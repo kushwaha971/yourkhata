@@ -3,11 +3,11 @@
 import { useCallback, useState } from 'react';
 
 import dynamic from 'next/dynamic';
-import { useRouter } from 'next/navigation';
 
 import { Ban, CheckCircle2, FileOutput, HandCoins, Pencil, Undo2, XCircle } from 'lucide-react';
 
 import { UbActionLink, UbButton, UbConfirmDialog } from 'src/design-system';
+import { useAppRouter } from 'src/hooks/useAppRouter';
 import { useAppDispatch } from 'src/hooks/useAppStore';
 import { usePermissions } from 'src/hooks/usePermissions';
 import { useTranslation } from 'src/hooks/useTranslation';
@@ -57,7 +57,7 @@ type Open = 'void' | 'apply' | 'convert' | 'reject' | 'cancelOrder' | 'voidChall
  */
 export function DocumentActions({ doc }: Readonly<{ doc: SalesDocument }>): React.JSX.Element {
   const { t } = useTranslation();
-  const router = useRouter();
+  const router = useAppRouter();
   const dispatch = useAppDispatch();
   const { can } = usePermissions();
   const [open, setOpen] = useState<Open>(null);

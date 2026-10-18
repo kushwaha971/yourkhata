@@ -2,8 +2,6 @@
 
 import { useCallback, useEffect, type RefObject } from 'react';
 
-import { useRouter } from 'next/navigation';
-
 import {
   UbBox,
   UbButton,
@@ -14,6 +12,7 @@ import {
   UbStack,
   UbText,
 } from 'src/design-system';
+import { useAppRouter } from 'src/hooks/useAppRouter';
 import { useAppDispatch, useAppSelector } from 'src/hooks/useAppStore';
 import { useNowMs } from 'src/hooks/useNowMs';
 import { useTranslation } from 'src/hooks/useTranslation';
@@ -64,7 +63,7 @@ export function NotificationPanel({
   returnFocusRef,
 }: Readonly<NotificationPanelProps>): React.JSX.Element {
   const { t } = useTranslation();
-  const router = useRouter();
+  const router = useAppRouter();
   const dispatch = useAppDispatch();
   const rows = useAppSelector(selectNotifications);
   const status = useAppSelector(selectNotificationsStatus);

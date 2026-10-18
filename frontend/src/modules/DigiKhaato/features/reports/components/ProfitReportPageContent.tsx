@@ -2,8 +2,6 @@
 
 import { useCallback, useMemo } from 'react';
 
-import { useRouter } from 'next/navigation';
-
 import { UbActionLink, UbFilterSelect, UbSearchInput } from 'src/design-system';
 import {
   UbDataGrid,
@@ -11,6 +9,7 @@ import {
   type UbDataGridEmptyStates,
   type UbGridState,
 } from 'src/design-system/UbDataGrid';
+import { useAppRouter } from 'src/hooks/useAppRouter';
 import { useCommittedSearch } from 'src/hooks/useCommittedSearch';
 import { usePermissions } from 'src/hooks/usePermissions';
 import { useTranslation } from 'src/hooks/useTranslation';
@@ -46,7 +45,7 @@ const SEARCH_DEBOUNCE_MS = 300;
  */
 export function ProfitReportPageContent(): React.JSX.Element {
   const { t } = useTranslation();
-  const router = useRouter();
+  const router = useAppRouter();
   const tier = useGridTier();
   const labels = useReportGridLabels();
   const report = useProfitReport();

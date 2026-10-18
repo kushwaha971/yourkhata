@@ -362,7 +362,10 @@ function UbDataGridTableBase<TRow>({
                   // accessible version of the same affordance — so the cursor
                   // changes over that control and nowhere else, which is also
                   // the honest thing for a row whose other cells do nothing.
-                  row.getIsSelected() ? 'bg-accent-quiet' : 'hover:bg-surface-hover'
+                  row.getIsSelected() ? 'bg-accent-quiet' : 'hover:bg-surface-hover',
+                  // Revamp F2: pressing the row's open control tints the whole
+                  // row, as the phone card already does (baseline H6: no change).
+                  '[&:has(button:active)]:bg-surface-active'
                 )}
               >
                 {selectable && (

@@ -2,8 +2,6 @@
 
 import { useCallback, useMemo } from 'react';
 
-import { useRouter } from 'next/navigation';
-
 import {
   UbActionLink,
   UbButton,
@@ -24,6 +22,7 @@ import {
   type UbDataGridEmptyStates,
   type UbGridState,
 } from 'src/design-system/UbDataGrid';
+import { useAppRouter } from 'src/hooks/useAppRouter';
 import { usePermissions } from 'src/hooks/usePermissions';
 import { useTranslation } from 'src/hooks/useTranslation';
 import { ROUTES } from 'src/routes';
@@ -79,7 +78,7 @@ const NEW_DOCUMENT: Readonly<
  */
 export function RegisterReport({ book }: Readonly<{ book: RegisterBook }>): React.JSX.Element {
   const { t } = useTranslation();
-  const router = useRouter();
+  const router = useAppRouter();
   const tier = useGridTier();
   const report = useRegisterReport(book);
   const labels = useReportGridLabels();

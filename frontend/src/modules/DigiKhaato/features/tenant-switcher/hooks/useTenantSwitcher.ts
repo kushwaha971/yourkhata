@@ -2,8 +2,7 @@
 
 import { useCallback, useMemo, useState } from 'react';
 
-import { useRouter } from 'next/navigation';
-
+import { useAppRouter } from 'src/hooks/useAppRouter';
 import { useAppDispatch, useAppSelector } from 'src/hooks/useAppStore';
 import { useDegradedNetwork } from 'src/hooks/useDegradedNetwork';
 import {
@@ -60,7 +59,7 @@ export interface UseTenantSwitcherResult {
 
 export const useTenantSwitcher = (): UseTenantSwitcherResult => {
   const dispatch = useAppDispatch();
-  const router = useRouter();
+  const router = useAppRouter();
   const goToLanding = useGoToLanding();
   const activeTenant = useAppSelector(selectActiveTenant);
   const tenants = useAppSelector(selectSessionTenants);

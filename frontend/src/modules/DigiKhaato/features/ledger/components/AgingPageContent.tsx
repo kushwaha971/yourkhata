@@ -3,7 +3,6 @@
 import { useCallback, useMemo } from 'react';
 
 import dynamic from 'next/dynamic';
-import { useRouter } from 'next/navigation';
 
 import { Download } from 'lucide-react';
 
@@ -30,6 +29,7 @@ import {
   type UbGridSort,
   type UbGridState,
 } from 'src/design-system/UbDataGrid';
+import { useAppRouter } from 'src/hooks/useAppRouter';
 import { usePermissions } from 'src/hooks/usePermissions';
 import { useTranslation } from 'src/hooks/useTranslation';
 import { formatInr } from 'src/utils/money';
@@ -89,7 +89,7 @@ export function AgingPageContent({
   book = 'main',
 }: Readonly<{ book?: 'main' | 'shop' }> = {}): React.JSX.Element {
   const { t } = useTranslation();
-  const router = useRouter();
+  const router = useAppRouter();
   const tier = useGridTier();
   const aging = useLedgerAging(book);
   const { tags } = usePartyTags();

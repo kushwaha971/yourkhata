@@ -2,8 +2,9 @@
 
 import { useCallback, useEffect, useState } from 'react';
 
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
 
+import { useAppRouter } from 'src/hooks/useAppRouter';
 import { useAppDispatch, useAppSelector } from 'src/hooks/useAppStore';
 import { useDegradedNetwork } from 'src/hooks/useDegradedNetwork';
 import { useIdempotencyKey } from 'src/hooks/useIdempotencyKey';
@@ -184,7 +185,7 @@ export interface UseOnboardingResult {
 
 export const useOnboarding = (routeStep: number): UseOnboardingResult => {
   const dispatch = useAppDispatch();
-  const router = useRouter();
+  const router = useAppRouter();
   const step = useAppSelector(selectOnboardingStep);
   const completedStep = useAppSelector(selectOnboardingCompletedStep);
   const draft = useAppSelector(selectOnboardingDraft);

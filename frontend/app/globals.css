@@ -870,6 +870,28 @@
   }
 }
 
+/* Revamp F2 — UbRouteProgress's sliding segment. Outside any layer, like
+   `.ub-lift`, so no utility replaces it. Reduced motion: a still bar. */
+.ub-route-progress {
+  animation: ub-route-progress 1.1s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+
+@keyframes ub-route-progress {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(300%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ub-route-progress {
+    animation: none;
+    width: 100%;
+  }
+}
+
 /* ── A4b ── the deposit slip (PLT-X02 §8). It is printed from the khata, which
    is a whole screen of controls, so while `data-printing-slip` is on <body> the
    slip's portal is the only child that reaches paper. */

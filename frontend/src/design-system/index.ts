@@ -230,6 +230,8 @@ export type { UbPhoneInputProps } from './UbPhoneInput';
 
 export { progressTone, UbProgress, usagePercent } from './UbProgress';
 export type { UbProgressProps } from './UbProgress';
+export { UbRouteProgress } from './UbRouteProgress';
+export type { UbRouteProgressProps } from './UbRouteProgress';
 
 export { UbRadioGroup } from './UbRadioGroup';
 export type { UbRadioGroupProps } from './UbRadioGroup';

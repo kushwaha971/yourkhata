@@ -2,9 +2,8 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 
-import { useRouter } from 'next/navigation';
-
 import { UbButton, UbCard, UbStack, UbStatusBanner, UbText } from 'src/design-system';
+import { useAppRouter } from 'src/hooks/useAppRouter';
 import { useAppDispatch } from 'src/hooks/useAppStore';
 import { useTranslation } from 'src/hooks/useTranslation';
 import { ROUTES } from 'src/routes';
@@ -43,7 +42,7 @@ type Phase = 'working' | 'joined' | 'failed';
 export function AcceptInvitePageContent({ token }: Readonly<{ token: string }>): React.JSX.Element {
   const { t } = useTranslation();
   const dispatch = useAppDispatch();
-  const router = useRouter();
+  const router = useAppRouter();
   const [phase, setPhase] = useState<Phase>('working');
   const [message, setMessage] = useState<string>('');
 

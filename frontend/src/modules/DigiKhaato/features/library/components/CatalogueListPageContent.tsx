@@ -3,7 +3,6 @@
 import { useCallback, useMemo, type KeyboardEvent } from 'react';
 
 import dynamic from 'next/dynamic';
-import { useRouter } from 'next/navigation';
 
 import { BookCopy, FolderTree, MapPin, Plus } from 'lucide-react';
 
@@ -21,6 +20,7 @@ import {
   type UbFilterValues,
 } from 'src/design-system';
 import { type UbDataGridEmptyStates } from 'src/design-system/UbDataGrid';
+import { useAppRouter } from 'src/hooks/useAppRouter';
 import { useAppDispatch, useAppSelector } from 'src/hooks/useAppStore';
 import { useCommittedSearch } from 'src/hooks/useCommittedSearch';
 import { useTranslation } from 'src/hooks/useTranslation';
@@ -55,7 +55,7 @@ const CatalogueDrawersLazy = dynamic(
  */
 export function CatalogueListPageContent(): React.JSX.Element {
   const { t } = useTranslation();
-  const router = useRouter();
+  const router = useAppRouter();
   const dispatch = useAppDispatch();
   const list = useTitleList();
   const { drawer } = useAppSelector(selectLibraryCatalogueForm);

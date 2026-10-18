@@ -2,8 +2,6 @@
 
 import { useMemo } from 'react';
 
-import { useRouter } from 'next/navigation';
-
 import { Package, TriangleAlert } from 'lucide-react';
 
 import { SummaryStatGrid } from 'src/components/stats/SummaryStatGrid';
@@ -34,6 +32,7 @@ import {
   type UbGridState,
   type UbGridTier,
 } from 'src/design-system/UbDataGrid';
+import { useAppRouter } from 'src/hooks/useAppRouter';
 import { usePermissions } from 'src/hooks/usePermissions';
 import { useTranslation, type TranslateFn } from 'src/hooks/useTranslation';
 import { ROUTES, itemPath } from 'src/routes';
@@ -181,7 +180,7 @@ const createSummaryColumns = ({
  */
 export function StockSummaryPageContent(): React.JSX.Element {
   const { t } = useTranslation();
-  const router = useRouter();
+  const router = useAppRouter();
   const tier = useGridTier();
   const report = useStockSummary();
   const masters = useInventoryMasters();

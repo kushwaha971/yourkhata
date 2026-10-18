@@ -2,8 +2,6 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
-import { useRouter } from 'next/navigation';
-
 import { FileText, IndianRupee, Plus, Receipt } from 'lucide-react';
 
 import { SummaryStatGrid } from 'src/components/stats/SummaryStatGrid';
@@ -28,6 +26,7 @@ import {
   type UbDataGridEmptyStates,
   type UbGridState,
 } from 'src/design-system/UbDataGrid';
+import { useAppRouter } from 'src/hooks/useAppRouter';
 import { useDebounce } from 'src/hooks/useDebounce';
 import { useTranslation } from 'src/hooks/useTranslation';
 import { formatInr } from 'src/utils/money';
@@ -66,7 +65,7 @@ export function SalesFlowListPageContent({
   kind,
 }: Readonly<{ kind: FlowKind }>): React.JSX.Element {
   const { t } = useTranslation();
-  const router = useRouter();
+  const router = useAppRouter();
   const tier = useGridTier();
   const list = useSalesFlowList(kind);
   const labels = useSalesGridLabels();

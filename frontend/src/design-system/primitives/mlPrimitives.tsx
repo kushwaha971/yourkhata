@@ -224,12 +224,12 @@ const BUTTON_VARIANT: Record<MLButtonVariant, string> = {
      `outline-neutral`, and with the dark `--border-strong` rather than a
      hairline — so a secondary button read heavier than a primary one. Both now
      exist under the names BrandHub gives them. */
-  secondary: 'bg-surface-sunken text-text-primary hover:bg-surface-hover',
+  secondary: 'bg-surface-sunken text-text-primary hover:bg-surface-hover active:bg-surface-active',
   outlineNeutral:
-    'border border-border-subtle bg-surface-card text-text-primary hover:bg-surface-hover',
+    'border border-border-subtle bg-surface-card text-text-primary hover:bg-surface-hover active:bg-surface-active',
   /* `ghost` was `--text-accent` indigo, so every ghost button in the product
      read as a link. BrandHub's is plain ink. */
-  ghost: 'text-text-primary hover:bg-surface-hover',
+  ghost: 'text-text-primary hover:bg-surface-hover active:bg-surface-active',
   link: 'text-text-accent underline-offset-4 hover:underline',
   // §23.3: destructive is an OUTLINED danger in --form-error, never a red fill.
   destructive: 'border border-formError bg-transparent text-formError hover:bg-formError-dim',
@@ -260,6 +260,11 @@ export const mlButtonClasses = (
     // icon-only header square, the 40 px `md`, the 28 px `sm` (globals.css).
     'ub-hit',
     'transition-colors duration-fast ease-standard',
+    // Revamp F2 (05 §3, "Finger down"): every variant answers a press within a
+    // frame, by a press colour distinct from hover and a 0.98 squeeze. The
+    // baseline found tabs, rows and four of six variants doing nothing on a
+    // touch but their hover style. Transform only, so nothing reflows.
+    'active:scale-[0.98] motion-reduce:active:scale-100 disabled:active:scale-100',
     'disabled:cursor-not-allowed disabled:opacity-45',
     BUTTON_VARIANT[variant],
     BUTTON_SIZE[size],

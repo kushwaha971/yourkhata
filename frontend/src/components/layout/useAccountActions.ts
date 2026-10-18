@@ -2,8 +2,7 @@
 
 import { useCallback } from 'react';
 
-import { useRouter } from 'next/navigation';
-
+import { useAppRouter } from 'src/hooks/useAppRouter';
 import { useAppDispatch, useAppSelector } from 'src/hooks/useAppStore';
 import { useLocaleSwitch } from 'src/hooks/useLocaleSwitch';
 import { selectImpersonation, selectSessionUser } from 'src/redux/slice/sessionSlice';
@@ -40,7 +39,7 @@ export interface AccountActions {
 }
 
 export function useAccountActions(): AccountActions {
-  const router = useRouter();
+  const router = useAppRouter();
   const dispatch = useAppDispatch();
   const user = useAppSelector(selectSessionUser);
   const impersonating = useAppSelector(selectImpersonation) !== null;

@@ -2,8 +2,6 @@
 
 import { Fragment, useCallback, useRef, useState } from 'react';
 
-import { useRouter } from 'next/navigation';
-
 import { Check, ChevronsUpDown, LogOut, Plus, Power, Star } from 'lucide-react';
 
 import {
@@ -16,6 +14,7 @@ import {
   UbText,
 } from 'src/design-system';
 import { MLMenu, MLMenuItem, MLMenuLabel, MLSpinner } from 'src/design-system/primitives';
+import { useAppRouter } from 'src/hooks/useAppRouter';
 import { useAppDispatch, useAppSelector } from 'src/hooks/useAppStore';
 import { useTranslation } from 'src/hooks/useTranslation';
 import { selectAppsAddable } from 'src/redux/slice/sessionSlice';
@@ -78,7 +77,7 @@ export function TenantSwitcherMenu({
   caption?: string;
 }>): React.JSX.Element | null {
   const { t } = useTranslation();
-  const router = useRouter();
+  const router = useAppRouter();
   const switcher = useTenantSwitcher();
   const dispatch = useAppDispatch();
   const { apps, app } = useNavigation();

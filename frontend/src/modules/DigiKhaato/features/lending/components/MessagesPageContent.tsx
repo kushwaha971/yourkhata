@@ -3,7 +3,6 @@
 import { useEffect, useState } from 'react';
 
 import dynamic from 'next/dynamic';
-import { useRouter } from 'next/navigation';
 
 import { MessageCircle } from 'lucide-react';
 
@@ -21,6 +20,7 @@ import {
   UbStatusBadge,
   UbText,
 } from 'src/design-system';
+import { useAppRouter } from 'src/hooks/useAppRouter';
 import { useAppDispatch, useAppSelector } from 'src/hooks/useAppStore';
 import { usePermissions } from 'src/hooks/usePermissions';
 import { useTranslation } from 'src/hooks/useTranslation';
@@ -47,7 +47,7 @@ const BUCKET_TONE = { overdue: 'error', due_today: 'warning', due_tomorrow: 'inf
  */
 export function MessagesPageContent(): React.JSX.Element {
   const { t } = useTranslation();
-  const router = useRouter();
+  const router = useAppRouter();
   const dispatch = useAppDispatch();
   const state = useAppSelector(selectLendingMessages);
   const { can, hasModule } = usePermissions();

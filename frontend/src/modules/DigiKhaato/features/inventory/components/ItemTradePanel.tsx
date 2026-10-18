@@ -2,8 +2,6 @@
 
 import { useEffect, useMemo, useState } from 'react';
 
-import { useRouter } from 'next/navigation';
-
 import {
   UbButton,
   UbCard,
@@ -17,6 +15,7 @@ import {
   UbText,
   isoToday,
 } from 'src/design-system';
+import { useAppRouter } from 'src/hooks/useAppRouter';
 import { useTranslation } from 'src/hooks/useTranslation';
 import { partyPath, ROUTES } from 'src/routes';
 import { formatBusinessDate } from 'src/utils/dates';
@@ -61,7 +60,7 @@ export function ItemTradePanel({
   unitCode,
 }: Readonly<{ itemId: string; side: TradeSide; unitCode: string }>): React.JSX.Element {
   const { t } = useTranslation();
-  const router = useRouter();
+  const router = useAppRouter();
   const [period, setPeriod] = useState<Period>('all');
   const [attempt, setAttempt] = useState(0);
   const [load, setLoad] = useState<Load>({ status: 'loading' });

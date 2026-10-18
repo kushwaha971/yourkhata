@@ -3,7 +3,6 @@
 import { useCallback, useEffect, useState } from 'react';
 
 import dynamic from 'next/dynamic';
-import { useRouter } from 'next/navigation';
 
 import { Plus } from 'lucide-react';
 
@@ -19,6 +18,7 @@ import {
   UbStack,
   UbText,
 } from 'src/design-system';
+import { useAppRouter } from 'src/hooks/useAppRouter';
 import { usePermissions } from 'src/hooks/usePermissions';
 import { useTranslation } from 'src/hooks/useTranslation';
 import { priceListPath } from 'src/routes';
@@ -44,7 +44,7 @@ type Load =
  */
 export function PriceListsPageContent(): React.JSX.Element {
   const { t } = useTranslation();
-  const router = useRouter();
+  const router = useAppRouter();
   const { can, hasModule } = usePermissions();
   const canRead = hasModule('inventory') && can('inventory.item.read');
   const canWrite = hasModule('inventory') && can('inventory.item.write');

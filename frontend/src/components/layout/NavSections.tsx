@@ -105,7 +105,9 @@ export function NavSections({
                   row,
                   active
                     ? 'border-border-navActive bg-surface-navActive text-text-onNav'
-                    : 'border-transparent text-text-onNavMuted hover:bg-surface-navHover hover:text-text-onNav'
+                    : // Revamp F2: pressed is the current row's tint, so a press
+                      // shows under a mouse too (it was the hover style only).
+                      'border-transparent text-text-onNavMuted hover:bg-surface-navHover hover:text-text-onNav active:bg-surface-navActive'
                 )}
               >
                 {inner}

@@ -2,8 +2,9 @@
 
 import { useCallback, useEffect } from 'react';
 
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
 
+import { useAppRouter } from 'src/hooks/useAppRouter';
 import { useAppDispatch, useAppSelector } from 'src/hooks/useAppStore';
 import { resetAllFeatureState } from 'src/redux/actions';
 import { localeFromProfile } from 'src/redux/slice/localeSlice';
@@ -76,7 +77,7 @@ export interface UseAuthRedirectResult {
 
 export const useAuthRedirect = (): UseAuthRedirectResult => {
   const dispatch = useAppDispatch();
-  const router = useRouter();
+  const router = useAppRouter();
   const searchParams = useSearchParams();
   const result = useAppSelector(selectAuthResult);
   const heldBefore = useAppSelector(selectSessionHeldInThisDocument);

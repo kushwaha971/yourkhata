@@ -3,7 +3,6 @@
 import { useCallback, useState } from 'react';
 
 import dynamic from 'next/dynamic';
-import { useRouter } from 'next/navigation';
 
 import { Save, Send, Trash2 } from 'lucide-react';
 
@@ -21,6 +20,7 @@ import {
   UbText,
   UbTotalDock,
 } from 'src/design-system';
+import { useAppRouter } from 'src/hooks/useAppRouter';
 import { useAppDispatch } from 'src/hooks/useAppStore';
 import { useDocksEditorTotals } from 'src/hooks/useDocksEditorTotals';
 import { useTranslation } from 'src/hooks/useTranslation';
@@ -69,7 +69,7 @@ export function PurchaseBillEditorPageContent({
   kind = 'purchase_bill',
 }: Readonly<{ documentId: string | null; kind?: PurchaseKind }>): React.JSX.Element {
   const { t } = useTranslation();
-  const router = useRouter();
+  const router = useAppRouter();
   const dispatch = useAppDispatch();
   const editor = usePurchaseBillEditor(documentId, kind);
   // Shop item 3 — the same editor writes an order: Send in place of Record, never paid.

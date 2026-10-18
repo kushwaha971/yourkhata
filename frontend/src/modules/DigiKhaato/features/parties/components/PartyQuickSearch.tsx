@@ -2,9 +2,8 @@
 
 import { memo, useCallback, useId, useState } from 'react';
 
-import { useRouter } from 'next/navigation';
-
 import { UbAmount, UbBox, UbLoadMore, UbSearchInput, UbText } from 'src/design-system';
+import { useAppRouter } from 'src/hooks/useAppRouter';
 import { useTranslation } from 'src/hooks/useTranslation';
 import { partyPath } from 'src/routes';
 import { cn } from 'src/utils/cn';
@@ -47,7 +46,7 @@ function PartyQuickSearchBase({
   onNavigate,
 }: Readonly<PartyQuickSearchProps>) {
   const { t } = useTranslation();
-  const router = useRouter();
+  const router = useAppRouter();
   const search = usePartySearch();
   const listId = useId();
   const [open, setOpen] = useState(false);

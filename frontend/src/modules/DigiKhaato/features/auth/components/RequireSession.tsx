@@ -2,9 +2,10 @@
 
 import { useEffect, type ReactNode } from 'react';
 
-import { usePathname, useRouter } from 'next/navigation';
+import { usePathname } from 'next/navigation';
 
 import { UbPageSkeleton } from 'src/design-system';
+import { useAppRouter } from 'src/hooks/useAppRouter';
 import { useAppSelector } from 'src/hooks/useAppStore';
 import { selectLanding, selectSessionStatus } from 'src/redux/slice/sessionSlice';
 import { ROUTES, loginPathWithNext } from 'src/routes';
@@ -56,7 +57,7 @@ export function RequireSession({
 }: Readonly<{ children: ReactNode }>): React.JSX.Element | null {
   const status = useAppSelector(selectSessionStatus);
   const landing = useAppSelector(selectLanding);
-  const router = useRouter();
+  const router = useAppRouter();
   const pathname = usePathname();
 
   // The chooser is where a tenant-less session with something to choose goes,

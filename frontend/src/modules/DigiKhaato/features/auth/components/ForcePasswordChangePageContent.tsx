@@ -2,12 +2,11 @@
 
 import { useCallback } from 'react';
 
-import { useRouter } from 'next/navigation';
-
 import { yupResolver } from '@hookform/resolvers/yup';
 import { useForm, useWatch } from 'react-hook-form';
 
 import { UbButton, UbField, UbForm, UbStack, UbStatusBanner, UbTextInput } from 'src/design-system';
+import { useAppRouter } from 'src/hooks/useAppRouter';
 import { useAppSelector } from 'src/hooks/useAppStore';
 import { useNowMs } from 'src/hooks/useNowMs';
 import { useTranslation } from 'src/hooks/useTranslation';
@@ -45,7 +44,7 @@ import type { ForcePasswordChangeFormValues } from '../validation/authSchemas';
  */
 export function ForcePasswordChangePageContent(): React.JSX.Element {
   const { t } = useTranslation();
-  const router = useRouter();
+  const router = useAppRouter();
   const goToLanding = useGoToLanding();
   const schemas = useAuthSchemas();
   const password = usePasswordFlow();

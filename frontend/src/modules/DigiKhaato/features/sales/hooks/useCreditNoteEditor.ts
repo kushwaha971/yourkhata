@@ -2,11 +2,10 @@
 
 import { useCallback, useEffect, useMemo } from 'react';
 
-import { useRouter } from 'next/navigation';
-
 import { yupResolver } from '@hookform/resolvers/yup';
 import { useForm, useWatch, type Resolver, type UseFormReturn } from 'react-hook-form';
 
+import { useAppRouter } from 'src/hooks/useAppRouter';
 import { useAppDispatch, useAppSelector } from 'src/hooks/useAppStore';
 import { useIdempotencyKey } from 'src/hooks/useIdempotencyKey';
 import { usePermissions } from 'src/hooks/usePermissions';
@@ -55,7 +54,7 @@ export interface UseCreditNoteEditorResult {
 
 export const useCreditNoteEditor = (againstId: string | null): UseCreditNoteEditorResult => {
   const dispatch = useAppDispatch();
-  const router = useRouter();
+  const router = useAppRouter();
   const state = useAppSelector(selectCreditNoteEditor);
   const timezone = useAppSelector(selectTenantTimezone);
   const { can, hasModule } = usePermissions();

@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
 
+import { useAppRouter } from 'src/hooks/useAppRouter';
 import { useAppDispatch, useAppSelector } from 'src/hooks/useAppStore';
 import { selectLanding, selectSessionStatus } from 'src/redux/slice/sessionSlice';
 
@@ -29,7 +30,7 @@ import { landingRoute } from '../view-model/landing';
  */
 export const useSignedInGate = (): { readonly checking: boolean } => {
   const dispatch = useAppDispatch();
-  const router = useRouter();
+  const router = useAppRouter();
   const searchParams = useSearchParams();
   const status = useAppSelector(selectSessionStatus);
   const landing = useAppSelector(selectLanding);

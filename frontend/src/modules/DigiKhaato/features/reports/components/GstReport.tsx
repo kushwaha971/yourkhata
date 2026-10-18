@@ -2,8 +2,6 @@
 
 import { useCallback, useMemo } from 'react';
 
-import { useRouter } from 'next/navigation';
-
 import { SummaryStatGrid } from 'src/components/stats/SummaryStatGrid';
 import {
   UbActionLink,
@@ -16,6 +14,7 @@ import {
   UbSwitch,
   UbTabs,
 } from 'src/design-system';
+import { useAppRouter } from 'src/hooks/useAppRouter';
 import { useTranslation } from 'src/hooks/useTranslation';
 import { ROUTES } from 'src/routes';
 import { formatBusinessDate } from 'src/utils/dates';
@@ -66,7 +65,7 @@ const VIEWS: readonly GstView[] = ['gstr1', 'gstr3b', 'details'];
  */
 export function GstReport(): React.JSX.Element {
   const { t } = useTranslation();
-  const router = useRouter();
+  const router = useAppRouter();
   const report = useGstSummary();
   const { data, query, view, setView } = report;
 

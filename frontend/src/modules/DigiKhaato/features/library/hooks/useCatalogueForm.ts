@@ -2,8 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
-import { useRouter } from 'next/navigation';
-
+import { useAppRouter } from 'src/hooks/useAppRouter';
 import { useAppDispatch, useAppSelector } from 'src/hooks/useAppStore';
 import { useIdempotencyKey } from 'src/hooks/useIdempotencyKey';
 import { useTranslation } from 'src/hooks/useTranslation';
@@ -138,7 +137,7 @@ export interface CatalogueFormResult extends LibraryCatalogueFormState {
 
 export const useCatalogueForm = (): CatalogueFormResult => {
   const dispatch = useAppDispatch();
-  const router = useRouter();
+  const router = useAppRouter();
   const { t } = useTranslation();
   const form = useAppSelector(selectLibraryCatalogueForm);
   const timezone = useAppSelector(selectTenantTimezone);

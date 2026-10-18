@@ -3,7 +3,6 @@
 import { useEffect } from 'react';
 
 import dynamic from 'next/dynamic';
-import { useRouter } from 'next/navigation';
 
 import { FilePlus, RefreshCw } from 'lucide-react';
 
@@ -18,6 +17,7 @@ import {
   UbStack,
   type UbMenuListRow,
 } from 'src/design-system';
+import { useAppRouter } from 'src/hooks/useAppRouter';
 import { useAppSelector } from 'src/hooks/useAppStore';
 import { usePermissions } from 'src/hooks/usePermissions';
 import { useTranslation, type TranslateFn } from 'src/hooks/useTranslation';
@@ -76,7 +76,7 @@ const updatedLabel = (t: TranslateFn, seconds: number): string =>
 
 export function DashboardPageContent(): React.JSX.Element {
   const { t } = useTranslation();
-  const router = useRouter();
+  const router = useAppRouter();
   const { can, hasModule } = usePermissions();
   const dash = useDashboard();
   const landing = useLandingPath();

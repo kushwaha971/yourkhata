@@ -1,6 +1,9 @@
 'use client';
 
+import { Suspense } from 'react';
+
 import { AppRouteWarmup } from 'src/components/layout/AppRouteWarmup';
+import { RouteProgress } from 'src/components/layout/RouteProgress';
 import { UbAppShell } from 'src/components/layout/UbAppShell';
 
 import { RequireSession } from 'modules/DigiKhaato/features/auth/components/RequireSession';
@@ -33,6 +36,10 @@ export function AppGroupShell({
   return (
     <>
       <AppRouteWarmup />
+      {/* useSearchParams needs a boundary of its own, or it suspends the shell. */}
+      <Suspense fallback={null}>
+        <RouteProgress />
+      </Suspense>
       <RequireSession>
         <UbAppShell>{children}</UbAppShell>
       </RequireSession>

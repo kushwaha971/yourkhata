@@ -2,8 +2,6 @@
 
 import { useEffect } from 'react';
 
-import { useRouter } from 'next/navigation';
-
 import {
   Armchair,
   CalendarClock,
@@ -34,6 +32,7 @@ import {
   UbQuickActions,
   useIsMobileLayer,
 } from 'src/design-system';
+import { useAppRouter } from 'src/hooks/useAppRouter';
 import { useAppDispatch, useAppSelector } from 'src/hooks/useAppStore';
 import { usePermissions } from 'src/hooks/usePermissions';
 import { useTranslation } from 'src/hooks/useTranslation';
@@ -58,7 +57,7 @@ import { LibraryCard } from './LibraryCard';
  */
 export function LibraryHomePageContent(): React.JSX.Element {
   const { t } = useTranslation();
-  const router = useRouter();
+  const router = useAppRouter();
   const dispatch = useAppDispatch();
   const state = useAppSelector(selectLibraryHome);
   const { can, hasModule } = usePermissions();

@@ -3,7 +3,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import dynamic from 'next/dynamic';
-import { useRouter } from 'next/navigation';
 
 import { Minus, Plus } from 'lucide-react';
 
@@ -21,6 +20,7 @@ import {
   UbStatusBanner,
   useIsMobileLayer,
 } from 'src/design-system';
+import { useAppRouter } from 'src/hooks/useAppRouter';
 import { usePermissions } from 'src/hooks/usePermissions';
 import { useScrolledPast } from 'src/hooks/useScrolledPast';
 import { useTranslation, type TranslateFn } from 'src/hooks/useTranslation';
@@ -200,7 +200,7 @@ export function PartyDetailPageContent({
         : w(shopBook ? (SHOP_BOOK_WORDS[key] ?? key) : key, values),
     [t, w, shopBook]
   );
-  const router = useRouter();
+  const router = useAppRouter();
   const partyForm = usePartyForm();
   const entryForm = useLedgerEntryForm();
   const opening = useOpeningBalance(id);

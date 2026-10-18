@@ -1,7 +1,5 @@
 'use client';
 
-import { useRouter } from 'next/navigation';
-
 import {
   Check,
   ChevronDown,
@@ -15,6 +13,7 @@ import { useFeedback } from 'src/analytics/feedback';
 import { THEME_MODES, useAccountActions } from 'src/components/layout/useAccountActions';
 import { UbAvatar, UbBox, UbDivider, UbText } from 'src/design-system';
 import { MLMenu, MLMenuItem, MLMenuLabel } from 'src/design-system/primitives';
+import { useAppRouter } from 'src/hooks/useAppRouter';
 import { useTranslation } from 'src/hooks/useTranslation';
 import { ROUTES } from 'src/routes';
 import { accountContact, accountDisplayName } from 'src/utils/accountIdentity';
@@ -41,7 +40,7 @@ export function AccountMenu({
   compact = false,
 }: Readonly<{ compact?: boolean }>): React.JSX.Element | null {
   const { t } = useTranslation();
-  const router = useRouter();
+  const router = useAppRouter();
   const feedback = useFeedback();
   const { user, impersonating, locale, options, setLocale, theme, setTheme, signOut } =
     useAccountActions();

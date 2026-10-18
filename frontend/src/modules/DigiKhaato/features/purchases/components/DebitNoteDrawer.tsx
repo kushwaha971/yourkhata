@@ -2,8 +2,6 @@
 
 import { useId, useMemo, useState } from 'react';
 
-import { useRouter } from 'next/navigation';
-
 import { CompactDrawer as UbDrawer } from 'src/components/records/CompactOverlays';
 import {
   UbButton,
@@ -18,6 +16,7 @@ import {
   UbTextInput,
   isoToday,
 } from 'src/design-system';
+import { useAppRouter } from 'src/hooks/useAppRouter';
 import { useAppDispatch } from 'src/hooks/useAppStore';
 import { useIdempotencyKey } from 'src/hooks/useIdempotencyKey';
 import { useTranslation } from 'src/hooks/useTranslation';
@@ -60,7 +59,7 @@ export function DebitNoteDrawer({
 }: Readonly<{ bill: PurchaseBill; onClose: () => void }>): React.JSX.Element {
   const { t } = useTranslation();
   const dispatch = useAppDispatch();
-  const router = useRouter();
+  const router = useAppRouter();
   const baseId = useId();
   const idempotency = useIdempotencyKey();
   const [qty, setQty] = useState<Record<number, string>>({});

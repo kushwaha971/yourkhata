@@ -2,8 +2,6 @@
 
 import { useCallback, useMemo } from 'react';
 
-import { useRouter } from 'next/navigation';
-
 import {
   UbButton,
   UbDataGrid,
@@ -16,6 +14,7 @@ import {
   UbFilterSelect,
 } from 'src/design-system';
 import type { UbDataGridEmptyStates, UbGridState } from 'src/design-system';
+import { useAppRouter } from 'src/hooks/useAppRouter';
 import { useTranslation } from 'src/hooks/useTranslation';
 import { adminTenantPath } from 'src/routes';
 
@@ -33,7 +32,7 @@ const EMPTY_PAGE = { page: 1, pageSize: 25, total: 0, totalPages: 1 };
  */
 export function AdminTenantsPageContent(): React.JSX.Element {
   const { t } = useTranslation();
-  const router = useRouter();
+  const router = useAppRouter();
   const list = useAdminTenants();
   const { state } = list;
   const columns = useMemo(() => createTenantColumns(t), [t]);

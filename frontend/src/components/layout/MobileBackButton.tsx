@@ -1,10 +1,9 @@
 'use client';
 
-import { useRouter } from 'next/navigation';
-
 import { ArrowLeft } from 'lucide-react';
 
 import { UbButton } from 'src/design-system';
+import { useAppRouter } from 'src/hooks/useAppRouter';
 import { useTranslation } from 'src/hooks/useTranslation';
 
 /**
@@ -21,7 +20,7 @@ export function MobileBackButton({
   upHref,
 }: Readonly<{ upHref: string | null }>): React.JSX.Element {
   const { t } = useTranslation();
-  const router = useRouter();
+  const router = useAppRouter();
   return (
     <UbButton
       variant="ghost"

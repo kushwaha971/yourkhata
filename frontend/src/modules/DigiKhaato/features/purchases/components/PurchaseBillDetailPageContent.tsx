@@ -3,7 +3,6 @@
 import { useState } from 'react';
 
 import dynamic from 'next/dynamic';
-import { useRouter } from 'next/navigation';
 
 import { Ban, FileOutput, Pencil, Undo2, XCircle } from 'lucide-react';
 
@@ -26,6 +25,7 @@ import {
   UbStatusBanner,
   UbText,
 } from 'src/design-system';
+import { useAppRouter } from 'src/hooks/useAppRouter';
 import { useAppDispatch } from 'src/hooks/useAppStore';
 import { useTranslation } from 'src/hooks/useTranslation';
 import { ROUTES } from 'src/routes';
@@ -85,7 +85,7 @@ export function PurchaseBillDetailPageContent({
   kind = 'purchase_bill',
 }: Readonly<{ id: string; kind?: PurchaseKind }>): React.JSX.Element {
   const { t } = useTranslation();
-  const router = useRouter();
+  const router = useAppRouter();
   const dispatch = useAppDispatch();
   const detail = usePurchaseBillDetail(id, kind);
   const [voiding, setVoiding] = useState(false);

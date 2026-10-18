@@ -74,14 +74,16 @@ function UbBottomNavBase({ label, items, className }: Readonly<UbBottomNavProps>
               href={item.href}
               aria-current={item.active ? 'page' : undefined}
               className={cn(
-                'relative flex min-w-0 flex-1 flex-col items-center justify-center gap-0.5 outline-none',
+                'group relative flex min-w-0 flex-1 flex-col items-center justify-center gap-0.5 outline-none',
                 'focus-visible:shadow-focus',
                 item.active ? 'text-text-primary' : 'text-text-tertiary'
               )}
             >
               <span
                 className={cn(
-                  'flex h-8 w-14 items-center justify-center rounded-pill transition-colors duration-fast',
+                  'flex h-8 w-14 items-center justify-center rounded-pill transition-[background-color,transform] duration-fast',
+                  // Revamp F2: the tab had no press look at all (baseline H6).
+                  'group-active:scale-95 group-active:bg-surface-active motion-reduce:group-active:scale-100',
                   item.active && 'bg-accent-quiet text-text-accent'
                 )}
               >

@@ -3,13 +3,13 @@
 import { useRef, useState, type ReactNode } from 'react';
 
 import dynamic from 'next/dynamic';
-import { useRouter } from 'next/navigation';
 
 import { MoreHorizontal } from 'lucide-react';
 
 import { useIsMobileLayer } from 'src/design-system/motion/useMediaQuery';
 import { UbButton } from 'src/design-system/UbButton';
 import { UbFab } from 'src/design-system/UbFab';
+import { useAppRouter } from 'src/hooks/useAppRouter';
 
 /** Fetched on the first ⋯ press: the sheet is a Radix dialog, not first paint. */
 const UbActionSheet = dynamic(
@@ -47,7 +47,7 @@ export function UbPageHeaderMobileActions({
   const [open, setOpen] = useState(false);
   const [opened, setOpened] = useState(false);
   const trigger = useRef<HTMLButtonElement>(null);
-  const router = useRouter();
+  const router = useAppRouter();
   const { primary } = mobile;
   // Rendered only on a phone, so a desktop DOM has no second "Add" and no ⋯.
   const isMobile = useIsMobileLayer();

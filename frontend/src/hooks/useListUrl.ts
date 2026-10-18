@@ -2,7 +2,9 @@
 
 import { useEffect, useRef } from 'react';
 
-import { usePathname, useRouter, useSearchParams } from 'next/navigation';
+import { usePathname, useSearchParams } from 'next/navigation';
+
+import { useAppRouter } from 'src/hooks/useAppRouter';
 
 /**
  * A list screen's filters, in the address bar — the mechanism, shared.
@@ -70,7 +72,7 @@ export interface UseListUrlOptions<F> {
 }
 
 export function useListUrl<F>({ codec, filters, defaults, onSeed }: UseListUrlOptions<F>): void {
-  const router = useRouter();
+  const router = useAppRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
   /* The string, not the object: `useSearchParams()` may hand back a new

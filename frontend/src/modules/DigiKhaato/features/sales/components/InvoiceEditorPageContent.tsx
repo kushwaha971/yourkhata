@@ -3,7 +3,6 @@
 import { useCallback, useState } from 'react';
 
 import dynamic from 'next/dynamic';
-import { useRouter } from 'next/navigation';
 
 import { Save, Send, Trash2 } from 'lucide-react';
 import { useStore } from 'react-redux';
@@ -21,6 +20,7 @@ import {
   UbStatusBanner,
   UbTotalDock,
 } from 'src/design-system';
+import { useAppRouter } from 'src/hooks/useAppRouter';
 import { useAppDispatch, useAppSelector } from 'src/hooks/useAppStore';
 import { useDocksEditorTotals } from 'src/hooks/useDocksEditorTotals';
 import { useTranslation } from 'src/hooks/useTranslation';
@@ -77,7 +77,7 @@ export function InvoiceEditorPageContent({
   kind = 'invoice',
 }: Readonly<{ documentId: string | null; kind?: EditorKind }>): React.JSX.Element {
   const { t } = useTranslation();
-  const router = useRouter();
+  const router = useAppRouter();
   const dispatch = useAppDispatch();
   const store = useStore<RootState>();
   const locale = useAppSelector(selectLocale);

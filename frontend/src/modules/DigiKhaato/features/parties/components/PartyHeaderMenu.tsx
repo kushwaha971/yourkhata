@@ -2,8 +2,6 @@
 
 import { type Ref } from 'react';
 
-import { useRouter } from 'next/navigation';
-
 import {
   Archive,
   BellRing,
@@ -16,6 +14,7 @@ import {
 } from 'lucide-react';
 
 import { UbMoreActions, type UbMenuListRow } from 'src/design-system';
+import { useAppRouter } from 'src/hooks/useAppRouter';
 import type { TranslateFn } from 'src/hooks/useTranslation';
 
 /**
@@ -104,7 +103,7 @@ export function PartyHeaderMenu({
   onCollect,
   triggerRef,
 }: Readonly<PartyHeaderMenuProps>): React.JSX.Element | null {
-  const router = useRouter();
+  const router = useAppRouter();
 
   /* Each row closes the sheet before it acts; `UbActionSheet` owns that order
      (WP-03 D-04a), because a drawer opened under a still-mounted sheet leaves

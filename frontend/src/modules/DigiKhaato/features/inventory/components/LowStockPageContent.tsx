@@ -3,7 +3,6 @@
 import { useCallback, useMemo } from 'react';
 
 import dynamic from 'next/dynamic';
-import { useRouter } from 'next/navigation';
 
 import { Package, SlidersHorizontal } from 'lucide-react';
 
@@ -25,6 +24,7 @@ import {
   type UbGridState,
   type UbGridTier,
 } from 'src/design-system/UbDataGrid';
+import { useAppRouter } from 'src/hooks/useAppRouter';
 import { usePermissions } from 'src/hooks/usePermissions';
 import { useTranslation, type TranslateFn } from 'src/hooks/useTranslation';
 import { itemPath } from 'src/routes';
@@ -188,7 +188,7 @@ const createLowStockColumns = ({
  */
 export function LowStockPageContent(): React.JSX.Element {
   const { t } = useTranslation();
-  const router = useRouter();
+  const router = useAppRouter();
   const tier = useGridTier();
   const report = useLowStock();
   const adjustment = useStockAdjustment();

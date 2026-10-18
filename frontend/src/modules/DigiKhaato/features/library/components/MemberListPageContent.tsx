@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import dynamic from 'next/dynamic';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
 
 import { ChevronRight, UserPlus } from 'lucide-react';
 
@@ -32,6 +32,7 @@ import {
   useGridTier,
   type UbDataGridEmptyStates,
 } from 'src/design-system/UbDataGrid';
+import { useAppRouter } from 'src/hooks/useAppRouter';
 import { useAppDispatch, useAppSelector } from 'src/hooks/useAppStore';
 import { useCommittedSearch } from 'src/hooks/useCommittedSearch';
 import { useIdempotencyKey } from 'src/hooks/useIdempotencyKey';
@@ -104,7 +105,7 @@ const SERVER_FIELD: Readonly<Record<string, string>> = {
  */
 export function MemberListPageContent(): React.JSX.Element {
   const { t } = useTranslation();
-  const router = useRouter();
+  const router = useAppRouter();
   const [selectedMember, setSelectedMember] = useState<string | null>(null);
   const dispatch = useAppDispatch();
   const list = useMemberList();

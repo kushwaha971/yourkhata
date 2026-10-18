@@ -36,14 +36,15 @@ Newest first. Each decision says who made it and when. "Open" means it waits for
 | 17 Oct 2026 | Phase 1 baseline measured on the scale book; H1–H4, H6 proven, H8 Lending Today only, H5 and H7 open | docs/performance/2026-10-17-app-baseline.md, e2e/perf-app.mjs, 05 |
 | 17 Oct 2026 | Owner approved building Phase 4 (R-DEC-08) and handed it to a new session; no app code changed in this session | 12 |
 | 17 Oct 2026 | Phase 4 piece 1 built: loading view on all 93 app routes (b168527). Throttled tap → first change p50 363 → 98 ms, p95 819 → 711 ms; link taps 52–165 ms; router.push taps and Lending Today → Loans not yet fixed | frontend/app/(app)/**/loading.tsx, RouteLoading, docs/performance/2026-10-17-f1-loading-views.md |
+| 18 Oct 2026 | Phase 4 piece 2 built: pressed looks on every button variant, bottom tab, sidebar row and table row; `useAppRouter` + `RouteProgress` for the 68 `router.push` modules, lint-enforced. Customer row tap 299 → 18 ms; p95 without Lending Today 306 → 172 ms | frontend (hooks/useAppRouter, RouteProgress, UbRouteProgress, tokens), docs/performance/2026-10-18-f2-pressed-and-pending.md |
 | 17 Oct 2026 | Tool-neutral start prompt for any coding agent; root AGENTS.md; design page copied into the repo | AGENT_START_PROMPT.md, design/ |
 
 ## Next
 
 1. **Build Phase 4, approved (R-DEC-08)**, one piece at a time, in this order. After each piece, run the gates in CLAUDE.md, take phone and desktop screenshots in every state (R-DEC-07, method in 11), measure before and after with `e2e/perf-app.mjs` against the baseline in docs/performance/2026-10-17-app-baseline.md, then commit and report before starting the next.
    1. ~~F1 route loading views~~ done 17 Oct (b168527; results in docs/performance/2026-10-17-f1-loading-views.md). `RouteProgress` was not needed for link taps and moves into piece 2 if router.push taps still need it.
-   2. **Start here.** F2 pressed and pending states: `useNavigate` with `useTransition` and `router.prefetch` on pointer down for the 110 `router.push` calls (list rows and New bill still freeze ~300 ms throttled; `e2e/revamp-shots.mjs --piece=loading` cases form-button and detail-row fail today and should pass after); pressed tint on `UbButton` primary, bottom tabs, desktop rows (H6 findings in the baseline). Full `npm run lint` takes over 25 minutes in the cloud container; lint changed files with `npx eslint --max-warnings=0 <files>` and say so.
-   3. Double-tap lock: in-flight guard in `UbForm` / `useAsyncAction`, and request-key reuse on retry (05 §4; Lending finding in 07-screens/13 is client-only).
+   2. ~~F2 pressed and pending states~~ done 18 Oct (results in docs/performance/2026-10-18-f2-pressed-and-pending.md). Full `npm run lint` takes over 25 minutes in the cloud container; lint changed files with `npx eslint --max-warnings=0 <files>` and say so.
+   3. **Start here.** Double-tap lock: in-flight guard in `UbForm` / `useAsyncAction`, and request-key reuse on retry (05 §4; Lending finding in 07-screens/13 is client-only).
    4. Phone App button and App sheet; desktop sidebar app tree (04, 07-screens/02, 06).
    Library and Lending: shared shell only; their screens, endpoints and calculations stay as 02 freezes them.
 2. Owner answers the five open questions (Udhaar undo, reminder tabs, Close khata, Shop person bottom bar, "Plan ended"), plus R-DEC-03, R-DEC-04 and the BP items. These do not block step 1.

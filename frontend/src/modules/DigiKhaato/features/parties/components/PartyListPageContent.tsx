@@ -3,7 +3,6 @@
 import { useCallback, useMemo } from 'react';
 
 import dynamic from 'next/dynamic';
-import { useRouter } from 'next/navigation';
 
 import { Plus, Tags } from 'lucide-react';
 
@@ -27,6 +26,7 @@ import {
   type UbGridSort,
   type UbGridState,
 } from 'src/design-system/UbDataGrid';
+import { useAppRouter } from 'src/hooks/useAppRouter';
 import { useNowMs } from 'src/hooks/useNowMs';
 import { useTranslation, type TranslateFn } from 'src/hooks/useTranslation';
 import { ROUTES, partyPath } from 'src/routes';
@@ -168,7 +168,7 @@ export function PartyListPageContent({
       ),
     [baseT, book]
   );
-  const router = useRouter();
+  const router = useAppRouter();
   const partyForm = usePartyForm();
   const {
     rows,

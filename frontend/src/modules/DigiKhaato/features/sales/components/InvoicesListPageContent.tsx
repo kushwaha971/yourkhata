@@ -2,8 +2,6 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
-import { useRouter } from 'next/navigation';
-
 import { Plus } from 'lucide-react';
 
 import {
@@ -27,6 +25,7 @@ import {
   type UbDataGridEmptyStates,
   type UbGridState,
 } from 'src/design-system/UbDataGrid';
+import { useAppRouter } from 'src/hooks/useAppRouter';
 import { useDebounce } from 'src/hooks/useDebounce';
 import { useTranslation } from 'src/hooks/useTranslation';
 import { ROUTES } from 'src/routes';
@@ -58,7 +57,7 @@ const NEW_BILL = `${ROUTES.SALES_INVOICES}/new`;
  */
 export function InvoicesListPageContent(): React.JSX.Element {
   const { t } = useTranslation();
-  const router = useRouter();
+  const router = useAppRouter();
   const tier = useGridTier();
   const list = useInvoiceList();
 

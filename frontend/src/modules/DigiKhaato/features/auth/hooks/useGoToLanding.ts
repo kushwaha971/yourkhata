@@ -2,10 +2,9 @@
 
 import { useCallback } from 'react';
 
-import { useRouter } from 'next/navigation';
-
 import { useStore } from 'react-redux';
 
+import { useAppRouter } from 'src/hooks/useAppRouter';
 import { selectLanding } from 'src/redux/slice/sessionSlice';
 import type { RootState } from 'src/redux/store';
 import { ROUTES } from 'src/routes';
@@ -24,7 +23,7 @@ import { landingRoute } from '../view-model/landing';
  * server says.
  */
 export const useGoToLanding = (): (() => void) => {
-  const router = useRouter();
+  const router = useAppRouter();
   const store = useStore<RootState>();
   return useCallback(() => {
     router.replace(landingRoute(selectLanding(store.getState()), ROUTES.DASHBOARD));

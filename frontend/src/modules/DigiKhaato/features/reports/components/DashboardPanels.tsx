@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
 
 import {
   AlarmClock,
@@ -30,6 +30,7 @@ import {
   type UbAttentionItem,
   UbChoiceChips,
 } from 'src/design-system';
+import { useAppRouter } from 'src/hooks/useAppRouter';
 import type { TranslateFn } from 'src/hooks/useTranslation';
 import { partyPath, ROUTES } from 'src/routes';
 import { formatInr, isNegativeAmount } from 'src/utils/money';
@@ -128,7 +129,7 @@ export function DashboardTodayRow({
   onRetry: () => void;
   t: TranslateFn;
 }>): React.JSX.Element | null {
-  const router = useRouter();
+  const router = useAppRouter();
   const search = useSearchParams();
   const asked = search?.get('period') ?? null;
   const [period, setPeriod] = useState<DashboardPeriod>(isPeriod(asked) ? asked : 'today');

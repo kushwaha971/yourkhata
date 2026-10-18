@@ -9,10 +9,13 @@
   --amount-get: 120 47.33% 52.35%;
   --divider: 213.33 11.11% 15.88%;
   --text-disabled: 214.29 7.22% 38.04%;
-  --cta-press: var(--accent-600);
+  /* Dark hover LIGHTENS the marigold; pressing darkens it instead, to the light
+     theme's hover step (ink 5.81:1), so press and hover never look the same. */
+  --cta-press: var(--accent-700);
   --cta-hover: var(--accent-600);
   --accent-50: 36 48.39% 12.16%;
   --accent-600: 35.87 100% 63.92%;
+  --accent-700: 35.65 91.19% 44.51%;
   --primary-600: 185 81.08% 29.02%;
   --primary-500: 185.04 60.37% 42.55%;
   --primary-400: 185.71 41.18% 60%;

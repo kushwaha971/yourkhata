@@ -61,6 +61,19 @@ const RESTRICTED_IMPORTS_BASE = {
 };
 
 /**
+ * Revamp F2 — a `router.push` must announce itself, or the tapped row stands
+ * still until the server answers (299–312 ms throttled after F1). Feature code
+ * takes `useAppRouter()`, which is `useRouter()` plus that announcement. Kept
+ * out of RESTRICTED_IMPORTS_BASE so the party-fetch allowlist block, which also
+ * covers every test file, does not forbid tests from mocking `useRouter`.
+ */
+const ROUTER_IMPORT = {
+  name: 'next/navigation',
+  importNames: ['useRouter'],
+  message: 'Use useAppRouter() from src/hooks/useAppRouter, so a push shows progress (revamp F2).',
+};
+
+/**
  * Sprint 3 §32.6.7 risk: "Party search becomes four different implementations
  * in four features." Mitigation: `usePartySearch` is THE party picker source,
  * and a lint rule forbids a second debounced party fetch outside it.
@@ -408,7 +421,7 @@ const config = [
       'no-restricted-imports': [
         'error',
         {
-          paths: RESTRICTED_IMPORTS_BASE.paths,
+          paths: [...RESTRICTED_IMPORTS_BASE.paths, ROUTER_IMPORT],
           patterns: [...RESTRICTED_IMPORTS_BASE.patterns, ...PARTY_FETCH_IMPORT_PATTERNS],
         },
       ],

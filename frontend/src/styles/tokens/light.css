@@ -12,11 +12,14 @@
   --divider: 210 13.33% 94.12%;
   --text-disabled: 215 8.82% 73.33%;
   --cta-foreground: 220 14.29% 12.35%;
-  --cta-press: var(--accent-600);
+  /* Revamp F2 — pressed is its own step, darker than hover, so a press shows
+     under a mouse too. 40 % lightness keeps the ink at 4.76:1. */
+  --cta-press: var(--accent-700);
   --cta-hover: var(--accent-600);
   --cta: var(--accent-500);
   --accent-50: 36.92 100% 94.9%;
   --accent-600: 35.65 91.19% 44.51%;
+  --accent-700: 35.65 91.19% 40%;
   --accent-500: 36.06 91.6% 53.33%;
 
   --primary-50: 184 42.86% 93.14%;

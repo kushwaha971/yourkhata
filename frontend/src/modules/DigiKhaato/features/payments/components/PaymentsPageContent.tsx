@@ -3,7 +3,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import dynamic from 'next/dynamic';
-import { useRouter } from 'next/navigation';
 
 import { ArrowDownLeft, ArrowUpRight, Plus } from 'lucide-react';
 
@@ -30,6 +29,7 @@ import {
   type UbDataGridLabels,
   type UbGridState,
 } from 'src/design-system/UbDataGrid';
+import { useAppRouter } from 'src/hooks/useAppRouter';
 import { useDebounce } from 'src/hooks/useDebounce';
 import { useOpenOnAddQuery } from 'src/hooks/useOpenOnAddQuery';
 import { usePermissions } from 'src/hooks/usePermissions';
@@ -68,7 +68,7 @@ const ALL = 'all';
  */
 export function PaymentsPageContent(): React.JSX.Element {
   const { t } = useTranslation();
-  const router = useRouter();
+  const router = useAppRouter();
   const { can, hasModule } = usePermissions();
   const list = usePaymentList();
   const tier = useGridTier();

@@ -3,7 +3,6 @@
 import { useCallback, useMemo, useState } from 'react';
 
 import dynamic from 'next/dynamic';
-import { useRouter } from 'next/navigation';
 
 import { MessageCircle, Settings2 } from 'lucide-react';
 
@@ -26,6 +25,7 @@ import {
   type UbDataGridLabels,
   type UbGridState,
 } from 'src/design-system/UbDataGrid';
+import { useAppRouter } from 'src/hooks/useAppRouter';
 import { useAppDispatch, useAppSelector } from 'src/hooks/useAppStore';
 import { useTranslation } from 'src/hooks/useTranslation';
 import { selectEnabledModules } from 'src/redux/slice/sessionSlice';
@@ -104,7 +104,7 @@ const FILTER_LABEL: Readonly<Record<ReminderKindFilter, string>> = {
  */
 export function RemindersPageContent(): React.JSX.Element {
   const { t } = useTranslation();
-  const router = useRouter();
+  const router = useAppRouter();
   const dispatch = useAppDispatch();
   const tier = useGridTier();
   const r = useReminders();

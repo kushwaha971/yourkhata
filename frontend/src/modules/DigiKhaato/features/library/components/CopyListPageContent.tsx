@@ -2,8 +2,6 @@
 
 import { useCallback, useEffect, useMemo } from 'react';
 
-import { useRouter } from 'next/navigation';
-
 import {
   UbButton,
   UbEmptyState,
@@ -18,6 +16,7 @@ import {
   type UbFilterValues,
 } from 'src/design-system';
 import { type UbDataGridEmptyStates } from 'src/design-system/UbDataGrid';
+import { useAppRouter } from 'src/hooks/useAppRouter';
 import { useAppDispatch, useAppSelector } from 'src/hooks/useAppStore';
 import { useCommittedSearch } from 'src/hooks/useCommittedSearch';
 import { useTranslation } from 'src/hooks/useTranslation';
@@ -42,7 +41,7 @@ import { LibraryRecordGrid } from './LibraryRecordGrid';
  */
 export function CopyListPageContent(): React.JSX.Element {
   const { t } = useTranslation();
-  const router = useRouter();
+  const router = useAppRouter();
   const dispatch = useAppDispatch();
   const list = useCopyList();
   const { locations } = useAppSelector(selectLibraryCatalogueForm);

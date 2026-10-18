@@ -2,8 +2,7 @@
 
 import { useCallback, useEffect, useRef } from 'react';
 
-import { useRouter } from 'next/navigation';
-
+import { useAppRouter } from 'src/hooks/useAppRouter';
 import { useAppDispatch, useAppSelector } from 'src/hooks/useAppStore';
 import { usePermissions } from 'src/hooks/usePermissions';
 import { showSnackbar } from 'src/redux/slice/snackbarSlice';
@@ -71,7 +70,7 @@ export const useImportWizard = ({
   readonly jobId: string | null;
 }): UseImportWizardResult => {
   const dispatch = useAppDispatch();
-  const router = useRouter();
+  const router = useAppRouter();
   const { canAll, hasModule } = usePermissions();
 
   const job = useAppSelector(selectImportJob);

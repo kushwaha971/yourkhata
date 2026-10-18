@@ -3,7 +3,6 @@
 import { useCallback, useEffect, useState } from 'react';
 
 import dynamic from 'next/dynamic';
-import { useRouter } from 'next/navigation';
 
 import { Pencil, Trash2 } from 'lucide-react';
 
@@ -24,6 +23,7 @@ import {
   UbStack,
   UbText,
 } from 'src/design-system';
+import { useAppRouter } from 'src/hooks/useAppRouter';
 import { useAppDispatch } from 'src/hooks/useAppStore';
 import { usePermissions } from 'src/hooks/usePermissions';
 import { useTranslation } from 'src/hooks/useTranslation';
@@ -131,7 +131,7 @@ function PinRate({
  */
 export function PriceListDetailPageContent({ id }: Readonly<{ id: string }>): React.JSX.Element {
   const { t } = useTranslation();
-  const router = useRouter();
+  const router = useAppRouter();
   const dispatch = useAppDispatch();
   const { can, hasModule } = usePermissions();
   const canWrite = hasModule('inventory') && can('inventory.item.write');

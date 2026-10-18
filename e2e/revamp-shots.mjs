@@ -14,6 +14,10 @@
  *            shot twice: 300 ms after the tap (the loading view) and once the
  *            new screen has settled (what it hands over to).
  *
+ *   press    F2's pressed looks. A mouse press is HELD (CDP touch does not set
+ *            :active headless, calibrated in the Phase 1 baseline) and the
+ *            control is photographed at rest and pressed, side by side.
+ *
  * Writes /tmp/e2e-shots/revamp/<piece>/<width>-<theme>-<case>-<when>.png.
  * Same sign-in and stack as perf-app.mjs (the seed_scale owner).
  */
@@ -89,8 +93,60 @@ async function measureOverflow(page) {
 }
 
 const WIDTHS = arg('widths', '390,320,1280').split(',').map(Number);
+
+// What to press, per width: [start, locator, name]. Never released, so nothing navigates.
+const PRESS_CASES = {
+  390: [
+    ['/customers', (p) => p.locator('nav a[href="/sales/invoices"]').filter({ visible: true }).first(), 'bottom-tab'],
+    ['/sales/invoices', (p) => p.getByRole('button', { name: /^New bill$/ }).filter({ visible: true }).first(), 'primary-button'],
+    ['/customers', (p) => p.locator('main button').filter({ hasText: /C-0\d{5}/ }).filter({ visible: true }).first(), 'list-row'],
+  ],
+  1280: [
+    ['/customers', (p) => p.locator('nav a[href="/sales/invoices"]').filter({ visible: true }).first(), 'sidebar-row'],
+    ['/customers', (p) => p.locator('main tr[data-testid="ub-grid-row"] button:not([role="checkbox"])').filter({ visible: true }).first(), 'table-row'],
+    ['/customers', (p) => p.getByRole('button', { name: /^Export|^Sort|More actions/ }).filter({ visible: true }).first(), 'secondary-button'],
+  ],
+};
+
+async function shootPress() {
+  for (const width of WIDTHS.filter((w) => PRESS_CASES[w])) {
+    for (const theme of THEMES) {
+      const ctx = await signedInContext(width, theme);
+      for (const [start, find, name] of PRESS_CASES[width]) {
+        const page = await ctx.newPage();
+        await page.goto(`${FRONTEND}${start}`, { waitUntil: 'networkidle' });
+        const el = find(page);
+        if (!(await el.count())) { failures.push(`${width} ${theme} ${name}: not found on ${start}`); await page.close(); continue; }
+        // The row a control sits in, so a row tint is in the picture.
+        const target = name === 'table-row' ? el.locator('xpath=ancestor::tr[1]') : el;
+        const box = await el.boundingBox();
+        const pad = 12;
+        const clipOf = async () => {
+          const b = await target.boundingBox();
+          return { x: Math.max(0, b.x - pad), y: Math.max(0, b.y - pad), width: Math.min(width, b.width + 2 * pad), height: b.height + 2 * pad };
+        };
+        await page.mouse.move(0, 0);
+        const file = `${DIR}/${width}-${theme}-${name}`;
+        await page.screenshot({ path: `${file}-1-rest.png`, clip: await clipOf() });
+        const rest = await target.evaluate((n) => { const c = getComputedStyle(n); const i = n.querySelector('span'); return `${c.backgroundColor} ${c.transform} ${i ? getComputedStyle(i).backgroundColor : ''}`; });
+        await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+        await page.mouse.down();
+        await page.waitForTimeout(150);
+        await page.screenshot({ path: `${file}-2-pressed.png`, clip: await clipOf() });
+        const pressed = await target.evaluate((n) => { const c = getComputedStyle(n); const i = n.querySelector('span'); return `${c.backgroundColor} ${c.transform} ${i ? getComputedStyle(i).backgroundColor : ''}`; });
+        await page.mouse.up({ button: 'left' }).catch(() => {});
+        const line = `${width} ${theme} ${name}: rest [${rest}] → pressed [${pressed}]`;
+        console.log(line);
+        if (rest === pressed) failures.push(`${line} — NO CHANGE`);
+        await page.close();
+      }
+      await ctx.close();
+    }
+  }
+}
 const THEMES = arg('themes', 'light,dark').split(',');
-for (const width of WIDTHS) {
+if (PIECE === 'press') await shootPress();
+else for (const width of WIDTHS) {
   for (const theme of THEMES) {
     if (width === 320 && theme === 'dark') continue;
     const ctx = await signedInContext(width, theme);
@@ -105,7 +161,7 @@ for (const width of WIDTHS) {
       const t0 = Date.now();
       await control.click({ noWaitAfter: true });
       await page.waitForTimeout(300);
-      const busy = await page.locator('[aria-busy="true"]').count();
+      const busy = await page.locator('[aria-busy="true"], [data-loading="true"]').count();
       await page.screenshot({ path: `${file}-1-loading.png` });
       const over1 = await measureOverflow(page);
       const re = new RegExp(target);
