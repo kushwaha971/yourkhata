@@ -33,7 +33,17 @@ import { cn } from 'src/utils/cn';
  */
 export interface UbBottomNavItem {
   readonly key: string;
-  readonly href: string;
+  /** A destination. An item without one is a BUTTON and needs `onSelect`. */
+  readonly href?: string;
+  /**
+   * Revamp 04 §2 — the App button: the slot opens a sheet instead of a page.
+   * It is a `button` with `aria-haspopup="dialog"`, never a link to nowhere.
+   */
+  readonly onSelect?: () => void;
+  /** The button's spoken name when it says more than its label. */
+  readonly ariaLabel?: string;
+  /** A small mark after the label (the App button's ▴). */
+  readonly trailing?: ReactNode;
   readonly label: string;
   /** `aria-hidden` icon, 24 px. */
   readonly icon: ReactNode;
@@ -48,6 +58,38 @@ export interface UbBottomNavProps {
   readonly label: string;
   readonly items: readonly UbBottomNavItem[];
   readonly className?: string;
+}
+
+/** A link for a destination, a button for the App slot; same look either way. */
+function Slot({
+  item,
+  className,
+  children,
+}: Readonly<{ item: UbBottomNavItem; className: string; children: ReactNode }>) {
+  if (item.href === undefined) {
+    return (
+      <button
+        type="button"
+        onClick={item.onSelect}
+        aria-haspopup="dialog"
+        aria-label={item.ariaLabel}
+        aria-current={item.active ? 'page' : undefined}
+        className={className}
+      >
+        {children}
+      </button>
+    );
+  }
+  return (
+    <Link
+      href={item.href}
+      aria-current={item.active ? 'page' : undefined}
+      aria-label={item.ariaLabel}
+      className={className}
+    >
+      {children}
+    </Link>
+  );
 }
 
 function UbBottomNavBase({ label, items, className }: Readonly<UbBottomNavProps>) {
@@ -70,9 +112,8 @@ function UbBottomNavBase({ label, items, className }: Readonly<UbBottomNavProps>
       >
         {items.map((item) => (
           <li key={item.key} className="flex min-w-0">
-            <Link
-              href={item.href}
-              aria-current={item.active ? 'page' : undefined}
+            <Slot
+              item={item}
               className={cn(
                 'group relative flex min-w-0 flex-1 flex-col items-center justify-center gap-0.5 outline-none',
                 'focus-visible:shadow-focus',
@@ -98,6 +139,7 @@ function UbBottomNavBase({ label, items, className }: Readonly<UbBottomNavProps>
                 className="line-clamp-2 w-full break-normal px-0.5 text-center text-[0.6875rem] font-medium leading-[13px] tracking-tight"
               >
                 {item.label}
+                {item.trailing}
               </span>
               {item.badge ? (
                 <span className="absolute left-1/2 top-1.5 ml-2 min-w-[18px] rounded-pill bg-error px-1 text-center text-[0.6875rem] font-semibold leading-[18px] text-text-inverse">
@@ -105,7 +147,7 @@ function UbBottomNavBase({ label, items, className }: Readonly<UbBottomNavProps>
                   {item.badgeLabel ? <span className="sr-only"> {item.badgeLabel}</span> : null}
                 </span>
               ) : null}
-            </Link>
+            </Slot>
           </li>
         ))}
       </ul>

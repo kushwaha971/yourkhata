@@ -243,6 +243,12 @@ function navigations(vp) {
     {
       id: 'switcher→Udhaar /khata', start: '/dashboard', target: '^/khata$', kind: 'app switcher item (router.push)',
       before: async (page) => {
+        // F4: an app reopens on the screen it was left on. This case measures
+        // switching to an app's HOME, comparable with the baseline, so the
+        // remembered place (khata.people→aging in the previous rep) is cleared.
+        await page.evaluate(() => {
+          for (const key of Object.keys(sessionStorage)) if (key.startsWith('yourkhata:place:')) sessionStorage.removeItem(key);
+        });
         await page.getByRole('button', { name: /Change business/ }).filter({ visible: true }).first().click();
         await page.getByRole('menuitem', { name: 'Udhaar book' }).waitFor();
         await page.waitForTimeout(800);

@@ -24,6 +24,7 @@ jest.mock('modules/appManifests', () => {
   const gym: AppManifest = {
     code: 'gym',
     labelId: 'nav.workspace.gym',
+    icon: jest.requireActual('lucide-react').Dumbbell,
     routePrefixes: ['/gym'],
     sections: [{ key: 'floor', labelId: 'gym.section.floor' }],
     navigation: [
@@ -98,7 +99,9 @@ it('gives the new app its own menu on its own paths', () => {
 });
 
 it('lists it in the switcher with the server’s home', () => {
-  expect(nav().apps).toContainEqual({ code: 'gym', labelId: 'nav.workspace.gym', href: '/gym' });
+  expect(nav().apps).toContainEqual(
+    expect.objectContaining({ code: 'gym', labelId: 'nav.workspace.gym', href: '/gym' })
+  );
 });
 
 it('leaves the other apps’ menus as they were', () => {

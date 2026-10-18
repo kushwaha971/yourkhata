@@ -2,7 +2,7 @@
 
 **What this is**: the living plan for redesigning the whole app (Shop, Udhaar book, Library, Lending, and everything around them) and fixing slow, silent taps in the installed app. **Planning and design only.** No application code is changed by anything in this folder until the owner approves a phase (R-DEC-01).
 
-**Start here if you are continuing this work** (any AI tool or person): follow [AGENT_START_PROMPT.md](AGENT_START_PROMPT.md). In short, read this page, then [12-decision-log.md](12-decision-log.md) for what is decided and open, then [02-preserve-and-contracts.md](02-preserve-and-contracts.md) before touching anything in Library or Lending.
+**Start here if you are continuing this work** (any AI tool or person): Phase 4 is built; the next session's task and method are in [START-NEXT-SESSION-PROMPT.txt](START-NEXT-SESSION-PROMPT.txt). The general rules are in [AGENT_START_PROMPT.md](AGENT_START_PROMPT.md). In short, read this page, then [12-decision-log.md](12-decision-log.md) for what is decided and open, then [02-preserve-and-contracts.md](02-preserve-and-contracts.md) before touching anything in Library or Lending.
 
 Last updated: 17 Oct 2026, on `dev` at 31784ab.
 

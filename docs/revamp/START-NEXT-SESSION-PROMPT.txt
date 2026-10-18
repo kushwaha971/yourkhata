@@ -1,0 +1,94 @@
+You are continuing the YourKhata revamp: a redesign of the whole app (Shop, Udhaar
+book, Library, Lending and everything around them) and a fix for slow, silent taps
+in the installed PWA. The plan lives in docs/revamp/. You continue it; you do not
+start a new one. Work on the dev branch and push to it.
+
+WHERE IT STANDS (18 Oct 2026): Phase 4, the shared foundation the owner approved
+(R-DEC-08), is COMPLETE. Four pieces are built, measured and pushed:
+  F1 route loading views, F2 pressed and pending states, F3 the double-tap lock,
+  F4 the phone App button and App sheet, the desktop sidebar app tree, the dark
+  teal sidebar and white page, and "each app reopens where you left it".
+The reports are in docs/performance/2026-10-1*-f*.md and the screenshots in
+/mnt/project-files/revamp/shots/<loading|press|lock|apps>/. The module screens
+themselves (Shop, Udhaar, Library, Lending) have NOT been redesigned yet.
+
+TASK: Do item 1 under "Next" in docs/revamp/12-decision-log.md.
+Phase 5 (Shop and Udhaar screens) and the shell pieces left out of F4
+(notifications popover and page, the /account "You" page, the 64 px icon rail at
+1024–1279 px, hiding the bar while the keyboard is open, tile figures, the
+unsaved-changes guard on switching) are NOT yet approved for building (R-DEC-01).
+So your first action is one decision card to the owner:
+  "Which do we build next?"
+  · Shop and Udhaar screens (recommended): the visible redesign starts, one
+    screen at a time, beginning with the Shop's Customers list and person page.
+  · Finish the shell first: notifications, the You page, the icon rail.
+Record the answer in 12 as a new R-DEC with the owner's words and the time, then
+build. Until they answer, prepare (read the specs for the recommended option,
+check them against the code), but change no application code.
+
+HOW EACH PIECE IS DONE (the owner's rule, R-DEC-07, and the loop in CLAUDE.md):
+review the spec, build, LOOK, report. After EACH piece (a screen, form, card,
+drawer, sheet or dialog):
+ 1. Gates: `npx eslint --fix --max-warnings=0 <changed files>` (the full lint takes
+    over 25 minutes in the cloud container; say so), `npm run type-check`, the
+    full `npx jest`, the build (command below), `npm run bundle:check`,
+    `npm run check:contrast`, and `npm run i18n:split && npm run i18n:check` after
+    any locale change. Do not run jest and the build at the same time: a test
+    writes a temporary probe file that the build's type check then trips on.
+ 2. Restart the frontend after every build (`./e2e/serve.sh`); a rebuild under a
+    running server breaks it. API: `./e2e/serve-api.sh`; database:
+    `service postgresql start`. Build command:
+    NEXT_PUBLIC_API_BASE_URL=/api/v1 API_PROXY_TARGET=http://127.0.0.1:8000 \
+    NEXT_PUBLIC_SW_ENABLED=false NEXT_PUBLIC_ANALYTICS_ENABLED=false npm run build
+ 3. Screenshots: add a `--piece=<name>` to e2e/revamp-shots.mjs and shoot
+    390 and 320 px phones and 1024 and 1280 px desktop, light and dark, plus
+    `--locale=hi` at 320 and 1280, in EVERY state (loading, empty, error, long
+    names, ₹12,40,378.00, busy, saved). Sign-in: scale@digikhaato.test /
+    Scale-Run-2026! (the seed_scale owner). Make contact sheets with `montage`
+    and LOOK at every one. Copy them to /mnt/project-files/revamp/shots/<piece>/.
+ 4. Make the harness MEASURE, not read: computed colours, each label's contrast
+    against what it sits on (>= 4.5:1), every text node against its own box (no
+    cut or clamped word), page width against the viewport. F4's screenshots found
+    three defects every unit test passed: dark rail labels at 1.4:1 in the light
+    theme, a search field running edge to edge, and words cut by the rail width.
+    Prove each new check FAILS on the old build before trusting it.
+ 5. Speed: `NODE_PATH=$(npm root -g) node e2e/perf-app.mjs --reps=3 --only=nav`
+    with nothing else running; compare with the F4 numbers in
+    docs/performance/2026-10-18-f4-app-button.md and the baseline
+    docs/performance/2026-10-17-app-baseline.md. No speed claim without both.
+ 6. Every defect fixed gets a test that fails before the fix, with a docstring
+    naming the defect.
+ 7. Docs: a dated report in docs/performance/, a Progress row and an updated
+    "Next" in 12, the tracking line of the screen in docs/revamp/07-screens/.
+ 8. Commit (prose message explaining WHY, with the attribution footer the session
+    gives you), push to dev, and report to the owner with the screenshots and the
+    numbers BEFORE starting the next piece.
+
+RULES THAT DO NOT BEND (all in CLAUDE.md and docs/revamp/02):
+- Library and Lending are live: presentation only. Their endpoints, request and
+  response shapes, calculations, models and workflows are frozen (L-01). Ideas
+  go to docs/revamp/08 as proposals, never into code.
+- Each app keeps its own money (DEC-019). Plain everyday words; Udhaar alone says
+  You gave / You got, Lending Lent / Collected, Library Fee / Paid. No word cut
+  by an ellipsis.
+- Nothing a merchant's customer receives names the product or its domain.
+- Look: teal #0E7C86, marigold #F59E1B with dark ink for the one main action,
+  white page, dark teal sidebar (#0B3F45, dark theme #0E2427), the existing logo
+  on a white tile (R-DEC-06). Read docs/DESIGN-SYSTEM.md and
+  docs/revamp/design/counter-mode.html before any UI.
+- Reuse src/design-system first. No new package without an ADR. Redux Toolkit,
+  no TanStack Query. No raw h1/div/span outside src/design-system. Errors go
+  through the global snackbar.
+- A sheet, drawer or form belongs in the chunk that OPENS it: use dynamic(), as
+  F4 did for the App sheet (route growth 3.5 KB -> 1.2 KB). Raise a bundle budget
+  only with the reason written in bundle-budgets.json.
+- Never commit Message Central credentials.
+
+READ FIRST, in this order: CLAUDE.md, docs/revamp/README.md,
+docs/revamp/12-decision-log.md, docs/revamp/02-preserve-and-contracts.md, the
+screen spec you are about to build in docs/revamp/07-screens/, then the real code.
+The code is the truth; where a doc disagrees, say so in 12.
+
+REPORT: lead with anything the owner must decide (one question, short options,
+your recommendation). Then what changed, the screenshots, what was measured and
+how, and what is still unproven. Keep it short; details belong in the docs.

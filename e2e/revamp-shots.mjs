@@ -27,6 +27,16 @@
  *            :active headless, calibrated in the Phase 1 baseline) and the
  *            control is photographed at rest and pressed, side by side.
  *
+ *   apps     F4's app switching. Phone: the bottom bar's App button (the open
+ *            app's icon and short name), the App sheet it opens, its lower
+ *            rows, and a switch to another app and back, which must land on
+ *            the screen that app was left on, not its home. Desktop: the
+ *            sidebar's app tree, the same switch and return, the logo tile,
+ *            and the page and rail colours READ from the computed style, not
+ *            judged from a picture. Every text node in the bar, the sheet and
+ *            the rail is measured against its own box (no cut words), and the
+ *            page against the viewport. `--locale=hi` repeats it in Hindi.
+ *
  * Writes /tmp/e2e-shots/revamp/<piece>/<width>-<theme>-<case>-<when>.png.
  * Same sign-in and stack as perf-app.mjs (the seed_scale owner).
  */
@@ -48,10 +58,13 @@ mkdirSync(DIR, { recursive: true });
 const SIZES = {
   320: { viewport: { width: 320, height: 640 }, isMobile: true, hasTouch: true, deviceScaleFactor: 2 },
   390: { viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true, deviceScaleFactor: 2 },
+  1024: { viewport: { width: 1024, height: 768 }, isMobile: false, hasTouch: false, deviceScaleFactor: 1 },
   1280: { viewport: { width: 1280, height: 800 }, isMobile: false, hasTouch: false, deviceScaleFactor: 1 },
 };
 const browser = await chromium.launch({ executablePath: process.env.CHROME ?? '/opt/pw-browsers/chromium' });
 const failures = [];
+
+const LOCALE = arg('locale', 'en');
 
 async function signedInContext(width, theme) {
   const ctx = await browser.newContext(SIZES[width]);
@@ -62,7 +75,10 @@ async function signedInContext(width, theme) {
   await page.click('button[type=submit]');
   await page.waitForURL((u) => !u.pathname.startsWith('/login'), { timeout: 60_000 });
   const host = new URL(FRONTEND).hostname;
-  await ctx.addCookies([{ name: 'ub_theme_choice', value: theme, domain: host, path: '/' }]);
+  await ctx.addCookies([
+    { name: 'ub_theme_choice', value: theme, domain: host, path: '/' },
+    { name: 'ub_locale', value: LOCALE, domain: host, path: '/' },
+  ]);
   await page.close();
   return ctx;
 }
@@ -268,7 +284,149 @@ async function shootLock() {
   }
 }
 
+/** Text nodes inside `root` whose rendered text is wider than their own box: a cut word. */
+async function cutText(page, selector) {
+  return page.evaluate((sel) => {
+    const out = [];
+    for (const root of document.querySelectorAll(sel)) {
+      for (const el of root.querySelectorAll('*')) {
+        if (!el.childNodes.length || [...el.childNodes].every((n) => n.nodeType !== 3 || !n.textContent.trim())) continue;
+        const r = el.getBoundingClientRect();
+        if (!r.width) continue;
+        const clips = getComputedStyle(el).overflow !== 'visible';
+        if (clips && (el.scrollWidth > el.clientWidth + 1 || el.scrollHeight > el.clientHeight + 1)) out.push(el.textContent.trim());
+      }
+    }
+    return out;
+  }, selector);
+}
+
+const bg = (page, sel) => page.locator(sel).first().evaluate((n) => getComputedStyle(n).backgroundColor);
+const pathOf = (page) => new URL(page.url()).pathname;
+const settle = async (page) => {
+  await page.waitForLoadState('networkidle').catch(() => {});
+  await page.waitForFunction(() => !document.querySelector('[aria-busy="true"]'), null, { timeout: 20_000 }).catch(() => {});
+  await page.waitForTimeout(600);
+};
+
+async function shootApps() {
+  const tag = LOCALE === 'en' ? '' : `-${LOCALE}`;
+  for (const width of WIDTHS) {
+    for (const theme of THEMES) {
+      const ctx = await signedInContext(width, theme);
+      const page = await ctx.newPage();
+      const file = (name) => `${DIR}/${width}-${theme}${tag}-${name}.png`;
+      const fail = (m) => { failures.push(`${width} ${theme}${tag}: ${m}`); console.log(`  FAIL ${m}`); };
+      // A screen deeper than an app's home, so "back where you were" is visible.
+      const place = '/customers';
+      await page.goto(`${FRONTEND}${place}`, { waitUntil: 'networkidle' });
+      await settle(page);
+      if (width < 1024) {
+        const appButton = page.locator('nav button[aria-haspopup="dialog"]').filter({ visible: true }).first();
+        if (!(await appButton.count())) { fail('no App button in the bottom bar'); await ctx.close(); continue; }
+        const label = await appButton.getAttribute('aria-label');
+        console.log(`${width} ${theme}${tag} App button: "${(await appButton.innerText()).trim()}" · label "${label}"`);
+        await page.screenshot({ path: file('1-bar') });
+        const cutBar = await cutText(page, 'nav[aria-label]');
+        if (cutBar.length) fail(`bar text cut: ${cutBar.join(' | ')}`);
+        await appButton.click();
+        const sheet = page.getByRole('dialog');
+        await sheet.waitFor({ timeout: 10_000 });
+        await page.waitForTimeout(500);
+        await page.screenshot({ path: file('2-sheet') });
+        const tiles = sheet.getByTestId('app-sheet-tiles').locator('button');
+        const names = (await tiles.allInnerTexts()).map((x) => x.trim());
+        const current = await sheet.locator('button[aria-current], button[aria-pressed="true"]').count();
+        console.log(`  tiles: ${names.join(' · ')} · marked current: ${current}`);
+        if (names.length < 2) fail('fewer than two app tiles');
+        if (!current) fail('no tile marked as the open app');
+        const cutSheet = await cutText(page, '[role="dialog"]');
+        if (cutSheet.length) fail(`sheet text cut: ${cutSheet.join(' | ')}`);
+        const focusIn = await page.evaluate(() => !!document.activeElement?.closest('[role="dialog"]'));
+        if (!focusIn) fail('focus is not inside the sheet');
+        // The sheet's lower half: the More rows and You.
+        await sheet.locator('a, button').last().scrollIntoViewIfNeeded();
+        await page.waitForTimeout(300);
+        await page.screenshot({ path: file('3-sheet-more') });
+        // Switch to Library, then back: Shop must reopen on Customers.
+        const other = tiles.filter({ hasNotText: /Shop|दुकान/ }).first();
+        const otherName = (await other.innerText()).trim();
+        await other.click();
+        await page.waitForURL((u) => u.pathname !== place, { timeout: 20_000 }).catch(() => {});
+        await settle(page);
+        const there = pathOf(page);
+        await page.screenshot({ path: file('4-switched') });
+        const newLabel = (await page.locator('nav button[aria-haspopup="dialog"]').filter({ visible: true }).first().innerText()).trim();
+        console.log(`  tile "${otherName}" → ${there} · button now "${newLabel}"`);
+        if (there === place) fail('a tile did not switch app');
+        await page.locator('nav button[aria-haspopup="dialog"]').filter({ visible: true }).first().click();
+        await page.getByRole('dialog').waitFor();
+        await page.getByRole('dialog').getByTestId('app-sheet-tiles').locator('button').filter({ hasText: /Shop|दुकान/ }).first().click();
+        await page.waitForURL((u) => u.pathname === place, { timeout: 20_000 }).catch(() => {});
+        await settle(page);
+        console.log(`  back to Shop → ${pathOf(page)}`);
+        if (pathOf(page) !== place) fail(`Shop reopened on ${pathOf(page)}, not ${place}`);
+        await page.screenshot({ path: file('5-back') });
+      } else {
+        const tree = page.getByTestId('sidebar-app-tree');
+        if (!(await tree.count())) { fail('no app tree in the sidebar'); await ctx.close(); continue; }
+        await page.screenshot({ path: file('1-tree') });
+        const canvas = await bg(page, 'main');
+        const body = await page.evaluate(() => getComputedStyle(document.body).backgroundColor);
+        const rail = await tree.evaluate((n) => { let e = n; while (e && getComputedStyle(e).backgroundColor === 'rgba(0, 0, 0, 0)') e = e.parentElement; return e ? getComputedStyle(e).backgroundColor : ''; });
+        const logo = await page.locator('aside img, aside svg').first().evaluate((n) => getComputedStyle(n.closest('span') ?? n).backgroundColor).catch(() => 'none');
+        console.log(`${width} ${theme}${tag} page ${body} / main ${canvas} · rail ${rail} · logo tile ${logo}`);
+        if (theme === 'light' && body !== 'rgb(255, 255, 255)') fail(`page is ${body}, not white`);
+        const rows = tree.locator(':scope > a, :scope > * > a').filter({ visible: true });
+        const expanded = await tree.locator('[aria-expanded="true"]').allInnerTexts();
+        console.log(`  expanded: ${expanded.map((x) => x.trim()).join(', ')}`);
+        if (expanded.length !== 1) fail(`${expanded.length} apps expanded, want 1`);
+        // Every label measured against the rail it sits on: the light theme
+        // once drew dark ink on dark teal while every token check passed.
+        const ink = await tree.locator('a').evaluateAll((links, railBg) => {
+          const rgb = (c) => (c.match(/[\d.]+/g) ?? []).slice(0, 3).map(Number);
+          const lum = ([r, g, b]) => [r, g, b].map((v) => { v /= 255; return v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4; })
+            .reduce((a, v, i) => a + v * [0.2126, 0.7152, 0.0722][i], 0);
+          const ratio = (a, b) => { const [x, y] = [lum(rgb(a)), lum(rgb(b))].sort((m, n) => n - m); return (x + 0.05) / (y + 0.05); };
+          return links.map((a) => {
+            const label = [...a.querySelectorAll('span')].find((n) => n.textContent.trim()) ?? a;
+            let e = a; while (e && getComputedStyle(e).backgroundColor === 'rgba(0, 0, 0, 0)') e = e.parentElement;
+            const bgc = e ? getComputedStyle(e).backgroundColor : railBg;
+            return [label.textContent.trim(), Math.round(ratio(getComputedStyle(label).color, bgc) * 10) / 10];
+          });
+        }, rail);
+        const faint = ink.filter(([, r]) => r < 4.5);
+        console.log(`  label contrast on the rail: lowest ${Math.min(...ink.map(([, r]) => r))}:1 over ${ink.length} rows`);
+        if (faint.length) fail(`rail labels below 4.5:1: ${faint.map(([n, r]) => `${n} ${r}`).join(', ')}`);
+        const cutRail = await cutText(page, 'nav:has([data-testid="sidebar-app-tree"])');
+        if (cutRail.length) fail(`rail text cut: ${cutRail.join(' | ')}`);
+        await page.screenshot({ path: file('1b-rail'), clip: { x: 0, y: 0, width: 300, height: SIZES[width].viewport.height } });
+        const collapsed = tree.locator('[aria-expanded="false"]').first();
+        const otherName = (await collapsed.innerText()).trim();
+        await collapsed.click();
+        await page.waitForURL((u) => u.pathname !== place, { timeout: 20_000 }).catch(() => {});
+        await settle(page);
+        const there = pathOf(page);
+        console.log(`  "${otherName}" → ${there} · expanded now ${(await tree.locator('[aria-expanded="true"]').allInnerTexts()).map((x) => x.trim()).join(', ')}`);
+        if (there === place) fail('an app row did not switch app');
+        await page.screenshot({ path: file('2-switched') });
+        await tree.locator('[aria-expanded="false"]').filter({ hasText: /Shop|दुकान/ }).first().click();
+        await page.waitForURL((u) => u.pathname === place, { timeout: 20_000 }).catch(() => {});
+        await settle(page);
+        console.log(`  back to Shop → ${pathOf(page)}`);
+        if (pathOf(page) !== place) fail(`Shop reopened on ${pathOf(page)}, not ${place}`);
+        await page.screenshot({ path: file('3-back') });
+        void rows;
+      }
+      const over = await measureOverflow(page);
+      if (over > 0) fail(`page ${over} px wider than the screen`);
+      await ctx.close();
+    }
+  }
+}
+
 if (PIECE === 'press') await shootPress();
+else if (PIECE === 'apps') await shootApps();
 else if (PIECE === 'lock') await shootLock();
 else for (const width of WIDTHS) {
   for (const theme of THEMES) {

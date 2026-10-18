@@ -36,14 +36,15 @@
   --surface-hover: 212.31 11.93% 21.37%;
   --surface-active: 205.26 14.96% 24.9%;
 
-  --surface-nav: 214.29 11.86% 11.57%;
-  --surface-nav-hover: 213.33 11.39% 15.49%;
-  --surface-nav-active: 186.12 52.69% 18.24%;
+  /* Counter Mode v5 — the rail stays teal in the dark (#0E2427). */
+  --surface-nav: 187.2 47.17% 10.39%;
+  --surface-nav-hover: 187.83 28.4% 15.88%;
+  --surface-nav-active: 187.83 23.23% 19.41%;
 
   --text-on-nav: 210 11.76% 93.33%;
-  --text-on-nav-muted: 216 8.88% 66.86%;
+  --text-on-nav-muted: 184.8 30% 80%;
   --surface-subtle: 213.33 11.39% 15.49%;
-  --border-nav-active: 185.04 60.37% 42.55%;
+  --border-nav-active: 187.83 23.23% 19.41%;
 
   --border-hairline: 214.29 12.28% 22.35%;
   --border-subtle: 213.33 12.16% 29.02%;

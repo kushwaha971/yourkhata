@@ -55,6 +55,13 @@ export interface AppManifest {
   readonly code: string;
   readonly labelId: string;
   /**
+   * Revamp 04 §2–3 — the app's own mark: the phone's App button, the App
+   * sheet's tiles and the desktop rail's app list all draw it.
+   */
+  readonly icon: LucideIcon;
+  /** The App button's label when `labelId` is too long for a 64 px tab. */
+  readonly shortLabelId?: string;
+  /**
    * Paths that belong to this app: a page under one opens this app's menu.
    * Shared pages (a party's khata, a payment receipt, settings) belong to no
    * app and keep the menu of the app the person is in.

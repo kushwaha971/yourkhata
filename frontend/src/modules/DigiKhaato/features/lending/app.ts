@@ -1,4 +1,4 @@
-import { HandCoins, Landmark, MessageCircle, Route, Users } from 'lucide-react';
+import { Banknote, HandCoins, Landmark, MessageCircle, Route, Users } from 'lucide-react';
 
 import { ROUTES } from 'src/routes';
 
@@ -12,6 +12,7 @@ import type { AppManifest } from 'modules/DigiKhaato/features/navigation/appMani
 export const LENDING_APP: AppManifest = {
   code: 'lending',
   labelId: 'nav.workspace.lending',
+  icon: Banknote,
   routePrefixes: [ROUTES.LENDING_HOME],
   // docs/platform/14 step 6 — this app's words on the shared khata.
   words: {

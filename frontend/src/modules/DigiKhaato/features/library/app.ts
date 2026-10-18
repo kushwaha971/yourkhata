@@ -10,6 +10,7 @@ import {
   Settings,
   Users,
   Wallet,
+  Library,
 } from 'lucide-react';
 
 import { ROUTES } from 'src/routes';
@@ -24,6 +25,7 @@ import type { AppManifest } from 'modules/DigiKhaato/features/navigation/appMani
 export const LIBRARY_APP: AppManifest = {
   code: 'library',
   labelId: 'nav.workspace.library',
+  icon: Library,
   routePrefixes: [ROUTES.LIBRARY_HOME],
   // docs/platform/14 step 6 — this app's words on the shared khata.
   words: {

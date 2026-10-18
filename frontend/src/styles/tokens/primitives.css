@@ -47,7 +47,10 @@
   --radius-card: var(--radius-lg);
   --radius-control: var(--radius-md);
 
-  --sidebar-width: 180px;
+  /* Revamp F4 (07-screens/02, Counter Mode v5): 232 px. At 180 the app tree's
+     indent left a row about 120 px of text, and "Delivery challans",
+     "Purchase orders" and "Income & expenses" were cut mid-word. */
+  --sidebar-width: 232px;
   --sidebar-collapsed: 64px;
   --topbar-height: 60px;
   --content-max: 1440px;

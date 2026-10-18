@@ -7,7 +7,10 @@ import { useTranslation } from 'src/hooks/useTranslation';
 import { cn } from 'src/utils/cn';
 
 import { activeNavHref } from 'modules/DigiKhaato/features/navigation/activeNav';
-import { useNavigation } from 'modules/DigiKhaato/features/navigation/useNavigation';
+import {
+  useNavigation,
+  type NavSectionView,
+} from 'modules/DigiKhaato/features/navigation/useNavigation';
 
 /**
  * The entitlement-driven navigation list, shared by the rail and the drawer.
@@ -31,24 +34,36 @@ import { useNavigation } from 'modules/DigiKhaato/features/navigation/useNavigat
  */
 export function NavSections({
   onNavigate,
-}: Readonly<{ onNavigate?: () => void }>): React.JSX.Element {
+  only,
+  className,
+}: Readonly<{
+  onNavigate?: () => void;
+  /**
+   * Revamp 04 §3 — the app tree draws the open app's sections under its row
+   * and the business's own (Team, Settings) at the foot of the rail. The lit
+   * row is still decided over EVERY row, so the two halves never both light.
+   */
+  only?: (section: NavSectionView) => boolean;
+  className?: string;
+}>): React.JSX.Element {
   const pathname = usePathname();
   const { t } = useTranslation();
-  const { sections } = useNavigation();
+  const { sections: all } = useNavigation();
   const currentHref = activeNavHref(
     pathname,
-    sections.flatMap((section) => section.items.map((item) => item.href))
+    all.flatMap((section) => section.items.map((item) => item.href))
   );
+  const sections = only ? all.filter(only) : all;
 
   return (
-    <UbStack gap={0} as="div" className="min-h-0 flex-1">
+    <UbStack gap={0} as="div" className={cn('min-h-0 flex-1', className)}>
       {sections.map((section) => (
         /* Figma "menu": 12 px padding, a 10 px section label, rows 2 px apart. */
         <UbStack key={section.key} gap={0} className="gap-0.5 p-3">
           <UbText
             as="span"
             variant="inherit"
-            className="ds-nav-caption-medium px-2 pb-0.5 text-text-muted"
+            className="ds-nav-caption-medium px-2 pb-0.5 text-text-onNavMuted opacity-80"
           >
             {t(section.labelId)}
           </UbText>
@@ -71,8 +86,8 @@ export function NavSections({
                 <UbText
                   as="span"
                   variant="inherit"
-                  truncate
-                  className={cn('flex-1', active ? 'ds-nav-label-medium' : 'ds-nav-label-regular')}
+                  tone="inherit"
+                  className={cn('line-clamp-2 min-w-0 flex-1 break-words', active ? 'ds-nav-label-medium' : 'ds-nav-label-regular')}
                 >
                   {t(item.labelId)}
                 </UbText>
@@ -104,7 +119,10 @@ export function NavSections({
                 className={cn(
                   row,
                   active
-                    ? 'border-border-navActive bg-surface-navActive text-text-onNav'
+                    ? // Revamp (Counter Mode v5): a marigold edge marks the
+                      // current row on the dark teal rail, drawn inside the
+                      // box so the label does not move.
+                      'border-border-navActive bg-surface-navActive text-text-onNav shadow-[inset_3px_0_0_hsl(var(--cta))]'
                     : // Revamp F2: pressed is the current row's tint, so a press
                       // shows under a mouse too (it was the hover style only).
                       'border-transparent text-text-onNavMuted hover:bg-surface-navHover hover:text-text-onNav active:bg-surface-navActive'

@@ -25,6 +25,7 @@ import { roleLabel } from 'src/utils/roleLabel';
 
 import { leaveApp, setAppRunning } from 'modules/DigiKhaato/features/auth/redux/sessionThunk';
 import { useNavigation } from 'modules/DigiKhaato/features/navigation/useNavigation';
+import { useOpenApp } from 'modules/DigiKhaato/features/navigation/useOpenApp';
 
 import { useTenantSwitcher } from '../hooks/useTenantSwitcher';
 import {
@@ -145,12 +146,7 @@ export function TenantSwitcherMenu({
 
   // The committed route's useNavigation sync remembers the app on the server.
   // Sending another switch here doubles both the mutation and session read (B21).
-  const openApp = useCallback(
-    (href: string) => {
-      router.push(href);
-    },
-    [router]
-  );
+  const openApp = useOpenApp();
 
   // Before `/auth/me` lands there is no name to show; a placeholder chevron
   // next to an empty string reads as a broken control.
@@ -180,7 +176,14 @@ export function TenantSwitcherMenu({
         trigger={
           rail ? (
             <>
-              <UbLogo variant="mark" size="md" />
+              {/* R-DEC-06 — on the dark rail the mark sits on a white tile,
+                  so it stays visible and is never recoloured. */}
+              <UbBox
+                as="span"
+                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] bg-white shadow-1"
+              >
+                <UbLogo variant="mark" size="sm" />
+              </UbBox>
               <UbBox as="span" className="flex min-w-0 flex-1 flex-col justify-center">
                 <UbText
                   as="span"
@@ -206,7 +209,7 @@ export function TenantSwitcherMenu({
             </>
           ) : (
             <>
-              <UbAvatar name={active.name} size="sm" tone="onNav" />
+              <UbAvatar name={active.name} size="sm" />
               <UbText
                 as="span"
                 variant="body-sm-medium"
@@ -229,7 +232,7 @@ export function TenantSwitcherMenu({
               <MLMenuItem
                 key={item.code}
                 selected={item.code === app}
-                onSelect={() => openApp(item.href)}
+                onSelect={() => openApp(item)}
               >
                 <UbText as="span" variant="inherit" tone="inherit" className="min-w-0 flex-1">
                   {t(item.labelId)}

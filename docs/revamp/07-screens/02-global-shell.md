@@ -29,7 +29,7 @@ Strategy and reasons are in [04-navigation-strategy.md](../04-navigation-strateg
 
 | Field | |
 |---|---|
-| Layout | 232 px dark teal rail (Counter Mode v5): the existing logo on a white 36 px rounded tile (R-DEC-06), business name and menu at top; **Apps** group with the active app expanded to its sections and the others collapsed; Settings and Team at the bottom. Collapses to a 64 px icon rail at 1024–1279 px with tooltips. |
+| Layout | 232 px (`--sidebar-width`, was 180) dark teal rail (Counter Mode v5): the existing logo on a white 36 px rounded tile (R-DEC-06), business name and menu at top; **Apps** group with the active app expanded to its sections and the others collapsed; Settings and Team at the bottom. Collapses to a 64 px icon rail at 1024–1279 px with tooltips. |
 | Active | lighter band with a marigold left edge; `aria-current="page"`. |
 | Feedback | pressed row darkens; pending navigation shows a small spinner at the row's right after 120 ms and the top progress line. |
 | Keyboard | Tab order top to bottom; `Ctrl K` focuses search. |
@@ -76,4 +76,4 @@ Unchanged in function. Visual alignment: list of businesses with role and apps u
 | Offline | existing network strip under the header; cached screens readable; Save buttons say why they are disabled. |
 | Server error on a whole page | existing `error.tsx` with "Try again"; partial failures stay inside their panel (existing `unavailable` parts). |
 
-Tracking: problems — A-01, A-03, A-10, A-13, A-14 · decisions — N-1 App button (pending), sidebar app tree, `/account` · dependencies — `UbBottomNav` action item, `useNavigate`, `RouteProgress` · risks — sheet discoverability; keyboard detection on iOS · approval — pending · build — not started · tests — desktop-unchanged, journey, nav e2e at 320/390/768/1280 in both themes · outcome — —
+Tracking: problems — A-01, A-03, A-10, A-13, A-14 · decisions — N-1 App button (approved), sidebar app tree, `/account` · dependencies — `UbBottomNav` action item, `useNavigate`, `RouteProgress` · risks — sheet discoverability; keyboard detection on iOS · approval — R-DEC-08 · build — App button, App sheet, sidebar app tree, dark rail and white page, keep-place-per-app built 18 Oct 2026 (F4); tile figures, + Add an app, unsaved guard, row spinner, 64 px icon rail, keyboard hiding, `/account` not built · tests — desktop-unchanged, journey, nav e2e at 320/390/768/1280 in both themes · outcome — —

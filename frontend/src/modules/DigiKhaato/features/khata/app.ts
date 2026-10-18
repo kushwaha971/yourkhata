@@ -1,4 +1,4 @@
-import { BookUser, Hourglass, Wallet } from 'lucide-react';
+import { BookUser, Hourglass, NotebookPen, Wallet } from 'lucide-react';
 
 import { ROUTES } from 'src/routes';
 
@@ -21,6 +21,8 @@ import type { AppManifest } from '../navigation/appManifest';
 export const KHATA_APP: AppManifest = {
   code: 'khata',
   labelId: 'nav.workspace.khata',
+  icon: NotebookPen,
+  shortLabelId: 'nav.workspace.khata.short',
   // `/parties/<id>` stays shared (no app owns it), so opening a person keeps
   // this menu; `/ledger` is the old-dues and reminders screens.
   routePrefixes: [ROUTES.KHATA, '/ledger'],

@@ -198,7 +198,7 @@ describe('the switcher', () => {
   });
 
   it('lists the apps the server says, in its order, with their homes', () => {
-    expect(listed().apps).toEqual([
+    expect(listed().apps.map(({ code, labelId, href }) => ({ code, labelId, href }))).toEqual([
       { code: 'library', labelId: 'nav.workspace.library', href: '/library' },
       { code: 'lending', labelId: 'nav.workspace.lending', href: '/lending' },
       { code: 'shop', labelId: 'nav.workspace.shop', href: '/dashboard' },

@@ -23,6 +23,7 @@ import {
   type AppManifest,
   type AppNavItem,
 } from './appManifest';
+import { rememberAppPlace } from './appPlace';
 import { rememberHistoryApp, useHistoryApp } from './historyApp';
 
 export interface NavSectionView {
@@ -34,6 +35,9 @@ export interface NavSectionView {
 export interface AppView {
   readonly code: string;
   readonly labelId: string;
+  /** The App button's label: `shortLabelId`, else `labelId`. */
+  readonly shortLabelId: string;
+  readonly icon: AppManifest['icon'];
   /** Where the switcher goes: the server's home for the app, else its first row. */
   readonly href: string;
 }
@@ -138,6 +142,8 @@ export function useNavigation(): UseNavigationResult {
     const apps: AppView[] = accessible.map(({ manifest, home }) => ({
       code: manifest.code,
       labelId: manifest.labelId,
+      shortLabelId: manifest.shortLabelId ?? manifest.labelId,
+      icon: manifest.icon,
       href: home,
     }));
     return { sections, bottomNav, apps, app: code, shell: current?.shell ?? NO_SHELL };
@@ -146,6 +152,22 @@ export function useNavigation(): UseNavigationResult {
   useEffect(() => {
     rememberHistoryApp(pathname, tenantId, result.app);
   }, [pathname, tenantId, result.app]);
+
+  // Revamp 04 §2 — the app's own top-level screen this person is on, so a
+  // switch back to this app returns here. A record page, a form or Settings is
+  // not a place: coming back to a half-typed bill from another app is not what
+  // "open the Shop" means.
+  const place =
+    pathname &&
+    result.sections.some(
+      (section) =>
+        section.key !== PLATFORM_SECTION.key && section.items.some((i) => i.href === pathname)
+    )
+      ? pathname
+      : null;
+  useEffect(() => {
+    rememberAppPlace(tenantId, result.app, place);
+  }, [tenantId, result.app, place]);
 
   // A page of another app was opened directly: say so, once, so the server's
   // `active_app` follows the person rather than the last switcher tap.

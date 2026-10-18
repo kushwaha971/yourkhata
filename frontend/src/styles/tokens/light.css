@@ -55,7 +55,8 @@
   --accent-quiet: rgba(14, 124, 134, 0.1);
   --accent-line: rgba(14, 124, 134, 0.35);
 
-  --canvas: 34.29 46.67% 97.06%;
+  /* R-DEC-02 (owner, 17 Oct 2026) — a white page; cards keep their hairline. */
+  --canvas: 0 0% 100%;
   --surface-sunken: 220 13.04% 95.49%;
   --surface-card: 0 0% 100%;
   --surface-raised: 0 0% 100%;
@@ -63,10 +64,11 @@
   --surface-subtle: 220 13.04% 95.49%;
   --surface-active: 184 42.86% 93.14%;
 
-  --surface-nav: 0 0% 100%;
-  --surface-nav-hover: 220 13.04% 95.49%;
-  --surface-nav-active: 184 42.86% 93.14%;
-  --border-nav-active: 185.14 45.45% 84.9%;
+  /* R-DEC-02 / Counter Mode v5 — the dark teal rail (#0B3F45) on the white page. */
+  --surface-nav: 186.21 72.5% 15.69%;
+  --surface-nav-hover: 186.79 46.09% 22.55%;
+  --surface-nav-active: 186 35.71% 27.45%;
+  --border-nav-active: 186 35.71% 27.45%;
 
   --border-hairline: 216 9.8% 90%;
   --border-subtle: 216 9.8% 90%;
@@ -82,8 +84,8 @@
   --text-inverse: 0 0% 100%;
   --text-accent: var(--primary-700);
 
-  --text-on-nav: 220 14.29% 12.35%;
-  --text-on-nav-muted: 214.74 8.6% 43.33%;
+  --text-on-nav: 0 0% 100%;
+  --text-on-nav-muted: 184.8 42.37% 88.43%;
 
   --success: 120 59.48% 30%;
   --success-bright: 151.65 57.47% 43.33%;

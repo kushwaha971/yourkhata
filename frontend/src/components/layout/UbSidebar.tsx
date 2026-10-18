@@ -7,6 +7,8 @@ import { useTranslation } from 'src/hooks/useTranslation';
 import { selectAppName } from 'src/redux/slice/whiteLabelSlice';
 import { cn } from 'src/utils/cn';
 
+import { SidebarAppTree } from 'modules/DigiKhaato/features/navigation/components/SidebarAppTree';
+import { useNavigation } from 'modules/DigiKhaato/features/navigation/useNavigation';
 import { TenantSwitcherMenu } from 'modules/DigiKhaato/features/tenant-switcher/components/TenantSwitcherMenu';
 
 /**
@@ -39,6 +41,7 @@ import { TenantSwitcherMenu } from 'modules/DigiKhaato/features/tenant-switcher/
 export function UbSidebar(): React.JSX.Element {
   const { t } = useTranslation();
   const appName = useAppSelector(selectAppName);
+  const { apps } = useNavigation();
 
   return (
     /* BrandHub's sidebar contents (business block, divider, 12 px sections of
@@ -53,12 +56,13 @@ export function UbSidebar(): React.JSX.Element {
       aria-label={t('nav.primary')}
       className={cn(
         'sticky top-0 hidden h-dvh w-sidebar shrink-0 flex-col overflow-y-auto lg:flex',
-        'border-r border-border-hairline bg-surface-nav text-text-onNav'
+        'border-r border-surface-nav bg-surface-nav text-text-onNav'
       )}
     >
       <TenantSwitcherMenu rail caption={appName} />
-      <UbBox aria-hidden className="h-px w-full shrink-0 bg-border-hairline" />
-      <NavSections />
+      <UbBox aria-hidden className="h-px w-full shrink-0 bg-white/10" />
+      {/* Revamp 04 §3 — with two or more apps the rail is an app tree. */}
+      {apps.length > 1 ? <SidebarAppTree /> : <NavSections />}
     </UbBox>
   );
 }

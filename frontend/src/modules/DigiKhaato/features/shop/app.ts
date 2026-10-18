@@ -17,6 +17,7 @@ import {
   Tags,
   Truck,
   Undo2,
+  Store,
 } from 'lucide-react';
 
 import { ROUTES } from 'src/routes';
@@ -39,6 +40,7 @@ import type { AppManifest } from '../navigation/appManifest';
 export const SHOP_APP: AppManifest = {
   code: 'shop',
   labelId: 'nav.workspace.shop',
+  icon: Store,
   // Not `/parties` or `/payments`: a library's student opens their khata and a
   // fee receipt there, and that must not throw the menu back to the shop.
   // `/dashboard` IS the shop's: sign-in lands on the server's `landing.path`
