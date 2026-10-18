@@ -53,3 +53,13 @@ export const SHOP_SORT_CHOICES = [
   { ordering: 'oldest_due_on', labelKey: 'parties.list.shop.sortLate' },
   ...PHONE_SORT_CHOICES,
 ] as const;
+
+/** One inverse mapping for supplier table arrows and labelled amount sorts. */
+export const supplierBalanceOrdering = (ordering: string): string =>
+  ordering === '-balance' ? 'balance' : ordering === 'balance' ? '-balance' : ordering;
+
+/** Supplier liabilities are negative in the shared API list; sort by magnitude for the same labels. */
+export const SUPPLIER_SORT_CHOICES = SHOP_SORT_CHOICES.map((choice) => ({
+  ...choice,
+  ordering: supplierBalanceOrdering(choice.ordering),
+}));

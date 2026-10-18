@@ -104,7 +104,7 @@ export function usePartyList(
       ...DEFAULT_PARTY_FILTERS,
       ...(kind ? { type: kind } : {}),
       book: book ?? 'main',
-      ...(book === 'shop' && kind === 'customer' ? { ordering: 'oldest_due_on' } : {}),
+      ...(book === 'shop' && Boolean(kind) ? { ordering: 'oldest_due_on' } : {}),
     }),
     [kind, book]
   );

@@ -7,11 +7,16 @@ import type { Party } from '../types/party.types';
 /** Presentation only: bill age is the server's business-date result. */
 export function shopAgeView(
   party: Party,
-  t: TranslateFn
+  t: TranslateFn,
+  supplier = false
 ): { label: string; tone: UbStatusBadgeTone } {
-  const direction = compareMoney(party.balance, '0');
+  const direction = compareMoney(party.balance, '0') * (supplier ? -1 : 1);
   if (direction === 0) return { label: t('parties.list.balance.settled'), tone: 'neutral' };
-  if (direction < 0) return { label: t('parties.list.shop.credit'), tone: 'info' };
+  if (direction < 0)
+    return {
+      label: t(supplier ? 'parties.list.supplier.advance' : 'parties.list.shop.credit'),
+      tone: 'info',
+    };
   const days = party.shop?.daysOverdue;
   if (days == null)
     return {

@@ -7,7 +7,7 @@ import { UbButton, UbChoiceChips, UbStack, UbText } from 'src/design-system';
 import { useTranslation } from 'src/hooks/useTranslation';
 
 import { usePartyFilterCount } from '../hooks/usePartyFilterCount';
-import { SHOP_SORT_CHOICES } from '../view-model/partyListSort';
+import { SHOP_SORT_CHOICES, SUPPLIER_SORT_CHOICES } from '../view-model/partyListSort';
 
 import { PartyTagFilter } from './PartyTagFilter';
 
@@ -16,13 +16,15 @@ import type { PartyListParams, PartyTagWithCount } from '../types/party.types';
 import 'src/i18n/catalogues/parties';
 
 /** A filter is a draft. Closing never applies it; Reset edits the draft only. */
-export function ShopCustomerFilterDrawer({
+export function ShopPartyFilterDrawer({
   filters,
+  supplier = false,
   tags,
   onApply,
   onClose,
 }: Readonly<{
   filters: PartyListParams;
+  supplier?: boolean;
   tags: readonly PartyTagWithCount[];
   onApply: (next: Partial<PartyListParams>) => void;
   onClose: () => void;
@@ -36,9 +38,9 @@ export function ShopCustomerFilterDrawer({
       onOpenChange={(open) => {
         if (!open) onClose();
       }}
-      title={t('parties.list.shop.filters')}
+      title={t(supplier ? 'parties.list.supplier.filters' : 'parties.list.shop.filters')}
       closeLabel={t('common.action.close')}
-      className="[&>div:last-child>button:last-child]:flex-1 [&>div:last-child]:flex-row [&>div:last-child]:gap-3"
+      className="lg:w-[360px] [&>div:last-child>button:last-child]:flex-1 [&>div:last-child]:flex-row [&>div:last-child]:gap-3"
       footer={
         <>
           <UbButton
@@ -76,8 +78,10 @@ export function ShopCustomerFilterDrawer({
             }}
           >
             {total === null
-              ? t('parties.list.shop.show')
-              : t('parties.list.shop.showCount', { count: total })}
+              ? t(supplier ? 'parties.list.supplier.show' : 'parties.list.shop.show')
+              : t(supplier ? 'parties.list.supplier.showCount' : 'parties.list.shop.showCount', {
+                  count: total,
+                })}
           </UbButton>
         </>
       }
@@ -90,8 +94,14 @@ export function ShopCustomerFilterDrawer({
           onChange={(balance) => setDraft({ ...draft, balance })}
           options={[
             { value: '', label: t('parties.list.filter.any') },
-            { value: 'owes_me', label: t('parties.list.shop.owes') },
-            { value: 'i_owe', label: t('parties.list.shop.credit') },
+            {
+              value: supplier ? 'i_owe' : 'owes_me',
+              label: t(supplier ? 'parties.list.supplier.owes' : 'parties.list.shop.owes'),
+            },
+            {
+              value: supplier ? 'owes_me' : 'i_owe',
+              label: t(supplier ? 'parties.list.supplier.advance' : 'parties.list.shop.credit'),
+            },
             { value: 'settled', label: t('parties.list.balance.settled') },
           ]}
         />
@@ -128,34 +138,36 @@ export function ShopCustomerFilterDrawer({
             { value: 'archived', label: t('parties.list.status.archived') },
           ]}
         />
-        <UbStack gap={2}>
-          <UbText variant="body-sm-medium">{t('parties.list.shop.collectionDate')}</UbText>
-          <UbChoiceChips
-            ariaLabel={t('parties.list.shop.collectionDate')}
-            value={draft.collection}
-            onChange={(collection) => setDraft({ ...draft, collection })}
-            options={[
-              { value: '', label: t('parties.list.filter.any') },
-              { value: 'today', label: t('parties.list.filter.collection.today') },
-              { value: 'overdue', label: t('parties.list.filter.collection.overdue') },
-              { value: 'upcoming', label: t('parties.list.filter.collection.upcoming') },
-            ]}
-          />
-        </UbStack>
+        {!supplier && (
+          <UbStack gap={2}>
+            <UbText variant="body-sm-medium">{t('parties.list.shop.collectionDate')}</UbText>
+            <UbChoiceChips
+              ariaLabel={t('parties.list.shop.collectionDate')}
+              value={draft.collection}
+              onChange={(collection) => setDraft({ ...draft, collection })}
+              options={[
+                { value: '', label: t('parties.list.filter.any') },
+                { value: 'today', label: t('parties.list.filter.collection.today') },
+                { value: 'overdue', label: t('parties.list.filter.collection.overdue') },
+                { value: 'upcoming', label: t('parties.list.filter.collection.upcoming') },
+              ]}
+            />
+          </UbStack>
+        )}
         <UbStack gap={2}>
           <UbText variant="body-sm-medium">{t('parties.list.sort.label')}</UbText>
           <UbChoiceChips
             ariaLabel={t('parties.list.sort.label')}
             value={draft.ordering}
             onChange={(ordering) => setDraft({ ...draft, ordering })}
-            options={SHOP_SORT_CHOICES.map((choice) => ({
+            options={(supplier ? SUPPLIER_SORT_CHOICES : SHOP_SORT_CHOICES).map((choice) => ({
               value: choice.ordering,
               label: t(choice.labelKey),
             }))}
           />
         </UbStack>
         <UbText variant="caption" tone="tertiary">
-          {t('parties.list.shop.draft')}
+          {t(supplier ? 'parties.list.supplier.draft' : 'parties.list.shop.draft')}
         </UbText>
       </UbStack>
     </CompactDrawer>

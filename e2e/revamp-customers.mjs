@@ -3,8 +3,10 @@
  * only the list response changes for loading/error/stress/empty screenshots. */
 import { writeFileSync } from 'node:fs';
 
-export async function shootCustomers({ signedInContext, widths, themes, locale, dir, frontend, failures, baseline }) {
+export async function shootCustomers({ signedInContext, widths, themes, locale, dir, frontend, failures, baseline, kind = 'customer' }) {
   const results = [];
+  const supplier = kind === 'supplier';
+  const listPath = supplier ? '/suppliers' : '/customers';
   for (const width of widths) for (const theme of themes) {
     const ctx = await signedInContext(width, theme);
     const page = await ctx.newPage();
@@ -12,6 +14,7 @@ export async function shootCustomers({ signedInContext, widths, themes, locale, 
     const check = async (state) => {
       await page.evaluate(() => document.fonts.ready);
       const measure = await measureCustomers(page);
+      if(supplier && locale === 'en' && /\bcustomers\b/i.test(await ((await page.getByRole('dialog').count()) ? page.getByRole('dialog') : page.locator('main')).innerText())) failures.push(`${tag} ${state}: supplier content named customers`);
       results.push({ width, theme, locale, state, ...measure });
       await page.screenshot({ path: `${dir}/${tag}-${state}.png`, fullPage: false });
       console.log(`${tag} ${state}: overflow ${measure.overflow}px, cut ${measure.cut.length}, contrast ${measure.lowContrast.length}, first row y=${measure.firstRowY}`);
@@ -19,11 +22,22 @@ export async function shootCustomers({ signedInContext, widths, themes, locale, 
         failures.push(`${tag} ${state}: ${JSON.stringify(measure)}`);
       }
     };
-    await page.goto(`${frontend}/customers`, { waitUntil: 'networkidle' });
+    await page.goto(`${frontend}${listPath}`, { waitUntil: 'networkidle' });
     await page.locator('[data-testid="ub-grid-card"], [data-testid="ub-grid-row"]').first().waitFor();
     await check('live');
-    if (!baseline && locale === 'en' && theme === 'light' && [320, 1280].includes(width)) await customerJourney(page, frontend, { dir, tag });
-    const response = await ctx.request.get(`${frontend}/api/v1/parties?book=shop&type=customer&page_size=25`);
+    if(supplier && !baseline) {
+      const pay=page.locator('main button[aria-label^="Pay ·"],main button[aria-label^="भुगतान करें ·"]').first();
+      if(await pay.count()){
+        await pay.click();await page.getByRole('dialog').waitFor();await page.waitForLoadState('networkidle');
+        await check('pay-supplier');
+        const dialogText=await page.getByRole('dialog').innerText();
+        if(locale==='en'&&!dialogText.includes('Pay supplier')) failures.push(`${tag}: wrong payment direction`);
+        await page.keyboard.press('Escape');await page.getByRole('dialog').waitFor({state:'hidden'});
+      }
+    }
+    if (supplier && !baseline && locale === 'en' && theme === 'light' && [320, 1280].includes(width)) await supplierJourney(page, frontend, check);
+    if (!supplier && !baseline && locale === 'en' && theme === 'light' && [320, 1280].includes(width)) await customerJourney(page, frontend, { dir, tag });
+    const response = await ctx.request.get(`${frontend}/api/v1/parties?book=shop&type=${kind}&page_size=25`);
     if (!response.ok()) throw new Error(`Fixture source ${response.status()}`);
     const original = await response.json();
     if (!original.data?.length) throw new Error('Scale customers missing');
@@ -40,8 +54,13 @@ export async function shootCustomers({ signedInContext, widths, themes, locale, 
       if (state === 'error') return route.fulfill({ status: 500, json: { error: { code: 'server_error', message: 'Test: list unavailable' } } });
       const fixture = structuredClone(original);
       const empty = state === 'empty' || state === 'filtered';
-      fixture.data = empty ? [] : [{ ...fixture.data[0], name: 'Shri Balaji Hardware & Electricals Private Limited', balance: '1240378.00', tags: [], is_supplier: true, last_activity_at: null, shop: { ...fixture.data[0].shop, customer_balance: '1240378.00', customer_due: '1240378.00', customer_credit: '0.00', supplier_balance: '600.00', supplier_due: '600.00', supplier_credit: '0.00', oldest_due_on: '2026-09-01', days_overdue: 47, last_activity_at: '2026-10-18T06:00:00Z', last_activity_kind: 'invoice' } }];
-      fixture.meta = { ...fixture.meta, page: 1, page_size: 25, total: empty ? 0 : 1, total_pages: empty ? 0 : 1, has_any: state !== 'empty', totals: { ...fixture.meta.totals, receivable: empty ? '0.00' : '1240378.00', payable: '0.00', count: empty ? 0 : 1 } };
+      fixture.data = empty ? [] : [{ ...fixture.data[0], name: 'Radhe Krishna Enterprises — Electrical and Electronics Wholesale Division',
+        balance: supplier ? '-1240378.00' : '1240378.00', tags: [], is_supplier: true, is_customer: true,
+        last_activity_at: null, shop: { ...fixture.data[0].shop,
+          customer_balance: supplier ? '600.00' : '1240378.00', customer_due: supplier ? '600.00' : '1240378.00', customer_credit: '0.00',
+          supplier_balance: supplier ? '1240378.00' : '600.00', supplier_due: supplier ? '1240378.00' : '600.00', supplier_credit: '0.00',
+          oldest_due_on: '2026-09-01', days_overdue: 47, last_activity_at: '2026-10-18T06:00:00Z', last_activity_kind: supplier ? 'purchase_bill' : 'invoice' } }];
+      fixture.meta = { ...fixture.meta, page: 1, page_size: 25, total: empty ? 0 : 1, total_pages: empty ? 0 : 1, has_any: state !== 'empty', shop_counts: {all: empty ? 0 : 1, owes: empty ? 0 : 1, advance: 0, late: empty ? 0 : 1}, totals: { ...fixture.meta.totals, receivable: empty || supplier ? '0.00' : '1240378.00', payable: !empty && supplier ? '1240378.00' : '0.00', count: empty ? 0 : 1 } };
       return route.fulfill({ status: 200, json: fixture });
     });
     await page.reload({ waitUntil: 'networkidle' });
@@ -57,16 +76,16 @@ export async function shootCustomers({ signedInContext, widths, themes, locale, 
       state = next;
       if (state === 'loading') {
         gate = hold(); const pending = seen();
-        await page.goto(`${frontend}/customers`, { waitUntil: 'domcontentloaded' });
+        await page.goto(`${frontend}${listPath}`, { waitUntil: 'domcontentloaded' });
         await pending; await page.waitForTimeout(150); await check(state); release();
         await page.waitForLoadState('networkidle');
       } else {
-        await page.goto(`${frontend}/customers${state === 'filtered' ? '?q=missing' : ''}`, { waitUntil: 'networkidle' });
+        await page.goto(`${frontend}${listPath}${state === 'filtered' ? '?q=missing' : ''}`, { waitUntil: 'networkidle' });
         await check(state);
       }
     }
     state = 'busy'; gate = hold(); const pending = seen();
-    await page.getByRole('searchbox').fill('Balaji'); await pending;
+    await page.getByRole('searchbox').fill('Radhe'); await pending;
     await page.waitForTimeout(100); await check('busy'); release();
     await page.waitForLoadState('networkidle'); await page.waitForTimeout(350);
     state = 'stress'; await check('refreshed');
@@ -123,6 +142,7 @@ export async function measureCustomers(page) {
 /** User-level regression: searching must not collapse the phone field after
  * Clear filters appears; Back must restore both query and readable controls. */
 async function customerJourney(page, frontend, { dir, tag }) {
+  const listPath = '/customers';
   const start = page.url();
   await page.getByTestId('filters-button').click();
   const dialog = page.getByRole('dialog');
@@ -164,17 +184,7 @@ async function customerJourney(page, frontend, { dir, tag }) {
   const width = await page.getByRole('searchbox').evaluate((el) => el.getBoundingClientRect().width);
   if (width < 80) throw new Error(`Search squeezed to ${width}px`);
   await page.goto(`${frontend}/customers?balance=owes_me`, { waitUntil: 'networkidle' });
-  if (page.viewportSize().width === 320) {
-    const before = await page.getByTestId('ub-grid-card').count();
-    const more = page.getByRole('button', { name: /^Show more/ });
-    if (await more.count()) {
-      const nextPage = page.waitForResponse((r) => r.url().includes('/api/v1/parties?') && new URL(r.url()).searchParams.get('page') === '2');
-      await more.click(); await nextPage;
-      await page.waitForFunction((n) => document.querySelectorAll('[data-testid="ub-grid-card"]').length > n, before);
-      const names = await page.getByTestId('ub-grid-card').locator('button[aria-label^="Open "]').evaluateAll((buttons) => buttons.map((b) => b.getAttribute('aria-label')));
-      if (names.length !== new Set(names).size) throw new Error('Show more duplicated a customer');
-    }
-  }
+  await checkAppend(page);
   const remind = page.getByRole('button', { name: /^Remind ·/ }).first();
   if (!(await remind.count())) throw new Error('Seeded positive Shop customer has no Remind');
   const writes = [];
@@ -199,5 +209,87 @@ async function customerJourney(page, frontend, { dir, tag }) {
   page.off('request', track);
   if (writes.length) throw new Error('Opening/cancelling a reminder recorded a send');
   console.log(`${page.viewportSize().width}: filter cancellation, Shop search, person/Back, append, editable Shop preview and no send on cancel PASS`);
-  await page.goto(`${frontend}/customers`, { waitUntil: 'networkidle' });
+  await page.goto(`${frontend}${listPath}`, { waitUntil: 'networkidle' });
+}
+
+/** Supplier debts use the opposite signed projection from customer debts.
+ * Guard the actual browser filters and outgoing payment context, not labels alone. */
+async function supplierJourney(page, frontend, check) {
+  for (const balance of ['i_owe', 'owes_me']) {
+    await page.goto(`${frontend}/suppliers?balance=${balance}`, { waitUntil: 'networkidle' });
+    const response = await page.request.get(`${frontend}/api/v1/parties?book=shop&type=supplier&balance=${balance}&page_size=25`);
+    const data = await response.json();
+    if (data.data.some(row => balance === 'i_owe' ? Number(row.balance) >= 0 : Number(row.balance) <= 0)) throw new Error('Supplier filter reversed debt and advance');
+    if (await page.getByRole('button', { name: /^Remind ·/ }).count()) throw new Error('Supplier exposed customer reminder');
+  }
+  await page.goto(`${frontend}/suppliers?balance=i_owe`, { waitUntil: 'networkidle' });
+  await checkAppend(page);
+  const start = page.url();
+  await page.locator('main button[aria-label^="Pay ·"]').first().click();
+  const dialog = page.getByRole('dialog');
+  await dialog.getByText('Pay supplier', {exact:true}).waitFor();
+  if(page.url() !== start) throw new Error('Pay also opened the row');
+  await page.keyboard.press('Escape');
+  await dialog.waitFor({state:'hidden'});
+  await page.locator('main button[aria-label^="Open "]').first().click();
+  await page.waitForURL(url => url.pathname.startsWith('/parties/') && url.searchParams.get('from') === 'suppliers');
+  await page.goBack();
+  await page.waitForURL(start);
+  console.log(`${page.viewportSize().width}: supplier debt/advance filters, outgoing Pay, row context and Back PASS`);
+  if (page.viewportSize().width === 320 && process.env.E2E_WRITE_TESTS === '1') {
+    if (!['localhost', '127.0.0.1'].includes(new URL(frontend).hostname)) throw new Error('Payment test is local-only');
+    await page.goto(`${frontend}/suppliers?balance=i_owe`, { waitUntil:'networkidle' });
+    const pay = page.locator('main button[aria-label^="Pay ·"]').first();
+    const row = pay.locator('xpath=ancestor::*[@data-testid="ub-grid-card"]');
+    const open = await row.locator('button[aria-label^="Open "]').getAttribute('aria-label');
+    const list = await (await page.request.get(`${frontend}/api/v1/parties?book=shop&type=supplier&balance=i_owe&ordering=oldest_due_on&page_size=25`)).json();
+    const person = list.data.find(row => `Open ${row.name}` === open);
+    if(!person) throw new Error('Could not identify the selected supplier');
+    const detail = `${frontend}/api/v1/parties/${person.id}?book=shop`;
+    const before = (await (await page.request.get(detail)).json()).data.shop;
+    await pay.click();
+    await dialog.locator('input[inputmode="decimal"]').first().fill('1');
+    await page.waitForFunction(()=>!document.querySelector('[data-testid="payment-save"]')?.disabled);
+    let release, started;
+    const held = new Promise(resolve=>{release=resolve;});
+    const saving = new Promise(resolve=>{started=resolve;});
+    let posts=0;
+    const hold=async route=>{ if(route.request().method()!=='POST')return route.fallback();posts++;started();await held;return route.continue(); };
+    await page.route('**/api/v1/payments',hold);
+    const result=page.waitForResponse(r=>new URL(r.url()).pathname==='/api/v1/payments'&&r.request().method()==='POST');
+    await dialog.getByTestId('payment-save').evaluate(button=>{button.click();button.click();});
+    await saving;await check('busy-payment');release();
+    const saved=await result;
+    if(!saved.ok())throw new Error(`Supplier payment ${saved.status()}`);
+    const body=JSON.parse(saved.request().postData());
+    if(body.direction!=='out'||body.bucket!=='shop'||body.party_id!==person.id)throw new Error(`Wrong supplier payment context: ${JSON.stringify(body)}`);
+    await dialog.getByRole('button',{name:'Done',exact:true}).waitFor();await check('saved-payment');
+    const receipt = await dialog.getByRole('link',{name:'View receipt',exact:true}).getAttribute('href');
+    await dialog.getByRole('button',{name:'Done',exact:true}).click();await page.unroute('**/api/v1/payments',hold);
+    const after=(await (await page.request.get(detail)).json()).data.shop;
+    if(posts!==1||Math.round(Number(after.supplier_balance)*100)!==Math.round(Number(before.supplier_balance)*100)-100||after.customer_balance!==before.customer_balance)throw new Error('Supplier payment failed one-write/role-isolation check');
+    await page.reload({waitUntil:'networkidle'});
+    const refreshed = (await (await page.request.get(`${frontend}/api/v1/parties?book=shop&type=supplier&q=${encodeURIComponent(person.name)}`)).json()).data.find(row=>row.id===person.id);
+    if(!refreshed || Math.round(Number(refreshed.balance)*100)!==-Math.round(Number(after.supplier_balance)*100))throw new Error('Saved supplier payment did not survive reload/list projection');
+    await page.goto(`${frontend}${receipt}`,{waitUntil:'networkidle'});
+    await page.getByText(person.name,{exact:true}).first().waitFor();
+    await check('payment-receipt');
+    console.log('320: ₹1 supplier payment, double tap one POST, customer balance unchanged PASS');
+  }
+  await page.goto(`${frontend}/suppliers`, { waitUntil: 'networkidle' });
+}
+
+/** Shared phone register paging must append unique rows rather than replace page one. */
+async function checkAppend(page) {
+  if (page.viewportSize().width === 320) {
+    const before = await page.getByTestId('ub-grid-card').count();
+    const more = page.getByRole('button', { name: /^Show more/ });
+    if (await more.count()) {
+      const nextPage = page.waitForResponse((r) => r.url().includes('/api/v1/parties?') && new URL(r.url()).searchParams.get('page') === '2');
+      await more.click(); await nextPage;
+      await page.waitForFunction((n) => document.querySelectorAll('[data-testid="ub-grid-card"]').length > n, before);
+      const names = await page.getByTestId('ub-grid-card').locator('button[aria-label^="Open "]').evaluateAll((buttons) => buttons.map((b) => b.getAttribute('aria-label')));
+      if (names.length !== new Set(names).size) throw new Error('Show more duplicated a person');
+    }
+  }
 }

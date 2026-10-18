@@ -11,7 +11,7 @@ import {
   PartyMetaCell,
   PartyNameCell,
   PartyStatusCell,
-  ShopCustomerRowActions,
+  ShopPartyRowActions,
 } from './PartyListRow';
 
 import type { Party } from '../types/party.types';
@@ -88,6 +88,8 @@ export interface PartyColumnDeps {
   /** The first column's heading when the page is one book (Suppliers). */
   readonly nameHeader?: string;
   readonly compactShop?: boolean;
+  readonly supplier?: boolean;
+  readonly onPay?: (party: Party) => void;
   readonly hideBalanceLabel?: boolean;
   readonly onOpen?: (party: Party) => void;
   readonly onRemind?: (party: Party) => void;
@@ -103,6 +105,8 @@ export const createPartyColumns = ({
   tagChipsPerRow,
   nameHeader,
   compactShop = false,
+  supplier = false,
+  onPay,
   hideBalanceLabel,
   onOpen,
   onRemind,
@@ -122,7 +126,11 @@ export const createPartyColumns = ({
           name={party.name}
           wrap={compactShop}
           roleLabel={
-            compactShop && party.isSupplier ? t('parties.list.shop.alsoSupplier') : undefined
+            compactShop && (supplier ? party.isCustomer : party.isSupplier)
+              ? t(
+                  supplier ? 'parties.list.supplier.alsoCustomer' : 'parties.list.shop.alsoSupplier'
+                )
+              : undefined
           }
           statusLabel={
             compactShop && party.status === 'archived'
@@ -132,7 +140,7 @@ export const createPartyColumns = ({
           contact={
             compactShop
               ? phoneCards
-                ? shopAgeView(party, t).label
+                ? shopAgeView(party, t, supplier).label
                 : contactLine(party)
               : undefined
           }
@@ -232,8 +240,10 @@ export const createPartyColumns = ({
     cardSlot: 'none',
     widthShare: 18,
     cell: (party) => {
-      const age = shopAgeView(party, t);
-      return <UbStatusBadge label={age.label} tone={age.tone} className="max-w-full whitespace-normal" />;
+      const age = shopAgeView(party, t, supplier);
+      return (
+        <UbStatusBadge label={age.label} tone={age.tone} className="max-w-full whitespace-normal" />
+      );
     },
   };
   const actions: UbDataGridColumn<Party> = {
@@ -245,7 +255,14 @@ export const createPartyColumns = ({
     align: 'end',
     widthShare: 16,
     cell: (party) => (
-      <ShopCustomerRowActions party={party} t={t} onOpen={onOpen} onRemind={onRemind} />
+      <ShopPartyRowActions
+        party={party}
+        t={t}
+        onOpen={onOpen}
+        onRemind={onRemind}
+        onPay={onPay}
+        supplier={supplier}
+      />
     ),
   };
 

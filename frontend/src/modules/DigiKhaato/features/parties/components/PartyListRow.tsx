@@ -82,7 +82,11 @@ function PartyNameCellBase({
         {name}
       </UbText>
       {roleLabel && (
-        <UbStatusBadge tone="warning" label={roleLabel} className="max-w-full self-start whitespace-normal" />
+        <UbStatusBadge
+          tone="warning"
+          label={roleLabel}
+          className="max-w-full self-start whitespace-normal"
+        />
       )}
       {statusLabel && <UbStatusBadge tone="neutral" label={statusLabel} />}
       {contact && (
@@ -170,33 +174,48 @@ PartyStatusCellBase.displayName = 'PartyStatusCell';
 export const PartyStatusCell = memo(PartyStatusCellBase);
 
 /** Same action and permission/recipient gate in a table or phone row. */
-export const ShopCustomerRowActions = memo(function ShopCustomerRowActions({
+export const ShopPartyRowActions = memo(function ShopPartyRowActions({
   party,
   t,
   onOpen,
   onRemind,
+  onPay,
+  supplier = false,
 }: Readonly<{
   party: Party;
   t: TranslateFn;
   onOpen?: (party: Party) => void;
   onRemind?: (party: Party) => void;
+  onPay?: (party: Party) => void;
+  supplier?: boolean;
 }>) {
   const remindable = Boolean(
+    !supplier &&
     onRemind &&
     party.shop &&
     party.mobile &&
     party.status !== 'archived' &&
     compareMoney(party.balance, '0') > 0
   );
-  const label = t(remindable ? 'parties.list.shop.remind' : 'parties.list.shop.viewBills');
-  if (!remindable && !onOpen) return null;
+  const payable = Boolean(
+    supplier && onPay && party.status !== 'archived' && compareMoney(party.balance, '0') < 0
+  );
+  const label = t(
+    payable
+      ? 'parties.list.supplier.pay'
+      : remindable
+        ? 'parties.list.shop.remind'
+        : 'parties.list.shop.viewBills'
+  );
+  if (!remindable && !payable && !onOpen) return null;
   return (
     <UbButton
       variant="outlineNeutral"
       size="sm"
       aria-label={`${label} · ${party.name}`}
       onClick={() => {
-        if (remindable) onRemind?.(party);
+        if (payable) onPay?.(party);
+        else if (remindable) onRemind?.(party);
         else onOpen?.(party);
       }}
     >

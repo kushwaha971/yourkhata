@@ -1,6 +1,6 @@
 # Shop: people and money
 
-Status: **specified, round 2 review passes provisionally (8.74)**, 17 Oct 2026. Wave 2. Not approved; not built (R-DEC-01).
+Status: **Shop presentation approved (R-DEC-10/16); Customers and person piece delivered; Suppliers register built and verified.** Other sections retain their individual tracking status. Original specification/review: 17 Oct 2026.
 
 Covers the Shop's Customers and Suppliers lists, the shared person page read in the Shop book, its statement, the tags manager, Payments, the Receive payment / Pay supplier drawer with everything it opens, the payment receipt and its message, the Cash book, and Expenses. 20 screens and overlays.
 
@@ -109,7 +109,7 @@ Same screen as §1 with `kind="supplier"`; only the differences are listed.
 | Main / other | open / Add supplier, Pay, filter, sort, tag, archive. |
 | All other fields | as §1, including every state, accessibility and must-keep row. |
 
-Tracking: problems — Pay on the row is new placement of an existing drawer · decisions — Pay is the supplier's row action as Remind is the customer's (design research: Khatabook lane pattern) · dependencies — P-08-03 for "Due this week" · risks — a Pay tap opening a money form from a list must still show the bills before saving (it does: §6) · approval — pending · build — not started · tests — parties e2e with `kind=supplier`, double-tap on Pay · outcome — —
+Tracking: problems — Pay on the row is new placement of an existing drawer · decisions — Pay is the supplier's row action as Remind is the customer's (design research: Khatabook lane pattern) · dependencies — P-08-03 for "Due this week" · risks — a Pay tap opening a money form from a list must still show the bills before saving (it does: §6) · approval — R-DEC-10/16 · build — shared ShopParty register/filter/sort verified; supplier counts/sign/sort corrected and existing outgoing Pay drawer reused; future Due this week filter remains a prerequisite, not fabricated · tests — 123 measured Supplier states, 72 Customer regression states, one-write/role-isolated payment-to-receipt journey, 4,489 frontend tests and 929 selected backend checks; `docs/performance/2026-10-19-p5-suppliers.md` · outcome — UI 8.8/10 provisional, implemented functionality 8.8/10, whole-spec feature coverage 8.4/10; not whole-Shop completion
 
 ## 3. Person page in the Shop book · `/parties/[id]` (opened from Shop)
 

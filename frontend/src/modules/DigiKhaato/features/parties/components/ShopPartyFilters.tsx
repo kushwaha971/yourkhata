@@ -12,17 +12,19 @@ import type { TranslateFn } from 'src/hooks/useTranslation';
 import type { PartyListParams, PartyTagWithCount } from '../types/party.types';
 
 const Drawer = dynamic(
-  () => import('./ShopCustomerFilterDrawer').then((m) => m.ShopCustomerFilterDrawer),
+  () => import('./ShopPartyFilterDrawer').then((m) => m.ShopPartyFilterDrawer),
   { ssr: false }
 );
 
-export function ShopCustomerFilters({
+export function ShopPartyFilters({
   t,
+  supplier = false,
   filters,
   tags,
   onApply,
 }: Readonly<{
   t: TranslateFn;
+  supplier?: boolean;
   filters: PartyListParams;
   tags: readonly PartyTagWithCount[];
   onApply: (next: Partial<PartyListParams>) => void;
@@ -53,7 +55,13 @@ export function ShopCustomerFilters({
         {t('common.filters.title')}
       </UbButton>
       {open && (
-        <Drawer filters={filters} tags={tags} onApply={onApply} onClose={() => setOpen(false)} />
+        <Drawer
+          supplier={supplier}
+          filters={filters}
+          tags={tags}
+          onApply={onApply}
+          onClose={() => setOpen(false)}
+        />
       )}
     </>
   );

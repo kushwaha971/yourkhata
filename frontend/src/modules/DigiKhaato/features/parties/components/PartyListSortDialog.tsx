@@ -5,7 +5,11 @@ import { useCallback, useMemo } from 'react';
 import { UbChoiceChips, UbDialog } from 'src/design-system';
 import type { TranslateFn } from 'src/hooks/useTranslation';
 
-import { PHONE_SORT_CHOICES, SHOP_SORT_CHOICES } from '../view-model/partyListSort';
+import {
+  PHONE_SORT_CHOICES,
+  SHOP_SORT_CHOICES,
+  SUPPLIER_SORT_CHOICES,
+} from '../view-model/partyListSort';
 
 // Loaded with dynamic(), so its own words come with its own chunk rather than
 // with the screen that opens it (src/i18n/catalogueRegistry.ts).
@@ -24,6 +28,7 @@ import 'src/i18n/catalogues/parties';
 export interface PartyListSortDialogProps {
   readonly t: TranslateFn;
   readonly shop?: boolean;
+  readonly supplier?: boolean;
   readonly open: boolean;
   readonly onOpenChange: (open: boolean) => void;
   readonly ordering: string;
@@ -33,20 +38,22 @@ export interface PartyListSortDialogProps {
 export function PartyListSortDialog({
   t,
   shop = false,
+  supplier = false,
   open,
   onOpenChange,
   ordering,
   onOrderingChange,
 }: Readonly<PartyListSortDialogProps>): React.JSX.Element {
-  const choices = shop ? SHOP_SORT_CHOICES : PHONE_SORT_CHOICES;
+  const choices = shop
+    ? supplier
+      ? SUPPLIER_SORT_CHOICES
+      : SHOP_SORT_CHOICES
+    : PHONE_SORT_CHOICES;
   const options = useMemo(
-    () =>
-      choices.map((choice) => ({ value: choice.ordering, label: t(choice.labelKey) })),
+    () => choices.map((choice) => ({ value: choice.ordering, label: t(choice.labelKey) })),
     [t, choices]
   );
-  const current = choices.some((choice) => choice.ordering === ordering)
-    ? ordering
-    : '';
+  const current = choices.some((choice) => choice.ordering === ordering) ? ordering : '';
 
   const choose = useCallback(
     (next: string) => {

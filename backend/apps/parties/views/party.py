@@ -302,7 +302,11 @@ class PartyViewSet(CsvExportMixin, TenantScopedNoDeleteViewSet):
             params.pop("balance", None)
             params.pop("late", None)
             base = PartyFilterSet(params, queryset=self.get_queryset(), request=request).qs
-            field = list_balance_field(request)
+            field = (
+                "shop_supplier_balance"
+                if params.get("type") == "supplier"
+                else "shop_customer_balance"
+            )
             prefix = "shop_supplier" if params.get("type") == "supplier" else "shop_customer"
             counts = base.aggregate(
                 all=Count("id"),

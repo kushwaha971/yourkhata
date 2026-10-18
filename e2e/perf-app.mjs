@@ -240,6 +240,8 @@ function navigations(vp) {
     list.push({ id: 'shop.bills→items', start: '/sales/invoices', target: '^/items$', tap: navLink('/items'), kind: 'sidebar row' });
   }
   list.push(
+    { id: 'shop.home→suppliers', start: '/dashboard', target: '^/suppliers$', tap: navLink('/suppliers'), kind: phone ? 'bottom tab' : 'sidebar row' },
+    { id: 'shop.supplier row→person', start: '/suppliers', target: '^/parties/[0-9a-f-]{36}$', tap: customerRow(vp), kind: 'supplier row' },
     { id: 'shop.customer row→person', start: '/customers', target: '^/parties/[0-9a-f-]{36}$', tap: customerRow(vp), kind: 'list row (router.push)' },
     {
       id: 'switcher→Udhaar /khata', start: '/dashboard', target: '^/khata$', kind: 'app switcher item (router.push)',

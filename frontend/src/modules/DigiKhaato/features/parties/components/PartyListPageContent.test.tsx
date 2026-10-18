@@ -230,8 +230,10 @@ describe('PartyListPageContent', () => {
     await screen.findByText('Ramesh Traders');
     await user.click(screen.getByRole('button', { name: 'Most late first' }));
     const dialog = await screen.findByRole('dialog', { name: 'Sort by' });
-    expect(within(dialog).getByRole('radio', { name: 'Most late first' }))
-      .toHaveAttribute('aria-checked', 'true');
+    expect(within(dialog).getByRole('radio', { name: 'Most late first' })).toHaveAttribute(
+      'aria-checked',
+      'true'
+    );
   });
 
   it('paints the skeleton first, then the first-use empty state', async () => {
@@ -2065,13 +2067,30 @@ describe('one book: Suppliers', () => {
     );
     renderWithProviders(<PartyListPageContent kind="supplier" book="shop" />);
     await screen.findByText('Ramesh Traders');
-    expect(screen.getByRole('textbox', { name: 'Search suppliers' })).toBeInTheDocument();
+    expect(screen.getByRole('searchbox', { name: 'Search suppliers' })).toBeInTheDocument();
     expect(
       screen.getByRole('list', { name: 'Suppliers, what you owe, and their latest activity' })
     ).toBeInTheDocument();
-    const summary = screen.getByRole('button', { name: 'Details' });
-    expect(summary.querySelector('dt')).toHaveTextContent('To pay');
-    expect(summary.querySelector('dd')).toHaveTextContent('₹2,688.00');
+    const summary = screen.getByTestId('shop-customer-summary');
+    expect(summary).toHaveTextContent('To pay');
+    expect(summary).toHaveTextContent('₹2,688.00');
+    expect(summary).not.toHaveTextContent('customers');
+    expect(summary).toHaveTextContent('supplier');
+    expect(screen.queryByRole('button', { name: 'Details' })).not.toBeInTheDocument();
+  });
+
+  it('keeps supplier names in the loaded footer and failure state', async () => {
+    /** Visual QA found the reused register saying customers on Supplier errors and pagination. */
+    partyService.listParties.mockResolvedValue(loaded([{ ...RAMESH, isSupplier: true, balance: '-2688.00' }]));
+    renderWithProviders(<PartyListPageContent kind="supplier" book="shop" />);
+    expect(await screen.findByText('Showing 1 of 1 suppliers')).toBeInTheDocument();
+  });
+
+  it('names suppliers in a failed register', async () => {
+    /** Supplier load failures must identify the correct business role. */
+    partyService.listParties.mockRejectedValue({code:'server_error',message:'Test failure',status:500});
+    renderWithProviders(<PartyListPageContent kind="supplier" book="shop" />);
+    expect(await screen.findByText('We could not load your suppliers')).toBeInTheDocument();
   });
 
   it('names suppliers, not customers, in the select-all box (SH-014)', async () => {

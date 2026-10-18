@@ -69,6 +69,9 @@ def test_dual_role_lists_use_their_own_documents_not_the_signed_cache(tenant, ap
     assert supplier.json()["data"][0]["balance"] == "-600.00"
     assert customer.json()["meta"]["totals"]["receivable"] == "1000.00"
     assert supplier.json()["meta"]["totals"]["payable"] == "600.00"
+    # Supplier debt has a negative list sign; counts still mean debt, not advance.
+    assert supplier.json()["meta"]["shop_counts"]["owes"] == 1
+    assert supplier.json()["meta"]["shop_counts"]["advance"] == 0
     assert customer.json()["data"][0]["shop"]["days_overdue"] == 42
     # The Shop home must reconcile to the same two lists, never its old 400 cache.
     from apps.reports.selectors.dashboard import party_tiles

@@ -49,16 +49,20 @@ import { usePartyForm } from '../hooks/usePartyForm';
 import { usePartyList } from '../hooks/usePartyList';
 import { usePartyRoles } from '../hooks/usePartyRoles';
 import { usePartyTags } from '../hooks/usePartyTags';
-import { orderingFor, sortFromOrdering } from '../view-model/partyListSort';
+import {
+  orderingFor,
+  sortFromOrdering,
+  supplierBalanceOrdering,
+} from '../view-model/partyListSort';
 
 import { createPartyColumns } from './PartyListColumns';
 import { PartyListFilters } from './PartyListFilters';
-import { ShopCustomerRowActions } from './PartyListRow';
+import { ShopPartyRowActions } from './PartyListRow';
 import { PartyListSortSheet } from './PartyListSortSheet';
 import { PartyListStats } from './PartyListStats';
-import { ShopCustomerFilters } from './ShopCustomerFilters';
-import { ShopCustomerSummary } from './ShopCustomerSummary';
-import { ShopCustomerToolbar } from './ShopCustomerToolbar';
+import { ShopPartyFilters } from './ShopPartyFilters';
+import { ShopPartySummary } from './ShopPartySummary';
+import { ShopPartyToolbar } from './ShopPartyToolbar';
 
 import type {
   PartyKind,
@@ -74,6 +78,11 @@ import type { Party } from '../types/party.types';
  * an interaction, so `open` is false in every server pass and there is no
  * hydration mismatch to avoid.
  */
+const SupplierPaymentLazy = dynamic(
+  () => import('../../payments/components/PaymentFormDrawer').then((m) => m.PaymentFormDrawer),
+  { ssr: false }
+);
+
 const ShopCustomerReminderLazy = dynamic(
   () => import('./ShopCustomerReminder').then((m) => m.ShopCustomerReminder),
   { ssr: false }
@@ -181,7 +190,10 @@ export function PartyListPageContent({
       ),
     [baseT, book, kind]
   );
-  const compactShop = book === 'shop' && kind === 'customer';
+  const compactShop = book === 'shop' && Boolean(kind);
+  const supplier = kind === 'supplier';
+  const [payingSupplier, setPayingSupplier] = useState<Party | null>(null);
+  const openSupplierPayment = useCallback((party: Party) => setPayingSupplier(party), []);
   const tier = useGridTier();
   const { can } = usePermissions();
   const [reminding, setReminding] = useState<Party | null>(null);
@@ -238,11 +250,13 @@ export function PartyListPageContent({
   // Resolved once so a memoised cell never has to reach for `react-intl`.
   const balanceLabels = useMemo(
     () => ({
-      'parties.list.balance.receivable': t('parties.list.balance.receivable'),
+      'parties.list.balance.receivable': t(
+        supplier ? 'parties.list.supplier.advance' : 'parties.list.balance.receivable'
+      ),
       'parties.list.balance.payable': t('parties.list.balance.payable'),
       'parties.list.balance.settled': t('parties.list.balance.settled'),
     }),
-    [t]
+    [t, supplier]
   );
 
   /* The grid's own tier, read by the screen so the column model can be built
@@ -250,20 +264,28 @@ export function PartyListPageContent({
      identically for itself, from the same media queries. */
   const tagChipsPerRow = TAG_CHIPS_PER_ROW[tier];
 
-  const openParty = useCallback((party: Party) => router.push(
-    kind === 'supplier' && book === 'shop' ? partyPath(party.id, 'supplier') : partyPath(party.id)
-  ), [router, kind, book]);
+  const openParty = useCallback(
+    (party: Party) =>
+      router.push(
+        kind === 'supplier' && book === 'shop'
+          ? partyPath(party.id, 'supplier')
+          : partyPath(party.id)
+      ),
+    [router, kind, book]
+  );
 
   const columns = useMemo(
     () =>
       createPartyColumns({
         t,
         compactShop,
+        supplier,
+        onPay: can('payments.payment.write') ? openSupplierPayment : undefined,
         phoneCards: tier === 'cards',
-        onRemind: canRemind ? openReminder : undefined,
+        onRemind: !supplier && canRemind ? openReminder : undefined,
         formatActivity: (at) =>
           d(at, { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }),
-        hideBalanceLabel: compactShop && filters.balance === 'owes_me',
+        hideBalanceLabel: compactShop && filters.balance === (supplier ? 'i_owe' : 'owes_me'),
         onOpen: openParty,
         nowMs,
         balanceLabels,
@@ -278,6 +300,9 @@ export function PartyListPageContent({
       hasTags,
       tagChipsPerRow,
       kind,
+      supplier,
+      can,
+      openSupplierPayment,
       compactShop,
       filters.balance,
       tier,
@@ -453,7 +478,7 @@ export function PartyListPageContent({
             ),
           },
       error: {
-        title: t('parties.list.error.title'),
+        title: t(supplier ? 'parties.list.supplier.error' : 'parties.list.error.title'),
         description: error?.message ?? t('parties.list.error.body'),
         requestId: error?.requestId ?? null,
         requestIdLabel: t('common.error.reference'),
@@ -467,6 +492,7 @@ export function PartyListPageContent({
     [
       t,
       kind,
+      supplier,
       addLabel,
       clearFilters,
       refetch,
@@ -513,14 +539,18 @@ export function PartyListPageContent({
   /** Nobody of this kind in the book at all, archived included (server's `hasAny`). */
   const emptyBook = status === 'succeeded' && rows.length === 0 && meta.hasAny === false;
 
-  const sort = useMemo(() => sortFromOrdering(filters.ordering), [filters.ordering]);
+  const sort = useMemo(
+    () => sortFromOrdering(supplier ? supplierBalanceOrdering(filters.ordering) : filters.ordering),
+    [filters.ordering, supplier]
+  );
 
   const handleSort = useCallback(
     (next: UbGridSort) => {
-      const ordering = orderingFor(next);
+      const raw = orderingFor(next);
+      const ordering = supplier ? supplierBalanceOrdering(raw) : raw;
       if (ordering) setOrdering(ordering);
     },
-    [setOrdering]
+    [setOrdering, supplier]
   );
 
   const handleStatus = useCallback(
@@ -564,14 +594,16 @@ export function PartyListPageContent({
 
   const renderCustomerActions = useCallback(
     (party: Party) => (
-      <ShopCustomerRowActions
+      <ShopPartyRowActions
         party={party}
         t={t}
         onOpen={openParty}
-        onRemind={canRemind ? openReminder : undefined}
+        supplier={supplier}
+        onPay={can('payments.payment.write') ? openSupplierPayment : undefined}
+        onRemind={!supplier && canRemind ? openReminder : undefined}
       />
     ),
-    [t, openParty, canRemind, openReminder]
+    [t, openParty, canRemind, openReminder, supplier, can, openSupplierPayment]
   );
 
   const filterControls = emptyBook ? undefined : tier === 'cards' || compactShop ? (
@@ -746,6 +778,21 @@ export function PartyListPageContent({
           16 px apart (tightened from 24 at the owner's request, 23 Sep). The
           count that used to sit here in grey label type is the third card
           now — it was the same job said in a different voice. */}
+      {payingSupplier && (
+        <SupplierPaymentLazy
+          context={{
+            direction: 'out',
+            bucket: 'shop',
+            entry: 'party',
+            partyId: payingSupplier.id,
+            partyName: payingSupplier.name,
+            receivable:
+              payingSupplier.shop?.supplierBalance ?? payingSupplier.balance.replace('-', ''),
+          }}
+          onClose={() => setPayingSupplier(null)}
+          onSaved={refetch}
+        />
+      )}
       <UbStack gap={4}>
         {showStats && !compactShop && (
           <PartyListStats
@@ -849,11 +896,14 @@ export function PartyListPageContent({
           <UbDataGrid
             rows={rows}
             variant={compactShop ? 'register' : 'panel'}
-            className={compactShop ? '[&_th]:whitespace-normal [&_th_button]:whitespace-normal' : undefined}
+            className={
+              compactShop ? '[&_th]:whitespace-normal [&_th_button]:whitespace-normal' : undefined
+            }
             columnMenu={compactShop ? false : undefined}
             toolbar={
               compactShop ? (
-                <ShopCustomerToolbar
+                <ShopPartyToolbar
+                  supplier={supplier}
                   t={t}
                   count={statsLoading ? undefined : n(meta.total)}
                   counts={shopCounts}
@@ -872,9 +922,11 @@ export function PartyListPageContent({
                         onOrderingChange={setOrdering}
                         labelled
                         shop
+                        supplier={supplier}
                         className="hidden lg:inline-flex"
                       />
-                      <ShopCustomerFilters
+                      <ShopPartyFilters
+                        supplier={supplier}
                         t={t}
                         filters={filters}
                         tags={tagOptions}
@@ -887,7 +939,8 @@ export function PartyListPageContent({
             }
             beforeRows={
               compactShop && showStats ? (
-                <ShopCustomerSummary
+                <ShopPartySummary
+                  supplier={supplier}
                   t={t}
                   total={meta.total}
                   rowCount={rows.length}
@@ -907,7 +960,7 @@ export function PartyListPageContent({
               compactShop && tier === 'cards' ? (
                 <UbStack gap={3} className="py-4">
                   <UbText variant="caption" tone="tertiary">
-                    {t('parties.list.shop.loaded', { count: rows.length, total: meta.total })}
+                    {t(supplier ? 'parties.list.supplier.loaded' : 'parties.list.shop.loaded', { count: rows.length, total: meta.total })}
                   </UbText>
                   {rows.length < meta.total && (
                     <UbButton
@@ -1006,7 +1059,9 @@ export function PartyListPageContent({
             merchant who opens the list to READ it, which is almost all of
             them. `openFor` is the only thing the page needs eagerly, and that
             lives in the slice. */}
-        {partyForm.open && <PartyFormDrawerLazy form={partyForm} kind={kind} shop={book === 'shop'} />}
+        {partyForm.open && (
+          <PartyFormDrawerLazy form={partyForm} kind={kind} shop={book === 'shop'} />
+        )}
         {compactShop && reminding && (
           <ShopCustomerReminderLazy party={reminding} onClose={() => setReminding(null)} />
         )}

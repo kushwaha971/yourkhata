@@ -10,8 +10,9 @@ import type { ShopLateFilter, ShopPartyCounts } from '../types/party.types';
 
 /** Counter Mode layout: phone search + filter, then the quick-filter track;
  * desktop search, quick filters and sort/filter occupy one wrapping toolbar. */
-export const ShopCustomerToolbar = memo(function ShopCustomerToolbar({
+export const ShopPartyToolbar = memo(function ShopPartyToolbar({
   t,
+  supplier = false,
   search,
   onSearch,
   balance,
@@ -24,6 +25,7 @@ export const ShopCustomerToolbar = memo(function ShopCustomerToolbar({
   onAll,
 }: Readonly<{
   t: TranslateFn;
+  supplier?: boolean;
   search: string;
   onSearch: (value: string) => void;
   balance: PartyBalanceFilter;
@@ -43,7 +45,7 @@ export const ShopCustomerToolbar = memo(function ShopCustomerToolbar({
       <UbSearchInput
         value={search}
         onChange={onSearch}
-        aria-label={t('parties.list.search.label')}
+        aria-label={t(supplier ? 'parties.list.supplier.searchLabel' : 'parties.list.search.label')}
         placeholder={t('parties.list.shop.search')}
       />
       <UbStack
@@ -58,9 +60,13 @@ export const ShopCustomerToolbar = memo(function ShopCustomerToolbar({
           onToggle={onAll}
         />
         <UbFilterChip
-          label={`${t('parties.list.shop.owes')}${counts ? ` · ${counts.owes}` : balance === 'owes_me' && count ? ` · ${count}` : ''}`}
-          pressed={balance === 'owes_me'}
-          onToggle={() => onBalance(balance === 'owes_me' ? '' : 'owes_me')}
+          label={`${t(supplier ? 'parties.list.supplier.owes' : 'parties.list.shop.owes')}${counts ? ` · ${counts.owes}` : balance === (supplier ? 'i_owe' : 'owes_me') && count ? ` · ${count}` : ''}`}
+          pressed={balance === (supplier ? 'i_owe' : 'owes_me')}
+          onToggle={() =>
+            onBalance(
+              balance === (supplier ? 'i_owe' : 'owes_me') ? '' : supplier ? 'i_owe' : 'owes_me'
+            )
+          }
         />
         {counts && (
           <UbFilterChip
@@ -70,9 +76,13 @@ export const ShopCustomerToolbar = memo(function ShopCustomerToolbar({
           />
         )}
         <UbFilterChip
-          label={`${t('parties.list.shop.credit')}${counts ? ` · ${counts.advance}` : balance === 'i_owe' && count ? ` · ${count}` : ''}`}
-          pressed={balance === 'i_owe'}
-          onToggle={() => onBalance(balance === 'i_owe' ? '' : 'i_owe')}
+          label={`${t(supplier ? 'parties.list.supplier.advance' : 'parties.list.shop.credit')}${counts ? ` · ${counts.advance}` : balance === (supplier ? 'owes_me' : 'i_owe') && count ? ` · ${count}` : ''}`}
+          pressed={balance === (supplier ? 'owes_me' : 'i_owe')}
+          onToggle={() =>
+            onBalance(
+              balance === (supplier ? 'owes_me' : 'i_owe') ? '' : supplier ? 'owes_me' : 'i_owe'
+            )
+          }
         />
         <UbFilterChip
           label={t('parties.list.balance.settled')}
