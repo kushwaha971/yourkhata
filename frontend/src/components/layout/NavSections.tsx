@@ -7,10 +7,7 @@ import { useTranslation } from 'src/hooks/useTranslation';
 import { cn } from 'src/utils/cn';
 
 import { activeNavHref } from 'modules/DigiKhaato/features/navigation/activeNav';
-import {
-  useNavigation,
-  type NavSectionView,
-} from 'modules/DigiKhaato/features/navigation/useNavigation';
+import { useNavigation } from 'modules/DigiKhaato/features/navigation/useNavigation';
 
 /**
  * The entitlement-driven navigation list, shared by the rail and the drawer.
@@ -34,29 +31,19 @@ import {
  */
 export function NavSections({
   onNavigate,
-  only,
-  className,
 }: Readonly<{
   onNavigate?: () => void;
-  /**
-   * Revamp 04 §3 — the app tree draws the open app's sections under its row
-   * and the business's own (Team, Settings) at the foot of the rail. The lit
-   * row is still decided over EVERY row, so the two halves never both light.
-   */
-  only?: (section: NavSectionView) => boolean;
-  className?: string;
 }>): React.JSX.Element {
   const pathname = usePathname();
   const { t } = useTranslation();
-  const { sections: all } = useNavigation();
+  const { sections } = useNavigation();
   const currentHref = activeNavHref(
     pathname,
-    all.flatMap((section) => section.items.map((item) => item.href))
+    sections.flatMap((section) => section.items.map((item) => item.href))
   );
-  const sections = only ? all.filter(only) : all;
 
   return (
-    <UbStack gap={0} as="div" className={cn('min-h-0 flex-1', className)}>
+    <UbStack gap={0} as="div" className="min-h-0 flex-1">
       {sections.map((section) => (
         /* Figma "menu": 12 px padding, a 10 px section label, rows 2 px apart. */
         <UbStack key={section.key} gap={0} className="gap-0.5 p-3">
@@ -87,7 +74,10 @@ export function NavSections({
                   as="span"
                   variant="inherit"
                   tone="inherit"
-                  className={cn('line-clamp-2 min-w-0 flex-1 break-words', active ? 'ds-nav-label-medium' : 'ds-nav-label-regular')}
+                  className={cn(
+                    'line-clamp-2 min-w-0 flex-1 break-words',
+                    active ? 'ds-nav-label-medium' : 'ds-nav-label-regular'
+                  )}
                 >
                   {t(item.labelId)}
                 </UbText>

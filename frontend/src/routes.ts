@@ -117,6 +117,8 @@ export const ROUTES = {
   SWITCH_TENANT: '/switch',
   /** docs/mobile-redesign — the phone's More tab: every destination that is not a tab. */
   MORE: '/more',
+  /** R-DEC-09 — every app this person can open, and the ones to add. */
+  APPS: '/apps',
   /** IMP-01 — the import wizard; `?kind=` skips the kind picker (FR-14). */
   IMPORTS: '/imports',
 
@@ -288,6 +290,7 @@ export const APP_ROUTE_PREFIXES: readonly string[] = [
   ROUTES.SETTINGS,
   ROUTES.SWITCH_TENANT,
   ROUTES.MORE,
+  ROUTES.APPS,
   '/notifications',
   ROUTES.IMPORTS,
   // ── library ── F01 (and so in CRAWL_DISALLOW, which derives from this list).

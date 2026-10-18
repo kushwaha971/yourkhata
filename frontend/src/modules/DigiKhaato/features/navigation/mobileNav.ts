@@ -54,7 +54,7 @@ export function mobileNavState(
   tabs: readonly AppNavItem[]
 ): MobileNavState {
   if (!pathname) return { visible: false, topLevel: false, active: null };
-  if (pathname === ROUTES.MORE) return { visible: true, topLevel: true, active: MORE_TAB };
+  if (pathname === ROUTES.MORE || pathname === ROUTES.APPS) return { visible: true, topLevel: true, active: MORE_TAB };
 
   const topLevel = rows.some((row) => row.href === pathname);
   const visible = topLevel || !isFocusedTask(pathname);

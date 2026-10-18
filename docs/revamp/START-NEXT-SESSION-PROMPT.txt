@@ -12,18 +12,10 @@ The reports are in docs/performance/2026-10-1*-f*.md and the screenshots in
 /mnt/project-files/revamp/shots/<loading|press|lock|apps>/. The module screens
 themselves (Shop, Udhaar, Library, Lending) have NOT been redesigned yet.
 
-TASK 1 (APPROVED, build it first): R-DEC-09 in docs/revamp/12-decision-log.md.
-The owner does not want the apps (Library, Lending, Shop, Udhaar book) listed in
-the desktop sidebar. Replace F4's app tree (features/navigation/components/
-SidebarAppTree.tsx) with ONE button at the top of the rail showing the open
-app's icon and name ("Switch app"); clicking it opens a page that lists every
-app the person can open, as tiles (reuse AppSwitcherSheet's tiles). The rail
-then shows only the open app's own sections, plus Team and Settings at the
-bottom. Keep "reopens where you left it" (useOpenApp). The phone App button and
-App sheet stay as they are. Same loop as below: tests, gates, screenshots at
-1024 and 1280 light and dark plus Hindi, measure, commit, push, report.
+(R-DEC-09, the owner's sidebar change, is already built: the rail has one
+"Apps" row that opens the /apps page; no app is listed in the rail.)
 
-TASK 2: Then do the rest of "Next" in docs/revamp/12-decision-log.md.
+TASK: Do item 1 under "Next" in docs/revamp/12-decision-log.md.
 Phase 5 (Shop and Udhaar screens) and the shell pieces left out of F4
 (notifications popover and page, the /account "You" page, the 64 px icon rail at
 1024–1279 px, hiding the bar while the keyboard is open, tile figures, the

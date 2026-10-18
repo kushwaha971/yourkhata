@@ -1,6 +1,6 @@
 'use client';
 
-import { Fragment, useCallback, useRef, useState } from 'react';
+import { Fragment, useCallback, useState } from 'react';
 
 import { Check, ChevronsUpDown, LogOut, Plus, Power, Star } from 'lucide-react';
 
@@ -18,12 +18,12 @@ import { useAppRouter } from 'src/hooks/useAppRouter';
 import { useAppDispatch, useAppSelector } from 'src/hooks/useAppStore';
 import { useTranslation } from 'src/hooks/useTranslation';
 import { selectAppsAddable } from 'src/redux/slice/sessionSlice';
-import { showSnackbar } from 'src/redux/slice/snackbarSlice';
 import { ROUTES } from 'src/routes';
 import { cn } from 'src/utils/cn';
 import { roleLabel } from 'src/utils/roleLabel';
 
 import { leaveApp, setAppRunning } from 'modules/DigiKhaato/features/auth/redux/sessionThunk';
+import { useAddApp } from 'modules/DigiKhaato/features/navigation/useAddApp';
 import { useNavigation } from 'modules/DigiKhaato/features/navigation/useNavigation';
 import { useOpenApp } from 'modules/DigiKhaato/features/navigation/useOpenApp';
 
@@ -84,8 +84,6 @@ export function TenantSwitcherMenu({
   const { apps, app } = useNavigation();
   const addable = useAppSelector(selectAppsAddable);
   const [appAction, setAppAction] = useState<'off' | 'leave' | null>(null);
-  const [addingApp, setAddingApp] = useState<string | null>(null);
-  const adding = useRef(false);
   const [appBusy, setAppBusy] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [leavingMembershipId, setLeavingMembershipId] = useState<string | null>(null);
@@ -99,33 +97,8 @@ export function TenantSwitcherMenu({
   const seeAll = useCallback(() => router.push(ROUTES.SWITCH_TENANT), [router]);
 
   // Add an app: run it for the business, open it, and land on its home.
-  const addApp = useCallback(
-    async (code: string, home: string, name: string) => {
-      if (adding.current) return;
-      adding.current = true;
-      setAppBusy(true);
-      setAddingApp(code);
-      try {
-        const done = await dispatch(setAppRunning({ app: code, running: true }));
-        if (setAppRunning.fulfilled.match(done)) {
-          dispatch(
-            showSnackbar({
-              severity: 'success',
-              id: 'tenant.switcher.apps.added',
-              params: { app: name },
-            })
-          );
-          setMenuOpen(false);
-          router.push(home);
-        }
-      } finally {
-        adding.current = false;
-        setAppBusy(false);
-        setAddingApp(null);
-      }
-    },
-    [dispatch, router]
-  );
+  const closeMenu = useCallback(() => setMenuOpen(false), []);
+  const { addApp, addingApp, busy: addBusy } = useAddApp(closeMenu);
 
   // Turn the open app off (owner) or leave it (anyone else), then go to the
   // home of whichever app the server now says this person is in.
@@ -246,7 +219,7 @@ export function TenantSwitcherMenu({
               addable.map((item) => (
                 <MLMenuItem
                   key={`add-${item.code}`}
-                  disabled={appBusy || !switcher.canSwitch}
+                  disabled={appBusy || addBusy || !switcher.canSwitch}
                   aria-busy={addingApp === item.code || undefined}
                   className={addingApp === item.code ? 'disabled:opacity-100' : undefined}
                   onSelect={(event) => {

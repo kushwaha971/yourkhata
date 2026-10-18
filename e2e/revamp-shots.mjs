@@ -31,7 +31,8 @@
  *            app's icon and short name), the App sheet it opens, its lower
  *            rows, and a switch to another app and back, which must land on
  *            the screen that app was left on, not its home. Desktop: the
- *            sidebar's app tree, the same switch and return, the logo tile,
+ *            sidebar's one Apps row (R-DEC-09: no app is listed in the rail),
+ *            the Apps page it opens, the same switch and return,
  *            and the page and rail colours READ from the computed style, not
  *            judged from a picture. Every text node in the bar, the sheet and
  *            the rail is measured against its own box (no cut words), and the
@@ -368,22 +369,19 @@ async function shootApps() {
         if (pathOf(page) !== place) fail(`Shop reopened on ${pathOf(page)}, not ${place}`);
         await page.screenshot({ path: file('5-back') });
       } else {
-        const tree = page.getByTestId('sidebar-app-tree');
-        if (!(await tree.count())) { fail('no app tree in the sidebar'); await ctx.close(); continue; }
-        await page.screenshot({ path: file('1-tree') });
-        const canvas = await bg(page, 'main');
+        // R-DEC-09: the rail lists no app; one "Apps" row opens the Apps page.
+        const rail = page.locator('nav:has([data-testid="sidebar-apps-row"])');
+        if (!(await rail.count())) { fail('no Apps row in the sidebar'); await ctx.close(); continue; }
+        await page.screenshot({ path: file('1-rail') });
         const body = await page.evaluate(() => getComputedStyle(document.body).backgroundColor);
-        const rail = await tree.evaluate((n) => { let e = n; while (e && getComputedStyle(e).backgroundColor === 'rgba(0, 0, 0, 0)') e = e.parentElement; return e ? getComputedStyle(e).backgroundColor : ''; });
-        const logo = await page.locator('aside img, aside svg').first().evaluate((n) => getComputedStyle(n.closest('span') ?? n).backgroundColor).catch(() => 'none');
-        console.log(`${width} ${theme}${tag} page ${body} / main ${canvas} · rail ${rail} · logo tile ${logo}`);
+        const railBg = await rail.evaluate((n) => getComputedStyle(n).backgroundColor);
+        console.log(`${width} ${theme}${tag} page ${body} · rail ${railBg}`);
         if (theme === 'light' && body !== 'rgb(255, 255, 255)') fail(`page is ${body}, not white`);
-        const rows = tree.locator(':scope > a, :scope > * > a').filter({ visible: true });
-        const expanded = await tree.locator('[aria-expanded="true"]').allInnerTexts();
-        console.log(`  expanded: ${expanded.map((x) => x.trim()).join(', ')}`);
-        if (expanded.length !== 1) fail(`${expanded.length} apps expanded, want 1`);
-        // Every label measured against the rail it sits on: the light theme
-        // once drew dark ink on dark teal while every token check passed.
-        const ink = await tree.locator('a').evaluateAll((links, railBg) => {
+        const listed = (await rail.locator('a').allInnerTexts()).map((x) => x.trim());
+        const leaked = listed.filter((x) => /^(Library|Lending|Udhaar book|लाइब्रेरी|उधार-वसूली|उधार खाता)$/.test(x));
+        if (leaked.length) fail(`rail still lists apps: ${leaked.join(', ')}`);
+        // Every label measured against what it sits on.
+        const ink = await rail.locator('a').evaluateAll((links) => {
           const rgb = (c) => (c.match(/[\d.]+/g) ?? []).slice(0, 3).map(Number);
           const lum = ([r, g, b]) => [r, g, b].map((v) => { v /= 255; return v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4; })
             .reduce((a, v, i) => a + v * [0.2126, 0.7152, 0.0722][i], 0);
@@ -391,32 +389,42 @@ async function shootApps() {
           return links.map((a) => {
             const label = [...a.querySelectorAll('span')].find((n) => n.textContent.trim()) ?? a;
             let e = a; while (e && getComputedStyle(e).backgroundColor === 'rgba(0, 0, 0, 0)') e = e.parentElement;
-            const bgc = e ? getComputedStyle(e).backgroundColor : railBg;
-            return [label.textContent.trim(), Math.round(ratio(getComputedStyle(label).color, bgc) * 10) / 10];
+            return [label.textContent.trim(), Math.round(ratio(getComputedStyle(label).color, getComputedStyle(e).backgroundColor) * 10) / 10];
           });
-        }, rail);
+        });
         const faint = ink.filter(([, r]) => r < 4.5);
-        console.log(`  label contrast on the rail: lowest ${Math.min(...ink.map(([, r]) => r))}:1 over ${ink.length} rows`);
+        console.log(`  rail rows: ${listed.length} · lowest label contrast ${Math.min(...ink.map(([, r]) => r))}:1`);
         if (faint.length) fail(`rail labels below 4.5:1: ${faint.map(([n, r]) => `${n} ${r}`).join(', ')}`);
-        const cutRail = await cutText(page, 'nav:has([data-testid="sidebar-app-tree"])');
+        const cutRail = await cutText(page, 'nav:has([data-testid="sidebar-apps-row"])');
         if (cutRail.length) fail(`rail text cut: ${cutRail.join(' | ')}`);
         await page.screenshot({ path: file('1b-rail'), clip: { x: 0, y: 0, width: 300, height: SIZES[width].viewport.height } });
-        const collapsed = tree.locator('[aria-expanded="false"]').first();
-        const otherName = (await collapsed.innerText()).trim();
-        await collapsed.click();
-        await page.waitForURL((u) => u.pathname !== place, { timeout: 20_000 }).catch(() => {});
+        // Apps row → Apps page.
+        await page.getByTestId('sidebar-apps-row').locator('a').click();
+        await page.waitForURL((u) => u.pathname === '/apps', { timeout: 20_000 }).catch(() => {});
         await settle(page);
-        const there = pathOf(page);
-        console.log(`  "${otherName}" → ${there} · expanded now ${(await tree.locator('[aria-expanded="true"]').allInnerTexts()).map((x) => x.trim()).join(', ')}`);
-        if (there === place) fail('an app row did not switch app');
-        await page.screenshot({ path: file('2-switched') });
-        await tree.locator('[aria-expanded="false"]').filter({ hasText: /Shop|दुकान/ }).first().click();
+        if (pathOf(page) !== '/apps') fail(`Apps row went to ${pathOf(page)}`);
+        await page.screenshot({ path: file('2-apps-page') });
+        const tiles = page.getByTestId('app-sheet-tiles').locator('button');
+        const names = (await tiles.allInnerTexts()).map((x) => x.trim());
+        console.log(`  Apps page tiles: ${names.join(' · ')} · to add: ${(await page.getByTestId('app-add-tiles').locator('button').allInnerTexts().catch(() => [])).map((x) => x.trim()).join(' · ') || 'none'}`);
+        const cutPage = await cutText(page, 'main');
+        if (cutPage.length) fail(`Apps page text cut: ${cutPage.join(' | ')}`);
+        const other = tiles.filter({ hasNotText: /Shop|दुकान/ }).first();
+        const otherName = (await other.innerText()).trim();
+        await other.click();
+        await page.waitForURL((u) => u.pathname !== '/apps', { timeout: 20_000 }).catch(() => {});
+        await settle(page);
+        console.log(`  tile "${otherName}" → ${pathOf(page)}`);
+        await page.screenshot({ path: file('3-switched') });
+        await page.getByTestId('sidebar-apps-row').locator('a').click();
+        await page.waitForURL((u) => u.pathname === '/apps', { timeout: 20_000 }).catch(() => {});
+        await settle(page);
+        await page.getByTestId('app-sheet-tiles').locator('button').filter({ hasText: /Shop|दुकान/ }).first().click();
         await page.waitForURL((u) => u.pathname === place, { timeout: 20_000 }).catch(() => {});
         await settle(page);
         console.log(`  back to Shop → ${pathOf(page)}`);
         if (pathOf(page) !== place) fail(`Shop reopened on ${pathOf(page)}, not ${place}`);
-        await page.screenshot({ path: file('3-back') });
-        void rows;
+        await page.screenshot({ path: file('4-back') });
       }
       const over = await measureOverflow(page);
       if (over > 0) fail(`page ${over} px wider than the screen`);

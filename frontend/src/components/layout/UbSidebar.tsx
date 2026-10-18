@@ -7,8 +7,7 @@ import { useTranslation } from 'src/hooks/useTranslation';
 import { selectAppName } from 'src/redux/slice/whiteLabelSlice';
 import { cn } from 'src/utils/cn';
 
-import { SidebarAppTree } from 'modules/DigiKhaato/features/navigation/components/SidebarAppTree';
-import { useNavigation } from 'modules/DigiKhaato/features/navigation/useNavigation';
+import { SidebarAppsRow } from 'modules/DigiKhaato/features/navigation/components/SidebarAppsRow';
 import { TenantSwitcherMenu } from 'modules/DigiKhaato/features/tenant-switcher/components/TenantSwitcherMenu';
 
 /**
@@ -41,7 +40,6 @@ import { TenantSwitcherMenu } from 'modules/DigiKhaato/features/tenant-switcher/
 export function UbSidebar(): React.JSX.Element {
   const { t } = useTranslation();
   const appName = useAppSelector(selectAppName);
-  const { apps } = useNavigation();
 
   return (
     /* BrandHub's sidebar contents (business block, divider, 12 px sections of
@@ -61,8 +59,10 @@ export function UbSidebar(): React.JSX.Element {
     >
       <TenantSwitcherMenu rail caption={appName} />
       <UbBox aria-hidden className="h-px w-full shrink-0 bg-white/10" />
-      {/* Revamp 04 §3 — with two or more apps the rail is an app tree. */}
-      {apps.length > 1 ? <SidebarAppTree /> : <NavSections />}
+      {/* R-DEC-09 — one "Apps" row, then the open app's own rows. The apps
+          themselves are listed on the Apps page, not in the rail. */}
+      <SidebarAppsRow />
+      <NavSections />
     </UbBox>
   );
 }

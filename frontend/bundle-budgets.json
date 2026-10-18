@@ -1031,6 +1031,7 @@
     "sharedApp": 113
   },
   "//routes": [
+    "18 Oct 2026, R-DEC-09: the rail's app tree became one \"Apps\" row and a new /apps page (the app tiles and, for an owner, the apps to add, through the same useAddApp hook as the business menu). Removing the tree paid for the row, so no existing route grew; /apps gets its own firstLoad at measured + 0.3 (290.8), and /_not-found, on its ceiling, rounded over by 0.0 KB and is raised to 239.8.",
     "18 Oct 2026, revamp F4 app switching: every app screen now draws the phone App button (the open app's icon and short name) and the desktop sidebar's app tree, with one icon per app in the manifests and a per-app 'last screen' memory. The App sheet itself, which carries the whole More menu, is dynamic() and fetched when the browser is idle, which took the growth from about 3.5 KB to about 1.2 KB per route; what remains is drawn on every screen. 144 exceeded scalars use measured + 0.3 KB; the shared app stays 112.2 of 113. Largest overrun before adjustment: 1.5 KB.",
     "The `route` figures are §19.9.2's, unchanged, and every route is comfortably",
     "inside them — the largest is /onboarding/step/[n] at 51.5 against 60.",
@@ -1765,7 +1766,7 @@
     },
     "/_not-found": {
       "route": 1,
-      "firstLoad": 239.5
+      "firstLoad": 239.8
     },
     "/library": {
       "route": 76.8,
@@ -1837,6 +1838,9 @@
     "/reports/aging": {
       "route": 97.0,
       "firstLoad": 336.5
+    },
+    "/apps": {
+      "firstLoad": 290.8
     }
   },
   "//ignoreRoutes": [

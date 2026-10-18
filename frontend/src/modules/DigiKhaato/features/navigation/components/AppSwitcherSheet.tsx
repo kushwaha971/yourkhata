@@ -1,14 +1,9 @@
 'use client';
 
-import { Check } from 'lucide-react';
-
-import { UbActionSheet, UbBox, UbGrid, UbPressable, UbText } from 'src/design-system';
+import { UbActionSheet, UbBox, UbText } from 'src/design-system';
 import { useTranslation } from 'src/hooks/useTranslation';
-import { cn } from 'src/utils/cn';
 
-import { useNavigation } from '../useNavigation';
-import { useOpenApp } from '../useOpenApp';
-
+import { AppTiles } from './AppTiles';
 import { MoreMenu } from './MoreMenu';
 
 /**
@@ -29,8 +24,6 @@ export function AppSwitcherSheet({
   onOpenChange,
 }: Readonly<{ open: boolean; onOpenChange: (open: boolean) => void }>): React.JSX.Element {
   const { t } = useTranslation();
-  const { apps, app: current } = useNavigation();
-  const openApp = useOpenApp();
 
   return (
     <UbActionSheet
@@ -43,36 +36,7 @@ export function AppSwitcherSheet({
         <UbText as="h3" variant="label" tone="tertiary" className="pb-2">
           {t('nav.apps')}
         </UbText>
-        <UbGrid columns={2} gap={2} data-testid="app-sheet-tiles">
-          {apps.map((item) => {
-            const Icon = item.icon;
-            const active = item.code === current;
-            return (
-              <UbPressable
-                key={item.code}
-                selected={active}
-                onClick={() => {
-                  if (!active) openApp(item);
-                }}
-                className={cn(
-                  'relative flex min-h-[88px] flex-col items-start justify-between gap-2 rounded-card border p-3',
-                  'active:scale-[0.98] motion-reduce:active:scale-100',
-                  active
-                    ? 'border-action bg-action text-text-inverse'
-                    : 'border-border-hairline bg-surface-card text-text-primary active:bg-surface-active'
-                )}
-              >
-                <Icon aria-hidden className="h-6 w-6" strokeWidth={active ? 2 : 1.75} />
-                <UbText as="span" variant="body-medium" tone="inherit" className="break-words">
-                  {t(item.labelId)}
-                </UbText>
-                {active && (
-                  <Check aria-hidden className="absolute right-3 top-3 h-5 w-5" strokeWidth={2.5} />
-                )}
-              </UbPressable>
-            );
-          })}
-        </UbGrid>
+        <AppTiles onLeave={() => onOpenChange(false)} />
       </UbBox>
       <MoreMenu listClassName="pb-2" searchClassName="px-4 pt-2" />
     </UbActionSheet>
