@@ -46,6 +46,8 @@ Alternative B (rejected unless the owner prefers it): 3 tabs + App + More. It co
 
 ## 3. Desktop: the sidebar
 
+> **Superseded in part by R-DEC-09 (owner, 18 Oct 2026):** the rail does not list the apps. It shows the open app's sections, with one "Switch app" button at the top that opens a page of all apps. The Apps group below was built in F4 and is to be replaced.
+
 **Today**: dark rail, business/app menu at the top, the active app's sections below.
 
 **Proposal**:
