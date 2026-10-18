@@ -173,7 +173,8 @@ export type RouteKey = keyof typeof ROUTES;
  * a path segment built by concatenation is a path segment somebody can put a
  * slash in.
  */
-export const partyPath = (id: string): string => `${ROUTES.PARTIES}/${encodeURIComponent(id)}`;
+export const partyPath = (id: string, kind?: 'customer' | 'supplier'): string =>
+  `${ROUTES.PARTIES}/${encodeURIComponent(id)}${kind === 'supplier' ? '?from=suppliers' : ''}`;
 
 /**
  * PTY-05 — the party list, filtered to one tag.

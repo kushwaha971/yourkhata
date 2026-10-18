@@ -158,7 +158,21 @@ def app_balance_guard(cache: str, module: str, label_id: str) -> ArchiveGuard:
 
     def guard(_tenant: Any, party: Party) -> ArchiveBlock | None:
         if (getattr(party, cache) or ZERO) == ZERO:
-            return None
+            if cache != "shop_balance":
+                return None
+            # BP-09: equal customer/supplier dues can cancel in the old cache,
+            # but neither role is settled. This is a read guard, never a posting.
+            from apps.parties.selectors.shop import shop_party_facts
+
+            facts = (
+                party
+                if hasattr(party, "shop_customer_balance")
+                else shop_party_facts(tenant=_tenant, party_id=party.id)
+            )
+            if facts is None or (
+                facts.shop_customer_balance == ZERO and facts.shop_supplier_balance == ZERO
+            ):
+                return None
         return {"module": module, "count": 1, "label_id": label_id}
 
     guard.__name__ = f"{cache}_archive_guard"
@@ -409,7 +423,14 @@ def bulk_archive_parties(*, ctx: Ctx, ids: list[Any], reason: str = "") -> dict:
     # rows are already locked above, so reading them again takes no new lock.
     blocked: dict[Any, ArchiveBlock] = {}
     if archived_ids and _enabled_guards(ctx.tenant):
-        for row in Party.objects.for_tenant(ctx.tenant).filter(pk__in=archived_ids):
+        rows = Party.objects.for_tenant(ctx.tenant).filter(pk__in=archived_ids)
+        from apps.platform_app.services.entitlements import effective_modules
+
+        if "sales" in effective_modules(ctx.tenant):
+            from apps.parties.selectors.shop import with_shop_facts
+
+            rows = with_shop_facts(rows, tenant=ctx.tenant)
+        for row in rows:
             block = archive_block(ctx.tenant, row)
             if block is not None:
                 blocked[row.pk] = block

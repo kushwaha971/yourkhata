@@ -59,12 +59,15 @@ export function PaymentModeEditor({
   target,
   t,
   disabled,
+  compact = false,
 }: Readonly<{
   form: UseFormReturn<PaymentFormValues>;
   /** What the lines are meant to add up to — the bill's due or the receivable. */
   target: string;
   t: TranslateFn;
   disabled?: boolean;
+  /** Shop Counter Mode: amount first, payment method second; shared split logic. */
+  compact?: boolean;
 }>): React.JSX.Element {
   const { fields, append, remove, replace } = useFieldArray({
     control: form.control,
@@ -94,67 +97,91 @@ export function PaymentModeEditor({
   };
 
   return (
-    <UbStack gap={3} className="rounded-card border border-border-hairline bg-surface-sunken p-3">
+    <UbStack
+      gap={3}
+      className={compact ? '' : 'rounded-card border border-border-hairline bg-surface-sunken p-3'}
+    >
       {fields.map((item, index) => {
         const line = lines[index];
         const rest = remainingFor(lines, index, fillTarget);
         const placeholder = line?.mode ? REFERENCE_PLACEHOLDER[line.mode] : undefined;
         return (
-          <UbStack key={item.key} gap={2} data-testid={`payment-line-${index}`}>
-            <UbField name={`lines.${index}.mode`} label={t('payments.mode.label')} labelHidden>
-              {(field) => (
-                <PaymentMethodField
-                  id={field.id}
-                  t={t}
-                  ariaLabel={t('payments.mode.label')}
-                  mode={field.value as PaymentMode | ''}
-                  app={line?.upiApp ?? ''}
-                  invalid={field.invalid}
-                  describedBy={field['aria-describedby']}
-                  onBlur={field.onBlur}
-                  disabled={disabled}
-                  onChange={(mode, app) => {
-                    field.onChange(mode);
-                    form.setValue(`lines.${index}.upiApp`, app, { shouldDirty: true });
-                  }}
-                />
-              )}
-            </UbField>
-            <UbStack direction="row" gap={2} align="start">
-              <UbField
-                name={`lines.${index}.amount`}
-                label={t('payments.mode.amount')}
-                labelHidden
-                placeholder={t('payments.amount.placeholder')}
-                className="min-w-0 flex-1"
-              >
-                {(field) => (
-                  <UbMoneyInput
-                    {...field}
-                    value={field.value as string}
-                    inputMode="decimal"
-                    disabled={disabled}
-                    autoFocus={index === 0}
-                  />
-                )}
-              </UbField>
-              {fields.length > 1 && (
-                <UbButton
-                  variant="ghost"
-                  iconOnly
-                  icon={<Trash2 className="h-4 w-4" aria-hidden />}
-                  onClick={() => remove(index)}
-                  disabled={disabled}
+          <UbStack
+            key={item.key}
+            gap={2}
+            className={compact ? 'flex-col' : undefined}
+            data-testid={`payment-line-${index}`}
+          >
+            {(compact ? ['amount', 'method'] : ['method', 'amount']).map((part) =>
+              part === 'method' ? (
+                <UbField
+                  key="method"
+                  name={`lines.${index}.mode`}
+                  label={t('payments.mode.label')}
+                  labelHidden={!compact}
                 >
-                  {t('payments.mode.remove')}
-                </UbButton>
-              )}
-            </UbStack>
+                  {(field) => (
+                    <PaymentMethodField
+                      presentation={compact ? 'select' : 'chips'}
+                      id={field.id}
+                      t={t}
+                      ariaLabel={t('payments.mode.label')}
+                      mode={field.value as PaymentMode | ''}
+                      app={line?.upiApp ?? ''}
+                      invalid={field.invalid}
+                      describedBy={field['aria-describedby']}
+                      onBlur={field.onBlur}
+                      disabled={disabled}
+                      onChange={(mode, app) => {
+                        field.onChange(mode);
+                        form.setValue(`lines.${index}.upiApp`, app, { shouldDirty: true });
+                      }}
+                    />
+                  )}
+                </UbField>
+              ) : (
+                <UbStack key="amount" direction="row" gap={2} align="start">
+                  <UbField
+                    name={`lines.${index}.amount`}
+                    label={t('payments.mode.amount')}
+                    labelHidden={!compact}
+                    placeholder={t('payments.amount.placeholder')}
+                    className="min-w-0 flex-1"
+                  >
+                    {(field) => (
+                      <UbMoneyInput
+                        {...field}
+                        value={field.value as string}
+                        inputMode="decimal"
+                        disabled={disabled}
+                        className={
+                          compact
+                            ? '[&_input]:text-left [&_input]:text-lg [&_input]:font-semibold'
+                            : undefined
+                        }
+                        autoFocus={index === 0}
+                      />
+                    )}
+                  </UbField>
+                  {fields.length > 1 && (
+                    <UbButton
+                      variant="ghost"
+                      iconOnly
+                      icon={<Trash2 className="h-4 w-4" aria-hidden />}
+                      onClick={() => remove(index)}
+                      disabled={disabled}
+                    >
+                      {t('payments.mode.remove')}
+                    </UbButton>
+                  )}
+                </UbStack>
+              )
+            )}
             {line?.mode && line.mode !== 'cash' && (
               <UbField
                 name={`lines.${index}.reference`}
                 label={t('payments.reference.label')}
-                labelHidden
+                labelHidden={!compact}
                 placeholder={t(placeholder ?? 'payments.reference.other')}
               >
                 {(field) => (
@@ -211,7 +238,7 @@ export function PaymentModeEditor({
       <UbStack direction="row" justify="between" align="center" className="flex-wrap gap-2">
         {fields.length < MAX_MODE_LINES ? (
           <UbButton
-            variant="secondary"
+            variant={compact ? 'ghost' : 'secondary'}
             size="sm"
             icon={<Plus className="h-4 w-4" aria-hidden />}
             onClick={addLine}
@@ -224,12 +251,14 @@ export function PaymentModeEditor({
             {t('payments.mode.maxLines', { count: MAX_MODE_LINES })}
           </UbText>
         )}
-        <UbStack direction="row" align="center" className="gap-2">
-          <UbText variant="body-sm" tone="secondary">
-            {t('payments.mode.total')}
-          </UbText>
-          <UbAmount value={total} size="sm" />
-        </UbStack>
+        {(!compact || fields.length > 1) && (
+          <UbStack direction="row" align="center" className="gap-2">
+            <UbText variant="body-sm" tone="secondary">
+              {t('payments.mode.total')}
+            </UbText>
+            <UbAmount value={total} size="sm" />
+          </UbStack>
+        )}
       </UbStack>
     </UbStack>
   );

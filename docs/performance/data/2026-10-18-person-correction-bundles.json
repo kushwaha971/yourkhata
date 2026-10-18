@@ -1,0 +1,839 @@
+{
+  "framework": {
+    "kb": 127.3,
+    "budgetKb": 128
+  },
+  "sharedApp": {
+    "kb": 112.5,
+    "budgetKb": 113
+  },
+  "routes": [
+    {
+      "route": "/sales/challans/[id]/edit",
+      "routeKb": 157.6,
+      "routeBudgetKb": 157.7,
+      "firstLoadKb": 397.3,
+      "firstLoadBudgetKb": 397.4
+    },
+    {
+      "route": "/sales/orders/[id]/edit",
+      "routeKb": 157.6,
+      "routeBudgetKb": 157.7,
+      "firstLoadKb": 397.3,
+      "firstLoadBudgetKb": 397.4
+    },
+    {
+      "route": "/sales/estimates/[id]/edit",
+      "routeKb": 157.6,
+      "routeBudgetKb": 157.7,
+      "firstLoadKb": 397.3,
+      "firstLoadBudgetKb": 400
+    },
+    {
+      "route": "/sales/invoices/[id]/edit",
+      "routeKb": 157.6,
+      "routeBudgetKb": 157.7,
+      "firstLoadKb": 397.3,
+      "firstLoadBudgetKb": 397.5
+    },
+    {
+      "route": "/sales/challans/new",
+      "routeKb": 157.6,
+      "routeBudgetKb": 157.7,
+      "firstLoadKb": 397.3,
+      "firstLoadBudgetKb": 397.5
+    },
+    {
+      "route": "/sales/orders/new",
+      "routeKb": 157.5,
+      "routeBudgetKb": 157.7,
+      "firstLoadKb": 397.3,
+      "firstLoadBudgetKb": 397.5
+    },
+    {
+      "route": "/sales/estimates/new",
+      "routeKb": 157.5,
+      "routeBudgetKb": 157.7,
+      "firstLoadKb": 397.3,
+      "firstLoadBudgetKb": 400
+    },
+    {
+      "route": "/sales/invoices/new",
+      "routeKb": 157.5,
+      "routeBudgetKb": 157.7,
+      "firstLoadKb": 397.3,
+      "firstLoadBudgetKb": 397.4
+    },
+    {
+      "route": "/purchases/orders/[id]/edit",
+      "routeKb": 156.8,
+      "routeBudgetKb": 157,
+      "firstLoadKb": 396.5,
+      "firstLoadBudgetKb": 396.7
+    },
+    {
+      "route": "/purchases/bills/[id]/edit",
+      "routeKb": 156.8,
+      "routeBudgetKb": 157,
+      "firstLoadKb": 396.5,
+      "firstLoadBudgetKb": 396.7
+    },
+    {
+      "route": "/purchases/orders/new",
+      "routeKb": 156.8,
+      "routeBudgetKb": 156.9,
+      "firstLoadKb": 396.5,
+      "firstLoadBudgetKb": 396.7
+    },
+    {
+      "route": "/purchases/bills/new",
+      "routeKb": 156.8,
+      "routeBudgetKb": 156.9,
+      "firstLoadKb": 396.5,
+      "firstLoadBudgetKb": 396.7
+    },
+    {
+      "route": "/sales/credit-notes/new",
+      "routeKb": 147.3,
+      "routeBudgetKb": 147.3,
+      "firstLoadKb": 387,
+      "firstLoadBudgetKb": 390
+    },
+    {
+      "route": "/settings/profile",
+      "routeKb": 142,
+      "routeBudgetKb": 142,
+      "firstLoadKb": 381.7,
+      "firstLoadBudgetKb": 381.8
+    },
+    {
+      "route": "/lending/loans/new",
+      "routeKb": 138.9,
+      "routeBudgetKb": 139.1,
+      "firstLoadKb": 378.6,
+      "firstLoadBudgetKb": 378.7
+    },
+    {
+      "route": "/library/settings",
+      "routeKb": 117.7,
+      "routeBudgetKb": 117.7,
+      "firstLoadKb": 357.4,
+      "firstLoadBudgetKb": 357.5
+    },
+    {
+      "route": "/reports/day-book",
+      "routeKb": 115.6,
+      "routeBudgetKb": 115.6,
+      "firstLoadKb": 355.3,
+      "firstLoadBudgetKb": 355.4
+    },
+    {
+      "route": "/reports/purchase-register",
+      "routeKb": 113,
+      "routeBudgetKb": 113,
+      "firstLoadKb": 352.7,
+      "firstLoadBudgetKb": 352.8
+    },
+    {
+      "route": "/reports/sales-register",
+      "routeKb": 113,
+      "routeBudgetKb": 113,
+      "firstLoadKb": 352.7,
+      "firstLoadBudgetKb": 352.8
+    },
+    {
+      "route": "/reports/gst-summary",
+      "routeKb": 112.5,
+      "routeBudgetKb": 112.5,
+      "firstLoadKb": 352.2,
+      "firstLoadBudgetKb": 352.3
+    },
+    {
+      "route": "/design-system",
+      "routeKb": 112.3,
+      "routeBudgetKb": 112.3,
+      "firstLoadKb": 352,
+      "firstLoadBudgetKb": 352.1
+    },
+    {
+      "route": "/parties/[id]",
+      "routeKb": 112.1,
+      "routeBudgetKb": 112.3,
+      "firstLoadKb": 351.8,
+      "firstLoadBudgetKb": 351.9
+    },
+    {
+      "route": "/reports/profit",
+      "routeKb": 107.9,
+      "routeBudgetKb": 108.1,
+      "firstLoadKb": 347.6,
+      "firstLoadBudgetKb": 347.7
+    },
+    {
+      "route": "/stock/summary",
+      "routeKb": 107.1,
+      "routeBudgetKb": 115,
+      "firstLoadKb": 346.8,
+      "firstLoadBudgetKb": 360
+    },
+    {
+      "route": "/settings",
+      "routeKb": 106.4,
+      "routeBudgetKb": 106.5,
+      "firstLoadKb": 346.2,
+      "firstLoadBudgetKb": 346.3
+    },
+    {
+      "route": "/items/[id]",
+      "routeKb": 106.3,
+      "routeBudgetKb": 106.3,
+      "firstLoadKb": 346,
+      "firstLoadBudgetKb": 346.1
+    },
+    {
+      "route": "/reports/aging",
+      "routeKb": 98.3,
+      "routeBudgetKb": 98.3,
+      "firstLoadKb": 338,
+      "firstLoadBudgetKb": 338.1
+    },
+    {
+      "route": "/ledger/aging",
+      "routeKb": 98.3,
+      "routeBudgetKb": 98.3,
+      "firstLoadKb": 338,
+      "firstLoadBudgetKb": 338.1
+    },
+    {
+      "route": "/settings/branding",
+      "routeKb": 94.2,
+      "routeBudgetKb": 94.2,
+      "firstLoadKb": 333.9,
+      "firstLoadBudgetKb": 334
+    },
+    {
+      "route": "/onboarding/step/[n]",
+      "routeKb": 92.8,
+      "routeBudgetKb": 93,
+      "firstLoadKb": 332.5,
+      "firstLoadBudgetKb": 332.9
+    },
+    {
+      "route": "/settings/team",
+      "routeKb": 89.6,
+      "routeBudgetKb": 89.7,
+      "firstLoadKb": 329.4,
+      "firstLoadBudgetKb": 329.4
+    },
+    {
+      "route": "/suppliers",
+      "routeKb": 89.1,
+      "routeBudgetKb": 110,
+      "firstLoadKb": 328.8,
+      "firstLoadBudgetKb": 344
+    },
+    {
+      "route": "/customers",
+      "routeKb": 89.1,
+      "routeBudgetKb": 110,
+      "firstLoadKb": 328.8,
+      "firstLoadBudgetKb": 344
+    },
+    {
+      "route": "/khata",
+      "routeKb": 89,
+      "routeBudgetKb": 109,
+      "firstLoadKb": 328.8,
+      "firstLoadBudgetKb": 344
+    },
+    {
+      "route": "/parties",
+      "routeKb": 89,
+      "routeBudgetKb": 109,
+      "firstLoadKb": 328.8,
+      "firstLoadBudgetKb": 344
+    },
+    {
+      "route": "/items/price-lists/[id]",
+      "routeKb": 87.9,
+      "routeBudgetKb": 87.9,
+      "firstLoadKb": 327.6,
+      "firstLoadBudgetKb": 327.7
+    },
+    {
+      "route": "/library/members",
+      "routeKb": 84.9,
+      "routeBudgetKb": 84.9,
+      "firstLoadKb": 324.6,
+      "firstLoadBudgetKb": 324.7
+    },
+    {
+      "route": "/sales/invoices",
+      "routeKb": 84.7,
+      "routeBudgetKb": 98,
+      "firstLoadKb": 324.4,
+      "firstLoadBudgetKb": 333
+    },
+    {
+      "route": "/sales/challans",
+      "routeKb": 84.6,
+      "routeBudgetKb": 84.8,
+      "firstLoadKb": 324.3,
+      "firstLoadBudgetKb": 324.4
+    },
+    {
+      "route": "/sales/credit-notes",
+      "routeKb": 84.6,
+      "routeBudgetKb": 98,
+      "firstLoadKb": 324.3,
+      "firstLoadBudgetKb": 356
+    },
+    {
+      "route": "/sales/estimates",
+      "routeKb": 84.6,
+      "routeBudgetKb": 98,
+      "firstLoadKb": 324.3,
+      "firstLoadBudgetKb": 356
+    },
+    {
+      "route": "/sales/orders",
+      "routeKb": 84.6,
+      "routeBudgetKb": 84.8,
+      "firstLoadKb": 324.3,
+      "firstLoadBudgetKb": 324.4
+    },
+    {
+      "route": "/library/members/[membershipId]",
+      "routeKb": 84.4,
+      "routeBudgetKb": 84.4,
+      "firstLoadKb": 324.1,
+      "firstLoadBudgetKb": 324.2
+    },
+    {
+      "route": "/items",
+      "routeKb": 84.2,
+      "routeBudgetKb": 108,
+      "firstLoadKb": 323.9,
+      "firstLoadBudgetKb": 344
+    },
+    {
+      "route": "/library/catalogue",
+      "routeKb": 83.7,
+      "routeBudgetKb": 83.9,
+      "firstLoadKb": 323.4,
+      "firstLoadBudgetKb": 323.5
+    },
+    {
+      "route": "/sales/challans/[id]",
+      "routeKb": 81.4,
+      "routeBudgetKb": 81.6,
+      "firstLoadKb": 321.2,
+      "firstLoadBudgetKb": 321.4
+    },
+    {
+      "route": "/sales/credit-notes/[id]",
+      "routeKb": 81.4,
+      "routeBudgetKb": 81.6,
+      "firstLoadKb": 321.2,
+      "firstLoadBudgetKb": 336
+    },
+    {
+      "route": "/sales/orders/[id]",
+      "routeKb": 81.4,
+      "routeBudgetKb": 81.6,
+      "firstLoadKb": 321.2,
+      "firstLoadBudgetKb": 321.4
+    },
+    {
+      "route": "/sales/estimates/[id]",
+      "routeKb": 81.4,
+      "routeBudgetKb": 81.6,
+      "firstLoadKb": 321.2,
+      "firstLoadBudgetKb": 336
+    },
+    {
+      "route": "/sales/invoices/[id]",
+      "routeKb": 81.4,
+      "routeBudgetKb": 81.6,
+      "firstLoadKb": 321.1,
+      "firstLoadBudgetKb": 321.3
+    },
+    {
+      "route": "/library/counter",
+      "routeKb": 81.4,
+      "routeBudgetKb": 81.4,
+      "firstLoadKb": 321.1,
+      "firstLoadBudgetKb": 321.2
+    },
+    {
+      "route": "/purchases/orders",
+      "routeKb": 81.2,
+      "routeBudgetKb": 81.3,
+      "firstLoadKb": 321,
+      "firstLoadBudgetKb": 321
+    },
+    {
+      "route": "/purchases/debit-notes",
+      "routeKb": 81.2,
+      "routeBudgetKb": 81.3,
+      "firstLoadKb": 321,
+      "firstLoadBudgetKb": 321
+    },
+    {
+      "route": "/expenses",
+      "routeKb": 81.2,
+      "routeBudgetKb": 107,
+      "firstLoadKb": 321,
+      "firstLoadBudgetKb": 341
+    },
+    {
+      "route": "/purchases/bills",
+      "routeKb": 81.2,
+      "routeBudgetKb": 95,
+      "firstLoadKb": 320.9,
+      "firstLoadBudgetKb": 330
+    },
+    {
+      "route": "/library/copies",
+      "routeKb": 81.2,
+      "routeBudgetKb": 81.2,
+      "firstLoadKb": 320.9,
+      "firstLoadBudgetKb": 321
+    },
+    {
+      "route": "/dashboard",
+      "routeKb": 79.9,
+      "routeBudgetKb": 88,
+      "firstLoadKb": 319.6,
+      "firstLoadBudgetKb": 336
+    },
+    {
+      "route": "/library/seats",
+      "routeKb": 79.5,
+      "routeBudgetKb": 79.7,
+      "firstLoadKb": 319.3,
+      "firstLoadBudgetKb": 319.3
+    },
+    {
+      "route": "/payments",
+      "routeKb": 79.2,
+      "routeBudgetKb": 104,
+      "firstLoadKb": 318.9,
+      "firstLoadBudgetKb": 339
+    },
+    {
+      "route": "/parties/[id]/statement",
+      "routeKb": 78,
+      "routeBudgetKb": 93,
+      "firstLoadKb": 317.8,
+      "firstLoadBudgetKb": 328
+    },
+    {
+      "route": "/library",
+      "routeKb": 77.7,
+      "routeBudgetKb": 77.7,
+      "firstLoadKb": 317.4,
+      "firstLoadBudgetKb": 317.5
+    },
+    {
+      "route": "/library/fees",
+      "routeKb": 77.5,
+      "routeBudgetKb": 77.6,
+      "firstLoadKb": 317.3,
+      "firstLoadBudgetKb": 317.3
+    },
+    {
+      "route": "/lending/borrowers",
+      "routeKb": 77.4,
+      "routeBudgetKb": 77.4,
+      "firstLoadKb": 317.1,
+      "firstLoadBudgetKb": 317.2
+    },
+    {
+      "route": "/ledger/reminders",
+      "routeKb": 76.5,
+      "routeBudgetKb": 76.6,
+      "firstLoadKb": 316.2,
+      "firstLoadBudgetKb": 316.2
+    },
+    {
+      "route": "/library/copies/[copyId]",
+      "routeKb": 76,
+      "routeBudgetKb": 76.2,
+      "firstLoadKb": 315.7,
+      "firstLoadBudgetKb": 315.8
+    },
+    {
+      "route": "/lending/loans",
+      "routeKb": 75.1,
+      "routeBudgetKb": 75.3,
+      "firstLoadKb": 314.8,
+      "firstLoadBudgetKb": 314.9
+    },
+    {
+      "route": "/library/attendance",
+      "routeKb": 73.8,
+      "routeBudgetKb": 73.8,
+      "firstLoadKb": 313.5,
+      "firstLoadBudgetKb": 313.6
+    },
+    {
+      "route": "/library/money",
+      "routeKb": 73.6,
+      "routeBudgetKb": 73.6,
+      "firstLoadKb": 313.3,
+      "firstLoadBudgetKb": 313.4
+    },
+    {
+      "route": "/library/catalogue/[titleId]",
+      "routeKb": 73.1,
+      "routeBudgetKb": 73.3,
+      "firstLoadKb": 312.8,
+      "firstLoadBudgetKb": 312.9
+    },
+    {
+      "route": "/cashbook",
+      "routeKb": 72.8,
+      "routeBudgetKb": 92,
+      "firstLoadKb": 312.6,
+      "firstLoadBudgetKb": 327
+    },
+    {
+      "route": "/settings/activity",
+      "routeKb": 72.5,
+      "routeBudgetKb": 101,
+      "firstLoadKb": 312.2,
+      "firstLoadBudgetKb": 335
+    },
+    {
+      "route": "/library/messages",
+      "routeKb": 71.5,
+      "routeBudgetKb": 71.7,
+      "firstLoadKb": 311.2,
+      "firstLoadBudgetKb": 311.3
+    },
+    {
+      "route": "/library/catalogue/categories",
+      "routeKb": 70.8,
+      "routeBudgetKb": 71,
+      "firstLoadKb": 310.5,
+      "firstLoadBudgetKb": 310.6
+    },
+    {
+      "route": "/library/catalogue/locations",
+      "routeKb": 70.8,
+      "routeBudgetKb": 71,
+      "firstLoadKb": 310.5,
+      "firstLoadBudgetKb": 310.6
+    },
+    {
+      "route": "/stock/low",
+      "routeKb": 70.7,
+      "routeBudgetKb": 70.8,
+      "firstLoadKb": 310.4,
+      "firstLoadBudgetKb": 310.5
+    },
+    {
+      "route": "/lending",
+      "routeKb": 70.2,
+      "routeBudgetKb": 70.2,
+      "firstLoadKb": 309.9,
+      "firstLoadBudgetKb": 310
+    },
+    {
+      "route": "/purchases/orders/[id]",
+      "routeKb": 70,
+      "routeBudgetKb": 70.1,
+      "firstLoadKb": 309.8,
+      "firstLoadBudgetKb": 309.8
+    },
+    {
+      "route": "/purchases/debit-notes/[id]",
+      "routeKb": 70,
+      "routeBudgetKb": 70.1,
+      "firstLoadKb": 309.8,
+      "firstLoadBudgetKb": 309.8
+    },
+    {
+      "route": "/purchases/bills/[id]",
+      "routeKb": 70,
+      "routeBudgetKb": 70.1,
+      "firstLoadKb": 309.8,
+      "firstLoadBudgetKb": 309.8
+    },
+    {
+      "route": "/lending/loans/[loanId]",
+      "routeKb": 69.8,
+      "routeBudgetKb": 69.8,
+      "firstLoadKb": 309.5,
+      "firstLoadBudgetKb": 309.6
+    },
+    {
+      "route": "/parties/tags",
+      "routeKb": 68.4,
+      "routeBudgetKb": 68.6,
+      "firstLoadKb": 308.1,
+      "firstLoadBudgetKb": 308.2
+    },
+    {
+      "route": "/payments/[id]",
+      "routeKb": 67.2,
+      "routeBudgetKb": 67.3,
+      "firstLoadKb": 306.9,
+      "firstLoadBudgetKb": 307.1
+    },
+    {
+      "route": "/settings/business-days",
+      "routeKb": 65.6,
+      "routeBudgetKb": 65.6,
+      "firstLoadKb": 305.3,
+      "firstLoadBudgetKb": 305.4
+    },
+    {
+      "route": "/lending/messages",
+      "routeKb": 64.8,
+      "routeBudgetKb": 64.8,
+      "firstLoadKb": 304.5,
+      "firstLoadBudgetKb": 304.6
+    },
+    {
+      "route": "/lending/routes",
+      "routeKb": 61.6,
+      "routeBudgetKb": 61.8,
+      "firstLoadKb": 301.3,
+      "firstLoadBudgetKb": 301.4
+    },
+    {
+      "route": "/settings/data",
+      "routeKb": 61.5,
+      "routeBudgetKb": 61.5,
+      "firstLoadKb": 301.2,
+      "firstLoadBudgetKb": 301.3
+    },
+    {
+      "route": "/settings/devices",
+      "routeKb": 59.4,
+      "routeBudgetKb": 59.5,
+      "firstLoadKb": 299.2,
+      "firstLoadBudgetKb": 299.2
+    },
+    {
+      "route": "/reports",
+      "routeKb": 59.1,
+      "routeBudgetKb": 72,
+      "firstLoadKb": 298.8,
+      "firstLoadBudgetKb": 320
+    },
+    {
+      "route": "/login/email",
+      "routeKb": 58.3,
+      "routeBudgetKb": 58.6,
+      "firstLoadKb": 298.1,
+      "firstLoadBudgetKb": 298.4
+    },
+    {
+      "route": "/signup",
+      "routeKb": 56.3,
+      "routeBudgetKb": 57,
+      "firstLoadKb": 296.1,
+      "firstLoadBudgetKb": 296.4
+    },
+    {
+      "route": "/login",
+      "routeKb": 56.3,
+      "routeBudgetKb": 57,
+      "firstLoadKb": 296.1,
+      "firstLoadBudgetKb": 296.4
+    },
+    {
+      "route": "/imports/[id]",
+      "routeKb": 54.9,
+      "routeBudgetKb": 54.9,
+      "firstLoadKb": 294.6,
+      "firstLoadBudgetKb": 294.7
+    },
+    {
+      "route": "/imports",
+      "routeKb": 54.9,
+      "routeBudgetKb": 54.9,
+      "firstLoadKb": 294.6,
+      "firstLoadBudgetKb": 294.7
+    },
+    {
+      "route": "/items/masters",
+      "routeKb": 54.8,
+      "routeBudgetKb": 54.9,
+      "firstLoadKb": 294.6,
+      "firstLoadBudgetKb": 294.7
+    },
+    {
+      "route": "/items/price-lists",
+      "routeKb": 54.6,
+      "routeBudgetKb": 56,
+      "firstLoadKb": 294.3,
+      "firstLoadBudgetKb": 294.4
+    },
+    {
+      "route": "/switch",
+      "routeKb": 53.6,
+      "routeBudgetKb": 53.8,
+      "firstLoadKb": 293.3,
+      "firstLoadBudgetKb": 293.4
+    },
+    {
+      "route": "/more",
+      "routeKb": 52.8,
+      "routeBudgetKb": 56,
+      "firstLoadKb": 292.5,
+      "firstLoadBudgetKb": 292.6
+    },
+    {
+      "route": "/settings/plan",
+      "routeKb": 52.6,
+      "routeBudgetKb": 52.6,
+      "firstLoadKb": 292.3,
+      "firstLoadBudgetKb": 292.4
+    },
+    {
+      "route": "/reset-password",
+      "routeKb": 52.3,
+      "routeBudgetKb": 52.6,
+      "firstLoadKb": 292,
+      "firstLoadBudgetKb": 292.4
+    },
+    {
+      "route": "/apps",
+      "routeKb": 52.1,
+      "routeBudgetKb": 56,
+      "firstLoadKb": 291.8,
+      "firstLoadBudgetKb": 291.9
+    },
+    {
+      "route": "/set-password",
+      "routeKb": 51.3,
+      "routeBudgetKb": 51.6,
+      "firstLoadKb": 291,
+      "firstLoadBudgetKb": 291.4
+    },
+    {
+      "route": "/forgot-password",
+      "routeKb": 50.6,
+      "routeBudgetKb": 52,
+      "firstLoadKb": 290.3,
+      "firstLoadBudgetKb": 290.7
+    },
+    {
+      "route": "/",
+      "routeKb": 42.8,
+      "routeBudgetKb": 43,
+      "firstLoadKb": 282.5,
+      "firstLoadBudgetKb": 282.7
+    },
+    {
+      "route": "/d/[token]",
+      "routeKb": 39.9,
+      "routeBudgetKb": 40.1,
+      "firstLoadKb": 279.6,
+      "firstLoadBudgetKb": 279.9
+    },
+    {
+      "route": "/admin/tenants",
+      "routeKb": 32,
+      "routeBudgetKb": 32.2,
+      "firstLoadKb": 271.7,
+      "firstLoadBudgetKb": 272
+    },
+    {
+      "route": "/admin/partners",
+      "routeKb": 27.6,
+      "routeBudgetKb": 27.8,
+      "firstLoadKb": 267.3,
+      "firstLoadBudgetKb": 267.6
+    },
+    {
+      "route": "/admin/tenants/[id]",
+      "routeKb": 24.9,
+      "routeBudgetKb": 25.2,
+      "firstLoadKb": 264.6,
+      "firstLoadBudgetKb": 265
+    },
+    {
+      "route": "/admin/health",
+      "routeKb": 20.7,
+      "routeBudgetKb": 21,
+      "firstLoadKb": 260.4,
+      "firstLoadBudgetKb": 260.5
+    },
+    {
+      "route": "/pay/[token]",
+      "routeKb": 15.6,
+      "routeBudgetKb": 56,
+      "firstLoadKb": 255.3,
+      "firstLoadBudgetKb": 288
+    },
+    {
+      "route": "/accept-invite/[token]",
+      "routeKb": 11.1,
+      "routeBudgetKb": 11.4,
+      "firstLoadKb": 250.8,
+      "firstLoadBudgetKb": 251.2
+    },
+    {
+      "route": "/admin",
+      "routeKb": 11,
+      "routeBudgetKb": 11,
+      "firstLoadKb": 250.7,
+      "firstLoadBudgetKb": 251
+    },
+    {
+      "route": "/in/[token]",
+      "routeKb": 7.4,
+      "routeBudgetKb": 56,
+      "firstLoadKb": 247.2,
+      "firstLoadBudgetKb": 288
+    },
+    {
+      "route": "/legal/terms",
+      "routeKb": 6.7,
+      "routeBudgetKb": 8,
+      "firstLoadKb": 246.4,
+      "firstLoadBudgetKb": 246.8
+    },
+    {
+      "route": "/legal/privacy",
+      "routeKb": 6.7,
+      "routeBudgetKb": 8,
+      "firstLoadKb": 246.4,
+      "firstLoadBudgetKb": 246.8
+    },
+    {
+      "route": "/solutions",
+      "routeKb": 6.4,
+      "routeBudgetKb": 56,
+      "firstLoadKb": 246.1,
+      "firstLoadBudgetKb": 288
+    },
+    {
+      "route": "/solutions/[slug]",
+      "routeKb": 6.4,
+      "routeBudgetKb": 56,
+      "firstLoadKb": 246.1,
+      "firstLoadBudgetKb": 288
+    },
+    {
+      "route": "/onboarding",
+      "routeKb": 4.6,
+      "routeBudgetKb": 6,
+      "firstLoadKb": 244.3,
+      "firstLoadBudgetKb": 244.6
+    },
+    {
+      "route": "/_not-found",
+      "routeKb": 0,
+      "routeBudgetKb": 1,
+      "firstLoadKb": 239.7,
+      "firstLoadBudgetKb": 239.8
+    }
+  ],
+  "violations": []
+}

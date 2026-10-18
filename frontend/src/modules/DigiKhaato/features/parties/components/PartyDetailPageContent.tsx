@@ -3,10 +3,12 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import dynamic from 'next/dynamic';
+import { useSearchParams } from 'next/navigation';
 
 import { Minus, Plus } from 'lucide-react';
 
 import {
+  UbLink,
   UbBottomBar,
   UbBox,
   UbButton,
@@ -45,6 +47,8 @@ import { PartyDetailHeader } from './PartyDetailHeader';
 import { PartyHeaderMenu } from './PartyHeaderMenu';
 import { PartyInfoPanel } from './PartyInfoPanel';
 import { PartyModulePanels } from './PartyModulePanels';
+import { ShopPersonActions } from './ShopPersonActions';
+import { ShopPersonOverview } from './ShopPersonOverview';
 
 import type { PartyDetail } from '../types/party.types';
 
@@ -78,6 +82,11 @@ import type { PartyDetail } from '../types/party.types';
  * an interaction, so `open` is false in every server pass and there is no
  * hydration mismatch to avoid.
  */
+const ShopPersonRecordsLazy = dynamic(
+  () => import('./ShopPersonRecords').then((m) => m.ShopPersonRecords),
+  { ssr: false }
+);
+
 const PartyFormDrawerLazy = dynamic(
   () => import('./PartyFormDrawer').then((m) => m.PartyFormDrawer),
   { ssr: false }
@@ -191,6 +200,7 @@ export function PartyDetailPageContent({
      balance, the credit limit) are not offered on the Shop's page,
      and the Shop's payment tools are not offered in the Udhaar book. */
   const shopBook = book === 'shop';
+  const search = useSearchParams();
   const udhaarApp = app === 'khata';
   /* The header's money words follow the book: "To collect / To pay" on the Shop's
      page, "You will get / You will give" in the Udhaar book. */
@@ -219,6 +229,11 @@ export function PartyDetailPageContent({
     setCollectionDate,
     refetch,
   } = usePartyDetail(id, shopBook ? 'shop' : undefined);
+  const supplierView =
+    shopBook &&
+    Boolean((party ?? cachedRow)?.isSupplier) &&
+    (search.get('from') === 'suppliers' || !(party ?? cachedRow)?.isCustomer);
+  const origin = supplierView ? ROUTES.SUPPLIERS : ROUTES.CUSTOMERS;
 
   const archive = usePartyArchive(id);
   /* The header's ⋯. Every dialog it opens returns focus here when it closes,
@@ -254,8 +269,8 @@ export function PartyDetailPageContent({
   }, [copied]);
 
   const backToList = useCallback(
-    () => router.push(peopleHref ?? ROUTES.CUSTOMERS),
-    [router, peopleHref]
+    () => router.push(shopBook ? origin : (peopleHref ?? ROUTES.CUSTOMERS)),
+    [router, peopleHref, shopBook, origin]
   );
   const openEdit = useCallback(() => {
     if (party) partyForm.openEdit(party as PartyDetail);
@@ -271,7 +286,7 @@ export function PartyDetailPageContent({
      `shown?.lastActivityAt`: the React compiler cannot preserve a memo whose
      dependency is an optional chain, and it says so rather than silently
      dropping the memoisation. */
-  const lastActivityAt = shown?.lastActivityAt ?? null;
+  const lastActivityAt = (shopBook ? shown?.shop?.lastActivityAt : shown?.lastActivityAt) ?? null;
   /* A6 — the roles worded once, from each module's catalogue (singular). */
   const roleBadges = party?.roleBadges;
   const roleLabels = useMemo(
@@ -294,7 +309,9 @@ export function PartyDetailPageContent({
       ? {
           id,
           name: party.name,
-          balance: shopBook ? (party.shop?.customerBalance ?? '0.00') : (summary?.balance ?? party.balance),
+          balance: shopBook
+            ? (party.shop?.customerBalance ?? '0.00')
+            : (summary?.balance ?? party.balance),
           mobile: party.mobile,
           isArchived,
         }
@@ -347,26 +364,32 @@ export function PartyDetailPageContent({
 
   // Shop gap §1.6 — price lists are for the customers a shop bills.
   const showPriceList =
-    !!party && hasModule('inventory') && can('inventory.item.read') && shown.isCustomer;
+    !!party &&
+    hasModule('inventory') &&
+    can('inventory.item.read') &&
+    shown.isCustomer &&
+    (!shopBook || !supplierView);
+  const collectionControl = party ? (
+    <PartyCollectionDate
+      t={t}
+      value={party.collectionDate}
+      onChange={setCollectionDate}
+      saving={collectionStatus === 'loading'}
+      /* Archived is read-only (FR-14), and so is a role that cannot write
+             a party. Both are shown as text rather than as a disabled picker:
+             a greyed-out control invites a merchant to work out why. */
+      disabled={isArchived || !partyForm.canWrite}
+      formatted={party.collectionDate ? d(party.collectionDate) : null}
+    />
+  ) : null;
   const infoPanel = party ? (
     <PartyInfoPanel
       t={t}
+      shop={shopBook}
       party={party}
       addedOn={party.createdAt ? d(party.createdAt) : null}
       lastActivity={asOf}
-      collectionControl={
-        <PartyCollectionDate
-          t={t}
-          value={party.collectionDate}
-          onChange={setCollectionDate}
-          saving={collectionStatus === 'loading'}
-          /* Archived is read-only (FR-14), and so is a role that cannot write
-             a party. Both are shown as text rather than as a disabled picker:
-             a greyed-out control invites a merchant to work out why. */
-          disabled={isArchived || !partyForm.canWrite}
-          formatted={party.collectionDate ? d(party.collectionDate) : null}
-        />
-      }
+      collectionControl={shopBook ? undefined : collectionControl}
       priceListControl={
         showPriceList ? (
           <PartyPriceListControl
@@ -396,9 +419,9 @@ export function PartyDetailPageContent({
   const shopFacts = shown.shop;
   const balanceNow = shopBook
     ? shopFacts
-      ? shown.isCustomer
-        ? shopFacts.customerBalance
-        : subtractMoney('0.00', shopFacts.supplierBalance)
+      ? supplierView
+        ? subtractMoney('0.00', shopFacts.supplierBalance)
+        : shopFacts.customerBalance
       : party
         ? (party.shopBalance ?? '0.00')
         : shown.balance
@@ -427,6 +450,23 @@ export function PartyDetailPageContent({
     !udhaarApp &&
     hasModule('payments') &&
     can('payments.payment.read');
+  const canSell = hasModule('sales') && can('sales.invoice.write');
+  const canPurchase = hasModule('purchases') && can('purchases.bill.write');
+  const shopActions =
+    party && !isArchived && (canPay || (supplierView ? canPurchase : canSell)) ? (
+      <ShopPersonActions
+        t={t}
+        id={id}
+        name={shown.name}
+        kind={supplierView ? 'supplier' : 'customer'}
+        canPay={canPay}
+        opening={paying !== null}
+        canSell={canSell}
+        canPurchase={canPurchase}
+        receive={() => setPaying({})}
+        pay={() => setPaying({ direction: 'out' })}
+      />
+    ) : null;
   const entryPair = (
     <>
       <UbButton variant="primary" onClick={() => entryForm.openEntry(id, 'debit')}>
@@ -440,10 +480,22 @@ export function PartyDetailPageContent({
 
   return (
     <UbPageShell
+      className={shopBook && shopActions ? 'pb-[var(--ub-bottom-inset)] lg:pb-0' : undefined}
       header={
-        <UbPageHeader
-          title={shown.name}
-          /* LED-01 FR-1 — the two actions this page exists for, and the most
+        <>
+          {shopBook && (
+            <UbLink href={origin} variant="caption" className="self-start">
+              {t(
+                origin === ROUTES.SUPPLIERS
+                  ? 'parties.detail.backToSuppliers'
+                  : 'parties.detail.backToList'
+              )}
+            </UbLink>
+          )}
+          <UbPageHeader
+            title={shown.name}
+            wrapTitle={shopBook}
+            /* LED-01 FR-1 — the two actions this page exists for, and the most
              frequent thing anybody does in this product. They stay as BUTTONS
              while everything else moved behind the menu, because the target
              is eight seconds from tapping the party to the entry being saved
@@ -453,43 +505,48 @@ export function PartyDetailPageContent({
 
              Hidden rather than disabled when the role cannot write (§19.7.5 /
              R-SEC-2): a greyed button with a tooltip is a support call. */
-          primaryActions={canRecord ? entryPair : undefined}
-          primaryActionsRef={pairRef}
-          /* docs/mobile-redesign (A9) — on a phone the pair lives in the dock
+            primaryActions={shopBook ? shopActions : canRecord ? entryPair : undefined}
+            primaryActionsRef={pairRef}
+            /* docs/mobile-redesign (A9) — on a phone the pair lives in the dock
              at the bottom from the first moment, not only after scrolling. */
-          dockPrimaryActions
-          actions={
-            /* Edit, Add opening balance and Archive. All three are things done
+            dockPrimaryActions
+            actions={
+              /* Edit, Add opening balance and Archive. All three are things done
                once a month or once in a party's life, and at five buttons the
                row ran 275 px off the right edge of a 360 px phone — see
                `PartyHeaderMenu` for the whole story. Archive is still on THIS
                screen, which was PTY-04's argument: a merchant filing somebody
                away is looking at the balance while they decide. Hidden for an
                archived party, whose flow is PTY-04's Restore. */
-            party && !isArchived ? (
-              <PartyHeaderMenu
-                t={t}
-                triggerRef={moreRef}
-                statementHref={canReadLedger ? partyStatementPath(id, book) : undefined}
-                onRemind={reminder.canRemind ? reminder.openSheet : undefined}
-                /* Money in for a customer (or a party marked as neither);
+              party && !isArchived ? (
+                <PartyHeaderMenu
+                  t={t}
+                  triggerRef={moreRef}
+                  statementHref={
+                    canReadLedger && !shopBook ? partyStatementPath(id, book) : undefined
+                  }
+                  onRemind={reminder.canRemind && !supplierView ? reminder.openSheet : undefined}
+                  /* Money in for a customer (or a party marked as neither);
                    money out for a supplier. A party that is both gets both. */
-                onRecordPayment={
-                  canPay && (shown.isCustomer || !shown.isSupplier)
-                    ? () => setPaying({})
-                    : undefined
-                }
-                onPaySupplier={
-                  canPay && shown.isSupplier ? () => setPaying({ direction: 'out' }) : undefined
-                }
-                onCollect={canCollect ? () => setCollecting(true) : undefined}
-                onEdit={partyForm.canEdit ? openEdit : undefined}
-                onAddOpening={opening.canAdd && !shopBook ? opening.openDrawer : undefined}
-                onArchive={archive.canArchive ? archive.open : undefined}
-              />
-            ) : undefined
-          }
-        />
+                  onRecordPayment={
+                    canPay && (!shopBook ? shown.isCustomer || !shown.isSupplier : !supplierView)
+                      ? () => setPaying({})
+                      : undefined
+                  }
+                  onPaySupplier={
+                    canPay && (!shopBook ? shown.isSupplier : supplierView)
+                      ? () => setPaying({ direction: 'out' })
+                      : undefined
+                  }
+                  onCollect={canCollect && !supplierView ? () => setCollecting(true) : undefined}
+                  onEdit={partyForm.canEdit ? openEdit : undefined}
+                  onAddOpening={opening.canAdd && !shopBook ? opening.openDrawer : undefined}
+                  onArchive={archive.canArchive ? archive.open : undefined}
+                />
+              ) : undefined
+            }
+          />
+        </>
       }
     >
       <UbStack gap={4}>
@@ -518,63 +575,117 @@ export function PartyDetailPageContent({
           />
         )}
 
-        <UbCard>
-          <UbBox>
-            <PartyDetailHeader
-              t={headerT}
-              name={shown.name}
-              balance={balanceNow}
-              shopBalances={
-                shopBook && shopFacts && shown.isCustomer && shown.isSupplier
-                  ? {
-                      customer: shopFacts.customerBalance,
-                      supplier: subtractMoney('0.00', shopFacts.supplierBalance),
-                    }
-                  : undefined
-              }
-              displayCode={shown.displayCode}
-              mobile={shown.mobile}
-              isCustomer={shown.isCustomer}
-              isSupplier={shown.isSupplier}
-              asOf={asOf}
-              credit={shopBook ? null : credit}
-              tags={shown.tags}
-              pending={status === 'loading' || status === 'refreshing'}
-              onCopyMobile={handleCopyMobile}
-              copied={copied}
+        {shopBook ? (
+          <UbStack gap={2}>
+            <ShopPersonOverview
+              party={shown}
+              supplier={supplierView}
+              fallbackBalance={balanceNow}
               roleLabels={roleLabels}
+              t={t}
+              pending={status === 'loading' || status === 'refreshing'}
+              onCopy={handleCopyMobile}
+              copied={copied}
             />
-            {/* LED-06 FR-6 — "did I already ask?", answered where the balance
+            <UbStack direction="row" wrap gap={4} align="start" justify="between">
+              {party && canReadLedger && !supplierView && (
+                <PartyReminderStripLazy partyId={id} book="shop" />
+              )}
+              {!supplierView && collectionControl && (
+                <UbDisclosure
+                  className="w-full sm:max-w-sm"
+                  label={`${t('parties.detail.collection.label')}${party?.collectionDate ? ` · ${d(party.collectionDate)}` : ''}`}
+                >
+                  {collectionControl}
+                </UbDisclosure>
+              )}
+            </UbStack>
+          </UbStack>
+        ) : (
+          <UbCard>
+            <UbBox>
+              <PartyDetailHeader
+                t={headerT}
+                name={shown.name}
+                balance={balanceNow}
+                displayCode={shown.displayCode}
+                mobile={shown.mobile}
+                isCustomer={shown.isCustomer}
+                isSupplier={shown.isSupplier}
+                asOf={asOf}
+                credit={shopBook ? null : credit}
+                tags={shown.tags}
+                pending={status === 'loading' || status === 'refreshing'}
+                onCopyMobile={handleCopyMobile}
+                copied={copied}
+                roleLabels={roleLabels}
+              />
+              {/* LED-06 FR-6 — "did I already ask?", answered where the balance
                 is. Its own chunk: it carries the reminders slice, and a khata
                 that is only read should not wait on it to paint. */}
-            {party && canReadLedger && (
-              <UbBox className="mt-3 border-t border-border-hairline pt-3">
-                <PartyReminderStripLazy partyId={id} book={shopBook ? 'shop' : 'main'} />
-              </UbBox>
-            )}
-          </UbBox>
-        </UbCard>
+              {party && canReadLedger && (
+                <UbBox className="mt-3 border-t border-border-hairline pt-3">
+                  <PartyReminderStripLazy partyId={id} book={shopBook ? 'shop' : 'main'} />
+                </UbBox>
+              )}
+            </UbBox>
+          </UbCard>
+        )}
 
         {/* Two columns from `lg`, one below it, with the rail on the right and
             sticky — FRD §7's desktop layout. On a phone the same content is a
             collapsible under the header, collapsed by default, because the
             merchant came here for the balance and the transactions and not for
             the GSTIN. */}
-        <UbBox className="flex flex-col gap-4 lg:flex-row lg:items-start">
+        <UbBox
+          className={
+            shopBook ? 'flex flex-col gap-4' : 'flex flex-col gap-4 lg:flex-row lg:items-start'
+          }
+        >
+          {shopBook && <UbDisclosure label={t('parties.detail.details')}>{infoPanel}</UbDisclosure>}
           <UbStack gap={4} className="min-w-0 flex-1">
             {/* The ledger feature's own component, and deliberately not a
                 generic one lifted into the design system: it knows what a debit
                 reads like and when an author is worth naming, neither of which
                 a `UbTimeline` could know. It renders nothing at all when the
                 tenant has not enabled the ledger module. */}
-            <PartyLedgerTimeline partyId={id} readOnly={isArchived} book={book} />
+            {shopBook && !supplierView && hasModule('sales') && can('sales.invoice.read') && (
+              <ShopPersonRecordsLazy key={`${id}:customer`} partyId={id} />
+            )}
+            {shopBook && supplierView && hasModule('purchases') && can('purchases.bill.read') && (
+              <ShopPersonRecordsLazy key={`${id}:supplier`} partyId={id} supplier />
+            )}
+            {shopBook && hasModule('payments') && can('payments.payment.read') && (
+              <ShopPersonRecordsLazy
+                key={`${id}:${supplierView}:payments`}
+                partyId={id}
+                supplier={supplierView}
+                payments
+              />
+            )}
+            {!shopBook && (
+              <PartyLedgerTimeline
+                emptyTitle={shopBook ? t('parties.person.noActivity') : undefined}
+                emptyBody={shopBook ? t('parties.person.activityHint') : undefined}
+                partyId={id}
+                readOnly={isArchived}
+                book={book}
+                title={shopBook ? t('parties.person.activityTitle') : undefined}
+              />
+            )}
           </UbStack>
 
-          <UbBox className="w-full lg:sticky lg:top-6 lg:w-[320px] lg:shrink-0">
-            <UbBox className="hidden lg:block">{infoPanel}</UbBox>
-            <UbBox className="lg:hidden">
-              <UbDisclosure label={t('parties.detail.details')}>{infoPanel}</UbDisclosure>
-            </UbBox>
+          <UbBox
+            className={shopBook ? 'w-full' : 'w-full lg:sticky lg:top-6 lg:w-[320px] lg:shrink-0'}
+          >
+            {!shopBook && (
+              <>
+                <UbBox className="hidden lg:block">{infoPanel}</UbBox>
+                <UbBox className="lg:hidden">
+                  <UbDisclosure label={t('parties.detail.details')}>{infoPanel}</UbDisclosure>
+                </UbBox>
+              </>
+            )}
             {/* A6 — below the info panel at every width: the relations section
                 exists only while a module with roles is on (the detail's
                 `roles` key). */}
@@ -612,6 +723,17 @@ export function PartyDetailPageContent({
             what they owe, green lowers it) like every khata a merchant has
             used. On a desktop nothing changed: the dock still only follows a
             scrolled-away pair, and it is `lg:hidden` there anyway. */}
+        {shopBook && shopActions && (
+          <UbBottomBar
+            sticky={false}
+            role="region"
+            aria-label={t('parties.person.actions', { name: shown.name })}
+            data-testid="shop-person-dock"
+            className="fixed inset-x-0 bottom-0 z-20 border-t border-border-hairline bg-surface-card px-4 pb-[calc(0.75rem+env(safe-area-inset-bottom,0px))] pt-3 lg:hidden"
+          >
+            {shopActions}
+          </UbBottomBar>
+        )}
         {canRecord && (isMobileLayer || pairScrolledPast) && (
           <UbBottomBar
             data-testid="khata-dock"
@@ -658,7 +780,9 @@ export function PartyDetailPageContent({
           carries React Hook Form's resolver, the Yup schema and the controls,
           and putting it in the route's own chunk charges every merchant who
           opened this page to READ it. */}
-      {partyForm.open && <PartyFormDrawerLazy form={partyForm} returnFocusRef={moreRef} />}
+      {partyForm.open && (
+        <PartyFormDrawerLazy form={partyForm} shop={shopBook} returnFocusRef={moreRef} />
+      )}
 
       {entryForm.open && <LedgerEntryDrawerLazy form={entryForm} partyName={shown.name} />}
 
@@ -666,6 +790,7 @@ export function PartyDetailPageContent({
         <PaymentFormDrawerLazy
           context={{
             direction: paying.direction ?? 'in',
+            bucket: shopBook ? 'shop' : undefined,
             partyId: id,
             partyName: shown.name,
             receivable: paying.direction === 'out' ? payable : receivable,
@@ -735,25 +860,35 @@ export function PartyDetailPageContent({
           onClose={archive.close}
           returnFocusRef={moreRef}
           savingFrom={archive.savingFrom}
-          canWriteOff={archive.canWriteOff}
+          shop={shopBook}
+          canWriteOff={!shopBook && archive.canWriteOff}
           onStartWriteOff={archive.startWriteOff}
           onCancelWriteOff={archive.cancelWriteOff}
           onConfirmWriteOff={archive.confirmWriteOff}
           onRecordPayment={
-            entryForm.canWrite
-              ? () => {
-                  /* The direction that SETTLES the balance: they owe you, so
+            shopBook
+              ? canPay && archive.openRecords?.module === 'sales'
+                ? () => {
+                    archive.close();
+                    setPaying({
+                      direction: supplierView ? 'out' : undefined,
+                    });
+                  }
+                : undefined
+              : entryForm.canWrite
+                ? () => {
+                    /* The direction that SETTLES the balance: they owe you, so
                    money comes in (You got); you owe them, so it goes out. */
-                  const direction = archive.blocked?.label === 'payable' ? 'debit' : 'credit';
-                  /* The magnitude the dialog just showed, prefilled and still
+                    const direction = archive.blocked?.label === 'payable' ? 'debit' : 'credit';
+                    /* The magnitude the dialog just showed, prefilled and still
                      editable — a part payment is the common case, but typing
                      back a figure the merchant was shown a second ago is the
                      uncommon kind of work (UAT). */
-                  const amount = archive.blocked?.magnitude ?? null;
-                  archive.close();
-                  entryForm.openEntry(id, direction, { amount });
-                }
-              : undefined
+                    const amount = archive.blocked?.magnitude ?? null;
+                    archive.close();
+                    entryForm.openEntry(id, direction, { amount });
+                  }
+                : undefined
           }
         />
       )}

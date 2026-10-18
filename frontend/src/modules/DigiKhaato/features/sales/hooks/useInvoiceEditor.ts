@@ -2,12 +2,14 @@
 
 import { useCallback, useEffect, useMemo, useRef } from 'react';
 
+
 import { useForm, useWatch, type UseFormReturn } from 'react-hook-form';
 import { useStore } from 'react-redux';
 
 import { useAppDispatch, useAppSelector } from 'src/hooks/useAppStore';
 import { useDraftSaveQueue } from 'src/hooks/useDraftSaveQueue';
 import { useIdempotencyKey } from 'src/hooks/useIdempotencyKey';
+import { usePartyEditorSeed } from 'src/hooks/usePartyEditorSeed';
 import { usePermissions } from 'src/hooks/usePermissions';
 import { useTranslation } from 'src/hooks/useTranslation';
 import {
@@ -81,6 +83,7 @@ export const useInvoiceEditor = (
   documentId: string | null,
   kind: EditorKind = 'invoice'
 ): UseInvoiceEditorResult => {
+  const { partyId: initialParty, partyName: initialPartyName } = usePartyEditorSeed();
   const dispatch = useAppDispatch();
   const store = useStore<RootState>();
   const tenant = useAppSelector(selectActiveTenant);
@@ -156,15 +159,18 @@ export const useInvoiceEditor = (
     }
     if (context && seeded.current !== 'new') {
       seeded.current = 'new';
+      const initial = emptyInvoiceForm(
+        today,
+        kind === 'delivery_challan' ? 'party' : defaultBillingMode(context.businessType),
+        context.stateCode
+      );
       form.reset(
-        emptyInvoiceForm(
-          today,
-          kind === 'delivery_challan' ? 'party' : defaultBillingMode(context.businessType),
-          context.stateCode
-        )
+        initialParty
+          ? { ...initial, mode: 'party', partyId: initialParty, partyName: initialPartyName, placeOfSupplyState: '' }
+          : initial
       );
     }
-  }, [documentId, document, context, form, today, kind]);
+  }, [documentId, document, context, form, today, kind, initialParty, initialPartyName]);
 
   // FR-17 — rates are by the bill's date; a changed date re-reads them.
   const documentDate = values.documentDate;

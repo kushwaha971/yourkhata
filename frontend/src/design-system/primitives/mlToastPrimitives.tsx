@@ -57,6 +57,8 @@ export const MLToaster = forwardRef<HTMLDivElement, MLToasterProps>(function MLT
       className={cn(
         'pointer-events-none fixed inset-x-0 bottom-toast z-[2000] px-4',
         'lg:bottom-auto lg:left-auto lg:right-0 lg:top-[var(--ub-toast-top)] lg:w-[452px]',
+        // A modal's primary actions must stay above a global error toast.
+        '[body:has([role=dialog])_&]:bottom-toast [body:has([role=dialog])_&]:top-auto',
         className
       )}
       style={{ ...style, '--ub-toast-top': `${top}px` } as CSSProperties}

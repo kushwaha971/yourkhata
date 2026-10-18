@@ -25,6 +25,7 @@ Last updated: 18 Oct 2026, on `dev`.
 | — | [AGENT_START_PROMPT.md](AGENT_START_PROMPT.md) | the prompt to give any coding agent (Codex, Cursor, Claude Code, others) to continue this work the same way | current |
 | — | [design/counter-mode.html](design/counter-mode.html) | the visual reference page (open in a browser) | current |
 | — | [Customers implementation evidence](../performance/2026-10-18-p5-customers.md) | screenshots, 108 browser cases, regression gates, measured performance/bundle cost, provisional score and remaining gaps | Customers piece verified; whole revamp ongoing |
+| — | [Shop person implementation evidence](../performance/2026-10-18-p5-shop-person.md) | role-specific product decisions, reused components, browser/regression gates, costs and statement gap | person piece corrected under R-DEC-14; shared-book privacy gap recorded as BP-11; Suppliers list next |
 
 ## Where this sits among older plans
 

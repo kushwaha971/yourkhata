@@ -61,6 +61,7 @@ import 'src/i18n/catalogues/parties';
  */
 export interface PartyArchiveDialogProps {
   readonly t: TranslateFn;
+  readonly shop?: boolean;
   readonly name: string;
   readonly stage: ArchiveStage;
   readonly blocked: BlockedBalance | null;
@@ -83,6 +84,7 @@ export interface PartyArchiveDialogProps {
 
 function PartyArchiveDialogBase({
   t,
+  shop = false,
   name,
   stage,
   blocked,
@@ -196,9 +198,12 @@ function PartyArchiveDialogBase({
         isOpenRecords ? (
           /* Nothing to do here but close: the next step is in the module that
              holds the records, and the sentence above names it. */
+          <>
           <UbButton variant="secondary" onClick={onClose} autoFocus>
             {t('common.action.close')}
           </UbButton>
+          {shop && openRecords?.module === 'sales' && onRecordPayment && <UbButton onClick={onRecordPayment}>{t('parties.person.openPayment')}</UbButton>}
+          </>
         ) : isWriteOff ? (
           <>
             <UbButton variant="secondary" onClick={onCancelWriteOff} disabled={saving} autoFocus>
@@ -237,9 +242,9 @@ function PartyArchiveDialogBase({
                 {t('parties.writeOff.action', { amount: amountText })}
               </UbButton>
             )}
-            {isBlocked && onRecordPayment && (
+            {isBlocked && !shop && onRecordPayment && (
               <UbButton variant="primary" onClick={onRecordPayment}>
-                {t('parties.archive.recordPayment')}
+                {t(shop ? 'parties.person.openPayment' : 'parties.archive.recordPayment')}
               </UbButton>
             )}
             {!isBlocked && (
@@ -293,7 +298,7 @@ function PartyArchiveDialogBase({
                   : 'parties.list.balance.payable'
               )}
             />
-            <UbText variant="body-sm">{t('parties.archive.blocked.body')}</UbText>
+            <UbText variant="body-sm">{t(shop ? 'parties.person.archiveOtherBook' : 'parties.archive.blocked.body')}</UbText>
             <UbText variant="caption" tone="tertiary">
               {t(
                 blocked.loanOpen

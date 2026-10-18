@@ -23,6 +23,20 @@ class PaymentFilterSet(BaseTenantFilterSet):
         field_name="direction", choices=PaymentDirection.choices
     )
     party_id = django_filters.UUIDFilter(field_name="party_id")
+    trade_role = django_filters.ChoiceFilter(
+        method="filter_trade_role", choices=(("customer", "Customer"), ("supplier", "Supplier"))
+    )
+
+    def filter_trade_role(self, queryset: QuerySet, name: str, value: Any) -> QuerySet:
+        """BP-09: receipts/payments for one Shop role; refunds are not supplier payments."""
+        direction = "in" if value == "customer" else "out"
+        rows = queryset.filter(bucket=LedgerBucket.SHOP, direction=direction)
+        return (
+            rows.exclude(meta__has_key="credit_note_id")
+            .exclude(meta__has_key="debit_note_id")
+            .exclude(Q(meta__has_key="context") & Q(meta__context__endswith="_refund"))
+        )
+
     date_from = django_filters.DateFilter(field_name="payment_date", lookup_expr="gte")
     date_to = django_filters.DateFilter(field_name="payment_date", lookup_expr="lte")
     #: A split payment matches every mode it carries (PAY-02 FR-7), not only its primary.

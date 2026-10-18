@@ -95,10 +95,16 @@ const ReverseEntryDialogLazy = dynamic(
  */
 export function PartyLedgerTimeline({
   partyId,
+  title,
+  emptyTitle,
+  emptyBody,
   readOnly: archivedReadOnly = false,
   book = 'main',
 }: Readonly<{
   partyId: string;
+  title?: string;
+  emptyTitle?: string;
+  emptyBody?: string;
   /**
    * DEC-019 — the open app's book. On the Shop's (`shop`) the rows are bills,
    * returns and payments, each fixed by its document: nothing is corrected from
@@ -144,7 +150,7 @@ export function PartyLedgerTimeline({
        padding around every line. */
     <UbStack gap={3}>
       <UbSectionHeading
-        title={t('ledger.timeline.title')}
+        title={title ?? t('ledger.timeline.title')}
         meta={
           hasEntries
             ? t('ledger.timeline.count', { count: ledger.summary?.entryCount ?? 0 })
@@ -251,10 +257,10 @@ export function PartyLedgerTimeline({
           <UbBox className="p-4">
             <UbEmptyState
               variant="firstUse"
-              title={t(
+              title={emptyTitle ?? t(
                 shopBook ? 'ledger.timeline.shop.empty.title' : 'ledger.timeline.empty.title'
               )}
-              description={t(
+              description={emptyBody ?? t(
                 shopBook ? 'ledger.timeline.shop.empty.body' : 'ledger.timeline.empty.body'
               )}
             />
@@ -276,6 +282,7 @@ export function PartyLedgerTimeline({
                 {index > 0 && <UbDivider />}
                 <EntryRow
                   entry={entry}
+                  shop={shopBook}
                   t={t}
                   viewerId={viewerId}
                   wasCorrected={ledger.superseded.has(entry.id)}
@@ -332,12 +339,14 @@ export function PartyLedgerTimeline({
  */
 function EntryRow({
   entry,
+  shop,
   t,
   viewerId,
   wasCorrected,
   onOpenMenu,
 }: Readonly<{
   entry: LedgerEntry;
+  shop?: boolean;
   t: TranslateFn;
   viewerId: string | null;
   /** True when another loaded row supersedes this one — see the badge below. */
@@ -353,14 +362,19 @@ function EntryRow({
   const bucketBadge = bucketBadgeId(entry.bucket);
   const caption = useMemo(() => entryCaption(entry, t, viewerId), [entry, t, viewerId]);
   const reason = entryReason(entry);
-  const balanceCaption = entryBalanceCaption(entry, t);
+  const balanceCaption = shop ? null : entryBalanceCaption(entry, t);
   const reversed = entry.status === 'reversed';
   const isOpening = isOpeningEntry(entry);
 
   return (
     // `relative` so the row's menu button can stretch its tap target over the
     // whole row on a phone (below) — the row is what a thumb aims at.
-    <UbStack direction="row" justify="between" align="start" className="gap-3 py-3 max-lg:relative">
+    <UbStack
+      direction="row"
+      justify="between"
+      align="start"
+      className={shop ? 'flex-wrap gap-3 py-3 max-lg:relative' : 'gap-3 py-3 max-lg:relative'}
+    >
       <UbStack gap={1} className="min-w-0 flex-1">
         {/* The title has the LINE TO ITSELF, and it wraps rather than truncates.
  
@@ -381,8 +395,8 @@ function EntryRow({
           variant="body"
           className={
             reversed
-              ? 'line-clamp-2 break-words line-through opacity-60'
-              : 'line-clamp-2 break-words'
+              ? `${shop ? '' : 'line-clamp-2'} break-words line-through opacity-60`
+              : `${shop ? '' : 'line-clamp-2'} break-words`
           }
         >
           {khataEntryTitle(entry, t)}
@@ -438,7 +452,11 @@ function EntryRow({
               since carries "Void" beside its number (§9). */}
           {entry.source && <EntrySourceLink source={entry.source} t={t} />}
           {caption && (
-            <UbText variant="caption" tone="tertiary" className="min-w-0 truncate">
+            <UbText
+              variant="caption"
+              tone="tertiary"
+              className={shop ? 'min-w-0 whitespace-normal break-words' : 'min-w-0 truncate'}
+            >
               {caption}
             </UbText>
           )}

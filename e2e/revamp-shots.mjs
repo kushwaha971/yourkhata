@@ -41,6 +41,7 @@
  * Writes /tmp/e2e-shots/revamp/<piece>/<width>-<theme>-<case>-<when>.png.
  * Same sign-in and stack as perf-app.mjs (the seed_scale owner).
  */
+import { closeBrowserWithDeadline } from './browser-cleanup.mjs';
 import { createRequire } from 'node:module';
 import { mkdirSync } from 'node:fs';
 
@@ -433,7 +434,11 @@ async function shootApps() {
   }
 }
 
-if (PIECE === 'customers') {
+if (PIECE === 'person') {
+  const { shootPerson } = await import('./revamp-person.mjs');
+  await shootPerson({ signedInContext, widths: WIDTHS, themes: THEMES, locale: LOCALE, dir: DIR, frontend: FRONTEND, failures, baseline: process.argv.includes('--baseline') });
+}
+else if (PIECE === 'customers') {
   const { shootCustomers } = await import('./revamp-customers.mjs');
   await shootCustomers({ signedInContext, widths: WIDTHS, themes: THEMES, locale: LOCALE, dir: DIR, frontend: FRONTEND, failures, baseline: process.argv.includes('--baseline') });
 }
@@ -475,6 +480,6 @@ else for (const width of WIDTHS) {
     await ctx.close();
   }
 }
-await browser.close();
 console.log(failures.length ? `\nFAIL ${failures.length}\n${failures.join('\n')}` : '\nall cases passed');
+await closeBrowserWithDeadline(browser);
 process.exit(failures.length ? 1 : 0);

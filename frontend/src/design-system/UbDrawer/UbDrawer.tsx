@@ -60,6 +60,8 @@ export interface UbDrawerProps {
    */
   readonly returnFocusRef?: RefObject<HTMLElement | null>;
   readonly className?: string;
+  /** Opt-in keyboard-safe form sheet; other overlays retain their geometry. */
+  readonly keyboardAware?: boolean;
 }
 
 function UbDrawerBase({
@@ -73,6 +75,7 @@ function UbDrawerBase({
   footer,
   returnFocusRef,
   className,
+  keyboardAware,
 }: Readonly<UbDrawerProps>) {
   const id = useId();
   const titleId = `${id}-title`;
@@ -86,6 +89,7 @@ function UbDrawerBase({
       describedBy={description ? descriptionId : undefined}
       dismissOnBackdrop={dismissOnBackdrop}
       placement="drawer"
+      keyboardAware={keyboardAware}
       returnFocusRef={returnFocusRef}
       className={className}
     >

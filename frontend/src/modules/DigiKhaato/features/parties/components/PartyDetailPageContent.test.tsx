@@ -79,9 +79,11 @@ const partyService = jest.requireMock('../api/partyService') as {
 };
 
 const mockPush = jest.fn();
+let mockPersonSearch = '';
+afterEach(() => { mockPersonSearch = ''; });
 jest.mock('next/navigation', () => ({
   useRouter: () => ({ push: mockPush, replace: jest.fn(), back: jest.fn(), prefetch: jest.fn() }),
-  useSearchParams: () => new URLSearchParams(''),
+  useSearchParams: () => new URLSearchParams(mockPersonSearch),
   usePathname: () => '/parties/p1',
 }));
 
@@ -562,6 +564,16 @@ describe('opened from the Shop (DEC-019)', () => {
       'shop'
     );
 
+  it('keeps secondary Shop contact settings collapsed rather than in a permanent right rail', async () => {
+    /** R-DEC-14: the old desktop layout duplicated the phone number and competed with the bills. */
+    shopSession();
+    renderWithProviders(<PartyDetailPageContent id={ID} />);
+    await screen.findByText('Ramesh Traders');
+    const details = screen.getByRole('button', { name: 'Details' });
+    expect(details).toHaveAttribute('aria-expanded', 'false');
+    expect(screen.queryByRole('complementary')).not.toBeInTheDocument();
+  });
+
   it('shows what is due on bills in the Shop’s words, not the udhaar figure', async () => {
     shopSession();
     partyService.getParty.mockResolvedValue({
@@ -599,6 +611,39 @@ describe('opened from the Shop (DEC-019)', () => {
       { partyId: ID, book: 'shop', page: 1, pageSize: 5 }, expect.anything());
   }, 15000);
 
+  /** Person revamp: the main payment action is reachable without opening overflow. */
+  it('puts role-specific actions on the Shop page and preserves the selected billing person', async () => {
+    shopSession();
+    const current = store.getState().session;
+    if (!current.user) throw new Error('Expected signed-in fixture');
+    store.dispatch(sessionLoaded({ ...current, user: current.user,
+      enabledModules: [...current.enabledModules, 'payments'],
+      permissions: [...current.permissions, 'payments.payment.write'] }));
+    renderWithProviders(<PartyDetailPageContent id={ID} />);
+    await screen.findByTestId('shop-person-overview');
+    const dock = screen.getByTestId('shop-person-dock');
+    expect(within(dock).getByRole('button', { name: 'Receive payment' })).toBeInTheDocument();
+    expect(screen.queryByText('You gave in all')).not.toBeInTheDocument();
+    expect(screen.queryByText('Credit limit')).not.toBeInTheDocument();
+  });
+
+  /** Owner: Customers, Suppliers and Udhaar are separate tasks, even for one contact. */
+  it.each([['', '₹1,000.00', '₹600.00'], ['from=suppliers', '₹600.00', '₹1,000.00']])(
+    'shows only the selected role amount for a dual-role person (%s)', async (query, shown, hidden) => {
+      mockPersonSearch = query;
+      shopSession();
+      partyService.getParty.mockResolvedValue({ ...RESULT, party: { ...PARTY, isSupplier: true,
+        shop: { customerBalance: '1000.00', supplierBalance: '600.00', customerDue: '1000.00', customerCredit: '0', supplierDue: '600', supplierCredit: '0', daysOverdue: 42, oldestDueOn: null, lastActivityAt: null, lastActivityKind: null } } });
+      renderWithProviders(<PartyDetailPageContent id={ID} />);
+      const overview = await screen.findByTestId('shop-person-overview');
+      expect(within(overview).getByText(shown)).toBeInTheDocument();
+      expect(within(overview).queryByText(hidden)).not.toBeInTheDocument();
+      expect(within(overview).queryByText('As a customer')).not.toBeInTheDocument();
+      expect(within(overview).queryByText('As a supplier')).not.toBeInTheDocument();
+      await openMenu(userEvent.setup());
+      expect(screen.queryByRole('link', { name: 'Statement' })).not.toBeInTheDocument();
+    });
+
   it('offers no You gave / You got, and reads the Shop’s lines', async () => {
     shopSession();
     renderWithProviders(<PartyDetailPageContent id={ID} />);
@@ -606,13 +651,7 @@ describe('opened from the Shop (DEC-019)', () => {
     expect(await screen.findByText('Ramesh Traders')).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /You gave/ })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /You got/ })).not.toBeInTheDocument();
-    await waitFor(() =>
-      expect(ledgerService.listPartyEntries).toHaveBeenCalledWith(
-        ID,
-        expect.objectContaining({ book: 'shop' }),
-        expect.anything()
-      )
-    );
+    expect(ledgerService.listPartyEntries).not.toHaveBeenCalled();
   });
 });
 

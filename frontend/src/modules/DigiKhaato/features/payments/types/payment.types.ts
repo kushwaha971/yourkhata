@@ -227,6 +227,8 @@ export interface PaymentSaveResult {
 export type PaymentTab = 'all' | 'in' | 'out' | 'void';
 
 export interface PaymentFilters {
+  readonly tradeRole?: 'customer' | 'supplier';
+  readonly status?: PaymentStatus;
   /** Person workspaces always name both the person and the app's own book. */
   readonly partyId?: string;
   readonly bucket?: PaymentBucket;

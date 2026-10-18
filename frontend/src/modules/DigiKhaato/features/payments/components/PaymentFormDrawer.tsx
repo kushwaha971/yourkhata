@@ -8,6 +8,8 @@ import { useForm, useWatch } from 'react-hook-form';
 import { CompactDrawer as UbDrawer } from 'src/components/records/CompactOverlays';
 import {
   UbActionLink,
+  UbAmount,
+  UbDisclosure,
   UbButton,
   UbChoiceChips,
   UbConfirmDialog,
@@ -26,7 +28,7 @@ import { selectTenantTimezone } from 'src/redux/slice/sessionSlice';
 import { ROUTES } from 'src/routes';
 import { PAYMENT_MODES, type PaymentMode } from 'src/types/domain.types';
 import { addDaysIso, todayInTenantTz } from 'src/utils/dates';
-import { compareMoney, formatAmount } from 'src/utils/money';
+import { compareMoney, formatAmount, subtractMoney } from 'src/utils/money';
 
 import { ExpensePartyField } from '../../expenses/components/ExpensePartyField';
 import { LAST_MODE_KEY } from '../constants/paymentConstants';
@@ -96,6 +98,7 @@ export function PaymentFormDrawer({
   const { canWrite, isSaving, formErrors, openDocuments, openStatus, loadOpenDocuments, submit } =
     payment;
   const [saved, setSaved] = useState<PaymentSaveResult | null>(null);
+  const [discardOpen, setDiscardOpen] = useState(false);
   const [earlyPayment, setEarlyPayment] = useState<PaymentFormValues | null>(null);
 
   const today = useMemo(() => todayInTenantTz(timezone ?? undefined), [timezone]);
@@ -135,6 +138,41 @@ export function PaymentFormDrawer({
   const partyName = useWatch({ control: form.control, name: 'partyName' });
   const lines = useWatch({ control: form.control, name: 'lines' });
   const total = linesTotal(lines ?? []);
+  const counter = context.bucket === 'shop';
+  const amountLeft = subtractMoney(context.receivable ?? context.documentDue ?? '0', total);
+  const afterLabel =
+    compareMoney(amountLeft, '0') < 0 ? 'payments.counter.advance' : 'payments.counter.left';
+  const drawerClass = counter ? `lg:w-[440px] ${className ?? ''}` : className;
+  const details = (
+    <UbStack gap={2}>
+      <UbField
+        name="paymentDate"
+        label={t('payments.date')}
+        placeholder={t('ledger.entry.date.placeholder')}
+        required
+      >
+        {(field) => (
+          <UbDateInput
+            {...field}
+            max={today}
+            quickChoicesLabel={t('ledger.entry.date.quick')}
+            quickChoices={[
+              { label: t('ledger.entry.date.today'), date: today },
+              { label: t('ledger.entry.date.yesterday'), date: yesterday },
+            ]}
+          />
+        )}
+      </UbField>
+      <UbField
+        name="note"
+        label={t('payments.note')}
+        placeholder={t('payments.note.placeholder')}
+        optionalLabel={t('common.field.optional')}
+      >
+        {(field) => <UbTextInput {...field} autoComplete="off" maxLength={255} />}
+      </UbField>
+    </UbStack>
+  );
 
   /* The rows the manual panel edits follow the open bills the server listed,
      with the invoice page's own bill preset to what is being paid, capped at
@@ -170,6 +208,8 @@ export function PaymentFormDrawer({
 
   const handleSubmit = useCallback(
     async (values: PaymentFormValues) => {
+      // Do not turn a failed bill read into an apparently intentional advance.
+      if (counter && partyId && openStatus !== 'succeeded') return;
       const amounts = values.autoAllocate
         ? fifoPreview(linesTotal(values.lines), openDocuments).allocations
         : Object.fromEntries(values.allocations.map((row) => [row.documentId, row.amount]));
@@ -192,7 +232,7 @@ export function PaymentFormDrawer({
         onSaved?.(result);
       }
     },
-    [submit, setError, onSaved, openDocuments]
+    [submit, setError, onSaved, openDocuments, counter, partyId, openStatus]
   );
 
   const directions = useMemo(
@@ -210,12 +250,19 @@ export function PaymentFormDrawer({
     ? t(out ? 'payments.record.titleOutFor' : 'payments.record.titleFor', { name: partyName })
     : t(out ? 'payments.record.titleOut' : 'payments.record.title');
 
+  const requestClose = () => {
+    if (counter && isSaving) return;
+    if (counter && formState.isDirty && !saved) setDiscardOpen(true);
+    else onClose();
+  };
+
   if (saved) {
     return (
       <UbDrawer
-        className={className}
+        className={drawerClass}
+        keyboardAware={counter}
         open
-        onOpenChange={(next) => !next && onClose()}
+        onOpenChange={(next) => !next && requestClose()}
         title={title}
         closeLabel={t('common.action.close')}
         footer={
@@ -249,26 +296,77 @@ export function PaymentFormDrawer({
 
   return (
     <UbDrawer
-      className={className}
+      className={drawerClass}
+      keyboardAware={counter}
       open
-      onOpenChange={(next) => !next && onClose()}
-      title={title}
+      onOpenChange={(next) => !next && requestClose()}
+      title={counter ? t(out ? 'payments.record.titleOut' : 'payments.counter.title') : title}
+      description={counter ? partyName || undefined : undefined}
       closeLabel={t('common.action.close')}
       dismissOnBackdrop={!formState.isDirty}
       footer={
-        <UbButton
-          type="submit"
-          form={formId}
-          busy={isSaving}
-          busyLabel={t('payments.saving')}
-          disabled={!canWrite}
-          data-testid="payment-save"
-        >
-          {t('payments.save', { amount: formatAmount(total) })}
-        </UbButton>
+        <UbStack direction="row" wrap align="center" justify="between" gap={3} className="w-full">
+          {counter && (context.receivable !== undefined || context.documentDue !== undefined) && (
+            <UbStack gap={1} role="status" className="min-w-0 max-w-[100px]">
+              <UbText variant="caption" tone="secondary">
+                {t(afterLabel)}
+              </UbText>
+              <UbAmount value={amountLeft} sign="none" size="sm" className="self-start" />
+            </UbStack>
+          )}
+          <UbStack direction="row" gap={3} wrap className="ml-auto">
+            {counter && (
+              <UbButton
+                variant="secondary"
+                onClick={requestClose}
+                disabled={isSaving}
+                className="hidden lg:inline-flex"
+              >
+                {t('common.action.cancel')}
+              </UbButton>
+            )}
+            <UbButton
+              type="submit"
+              form={formId}
+              busy={isSaving}
+              busyLabel={t('payments.saving')}
+              disabled={!canWrite || (counter && !!partyId && openStatus !== 'succeeded')}
+              data-testid="payment-save"
+            >
+              {t(
+                counter
+                  ? out
+                    ? 'payments.counter.pay'
+                    : 'payments.counter.receive'
+                  : 'payments.save',
+                { amount: formatAmount(total) }
+              )}
+            </UbButton>
+          </UbStack>
+        </UbStack>
       }
     >
-      <UbForm id={formId} form={form} onSubmit={handleSubmit} formErrors={formErrors}>
+      <UbForm
+        className={counter ? 'gap-4 [&_.min-h-5:empty]:hidden' : undefined}
+        id={formId}
+        form={form}
+        onSubmit={handleSubmit}
+        formErrors={formErrors}
+      >
+        <UbConfirmDialog
+          open={discardOpen}
+          onOpenChange={setDiscardOpen}
+          title={t('payments.counter.discardTitle')}
+          description={t('payments.counter.discardBody')}
+          confirmLabel={t('payments.counter.discard')}
+          cancelLabel={t('payments.counter.keepEditing')}
+          closeLabel={t('common.action.close')}
+          destructive={false}
+          onConfirm={() => {
+            setDiscardOpen(false);
+            onClose();
+          }}
+        />
         <UbConfirmDialog
           open={earlyPayment !== null}
           onOpenChange={(open) => !open && setEarlyPayment(null)}
@@ -322,9 +420,25 @@ export function PaymentFormDrawer({
           </UbField>
         )}
 
+        {counter && context.partyId && (
+          <UbStack
+            direction="row"
+            align="center"
+            justify="between"
+            wrap
+            gap={2}
+            className="rounded-md bg-surface-sunken px-3 py-2"
+          >
+            <UbText variant="caption" tone="secondary">
+              {t(out ? 'payments.party.to' : 'payments.party.from')}
+            </UbText>
+            <UbText variant="body-sm-medium">{partyName}</UbText>
+          </UbStack>
+        )}
         <UbStack gap={2}>
-          <UbSectionHeading title={t('payments.mode.heading')} />
+          {!counter && <UbSectionHeading title={t('payments.mode.heading')} />}
           <PaymentModeEditor
+            compact={counter}
             form={form}
             target={context.documentDue ?? context.receivable ?? total}
             t={t}
@@ -332,28 +446,22 @@ export function PaymentFormDrawer({
           />
         </UbStack>
 
-        <UbField
-          name="paymentDate"
-          label={t('payments.date')}
-          placeholder={t('ledger.entry.date.placeholder')}
-          required
-        >
-          {(field) => (
-            <UbDateInput
-              {...field}
-              max={today}
-              quickChoicesLabel={t('ledger.entry.date.quick')}
-              quickChoices={[
-                { label: t('ledger.entry.date.today'), date: today },
-                { label: t('ledger.entry.date.yesterday'), date: yesterday },
-              ]}
-            />
-          )}
-        </UbField>
+        {!counter && details}
 
-        {partyId && (
+        {counter && partyId && openStatus === 'failed' && (
+          <UbStatusBanner
+            tone="info"
+            title={t('payments.alloc.error')}
+            action={
+              <UbButton variant="secondary" onClick={() => loadOpenDocuments(partyId, direction)}>
+                {t('common.action.retry')}
+              </UbButton>
+            }
+          />
+        )}
+        {partyId && (!counter || openStatus !== 'failed') && (
           <UbStack gap={2}>
-            <UbSectionHeading title={t('payments.alloc.heading')} />
+            {!counter && <UbSectionHeading title={t('payments.alloc.heading')} />}
             <PaymentAllocationPicker
               form={form}
               documents={openDocuments}
@@ -367,14 +475,14 @@ export function PaymentFormDrawer({
           </UbStack>
         )}
 
-        <UbField
-          name="note"
-          label={t('payments.note')}
-          placeholder={t('payments.note.placeholder')}
-          optionalLabel={t('common.field.optional')}
-        >
-          {(field) => <UbTextInput {...field} autoComplete="off" maxLength={255} />}
-        </UbField>
+        {counter && (
+          <UbDisclosure
+            label={t('payments.counter.details')}
+            open={formState.errors.paymentDate || formState.errors.note ? true : undefined}
+          >
+            {details}
+          </UbDisclosure>
+        )}
         {direction === 'out' && (
           <UbText variant="caption" tone="tertiary">
             {t('payments.out.hint')}

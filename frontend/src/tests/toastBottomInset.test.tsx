@@ -4,7 +4,7 @@ import { join } from 'node:path';
 import { act, fireEvent, screen, waitFor } from '@testing-library/react';
 
 import { SnackbarHost } from 'src/components/layout/SnackbarHost';
-import { UbBottomBar } from 'src/design-system';
+import { UbBottomBar, UbDrawer } from 'src/design-system';
 import { UB_BOTTOM_INSET_PROPERTY, __resetBottomInset } from 'src/hooks/useBottomInset';
 import { hideSnackbar } from 'src/redux/slice/snackbarSlice';
 import { store } from 'src/redux/store';
@@ -272,4 +272,24 @@ describe('the toast respects prefers-reduced-motion', () => {
     expect(TAILWIND).toMatch(/'fade-in':\s*'fade-in var\(--dur-fast\) var\(--ease-entrance\)'/);
     expect(TOKENS).toMatch(/@media \(prefers-reduced-motion: reduce\)[\s\S]*--dur-fast:\s*0ms;/);
   });
+});
+
+it('publishes a dialog footer so an error toast cannot cover Discard changes', async () => {
+  /** R-DEC-14 visual defect: a failed-read toast hid the phone discard action. */
+  renderWithProviders(
+    <UbDrawer
+      open
+      title="Receive payment"
+      closeLabel="Close"
+      onOpenChange={jest.fn()}
+      footer={<button type="button">Discard changes</button>}
+    />
+  );
+  const footer = screen
+    .getByRole('button', { name: 'Discard changes' })
+    .closest<HTMLElement>('[data-ub-overlay-footer]');
+  expect(footer).not.toBeNull();
+  if (!footer) throw new Error('Missing overlay footer');
+  place(footer, VIEWPORT - 144, 144);
+  await waitFor(() => expect(publishedInset()).toBe('144px'));
 });

@@ -323,3 +323,54 @@ it('B37 asks before allocating an earlier payment and saves only after confirmat
     confirmEarlyAllocation: true,
   });
 });
+
+it('keeps the Shop amount before the method and secondary fields behind More details', async () => {
+  /** R-DEC-14: the old drawer led with a wall of method chips and exposed date/note on every payment. */
+  const user = userEvent.setup();
+  renderWithProviders(
+    <PaymentFormDrawer context={{ ...context, bucket: 'shop' }} onClose={jest.fn()} />
+  );
+  const dialog = screen.getByRole('dialog');
+  const amount = within(dialog).getByRole('textbox', { name: 'Amount' });
+  const mode = within(dialog).getByRole('combobox', { name: 'How it was paid' });
+  expect(amount.compareDocumentPosition(mode) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  expect(within(dialog).queryByLabelText('Date')).not.toBeInTheDocument();
+  expect(within(dialog).getByText('Still due after this')).toBeInTheDocument();
+  await user.click(within(dialog).getByRole('button', { name: /More details/ }));
+  expect(within(dialog).getByText('Date')).toBeInTheDocument();
+  expect(within(dialog).getByRole('button', { name: 'Receive ₹1,000.00' })).toBeInTheDocument();
+});
+
+it('asks before discarding a changed Shop payment instead of losing the amount on Escape', async () => {
+  /** Counter drawer defect: closing the old form silently discarded a payment being entered. */
+  const user = userEvent.setup(),
+    onClose = jest.fn();
+  renderWithProviders(
+    <PaymentFormDrawer context={{ ...context, bucket: 'shop' }} onClose={onClose} />
+  );
+  const input = screen.getByRole('textbox', { name: 'Amount' });
+  await user.clear(input);
+  await user.type(input, '200');
+  await user.keyboard('{Escape}');
+  expect(onClose).not.toHaveBeenCalled();
+  const confirm = screen.getByRole('dialog', { name: 'Leave without saving?' });
+  await user.click(within(confirm).getByRole('button', { name: 'Keep editing' }));
+  expect(input).toHaveValue('200.00');
+  await user.click(input);
+  await user.keyboard('{Escape}');
+  await user.click(
+    within(screen.getByRole('dialog', { name: 'Leave without saving?' })).getByRole('button', {
+      name: 'Discard changes',
+    })
+  );
+  expect(onClose).toHaveBeenCalledTimes(1);
+});
+
+it('does not record a Shop payment before its unpaid bills are available', async () => {
+  /** Counter defect: an empty loading/error result must not silently classify a collection as an advance. */
+  jest.mocked(service.listOpenDocuments).mockReturnValue(new Promise(() => undefined));
+  renderWithProviders(
+    <PaymentFormDrawer context={{ ...context, bucket: 'shop' }} onClose={jest.fn()} />
+  );
+  expect(screen.getByTestId('payment-save')).toBeDisabled();
+});

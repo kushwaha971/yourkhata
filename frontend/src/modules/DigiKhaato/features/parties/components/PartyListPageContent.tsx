@@ -250,6 +250,10 @@ export function PartyListPageContent({
      identically for itself, from the same media queries. */
   const tagChipsPerRow = TAG_CHIPS_PER_ROW[tier];
 
+  const openParty = useCallback((party: Party) => router.push(
+    kind === 'supplier' && book === 'shop' ? partyPath(party.id, 'supplier') : partyPath(party.id)
+  ), [router, kind, book]);
+
   const columns = useMemo(
     () =>
       createPartyColumns({
@@ -260,7 +264,7 @@ export function PartyListPageContent({
         formatActivity: (at) =>
           d(at, { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }),
         hideBalanceLabel: compactShop && filters.balance === 'owes_me',
-        onOpen: (party) => router.push(partyPath(party.id)),
+        onOpen: openParty,
         nowMs,
         balanceLabels,
         hasTags,
@@ -275,11 +279,11 @@ export function PartyListPageContent({
       tagChipsPerRow,
       kind,
       compactShop,
-      router,
       filters.balance,
       tier,
       canRemind,
       openReminder,
+      openParty,
       d,
     ]
   );
@@ -554,7 +558,6 @@ export function PartyListPageContent({
      to go to, so the grid's row-open affordance was left unwired — a chevron
      that navigated to a 404 would have been worse than a row that plainly does
      not move. */
-  const openParty = useCallback((party: Party) => router.push(partyPath(party.id)), [router]);
 
   const rowId = useCallback((party: Party) => party.id, []);
   const rowName = useCallback((party: Party) => party.name, []);
@@ -1003,7 +1006,7 @@ export function PartyListPageContent({
             merchant who opens the list to READ it, which is almost all of
             them. `openFor` is the only thing the page needs eagerly, and that
             lives in the slice. */}
-        {partyForm.open && <PartyFormDrawerLazy form={partyForm} kind={kind} />}
+        {partyForm.open && <PartyFormDrawerLazy form={partyForm} kind={kind} shop={book === 'shop'} />}
         {compactShop && reminding && (
           <ShopCustomerReminderLazy party={reminding} onClose={() => setReminding(null)} />
         )}

@@ -353,7 +353,7 @@ it('gives customers and suppliers a panel each, every figure opening its own lis
   );
   expect(within(suppliers).getByRole('link', { name: 'Gupta Wholesale' })).toHaveAttribute(
     'href',
-    '/parties/s1'
+    '/parties/s1?from=suppliers'
   );
   expect(within(suppliers).getByRole('link', { name: 'All suppliers' })).toHaveAttribute(
     'href',

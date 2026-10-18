@@ -1,0 +1,30 @@
+[
+  {
+    "route": "/design-system",
+    "field": "route",
+    "old": 111.9,
+    "measured": 112,
+    "new": 112.3
+  },
+  {
+    "route": "/parties/[id]",
+    "field": "route",
+    "old": 110.1,
+    "measured": 111.8,
+    "new": 112.1
+  },
+  {
+    "route": "/parties/[id]",
+    "field": "firstLoad",
+    "old": 349.9,
+    "measured": 351.4,
+    "new": 351.7
+  },
+  {
+    "route": "/parties/tags",
+    "field": "route",
+    "old": 68.1,
+    "measured": 68.1,
+    "new": 68.4
+  }
+]

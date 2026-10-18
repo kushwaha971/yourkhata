@@ -217,11 +217,12 @@ export const toWireBody = (values: PaymentFormValues): Record<string, unknown> =
 export const paymentListQuery = (filters: PaymentFilters): string =>
   toQueryString({
     party_id: filters.partyId || undefined,
+    trade_role: filters.tradeRole,
     bucket: filters.bucket,
     date_from: filters.dateFrom || undefined,
     date_to: filters.dateTo || undefined,
     direction: filters.tab === 'in' || filters.tab === 'out' ? filters.tab : undefined,
-    status: filters.tab === 'void' ? 'void' : undefined,
+    status: filters.status ?? (filters.tab === 'void' ? 'void' : undefined),
     mode: filters.mode || undefined,
     q: filters.q.trim() || undefined,
     page: filters.page > 1 ? filters.page : undefined,

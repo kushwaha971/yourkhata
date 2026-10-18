@@ -40,6 +40,7 @@ import {
 
 import { createPortal } from 'react-dom';
 
+import { useBottomInset } from 'src/hooks/useBottomInset';
 import { cn } from 'src/utils/cn';
 
 /** Everything focusable, in DOM order, that is not disabled or hidden. */
@@ -98,6 +99,7 @@ export interface MLDialogProps {
    * which is a class name.
    */
   readonly placement?: 'center' | 'drawer';
+  readonly keyboardAware?: boolean;
   /**
    * Where focus goes on close when the element that opened the dialog is no
    * longer in the document (WCAG 2.4.3). The case is a dialog opened from
@@ -140,9 +142,49 @@ export function MLDialog({
   returnFocusRef,
   children,
   className,
+  keyboardAware = false,
 }: Readonly<MLDialogProps>): React.JSX.Element | null {
   const panelRef = useRef<HTMLDivElement | null>(null);
   const openerRef = useRef<HTMLElement | null>(null);
+
+  // Counter Mode: the footer belongs to the visible sheet, above a phone keyboard.
+  // Opt-in keeps Library/Lending and other shared overlay consumers unchanged.
+  useEffect(() => {
+    const viewport = window.visualViewport;
+    const panel = panelRef.current;
+    const frame = panel?.parentElement;
+    if (!open || !keyboardAware || !viewport || !panel || !frame) return;
+    const reset = () => {
+      frame.style.removeProperty('top');
+      frame.style.removeProperty('bottom');
+      frame.style.removeProperty('height');
+      panel.style.removeProperty('max-height');
+    };
+    const update = () => {
+      if (
+        window.innerWidth >= 1024 ||
+        viewport.scale !== 1 ||
+        window.innerHeight - viewport.height < 150
+      ) {
+        reset();
+        return;
+      }
+      frame.style.top = `${viewport.offsetTop}px`;
+      frame.style.bottom = 'auto';
+      frame.style.height = `${viewport.height}px`;
+      panel.style.maxHeight = `${Math.max(0, viewport.height - 8)}px`;
+    };
+    update();
+    viewport.addEventListener('resize', update);
+    viewport.addEventListener('scroll', update);
+    window.addEventListener('resize', update);
+    return () => {
+      viewport.removeEventListener('resize', update);
+      viewport.removeEventListener('scroll', update);
+      window.removeEventListener('resize', update);
+      reset();
+    };
+  }, [open, keyboardAware]);
 
   /* A dialog MOUNTED open never sees its opener take focus. Every lazily
      loaded dialog in this product is rendered as `{open && <LazyDialog open />}`,
@@ -429,6 +471,7 @@ export function MLDialogFooter({
   readonly className?: string;
   readonly order?: MLDialogFooterOrder;
 }>): React.JSX.Element {
+  const footerRef = useBottomInset<HTMLDivElement>();
   return (
     /* `border-t` and its own 24px, matching `MLDialogHeader`: BrandHub's
        footer is `flex items-center gap-4 border-t border-border p-6`. The
@@ -438,6 +481,8 @@ export function MLDialogFooter({
        actions (PTY-04's blocked archive: Cancel, Record payment, Write off)
        and a 480 px dialog clipped the first one to "cel" rather than wrap. */
     <div
+      ref={footerRef}
+      data-ub-overlay-footer=""
       className={cn(
         'flex gap-3 border-t border-border-hairline p-6 pb-[max(1.5rem,env(safe-area-inset-bottom,0px))]',
         order === 'as-written' ? 'flex-col' : 'flex-col-reverse',

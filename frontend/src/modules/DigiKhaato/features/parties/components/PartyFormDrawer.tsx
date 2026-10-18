@@ -69,8 +69,10 @@ export function PartyFormDrawer({
   form: partyForm,
   returnFocusRef,
   kind,
+  shop = false,
 }: Readonly<{
   form: UsePartyFormResult;
+  shop?: boolean;
   /** Opened from Suppliers: a new party is a supplier unless the merchant says otherwise. */
   kind?: PartyKind;
   /** Focus target on close when the opener is gone (QA D1) — the khata's ⋯. */
@@ -414,7 +416,7 @@ export function PartyFormDrawer({
         </UbField>
 
         {/* ── Everything else, folded away ───────────────────────────────── */}
-        {!isEdit && (
+        {!isEdit && !shop && (
           <UbDisclosure
             label={t('parties.form.section.opening')}
             hint={t('parties.form.section.opening.hint')}
@@ -503,7 +505,10 @@ export function PartyFormDrawer({
           </UbField>
         </UbDisclosure>
 
-        <UbDisclosure label={t('parties.form.section.credit')} open={creditHasError || undefined}>
+        <UbDisclosure
+          label={t(shop ? 'parties.form.collectionDate.label' : 'parties.form.section.credit')}
+          open={creditHasError || undefined}
+        >
           {/* PTY-06 FR-13 — a NOTICE, not an error.
  
               Lowering a limit below what somebody already owes is allowed and
@@ -516,22 +521,26 @@ export function PartyFormDrawer({
               `hint` rather than a banner, because it belongs to this field and
               disappears with it. It is computed from the balance the form
               already has, so there is no request behind it. */}
-          <UbField
-            name="creditLimit"
-            label={t('parties.form.creditLimit.label')}
-            placeholder={t('parties.form.creditLimit.placeholder')}
-            hint={creditHint}
-          >
-            {(field) => <UbMoneyInput {...field} />}
-          </UbField>
-          <UbField
-            name="creditDays"
-            label={t('parties.form.creditDays.label')}
-            placeholder={t('parties.form.creditDays.placeholder')}
-            hint={t('parties.form.creditDays.hint')}
-          >
-            {(field) => <UbTextInput {...field} inputMode="numeric" autoComplete="off" />}
-          </UbField>
+          {!shop && (
+            <>
+              <UbField
+                name="creditLimit"
+                label={t('parties.form.creditLimit.label')}
+                placeholder={t('parties.form.creditLimit.placeholder')}
+                hint={creditHint}
+              >
+                {(field) => <UbMoneyInput {...field} />}
+              </UbField>
+              <UbField
+                name="creditDays"
+                label={t('parties.form.creditDays.label')}
+                placeholder={t('parties.form.creditDays.placeholder')}
+                hint={t('parties.form.creditDays.hint')}
+              >
+                {(field) => <UbTextInput {...field} inputMode="numeric" autoComplete="off" />}
+              </UbField>
+            </>
+          )}
           <UbField
             name="collectionDate"
             label={t('parties.form.collectionDate.label')}

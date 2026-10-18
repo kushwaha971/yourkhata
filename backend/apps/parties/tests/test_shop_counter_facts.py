@@ -281,3 +281,91 @@ def test_shop_reminder_rechecks_payment_and_rejects_unknown_books(tenant, api_as
         format="json",
     )
     assert wrong.status_code == 400
+
+
+def test_archive_cannot_net_equal_customer_and_supplier_dues(tenant, api_as):
+    """BP-09: a zero combined cache must not hide two unsettled Shop roles."""
+    person = PartyFactory(
+        tenant=tenant,
+        is_customer=True,
+        is_supplier=True,
+        balance=Decimal("0"),
+        shop_balance=Decimal("0"),
+    )
+    sale(tenant, person)
+    PurchaseDocument.objects.create(
+        tenant=tenant,
+        party=person,
+        kind="purchase_bill",
+        status="recorded",
+        number="PB-EQUAL",
+        fy_label="26-27",
+        document_date=tenant_today(tenant),
+        place_of_supply_state="27",
+        grand_total=Decimal("1000"),
+        amount_due=Decimal("1000"),
+    )
+    client, _ = api_as(tenant)
+    response = client.post(reverse("v1:party-archive", args=[person.id]), {}, format="json")
+    assert response.status_code == 409
+    assert response.json()["error"]["code"] == "party_has_open_records"
+    assert response.json()["error"]["details"]["module"] == "sales"
+    result = client.post(reverse("v1:party-bulk-archive"), {"ids": [str(person.id)]}, format="json")
+    assert result.status_code == 200
+    person.refresh_from_db()
+    assert person.status == "active"
+
+
+def test_shop_person_bill_query_excludes_vertical_documents(tenant, api_as):
+    """BP-09: Library/Lending source bills cannot appear under Shop unpaid bills."""
+    import uuid
+
+    from apps.sales.filters import InvoiceFilterSet
+
+    person = PartyFactory(tenant=tenant)
+    core = sale(tenant, person)
+    vertical = sale(tenant, person, number="LIB-SOURCE")
+    vertical.origin_module = "library"
+    vertical.origin_type = "library_membership"
+    vertical.origin_id = uuid.uuid4()
+    vertical.save(update_fields=["origin_module", "origin_type", "origin_id"])
+    rows = SalesDocument.objects.filter(tenant=tenant, party=person)
+    assert list(InvoiceFilterSet({"book": "shop"}, queryset=rows).qs) == [core]
+    assert InvoiceFilterSet({}, queryset=rows).qs.count() == 2
+
+
+def test_supplier_payment_history_cannot_include_customer_refunds_or_udhaar(tenant):
+    """R-DEC-13: supplier history is not every outgoing voucher for the shared contact."""
+    from apps.payments.filters import PaymentFilterSet
+    from apps.payments.models import Payment
+
+    person = PartyFactory(tenant=tenant, is_customer=True, is_supplier=True)
+    rows = []
+    for index, (direction, bucket, meta) in enumerate(
+        [
+            ("out", "shop", {}),
+            ("out", "shop", {"credit_note_id": "refund"}),
+            ("in", "shop", {}),
+            ("out", "main", {}),
+        ]
+    ):
+        rows.append(
+            Payment.objects.create(
+                tenant=tenant,
+                party=person,
+                number=f"ROLE-{index}",
+                direction=direction,
+                bucket=bucket,
+                amount=Decimal("100"),
+                unallocated_amount=Decimal("100"),
+                payment_date=tenant_today(tenant),
+                primary_mode="cash",
+                mode_breakup=[{"mode": "cash", "amount": "100.00"}],
+                status="recorded",
+                meta=meta,
+            )
+        )
+    source = Payment.objects.filter(tenant=tenant, party=person)
+    assert list(PaymentFilterSet({"trade_role": "supplier"}, queryset=source).qs) == [rows[0]]
+    assert list(PaymentFilterSet({"trade_role": "customer"}, queryset=source).qs) == [rows[2]]
+    assert PaymentFilterSet({}, queryset=source).qs.count() == 4

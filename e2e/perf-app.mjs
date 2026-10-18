@@ -45,6 +45,7 @@
  * A lab number from a container is not a phone. Read the dated report
  * (docs/performance/2026-10-17-app-baseline.md) for what that means.
  */
+import { closeBrowserWithDeadline } from './browser-cleanup.mjs';
 import { createRequire } from 'node:module';
 import { mkdirSync, writeFileSync } from 'node:fs';
 
@@ -479,7 +480,7 @@ for (const vp of WIDTHS) {
     await ctx.close();
   }
 }
-await browser.close();
+await closeBrowserWithDeadline(browser);
 
 // ── summary ──────────────────────────────────────────────────────────────────
 const pct = (xs, p) => { const s = xs.filter((x) => x != null).sort((a, b) => a - b); return s.length ? s[Math.min(s.length - 1, Math.ceil((p / 100) * s.length) - 1)] : null; };

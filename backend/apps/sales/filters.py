@@ -32,6 +32,14 @@ class InvoiceFilterSet(BaseTenantFilterSet):
     created_by = django_filters.UUIDFilter(field_name="created_by_id")
     q = django_filters.CharFilter(method="filter_search")
     # ── A5 ── PLT-X05 §6/§7: the list's origin chip, and a module reading its own invoices back.
+    book = django_filters.CharFilter(method="filter_book")
+
+    def filter_book(self, queryset: QuerySet, name: str, value: Any) -> QuerySet:
+        """BP-09: the Shop person must not list a vertical's invoice as Shop dues."""
+        if value == "shop":
+            return queryset.filter(Q(origin_module__isnull=True) | Q(origin_module=""))
+        return queryset
+
     origin_module = django_filters.CharFilter(field_name="origin_module")
     origin_type = django_filters.CharFilter(field_name="origin_type")
     origin_id = django_filters.UUIDFilter(field_name="origin_id")

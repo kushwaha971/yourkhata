@@ -7,7 +7,6 @@ import type { TranslateFn } from 'src/hooks/useTranslation';
 import { formatInr } from 'src/utils/money';
 import { formatPhoneForDisplay } from 'src/utils/share';
 
-
 import type { PartyDetail } from '../types/party.types';
 
 /**
@@ -30,6 +29,7 @@ import type { PartyDetail } from '../types/party.types';
  */
 export interface PartyInfoPanelProps {
   readonly t: TranslateFn;
+  readonly shop?: boolean;
   readonly party: PartyDetail;
   /** Formatted by the caller — this layer does not reach for `react-intl`. */
   readonly addedOn: string | null;
@@ -94,6 +94,7 @@ const addressLine = (address: Record<string, string> | null | undefined): string
 
 function PartyInfoPanelBase({
   t,
+  shop = false,
   party,
   addedOn,
   lastActivity,
@@ -106,7 +107,10 @@ function PartyInfoPanelBase({
         title={t('parties.detail.section.contact')}
         fields={[
           // Shown as the header and the reminder sheet show it (QA O6).
-          { label: t('parties.form.mobile.label'), value: formatPhoneForDisplay(party.mobile) },
+          {
+            label: t('parties.form.mobile.label'),
+            value: shop ? null : formatPhoneForDisplay(party.mobile),
+          },
           { label: t('parties.form.altPhone.label'), value: formatPhoneForDisplay(party.altPhone) },
           { label: t('parties.form.email.label'), value: party.email },
         ]}
@@ -143,11 +147,11 @@ function PartyInfoPanelBase({
                grouped the Indian way, and `formatInr` is the one function that
                does it. Found in a screenshot, not in a test: `toBeInTheDocument`
                is as happy with "50000.00" as with "₹50,000.00". */
-            value: party.creditLimit ? formatInr(party.creditLimit) : null,
+            value: !shop && party.creditLimit ? formatInr(party.creditLimit) : null,
           },
           {
             label: t('parties.form.creditDays.label'),
-            value: party.creditDays != null ? String(party.creditDays) : null,
+            value: !shop && party.creditDays != null ? String(party.creditDays) : null,
           },
         ]}
       >

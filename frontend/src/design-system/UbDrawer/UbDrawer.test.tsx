@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { act, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
 import { UbDrawer } from './UbDrawer';
@@ -96,4 +96,31 @@ describe('where focus lands when it opens', () => {
 
     expect(screen.getByRole('button', { name: 'Close' })).toHaveFocus();
   });
+});
+
+it('keeps an opted-in drawer footer inside the visual viewport and restores it on keyboard close', async () => {
+  /** Counter Mode defect: a layout-viewport sheet left Save underneath the phone keyboard. */
+  const viewport = new EventTarget();
+  Object.assign(viewport, { height: 400, offsetTop: 12, scale: 1 });
+  const previous = Object.getOwnPropertyDescriptor(window, 'visualViewport');
+  const previousWidth = window.innerWidth;
+  Object.defineProperty(window, 'innerWidth', { configurable: true, value: 390 });
+  Object.defineProperty(window, 'visualViewport', { configurable: true, value: viewport });
+  try {
+    const { unmount } = open({ keyboardAware: true });
+    const panel = screen.getByRole('dialog');
+    expect(panel.parentElement).toHaveStyle({ height: '400px', top: '12px' });
+    expect(panel).toHaveStyle({ maxHeight: '392px' });
+    Object.assign(viewport, { height: window.innerHeight });
+    await act(async () => {
+      viewport.dispatchEvent(new Event('resize'));
+    });
+    expect(panel.style.maxHeight).toBe('');
+    expect(panel.parentElement?.style.height).toBe('');
+    unmount();
+  } finally {
+    Object.defineProperty(window, 'innerWidth', { configurable: true, value: previousWidth });
+    if (previous) Object.defineProperty(window, 'visualViewport', previous);
+    else Reflect.deleteProperty(window, 'visualViewport');
+  }
 });

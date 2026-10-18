@@ -357,7 +357,7 @@ function CreditorRows({
               wrapPrimary
               className="min-w-0"
               primary={
-                <UbLink href={partyPath(row.id)} variant="body-sm-medium" className="line-clamp-2">
+                <UbLink href={partyPath(row.id, 'supplier')} variant="body-sm-medium" className="line-clamp-2">
                   {row.name}
                 </UbLink>
               }

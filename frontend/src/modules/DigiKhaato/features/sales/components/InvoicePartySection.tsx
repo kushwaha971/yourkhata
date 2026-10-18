@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useEffect, useMemo } from 'react';
 
 import { type UseFormReturn } from 'react-hook-form';
 
@@ -66,6 +66,18 @@ export function InvoicePartySection({
   const partyName = watch('partyName');
   const documentDate = watch('documentDate');
   const pos = watch('placeOfSupplyState');
+  const partyId = watch('partyId');
+  // Picker and person-page shortcuts share one defaulting path. A manual
+  // invoice-specific state is never overwritten by a late contact response.
+  useEffect(() => {
+    if (mode !== 'party' || !partyId || pos || disabled) return;
+    const controller = new AbortController();
+    void getParty(partyId, controller.signal).then(({ party }) => {
+      if (controller.signal.aborted || form.getValues('partyId') !== partyId || form.getValues('placeOfSupplyState')) return;
+      setValue('placeOfSupplyState', defaultPlaceOfSupply(party, tenantState));
+    }).catch(() => undefined);
+    return () => controller.abort();
+  }, [mode, partyId, pos, disabled, form, setValue, tenantState]);
   const interState = !!pos && pos !== tenantState;
 
   const modeOptions = useMemo(
@@ -116,17 +128,6 @@ export function InvoicePartySection({
                 field.onChange(id || null);
                 setValue('partyName', name);
                 setValue('placeOfSupplyState', '', { shouldDirty: true });
-                if (!id) return;
-                // A failed read leaves the field empty; the server then resolves it on save.
-                getParty(id)
-                  .then(({ party }) => {
-                    if (form.getValues('partyId') !== id) return;
-                    if (form.getValues('placeOfSupplyState')) return;
-                    setValue('placeOfSupplyState', defaultPlaceOfSupply(party, tenantState), {
-                      shouldDirty: true,
-                    });
-                  })
-                  .catch(() => undefined);
               }}
             />
           )}

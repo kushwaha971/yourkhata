@@ -168,6 +168,7 @@ export const toEnvelope = (body: EnvelopeWire): SalesDocumentEnvelope => {
 // ── Endpoints ───────────────────────────────────────────────────────────────
 
 export interface InvoiceListQuery {
+  readonly book?: 'shop';
   readonly tab: InvoiceTab;
   readonly dateFrom: string;
   readonly dateTo: string;
@@ -180,6 +181,7 @@ export interface InvoiceListQuery {
 
 export const invoiceListQuery = (filters: InvoiceListQuery): string =>
   toQueryString({
+    book: filters.book,
     tab: filters.tab !== 'all' ? filters.tab : undefined,
     date_from: filters.dateFrom || undefined,
     date_to: filters.dateTo || undefined,

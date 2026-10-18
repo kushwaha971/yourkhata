@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
+
 import { useForm, useWatch, type UseFormReturn } from 'react-hook-form';
 import { useStore } from 'react-redux';
 import { ValidationError } from 'yup';
@@ -9,6 +10,7 @@ import { ValidationError } from 'yup';
 import { useAppDispatch, useAppSelector } from 'src/hooks/useAppStore';
 import { useDraftSaveQueue } from 'src/hooks/useDraftSaveQueue';
 import { useIdempotencyKey } from 'src/hooks/useIdempotencyKey';
+import { usePartyEditorSeed } from 'src/hooks/usePartyEditorSeed';
 import { usePermissions } from 'src/hooks/usePermissions';
 import { useTranslation } from 'src/hooks/useTranslation';
 import { selectNetworkImpaired } from 'src/redux/slice/networkSlice';
@@ -118,6 +120,7 @@ export const usePurchaseBillEditor = (
   documentId: string | null,
   kind: PurchaseKind = 'purchase_bill'
 ): UsePurchaseBillEditorResult => {
+  const { partyId: initialParty, partyName: initialPartyName } = usePartyEditorSeed();
   const dispatch = useAppDispatch();
   const store = useStore<RootState>();
   const { t } = useTranslation();
@@ -173,10 +176,14 @@ export const usePurchaseBillEditor = (
     }
     if (context && seeded.current !== 'new') {
       seeded.current = 'new';
-      form.reset(emptyPurchaseForm(today, context.gstType === 'regular'));
+      form.reset({
+        ...emptyPurchaseForm(today, context.gstType === 'regular'),
+        partyId: initialParty,
+        partyName: initialPartyName,
+      });
       setSeededFor('new');
     }
-  }, [documentId, document, context, form, today]);
+  }, [documentId, document, context, form, today, initialParty, initialPartyName]);
 
   // Rates are by the bill's date; a changed date re-reads them.
   const documentDate = values.documentDate;
