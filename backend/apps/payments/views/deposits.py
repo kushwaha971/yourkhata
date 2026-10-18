@@ -17,6 +17,7 @@ from rest_framework import mixins, viewsets
 from rest_framework.decorators import action
 from rest_framework.permissions import SAFE_METHODS, IsAuthenticated
 
+from apps.common.book_access import allowed_app_modules, require_book
 from apps.common.constants import ModuleCode
 from apps.common.context import Ctx
 from apps.common.exceptions import ValidationFailed
@@ -57,6 +58,35 @@ class DepositViewSet(
     lookup_value_regex = UUID_RE
     permission_classes = [IsAuthenticated, ModuleEnabled(ModuleCode.PAYMENTS), DepositPermissions]
 
+    def authorize_book(self, request: Any, codename: str) -> bool:
+        from django.http import Http404
+        from rest_framework.exceptions import PermissionDenied
+
+        modules = allowed_app_modules(request, codename)
+        if self.kwargs.get("pk"):
+            row = (
+                HeldDeposit.objects.for_tenant(self.get_tenant())
+                .filter(pk=self.kwargs["pk"])
+                .first()
+            )
+            if row is not None and "*" not in modules and row.module not in modules:
+                raise Http404
+        elif (
+            request.query_params.get("module")
+            and "*" not in modules
+            and request.query_params["module"] not in modules
+        ):
+            raise PermissionDenied("You do not have permission to access these deposits.")
+        if self.action == "apply" and isinstance(request.data.get("allocations"), list):
+            from apps.payments.services.targets import target_for
+
+            for allocation in request.data["allocations"]:
+                if isinstance(allocation, dict):
+                    target = target_for(allocation.get("document_type", ""))
+                    if target is not None:
+                        require_book(request, target.bucket, codename)
+        return True
+
     def get_throttles(self) -> list[Any]:
         scope = "user" if self.request.method in SAFE_METHODS else "ledger_write"
         return [ScopedUserRateThrottle(scope)]
@@ -76,7 +106,9 @@ class DepositViewSet(
         return wanted
 
     def get_queryset(self) -> Any:
-        return deposits.deposits_for(tenant=self.get_tenant(), **self._filters())
+        rows = deposits.deposits_for(tenant=self.get_tenant(), **self._filters())
+        modules = allowed_app_modules(self.request, "payments.payment.read")
+        return rows if "*" in modules else rows.filter(module__in=modules)
 
     def list(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         """`meta.totals.held` over the FILTERED set, beside the page."""

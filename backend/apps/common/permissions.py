@@ -119,7 +119,19 @@ def HasPermission(mapping: str | dict[str, str]) -> type[BasePermission]:
             codename = required.get(getattr(view, "action", None) or "*") or required.get("*")
             if codename is None:
                 return False  # unmapped action → denied
-            return codename in permissions_for(membership)
+            if codename not in permissions_for(membership):
+                return False
+            from apps.common.permissions_registry import MODULE_OF, permissions_for_app
+            from apps.platform_app.apps_registry import registered_apps
+
+            capability = MODULE_OF.get(codename)
+            owners = [app.code for app in registered_apps() if capability in app.capabilities]
+            if owners and not any(
+                codename in permissions_for_app(membership, app) for app in owners
+            ):
+                return False
+            book_check = getattr(view, "authorize_book", None)
+            return True if book_check is None else bool(book_check(request, codename))
 
         def has_object_permission(self, request: Any, view: Any, obj: Any) -> bool:
             # Object-level rules that are *about ownership*, not about tenancy —

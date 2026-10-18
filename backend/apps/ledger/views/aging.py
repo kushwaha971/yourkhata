@@ -15,6 +15,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.views import APIView
 
 from apps.common.audit import AuditAction
+from apps.common.book_access import BookAccessMixin, require_book
 from apps.common.constants import ModuleCode
 from apps.common.exceptions import ValidationFailed
 from apps.common.permissions import HasPermission, ModuleEnabled
@@ -55,7 +56,7 @@ def book_has_any(tenant: Any, book: str | None = None) -> bool:
     return (entries.filter(bucket=book) if book else entries).exists()
 
 
-class LedgerSummaryView(TenantScopeMixin, APIView):
+class LedgerSummaryView(BookAccessMixin, TenantScopeMixin, APIView):
     """FR-1 / BR-1 — the tenant's position, in two numbers."""
 
     permission_classes = [
@@ -91,7 +92,7 @@ class LedgerSummaryView(TenantScopeMixin, APIView):
         )
 
 
-class LedgerAgingView(TenantScopeMixin, APIView):
+class LedgerAgingView(BookAccessMixin, TenantScopeMixin, APIView):
     """FR-2 — every party with something outstanding, bucketed by age.
 
     ── Why the paging happens in Python and not in the query ────────────────
@@ -227,6 +228,7 @@ class LedgerAgingView(TenantScopeMixin, APIView):
     def get(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         is_csv = request.query_params.get("format") == "csv"
         if is_csv:
+            require_book(request, book_of(request.query_params.get("book")), "reports.export")
             self._validate_params(request)
             # BEFORE the report is computed (security review I-5). The FIFO walk
             # over every party is the expensive part of this view; a caller who

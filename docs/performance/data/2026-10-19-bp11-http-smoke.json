@@ -1,0 +1,40 @@
+{
+  "isolated_database": "revamp_20261018",
+  "checks": [
+    {
+      "check": "Shop cannot read main summary",
+      "status": 403,
+      "passed": true
+    },
+    {
+      "check": "Udhaar cannot read Shop summary",
+      "status": 403,
+      "passed": true
+    },
+    {
+      "check": "Shop can read own summary",
+      "status": 200,
+      "passed": true
+    },
+    {
+      "check": "Udhaar can read own summary",
+      "status": 200,
+      "passed": true
+    },
+    {
+      "check": "Shop contact projection",
+      "status": 200,
+      "passed": true
+    },
+    {
+      "check": "Udhaar contact projection",
+      "status": 200,
+      "passed": true
+    },
+    {
+      "check": "Last explicit app revoked without legacy fallback",
+      "status": 403,
+      "passed": true
+    }
+  ]
+}

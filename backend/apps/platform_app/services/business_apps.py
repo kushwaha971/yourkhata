@@ -118,7 +118,10 @@ def leave_app(*, membership: Any, app: Any, ctx: Ctx) -> Any:
             MembershipAppGrant.objects.bulk_create(
                 [MembershipAppGrant(membership=membership, app=a.code, role=role) for a in keep]
             )
-        fields = {"permissions_version": membership.permissions_version + 1}
+        fields = {
+            "permissions_version": membership.permissions_version + 1,
+            "app_grants_configured": True,
+        }
         if (membership.last_app or "") == code:
             fields["last_app"] = ""
         Membership.objects.filter(pk=membership.pk).update(**fields)

@@ -17,6 +17,7 @@ from django.shortcuts import get_object_or_404
 from rest_framework.decorators import action
 from rest_framework.permissions import SAFE_METHODS, IsAuthenticated
 
+from apps.common.book_access import allowed_books, require_book
 from apps.common.constants import ModuleCode
 from apps.common.context import Ctx
 from apps.common.dates import tenant_today
@@ -191,6 +192,54 @@ class PartyViewSet(CsvExportMixin, TenantScopedNoDeleteViewSet):
             return PartyDetailSerializer
         return PartyListSerializer
 
+    def authorize_book(self, request: Any, codename: str) -> bool:
+        if request.query_params.get("book") == "shop":
+            require_book(request, "shop", codename)
+        if self.action == "credit_check":
+            require_book(request, "main", "ledger.entry.read")
+        if request.query_params.get("book") != "shop" and "main" not in allowed_books(
+            request, "parties.party.read"
+        ):
+            params = request.query_params
+            if any(params.get(key) for key in ("balance", "credit", "collection", "late")) or any(
+                key in params.get("ordering", "")
+                for key in ("balance", "last_activity", "oldest_due")
+            ):
+                require_book(request, "main", "parties.party.read")
+        body = request.data if request.method not in ("GET", "HEAD", "OPTIONS") else {}
+        if body.get("opening_balance_amount") or any(
+            key in body for key in ("credit_limit", "credit_days")
+        ):
+            require_book(request, "main", "ledger.entry.write")
+        if self.action in ("archive", "bulk_archive"):
+            for book in ("main", "shop"):
+                require_book(request, book, codename)
+        if self.action in ("archive", "bulk_archive") and body.get("write_off"):
+            ModuleEnabled(ModuleCode.LEDGER)().has_permission(request, self)
+            require_book(request, "main", "ledger.entry.write")
+        return True
+
+    def _project_financials(self, data: dict) -> dict:
+        books = allowed_books(self.request, "parties.party.read")
+        if "main" not in books:
+            for key in (
+                "balance",
+                "summary",
+                "credit",
+                "credit_limit",
+                "credit_days",
+                "opening_balance_amount",
+                "opening_balance_direction",
+                "opening_balance_as_of",
+                "collection_date",
+                "last_activity_at",
+            ):
+                data.pop(key, None)
+        if "shop" not in books:
+            data.pop("shop_balance", None)
+            data.pop("shop", None)
+        return data
+
     def get_queryset(self) -> Any:
         """The selector owns the query; the viewset owns nothing but the call.
 
@@ -207,6 +256,10 @@ class PartyViewSet(CsvExportMixin, TenantScopedNoDeleteViewSet):
                 rows = with_shop_facts(rows, tenant=self.get_tenant()).order_by(
                     F("shop_last_activity_at").desc(nulls_last=True), "-id"
                 )
+            if self.request.query_params.get("book") != "shop" and "main" not in allowed_books(
+                self.request, "parties.party.read"
+            ):
+                rows = rows.order_by("name", "id")
             return rows
         return party_detail_queryset(tenant=self.get_tenant())
 
@@ -220,6 +273,11 @@ class PartyViewSet(CsvExportMixin, TenantScopedNoDeleteViewSet):
         honestly labelled and useless for the question it was being asked.
         """
         if self.wants_csv(request):
+            require_book(
+                request,
+                "shop" if request.query_params.get("book") == "shop" else "main",
+                "parties.party.export",
+            )
             return self.csv_export(request)
         # The filtered set WITHOUT the export's role annotation (A6): the page and
         # the totals are the same queries they were, and badges are one more.
@@ -261,7 +319,20 @@ class PartyViewSet(CsvExportMixin, TenantScopedNoDeleteViewSet):
                 ),
             )
             meta["shop_counts"] = counts
-        return StandardResponse.ok(serializer.data, meta=meta)
+        # Never expose main-book totals to identity-only consumers.
+        if self.request.query_params.get("book") != "shop" and "main" not in allowed_books(
+            request, "parties.party.read"
+        ):
+            meta["totals"] = {"count": totals["count"]}
+        rows = [self._project_financials(dict(row)) for row in serializer.data]
+        if (
+            "main" not in allowed_books(request, "parties.party.read")
+            and request.query_params.get("book") == "shop"
+        ):
+            for row, original in zip(rows, serializer.data):
+                # On this list balance is the selected Shop role, not main.
+                row["balance"] = original["balance"]
+        return StandardResponse.ok(rows, meta=meta)
 
     def _has_any(self, request: Any) -> bool:
         """Whether the list's own kind of party exists at all — customers on
@@ -276,6 +347,14 @@ class PartyViewSet(CsvExportMixin, TenantScopedNoDeleteViewSet):
         elif kind == "supplier":
             qs = qs.filter(is_supplier=True)
         return qs.exists()
+
+    def allowed_export_columns(self, request: Any) -> Any:
+        columns = super().allowed_export_columns(request)
+        if "main" not in allowed_books(request, "parties.party.read"):
+            columns = tuple(
+                c for c in columns if c.header not in ("collection_date", "last_activity")
+            )
+        return columns
 
     def export_queryset(self) -> Any:
         """The filtered set, plus `role_codes` for the CSV's `roles` column (A6)."""
@@ -324,7 +403,7 @@ class PartyViewSet(CsvExportMixin, TenantScopedNoDeleteViewSet):
             current = shop_party_facts(tenant=self.get_tenant(), party_id=party.id)
             if current is not None:
                 data["shop"] = serialize_shop_facts(current, today=tenant_today(self.get_tenant()))
-        return data
+        return self._project_financials(data)
 
     def retrieve(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         """The party, plus the two blocks the khata page's header draws.
@@ -358,7 +437,7 @@ class PartyViewSet(CsvExportMixin, TenantScopedNoDeleteViewSet):
         credit = credit_snapshot(party, mode=credit_mode(self.get_tenant()))
         if credit is not None:
             data["credit"] = PartyCreditSerializer(credit).data
-        return StandardResponse.ok(data)
+        return StandardResponse.ok(self._project_financials(data))
 
     def get_object(self) -> Any:
         """The scoped queryset WITHOUT the list's filters.

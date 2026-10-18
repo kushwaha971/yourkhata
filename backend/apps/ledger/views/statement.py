@@ -16,6 +16,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.views import APIView
 
 from apps.common.audit import AuditAction
+from apps.common.book_access import BookAccessMixin, require_book
 from apps.common.constants import ModuleCode
 from apps.common.dates import tenant_today
 from apps.common.exceptions import ValidationFailed
@@ -35,10 +36,7 @@ from apps.ledger.selectors.statement import (
     statement_rows,
     statement_totals,
 )
-from apps.ledger.serializers.entry import (
-    StatementRowSerializer,
-    StatementTotalsSerializer,
-)
+from apps.ledger.serializers.entry import StatementRowSerializer, StatementTotalsSerializer
 from apps.ledger.services.statement_csv import statement_csv_rows
 from apps.ledger.views.exports import audit_export, authorise_export
 
@@ -69,7 +67,7 @@ def mask_mobile(mobile: str | None) -> str | None:
     return f"{digits[:2]}••• ••{digits[-3:]}"
 
 
-class PartyStatementView(TenantScopeMixin, APIView):
+class PartyStatementView(BookAccessMixin, TenantScopeMixin, APIView):
     """The statement, paged, or the whole thing as a CSV.
 
     `APIView` rather than a viewset: this is one read with its own response
@@ -157,6 +155,8 @@ class PartyStatementView(TenantScopeMixin, APIView):
         # DEC-019 — `?book=shop` is the Shop's statement (bills and the payments against
         # them); anything else is the Udhaar book's.
         self._book = book_of(request.query_params.get("book"))
+        if request.query_params.get("format") == "csv":
+            require_book(request, self._book, "ledger.statement.export")
         scope = {
             "tenant": self.get_tenant(),
             "party_id": party.id,

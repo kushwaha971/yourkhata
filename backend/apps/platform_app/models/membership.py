@@ -70,6 +70,8 @@ class Membership(TimeStampedModel):
     #: the switcher and the landing open it again, on any device. Blank → the
     #: first app they can open.
     last_app = models.CharField(max_length=32, blank=True, default="")
+    # Empty explicit grants mean no apps, never legacy business-wide access.
+    app_grants_configured = models.BooleanField(default=False)
 
     class Meta:
         db_table = "platform_membership"
@@ -91,8 +93,8 @@ class MembershipAppGrant(TimeStampedModel):
 
     docs/platform/14 §6 decision 1: the owner assigns apps per person — "Ravi:
     Lending as agent, Shop as staff". The business's owner needs no rows (they
-    are in every app); a membership with no rows is a legacy one whose single
-    role covers every app, as before grants existed.
+    are in every app); a membership whose grants have never been configured
+    retains its legacy business role. Explicitly clearing grants revokes apps.
 
     `app` is an `apps_registry` code, validated by the service that writes it;
     a grant for an app the business no longer runs is kept (switching the app

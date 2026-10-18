@@ -253,6 +253,38 @@ def permissions_for(membership: Any) -> frozenset[str]:
     )
 
 
+def permissions_for_app(membership: Any, app_code: str) -> frozenset[str]:
+    """BP-11: do not borrow a writable role from another app's merged grants."""
+    from apps.platform_app import apps_registry as registry
+
+    held = permissions_for(membership)
+    if not held:
+        return frozenset()
+    if registry.is_business_owner(membership):
+        return held
+    grants = registry.grants_of(membership)
+    if not registry.uses_explicit_app_grants(membership):
+        return held
+    role = grants.get(app_code)
+    spec = registry.app_spec(app_code)
+    if (
+        role is None
+        or spec is None
+        or app_code not in {app.code for app in registry.apps_of_business(membership.tenant)}
+    ):
+        return frozenset()
+    own = _role_codenames(role)
+    allow = set((membership.permissions_override or {}).get("allow", []))
+    module_role = _MODULE_ROLES.get(role.code) if role.is_system else None
+    if module_role is not None:
+        allow = {
+            c
+            for c in allow
+            if MODULE_OF.get(c) == module_role.module and not c.endswith(".read_all")
+        }
+    return frozenset(c for c in held & (own | allow) if MODULE_OF.get(c) in spec.capabilities)
+
+
 def _role_codenames(role: Any) -> set[str]:
     if role.is_system:
         return set(system_role_permissions(role.code))
@@ -274,7 +306,7 @@ def _scoped_by_app_grants(membership: Any, base: set[str]) -> set[str] | None:
     if registry.is_business_owner(membership):
         return None
     grants = registry.grants_of(membership)
-    if not grants:
+    if not registry.uses_explicit_app_grants(membership):
         return None
     scoped = {c for c in base if MODULE_OF.get(c) in registry.BUSINESS_CAPABILITIES}
     for code, grant_role in grants.items():

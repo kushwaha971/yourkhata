@@ -1,6 +1,6 @@
 # 08 · Backend change proposals
 
-Status: **BP-09 approved by the owner on 18 Oct 2026; all other backend proposals remain unapproved unless separately recorded.**
+Status: **BP-09 and BP-11 approved by the owner on 18 Oct 2026; other backend proposals remain unapproved unless separately recorded.**
 
 The revamp is mainly UI, UX and frontend performance. A backend change is listed here only if the audit found a demonstrated need. Library and Lending contracts are fixed: proposals for them change no request, response, rule or table; they only make the same answer arrive faster or safer, and each still needs approval.
 
@@ -97,7 +97,9 @@ Implementation note (18 Oct): optional Shop-only invoice/payment read filters an
 - Rollback: remove the opt-in reads/new link; preserve existing endpoints and source documents. Do not unblock the old mixed statement by renaming it.
 
 
-## BP-11 · Shared-engine book authorization audit (proposed, not implemented)
+## BP-11 · Shared-engine book authorization
+
+**APPROVED — owner, 18 Oct 2026: "fix that backend gap as well".** Implement server-side app/book authorization and financial-field projection using existing app grants and action permissions. No financial posting, ownership migration or Library/Lending calculation changes. The additive platform/0019 membership marker is required to distinguish explicit empty app grants from never-configured legacy access.
 
 Raised 18 Oct 2026 after the owner asked whether any other user/module could read data without permission. **Tenant and action-permission checks are present; a selected app or a UI book filter is not itself an authorization boundary.**
 
@@ -107,4 +109,4 @@ Do not confuse this with cross-business access: 122 selected permission/tenant/a
 
 Proposed work: define and test the authorization matrix for each shared contact, ledger, statement, reminder and payment endpoint, including omitted/changed book parameters, list totals/exports/detail serializers, direct IDs, role overrides and revoked grants. Reuse the existing membership/app registry/permission resolver rather than inventing another role map. Enforce allowed books server-side and project only authorized financial facts; keep contact identity reuse independent from financial access. First reproduce each undesired read with denied/limited app grants. Preserve owner/authorized staff workflows, public-share token semantics and Library/Lending's fixed vertical contracts. Personal Udhaar ownership needs an explicit owner/data-model design rather than hiding tenant-wide rows in the frontend.
 
-Risk/compatibility: shared identity pickers and legacy missing-book callers must keep working; returning zero for a hidden balance is misleading, so the response/projection convention needs documenting before a change. No migration or backend rule is changed by this proposal. Rollback would revert only the new authorization/projection implementation, never financial records. Approval is required under this document's existing proposal rule before building.
+Risk/compatibility: shared identity pickers and legacy missing-book callers must keep working; returning zero for a hidden balance is misleading, so the response/projection convention needs documenting before a change. Approved implementation adds app-aware authorization/projection and migration platform/0019 for an explicit-grants marker. It changes no financial records. Never-configured legacy business roles remain compatible; explicitly empty managed grants now revoke access. Read docs/performance/2026-10-19-bp11-book-authorization.md before deployment/rollback. The owner has approved this proposal (R-DEC-15).

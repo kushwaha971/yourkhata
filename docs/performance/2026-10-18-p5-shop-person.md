@@ -1,3 +1,5 @@
+> Follow-up: BP-11 was approved and its shared-engine grant gap is fixed in the backend piece documented in [the authorization report](2026-10-19-bp11-book-authorization.md). Historical gap statements and self-review below describe the person-page build before that follow-up. Personal Udhaar ownership is still a separate model question.
+
 # Phase 5 · Shop person page
 
 18 October 2026. Approved by R-DEC-10; role-specific composition clarified by the owner in **R-DEC-13**. Continues the Counter Mode plan rather than starting another design system. Scope: the person opened from Shop Customers/Suppliers, its primary actions and existing form handoffs. Udhaar keeps its existing workspace; Library/Lending endpoints and calculations are unchanged.

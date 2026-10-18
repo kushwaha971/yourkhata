@@ -15,6 +15,7 @@ from rest_framework.decorators import action
 from rest_framework.permissions import SAFE_METHODS, IsAuthenticated
 from rest_framework.views import APIView
 
+from apps.common.book_access import allowed_books, require_book
 from apps.common.constants import LedgerBucket, ModuleCode
 from apps.common.context import Ctx
 from apps.common.exceptions import ValidationFailed
@@ -27,6 +28,7 @@ from apps.payments.constants import PaymentDirection
 from apps.payments.filters import PaymentFilterSet
 from apps.payments.models import Payment
 from apps.payments.permissions import PaymentPermissions, UpiPermissions
+from apps.payments.selectors.access import scope_payments
 from apps.payments.selectors.payments import (
     detail_queryset,
     list_payments,
@@ -44,6 +46,7 @@ from apps.payments.serializers.payment import (
 from apps.payments.services.allocate import allocate_existing
 from apps.payments.services.receipt import receipt_share_text, record_receipt_share
 from apps.payments.services.record import record_payment
+from apps.payments.services.targets import target_for
 from apps.payments.services.upi import upi_intent
 from apps.payments.services.void import void_payment
 
@@ -76,6 +79,35 @@ class PaymentViewSet(
     permission_classes = [IsAuthenticated, ModuleEnabled(ModuleCode.PAYMENTS), PaymentPermissions]
     throttle_classes = [ScopedUserRateThrottle]
 
+    def authorize_book(self, request: Any, codename: str) -> bool:
+        if self.kwargs.get("pk"):
+            # 404 does not disclose the existence of an inaccessible record.
+            from django.http import Http404
+
+            row = detail_queryset(tenant=self.get_tenant()).filter(pk=self.kwargs["pk"]).first()
+            if (
+                row is not None
+                and not scope_payments(request, detail_queryset(tenant=self.get_tenant()), codename)
+                .filter(pk=row.pk)
+                .exists()
+            ):
+                raise Http404
+        elif self.action in ("create", "open_documents"):
+            body = request.data if self.action == "create" else request.query_params
+            bucket = body.get("bucket") or "shop"
+            if bucket in LedgerBucket.values:
+                require_book(request, bucket, codename)
+        elif request.query_params.get("bucket") in LedgerBucket.values:
+            require_book(request, request.query_params["bucket"], codename)
+        allocations = request.data.get("allocations") if request.method == "POST" else None
+        if isinstance(allocations, list):
+            for row in allocations:
+                if isinstance(row, dict):
+                    target = target_for(row.get("document_type", ""))
+                    if target is not None:
+                        require_book(request, target.bucket, codename)
+        return True
+
     def get_throttles(self) -> list[Any]:
         # A payment write is a money write of the ledger's shape and frequency.
         scope = "user" if self.request.method in SAFE_METHODS else "ledger_write"
@@ -83,8 +115,12 @@ class PaymentViewSet(
 
     def get_queryset(self) -> Any:
         if self.action == "list":
-            return list_payments(tenant=self.get_tenant())
-        return detail_queryset(tenant=self.get_tenant())
+            return scope_payments(
+                self.request, list_payments(tenant=self.get_tenant()), "payments.payment.read"
+            )
+        return scope_payments(
+            self.request, detail_queryset(tenant=self.get_tenant()), "payments.payment.read"
+        )
 
     def list(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         """A page and `meta.totals` over the FILTERED set (FR-10) — voids never counted."""
@@ -195,7 +231,7 @@ class PaymentViewSet(
         A POST under `payments.payment.write` (§12: the accountant prints, and
         does not hand receipts to customers), audited as `payment.receipt_shared`.
         """
-        payment = get_object_or_404(detail_queryset(tenant=self.get_tenant()), pk=kwargs["pk"])
+        payment = get_object_or_404(self.get_queryset(), pk=kwargs["pk"])
         text = receipt_share_text(payment, locale=request.data.get("locale"))
         record_receipt_share(
             ctx=Ctx.from_request(request),

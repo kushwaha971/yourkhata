@@ -105,9 +105,8 @@ def set_app_grants(*, tenant: Any, membership_id: Any, grants: Any, actor: Any, 
     """`PUT /members/{id}/apps` — which apps this person is in, and as what (§6 decision 1).
 
     Replaces the whole set. The owner of the business is in every app and takes
-    no grants; an empty set returns a member to the legacy reading, where their
-    one business role covers every app (to take someone out of the business,
-    remove them from the team). The roles a grant may carry are the business's
+    no grants; an explicitly empty set removes app access. It never restores
+    legacy business-wide permissions. The roles a grant may carry are the business's
     own: the canon roles except owner, and a module role only in its own app.
     Only an owner gives `admin`, as only an owner makes an admin today.
 
@@ -171,9 +170,10 @@ def set_app_grants(*, tenant: Any, membership_id: Any, grants: Any, actor: Any, 
         ]
     )
     Membership.objects.filter(pk=target.pk).update(
-        permissions_version=target.permissions_version + 1
+        permissions_version=target.permissions_version + 1, app_grants_configured=True
     )
     target.permissions_version += 1
+    target.app_grants_configured = True
     if hasattr(target, "_ub_app_grants"):
         del target._ub_app_grants
     write_audit(

@@ -16,8 +16,7 @@ apps only through this registry, never by name.
 
 **Per-person access** (owner decision 1, §6): a business's owner is in every
 app the business runs. Anyone else is in the apps they hold a grant for
-(`platform_membership_app_grant`), with a role per app. A membership with no
-grants at all is a legacy row from before grants existed: its one role covers
+(`platform_membership_app_grant`), with a role per app. A membership whose grants have never been configured is a legacy row from before grants existed: its one role covers
 every app, exactly as it always did, until the owner sets grants.
 
 Registries follow ADR-042: idempotent for an equal spec, a conflict raises,
@@ -151,6 +150,11 @@ def grants_of(membership: Any) -> dict[str, Any]:
     return grants
 
 
+def uses_explicit_app_grants(membership: Any) -> bool:
+    """Legacy fallback is allowed only until grants have explicitly been managed."""
+    return bool(getattr(membership, "app_grants_configured", False) or grants_of(membership))
+
+
 def is_business_owner(membership: Any) -> bool:
     return getattr(getattr(membership, "role", None), "code", None) == "owner"
 
@@ -159,7 +163,7 @@ def accessible_apps(membership: Any, permissions: Iterable[str]) -> tuple[AppSpe
     """The apps this person can open in this business, in switcher order.
 
     Owner: every app the business runs. Grants set: exactly the granted apps
-    the business runs, and whose role opens it. No grants (legacy): every app
+    the business runs, and whose role opens it. Never-configured grants (legacy): every app
     the business runs whose entry permission the person's role holds.
     """
     if membership is None:
@@ -169,7 +173,7 @@ def accessible_apps(membership: Any, permissions: Iterable[str]) -> tuple[AppSpe
     if is_business_owner(membership):
         return running
     grants = grants_of(membership)
-    if grants:
+    if uses_explicit_app_grants(membership):
         return tuple(a for a in running if a.code in grants and a.entry_permission in held)
     return tuple(a for a in running if a.entry_permission in held)
 

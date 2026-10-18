@@ -21,6 +21,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from apps.common.book_access import allowed_books, require_book
 from apps.common.constants import ModuleCode
 from apps.common.context import Ctx
 from apps.common.dates import tenant_today
@@ -64,6 +65,49 @@ class _ReminderBase(TenantScopeMixin, APIView):
     permission_classes = _read_write()
     throttle_classes = [ScopedUserRateThrottle]
 
+    def authorize_book(self, request: Any, codename: str) -> bool:
+        from django.shortcuts import get_object_or_404
+
+        from apps.common.permissions_registry import permissions_for_app
+        from apps.common.tenancy import get_effective_tenant
+        from apps.ledger.services.reminder_seam import module_of_source
+
+        body = (
+            request.data
+            if request.method not in ("GET", "HEAD", "OPTIONS")
+            else request.query_params
+        )
+        module = body.get("module") or ""
+        if self.kwargs.get("pk"):
+            row = get_object_or_404(
+                Reminder.objects.for_tenant(self.get_tenant()), pk=self.kwargs["pk"]
+            )
+            module = row.module
+        elif body.get("source_type"):
+            module = module_of_source(body["source_type"]) or ""
+        if module and module not in ("sales", "purchases"):
+            member = getattr(get_effective_tenant(request), "_ub_membership", None)
+            if member is None or codename not in permissions_for_app(member, module):
+                from rest_framework.exceptions import PermissionDenied
+
+                raise PermissionDenied("You do not have permission to access this app's reminders.")
+        elif (
+            self.__class__.__name__ != "ReminderListCreateView"
+            or request.method != "GET"
+            or body.get("book")
+            or module
+        ):
+            require_book(
+                request,
+                (
+                    "shop"
+                    if module in ("sales", "purchases") or body.get("book") == "shop"
+                    else "main"
+                ),
+                codename,
+            )
+        return True
+
     def ctx(self) -> Ctx:
         return Ctx.from_request(self.request)
 
@@ -72,6 +116,27 @@ class ReminderListCreateView(_ReminderBase):
     def get(self, request: Any) -> Any:
         params = request.query_params
         rows = self.scope_to_tenant(Reminder.objects.select_related("party", "recipient_party"))
+        from django.db.models import Q
+
+        from apps.common.permissions_registry import permissions_for_app
+        from apps.common.tenancy import get_effective_tenant
+        from apps.platform_app.apps_registry import registered_apps
+
+        member = getattr(get_effective_tenant(request), "_ub_membership", None)
+        books = allowed_books(request, "ledger.entry.read")
+        visible = Q(
+            module__in=[
+                app.code
+                for app in registered_apps()
+                if member and "ledger.entry.read" in permissions_for_app(member, app.code)
+            ]
+        )
+        if "main" in books:
+            visible |= Q(module="")
+        if "shop" in books:
+            visible |= Q(module__in=("sales", "purchases"))
+        if "deposit" not in books:  # unrestricted owner/legacy readers retain historical modules
+            rows = rows.filter(visible)
         # A7 §11 — the history's module filter; `module=` alone is the shop's.
         if "module" in params:
             rows = rows.filter(module=params.get("module") or "")
@@ -230,6 +295,11 @@ class ReminderSettingsView(_ReminderBase):
     """LED-07 FR-1 / LED-08 FR-1 — read by anyone who reads the ledger, changed by owner/admin."""
 
     permission_classes = _read_write(write="notifications.settings.manage")
+
+    def authorize_book(self, request: Any, codename: str) -> bool:
+        # Business-level sending policy, not a financial-book response.
+        # Existing notification/settings permission remains the authority.
+        return True
 
     def get(self, request: Any) -> Any:
         return StandardResponse.ok(

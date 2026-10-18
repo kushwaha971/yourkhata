@@ -195,3 +195,8 @@ Each row is a test, unit or API, and is walked in the browser at the step that d
 | 50 businesses on a 600 px window | the sidebar never scrolls; the panel does |
 | Renaming one app | no other app changes |
 | A new app | registered, not copied |
+
+
+### BP-11 security correction — 19 Oct 2026
+
+Per-app financial authorization now checks the role in the owning app, not a union of codenames from other apps. `membership.app_grants_configured` (migration 0019) distinguishes never-configured legacy access from an explicitly empty managed grant set. Clearing managed grants revokes all apps rather than restoring the legacy business role. Existing grants are marked by the migration; legacy memberships that never had grants keep their documented business-role access. Historical instructions saying an empty grant list restores legacy access are superseded by R-DEC-15/BP-11. Details and regression/rollout evidence: `docs/performance/2026-10-19-bp11-book-authorization.md`.

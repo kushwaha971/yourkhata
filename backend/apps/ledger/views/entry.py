@@ -13,6 +13,7 @@ from rest_framework import mixins, viewsets
 from rest_framework.decorators import action
 from rest_framework.permissions import SAFE_METHODS, IsAuthenticated
 
+from apps.common.book_access import BookAccessMixin, allowed_books
 from apps.common.constants import ModuleCode
 from apps.common.context import Ctx
 from apps.common.idempotency import idempotent
@@ -52,6 +53,7 @@ from apps.ledger.services.opening import post_opening_balance
 
 
 class LedgerEntryViewSet(
+    BookAccessMixin,
     TenantScopeMixin,
     mixins.CreateModelMixin,
     mixins.ListModelMixin,
@@ -110,6 +112,24 @@ class LedgerEntryViewSet(
         if self.action == "list":
             return TimelineEntrySerializer
         return LedgerEntrySerializer
+
+    def permission_books(self, request: Any, codename: str) -> tuple[str, ...]:
+        if self.action in ("retrieve", "reverse", "correct"):
+            row = (
+                LedgerEntry.objects.for_tenant(self.get_tenant())
+                .filter(pk=self.kwargs.get("pk"))
+                .first()
+            )
+            if row is not None and row.bucket not in allowed_books(request, codename):
+                from django.http import Http404
+
+                raise Http404
+            # The handler returns the same 404 for a missing or inaccessible id.
+            return ()
+        # Manual ledger writes always post in main, regardless of query parameters.
+        if self.action == "create":
+            return ("main",)
+        return super().permission_books(request, codename)
 
     def _include_reversed(self) -> bool:
         """LED-03 BR-5 — `?include_reversed=true` and nothing else.
