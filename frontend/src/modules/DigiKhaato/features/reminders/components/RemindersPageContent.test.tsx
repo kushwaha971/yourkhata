@@ -480,7 +480,7 @@ describe('the Sent tab', () => {
     await user.click(await screen.findByRole('option', { name: 'Failed' }));
     await waitFor(() =>
       expect(service.listReminders).toHaveBeenLastCalledWith(
-        { kind: undefined, status: 'failed', page: 1, pageSize: 25 },
+        { book: 'main', kind: undefined, status: 'failed', page: 1, pageSize: 25 },
         expect.anything()
       )
     );

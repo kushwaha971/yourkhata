@@ -7,6 +7,12 @@ import { getParty, setCollectionDate } from '../api/partyService';
 
 import type { PartyDetail, PartyDetailResult } from '../types/party.types';
 
+export type PartyDetailArg = string | { readonly id: string; readonly book: 'shop' };
+export const partyDetailArgId = (arg: PartyDetailArg): string =>
+  typeof arg === 'string' ? arg : arg.id;
+export const partyDetailArgBook = (arg: PartyDetailArg): 'main' | 'shop' =>
+  typeof arg === 'string' ? 'main' : arg.book;
+
 /**
  * QUERY. Part 19 §19.3.3 — three type arguments, one service call, and a catch
  * that normalises. The `signal` is RTK's own, so navigating away from a slow
@@ -14,11 +20,13 @@ import type { PartyDetail, PartyDetailResult } from '../types/party.types';
  */
 export const fetchPartyDetail = createAsyncThunk<
   PartyDetailResult,
-  string,
+  PartyDetailArg,
   { rejectValue: ApiErrorShape }
->('partyDetail/fetchPartyDetail', async (id, { signal, rejectWithValue }) => {
+>('partyDetail/fetchPartyDetail', async (arg, { signal, rejectWithValue }) => {
   try {
-    return await getParty(id, signal);
+    return await (typeof arg === 'string'
+      ? getParty(arg, signal)
+      : getParty(arg.id, signal, arg.book));
   } catch (error) {
     return rejectWithValue(toApiError(error, 'parties.detail.error.title'));
   }

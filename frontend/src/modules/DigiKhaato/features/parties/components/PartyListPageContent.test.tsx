@@ -192,6 +192,48 @@ describe('PartyListPageContent', () => {
     setTier('cards');
   });
 
+  /** R-DEC-10: Shop totals must not consume the phone's first screen as KPI cards. */
+  it('uses a compact Shop summary with scoped totals and keeps the shared book unchanged', async () => {
+    partyService.listParties.mockResolvedValue(loaded([RAMESH]));
+    renderWithProviders(<PartyListPageContent kind="customer" book="shop" />);
+    expect(await screen.findByTestId('shop-customer-summary')).toBeInTheDocument();
+    expect(
+      within(screen.getByTestId('shop-customer-summary')).getByText(
+        /From the 1 customer on this page/
+      )
+    ).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Owe you', pressed: false })).toBeInTheDocument();
+    expect(screen.getByRole('searchbox')).toBeInTheDocument();
+    expect(screen.getByTestId('ub-grid-cards')).toHaveAttribute('data-card-layout', 'stacked');
+    // The selected artifact puts controls first, then the scoped summary, then rows.
+    expect(
+      screen
+        .getByTestId('shop-customer-toolbar')
+        .compareDocumentPosition(screen.getByTestId('shop-customer-summary')) &
+        Node.DOCUMENT_POSITION_FOLLOWING
+    ).toBeTruthy();
+    expect(
+      screen
+        .getByTestId('shop-customer-summary')
+        .compareDocumentPosition(screen.getByTestId('ub-grid-cards')) &
+        Node.DOCUMENT_POSITION_FOLLOWING
+    ).toBeTruthy();
+    expect(document.querySelector('[data-ub-fab]')).toBeNull();
+  });
+
+  /** BP-09: the Shop sort label existed but its menu omitted the selected late order. */
+  it('offers the real bill-age order in the Shop sort menu', async () => {
+    setTier('full');
+    partyService.listParties.mockResolvedValue(loaded([RAMESH]));
+    const user = userEvent.setup();
+    renderWithProviders(<PartyListPageContent kind="customer" book="shop" />);
+    await screen.findByText('Ramesh Traders');
+    await user.click(screen.getByRole('button', { name: 'Most late first' }));
+    const dialog = await screen.findByRole('dialog', { name: 'Sort by' });
+    expect(within(dialog).getByRole('radio', { name: 'Most late first' }))
+      .toHaveAttribute('aria-checked', 'true');
+  });
+
   it('paints the skeleton first, then the first-use empty state', async () => {
     partyService.listParties.mockResolvedValue(EMPTY);
 

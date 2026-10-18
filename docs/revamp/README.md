@@ -1,10 +1,10 @@
 # YourKhata revamp — master plan
 
-**What this is**: the living plan for redesigning the whole app (Shop, Udhaar book, Library, Lending, and everything around them) and fixing slow, silent taps in the installed app. **Planning and design only.** No application code is changed by anything in this folder until the owner approves a phase (R-DEC-01).
+**What this is**: the living plan for redesigning the whole app (Shop, Udhaar book, Library, Lending, and everything around them) and fixing slow, silent taps in the installed app. Implementation requires the owner’s recorded phase approval (R-DEC-01). Phase 4 is complete; Phase 5 Shop/Udhaar screens and BP-09 are approved (R-DEC-10/12).
 
 **Start here if you are continuing this work** (any AI tool or person): Phase 4 is built; the next session's task and method are in [START-NEXT-SESSION-PROMPT.txt](START-NEXT-SESSION-PROMPT.txt). The general rules are in [AGENT_START_PROMPT.md](AGENT_START_PROMPT.md). In short, read this page, then [12-decision-log.md](12-decision-log.md) for what is decided and open, then [02-preserve-and-contracts.md](02-preserve-and-contracts.md) before touching anything in Library or Lending.
 
-Last updated: 17 Oct 2026, on `dev` at 31784ab.
+Last updated: 18 Oct 2026, on `dev`.
 
 ## Documents
 
@@ -16,14 +16,15 @@ Last updated: 17 Oct 2026, on `dev` at 31784ab.
 | 04 | [Navigation strategy](04-navigation-strategy.md) | business → app → section model, phone App button (N-1, approved), desktop sidebar, back, notifications, start screen, You page | proposed |
 | 05 | [Feedback and performance](05-feedback-and-performance.md) | causes H1–H8 with how to prove each, feedback rules, duplicate protection, targets, benchmark method, fix list | hypotheses until Phase 1 |
 | 06 | [Shared components and architecture](06-shared-components-and-architecture.md) | reuse map of 92 design-system parts, the few new pieces, duplication to remove | proposed |
-| 07 | [Screen specs](07-screens/README.md) | template; specs for sign-in, onboarding, shell, notifications, four module entry points | foundation done; waves 2–3 to do |
-| 08 | [Backend change proposals](08-backend-change-proposals.md) | BP-01…07, each with risk, compatibility, tests, rollback | none approved |
-| 09 | [Design review](09-design-review.md) | weighted rubric, round 1 (failed) and round 2 (passes provisionally), what each score still needs | foundation only |
+| 07 | [Screen specs](07-screens/README.md) | template; specs for sign-in, onboarding, shell, notifications, four module entry points | waves 1–3 specified; Customers piece implemented |
+| 08 | [Backend change proposals](08-backend-change-proposals.md) | proposals with risk, compatibility, tests, rollback | BP-09 approved; others unapproved |
+| 09 | [Design review](09-design-review.md) | weighted rubric, round 1 (failed) and round 2 (passes provisionally), what each score still needs | whole-module specifications reviewed provisionally |
 | 10 | [Roadmap](10-roadmap.md) | phases 1–8 with deliverables, risks and done-when | plan |
 | 11 | [QA and regression](11-qa-and-regression.md) | existing gates, added checks, rollout exit criteria | plan |
 | 12 | [Decisions and progress](12-decision-log.md) | every decision and activity | living |
 | — | [AGENT_START_PROMPT.md](AGENT_START_PROMPT.md) | the prompt to give any coding agent (Codex, Cursor, Claude Code, others) to continue this work the same way | current |
 | — | [design/counter-mode.html](design/counter-mode.html) | the visual reference page (open in a browser) | current |
+| — | [Customers implementation evidence](../performance/2026-10-18-p5-customers.md) | screenshots, 108 browser cases, regression gates, measured performance/bundle cost, provisional score and remaining gaps | Customers piece verified; whole revamp ongoing |
 
 ## Where this sits among older plans
 

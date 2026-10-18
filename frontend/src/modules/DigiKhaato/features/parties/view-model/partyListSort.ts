@@ -15,6 +15,7 @@ export const PARTY_SORT_FIELDS: Readonly<Record<string, string>> = {
   name: 'name',
   balance: 'balance',
   activity: 'last_activity_at',
+  late: 'oldest_due_on',
 };
 
 /** `{ columnId: 'balance', direction: 'desc' }` → `-balance`. */
@@ -47,3 +48,8 @@ export const PHONE_SORT_CHOICES = [
 ] as const;
 
 export type PhoneSortOrdering = (typeof PHONE_SORT_CHOICES)[number]['ordering'];
+
+export const SHOP_SORT_CHOICES = [
+  { ordering: 'oldest_due_on', labelKey: 'parties.list.shop.sortLate' },
+  ...PHONE_SORT_CHOICES,
+] as const;

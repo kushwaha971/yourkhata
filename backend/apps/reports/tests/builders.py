@@ -39,6 +39,44 @@ def party(tenant: Any, name: str = "Ramesh", **extra: Any) -> Any:
     return PartyFactory(tenant=tenant, name=name, **extra)
 
 
+def shop_party(tenant: Any, name: str = "Ramesh", *, shop_balance: Decimal, **extra: Any) -> Any:
+    """BP-09: a dashboard balance fixture needs financial sources, not only a cache.
+
+    Historical opening documents/adjustments stay outside the tests' trading
+    windows. Production never fabricates these rows from the combined cache.
+    Dual-role fixtures must create their two sources explicitly instead.
+    """
+    who = party(tenant, name, shop_balance=shop_balance, **extra)
+    assert not (who.is_customer and who.is_supplier), "Create dual-role sources explicitly"
+    amount = abs(shop_balance)
+    if not amount:
+        return who
+    on = dt.date(1970, 1, 1)
+    owing = shop_balance > 0 if who.is_customer else shop_balance < 0
+    if owing:
+        source = (
+            sale(tenant, on, amount, party=who)
+            if who.is_customer
+            else purchase(tenant, on, amount, party=who)
+        )
+        type(source).objects.filter(pk=source.pk).update(
+            **{
+                "issued_at" if who.is_customer else "recorded_at": dt.datetime(
+                    1970, 1, 1, tzinfo=dt.UTC
+                )
+            }
+        )
+    else:
+        payment(
+            tenant,
+            on,
+            {"adjustment": amount},
+            party=who,
+            direction="in" if who.is_customer else "out",
+        )
+    return who
+
+
 def sale(
     tenant: Any,
     on: dt.date,

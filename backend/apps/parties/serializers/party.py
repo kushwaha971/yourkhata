@@ -16,7 +16,6 @@ from apps.parties.constants import ConsentSource, GstRegistration, OpeningDirect
 from apps.parties.models import Party, Tag
 from apps.parties.services.archive import BULK_ARCHIVE_MAX
 
-
 MOBILE_PATTERN = r"^(\+[1-9][0-9]{6,13}|[0-9]{10,14})$"
 
 
@@ -107,6 +106,15 @@ class PartyListSerializer(serializers.ModelSerializer):
         field = self.context.get("balance_field")
         if field and field != "balance":
             data["balance"] = self.fields["balance"].to_representation(getattr(instance, field))
+        if hasattr(instance, "shop_customer_balance"):
+            from apps.common.dates import tenant_today
+            from apps.parties.selectors.shop import serialize_shop_facts
+
+            data["shop"] = serialize_shop_facts(
+                instance,
+                today=tenant_today(self.context["view"].get_tenant()),
+                kind=self.context.get("shop_kind", "customer"),
+            )
         return data
 
 

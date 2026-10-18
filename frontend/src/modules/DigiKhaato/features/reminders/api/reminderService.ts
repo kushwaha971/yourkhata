@@ -89,6 +89,7 @@ export const listReminders = async (
   }>(
     `${API_PATHS.REMINDERS}${toQueryString({
       party_id: params.partyId || undefined,
+      book: params.book,
       kind: params.kind || undefined,
       status: params.status || undefined,
       page: params.page > 1 ? params.page : undefined,
@@ -178,11 +179,13 @@ export const getCollectionSummary = async (signal?: AbortSignal): Promise<Collec
 
 export const previewReminder = async (
   partyId: string,
-  signal?: AbortSignal
+  signal?: AbortSignal,
+  book?: 'main' | 'shop'
 ): Promise<ReminderPreview> => {
   const response = await api.post<{
     data: {
       party_id: string;
+      book?: 'main' | 'shop';
       balance: string;
       text: string;
       sms_text: string;
@@ -190,10 +193,15 @@ export const previewReminder = async (
       has_upi: boolean;
       warnings: readonly WarningWire[];
     };
-  }>(API_PATHS.REMINDER_PREVIEW, { party_id: partyId }, ubConfig({ signal }));
+  }>(
+    API_PATHS.REMINDER_PREVIEW,
+    { party_id: partyId, ...(book ? { book } : {}) },
+    ubConfig({ signal })
+  );
   const { data } = response.data;
   return {
     partyId: data.party_id,
+    ...(data.book ? { book: data.book } : {}),
     balance: data.balance,
     text: data.text,
     smsText: data.sms_text,
@@ -207,12 +215,14 @@ export const previewReminder = async (
 export const createReminder = async (
   partyId: string,
   channel: ReminderChannel,
-  note?: string
+  note?: string,
+  book?: 'main' | 'shop'
 ): Promise<Reminder> => {
   const response = await api.post<{ data: ReminderWire }>(API_PATHS.REMINDERS, {
     party_id: partyId,
     channel,
     ...(note ? { note } : {}),
+    ...(book ? { book } : {}),
   });
   return toReminder(response.data.data);
 };

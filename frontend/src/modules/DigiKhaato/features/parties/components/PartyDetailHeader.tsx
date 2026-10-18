@@ -70,6 +70,7 @@ export interface PartyDetailHeaderProps {
   readonly t: TranslateFn;
   readonly name: string;
   readonly balance: string;
+  readonly shopBalances?: { readonly customer: string; readonly supplier: string };
   readonly displayCode: string | null;
   readonly mobile: string | null;
   readonly isCustomer: boolean;
@@ -96,6 +97,7 @@ function PartyDetailHeaderBase({
   t,
   name,
   balance,
+  shopBalances,
   displayCode,
   mobile,
   isCustomer,
@@ -219,13 +221,30 @@ function PartyDetailHeaderBase({
         aria-busy={pending || undefined}
         className="flex flex-col items-end gap-1 text-right"
       >
-        <UbAmount
-          value={balance}
-          size="lg"
-          tone={view.tone}
-          sign={view.sign}
-          label={t(view.labelId)}
-        />
+        {shopBalances ? (
+          <UbStack direction="row" gap={4} wrap>
+            <UbAmount
+              value={shopBalances.customer}
+              size="md"
+              tone={balanceView(shopBalances.customer).tone}
+              label={`${t('parties.list.shop.asCustomer')} · ${t(balanceView(shopBalances.customer).labelId)}`}
+            />
+            <UbAmount
+              value={shopBalances.supplier}
+              size="md"
+              tone={balanceView(shopBalances.supplier).tone}
+              label={`${t('parties.list.shop.asSupplier')} · ${t(balanceView(shopBalances.supplier).labelId)}`}
+            />
+          </UbStack>
+        ) : (
+          <UbAmount
+            value={balance}
+            size="lg"
+            tone={view.tone}
+            sign={view.sign}
+            label={t(view.labelId)}
+          />
+        )}
         {asOf && (
           /* Koper's rule: every number carries its baseline. "₹2,300" is a
              figure; "₹2,300 as of 18 Sep" is a fact somebody can act on. */

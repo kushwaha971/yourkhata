@@ -26,6 +26,7 @@ export interface UbPageHeaderMobile {
    * desktop the same action is the `primaryAction` element at the end of the
    * header's row, exactly as before.
    */
+  readonly primaryPlacement?: 'floating' | 'header';
   readonly primary?: {
     readonly label: string;
     readonly icon: ReactNode;
@@ -85,7 +86,17 @@ export function UbPageHeaderMobileActions({
           )}
         </div>
       ) : null}
-      {primary ? (
+      {primary && mobile.primaryPlacement === 'header' ? (
+        <UbButton
+          variant="ghost"
+          iconOnly
+          icon={primary.icon}
+          className="h-11 w-11"
+          onClick={primary.onClick}
+        >
+          {primary.label}
+        </UbButton>
+      ) : primary ? (
         <UbFab
           mobileOnly
           label={primary.label}

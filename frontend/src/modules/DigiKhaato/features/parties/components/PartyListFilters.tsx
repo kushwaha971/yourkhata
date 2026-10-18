@@ -108,6 +108,8 @@ export interface PartyListFiltersProps {
    * the party list keeps its one-tap sort sheet instead, UAT D5.)
    */
   readonly compact?: boolean;
+  readonly controlClassName?: string;
+  readonly showClear?: boolean;
   readonly status?: string;
   readonly onStatusChange?: (value: string) => void;
   readonly ordering?: string;
@@ -136,6 +138,8 @@ function PartyListFiltersBase({
   onClear,
   part = 'controls',
   compact = false,
+  controlClassName,
+  showClear = true,
   status = 'active',
   onStatusChange,
   ordering = DEFAULT_ORDERING,
@@ -330,6 +334,7 @@ function PartyListFiltersBase({
         />
       )}
       <UbFilterSheet
+        className={controlClassName}
         compact
         specs={[...compactSpecs, ...specs]}
         values={values}
@@ -341,7 +346,7 @@ function PartyListFiltersBase({
           close: t('common.action.close'),
         }}
       />
-      {activeFilterCount > 0 && (
+      {showClear && activeFilterCount > 0 && (
         <UbButton variant="ghost" size="sm" onClick={onClear} className="shrink-0">
           {t('parties.list.filter.clear', { count: activeFilterCount })}
         </UbButton>

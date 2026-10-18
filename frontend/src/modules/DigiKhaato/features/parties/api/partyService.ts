@@ -12,6 +12,9 @@ import type {
   PartyIdentityValues,
   PartyListParams,
   PartyListResult,
+  ShopPartyFactsWire,
+  ShopPartyFacts,
+  ShopPartyCounts,
   PartyRoleBadge,
   PartySaveResult,
 } from '../types/party.types';
@@ -34,6 +37,7 @@ interface PartyListApiResponse {
     readonly total: number;
     readonly total_pages: number;
     readonly has_any?: boolean;
+    readonly shop_counts?: ShopPartyCounts;
     /**
      * The header figures for the whole FILTERED set (Part 22 §22.4).
      *
@@ -81,6 +85,19 @@ interface PartyListApiResponse {
  * Money stays a STRING on purpose (R-TS-7). `UbAmount` and `view-model/*` parse
  * with decimal.js-light when they need maths.
  */
+export const toShopFacts = (row: ShopPartyFactsWire): ShopPartyFacts => ({
+  customerBalance: row.customer_balance,
+  customerDue: row.customer_due,
+  customerCredit: row.customer_credit,
+  supplierBalance: row.supplier_balance,
+  supplierDue: row.supplier_due,
+  supplierCredit: row.supplier_credit,
+  oldestDueOn: row.oldest_due_on,
+  daysOverdue: row.days_overdue,
+  lastActivityAt: row.last_activity_at,
+  lastActivityKind: row.last_activity_kind,
+});
+
 const toParty = (row: PartyApiRow): Party => ({
   id: row.id,
   name: row.name,
@@ -89,6 +106,7 @@ const toParty = (row: PartyApiRow): Party => ({
   isCustomer: row.is_customer,
   isSupplier: row.is_supplier,
   balance: row.balance,
+  ...(row.shop ? { shop: toShopFacts(row.shop) } : {}),
   status: row.status,
   lastActivityAt: row.last_activity_at,
   /* `?? []` because a server older than this client sends no `tags` key. An
@@ -122,6 +140,7 @@ const partyFilterQuery = (
   // comment claimed a 400.
   type: params.type || undefined,
   balance: params.balance || undefined,
+  late: params.late || undefined,
   collection: params.collection || undefined,
   tag: params.tag || undefined,
   credit: params.credit || undefined,
@@ -206,6 +225,7 @@ export const listParties = async (
     /* A6 — the server sends `roles` on every row while a module with roles is
        on, and on none otherwise, so one row is enough to know. */
     rolesOn: response.data.data.some((row) => row.roles !== undefined),
+    ...(response.data.meta.shop_counts ? { shopCounts: response.data.meta.shop_counts } : {}),
   };
 };
 
@@ -446,9 +466,13 @@ interface PartyDetailApiResponse {
  * again. A toast would say the same thing and then disappear, leaving an empty
  * screen with no explanation.
  */
-export const getParty = async (id: string, signal?: AbortSignal): Promise<PartyDetailResult> => {
+export const getParty = async (
+  id: string,
+  signal?: AbortSignal,
+  book?: 'shop'
+): Promise<PartyDetailResult> => {
   const response = await api.get<PartyDetailApiResponse>(
-    API_PATHS.PARTY(id),
+    `${API_PATHS.PARTY(id)}${book ? '?book=shop' : ''}`,
     ubConfig({ signal, suppressErrorSnackbar: true })
   );
   const { summary, credit } = response.data.data;

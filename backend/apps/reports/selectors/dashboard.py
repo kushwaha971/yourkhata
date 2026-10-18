@@ -5,9 +5,8 @@ today, what am I running out of" (§1). Every figure here is ALREADY a figure
 somewhere else in the product, and the rule this module keeps is that it is
 computed by the SAME code as that somewhere else:
 
-* To collect / To pay are `ledger_summary()` — the figures above the party
-  list and on `/ledger/aging`'s tabs.
-* (DEC-019) To collect / To pay read `shop_balance`: this is the Shop's home.
+* To collect / To pay reuse the Shop role facts and list totals (BP-09),
+  never the combined `shop_balance` cache or the Udhaar ledger.
   Due today and Upcoming were the Udhaar book's promise dates and are that
   app's Reminders now; Overdue is the Shop's overdue bills.
 * Cash in hand is the day book's `money_position()` up to today — the day
@@ -74,7 +73,7 @@ def party_tiles(*, tenant: Any, today: dt.date) -> dict[str, dict[str, Any]]:
     """To collect and To pay on the Shop's bills (FR-2, DEC-019, WP-06 DASH-02).
 
     The dashboard is the SHOP's home, and DEC-019 (owner, 12 Oct 2026) keeps each
-    app's money to itself: these are `shop_balance`, what is due on bills, never
+    app's money to itself: these are separate customer/supplier dues, never
     the Udhaar book's figure. Due today, Upcoming and the party half of Overdue
     were the udhaar book's promise dates (`collection_buckets`) and went with it
     to that app's Reminders; the Shop's overdue is its overdue BILLS.
@@ -85,16 +84,19 @@ def party_tiles(*, tenant: Any, today: dt.date) -> dict[str, dict[str, Any]]:
     over an empty supplier list. The money held the other way round (a
     customer's advance, a supplier paid ahead) rides beside each tile as
     `advances`, named, rather than vanishing or being folded in. A party who is
-    both is in both lists, as the lists already show them; their net position
-    is decision D-03's and nothing here invents one.
+    both is in both lists with its own role balance (D-03, BP-09). The amounts
+    are never netted against the other role.
     """
     from apps.parties.constants import PartyStatus
     from apps.parties.models import Party
     from apps.parties.selectors.party import party_totals
+    from apps.parties.selectors.shop import with_shop_facts
 
-    active = Party.objects.for_tenant(tenant).filter(status=PartyStatus.ACTIVE)
-    customers = party_totals(active.filter(is_customer=True), field="shop_balance")
-    suppliers = party_totals(active.filter(is_supplier=True), field="shop_balance")
+    active = with_shop_facts(
+        Party.objects.for_tenant(tenant).filter(status=PartyStatus.ACTIVE), tenant=tenant
+    )
+    customers = party_totals(active.filter(is_customer=True), field="shop_customer_balance")
+    suppliers = party_totals(active.filter(is_supplier=True), field="shop_supplier_list_balance")
     return {
         "to_collect": {
             "amount": _money(customers["receivable"]),
@@ -384,19 +386,20 @@ def top_debtors(*, tenant: Any) -> list[dict[str, Any]]:
     """
     from apps.parties.constants import PartyStatus
     from apps.parties.models import Party
+    from apps.parties.selectors.shop import with_shop_facts
 
     rows = (
-        Party.objects.for_tenant(tenant)
+        with_shop_facts(Party.objects.for_tenant(tenant), tenant=tenant)
         # DEC-019 — who owes the SHOP most, on bills.
-        .filter(status=PartyStatus.ACTIVE, is_customer=True, shop_balance__gt=ZERO)
-        .order_by("-shop_balance", "name", "id")
-        .only("id", "name", "shop_balance", "collection_date", "mobile")[:TOP_DEBTORS_LIMIT]
+        .filter(status=PartyStatus.ACTIVE, is_customer=True, shop_customer_balance__gt=ZERO)
+        .order_by("-shop_customer_balance", "name", "id")
+        .only("id", "name", "collection_date", "mobile")[:TOP_DEBTORS_LIMIT]
     )
     return [
         {
             "id": str(party.id),
             "name": party.name,
-            "balance": _money(party.shop_balance),
+            "balance": _money(party.shop_customer_balance),
             "collection_date": (
                 party.collection_date.isoformat() if party.collection_date else None
             ),
@@ -410,15 +413,20 @@ def top_creditors(*, tenant: Any) -> list[dict[str, Any]]:
     """WP-06 — the five suppliers the Shop owes most: the top of `/suppliers?balance=i_owe`."""
     from apps.parties.constants import PartyStatus
     from apps.parties.models import Party
+    from apps.parties.selectors.shop import with_shop_facts
 
     rows = (
-        Party.objects.for_tenant(tenant)
-        .filter(status=PartyStatus.ACTIVE, is_supplier=True, shop_balance__lt=ZERO)
-        .order_by("shop_balance", "name", "id")
-        .only("id", "name", "shop_balance")[:TOP_DEBTORS_LIMIT]
+        with_shop_facts(Party.objects.for_tenant(tenant), tenant=tenant)
+        .filter(status=PartyStatus.ACTIVE, is_supplier=True, shop_supplier_list_balance__lt=ZERO)
+        .order_by("shop_supplier_list_balance", "name", "id")
+        .only("id", "name")[:TOP_DEBTORS_LIMIT]
     )
     return [
-        {"id": str(party.id), "name": party.name, "balance": _money(-party.shop_balance)}
+        {
+            "id": str(party.id),
+            "name": party.name,
+            "balance": _money(-party.shop_supplier_list_balance),
+        }
         for party in rows
     ]
 

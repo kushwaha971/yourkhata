@@ -87,16 +87,36 @@ def _channel(raw: Any) -> str:
     return raw
 
 
-def trade_balance(party: Party) -> Decimal:
+def trade_balance(party: Party, book: str = "main") -> Decimal:
     """A7 BR-7 — what the udhaar book is owed: `balance` (DEC-019).
 
     A party reminder never quotes a loan, a bill or a library fee: each is another
     app's money, reminded from that app's own source.
     """
+    if book == "shop":
+        if hasattr(party, "shop_customer_balance"):
+            return party.shop_customer_balance
+        from apps.parties.selectors.shop import shop_party_facts
+
+        current = shop_party_facts(tenant=party.tenant_id, party_id=party.id)
+        return current.shop_customer_balance if current else ZERO
     return party.balance or ZERO
 
 
-def _check_remindable(party: Party | None, channel: str | None) -> Party:
+def _book(raw: Any, ctx: Ctx) -> str:
+    book = "main" if raw is None or raw == "" else raw
+    if book not in ("main", "shop"):
+        raise ValidationFailed({"book": ["Choose the Shop or Udhaar book."]})
+    if book == "shop":
+        from apps.common.exceptions import ModuleDisabled
+        from apps.platform_app.services.entitlements import effective_modules
+
+        if "sales" not in effective_modules(ctx.tenant):
+            raise ModuleDisabled(details={"module": "sales"})
+    return book
+
+
+def _check_remindable(party: Party | None, channel: str | None, book: str = "main") -> Party:
     """The three refusals every path shares, in the order a merchant hits them."""
     if party is None:
         raise NotFound("No such party.")
@@ -104,12 +124,12 @@ def _check_remindable(party: Party | None, channel: str | None) -> Party:
         raise BusinessRuleViolation(
             "party_archived", "This party is archived. Restore them to remind them."
         )
-    if trade_balance(party) <= ZERO:
+    if trade_balance(party, book) <= ZERO:
         # FR-8 / CCR-2 — nothing to collect, or money the MERCHANT owes.
         raise BusinessRuleViolation(
             "nothing_due",
             "Nothing is due from this party.",
-            details={"party_id": str(party.id), "balance": str(trade_balance(party))},
+            details={"party_id": str(party.id), "balance": str(trade_balance(party, book))},
         )
     if channel in NEEDS_MOBILE and not party.mobile:
         raise ValidationFailed({"party_id": ["Party has no mobile"]})
@@ -156,6 +176,7 @@ def preview_reminder(
     note: Any = "",
     source_type: Any = None,
     source_id: Any = None,
+    book: Any = "main",
 ) -> dict:
     """The text the sheet shows; writes nothing (see the module docstring).
 
@@ -165,14 +186,16 @@ def preview_reminder(
     """
     if source_type or source_id:
         return _preview_source(ctx, source_type, source_id, note)
-    party = _check_remindable(_find_party(ctx, party_id), channel=None)
-    trade = trade_balance(party)
+    book = _book(book, ctx)
+    party = _check_remindable(_find_party(ctx, party_id), channel=None, book=book)
+    trade = trade_balance(party, book)
     composed = messaging.compose_reminder(
         tenant=ctx.tenant, party=party, balance=trade, note=_clean_note(note)
     )
     return {
         "party_id": str(party.id),
-        "balance": str(trade),
+        **({"book": "shop"} if book == "shop" else {}),
+        "balance": f"{trade:.2f}",
         "text": composed.text,
         "sms_text": composed.sms_text,
         "wa_url": composed.wa_url,
@@ -192,7 +215,8 @@ def create_reminder(*, ctx: Ctx, payload: dict) -> Reminder:
         return _create_source_reminder(ctx, payload)
     channel = _channel(payload.get("channel"))
     note = _clean_note(payload.get("note") or "")
-    party = _check_remindable(_find_party(ctx, payload.get("party_id")), channel)
+    book = _book(payload.get("book"), ctx)
+    party = _check_remindable(_find_party(ctx, payload.get("party_id")), channel, book)
     due_on = payload.get("due_on") or tenant_today(ctx.tenant)
     if isinstance(due_on, str):
         try:
@@ -206,6 +230,7 @@ def create_reminder(*, ctx: Ctx, payload: dict) -> Reminder:
         due_on=due_on,
         channel=channel,
         kind=ReminderKind.MANUAL,
+        module="sales" if book == "shop" else "",
         status=ReminderStatus.SCHEDULED,
         note=note,
         scheduled_for=timezone.now(),
@@ -261,8 +286,9 @@ def send_reminder(*, ctx: Ctx, reminder_id: Any, bulk: bool = False, text: Any =
         )
     if reminder.source_id is not None:
         return _send_source_reminder(ctx, reminder, bulk=bulk, text=text)
+    book = _book("shop" if reminder.module == "sales" else "main", ctx)
     party = _check_remindable(
-        lock_party(tenant=ctx.tenant, party_id=reminder.party_id), reminder.channel
+        lock_party(tenant=ctx.tenant, party_id=reminder.party_id), reminder.channel, book
     )
     # BR-1 — structurally on this path too: a party reminder (`module=''`) has no
     # policy, so this returns without a query.
@@ -274,7 +300,7 @@ def send_reminder(*, ctx: Ctx, reminder_id: Any, bulk: bool = False, text: Any =
         exclude_id=reminder.id,
     )
     warnings = [] if bulk else _recent_warning(party)
-    balance = trade_balance(party)
+    balance = trade_balance(party, book)
 
     if reminder.channel == ReminderChannel.CALL:
         # FR-4 — the dialler opens; there is no message, so no message log.
@@ -348,6 +374,7 @@ def bulk_reminders(*, ctx: Ctx, payload: dict) -> dict:
     channel = _channel(payload.get("channel"))
     if payload.get("sources") is not None:
         return _bulk_source_reminders(ctx, payload, channel)
+    book = _book(payload.get("book"), ctx)
     raw_ids = payload.get("party_ids")
     if not isinstance(raw_ids, list) or not 1 <= len(raw_ids) <= BULK_REMINDER_MAX:
         raise ValidationFailed(
@@ -359,22 +386,32 @@ def bulk_reminders(*, ctx: Ctx, payload: dict) -> dict:
         str(p.id): p for p in Party.objects.for_tenant(ctx.tenant).filter(pk__in=_valid_uuids(ids))
     }
 
+    if book == "shop":
+        from apps.parties.selectors.shop import with_shop_facts
+
+        parties = {
+            str(p.id): p
+            for p in with_shop_facts(
+                Party.objects.for_tenant(ctx.tenant).filter(pk__in=_valid_uuids(ids)),
+                tenant=ctx.tenant,
+            )
+        }
     items: list[dict] = []
     skipped: list[dict] = []
     for party_id in ids:
         party = parties.get(party_id)
-        reason = _skip_reason(party, channel)
+        reason = _skip_reason(party, channel, book)
         if reason:
             skipped.append({"party_id": party_id, "reason": reason})
             continue
         reminder = create_reminder(
-            ctx=ctx, payload={"party_id": party_id, "channel": channel, "note": note}
+            ctx=ctx, payload={"party_id": party_id, "channel": channel, "note": note, "book": book}
         )
         if channel == ReminderChannel.SMS:
             send_reminder(ctx=ctx, reminder_id=reminder.id, bulk=True)
             items.append({"party_id": party_id, "reminder_id": str(reminder.id)})
             continue
-        trade = trade_balance(party)
+        trade = trade_balance(party, book)
         composed = messaging.compose_reminder(
             tenant=ctx.tenant,
             party=party,
@@ -413,12 +450,12 @@ def _valid_uuids(values: list[str]) -> list[str]:
     return valid
 
 
-def _skip_reason(party: Party | None, channel: str) -> str | None:
+def _skip_reason(party: Party | None, channel: str, book: str = "main") -> str | None:
     if party is None:
         return "not_found"
     if party.status == PartyStatus.ARCHIVED:
         return "archived"
-    if trade_balance(party) <= ZERO:
+    if trade_balance(party, book) <= ZERO:
         return "nothing_due"
     if not party.mobile:
         return "no_mobile"

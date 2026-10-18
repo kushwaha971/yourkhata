@@ -75,11 +75,31 @@ describe('partyListSlice', () => {
     expect(loaded.rows).toHaveLength(1);
     expect(loaded.status).toBe('succeeded');
 
-    const appended = partyListReducer(loaded, fulfilled({ ...payload, mode: 'append' }));
+    const appended = partyListReducer(
+      loaded,
+      fulfilled({
+        ...payload,
+        rows: [{ ...row, id: 'second', name: 'Sunita Stores' }],
+        mode: 'append',
+      })
+    );
     expect(appended.rows).toHaveLength(2);
 
     const replaced = partyListReducer(appended, fulfilled());
     expect(replaced.rows).toHaveLength(1);
+  });
+
+  /** Mobile Show more and returning from a person must never duplicate a customer. */
+  it('merges an overlapping mobile page once and refreshes its existing rows', () => {
+    const loaded = partyListReducer(initial, fulfilled());
+    const pageTwo = fulfilled({
+      ...payload,
+      rows: [row, { ...row, id: 'second' }],
+      mode: 'append',
+    });
+    const first = partyListReducer(loaded, pageTwo);
+    const replay = partyListReducer(first, pageTwo);
+    expect(replay.rows.map((party) => party.id)).toEqual([row.id, 'second']);
   });
 
   it('treats an aborted request as a superseded keystroke, not a failure', () => {

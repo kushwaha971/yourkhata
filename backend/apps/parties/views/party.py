@@ -12,7 +12,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from django.db.models import F, Q
+from django.db.models import Count, F, Q
 from django.shortcuts import get_object_or_404
 from rest_framework.decorators import action
 from rest_framework.permissions import SAFE_METHODS, IsAuthenticated
@@ -29,11 +29,7 @@ from apps.common.viewsets import TenantScopedNoDeleteViewSet
 from apps.parties.constants import archive_via
 from apps.parties.filters import PartyFilterSet, list_balance_field
 from apps.parties.models import Party, PartyRelation
-from apps.parties.permissions import (
-    PartyManagerActions,
-    PartyPermissions,
-    WriteOffPermissions,
-)
+from apps.parties.permissions import PartyManagerActions, PartyPermissions, WriteOffPermissions
 from apps.parties.selectors.party import (
     list_parties,
     party_detail_queryset,
@@ -54,10 +50,7 @@ from apps.parties.serializers.party import (
     PartyUpdateSerializer,
     PartyWriteSerializer,
 )
-from apps.parties.serializers.relation import (
-    PartyRelationCreateSerializer,
-    PartyRelationSerializer,
-)
+from apps.parties.serializers.relation import PartyRelationCreateSerializer, PartyRelationSerializer
 from apps.parties.services.archive import archive_party, bulk_archive_parties, restore_party
 from apps.parties.services.credit import check_credit, credit_mode, credit_snapshot, may_override
 from apps.parties.services.crud import create_party, update_party
@@ -122,7 +115,12 @@ class PartyViewSet(CsvExportMixin, TenantScopedNoDeleteViewSet):
     # anything not named here is ignored by DRF's ordering backend rather than
     # passed through. `collection_date` is here because CR-024 accepted it into
     # Part 22's four-value list.
-    ordering_fields = ("name", "balance", "last_activity_at", "collection_date")
+    ordering_fields = ("name", "balance", "last_activity_at", "collection_date", "oldest_due_on")
+    nulls_last_ordering_fields = (
+        "shop_customer_open_due_on",
+        "shop_supplier_open_due_on",
+        "shop_last_activity_at",
+    )
     permission_classes = [
         IsAuthenticated,
         ModuleEnabled(ModuleCode.PARTIES),
@@ -202,7 +200,14 @@ class PartyViewSet(CsvExportMixin, TenantScopedNoDeleteViewSet):
         second query per row (§20.14.2).
         """
         if self.action == "list":
-            return list_parties(tenant=self.get_tenant())
+            rows = list_parties(tenant=self.get_tenant())
+            if self.request.query_params.get("book") == "shop":
+                from apps.parties.selectors.shop import with_shop_facts
+
+                rows = with_shop_facts(rows, tenant=self.get_tenant()).order_by(
+                    F("shop_last_activity_at").desc(nulls_last=True), "-id"
+                )
+            return rows
         return party_detail_queryset(tenant=self.get_tenant())
 
     def list(self, request: Any, *args: Any, **kwargs: Any) -> Any:
@@ -231,6 +236,31 @@ class PartyViewSet(CsvExportMixin, TenantScopedNoDeleteViewSet):
             "totals": PartyTotalsSerializer(totals).data,
             "has_any": bool(page) or self._has_any(request),
         }
+        if request.query_params.get("book") == "shop" and request.query_params.get("type") in (
+            "customer",
+            "supplier",
+        ):
+            params = request.query_params.copy()
+            params.pop("balance", None)
+            params.pop("late", None)
+            base = PartyFilterSet(params, queryset=self.get_queryset(), request=request).qs
+            field = list_balance_field(request)
+            prefix = "shop_supplier" if params.get("type") == "supplier" else "shop_customer"
+            counts = base.aggregate(
+                all=Count("id"),
+                owes=Count("id", filter=Q(**{f"{field}__gt": 0})),
+                advance=Count("id", filter=Q(**{f"{field}__lt": 0})),
+                late=Count(
+                    "id",
+                    filter=Q(
+                        **{
+                            f"{prefix}_balance__gt": 0,
+                            f"{prefix}_due_on__lt": tenant_today(self.get_tenant()),
+                        }
+                    ),
+                ),
+            )
+            meta["shop_counts"] = counts
         return StandardResponse.ok(serializer.data, meta=meta)
 
     def _has_any(self, request: Any) -> bool:
@@ -258,6 +288,18 @@ class PartyViewSet(CsvExportMixin, TenantScopedNoDeleteViewSet):
     def ordering_term(self, term: str) -> str:
         """DEC-019 — `?ordering=balance` sorts by the book the list reads (`StableOrderingFilter`)."""
         field = list_balance_field(self.request)
+        if self.request.query_params.get("book") == "shop":
+            name = term.lstrip("-")
+            if name == "oldest_due_on":
+                return ("-" if term.startswith("-") else "") + (
+                    "shop_supplier_open_due_on"
+                    if self.request.query_params.get("type") == "supplier"
+                    else "shop_customer_open_due_on"
+                )
+            if name == "last_activity_at":
+                return term.replace("last_activity_at", "shop_last_activity_at")
+        if self.request.query_params.get("book") != "shop" and term.lstrip("-") == "oldest_due_on":
+            return "-last_activity_at"
         if field != "balance" and term.lstrip("-") == "balance":
             return term.replace("balance", field)
         return term
@@ -267,6 +309,7 @@ class PartyViewSet(CsvExportMixin, TenantScopedNoDeleteViewSet):
         context = self.get_serializer_context()
         # DEC-019 — the row's `balance` is the figure of the book the list reads.
         context["balance_field"] = list_balance_field(self.request)
+        context["shop_kind"] = self.request.query_params.get("type", "customer")
         tenant = self.get_tenant()
         if enabled_roles(tenant):
             context["party_roles"] = roles_for(tenant, [party.pk for party in page or ()])
@@ -274,7 +317,14 @@ class PartyViewSet(CsvExportMixin, TenantScopedNoDeleteViewSet):
 
     def _detail(self, party: Party) -> dict:
         """`PartyDetailSerializer` with the tenant in hand, so `roles` costs no tenant read."""
-        return PartyDetailSerializer(party, context={"tenant": self.get_tenant()}).data
+        data = PartyDetailSerializer(party, context={"tenant": self.get_tenant()}).data
+        if self.request.query_params.get("book") == "shop":
+            from apps.parties.selectors.shop import serialize_shop_facts, shop_party_facts
+
+            current = shop_party_facts(tenant=self.get_tenant(), party_id=party.id)
+            if current is not None:
+                data["shop"] = serialize_shop_facts(current, today=tenant_today(self.get_tenant()))
+        return data
 
     def retrieve(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         """The party, plus the two blocks the khata page's header draws.

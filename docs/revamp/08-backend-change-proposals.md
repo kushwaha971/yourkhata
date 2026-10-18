@@ -1,6 +1,6 @@
 # 08 · Backend change proposals
 
-Status: **proposals only. None is approved. None may be built without the owner's written approval.** 17 Oct 2026.
+Status: **BP-09 approved by the owner on 18 Oct 2026; all other backend proposals remain unapproved unless separately recorded.**
 
 The revamp is mainly UI, UX and frontend performance. A backend change is listed here only if the audit found a demonstrated need. Library and Lending contracts are fixed: proposals for them change no request, response, rule or table; they only make the same answer arrive faster or safer, and each still needs approval.
 
@@ -68,3 +68,19 @@ The client can and will lock buttons (05 §4). The server is the last guard. The
 - No change to any Library or Lending calculation, model, migration, or response field.
 - No new notification types, no push (owner directive; NTF-04 needs ADR-024).
 - No pagination change on Library/Lending lists (page-number paging is part of their contract); long lists are handled in the client (05 F8).
+
+## BP-09 · Shop data needed by the approved Counter Mode screens
+
+**Status: APPROVED, 18 Oct 2026 08:13 UTC (13:43 IST). Owner: "Approve BP-09 and complete the matching features".** This is a prerequisite for faithful functionality, not a replacement redesign plan. The owner clarified that the Claude artifact is the target for every revamp screen, rather than small changes to existing layouts. Reference: https://claude.ai/artifact/GCqwcB9AuZ5Yhqhu8xgobh, Customers and filters.
+
+- **Why:** the current party list exposes a single signed `shop_balance` and generic `last_activity_at`; it cannot faithfully show separate customer/supplier amounts, bill-based days late, or the last Shop document. The current person-level reminder reads the Udhaar balance. These are TV-01, TV-02, TV-07 and P-08-03 already recorded in the Shop programme and screen specification.
+- **Touches:** Shop-scoped reads in `backend/apps/parties` (selector/filter/serializer); the existing reminder preview/manual-send service and serializers; corresponding Shop frontend adapters. Exact service ownership must be confirmed against current source before editing. No Library/Lending endpoint, calculation, model or workflow changes.
+- **Before → after:** add backward-compatible Shop-only fields for customer receivable/customer credit and supplier payable/supplier credit, oldest unpaid bill due date/days late, and last Shop activity date/type. Add supported late-bucket filters and oldest-overdue ordering to the existing Shop party list. Compose and log editable customer-level reminders from current Shop amounts, with an explicit Shop book context; absent context keeps existing Udhaar behaviour.
+- **Business invariants:** do not net customer and supplier balances; do not treat a supplier payable as customer advance; derive amounts from existing document, allocation, credit/refund engines rather than inventing frontend arithmetic. Preserve existing financial posting, stock costing, invoices and historical records. Explicit settlement remains a separate unapproved proposal and is not included here.
+- **Compatibility/data:** additive optional read fields and optional reminder book context, preserving existing defaults. No record deletion, balance rewrite or new financial transaction type. If implementation reveals that a migration or different contract is necessary, document the exact change before building it.
+- **UI consequence:** once these are verified, Customers can show Late / Late by / Most late first, last Shop activity and inline Remind exactly as the reference intends. Do not fabricate these values or route a Shop reminder through the Udhaar preview meanwhile.
+- **Risk:** medium to high because incorrect recipient amounts are financial misinformation. Staff permissions, tenant isolation, reminder caps/hours and customer-facing branding rules continue to apply.
+- **Acceptance tests:** same person owes ₹1,000 as customer and is owed ₹600 as supplier: each list shows its own amount, never ₹400 or a false advance. Cover partial payment, unallocated customer/supplier advances, credits, returns/refunds, settled, archived, no bills, due today versus overdue, and an older Udhaar entry versus newer Shop document. Reminder preview must use a fresh Shop figure, preserve final edited text in the existing log, retain recipient/cap/hour checks, and never claim delivery from app handoff. Existing no-book Udhaar requests and Library/Lending contracts must be unchanged. Add query-count checks on the 2,000-person scale book; no per-row invoice queries.
+- **Rollback:** remove the additive client reads/controls and optional context, retaining prior fields/defaults. No destructive data rollback should be required.
+
+Implementation note (18 Oct): role-aware Shop headline/top-party dashboard consumers also reuse this read seam so the lists they open agree. Existing report/aging consumers and the full person-page presentation remain separate follow-up pieces; see the implementation report’s limitations. No posting/model/stock change was made.

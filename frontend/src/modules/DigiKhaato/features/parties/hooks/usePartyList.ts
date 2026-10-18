@@ -27,6 +27,7 @@ import {
   selectPartyRolesOn,
   selectPartyRows,
   selectPartySelection,
+  selectShopPartyCounts,
 } from '../redux/partyListSlice';
 import { fetchPartyList } from '../redux/partyListThunk';
 import { abortWarmPartyList, claimWarmPartyList } from '../redux/partyListWarmup';
@@ -35,10 +36,11 @@ import { partyTotals } from '../view-model/partyDisplay';
 import { usePartyListUrl } from './usePartyListUrl';
 
 import type { PartyBalanceFilter, PartyKind } from '../constants/partyFilters';
-import type { Party, PartyListFilters } from '../types/party.types';
+import type { Party, PartyListFilters, ShopPartyCounts } from '../types/party.types';
 import type { PartyListTotals } from '../view-model/partyDisplay';
 
 export interface UsePartyListResult {
+  readonly shopCounts: ShopPartyCounts | null;
   readonly rows: readonly Party[];
   readonly meta: PageMeta;
   readonly filters: PartyListFilters;
@@ -102,6 +104,7 @@ export function usePartyList(
       ...DEFAULT_PARTY_FILTERS,
       ...(kind ? { type: kind } : {}),
       book: book ?? 'main',
+      ...(book === 'shop' && kind === 'customer' ? { ordering: 'oldest_due_on' } : {}),
     }),
     [kind, book]
   );
@@ -117,6 +120,7 @@ export function usePartyList(
   const totalsScope = useAppSelector(selectPartyListTotalsScope);
   const overLimit = useAppSelector(selectPartyOverLimit);
   const rolesOn = useAppSelector(selectPartyRolesOn);
+  const shopCounts = useAppSelector(selectShopPartyCounts);
 
   /**
    * The page-sum fallback, computed HERE rather than in the reducer.
@@ -193,7 +197,10 @@ export function usePartyList(
   // Claiming it takes over that exact request — abort handle included — rather
   // than issuing a second identical GET.
   useEffect(() => {
-    const arg = { params: filters, mode };
+    const arg = {
+      params: filters,
+      mode: mode === 'append' && filters.page > 1 ? ('append' as const) : ('replace' as const),
+    };
     // Claimed: the warm-up owns that request's lifetime, so there is nothing to
     // dispatch and nothing to abort here. Not claimed: this is something the
     // warm-up did not predict, so anything still speculating is superseded
@@ -264,6 +271,7 @@ export function usePartyList(
         filters.type !== defaults.type,
         filters.balance,
         filters.collection,
+        filters.late,
         filters.tag,
         filters.credit,
         filters.role,
@@ -274,6 +282,7 @@ export function usePartyList(
       filters.type,
       filters.balance,
       filters.collection,
+      filters.late,
       filters.tag,
       filters.credit,
       filters.role,
@@ -342,6 +351,7 @@ export function usePartyList(
 
   return {
     rows,
+    shopCounts,
     meta,
     filters,
     status,

@@ -2,12 +2,14 @@
 
 import { memo } from 'react';
 
-import { UbAmount, UbBox, UbStatusBadge, UbTagList, UbText } from 'src/design-system';
+import { UbAmount, UbBox, UbButton, UbStatusBadge, UbTagList, UbText } from 'src/design-system';
+import type { TranslateFn } from 'src/hooks/useTranslation';
+import { compareMoney } from 'src/utils/money';
 
 import { balanceView } from '../view-model/partyDisplay';
 import { toTagListItems } from '../view-model/partyTagDisplay';
 
-import type { PartyTag } from '../types/party.types';
+import type { Party, PartyTag } from '../types/party.types';
 
 /**
  * What a party row is MADE OF: the five cells, memoised, each taking exactly
@@ -30,6 +32,10 @@ import type { PartyTag } from '../types/party.types';
 
 export interface PartyNameCellProps {
   readonly name: string;
+  readonly wrap?: boolean;
+  readonly contact?: string;
+  readonly statusLabel?: string;
+  readonly roleLabel?: string;
   /** PTY-05. Empty for an untagged party, which is most of them. */
   readonly tags: readonly PartyTag[];
   /**
@@ -55,6 +61,10 @@ export interface PartyNameCellProps {
 
 function PartyNameCellBase({
   name,
+  wrap = false,
+  contact,
+  statusLabel,
+  roleLabel,
   tags,
   reserveTagLane,
   tagsLabel,
@@ -63,9 +73,28 @@ function PartyNameCellBase({
 }: Readonly<PartyNameCellProps>) {
   return (
     <UbBox as="span" className="flex min-w-0 flex-col gap-1">
-      <UbText as="span" variant="body-sm-medium" truncate>
+      <UbText
+        as="span"
+        variant="body-sm-medium"
+        truncate={!wrap}
+        className={wrap ? 'whitespace-normal break-words' : undefined}
+      >
         {name}
       </UbText>
+      {roleLabel && (
+        <UbStatusBadge tone="warning" label={roleLabel} className="max-w-full self-start whitespace-normal" />
+      )}
+      {statusLabel && <UbStatusBadge tone="neutral" label={statusLabel} />}
+      {contact && (
+        <UbText
+          as="span"
+          variant="caption"
+          tone="tertiary"
+          className="whitespace-normal break-words"
+        >
+          {contact}
+        </UbText>
+      )}
       {reserveTagLane || tags.length > 0 ? (
         <UbTagList
           tags={toTagListItems(tags)}
@@ -82,17 +111,20 @@ PartyNameCellBase.displayName = 'PartyNameCell';
 export const PartyNameCell = memo(PartyNameCellBase);
 
 export interface PartyBalanceCellProps {
+  readonly labelHidden?: boolean;
   /** Decimal string; never a number, never preformatted (R-TS-7). */
   readonly balance: string;
   /** The three direction words, pre-translated by the screen. */
   readonly labels: Readonly<Record<string, string>>;
 }
 
-function PartyBalanceCellBase({ balance, labels }: Readonly<PartyBalanceCellProps>) {
+function PartyBalanceCellBase({ balance, labels, labelHidden }: Readonly<PartyBalanceCellProps>) {
   const view = balanceView(balance);
   return (
     <UbAmount
       value={balance}
+      labelHidden={labelHidden}
+      className="whitespace-normal"
       tone={view.tone}
       sign={view.sign}
       /* §23.2.6 rule 2 — the label sits beside the figure at every width. The
@@ -136,3 +168,39 @@ function PartyStatusCellBase({ label, archived }: Readonly<PartyStatusCellProps>
 }
 PartyStatusCellBase.displayName = 'PartyStatusCell';
 export const PartyStatusCell = memo(PartyStatusCellBase);
+
+/** Same action and permission/recipient gate in a table or phone row. */
+export const ShopCustomerRowActions = memo(function ShopCustomerRowActions({
+  party,
+  t,
+  onOpen,
+  onRemind,
+}: Readonly<{
+  party: Party;
+  t: TranslateFn;
+  onOpen?: (party: Party) => void;
+  onRemind?: (party: Party) => void;
+}>) {
+  const remindable = Boolean(
+    onRemind &&
+    party.shop &&
+    party.mobile &&
+    party.status !== 'archived' &&
+    compareMoney(party.balance, '0') > 0
+  );
+  const label = t(remindable ? 'parties.list.shop.remind' : 'parties.list.shop.viewBills');
+  if (!remindable && !onOpen) return null;
+  return (
+    <UbButton
+      variant="outlineNeutral"
+      size="sm"
+      aria-label={`${label} · ${party.name}`}
+      onClick={() => {
+        if (remindable) onRemind?.(party);
+        else onOpen?.(party);
+      }}
+    >
+      {label}
+    </UbButton>
+  );
+});

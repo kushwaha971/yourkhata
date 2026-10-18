@@ -75,6 +75,10 @@ class ReminderListCreateView(_ReminderBase):
         # A7 §11 — the history's module filter; `module=` alone is the shop's.
         if "module" in params:
             rows = rows.filter(module=params.get("module") or "")
+        if params.get("book") == "shop":
+            rows = rows.filter(module="sales", source_id__isnull=True)
+        elif params.get("book") == "main":
+            rows = rows.filter(module="", source_id__isnull=True)
         if params.get("party_id"):
             try:
                 rows = rows.filter(party_id=uuid.UUID(params["party_id"]))
@@ -184,6 +188,7 @@ class ReminderPreviewView(_ReminderBase):
                 note=data.get("note") or "",
                 source_type=data.get("source_type"),
                 source_id=data.get("source_id"),
+                book=data.get("book") or "main",
             )
         )
 

@@ -6,6 +6,9 @@ Newest first. Each decision says who made it and when. "Open" means it waits for
 
 | ID | Decision | Status | By, date |
 |---|---|---|---|
+| R-DEC-12 | Approve BP-09 Shop prerequisites: separate customer/supplier figures, bill-based lateness and last Shop activity, editable Shop reminders. Owner’s exact answer: "Approve BP-09 and complete the matching features". Library/Lending remain frozen. | decided | owner, 18 Oct 2026, recorded 08:13 UTC (13:43 IST) |
+| R-DEC-11 | The Claude Counter Mode artifact is the composition/interaction reference across the whole revamp, not only Customers. Reuse existing components and business flows underneath; do not preserve old layouts and call colour/spacing changes a redesign. Owner’s words: "and this is not only about customer section"; then "yes proceed". Backend prerequisites are BP-09; they remain awaiting a separate approval under 08. | decided | owner, 18 Oct 2026, recorded during implementation |
+| R-DEC-10 | Build Shop and Udhaar screens (Phase 5), one piece at a time, starting with Shop Customers list and person page. Owner’s words: "Shop and Udhaar screens (Recommended): start with Shop Customers list and person page." Remaining shell work and backend proposals remain unapproved. | decided | owner, received before implementation; recorded 18 Oct 2026 06:33 UTC (12:03 IST) |
 | R-DEC-01 | Revamp is planning and design only until the owner approves a phase. No app code changes. | decided | owner, 17 Oct 2026 |
 | R-DEC-02 | Keep the Counter Mode direction: teal and marigold, white page background, dark teal sidebar. Changes `tokens/light.css` canvas when built. | decided | owner, 17 Oct 2026 |
 | R-DEC-03 | Shop Home: four-figure line (current spec) vs the earlier big sentence; proposal is both — sentence as a one-line phone header above the grid. | **open** | — |
@@ -22,8 +25,11 @@ Newest first. Each decision says who made it and when. "Open" means it waits for
 
 ## Progress
 
+18 Oct 2026 — R-DEC-10/11 Customers register, filter drawer and editable Shop reminder, plus approved BP-09 role-aware reads. Customer/supplier lists, person role header and Shop home headline panels no longer net the roles. The existing person-menu reminder now uses Shop amounts; its history and the Udhaar Sent tab are book-scoped. No financial posting/model or Library/Lending contract changed. This completes the Customers piece, **not the person-page or whole-app redesign**. Evidence, scores, remaining read-consumer gaps and measured costs: `docs/performance/2026-10-18-p5-customers.md`.
+
 | Date | What was done | Files |
 |---|---|---|
+| 18 Oct 2026 | R-DEC-10/11/12 Customers register and approved BP-09: Counter Mode summary/chips, search/filter/sort, desktop table and responsive phone rows; local scale-book browser checks, en/hi state sweep, full frontend tests, explicit feature-gap ratings. Person/Suppliers/Udhaar next. | docs/performance/2026-10-18-p5-customers.md; e2e/revamp-customers.mjs |
 | 17 Oct 2026 | Read-only audit of frontend, backend, existing docs and performance facts | 01, 02 |
 | 17 Oct 2026 | Goals, principles, navigation strategy, feedback and performance plan, shared components | 03, 04, 05, 06 |
 | 17 Oct 2026 | Screen specs for sign-in and onboarding, global shell, notifications, four module entry points | 07-screens/01–07 |
@@ -45,13 +51,15 @@ Newest first. Each decision says who made it and when. "Open" means it waits for
 
 ## Next
 
+**R-DEC-10/11/12 active:** Customers register/filter/reminder and BP-09 role-aware facts implemented and verified; deliver/push this piece before the next. Next: full Shop person-page redesign using §3 of 08 and the artifact, then Suppliers/Udhaar. Do not ask the phase or BP-09 approval again. Report details and remaining gaps are in `docs/performance/2026-10-18-p5-customers.md`. Historical Shop aging/report consumers still need their own role-aware/as-of review; person timeline/actions are not called redesigned by a header data correction. The desktop reference uses a scoped sentence rather than the older spec's retained stat tiles; this implementation follows the artifact.
+
 1. **Build Phase 4, approved (R-DEC-08)**, one piece at a time, in this order. After each piece, run the gates in CLAUDE.md, take phone and desktop screenshots in every state (R-DEC-07, method in 11), measure before and after with `e2e/perf-app.mjs` against the baseline in docs/performance/2026-10-17-app-baseline.md, then commit and report before starting the next.
    1. ~~F1 route loading views~~ done 17 Oct (b168527; results in docs/performance/2026-10-17-f1-loading-views.md). `RouteProgress` was not needed for link taps and moves into piece 2 if router.push taps still need it.
    2. ~~F2 pressed and pending states~~ done 18 Oct (results in docs/performance/2026-10-18-f2-pressed-and-pending.md). Full `npm run lint` takes over 25 minutes in the cloud container; lint changed files with `npx eslint --max-warnings=0 <files>` and say so.
    3. ~~F3 double-tap lock~~ done 18 Oct (results in docs/performance/2026-10-18-f3-double-tap-lock.md). Left for the screen work, not this piece: Collect's button still says "Save collection" while busy (no `busyLabel`; needs an en + hi string), and the "Not sure it was saved. Checking…" re-read in 07-screens/13 is not built (today the message is "Could not reach the server.", and Try again now replays safely). A Turbopack chunking duplicate (lucide's icon factory copied into the forms' validation-message chunk, ~0.6 KB on most form routes) appeared with this build; recorded in bundle-budgets.json, worth removing when someone has a build to spare.
    4. ~~F4 phone App button and App sheet; desktop sidebar app tree~~ done 18 Oct (results in docs/performance/2026-10-18-f4-app-button.md). Not built in this piece, each still in 07-screens/02: a figure on each app tile (no app's home figures are held app-wide yet), the "+ Add an app" tile (still in the business menu), the unsaved-changes guard on switching, the per-row pending spinner, the 64 px icon rail at 1024–1279 px (at 1024 the Customers filters now wrap to a second row because the rail is 52 px wider), hiding the bar while the keyboard is open, the `/account` page and the notifications popover. A long business name in the rail header still ends in "…".
    5. ~~R-DEC-09 one "Apps" row and the Apps page~~ done 18 Oct.
-   **Phase 4 (R-DEC-08) is complete.** Next session starts with START-NEXT-SESSION-PROMPT.txt: one decision card to the owner, "Shop and Udhaar screens" (Phase 5, recommended, starting with the Shop's Customers list and person page) or "Finish the shell first" (notifications, the You page, the icon rail). Neither is approved yet (R-DEC-01); record the answer as a new R-DEC before building.
+   **Phase 4 (R-DEC-08) is complete.** Owner chose Shop and Udhaar screens (R-DEC-10). Customers presentation is the first piece. Finish its report/push, then the person page. Do not ask the Phase 5/shell choice again; the omitted shell work remains unapproved.
    Library and Lending: shared shell only; their screens, endpoints and calculations stay as 02 freezes them.
 2. Owner answers the five open questions (Udhaar undo, reminder tabs, Close khata, Shop person bottom bar, "Plan ended"), plus R-DEC-03, R-DEC-04 and the BP items. These do not block step 1.
 3. Write the proposals the specs raised into 08 (BP-08 dual-role settle; Lending Today returning every loan and the loans / members N+1s; Library P-01…06; Lending FP-1…9; Shop P-08-01…06).

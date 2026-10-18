@@ -52,6 +52,7 @@ const URL_KEYS = [
   'type',
   'balance',
   'collection',
+  'late',
   'tag',
   'credit',
   'role',
@@ -96,6 +97,7 @@ const readFilters = (params: URLSearchParams): Partial<PartyListFilters> => {
   take('type', TYPES);
   take('balance', BALANCES);
   take('collection', COLLECTIONS);
+  take('late', ['overdue', 'not_due', '1_30', 'over_30']);
   take('credit', CREDITS);
   take('ordering');
   /* `tag` is a comma list of names and has no closed set — it is the merchant's

@@ -106,7 +106,7 @@ const ALL_CASES = [
   ['/customers', link('/dashboard'), '^/dashboard$', 'home'],
   ['/sales/invoices', button(/^New bill$/), '^/sales/invoices/new$', 'form-button'],
   ['/customers', (page) => (page.viewportSize().width < 1024
-    ? page.locator('main button').filter({ hasText: /C-0\d{5}/ }).filter({ visible: true }).first()
+    ? page.locator('main [data-testid="ub-grid-card"] button[aria-label^="Open "]').filter({ visible: true }).first()
     : page.locator('main tr[data-testid="ub-grid-row"] button:not([role="checkbox"])').filter({ visible: true }).first()),
   '^/parties/[^/]+$', 'detail-row'],
   ['/library', link('/library/members'), '^/library/members$', 'library-list'],
@@ -125,7 +125,7 @@ const PRESS_CASES = {
   390: [
     ['/customers', (p) => p.locator('nav a[href="/sales/invoices"]').filter({ visible: true }).first(), 'bottom-tab'],
     ['/sales/invoices', (p) => p.getByRole('button', { name: /^New bill$/ }).filter({ visible: true }).first(), 'primary-button'],
-    ['/customers', (p) => p.locator('main button').filter({ hasText: /C-0\d{5}/ }).filter({ visible: true }).first(), 'list-row'],
+    ['/customers', (p) => p.locator('main [data-testid="ub-grid-card"] button[aria-label^="Open "]').filter({ visible: true }).first(), 'list-row'],
   ],
   1280: [
     ['/customers', (p) => p.locator('nav a[href="/sales/invoices"]').filter({ visible: true }).first(), 'sidebar-row'],
@@ -177,7 +177,7 @@ const LOCK_CASES = [
   ['udhaar-entry', async (page) => {
     await page.goto(`${FRONTEND}/khata`, { waitUntil: 'networkidle' });
     const row = page.viewportSize().width < 1024
-      ? page.locator('main button').filter({ hasText: /C-0\d{5}/ }).filter({ visible: true }).first()
+      ? page.locator('main [data-testid="ub-grid-card"] button[aria-label^="Open "]').filter({ visible: true }).first()
       : page.locator('main tr[data-testid="ub-grid-row"] button:not([role="checkbox"])').filter({ visible: true }).first();
     await row.click();
     await page.waitForURL(/\/parties\/[^/]+$/, { timeout: 20_000 });
@@ -433,7 +433,11 @@ async function shootApps() {
   }
 }
 
-if (PIECE === 'press') await shootPress();
+if (PIECE === 'customers') {
+  const { shootCustomers } = await import('./revamp-customers.mjs');
+  await shootCustomers({ signedInContext, widths: WIDTHS, themes: THEMES, locale: LOCALE, dir: DIR, frontend: FRONTEND, failures, baseline: process.argv.includes('--baseline') });
+}
+else if (PIECE === 'press') await shootPress();
 else if (PIECE === 'apps') await shootApps();
 else if (PIECE === 'lock') await shootLock();
 else for (const width of WIDTHS) {

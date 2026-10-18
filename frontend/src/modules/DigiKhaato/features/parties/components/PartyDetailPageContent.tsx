@@ -26,6 +26,7 @@ import { useScrolledPast } from 'src/hooks/useScrolledPast';
 import { useTranslation, type TranslateFn } from 'src/hooks/useTranslation';
 import { ROUTES, partyStatementPath } from 'src/routes';
 import { copyText } from 'src/utils/clipboard';
+import { subtractMoney, compareMoney } from 'src/utils/money';
 
 import { PartyLedgerTimeline } from 'modules/DigiKhaato/features/ledger/components/PartyLedgerTimeline';
 import { useLedgerEntryForm } from 'modules/DigiKhaato/features/ledger/hooks/useLedgerEntryForm';
@@ -187,7 +188,7 @@ export function PartyDetailPageContent({
   /* DEC-019 — each app shows only its own money. Opened from the Shop this page
      is the person's bills and payments (`shopBook`); opened from the Udhaar book
      it is You gave / You got. The udhaar book's own tools (the pair, the opening
-     balance, the credit limit, reminders) are not offered on the Shop's page,
+     balance, the credit limit) are not offered on the Shop's page,
      and the Shop's payment tools are not offered in the Udhaar book. */
   const shopBook = book === 'shop';
   const udhaarApp = app === 'khata';
@@ -217,7 +218,7 @@ export function PartyDetailPageContent({
     collectionStatus,
     setCollectionDate,
     refetch,
-  } = usePartyDetail(id);
+  } = usePartyDetail(id, shopBook ? 'shop' : undefined);
 
   const archive = usePartyArchive(id);
   /* The header's ⋯. Every dialog it opens returns focus here when it closes,
@@ -293,7 +294,7 @@ export function PartyDetailPageContent({
       ? {
           id,
           name: party.name,
-          balance: summary?.balance ?? party.balance,
+          balance: shopBook ? (party.shop?.customerBalance ?? '0.00') : (summary?.balance ?? party.balance),
           mobile: party.mobile,
           isArchived,
         }
@@ -392,15 +393,34 @@ export function PartyDetailPageContent({
     can('payments.payment.write');
   /* The figure of the book this page reads: the Shop's from the detail once it has
      landed (a cached list row is the list's own book until then). */
+  const shopFacts = shown.shop;
   const balanceNow = shopBook
-    ? party
-      ? (party.shopBalance ?? '0.00')
-      : shown.balance
+    ? shopFacts
+      ? shown.isCustomer
+        ? shopFacts.customerBalance
+        : subtractMoney('0.00', shopFacts.supplierBalance)
+      : party
+        ? (party.shopBalance ?? '0.00')
+        : shown.balance
     : (summary?.balance ?? shown.balance);
-  const receivable = balanceNow && !balanceNow.startsWith('-') ? balanceNow : '';
+  const receivable =
+    shopBook && shopFacts
+      ? compareMoney(shopFacts.customerBalance, '0') > 0
+        ? shopFacts.customerBalance
+        : ''
+      : balanceNow && !balanceNow.startsWith('-')
+        ? balanceNow
+        : '';
   /* PUR-02 — what the shop owes this supplier, as a magnitude: the default
      amount of "Pay supplier". A negative balance is "You will give". */
-  const payable = balanceNow?.startsWith('-') ? balanceNow.slice(1) : '';
+  const payable =
+    shopBook && shopFacts
+      ? compareMoney(shopFacts.supplierBalance, '0') > 0
+        ? shopFacts.supplierBalance
+        : ''
+      : balanceNow?.startsWith('-')
+        ? balanceNow.slice(1)
+        : '';
   const canCollect =
     Boolean(party) &&
     !isArchived &&
@@ -451,7 +471,7 @@ export function PartyDetailPageContent({
                 t={t}
                 triggerRef={moreRef}
                 statementHref={canReadLedger ? partyStatementPath(id, book) : undefined}
-                onRemind={reminder.canRemind && !shopBook ? reminder.openSheet : undefined}
+                onRemind={reminder.canRemind ? reminder.openSheet : undefined}
                 /* Money in for a customer (or a party marked as neither);
                    money out for a supplier. A party that is both gets both. */
                 onRecordPayment={
@@ -504,6 +524,14 @@ export function PartyDetailPageContent({
               t={headerT}
               name={shown.name}
               balance={balanceNow}
+              shopBalances={
+                shopBook && shopFacts && shown.isCustomer && shown.isSupplier
+                  ? {
+                      customer: shopFacts.customerBalance,
+                      supplier: subtractMoney('0.00', shopFacts.supplierBalance),
+                    }
+                  : undefined
+              }
               displayCode={shown.displayCode}
               mobile={shown.mobile}
               isCustomer={shown.isCustomer}
@@ -519,9 +547,9 @@ export function PartyDetailPageContent({
             {/* LED-06 FR-6 — "did I already ask?", answered where the balance
                 is. Its own chunk: it carries the reminders slice, and a khata
                 that is only read should not wait on it to paint. */}
-            {party && canReadLedger && !shopBook && (
+            {party && canReadLedger && (
               <UbBox className="mt-3 border-t border-border-hairline pt-3">
-                <PartyReminderStripLazy partyId={id} />
+                <PartyReminderStripLazy partyId={id} book={shopBook ? 'shop' : 'main'} />
               </UbBox>
             )}
           </UbBox>
@@ -668,6 +696,7 @@ export function PartyDetailPageContent({
       {reminder.canRemind && reminder.open && (
         <PartyReminderSheetLazy
           partyId={reminder.partyId}
+          book={shopBook ? 'shop' : 'main'}
           open={reminder.open}
           onOpenChange={reminder.setOpen}
           title={reminder.title}

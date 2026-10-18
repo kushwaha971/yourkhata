@@ -59,7 +59,7 @@ export interface UsePartyDetailResult {
  * pasted URL the list is empty and this is `null`, which is exactly when a
  * skeleton IS the right answer.
  */
-export function usePartyDetail(id: string): UsePartyDetailResult {
+export function usePartyDetail(id: string, book?: 'shop'): UsePartyDetailResult {
   const dispatch = useAppDispatch();
 
   const party = useAppSelector(selectPartyDetail);
@@ -79,13 +79,13 @@ export function usePartyDetail(id: string): UsePartyDetailResult {
      drop the previous party's data and reject a late response for it. Without
      this the store briefly holds one party's name above another's balance. */
   useEffect(() => {
-    dispatch(partyDetailOpened(id));
-  }, [dispatch, id]);
+    dispatch(partyDetailOpened(book ? { id, book } : id));
+  }, [dispatch, id, book]);
 
   useEffect(() => {
-    const promise = dispatch(fetchPartyDetail(id));
+    const promise = dispatch(fetchPartyDetail(book ? { id, book } : id));
     return () => promise.abort();
-  }, [dispatch, id]);
+  }, [dispatch, id, book]);
 
   /* A mutation elsewhere marked us stale — refetch once, silently, and not
      while the link is impaired. Same judgement as the list: the page is already
@@ -98,9 +98,9 @@ export function usePartyDetail(id: string): UsePartyDetailResult {
      after the last write rather than between two of them. */
   useEffect(() => {
     if (!stale || isImpaired) return;
-    const promise = dispatch(fetchPartyDetail(id));
+    const promise = dispatch(fetchPartyDetail(book ? { id, book } : id));
     return () => promise.abort();
-  }, [stale, staleSeq, isImpaired, dispatch, id]);
+  }, [stale, staleSeq, isImpaired, dispatch, id, book]);
 
   const setCollectionDate = useCallback(
     (date: string | null) => {
@@ -110,8 +110,8 @@ export function usePartyDetail(id: string): UsePartyDetailResult {
   );
 
   const refetch = useCallback(() => {
-    void dispatch(fetchPartyDetail(id));
-  }, [dispatch, id]);
+    void dispatch(fetchPartyDetail(book ? { id, book } : id));
+  }, [dispatch, id, book]);
 
   return {
     party,

@@ -223,7 +223,7 @@ async function signIn(vp) {
 const navLink = (href) => (page) => page.locator(`nav a[href="${href}"]`).filter({ visible: true }).first();
 const mainLink = (href) => (page) => page.locator(`main a[href="${href}"]`).filter({ visible: true }).first();
 const customerRow = (vp) => (page) => (vp === 390
-  ? page.locator('main button').filter({ hasText: /C-0\d{5}/ }).filter({ visible: true }).first()
+  ? page.locator('main [data-testid="ub-grid-card"] button[aria-label^="Open "]').filter({ visible: true }).first()
   : page.locator('main tr[data-testid="ub-grid-row"] button:not([role="checkbox"])').filter({ visible: true }).first());
 
 function navigations(vp) {
@@ -260,7 +260,8 @@ function navigations(vp) {
     { id: 'library.members→seats', start: '/library/members', target: '^/library/seats$', tap: navLink('/library/seats'), kind: phone ? 'bottom tab' : 'sidebar row' },
     { id: 'lending.today→loans', start: '/lending', target: '^/lending/loans$', tap: navLink('/lending/loans'), kind: phone ? 'bottom tab' : 'sidebar row' },
   );
-  return list;
+  const onlyCases = arg('cases', '').split(',').filter(Boolean);
+  return onlyCases.length ? list.filter((nav) => onlyCases.includes(nav.id)) : list;
 }
 
 async function measureNav(page, reqs, nav, vp, profile, rep) {

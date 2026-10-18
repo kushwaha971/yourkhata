@@ -68,6 +68,7 @@ export const fetchReminderHistory = createAsyncThunk<
   try {
     return await listReminders(
       {
+        book: 'main',
         kind: filter === 'auto' || filter === 'manual' ? filter : undefined,
         status: filter === 'failed' ? 'failed' : undefined,
         page,
@@ -81,11 +82,17 @@ export const fetchReminderHistory = createAsyncThunk<
 });
 
 /** QUERY. LED-06 FR-6 — the khata's history strip. */
-export const fetchPartyReminders = createAsyncThunk<ReminderPage, string, Rejected>(
+export type PartyReminderQuery = string | { readonly partyId: string; readonly book: 'main' | 'shop' };
+/** Context is part of the cache identity; the same person has independent books. */
+export const partyReminderKey = (arg: PartyReminderQuery): string =>
+  typeof arg === 'string' ? arg : `${arg.book}:${arg.partyId}`;
+
+export const fetchPartyReminders = createAsyncThunk<ReminderPage, PartyReminderQuery, Rejected>(
   'reminders/fetchPartyReminders',
-  async (partyId, { signal, rejectWithValue }) => {
+  async (arg, { signal, rejectWithValue }) => {
     try {
-      return await listReminders({ partyId, page: 1, pageSize: 5 }, signal);
+      const params = typeof arg === 'string' ? { partyId: arg } : arg;
+      return await listReminders({ ...params, page: 1, pageSize: 5 }, signal);
     } catch (error) {
       return rejectWithValue(toApiError(error, 'reminders.error.title'));
     }
@@ -93,16 +100,19 @@ export const fetchPartyReminders = createAsyncThunk<ReminderPage, string, Reject
 );
 
 /** QUERY. The text the sheet shows, composed by the server (NTF-03 BR-2). */
-export const fetchReminderPreview = createAsyncThunk<ReminderPreview, string, Rejected>(
-  'reminders/fetchReminderPreview',
-  async (partyId, { signal, rejectWithValue }) => {
-    try {
-      return await previewReminder(partyId, signal);
-    } catch (error) {
-      return rejectWithValue(toApiError(error, 'reminders.error.title'));
-    }
+export const fetchReminderPreview = createAsyncThunk<
+  ReminderPreview,
+  string | { readonly partyId: string; readonly book: 'shop' },
+  Rejected
+>('reminders/fetchReminderPreview', async (arg, { signal, rejectWithValue }) => {
+  try {
+    return await (typeof arg === 'string'
+      ? previewReminder(arg, signal)
+      : previewReminder(arg.partyId, signal, arg.book));
+  } catch (error) {
+    return rejectWithValue(toApiError(error, 'reminders.error.title'));
   }
-);
+});
 
 /** QUERY. LED-07 FR-1 — the two switches and whether a provider exists. */
 export const fetchReminderSettings = createAsyncThunk<ReminderSettings, void, Rejected>(
@@ -125,9 +135,11 @@ export const fetchReminderSettings = createAsyncThunk<ReminderSettings, void, Re
  */
 export const sendManualReminder = createAsyncThunk<Reminder, SendManualReminderArg, Rejected>(
   'reminders/sendManualReminder',
-  async ({ partyId, channel, note, text }, { rejectWithValue }) => {
+  async ({ partyId, channel, note, text, book }, { rejectWithValue }) => {
     try {
-      const created = await createReminder(partyId, channel, note);
+      const created = await (book
+        ? createReminder(partyId, channel, note, book)
+        : createReminder(partyId, channel, note));
       await sendReminder(created.id, text);
       return { ...created, status: 'sent' };
     } catch (error) {

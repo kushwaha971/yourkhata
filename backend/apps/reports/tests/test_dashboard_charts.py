@@ -281,7 +281,7 @@ def test_shop_dashboard_aging_excludes_other_books_and_matches_its_headline(tena
     from apps.ledger.models import LedgerEntry
     from apps.reports.selectors.dashboard import party_tiles
 
-    person = b.party(tenant, balance=Decimal("1000.00"), shop_balance=Decimal("100.00"))
+    person = b.shop_party(tenant, balance=Decimal("1000.00"), shop_balance=Decimal("100.00"))
     for bucket, direction, amount in [
         ("main", "debit", "1000.00"),
         ("loan", "debit", "300.00"),

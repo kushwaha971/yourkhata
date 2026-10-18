@@ -14,7 +14,7 @@ import { DEFAULT_ORDERING, DEFAULT_PAGE_SIZE, SELECTION_CAP } from '../constants
 import { fetchPartyList } from './partyListThunk';
 
 import type { PartyListTotals } from '../constants/partyListDefaults';
-import type { Party, PartyListFilters } from '../types/party.types';
+import type { Party, PartyListFilters, ShopPartyCounts } from '../types/party.types';
 
 /**
  * Part 19 §19.3.2 Shape A — a list slice. Slice name = file name = store key
@@ -23,6 +23,7 @@ import type { Party, PartyListFilters } from '../types/party.types';
  * `error` the normalised serialisable `ApiErrorShape` (R-RX-10).
  */
 export interface PartyListState {
+  shopCounts: ShopPartyCounts | null;
   rows: Party[];
   meta: PageMeta;
   filters: PartyListFilters;
@@ -103,6 +104,7 @@ export const DEFAULT_PARTY_FILTERS: PartyListFilters = {
 
 const initialState: PartyListState = {
   rows: [],
+  shopCounts: null,
   meta: { page: 1, pageSize: DEFAULT_PAGE_SIZE, total: 0, totalPages: 0 },
   filters: DEFAULT_PARTY_FILTERS,
   // Start in 'loading' so the grid paints its skeleton on first render rather
@@ -203,8 +205,14 @@ const partyListSlice = createSlice({
         // and never mutated in place, so nothing is being smuggled past the
         // type system — the array the reducer assigns was built one line above.
         state.rows = (
-          action.payload.mode === 'append'
-            ? [...state.rows, ...action.payload.rows]
+          action.payload.mode === 'append' &&
+          state.rowsQuery &&
+          sameQuery(state.rowsQuery, action.meta.arg.params, { ignorePage: true })
+            ? [
+                ...new Map(
+                  [...state.rows, ...action.payload.rows].map((party) => [party.id, party])
+                ).values(),
+              ]
             : [...action.payload.rows]
         ) as Draft<Party>[];
         state.meta = action.payload.meta;
@@ -222,6 +230,7 @@ const partyListSlice = createSlice({
         state.totalsScope = action.payload.totalsScope;
         state.overLimit = action.payload.overLimit;
         state.rolesOn = action.payload.rolesOn ?? false;
+        state.shopCounts = action.payload.shopCounts ?? null;
         state.lastFetchedAt = Date.now();
         state.rowsQuery = { ...action.meta.arg.params };
         state.showingSaved = false;
@@ -272,3 +281,6 @@ export const selectPartyOverLimit = (state: RootState): number | null => state.p
 export const selectPartyRolesOn = (state: RootState): boolean => state.partyList.rolesOn;
 export const selectPartyListShowingSaved = (state: RootState): boolean =>
   state.partyList.showingSaved;
+
+export const selectShopPartyCounts = (state: RootState): ShopPartyCounts | null =>
+  state.partyList.shopCounts;

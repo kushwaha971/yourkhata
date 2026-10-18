@@ -91,6 +91,12 @@ export interface UbDataGridProps<TRow> {
   readonly onSelectionChange?: (ids: readonly string[]) => void;
   readonly bulkActions?: ReactNode;
 
+  /** Optional complete toolbar composition; selection still uses the shared bulk bar. */
+  readonly toolbar?: ReactNode;
+  readonly beforeRows?: ReactNode;
+  readonly footer?: ReactNode;
+  readonly variant?: 'panel' | 'register';
+  readonly cardActions?: (row: TRow) => ReactNode;
   readonly search?: ReactNode;
   readonly filters?: ReactNode;
 
@@ -102,6 +108,9 @@ export interface UbDataGridProps<TRow> {
    * see `UbDataGridMobileList`.
    */
   readonly cardAvatar?: boolean;
+  /** Full-width title and a separate amount row for long names and large money.
+   * Opt-in: existing module cards keep their current layout. */
+  readonly cardLayout?: 'inline' | 'stacked';
   /**
    * Cards only: an icon for the disc in place of initials, per row — for a row
    * with no name, such as an invitation (QA O3). `null` keeps the initials.
@@ -290,9 +299,15 @@ export function UbDataGrid<TRow>({
   onSelectionChange,
   bulkActions,
   search,
+  toolbar,
+  beforeRows,
+  footer,
+  variant = 'panel',
+  cardActions,
   filters,
   onRowOpen,
   cardAvatar,
+  cardLayout,
   cardAvatarIcon,
   compactCutoff,
   allowHorizontalScroll = false,
@@ -353,32 +368,38 @@ export function UbDataGrid<TRow>({
       data-ub-tier={tier}
       className={cn(
         'w-full min-w-0 overflow-hidden rounded-card border border-border-hairline bg-surface-card',
+        variant === 'register' && 'overflow-visible rounded-none border-0 bg-transparent',
         className
       )}
     >
-      <UbDataGridToolbar
-        search={search}
-        filters={filters}
-        bulk={canSelect ? bulkActions : undefined}
-        selectedCount={canSelect ? (selectedIds?.length ?? 0) : 0}
-        /* Painted as given. `selectedCount` is an ICU plural and the FEATURE
+      {toolbar && !selectedIds?.length ? (
+        toolbar
+      ) : (
+        <UbDataGridToolbar
+          search={search}
+          filters={filters}
+          bulk={canSelect ? bulkActions : undefined}
+          selectedCount={canSelect ? (selectedIds?.length ?? 0) : 0}
+          /* Painted as given. `selectedCount` is an ICU plural and the FEATURE
            resolved it — a plural cannot be deferred behind a `{count}`
            placeholder the way `pageOf` and `selectRow` are, because ICU has to
            see the number to choose the form. Substituting here as well is how
            it came to read "NaN selected". */
-        selectionLabel={labels.selectedCount}
-        columns={
-          showColumnMenu ? (
-            <UbDataGridColumnMenuLazy
-              columns={tierColumns}
-              visibility={visibility}
-              onColumnVisibleChange={setColumnVisible}
-              onShowAll={showAllColumns}
-              labels={labels}
-            />
-          ) : undefined
-        }
-      />
+          selectionLabel={labels.selectedCount}
+          columns={
+            showColumnMenu ? (
+              <UbDataGridColumnMenuLazy
+                columns={tierColumns}
+                visibility={visibility}
+                onColumnVisibleChange={setColumnVisible}
+                onShowAll={showAllColumns}
+                labels={labels}
+              />
+            ) : undefined
+          }
+        />
+      )}
+      {beforeRows}
 
       {/* Loading, empty, filtered-empty and error are drawn INSIDE the table on
           a table tier — BrandHub's arrangement, and see `UbDataGridStateTable`
@@ -449,11 +470,23 @@ export function UbDataGrid<TRow>({
               onRowOpen={onRowOpen}
               labels={labels}
               listLabel={caption}
+              className={
+                variant === 'register'
+                  ? 'rounded-card border border-border-hairline bg-surface-card'
+                  : undefined
+              }
+              actions={cardActions}
+              layout={cardLayout}
               avatar={cardAvatar}
               avatarIcon={cardAvatarIcon}
             />
           ) : (
             <UbDataGridTableLazy
+              className={
+                variant === 'register'
+                  ? 'overflow-hidden rounded-card border border-border-hairline bg-surface-card'
+                  : undefined
+              }
               rows={rows}
               columns={shown}
               rowId={rowId}
@@ -474,16 +507,19 @@ export function UbDataGrid<TRow>({
         </div>
       )}
 
-      {state === 'rows' && (
-        <UbDataGridPagination
-          page={page}
-          tier={tier}
-          labels={labels}
-          pageSizeOptions={pageSizeOptions}
-          onPageChange={onPageChange}
-          onPageSizeChange={onPageSizeChange}
-        />
-      )}
+      {state === 'rows' &&
+        (footer !== undefined ? (
+          footer
+        ) : (
+          <UbDataGridPagination
+            page={page}
+            tier={tier}
+            labels={labels}
+            pageSizeOptions={pageSizeOptions}
+            onPageChange={onPageChange}
+            onPageSizeChange={onPageSizeChange}
+          />
+        ))}
     </div>
   );
 }

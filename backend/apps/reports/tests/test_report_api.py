@@ -96,10 +96,10 @@ def test_the_dues_tiles_add_up_to_the_lists_they_open(tenant: Any, api_as: Any) 
     customer's ₹700 advance put To pay at ₹700 over an EMPTY supplier list. Each
     tile is now the list's own total, and the money held the other way round is
     sent beside it under its own name rather than folded in."""
-    b.party(tenant, "Ramesh", shop_balance=Decimal("1800"))
-    b.party(tenant, "Asha", shop_balance=Decimal("-700"))
-    b.party(tenant, "Gupta", shop_balance=Decimal("300"), is_supplier=True, is_customer=False)
-    b.party(tenant, "Agro", shop_balance=Decimal("-450"), is_supplier=True, is_customer=False)
+    b.shop_party(tenant, "Ramesh", shop_balance=Decimal("1800"))
+    b.shop_party(tenant, "Asha", shop_balance=Decimal("-700"))
+    b.shop_party(tenant, "Gupta", shop_balance=Decimal("300"), is_supplier=True, is_customer=False)
+    b.shop_party(tenant, "Agro", shop_balance=Decimal("-450"), is_supplier=True, is_customer=False)
     owner, _ = api_as(tenant)
     data = owner.get(reverse(DASHBOARD) + "?refresh=true").json()["data"]
     tiles = data["tiles"]
@@ -175,7 +175,7 @@ def test_one_shops_snapshot_is_never_another_shops(
     tenant: Any, other_tenant: Any, api_as: Any
 ) -> None:
     """§19 — the cache key is the tenant; the other shop computes its own."""
-    b.party(tenant, shop_balance=Decimal("4000"))
+    b.shop_party(tenant, shop_balance=Decimal("4000"))
     mine, _ = api_as(tenant)
     theirs, _ = api_as(other_tenant)
     assert mine.get(reverse(DASHBOARD)).json()["data"]["tiles"]["to_collect"]["amount"] == "4000.00"
@@ -372,7 +372,7 @@ def test_a_failing_part_is_answered_named_and_not_cached(
     def broken(**_kwargs: Any) -> Any:
         raise RuntimeError("creditors query failed")
 
-    b.party(tenant, "Ramesh", shop_balance=Decimal("900"))
+    b.shop_party(tenant, "Ramesh", shop_balance=Decimal("900"))
     owner, _ = api_as(tenant)
     monkeypatch.setattr(dashboard, "top_creditors", broken)
     first = owner.get(reverse(DASHBOARD))

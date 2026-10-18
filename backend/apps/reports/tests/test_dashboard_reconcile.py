@@ -55,11 +55,11 @@ def test_ac1_to_collect_and_to_pay(tenant: Any) -> None:
     pay, to all your suppliers"; those figures opened lists that could not show
     them. They travel as each tile's `advances` now. An archived party is in
     neither; DEC-019 — an Udhaar book balance (`balance`) is another app's money."""
-    b.party(tenant, "A", shop_balance=Decimal("5000"), balance=Decimal("900"))
-    b.party(tenant, "B", shop_balance=Decimal("2000"), is_supplier=True, is_customer=False)
-    b.party(tenant, "C", shop_balance=Decimal("-1500"))
+    b.shop_party(tenant, "A", shop_balance=Decimal("5000"), balance=Decimal("900"))
+    b.shop_party(tenant, "B", shop_balance=Decimal("2000"), is_supplier=True, is_customer=False)
+    b.shop_party(tenant, "C", shop_balance=Decimal("-1500"))
     b.party(tenant, "Udhaar only", balance=Decimal("-4000"))
-    b.party(tenant, "Gone", shop_balance=Decimal("0"), status="archived")
+    b.shop_party(tenant, "Gone", shop_balance=Decimal("0"), status="archived")
     tiles = _tiles(tenant)
     assert tiles["to_collect"] == {"amount": "5000.00", "advances": "1500.00"}
     assert tiles["to_pay"] == {"amount": "0.00", "advances": "2000.00"}
@@ -193,9 +193,64 @@ def test_every_tile_equals_a_naive_recount_of_a_fuzzed_book(tenant: Any) -> None
     active = list(Party.objects.filter(tenant=tenant, status="active"))
     money = lambda value: str(Decimal(value).quantize(Decimal("0.01")))  # noqa: E731
     # DEC-019 — the Shop's own figure: what is due on bills, never the udhaar book's.
-    shop = [p.shop_balance for p in active]
-    assert tiles["to_collect"]["amount"] == money(sum(v for v in shop if v > 0))
-    assert tiles["to_pay"]["amount"] == money(sum(-v for v in shop if v < 0))
+    # BP-09: independent source replay, never the combined cache or SQL selector.
+    from apps.payments.models import Payment
+    from apps.purchases.models import PurchaseDocument
+
+    sales = list(SalesDocument.objects.filter(tenant=tenant))
+    purchases = list(PurchaseDocument.objects.filter(tenant=tenant))
+    payments = list(Payment.objects.filter(tenant=tenant, bucket="shop", status="recorded"))
+    customer_balances, supplier_balances = [], []
+    for person in active:
+        customer = sum(
+            d.amount_due
+            for d in sales
+            if d.party_id == person.id
+            and not d.origin_module
+            and d.kind in ("invoice", "bill_of_supply")
+            and d.status in ("issued", "partially_paid", "overdue", "paid")
+        )
+        customer -= sum(
+            d.amount_due
+            for d in sales
+            if d.party_id == person.id
+            and not d.origin_module
+            and d.kind == "credit_note"
+            and d.status in ("issued", "applied")
+        )
+        supplier = sum(
+            d.amount_due
+            for d in purchases
+            if d.party_id == person.id
+            and d.kind == "purchase_bill"
+            and d.status in ("recorded", "partially_paid", "overdue", "paid")
+        )
+        supplier -= sum(
+            d.amount_due
+            for d in purchases
+            if d.party_id == person.id and d.kind == "debit_note" and d.status == "issued"
+        )
+        for receipt in payments:
+            meta = receipt.meta or {}
+            if (
+                receipt.party_id != person.id
+                or receipt.unallocated_amount <= 0
+                or any(key in meta for key in ("earmark", "credit_note_id", "debit_note_id"))
+                or str(meta.get("context", "")).endswith("_refund")
+            ):
+                continue
+            if receipt.direction == "in":
+                customer -= receipt.unallocated_amount
+            else:
+                supplier -= receipt.unallocated_amount
+        if person.is_customer:
+            customer_balances.append(customer)
+        if person.is_supplier:
+            supplier_balances.append(supplier)
+    assert tiles["to_collect"]["amount"] == money(sum(v for v in customer_balances if v > 0))
+    assert tiles["to_pay"]["amount"] == money(sum(v for v in supplier_balances if v > 0))
+    assert tiles["to_collect"]["advances"] == money(sum(-v for v in customer_balances if v < 0))
+    assert tiles["to_pay"]["advances"] == money(sum(-v for v in supplier_balances if v < 0))
 
     docs = list(SalesDocument.objects.filter(tenant=tenant, document_date=TODAY))
     sold = [d for d in docs if d.kind == "invoice" and d.status not in ("draft", "void")]
@@ -270,7 +325,7 @@ def test_project_omits_what_a_reader_may_not_see(tenant: Any) -> None:
     """§12 / FR-6 / §10 — omitted, never zeroed: no financial read → no Cash in hand;
     no stock read (inventory off) → no Low stock; an activity row needs its own
     codename; the unmasked mobile rides only with the Remind permission."""
-    ramesh = b.party(tenant, shop_balance=Decimal("900"), mobile="+919812345678")
+    ramesh = b.shop_party(tenant, shop_balance=Decimal("900"), mobile="+919812345678")
     b.purchase(tenant, TODAY, 100, party=ramesh)
     b.payment(tenant, TODAY, {"cash": 5}, party=ramesh)
     payload = build_dashboard(tenant=tenant, today=TODAY)
@@ -297,7 +352,7 @@ def test_project_omits_what_a_reader_may_not_see(tenant: Any) -> None:
     staff = EVERYTHING - {"reports.financial.read", "purchases.bill.read", "ledger.reminder.write"}
     cut = project(payload, granted=staff, modules=ALL_MODULES)
     assert "cash_in_hand" not in cut["tiles"] and "shop_cash_in_hand" not in cut["tiles"]
-    assert {event["type"] for event in cut["recent_activity"]} == {"payment_in"}
+    assert {event["type"] for event in cut["recent_activity"]} == {"payment_in", "sale"}
     assert cut["top_debtors"][0]["mobile"] is None
 
     no_stock = project(
@@ -396,8 +451,10 @@ def test_the_suppliers_panel_is_who_you_owe_most_and_the_bills_falling_due(tenan
     agro = b.party(
         tenant, "Agro", shop_balance=Decimal("-450"), is_supplier=True, is_customer=False
     )
-    b.party(tenant, "Paid ahead", shop_balance=Decimal("300"), is_supplier=True, is_customer=False)
-    b.party(tenant, "Customer advance", shop_balance=Decimal("-700"))
+    b.shop_party(
+        tenant, "Paid ahead", shop_balance=Decimal("300"), is_supplier=True, is_customer=False
+    )
+    b.shop_party(tenant, "Customer advance", shop_balance=Decimal("-700"))
     late = b.purchase(tenant, TODAY - dt.timedelta(days=30), 1000, party=gupta, status="overdue")
     late.due_on = TODAY - dt.timedelta(days=12)
     late.save(update_fields=["due_on"])
@@ -458,7 +515,7 @@ def test_the_new_panels_follow_the_readers_permissions(tenant: Any) -> None:
     """WP-06 — each new figure travels only with the permission that reads its
     list: money received with payments, the supplier bills with purchase bills,
     the creditors with parties. Omitted, not zeroed (§10)."""
-    b.party(tenant, "Gupta", shop_balance=Decimal("-300"), is_supplier=True, is_customer=False)
+    b.shop_party(tenant, "Gupta", shop_balance=Decimal("-300"), is_supplier=True, is_customer=False)
     payload = _dashboard(tenant)
     full = project(payload, granted=EVERYTHING, modules=ALL_MODULES)
     assert {"today_received", "supplier_bills"} <= set(full["tiles"])
@@ -577,7 +634,7 @@ def test_a_failing_list_is_named_and_the_figures_still_arrive(
     def broken(**_kwargs: Any) -> Any:
         raise RuntimeError("debtors query failed")
 
-    b.party(tenant, shop_balance=Decimal("900"))
+    b.shop_party(tenant, shop_balance=Decimal("900"))
     monkeypatch.setattr(dashboard, "top_debtors", broken)
     cut = project(_dashboard(tenant), granted=EVERYTHING, modules=ALL_MODULES)
     assert cut["unavailable"] == ["top_debtors"]

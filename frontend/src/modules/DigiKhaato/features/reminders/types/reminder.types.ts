@@ -53,6 +53,7 @@ export interface ReminderPage {
 }
 
 export interface ReminderListParams {
+  readonly book?: 'main' | 'shop';
   readonly partyId?: string;
   readonly kind?: 'auto' | 'manual';
   readonly status?: string;
@@ -102,6 +103,7 @@ export interface ReminderWarning {
 
 /** `POST /reminders/preview` — the server-composed text; nothing is recorded. */
 export interface ReminderPreview {
+  readonly book?: 'main' | 'shop';
   readonly partyId: string;
   readonly balance: string;
   readonly text: string;
@@ -201,6 +203,7 @@ export interface SourceReminderPreview {
 }
 
 export interface SendManualReminderArg {
+  readonly book?: 'main' | 'shop';
   readonly partyId: string;
   readonly channel: 'whatsapp_manual' | 'sms_manual' | 'call';
   readonly note?: string;

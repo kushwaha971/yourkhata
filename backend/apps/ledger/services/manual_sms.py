@@ -38,17 +38,28 @@ def send_manual_sms(*, reminder_id: Any, tenant: Any, final_attempt: bool) -> di
     )
     if reminder is None or reminder.status != ReminderStatus.SCHEDULED:
         return {"skipped": "not_scheduled"}
+    if reminder.module == "sales":
+        from apps.platform_app.services.entitlements import effective_modules
+
+        if "sales" not in effective_modules(tenant):
+            _finish(ctx, reminder, status=ReminderStatus.CANCELLED, note="Shop is switched off.")
+            return {"cancelled": "module_disabled"}
     party = lock_party(tenant=tenant, party_id=reminder.party_id)
-    if party is None or (party.balance or ZERO) <= ZERO:
+    from apps.ledger.services.reminders import trade_balance
+
+    balance = (
+        trade_balance(party, "shop" if reminder.module == "sales" else "main") if party else ZERO
+    )
+    if party is None or balance <= ZERO:
         _finish(ctx, reminder, status=ReminderStatus.CANCELLED, note=NOTE_BALANCE_SETTLED)
         return {"cancelled": "balance_settled"}
 
     composed = messaging.compose_reminder(
-        tenant=tenant, party=party, balance=party.balance, note=reminder.note
+        tenant=tenant, party=party, balance=balance, note=reminder.note
     )
     params = {
         **composed.params,
-        "pay_line": messaging.pay_line(tenant=tenant, amount=party.balance),
+        "pay_line": messaging.pay_line(tenant=tenant, amount=balance),
         "note_line": f"{reminder.note} " if reminder.note else "",
     }
     outcome = messaging.deliver_sms(
@@ -61,7 +72,7 @@ def send_manual_sms(*, reminder_id: Any, tenant: Any, final_attempt: bool) -> di
         related_id=reminder.id,
     )
     log = outcome.log
-    common = {"snapshot_balance": party.balance, "message_log_id": log.id}
+    common = {"snapshot_balance": balance, "message_log_id": log.id}
     if log.status in ("sent", "delivered"):
         _finish(ctx, reminder, status=ReminderStatus.SENT, sent_at=timezone.now(), **common)
         return {"sent": True}

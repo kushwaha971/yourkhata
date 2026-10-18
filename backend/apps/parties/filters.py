@@ -43,7 +43,11 @@ def list_balance_field(request: Any) -> str:
     book (`balance`). One function, so the rows, the chips, the header and the sort
     can never read two different columns."""
     params = getattr(request, "query_params", None) or {}
-    return "shop_balance" if params.get("book") == "shop" else "balance"
+    if params.get("book") != "shop":
+        return "balance"
+    return {"customer": "shop_customer_balance", "supplier": "shop_supplier_list_balance"}.get(
+        params.get("type"), "shop_balance"
+    )
 
 
 class PartyFilterSet(BaseTenantFilterSet):
@@ -70,6 +74,15 @@ class PartyFilterSet(BaseTenantFilterSet):
     collection = django_filters.ChoiceFilter(
         method="filter_collection",
         choices=(("today", "Today"), ("overdue", "Overdue"), ("upcoming", "Upcoming")),
+    )
+    late = django_filters.ChoiceFilter(
+        method="filter_late",
+        choices=(
+            ("overdue", "Overdue"),
+            ("not_due", "Not due yet"),
+            ("1_30", "1–30 days"),
+            ("over_30", "Over 30 days"),
+        ),
     )
     tag = django_filters.CharFilter(method="filter_tags")
     credit = django_filters.ChoiceFilter(
@@ -218,7 +231,7 @@ class PartyFilterSet(BaseTenantFilterSet):
         # fourth party who had already paid (AC-2: "lists exactly those").
         # A7 BR-7 — the udhaar book's own figure (DEC-019: `balance` holds no
         # other app's money), like the ledger summary's tiles it has to agree with.
-        shop_owes = queryset.filter(balance__gt=0)
+        shop_owes = queryset.filter(**{f"{list_balance_field(self.request)}__gt": 0})
         if value == "today":
             return shop_owes.filter(collection_date=today)
         if value == "overdue":
@@ -228,6 +241,28 @@ class PartyFilterSet(BaseTenantFilterSet):
                 collection_date__gt=today,
                 collection_date__lte=today + timedelta(days=UPCOMING_DAYS),
             )
+        return queryset
+
+    def filter_late(self, queryset: QuerySet, _name: str, value: str) -> QuerySet:
+        params = getattr(self.request, "query_params", None) or {}
+        if params.get("book") != "shop":
+            return queryset
+        prefix = "shop_supplier" if params.get("type") == "supplier" else "shop_customer"
+        today = self._today()
+        live = queryset.filter(**{f"{prefix}_balance__gt": 0})
+        if value == "overdue":
+            return live.filter(**{f"{prefix}_due_on__lt": today})
+        if value == "not_due":
+            return live.filter(**{f"{prefix}_due_on__gte": today})
+        if value == "1_30":
+            return live.filter(
+                **{
+                    f"{prefix}_due_on__lt": today,
+                    f"{prefix}_due_on__gte": today - timedelta(days=30),
+                }
+            )
+        if value == "over_30":
+            return live.filter(**{f"{prefix}_due_on__lt": today - timedelta(days=30)})
         return queryset
 
     def filter_tags(self, queryset: QuerySet, _name: str, value: str) -> QuerySet:

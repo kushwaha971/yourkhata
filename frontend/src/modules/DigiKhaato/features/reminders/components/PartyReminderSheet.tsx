@@ -1,6 +1,6 @@
 'use client';
 
-import { memo, useCallback, useEffect, type RefObject } from 'react';
+import { memo, useCallback, useEffect, useRef, type RefObject } from 'react';
 
 import {
   UbButton,
@@ -50,6 +50,7 @@ import 'src/i18n/catalogues/share';
  */
 export interface PartyReminderSheetProps {
   readonly partyId: string;
+  readonly book?: 'main' | 'shop';
   readonly open: boolean;
   readonly onOpenChange: (open: boolean) => void;
   readonly title: string;
@@ -67,6 +68,7 @@ const CHANNEL_OF: Readonly<Partial<Record<UbShareChannel, SendManualReminderArg[
 
 function PartyReminderSheetBase({
   partyId,
+  book = 'main',
   open,
   onOpenChange,
   title,
@@ -76,6 +78,7 @@ function PartyReminderSheetBase({
   returnFocusRef,
 }: Readonly<PartyReminderSheetProps>) {
   const { t } = useTranslation();
+  const handedOff = useRef(false);
   const dispatch = useAppDispatch();
   const feedback = useShareFeedback();
   const nowMs = useNowMs();
@@ -86,29 +89,42 @@ function PartyReminderSheetBase({
      and a khata left open overnight must not send yesterday's balance. */
   useEffect(() => {
     if (!open || !partyId) return;
-    const request = dispatch(fetchReminderPreview(partyId));
+    handedOff.current = false;
+    const request = dispatch(fetchReminderPreview(book === 'shop' ? { partyId, book } : partyId));
     return () => {
       request.abort();
       dispatch(previewCleared());
     };
-  }, [open, partyId, dispatch]);
+  }, [open, partyId, dispatch, book]);
 
   const onShared = useCallback(
     (channel: UbShareChannel, text: string) => {
-      feedback.onShared(channel);
       const logged = CHANNEL_OF[channel];
+      if (book === 'shop' && logged) {
+        if (handedOff.current) return;
+        handedOff.current = true;
+      }
+      feedback.onShared(channel);
       // MSG-10 — the words that left, after any edit, are what the log keeps.
       if (logged)
-        void dispatch(sendManualReminder({ partyId, channel: logged, text: text || undefined }));
+        void dispatch(
+          sendManualReminder({
+            partyId,
+            channel: logged,
+            text: text || undefined,
+            ...(book === 'shop' ? { book } : {}),
+          })
+        );
     },
-    [feedback, dispatch, partyId]
+    [feedback, dispatch, partyId, book]
   );
 
   const retry = useCallback(() => {
-    void dispatch(fetchReminderPreview(partyId));
-  }, [dispatch, partyId]);
+    void dispatch(fetchReminderPreview(book === 'shop' ? { partyId, book } : partyId));
+  }, [dispatch, partyId, book]);
 
-  const ready = status === 'succeeded' && preview?.partyId === partyId;
+  const ready =
+    status === 'succeeded' && preview?.partyId === partyId && (preview.book ?? 'main') === book;
 
   /* LED-06 FR-10 — a second reminder inside a day is allowed and said out
      loud first: a customer chased twice before lunch stops answering. */

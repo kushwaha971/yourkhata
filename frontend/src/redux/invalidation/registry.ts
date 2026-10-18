@@ -28,6 +28,7 @@ export const QUERIES = {
   fetchPlanLimits: 'plan/fetchPlanLimits',
   // parties (the walking skeleton, Part 32 S0-71)
   fetchPartyList: 'partyList/fetchPartyList',
+  fetchPartyFilterCount: 'partyList/filterCount',
   // PTY-03 — the khata page's header and info panel
   fetchPartyDetail: 'partyDetail/fetchPartyDetail',
   // PTY-05 — every tag in the tenant, held once for the session

@@ -56,6 +56,8 @@ export interface UbDataGridMobileListProps<TRow> {
    * actions sitting on one line and stacking on three.
    */
   readonly avatar?: boolean;
+  readonly layout?: 'inline' | 'stacked';
+  readonly actions?: (row: TRow) => ReactNode;
   /**
    * A per-row icon drawn in the disc instead of initials, for a row with no
    * name to take them from (an invitation, an invited member — QA O3).
@@ -78,25 +80,44 @@ const cardBody = <TRow,>(
   name: string,
   model: UbCardModel<TRow>,
   avatar: boolean,
-  avatarIcon?: (row: TRow) => ReactNode
+  avatarIcon?: (row: TRow) => ReactNode,
+  stacked = false
 ): ReactNode => (
   <>
     {avatar && <UbAvatar name={name} icon={avatarIcon?.(row) ?? undefined} />}
-    <span className="flex min-w-0 flex-1 flex-col">
-      <span className="ds-body-sm-medium truncate text-text-primary">
+    <span className={cn('flex min-w-0 flex-1 flex-col', stacked && 'col-start-1 row-start-1')}>
+      <span
+        className={cn(
+          'ds-body-sm-medium text-text-primary',
+          stacked ? 'whitespace-normal break-words' : 'truncate'
+        )}
+      >
         {model.title ? model.title.cell(row) : name}
       </span>
       {model.meta.length > 0 && (
         <span className="ds-caption flex min-w-0 flex-wrap items-center gap-x-2 text-text-tertiary">
           {model.meta.map((column) => (
-            <span key={column.id} className="truncate">
+            <span
+              key={column.id}
+              className={stacked ? 'whitespace-normal break-words' : 'truncate'}
+            >
               {column.cell(row)}
             </span>
           ))}
         </span>
       )}
     </span>
-    {model.trailing && <span className="shrink-0">{model.trailing.cell(row)}</span>}
+    {model.trailing && (
+      <span
+        className={cn(
+          'shrink-0',
+          stacked &&
+            'col-span-2 row-start-2 justify-self-start min-[360px]:col-span-1 min-[360px]:col-start-2 min-[360px]:row-start-1 min-[360px]:justify-self-end'
+        )}
+      >
+        {model.trailing.cell(row)}
+      </span>
+    )}
   </>
 );
 
@@ -109,26 +130,27 @@ function UbDataGridMobileListBase<TRow>({
   labels,
   listLabel,
   avatar = true,
+  layout = 'inline',
+  actions,
   avatarIcon,
   className,
 }: Readonly<UbDataGridMobileListProps<TRow>>): React.JSX.Element {
   const model = cardModel(columns);
 
-  const handleOpen = useCallback(
-    (row: TRow) => () => onRowOpen?.(row),
-    [onRowOpen]
-  );
+  const handleOpen = useCallback((row: TRow) => () => onRowOpen?.(row), [onRowOpen]);
 
   return (
     <ul
       aria-label={listLabel}
       data-testid="ub-grid-cards"
+      data-card-layout={layout}
       data-ub-scroll-x="off"
       className={cn('w-full min-w-0 overflow-x-hidden', className)}
     >
       {rows.map((row) => {
         const name = rowName(row);
-        const body = cardBody(row, name, model, avatar, avatarIcon);
+        const stacked = layout === 'stacked';
+        const body = cardBody(row, name, model, avatar, avatarIcon, stacked);
 
         return (
           <li
@@ -136,22 +158,58 @@ function UbDataGridMobileListBase<TRow>({
             data-testid="ub-grid-card"
             className="border-b border-border-hairline last:border-b-0"
           >
-            {onRowOpen ? (
+            {actions ? (
+              <div className="flex min-w-0 items-center gap-3 px-3 py-3 sm:px-4">
+                <button
+                  type="button"
+                  onClick={handleOpen(row)}
+                  aria-label={fillTemplate(labels.openRow, { name })}
+                  className="flex min-w-0 flex-1 flex-col gap-1 rounded-control py-1 text-left outline-none hover:text-text-accent focus-visible:shadow-focus"
+                >
+                  {model.title?.cell(row)}
+                  {model.meta.map((column) => (
+                    <span key={column.id} className="ds-caption text-text-tertiary">
+                      {column.cell(row)}
+                    </span>
+                  ))}
+                </button>
+                <div className="flex shrink-0 flex-col items-end gap-2">
+                  {model.trailing?.cell(row)}
+                  {actions(row)}
+                </div>
+              </div>
+            ) : onRowOpen ? (
               <button
                 type="button"
                 aria-label={fillTemplate(labels.openRow, { name })}
                 onClick={handleOpen(row)}
                 className={cn(
                   CARD_BODY,
+                  stacked &&
+                    'grid grid-cols-[minmax(0,1fr)_auto] gap-y-2 min-[360px]:grid-cols-[minmax(0,1fr)_auto_auto]',
                   'outline-none transition-colors duration-fast ease-standard',
                   'hover:bg-surface-hover focus-visible:shadow-focus active:bg-surface-active'
                 )}
               >
                 {body}
-                <ChevronRight className="h-5 w-5 shrink-0 text-text-muted" aria-hidden />
+                <ChevronRight
+                  className={cn(
+                    'h-5 w-5 shrink-0 text-text-muted',
+                    stacked && 'col-start-2 row-start-1 min-[360px]:col-start-3'
+                  )}
+                  aria-hidden
+                />
               </button>
             ) : (
-              <div className={CARD_BODY}>{body}</div>
+              <div
+                className={cn(
+                  CARD_BODY,
+                  stacked &&
+                    'grid grid-cols-[minmax(0,1fr)_auto] gap-y-2 min-[360px]:grid-cols-[minmax(0,1fr)_auto_auto]'
+                )}
+              >
+                {body}
+              </div>
             )}
           </li>
         );

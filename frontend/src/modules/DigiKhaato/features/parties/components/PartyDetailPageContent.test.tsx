@@ -576,6 +576,29 @@ describe('opened from the Shop (DEC-019)', () => {
     expect(screen.queryByText('You will get')).not.toBeInTheDocument();
   });
 
+  /** BP-09: the person reminder must use the customer role, not the unrelated Udhaar amount. */
+  it('opens a Shop reminder and reads only its book history', async () => {
+    shopSession();
+    partyService.getParty.mockResolvedValue({ ...RESULT, party: { ...PARTY,
+      balance: '2300.00', shopBalance: '400.00', isSupplier: true,
+      shop: { customerBalance: '1000.00', customerDue: '1000.00', customerCredit: '0.00',
+        supplierBalance: '600.00', supplierDue: '600.00', supplierCredit: '0.00',
+        daysOverdue: 42, oldestDueOn: '2026-09-01', lastActivityAt: null, lastActivityKind: null },
+    } });
+    reminderService.previewReminder.mockResolvedValue({ partyId: ID, book: 'shop',
+      balance: '1000.00', text: 'Shop bill amount 1000', smsText: 'Shop bill amount 1000', warnings: [] });
+    const user = userEvent.setup();
+    renderWithProviders(<PartyDetailPageContent id={ID} />);
+    await screen.findByText('Ramesh Traders');
+    await openMenu(user);
+    await user.click(await screen.findByRole('button', { name: 'Send reminder' }));
+    const dialog = await screen.findByRole('dialog', { name: 'Send reminder' });
+    expect(await within(dialog).findByDisplayValue('Shop bill amount 1000')).toBeInTheDocument();
+    expect(reminderService.previewReminder).toHaveBeenCalledWith(ID, expect.anything(), 'shop');
+    expect(reminderService.listReminders).toHaveBeenCalledWith(
+      { partyId: ID, book: 'shop', page: 1, pageSize: 5 }, expect.anything());
+  }, 15000);
+
   it('offers no You gave / You got, and reads the Shop’s lines', async () => {
     shopSession();
     renderWithProviders(<PartyDetailPageContent id={ID} />);
@@ -1450,7 +1473,7 @@ describe('sending a reminder from the khata page (LED-06)', () => {
     renderWithProviders(<PartyDetailPageContent id={ID} />);
     expect(await screen.findByText('Reminded 3 times · last 2 days ago (SMS)')).toBeInTheDocument();
     expect(reminderService.listReminders).toHaveBeenCalledWith(
-      { partyId: ID, page: 1, pageSize: 5 },
+      { partyId: ID, book: 'main', page: 1, pageSize: 5 },
       expect.anything()
     );
   });

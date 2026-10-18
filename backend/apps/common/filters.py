@@ -119,8 +119,17 @@ class StableOrderingFilter(OrderingFilter):
         translate = getattr(view, "ordering_term", None)
         if translate is not None:
             ordering = [translate(term) for term in ordering]
+        nullable = set(getattr(view, "nulls_last_ordering_fields", ()))
         return [
-            _with_null_placement(term, queryset.model)
+            (
+                (
+                    F(term.lstrip("-")).desc(nulls_last=True)
+                    if term.startswith("-")
+                    else F(term).asc(nulls_last=True)
+                )
+                if term.lstrip("-") in nullable
+                else _with_null_placement(term, queryset.model)
+            )
             for term in with_tie_breaker(ordering, queryset.model)
         ]
 

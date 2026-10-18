@@ -19,7 +19,41 @@ import type { PartyListTotals, PartyTotalsScope } from '../constants/partyListDe
  */
 
 /** The wire row, snake_case, exactly as Part 22 §22.4 documents it. */
+export interface ShopPartyFactsWire {
+  readonly customer_balance: string;
+  readonly customer_due: string;
+  readonly customer_credit: string;
+  readonly supplier_balance: string;
+  readonly supplier_due: string;
+  readonly supplier_credit: string;
+  readonly oldest_due_on: string | null;
+  readonly days_overdue: number | null;
+  readonly last_activity_at: string | null;
+  readonly last_activity_kind: string | null;
+}
+
+export interface ShopPartyFacts {
+  readonly customerBalance: string;
+  readonly customerDue: string;
+  readonly customerCredit: string;
+  readonly supplierBalance: string;
+  readonly supplierDue: string;
+  readonly supplierCredit: string;
+  readonly oldestDueOn: string | null;
+  readonly daysOverdue: number | null;
+  readonly lastActivityAt: string | null;
+  readonly lastActivityKind: string | null;
+}
+export interface ShopPartyCounts {
+  readonly all: number;
+  readonly owes: number;
+  readonly advance: number;
+  readonly late: number;
+}
+export type ShopLateFilter = '' | 'overdue' | 'not_due' | '1_30' | 'over_30';
+
 export interface PartyApiRow {
+  readonly shop?: ShopPartyFactsWire;
   readonly id: string;
   readonly name: string;
   readonly display_code: string | null;
@@ -74,6 +108,7 @@ export interface PartyIdentityValues {
 }
 
 export interface Party {
+  readonly shop?: ShopPartyFacts;
   readonly id: string;
   readonly name: string;
   readonly displayCode: string | null;
@@ -90,6 +125,7 @@ export interface Party {
 }
 
 export interface PartyListParams {
+  readonly late?: ShopLateFilter;
   readonly q: string;
   readonly status: PartyStatus;
   /**
@@ -135,6 +171,7 @@ export interface PartyListParams {
 export type PartyListFilters = PartyListParams;
 
 export interface PartyListResult {
+  readonly shopCounts?: ShopPartyCounts | null;
   readonly rows: readonly Party[];
   readonly meta: PageMeta;
   /**
