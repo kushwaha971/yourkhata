@@ -38,6 +38,7 @@ import { ROUTES } from 'src/routes';
 import { applyServerErrors } from 'src/utils/applyServerErrors';
 import { formatBusinessDate, todayInTenantTz } from 'src/utils/dates';
 import { addMoney, formatInr } from 'src/utils/money';
+import { mayHaveBeenSaved } from 'src/utils/requestKey';
 
 import { toTermsBody } from '../api/lendingService';
 import { selectLendingForm } from '../redux/lendingFormSlice';
@@ -223,7 +224,9 @@ export function NewLoanPageContent(): React.JSX.Element {
 
   const save = async (data: LoanFormValues) => {
     const result = await dispatch(createLendingLoan({ values: data, key }));
-    rotate();
+    // L-R1 — a save that ended without an answer may have landed, so Try
+    // again must replay it under the SAME key; a new key would record it twice.
+    if (createLendingLoan.fulfilled.match(result) || !mayHaveBeenSaved(result.payload)) rotate();
     if (createLendingLoan.fulfilled.match(result)) {
       dispatch(
         showSnackbar({
@@ -316,7 +319,10 @@ export function NewLoanPageContent(): React.JSX.Element {
                 <>
                   <PhoneContactButton
                     onPick={(contact) => {
-                      form.setValue('name', contact.name, { shouldDirty: true, shouldValidate: true });
+                      form.setValue('name', contact.name, {
+                        shouldDirty: true,
+                        shouldValidate: true,
+                      });
                       form.setValue('mobile', contact.mobile, {
                         shouldDirty: true,
                         shouldValidate: true,

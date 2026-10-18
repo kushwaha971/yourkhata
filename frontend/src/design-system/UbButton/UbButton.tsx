@@ -13,6 +13,7 @@ import {
   useUbActionPresentation,
 } from 'src/design-system/UbActionSheet/actionPresentation';
 import { useUbViewOnly } from 'src/design-system/UbViewOnly';
+import { useAsyncAction } from 'src/hooks/useAsyncAction';
 import { cn } from 'src/utils/cn';
 
 /**
@@ -97,11 +98,16 @@ const UbButtonInner = forwardRef<HTMLButtonElement, UbButtonProps>(function UbBu
     className,
     viewOnlySafe = false,
     title,
+    onClick,
     ...rest
   },
   ref
 ) {
   const viewOnly = useUbViewOnly();
+  // 05 §3 — an async onClick locks the button until it settles, so a caller
+  // that forgets `busy` still cannot be tapped twice into a double write.
+  const action = useAsyncAction(onClick);
+  const working = busy || action.pending;
   const locked =
     viewOnly !== null && !viewOnlySafe && (WRITE_VARIANTS.has(variant) || rest.type === 'submit');
   // Inside a ⋯ sheet the action is a worded row, whatever it is inline.
@@ -112,9 +118,9 @@ const UbButtonInner = forwardRef<HTMLButtonElement, UbButtonProps>(function UbBu
       ref={ref}
       variant={inSheet ? 'ghost' : variant}
       size={size}
-      disabled={disabled || busy || locked}
-      aria-busy={busy || undefined}
-      aria-disabled={disabled || busy || locked || undefined}
+      disabled={disabled || working || locked}
+      aria-busy={working || undefined}
+      aria-disabled={disabled || working || locked || undefined}
       title={locked ? viewOnly : title}
       data-view-only={locked || undefined}
       className={cn(
@@ -126,8 +132,9 @@ const UbButtonInner = forwardRef<HTMLButtonElement, UbButtonProps>(function UbBu
         inSheet && variant === 'destructive' && 'text-error [&_svg]:text-error'
       )}
       {...rest}
+      onClick={onClick ? action.run : undefined}
     >
-      {busy ? <MLSpinner /> : icon}
+      {working ? <MLSpinner /> : icon}
       {/* `inline-flex items-center gap-2` rather than a bare `<span>`.
           Tailwind's preflight sets `svg { display: block }`, so an icon a
           caller passes as a CHILD instead of through `icon` becomes a block
@@ -143,7 +150,7 @@ const UbButtonInner = forwardRef<HTMLButtonElement, UbButtonProps>(function UbBu
           shape === 'mobile' && LABEL_ONLY_FROM_SM
         )}
       >
-        {busy ? (busyLabel ?? children) : children}
+        {working ? (busyLabel ?? children) : children}
       </span>
     </MLButton>
   );

@@ -22,6 +22,7 @@ import { applyServerErrors } from 'src/utils/applyServerErrors';
 import { todayInTenantTz } from 'src/utils/dates';
 import { draftReplyOutcome, draftSnapshot, settleAutosave } from 'src/utils/draftCreation';
 import { newRequestId } from 'src/utils/requestId';
+import { mayHaveBeenSaved } from 'src/utils/requestKey';
 
 import { computeDocumentTotals, type EngineResult } from '../../sales/view-model/taxEngine';
 import { PURCHASE_AUTOSAVE_MS } from '../constants/purchaseConstants';
@@ -298,7 +299,7 @@ export const usePurchaseBillEditor = (
       // A network failure keeps the key for the retry (EC-11); anything the
       // server answered is a new attempt next time.
       const code = result.payload?.code;
-      if (code !== 'network_error' && code !== 'timeout') idempotency.rotate();
+      if (!mayHaveBeenSaved(result.payload)) idempotency.rotate();
       if (code === 'validation_error' && result.payload) {
         applyServerErrors(result.payload, form.setError, FORM_FIELDS, t);
       }

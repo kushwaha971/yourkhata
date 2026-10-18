@@ -1,6 +1,6 @@
 'use client';
 
-import { memo, type ReactNode } from 'react';
+import { memo, useRef, type FormEvent, type ReactNode } from 'react';
 
 import {
   FormProvider,
@@ -48,6 +48,24 @@ function UbFormBase<T extends FieldValues>({
   className,
   id,
 }: Readonly<UbFormProps<T>>) {
+  /* 05 §4 — one submit at a time. `handleSubmit` awaits the resolver before it
+     calls `onSubmit`, so the caller's `busy` cannot be painted until validation
+     has finished: two taps on Save, or a tap and an Enter, both got through that
+     window and posted twice. A ref, not state, because both events arrive
+     before React re-renders. The browser's own submit is still prevented on the
+     dropped one, or it would fall back to a native POST. */
+  const inFlight = useRef(false);
+  const submit = (event: FormEvent<HTMLFormElement>) => {
+    if (inFlight.current) {
+      event.preventDefault();
+      return;
+    }
+    inFlight.current = true;
+    const run = form.handleSubmit(onSubmit, onInvalid);
+    void run(event).finally(() => {
+      inFlight.current = false;
+    });
+  };
   return (
     <FormProvider {...form}>
       <form
@@ -58,7 +76,7 @@ function UbFormBase<T extends FieldValues>({
            pre-hydration submit's fields in the body. */
         method="post"
         noValidate
-        onSubmit={form.handleSubmit(onSubmit, onInvalid)}
+        onSubmit={submit}
         /* BrandHub: 24 px between fields = the 20 px reserved message row
            under each field + this 4 px. */
         className={cn('flex w-full flex-col gap-1', className)}

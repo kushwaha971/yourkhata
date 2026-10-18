@@ -25,6 +25,7 @@ import { useValidationSchemas } from 'src/hooks/useValidationSchemas';
 import { readDetailString } from 'src/utils/errorDetails';
 import { addMoney, formatInr, isNegativeAmount, moneyOrZero, subtractMoney } from 'src/utils/money';
 import { REASON_MAX_CHARS } from 'src/utils/reason';
+import { mayHaveBeenSaved } from 'src/utils/requestKey';
 
 import {
   MANUAL_CHARGE_KINDS,
@@ -289,7 +290,8 @@ export function ManualChargeDialog({
             },
             key
           );
-          rotate();
+          // L-R1 — the same keep-the-key rule as Lending's money writes.
+          if (outcome.ok || !mayHaveBeenSaved(outcome.error)) rotate();
           if (outcome.ok) onClose();
           else setFailure(outcome.error?.message ?? null);
         }}

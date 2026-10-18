@@ -28,6 +28,7 @@ import { selectTenantTimezone } from 'src/redux/slice/sessionSlice';
 import { showSnackbar } from 'src/redux/slice/snackbarSlice';
 import { todayInTenantTz } from 'src/utils/dates';
 import { compareMoney, formatInr, subtractMoney } from 'src/utils/money';
+import { mayHaveBeenSaved } from 'src/utils/requestKey';
 
 import { selectLendingForm } from '../redux/lendingFormSlice';
 import { collectFromBorrower, previewBorrowerCollection } from '../redux/lendingThunk';
@@ -148,7 +149,9 @@ export function CollectFromBorrowerDialog({
   const save = async (values: CollectFormValues) => {
     if (!current) return;
     const result = await dispatch(collectFromBorrower({ split: current, values, key }));
-    rotate();
+    // L-R1 — a save that ended without an answer may have landed, so Try
+    // again must replay it under the SAME key; a new key would record it twice.
+    if (collectFromBorrower.fulfilled.match(result) || !mayHaveBeenSaved(result.payload)) rotate();
     if (collectFromBorrower.fulfilled.match(result)) {
       dispatch(
         showSnackbar({

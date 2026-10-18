@@ -25,6 +25,7 @@ import { selectTenantTimezone } from 'src/redux/slice/sessionSlice';
 import { showSnackbar } from 'src/redux/slice/snackbarSlice';
 import { formatBusinessDate, todayInTenantTz } from 'src/utils/dates';
 import { formatInr, sumMoney } from 'src/utils/money';
+import { mayHaveBeenSaved } from 'src/utils/requestKey';
 
 import { selectLendingForm } from '../redux/lendingFormSlice';
 import { collectLendingLoan, previewLendingCollection } from '../redux/lendingThunk';
@@ -116,7 +117,9 @@ export function CollectDialog({
 
   const save = async (values: CollectFormValues) => {
     const result = await dispatch(collectLendingLoan({ loanId, values, key }));
-    rotate();
+    // L-R1 — a save that ended without an answer may have landed, so Try
+    // again must replay it under the SAME key; a new key would record it twice.
+    if (collectLendingLoan.fulfilled.match(result) || !mayHaveBeenSaved(result.payload)) rotate();
     if (collectLendingLoan.fulfilled.match(result)) {
       dispatch(
         showSnackbar({
@@ -181,7 +184,13 @@ export function CollectDialog({
               {...field}
               value={field.value as string}
               onChange={(next) => {
+                // Leaving the box pads "500" to "500.00", which is the same
+                // amount. Clearing the preview for it collapsed the card at
+                // the moment of a desktop click on Save: the footer jumped up
+                // between press and release and the tap did nothing.
+                const same = Number(next) === Number(field.value);
                 field.onChange(next);
+                if (same) return;
                 setPreview(null);
                 setRefusal('');
               }}

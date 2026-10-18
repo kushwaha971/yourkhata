@@ -34,6 +34,7 @@ Every UI piece that is built, whether a form, card, drawer, sheet, dialog, list 
 - **How:** Playwright against the live stack served by `e2e/serve-api.sh` and `e2e/serve.sh` (never `next start`), the same way the existing `--shots` sweeps work, saved under `/tmp/e2e-shots/revamp/<piece>/` and copied to `/mnt/project-files/revamp/shots/<piece>/` so the owner can open them.
 - **Read them before sending:** look at each picture against the spec, and run the measuring checks on the same pages. A screenshot nobody looked at proves nothing.
 - Library and Lending pieces are photographed beside the current screen with the same data, so the figures can be compared (figure parity).
+- The harness is `e2e/revamp-shots.mjs --piece=<loading|press|lock>`. `lock` is also the double-tap check: it holds the save's POST, taps twice and presses Enter, counts the requests that left (must be 1), and replays a lost answer to prove the retry carries the same key and comes back `Idempotent-Replayed`.
 
 ## Exit criteria for rollout (Phase 8)
 1. Every existing gate green.

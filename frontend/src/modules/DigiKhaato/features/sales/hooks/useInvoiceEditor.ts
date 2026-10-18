@@ -17,6 +17,7 @@ import {
 } from 'src/redux/slice/sessionSlice';
 import type { RootState } from 'src/redux/store';
 import { todayInTenantTz } from 'src/utils/dates';
+import { mayHaveBeenSaved } from 'src/utils/requestKey';
 
 import {
   editorReset,
@@ -252,9 +253,7 @@ export const useInvoiceEditor = (
       }
       // A network failure keeps the key for the retry (EC-8); anything the
       // server answered is a new attempt next time (EC-9).
-      if (result.payload?.code !== 'network_error' && result.payload?.code !== 'timeout') {
-        idempotency.rotate();
-      }
+      if (!mayHaveBeenSaved(result.payload)) idempotency.rotate();
       return null;
     },
     [save, dispatch, form, idempotency, kind]

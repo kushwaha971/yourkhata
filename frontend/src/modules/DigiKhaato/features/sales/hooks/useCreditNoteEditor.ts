@@ -13,6 +13,7 @@ import { selectTenantTimezone } from 'src/redux/slice/sessionSlice';
 import { ROUTES } from 'src/routes';
 import { todayInTenantTz } from 'src/utils/dates';
 import { exceedsQuantity } from 'src/utils/quantity';
+import { mayHaveBeenSaved } from 'src/utils/requestKey';
 
 import {
   creditNoteEditorReset,
@@ -116,9 +117,7 @@ export const useCreditNoteEditor = (againstId: string | null): UseCreditNoteEdit
       router.push(`${ROUTES.SALES_CREDIT_NOTES}/${result.payload.document.id}`);
       return;
     }
-    if (result.payload?.code !== 'network_error' && result.payload?.code !== 'timeout') {
-      idempotency.rotate();
-    }
+    if (!mayHaveBeenSaved(result.payload)) idempotency.rotate();
   }, [source, preview, split, overCap, form, dispatch, idempotency, router]);
 
   return { state, form, values, preview, split, overCap, today, canWrite, issue };

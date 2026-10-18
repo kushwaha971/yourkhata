@@ -14,6 +14,15 @@
  *            shot twice: 300 ms after the tap (the loading view) and once the
  *            new screen has settled (what it hands over to).
  *
+ *   lock     F3's double-tap lock, on the two money writes a merchant makes
+ *            most: an Udhaar "You gave" entry and a Lending collection. The
+ *            save's POST is HELD for 3 s and Save is tapped twice; the busy
+ *            button is photographed, and the POSTs that left are COUNTED —
+ *            the assertion is the network, not the paint (the PTY-02 lesson).
+ *            Then a dropped answer: the first collection reaches the server
+ *            and the browser is told it timed out; "Save" again must carry
+ *            the same Idempotency-Key and come back `Idempotent-Replayed`.
+ *
  *   press    F2's pressed looks. A mouse press is HELD (CDP touch does not set
  *            :active headless, calibrated in the Phase 1 baseline) and the
  *            control is photographed at rest and pressed, side by side.
@@ -145,7 +154,122 @@ async function shootPress() {
   }
 }
 const THEMES = arg('themes', 'light,dark').split(',');
+
+// Each opens a money sheet ready to save and returns [save button, POST matcher].
+const LOCK_CASES = [
+  ['udhaar-entry', async (page) => {
+    await page.goto(`${FRONTEND}/khata`, { waitUntil: 'networkidle' });
+    const row = page.viewportSize().width < 1024
+      ? page.locator('main button').filter({ hasText: /C-0\d{5}/ }).filter({ visible: true }).first()
+      : page.locator('main tr[data-testid="ub-grid-row"] button:not([role="checkbox"])').filter({ visible: true }).first();
+    await row.click();
+    await page.waitForURL(/\/parties\/[^/]+$/, { timeout: 20_000 });
+    await page.getByRole('button', { name: /^You gave/ }).filter({ visible: true }).first().click();
+    const amount = page.getByRole('textbox', { name: /^Amount/ }).filter({ visible: true }).first();
+    await amount.fill('1');
+    return [page.getByRole('button', { name: /^Save/ }).filter({ visible: true }).last(), /\/ledger-entries$/];
+  }],
+  ['lending-collect', async (page) => {
+    await page.goto(`${FRONTEND}/lending/loans`, { waitUntil: 'networkidle' });
+    await page.locator('main button').filter({ hasText: /LN-\d{4}/ }).filter({ visible: true }).first().click();
+    // A loan opens as a sheet over the list; Collect is its marigold icon button.
+    await page.getByTestId('lending-loan-collect').filter({ visible: true }).first().click();
+    const amount = page.getByRole('textbox', { name: 'Amount received' });
+    await amount.fill('1');
+    // The preview card arrives after a debounce and pushes Save down; a tap
+    // during that shift lands on empty sheet, which is not what is under test.
+    await page.getByText(/^Left after this/).filter({ visible: true }).first().waitFor({ timeout: 15_000 });
+    await page.waitForTimeout(300);
+    return [page.getByTestId('lending-collect-save'), /\/lending\/loans\/[^/]+\/collections$/];
+  }],
+];
+
+async function shootLock() {
+  for (const width of WIDTHS) {
+    for (const theme of THEMES) {
+      const ctx = await signedInContext(width, theme);
+      for (const [name, open] of LOCK_CASES) {
+        const page = await ctx.newPage();
+        const file = `${DIR}/${width}-${theme}-${name}`;
+        let save, match;
+        try { [save, match] = await open(page); } catch (error) {
+          failures.push(`${width} ${theme} ${name}: could not open the sheet (${error.message.split('\n')[0]})`);
+          await page.screenshot({ path: `${file}-0-open-failed.png` });
+          await page.close(); continue;
+        }
+        await page.screenshot({ path: `${file}-1-ready.png` });
+        // A handle, not the locator: the button's NAME changes to "Saving…".
+        save = await save.elementHandle();
+        const posts = [];
+        await page.route('**/*', async (route) => {
+          const r = route.request();
+          if (r.method() === 'POST' && match.test(new URL(r.url()).pathname)) {
+            posts.push(r.headers()['idempotency-key']);
+            await new Promise((done) => setTimeout(done, 3000));
+          }
+          await route.fallback();
+        });
+        // Two taps 60 ms apart: a thumb that is not sure the first one took.
+        await save.click({ noWaitAfter: true });
+        await page.waitForTimeout(60);
+        // `force`: the second tap lands on whatever the button has become.
+        await save.click({ noWaitAfter: true, force: true, timeout: 2000 }).catch(() => {});
+        await page.keyboard.press('Enter').catch(() => {});
+        await page.waitForTimeout(250);
+        const busy = await save.getAttribute('aria-busy');
+        await page.screenshot({ path: `${file}-2-busy.png` });
+        await page.waitForTimeout(4500);
+        await page.screenshot({ path: `${file}-3-saved.png` });
+        const over = await measureOverflow(page);
+        const line = `${width} ${theme} ${name}: POSTs sent ${posts.length} · busy while held ${busy === 'true' ? 'yes' : 'NO'} · sideways scroll ${over} px`;
+        console.log(line);
+        if (posts.length !== 1 || busy !== 'true') failures.push(line);
+        if (over > 0) failures.push(`${line} — page wider than the screen`);
+        await page.close();
+      }
+      // The dropped answer, once per size: light only, it is a network check.
+      if (theme === THEMES[0]) {
+        const page = await ctx.newPage();
+        let found, match;
+        try { [found, match] = await LOCK_CASES[1][1](page); } catch (error) {
+          failures.push(`${width} retry after a lost answer: could not open Collect (${error.message.split('\n')[0]})`);
+          await page.close(); await ctx.close(); continue;
+        }
+        const save = await found.elementHandle();
+        const sent = [];
+        let first = true;
+        await page.route('**/*', async (route) => {
+          const r = route.request();
+          if (r.method() !== 'POST' || !match.test(new URL(r.url()).pathname)) return route.fallback();
+          const response = await route.fetch();
+          sent.push({ key: r.headers()['idempotency-key'], status: response.status(), replayed: response.headers()['idempotent-replayed'] ?? '', body: await response.text() });
+          if (first) { first = false; return route.abort('timedout'); }
+          return route.fulfill({ response });
+        });
+        await save.click();
+        await page.waitForTimeout(2500);
+        // One plain click must send it: a desktop footer that moved between
+        // press and release once swallowed this tap (fixed in CollectDialog).
+        if (sent.length !== 1) failures.push(`${width} Collect: the first tap on Save sent ${sent.length} requests`);
+        await page.screenshot({ path: `${DIR}/${width}-${theme}-lending-collect-4-no-answer.png` });
+        await save.click().catch(() => {});
+        await page.waitForTimeout(2500);
+        await page.screenshot({ path: `${DIR}/${width}-${theme}-lending-collect-5-retried.png` });
+        const receipt = (b) => { try { return JSON.parse(b).data.receipt_number; } catch { return null; } };
+        const same = sent.length === 2 && sent[0].key === sent[1].key;
+        const replayed = sent[1]?.replayed === 'true' && receipt(sent[0].body) === receipt(sent[1]?.body);
+        const line = `${width} retry after a lost answer: ${sent.length} POSTs · same key ${same ? 'yes' : 'NO'} · server replayed ${replayed ? 'yes' : 'NO'} (${sent.map((x) => `${x.status}${x.replayed ? ' replayed' : ''} ${receipt(x.body)}`).join(', ')})`;
+        console.log(line);
+        if (!same || !replayed) failures.push(line);
+        await page.close();
+      }
+      await ctx.close();
+    }
+  }
+}
+
 if (PIECE === 'press') await shootPress();
+else if (PIECE === 'lock') await shootLock();
 else for (const width of WIDTHS) {
   for (const theme of THEMES) {
     if (width === 320 && theme === 'dark') continue;
@@ -182,5 +306,5 @@ else for (const width of WIDTHS) {
   }
 }
 await browser.close();
-console.log(failures.length ? `\nFAIL ${failures.length}\n${failures.join('\n')}` : '\nall cases showed the loading view');
+console.log(failures.length ? `\nFAIL ${failures.length}\n${failures.join('\n')}` : '\nall cases passed');
 process.exit(failures.length ? 1 : 0);
