@@ -2,6 +2,7 @@ import { UbAmount, UbStack, UbStatusBadge, UbText } from 'src/design-system';
 import type { UbDataGridColumn } from 'src/design-system/UbDataGrid';
 import type { TranslateFn } from 'src/hooks/useTranslation';
 import { formatBusinessDate } from 'src/utils/dates';
+import { formatInr } from 'src/utils/money';
 
 import { STATUS_TONE, daysOverdue } from '../view-model/invoiceDisplay';
 import { originWords } from '../view-model/originDisplay';
@@ -43,14 +44,14 @@ export const createInvoiceColumns = ({
       const walkIn = !row.party;
       const name = row.party?.name ?? row.walkInName ?? t('sales.walkIn.label');
       const number = row.number ?? t('sales.status.draft');
-      if (isCards) return `${name} · ${number}`;
+      if (isCards) return name;
       return (
         <UbStack gap={0} className="min-w-0">
           <UbText
             as="span"
             variant="body-sm"
             tone={walkIn ? 'tertiary' : undefined}
-            className="line-clamp-2"
+            className="whitespace-normal break-words"
           >
             {walkIn && row.walkInName ? `${t('sales.walkIn.label')} · ${name}` : name}
           </UbText>
@@ -67,16 +68,23 @@ export const createInvoiceColumns = ({
     header: t('sales.column.date'),
     priority: 1,
     cardSlot: 'meta',
-    widthShare: 12,
+    widthShare: 16,
     cell: (row) => {
       const date = formatBusinessDate(row.documentDate);
-      if (!isCards || !row.origin) return date;
+      if (!isCards)
+        return (
+          <UbText as="span" variant="body-sm" className="block whitespace-normal break-words">
+            {date}
+          </UbText>
+        );
+      const caption = `${row.number ?? t('sales.status.draft')} · ${date}`;
+      if (!row.origin) return caption;
       const words = originWords(row.origin);
       const from = t(words.id, {
         module: words.moduleId ? t(words.moduleId) : words.module,
         label: words.label ?? '',
       });
-      return `${date} · ${from}`;
+      return `${caption} · ${from}`;
     },
   },
   {
@@ -87,10 +95,21 @@ export const createInvoiceColumns = ({
     widthShare: 14,
     cell: (row) => {
       const overdue = row.isOverdue ? 'overdue' : row.status;
+      const label =
+        overdue === 'issued' && row.amountDue !== '0.00'
+          ? t('sales.tab.unpaid')
+          : t(`sales.status.${overdue}`);
       return isCards ? (
-        t(`sales.status.${overdue}`)
+        [
+          label,
+          row.amountDue !== '0.00'
+            ? t('sales.list.dueAmount', { amount: formatInr(row.amountDue) })
+            : '',
+        ]
+          .filter(Boolean)
+          .join(' · ')
       ) : (
-        <UbStatusBadge tone={STATUS_TONE[overdue]} label={t(`sales.status.${overdue}`)} />
+        <UbStatusBadge tone={STATUS_TONE[overdue]} label={label} />
       );
     },
   },

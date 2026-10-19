@@ -1,8 +1,9 @@
 import type * as ReactModule from 'react';
 
-import { screen, waitFor, within } from '@testing-library/react';
+import { act, fireEvent, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
+import { UbButton } from 'src/design-system';
 import { resetAllFeatureState } from 'src/redux/actions';
 import { sessionLoaded } from 'src/redux/slice/sessionSlice';
 import { store } from 'src/redux/store';
@@ -23,6 +24,7 @@ import type { InvoiceListPage, InvoiceListRow } from '../types/sales.types';
 jest.mock('../api/salesService');
 
 const mockReplace = jest.fn();
+const mockPush = jest.fn();
 let mockSearch = '';
 const mockUrlListeners = new Set<() => void>();
 jest.mock('next/navigation', () => {
@@ -36,7 +38,7 @@ jest.mock('next/navigation', () => {
   const read = () => mockSearch;
   return {
     useRouter: () => ({
-      push: jest.fn(),
+      push: mockPush,
       replace: mockReplace,
       back: jest.fn(),
       prefetch: jest.fn(),
@@ -130,18 +132,14 @@ it('lists this financial year and shows the server totals', async () => {
   expect(lastAsked()).toMatchObject({ tab: 'all', dateFrom: expect.stringMatching(/-04-01$/) });
 });
 
-it('asks the server for paid bills when Paid is chosen in the Filters sheet', async () => {
-  // On a phone the status tabs live in the one Filters sheet (approved design,
-  // 12 Oct 2026); jsdom renders the phone layout.
+/** Counter register: the common status question must not require opening Filters. */
+it('asks the server for paid bills directly from the visible status choices', async () => {
   signIn(['sales.invoice.read']);
   const user = userEvent.setup();
   renderWithProviders(<InvoicesListPageContent />);
   await screen.findAllByText(/Ramesh Traders/);
-  expect(screen.queryByRole('tab', { name: /Paid/ })).not.toBeInTheDocument();
-  await user.click(screen.getByTestId('filters-button'));
-  const group = await screen.findByRole('radiogroup', { name: 'Bill status' });
-  await user.click(within(group).getByRole('radio', { name: /Paid/ }));
-  await user.click(screen.getByTestId('filters-apply'));
+  const group = screen.getByRole('radiogroup', { name: 'Bill status' });
+  await user.click(within(group).getByRole('radio', { name: /^Paid/ }));
   await waitFor(() => expect(lastAsked().tab).toBe('paid'));
   expect(mockSearch).toBe('tab=paid');
 });
@@ -178,4 +176,71 @@ it('tells a member without access so, and asks nothing', () => {
   renderWithProviders(<InvoicesListPageContent />);
   expect(screen.getByText('Bills are not available')).toBeInTheDocument();
   expect(service.listInvoices).not.toHaveBeenCalled();
+});
+
+/** The N shortcut must not steal typing from the global command trigger. */
+it('does not navigate to a new bill when typing n into the global combobox', async () => {
+  signIn(['sales.invoice.read', 'sales.invoice.write']);
+  renderWithProviders(
+    <>
+      <UbButton role="combobox" aria-label="Shop command">
+        Find or start
+      </UbButton>
+      <InvoicesListPageContent />
+    </>
+  );
+  await screen.findAllByText(/Ramesh Traders/);
+  fireEvent.keyDown(screen.getByRole('combobox', { name: 'Shop command' }), { key: 'n' });
+  expect(mockPush).not.toHaveBeenCalled();
+});
+
+/** A header-placed primary action must navigate, not become an inert plus icon. */
+it('opens the new bill editor from the phone header action', async () => {
+  const media = jest.spyOn(window, 'matchMedia').mockImplementation((query) => ({
+    matches: query.includes('max-width'),
+    media: query,
+    onchange: null,
+    addEventListener: () => undefined,
+    removeEventListener: () => undefined,
+    addListener: () => undefined,
+    removeListener: () => undefined,
+    dispatchEvent: () => false,
+  }));
+  signIn(['sales.invoice.read', 'sales.invoice.write']);
+  const view = renderWithProviders(<InvoicesListPageContent />);
+  await screen.findAllByText(/Ramesh Traders/);
+  await userEvent.click(screen.getByRole('button', { name: 'New bill' }));
+  expect(mockPush).toHaveBeenCalledWith('/sales/invoices/new');
+  view.unmount();
+  media.mockRestore();
+});
+
+/** Advanced filters must retain the status selected in the visible row. */
+it('preserves the chosen status when applying the advanced filter drawer', async () => {
+  signIn(['sales.invoice.read']);
+  const user = userEvent.setup();
+  renderWithProviders(<InvoicesListPageContent />);
+  await screen.findAllByText(/Ramesh Traders/);
+  await user.click(screen.getByRole('radio', { name: /^Paid/ }));
+  await waitFor(() => expect(lastAsked().tab).toBe('paid'));
+  await user.click(screen.getByTestId('filters-button'));
+  await user.click(await screen.findByTestId('filters-apply'));
+  expect(lastAsked().tab).toBe('paid');
+});
+
+/** Back/deep-link search must not be overwritten by the previous input debounce. */
+it('follows an external search URL while the register stays mounted', async () => {
+  signIn(['sales.invoice.read']);
+  renderWithProviders(<InvoicesListPageContent />);
+  await screen.findAllByText(/Ramesh Traders/);
+  act(() => {
+    mockSearch = 'q=Radhe';
+    mockUrlListeners.forEach((notify) => notify());
+  });
+  await waitFor(() => expect(screen.getByRole('searchbox')).toHaveValue('Radhe'));
+  await act(async () => {
+    await new Promise((resolve) => setTimeout(resolve, 350));
+  });
+  expect(mockSearch).toBe('q=Radhe');
+  expect(lastAsked().q).toBe('Radhe');
 });

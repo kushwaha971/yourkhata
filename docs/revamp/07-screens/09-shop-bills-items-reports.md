@@ -5,7 +5,7 @@ Read with [02](../02-preserve-and-contracts.md) (what must keep working), [05 §
 
 Paths: `F/` is `frontend/src/modules/DigiKhaato/features/`; endpoints are under `/api/v1/` (constants in `frontend/src/api/APIPaths.ts`). Code was read at `dev` on 17 Oct 2026. Where the code and an older doc disagree, the code is described and the difference is listed in §12.
 
-Every money figure on these screens is the **Shop's book** (DEC-019: ledger bucket `shop`, party cache `shop_balance`). Customers and suppliers are never netted. Udhaar words (You gave / You got) never appear here; the Shop says **Billed, Received, Paid out, Due, To collect, To pay**.
+Every money figure on these screens is the **Shop's book** (DEC-019: ledger bucket `shop`, role-specific Shop facts; never the combined `shop_balance` cache). Customers and suppliers are never netted. Udhaar words (You gave / You got) never appear here; the Shop says **Billed, Received, Paid out, Due, To collect, To pay**.
 
 ---
 
@@ -81,9 +81,36 @@ These apply to every section below. A screen's own **States** field lists only w
 | Must keep working | SAL-08 counts over date+search, totals over the filtered set, `N` shortcut, origin filter when modules issue documents, per-kind read permissions, `hasAny` first-use rule, URL filters. |
 | Fewer taps | status chips visible on phone (−2 taps per filter); search accepts a bill number or an amount ("1240"). |
 
-Tracking: problems — status hidden in the phone sheet; "void" shown as a code-ish word · decisions — status chips on phone, "Cancelled" as the word · dependencies — none (presentation) · risks — chip row width at 320 px Hindi (scrolls horizontally inside its own row, never the page) · approval — R-DEC-16/25 · build — next after Home acceptance · tests — `InvoicesListPageContent.test.tsx`, `final-sales-qa.mjs`, `sales-look.mjs` at 320/390/768/1280, both themes · outcome — —
+Tracking: problems — status hidden in the phone sheet; "void" shown as a code-ish word · decisions — status chips on phone, "Cancelled" as the word · dependencies — none (presentation) · risks — chip row width at 320 px Hindi (scrolls horizontally inside its own row, never the page) · approval — R-DEC-16/25 · build — register delivered on dev · tests — `InvoicesListPageContent.test.tsx`, `revamp-bills.mjs` at 320/390/1024/1280, both themes + Hindi · outcome — 4,536 tests and102 measured states pass; report 2026-10-20-p5-bills-register
 
 ---
+
+### 1.1 Implementation review · 20 Oct 2026
+
+R-DEC-25: continue directly from delivered Home 4a66b430. The register now uses
+visible UI-kit single-choice status chips at every width, a compact server-total
+line (shared RecordTotals composition), an existing register grid and explicit
+stacked phone cards. Desktop period selection is one existing UI-kit dropdown;
+phone advanced dates/origin remain in Filters and preserve the visible status.
+The former summary-card stack, hidden status question and floating New action
+are superseded. The phone New action is in the header and its navigation is
+covered by a fail-before regression. Names and full dates wrap; 1024 px action
+rows stay within available width. No source endpoint/accounting/permission change.
+
+The status key `void` is unchanged, labelled Cancelled. An issued invoice with
+remaining money says Unpaid. Cards show remaining due along with status; the two
+metadata-slot design rule is preserved by composing the supporting facts rather
+than duplicating a grid implementation. Search reuses useCommittedSearch so a
+Back/deep-link query wins over stale input; N does not steal header search typing.
+
+Actual differences from the original planning table: status choices are the
+same chip treatment on desktop and phone (consistent with Counter Mode), and
+Count/Billed/Due are a compact filtered-total composition rather than stat cards.
+Bill list search still truthfully names number/name/mobile; an amount-search
+contract is not claimed by this presentation piece. Existing paging/first-use/
+filters/shortcuts and per-kind destinations stay in place. End-to-end POS/editor,
+returns, sharing/print and accounting effects are the next family piece, not
+certified by the list acceptance. Report: docs/performance/2026-10-20-p5-bills-register.md.
 
 ## 2. Sale document detail · `/sales/{invoices|estimates|orders|challans|credit-notes}/[id]`
 

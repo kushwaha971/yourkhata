@@ -8,6 +8,16 @@ phase/next-screen permission again. New business-rule/destructive decisions and
 frozen live contracts retain their boundaries. Read 12's current Progress/Next
 and the latest Home report before interpreting a status as complete.
 
+DELIVERED CHECKPOINTS
+Home is pushed as4a66b430. Bills register is delivered; read its report
+2026-10-20-p5-bills-register.md and current12 for delivery status. It uses
+visible status chips, shared RecordTotals, register grid/stacked phone cards,
+header New, full dates/names and useCommittedSearch. N no longer steals command
+input; header navigation is tested. No backend/accounting changes. Full FE:
+406 suites/4,536 tests;102 measured en/hi states pass; unchanged bundle budgets.
+Immediate next work: invoice/POS editor and invoice detail/actions, not another
+list-only polish. R-DEC-25 authorizes continuing without routine permission.
+
 READ FIRST
 AGENTS.md, CLAUDE.md, docs/revamp/README.md, 12-decision-log.md,
 02-preserve-and-contracts.md, the Home delivery report in docs/performance/

@@ -1,13 +1,14 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo } from 'react';
 
 import { Plus } from 'lucide-react';
 
 import {
   UbActionLink,
   UbButton,
-  UbDateRangePicker,
+  UbPeriodSelect,
+  UbChoiceChips,
   UbFilterSelect,
   UbEmptyState,
   UbFilterSheet,
@@ -16,7 +17,6 @@ import {
   UbPageShell,
   UbSearchInput,
   UbStack,
-  UbTabs,
 } from 'src/design-system';
 import type { UbFilterSpec, UbFilterValues } from 'src/design-system';
 import {
@@ -26,7 +26,7 @@ import {
   type UbGridState,
 } from 'src/design-system/UbDataGrid';
 import { useAppRouter } from 'src/hooks/useAppRouter';
-import { useDebounce } from 'src/hooks/useDebounce';
+import { useCommittedSearch } from 'src/hooks/useCommittedSearch';
 import { useTranslation } from 'src/hooks/useTranslation';
 import { ROUTES } from 'src/routes';
 
@@ -61,21 +61,21 @@ export function InvoicesListPageContent(): React.JSX.Element {
   const tier = useGridTier();
   const list = useInvoiceList();
 
-  const [search, setSearch] = useState(list.filters.q);
-  const debounced = useDebounce(search, INVOICE_SEARCH_DEBOUNCE_MS);
   const { setQuery, filters } = list;
-  useEffect(() => {
-    if (debounced.trim() !== filters.q.trim()) setQuery(debounced);
-  }, [debounced, filters.q, setQuery]);
+  const [search, setSearch] = useCommittedSearch(filters.q, setQuery, INVOICE_SEARCH_DEBOUNCE_MS);
 
   // FR-12 — `N` opens a new bill, unless the merchant is typing somewhere.
   const { canWrite } = list;
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
       const target = event.target as HTMLElement | null;
-      const typing = target?.closest('input, textarea, select, [contenteditable="true"]');
+      const typing = target?.closest(
+        'input, textarea, select, [contenteditable="true"], [role="combobox"], [role="dialog"]'
+      );
       if (
         canWrite &&
+        !event.defaultPrevented &&
+        !event.altKey &&
         !typing &&
         event.key.toLowerCase() === 'n' &&
         !event.metaKey &&
@@ -203,21 +203,8 @@ export function InvoicesListPageContent(): React.JSX.Element {
           }),
         }
       : null;
-  /* On a phone: the search and ONE Filters button. The tabs (Unpaid, Overdue,
-     Paid…), the period and the origin are inside it; each default reads as
-     "no filter", so the badge counts only what the merchant changed. */
+  // Status stays visible; the drawer owns only advanced period/origin filters.
   const phoneSpecs: UbFilterSpec[] = [
-    {
-      kind: 'single',
-      key: 'tab',
-      label: t('sales.tab.label'),
-      anyLabel: t('sales.tab.all'),
-      options: INVOICE_TABS_ORDER.filter((tab) => tab !== 'all').map((value) => ({
-        value,
-        label: t(`sales.tab.${value}`),
-        hint: list.tabs?.[value] ? String(list.tabs[value]) : undefined,
-      })),
-    },
     {
       kind: 'single',
       key: 'preset',
@@ -241,7 +228,6 @@ export function InvoicesListPageContent(): React.JSX.Element {
   ];
   const custom = filters.preset === 'custom';
   const phoneValues: UbFilterValues = {
-    tab: filters.tab === 'all' ? '' : filters.tab,
     preset: filters.preset === DEFAULT_INVOICE_PRESET || custom ? '' : filters.preset,
     dateFrom: custom ? filters.dateFrom : '',
     dateTo: custom ? filters.dateTo : '',
@@ -250,7 +236,7 @@ export function InvoicesListPageContent(): React.JSX.Element {
   const applyPhone = (next: UbFilterValues) => {
     const ranged = Boolean(next.dateFrom || next.dateTo);
     list.applyFilters({
-      tab: (next.tab || 'all') as InvoiceTab,
+      tab: filters.tab,
       preset: ranged ? 'custom' : ((next.preset || DEFAULT_INVOICE_PRESET) as InvoicePreset),
       dateFrom: next.dateFrom || filters.dateFrom,
       dateTo: next.dateTo || filters.dateTo,
@@ -263,7 +249,7 @@ export function InvoicesListPageContent(): React.JSX.Element {
       onChange={setSearch}
       placeholder={t('sales.search.placeholder')}
       aria-label={t('sales.search.label')}
-      className={phone ? 'min-w-0 flex-1' : 'w-56'}
+      className={phone ? 'min-w-0 flex-1' : 'w-72'}
     />
   );
   const grid = (
@@ -286,6 +272,8 @@ export function InvoicesListPageContent(): React.JSX.Element {
       onPageChange={list.setPage}
       onRowOpen={openRow}
       cardAvatar={false}
+      cardLayout="stacked"
+      variant="register"
     />
   );
   return (
@@ -314,13 +302,14 @@ export function InvoicesListPageContent(): React.JSX.Element {
             mobile={{
               menuLabel: t('common.action.moreActions'),
               closeLabel: t('common.action.close'),
+              primaryPlacement: 'header',
               // The empty book's one button is in the middle of the screen.
               primary:
                 canWrite && !emptyBook
                   ? {
                       label: t('sales.newBill'),
                       icon: <Plus className="h-6 w-6" aria-hidden />,
-                      href: NEW_BILL,
+                      onClick: newBill,
                     }
                   : undefined,
             }}
@@ -338,67 +327,69 @@ export function InvoicesListPageContent(): React.JSX.Element {
             description={emptyStates.firstUse.description}
             action={emptyStates.firstUse.action}
           />
-        ) : phone ? (
-          <>
-            <UbStack direction="row" gap={2} align="center">
-              {searchBox}
-              <UbFilterSheet
-                compact
-                specs={phoneSpecs}
-                values={phoneValues}
-                onApply={applyPhone}
-                labels={{
-                  title: t('common.filters.title'),
-                  apply: t('common.action.apply'),
-                  reset: t('common.action.reset'),
-                  close: t('common.action.close'),
-                }}
-              />
-            </UbStack>
-            {totals && <InvoiceListStats totals={totals} />}
-            {grid}
-          </>
         ) : (
           <>
-            <UbDateRangePicker<InvoicePreset>
-              presets={presets}
-              preset={filters.preset}
-              onPresetChange={list.setPreset}
-              customPreset="custom"
-              from={filters.dateFrom}
-              to={filters.dateTo}
-              onRangeChange={list.setRange}
-              max={list.today}
-              name="invoice-period"
-              end={
-                originSpec ? (
-                  <UbFilterSelect
-                    spec={originSpec}
-                    value={filters.originModule ?? ''}
-                    onChange={(next) => list.setOriginModule(next || null)}
-                    closeLabel={t('common.action.close')}
+            <UbStack
+              direction="row"
+              align="center"
+              className="flex-wrap gap-3"
+              data-testid="invoice-register-toolbar"
+            >
+              {searchBox}
+              {phone ? (
+                <UbFilterSheet
+                  compact
+                  specs={phoneSpecs}
+                  values={phoneValues}
+                  onApply={applyPhone}
+                  labels={{
+                    title: t('common.filters.title'),
+                    apply: t('common.action.apply'),
+                    reset: t('common.action.reset'),
+                    close: t('common.action.close'),
+                  }}
+                />
+              ) : (
+                <>
+                  <UbPeriodSelect<InvoicePreset>
+                    presets={presets}
+                    value={filters.preset}
+                    customValue="custom"
+                    from={filters.dateFrom}
+                    to={filters.dateTo}
+                    max={list.today}
+                    onChange={(preset, from, to) => {
+                      if (preset === 'custom' && from && to) list.setRange(from, to);
+                      else list.setPreset(preset);
+                    }}
+                    labels={{
+                      period: t('sales.period.label'),
+                      from: t('sales.period.from'),
+                      to: t('sales.period.to'),
+                      apply: t('common.action.apply'),
+                      close: t('common.action.close'),
+                    }}
                   />
-                ) : undefined
-              }
-              labels={{
-                presets: t('sales.period.label'),
-                from: t('sales.period.from'),
-                to: t('sales.period.to'),
-                apply: t('common.action.apply'),
-                close: t('common.action.close'),
-              }}
+                  {originSpec && (
+                    <UbFilterSelect
+                      spec={originSpec}
+                      value={filters.originModule ?? ''}
+                      onChange={(next) => list.setOriginModule(next || null)}
+                      closeLabel={t('common.action.close')}
+                    />
+                  )}
+                </>
+              )}
+            </UbStack>
+            <UbChoiceChips<InvoiceTab>
+              value={filters.tab}
+              onChange={list.setTab}
+              options={tabs.map((tab) => ({ value: tab.value, label: tab.label }))}
+              ariaLabel={t('sales.tab.label')}
+              className="flex-nowrap overflow-x-auto py-1 [&>button]:shrink-0"
             />
             {totals && <InvoiceListStats totals={totals} />}
-            <UbTabs<InvoiceTab>
-              value={filters.tab}
-              onValueChange={list.setTab}
-              tabs={tabs}
-              ariaLabel={t('sales.tab.label')}
-              layout="fit"
-              trailing={searchBox}
-            >
-              {grid}
-            </UbTabs>
+            {grid}
           </>
         )}
       </UbStack>

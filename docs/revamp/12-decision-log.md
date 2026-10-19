@@ -85,6 +85,7 @@ destructive actions and frozen Library/Lending contracts retain their boundaries
 
 | Date | What was done | Files |
 |---|---|---|
+| 20 Oct 2026 | R-DEC-25 Bills register verified: visible statuses, compact totals, shared register/phone cards, header New, full dates/names, committed search and guarded N. 4,536 tests;102 en/hi measured states;12 quiet nav samples. Commit/push then invoice/POS editor/detail. | docs/performance/2026-10-20-p5-bills-register.md; 07-screens/09 |
 | 20 Oct 2026 | R-DEC-21–25 Home accepted locally: header command, real Repeat/role lanes, compact period/group graph, joined phone figures and filled tabs; 4,532 frontend tests, 144 Home and 64 measured flow frames, local double-tap/receipt. Backend latest 4,665 pass/16 skip/one existing scale timeout; isolated pass48.66s. Commit/push checkpoint, then Bills/POS without reapproval. | docs/performance/2026-10-19-p5-shop-home.md; 03-shop-home.md; START-NEXT-SESSION-PROMPT.txt |
 | 19 Oct 2026 | Superseded first Home composition (not the accepted delivery): Counter Mode figures, role-separated lanes, shared search/payment/reminder, tabs and lazy Insights; source-scoped local chart state and wrapping chart geometry. Final browser verification and delivery in progress; no new finance API. | docs/performance/2026-10-19-p5-shop-home.md; 07-screens/03-shop-home.md |
 | 19 Oct 2026 | R-DEC-20: fast-forwarded seven Claude commits through 7de05d53; independent BP-14 review corrected legacy/sensitive stored exports, actual source scope, report-aging aliases/private main fields and disabled-app cash history. 12 fail-before assertions; 18 focused security checks; full backend 4,661 passed/16 skipped/zero failures. Home harness now measures loading/first use instead of merely taking PNGs. Next: actual Counter Mode Home rebuild. | docs/performance/2026-10-19-claude-review-access-followup.md; e2e/revamp-home.mjs |
@@ -118,12 +119,11 @@ destructive actions and frozen Library/Lending contracts retain their boundaries
 
 ## Next
 
-**R-DEC-25 current:** Home implementation and local acceptance are complete;
-finish its commit/push/report checkpoint, then proceed immediately to the Bills
-register/POS/customer invoice family in 07-screens/09. R-DEC-21–24 corrections
-(header search, period/group graph, reference mobile geometry) and exact test/
-feature limits are in the Home report. Do not redo Home or ask the phase choice.
-BP-14 is delivered as bab3dd24; BP-15 is additive read-only Home data.
+**R-DEC-25 current:** Home is delivered on dev as4a66b430. Bills register is
+delivered (4,536 tests;102 measured en/hi states); immediately continue invoice/POS editor and detail actions in07-screens/09.
+Do not ask the phase choice. Exact source/timing/physical-device limits remain
+in the reports. BP-14 is bab3dd24; BP-15 is read-only Home data. Whole-Shop/editor
+accounting-flow completion is not claimed.
 
 **R-DEC-16 active:** Customer register and the corrected Shop person piece are delivered (`06ac3b23`); BP-11 book authorization is delivered (`4e6d7b37`). Suppliers is delivered as `b0716d46`; after the R-DEC-18 access checkpoint continue Shop Home, then the remaining Shop screen families, then another app. Do not ask those phase/BP-09 approvals again. **R-DEC-13 supersedes the two-figure person-page design:** Customers shows only customer money and Receive/New bill; Suppliers only supplier money and Pay/Purchase bill; Udhaar independent. Current Shop facts are BP-09. Historical role-specific statements/aging are proposed BP-10, and shared-book authorization audit is BP-11 (implemented and pushed under R-DEC-15); BP-10 remains unapproved; the mixed Shop statement link is withheld from these views. Reports: `docs/performance/2026-10-18-p5-customers.md` and `docs/performance/2026-10-18-p5-shop-person.md`.
 
