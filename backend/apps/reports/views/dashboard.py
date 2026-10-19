@@ -55,6 +55,16 @@ from apps.reports.views.export_support import granted_permissions
 logger = logging.getLogger("ub.reports")
 
 
+def reads_every_book(request: Any, tenant: Any) -> bool:
+    """The reader holds `ledger.entry.read` in every book this business runs (BP-11)."""
+    from apps.common.book_access import BOOK_APPS, allowed_books
+    from apps.platform_app.apps_registry import apps_of_business
+
+    running = {app.code for app in apps_of_business(tenant)}
+    needed = {book for book, app in BOOK_APPS.items() if app in running}
+    return needed <= allowed_books(request, "ledger.entry.read")
+
+
 def module_sections(tenant: Any, today: date, *, granted: frozenset[str]) -> list[dict]:
     """The registered sections this reader may see, each computed now.
 
@@ -134,6 +144,10 @@ class DashboardView(TenantScopeMixin, APIView):
             granted=granted,
             modules=frozenset(tenant.enabled_modules or ()),
         )
+        if "cash_in_hand" in body.get("tiles", {}) and not reads_every_book(request, tenant):
+            # R-DEC-18 — every book's cash, for a reader of every book. The Shop's
+            # own drawer stays in `shop_cash_in_hand`.
+            body["tiles"].pop("cash_in_hand")
         body["sections"] = module_sections(tenant, today, granted=granted)
         body["generated_at"] = snapshot.computed_at.isoformat()
         response = StandardResponse.ok(
