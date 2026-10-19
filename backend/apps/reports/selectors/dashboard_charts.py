@@ -280,9 +280,11 @@ def money_series(span: _Span) -> tuple[list[Decimal], list[Decimal]]:
     from apps.expenses.models import Expense
     from apps.payments.models import Payment
 
-    payments = Payment.objects.filter(tenant=span.tenant, **span.between("payment_date")).exclude(
-        status="void"
-    )
+    # DEC-019 / R-DEC-18 — the Shop's own book, as the Received tile and the
+    # cash book read it; expenses below are already `app="shop"`.
+    payments = Payment.objects.filter(
+        tenant=span.tenant, bucket=LedgerBucket.SHOP, **span.between("payment_date")
+    ).exclude(status="void")
     money_in = _series(
         _grouped(payments.filter(direction="in"), "payment_date", "amount", span.group),
         span.starts,

@@ -74,3 +74,15 @@ def test_owner_keeps_every_book_cash(cash_in_other_books):
     _, owner = cash_in_other_books
     tiles = _tiles(owner)
     assert Decimal(tiles["cash_in_hand"]["amount"]) >= Decimal("8642.00")
+
+
+def test_shop_chart_money_counts_only_the_shop_book(cash_in_other_books):
+    """The chart's money-in summed every book's receipts; the Received tile is Shop-only."""
+    make, owner = cash_in_other_books
+    for client in (make(shop="admin"), owner):
+        response = client.get("/api/v1/reports/dashboard/charts", {"range": "7d"})
+        assert response.status_code == 200, response.content
+        money = response.json()["data"].get("money")
+        if money is None:
+            continue
+        assert Decimal(money["totals"]["in"]) == 0, money["totals"]
