@@ -111,6 +111,14 @@ class TenantContextMiddleware:
             # pre-switch one, so it must not overwrite it.
             if "X-Tenant-Id" not in response:
                 response["X-Tenant-Id"] = str(tenant.id)
+        actor = getattr(request, "user", None)
+        if actor is not None and getattr(actor, "is_authenticated", False):
+            response.setdefault("X-User-Id", str(actor.pk))
+        if tenant not in (None, "unset") and response.get("X-Tenant-Id") == str(tenant.id):
+            member = getattr(tenant, "_ub_membership", None)
+            revision = getattr(member, "permissions_version", None)
+            if revision is not None:
+                response["X-Membership-Version"] = str(revision)
         return response
 
 

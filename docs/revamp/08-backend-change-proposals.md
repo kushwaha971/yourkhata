@@ -1,6 +1,6 @@
 # 08 · Backend change proposals
 
-Status: **BP-09 and BP-11 approved by the owner on 18 Oct 2026; BP-12 access-context corrections are approved on 19 Oct (R-DEC-18); other backend proposals remain unapproved unless separately recorded.**
+Status: **BP-09 and BP-11 approved by the owner on 18 Oct 2026; BP-12 and BP-13 access-context corrections are approved on 19 Oct (R-DEC-18); other backend proposals remain unapproved unless separately recorded.**
 
 The revamp is mainly UI, UX and frontend performance. A backend change is listed here only if the audit found a demonstrated need. Library and Lending contracts are fixed: proposals for them change no request, response, rule or table; they only make the same answer arrive faster or safer, and each still needs approval.
 
@@ -125,3 +125,16 @@ Risk/compatibility: shared identity pickers and legacy missing-book callers must
 - **Rollback:** revert the frontend search changes if needed; retain server visibility guards. An emergency UI rollback must not re-enable cross-app notification disclosure.
 
 The owner asked for the rule across the application. This piece does not certify every endpoint. Continue an explicit coverage matrix for read/write/bulk/export/share and account/business switching; unverified surfaces stay named rather than inferred safe from hidden controls.
+
+## BP-13 · Request actor/business intent and late-response isolation
+
+Approved access correction scope: R-DEC-18. The owner requires user/module/business isolation for data and actions, with fixes before the next redesign screen.
+
+- Why: the stored diagnostic proves a late user-A notification response can populate user B after logout/login in the same business. Tenant-only checks cannot identify that change. Response-only tenant checks also cannot prevent a stale tab creating a record in the business selected by a shared cookie before the response is rejected.
+- Touches: shared Axios transport/bridge and request identity selector, shared source keys, central JWT authentication and tenant response metadata. No financial service or vertical payload/model/calculation changes.
+- Before/after: capture authenticated user/business/permission revision on requests; reject stale results and retries. Optional X-Expected-User-Id and X-Expected-Tenant-Id headers are preconditions, never authentication or tenant selection; mismatches return 409 before the view acts. Existing tokens/membership/grants remain the authority. Echo membership revision on scoped responses so late results from older rights cannot overwrite current state; keep own tenant-transition/bootstrap behavior.
+- Compatibility: clients omitting preconditions keep current API shapes; browser adds them only when its context is known. Public token documents and intentional authentication transitions remain functional. CORS must allow/expose the new headers. No migration or database rewrite.
+- Risk: a guard must not break login/OTP, refresh, own-business switching, adding a business, no-tenant sessions or impersonation. Stale 401s must never refresh/replay under a different actor. Context mismatch clears stale local data and reloads coherently rather than rendering another actor under an old header.
+- Acceptance: late success/error/401 after logout/new login in same business; revision changes; matching and forged/absent preconditions; stale-tab writes have no side effects; own switch and bootstrap pass; cookie and Bearer paths; proxy/CORS; account/tenant switch in two browser tabs. Add the failing diagnostic as an active regression. Preserve all existing book authorization tests.
+- Rollback: retain server preconditions and remove only unsafe client presentation if necessary; never revert to accepting private stale responses to mask a UX failure.
+- Implementation evidence: `docs/performance/2026-10-19-bp13-request-context.md`. No migration; API support must ship before or with the new client. Remaining access-matrix checks are explicit in 02 §5.1.

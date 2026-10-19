@@ -1,5 +1,12 @@
-import { createSlice, type Draft, type PayloadAction, type UnknownAction } from '@reduxjs/toolkit';
+import {
+  createSelector,
+  createSlice,
+  type Draft,
+  type PayloadAction,
+  type UnknownAction,
+} from '@reduxjs/toolkit';
 
+import type { RequestIdentity } from 'src/api/transportBridge';
 import { resetAllFeatureState } from 'src/redux/actions';
 import type { RootState } from 'src/redux/store';
 import type { ApiErrorShape } from 'src/types/api.types';
@@ -430,6 +437,16 @@ export const selectMustChangePassword = (state: RootState): boolean =>
 export const selectSessionUser = (state: RootState): SessionUser | null => state.session.user;
 export const selectActiveTenant = (state: RootState): SessionTenant | null =>
   state.session.activeTenant;
+/** One identity key for transport and transient search sources; phone numbers never participate. */
+export const selectRequestIdentity = createSelector(
+  [selectSessionUser, selectActiveTenant, (state: RootState) => state.session.version],
+  (user, tenant, version): RequestIdentity | null =>
+    user ? { userId: user.id, tenantId: tenant?.id ?? null, version } : null
+);
+export const selectRequestScopeKey = createSelector(selectRequestIdentity, (identity) =>
+  JSON.stringify(identity)
+);
+
 export const selectPermissions = (state: RootState): readonly PermissionCode[] =>
   state.session.permissions;
 export const selectEnabledModules = (state: RootState): readonly ModuleCode[] =>

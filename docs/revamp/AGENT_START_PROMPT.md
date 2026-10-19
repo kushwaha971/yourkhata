@@ -4,6 +4,10 @@ Give the block below to any coding agent (Codex, Cursor, Claude Code, Copilot, W
 
 Replace the line marked `TASK` with what you want done next. If you leave it out, the agent does the next item in `docs/revamp/12-decision-log.md` → "Next".
 
+## Current handoff · 19 October 2026
+
+Read `START-NEXT-SESSION-PROMPT.txt` first for current completion and next steps. R-DEC-19 requires committing/pushing this access-fix checkpoint and handing off **before Home**. BP-12 is delivered; read the BP-13 report for the current request-context correction and exact test results. Do not repeat old phase-choice questions, assume all APIs are certified, or turn remaining personal-Udhaar ownership into a completed feature.
+
 ```text
 You are continuing the YourKhata revamp: a redesign of the whole app (Shop, Udhaar
 book, Library, Lending and everything around them) and a fix for slow, silent taps
@@ -43,7 +47,7 @@ out of date; the code is the truth. If they disagree, say so in the decision log
   Keep the existing logo (UbLogo, frontend/public/brand/yourkhata-*.svg,
   DESIGN-SYSTEM.md §7); never draw a new one (R-DEC-06).
 - Phones: bottom bar with 4 app tabs + the App button (N-1, approved). Desktop:
-  app tree in the sidebar. Never copy the phone bar to desktop.
+  one Apps row in the sidebar opens /apps (R-DEC-09 supersedes the old app tree). Never copy the phone bar to desktop.
 - Reuse first: check src/design-system (92 parts) and 06 before proposing a new
   component. No new dependency without an ADR. Redux Toolkit, no TanStack Query.
 - Backend changes only when proven necessary, written in 08 with: why, endpoint,

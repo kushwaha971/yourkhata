@@ -1,117 +1,133 @@
-CONFIRMED NEXT SECURITY REGRESSION (R-DEC-18): after delivering the scoped search/notification checkpoint, fix late previous-user responses after logout/new-user login into the SAME business before Shop Home. The concrete failing diagnostic is docs/performance/2026-10-19-late-account-response-repro.txt (count 7 wrongly populated the next user). Restore it as an active test and fix the common transport, including stale 401 retries and cross-tab actor intent checks; do not weaken server app/tenant guards. The current fix pack does not resolve this, nor per-user personal Udhaar ownership or all import/export/token audits.
+Continue the existing YourKhata revamp on dev. Do not start a new plan.
 
-ACTIVE PRIORITY (R-DEC-18, owner 19 Oct): finish shared search/business-book cache context and module/user notification access hardening, verify and push before resuming Shop Home. Owner says Udhaar default is not live and must not control Shop searches. Same phone can be another business owner/contact; never infer membership from it. Tests reproduce wrong-book recent picker 403, old-source rows on context switch, and cross-app targeted/broadcast notifications. Fixes are in the working tree; check logs and finish delivery before another screen. This does NOT certify every endpoint; retain an explicit access audit matrix and name unverified surfaces/personal-Udhaar ownership gap.
+CURRENT HANDOFF — 19 October 2026, R-DEC-19
+The owner asked: "once all these done before switching to home commit code and
+push and give me latest promt so i gave to another agent to continuing in same
+manner". The outgoing agent stops before Home after delivering this checkpoint.
+Read the BP-13 report for final verification and check git log/status/origin/dev;
+do not rely on older chat claims or assume that Home has been redesigned.
 
-LATEST SUPPLIER DELIVERY — 19 Oct 2026: Supplier register/filter/sort and outgoing Pay journey are built and verified under R-DEC-16. Check git/dev delivery status, then Shop Home, remaining Shop screen families, then other apps. Read docs/performance/2026-10-19-p5-suppliers.md: 4,489 frontend tests, 929 selected backend checks, 123 Supplier measured states, 72 Customer regression states; local one-write payment-to-receipt and role isolation; shared electrical products across two suppliers/two customers. UI and implemented function each 8.8 provisional; full-spec features 8.4 because future-due filtering/statements/settlement remain gaps. No whole-Shop completion or production deployment claim. Older handoff text below is historical and superseded by this paragraph and decisions 16/17.
+READ FIRST
+1. AGENTS.md and CLAUDE.md at the repository root.
+2. docs/revamp/README.md and 12-decision-log.md (especially R-DEC-13 through 19).
+3. 02-preserve-and-contracts.md, including the access coverage matrix in §5.1.
+4. docs/performance/2026-10-19-bp13-request-context.md and the BP-12 report.
+5. AGENT_START_PROMPT.md, DESIGN-SYSTEM.md, the relevant 07-screens spec,
+   09-design-review.md and 11-qa-and-regression.md, then the real code.
+6. Open docs/revamp/design/counter-mode.html in a browser. Reference also:
+   https://claude.ai/artifact/GCqwcB9AuZ5Yhqhu8xgobh
+   If the remote artifact is unavailable, say so and use the committed reference
+   and owner-provided screenshots. Do not pretend to have inspected it.
 
-EXAMPLE PREFERENCE (R-DEC-17): New examples/demo scenarios use electronics and electrical products and the firm Radhe Krishna Enterprises. Do not rename actual tenant/customer data.
+WHAT IS DELIVERED
+- F1–F4 shared foundation. R-DEC-09 supersedes the old desktop app tree:
+  one Apps row opens /apps; no separate app entries in the rail.
+- Customers register, role-specific Shop person page (corrected 06ac3b23),
+  BP-11 book authorization (4e6d7b37).
+- Suppliers register/filter/sort and outgoing Pay/receipt journey (b0716d46).
+  Shared ShopParty components are reused, not copied from Customers.
+- BP-12 search/cache/pending-choice and notification app/recipient fixes
+  (8bb09def). Shop-only staff searches explicitly read book=shop; phone numbers
+  never grant membership. User/business/revision/book source keys isolate results.
+- BP-13 central actor/business intent guards and late-response/retry protection.
+  Optional expected-user/tenant headers are preconditions, NOT credentials or
+  tenant selectors. Server token, membership and app permissions stay decisive.
+  Stale-tab writes are refused before view execution. A late previous-user result
+  cannot repopulate the next user's notification count. The automatic reload
+  warning survives generic form error feedback. No vertical finance calculation,
+  model or payload shape changed. Read the report for exact scope and limits.
 
-LATEST SCOPE — R-DEC-16, 19 Oct 2026: owner said “proceed with supplier and all other shop module then proccedd with anohter module”. Suppliers register is in progress using shared ShopParty toolbar/filter/summary and the existing payment drawer. Finish its real phone/desktop verification and push, then Shop Home, billing/document screens, items/stock, remaining money/report screens, before Udhaar and other modules. Do not ask again whether to continue approved Shop presentation. Library/Lending backend/calculation contracts remain frozen; do not silently implement unapproved backend business-rule proposals. Check current git/status, screen tracking and 12 for actual completion rather than historical text below.
+DO NEXT — PRIORITY ORDER
+1. Verify the delivered checkpoint and remaining access matrix in 02 §5.1.
+   Continue explicit tenant/recipient/app/permission checks for imports, exports,
+   public-share/download tokens and remaining action families; inspect existing
+   tests before adding anything. Include delayed responses, revoked permissions,
+   same phone in another business, customer+supplier, owner of another shop,
+   cross-tab context changes, direct IDs, writes and bulk operations. Prove any
+   defect before fixing it; do not infer server authorization from hidden UI.
+   User-level personal Udhaar ownership remains a separate unimplemented data
+   model requirement; propose the migration/rules before changing it. Do not
+   silently call tenant-scoped books a personal per-user book.
+2. Once concrete access defects are resolved and the coverage/limits are recorded,
+   continue Shop Home and remaining Shop screen families under R-DEC-16. Review
+   07-screens/03 and 09 before Home. Build actual Counter Mode hierarchy and
+   content placement, not cosmetic changes to the old dashboard. Use real API
+   facts; never fabricate graphs, paid-out aggregates or repeat-customer figures.
+   A needed backend business feature requires a proposal/approval in 08.
+3. Finish all Shop families before moving to other apps. Phase choice and Shop
+   presentation are already approved; do not ask the same question again.
 
-LATEST BACKEND WORK — BP-11 approved by owner “fix that backend gap as well” (R-DEC-15). Shared book authorization and explicit-empty grant marker are implemented and verified (22 security regressions, 149 compatibility/query-budget tests, 7 live HTTP checks). Full backend: 4,621 passed, 16 skipped and one wall-clock failure, passed on isolated rerun; read docs/performance/2026-10-19-bp11-book-authorization.md, check git status and latest test logs before claiming delivery. Migration platform/0019 must precede updated API startup. Never-configured legacy roles remain documented broad access; per-user personal Udhaar ownership is not implemented by this fix. Check dev for delivery of this security piece before continuing the next UI screen. No production migration or manual deployment was performed by this verification.
+REMAINING FEATURE BOUNDARIES
+- BP-10 historical role-specific statements/aging and BP-08 dual-role settlement
+  are unapproved. Withhold misleading mixed-money links; never net roles.
+- Suppliers' implemented UI/function scores were 8.8 provisional; whole-spec
+  features 8.4 due to named gaps. That is not a whole-Shop score. No arbitrary
+  9/10 claim. Rate actual finished pieces using 09, name every missing capability,
+  and distinguish product review from real merchant/physical-device validation.
+- The 320 px purchase footer amount clamp is recorded, not fixed by picker work;
+  include it when redesigning the purchase form family.
+- Shell pieces omitted from F4 still need their recorded approval. Do not quietly
+  expand a Shop screen into new shell features.
 
-LATEST CORRECTION — 18 Oct 2026, R-DEC-14 supersedes the old visual score: owner rejected the permanent Shop details rail and old payment drawer. The correction compacts the overview, folds details/promise controls, and uses the existing form with an amount-first 440 px Shop drawer/mobile sheet, UI-kit payment-method select, folded date/note and pinned due/action footer. Check the latest person report and Git delivery status before continuing. The old 8.97 rating is withdrawn. Six added regressions fail on the previous code; the browser also proved a toast hid Discard changes and now hit-tests that action. Dialog footers reuse the shared inset hook. Final 397 suites / 4,484 tests and 210 measured states pass. The final browser matrix covers all four widths, light/dark and Hindi. Do not claim every API has strict app privacy: 122 selected access tests passed, but shared parties/ledger permissions span Shop/Udhaar; BP-11 proposes a complete book authorization audit and is not approved. Read that gap alongside BP-10 statements before calling Shop complete.
+RULES
+- Reuse src/design-system and existing services/hooks/components first; extract
+  shared behavior rather than copying. No new packages without an ADR. Redux
+  Toolkit, no TanStack Query. No raw JSX host tags in feature code.
+- Library/Lending are live: presentation only. Their endpoints, shapes, rules,
+  models, calculations and workflows stay frozen. Central access hardening under
+  R-DEC-18 does not authorize vertical functional changes.
+- Customer, Supplier, Udhaar, Library and Lending money remain separate. Plain
+  words. Every default outgoing message stays editable. Customer-facing material
+  names only the merchant's business, never YourKhata/domain.
+- New examples: electronics/electrical products, Radhe Krishna Enterprises.
+  Do not rename actual records to make screenshots.
+- Teal #0E7C86, marigold #F59E1B with dark ink for one main action, white page,
+  dark teal sidebar (#0B3F45; dark theme #0E2427), existing logo on white tile,
+  Plus Jakarta Sans + Mukta. Lazy-load forms/drawers in the chunk that opens them.
+- Never commit Message Central credentials or touch production data for tests.
 
-LATEST HANDOFF — 18 Oct 2026 (R-DEC-13 overrides older text below): the Shop person piece is implemented as separate Customer/Supplier views, never a two-role overview. Read docs/performance/2026-10-18-p5-shop-person.md for evidence and gaps, check git/origin/dev for its delivery commit, then next is Suppliers list using the register composition. Reuse existing UI, Redux queries, services and financial rules. Shared identity is not a reason to expose every role/module feature. Shop's legacy mixed statement is withheld; BP-10 proposes proper role/as-of statements and is not approved. Udhaar retains its ledger/statement. Do not redo the rejected dual-figure layout or ask Phase 5/BP-09 approval again. Full person payment form restyling remains the payments piece; the existing form is reused here.
+WORK LOOP — EACH PIECE
+Review spec/code → build → run backend + production frontend → test like a tester
+→ inspect finished screenshots → report → commit/push dev before the next piece.
+- Changed-file ESLint --fix --max-warnings=0; npm run type-check; full npx jest.
+  Full lint can take >25 minutes in cloud; disclose changed-file lint scope.
+- Run backend tests appropriate to shared changes, preserving full-suite evidence
+  and honest failures. A timing test passing alone does not make the full run green.
+- Never run Jest and build together: Jest temporarily writes a probe the build
+  type check can see. Build:
+  NEXT_PUBLIC_API_BASE_URL=/api/v1 API_PROXY_TARGET=http://127.0.0.1:8000 \
+  NEXT_PUBLIC_SW_ENABLED=false NEXT_PUBLIC_ANALYTICS_ENABLED=false npm run build
+- npm run bundle:check; npm run check:contrast; locale changes also require
+  npm run i18n:split && npm run i18n:check. Budget increases need measured reason.
+- Restart the frontend after EVERY build. Use e2e/serve.sh and serve-api.sh where
+  supported; on macOS serve .next/standalone/server.js with copied .next/static
+  and public. Kill only task-owned processes. Use an isolated local database.
+- Real browser matrix: 390/320/1024/1280, light/dark, plus 320/1280 Hindi. Test
+  loading, empty, error, long names, ₹12,40,378.00, pending, saved, repeated taps,
+  expired sessions and permission denials where relevant. Add --piece to existing
+  e2e/revamp-shots.mjs. Account-context piece covers cross-tab read/write/business.
+- Measure actual computed contrast >=4.5:1, text against its own box, and viewport
+  overflow. Prove new regressions fail on old code. Make contact sheets and LOOK
+  at all of them. Unit tests alone do not prove layout or live workflows.
+- Idle navigation: node e2e/perf-app.mjs --reps=3 --only=nav, compare the SAME
+  cases/profile/width against prior delivered evidence. F4 and baseline reports
+  are context; differing cohorts cannot prove a speed improvement.
+- Document dated results/limits in docs/performance, update Progress/Next in 12,
+  tracking lines in 07 and README/handoff. Commit a prose WHY message with
+  Assisted-by: OpenAI Codex (or the actual tool's accurate attribution), push dev
+  and verify origin/dev equals the commit. No unverified completion/rating claims.
 
-CURRENT HANDOFF (18 Oct 2026): R-DEC-10/11 approves artifact-led Shop/Udhaar screens. R-DEC-12 explicitly approves BP-09: "Approve BP-09 and complete the matching features". Customers register/filter/reminder and role-aware list/person-header/home-panel reads are implemented; see docs/performance/2026-10-18-p5-customers.md for actual verification, ratings, performance cost and remaining gaps. Do not repeat the phase/BP-09 permission questions. Check git status/origin/dev and finish any pending Customers delivery/push; otherwise next is the full Shop person-page redesign (§3 of 07-screens/08), not polishing the old layout. Historical Shop aging/report consumers remain a known role/as-of gap. Deliver and push the Customers piece before beginning the next piece. No Library/Lending contract change or BP-08 settlement is authorized.
+LOCAL CONTINUITY
+Repository: /Users/akashkushwaha/Projects/ims-platform (verify on another machine).
+Last isolated DB: revamp_20261018; test DB test_revamp_bp09. Do not use production.
+Existing scale fixtures are synthetic; e2e/perf-app defaults to the seeded scale
+owner. Account-context harness needs a synthetic two-operator/two-business fixture
+via E2E_SCOPE_FIXTURE; never copy real credentials into the repo.
+Raw final evidence is in the outgoing task workspace outputs/revamp/shots/
+account-context; committed measurements and report are under docs/performance.
+Preserve unrelated untracked .claude-build.log, .claude/ and ims-platform/.
 
-UPDATE 18 Oct 2026 — R-DEC-10: the owner has already chosen Shop and Udhaar screens, starting with Customers and the Shop person page. Do NOT ask the phase choice below again. Customers presentation is implemented; read docs/performance/2026-10-18-p5-customers.md for the verified scope and outstanding artifact features. Next is the Shop person page, one piece with screenshots/gates/report/push. Other backend proposals (excluding approved BP-09) and omitted shell work remain unapproved. The older handoff below is retained as historical context; R-DEC-10 supersedes its approval question.
-
-You are continuing the YourKhata revamp: a redesign of the whole app (Shop, Udhaar
-book, Library, Lending and everything around them) and a fix for slow, silent taps
-in the installed PWA. The plan lives in docs/revamp/. You continue it; you do not
-start a new one. Work on the dev branch and push to it.
-
-WHERE IT STANDS (18 Oct 2026): Phase 4, the shared foundation the owner approved
-(R-DEC-08), is COMPLETE. Four pieces are built, measured and pushed:
-  F1 route loading views, F2 pressed and pending states, F3 the double-tap lock,
-  F4 the phone App button and App sheet, the desktop sidebar app tree, the dark
-  teal sidebar and white page, and "each app reopens where you left it".
-The reports are in docs/performance/2026-10-1*-f*.md and the screenshots in
-/mnt/project-files/revamp/shots/<loading|press|lock|apps>/. The module screens
-themselves (Shop, Udhaar, Library, Lending) have NOT been redesigned yet.
-
-(R-DEC-09, the owner's sidebar change, is already built: the rail has one
-"Apps" row that opens the /apps page; no app is listed in the rail.)
-
-TASK: Do item 1 under "Next" in docs/revamp/12-decision-log.md.
-Phase 5 (Shop and Udhaar screens) and the shell pieces left out of F4
-(notifications popover and page, the /account "You" page, the 64 px icon rail at
-1024–1279 px, hiding the bar while the keyboard is open, tile figures, the
-unsaved-changes guard on switching) are NOT yet approved for building (R-DEC-01).
-So your first action is one decision card to the owner:
-  "Which do we build next?"
-  · Shop and Udhaar screens (recommended): the visible redesign starts, one
-    screen at a time, beginning with the Shop's Customers list and person page.
-  · Finish the shell first: notifications, the You page, the icon rail.
-Record the answer in 12 as a new R-DEC with the owner's words and the time, then
-build. Until they answer, prepare (read the specs for the recommended option,
-check them against the code), but change no application code.
-
-HOW EACH PIECE IS DONE (the owner's rule, R-DEC-07, and the loop in CLAUDE.md):
-review the spec, build, LOOK, report. After EACH piece (a screen, form, card,
-drawer, sheet or dialog):
- 1. Gates: `npx eslint --fix --max-warnings=0 <changed files>` (the full lint takes
-    over 25 minutes in the cloud container; say so), `npm run type-check`, the
-    full `npx jest`, the build (command below), `npm run bundle:check`,
-    `npm run check:contrast`, and `npm run i18n:split && npm run i18n:check` after
-    any locale change. Do not run jest and the build at the same time: a test
-    writes a temporary probe file that the build's type check then trips on.
- 2. Restart the frontend after every build (`./e2e/serve.sh`); a rebuild under a
-    running server breaks it. API: `./e2e/serve-api.sh`; database:
-    `service postgresql start`. Build command:
-    NEXT_PUBLIC_API_BASE_URL=/api/v1 API_PROXY_TARGET=http://127.0.0.1:8000 \
-    NEXT_PUBLIC_SW_ENABLED=false NEXT_PUBLIC_ANALYTICS_ENABLED=false npm run build
- 3. Screenshots: add a `--piece=<name>` to e2e/revamp-shots.mjs and shoot
-    390 and 320 px phones and 1024 and 1280 px desktop, light and dark, plus
-    `--locale=hi` at 320 and 1280, in EVERY state (loading, empty, error, long
-    names, ₹12,40,378.00, busy, saved). Sign-in: scale@digikhaato.test /
-    Scale-Run-2026! (the seed_scale owner). Make contact sheets with `montage`
-    and LOOK at every one. Copy them to /mnt/project-files/revamp/shots/<piece>/.
- 4. Make the harness MEASURE, not read: computed colours, each label's contrast
-    against what it sits on (>= 4.5:1), every text node against its own box (no
-    cut or clamped word), page width against the viewport. F4's screenshots found
-    three defects every unit test passed: dark rail labels at 1.4:1 in the light
-    theme, a search field running edge to edge, and words cut by the rail width.
-    Prove each new check FAILS on the old build before trusting it.
- 5. Speed: `NODE_PATH=$(npm root -g) node e2e/perf-app.mjs --reps=3 --only=nav`
-    with nothing else running; compare with the F4 numbers in
-    docs/performance/2026-10-18-f4-app-button.md and the baseline
-    docs/performance/2026-10-17-app-baseline.md. No speed claim without both.
- 6. Every defect fixed gets a test that fails before the fix, with a docstring
-    naming the defect.
- 7. Docs: a dated report in docs/performance/, a Progress row and an updated
-    "Next" in 12, the tracking line of the screen in docs/revamp/07-screens/.
- 8. Commit (prose message explaining WHY, with the attribution footer the session
-    gives you), push to dev, and report to the owner with the screenshots and the
-    numbers BEFORE starting the next piece.
-
-RULES THAT DO NOT BEND (all in CLAUDE.md and docs/revamp/02):
-- Library and Lending are live: presentation only. Their endpoints, request and
-  response shapes, calculations, models and workflows are frozen (L-01). Ideas
-  go to docs/revamp/08 as proposals, never into code.
-- Each app keeps its own money (DEC-019). Plain everyday words; Udhaar alone says
-  You gave / You got, Lending Lent / Collected, Library Fee / Paid. No word cut
-  by an ellipsis.
-- Nothing a merchant's customer receives names the product or its domain.
-- Look: teal #0E7C86, marigold #F59E1B with dark ink for the one main action,
-  white page, dark teal sidebar (#0B3F45, dark theme #0E2427), the existing logo
-  on a white tile (R-DEC-06). Read docs/DESIGN-SYSTEM.md and
-  docs/revamp/design/counter-mode.html before any UI.
-- Reuse src/design-system first. No new package without an ADR. Redux Toolkit,
-  no TanStack Query. No raw h1/div/span outside src/design-system. Errors go
-  through the global snackbar.
-- A sheet, drawer or form belongs in the chunk that OPENS it: use dynamic(), as
-  F4 did for the App sheet (route growth 3.5 KB -> 1.2 KB). Raise a bundle budget
-  only with the reason written in bundle-budgets.json.
-- Never commit Message Central credentials.
-
-READ FIRST, in this order: CLAUDE.md, docs/revamp/README.md,
-docs/revamp/12-decision-log.md, docs/revamp/02-preserve-and-contracts.md, the
-screen spec you are about to build in docs/revamp/07-screens/, then the real code.
-The code is the truth; where a doc disagrees, say so in 12.
-
-REPORT: lead with anything the owner must decide (one question, short options,
-your recommendation). Then what changed, the screenshots, what was measured and
-how, and what is still unproven. Keep it short; details belong in the docs.
+REPORT TO OWNER
+Finished checkpoint only, concise: commit/hash and verified push, concrete changes,
+final screenshots, actual checks/numbers and material limits. No intermittent
+mockups or inflated ratings. Do not claim deployed unless deployment was verified.

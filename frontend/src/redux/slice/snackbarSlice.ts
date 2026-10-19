@@ -80,6 +80,14 @@ const snackbarSlice = createSlice({
   initialState,
   reducers: {
     showSnackbar(state, action: PayloadAction<ShowSnackbarPayload>) {
+      // BP-13: rejected old forms can report another error after teardown.
+      // Keep the context warning until dismissal/reload so the real reason
+      // for the refused action is not replaced by a generic save failure.
+      if (
+        state.snackbarOpen &&
+        (state.id === 'auth.session.changed' || state.id === 'tenant.switcher.staleTab')
+      )
+        return;
       state.snackbarOpen = true;
       state.snackbarMessage = action.payload.message ?? '';
       state.snackbarSeverity = action.payload.severity;

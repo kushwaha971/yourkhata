@@ -68,11 +68,28 @@ class CookieOrBearerJWTAuthentication(JWTAuthentication):
         if cookie_auth and request.method not in SAFE_METHODS:
             self._assert_csrf(request)
 
+        # Preconditions only: the verified token remains the identity authority.
+        expected_user = request.headers.get("X-Expected-User-Id")
+        if expected_user is not None and expected_user != str(user.pk):
+            from apps.common.exceptions import BusinessRuleViolation
+
+            raise BusinessRuleViolation(
+                "session_context_changed", "Your account changed. Reload before continuing."
+            )
+
         self._assert_password_usable(request, user)
 
         # Bind the tenant contextvar as early as the tenant is knowable (§20.4.3).
         request.user = user
         tenant = get_effective_tenant(request)
+        expected_tenant = request.headers.get("X-Expected-Tenant-Id")
+        actual_tenant = str(tenant.pk) if tenant is not None else ""
+        if expected_tenant is not None and expected_tenant != actual_tenant:
+            from apps.common.exceptions import BusinessRuleViolation
+
+            raise BusinessRuleViolation(
+                "tenant_context_changed", "Your business changed. Reload before continuing."
+            )
         if validated.payload.get("imp"):
             self._assert_impersonation_scope(request, tenant)
         if tenant is not None:

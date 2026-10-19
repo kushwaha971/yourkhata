@@ -98,10 +98,10 @@ A phone number is contact information, not membership or authorization. A person
 | Shared financial book reads/writes/direct IDs | BP-11 guards and regression suite; see its dated report. Not a blanket certification of every route. |
 | Same phone as a different business's owner/contact | BP-12 API test proves isolated search, foreign direct read/write 404 and no inferred membership. |
 | Shop recent contact searches | Explicit manifest/form Shop context; one shared search source, supplier/customer role preserved; wrong-context tests fail before fix. |
-| Search caches and pending choices | Business/book/source keys; old-source rows hidden immediately; old query results cannot be selected while pending. Item search also uses business identity. |
+| Search caches and pending choices | User/business/permission-revision/book/source keys; old-source rows hidden immediately; old query results cannot be selected while pending. Item search also uses business identity. |
 | Notifications | BP-12 list/count/direct-read/read-all use app origin, recipient and tenant scope for explicit app grants; revoked/disabled app tests. Business/account notices retain their existing recipient rules. |
 | Compatibility | Never-configured legacy memberships retain BP-11's documented broad role. Do not claim they have been migrated to strict app grants. |
-| Tenant transport and teardown | Existing X-Tenant-Id response guard and feature reset tests; a same-business late previous-user response has now been reproduced and remains the next transport fix (see the dated BP-12 report). |
+| Tenant transport and teardown | BP-13 adds expected-user/business preconditions before view execution and rejects late actor/revision responses and cross-context 401 retries; server token/membership/grants remain authoritative. See its dated report for measured browser cases and limitations; old clients omitting headers retain existing behavior. |
 | Personal Udhaar ownership | Still not independently per-user: BP-11 scopes existing tenant books, not a personal-book ownership migration. Do not claim this requirement complete. |
 | Imports/exports, public share/download tokens and remaining module actions | Continue explicit endpoint/action coverage during the next access audit and each screen family. Intended token-authorized customer sharing is different from granting access to the business workspace. Do not infer safety from hidden UI. |
 

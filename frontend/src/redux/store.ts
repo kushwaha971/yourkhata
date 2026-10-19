@@ -27,7 +27,7 @@ import { invalidationListener } from './invalidation/listener';
 import localeReducer from './slice/localeSlice';
 import networkReducer, { responseObserved, transportFailed } from './slice/networkSlice';
 import offlineQueueReducer from './slice/offlineQueueSlice';
-import sessionReducer, { endSessionLocally } from './slice/sessionSlice';
+import sessionReducer, { endSessionLocally, selectRequestIdentity } from './slice/sessionSlice';
 import snackbarReducer, { showSnackbar } from './slice/snackbarSlice';
 import themeReducer from './slice/themeSlice';
 import whiteLabelReducer from './slice/whiteLabelSlice';
@@ -53,30 +53,31 @@ import whiteLabelReducer from './slice/whiteLabelSlice';
  * the list). `statement` and `ledgerAging` are the first two lazy slices.
  * `combineSlices` is part of Redux Toolkit; no dependency was added.
  */
-const staticReducers = {    snackbar: snackbarReducer,
-    session: sessionReducer,
-    whiteLabel: whiteLabelReducer,
-    locale: localeReducer,
-    theme: themeReducer,
-    network: networkReducer,
-    offlineQueue: offlineQueueReducer,
+const staticReducers = {
+  snackbar: snackbarReducer,
+  session: sessionReducer,
+  whiteLabel: whiteLabelReducer,
+  locale: localeReducer,
+  theme: themeReducer,
+  network: networkReducer,
+  offlineQueue: offlineQueueReducer,
 
-    auth: authReducer,
-    onboarding: onboardingReducer,
-    plan: planReducer,
+  auth: authReducer,
+  onboarding: onboardingReducer,
+  plan: planReducer,
 
-    partyList: partyListReducer,
-    partyForm: partyFormReducer,
-    partyDetail: partyDetailReducer,
-    partyTag: partyTagReducer,
-    ledgerEntry: ledgerEntryReducer,
-    ledgerForm: ledgerFormReducer,
-    invitation: invitationReducer,
-    member: memberReducer,
+  partyList: partyListReducer,
+  partyForm: partyFormReducer,
+  partyDetail: partyDetailReducer,
+  partyTag: partyTagReducer,
+  ledgerEntry: ledgerEntryReducer,
+  ledgerForm: ledgerFormReducer,
+  invitation: invitationReducer,
+  member: memberReducer,
 };
 
 /** Route-local slices add themselves here with `declare module` (CR-134). */
- 
+
 export interface LazyLoadedSlices {}
 
 export const rootReducer = combineSlices(staticReducers).withLazyLoadedSlices<LazyLoadedSlices>();
@@ -98,6 +99,12 @@ export const store = configureStore({
  * there, so the dependency graph stays acyclic (see src/api/transportBridge.ts).
  */
 registerTransportHost({
+  getRequestIdentity: () => selectRequestIdentity(store.getState()),
+  onAccountMismatch: () => {
+    endSessionLocally(store.dispatch);
+    store.dispatch(showSnackbar({ severity: 'warning', id: 'auth.session.changed' }));
+    if (typeof window !== 'undefined') window.setTimeout(() => window.location.reload(), 600);
+  },
   getLocale: () => store.getState().locale.current,
   onResponseObserved: () => {
     store.dispatch(responseObserved());

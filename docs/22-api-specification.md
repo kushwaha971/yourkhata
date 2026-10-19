@@ -101,6 +101,8 @@ Ownership is recorded as **T-16** in Part 0 §0.12.2. No other chapter may carry
 | `tenant_suspended` | 403 | E | The tenant is suspended by its partner or by Metis ops. | "This business is suspended. Contact support." | `errors.tenant_suspended` | no |
 | `partner_suspended` | 403 | E | The owning partner is suspended, which suspends every tenant under it. | "This service is suspended. Contact support." | `errors.partner_suspended` | no |
 | `tenant_pending_deletion` | 409 | E | A write was attempted during the 30-day deletion cool-off. | "This business is being closed. Cancel the closure to continue." | `errors.tenant_pending_deletion` | no |
+| `session_context_changed` | 409 | E | Optional expected user differs from the authenticated token user; refused before the view acts (R-DEC-18/BP-13). | "Your account changed. Reload before continuing." | `auth.session.changed` | no |
+| `tenant_context_changed` | 409 | E | Optional expected business differs from the token-resolved business; this never selects a tenant. | "Your business changed. Reload before continuing." | `tenant.switcher.staleTab` | no |
 | `plan_in_use` | 409 | D `tenant_count` | A plan with live tenants was archived or deleted. | "This plan is in use." | `errors.plan_in_use` | no |
 | `module_has_data` | 409 | D `module`, `row_count` | A module with business rows was switched off. | "This module has data and cannot be switched off." | `errors.module_has_data` | no |
 | `gst_type_locked` | 409 | D `issued_invoice_count` | `gst_type` was changed away from `regular` while tax invoices exist in the current financial year. | "You have already issued tax invoices this year." | `errors.gst_type_locked` | no |
@@ -545,3 +547,10 @@ Inbound provider webhooks verify HMAC signatures, are idempotent on provider ids
 2. `POST /payments` `direction=in`, amount 500 UPI, `allocations:"auto"` → allocation 500 to invoice, invoice `partially_paid`, `amount_due=398.00`; `LedgerEntry(credit 500, payment_in)`; `Party.balance = 398`; SMS to party if enabled: "Received ₹500. Balance ₹398."
 3. `GET /parties/{id}/statement` → opening 0 → +898 (INV/26-27/0042) → −500 (RCT/26-27/0017) → closing 398.
 4. Owner voids the invoice by mistake? `POST /sales/invoices/{id}/void` → stock +2 (`reversal`), ledger credit 898 (`reversal`), invoice `void`; the ₹500 payment remains as unallocated advance; party balance −102 ("You will give ₹102"). Statement shows both with corrections toggle.
+
+
+### 19 Oct 2026 · Request context preconditions (R-DEC-18 / BP-13)
+
+Authenticated browser calls may send `X-Expected-User-Id` and `X-Expected-Tenant-Id`. They are optional safety preconditions against shared-cookie/stale-tab intent; tokens, membership and app grants remain the authorization authority. A mismatch is a non-retryable 409 **before** the resource view runs. Missing headers preserve existing API clients. They never switch an account/business. Anonymous/intentional login endpoints retain their existing behavior.
+
+Scoped replies expose `X-User-Id` and `X-Membership-Version` in addition to the existing tenant echo. The membership revision is omitted on responses whose explicit tenant echo is a transition target different from the request tenant. Metadata adds no payload fields or query per row. CORS allows/exposes these headers. Clients discard late responses/401 retries belonging to an earlier actor and older permission revisions; they reload rather than replay a mismatched intent.

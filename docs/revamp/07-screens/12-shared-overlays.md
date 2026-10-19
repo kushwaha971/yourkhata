@@ -2,6 +2,8 @@
 
 Status: **specified (wave 2), 17 Oct 2026 — not approved, not built.** Applies to every app (Shop, Udhaar, Library, Lending, settings). For Library and Lending only the presentation rules apply; their dialogs keep their fields, rules and endpoints (02 §2–3).
 
+**19 Oct access correction (R-DEC-18 / BP-13):** existing shared snackbar preserves the account/business-change explanation while an old form is refused and the page reloads. Existing contact/item picker sources now include actor/business/revision. These corrections do not mark this entire overlay redesign built or authorize new shell pieces; evidence: `docs/performance/2026-10-19-bp13-request-context.md`.
+
 Paths are relative to `frontend/src/` unless stated. Every pattern names the existing component that implements it; the only new pieces are marked **NEW** and are listed together in §9.
 
 ## 1. Choosing the pattern

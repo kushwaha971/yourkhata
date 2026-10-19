@@ -13,6 +13,7 @@
   "auth.password.error": "Could not save the password. Try again.",
   "auth.password.reset.error": "Could not reset the password. Try again.",
   "auth.rememberEmail": "Remember this address",
+  "auth.session.changed": "Your account changed in another tab. Reloading…",
   "auth.session.error": "We could not check your sign-in.",
   "auth.switchTenant.error": "We could not switch business.",
   "common.action.addParty": "Add customer",

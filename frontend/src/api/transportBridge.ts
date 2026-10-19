@@ -13,7 +13,16 @@ import type { ApiErrorShape } from 'src/types/api.types';
  *
  * This module imports nothing but types, which is what makes it a safe leaf.
  */
+export interface RequestIdentity {
+  readonly userId: string;
+  readonly tenantId: string | null;
+  readonly version: number | null;
+}
+
 export interface TransportHost {
+  /** Authenticated request scope; optional for legacy transport hosts/bootstrap. */
+  readonly getRequestIdentity?: () => RequestIdentity | null;
+  readonly onAccountMismatch?: () => void;
   /** Drives `Accept-Language`, so server messages match the UI (§19.4.2). */
   readonly getLocale: () => string;
   /** §19.10.3 signal 1 — the server answered, whatever it answered. */

@@ -59,7 +59,10 @@ def test_registry_is_closed_and_complete() -> None:
     # ── L03 ── +1: `lending_nothing_due` (a Remind on a loan with nothing due).
     # ── 12 Oct 2026 ── +1: `borrower_blocked` (a blocked borrower gets no new loan).
     # ── QA B5 ── +1: `library_plan_no_end` (Renew on a plan with no end date).
-    assert len(REGISTRY) == 216
+    # R-DEC-18 / BP-13 — +2 reload-only actor/business context preconditions (API §22.1.1).
+    assert len(REGISTRY) == 218
+    assert REGISTRY["session_context_changed"] == (409, False)
+    assert REGISTRY["tenant_context_changed"] == (409, False)
     assert REGISTRY["attendance_blocked"] == (409, False)  # ATT
     assert REGISTRY["attendance_duplicate"] == (409, False)  # ATT
     assert REGISTRY["entitlement_exhausted"] == (409, False)  # ATT

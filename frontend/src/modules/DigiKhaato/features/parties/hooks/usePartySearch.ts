@@ -9,7 +9,7 @@ import {
   type UsePagedSearchResult,
 } from 'src/hooks/usePagedSearch';
 import { usePermissions } from 'src/hooks/usePermissions';
-import { selectActiveTenant } from 'src/redux/slice/sessionSlice';
+import { selectRequestScopeKey } from 'src/redux/slice/sessionSlice';
 import type { LedgerBook } from 'src/types/domain.types';
 
 import { listParties } from '../api/partyService';
@@ -71,7 +71,7 @@ export function useCanSearchParties(): boolean {
 
 export function usePartySearch(options: UsePartySearchOptions = {}): UsePartySearchResult {
   const canSearch = useCanSearchParties();
-  const tenantId = useAppSelector(selectActiveTenant)?.id;
+  const scopeKey = useAppSelector(selectRequestScopeKey);
   const { type, book, limit = PARTY_SEARCH_LIMIT } = options;
 
   const fetchPage = useCallback(
@@ -101,7 +101,7 @@ export function usePartySearch(options: UsePartySearchOptions = {}): UsePartySea
   const search = usePagedSearch<Party>({
     enabled: canSearch,
     fetchPage,
-    key: `${tenantId ?? ''}:${book ?? 'main'}:${type ?? ''}:${limit}`,
+    key: `${scopeKey}:${book ?? 'main'}:${type ?? ''}:${limit}`,
     idOf: partyId,
   });
   return useMemo(() => ({ ...search, canSearch }), [search, canSearch]);

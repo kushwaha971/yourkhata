@@ -56,6 +56,8 @@ _REGISTRY: dict[str, tuple[int, bool]] = {
     "tenant_suspended": (403, False),
     "partner_suspended": (403, False),
     "tenant_pending_deletion": (409, False),
+    "session_context_changed": (409, False),
+    "tenant_context_changed": (409, False),
     "plan_in_use": (409, False),
     "module_has_data": (409, False),
     "gst_type_locked": (409, False),

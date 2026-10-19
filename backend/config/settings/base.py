@@ -304,6 +304,8 @@ CORS_EXPOSE_HEADERS = [
     "X-Request-Id",
     "X-Tenant-Id",
     "X-Tenant-Scope",
+    "X-User-Id",
+    "X-Membership-Version",
     "Idempotent-Replayed",
     "Retry-After",
     # IMP-02 — a list export is FETCHED (it may answer 202 with a job instead
@@ -339,6 +341,8 @@ CORS_ALLOW_HEADERS = (
     "X-CSRF-Token",  # double-submit cookie guard (§20.4.6)
     "Idempotency-Key",  # replay-safe writes (§22.3)
     "X-Client",  # `web` | `api`, read by throttling and audit
+    "X-Expected-User-Id",  # browser intent precondition, never authentication
+    "X-Expected-Tenant-Id",  # stale-tab write guard, never tenant selection
     # PLT-06 FR-8 / CR-011 — the settings PUT's optimistic lock. Without it the
     # settings page's every save fails preflight in dev (the X-Request-Id
     # defect above, again) and passes every Django-test-client test.
@@ -356,12 +360,12 @@ UB_SCHEDULER_ENQUEUE_LOCK_ID = env.int("UB_SCHEDULER_ENQUEUE_LOCK_ID", 918273645
 # the sign-in OTP. Credentials come from the environment only and never leave
 # Django. `MC_*` are the names Message Central's own guides use, so they are
 # not `UB_`-prefixed.
-META_WHATSAPP_ACCESS_TOKEN = env.str("META_WHATSAPP_ACCESS_TOKEN", '')
-META_WHATSAPP_APP_SECRET = env.str("META_WHATSAPP_APP_SECRET", '')
-META_WHATSAPP_WEBHOOK_VERIFY_TOKEN = env.str("META_WHATSAPP_WEBHOOK_VERIFY_TOKEN", '')
-META_WHATSAPP_PHONE_NUMBER_ID = env.str("META_WHATSAPP_PHONE_NUMBER_ID", '')
-META_WHATSAPP_WABA_ID = env.str("META_WHATSAPP_WABA_ID", '')
-META_WHATSAPP_TEMPLATE = env.str("META_WHATSAPP_TEMPLATE", 'yourkhata_login_otp')
+META_WHATSAPP_ACCESS_TOKEN = env.str("META_WHATSAPP_ACCESS_TOKEN", "")
+META_WHATSAPP_APP_SECRET = env.str("META_WHATSAPP_APP_SECRET", "")
+META_WHATSAPP_WEBHOOK_VERIFY_TOKEN = env.str("META_WHATSAPP_WEBHOOK_VERIFY_TOKEN", "")
+META_WHATSAPP_PHONE_NUMBER_ID = env.str("META_WHATSAPP_PHONE_NUMBER_ID", "")
+META_WHATSAPP_WABA_ID = env.str("META_WHATSAPP_WABA_ID", "")
+META_WHATSAPP_TEMPLATE = env.str("META_WHATSAPP_TEMPLATE", "yourkhata_login_otp")
 FAST2SMS_API_KEY = env.str("FAST2SMS_API_KEY", "")
 MC_CUSTOMER_ID = env.str("MC_CUSTOMER_ID", "")
 MC_PASSWORD = env.str("MC_PASSWORD", "")

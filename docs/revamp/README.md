@@ -17,14 +17,15 @@ Last updated: 19 Oct 2026, on `dev`.
 | 05 | [Feedback and performance](05-feedback-and-performance.md) | causes H1–H8 with how to prove each, feedback rules, duplicate protection, targets, benchmark method, fix list | hypotheses until Phase 1 |
 | 06 | [Shared components and architecture](06-shared-components-and-architecture.md) | reuse map of 92 design-system parts, the few new pieces, duplication to remove | proposed |
 | 07 | [Screen specs](07-screens/README.md) | template; specs for sign-in, onboarding, shell, notifications, four module entry points | waves 1–3 specified; Customers piece implemented |
-| 08 | [Backend change proposals](08-backend-change-proposals.md) | proposals with risk, compatibility, tests, rollback | BP-09 approved; others unapproved |
+| 08 | [Backend change proposals](08-backend-change-proposals.md) | proposals with risk, compatibility, tests, rollback | BP-09/BP-11/BP-12/BP-13 approved; other proposals retain individual status |
 | 09 | [Design review](09-design-review.md) | weighted rubric, round 1 (failed) and round 2 (passes provisionally), what each score still needs | whole-module specifications reviewed provisionally |
 | 10 | [Roadmap](10-roadmap.md) | phases 1–8 with deliverables, risks and done-when | plan |
 | 11 | [QA and regression](11-qa-and-regression.md) | existing gates, added checks, rollout exit criteria | plan |
 | 12 | [Decisions and progress](12-decision-log.md) | every decision and activity | living |
 | — | [AGENT_START_PROMPT.md](AGENT_START_PROMPT.md) | the prompt to give any coding agent (Codex, Cursor, Claude Code, others) to continue this work the same way | current |
 | — | [design/counter-mode.html](design/counter-mode.html) | the visual reference page (open in a browser) | current |
-| — | [Access-context correction evidence](../performance/2026-10-19-bp12-context-isolation.md) | Shop-only staff searches, source caches, module/recipient notifications, regression/visual evidence and explicit access audit boundaries | scoped corrections verified; remaining actor-response fix next |
+| — | [Request-context correction evidence](../performance/2026-10-19-bp13-request-context.md) | stale actor/business responses and retry/write intent, real browser refusal/reload, gates and remaining audit limits | BP-13 checkpoint; handoff before Home (R-DEC-19) |
+| — | [Access-context correction evidence](../performance/2026-10-19-bp12-context-isolation.md) | Shop-only staff searches, source caches, module/recipient notifications, regression/visual evidence and explicit access audit boundaries | scoped corrections delivered; actor-response correction in BP-13 |
 | — | [Suppliers implementation evidence](../performance/2026-10-19-p5-suppliers.md) | shared Counter Mode register, supplier payment journey, multi-party products, backend/frontend checks and delivery evidence | Supplier piece verified; whole Shop ongoing |
 | — | [Customers implementation evidence](../performance/2026-10-18-p5-customers.md) | screenshots, 108 browser cases, regression gates, measured performance/bundle cost, provisional score and remaining gaps | Customers piece verified; whole revamp ongoing |
 | — | [BP-11 authorization evidence](../performance/2026-10-19-bp11-book-authorization.md) | shared-book API guards, explicit-empty grant migration, isolation regressions and rollout limits | implemented/verified under R-DEC-15; migration required before API startup |
