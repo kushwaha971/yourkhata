@@ -69,6 +69,10 @@ class RegisteredReport:
     label_id: str
     selector: ReportSelector
     csv: ReportCsv | None
+    #: R-DEC-18 — for rows owned by several apps (a shared engine), the codename
+    #: whose per-app grant decides which rows a reader gets. The view passes the
+    #: readable modules to the selector as `params["_modules"]`.
+    row_scope: str | None = None
 
     @property
     def has_csv(self) -> bool:
@@ -122,11 +126,15 @@ def register_report(
     label_id: str,
     selector: ReportSelector,
     csv: ReportCsv | None,
+    row_scope: str | None = None,
 ) -> None:
     """A module's report, listed by `GET /reports` and served at `/reports/<key>`."""
     _check_key(key, module)
     _put(
-        _REPORTS, key, RegisteredReport(key, module, permission, label_id, selector, csv), "report"
+        _REPORTS,
+        key,
+        RegisteredReport(key, module, permission, label_id, selector, csv, row_scope),
+        "report",
     )
 
 

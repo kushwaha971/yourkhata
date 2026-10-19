@@ -30,6 +30,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.views import APIView
 
 from apps.common import exports as common_exports
+from apps.common.book_access import allowed_app_modules
 from apps.common.constants import ModuleCode
 from apps.common.exceptions import ModuleDisabled, NotFound, PermissionDenied, ValidationFailed
 from apps.common.permissions import ModuleEnabled
@@ -84,8 +85,11 @@ class ModuleReportView(ReportFormatMixin, TenantScopeMixin, APIView):
         params = {
             name: request.query_params.get(name)
             for name in request.query_params
-            if name not in common_exports.PAGE_PARAMS
+            # `_`-prefixed keys are set by the server below, never by a client.
+            if name not in common_exports.PAGE_PARAMS and not name.startswith("_")
         }
+        if report.row_scope:
+            params["_modules"] = sorted(allowed_app_modules(request, report.row_scope))
         if request.query_params.get("format") != "csv":
             return StandardResponse.ok(report.selector(tenant, params))
 

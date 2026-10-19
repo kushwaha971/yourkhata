@@ -31,6 +31,11 @@ HEADER = (
 
 def _queryset(tenant: Any, params: dict) -> Any:
     rows = HeldDeposit.objects.for_tenant(tenant).select_related("party")
+    # R-DEC-18: the modules the reader may see (set by the report view, never
+    # by a client). Absent means a caller that did not scope (owner tooling).
+    allowed = (params or {}).get("_modules")
+    if allowed is not None and "*" not in allowed:
+        rows = rows.filter(module__in=allowed)
     module = (params or {}).get("module")
     status = (params or {}).get("status")
     if module:

@@ -35,4 +35,7 @@ class ReportsConfig(AppConfig):
             label_id="payments.reports.depositsHeld",
             selector=deposits_held_report,
             csv=deposits_held_csv,
+            # A deposit belongs to its module's app (BP-11): the same rows as
+            # `/deposits`, narrowed the same way.
+            row_scope="payments.payment.read",
         )

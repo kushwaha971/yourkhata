@@ -13,6 +13,15 @@
 
 Checked without a defect: a Shop-only member's own parties export (direct and background) contains only the Shop balance; invoice share (`/public/d/`) and pay (`/public/pay/`) tokens are hashed, expire, revoke and resolve inside their tenant.
 
+## Follow-up: backup export, shared modules and module reports (same day)
+
+- **Whole-business backup export:** start, list, status and download are owner-only and tenant-scoped; the ZIP is not a `/files` attachment. No defect.
+- **Shared-module sweep.** Apps sharing a module: `parties`, `ledger`, `payments` (all four or three apps), `import_export`, and `dues` (Library and Lending). Every money route in parties/ledger/payments carries BP-11's book check. Dues is read-only and narrows rows by module-specific read codenames. Tags (contact labels, no money) and the QR/UPI helpers (draw a link for an amount, move nothing) have no book check by design; tag delete/merge across apps is recorded as an open question, not a defect.
+- **Sign-in-only sweep.** Every authenticated route whose class grants on sign-in alone was listed; views that set module+codename checks in `get_permissions()` (all of Library and Lending) were excluded after confirming the pattern. The remainder either act on the signed-in person (auth/sessions), check owner/codename inside the handler (tenant export/deletion, calendar, memberships, module reports), or were fixed above (imports, exports, files).
+4. **"Deposits held" report listed every app's deposits.** BP-11 narrowed `/deposits` to the owning module, but the module report `payments.deposits_held`, gated by the Shop capability `reports.financial.read`, returned a Library member's deposit to a Shop-only admin (reproduced).
+   Fix: registered reports may declare `row_scope`; the report view passes the reader's readable modules (`allowed_app_modules`, the same resolver `/deposits` uses) as a server-only `_modules` param, and client-supplied `_`-prefixed params are dropped. The deposits selector filters by it. Owners and never-configured legacy members keep every row. Regression: `apps/reports/tests/test_deposits_report_access.py` (failed before; includes a forged `_modules` query). Reports, payments and BP-11 suites: 400 passed.
+- Other Shop money reports checked: the cash book reads only the Shop payment bucket; aging goes through BP-11's book check.
+
 ## Evidence
 
 - New regressions: `apps/imports/tests/test_import_book_access.py` (4), `apps/reports/tests/test_export_book_access.py` (2), `apps/files/tests/test_attachment_kind_scope.py` (1). The three denial cases failed on unchanged code; the grant-holding controls pass before and after.
@@ -27,5 +36,5 @@ Checked without a defect: a Shop-only member's own parties export (direct and ba
 - The frontend still draws Import on the Shop parties list from merged permissions, so a Shop-only member now gets a permission error instead of a silent Udhaar write. Hiding it needs the client to know per-book grants; not done here.
 - Party import is presented as the Shop's customers/suppliers but posts openings to the main (Udhaar) book. Which book it should post to is a financial behavior change and needs an 08 proposal.
 - Invoice share links keep working while a business is suspended or pending deletion; pay links stop only once it is deleted. Product decision, not a demonstrated defect.
-- Not yet covered: the whole-business backup export, and the remaining §5.1 action families. Per-user personal Udhaar ownership remains unimplemented.
+- Remaining: tag delete/merge consequences across apps (product question). The access matrix has now been swept by module and by permission pattern; this is still not a penetration-test certificate. Per-user personal Udhaar ownership remains unimplemented.
 - No browser matrix or frontend gates were run because no frontend file changed. No deployment, production database or credentials were used.
