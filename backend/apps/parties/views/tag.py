@@ -12,6 +12,7 @@ from typing import Any
 
 from django.shortcuts import get_object_or_404
 from rest_framework.decorators import action
+from rest_framework.exceptions import PermissionDenied
 from rest_framework.permissions import IsAuthenticated
 
 from apps.common.constants import ModuleCode
@@ -66,6 +67,33 @@ class TagViewSet(TenantScopedViewSet):
     # response, and the picker wants all of them at once so that opening it
     # twice does not cost two round trips.
     pagination_class = None
+
+    #: Actions whose effect is business-wide: one tag is every app's label.
+    BUSINESS_WIDE = frozenset({"update", "partial_update", "merge", "destroy"})
+
+    def authorize_book(self, request: Any, codename: str) -> bool:
+        """R-DEC-18 — like the shared-contact archive (BP-11), renaming, merging or
+        deleting a tag needs the codename in every app this business runs that
+        keeps contacts. Creating a tag and tagging contacts stay single-app."""
+        if getattr(self, "action", None) not in self.BUSINESS_WIDE:
+            return True
+        from apps.common.book_access import allowed_app_modules
+        from apps.platform_app.apps_registry import apps_of_business
+
+        held = allowed_app_modules(request, codename)
+        if "*" in held:
+            return True
+        needed = {
+            app.code
+            for app in apps_of_business(self.get_tenant())
+            if ModuleCode.PARTIES in app.capabilities
+        }
+        if not needed <= held:
+            raise PermissionDenied(
+                "Changing this tag affects every app's contacts. Ask the owner or an "
+                "admin of each app."
+            )
+        return True
 
     def get_queryset(self) -> Any:
         include_archived = self.request.query_params.get("include_archived") == "true"
