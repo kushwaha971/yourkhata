@@ -67,9 +67,14 @@ jest.mock('../../parties/api/partyService', () => ({
     credit: null,
   })),
 }));
+let mockSearch = '';
+jest.mock('../../inventory/api/itemService', () => ({
+  ...jest.requireActual('../../inventory/api/itemService'),
+  getItem: jest.fn(),
+}));
 jest.mock('next/navigation', () => ({
   useRouter: () => ({ push: jest.fn(), replace: jest.fn(), back: jest.fn(), prefetch: jest.fn() }),
-  useSearchParams: () => new URLSearchParams(''),
+  useSearchParams: () => new URLSearchParams(mockSearch),
   usePathname: () => '/sales/invoices/new',
 }));
 
@@ -102,6 +107,7 @@ const signIn = (permissions: readonly PermissionCode[]): void => {
 
 beforeEach(() => {
   jest.clearAllMocks();
+  mockSearch = '';
   store.dispatch(resetAllFeatureState());
   window.localStorage.clear();
 });
@@ -228,8 +234,8 @@ describe('the place of supply for a picked party (QA S-D1)', () => {
     expect(screen.getByText('Intra-state supply — CGST + SGST')).toBeInTheDocument();
     await userEvent.click(screen.getByRole('radio', { name: 'Party' }));
     await userEvent.type(screen.getByLabelText('Party'), 'Beng');
-    const match = await screen.findByRole('option', {name:/Bengaluru Traders/});
-    await waitFor(()=>expect(match).toHaveAttribute('aria-disabled','false'));
+    const match = await screen.findByRole('option', { name: /Bengaluru Traders/ });
+    await waitFor(() => expect(match).toHaveAttribute('aria-disabled', 'false'));
     await userEvent.click(match);
     expect(await screen.findByText('Inter-state supply — IGST')).toBeInTheDocument();
   });
@@ -501,4 +507,69 @@ describe('draft creation recovery', () => {
     });
     expect(store.getState().invoiceEditor?.documentId).toBeNull();
   });
+});
+
+/** Regression: Home selected an item but the new bill lost its default price. */
+it('preserves a manual line against a late Home item reply', async () => {
+  mockSearch = 'item=i-led';
+  const service = jest.requireMock('../../inventory/api/itemService') as { getItem: jest.Mock };
+  let answer!: (item: unknown) => void;
+  service.getItem.mockImplementationOnce(
+    () =>
+      new Promise((resolve) => {
+        answer = resolve;
+      })
+  );
+  let editor!: UseInvoiceEditorResult;
+  function Probe() {
+    editor = useInvoiceEditor(null);
+    return null;
+  }
+  signIn(['sales.invoice.read', 'sales.invoice.write', 'inventory.item.read']);
+  renderWithProviders(<Probe />);
+  await waitFor(() => expect(service.getItem).toHaveBeenCalled());
+  act(() =>
+    editor.form.setValue('lines.0.description', 'My electrical item', { shouldDirty: true })
+  );
+  await act(async () =>
+    answer({
+      id: 'i-led',
+      status: 'active',
+      name: 'LED driver',
+      sellingPrice: '900.00',
+      unit: { code: 'PCS', allowDecimal: false },
+      taxCode: 'GST5',
+      hsnSac: '9405',
+    })
+  );
+  expect(editor.form.getValues('lines.0.description')).toBe('My electrical item');
+  expect(sales.createInvoice).not.toHaveBeenCalled();
+});
+
+it('seeds a new Home bill with default selling price without issuing it or changing the item', async () => {
+  mockSearch = 'item=i-led';
+  const service = jest.requireMock('../../inventory/api/itemService') as { getItem: jest.Mock };
+  const item = {
+    id: 'i-led',
+    status: 'active',
+    name: 'LED driver',
+    sellingPrice: '900.00',
+    unit: { code: 'PCS', allowDecimal: false },
+    taxCode: 'GST5',
+    hsnSac: '9405',
+  };
+  service.getItem.mockResolvedValueOnce(item);
+  let editor!: UseInvoiceEditorResult;
+  function Probe() {
+    editor = useInvoiceEditor(null);
+    return null;
+  }
+  signIn(['sales.invoice.read', 'sales.invoice.write', 'inventory.item.read']);
+  renderWithProviders(<Probe />);
+  await waitFor(() => expect(editor.form.getValues('lines.0.itemId')).toBe('i-led'));
+  expect(editor.form.getValues('lines.0.unitPrice')).toBe('900.00');
+  act(() => editor.form.setValue('lines.0.unitPrice', '850.00', { shouldDirty: true }));
+  expect(item.sellingPrice).toBe('900.00');
+  expect(sales.createInvoice).not.toHaveBeenCalled();
+  expect(sales.issueInvoice).not.toHaveBeenCalled();
 });

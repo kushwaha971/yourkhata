@@ -149,3 +149,25 @@ Approved access correction scope: R-DEC-18. The owner requires user/module/busin
 - Compatibility/data impact: no stored accounting data rewrite. Older mixed-column or unverifiable exports may need regeneration. Source reads and calculations otherwise stay unchanged. Owners/legacy broad grants retain their established authority.
 - Risk/tests: preserve current valid downloads, controls for both grants and Shop-only access, JSON/CSV positive/negative book checks, cost/source revocation, legacy file metadata and disabled-module history. Fail-before and final results: `docs/performance/2026-10-19-claude-review-access-followup.md`.
 - Rollback: retain server access guards. Regenerate/export from the authorized source if a stored file becomes incompatible; do not grandfather private data to hide a permission error. No database rollback required.
+
+## BP-15 · Counter Mode Home read prerequisites
+
+19–20 Oct 2026; implemented under R-DEC-22, then narrowed by R-DEC-23/24.
+The owner explicitly requested every reference part, including its graph and
+mobile composition. That request was treated as authorization for the necessary
+read prerequisite, not a financial-settlement rule or vertical contract change.
+The later daily/week/month/year choice supersedes the hourly proposal: **no
+hourly endpoint or new sales arithmetic was implemented**.
+
+Additive GET /reports/dashboard/counter: tenant/Shop-book gated, private/no-store,
+per-app source permissions resolved once. Returns optional independent customer/
+supplier lanes using with_shop_facts, oldest-open-bill balance bands/counts and
+bounded people; eligible Repeat sources from the last 14 days, filtered by the
+source read rights. Repeats open existing reviewed forms; no backend copy/write
+endpoint, model, migration or existing response shape change. Old personal
+Udhaar promises are not reused as Shop promises. Financial data stays in its app.
+
+Tests cover separate dual-role balances, band sums/oldest dates, unreadable-source
+omission, tenant and Shop grants, real eligible repeat sources and no writes.
+Rollback removes the additive read and its consumers; source records stay intact.
+Full source, measurements, rollout limits and test results are in the Home report.

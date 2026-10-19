@@ -62,8 +62,8 @@ function UbChartCardBase({
 
   return (
     <MLCard className={cn('flex flex-col', className)}>
-      <MLCardHeader className="flex-row items-start justify-between gap-4">
-        <div className="flex min-w-0 flex-col gap-1">
+      <MLCardHeader className="flex-row flex-wrap items-start justify-between gap-4">
+        <div className="flex min-w-0 flex-1 basis-40 flex-col gap-1 break-words">
           <h3 id={titleId} className="ds-h3 text-text-primary">
             {title}
           </h3>

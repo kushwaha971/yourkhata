@@ -12,7 +12,13 @@ import {
   CHART_PAIR_FILLS,
   CHART_PAIR_KEYS,
 } from '../chartPalette';
-import { formatAxisAmount, niceAxisMax, toPlotValue, verticalBarPath } from '../chartScale';
+import {
+  axisLabelGutter,
+  formatAxisAmount,
+  niceAxisMax,
+  toPlotValue,
+  verticalBarPath,
+} from '../chartScale';
 import { UbChartTooltip } from '../UbChartTooltip';
 import { useChartWidth } from '../useChartWidth';
 
@@ -67,7 +73,6 @@ export interface UbGroupedBarsProps {
   readonly className?: string;
 }
 
-const GUTTER_LEFT = 56;
 const GUTTER_RIGHT = 8;
 const GUTTER_TOP = 12;
 const GUTTER_BOTTOM = 24;
@@ -104,11 +109,12 @@ function UbGroupedBarsBase({
   );
 
   const model = useMemo(() => {
-    const plotWidth = Math.max(0, width - GUTTER_LEFT - GUTTER_RIGHT);
     const values = groups.flatMap((group) => valuesOf(group).map(toPlotValue));
     const axisMax = niceAxisMax(Math.max(...values, 0));
     const lowest = Math.min(...values, 0);
     const axisMin = lowest < 0 ? -niceAxisMax(-lowest) : 0;
+    const left = axisLabelGutter([axisMax, axisMax / 2, axisMin]);
+    const plotWidth = Math.max(0, width - left - GUTTER_RIGHT);
     const span = axisMax - axisMin || 1;
     const yOf = (value: number) => GUTTER_TOP + ((axisMax - value) / span) * PLOT_HEIGHT;
     const zero = yOf(0);
@@ -118,12 +124,12 @@ function UbGroupedBarsBase({
     const barWidth = Math.max(1, (inner - gap * (shown.length - 1)) / Math.max(shown.length, 1));
     const tickEvery = Math.max(1, Math.ceil(MIN_TICK_SPACING / Math.max(slot, 1)));
     const columns = groups.map((group, index) => {
-      const left = GUTTER_LEFT + slot * index + (slot - inner) / 2;
+      const barLeft = left + slot * index + (slot - inner) / 2;
       return {
-        center: GUTTER_LEFT + slot * index + slot / 2,
+        center: left + slot * index + slot / 2,
         bars: shown.map((_s, seriesIndex) => {
           const value = toPlotValue(valuesOf(group)[seriesIndex] ?? '0');
-          const x = left + seriesIndex * (barWidth + gap);
+          const x = barLeft + seriesIndex * (barWidth + gap);
           return value >= 0
             ? verticalBarPath({ x, y: yOf(value), width: barWidth, height: zero - yOf(value) })
             : verticalBarPath({ x, y: zero, width: barWidth, height: yOf(value) - zero }, true);
@@ -131,17 +137,17 @@ function UbGroupedBarsBase({
       };
     });
     const ticks = axisMin < 0 ? [axisMax, 0, axisMin] : [axisMax, axisMax / 2, 0];
-    return { slot, columns, tickEvery, plotWidth, ticks, yOf, zero };
+    return { left, slot, columns, tickEvery, plotWidth, ticks, yOf, zero };
   }, [groups, shown, width, valuesOf]);
 
   const handlePointerMove = useCallback(
     (event: PointerEvent<SVGSVGElement>) => {
       if (model.slot <= 0) return;
-      const x = event.clientX - event.currentTarget.getBoundingClientRect().left - GUTTER_LEFT;
+      const x = event.clientX - event.currentTarget.getBoundingClientRect().left - model.left;
       const index = Math.floor(x / model.slot);
       setActiveIndex(index >= 0 && index < groups.length ? index : null);
     },
-    [model.slot, groups.length]
+    [model.slot, model.left, groups.length]
   );
   const handleLeave = useCallback(() => setActiveIndex(null), []);
   const handleKeyDown = useCallback(
@@ -243,16 +249,16 @@ function UbGroupedBarsBase({
           return (
             <g key={tick}>
               <line
-                x1={GUTTER_LEFT}
+                x1={model.left}
                 y1={y}
-                x2={GUTTER_LEFT + model.plotWidth}
+                x2={model.left + model.plotWidth}
                 y2={y}
                 strokeWidth={1}
                 fill="none"
                 className={tick === 0 ? CHART_ZERO_STROKE : CHART_GRID_STROKE}
               />
               <text
-                x={GUTTER_LEFT - 8}
+                x={model.left - 8}
                 y={y + 4}
                 textAnchor="end"
                 className={cn('ds-num', CHART_AXIS_TEXT)}

@@ -244,6 +244,7 @@ export interface MLTabsProps<T extends string> {
   readonly className?: string;
   /** `fit`: tabs as wide as their labels, left-aligned. `fill` shares the row. */
   readonly layout?: 'fill' | 'fit';
+  readonly appearance?: 'underline' | 'segmented';
   /** A control at the right end of the tab row — a filter that scopes every tab. */
   readonly trailing?: ReactNode;
 }
@@ -261,6 +262,7 @@ export function MLTabs<T extends string>({
   idPrefix,
   className,
   layout = 'fill',
+  appearance = 'underline',
   trailing,
 }: Readonly<MLTabsProps<T>>): React.JSX.Element {
   const generated = useId();
@@ -297,14 +299,20 @@ export function MLTabs<T extends string>({
 
   return (
     <div className={cn('flex w-full flex-col gap-4', className)}>
-      <div className="flex w-full flex-wrap items-center gap-x-4 gap-y-2 border-b border-border-hairline">
+      <div
+        className={cn(
+          'flex w-full flex-wrap items-center gap-x-4 gap-y-2',
+          appearance === 'underline' && 'border-b border-border-hairline'
+        )}
+      >
         <div
           ref={listRef}
           role="tablist"
           aria-label={ariaLabel}
           onKeyDown={onKeyDown}
           className={cn(
-            '-mb-px flex items-center gap-1',
+            'flex items-center gap-1',
+            appearance === 'segmented' ? 'rounded-control bg-surface-sunken p-1' : '-mb-px',
             layout === 'fill' ? 'w-full' : 'max-w-full overflow-x-auto'
           )}
         >
@@ -328,9 +336,16 @@ export function MLTabs<T extends string>({
                      labelled tabs with counts fit 360 px instead of scrolling. */
                   layout === 'fill' ? 'flex-1' : 'flex-none max-sm:px-3',
                   'transition-colors duration-fast ease-standard',
-                  active
-                    ? 'border-action text-text-accent'
-                    : 'border-transparent text-text-tertiary hover:text-text-primary'
+                  appearance === 'segmented'
+                    ? cn(
+                        'rounded-control border-b-0 px-2',
+                        active
+                          ? 'bg-surface-card text-text-primary shadow-sm'
+                          : 'text-text-secondary'
+                      )
+                    : active
+                      ? 'border-action text-text-accent'
+                      : 'border-transparent text-text-tertiary hover:text-text-primary'
                 )}
               >
                 {tab.label}

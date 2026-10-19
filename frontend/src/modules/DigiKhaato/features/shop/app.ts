@@ -299,5 +299,5 @@ export const SHOP_APP: AppManifest = {
   // and the payments against them, never their Udhaar book figure.
   book: 'shop',
   peopleHref: ROUTES.CUSTOMERS,
-  shell: { partySearch: true },
+  shell: { partySearch: true, commandSearch: true },
 };

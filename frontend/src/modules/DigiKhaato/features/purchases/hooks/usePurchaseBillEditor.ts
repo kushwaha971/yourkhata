@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
+import { useSearchParams } from 'next/navigation';
 
 import { useForm, useWatch, type UseFormReturn } from 'react-hook-form';
 import { useStore } from 'react-redux';
@@ -12,6 +13,7 @@ import { useDraftSaveQueue } from 'src/hooks/useDraftSaveQueue';
 import { useIdempotencyKey } from 'src/hooks/useIdempotencyKey';
 import { usePartyEditorSeed } from 'src/hooks/usePartyEditorSeed';
 import { usePermissions } from 'src/hooks/usePermissions';
+import { useReviewedRepeat } from 'src/hooks/useReviewedRepeat';
 import { useTranslation } from 'src/hooks/useTranslation';
 import { selectNetworkImpaired } from 'src/redux/slice/networkSlice';
 import {
@@ -27,6 +29,7 @@ import { newRequestId } from 'src/utils/requestId';
 import { mayHaveBeenSaved } from 'src/utils/requestKey';
 
 import { computeDocumentTotals, type EngineResult } from '../../sales/view-model/taxEngine';
+import { getPurchaseBill } from '../api/purchaseBillService';
 import { PURCHASE_AUTOSAVE_MS } from '../constants/purchaseConstants';
 import {
   purchaseDraftReply,
@@ -185,6 +188,30 @@ export const usePurchaseBillEditor = (
     }
   }, [documentId, document, context, form, today, initialParty, initialPartyName]);
 
+  const readRepeat = useCallback(async (id: string, signal: AbortSignal) => {
+    const source = await getPurchaseBill(id, signal);
+    const previous = fromPurchaseBill(source.bill);
+    if (source.bill.kind !== 'purchase_bill' || ['draft', 'void'].includes(source.bill.status))
+      throw new Error('Repeat source unavailable');
+    return {
+      partyId: previous.partyId,
+      partyName: previous.partyName,
+      partyStateCode: previous.partyStateCode,
+      partyCreditDays: previous.partyCreditDays,
+      lines: previous.lines,
+      notes: previous.notes,
+      discountType: previous.discountType,
+      discountValue: previous.discountValue,
+    };
+  }, []);
+  useReviewedRepeat({
+    ready: !!context && seededFor === 'new',
+    documentId,
+    form,
+    read: readRepeat,
+  });
+  const repeatId = useSearchParams()?.get('repeat');
+
   // Rates are by the bill's date; a changed date re-reads them.
   const documentDate = values.documentDate;
   useEffect(() => {
@@ -331,7 +358,7 @@ export const usePurchaseBillEditor = (
   const saving = useRef(false);
   const [saveRevision, setSaveRevision] = useState(0);
   useEffect(() => {
-    if (!dirty || blocked || !meaningful || !canWrite) return undefined;
+    if (repeatId || !dirty || blocked || !meaningful || !canWrite) return undefined;
     const timer = window.setTimeout(() => {
       if (saving.current) return;
       saving.current = true;
@@ -343,7 +370,7 @@ export const usePurchaseBillEditor = (
       });
     }, PURCHASE_AUTOSAVE_MS);
     return () => window.clearTimeout(timer);
-  }, [values, dirty, blocked, meaningful, canWrite, save, form, saveRevision]);
+  }, [values, dirty, blocked, meaningful, canWrite, save, form, saveRevision, repeatId]);
 
   /** "New bill" after recording on `/new`: a blank editor without a page load. */
   const restart = useCallback(() => {

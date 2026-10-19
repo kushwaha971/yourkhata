@@ -11,7 +11,12 @@ import { useMediaQuery } from '../motion/useMediaQuery';
 
 import { FilterAnchor } from './FilterAnchor';
 import { formatDateFace } from './filterDisplay';
-import { FILTER_BUTTON_CLASS, SHEET_QUERY, filterButtonTone } from './UbFilterSelect';
+import {
+  COMPACT_FILTER_BUTTON_CLASS,
+  FILTER_BUTTON_CLASS,
+  SHEET_QUERY,
+  filterButtonTone,
+} from './UbFilterSelect';
 
 /**
  * The period, as one dropdown: presets in a list, "Custom range" at the foot
@@ -45,6 +50,8 @@ export interface UbPeriodSelectProps<P extends string> {
   };
   readonly locale?: string;
   readonly className?: string;
+  /** Compact toolbars show the custom preset's name; full dates stay accessible. */
+  readonly size?: 'sm' | 'md';
 }
 
 const panels = deferredModule(() => import('./filterPanels'));
@@ -60,6 +67,7 @@ function UbPeriodSelectBase<P extends string>({
   labels,
   locale,
   className,
+  size = 'md',
 }: Readonly<UbPeriodSelectProps<P>>) {
   const [open, setOpen] = useState(false);
   const sheet = useMediaQuery(SHEET_QUERY);
@@ -101,11 +109,18 @@ function UbPeriodSelectBase<P extends string>({
       aria-expanded={open}
       aria-label={`${labels.period}: ${current}`}
       onClick={() => setOpen((was) => !was)}
-      className={cn(FILTER_BUTTON_CLASS, filterButtonTone(false), className)}
+      className={cn(
+        FILTER_BUTTON_CLASS,
+        filterButtonTone(false),
+        size === 'sm' && COMPACT_FILTER_BUTTON_CLASS,
+        className
+      )}
       data-testid="period-select"
     >
-      <CalendarDays aria-hidden className="h-4 w-4 shrink-0 opacity-70" />
-      <span className="truncate">{current}</span>
+      {size !== 'sm' && <CalendarDays aria-hidden className="h-4 w-4 shrink-0 opacity-70" />}
+      <span className="truncate">
+        {size === 'sm' && isCustom ? presets.find((p) => p.value === customValue)?.label : current}
+      </span>
       <ChevronDown aria-hidden className="h-4 w-4 shrink-0 opacity-70" />
     </button>
   );

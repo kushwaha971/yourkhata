@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef } from 'react';
 
+import { useSearchParams } from 'next/navigation';
 
 import { useForm, useWatch, type UseFormReturn } from 'react-hook-form';
 import { useStore } from 'react-redux';
@@ -11,16 +12,20 @@ import { useDraftSaveQueue } from 'src/hooks/useDraftSaveQueue';
 import { useIdempotencyKey } from 'src/hooks/useIdempotencyKey';
 import { usePartyEditorSeed } from 'src/hooks/usePartyEditorSeed';
 import { usePermissions } from 'src/hooks/usePermissions';
+import { useReviewedRepeat } from 'src/hooks/useReviewedRepeat';
 import { useTranslation } from 'src/hooks/useTranslation';
 import {
   selectActiveTenant,
   selectSessionUser,
   selectTenantTimezone,
 } from 'src/redux/slice/sessionSlice';
+import { showSnackbar } from 'src/redux/slice/snackbarSlice';
 import type { RootState } from 'src/redux/store';
 import { todayInTenantTz } from 'src/utils/dates';
 import { mayHaveBeenSaved } from 'src/utils/requestKey';
 
+import { getItem } from '../../inventory/api/itemService';
+import { getInvoice } from '../api/salesService';
 import {
   editorReset,
   saveUnavailable,
@@ -44,6 +49,8 @@ import {
   type InvoiceFormValues,
   type PaymentRowForm,
 } from '../view-model/invoiceForm';
+import { emptyLine } from '../view-model/invoiceForm';
+import { itemLineDefaults } from '../view-model/itemLineDefaults';
 import { computeDocumentTotals, type EngineResult } from '../view-model/taxEngine';
 
 import type { SalesDocumentEnvelope } from '../types/sales.types';
@@ -83,6 +90,8 @@ export const useInvoiceEditor = (
   documentId: string | null,
   kind: EditorKind = 'invoice'
 ): UseInvoiceEditorResult => {
+  const search = useSearchParams();
+  const initialItem = search.get('item');
   const { partyId: initialParty, partyName: initialPartyName } = usePartyEditorSeed();
   const dispatch = useAppDispatch();
   const store = useStore<RootState>();
@@ -166,11 +175,77 @@ export const useInvoiceEditor = (
       );
       form.reset(
         initialParty
-          ? { ...initial, mode: 'party', partyId: initialParty, partyName: initialPartyName, placeOfSupplyState: '' }
+          ? {
+              ...initial,
+              mode: 'party',
+              partyId: initialParty,
+              partyName: initialPartyName,
+              placeOfSupplyState: '',
+            }
           : initial
       );
     }
   }, [documentId, document, context, form, today, kind, initialParty, initialPartyName]);
+
+  // A Home handoff is a proposed line in a NEW editor only; existing drafts,
+  // manual changes and revoked/switching contexts always win over a late read.
+  useEffect(() => {
+    if (documentId || !initialItem || !context || seeded.current !== 'new') return undefined;
+    const controller = new AbortController();
+    void getItem(initialItem, controller.signal)
+      .then((item) => {
+        const line = form.getValues('lines.0');
+        if (
+          controller.signal.aborted ||
+          item.status !== 'active' ||
+          line?.itemId ||
+          line?.description ||
+          form.formState.dirtyFields.lines
+        )
+          return;
+        form.setValue(
+          'lines.0',
+          { ...emptyLine(), ...itemLineDefaults(item) },
+          { shouldDirty: true }
+        );
+      })
+      .catch(() => {
+        if (!controller.signal.aborted)
+          dispatch(showSnackbar({ severity: 'error', id: 'sales.editor.error.context' }));
+      });
+    return () => controller.abort();
+  }, [documentId, initialItem, context, form, tenantId, userId, dispatch]);
+
+  const readRepeat = useCallback(async (id: string, signal: AbortSignal) => {
+    const { document: source } = await getInvoice(id, signal);
+    if (
+      source.origin ||
+      !['invoice', 'bill_of_supply'].includes(source.kind) ||
+      ['draft', 'void'].includes(source.status)
+    )
+      throw new Error('Repeat source unavailable');
+    const previous = fromDocument(source);
+    return {
+      mode: previous.mode,
+      partyId: previous.partyId,
+      partyName: previous.partyName,
+      partyStateCode: previous.partyStateCode,
+      walkInName: previous.walkInName,
+      walkInMobile: previous.walkInMobile,
+      placeOfSupplyState: previous.placeOfSupplyState,
+      lines: previous.lines,
+      discountType: previous.discountType,
+      discountValue: previous.discountValue,
+      notes: previous.notes,
+      terms: previous.terms,
+    };
+  }, []);
+  useReviewedRepeat({
+    ready: !!context && !documentId,
+    documentId,
+    form,
+    read: readRepeat,
+  });
 
   // FR-17 — rates are by the bill's date; a changed date re-reads them.
   const documentDate = values.documentDate;

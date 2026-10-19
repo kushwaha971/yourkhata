@@ -2,6 +2,8 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 
+import { useSearchParams } from 'next/navigation';
+
 import { useAppDispatch, useAppSelector } from 'src/hooks/useAppStore';
 import { selectNetworkImpaired } from 'src/redux/slice/networkSlice';
 import { selectActiveTenant, selectSessionUser } from 'src/redux/slice/sessionSlice';
@@ -66,6 +68,7 @@ export const useDraftAutosave = (
   editor: UseInvoiceEditorResult,
   documentId: string | null
 ): UseDraftAutosaveResult => {
+  const repeatId = useSearchParams()?.get('repeat');
   const dispatch = useAppDispatch();
   const tenant = useAppSelector(selectActiveTenant);
   const offline = useAppSelector(selectNetworkImpaired);
@@ -111,7 +114,8 @@ export const useDraftAutosave = (
   // FR-2 — the server copy, 3 s after the last change, while dirty and meaningful.
   const blocked = offline || server.saveState === 'conflict' || server.issuing || !!server.issued;
   useEffect(() => {
-    if (!dirty || blocked || !meaningful(values) || !discountsInRange(values)) return undefined;
+    if (repeatId || !dirty || blocked || !meaningful(values) || !discountsInRange(values))
+      return undefined;
     const timer = window.setTimeout(() => {
       if (saving.current) return;
       saving.current = true;
@@ -123,7 +127,7 @@ export const useDraftAutosave = (
       });
     }, SERVER_AUTOSAVE_MS);
     return () => window.clearTimeout(timer);
-  }, [values, dirty, blocked, save, form, saveRevision]);
+  }, [values, dirty, blocked, save, form, saveRevision, repeatId]);
 
   const acceptRestore = useCallback(() => {
     if (restore) {

@@ -18,6 +18,7 @@ import {
 } from '../chartPalette';
 import {
   areaPath,
+  axisLabelGutter,
   formatAxisAmount,
   formatChartDate,
   formatChartDateShort,
@@ -59,7 +60,6 @@ export interface UbTrendAreaProps {
 }
 
 /** Gutters exist so the outermost labels have room INSIDE the viewBox. */
-const GUTTER_LEFT = 64;
 const GUTTER_RIGHT = 12;
 const GUTTER_TOP = 22;
 const GUTTER_BOTTOM = 24;
@@ -76,14 +76,15 @@ function UbTrendAreaBase({
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
 
   const model = useMemo(() => {
-    const plot: ChartPlot = {
-      left: GUTTER_LEFT,
-      top: GUTTER_TOP,
-      width: Math.max(0, width - GUTTER_LEFT - GUTTER_RIGHT),
-      height: PLOT_HEIGHT,
-    };
     const values = points.map((point) => toPlotValue(point.amount));
     const axisMax = niceAxisMax(Math.max(...values, 0));
+    const left = axisLabelGutter([axisMax, axisMax / 2, 0]);
+    const plot: ChartPlot = {
+      left,
+      top: GUTTER_TOP,
+      width: Math.max(0, width - left - GUTTER_RIGHT),
+      height: PLOT_HEIGHT,
+    };
     const plotted = seriesPoints(values, axisMax, plot);
     const baseline = plot.top + plot.height;
     return {

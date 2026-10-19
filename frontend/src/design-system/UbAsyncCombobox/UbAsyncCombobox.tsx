@@ -64,6 +64,8 @@ export interface UbAsyncComboboxProps {
   readonly onQueryChange: (query: string) => void;
   readonly options: readonly UbAsyncComboboxOption[];
   readonly onSelect: (option: UbAsyncComboboxOption) => void;
+  /** Full command labels wrap; compact item pickers retain their existing layout. */
+  readonly wrapLabels?: boolean;
   readonly loading?: boolean;
   /** The options do not answer `query` yet — an Enter waits for the ones that do. */
   readonly pending?: boolean;
@@ -87,6 +89,7 @@ export interface UbAsyncComboboxProps {
   readonly onKeyDown?: (event: React.KeyboardEvent<HTMLButtonElement>) => void;
   /** Called whenever the panel opens — start listing. */
   readonly onOpen?: () => void;
+  readonly onOpenChange?: (open: boolean) => void;
   /** The next page, when there is one. */
   readonly paging?: UbAsyncComboboxPaging;
   /**
@@ -118,6 +121,7 @@ const UbAsyncComboboxInner = forwardRef<HTMLButtonElement, UbAsyncComboboxProps>
       options,
       onSelect,
       loading = false,
+      wrapLabels = false,
       pending = false,
       placeholder,
       searchPlaceholder,
@@ -133,6 +137,7 @@ const UbAsyncComboboxInner = forwardRef<HTMLButtonElement, UbAsyncComboboxProps>
       onBlur,
       onKeyDown,
       onOpen,
+      onOpenChange,
       paging,
       afterPick,
       name: _name,
@@ -144,9 +149,10 @@ const UbAsyncComboboxInner = forwardRef<HTMLButtonElement, UbAsyncComboboxProps>
     const setOpen = useCallback(
       (next: boolean) => {
         setOpenState(next);
+        onOpenChange?.(next);
         if (next) onOpen?.();
       },
-      [onOpen]
+      [onOpen, onOpenChange]
     );
     const trimmed = query.trim();
     const canCreate = Boolean(onCreate && createLabel && trimmed);
@@ -275,6 +281,7 @@ const UbAsyncComboboxInner = forwardRef<HTMLButtonElement, UbAsyncComboboxProps>
         >
           {panel ? (
             <panel.UbAsyncComboboxPanel
+              wrapLabels={wrapLabels}
               query={query}
               onQueryChange={onQueryChange}
               options={options}

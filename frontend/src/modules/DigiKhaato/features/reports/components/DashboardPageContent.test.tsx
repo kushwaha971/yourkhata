@@ -28,6 +28,10 @@ import type { DashboardData } from '../types/reports.types';
  * empty book; and the refresh icon asks the server to recompute.
  */
 jest.mock('../api/dashboardService');
+jest.mock('../api/dashboardChartsService');
+jest.mock('../api/counterService', () => ({
+  getCounter: jest.fn().mockResolvedValue({ as_of: '2026-10-19' }),
+}));
 // The graphs have their own read and their own suite (DashboardCharts.test);
 // here they would be a second, unmocked request on every render.
 jest.mock('./DashboardCharts', () => ({ DashboardCharts: () => null }));
@@ -130,12 +134,13 @@ const signIn = (
     'payments',
     'purchases',
     'expenses',
-  ]
+  ],
+  identity = 'u1'
 ): void => {
   store.dispatch(
     sessionLoaded({
       user: {
-        id: 'u1',
+        id: identity,
         name: 'Owner',
         email: 'owner@shop.test',
         mobile: null,
@@ -154,6 +159,17 @@ const signIn = (
 
 beforeEach(() => {
   jest.clearAllMocks();
+  jest.requireMock('../api/dashboardChartsService').getDashboardCharts.mockResolvedValue({
+    range: '7d',
+    group: 'day',
+    from: '2026-09-12',
+    to: '2026-09-18',
+    money: {
+      points: [{ date: '2026-09-18', out: '400.00' }],
+      series: ['in', 'out'],
+      totals: { in: '700.00', out: '9000.00' },
+    },
+  });
   store.dispatch(resetAllFeatureState());
   resetDashboardSectionsForTests();
 });
@@ -169,21 +185,18 @@ it('says whose Shop and which day in the header, with New bill and the rest unde
   service.getDashboard.mockResolvedValue(DATA());
   signIn(OWNER);
   renderWithProviders(<DashboardPageContent />);
-  const heading = await screen.findByRole('heading', { name: 'Kumar Stores' });
+  const heading = await screen.findByRole('heading', { name: 'Home' });
   // "Shree Ganesh Kirana Stores" was cut to "Shree Ganesh Ki…" on a 360 px
   // phone: the title is a business name now, and a name is not cut.
   expect(heading).not.toHaveClass('truncate');
-  expect(screen.getByText(/^Shop · Today, 18\/09\/2026/)).toBeInTheDocument();
+  expect(screen.getByText(/^Kumar Stores · 18\/09\/2026/)).toBeInTheDocument();
   expect(screen.getByRole('link', { name: 'New bill' })).toHaveAttribute(
     'href',
     '/sales/invoices/new'
   );
   await userEvent.click(screen.getByRole('button', { name: 'More actions' }));
   const sheet = screen.getByRole('dialog', { name: 'More actions' });
-  expect(within(sheet).getByRole('link', { name: 'Record payment' })).toHaveAttribute(
-    'href',
-    '/payments?add=1'
-  );
+  expect(within(sheet).getByRole('button', { name: 'Receive money' })).toBeInTheDocument();
   expect(within(sheet).getByRole('link', { name: 'Add expense' })).toHaveAttribute(
     'href',
     '/expenses?add=1'
@@ -198,17 +211,19 @@ it("shows today's net sales, money received and cash in hand, each opening its r
   service.getDashboard.mockResolvedValue(DATA());
   signIn(OWNER);
   renderWithProviders(<DashboardPageContent />);
-  const today = await screen.findByRole('region', { name: 'Today' });
-  expect(within(today).getByText('Net sales today')).toBeInTheDocument();
-  expect(within(today).getByText('Money received today')).toBeInTheDocument();
+  const today = await screen.findByRole('region', { name: 'Today so far' });
+  expect(within(today).getByText('Billed')).toBeInTheDocument();
+  expect(within(today).getByText('Received')).toBeInTheDocument();
   expect(within(today).getByText('2 receipts')).toBeInTheDocument();
-  await userEvent.click(within(today).getByRole('button', { name: /Money received today/ }));
-  expect(mockPush).toHaveBeenCalledWith('/payments?period=today&tab=in');
+  expect(within(today).getByRole('link', { name: /Received/ })).toHaveAttribute(
+    'href',
+    '/payments?period=today&tab=in'
+  );
 });
 
-it('never shows the drawer as a till holding minus money (WP-06 Finding 4)', async () => {
-  // No opening cash is recorded: a new Shop whose first cash record is a tea
-  // expense read "−₹150 · since you started using YourKhata".
+it('labels negative cash as records and states the excluded opening cash', async () => {
+  // Cash by records is not a counted physical till. A negative recorded balance
+  // must remain signed and its missing opening baseline must be explicit.
   const data = DATA();
   service.getDashboard.mockResolvedValue({
     ...data,
@@ -216,12 +231,10 @@ it('never shows the drawer as a till holding minus money (WP-06 Finding 4)', asy
   });
   signIn(OWNER);
   renderWithProviders(<DashboardPageContent />);
-  const today = await screen.findByRole('region', { name: 'Today' });
-  const tile = within(today).getByRole('button', { name: /More cash paid out/ });
-  expect(tile).toHaveTextContent('₹150.00');
-  expect(tile).toHaveTextContent('than came in, since 03/09/2026');
-  expect(tile).not.toHaveTextContent('−');
-  expect(within(today).queryByText('Cash in hand')).not.toBeInTheDocument();
+  const today = await screen.findByRole('region', { name: 'Today so far' });
+  expect(within(today).getByText('Cash by your records')).toBeInTheDocument();
+  expect(within(today).getByText(/opening cash excluded/)).toBeInTheDocument();
+  expect(within(today).getByText(/150\.00/)).toHaveTextContent(/[-−]/);
 });
 
 it('lists the orders waiting on someone in Needs attention, each opening its list', async () => {
@@ -242,6 +255,7 @@ it('lists the orders waiting on someone in Needs attention, each opening its lis
   });
   signIn(OWNER);
   renderWithProviders(<DashboardPageContent />);
+  await userEvent.click(await screen.findByRole('tab', { name: 'Follow-ups' }));
   const panel = await screen.findByRole('region', { name: 'Needs attention' });
   expect(
     within(panel).getByRole('link', { name: /2 customer orders to deliver and bill · ₹1,000\.00/ })
@@ -294,6 +308,8 @@ it('shows sales and money received for Yesterday, This week or This month (WP-06
   });
   signIn(OWNER);
   renderWithProviders(<DashboardPageContent />);
+  await userEvent.click(await screen.findByRole('tab', { name: 'Insights' }));
+  await userEvent.click(screen.getByRole('button', { name: 'More reports and comparisons' }));
   const chips = await screen.findByRole('radiogroup', { name: 'Show figures for' });
   expect(within(chips).getByRole('radio', { name: 'Today' })).toBeChecked();
   await userEvent.click(within(chips).getByRole('radio', { name: 'This week' }));
@@ -315,7 +331,7 @@ it("gives an older server's dashboard no period chips", async () => {
   service.getDashboard.mockResolvedValue(DATA());
   signIn(OWNER);
   renderWithProviders(<DashboardPageContent />);
-  await screen.findByRole('region', { name: 'Today' });
+  await screen.findByRole('region', { name: 'Today so far' });
   expect(screen.queryByRole('radiogroup', { name: 'Show figures for' })).not.toBeInTheDocument();
 });
 
@@ -334,7 +350,7 @@ it('gives customers and suppliers a panel each, every figure opening its own lis
   expect(
     within(customers).getByRole('link', { name: /2 bills overdue · ₹900\.00/ })
   ).toHaveAttribute('href', '/sales/invoices?tab=overdue&from=2025-12-02&to=2026-09-18');
-  expect(within(customers).getByText(/Oldest is 25 days late/)).toBeInTheDocument();
+
   expect(within(customers).getByRole('link', { name: 'Ramesh' })).toBeInTheDocument();
 
   const suppliers = screen.getByRole('region', { name: 'Suppliers' });
@@ -365,6 +381,7 @@ it('keeps Needs attention on the page, each row with its amount, age and next st
   service.getDashboard.mockResolvedValue(DATA());
   signIn(OWNER);
   renderWithProviders(<DashboardPageContent />);
+  await userEvent.click(await screen.findByRole('tab', { name: 'Follow-ups' }));
   const attention = await screen.findByRole('region', { name: 'Needs attention' });
   expect(screen.queryByRole('button', { name: 'Details' })).not.toBeInTheDocument();
   const rows = within(attention).getAllByRole('link');
@@ -394,6 +411,7 @@ it('says when nothing needs the merchant, rather than hiding the section', async
   service.getDashboard.mockResolvedValue(DATA({ tiles: quiet, lowStockItems: [] }));
   signIn(OWNER);
   renderWithProviders(<DashboardPageContent />);
+  await userEvent.click(await screen.findByRole('tab', { name: 'Follow-ups' }));
   const attention = await screen.findByRole('region', { name: 'Needs attention' });
   expect(within(attention).getByText('Nothing needs you right now.')).toBeInTheDocument();
 });
@@ -422,7 +440,7 @@ it('leaves out a tile the reader may not see, rather than showing it as ₹0 (FR
   service.getDashboard.mockResolvedValue(DATA({ tiles }));
   signIn(OWNER.filter((code) => code !== 'reports.financial.read'));
   renderWithProviders(<DashboardPageContent />);
-  await screen.findAllByText('To collect');
+  await screen.findByRole('region', { name: 'Customers' });
   expect(screen.queryByText('Cash in hand')).not.toBeInTheDocument();
   expect(screen.queryByText('Low stock')).not.toBeInTheDocument();
   expect(screen.queryByText('Running low')).not.toBeInTheDocument();
@@ -488,12 +506,12 @@ it('links each recent event to its document, and each debtor to the khata', asyn
     'href',
     '/sales/invoices/d1'
   );
-  const debtors = screen.getByRole('list', { name: 'Who has to give you the most' });
+  const debtors = screen.getByRole('list', { name: 'Customers' });
   expect(within(debtors).getByRole('link', { name: 'Ramesh' })).toHaveAttribute(
     'href',
     '/parties/p1'
   );
-  expect(within(debtors).getByText(/\+91 98••• ••678/)).toBeInTheDocument();
+  expect(within(debtors).queryByText('+919812345678')).not.toBeInTheDocument();
   // WP-06 / DEC-019 — the panel's "All customers" opens the Shop's customers,
   // the list whose figure this is the top of, not the Udhaar book's people.
   const panel = screen.getByRole('region', { name: 'Customers' });
@@ -508,7 +526,7 @@ it('asks the server to recompute when the refresh icon is pressed (FR-8)', async
   service.getDashboard.mockResolvedValue(DATA());
   signIn(OWNER);
   renderWithProviders(<DashboardPageContent />);
-  await screen.findAllByText('To collect');
+  await screen.findByRole('region', { name: 'Customers' });
   expect(screen.getByText(/Updated/)).toBeInTheDocument();
   await userEvent.click(screen.getByRole('button', { name: 'Refresh' }));
   expect(service.getDashboard).toHaveBeenLastCalledWith({ refresh: true }, expect.anything());
@@ -518,7 +536,7 @@ it('re-reads after any write the invalidation map signals (TSK-RPT-01-06)', asyn
   service.getDashboard.mockResolvedValue(DATA());
   signIn(OWNER);
   renderWithProviders(<DashboardPageContent />);
-  await screen.findAllByText('To collect');
+  await screen.findByRole('region', { name: 'Customers' });
   const before = service.getDashboard.mock.calls.length;
   act(() => {
     store.dispatch(cacheInvalidated({ slices: ['partyList'], urgency: 'next-mount' }));
@@ -568,7 +586,7 @@ it('never draws a registered section the server did not return', async () => {
   service.getDashboard.mockResolvedValue(DATA());
   signIn(OWNER);
   renderWithProviders(<DashboardPageContent />);
-  expect(await screen.findAllByText('To collect')).not.toHaveLength(0);
+  expect(await screen.findByRole('region', { name: 'Customers' })).toBeInTheDocument();
   expect(screen.queryByTestId('dashboard-module-sections')).not.toBeInTheDocument();
   expect(screen.queryByText(/Probe members/)).not.toBeInTheDocument();
 });
@@ -652,10 +670,11 @@ it('says which panel could not load and keeps the rest of the page', async () =>
     within(customers).getByRole('link', { name: /To collect.*₹7,000\.00/ })
   ).toBeInTheDocument();
 
+  await userEvent.click(screen.getByRole('tab', { name: 'Follow-ups' }));
   const attention = screen.getByRole('region', { name: 'Needs attention' });
   expect(within(attention).getByText('This section could not load.')).toBeInTheDocument();
   expect(within(attention).queryByText('Nothing needs you right now.')).not.toBeInTheDocument();
-  expect(screen.getByRole('region', { name: 'Today' })).toBeInTheDocument();
+  expect(screen.getByRole('region', { name: 'Today so far' })).toBeInTheDocument();
 
   await userEvent.click(within(customers).getByRole('button', { name: 'Try again' }));
   expect(service.getDashboard).toHaveBeenLastCalledWith({ refresh: true }, expect.anything());
@@ -674,4 +693,28 @@ it('keeps a panel on the page with a Retry when its own figure failed', async ()
   const suppliers = await screen.findByRole('region', { name: 'Suppliers' });
   expect(within(suppliers).getByText('This section could not load.')).toBeInTheDocument();
   expect(within(suppliers).getByRole('button', { name: 'Try again' })).toBeInTheDocument();
+});
+
+it('does not keep a previous actor overview figure while the next overview is pending', async () => {
+  // A component-local chart result must obey the same account boundary as Redux.
+  service.getDashboard.mockResolvedValue(DATA());
+  signIn(OWNER);
+  renderWithProviders(<DashboardPageContent />);
+  await screen.findByText('₹400.00');
+  jest
+    .requireMock('../api/dashboardChartsService')
+    .getDashboardCharts.mockReturnValue(new Promise(() => {}));
+  act(() => signIn(OWNER, undefined, 'another-operator'));
+  expect(screen.queryByText('₹400.00')).not.toBeInTheDocument();
+});
+
+/** Pending paid-out data used to nest a block skeleton inside a paragraph. */
+it('keeps the money loading skeleton outside paragraphs to avoid hydration repair', async () => {
+  const charts = jest.requireMock('../api/dashboardChartsService');
+  charts.getDashboardCharts.mockImplementationOnce(() => new Promise(() => undefined));
+  service.getDashboard.mockResolvedValue(DATA());
+  signIn(OWNER);
+  renderWithProviders(<DashboardPageContent />);
+  const figures = await screen.findByTestId('home-figures');
+  expect(figures.querySelector('p div')).toBeNull();
 });

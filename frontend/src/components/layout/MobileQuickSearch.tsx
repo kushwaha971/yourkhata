@@ -12,6 +12,7 @@ import { useTranslation } from 'src/hooks/useTranslation';
 import { useNavigation } from 'modules/DigiKhaato/features/navigation/useNavigation';
 import { PartyQuickSearch } from 'modules/DigiKhaato/features/parties/components/PartyQuickSearch';
 import { useCanSearchParties } from 'modules/DigiKhaato/features/parties/hooks/usePartySearch';
+import { ShopGlobalSearch } from 'modules/DigiKhaato/features/reports/components/ShopGlobalSearch';
 
 /**
  * W4-P — the sheet (vaul, via `UbDrawer`) is fetched on the first tap rather
@@ -47,6 +48,7 @@ export function MobileQuickSearch(): React.JSX.Element | null {
   const close = useCallback(() => setOpen(false), []);
 
   // The party search is the shop's question, not a library's (owner, 4 Oct 2026).
+  if (shell.commandSearch) return <ShopGlobalSearch presentation="mobile" />;
   if (!canSearch || !shell.partySearch) return null;
 
   return (

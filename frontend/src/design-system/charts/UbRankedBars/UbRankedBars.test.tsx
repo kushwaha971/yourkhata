@@ -47,10 +47,12 @@ describe('UbRankedBars', () => {
     expect(screen.queryByText('and 2 more')).not.toBeInTheDocument();
   });
 
-  it('keeps a long party name readable — ellipsis plus the full string', () => {
+  it('wraps a long party name instead of cutting it inside a narrow chart', () => {
     render(<UbRankedBars parties={PARTIES} labelledBy="t" describedBy="d" />);
     const name = screen.getByTitle('Shree Balaji Kirana Stores');
-    expect(name.className).toContain('truncate');
+    // Home browser review found tooltip-only full names still cut on screen.
+    expect(name.className).toContain('break-words');
+    expect(name.className).not.toContain('truncate');
   });
 
   it('speaks each bar as a name and an amount', () => {

@@ -32,6 +32,7 @@ export interface UbFilterSelectProps {
   readonly onChange: (value: string) => void;
   /** Prefix the value with the filter's name ("Status: Unpaid"). Default true. */
   readonly showLabel?: boolean;
+  readonly size?: 'sm' | 'md';
   /** The sheet's close button, on a phone. */
   readonly closeLabel: string;
   readonly className?: string;
@@ -48,6 +49,9 @@ export const FILTER_BUTTON_CLASS = cn(
   'transition-colors duration-fast ease-standard motion-reduce:transition-none',
   'outline-none focus-visible:shadow-focus disabled:cursor-not-allowed disabled:opacity-60'
 );
+
+export const COMPACT_FILTER_BUTTON_CLASS =
+  'ds-caption h-8 gap-1 px-2 sm:h-8 sm:gap-1 sm:px-2 [&>svg]:h-3 [&>svg]:w-3';
 
 export const filterButtonTone = (applied: boolean): string =>
   applied
@@ -104,6 +108,7 @@ function UbFilterSelectBase({
   value,
   onChange,
   showLabel = true,
+  size = 'md',
   closeLabel,
   className,
 }: Readonly<UbFilterSelectProps>) {
@@ -140,6 +145,7 @@ function UbFilterSelectBase({
       onClick={() => setOpen((was) => !was)}
       className={cn(
         FILTER_BUTTON_CLASS,
+        size === 'sm' && COMPACT_FILTER_BUTTON_CLASS,
         filterButtonTone(value !== '' && !!spec.anyLabel),
         className
       )}

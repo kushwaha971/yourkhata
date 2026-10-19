@@ -22,9 +22,14 @@ import { clearCookie, LOCALE_COOKIE, readCookie } from 'src/utils/cookieUtils';
  * tab, `MorePageContent.test.tsx`).
  */
 jest.mock('modules/DigiKhaato/features/auth/api/authService');
-jest.mock('modules/DigiKhaato/features/parties/api/partyService', () => ({
-  ...jest.requireActual('modules/DigiKhaato/features/parties/api/partyService'),
-  listParties: jest.fn(),
+jest.mock('modules/DigiKhaato/features/sales/api/salesService', () => ({
+  listInvoices: jest.fn().mockResolvedValue({ rows: [], pageSize: 25, total: 0 }),
+}));
+jest.mock('modules/DigiKhaato/features/purchases/api/purchaseBillService', () => ({
+  listPurchaseBills: jest.fn().mockResolvedValue({ rows: [], pageSize: 25, total: 0 }),
+}));
+jest.mock('modules/DigiKhaato/features/inventory/api/itemService', () => ({
+  searchItems: jest.fn().mockResolvedValue({ rows: [], hasMore: false }),
 }));
 
 // The shell mounts the notification bell, which polls `getUnreadCount`. Left
@@ -52,7 +57,9 @@ const authService = jest.requireMock('modules/DigiKhaato/features/auth/api/authS
   logout: jest.Mock;
 };
 
-const partyService = jest.requireMock('modules/DigiKhaato/features/parties/api/partyService') as {
+const partyService = jest.requireMock(
+  'src/modules/DigiKhaato/features/parties/api/partyService'
+) as {
   listParties: jest.Mock;
 };
 
@@ -105,6 +112,16 @@ const mobileHeader = (): HTMLElement => {
 
 beforeEach(() => {
   jest.clearAllMocks();
+  jest.spyOn(window, 'matchMedia').mockImplementation((query) => ({
+    matches: query.includes('max-width: 1023'),
+    media: query,
+    onchange: null,
+    addEventListener: () => undefined,
+    removeEventListener: () => undefined,
+    addListener: () => undefined,
+    removeListener: () => undefined,
+    dispatchEvent: () => false,
+  }));
   authService.logout.mockResolvedValue(undefined);
   clearCookie(LOCALE_COOKIE);
   store.dispatch(localeChanged('en'));
@@ -126,19 +143,20 @@ describe('UAT D2 — the phone and tablet chrome', () => {
     expect(
       header.queryByRole('button', { name: 'Account menu for Suresh Kumar' })
     ).not.toBeInTheDocument();
-    expect(header.getByRole('button', { name: 'Search parties' })).toBeInTheDocument();
+    expect(header.getByRole('button', { name: 'Find or start' })).toBeInTheDocument();
   });
 
-  it('has a search button that opens the party quick search, focused', async () => {
+  it('opens the shared Shop command search from the mobile header, focused', async () => {
     /* D2: the party search was in the same desktop-only bar, so a phone had no
        way to find a khata except by scrolling the list. */
     const user = userEvent.setup();
     renderShell();
 
-    await user.click(within(mobileHeader()).getByRole('button', { name: 'Search parties' }));
+    await user.click(within(mobileHeader()).getByRole('button', { name: 'Find or start' }));
 
-    const sheet = await screen.findByRole('dialog', { name: 'Search parties' });
-    const input = within(sheet).getByRole('combobox', { name: 'Search parties' });
+    const input = await screen.findByPlaceholderText(
+      'Find or start: a name, item, bill number or amount'
+    );
     expect(input).toHaveFocus();
   });
 
@@ -155,43 +173,18 @@ describe('UAT D2 — the phone and tablet chrome', () => {
     // `/parties` (this file's path) is not a menu destination, so the phone
     // header carries Back where the brand would be (MobileBackButton).
     expect(header.getByRole('button', { name: 'Back' })).toBeInTheDocument();
-    expect(header.queryByRole('button', { name: 'Search parties' })).not.toBeInTheDocument();
+    expect(header.queryByRole('button', { name: 'Find or start' })).not.toBeInTheDocument();
     expect(partyService.listParties).not.toHaveBeenCalled();
   });
 
-  it('shows a result’s mobile grouped as the party list does (D-L2)', async () => {
-    /* Prevents D-L2: the phone search sheet printed the stored E.164
-       "+919876543210" under the party's name, while the party row, the khata
-       header and the reminder sheet all show "+91 98765 43210" — three
-       spellings of one number on the screen a merchant uses to check they
-       have the right Ramesh. */
-    partyService.listParties.mockResolvedValue({
-      rows: [
-        {
-          id: 'p1',
-          name: 'Ramesh Traders',
-          displayCode: 'C-001',
-          mobile: '+919876543210',
-          isCustomer: true,
-          isSupplier: false,
-          balance: '1200.00',
-          status: 'active',
-          lastActivityAt: null,
-          tags: [],
-        },
-      ],
-      meta: { page: 1, pageSize: 8, total: 1, totalPages: 1 },
-    });
-    const user = userEvent.setup();
+  it('has one visible Shop header command trigger, without the obsolete party-only trigger', () => {
     renderShell();
-
-    await user.click(within(mobileHeader()).getByRole('button', { name: 'Search parties' }));
-    const sheet = within(await screen.findByRole('dialog', { name: 'Search parties' }));
-    await user.type(sheet.getByRole('combobox', { name: 'Search parties' }), 'Ram');
-
-    const option = await sheet.findByRole('option', { name: /Ramesh Traders/ });
-    expect(within(option).getByText('+91 98765 43210')).toBeInTheDocument();
-    expect(within(option).queryByText('+919876543210')).not.toBeInTheDocument();
+    expect(within(mobileHeader()).getAllByRole('button', { name: 'Find or start' })).toHaveLength(
+      1
+    );
+    expect(
+      within(mobileHeader()).queryByRole('button', { name: 'Search parties' })
+    ).not.toBeInTheDocument();
   });
 });
 

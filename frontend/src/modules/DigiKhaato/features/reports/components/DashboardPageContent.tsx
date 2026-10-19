@@ -2,14 +2,11 @@
 
 import { useEffect } from 'react';
 
-import dynamic from 'next/dynamic';
-
 import { FilePlus, RefreshCw } from 'lucide-react';
 
 import {
   UbActionLink,
   UbButton,
-  UbGrid,
   UbMoreActions,
   UbPageHeader,
   UbPageShell,
@@ -33,22 +30,8 @@ import { isFirstUse } from '../view-model/dashboardDisplay';
 
 import { FirstUseChecklist } from './DashboardLists';
 import { DashboardModuleSections } from './DashboardModuleSections';
-import {
-  ActivityAndLowStock,
-  CustomersPanel,
-  DashboardTodayRow,
-  failed,
-  NeedsAttention,
-  SuppliersPanel,
-} from './DashboardPanels';
 import { ReportStateBody } from './ReportStateBody';
-
-/* The graphs arrive after the tiles: a landing screen waits for nothing it
-   does not need to answer "what do I collect today". */
-const DashboardChartsLazy = dynamic(
-  () => import('./DashboardCharts').then((module) => module.DashboardCharts),
-  { ssr: false }
-);
+import { ShopHomeWorkspace, ShopHomeLoading } from './ShopHomeWorkspace';
 
 /**
  * RPT-01 — `/dashboard`, the landing screen: "what do I have to collect, what
@@ -106,6 +89,9 @@ export function DashboardPageContent(): React.JSX.Element {
   const canPay = hasModule('payments') && can('payments.payment.write');
   const canSpend = hasModule('expenses') && can('expenses.expense.write');
   const more: UbMenuListRow[] = [
+    ...(hasModule('inventory') && can('inventory.item.read')
+      ? [{ key: 'items', label: t('reports.home.items'), href: ROUTES.ITEMS }]
+      : []),
     ...(canBuy
       ? [
           {
@@ -141,62 +127,64 @@ export function DashboardPageContent(): React.JSX.Element {
 
   return (
     <UbPageShell>
-      <UbPageHeader
-        /* The title is the business's name, and a name is not cut: "Shree
+      {(!data || dayOne) && (
+        <UbPageHeader
+          /* The title is the business's name, and a name is not cut: "Shree
            Ganesh Kirana Stores" read "Shree Ganesh Ki…" on a 360 px phone. */
-        wrapTitle
-        title={
-          dayOne
-            ? firstName
-              ? t('reports.dashboard.welcome', { name: firstName })
-              : t('reports.dashboard.welcomeNoName')
-            : tenant?.name || t('reports.dashboard.title')
-        }
-        /* WP-06 DASH-01 — whose Shop, which day, and how fresh: "Shop · Today,
+          wrapTitle
+          title={
+            dayOne
+              ? firstName
+                ? t('reports.dashboard.welcome', { name: firstName })
+                : t('reports.dashboard.welcomeNoName')
+              : t('reports.home.title')
+          }
+          /* WP-06 DASH-01 — whose Shop, which day, and how fresh: "Shop · Today,
            16/10/2026 · Updated 30 s ago". FR-8's age is kept at every width. */
-        subtitle={
-          data && !dayOne
-            ? t('reports.dashboard.header.subtitle', {
-                date: formatBusinessDate(data.asOf),
-                updated: updatedLabel(t, dash.secondsAgo),
-              })
-            : undefined
-        }
-        actions={
-          dayOne ? undefined : (
-            <UbStack direction="row" align="center" className="gap-2">
-              {canBill && (
-                <UbActionLink
-                  href={`${ROUTES.SALES_INVOICES}/new`}
-                  variant="primary"
-                  size="sm"
-                  icon={<FilePlus className="h-4 w-4" aria-hidden />}
+          subtitle={
+            data && !dayOne
+              ? `${tenant?.name ?? ''} · ${t('reports.dashboard.header.subtitle', {
+                  date: formatBusinessDate(data.asOf),
+                  updated: updatedLabel(t, dash.secondsAgo),
+                })}`
+              : undefined
+          }
+          actions={
+            dayOne ? undefined : (
+              <UbStack direction="row" align="center" className="gap-2">
+                {canBill && (
+                  <UbActionLink
+                    href={`${ROUTES.SALES_INVOICES}/new`}
+                    variant="primary"
+                    size="md"
+                    icon={<FilePlus className="h-4 w-4" aria-hidden />}
+                  >
+                    {t('reports.dashboard.quick.newBill')}
+                  </UbActionLink>
+                )}
+                <UbMoreActions
+                  label={t('reports.dashboard.quick.more')}
+                  title={t('reports.dashboard.quick.moreTitle')}
+                  closeLabel={t('common.action.close')}
+                  rows={more}
+                  size="md"
+                />
+                <UbButton
+                  variant="secondary"
+                  size="md"
+                  icon={<RefreshCw className="h-4 w-4" aria-hidden />}
+                  iconOnly
+                  busy={dash.refreshing}
+                  busyLabel={t('reports.dashboard.refreshing')}
+                  onClick={dash.refresh}
                 >
-                  {t('reports.dashboard.quick.newBill')}
-                </UbActionLink>
-              )}
-              <UbMoreActions
-                label={t('reports.dashboard.quick.more')}
-                title={t('reports.dashboard.quick.moreTitle')}
-                closeLabel={t('common.action.close')}
-                rows={more}
-                size="sm"
-              />
-              <UbButton
-                variant="secondary"
-                size="sm"
-                icon={<RefreshCw className="h-4 w-4" aria-hidden />}
-                iconOnly
-                busy={dash.refreshing}
-                busyLabel={t('reports.dashboard.refreshing')}
-                onClick={dash.refresh}
-              >
-                {t('reports.dashboard.refresh')}
-              </UbButton>
-            </UbStack>
-          )
-        }
-      />
+                  {t('reports.dashboard.refresh')}
+                </UbButton>
+              </UbStack>
+            )
+          }
+        />
+      )}
       <UbStack gap={4} data-testid="dashboard-screen">
         {/* The state half of the report shell only: the landing page must not
             download the period picker's calendar to draw its skeleton. */}
@@ -205,7 +193,7 @@ export function DashboardPageContent(): React.JSX.Element {
           error={dash.error}
           onRetry={dash.retry}
           loadingLabel={t('reports.dashboard.loading')}
-          skeletonTiles={8}
+          loadingContent={<ShopHomeLoading label={t('reports.dashboard.loading')} />}
         >
           {data && (
             <UbStack gap={4}>
@@ -221,22 +209,13 @@ export function DashboardPageContent(): React.JSX.Element {
                 />
               ) : (
                 <>
-                  <DashboardTodayRow data={data} onRetry={dash.refresh} t={t} />
-                  {(data.tiles.toCollect || data.tiles.toPay || failed(data, ['party_tiles'])) && (
-                    <UbGrid columns={{ base: 1, lg: 2 }} gap={4}>
-                      <CustomersPanel data={data} onRetry={dash.refresh} t={t} />
-                      <SuppliersPanel data={data} onRetry={dash.refresh} t={t} />
-                    </UbGrid>
-                  )}
-                  <NeedsAttention data={data} onRetry={dash.refresh} t={t} />
-                  <ActivityAndLowStock data={data} onRetry={dash.refresh} t={t} />
+                  <ShopHomeWorkspace
+                    data={data}
+                    refresh={dash.refresh}
+                    secondsAgo={dash.secondsAgo}
+                  />
                 </>
               )}
-
-              {/* The charts, below the figures and the lists rather than above
-                  them (approved design, 12 Oct 2026): useful when there is time
-                  to look, not the first thing on the screen. */}
-              {!dayOne && <DashboardChartsLazy refreshKey={data.generatedAt} />}
 
               {/* A10 — the modules' sections, below the core tiles and lists. */}
               <DashboardModuleSections sections={data.sections} onRetry={dash.refresh} t={t} />

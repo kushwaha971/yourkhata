@@ -223,3 +223,7 @@ export const formatChartDateShort = (isoDate: string): string => {
 const AXIS_FORMAT = new Intl.NumberFormat('en-IN', { maximumFractionDigits: 0 });
 export const formatAxisAmount = (value: number): string =>
   AXIS_FORMAT.format(Number.isFinite(value) ? value : 0);
+
+/** Space for full Indian-grouped axis labels; previously ₹5 lakh clipped at the SVG edge. */
+export const axisLabelGutter = (values: readonly number[]): number =>
+  Math.max(56, ...values.map((value) => formatAxisAmount(value).length * 10 + 16));

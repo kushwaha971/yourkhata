@@ -12,6 +12,7 @@ from django.urls import path, re_path
 from apps.reports.views.aging import PayablesAgingView, ReceivablesAgingView
 from apps.reports.views.dashboard import (
     DashboardChartsView,
+    DashboardCounterView,
     DashboardView,
     ItemLastRateView,
     ItemTradeView,
@@ -45,6 +46,7 @@ urlpatterns = [
     ),
     # RPT-01 / RPT-02 / RPT-05 / RPT-06 (W4-A).
     path("dashboard", DashboardView.as_view(), name="report-dashboard"),
+    path("dashboard/counter", DashboardCounterView.as_view(), name="report-dashboard-counter"),
     path("dashboard/charts", DashboardChartsView.as_view(), name="report-dashboard-charts"),
     path("items/<uuid:item_id>/trade", ItemTradeView.as_view(), name="report-item-trade"),
     path(

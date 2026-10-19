@@ -31,6 +31,48 @@ Newest first. Each decision says who made it and when. "Open" means it waits for
 | R-DEC-09 | Desktop sidebar: do NOT list the apps (Library, Lending, Shop, Udhaar book) in the rail. Show only the open app's own sections, with ONE button at the top (the open app's name and icon, "Switch app") that opens a page listing every app the person can open. Supersedes the "Apps group" of 04 §3 and 07-screens/02 "Desktop sidebar" built in F4 (11a2b10). Owner's words: "why on sidebar be default we are shown tinat Library/Lending instead of that in that button there is something like module/feature what when clikc on that open next page and where see all the list". The phone App button and App sheet are unchanged. Built the same day (see Progress). | decided, built | owner, 18 Oct 2026 05:42 UTC |
 | R-DEC-07 | Every UI piece built (form, card, drawer, sheet, dialog, list, any screen) is delivered with screenshots of it on a phone and on desktop, in each of its states, before the next piece starts. See 11 "Screenshots after each piece". | decided | owner, 17 Oct 2026 |
 
+## R-DEC-21 · Home must follow the artifact, including Find or start
+
+Owner, 19 Oct 2026; clarification recorded 17:22 UTC. Owner's words: “that dashboard design is something else and I’m looking for that”, “and also that global search in that search Find or start:a name, item, bill number or amount”, “even that Home ui want same”; then “ok proceed”. Implement the artifact hierarchy for Shop Home using existing components and authorized sources. The previous identity-only search / phone disclosure composition is superseded. This is not approval to invent hourly/repeat figures or settle Customer/Supplier balances. No Library/Lending contract changes.
+
+## R-DEC-22 · Header search and complete artifact Home
+
+Owner, 19 Oct 2026, approximately 17:36–17:38 UTC: “move that search to above on
+global search replace to that and make it global search”, “on header”, “in
+artcrafe there is graph and I want that same ui”, “each and everything as per
+artcraft”, and “also check that mobile view also that present in artcraft”.
+Supersedes Home-body search and omission of the hourly graph. Implement the
+shared Shop header command, actual hourly/chart-table and reference compositions,
+and their necessary read-only BP-15 data. This interprets the explicit feature
+request as authorization for its read prerequisite, not a quoted approval of
+financial settlement or a change to live Library/Lending contracts.
+
+## R-DEC-23 · Daily graph instead of hourly
+
+Owner, 19 Oct 2026: “instead of horuly use daliy”. Use the existing seven-day
+net-billed daily series in the artifact-style compact graph/table. Supersedes
+the hourly requirement in R-DEC-22 and removes its proposed hourly backend read.
+BP-15 now supplies only missing role-lane/Repeat details; existing daily report
+arithmetic and endpoints remain reused.
+
+## R-DEC-24 · Responsive fidelity and period controls
+
+Owner, 20 Oct 2026: approve period/group filters rather than hourly; require
+Repeat pills matching the artifact, compact same-row graph dropdowns, joined
+mobile 2×2 figure card and filled mobile tabs. The owner also says “same
+responsibile in everywhere in futruer”. This is a continuing quality standard,
+recorded in CLAUDE.md. Use the reference for whole compositions and real flows,
+not just isolated components; expose gaps rather than overstate completion.
+
+## R-DEC-25 · Continue approved Shop work without another phase question
+
+Owner, 20 Oct 2026: “after completion of Home you will direcly procced with next
+without waiting for my permission”. After Home acceptance, commit/push and report
+its evidence, then proceed directly to Bills/POS/customer invoices and the
+remaining approved Shop sequence. Do not stop for routine design/implementation
+confirmation or repeat the phase choice. Genuine new business-rule decisions,
+destructive actions and frozen Library/Lending contracts retain their boundaries.
+
 ## Progress
 
 19 Oct 2026 — BP-11/R-DEC-15: implementing shared-engine app/book authorization using existing grant roles; financial contact projections, ledger reads/exports, payment IDs/targets, reminders and module-owned deposits. New explicit-grant marker prevents clearing the last app from restoring legacy access. Verification and migration/rollout limits: docs/performance/2026-10-19-bp11-book-authorization.md. Verified: 22 security regressions, 149 compatibility/query-budget checks and 7 live HTTP checks. Full backend: 4,621 passed, 16 skipped, one Library wall-clock failure that passed alone afterward; do not relabel the original full run green. Migration applied only locally. Deliver/push before further UI work.
@@ -43,6 +85,8 @@ Newest first. Each decision says who made it and when. "Open" means it waits for
 
 | Date | What was done | Files |
 |---|---|---|
+| 20 Oct 2026 | R-DEC-21–25 Home accepted locally: header command, real Repeat/role lanes, compact period/group graph, joined phone figures and filled tabs; 4,532 frontend tests, 144 Home and 64 measured flow frames, local double-tap/receipt. Backend latest 4,665 pass/16 skip/one existing scale timeout; isolated pass48.66s. Commit/push checkpoint, then Bills/POS without reapproval. | docs/performance/2026-10-19-p5-shop-home.md; 03-shop-home.md; START-NEXT-SESSION-PROMPT.txt |
+| 19 Oct 2026 | Superseded first Home composition (not the accepted delivery): Counter Mode figures, role-separated lanes, shared search/payment/reminder, tabs and lazy Insights; source-scoped local chart state and wrapping chart geometry. Final browser verification and delivery in progress; no new finance API. | docs/performance/2026-10-19-p5-shop-home.md; 07-screens/03-shop-home.md |
 | 19 Oct 2026 | R-DEC-20: fast-forwarded seven Claude commits through 7de05d53; independent BP-14 review corrected legacy/sensitive stored exports, actual source scope, report-aging aliases/private main fields and disabled-app cash history. 12 fail-before assertions; 18 focused security checks; full backend 4,661 passed/16 skipped/zero failures. Home harness now measures loading/first use instead of merely taking PNGs. Next: actual Counter Mode Home rebuild. | docs/performance/2026-10-19-claude-review-access-followup.md; e2e/revamp-home.mjs |
 | 19 Oct 2026 | R-DEC-18, found while reading Shop Home's data: the every-book `cash_in_hand` tile is now only for readers of every book (reproduced Shop-only read of Udhaar + Library cash). Shop Home must use `shop_cash_in_hand`. | docs/performance/2026-10-19-access-audit-imports-exports.md |
 | 19 Oct 2026 | R-DEC-18: business-wide tag rename/merge/delete now needs the right in every contact app (reproduced Library-only rename). R-DEC-18 access defects found in this audit are resolved; Shop Home (R-DEC-16) starts next. | docs/performance/2026-10-19-access-audit-imports-exports.md |
@@ -74,7 +118,12 @@ Newest first. Each decision says who made it and when. "Open" means it waits for
 
 ## Next
 
-**R-DEC-20 resumes work:** pulled seven Claude commits through `7de05d53`. Independent BP-14 review reproduced additional legacy/sensitive export, aging alias/field and disabled-app historical-cash gaps; see the dated review follow-up. BP-14 is verified (full backend 4,661 passed, 16 skipped, zero failures); deliver that checkpoint, then continue Shop Home under R-DEC-16 using the actual Counter Mode reference and verified API sources. Do not treat a Home screenshot harness as a redesign. No phase-choice reapproval needed; financial feature proposals retain their individual approval boundaries.
+**R-DEC-25 current:** Home implementation and local acceptance are complete;
+finish its commit/push/report checkpoint, then proceed immediately to the Bills
+register/POS/customer invoice family in 07-screens/09. R-DEC-21–24 corrections
+(header search, period/group graph, reference mobile geometry) and exact test/
+feature limits are in the Home report. Do not redo Home or ask the phase choice.
+BP-14 is delivered as bab3dd24; BP-15 is additive read-only Home data.
 
 **R-DEC-16 active:** Customer register and the corrected Shop person piece are delivered (`06ac3b23`); BP-11 book authorization is delivered (`4e6d7b37`). Suppliers is delivered as `b0716d46`; after the R-DEC-18 access checkpoint continue Shop Home, then the remaining Shop screen families, then another app. Do not ask those phase/BP-09 approvals again. **R-DEC-13 supersedes the two-figure person-page design:** Customers shows only customer money and Receive/New bill; Suppliers only supplier money and Pay/Purchase bill; Udhaar independent. Current Shop facts are BP-09. Historical role-specific statements/aging are proposed BP-10, and shared-book authorization audit is BP-11 (implemented and pushed under R-DEC-15); BP-10 remains unapproved; the mixed Shop statement link is withheld from these views. Reports: `docs/performance/2026-10-18-p5-customers.md` and `docs/performance/2026-10-18-p5-shop-person.md`.
 

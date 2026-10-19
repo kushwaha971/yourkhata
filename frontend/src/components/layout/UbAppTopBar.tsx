@@ -6,6 +6,7 @@ import { UbBox } from 'src/design-system';
 import { useNavigation } from 'modules/DigiKhaato/features/navigation/useNavigation';
 import { NotificationBell } from 'modules/DigiKhaato/features/notifications/components/NotificationBell';
 import { PartyQuickSearch } from 'modules/DigiKhaato/features/parties/components/PartyQuickSearch';
+import { ShopGlobalSearch } from 'modules/DigiKhaato/features/reports/components/ShopGlobalSearch';
 
 /**
  * The desktop app bar — the owner asked for a header across the top of every
@@ -32,7 +33,13 @@ export function UbAppTopBar(): React.JSX.Element {
       data-print="hide"
       className="sticky top-0 z-30 hidden h-14 shrink-0 items-center justify-between gap-6 border-b border-border-hairline bg-surface-card px-6 lg:flex"
     >
-      {shell.partySearch ? <PartyQuickSearch book={book} className="max-w-[360px]" /> : <UbBox />}
+      {shell.commandSearch ? (
+        <ShopGlobalSearch presentation="desktop" />
+      ) : shell.partySearch ? (
+        <PartyQuickSearch book={book} className="max-w-[360px]" />
+      ) : (
+        <UbBox />
+      )}
       <UbBox className="flex items-center gap-2">
         <NotificationBell />
         <AccountMenu />

@@ -21,6 +21,7 @@ import type { UbAsyncComboboxOption, UbAsyncComboboxPaging } from './UbAsyncComb
  * `primitives/deferredModule.ts`). The trigger stays in `UbAsyncCombobox.tsx`.
  */
 export interface UbAsyncComboboxPanelProps {
+  readonly wrapLabels?: boolean;
   readonly query: string;
   readonly onQueryChange: (query: string) => void;
   readonly options: readonly UbAsyncComboboxOption[];
@@ -37,6 +38,7 @@ export interface UbAsyncComboboxPanelProps {
 }
 
 export function UbAsyncComboboxPanel({
+  wrapLabels,
   query,
   onQueryChange,
   options,
@@ -83,7 +85,11 @@ export function UbAsyncComboboxPanel({
               onSelect={() => onPick(option)}
               className="ds-body flex-col items-start gap-0"
             >
-              <span className="w-full truncate">{option.label}</span>
+              <span
+                className={wrapLabels ? 'w-full whitespace-normal break-words' : 'w-full truncate'}
+              >
+                {option.label}
+              </span>
               {option.description && (
                 <span className="ds-body-s-regular w-full truncate text-text-tertiary">
                   {option.description}

@@ -12,7 +12,10 @@ import type { Party } from '../types/party.types';
 export function ShopCustomerReminder({
   party,
   onClose,
-}: Readonly<{ party: Party; onClose: () => void }>): React.JSX.Element {
+}: Readonly<{
+  party: Pick<Party, 'id' | 'name' | 'mobile'>;
+  onClose: () => void;
+}>): React.JSX.Element {
   const { t } = useTranslation();
   const labels = useShareSheetLabels(true);
   return (
@@ -30,3 +33,6 @@ export function ShopCustomerReminder({
     />
   );
 }
+
+// This drawer can open from Home as well as the party register.
+import 'src/i18n/catalogues/parties';

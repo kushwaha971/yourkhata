@@ -94,6 +94,8 @@ export interface AppManifest {
   readonly shell?: {
     /** The top bar's party search (the Shop's customers and suppliers). */
     readonly partySearch?: boolean;
+    /** The app opts into the permission-scoped command search in both headers. */
+    readonly commandSearch?: boolean;
   };
 }
 

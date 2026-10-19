@@ -174,3 +174,29 @@ describe('UbAsyncCombobox option detail', () => {
     expect(detail).toHaveClass('break-words');
   });
 });
+
+/** Home command names were ellipsized, hiding which contact would be paid. */
+it('wraps command labels when requested', async () => {
+  render(
+    <UbAsyncCombobox
+      aria-label="Command"
+      value={null}
+      query=""
+      onQueryChange={() => undefined}
+      wrapLabels
+      options={[
+        {
+          value: 'p',
+          label: 'Receive ₹2,000 from Radhe Krishna Enterprises Electrical and Electronics',
+        },
+      ]}
+      onSelect={() => undefined}
+    />
+  );
+  await userEvent.click(screen.getByRole('combobox', { name: 'Command' }));
+  const label = await screen.findByText(
+    'Receive ₹2,000 from Radhe Krishna Enterprises Electrical and Electronics'
+  );
+  expect(label).not.toHaveClass('truncate');
+  expect(label).toHaveClass('break-words');
+});

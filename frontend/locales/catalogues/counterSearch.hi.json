@@ -1,0 +1,16 @@
+{
+  "shopSearch.choosePerson": "भुगतान फ़ॉर्म में व्यक्ति चुनें",
+  "shopSearch.customer": "ग्राहक · दुकान का बही",
+  "shopSearch.draft": "ड्राफ्ट बिल",
+  "shopSearch.empty": "कुछ नहीं मिला। नाम, सामान या बिल नंबर लिखें।",
+  "shopSearch.item": "{name} के साथ नया बिल",
+  "shopSearch.newBill": "{name} का नया बिल",
+  "shopSearch.open": "{name} खोलें",
+  "shopSearch.pay": "{name} को {amount} दें",
+  "shopSearch.payAmount": "{amount} दें",
+  "shopSearch.price": "सामान का बिक्री मूल्य {amount}",
+  "shopSearch.receive": "{name} से {amount} लें",
+  "shopSearch.receiveAmount": "{amount} लें",
+  "shopSearch.review": "भरा फ़ॉर्म खुलेगा · अभी कुछ सेव नहीं हुआ",
+  "shopSearch.supplier": "सप्लायर · दुकान का बही"
+}

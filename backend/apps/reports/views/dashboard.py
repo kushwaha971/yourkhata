@@ -328,3 +328,32 @@ class ItemLastRateView(TenantScopeMixin, APIView):
         response = StandardResponse.ok(body)
         response["Cache-Control"] = "private, no-store"
         return response
+
+
+class DashboardCounterView(TenantScopeMixin, APIView):
+    """BP-15 additive, tenant/Shop-grant scoped read; no snapshot or writes."""
+
+    permission_classes = [
+        IsAuthenticated,
+        ModuleEnabled(ModuleCode.REPORTS),
+        HasPermission("reports.basic.read"),
+    ]
+    throttle_classes = [ScopedUserRateThrottle]
+
+    def get(self, request: Any, *args: Any, **kwargs: Any) -> Any:
+        from apps.common.book_access import require_book
+        from apps.common.permissions_registry import permissions_for_app
+        from apps.reports.selectors.counter import counter_data
+
+        require_book(request, "shop", "reports.basic.read")
+        tenant = self.get_tenant()
+        granted = permissions_for_app(tenant._ub_membership, "shop")
+        response = StandardResponse.ok(
+            counter_data(
+                tenant=tenant,
+                granted=granted,
+                modules=frozenset(tenant.enabled_modules or ()),
+            )
+        )
+        response["Cache-Control"] = "private, no-store"
+        return response

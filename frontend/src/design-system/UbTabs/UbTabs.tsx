@@ -29,6 +29,7 @@ export interface UbTabsProps<T extends string> {
   readonly className?: string;
   /** `fit` — tabs as wide as their labels; `fill` (default) shares the row. */
   readonly layout?: 'fill' | 'fit';
+  readonly appearance?: 'underline' | 'segmented';
   /** A control at the right end of the tab row, scoping every tab. */
   readonly trailing?: ReactNode;
 }
@@ -41,6 +42,7 @@ export function UbTabs<T extends string>({
   children,
   className,
   layout,
+  appearance,
   trailing,
 }: Readonly<UbTabsProps<T>>): React.JSX.Element {
   return (
@@ -51,6 +53,7 @@ export function UbTabs<T extends string>({
       ariaLabel={ariaLabel}
       className={className}
       layout={layout}
+      appearance={appearance}
       trailing={trailing}
     >
       {children}

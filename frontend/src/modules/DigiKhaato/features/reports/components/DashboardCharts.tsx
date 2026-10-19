@@ -42,6 +42,7 @@ import {
   type TopBy,
   type TrendMetric,
 } from '../api/dashboardChartsService';
+import { groupLabels, intlLocale } from '../view-model/chartDisplay';
 
 /**
  * The dashboard's graphs (owner, 6 Oct 2026: "see how on dashboard that
@@ -58,6 +59,8 @@ import {
  *
  * Loaded with `dynamic()` from the dashboard, so the tiles paint first.
  */
+export { groupLabels } from '../view-model/chartDisplay';
+
 type Load =
   | { readonly status: 'loading' }
   | { readonly status: 'failed'; readonly message: string | null }
@@ -66,37 +69,6 @@ type Load =
 const TREND_METRICS: readonly TrendMetric[] = ['sales', 'purchases', 'profit', 'expenses'];
 const DEFAULT_METRICS: readonly TrendMetric[] = ['sales', 'purchases'];
 const MAX_METRICS = 3;
-
-const intlLocale = (locale: string): string => (locale === 'hi' ? 'hi-IN' : 'en-IN');
-
-/** Axis ticks and tooltip headings, in the reader's language. */
-export const groupLabels = (
-  date: string,
-  group: ChartGroup,
-  locale: string,
-  t?: TranslateFn
-): { label: string; longLabel: string } => {
-  const day = new Date(`${date}T00:00:00`);
-  const lang = intlLocale(locale);
-  const fmt = (options: Intl.DateTimeFormatOptions) =>
-    new Intl.DateTimeFormat(lang, options).format(day);
-  if (group === 'year')
-    return { label: fmt({ year: 'numeric' }), longLabel: fmt({ year: 'numeric' }) };
-  if (group === 'month') {
-    return { label: fmt({ month: 'short' }), longLabel: fmt({ month: 'long', year: 'numeric' }) };
-  }
-  if (group === 'week') {
-    const start = fmt({ day: 'numeric', month: 'short' });
-    return {
-      label: fmt({ day: '2-digit', month: '2-digit' }),
-      longLabel: t ? t('reports.charts.weekOf', { date: start }) : start,
-    };
-  }
-  return {
-    label: fmt({ day: '2-digit', month: '2-digit' }),
-    longLabel: fmt({ weekday: 'short', day: 'numeric', month: 'short' }),
-  };
-};
 
 /** The server's message for the control it names, if the read was refused. */
 const refusal = (error: unknown): string | null => {
@@ -107,7 +79,13 @@ const refusal = (error: unknown): string | null => {
 
 export function DashboardCharts({
   refreshKey,
-}: Readonly<{ refreshKey?: string }>): React.JSX.Element | null {
+  overview,
+  onOverviewRetry,
+}: Readonly<{
+  refreshKey?: string;
+  overview?: Load;
+  onOverviewRetry?: () => void;
+}>): React.JSX.Element | null {
   const { t } = useTranslation();
   const locale = useAppSelector(selectLocale);
   const today = isoToday();
@@ -119,14 +97,17 @@ export function DashboardCharts({
     topBy: 'value',
   });
   const [attempt, setAttempt] = useState(0);
-  const [load, setLoad] = useState<Load>({ status: 'loading' });
+  const [localLoad, setLoad] = useState<Load>({ status: 'loading' });
   const [metrics, setMetrics] = useState<readonly TrendMetric[]>(DEFAULT_METRICS);
   /** The range's real dates, from the last answer — what greys a grouping out. */
   const [span, setSpan] = useState<{ from: string; to: string } | null>(null);
 
+  const useOverview =
+    !!overview && query.range === '7d' && query.group === null && query.topBy === 'value';
+  const load = useOverview ? overview : localLoad;
   const waiting = query.range === 'custom' && (!query.from || !query.to);
   useEffect(() => {
-    if (waiting) return undefined;
+    if (waiting || useOverview) return undefined;
     const controller = new AbortController();
     getDashboardCharts(query, controller.signal)
       .then((charts) => {
@@ -137,7 +118,7 @@ export function DashboardCharts({
         if (!controller.signal.aborted) setLoad({ status: 'failed', message: refusal(error) });
       });
     return () => controller.abort();
-  }, [query, attempt, refreshKey, waiting]);
+  }, [query, attempt, refreshKey, waiting, useOverview]);
 
   const update = (patch: Partial<ChartQuery>) => {
     setLoad({ status: 'loading' });
@@ -145,7 +126,9 @@ export function DashboardCharts({
   };
 
   const rangeDates =
-    query.range === 'custom' && query.from && query.to ? { from: query.from, to: query.to } : span;
+    query.range === 'custom' && query.from && query.to
+      ? { from: query.from, to: query.to }
+      : (span ?? (load.status === 'ready' ? { from: load.charts.from, to: load.charts.to } : null));
   const presets = useMemo(
     () => CHART_RANGES.map((value) => ({ value, label: t(`reports.charts.range.${value}`) })),
     [t]
@@ -231,8 +214,11 @@ export function DashboardCharts({
               size="sm"
               variant="secondary"
               onClick={() => {
-                setLoad({ status: 'loading' });
-                setAttempt((n) => n + 1);
+                if (useOverview && onOverviewRetry) onOverviewRetry();
+                else {
+                  setLoad({ status: 'loading' });
+                  setAttempt((n) => n + 1);
+                }
               }}
             >
               {t('reports.charts.retry')}
@@ -241,7 +227,7 @@ export function DashboardCharts({
         </UbStack>
       )}
       {!waiting && charts && (
-        <UbGrid columns={{ base: 1, lg: 2 }} gap={4}>
+        <UbGrid columns={{ base: 1, lg: overview ? 1 : 2 }} gap={4}>
           {charts.trend && (
             <TrendCard
               block={charts.trend}

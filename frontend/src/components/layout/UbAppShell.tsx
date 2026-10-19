@@ -17,6 +17,7 @@ import { selectAppName } from 'src/redux/slice/whiteLabelSlice';
 
 import { useLandingPath } from 'modules/DigiKhaato/features/navigation/useLandingPath';
 import { useMobileNav } from 'modules/DigiKhaato/features/navigation/useMobileNav';
+import { useNavigation } from 'modules/DigiKhaato/features/navigation/useNavigation';
 import { NotificationBell } from 'modules/DigiKhaato/features/notifications/components/NotificationBell';
 import { useNotificationPoll } from 'modules/DigiKhaato/features/notifications/hooks/useNotificationPoll';
 import { PlanLimitDialog } from 'modules/DigiKhaato/features/plan/components/PlanLimitDialog';
@@ -66,6 +67,7 @@ export function UbAppShell({ children }: Readonly<{ children: ReactNode }>): Rea
   const landing = useLandingPath();
   const impersonating = useAppSelector(selectImpersonation) !== null;
   const mobileNav = useMobileNav();
+  const { shell } = useNavigation();
 
   return (
     <UbStack direction="row" className="min-h-dvh w-full bg-canvas">
@@ -93,7 +95,7 @@ export function UbAppShell({ children }: Readonly<{ children: ReactNode }>): Rea
           align="center"
           gap={2}
           data-print="hide"
-          className="h-14 shrink-0 border-b border-border-hairline bg-surface-card px-4 lg:hidden"
+          className={`shrink-0 border-b border-border-hairline bg-surface-card px-4 lg:hidden ${shell.commandSearch ? 'min-h-14 flex-wrap py-2' : 'h-14'}`}
         >
           {/* A top-level screen shows the brand; a detail or task screen shows
               Back in its place. The bottom nav is there on most of them too (all but

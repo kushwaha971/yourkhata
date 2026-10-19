@@ -10,6 +10,7 @@ import {
   UbActionLink,
   UbAmount,
   UbButton,
+  UbBox,
   UbCard,
   UbDivider,
   UbLink,
@@ -47,10 +48,15 @@ const PartyReminderSheetLazy = /* @__PURE__ */ dynamic(() =>
 export function RecentActivityList({
   items,
   t,
-}: Readonly<{ items: readonly ActivityItem[]; t: TranslateFn }>): React.JSX.Element {
+  counter = false,
+}: Readonly<{
+  items: readonly ActivityItem[];
+  t: TranslateFn;
+  counter?: boolean;
+}>): React.JSX.Element {
   const timeZone = useAppSelector(selectTenantTimezone);
-  return (
-    <UbCard title={t('reports.dashboard.activity.title')} padded>
+  const content = (
+    <>
       {items.length === 0 ? (
         <UbText variant="body-sm" tone="tertiary">
           {t('reports.dashboard.activity.empty')}
@@ -60,19 +66,93 @@ export function RecentActivityList({
           {items.map((item, index) => {
             const title = activityTitle(item, t);
             const href = sourceHref(item.source, item.number, item.type);
+            if (counter) {
+              const clock = new Intl.DateTimeFormat('en-IN', {
+                hour: '2-digit',
+                minute: '2-digit',
+                hour12: false,
+                timeZone: timeZone ?? 'Asia/Kolkata',
+              }).format(new Date(item.at));
+              const kind = activityTitle(item, t, false)
+                .replace(item.number ?? '', '')
+                .trim();
+              const outgoing = ['payment_out', 'expense'].includes(item.type),
+                incoming = item.type === 'payment_in';
+              return (
+                <UbStack
+                  as="li"
+                  key={item.id}
+                  direction="row"
+                  align="center"
+                  className="gap-3 border-b border-border-hairline py-3 last:border-b-0"
+                >
+                  <UbText variant="caption" tone="secondary" className="ds-num w-11 shrink-0">
+                    {clock}
+                  </UbText>
+                  <UbText
+                    variant="caption"
+                    tone="secondary"
+                    className="hidden w-16 shrink-0 lg:block"
+                  >
+                    {kind}
+                  </UbText>
+                  <UbStack gap={1} className="min-w-0 flex-1">
+                    <UbText variant="caption" tone="secondary" className="lg:hidden">
+                      {kind}
+                    </UbText>
+                    {href ? (
+                      <UbLink
+                        href={href}
+                        aria-label={title}
+                        underline={false}
+                        tone="primary"
+                        variant="body-sm-medium"
+                        className="whitespace-normal break-words"
+                      >
+                        {item.party?.name ?? title}
+                      </UbLink>
+                    ) : (
+                      <UbText variant="body-sm-medium">{title}</UbText>
+                    )}
+                    <UbText variant="caption" tone="secondary" className="break-words">
+                      {[item.number, activityWhen(item, t, timeZone ?? undefined)]
+                        .filter(Boolean)
+                        .join(' · ')}
+                    </UbText>
+                  </UbStack>
+                  {item.amount && (
+                    <UbBox className="min-w-0 max-w-[42%] shrink-0">
+                      <UbText
+                        variant="body-sm-medium"
+                        className={`ds-num ${item.type.endsWith('_void') ? 'line-through' : outgoing ? 'text-give' : incoming ? 'text-get' : ''}`}
+                      >
+                        {outgoing ? '−' : incoming ? '+' : ''}
+                        {formatInr(item.amount)}
+                      </UbText>
+                    </UbBox>
+                  )}
+                </UbStack>
+              );
+            }
             return (
               <UbStack as="li" key={item.id} gap={0}>
                 {index > 0 && <UbDivider />}
-                <UbStack direction="row" justify="between" align="center" className="gap-3 py-2.5">
+                <UbStack
+                  direction="row"
+                  justify="between"
+                  align="center"
+                  className="flex-wrap gap-3 py-2.5"
+                >
                   <UbListItemText
                     wrapPrimary
-                    className="min-w-0"
+                    className="min-w-0 flex-1 basis-40"
                     primary={
                       href ? (
                         <UbLink
                           href={href}
+                          aria-label={title}
                           variant="body-sm-medium"
-                          className="line-clamp-2 whitespace-normal break-words"
+                          className="whitespace-normal break-words"
                         >
                           {title}
                         </UbLink>
@@ -100,6 +180,13 @@ export function RecentActivityList({
           })}
         </UbStack>
       )}
+    </>
+  );
+  return counter ? (
+    <UbStack>{content}</UbStack>
+  ) : (
+    <UbCard title={t('reports.dashboard.activity.title')} padded>
+      {content}
     </UbCard>
   );
 }
@@ -139,7 +226,12 @@ export function TopDebtorsList({
           {debtors.map((debtor, index) => (
             <UbStack as="li" key={debtor.id} gap={0}>
               {index > 0 && <UbDivider />}
-              <UbStack direction="row" align="center" justify="between" className="gap-3 py-2.5">
+              <UbStack
+                direction="row"
+                align="center"
+                justify="between"
+                className="flex-wrap gap-3 py-2.5"
+              >
                 <UbListItemText
                   wrapPrimary
                   className="min-w-0"
@@ -234,7 +326,12 @@ export function LowStockCard({
           {items.map((item, index) => (
             <UbStack as="li" key={item.id} gap={0}>
               {index > 0 && <UbDivider />}
-              <UbStack direction="row" align="center" justify="between" className="gap-3 py-2.5">
+              <UbStack
+                direction="row"
+                align="center"
+                justify="between"
+                className="flex-wrap gap-3 py-2.5"
+              >
                 <UbListItemText
                   wrapPrimary
                   className="min-w-0"

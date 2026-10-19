@@ -1,0 +1,523 @@
+'use client';
+
+import { useId, useState } from 'react';
+
+import dynamic from 'next/dynamic';
+import { useSearchParams } from 'next/navigation';
+
+import { RefreshCw } from 'lucide-react';
+
+import {
+  useIsMobileLayer,
+  UbActionLink,
+  UbMoreActions,
+  UbBox,
+  UbButton,
+  UbLink,
+  UbStack,
+  UbSkeleton,
+  UbTabs,
+  UbDisclosure,
+  UbText,
+} from 'src/design-system';
+import { UbRankedBars } from 'src/design-system/charts';
+import { useAppSelector } from 'src/hooks/useAppStore';
+import { usePermissions } from 'src/hooks/usePermissions';
+import { useTranslation } from 'src/hooks/useTranslation';
+import { selectNetworkImpaired } from 'src/redux/slice/networkSlice';
+import { selectActiveTenant } from 'src/redux/slice/sessionSlice';
+import { ROUTES } from 'src/routes';
+import { formatBusinessDate } from 'src/utils/dates';
+import { formatInr, isZeroAmount } from 'src/utils/money';
+
+import { useCounter } from '../hooks/useCounter';
+import { useHomeCharts } from '../hooks/useHomeCharts';
+import { advancesLine, tileHref, overdueHref, dueWeekHref } from '../view-model/dashboardDisplay';
+
+import { LowStockCard, RecentActivityList } from './DashboardLists';
+import {
+  DashboardTodayRow,
+  NeedsAttention,
+  PartUnavailable,
+  PARTS,
+  failed,
+} from './DashboardPanels';
+import { HomeBalanceLane } from './HomeBalanceLane';
+import { HomeDaily } from './HomeDaily';
+import { HomeRepeats } from './HomeRepeats';
+
+import type { PaymentContext } from '../../payments/types/payment.types';
+import type { DashboardData } from '../types/reports.types';
+
+const Charts = dynamic(() => import('./DashboardCharts').then((m) => m.DashboardCharts), {
+  ssr: false,
+});
+const Payment = dynamic(() =>
+  import('../../payments/components/PaymentFormDrawer').then((m) => m.PaymentFormDrawer)
+);
+const Remind = dynamic(() =>
+  import('../../parties/components/ShopCustomerReminder').then((m) => m.ShopCustomerReminder)
+);
+
+type HomeTab = 'register' | 'followups' | 'insights';
+type LanePerson = {
+  readonly id: string;
+  readonly name: string;
+  readonly balance: string;
+  readonly mobile?: string | null;
+  readonly mobileMasked?: string;
+};
+
+/** A bounded counter workspace, using the existing Shop flows and source figures. */
+export function ShopHomeWorkspace({
+  data,
+  refresh,
+  secondsAgo = 0,
+}: Readonly<{ data: DashboardData; refresh: () => void; secondsAgo?: number }>): React.JSX.Element {
+  const { t } = useTranslation();
+  const mobile = useIsMobileLayer();
+  const tenant = useAppSelector(selectActiveTenant);
+  const { can, hasModule } = usePermissions();
+  const impaired = useAppSelector(selectNetworkImpaired);
+  const params = useSearchParams();
+  const [tab, setTab] = useState<HomeTab>(params?.get('period') ? 'insights' : 'register');
+  const [payment, setPayment] = useState<PaymentContext | null>(null);
+  const insightsId = useId();
+  const [reminder, setReminder] = useState<LanePerson | null>(null);
+  const counter = useCounter(data.generatedAt);
+  const overview = useHomeCharts(true, data.generatedAt);
+  const canPay = hasModule('payments') && can('payments.payment.write');
+  const canRemind = hasModule('ledger') && can('ledger.entry.read') && can('ledger.reminder.write');
+  const paidOut =
+    overview.status === 'ready' && overview.charts.group === 'day'
+      ? overview.charts.money?.points.find((point) => point.date === data.asOf)?.out
+      : undefined;
+  const figures = [
+    ...(data.tiles.todaySales
+      ? [
+          {
+            key: 'billed',
+            amount: data.tiles.todaySales.amount,
+            caption: t('reports.dashboard.today.salesCaption', {
+              count: data.tiles.todaySales.count,
+            }),
+            href: `${ROUTES.SALES_INVOICES}?period=today`,
+          },
+        ]
+      : []),
+    ...(data.tiles.todayReceived
+      ? [
+          {
+            key: 'received',
+            amount: data.tiles.todayReceived.amount,
+            caption: t('reports.dashboard.today.receivedCaption', {
+              count: data.tiles.todayReceived.count,
+            }),
+            href: `${ROUTES.PAYMENTS}?period=today&tab=in`,
+          },
+        ]
+      : []),
+    ...(paidOut !== undefined ||
+    (overview.status === 'loading' &&
+      can('reports.financial.read') &&
+      (can('payments.payment.read') || can('expenses.expense.read')))
+      ? [
+          {
+            key: 'paidOut',
+            amount: paidOut ?? null,
+            caption: t('reports.home.paidOutBasis'),
+            href: ROUTES.REPORT_DAY_BOOK,
+          },
+        ]
+      : []),
+    ...(data.tiles.cashInHand
+      ? [
+          {
+            key: 'cash',
+            amount: data.tiles.cashInHand.amount,
+            caption: data.tiles.cashInHand.since
+              ? t('reports.home.cashBasis', {
+                  date: formatBusinessDate(data.tiles.cashInHand.since),
+                })
+              : t('reports.dashboard.tile.cashInHand.baseline'),
+            href: ROUTES.CASHBOOK,
+          },
+        ]
+      : []),
+  ];
+  const openPayment = (direction: 'in' | 'out', party?: LanePerson) =>
+    setPayment({
+      direction,
+      tradeRole: direction === 'in' ? 'customer' : 'supplier',
+      bucket: 'shop',
+      entry: 'party',
+      ...(party ? { partyId: party.id, partyName: party.name, receivable: party.balance } : {}),
+    });
+  const lane = (supplier: boolean) => {
+    const sum = supplier ? data.tiles.toPay : data.tiles.toCollect;
+    const broken = failed(
+      data,
+      supplier ? ['party_tiles', 'top_creditors', 'supplier_bills'] : ['party_tiles', 'top_debtors']
+    );
+    if (!sum && !broken) return null;
+    return (
+      <HomeBalanceLane
+        supplier={supplier}
+        amount={sum?.amount ?? null}
+        href={tileHref(supplier ? 'toPay' : 'toCollect', data.tiles)}
+        details={supplier ? counter.data?.suppliers : counter.data?.customers}
+        people={supplier ? data.topCreditors : data.topDebtors}
+        canAct={supplier ? canPay : canRemind}
+        onAct={(person) => (supplier ? openPayment('out', person) : setReminder(person))}
+        failure={
+          broken ? <PartUnavailable onRetry={refresh} t={t} className="flex-wrap" /> : undefined
+        }
+      >
+        {advancesLine(supplier ? 'toPay' : 'toCollect', data.tiles, t) && (
+          <UbText variant="caption" tone="secondary">
+            {advancesLine(supplier ? 'toPay' : 'toCollect', data.tiles, t)}
+          </UbText>
+        )}
+        {supplier && data.tiles.supplierBills ? (
+          <UbStack gap={1}>
+            {data.tiles.supplierBills.overdue.count > 0 && (
+              <UbLink
+                variant="caption"
+                href={overdueHref(
+                  ROUTES.PURCHASE_BILLS,
+                  data.tiles.supplierBills.overdue,
+                  data.asOf
+                )}
+              >
+                {t('reports.dashboard.suppliers.overdue', {
+                  count: data.tiles.supplierBills.overdue.count,
+                  amount: formatInr(data.tiles.supplierBills.overdue.amount),
+                })}
+              </UbLink>
+            )}
+            {data.tiles.supplierBills.dueWeek.count > 0 && (
+              <UbLink
+                variant="caption"
+                href={dueWeekHref(data.tiles.supplierBills.dueWeek, data.asOf)}
+              >
+                {t('reports.dashboard.suppliers.dueWeek', {
+                  count: data.tiles.supplierBills.dueWeek.count,
+                  amount: formatInr(data.tiles.supplierBills.dueWeek.amount),
+                })}
+              </UbLink>
+            )}
+          </UbStack>
+        ) : (
+          !supplier &&
+          data.tiles.overdue?.invoices && (
+            <UbLink
+              variant="caption"
+              href={overdueHref(ROUTES.SALES_INVOICES, data.tiles.overdue.invoices, data.asOf)}
+            >
+              {t('reports.dashboard.suppliers.overdue', {
+                count: data.tiles.overdue.invoices.count,
+                amount: formatInr(data.tiles.overdue.invoices.amount),
+              })}
+            </UbLink>
+          )
+        )}
+      </HomeBalanceLane>
+    );
+  };
+  return (
+    <UbStack gap={5} data-testid="shop-home-workspace">
+      <UbStack direction="row" justify="between" align="start" className="flex-wrap gap-4">
+        <UbStack gap={1} className="min-w-0 flex-1">
+          <UbText as="h1" variant="h1" className="sr-only lg:not-sr-only">
+            {t('reports.home.title')}
+          </UbText>
+          <UbText variant="body-sm" tone="secondary">
+            {mobile
+              ? formatBusinessDate(data.asOf)
+              : `${tenant?.name ?? ''} · ${formatBusinessDate(data.asOf)} · ${
+                  secondsAgo < 60
+                    ? t('reports.dashboard.updated.seconds', { seconds: secondsAgo })
+                    : t('reports.dashboard.updated.minutes', {
+                        minutes: Math.floor(secondsAgo / 60),
+                      })
+                }`}
+          </UbText>
+        </UbStack>
+        <UbStack direction="row" className="flex-wrap gap-2" align="center">
+          {canPay && (
+            <UbBox className="hidden gap-2 lg:flex">
+              <UbButton variant="secondary" onClick={() => openPayment('in')}>
+                {t('reports.home.receive')}
+              </UbButton>
+              <UbButton variant="secondary" onClick={() => openPayment('out')}>
+                {t('reports.home.paySupplier')}
+              </UbButton>
+            </UbBox>
+          )}
+          {!mobile && hasModule('sales') && can('sales.invoice.write') && (
+            <UbActionLink
+              href={`${ROUTES.SALES_INVOICES}/new`}
+              variant="primary"
+              className="hidden lg:inline-flex"
+            >
+              {t('reports.dashboard.quick.newBill')}
+            </UbActionLink>
+          )}
+          <UbMoreActions
+            label={t('reports.dashboard.quick.more')}
+            title={t('reports.dashboard.quick.moreTitle')}
+            closeLabel={t('common.action.close')}
+            size="md"
+            rows={[
+              ...(canPay
+                ? [
+                    {
+                      key: 'receive',
+                      label: t('reports.home.receive'),
+                      onSelect: () => openPayment('in'),
+                    },
+                    {
+                      key: 'pay',
+                      label: t('reports.home.paySupplier'),
+                      onSelect: () => openPayment('out'),
+                    },
+                  ]
+                : []),
+              ...(hasModule('inventory') && can('inventory.item.read')
+                ? [{ key: 'items', label: t('reports.home.items'), href: ROUTES.ITEMS }]
+                : []),
+              ...(hasModule('purchases') && can('purchases.bill.write')
+                ? [
+                    {
+                      key: 'purchase',
+                      label: t('reports.dashboard.quick.newPurchase'),
+                      href: `${ROUTES.PURCHASE_BILLS}/new`,
+                    },
+                  ]
+                : []),
+              ...(hasModule('expenses') && can('expenses.expense.write')
+                ? [
+                    {
+                      key: 'expense',
+                      label: t('reports.dashboard.quick.addExpense'),
+                      href: `${ROUTES.EXPENSES}?add=1`,
+                    },
+                  ]
+                : []),
+            ]}
+          />
+          <UbButton
+            variant="ghost"
+            iconOnly
+            icon={<RefreshCw aria-hidden className="h-4 w-4" />}
+            onClick={refresh}
+          >
+            {t('reports.dashboard.refresh')}
+          </UbButton>
+        </UbStack>
+      </UbStack>
+
+      {impaired && (
+        <UbText role="status" variant="body-sm" tone="warning">
+          {t('reports.home.offline', { date: formatBusinessDate(data.asOf) })}
+        </UbText>
+      )}
+      <UbStack gap={2}>
+        {mobile && (
+          <UbStack direction="row" className="gap-3" align="center">
+            {canPay && (
+              <UbButton
+                className="flex-1"
+                variant="outlineNeutral"
+                onClick={() => openPayment('in')}
+              >
+                {t('reports.home.receive')}
+              </UbButton>
+            )}
+            {hasModule('sales') && can('sales.invoice.write') && (
+              <UbActionLink
+                className="flex-1"
+                href={`${ROUTES.SALES_INVOICES}/new`}
+                variant="primary"
+              >
+                {t('reports.dashboard.quick.newBill')}
+              </UbActionLink>
+            )}
+          </UbStack>
+        )}
+      </UbStack>
+      {counter.data?.repeat && <HomeRepeats sources={counter.data.repeat} />}
+      <UbBox
+        as="section"
+        aria-label={t('reports.home.today')}
+        data-testid="home-figures"
+        className="grid grid-cols-2 overflow-hidden rounded-card border border-border-hairline lg:grid-cols-4 lg:overflow-visible lg:rounded-none lg:border-x-0 lg:border-t-2 lg:py-4 xl:grid-cols-[repeat(4,minmax(0,1fr))_minmax(0,1.5fr)]"
+      >
+        {figures.map((figure) => (
+          <UbStack
+            key={figure.key}
+            gap={1}
+            className="min-w-0 border-border-hairline p-3 lg:border-r lg:p-4 lg:first:pl-0 [&:nth-child(-n+2)]:border-b lg:[&:nth-child(-n+2)]:border-b-0 [&:nth-child(odd)]:border-r"
+          >
+            <UbLink
+              href={figure.href}
+              underline={false}
+              className="flex flex-col gap-1 whitespace-normal break-words"
+            >
+              <UbText variant="caption" tone="secondary" className="font-semibold lg:text-body-sm">
+                {t(
+                  mobile && figure.key === 'cash'
+                    ? 'reports.home.cashPhone'
+                    : `reports.home.${figure.key}`
+                )}
+              </UbText>
+              <UbText
+                as="div"
+                variant="body"
+                className={`ds-num font-bold ${figure.amount && formatInr(figure.amount).length > 11 ? 'text-sm lg:text-xl' : 'text-xl'} ${figure.amount && !isZeroAmount(figure.amount) ? (figure.key === 'received' ? 'text-get' : figure.key === 'paidOut' ? 'text-give' : '') : ''}`}
+              >
+                {figure.amount === null ? (
+                  <UbSkeleton className="h-6 w-20" />
+                ) : (
+                  formatInr(figure.amount)
+                )}
+              </UbText>
+            </UbLink>
+            <UbText variant="caption" tone="secondary" title={figure.caption}>
+              {mobile && figure.key === 'paidOut'
+                ? t('reports.home.paidOutPhone')
+                : mobile && figure.key === 'cash'
+                  ? t('reports.home.cashPhoneBasis')
+                  : figure.caption}
+            </UbText>
+          </UbStack>
+        ))}
+        {overview.status === 'ready' && overview.charts.trend?.series.includes('sales') && (
+          <UbBox className="col-span-2 hidden border-border-hairline lg:col-span-4 lg:block xl:col-span-1 xl:pl-4">
+            <HomeDaily data={overview.charts} today={data.asOf} refreshKey={data.generatedAt} />
+          </UbBox>
+        )}
+        {figures.length === 0 && (
+          <UbText variant="body-sm" tone="secondary">
+            {t('reports.home.limited')}
+          </UbText>
+        )}
+        {overview.status === 'failed' && <PartUnavailable onRetry={refresh} t={t} />}
+      </UbBox>
+      {counter.failed && <PartUnavailable onRetry={refresh} t={t} />}
+      {failed(data, PARTS.today) && <PartUnavailable onRetry={refresh} t={t} />}
+      <UbBox className="grid grid-cols-1 gap-5 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)]">
+        <UbStack
+          gap={4}
+          className="order-2 min-w-0 self-start lg:order-1 lg:rounded-card lg:border lg:border-border-hairline"
+        >
+          <UbTabs<HomeTab>
+            layout="fill"
+            appearance={mobile ? 'segmented' : 'underline'}
+            className="[&_[role=tab]]:min-w-0 [&_[role=tab]]:px-2"
+            value={tab}
+            onValueChange={setTab}
+            ariaLabel={t('reports.home.sections')}
+            tabs={(['register', 'followups', 'insights'] as const).map((value) => ({
+              value,
+              label: t(`reports.home.${value}`),
+            }))}
+          >
+            <UbStack
+              gap={4}
+              className="rounded-card border border-border-hairline px-3 pb-3 pt-2 lg:rounded-none lg:border-0 lg:px-4"
+            >
+              {tab === 'register' && (
+                <>
+                  {failed(data, ['recent_activity']) ? (
+                    <PartUnavailable onRetry={refresh} t={t} />
+                  ) : (
+                    <RecentActivityList counter items={data.recentActivity} t={t} />
+                  )}
+                  <UbLink href={ROUTES.REPORT_DAY_BOOK}>{t('reports.home.daybook')}</UbLink>
+                </>
+              )}
+              {tab === 'followups' && (
+                <>
+                  <NeedsAttention data={data} onRetry={refresh} t={t} />
+                  {data.tiles.lowStock && <LowStockCard items={data.lowStockItems} t={t} />}
+                </>
+              )}
+              {tab === 'insights' && (
+                <>
+                  {overview.status === 'ready' && (
+                    <UbBox className="grid min-w-0 grid-cols-1 gap-4 xl:grid-cols-2">
+                      <HomeDaily
+                        data={overview.charts}
+                        today={data.asOf}
+                        refreshKey={data.generatedAt}
+                      />
+                      {overview.charts.topItems && (
+                        <UbStack gap={2}>
+                          <UbText as="h2" id={insightsId} variant="body-sm-medium">
+                            {t('reports.charts.topItems.title')}
+                          </UbText>
+                          <UbText id={`${insightsId}-hint`} variant="caption" tone="secondary">
+                            {t('reports.charts.topItems.hint')}
+                          </UbText>
+                          {overview.charts.topItems.length ? (
+                            <UbRankedBars
+                              parties={overview.charts.topItems}
+                              labelledBy={insightsId}
+                              describedBy={`${insightsId}-hint`}
+                            />
+                          ) : (
+                            <UbText variant="caption" tone="secondary">
+                              {t('reports.charts.topItems.empty')}
+                            </UbText>
+                          )}
+                        </UbStack>
+                      )}
+                    </UbBox>
+                  )}
+                  <UbDisclosure label={t('reports.home.moreReports')}>
+                    <DashboardTodayRow data={data} onRetry={refresh} t={t} />
+                    <Charts
+                      refreshKey={data.generatedAt}
+                      overview={overview}
+                      onOverviewRetry={refresh}
+                    />
+                  </UbDisclosure>
+                </>
+              )}
+            </UbStack>
+          </UbTabs>
+        </UbStack>
+        <UbBox className="order-1 grid min-w-0 grid-cols-2 gap-3 lg:order-2 lg:flex lg:flex-col lg:gap-4">
+          {lane(false)}
+          {lane(true)}
+        </UbBox>
+      </UbBox>
+      {payment && <Payment context={payment} onClose={() => setPayment(null)} onSaved={refresh} />}
+      {reminder && (
+        <Remind
+          party={{ ...reminder, mobile: reminder.mobile ?? null }}
+          onClose={() => setReminder(null)}
+        />
+      )}
+    </UbStack>
+  );
+}
+
+/** Same four figures and two work regions as the loaded counter. */
+export function ShopHomeLoading({ label }: Readonly<{ label: string }>): React.JSX.Element {
+  return (
+    <UbStack gap={4} role="status" aria-label={label} aria-busy="true">
+      <UbSkeleton className="h-10 w-full" />
+      <UbBox className="grid grid-cols-2 gap-4 lg:grid-cols-4 xl:grid-cols-[repeat(4,minmax(0,1fr))_minmax(0,1.5fr)]">
+        {Array.from({ length: 4 }, (_, index) => (
+          <UbSkeleton key={index} className="h-20 w-full" />
+        ))}
+      </UbBox>
+      <UbBox className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+        <UbSkeleton className="h-40 w-full" />
+        <UbSkeleton className="h-40 w-full" />
+      </UbBox>
+    </UbStack>
+  );
+}

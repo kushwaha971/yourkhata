@@ -36,6 +36,7 @@ export interface ReportStateBodyProps {
   readonly loadingLabel: string;
   /** How many skeleton tiles above the skeleton rows; 0 for a list-only report. */
   readonly skeletonTiles?: number;
+  readonly loadingContent?: React.JSX.Element;
   readonly children?: ReactNode;
 }
 
@@ -46,10 +47,12 @@ export function ReportStateBody({
   empty,
   loadingLabel,
   skeletonTiles = 4,
+  loadingContent,
   children,
 }: Readonly<ReportStateBodyProps>): React.JSX.Element | null {
   const { t } = useTranslation();
 
+  if (state === 'loading' && loadingContent) return loadingContent;
   if (state === 'loading') {
     return (
       <UbStack gap={3} aria-busy="true" aria-label={loadingLabel} role="status">

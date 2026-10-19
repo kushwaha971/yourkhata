@@ -36,3 +36,19 @@ it('draws at most three series, and a negative figure below the zero line', () =
   expect(ticks.some((t) => t?.startsWith('-'))).toBe(true);
   expect(ticks).toContain('0');
 });
+
+it('reserves more axis space for large Indian-grouped amounts', () => {
+  // Home baseline clipped 2,50,000/1,25,000/5,00,000 at the left SVG edge.
+  const { container } = render(
+    <UbGroupedBars
+      series={series.slice(0, 1)}
+      groups={[{ key: 'x', label: 'Today', longLabel: 'Today', values: ['500000.00'] }]}
+      labelledBy="t"
+      describedBy="d"
+    />
+  );
+  const tick = [...container.querySelectorAll('text')].find(
+    (node) => node.textContent === '5,00,000'
+  );
+  expect(Number(tick?.getAttribute('x'))).toBeGreaterThan(56);
+});

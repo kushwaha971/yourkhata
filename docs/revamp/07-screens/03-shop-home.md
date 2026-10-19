@@ -17,7 +17,7 @@ Visual reference: Counter Mode design page, revision 3 and later (the published 
 | Must keep working | each app's own book (DEC-019); customers and suppliers never netted (D-03, TV-01 server fix pending); dashboard per-part availability. |
 | Fewer taps | "mohan 2000" in find-or-start opens Receive payment filled for Mohan with ₹2,000 (nothing saved until Receive); Repeat chips open filled forms. |
 
-Tracking: problems — TV-01 netting, TV-02 Shop reminders (server) · decisions — four-figure line kept over the big sentence (the owner liked the sentence; R-DEC-03 open: offer the sentence as a phone-only header line above the grid) · dependencies — TV-01, TV-02, per-hour series read · risks — find-or-start discoverability · approval — direction approved 17 Oct (colours, sidebar); details pending · build — not started · tests — dashboard e2e, figure-sum check, 320 px Hindi · outcome — —
+Tracking: problems — TV-01 netting, TV-02 Shop reminders (server) · decisions — four-figure line kept over the big sentence (the owner liked the sentence; R-DEC-03 open: offer the sentence as a phone-only header line above the grid) · dependencies — TV-01, TV-02, per-hour series read · risks — find-or-start discoverability · approval — direction approved 17 Oct (colours, sidebar); details pending · build — R-DEC-21–24 responsive implementation; final delivery evidence in the dated report · tests — dashboard e2e, figure-sum check, 320 px Hindi · outcome — —
 
 ## Data available for Home (verified against the API, 19 Oct 2026)
 
@@ -55,3 +55,31 @@ chart labels remain a baseline defect to fix in the actual Counter Mode rebuild.
 Do not rate or ship the old layout as the completed redesign on the strength of
 API tests or baseline-mode output. The `build — not started` tracking remains
 accurate for the redesigned Home; preparation and data verification are complete.
+
+## Implementation decisions · 19 Oct 2026
+
+R-DEC-21–24 supersede the first composition. The global Shop header now owns
+Find or start (full-width in the phone header); Home does not duplicate it.
+Phone uses a joined bordered 2×2 figure card, compact independent money lanes,
+filled segmented tabs and a separate register/content card. Desktop uses the
+ruled figures + compact graph, normal-weight Repeat pills, underlined tabs and
+independent lanes with full names/amounts. A main panel never stretches to the
+side column's height. The defaults of shared UI-kit controls stay unchanged.
+
+The owner replaced hourly with period/group filters. Home's default seven-day
+billed series is reused from the existing charts read; This week/month/calendar
+year/all/custom and Day/Week/Month/Year request the existing report endpoint.
+The compact controls share one row; chart and table use identical data. Original
+extended reports/period comparisons remain available under More reports.
+
+BP-15 adds a permission-projected, private/no-store Counter read for role lanes
+and eligible Repeat sources. No model/posting or vertical contract changes.
+Role bands group net balances by each person's oldest open bill, not invoice-age
+allocations. Repeat proposes fresh forms through shared mappings/hooks, preserves
+manual input and never copies old ids/numbers/dates/payments or silently posts.
+Search reuses the existing paged Shop sources and role-specific pages/forms.
+
+The register retains real recent-source data; missing status/item-count data is
+not fabricated. Cash by records is not a physical count. Settlement/historical
+role statements and personal Udhaar ownership retain their separate approvals.
+Evidence and exact remaining parity limits: docs/performance/2026-10-19-p5-shop-home.md.

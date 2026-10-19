@@ -55,20 +55,45 @@ export async function shootHome({ signedInContext, widths, themes, locale, dir, 
     // Ready: the real figures.
     await page.goto(`${frontend}/dashboard`, { waitUntil: 'networkidle' });
     await page.locator('[data-testid="dashboard-screen"]').waitFor({ timeout: 30_000 });
+    if(await page.evaluate(()=>window.scrollY)>1)failures.push(`${tag}: Home unexpectedly scrolled on first load`);
+    if(width<1024 && !baseline){
+      const geometry=await page.getByTestId('home-figures').evaluate(el=>{const s=getComputedStyle(el),cells=[...el.children].filter(c=>getComputedStyle(c).display!=='none');return {radius:parseFloat(s.borderTopLeftRadius),gap:parseFloat(s.columnGap)||0,firstBottom:parseFloat(getComputedStyle(cells[0]).borderBottomWidth),firstRight:parseFloat(getComputedStyle(cells[0]).borderRightWidth)};});
+      if(geometry.radius<8||geometry.gap>0||geometry.firstBottom<1||geometry.firstRight<1)failures.push(`${tag}: expected joined 2x2 figure card ${JSON.stringify(geometry)}`);
+      const tabs=page.getByRole('tablist',{name:locale==='hi'?'होम के हिस्से':'Home sections'});if(await tabs.count()){
+        const style=await tabs.evaluate(el=>({background:getComputedStyle(el).backgroundColor,radius:parseFloat(getComputedStyle(el).borderTopLeftRadius)}));if(style.radius<6||style.background==='rgba(0, 0, 0, 0)')failures.push(`${tag}: missing segmented mobile tabs`);
+      }
+    }
     await check('ready');
     await check('ready-full', { fullPage: true });
-
     // Tabs, when the new Home has them (the old screen has none).
     for (const [name, state] of [[/^(Follow-ups|फ़ॉलो-अप)/, 'tab-followups'], [/^(Insights|जानकारी)/, 'tab-insights']]) {
       const tab = page.getByRole('tab', { name }).filter({ visible: true }).first();
       if (await tab.count()) {
         await tab.click();
         await page.waitForLoadState('networkidle');
+        if(state==='tab-insights') await page.getByTestId('home-daily').filter({visible:true}).first().waitFor();
         await check(state, { fullPage: true });
       } else if (!baseline) {
         failures.push(`${tag}: missing required Home tab ${state}`);
       }
     }
+
+    const more=page.getByRole('button',{name:locale==='hi'?'अन्य रिपोर्ट और तुलना':'More reports and comparisons',exact:true});
+    if(await more.count()){await more.click();await page.getByTestId('dashboard-charts').waitFor();await check('expanded-reports',{fullPage:true});}
+
+    // Offline after a successful read: retained figures are explicitly dated.
+    await ctx.setOffline(true);await page.waitForTimeout(200);
+    await check('offline', {fullPage:true});await ctx.setOffline(false);
+
+    const empty=await ctx.newPage();
+    await rewriteDashboard(empty, data=>{
+      data.recent_activity=[];data.top_debtors=[];data.top_creditors=[];data.low_stock_items=[];
+      for(const tile of Object.values(data.tiles))if(tile&&typeof tile==='object'){
+        if('amount' in tile)tile.amount='0.00';if('count' in tile)tile.count=0;
+      }
+    });
+    await empty.goto(`${frontend}/dashboard`,{waitUntil:'networkidle'});
+    await empty.getByTestId('shop-home-workspace').waitFor();await check('empty', {target:empty,fullPage:true});await empty.close();
 
     // Loading: the dashboard read is held, the page is reloaded.
     const held = await ctx.newPage();
@@ -101,6 +126,32 @@ export async function shootHome({ signedInContext, widths, themes, locale, dir, 
     await check('first-use', { target: first, fullPage: true });
     await first.close();
 
+
+    const stress=await ctx.newPage();
+    await rewriteDashboard(stress,data=>{
+      const long='Radhe Krishna Enterprises Electrical and Electronics Wholesale Private Limited';
+      for(const row of [...data.top_debtors,...data.top_creditors]){row.name=long;row.balance='1240378.00';}
+      if(data.tiles.today_sales)data.tiles.today_sales.amount='1240378.00';
+      if(data.tiles.to_collect)data.tiles.to_collect.amount='1240378.00';
+      if(data.tiles.to_pay)data.tiles.to_pay.amount='1240378.00';
+    });
+    await stress.route('**/api/v1/reports/dashboard/counter',async route=>{
+      const response=await route.fetch();const body=await response.json();
+      for(const key of ['customers','suppliers'])if(body.data[key]){
+       body.data[key].total='1240378.00';for(const person of body.data[key].people){person.name='Radhe Krishna Enterprises Electrical and Electronics Wholesale Private Limited';person.amount='1240378.00';}
+      }
+      for(const source of body.data.repeat??[])source.name='Radhe Krishna Enterprises Electrical and Electronics Wholesale Private Limited';
+      await route.fulfill({response,json:body});
+    });
+    await stress.goto(`${frontend}/dashboard`,{waitUntil:'networkidle'});
+    await stress.getByTestId('shop-home-workspace').waitFor();
+    await check('long-name-large-amount',{target:stress,fullPage:true});await stress.close();
+
+    const errorPage=await ctx.newPage();
+    await errorPage.route(DASHBOARD_BARE,route=>route.fulfill({status:500,json:{error:{code:'server_error',message:'Test: unable to load Home'}}}));
+    await errorPage.goto(`${frontend}/dashboard`,{waitUntil:'networkidle'});
+    await errorPage.getByRole('button',{name:locale==='hi'?'फिर कोशिश करें':'Try again',exact:true}).first().waitFor();
+    await check('error',{target:errorPage});await errorPage.close();
     await ctx.close();
   }
   writeFileSync(`${dir}/results-${locale}.json`, JSON.stringify(results, null, 1));

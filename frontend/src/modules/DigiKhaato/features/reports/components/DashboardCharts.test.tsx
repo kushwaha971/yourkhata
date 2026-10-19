@@ -150,3 +150,10 @@ it('labels each grouping in the reader’s language', () => {
   });
   expect(groupLabels('2026-01-01', 'year', 'en').label).toBe('2026');
 });
+
+it('reuses the Home overview without requesting the same range again', async () => {
+  // The Paid out figure and the initial Insights range must share one read.
+  renderWithProviders(<DashboardCharts overview={{ status: 'ready', charts: full }} />);
+  expect(service.getDashboardCharts).not.toHaveBeenCalled();
+  expect(screen.getByTestId('dashboard-charts')).toBeInTheDocument();
+});

@@ -270,11 +270,13 @@ export const cashTile = (
 
 export const activityTitle = (
   item: ActivityItem,
-  t: (id: string, values?: Record<string, string>) => string
+  t: (id: string, values?: Record<string, string>) => string,
+  includeParty = true
 ): string => {
   const base = item.type.replace(/_void$/, '');
-  const party =
-    item.party?.name || (COUNTER_TYPES.includes(base) ? t('reports.daybook.walkIn') : '');
+  const party = includeParty
+    ? item.party?.name || (COUNTER_TYPES.includes(base) ? t('reports.daybook.walkIn') : '')
+    : '';
   return t(activityLabelId(item), { number: item.number ?? '', party })
     .replace(/\s*·\s*$/, '')
     .replace(/\s*·\s*·\s*/g, ' · ')

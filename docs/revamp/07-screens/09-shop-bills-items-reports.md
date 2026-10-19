@@ -1,6 +1,6 @@
 # Shop: bills, purchases, items, stock, imports, reports and settings
 
-Status: **specified (wave 2), not approved**, 17 Oct 2026. Planning and design only (R-DEC-01): nothing here changes code.
+Status: **implementation approved under R-DEC-16/25**, 20 Oct 2026. Continue one reviewed/tested screen at a time after Home acceptance. Financial proposals retain their individual approval boundaries.
 Read with [02](../02-preserve-and-contracts.md) (what must keep working), [05 §3–4](../05-feedback-and-performance.md) (feedback and duplicate protection), [06](../06-shared-components-and-architecture.md) (reuse), the template in [README](README.md), and the Counter Mode design page (`docs/revamp/design/counter-mode.html`, sections `#billactions`, `#share`, `#pickers`, `#footer`, `#settings`), whose decisions are reused here rather than redesigned.
 
 Paths: `F/` is `frontend/src/modules/DigiKhaato/features/`; endpoints are under `/api/v1/` (constants in `frontend/src/api/APIPaths.ts`). Code was read at `dev` on 17 Oct 2026. Where the code and an older doc disagree, the code is described and the difference is listed in §12.
@@ -81,7 +81,7 @@ These apply to every section below. A screen's own **States** field lists only w
 | Must keep working | SAL-08 counts over date+search, totals over the filtered set, `N` shortcut, origin filter when modules issue documents, per-kind read permissions, `hasAny` first-use rule, URL filters. |
 | Fewer taps | status chips visible on phone (−2 taps per filter); search accepts a bill number or an amount ("1240"). |
 
-Tracking: problems — status hidden in the phone sheet; "void" shown as a code-ish word · decisions — status chips on phone, "Cancelled" as the word · dependencies — none (presentation) · risks — chip row width at 320 px Hindi (scrolls horizontally inside its own row, never the page) · approval — pending · build — not started · tests — `InvoicesListPageContent.test.tsx`, `final-sales-qa.mjs`, `sales-look.mjs` at 320/390/768/1280, both themes · outcome — —
+Tracking: problems — status hidden in the phone sheet; "void" shown as a code-ish word · decisions — status chips on phone, "Cancelled" as the word · dependencies — none (presentation) · risks — chip row width at 320 px Hindi (scrolls horizontally inside its own row, never the page) · approval — R-DEC-16/25 · build — next after Home acceptance · tests — `InvoicesListPageContent.test.tsx`, `final-sales-qa.mjs`, `sales-look.mjs` at 320/390/768/1280, both themes · outcome — —
 
 ---
 

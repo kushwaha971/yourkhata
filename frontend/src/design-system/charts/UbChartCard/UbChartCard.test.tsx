@@ -60,3 +60,19 @@ describe('UbChartCard — the table view is reachable, not decorative', () => {
     expect(screen.queryByText('chart')).not.toBeInTheDocument();
   });
 });
+
+it('allows long chart titles and descriptions to wrap beside table controls', () => {
+  // Home's narrow desktop column clipped titles/descriptions beside the fixed toggle.
+  const { container } = render(
+    <UbChartCard
+      title="Radhe Krishna Enterprises electrical sales trend"
+      description="A long period summary with ₹12,40,378.00 and purchase totals"
+      table={TABLE}
+      viewLabels={LABELS}
+    >
+      {() => null}
+    </UbChartCard>
+  );
+  expect(container.querySelector('h3')?.parentElement).toHaveClass('break-words');
+  expect(container.querySelector('h3')?.parentElement?.parentElement).toHaveClass('flex-wrap');
+});

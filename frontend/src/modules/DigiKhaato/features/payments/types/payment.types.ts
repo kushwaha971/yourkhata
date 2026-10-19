@@ -158,6 +158,8 @@ export interface OpenDocument {
 
 /** Where the drawer was opened from, and what it is preset with (FR-1). */
 export interface PaymentContext {
+  /** Optional role-scoped picker for dedicated Shop counter entry points. */
+  readonly tradeRole?: 'customer' | 'supplier';
   readonly direction: PaymentDirection;
   readonly partyId?: string;
   readonly partyName?: string;

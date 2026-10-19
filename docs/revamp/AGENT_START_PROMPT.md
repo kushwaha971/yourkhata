@@ -4,9 +4,14 @@ Give the block below to any coding agent (Codex, Cursor, Claude Code, Copilot, W
 
 Replace the line marked `TASK` with what you want done next. If you leave it out, the agent does the next item in `docs/revamp/12-decision-log.md` → "Next".
 
-## Current handoff · 19 October 2026
+## Current handoff · 20 October 2026
 
-Read `START-NEXT-SESSION-PROMPT.txt` first for current completion and next steps. R-DEC-20 resumes after the delivered R-DEC-19 handoff: pull/review Claude’s work, deliver BP-14 access corrections, then proceed to Shop Home. BP-12/BP-13 are delivered; read the independent Claude-review report for current results and limits. Do not repeat old phase-choice questions, assume all APIs are certified, or turn remaining personal-Udhaar ownership into a completed feature.
+Read START-NEXT-SESSION-PROMPT.txt and the Home acceptance report first. R-DEC-25
+authorizes immediate continuation to Bills/POS/customer invoices after Home's
+commit/push/report. Home's actual scope, 144 measured states, 4,532 frontend
+tests, backend scale-test caveat and remaining prototype parity gaps are explicit.
+Do not repeat phase-choice questions or inflate whole-app completion from one
+screen. CLAUDE.md now records the owner's standing whole-composition quality rule.
 
 ```text
 You are continuing the YourKhata revamp: a redesign of the whole app (Shop, Udhaar

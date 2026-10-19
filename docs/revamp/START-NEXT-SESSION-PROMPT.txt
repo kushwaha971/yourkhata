@@ -1,143 +1,76 @@
-Continue the existing YourKhata revamp on dev. Do not start a new plan.
+Continue the existing YourKhata revamp on dev. Do not start another plan.
 
-CURRENT HANDOFF — 19 October 2026, R-DEC-20
-The owner resumed: "take latest pull from dev and check claude is done something
-if that correct then proceed with next". Dev was fast-forwarded through 7de05d53
-(seven Claude commits). Independent review found additional access defects and
-corrects them in BP-14: full backend 4,661 passed / 16 skipped / zero failures.
-Read the dated follow-up for fail-before proof and exact verification/limits.
-Home remains the old screen. Its harness and API-source table are preparation,
-not a completed redesign. The strengthened harness records 60 baseline states
-and intentionally fails the old screen outside baseline mode. Continue Shop Home
-under R-DEC-16, then remaining Shop families, using the established method.
+CURRENT HANDOFF — 20 October 2026, R-DEC-21–25
+The owner requires full reference fidelity and responsible verification across
+all future work. After Home acceptance, commit/push/report and proceed directly
+to Bills/POS/customer invoices, then the remaining Shop families. Do not ask the
+phase/next-screen permission again. New business-rule/destructive decisions and
+frozen live contracts retain their boundaries. Read 12's current Progress/Next
+and the latest Home report before interpreting a status as complete.
 
 READ FIRST
-1. AGENTS.md and CLAUDE.md at the repository root.
-2. docs/revamp/README.md and 12-decision-log.md (especially R-DEC-13 through 19).
-3. 02-preserve-and-contracts.md, including the access coverage matrix in §5.1.
-4. docs/performance/2026-10-19-claude-review-access-followup.md, the Claude access
-   audit/evaluation, then the BP-13 and BP-12 reports.
-5. AGENT_START_PROMPT.md, DESIGN-SYSTEM.md, the relevant 07-screens spec,
-   09-design-review.md and 11-qa-and-regression.md, then the real code.
-6. Open docs/revamp/design/counter-mode.html in a browser. Reference also:
-   https://claude.ai/artifact/GCqwcB9AuZ5Yhqhu8xgobh
-   If the remote artifact is unavailable, say so and use the committed reference
-   and owner-provided screenshots. Do not pretend to have inspected it.
+AGENTS.md, CLAUDE.md, docs/revamp/README.md, 12-decision-log.md,
+02-preserve-and-contracts.md, the Home delivery report in docs/performance/
+2026-10-19-p5-shop-home.md, then 07-screens/09-shop-bills-items-reports.md and
+DESIGN-SYSTEM.md. Inspect the real code. The committed Counter Mode HTML and
+owner screenshots are the reference; never claim to have inspected an
+unavailable live artifact. Existing R-DEC-13/14/16/18/20 decisions remain.
 
-WHAT IS DELIVERED
-- F1–F4 shared foundation. R-DEC-09 supersedes the old desktop app tree:
-  one Apps row opens /apps; no separate app entries in the rail.
-- Customers register, role-specific Shop person page (corrected 06ac3b23),
-  BP-11 book authorization (4e6d7b37).
-- Suppliers register/filter/sort and outgoing Pay/receipt journey (b0716d46).
-  Shared ShopParty components are reused, not copied from Customers.
-- BP-12 search/cache/pending-choice and notification app/recipient fixes
-  (8bb09def). Shop-only staff searches explicitly read book=shop; phone numbers
-  never grant membership. User/business/revision/book source keys isolate results.
-- BP-13 central actor/business intent guards and late-response/retry protection.
-  Optional expected-user/tenant headers are preconditions, NOT credentials or
-  tenant selectors. Server token, membership and app permissions stay decisive.
-  Stale-tab writes are refused before view execution. A late previous-user result
-  cannot repopulate the next user's notification count. The automatic reload
-  warning survives generic form error feedback. No vertical finance calculation,
-  model or payload shape changed. Read the report for exact scope and limits.
+HOME CHANGES
+- Search is global within Shop and in the header: full field on phone and desktop.
+  It reuses paged Shop party/item/bill sources, permissions and existing forms.
+  Name/mobile/name+amount/item/sales or purchase bill number work. Customer and
+  supplier money is never netted, and other-app contacts are not searched by
+  accidentally defaulting to Udhaar. Search/form chunks stay dynamic.
+- Home follows the artifact hierarchy. Owner replaced hourly with period/group
+  filters: Last 7 days, this week/month/calendar year/all/custom and day/week/
+  month/year. Reuse existing report arithmetic. Compact dropdowns draw at 32 px,
+  share a row and preserve the touch-target treatment. Chart and table use the
+  same data. Mobile: joined 2x2 figure card, compact independent lanes, filled
+  segmented tabs; no reused vertical stack of old cards.
+- BP-15 is an additive private/no-store read, /reports/dashboard/counter, with
+  tenant/Shop-book and per-app source rights. No model/migration/posting changes.
+  Lane bands group each person's net role balance by their oldest open bill;
+  they are NOT invoice-age allocations. Headline and bands use the same fresh
+  lane snapshot. The visible caption explains the classification.
+- Repeat uses real recent source records and the existing editors. A shared
+  seed hook preserves manual work and current date/context. Old ids, numbers,
+  supplier reference and payments are not copied; Repeat does not silently
+  server-autosave. An item-search handoff uses the same line-default mapping
+  as the existing picker. Invoice overrides never edit item defaults.
+- Extended analytics/period comparisons remain under More reports. Existing
+  default messages remain editable. Ordinary non-Repeat autosave stays intact.
+- Optional shared compact-filter/segmented-tab/wrapping-command treatments do not
+  change default callers. No new package, duplicated pricing engine or TanStack
+  Query. No raw host JSX outside the design system.
 
-- Claude's imports/files/tags/deposits/Shop-money corrections are pulled. BP-14
-  replaces the insufficient all-grants/legacy export guard with current source
-  permissions and columns, guards report aging aliases/private main fields, and
-  prevents disabled-app cash history being exposed through the global tile.
+EVIDENCE AND LIMITS
+Use the Home report's final results, not an older intermediate screenshot or
+score. Full frontend: 406 suites/4,532 tests at the last recorded run. Full
+backend latest: 4,665 pass/16 skip/one old 60-second scale ceiling failed at
+66.87s while other checks ran; isolated rerun passed with 48.66s call time.
+Do not relabel that full run green. Exact screenshots, geometry, contrast,
+bundle/nav measurements and browser-flow evidence are recorded in the report.
+Physical devices, TalkBack and merchant research are not proved by Chromium.
 
-DO NEXT — PRIORITY ORDER
-1. Verify the delivered checkpoint and remaining access matrix in 02 §5.1.
-   Continue explicit tenant/recipient/app/permission checks for imports, exports,
-   public-share/download tokens and remaining action families; inspect existing
-   tests before adding anything. Include delayed responses, revoked permissions,
-   same phone in another business, customer+supplier, owner of another shop,
-   cross-tab context changes, direct IDs, writes and bulk operations. Prove any
-   defect before fixing it; do not infer server authorization from hidden UI.
-   User-level personal Udhaar ownership remains a separate unimplemented data
-   model requirement; propose the migration/rules before changing it. Do not
-   silently call tenant-scoped books a personal per-user book.
-2. Once concrete access defects are resolved and the coverage/limits are recorded,
-   continue Shop Home and remaining Shop screen families under R-DEC-16. Review
-   07-screens/03 and 09 before Home. Build actual Counter Mode hierarchy and
-   content placement, not cosmetic changes to the old dashboard. Use real API
-   facts; never fabricate graphs, paid-out aggregates or repeat-customer figures.
-   A needed backend business feature requires a proposal/approval in 08.
-3. Finish all Shop families before moving to other apps. Phase choice and Shop
-   presentation are already approved; do not ask the same question again.
+Actual recent register data does not contain every prototype payment-status/
+item-count datum, so none is fabricated. Shop promises do not borrow personal
+Udhaar dates. Physical cash count, BP-08 settlement, BP-10 historical role
+statements, per-user Udhaar ownership and omitted shell work are not claimed.
+Do not rate the entire app from this screen or call the prototype fully built.
 
-REMAINING FEATURE BOUNDARIES
-- BP-10 historical role-specific statements/aging and BP-08 dual-role settlement
-  are unapproved. Withhold misleading mixed-money links; never net roles.
-- Suppliers' implemented UI/function scores were 8.8 provisional; whole-spec
-  features 8.4 due to named gaps. That is not a whole-Shop score. No arbitrary
-  9/10 claim. Rate actual finished pieces using 09, name every missing capability,
-  and distinguish product review from real merchant/physical-device validation.
-- The 320 px purchase footer amount clamp is recorded, not fixed by picker work;
-  include it when redesigning the purchase form family.
-- Shell pieces omitted from F4 still need their recorded approval. Do not quietly
-  expand a Shop screen into new shell features.
-
-RULES
-- Reuse src/design-system and existing services/hooks/components first; extract
-  shared behavior rather than copying. No new packages without an ADR. Redux
-  Toolkit, no TanStack Query. No raw JSX host tags in feature code.
-- Library/Lending are live: presentation only. Their endpoints, shapes, rules,
-  models, calculations and workflows stay frozen. Central access hardening under
-  R-DEC-18 does not authorize vertical functional changes.
-- Customer, Supplier, Udhaar, Library and Lending money remain separate. Plain
-  words. Every default outgoing message stays editable. Customer-facing material
-  names only the merchant's business, never YourKhata/domain.
-- New examples: electronics/electrical products, Radhe Krishna Enterprises.
-  Do not rename actual records to make screenshots.
-- Teal #0E7C86, marigold #F59E1B with dark ink for one main action, white page,
-  dark teal sidebar (#0B3F45; dark theme #0E2427), existing logo on white tile,
-  Plus Jakarta Sans + Mukta. Lazy-load forms/drawers in the chunk that opens them.
-- Never commit Message Central credentials or touch production data for tests.
-
-WORK LOOP — EACH PIECE
-Review spec/code → build → run backend + production frontend → test like a tester
-→ inspect finished screenshots → report → commit/push dev before the next piece.
-- Changed-file ESLint --fix --max-warnings=0; npm run type-check; full npx jest.
-  Full lint can take >25 minutes in cloud; disclose changed-file lint scope.
-- Run backend tests appropriate to shared changes, preserving full-suite evidence
-  and honest failures. A timing test passing alone does not make the full run green.
-- Never run Jest and build together: Jest temporarily writes a probe the build
-  type check can see. Build:
-  NEXT_PUBLIC_API_BASE_URL=/api/v1 API_PROXY_TARGET=http://127.0.0.1:8000 \
-  NEXT_PUBLIC_SW_ENABLED=false NEXT_PUBLIC_ANALYTICS_ENABLED=false npm run build
-- npm run bundle:check; npm run check:contrast; locale changes also require
-  npm run i18n:split && npm run i18n:check. Budget increases need measured reason.
-- Restart the frontend after EVERY build. Use e2e/serve.sh and serve-api.sh where
-  supported; on macOS serve .next/standalone/server.js with copied .next/static
-  and public. Kill only task-owned processes. Use an isolated local database.
-- Real browser matrix: 390/320/1024/1280, light/dark, plus 320/1280 Hindi. Test
-  loading, empty, error, long names, ₹12,40,378.00, pending, saved, repeated taps,
-  expired sessions and permission denials where relevant. Add --piece to existing
-  e2e/revamp-shots.mjs. Account-context piece covers cross-tab read/write/business.
-- Measure actual computed contrast >=4.5:1, text against its own box, and viewport
-  overflow. Prove new regressions fail on old code. Make contact sheets and LOOK
-  at all of them. Unit tests alone do not prove layout or live workflows.
-- Idle navigation: node e2e/perf-app.mjs --reps=3 --only=nav, compare the SAME
-  cases/profile/width against prior delivered evidence. F4 and baseline reports
-  are context; differing cohorts cannot prove a speed improvement.
-- Document dated results/limits in docs/performance, update Progress/Next in 12,
-  tracking lines in 07 and README/handoff. Commit a prose WHY message with
-  Assisted-by: OpenAI Codex (or the actual tool's accurate attribution), push dev
-  and verify origin/dev equals the commit. No unverified completion/rating claims.
-
-LOCAL CONTINUITY
-Repository: /Users/akashkushwaha/Projects/ims-platform (verify on another machine).
-Last isolated DB: revamp_20261018; test DB test_revamp_bp09. Do not use production.
-Existing scale fixtures are synthetic; e2e/perf-app defaults to the seeded scale
-owner. Account-context harness needs a synthetic two-operator/two-business fixture
-via E2E_SCOPE_FIXTURE; never copy real credentials into the repo.
-Raw final evidence is in the outgoing task workspace outputs/revamp/shots/
-account-context; committed measurements and report are under docs/performance.
-Preserve unrelated untracked .claude-build.log, .claude/ and ims-platform/.
-
-REPORT TO OWNER
-Finished checkpoint only, concise: commit/hash and verified push, concrete changes,
-final screenshots, actual checks/numbers and material limits. No intermittent
-mockups or inflated ratings. Do not claim deployed unless deployment was verified.
+METHOD FOR NEXT PIECES
+Review spec + reference + code; implement using existing components/services;
+bring the stack up; LOOK at every phone/desktop state and test real flows.
+Use Radhe Krishna Enterprises and electrical/electronics examples. Check tenant,
+user, module/book and role authorization at actual API boundaries; same phone
+numbers or dual-role people never grant access or net books.
+Run changed-file eslint --fix --max-warnings=0, type-check, full Jest, build
+(sequential with Jest), bundle/contrast and locale checks. Restart standalone
+frontend after each build. Capture 390/320/1024/1280 light/dark plus Hindi320/1280,
+measure text/overflow/contrast and prove defect checks fail before fixes.
+Run nav performance alone and compare the same before/after cohort, plus F4 and
+original baselines; no unsupported speed claims. Update report/spec/12/handoff,
+commit with a WHY message and Assisted-by: OpenAI Codex, push dev, report the
+piece before starting another. R-DEC-25 authorizes continuing without another
+routine permission question.

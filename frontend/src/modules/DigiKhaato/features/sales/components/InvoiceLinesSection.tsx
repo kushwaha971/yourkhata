@@ -22,6 +22,7 @@ import { getPartyRates } from '../../inventory/api/priceListService';
 import { ItemLineCell } from '../../inventory/components/ItemLineCell';
 import { LastRateNote } from '../../inventory/components/LastRateNote';
 import { emptyLine, ratePlaces, type InvoiceFormValues } from '../view-model/invoiceForm';
+import { itemLineDefaults } from '../view-model/itemLineDefaults';
 
 import type { ItemListRow } from '../../inventory/types/item.types';
 import type { EngineResult } from '../view-model/taxEngine';
@@ -73,14 +74,15 @@ export function InvoiceLinesSection({
   const pick = useCallback(
     (index: number, row: ItemListRow) => {
       const base = `lines.${index}` as const;
-      setValue(`${base}.itemId`, row.id, { shouldDirty: true });
-      setValue(`${base}.description`, row.name);
-      setValue(`${base}.unitCode`, row.unit.code);
-      setValue(`${base}.allowDecimal`, row.unit.allowDecimal);
-      setValue(`${base}.unitPrice`, row.sellingPrice);
-      setValue(`${base}.taxCode`, row.taxCode);
-      setValue(`${base}.hsnSac`, row.hsnSac ?? '');
-      setValue(`${base}.taxInclusive`, row.taxInclusiveSelling ?? false);
+      const defaults = itemLineDefaults(row);
+      setValue(`${base}.itemId`, defaults.itemId, { shouldDirty: true });
+      setValue(`${base}.description`, defaults.description);
+      setValue(`${base}.unitCode`, defaults.unitCode);
+      setValue(`${base}.allowDecimal`, defaults.allowDecimal);
+      setValue(`${base}.unitPrice`, defaults.unitPrice);
+      setValue(`${base}.taxCode`, defaults.taxCode);
+      setValue(`${base}.hsnSac`, defaults.hsnSac);
+      setValue(`${base}.taxInclusive`, defaults.taxInclusive);
       if (row.trackStock && row.onHand !== null) {
         const onHand = row.onHand;
         setStock((current) => ({ ...current, [row.id]: { onHand, unit: row.unit.code } }));

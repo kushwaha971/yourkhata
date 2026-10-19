@@ -407,6 +407,7 @@ export function PaymentFormDrawer({
           >
             {(field) => (
               <ExpensePartyField
+                type={context.tradeRole}
                 book={context.bucket === 'library' ? null : 'shop'}
                 field={field}
                 partyName={partyName}

@@ -80,6 +80,16 @@ after each feature: **bring the stack up, test it like a tester, fix what you
 find, then move on.** The step most often skipped is *look*: actually run it and
 look at the result.
 
+Owner quality standard, 20 Oct 2026: this responsibility applies to every future
+module and change. Treat an approved artifact as the acceptance reference, not
+loose inspiration. Compare complete phone and desktop compositions, components,
+typography, spacing, density, data placement and interactions before delivery.
+Exercise the real business flows and edge cases, reuse the existing system, and
+state missing source data or unsupported behavior explicitly. Do not make the
+owner discover preventable inconsistencies, inflate ratings, or call a partial
+implementation complete. New owner instructions supersede a specific reference
+(e.g. Home's daily/weekly/monthly/yearly graph and header command search).
+
 This has repeatedly paid off. Five separate defects shipped green tests because
 nothing exercised the real path: `seed_all`, `seed_demo` and `seed_e2e` were
 named by the Makefile and did not exist; `create_superadmin` likewise;

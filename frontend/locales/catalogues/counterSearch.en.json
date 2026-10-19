@@ -1,0 +1,16 @@
+{
+  "shopSearch.choosePerson": "Choose who in the payment form",
+  "shopSearch.customer": "Customer · Shop book",
+  "shopSearch.draft": "Draft bill",
+  "shopSearch.empty": "No match. Try a name, item or bill number.",
+  "shopSearch.item": "New bill with {name}",
+  "shopSearch.newBill": "New bill for {name}",
+  "shopSearch.open": "Open {name}",
+  "shopSearch.pay": "Pay {amount} to {name}",
+  "shopSearch.payAmount": "Pay {amount}",
+  "shopSearch.price": "Default selling price {amount}",
+  "shopSearch.receive": "Receive {amount} from {name}",
+  "shopSearch.receiveAmount": "Receive {amount}",
+  "shopSearch.review": "Opens a filled form · nothing is saved yet",
+  "shopSearch.supplier": "Supplier · Shop book"
+}
