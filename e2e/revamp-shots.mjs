@@ -438,6 +438,10 @@ if (PIECE === 'person') {
   const { shootPerson } = await import('./revamp-person.mjs');
   await shootPerson({ signedInContext, widths: WIDTHS, themes: THEMES, locale: LOCALE, dir: DIR, frontend: FRONTEND, failures, baseline: process.argv.includes('--baseline') });
 }
+else if (PIECE === 'contexts') {
+  const { shootContexts } = await import('./revamp-contexts.mjs');
+  await shootContexts({signedInContext,widths:WIDTHS,themes:THEMES,locale:LOCALE,dir:DIR,frontend:FRONTEND,failures});
+}
 else if (PIECE === 'suppliers') {
   const { shootCustomers } = await import('./revamp-customers.mjs');
   await shootCustomers({ signedInContext, widths: WIDTHS, themes: THEMES, locale: LOCALE, dir: DIR, frontend: FRONTEND, failures, baseline: process.argv.includes('--baseline'), kind: 'supplier' });

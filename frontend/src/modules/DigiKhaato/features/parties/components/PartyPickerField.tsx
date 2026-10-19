@@ -15,6 +15,7 @@ import {
   type UbFieldRenderProps,
 } from 'src/design-system';
 import type { TranslateFn } from 'src/hooks/useTranslation';
+import type { LedgerBook } from 'src/types/domain.types';
 import { cn } from 'src/utils/cn';
 
 import { usePartySearch } from '../hooks/usePartySearch';
@@ -50,6 +51,7 @@ export interface PartyPickerFieldProps {
   readonly t: TranslateFn;
   /** `supplier` for a purchase bill, `customer` for a sale. */
   readonly type?: 'customer' | 'supplier';
+  readonly book?: LedgerBook;
   /** A party that may not be picked here (the khata a relation is made from). */
   readonly excludeId?: string;
   readonly disabled?: boolean;
@@ -63,11 +65,12 @@ export function PartyPickerField({
   labels,
   t,
   type,
+  book,
   excludeId,
   disabled = false,
   testId,
 }: Readonly<PartyPickerFieldProps>): React.JSX.Element {
-  const search = usePartySearch(type ? { type } : {});
+  const search = usePartySearch({ type, book });
   const listId = useId();
   const [open, setOpen] = useState(false);
   const [active, setActive] = useState(0);
@@ -84,9 +87,9 @@ export function PartyPickerField({
         direction="row"
         align="center"
         justify="between"
-        className="border-border-default h-10 rounded-control border px-3"
+        className="border-border-default min-h-10 rounded-control border px-3 py-2"
       >
-        <UbText variant="body" className="truncate" data-testid={testId}>
+        <UbText variant="body" className="min-w-0 whitespace-normal break-words" data-testid={testId}>
           {pickedName}
         </UbText>
         {!disabled && (
@@ -118,7 +121,7 @@ export function PartyPickerField({
 
   const pick = (index: number) => {
     const party = shown[index];
-    if (!party) return;
+    if (!party || search.pending) return;
     onPick(party.id, party.name);
     setOpen(false);
     search.clear();
@@ -127,6 +130,10 @@ export function PartyPickerField({
   const handleKey = (event: React.KeyboardEvent<HTMLInputElement>) => {
     if (event.key === 'Escape') {
       setOpen(false);
+      return;
+    }
+    if (search.pending) {
+      if (event.key === 'Enter') event.preventDefault();
       return;
     }
     if (!shown.length) return;
@@ -198,7 +205,8 @@ export function PartyPickerField({
               key={party.id}
               id={`${listId}-${index}`}
               role="option"
-              aria-selected={index === active}
+              aria-selected={!search.pending && index === active}
+              aria-disabled={search.pending}
               onMouseDown={(event: React.MouseEvent) => event.preventDefault()}
               onClick={() => pick(index)}
               onMouseEnter={() => setActive(index)}
@@ -207,7 +215,7 @@ export function PartyPickerField({
                 index === active && 'bg-surface-hover'
               )}
             >
-              <UbListItemText primary={party.name} secondary={party.mobile ?? undefined} />
+              <UbListItemText wrapPrimary="full" primary={party.name} secondary={party.mobile ?? undefined} />
             </UbBox>
           ))}
           {search.hasMore && (

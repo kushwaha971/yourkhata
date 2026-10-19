@@ -228,7 +228,9 @@ describe('the place of supply for a picked party (QA S-D1)', () => {
     expect(screen.getByText('Intra-state supply — CGST + SGST')).toBeInTheDocument();
     await userEvent.click(screen.getByRole('radio', { name: 'Party' }));
     await userEvent.type(screen.getByLabelText('Party'), 'Beng');
-    await userEvent.click(await screen.findByText('Bengaluru Traders'));
+    const match = await screen.findByRole('option', {name:/Bengaluru Traders/});
+    await waitFor(()=>expect(match).toHaveAttribute('aria-disabled','false'));
+    await userEvent.click(match);
     expect(await screen.findByText('Inter-state supply — IGST')).toBeInTheDocument();
   });
 });

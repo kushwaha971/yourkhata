@@ -374,3 +374,12 @@ it('does not record a Shop payment before its unpaid bills are available', async
   );
   expect(screen.getByTestId('payment-save')).toBeDisabled();
 });
+
+it('uses Shop search for a default payment context without an explicit bucket', async () => {
+  /** The payment API defaults to Shop; its empty party picker must not default to Udhaar. */
+  const parties=jest.requireMock('../../parties/api/partyService') as {listParties:jest.Mock};
+  parties.listParties.mockResolvedValue({rows:[],meta:{page:1,pageSize:20,total:0,totalPages:0},totals:null});
+  renderWithProviders(<PaymentFormDrawer context={{direction:'in',entry:'list'}} onClose={jest.fn()} />);
+  await userEvent.click(screen.getByRole('combobox',{name:/from/i}));
+  await waitFor(()=>expect(parties.listParties).toHaveBeenLastCalledWith(expect.objectContaining({book:'shop'}),expect.any(AbortSignal)));
+});

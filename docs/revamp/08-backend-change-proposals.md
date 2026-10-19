@@ -1,6 +1,6 @@
 # 08 · Backend change proposals
 
-Status: **BP-09 and BP-11 approved by the owner on 18 Oct 2026; other backend proposals remain unapproved unless separately recorded.**
+Status: **BP-09 and BP-11 approved by the owner on 18 Oct 2026; BP-12 access-context corrections are approved on 19 Oct (R-DEC-18); other backend proposals remain unapproved unless separately recorded.**
 
 The revamp is mainly UI, UX and frontend performance. A backend change is listed here only if the audit found a demonstrated need. Library and Lending contracts are fixed: proposals for them change no request, response, rule or table; they only make the same answer arrive faster or safer, and each still needs approval.
 
@@ -110,3 +110,18 @@ Do not confuse this with cross-business access: 122 selected permission/tenant/a
 Proposed work: define and test the authorization matrix for each shared contact, ledger, statement, reminder and payment endpoint, including omitted/changed book parameters, list totals/exports/detail serializers, direct IDs, role overrides and revoked grants. Reuse the existing membership/app registry/permission resolver rather than inventing another role map. Enforce allowed books server-side and project only authorized financial facts; keep contact identity reuse independent from financial access. First reproduce each undesired read with denied/limited app grants. Preserve owner/authorized staff workflows, public-share token semantics and Library/Lending's fixed vertical contracts. Personal Udhaar ownership needs an explicit owner/data-model design rather than hiding tenant-wide rows in the frontend.
 
 Risk/compatibility: shared identity pickers and legacy missing-book callers must keep working; returning zero for a hidden balance is misleading, so the response/projection convention needs documenting before a change. Approved implementation adds app-aware authorization/projection and migration platform/0019 for an explicit-grants marker. It changes no financial records. Never-configured legacy business roles remain compatible; explicitly empty managed grants now revoke access. Read docs/performance/2026-10-19-bp11-book-authorization.md before deployment/rollback. The owner has approved this proposal (R-DEC-15).
+
+
+## BP-12 · Notification visibility and shared-context isolation
+
+**Approved correction scope, 19 Oct 2026 (R-DEC-18).** Owner explicitly requested notifications based on modules/users and the same rule for all data/functions, with these fixes before the next redesign piece. This is access hardening, not a change to vertical financial rules or API shapes.
+
+- **Why:** a regression reproduces Shop-only access to an Udhaar broadcast through a merged ledger permission, and a targeted Library row bypassing module access. Shared recent-contact pickers omit Shop context and receive 403 for Shop-only staff; source caches do not include business/book and retain old-source rows during a switch.
+- **Touches:** the existing notification visibility predicate used by list/count/read/read-all; shared frontend party/item search hooks and their Shop callers. No new search or financial engine.
+- **Before → after:** resolve module-origin notification access using app-specific grants, including targeted rows. The recipient and business filters remain mandatory; the badge and read actions use the identical predicate. Explicit Shop search context and tenant/book source keys prevent borrowing Udhaar rights or showing stale contacts from another context.
+- **Compatibility:** preserve documented never-configured membership compatibility; business/account-level notifications keep their existing recipient/permission rules. Preserve notification response shapes and every Library/Lending endpoint, calculation and workflow. No model migration, record deletion or posted balance change.
+- **Risk:** visibility must not leak through unread counts or mark-all; caches must not retain selectable rows from another scope; targeting a user does not override a revoked app grant.
+- **Tests:** fail-before tests for wrong-context searches, stale source rows and notifications; cross-business same-phone contact/owner API checks; grant revocation/disabled apps/other recipient; list/badge/direct/read-all parity; regression of existing inbox and permissions suites; local restricted-staff browser searches on phone and desktop.
+- **Rollback:** revert the frontend search changes if needed; retain server visibility guards. An emergency UI rollback must not re-enable cross-app notification disclosure.
+
+The owner asked for the rule across the application. This piece does not certify every endpoint. Continue an explicit coverage matrix for read/write/bulk/export/share and account/business switching; unverified surfaces stay named rather than inferred safe from hidden controls.

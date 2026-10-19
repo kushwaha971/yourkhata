@@ -170,8 +170,10 @@ export function usePagedSearch<T>({
   /* What is on screen must answer what is in the box: while page one of a new
      term is on its way, the old term's rows stay (no flash of empty), but they
      are never shown for a box that is not running. */
-  const shown = running ? results : (EMPTY as readonly T[]);
-  const shownStatus: PagedSearchStatus = running ? status : 'idle';
+  // Retain rows across query edits, never across a business/module/source change.
+  const sameSource = answered === null || answered.split('\u0000', 1)[0] === key;
+  const shown = running && sameSource ? results : (EMPTY as readonly T[]);
+  const shownStatus: PagedSearchStatus = running ? sameSource ? status : 'loading' : 'idle';
   const pending = running && (answered !== signature || status === 'loading');
 
   return useMemo(
@@ -180,7 +182,7 @@ export function usePagedSearch<T>({
       setQuery,
       results: shown,
       status: shownStatus,
-      hasMore: running && hasMore,
+      hasMore: running && sameSource && hasMore,
       loadMore,
       activate,
       active: running,
@@ -188,7 +190,7 @@ export function usePagedSearch<T>({
       pending,
       clear,
     }),
-    [query, setQuery, shown, shownStatus, running, hasMore, loadMore, activate, clear, pending]
+    [query, setQuery, shown, shownStatus, running, sameSource, hasMore, loadMore, activate, clear, pending]
   );
 }
 

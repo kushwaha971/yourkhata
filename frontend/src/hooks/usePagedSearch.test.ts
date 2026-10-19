@@ -109,3 +109,16 @@ it('says the rows are pending until they answer the term in the box', async () =
   await waitFor(() => expect(hook.result.current.pending).toBe(false));
   expect(hook.result.current.results[0]?.id).toBe('K003r0');
 });
+
+it('hides previous-business or module rows immediately when the source key changes', async () => {
+  /** A persistent header must not expose the previous scope while its replacement is loading. */
+  const source = jest.fn(async (): Promise<PagedSearchPage<Row>> => ({rows:[{id:'old-business'}],hasMore:true}));
+  const {result,rerender}=renderHook(({key})=>usePagedSearch<Row>({enabled:true,key,fetchPage:source,debounceMs:10,idOf:row=>row.id}),{initialProps:{key:'business-a:shop'}});
+  act(()=>result.current.activate());
+  await waitFor(()=>expect(result.current.results).toHaveLength(1));
+  source.mockImplementation(()=>new Promise(()=>undefined));
+  rerender({key:'business-b:shop'});
+  expect(result.current.results).toEqual([]);
+  expect(result.current.hasMore).toBe(false);
+  expect(result.current.isEmpty).toBe(false);
+});

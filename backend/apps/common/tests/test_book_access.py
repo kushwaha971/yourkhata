@@ -291,3 +291,152 @@ def test_ledger_direct_id_cannot_bypass_book_scope_or_disclose_existence(books):
         ).status_code
         == 404
     )
+
+
+def test_shop_only_recent_contact_picker_needs_explicit_shop_context(books):
+    """The shared frontend picker used an unscoped money-activity sort, yielding 403 for Shop staff."""
+    _, _, make = books
+    client, _ = make(shop="staff")
+    assert client.get("/api/v1/parties", {"ordering": "-last_activity_at"}).status_code == 403
+    response = client.get("/api/v1/parties", {"ordering": "-last_activity_at", "book": "shop"})
+    assert response.status_code == 200
+    assert "summary" not in response.json()["data"][0]
+
+
+def test_shop_only_staff_keeps_authorized_role_list_money_without_main_money(books):
+    """Preserve authorized role-list money while continuing to redact private Udhaar money."""
+    from apps.common.dates import tenant_today
+    from apps.purchases.models import PurchaseDocument
+    from apps.sales.models import SalesDocument
+
+    tenant, party, make = books
+    party.is_supplier = True
+    party.is_customer = True
+    party.save(update_fields=["is_supplier", "is_customer"])
+    today = tenant_today(tenant)
+    PurchaseDocument.objects.create(
+        tenant=tenant,
+        party=party,
+        kind="purchase_bill",
+        status="recorded",
+        number="PB-STAFF",
+        fy_label="26-27",
+        document_date=today,
+        grand_total="600",
+        amount_due="600",
+    )
+    SalesDocument.objects.create(
+        tenant=tenant,
+        party=party,
+        kind="invoice",
+        status="issued",
+        number="INV-STAFF",
+        fy_label="26-27",
+        document_date=today,
+        place_of_supply_state="27",
+        grand_total="1000",
+        amount_due="1000",
+    )
+    client, _ = make(shop="staff")
+    for kind, expected in [("supplier", "-600.00"), ("customer", "1000.00")]:
+        result = client.get("/api/v1/parties", {"book": "shop", "type": kind})
+        assert result.status_code == 200
+        row = result.json()["data"][0]
+        assert row.get("balance") == expected
+        assert not {"summary", "credit", "credit_limit"} & row.keys()
+    assert (
+        "balance" not in client.get(f"/api/v1/parties/{party.id}", {"book": "shop"}).json()["data"]
+    )
+    assert "balance" not in client.get("/api/v1/parties").json()["data"][0]
+
+
+def test_same_phone_contact_can_own_another_business_without_cross_access(
+    books, other_tenant, api_as
+):
+    """A Party mobile is not login membership or permission to the other business's records."""
+    from tests.factories.platform import UserFactory
+
+    tenant, contact, make = books
+    phone = "+919876500321"
+    contact.mobile = phone
+    contact.save(update_fields=["mobile"])
+    other_contact = PartyFactory(tenant=other_tenant, mobile=phone, name="Electrical buyer")
+    login = UserFactory(mobile=phone, full_name="Radhe Krishna Enterprises owner")
+    owner_elsewhere, _ = api_as(other_tenant, user=login)
+    own_rows = owner_elsewhere.get("/api/v1/parties", {"q": phone}).json()["data"]
+    assert {row["id"] for row in own_rows} == {str(other_contact.id)}
+    assert owner_elsewhere.get(f"/api/v1/parties/{contact.id}").status_code == 404
+    assert (
+        owner_elsewhere.patch(
+            f"/api/v1/parties/{contact.id}", {"name": "Changed"}, format="json"
+        ).status_code
+        == 404
+    )
+    shop_staff, _ = make(shop="staff")
+    assert (
+        shop_staff.get(f"/api/v1/parties/{other_contact.id}", {"book": "shop"}).status_code == 404
+    )
+    contact.refresh_from_db()
+    assert contact.tenant_id == tenant.id and contact.name != "Changed"
+
+
+def test_notification_list_badge_and_read_actions_share_app_recipient_scope(books):
+    """A Shop role must not borrow ledger rights for Udhaar or see targeted Library rows."""
+    from apps.notifications.models import Notification
+    from apps.notifications.services.notify import notify
+
+    tenant, _, make = books
+    client, member = make(shop="admin")
+    own = notify(tenant, "low_stock", params={"count": 1})
+    khata = notify(tenant, "reminder_due", params={"count": 1})
+    library = notify(tenant, "library.overdue_today", user=member.user, params={"count": 1})
+    other_client, other_member = make(shop="admin")
+    another_user = notify(tenant, "low_stock", user=other_member.user, params={"count": 1})
+    rows = client.get("/api/v1/notifications").json()
+    assert {row["id"] for row in rows["data"]} == {str(own.id)}
+    assert (
+        rows["meta"]["unread_count"]
+        == client.get("/api/v1/notifications/unread-count").json()["data"]["count"]
+        == 1
+    )
+    for forbidden in [khata, library, another_user]:
+        assert client.post(f"/api/v1/notifications/{forbidden.id}/read").status_code == 404
+    assert (
+        client.post("/api/v1/notifications/read-all", {}, format="json").json()["data"]["marked"]
+        == 1
+    )
+    library.refresh_from_db()
+    khata.refresh_from_db()
+    assert library.read_at is None and khata.read_by == []
+    assert Notification.objects.filter(pk=another_user.id, read_at__isnull=True).exists()
+
+
+def test_targeted_module_notice_disappears_when_app_grant_is_revoked(books):
+    """An addressed notification must not outlive the user's permission to its module."""
+    from apps.notifications.services.notify import notify
+
+    tenant, _, make = books
+    client, member = make(shop="admin", library="staff")
+    member.app_grants_configured = True
+    member.save(update_fields=["app_grants_configured"])
+    notice = notify(tenant, "library.overdue_today", user=member.user, params={"count": 1})
+    assert str(notice.id) in {
+        row["id"] for row in client.get("/api/v1/notifications").json()["data"]
+    }
+    MembershipAppGrant.objects.filter(membership=member, app="library").delete()
+    assert client.get("/api/v1/notifications/unread-count").json()["data"]["count"] == 0
+    assert client.get("/api/v1/notifications").json()["data"] == []
+    assert client.post(f"/api/v1/notifications/{notice.id}/read").status_code == 404
+
+
+def test_disabled_module_notice_is_hidden_even_with_an_old_grant(books):
+    """Turning an app off must hide its previous notifications, including targeted rows."""
+    from apps.notifications.services.notify import notify
+
+    tenant, _, make = books
+    client, member = make(shop="admin", library="staff")
+    notice = notify(tenant, "library.overdue_today", user=member.user, params={"count": 1})
+    tenant.enabled_modules = [code for code in tenant.enabled_modules if code != "library"]
+    tenant.save(update_fields=["enabled_modules"])
+    assert client.get("/api/v1/notifications").json()["data"] == []
+    assert client.post(f"/api/v1/notifications/{notice.id}/read").status_code == 404

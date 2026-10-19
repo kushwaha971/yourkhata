@@ -12,6 +12,7 @@ import {
   selectPermissions,
   selectSessionApps,
 } from 'src/redux/slice/sessionSlice';
+import type { LedgerBook } from 'src/types/domain.types';
 
 import { APP_MANIFESTS } from 'modules/appManifests';
 
@@ -49,6 +50,8 @@ export interface UseNavigationResult {
   readonly apps: readonly AppView[];
   /** The app whose menu is showing, or null when the person can open none. */
   readonly app: string | null;
+  /** Financial search context declared by the app manifest, never guessed by shared UI. */
+  readonly book?: LedgerBook;
   /** What the shell offers while that app is open (`AppManifest.shell`). */
   readonly shell: NonNullable<AppManifest['shell']>;
 }
@@ -146,7 +149,7 @@ export function useNavigation(): UseNavigationResult {
       icon: manifest.icon,
       href: home,
     }));
-    return { sections, bottomNav, apps, app: code, shell: current?.shell ?? NO_SHELL };
+    return { sections, bottomNav, apps, app: code, book: current?.book, shell: current?.shell ?? NO_SHELL };
   }, [enabledModules, permissions, sessionApps, activeApp, fromPath]);
 
   useEffect(() => {

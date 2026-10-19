@@ -52,6 +52,7 @@ export function PurchaseSupplierField({
       labels={labels}
       t={t}
       type="supplier"
+      book="shop"
       disabled={disabled}
       testId="purchase-supplier"
     />

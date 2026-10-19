@@ -3,9 +3,11 @@
 import { useCallback, useMemo } from 'react';
 
 import type { UbAsyncComboboxOption } from 'src/design-system';
+import { useAppSelector } from 'src/hooks/useAppStore';
 import { usePagedSearch, type PagedSearchStatus } from 'src/hooks/usePagedSearch';
 import { usePermissions } from 'src/hooks/usePermissions';
 import { useTranslation } from 'src/hooks/useTranslation';
+import { selectActiveTenant } from 'src/redux/slice/sessionSlice';
 import { formatQuantity } from 'src/utils/quantity';
 
 import { lookupItemByBarcode, searchItems } from '../api/itemService';
@@ -63,6 +65,7 @@ const itemId = (row: ItemListRow): string => row.id;
  */
 export function useItemSearch(options: UseItemSearchOptions = {}): UseItemSearchResult {
   const { can, hasModule } = usePermissions();
+  const tenantId = useAppSelector(selectActiveTenant)?.id;
   const { t } = useTranslation();
   const canSearch = hasModule('inventory') && can('inventory.item.read');
   const { trackedOnly = false } = options;
@@ -75,7 +78,7 @@ export function useItemSearch(options: UseItemSearchOptions = {}): UseItemSearch
   const search = usePagedSearch<ItemListRow>({
     enabled: canSearch,
     fetchPage,
-    key: trackedOnly ? 'tracked' : 'all',
+    key: `${tenantId ?? ''}:${trackedOnly ? 'tracked' : 'all'}`,
     debounceMs: ITEM_SEARCH_DEBOUNCE_MS,
     idOf: itemId,
   });

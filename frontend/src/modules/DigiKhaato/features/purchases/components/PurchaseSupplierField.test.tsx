@@ -1,4 +1,4 @@
-import { screen } from '@testing-library/react';
+import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
 import type { UbFieldRenderProps } from 'src/design-system';
@@ -74,7 +74,16 @@ it('P-D6: supplier matches are a listbox of options, pickable with the arrow key
   expect(options.map((o) => o.textContent)).toEqual(['Gupta Wholesale', 'Gupta Agro']);
   expect(screen.getByRole('listbox')).toBeInTheDocument();
   expect(input).toHaveAttribute('aria-expanded', 'true');
-  expect(options[0]).toHaveAttribute('aria-selected', 'true');
+  await waitFor(()=>expect(options[0]).toHaveAttribute('aria-selected', 'true'));
+  expect(options[0]).toHaveAttribute('aria-disabled','false');
   await user.keyboard('{ArrowDown}{Enter}');
   expect(onPick).toHaveBeenCalledWith('s2', 'Gupta Agro');
+});
+
+it('opens recent supplier matches in the Shop book for Shop-only staff', async () => {
+  /** An unscoped recent-activity sort is correctly refused by BP-11 for Shop-only grants. */
+  renderWithProviders(<Field onPick={jest.fn()} />);
+  await userEvent.click(screen.getByRole('combobox'));
+  const service = jest.requireMock('../../parties/api/partyService') as {listParties: jest.Mock};
+  await waitFor(()=>expect(service.listParties).toHaveBeenLastCalledWith(expect.objectContaining({book:'shop',type:'supplier',ordering:'-last_activity_at'}),expect.any(AbortSignal)));
 });

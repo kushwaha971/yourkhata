@@ -226,7 +226,9 @@ describe('Role badges and the guardian and payer section', () => {
     const results = await within(dialog).findByRole('listbox', { name: 'Matching parties' });
     // The party whose khata this is is never offered as their own guardian.
     expect(within(results).queryByText('Rahul')).not.toBeInTheDocument();
-    await user.click(within(results).getByText('Mohan'));
+    const option = within(results).getByRole('option', {name:/Mohan/});
+    await waitFor(()=>expect(option).toHaveAttribute('aria-disabled','false'));
+    await user.click(option);
     await user.click(within(dialog).getByRole('radio', { name: 'Pays for' }));
     await user.click(within(dialog).getByRole('switch', { name: /Send reminders to them/ }));
     await user.click(within(dialog).getByRole('button', { name: 'Save' }));

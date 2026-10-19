@@ -24,6 +24,7 @@ Last updated: 19 Oct 2026, on `dev`.
 | 12 | [Decisions and progress](12-decision-log.md) | every decision and activity | living |
 | — | [AGENT_START_PROMPT.md](AGENT_START_PROMPT.md) | the prompt to give any coding agent (Codex, Cursor, Claude Code, others) to continue this work the same way | current |
 | — | [design/counter-mode.html](design/counter-mode.html) | the visual reference page (open in a browser) | current |
+| — | [Access-context correction evidence](../performance/2026-10-19-bp12-context-isolation.md) | Shop-only staff searches, source caches, module/recipient notifications, regression/visual evidence and explicit access audit boundaries | scoped corrections verified; remaining actor-response fix next |
 | — | [Suppliers implementation evidence](../performance/2026-10-19-p5-suppliers.md) | shared Counter Mode register, supplier payment journey, multi-party products, backend/frontend checks and delivery evidence | Supplier piece verified; whole Shop ongoing |
 | — | [Customers implementation evidence](../performance/2026-10-18-p5-customers.md) | screenshots, 108 browser cases, regression gates, measured performance/bundle cost, provisional score and remaining gaps | Customers piece verified; whole revamp ongoing |
 | — | [BP-11 authorization evidence](../performance/2026-10-19-bp11-book-authorization.md) | shared-book API guards, explicit-empty grant migration, isolation regressions and rollout limits | implemented/verified under R-DEC-15; migration required before API startup |

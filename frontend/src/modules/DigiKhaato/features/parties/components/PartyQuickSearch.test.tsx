@@ -102,3 +102,28 @@ it('narrows by name as the merchant types', async () => {
     )
   );
 });
+
+it('keeps Shop header search scoped and opens a supplier in its supplier workspace', async () => {
+  /** Global search must neither borrow Udhaar rights nor show a netted Shop amount. */
+  partyService.listParties.mockResolvedValue({rows:[{...party(1),isCustomer:false,isSupplier:true,balance:'-500.00'}],meta:{page:1,pageSize:20,total:1,totalPages:1},totals:null});
+  renderWithProviders(<PartyQuickSearch book="shop" />);
+  await userEvent.click(screen.getByRole('combobox'));
+  const option=await screen.findByRole('option');
+  expect(partyService.listParties).toHaveBeenLastCalledWith(expect.objectContaining({book:'shop'}),expect.any(AbortSignal));
+  expect(option).not.toHaveTextContent('500');
+  await userEvent.click(option);
+  expect(push).toHaveBeenCalledWith('/parties/p1?from=suppliers');
+});
+
+it('does not open an old contact when Enter is pressed before a new query answers', async () => {
+  /** A quick typist must not navigate to the previous name's retained row. */
+  partyService.listParties.mockResolvedValue(page(1,1,1,1));
+  const user=userEvent.setup();
+  renderWithProviders(<PartyQuickSearch book="shop" />);
+  await user.click(screen.getByRole('combobox'));
+  await screen.findByRole('option');
+  partyService.listParties.mockImplementation(()=>new Promise(()=>undefined));
+  await user.type(screen.getByRole('combobox'),'Electrical');
+  await user.keyboard('{Enter}');
+  expect(push).not.toHaveBeenCalled();
+});

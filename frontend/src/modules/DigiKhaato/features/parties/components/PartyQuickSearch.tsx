@@ -6,6 +6,7 @@ import { UbAmount, UbBox, UbLoadMore, UbSearchInput, UbText } from 'src/design-s
 import { useAppRouter } from 'src/hooks/useAppRouter';
 import { useTranslation } from 'src/hooks/useTranslation';
 import { partyPath } from 'src/routes';
+import type { LedgerBook } from 'src/types/domain.types';
 import { cn } from 'src/utils/cn';
 import { formatPhoneForDisplay } from 'src/utils/share';
 
@@ -23,6 +24,7 @@ import { balanceView } from '../view-model/partyDisplay';
  */
 export interface PartyQuickSearchProps {
   readonly className?: string;
+  readonly book?: LedgerBook;
   /**
    * UAT D2 — the phone's search sheet. The sheet opens BECAUSE the merchant
    * asked to search, so the field takes focus (and brings the keyboard up) at
@@ -41,31 +43,38 @@ export interface PartyQuickSearchProps {
 
 function PartyQuickSearchBase({
   className,
+  book,
   autoFocus = false,
   inline = false,
   onNavigate,
 }: Readonly<PartyQuickSearchProps>) {
   const { t } = useTranslation();
   const router = useAppRouter();
-  const search = usePartySearch();
+  const search = usePartySearch({ book });
   const listId = useId();
   const [open, setOpen] = useState(false);
   const [active, setActive] = useState(0);
 
   const openParty = useCallback(
     (id: string) => {
+      if (search.pending) return;
       setOpen(false);
       search.clear();
-      router.push(partyPath(id));
+      const party = search.results.find((row) => row.id === id);
+      router.push(partyPath(id, book === 'shop' && party?.isSupplier && !party.isCustomer ? 'supplier' : undefined));
       onNavigate?.();
     },
-    [router, search, onNavigate]
+    [router, search, onNavigate, book]
   );
 
   const handleKey = useCallback(
     (event: React.KeyboardEvent<HTMLInputElement>) => {
       if (event.key === 'Escape') {
         setOpen(false);
+        return;
+      }
+      if (search.pending) {
+        if (event.key === 'Enter') event.preventDefault();
         return;
       }
       if (!search.results.length) return;
@@ -155,7 +164,8 @@ function PartyQuickSearchBase({
                   key={party.id}
                   id={`${listId}-${index}`}
                   role="option"
-                  aria-selected={index === active}
+                  aria-selected={!search.pending && index === active}
+                  aria-disabled={search.pending}
                   onMouseDown={(event: React.MouseEvent) => event.preventDefault()}
                   onClick={() => openParty(party.id)}
                   onMouseEnter={() => setActive(index)}
@@ -168,8 +178,7 @@ function PartyQuickSearchBase({
                     <UbText
                       as="span"
                       variant="inherit"
-                      truncate
-                      className="ds-body-base-medium text-text-primary"
+                      className="ds-body-base-medium whitespace-normal break-words text-text-primary"
                     >
                       {party.name}
                     </UbText>
@@ -185,13 +194,13 @@ function PartyQuickSearchBase({
                       </UbText>
                     )}
                   </UbBox>
-                  <UbAmount
+                  {book !== 'shop' && <UbAmount
                     value={party.balance}
                     tone={view.tone}
                     sign={view.sign}
                     label={t(view.labelId)}
                     size="sm"
-                  />
+                  />}
                 </UbBox>
               );
             })

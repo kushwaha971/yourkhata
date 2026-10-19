@@ -38,9 +38,10 @@ export interface UbListItemTextProps {
   /**
    * Wrap the title to two lines instead of cutting it with an ellipsis. For a
    * person's or a shop's name, where the cut-off half is the part that says
-   * which one ("…General Store, Station R", WP-06).
+   * which one ("…General Store, Station R", WP-06). `full` wraps every line
+   * for identity choices, where two similar names must remain distinguishable.
    */
-  readonly wrapPrimary?: boolean;
+  readonly wrapPrimary?: boolean | 'full';
   readonly className?: string;
 }
 
@@ -61,7 +62,11 @@ function UbListItemTextBase({
         as="span"
         title={title}
         className={cn(
-          wrapPrimary ? 'line-clamp-2 break-words' : 'truncate',
+          wrapPrimary === 'full'
+            ? 'whitespace-normal break-words'
+            : wrapPrimary
+              ? 'line-clamp-2 break-words'
+              : 'truncate',
           UB_TEXT_VARIANT[primaryVariant],
           UB_TEXT_TONE[primaryTone]
         )}

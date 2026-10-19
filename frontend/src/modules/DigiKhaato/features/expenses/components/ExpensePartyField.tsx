@@ -4,6 +4,7 @@ import { useMemo } from 'react';
 
 import type { UbFieldRenderProps } from 'src/design-system';
 import type { TranslateFn } from 'src/hooks/useTranslation';
+import type { LedgerBook } from 'src/types/domain.types';
 
 import { PartyPickerField } from '../../parties/components/PartyPickerField';
 
@@ -24,6 +25,8 @@ export interface ExpensePartyFieldProps {
   readonly t: TranslateFn;
   /** Restrict a reused picker to the transaction’s party role. Expenses keep both. */
   readonly type?: 'customer' | 'supplier';
+  /** Shop owns this field's normal callers; null preserves another app's identity lookup. */
+  readonly book?: LedgerBook | null;
   readonly disabled?: boolean;
 }
 
@@ -33,6 +36,7 @@ export function ExpensePartyField({
   onPick,
   t,
   type,
+  book = 'shop',
   disabled,
 }: Readonly<ExpensePartyFieldProps>): React.JSX.Element {
   const labels = useMemo(
@@ -52,6 +56,7 @@ export function ExpensePartyField({
       labels={labels}
       t={t}
       type={type}
+      book={book ?? undefined}
       disabled={disabled}
     />
   );

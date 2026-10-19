@@ -20,7 +20,11 @@ from apps.common.responses import StandardResponse
 from apps.common.tenancy import get_effective_tenant
 from apps.common.throttling import ScopedUserRateThrottle
 from apps.notifications.constants import INBOX_DEFAULT_LIMIT, INBOX_MAX_LIMIT, NotificationCategory
-from apps.notifications.permissions import IsTenantMember, member_permissions
+from apps.notifications.permissions import (
+    IsTenantMember,
+    member_notification_types,
+    member_permissions,
+)
 from apps.notifications.serializers.notification import serialize_notification
 from apps.notifications.services.notify import inbox, mark_all_read, mark_read, unread_q
 
@@ -46,6 +50,7 @@ class _InboxMixin:
             tenant=get_effective_tenant(request),
             user=request.user,
             permissions=member_permissions(request),
+            permitted_types=member_notification_types(request),
         )
 
     def _category(self, raw: str | None) -> str | None:
@@ -124,6 +129,7 @@ class NotificationReadAllView(_InboxMixin, APIView):
             tenant=get_effective_tenant(request),
             user=request.user,
             permissions=member_permissions(request),
+            permitted_types=member_notification_types(request),
             category=category,
         )
         return StandardResponse.ok({"marked": marked})

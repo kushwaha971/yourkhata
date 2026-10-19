@@ -89,6 +89,24 @@ Shop and Udhaar can get UX improvements and, with approval, functional ones. The
 
 The design reads which apps a person can open only from `GET auth/me`: `apps[]`, `active_app`, `accessible_apps`, `permissions[]`, `active_tenant.enabled_modules`. Switching uses the existing `POST auth/switch-app`; adding or turning off an app uses `POST tenants/current/apps` (owner only). No new access logic in the client.
 
+### 5.1 Access-context verification (R-DEC-18, 19 Oct 2026)
+
+A phone number is contact information, not membership or authorization. A person may own one business and be a Party in another. Within one business a shared contact can have multiple module profiles and customer/supplier roles; identity reuse never combines financial books or grants login access. Repeated active mobile numbers are deduplicated **within** a tenant; the same number is valid in another tenant. Server token/membership, enabled app and app-specific capability remain the authority, including direct/bulk writes and downloads.
+
+| Surface | Evidence / present status |
+|---|---|
+| Shared financial book reads/writes/direct IDs | BP-11 guards and regression suite; see its dated report. Not a blanket certification of every route. |
+| Same phone as a different business's owner/contact | BP-12 API test proves isolated search, foreign direct read/write 404 and no inferred membership. |
+| Shop recent contact searches | Explicit manifest/form Shop context; one shared search source, supplier/customer role preserved; wrong-context tests fail before fix. |
+| Search caches and pending choices | Business/book/source keys; old-source rows hidden immediately; old query results cannot be selected while pending. Item search also uses business identity. |
+| Notifications | BP-12 list/count/direct-read/read-all use app origin, recipient and tenant scope for explicit app grants; revoked/disabled app tests. Business/account notices retain their existing recipient rules. |
+| Compatibility | Never-configured legacy memberships retain BP-11's documented broad role. Do not claim they have been migrated to strict app grants. |
+| Tenant transport and teardown | Existing X-Tenant-Id response guard and feature reset tests; a same-business late previous-user response has now been reproduced and remains the next transport fix (see the dated BP-12 report). |
+| Personal Udhaar ownership | Still not independently per-user: BP-11 scopes existing tenant books, not a personal-book ownership migration. Do not claim this requirement complete. |
+| Imports/exports, public share/download tokens and remaining module actions | Continue explicit endpoint/action coverage during the next access audit and each screen family. Intended token-authorized customer sharing is different from granting access to the business workspace. Do not infer safety from hidden UI. |
+
+No change in this table authorizes modifying Library/Lending calculations, payload shapes or workflows.
+
 ## 6. How we prove nothing changed (used in Phase 8)
 
 | Proof | What it checks |

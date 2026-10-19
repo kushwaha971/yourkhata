@@ -320,11 +320,18 @@ def visible_types(permissions: Iterable[str]) -> list[str]:
     return [code for code, spec in REGISTRY.items() if spec.required_permission in held]
 
 
-def inbox(*, tenant: Any, user: Any, permissions: Iterable[str]) -> QuerySet:
+def inbox(
+    *,
+    tenant: Any,
+    user: Any,
+    permissions: Iterable[str],
+    permitted_types: Iterable[str] | None = None,
+) -> QuerySet:
     """Every row this member may see: their personal rows and the broadcasts they are entitled to."""
-    return Notification.objects.filter(tenant=tenant).filter(
+    rows = Notification.objects.filter(tenant=tenant).filter(
         Q(user=user) | Q(user__isnull=True, type__in=visible_types(permissions))
     )
+    return rows if permitted_types is None else rows.filter(type__in=permitted_types)
 
 
 def unread_q(user: Any) -> Q:
@@ -356,10 +363,17 @@ def mark_read(*, row: Notification, user: Any) -> None:
 
 @transaction.atomic
 def mark_all_read(
-    *, tenant: Any, user: Any, permissions: Iterable[str], category: str | None = None
+    *,
+    tenant: Any,
+    user: Any,
+    permissions: Iterable[str],
+    category: str | None = None,
+    permitted_types: Iterable[str] | None = None,
 ) -> int:
     """FR-8 — everything unread for this member, optionally within one category."""
-    rows = inbox(tenant=tenant, user=user, permissions=permissions).filter(unread_q(user))
+    rows = inbox(
+        tenant=tenant, user=user, permissions=permissions, permitted_types=permitted_types
+    ).filter(unread_q(user))
     if category:
         rows = rows.filter(category=category)
     marked = rows.filter(user=user).update(read_at=timezone.now())

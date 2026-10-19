@@ -102,9 +102,9 @@ export async function shootCustomers({ signedInContext, widths, themes, locale, 
 
 /** Measures actual text-node rectangles, ancestor clipping and computed colours.
  * Ignores deliberate screen-reader-only content, never visible clamped labels. */
-export async function measureCustomers(page) {
-  return page.evaluate(() => {
-    const root = [...document.querySelectorAll('[role="dialog"]')].at(-1) ?? document.querySelector('main');
+export async function measureCustomers(page, rootSelector) {
+  return page.evaluate((selector) => {
+    const root = selector ? document.querySelector(selector) : [...document.querySelectorAll('[role="dialog"]')].at(-1) ?? document.querySelector('main');
     const cut = []; const lowContrast = [];
     const rgba = (value) => (value.match(/[\d.]+/g) ?? []).map(Number);
     const blend = (fg, bg) => { const a = fg[3] ?? 1; return fg.slice(0, 3).map((v, i) => v * a + bg[i] * (1 - a)); };
@@ -136,7 +136,7 @@ export async function measureCustomers(page) {
     }
     const first = root.querySelector('[data-testid="ub-grid-card"], [data-testid="ub-grid-row"]');
     return { overflow: Math.max(0, document.documentElement.scrollWidth - innerWidth), cut: [...new Set(cut)], lowContrast, firstRowY: first ? Math.round(first.getBoundingClientRect().y) : null };
-  });
+  }, rootSelector);
 }
 
 /** User-level regression: searching must not collapse the phone field after

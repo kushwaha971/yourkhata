@@ -2,12 +2,15 @@
 
 import { useCallback, useMemo } from 'react';
 
+import { useAppSelector } from 'src/hooks/useAppStore';
 import {
   PAGED_SEARCH_DEBOUNCE_MS,
   usePagedSearch,
   type UsePagedSearchResult,
 } from 'src/hooks/usePagedSearch';
 import { usePermissions } from 'src/hooks/usePermissions';
+import { selectActiveTenant } from 'src/redux/slice/sessionSlice';
+import type { LedgerBook } from 'src/types/domain.types';
 
 import { listParties } from '../api/partyService';
 
@@ -41,6 +44,8 @@ export interface UsePartySearchOptions {
   /** `customer` / `supplier` narrow the source for a document picker. */
   readonly type?: 'customer' | 'supplier';
   readonly limit?: number;
+  /** Explicit financial context for recent-activity ordering; omission keeps identity/Udhaar callers unchanged. */
+  readonly book?: LedgerBook;
 }
 
 /**
@@ -66,12 +71,14 @@ export function useCanSearchParties(): boolean {
 
 export function usePartySearch(options: UsePartySearchOptions = {}): UsePartySearchResult {
   const canSearch = useCanSearchParties();
-  const { type, limit = PARTY_SEARCH_LIMIT } = options;
+  const tenantId = useAppSelector(selectActiveTenant)?.id;
+  const { type, book, limit = PARTY_SEARCH_LIMIT } = options;
 
   const fetchPage = useCallback(
     async (term: string, page: number, signal: AbortSignal) => {
       const answer = await listParties(
         {
+          ...(book ? { book } : {}),
           q: term,
           status: 'active',
           type: type ?? '',
@@ -88,13 +95,13 @@ export function usePartySearch(options: UsePartySearchOptions = {}): UsePartySea
       const { meta } = answer;
       return { rows: answer.rows, hasMore: Boolean(meta && meta.page < meta.totalPages) };
     },
-    [type, limit]
+    [type, book, limit]
   );
 
   const search = usePagedSearch<Party>({
     enabled: canSearch,
     fetchPage,
-    key: `${type ?? ''}:${limit}`,
+    key: `${tenantId ?? ''}:${book ?? 'main'}:${type ?? ''}:${limit}`,
     idOf: partyId,
   });
   return useMemo(() => ({ ...search, canSearch }), [search, canSearch]);

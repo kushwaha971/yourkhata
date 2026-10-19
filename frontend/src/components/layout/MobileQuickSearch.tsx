@@ -41,7 +41,7 @@ const UbDrawer = dynamic(
 export function MobileQuickSearch(): React.JSX.Element | null {
   const { t } = useTranslation();
   const canSearch = useCanSearchParties();
-  const { shell } = useNavigation();
+  const { shell, book } = useNavigation();
   const [open, setOpen] = useState(false);
   const [opened, setOpened] = useState(false);
   const close = useCallback(() => setOpen(false), []);
@@ -71,7 +71,7 @@ export function MobileQuickSearch(): React.JSX.Element | null {
           closeLabel={t('common.action.close')}
           className="min-h-[60dvh]"
         >
-          <PartyQuickSearch autoFocus inline onNavigate={close} />
+          <PartyQuickSearch book={book} autoFocus inline onNavigate={close} />
         </UbDrawer>
       )}
     </>

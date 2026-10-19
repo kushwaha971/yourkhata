@@ -14,7 +14,7 @@ The design system already covers almost everything the revamp needs. The table m
 | Forms | `UbForm`, `UbField`, `UbFieldError`, `UbInputHint`, `UbDisclosure` | keep; add in-flight guard (§3) |
 | Overlays | `UbDrawer`, `UbDialog`, `UbConfirmDialog`, `UbActionSheet`, `UbPopover`, `UbShareSheet`, `UbTooltip`, `CompactOverlays` | keep; notifications move from `UbDialog` to `UbPopover` (desktop) |
 | Navigation | `UbBottomNav`, `UbBottomBar`, `UbFab`, `UbTabs`, `UbChipTabs`, `UbMenuList`, `UbLink`, `UbActionLink`, `UbPageHeader`, `UbPageShell` | keep; `UbBottomNav` gains the App slot (§2) |
-| Lists and tables | `UbDataGrid` (table + card modes), `UbLoadMore`, `UbFilters`, `UbFilterChip`, `UbInfoRow`, `UbListItemText` | keep; card mode is the phone default |
+| Lists and tables | `UbDataGrid` (table + card modes), `UbLoadMore`, `UbFilters`, `UbFilterChip`, `UbInfoRow`, `UbListItemText` | keep; card mode is the phone default. R-DEC-18: `UbListItemText wrapPrimary="full"` is the opt-in identity-choice mode; existing defaults stay unchanged |
 | Figures and charts | `UbAmount`, `UbStatSummary`, `UbStatusBadge`, `UbTag`, charts (`UbAgingBars`, `UbGroupedBars`, `UbRankedBars`, `UbTrendArea`, `UbChartTable`, `UbStatCard`) | keep |
 | States | `UbSkeleton`, `UbEmptyState`, `UbStatusBanner`, `UbSnackbar`, `UbProgress` | keep; add route skeletons per screen family |
 | Home blocks | `UbHomeBlocks`, `UbTotalDock` | keep; TV-03 change to `UbTotalDock` (stack below `sm`) |
