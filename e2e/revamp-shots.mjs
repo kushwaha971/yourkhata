@@ -454,6 +454,10 @@ else if (PIECE === 'customers') {
   const { shootCustomers } = await import('./revamp-customers.mjs');
   await shootCustomers({ signedInContext, widths: WIDTHS, themes: THEMES, locale: LOCALE, dir: DIR, frontend: FRONTEND, failures, baseline: process.argv.includes('--baseline') });
 }
+else if (PIECE === 'home') {
+  const { shootHome } = await import('./revamp-home.mjs');
+  await shootHome({ signedInContext, widths: WIDTHS, themes: THEMES, locale: LOCALE, dir: DIR, frontend: FRONTEND, failures, baseline: process.argv.includes('--baseline') });
+}
 else if (PIECE === 'press') await shootPress();
 else if (PIECE === 'apps') await shootApps();
 else if (PIECE === 'lock') await shootLock();
