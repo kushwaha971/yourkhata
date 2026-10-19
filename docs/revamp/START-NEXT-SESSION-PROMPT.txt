@@ -1,17 +1,22 @@
 Continue the existing YourKhata revamp on dev. Do not start a new plan.
 
-CURRENT HANDOFF — 19 October 2026, R-DEC-19
-The owner asked: "once all these done before switching to home commit code and
-push and give me latest promt so i gave to another agent to continuing in same
-manner". The outgoing agent stops before Home after delivering this checkpoint.
-Read the BP-13 report for final verification and check git log/status/origin/dev;
-do not rely on older chat claims or assume that Home has been redesigned.
+CURRENT HANDOFF — 19 October 2026, R-DEC-20
+The owner resumed: "take latest pull from dev and check claude is done something
+if that correct then proceed with next". Dev was fast-forwarded through 7de05d53
+(seven Claude commits). Independent review found additional access defects and
+corrects them in BP-14: full backend 4,661 passed / 16 skipped / zero failures.
+Read the dated follow-up for fail-before proof and exact verification/limits.
+Home remains the old screen. Its harness and API-source table are preparation,
+not a completed redesign. The strengthened harness records 60 baseline states
+and intentionally fails the old screen outside baseline mode. Continue Shop Home
+under R-DEC-16, then remaining Shop families, using the established method.
 
 READ FIRST
 1. AGENTS.md and CLAUDE.md at the repository root.
 2. docs/revamp/README.md and 12-decision-log.md (especially R-DEC-13 through 19).
 3. 02-preserve-and-contracts.md, including the access coverage matrix in §5.1.
-4. docs/performance/2026-10-19-bp13-request-context.md and the BP-12 report.
+4. docs/performance/2026-10-19-claude-review-access-followup.md, the Claude access
+   audit/evaluation, then the BP-13 and BP-12 reports.
 5. AGENT_START_PROMPT.md, DESIGN-SYSTEM.md, the relevant 07-screens spec,
    09-design-review.md and 11-qa-and-regression.md, then the real code.
 6. Open docs/revamp/design/counter-mode.html in a browser. Reference also:
@@ -36,6 +41,11 @@ WHAT IS DELIVERED
   cannot repopulate the next user's notification count. The automatic reload
   warning survives generic form error feedback. No vertical finance calculation,
   model or payload shape changed. Read the report for exact scope and limits.
+
+- Claude's imports/files/tags/deposits/Shop-money corrections are pulled. BP-14
+  replaces the insufficient all-grants/legacy export guard with current source
+  permissions and columns, guards report aging aliases/private main fields, and
+  prevents disabled-app cash history being exposed through the global tile.
 
 DO NEXT — PRIORITY ORDER
 1. Verify the delivered checkpoint and remaining access matrix in 02 §5.1.

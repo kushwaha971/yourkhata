@@ -6,7 +6,7 @@ Replace the line marked `TASK` with what you want done next. If you leave it out
 
 ## Current handoff · 19 October 2026
 
-Read `START-NEXT-SESSION-PROMPT.txt` first for current completion and next steps. R-DEC-19 requires committing/pushing this access-fix checkpoint and handing off **before Home**. BP-12 is delivered; read the BP-13 report for the current request-context correction and exact test results. Do not repeat old phase-choice questions, assume all APIs are certified, or turn remaining personal-Udhaar ownership into a completed feature.
+Read `START-NEXT-SESSION-PROMPT.txt` first for current completion and next steps. R-DEC-20 resumes after the delivered R-DEC-19 handoff: pull/review Claude’s work, deliver BP-14 access corrections, then proceed to Shop Home. BP-12/BP-13 are delivered; read the independent Claude-review report for current results and limits. Do not repeat old phase-choice questions, assume all APIs are certified, or turn remaining personal-Udhaar ownership into a completed feature.
 
 ```text
 You are continuing the YourKhata revamp: a redesign of the whole app (Shop, Udhaar

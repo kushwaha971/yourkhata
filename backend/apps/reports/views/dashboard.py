@@ -55,14 +55,16 @@ from apps.reports.views.export_support import granted_permissions
 logger = logging.getLogger("ub.reports")
 
 
-def reads_every_book(request: Any, tenant: Any) -> bool:
-    """The reader holds `ledger.entry.read` in every book this business runs (BP-11)."""
-    from apps.common.book_access import BOOK_APPS, allowed_books
-    from apps.platform_app.apps_registry import apps_of_business
+def reads_every_book(request: Any) -> bool:
+    """Every known book, including retained history from apps now disabled.
 
-    running = {app.code for app in apps_of_business(tenant)}
-    needed = {book for book, app in BOOK_APPS.items() if app in running}
-    return needed <= allowed_books(request, "ledger.entry.read")
+    Running-app membership is insufficient: turning off Library does not delete
+    its past cash from the all-book figure. Shop has its own separate cash tile.
+    Owners/legacy members retain their existing broad book authority.
+    """
+    from apps.common.book_access import BOOK_APPS, allowed_books
+
+    return frozenset(BOOK_APPS) <= allowed_books(request, "ledger.entry.read")
 
 
 def module_sections(tenant: Any, today: date, *, granted: frozenset[str]) -> list[dict]:
@@ -144,7 +146,7 @@ class DashboardView(TenantScopeMixin, APIView):
             granted=granted,
             modules=frozenset(tenant.enabled_modules or ()),
         )
-        if "cash_in_hand" in body.get("tiles", {}) and not reads_every_book(request, tenant):
+        if "cash_in_hand" in body.get("tiles", {}) and not reads_every_book(request):
             # R-DEC-18 — every book's cash, for a reader of every book. The Shop's
             # own drawer stays in `shop_cash_in_hand`.
             body["tiles"].pop("cash_in_hand")

@@ -20,11 +20,11 @@ from django.utils import timezone
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.views import APIView
 
-from apps.common.book_access import allowed_books
 from apps.common.exceptions import BusinessRuleViolation, NoActiveTenant, NotFound, PermissionDenied
 from apps.common.exports import request_has
 from apps.common.responses import StandardResponse
 from apps.common.tenancy import get_effective_tenant
+from apps.reports.export_access import authorize_stored_export
 from apps.reports.models import Export, ExportStatus
 
 
@@ -40,13 +40,7 @@ def _export_for(request: Any, export_id: Any) -> Export:
     codename = (export.params or {}).get("codename") or "reports.export"
     if not request_has(request, codename):
         raise PermissionDenied("You do not have permission to download this export.")
-    # R-DEC-18 — the file holds the books its requester could read then. A grant
-    # revoked since (or another member without it) must not take it, and the
-    # answer is the same 404 a foreign id gets. Rows from before this check
-    # carry no `books` and keep their earlier behaviour.
-    books = (export.params or {}).get("books")
-    if books and not set(books) <= allowed_books(request, codename):
-        raise NotFound("No such export.")
+    authorize_stored_export(request, export)
     return export
 
 

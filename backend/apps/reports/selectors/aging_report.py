@@ -125,9 +125,11 @@ def aging_report(
                     "type": _party_type(party),
                     "tags": sorted(t.name for t in party.tags.all()),
                 },
-                "collection_date": party.collection_date,
+                "collection_date": party.collection_date if book == "main" else None,
                 # BR-8 — a credit limit is about lending, so receivable only.
-                "credit_limit": party.credit_limit if kind == "receivable" else None,
+                "credit_limit": (
+                    party.credit_limit if kind == "receivable" and book == "main" else None
+                ),
                 "buckets": {name: figures[name] for name in BUCKETS},
                 "total": figures["total"],
                 "oldest_entry_date": oldest,

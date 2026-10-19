@@ -2,6 +2,13 @@
 
 19 October 2026. Continues R-DEC-18 after the BP-13 checkpoint (R-DEC-19), before Shop Home. Backend-only. No frontend, payload shape, financial posting rule, migration, package or Library/Lending calculation changed.
 
+**Independent review follow-up, 19 Oct:** additional failures were reproduced on
+`7de05d53`; the export snapshot/legacy behavior and running-app-only global cash
+guard described below are superseded by BP-14. Report aging also needed explicit
+book/field guards. Read `2026-10-19-claude-review-access-followup.md` for corrected
+behavior, current verification and remaining limits. This original audit is
+historical evidence, not the final privacy sign-off.
+
 ## Defects found, each reproduced before fixing
 
 1. **Party import wrote the Udhaar book on a Shop-only grant.** The party drawer requires main-book `ledger.entry.write` (BP-11). The import engine checked the merged codename set, so a member with only a Shop admin grant uploaded and committed a party file and a ₹2,300 opening entry was posted with `bucket=main`. The same member could open the owner's party import jobs, row previews and problem file, which carry Udhaar opening balances.

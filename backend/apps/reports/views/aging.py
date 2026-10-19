@@ -18,6 +18,7 @@ from typing import Any
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.views import APIView
 
+from apps.common.book_access import BookAccessMixin
 from apps.common.constants import ModuleCode
 from apps.common.dates import tenant_today
 from apps.common.exceptions import PermissionDenied, ValidationFailed
@@ -129,7 +130,7 @@ EXPORTERS = {
 # ── The view ─────────────────────────────────────────────────────────────────
 
 
-class _AgingReportView(ReportFormatMixin, TenantScopeMixin, APIView):
+class _AgingReportView(BookAccessMixin, ReportFormatMixin, TenantScopeMixin, APIView):
     kind = "receivable"
     permission_classes = [
         IsAuthenticated,
@@ -139,6 +140,13 @@ class _AgingReportView(ReportFormatMixin, TenantScopeMixin, APIView):
         HasPermission("ledger.entry.read"),
     ]
     throttle_classes = [ScopedUserRateThrottle]
+
+    def permission_books(self, request: Any, codename: str) -> tuple[str, ...]:
+        # Report capability and book rights are separate: reports.basic.read
+        # belongs to Shop, while the requested money belongs to main or Shop.
+        return (
+            super().permission_books(request, codename) if codename == "ledger.entry.read" else ()
+        )
 
     def _params(self, request: Any, tenant: Any) -> dict:
         """§10 — every parameter checked before the FIFO walk runs."""

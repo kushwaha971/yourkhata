@@ -86,3 +86,14 @@ def test_shop_chart_money_counts_only_the_shop_book(cash_in_other_books):
         if money is None:
             continue
         assert Decimal(money["totals"]["in"]) == 0, money["totals"]
+
+
+def test_disabled_apps_history_cannot_reenter_shop_cash(cash_in_other_books, tenant):
+    """Disabling an app removes access, not its historical cash from the aggregate."""
+    make, _ = cash_in_other_books
+    client = make(shop="admin")
+    tenant.enabled_modules = [
+        m for m in tenant.enabled_modules if m not in {"khata", "library", "lending"}
+    ]
+    tenant.save(update_fields=["enabled_modules"])
+    assert "cash_in_hand" not in _tiles(client)

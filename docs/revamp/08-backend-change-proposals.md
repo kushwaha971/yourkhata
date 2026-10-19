@@ -138,3 +138,14 @@ Approved access correction scope: R-DEC-18. The owner requires user/module/busin
 - Acceptance: late success/error/401 after logout/new login in same business; revision changes; matching and forged/absent preconditions; stale-tab writes have no side effects; own switch and bootstrap pass; cookie and Bearer paths; proxy/CORS; account/tenant switch in two browser tabs. Add the failing diagnostic as an active regression. Preserve all existing book authorization tests.
 - Rollback: retain server preconditions and remove only unsafe client presentation if necessary; never revert to accepting private stale responses to mask a UX failure.
 - Implementation evidence: `docs/performance/2026-10-19-bp13-request-context.md`. No migration; API support must ship before or with the new client. Remaining access-matrix checks are explicit in 02 §5.1.
+
+## BP-14 · Revalidate stored-file contents and report entry points
+
+**Approved access-hardening scope:** R-DEC-18 and the owner's 19 Oct instruction to pull/review Claude's changes and proceed when correct. This corrects verified gaps in `7de05d53`, not new financial rules.
+
+- Why: legacy files, sensitive columns and report source permissions bypassed the merged export check; report aging bypassed book guards; disabled-app historical cash bypassed the running-app guard.
+- Endpoints: existing `/reports/exports/{id}` and `/download`, report aging JSON/CSV, party CSV and dashboard projection. No new endpoint/model/migration.
+- Before/after: recheck the saved source's actual current read/book/column policy (old files included); refuse immutable private files with 404/regenerate rather than re-authorizing every unrelated grant. Reuse source classes/column definitions. Shop aging redacts main-book promise/limit fields to null; Shop CSV omits main-book contact finance columns. All-book cash requires every known book, including history from disabled apps; Shop cash is unchanged.
+- Compatibility/data impact: no stored accounting data rewrite. Older mixed-column or unverifiable exports may need regeneration. Source reads and calculations otherwise stay unchanged. Owners/legacy broad grants retain their established authority.
+- Risk/tests: preserve current valid downloads, controls for both grants and Shop-only access, JSON/CSV positive/negative book checks, cost/source revocation, legacy file metadata and disabled-module history. Fail-before and final results: `docs/performance/2026-10-19-claude-review-access-followup.md`.
+- Rollback: retain server access guards. Regenerate/export from the authorized source if a stored file becomes incompatible; do not grandfather private data to hide a permission error. No database rollback required.

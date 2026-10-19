@@ -273,11 +273,6 @@ class PartyViewSet(CsvExportMixin, TenantScopedNoDeleteViewSet):
         honestly labelled and useless for the question it was being asked.
         """
         if self.wants_csv(request):
-            require_book(
-                request,
-                "shop" if request.query_params.get("book") == "shop" else "main",
-                "parties.party.export",
-            )
             return self.csv_export(request)
         # The filtered set WITHOUT the export's role annotation (A6): the page and
         # the totals are the same queries they were, and badges are one more.
@@ -352,9 +347,19 @@ class PartyViewSet(CsvExportMixin, TenantScopedNoDeleteViewSet):
             qs = qs.filter(is_supplier=True)
         return qs.exists()
 
+    def authorize_export_scope(self, request: Any) -> None:
+        """CSV money is never an identity-only read, including stored files."""
+        require_book(
+            request,
+            "shop" if request.query_params.get("book") == "shop" else "main",
+            self.export_codename,
+        )
+
     def allowed_export_columns(self, request: Any) -> Any:
         columns = super().allowed_export_columns(request)
-        if "main" not in allowed_books(request, "parties.party.read"):
+        if request.query_params.get("book") == "shop" or "main" not in allowed_books(
+            request, "parties.party.read"
+        ):
             columns = tuple(
                 c for c in columns if c.header not in ("collection_date", "last_activity")
             )

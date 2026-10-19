@@ -40,3 +40,18 @@ Use only these facts; anything in the visual reference without a source below is
 | One part failed | `unavailable[]` per part | available |
 
 Verification constraint recorded 19 Oct: the claude.ai sandbox cannot download a Playwright browser (network allowlist), so the required real-browser matrix, screenshots and computed-contrast checks for Home must run on a machine with a browser (local `e2e/revamp-shots.mjs`). Unit tests and type checks alone do not prove this screen.
+
+## Independent readiness review · 19 Oct 2026 (R-DEC-20)
+
+Claude's seven commits provide access corrections, an API-source table and a
+baseline harness, not the rebuilt Home. BP-14 independently corrected further
+stored-export/report/book/history failures; the full final backend passes
+4,661 tests with 16 skips and no failures. See the dated review follow-up.
+
+The Home harness now measures loading and first-use frames rather than merely
+saving PNGs, awaits the measured page root, retains per-locale results, and
+requires the specified tabs outside baseline mode. The old screen's clipped
+chart labels remain a baseline defect to fix in the actual Counter Mode rebuild.
+Do not rate or ship the old layout as the completed redesign on the strength of
+API tests or baseline-mode output. The `build — not started` tracking remains
+accurate for the redesigned Home; preparation and data verification are complete.

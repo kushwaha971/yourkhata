@@ -9,7 +9,7 @@
  * own box, and computed contrast of every text node against the colours behind
  * it — and any finding fails the run unless `--baseline` records the old screen.
  *
- * Writes <dir>/<width>-<theme>-<locale>-<state>.png and results.json.
+ * Writes <dir>/<width>-<theme>-<locale>-<state>.png and results-<locale>.json.
  */
 import { writeFileSync } from 'node:fs';
 
@@ -37,12 +37,15 @@ export async function shootHome({ signedInContext, widths, themes, locale, dir, 
     const tag = `${width}-${theme}-${locale}`;
     const page = await ctx.newPage();
 
-    const check = async (state, { fullPage = false } = {}) => {
-      await page.evaluate(() => document.fonts.ready);
-      await page.waitForTimeout(250);
-      const measure = await measureCustomers(page, 'main');
+    const check = async (state, { fullPage = false, target = page } = {}) => {
+      // A frame is not verified merely because a PNG exists. Wait for its
+      // actual root, then measure the same page that is being photographed.
+      await target.locator('main').waitFor();
+      await target.evaluate(() => document.fonts.ready);
+      await target.waitForTimeout(250);
+      const measure = await measureCustomers(target, 'main');
       results.push({ width, theme, locale, state, ...measure });
-      await page.screenshot({ path: `${dir}/${tag}-${state}.png`, fullPage });
+      await target.screenshot({ path: `${dir}/${tag}-${state}.png`, fullPage });
       console.log(`${tag} ${state}: overflow ${measure.overflow}px, cut ${measure.cut.length}, contrast ${measure.lowContrast.length}`);
       if (!baseline && (measure.overflow > 0 || measure.cut.length || measure.lowContrast.length)) {
         failures.push(`${tag} ${state}: ${JSON.stringify({ overflow: measure.overflow, cut: measure.cut, lowContrast: measure.lowContrast })}`);
@@ -62,6 +65,8 @@ export async function shootHome({ signedInContext, widths, themes, locale, dir, 
         await tab.click();
         await page.waitForLoadState('networkidle');
         await check(state, { fullPage: true });
+      } else if (!baseline) {
+        failures.push(`${tag}: missing required Home tab ${state}`);
       }
     }
 
@@ -70,8 +75,8 @@ export async function shootHome({ signedInContext, widths, themes, locale, dir, 
     await held.route(DASHBOARD, async (route) => { await new Promise((r) => setTimeout(r, 5000)); await route.fallback(); });
     await held.route(DASHBOARD_BARE, async (route) => { await new Promise((r) => setTimeout(r, 5000)); await route.fallback(); });
     await held.goto(`${frontend}/dashboard`, { waitUntil: 'domcontentloaded' });
-    await held.waitForTimeout(1500);
-    await held.screenshot({ path: `${dir}/${tag}-loading.png` });
+    await held.locator('[data-testid="dashboard-screen"] > [aria-busy="true"]').waitFor();
+    await check('loading', { target: held });
     await held.close();
 
     // One part failed: the server's own mechanism, on its real response.
@@ -83,13 +88,7 @@ export async function shootHome({ signedInContext, widths, themes, locale, dir, 
     });
     await broken.goto(`${frontend}/dashboard`, { waitUntil: 'networkidle' });
     await broken.locator('[data-testid="dashboard-screen"]').waitFor({ timeout: 30_000 });
-    await broken.evaluate(() => document.fonts.ready);
-    const brokenMeasure = await measureCustomers(broken, 'main');
-    results.push({ width, theme, locale, state: 'part-failed', ...brokenMeasure });
-    await broken.screenshot({ path: `${dir}/${tag}-part-failed.png`, fullPage: true });
-    if (!baseline && (brokenMeasure.overflow > 0 || brokenMeasure.cut.length || brokenMeasure.lowContrast.length)) {
-      failures.push(`${tag} part-failed: ${JSON.stringify(brokenMeasure)}`);
-    }
+    await check('part-failed', { target: broken, fullPage: true });
     await broken.close();
 
     // First use: the checklist and nothing else.
@@ -98,12 +97,12 @@ export async function shootHome({ signedInContext, widths, themes, locale, dir, 
       data.first_use = { has_party: false, has_item: false, has_document: false, has_upi: false };
     });
     await first.goto(`${frontend}/dashboard`, { waitUntil: 'networkidle' });
-    await first.waitForTimeout(800);
-    await first.screenshot({ path: `${dir}/${tag}-first-use.png`, fullPage: true });
+    await first.getByTestId('dashboard-first-use').waitFor();
+    await check('first-use', { target: first, fullPage: true });
     await first.close();
 
     await ctx.close();
   }
-  writeFileSync(`${dir}/results.json`, JSON.stringify(results, null, 1));
+  writeFileSync(`${dir}/results-${locale}.json`, JSON.stringify(results, null, 1));
   return results;
 }

@@ -47,13 +47,6 @@ def request_has(request: Any, codename: str) -> bool:
     return bool(membership) and codename in permissions_for(membership)
 
 
-def export_books(request: Any, codename: str) -> tuple[str, ...]:
-    """The books a queued file may contain, recorded with it (R-DEC-18)."""
-    from apps.common.book_access import allowed_books
-
-    return tuple(sorted(allowed_books(request, codename)))
-
-
 def refuse_cross_site(request: Any) -> None:
     """403 for an export another site started (security review F-3).
 
@@ -335,6 +328,9 @@ class CsvExportMixin:
             if column.permission is None or request_has(request, column.permission)
         )
 
+    def authorize_export_scope(self, request: Any) -> None:
+        """Optional source-specific scope, shared by fresh and stored exports."""
+
     def csv_export(self, request: Any) -> Any:
         """Authorise, count, then stream (≤ 5,000) or queue (> 5,000)."""
         from django.http import StreamingHttpResponse
@@ -343,6 +339,7 @@ class CsvExportMixin:
         from apps.common.responses import StandardResponse
         from apps.common.tenancy import get_effective_tenant
 
+        self.authorize_export_scope(request)
         authorise_export(
             request,
             self,
@@ -378,7 +375,6 @@ class CsvExportMixin:
                 codename=self.export_codename,
                 row_count=count,
                 request_id=getattr(request, "request_id", None),
-                books=export_books(request, self.export_codename),
             )
             return StandardResponse.accepted(
                 {"export_id": str(export.id), "status": export.status, "row_count": count},
@@ -434,13 +430,8 @@ def queue_export(
     codename: str,
     row_count: int,
     request_id: str | None = None,
-    books: tuple[str, ...] = (),
 ) -> Any:
-    """A `reports_export` row and its `platform_job`, in one transaction.
-
-    `books` (BP-11 / R-DEC-18) are the books the requester could read with
-    `codename` when the file was made; the download requires them again.
-    """
+    """A `reports_export` row and its `platform_job`, in one transaction."""
     from django.apps import apps
     from django.db import transaction
 
@@ -461,7 +452,6 @@ def queue_export(
                 "columns": columns,
                 "view": f"{view.__module__}.{view.__qualname__}",
                 "codename": codename,
-                "books": list(books),
             },
         )
         enqueue(
@@ -475,7 +465,7 @@ def queue_export(
     return export
 
 
-def replay_export_queryset(export: Any) -> tuple[Any, tuple[ExportColumn, ...]]:
+def export_list_view(export: Any, reader: Any = None) -> Any:
     """Rebuild the list's filtered queryset in the scheduler (the async half).
 
     The view class is imported from the stored dotted path and must be a
@@ -486,6 +476,8 @@ def replay_export_queryset(export: Any) -> tuple[Any, tuple[ExportColumn, ...]]:
 
     from django.http import HttpRequest, QueryDict
     from rest_framework.request import Request
+
+    from apps.common.tenancy import get_effective_tenant
 
     path = export.params.get("view") or ""
     module_name, _, class_name = path.rpartition(".")
@@ -504,16 +496,25 @@ def replay_export_queryset(export: Any) -> tuple[Any, tuple[ExportColumn, ...]]:
     for key, value in (export.params.get("filters") or {}).items():
         query[key] = value
     raw.GET = query
-    raw.user = export.created_by
-    raw._ub_tenant = export.tenant  # the memo `get_effective_tenant` reads first
-    request = Request(raw)
-    request._request._ub_tenant = export.tenant
+    raw.user = reader.user if reader is not None else export.created_by
+    tenant = get_effective_tenant(reader) if reader is not None else export.tenant
+    raw._ub_tenant = tenant  # the memo `get_effective_tenant` reads first
+    request = Request(raw, authenticators=[])
+    request.user = raw.user
+    request.auth_claims = getattr(reader, "auth_claims", {}) if reader is not None else {}
+    request._request._ub_tenant = tenant
     view = view_class()
     view.request = request
     view.args = ()
     view.kwargs = {}
     view.format_kwarg = None
     view.action = "list"
+    return view
+
+
+def replay_export_queryset(export: Any) -> tuple[Any, tuple[ExportColumn, ...]]:
+    """Rebuild the same list source for the job; access is rechecked at download."""
+    view = export_list_view(export)
     wanted = set(export.params.get("columns") or [])
-    columns = tuple(column for column in view_class.export_columns if column.header in wanted)
+    columns = tuple(column for column in view.export_columns if column.header in wanted)
     return view.export_queryset(), columns
