@@ -18,3 +18,25 @@ Visual reference: Counter Mode design page, revision 3 and later (the published 
 | Fewer taps | "mohan 2000" in find-or-start opens Receive payment filled for Mohan with ₹2,000 (nothing saved until Receive); Repeat chips open filled forms. |
 
 Tracking: problems — TV-01 netting, TV-02 Shop reminders (server) · decisions — four-figure line kept over the big sentence (the owner liked the sentence; R-DEC-03 open: offer the sentence as a phone-only header line above the grid) · dependencies — TV-01, TV-02, per-hour series read · risks — find-or-start discoverability · approval — direction approved 17 Oct (colours, sidebar); details pending · build — not started · tests — dashboard e2e, figure-sum check, 320 px Hindi · outcome — —
+
+## Data available for Home (verified against the API, 19 Oct 2026)
+
+Use only these facts; anything in the visual reference without a source below is withheld, not approximated.
+
+| Reference element | Source today | Status |
+|---|---|---|
+| Billed today | `GET /reports/dashboard` `tiles.today_sales` (net of credit notes) | available |
+| Received today | `tiles.today_received` (Shop bucket) | available; **no cash/UPI split** — show the total only |
+| Paid out today | `GET /reports/dashboard/charts?range=7d` `money` last point `out` (Shop payments out + paid Shop expenses; Shop-only since c4c55deb) | available as one figure; **no suppliers/expenses split** |
+| Cash by your records | `tiles.shop_cash_in_hand` `{amount, since}` — never `cash_in_hand` (every book; hidden from Shop-only readers since 3be71500) | available |
+| Per-hour chart | — (charts group by day/week/month/year only) | **missing**: needs an 08 proposal; until approved, Insights shows the existing "Billed per day" trend |
+| Repeat chips | — | **missing**: needs an 08 proposal; omit |
+| To collect lane | `tiles.to_collect {amount, advances}`, `top_debtors`, Shop receivables aging from `charts.receivable_aging` | available; days-late per row not in `top_debtors` |
+| To pay lane | `tiles.to_pay {amount, advances}`, `top_creditors`, `tiles.supplier_bills` overdue / due this week | available |
+| Register | `recent_activity` (typed events with per-event permission) | available |
+| Follow-ups | overdue bills, supplier bills due, `low_stock_items`, `tiles.open_orders` | available; **promise dates are the Udhaar book's (DEC-019)** — not on the Shop Home |
+| Dual-role "Settle…" | — | **withheld**: BP-08 unapproved; never net roles |
+| First day | `first_use` | available |
+| One part failed | `unavailable[]` per part | available |
+
+Verification constraint recorded 19 Oct: the claude.ai sandbox cannot download a Playwright browser (network allowlist), so the required real-browser matrix, screenshots and computed-contrast checks for Home must run on a machine with a browser (local `e2e/revamp-shots.mjs`). Unit tests and type checks alone do not prove this screen.
