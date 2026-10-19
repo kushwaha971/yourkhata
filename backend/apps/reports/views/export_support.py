@@ -25,7 +25,7 @@ from django.http import StreamingHttpResponse
 
 from apps.common import exports as common_exports
 from apps.common.exceptions import BusinessRuleViolation
-from apps.common.exports import JOB_BUILD_EXPORT, audit_export_request, csv_lines
+from apps.common.exports import JOB_BUILD_EXPORT, audit_export_request, csv_lines, export_books
 from apps.common.responses import StandardResponse
 from apps.reports.exporting import Exporter
 
@@ -90,6 +90,7 @@ def _queue(
                 "query": params,
                 "codename": exporter.codename,
                 "filename": filename,
+                "books": list(export_books(request, exporter.codename)),
             },
         )
         enqueue(

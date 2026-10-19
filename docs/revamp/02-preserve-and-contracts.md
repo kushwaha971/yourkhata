@@ -103,7 +103,8 @@ A phone number is contact information, not membership or authorization. A person
 | Compatibility | Never-configured legacy memberships retain BP-11's documented broad role. Do not claim they have been migrated to strict app grants. |
 | Tenant transport and teardown | BP-13 adds expected-user/business preconditions before view execution and rejects late actor/revision responses and cross-context 401 retries; server token/membership/grants remain authoritative. See its dated report for measured browser cases and limitations; old clients omitting headers retain existing behavior. |
 | Personal Udhaar ownership | Still not independently per-user: BP-11 scopes existing tenant books, not a personal-book ownership migration. Do not claim this requirement complete. |
-| Imports/exports, public share/download tokens and remaining module actions | Continue explicit endpoint/action coverage during the next access audit and each screen family. Intended token-authorized customer sharing is different from granting access to the business workspace. Do not infer safety from hidden UI. |
+| Imports, exports and stored files | Party import reads/writes need the main-book grant it posts into; background exports re-check the books recorded at request time; `/files/{id}` serves only logos/signatures. See docs/performance/2026-10-19-access-audit-imports-exports.md. Customer share/pay tokens reviewed without a defect. |
+| Remaining module actions, whole-business backup export | Continue explicit endpoint/action coverage. Intended token-authorized customer sharing is different from granting access to the business workspace. Do not infer safety from hidden UI. |
 
 No change in this table authorizes modifying Library/Lending calculations, payload shapes or workflows.
 

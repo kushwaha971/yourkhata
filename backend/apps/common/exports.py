@@ -47,6 +47,13 @@ def request_has(request: Any, codename: str) -> bool:
     return bool(membership) and codename in permissions_for(membership)
 
 
+def export_books(request: Any, codename: str) -> tuple[str, ...]:
+    """The books a queued file may contain, recorded with it (R-DEC-18)."""
+    from apps.common.book_access import allowed_books
+
+    return tuple(sorted(allowed_books(request, codename)))
+
+
 def refuse_cross_site(request: Any) -> None:
     """403 for an export another site started (security review F-3).
 
@@ -371,6 +378,7 @@ class CsvExportMixin:
                 codename=self.export_codename,
                 row_count=count,
                 request_id=getattr(request, "request_id", None),
+                books=export_books(request, self.export_codename),
             )
             return StandardResponse.accepted(
                 {"export_id": str(export.id), "status": export.status, "row_count": count},
@@ -426,8 +434,13 @@ def queue_export(
     codename: str,
     row_count: int,
     request_id: str | None = None,
+    books: tuple[str, ...] = (),
 ) -> Any:
-    """A `reports_export` row and its `platform_job`, in one transaction."""
+    """A `reports_export` row and its `platform_job`, in one transaction.
+
+    `books` (BP-11 / R-DEC-18) are the books the requester could read with
+    `codename` when the file was made; the download requires them again.
+    """
     from django.apps import apps
     from django.db import transaction
 
@@ -448,6 +461,7 @@ def queue_export(
                 "columns": columns,
                 "view": f"{view.__module__}.{view.__qualname__}",
                 "codename": codename,
+                "books": list(books),
             },
         )
         enqueue(

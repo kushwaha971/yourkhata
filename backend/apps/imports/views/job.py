@@ -24,6 +24,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.views import APIView
 
 from apps.common.audit import write_audit
+from apps.common.book_access import allowed_books
 from apps.common.constants import ModuleCode
 from apps.common.context import Ctx
 from apps.common.exceptions import BusinessRuleViolation, NoActiveTenant, NotFound, PermissionDenied
@@ -53,12 +54,19 @@ def _tenant(request: Any) -> Any:
     return tenant
 
 
+def _holds(request: Any, spec: registry.ImporterSpec, codename: str) -> bool:
+    """The merged codename, and for a kind that posts money, that book's own grant."""
+    if not request_has(request, codename):
+        return False
+    return spec.book is None or spec.book in allowed_books(request, codename)
+
+
 def _may_read(request: Any, spec: registry.ImporterSpec | None) -> bool:
-    return spec is not None and request_has(request, spec.read_permission)
+    return spec is not None and _holds(request, spec, spec.read_permission)
 
 
 def _may_write(request: Any, spec: registry.ImporterSpec | None) -> bool:
-    return spec is not None and all(request_has(request, c) for c in spec.required_permissions)
+    return spec is not None and all(_holds(request, spec, c) for c in spec.required_permissions)
 
 
 def _job_or_404(request: Any, job_id: Any) -> tuple[ImportJob, registry.ImporterSpec | None]:

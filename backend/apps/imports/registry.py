@@ -101,6 +101,11 @@ class ImporterSpec:
     #: R28 — the column `is_example` compares against the template rows. A
     #: library copy has no `name`; its example row is known by its accession.
     example_key: str = "name"
+    #: BP-11 / R-DEC-18 — the financial book `commit_rows` posts into, if any.
+    #: Reading and writing the kind then also need that book's own app grant,
+    #: exactly as the drawer that writes the same rows does; a merged codename
+    #: from another app's grant is not enough.
+    book: str | None = None
 
     @property
     def column_names(self) -> tuple[str, ...]:

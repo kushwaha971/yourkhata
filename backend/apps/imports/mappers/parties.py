@@ -543,5 +543,9 @@ SPEC = register(
         ),
         records_route="/parties",
         totals=preview_totals,
+        # `post_opening_balance` writes the main (Udhaar) book, so the drawer's
+        # BP-11 rule applies here too. Which book a Shop import SHOULD post to is
+        # a separate product question (docs/revamp/12), not changed here.
+        book="main",
     )
 )

@@ -21,11 +21,17 @@ from rest_framework.views import APIView
 
 from apps.common.exceptions import NoActiveTenant, NotFound
 from apps.common.tenancy import get_effective_tenant
+from apps.files.constants import AttachmentKind
 from apps.files.selectors.attachments import attachment_of_tenant
+
+#: R-DEC-18 — the kinds this route publishes URLs for (`branding.attachment_url`).
+#: Import uploads and export files have their own routes, which check the kind's
+#: permission and book; serving them here by id would bypass both.
+SERVED_KINDS = frozenset({AttachmentKind.LOGO, AttachmentKind.SIGNATURE})
 
 
 class AttachmentContentView(APIView):
-    """Any active member of the owning tenant may read; 404 for anyone else."""
+    """A branding image, to any active member of its tenant; 404 for anything else."""
 
     permission_classes = [IsAuthenticated]
 
@@ -34,7 +40,11 @@ class AttachmentContentView(APIView):
         if tenant is None:
             raise NoActiveTenant()
         attachment = attachment_of_tenant(tenant=tenant, attachment_id=attachment_id)
-        if attachment is None or not default_storage.exists(attachment.storage_key):
+        if (
+            attachment is None
+            or attachment.kind not in SERVED_KINDS
+            or not default_storage.exists(attachment.storage_key)
+        ):
             raise NotFound()
         response = FileResponse(
             default_storage.open(attachment.storage_key, "rb"),

@@ -24,6 +24,7 @@ Last updated: 19 Oct 2026, on `dev`.
 | 12 | [Decisions and progress](12-decision-log.md) | every decision and activity | living |
 | — | [AGENT_START_PROMPT.md](AGENT_START_PROMPT.md) | the prompt to give any coding agent (Codex, Cursor, Claude Code, others) to continue this work the same way | current |
 | — | [design/counter-mode.html](design/counter-mode.html) | the visual reference page (open in a browser) | current |
+| — | [Imports/exports access evidence](../performance/2026-10-19-access-audit-imports-exports.md) | party import book grant, export book re-check, stored-file route scope, full-run results and open questions | access audit in progress; Home not started |
 | — | [Request-context correction evidence](../performance/2026-10-19-bp13-request-context.md) | stale actor/business responses and retry/write intent, real browser refusal/reload, gates and remaining audit limits | BP-13 checkpoint; handoff before Home (R-DEC-19) |
 | — | [Access-context correction evidence](../performance/2026-10-19-bp12-context-isolation.md) | Shop-only staff searches, source caches, module/recipient notifications, regression/visual evidence and explicit access audit boundaries | scoped corrections delivered; actor-response correction in BP-13 |
 | — | [Suppliers implementation evidence](../performance/2026-10-19-p5-suppliers.md) | shared Counter Mode register, supplier payment journey, multi-party products, backend/frontend checks and delivery evidence | Supplier piece verified; whole Shop ongoing |
