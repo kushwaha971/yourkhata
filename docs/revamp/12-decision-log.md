@@ -107,6 +107,8 @@ destructive actions and frozen Library/Lending contracts retain their boundaries
 
 ## Progress
 
+20 Oct 2026 — Shop Customers list: PostgreSQL JIT compiled every Shop-facts query for ~0.6 s before running it in ~0.04 s. `jit=off` on the app's connections; API 1.6–1.9 s → 0.44–0.52 s, Customers tab 1.65 s → 0.45–0.61 s. Backend 4,673 passed / 16 skipped / 2 timing failures (one already red). `docs/performance/2026-10-20-shop-customers-jit.md`.
+
 20 Oct 2026 — Bill editor composition (07-screens/09 §3): always-open item search, compact Shop customer line, offline/slow Issue states, Issue named with its total; live run found and fixed a squeezed customer name at 320 px, a red Restore and Escape discarding a kept bill. 4,564 frontend tests, 80 frames, real Quick Sale issue and draft restore on local QA. Found the Shop customer list API at 1.5–1.9 s. `docs/performance/2026-10-20-p5-editor-compose.md`.
 
 
@@ -168,9 +170,8 @@ and updated continuation prompt. This changes words, not the sequence below.
 3. Remaining Home workflows approved in R-DEC-26 (BP-08/16/17), integrated with
    the verified source workflows, followed by Home end-to-end acceptance.
 
-Immediate next: (a) the Shop customer list API, `GET /parties?book=shop&type=customer`, 1.5–1.9 s on the
-2,000-contact QA tenant because each customer's dues is a correlated SUM over sales_document (list, totals and
-chip counts each pay it); (b) finish §3: create/restore item from a no-match search, "Add <name>" from the
+Immediate next: finish §3 (the Customers list JIT fix is in; its remaining ~0.3 s of totals/counts is noted in
+the 20-Oct JIT report): create/restore item from a no-match search, "Add <name>" from the
 customer search, the changed-rate note, Jump to line, expired-session return; then the remaining sales
 documents, purchases and returns. Editor composition delivered 20 Oct (see Progress). Continue review→build→LOOK→
 report→commit/push for each piece without routine permission questions. Preserve

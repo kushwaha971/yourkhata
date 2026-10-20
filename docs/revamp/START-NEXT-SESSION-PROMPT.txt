@@ -23,11 +23,9 @@ Do not return to Home first. The owner explicitly deferred it because it needs
 those modules' final data. Do not ask routine phase/next-screen permission again.
 
 IMMEDIATE NEXT PIECE
-1. Shop customer list API: GET /parties?book=shop&type=customer takes 1.5-1.9 s
-   on the 2,000-contact QA tenant (Customers tab 131 -> 1,668 ms). Each
-   customer's Shop dues is a correlated SUM(amount_due) over sales_document,
-   paid by the list, the totals and the chip counts. Reproduce with EXPLAIN and
-   a failing performance test first; do not change what the figures mean.
+1. Done 20 Oct: Shop Customers list was slow because PostgreSQL JIT compiled
+   each query; jit=off on app connections (2026-10-20-shop-customers-jit.md).
+   The remaining ~0.3 s of totals/chip counts is noted there, not fixed.
 2. Finish 07-screens/09 section3: create/restore an item from a no-match search
    (owner/item-write only), "Add <name>" from the customer search, the
    changed-rate note "For this bill only. The usual price stays Rs450.", the
@@ -36,6 +34,8 @@ IMMEDIATE NEXT PIECE
    slow Issue, recovery) is delivered; the sales/POS family is NOT complete.
 
 LATEST DELIVERED WORK
+- Customers list JIT fix (20 Oct): 1.65 s -> 0.45-0.61 s; backend 4,673 passed,
+  16 skipped, 2 wall-clock failures recorded, not relabelled.
 - Bill editor composition (20 Oct): always-open item search, Shop customer
   line, offline/slow Issue, draft recovery fixes; 4,564 tests, 80 frames, real
   Quick Sale issued locally. Report: 2026-10-20-p5-editor-compose.md. Harness:

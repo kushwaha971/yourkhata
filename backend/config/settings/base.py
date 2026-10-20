@@ -129,7 +129,10 @@ DATABASES = {
             "options": (
                 f"-c statement_timeout={env.int('UB_DB_STATEMENT_TIMEOUT_MS', 15000)} "
                 f"-c lock_timeout={env.int('UB_DB_LOCK_TIMEOUT_MS', 5000)} "
-                f"-c idle_in_transaction_session_timeout=30000"
+                f"-c idle_in_transaction_session_timeout=30000 "
+                # JIT compiles for 0.6 s to save microseconds on correlated
+                # subqueries: tests/performance/test_no_jit.py.
+                f"-c jit=off"
             ),
         },
     }
