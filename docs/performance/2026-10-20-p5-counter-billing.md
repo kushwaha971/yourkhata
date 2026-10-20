@@ -137,17 +137,50 @@ the dialog says when the bill was kept, not what is in it.
 
 ## Navigation timing
 
-`data/2026-10-20-counter-billing-nav.json`, three repetitions, run with nothing
-else on the machine, against the 18 Oct baseline: median 578 → 610 ms, p95
-1,243 → 1,470 ms over 36 cases. **This does not show the billing work is
-neutral, and it does not show it is to blame.** Almost every case is slower,
-including Library and Lending (library.home→members +547 ms throttled), which
-are frozen and which this work never touched, so the difference is mostly the
-machine, not the code. The largest single change is shop.home→customers
-(+463–488 ms unthrottled at both widths), which is worth a look on its own. A
-fair answer needs the old and new builds timed in the same container one after
-the other; that is part of the rescore, and performance is not called above
-8.5 until it is done.
+A first run against the 18 Oct baseline (`data/2026-10-20-counter-billing-nav.json`)
+was slower almost everywhere, frozen Library and Lending included, so it said
+nothing about this work. The fair test was then run: the build before this work
+(3421283) and the current build, **alternately in the same container** (old,
+new, old, new; three repetitions each; `data/2026-10-20-counter-billing-nav-ab-*.json`).
+Pooled over 48 cases: **median 684 ms old, 688 ms new; p95 1,499 old, 1,461
+new.** The two old runs differ from each other by 8.5 ms at the median, so the
+4 ms is noise: navigation is unchanged. The first run's shop.home→customers
+outlier is not there (old 584, new 604 unthrottled at 1280; throttled new is
+faster).
+
+## Editor speed on a long bill
+
+`e2e/perf-billing.mjs` adds thirty different items through the search and times
+Enter to the line on screen, and reads the browser's own Event Timing for the
+slowest input (`data/2026-10-20-counter-billing-editor.json`; two runs agree).
+
+| | Enter → line, median / p95 | slowest event while picking | typing a Qty digit |
+|---|---|---|---|
+| Phone, 390 px, CPU 4× slower | 190–207 / 238–270 ms | 216–248 ms | 48–72 ms |
+| Laptop, 1280 px | 96–105 / 138–158 ms | 160–184 ms | 48–64 ms |
+
+Typing is quick. **A pick on a long bill on a slow phone is about 200 ms**, the
+line where "good" responsiveness ends; it is the weakest number here.
+
+## Rescore (20 Oct), in the Counter Mode artifact's table
+
+Against the owner's bar of above 8.5 in every aspect, phone and desktop.
+
+| Point of view | Score | Evidence | Still weak | Confidence |
+|---|---|---|---|---|
+| Function, phone | 8.5 | One-tap Paid cash issued for real; Hold and the On hold row; Add customer and Create/Restore item from no match; find a line; expired session keeps the bill; flows 0 failures | No per-line "usual price" caption (only the changed-rate note); the restore dialog says when, not what; verified on Tax Invoice, not each other sales document | Medium |
+| Function, desktop | 8.5 | Same flows at 1280; Ctrl+Enter, Enter cell to cell | Same as phone | Medium |
+| Busy shop, phone | 8.5 | Repeat scan raises Qty; a scan keeps the caret; Hold without losing the bill; one-tap cash | No real HID scanner or real phone tried; Hold has no shortcut | Medium |
+| Busy shop, desktop | 9 | Keyboard-only bill: search, Enter, Qty, Ctrl+Enter; find a line | Same scanner caveat | Medium |
+| UI/UX, phone | 8.5 | 70 English and 38 Hindi frames, zero overflow, cut text or low contrast; held chips one row; options wrap | Dock holds Paid cash / UPI or other, not the artifact's Save draft / Save bill (told to the owner); business name in the top bar is cut at 320 px in Hindi (app chrome, not the editor) | Medium-high |
+| UI/UX, desktop | 8.5 | Same frames at 1024 and 1280 | Header Save and Hold are quiet ghost buttons | Medium-high |
+| Performance, phone | **8** | Navigation unchanged against the old build; typing 48–72 ms | **A pick on a 30-line bill at 4× CPU is about 200 ms** | Medium (emulated CPU) |
+| Performance, desktop | 9 | Pick about 100 ms, typing under 65 ms, navigation unchanged | — | Medium |
+
+**Not above 8.5 everywhere yet: phone performance is 8.** The next piece is
+making a pick cheaper on a long phone bill (the whole editor re-renders and
+re-prices every line on each pick), then the remaining sales documents,
+purchases and returns.
 
 ## Not in this piece
 

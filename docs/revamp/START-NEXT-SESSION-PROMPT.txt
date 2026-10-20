@@ -41,13 +41,13 @@ lines, caret to the line's Qty); UbCombobox options wrap instead of "...".
 Verified, no change needed: an expired session sends the merchant to sign in
 with next=the bill, and the device copy is offered back after sign-in (harness
 flow session-return).
+Rescored 20 Oct (report's "Rescore" table): 8.5-9 everywhere EXCEPT phone
+performance 8. Navigation is unchanged (same-container old/new, median 684 vs
+688 ms). The weak number: adding an item to a 30-line bill at 4x CPU takes
+~200 ms (NODE_PATH=$(npm root -g) node e2e/perf-billing.mjs).
 Remaining, in order:
-1. Same-container navigation timing, old build vs new, one after the other:
-   the 20 Oct run (docs/performance/data/2026-10-20-counter-billing-nav.json)
-   was slower than 18 Oct everywhere, frozen Library/Lending included, so it
-   proves nothing either way; shop.home->customers +~470 ms is the outlier.
-2. Rescore in the artifact's table: point of view, score, evidence, still weak,
-   confidence, for phone and desktop, from frames and measurements.
+1. Make a pick cheaper on a long phone bill (whole editor re-renders and
+   re-prices every line per pick), re-run perf-billing.mjs, then rescore.
 Then the remaining sales documents, purchases and returns (R-DEC-27).
 Open owner question: should jit=off (3421283) go to production or stay local?
 

@@ -107,6 +107,8 @@ destructive actions and frozen Library/Lending contracts retain their boundaries
 
 ## Progress
 
+20 Oct 2026 — Billing rescore in the artifact's table: function/busy shop/UI 8.5–9 on phone and desktop; performance desktop 9, phone 8. Same-container old/new navigation: median 684 vs 688 ms (noise 8.5 ms), unchanged. New e2e/perf-billing.mjs: pick on a 30-line bill ~200 ms at 4x CPU, ~100 ms laptop; typing 48–72 ms. Report: 2026-10-20-p5-counter-billing.md.
+
 20 Oct 2026 — Billing: "Find a line on this bill" from ten named lines puts the caret in the chosen line's Qty (lazy `InvoiceLineFinder`). Live look found every combobox cutting long options with "…"; they wrap now. 4,589 tests; 108 frames. Navigation timing slower everywhere against 18 Oct, frozen apps included, so not attributable; same-container A/B owed before the rescore. Report: 2026-10-20-p5-counter-billing.md (third section).
 
 20 Oct 2026 — Billing hold and resume ("On hold · N" row of time-stamped chips above the editor, Hold saves then opens a blank bill) and "Add <name> as a new customer" from the Saved customer search (write permission only, lazy contact form). List rows carry `updated_at`. Live look fixed held chips wrapping to three phone rows and identical-looking held bills; harness now cleans the drafts it POSTs. 4,585 tests; 84 frames. Report: 2026-10-20-p5-counter-billing.md (second section).
@@ -176,8 +178,8 @@ and updated continuation prompt. This changes words, not the sequence below.
 3. Remaining Home workflows approved in R-DEC-26 (BP-08/16/17), integrated with
    the verified source workflows, followed by Home end-to-end acceptance.
 
-Immediate next (owner, 20 Oct: billing >8.5 in every aspect against the Counter Mode artifact): a same-container old/new navigation timing (the 20 Oct run was slower everywhere, frozen apps too), then the rescore in the artifact's table (point of view, score, evidence,
-still weak, confidence). Expired-session return (verified working, now a harness flow), find a line on a long bill, hold/resume, "Add <name>", create/restore item, changed-rate note, Paid cash, repeat-scan Qty are done
+Immediate next (owner, 20 Oct: billing >8.5 in every aspect against the Counter Mode artifact): rescored 20 Oct, all aspects 8.5–9 except phone performance 8 (a pick on a 30-line bill at 4x CPU ~200 ms;
+e2e/perf-billing.mjs). Make that pick cheaper, re-measure, rescore. Expired-session return (verified working, now a harness flow), find a line on a long bill, hold/resume, "Add <name>", create/restore item, changed-rate note, Paid cash, repeat-scan Qty are done
 (2026-10-20-p5-counter-billing.md). Then the remaining sales documents, purchases and returns. Editor composition delivered 20 Oct (see Progress). Continue review→build→LOOK→
 report→commit/push for each piece without routine permission questions. Preserve
 separate roles/books, source permissions and frozen Library/Lending contracts.
