@@ -149,7 +149,7 @@ def write_off_party_balance(*, ctx: Ctx, party: Any, request: dict) -> dict:
     if balance == ZERO:
         raise BusinessRuleViolation(
             "nothing_to_write_off",
-            "This party's balance is already zero — there is nothing to write off.",
+            "This contact's balance is already zero — there is nothing to write off.",
             details={"balance": str(balance)},
         )
 

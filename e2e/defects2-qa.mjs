@@ -519,7 +519,7 @@ async function phaseL(browser) {
   {
     const { ctx, page } = await open(DESK);
     await page.goto(`${FE}/parties`, { waitUntil: 'networkidle' }); await page.waitForTimeout(1200);
-    await page.getByRole('button', { name: /Add party/ }).first().click(); await page.waitForTimeout(1200);
+    await page.getByRole('button', { name: /Add contact/ }).first().click(); await page.waitForTimeout(1200);
     await page.getByRole('button', { name: /Opening balance/ }).first().click().catch(() => {}); await page.waitForTimeout(600);
     const t = await page.getByRole('dialog').last().innerText().catch(() => '');
     await shot(page, 'party-form-opening-chip');

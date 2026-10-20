@@ -44,7 +44,7 @@ PRESETS: dict[str, Preset] = {
     ),
     BusinessType.WHOLESALE.value: Preset(
         inventory_enabled=True,
-        party_labels=("Party", "Supplier"),
+        party_labels=("Customer", "Supplier"),
         favourite_units=("NOS", "BOX", "BAG", "KGS", "QTL", "DOZ"),
         extra_expense_categories=("Loading & unloading", "Godown rent"),
         default_due_days=15,
@@ -65,7 +65,7 @@ PRESETS: dict[str, Preset] = {
     ),
     BusinessType.TRADER.value: Preset(
         inventory_enabled=True,
-        party_labels=("Party", "Supplier"),
+        party_labels=("Customer", "Supplier"),
         favourite_units=("KGS", "QTL", "TON", "BAG", "NOS"),
         extra_expense_categories=("Commission", "Mandi charges"),
         default_due_days=15,
@@ -98,7 +98,7 @@ PRESETS: dict[str, Preset] = {
     ),
     BusinessType.OTHER.value: Preset(
         inventory_enabled=True,
-        party_labels=("Party", "Supplier"),
+        party_labels=("Customer", "Supplier"),
         favourite_units=("NOS", "KGS", "LTR"),
         extra_expense_categories=(),
         default_due_days=30,

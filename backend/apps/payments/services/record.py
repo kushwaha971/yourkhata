@@ -286,11 +286,11 @@ def _lock_party_for(ctx: Ctx, party_id: Any) -> Any:
         party = None
     if party is None:
         # Canon §0.11 rule 2 — another tenant's party is NOT FOUND.
-        raise NotFound("No such party.")
+        raise NotFound("No such contact.")
     if party.status == PartyStatus.ARCHIVED:
         raise BusinessRuleViolation(
             "party_archived",
-            "This party is archived. Restore them to record a payment.",
+            "This contact is archived. Restore them to record a payment.",
             details={"party_id": str(party.id), "name": party.name},
         )
     return party
@@ -452,7 +452,7 @@ def _walk_in(ctx: Ctx, *, document_id: Any, amount: Decimal) -> list[_Chosen]:
         raise NotFound("No such bill.")
     document = documents[0]
     if target.outstanding(document) != amount:
-        raise ValidationFailed({"payment": ["Walk-in sale must be paid in full"]})
+        raise ValidationFailed({"payment": ["quick sale must be paid in full"]})
     return [_Chosen(target, document, amount)]
 
 
@@ -537,7 +537,7 @@ def _record(
     party = None
     if walk_in_document_id is not None:
         if direction != PaymentDirection.IN:
-            raise ValidationFailed({"direction": ["A walk-in sale is money received."]})
+            raise ValidationFailed({"direction": ["A quick sale is money received."]})
         chosen = _walk_in(ctx, document_id=walk_in_document_id, amount=amount)
         mode = AllocationMode.MANUAL
     else:

@@ -423,11 +423,11 @@ def open_deposit(
 
     party = lock_party(tenant=ctx.tenant, party_id=party_id)
     if party is None:
-        raise NotFound("No such party.")
+        raise NotFound("No such contact.")
     if party.status == PartyStatus.ARCHIVED:
         raise BusinessRuleViolation(
             "party_archived",
-            "This party is archived. Restore them to take a deposit.",
+            "This contact is archived. Restore them to take a deposit.",
             details={"party_id": str(party.id), "name": party.name},
         )
     standing = (
@@ -567,7 +567,7 @@ def _clean_allocations(raw: Any) -> tuple[list[dict], Decimal]:
             or target.bucket in (LedgerBucket.DEPOSIT, LedgerBucket.LOAN)
         ):
             details[f"allocations.{index}.document_type"] = [
-                "A deposit is adjusted against what the party owes."
+                "A deposit is adjusted against what the contact owes."
             ]
             continue
         errors: dict[str, list[str]] = {}

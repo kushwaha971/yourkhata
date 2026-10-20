@@ -120,6 +120,6 @@
   "admin.tenants.stats": "Businesses by status",
   "admin.tenants.subtitle": "Every business on the platform — search by name, GSTIN, owner email or id.",
   "admin.tenants.title": "Businesses",
-  "admin.tenants.usage": "{members, plural, one {# member} other {# members}} · {parties, plural, one {# party} other {# parties}}",
+  "admin.tenants.usage": "{members, plural, one {# member} other {# members}} · {parties, plural, one {# contact} other {# contacts}}",
   "admin.working": "Working…"
 }

@@ -134,7 +134,7 @@ def _refuse_archived(party: Party) -> None:
     if party.status == PartyStatus.ARCHIVED:
         raise BusinessRuleViolation(
             "party_archived",
-            "Restore this party before linking them.",
+            "Restore this contact before linking them.",
             details={"party_id": str(party.id)},
         )
 
@@ -161,11 +161,11 @@ def create_relation(
     if kind not in RelationKind.values:
         raise ValidationFailed({"kind": ["Choose Guardian or Pays for."]})
     if str(related_party_id) == str(party.id):
-        raise ValidationFailed({"related_party_id": ["A party cannot be linked to themselves."]})
+        raise ValidationFailed({"related_party_id": ["A contact cannot be linked to themselves."]})
 
     related = Party.objects.for_tenant(ctx.tenant).filter(pk=related_party_id).first()
     if related is None:
-        raise NotFound("Party not found.")
+        raise NotFound("Contact not found.")
     # Both rows locked in id order, so two opposite links made at once cannot
     # deadlock, and an archive racing this link sees one or the other.
     locked = {

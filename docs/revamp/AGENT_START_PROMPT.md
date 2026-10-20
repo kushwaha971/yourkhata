@@ -8,11 +8,12 @@ Replace the line marked `TASK` with what you want done next. If you leave it out
 
 Read START-NEXT-SESSION-PROMPT.txt and12's current Next first. R-DEC-27 orders
 billing/POS, purchases and returns, then inventory, payments, expenses and reports
-before the remaining Home workflows. Immediate next: invoice/POS editor. BP-08/
-16/17 remain approved under R-DEC-26; integrate them afterward using verified
-source workflows. BP-15 is delivered asfe6852ae; the dated source-facts report
-records4,673 backend passes/16 skips,4,547 frontend passes and168 Home states.
-Do not repeat approval questions or inflate whole-app completion from one screen.
+before the remaining Home workflows. Immediate next: continue invoice/POS editor.
+Compact line/totals component407d9caa is delivered; it is not the whole editor.
+R-DEC-28 adds app-wide Quick Sale / Saved customer and role-appropriate Customer,
+Supplier, Contact copy. Read2026-10-20-plain-contact-terms.md for verification and
+the explicit backend full-run timing/copy-assertion caveat. BP-08/16/17 remain
+approved but deferred. Do not repeat approvals or inflate whole-app completion.
 
 ```text
 You are continuing the YourKhata revamp: a redesign of the whole app (Shop, Udhaar

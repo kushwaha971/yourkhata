@@ -589,7 +589,7 @@ def _party(ctx: Any, data: dict, errors: Errors) -> Any:
     if data.get("party_id"):
         party = owned(Party, ctx.tenant, data.get("party_id"), errors, "party_id")
         if party is not None and party.status != "active":
-            errors.add("party_id", "This party is archived. Restore them first.")
+            errors.add("party_id", "This contact is archived. Restore them first.")
         return party
     raw = data.get("party")
     if not isinstance(raw, dict) or not raw.get("name"):

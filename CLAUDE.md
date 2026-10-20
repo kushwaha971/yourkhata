@@ -63,6 +63,13 @@ not used** — this overrides any earlier suggestion to the contrary. TanStack
 `react/forbid-elements` enforces it. Central utils and enums, no duplication —
 if you write something twice, extract it.
 
+**Plain labels (owner,20 Oct2026):** billing says Quick Sale / Saved customer.
+Sales says Customer, purchases Supplier; shared identity/pickers/history say
+Contact. Replace visible Party/Parties and Walk-in copy throughout the app,
+including Hindi and server presentation messages. Keep model names, request and
+response keys, route/permission identifiers, import headers and saved user data
+unchanged. The new labels do not change business rules or app/book ownership.
+
 **Errors surface through the global snackbar**, mounted once in `AppProviders`,
 never per page. **No error shows a "Reference <request id>" line** (owner, 7 Oct
 2026): `UbRequestId` draws nothing, so every snackbar, empty state and dialog

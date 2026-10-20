@@ -136,7 +136,7 @@ for (const [label, viewport] of [['desktop', { width: 1440, height: 900 }], ['ph
   // Credit sale to Ramesh.
   await p.goto(`${FE}/sales/invoices/new`, { waitUntil: 'domcontentloaded' });
   await p.waitForTimeout(3000);
-  await p.getByRole('radio', { name: 'Party' }).click().catch(() => p.getByText('Party', { exact: true }).first().click());
+  await p.getByRole('radio', { name: 'Saved customer' }).click().catch(() => p.getByText('Saved customer', { exact: true }).first().click());
   await p.waitForTimeout(300);
   await p.getByPlaceholder('Search by name or mobile').fill('Ram');
   await p.waitForTimeout(1500);

@@ -56,7 +56,7 @@ def resolve_party(tenant: Any, party_id: Any, errors: dict) -> Any:
         return None
     party = Party.objects.filter(tenant=tenant, pk=party_id).first()
     if party is None:
-        errors["party_id"] = ["Choose a party from your list."]
+        errors["party_id"] = ["Choose a saved customer from your list."]
     return party
 
 

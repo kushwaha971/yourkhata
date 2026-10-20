@@ -80,7 +80,7 @@ REGISTRY: dict[str, NotificationType] = {
             category=NotificationCategory.REMINDERS,
             severity=NotificationSeverity.WARNING,
             required_permission="ledger.entry.read",
-            title_en="{count} parties have a payment due today",
+            title_en="Contacts with payments due today: {count}",
             body_en="Tap to see who to remind",
             group_window=24 * 60,
             route=lambda _p: "/ledger/reminders?bucket=today",

@@ -64,6 +64,16 @@ responsibile in everywhere in futruer”. This is a continuing quality standard,
 recorded in CLAUDE.md. Use the reference for whole compositions and real flows,
 not just isolated components; expose gaps rather than overstate completion.
 
+## R-DEC-28 · Plain labels throughout the application
+
+Owner,20 Oct2026, recorded07:21 UTC (12:51 IST): “Quick Sale and Saved customer”,
+then “everru where in entienr project”. Apply those billing labels and use
+Customer/Supplier by role, Contact for neutral/shared identities, across rendered
+English/Hindi copy, reports, imports, activity and server presentation messages.
+Preserve machine identifiers, API/import contracts, user records and all existing
+financial/vertical workflows. This is presentation wording, not a mode/model
+rename or a migration of people between books. R-DEC-27 delivery order continues.
+
 ## R-DEC-27 · Finish Shop source workflows before remaining Home features
 
 Owner,20 Oct2026, recorded06:17 UTC (11:47 IST): “do home penidnfg work
@@ -108,6 +118,7 @@ destructive actions and frozen Library/Lending contracts retain their boundaries
 
 | Date | What was done | Files |
 |---|---|---|
+|20 Oct2026|R-DEC-28 plain labels across English/Hindi and server presentation: Quick Sale/Saved customer, Customer/Supplier/Contact by context.4,550 frontend passes and48 read-only browser frames. Full backend4670 pass/16 skip/3 failures; corrected59-test group passes incl isolated scale40.37s; original full-run caveat retained. Handoff updated; next remains billing/POS, Home deferred.|docs/performance/2026-10-20-plain-contact-terms.md; START-NEXT-SESSION-PROMPT.txt|
 |20 Oct2026|R-DEC-27 billing component checkpoint: opt-in compact rows, edit/error focus retention, full names, readable total dock and numeric rates.4,550 tests,84 measured frames; whole POS remains in progress. Next: item search/customer composition and issue/recovery flows.|docs/performance/2026-10-20-p5-editor-lines.md;07-screens/09 §3|
 |20 Oct2026|R-DEC-27 owner reordered work: billing/POS, purchases/returns, inventory/money/expenses/reports first; approved remaining Home workflows afterward, using those sources. Next: invoice/POS editor.|07-screens/09; START-NEXT-SESSION-PROMPT.txt|
 |20 Oct2026|BP-15 Home source facts and Shop-origin read fences:4,673 backend passes/16 skips,4,547 frontend passes,168 measured frames; local payment refresh tested. R-DEC-26 approves promises, physical cash observations and explicit settlements; implement next.|docs/performance/2026-10-20-home-register-facts.md;08 BP-08/16/17|
@@ -145,6 +156,9 @@ destructive actions and frozen Library/Lending contracts retain their boundaries
 | 17 Oct 2026 | Tool-neutral start prompt for any coding agent; root AGENTS.md; design page copied into the repo | AGENT_START_PROMPT.md, design/ |
 
 ## Next
+
+R-DEC-28 terminology checkpoint is delivered on dev; see the20-Oct label report
+and updated continuation prompt. This changes words, not the sequence below.
 
 **R-DEC-27 current order:**
 1. Billing/POS editor and remaining sales document flows, purchases and returns.

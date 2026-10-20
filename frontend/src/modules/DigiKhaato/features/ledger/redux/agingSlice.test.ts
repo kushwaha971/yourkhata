@@ -56,7 +56,7 @@ it.each<Partial<AgingFilters>>([
   state = reduce(state, fetchLedgerAging.pending('new', next));
   state = reduce(state, fetchLedgerAging.fulfilled(page('Correct party', next), 'new', next));
   const correct = state;
-  state = reduce(state, fetchLedgerAging.fulfilled(page('Wrong party', BASE), 'old', BASE));
+  state = reduce(state, fetchLedgerAging.fulfilled(page('Wrong contact', BASE), 'old', BASE));
   expect(state).toEqual(correct);
 });
 

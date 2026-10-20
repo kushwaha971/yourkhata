@@ -107,7 +107,7 @@
   "onboarding.type.professional": "Professional",
   "onboarding.type.professional.hint": "Clients and fees",
   "onboarding.type.retail": "Retail shop",
-  "onboarding.type.retail.hint": "Walk-in customers, udhaar",
+  "onboarding.type.retail.hint": "Customers without saved details, udhaar",
   "onboarding.type.services": "Services",
   "onboarding.type.services.hint": "Clients on monthly credit",
   "onboarding.type.trader": "Trader / mandi",

@@ -151,7 +151,7 @@ def create_schedule(
     if party.status == "archived":
         raise BusinessRuleViolation(
             "party_archived",
-            "This party is archived. Restore them or choose another party.",
+            "This contact is archived. Restore them or choose another contact.",
             details={"party_id": str(party.id)},
         )
     beneficiary = None
@@ -160,7 +160,7 @@ def create_schedule(
 
         beneficiary = Party.objects.for_tenant(tenant).filter(pk=beneficiary_party_id).first()
         if beneficiary is None:
-            raise ValidationFailed({"beneficiary_party_id": ["Choose a party of this business."]})
+            raise ValidationFailed({"beneficiary_party_id": ["Choose a contact of this business."]})
 
     plan = DuesPlan.objects.for_tenant(tenant).filter(pk=plan_id).first()
     if plan is None:

@@ -312,7 +312,7 @@ class ItemLastRateView(TenantScopeMixin, APIView):
             except ValueError:
                 raise ValidationFailed({name: ["Not a valid id."]}) from None
         if ids["party"] is None:
-            raise ValidationFailed({"party": ["Choose a party."]})
+            raise ValidationFailed({"party": ["Choose a contact."]})
         tenant = self.get_tenant()
         granted = granted_permissions(tenant)
         prefix = "sales.invoice" if side == "sales" else "purchases.bill"

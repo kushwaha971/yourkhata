@@ -304,7 +304,7 @@ async function sweepTaggedBook(ctx, size) {
   // 4. The party form, with the Tags picker open on the create-inline row.
   await at('form', async () => {
     await openList(page);
-    await page.getByRole('button', { name: /^Add party/i }).first().click();
+    await page.getByRole('button', { name: /^Add contact/i }).first().click();
     await settle(page, 900);
     await capture(page, size, '04-form-drawer-tags-field');
     await page.getByRole('combobox', { name: 'Tags' }).first().click();

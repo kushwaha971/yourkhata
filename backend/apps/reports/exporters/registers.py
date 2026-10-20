@@ -53,7 +53,7 @@ def _party_name(document: Any) -> str:
     snapshot = document.party_snapshot or {}
     name = snapshot.get("name") or document.walk_in_name or ""
     if document.party_id is None:
-        return f"Walk-in ({name})" if name else "Walk-in"
+        return f"Quick sale ({name})" if name else "Quick sale"
     return name
 
 

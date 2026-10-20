@@ -58,9 +58,9 @@ const line = (item, qty) => ({ item_id: item.id, qty: String(qty) });
 const cash = (amt, date = TODAY) => ({ payment_date: date, mode_breakup: [{ mode: 'cash', amount: String(amt) }] });
 
 const docs = {};
-docs.yday = await inv({ walk_in_name: 'Walk-in', document_date: YDAY, lines: [line(rice, 2)] }, cash('945.00', YDAY));
+docs.yday = await inv({ walk_in_name: 'Quick Sale', document_date: YDAY, lines: [line(rice, 2)] }, cash('945.00', YDAY));
 if (docs.yday.status !== 'paid') docs.yday = docs.yday; // walk-in auto-pays? record below if due
-docs.walkin = await inv({ walk_in_name: 'Walk-in', document_date: TODAY, lines: [line(rice, 1)] }, cash('473.00'));
+docs.walkin = await inv({ walk_in_name: 'Quick Sale', document_date: TODAY, lines: [line(rice, 1)] }, cash('473.00'));
 docs.credit = await inv({ party_id: ramesh.id, document_date: TODAY, due_on: TODAY, lines: [line(rice, 2), line(soap, 2)] },
   { payment_date: TODAY, mode_breakup: [{ mode: 'upi', amount: '200.00' }] });
 docs.igst = await inv({ party_id: gupta.id, document_date: TODAY, due_on: iso(-15), lines: [line(soap, 10)] }, null);
@@ -95,7 +95,7 @@ const bill = r.body?.data;
 console.log('bill', bill?.number, bill?.grand_total, bill?.amount_due ?? bill?.balance_due);
 
 // A voided invoice (for "show voided").
-const vd = await inv({ walk_in_name: 'Walk-in', document_date: TODAY, lines: [line(dal, 1)] }, cash('147.00'));
+const vd = await inv({ walk_in_name: 'Quick Sale', document_date: TODAY, lines: [line(dal, 1)] }, cash('147.00'));
 r = await api('POST', `/sales/invoices/${vd.id}/void`, { reason: 'Typed twice by mistake' }, tok);
 check('seed: void walk-in', r.status < 300, `${r.status} ${JSON.stringify(r.body?.error ?? '').slice(0, 200)}`);
 

@@ -113,7 +113,7 @@ def test_a_paid_walk_in_bill_voids_its_counter_receipt_uat_d3(owner: Any, make_i
     ]
     receipt.refresh_from_db()
     assert receipt.status == "void"
-    assert receipt.void_reason == "Walk-in bill voided: Duplicate bill"
+    assert receipt.void_reason == "Quick-sale bill cancelled: Duplicate bill"
     assert not Allocation.objects.filter(document_id=paid["id"]).exists()
     document = SalesDocument.objects.get(pk=paid["id"])
     assert document.status == "void" and document.amount_paid == Decimal("0.00")

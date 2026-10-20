@@ -38,8 +38,8 @@ from apps.tax.models import TaxRate
 from apps.tax.validators import is_valid_gstin
 
 MESSAGES: dict[str, str] = {
-    "missing_party_gstin": "The party is GST-registered but this document has no GSTIN.",
-    "invalid_gstin_checksum": "The party GSTIN on this document is not a valid GSTIN.",
+    "missing_party_gstin": "The contact is GST-registered but this document has no GSTIN.",
+    "invalid_gstin_checksum": "The contact GSTIN on this document is not a valid GSTIN.",
     "missing_hsn": "A line on this tax invoice has no HSN/SAC code.",
     "missing_pos": "This document has no place of supply.",
     "pos_state_mismatch": "The place of supply and the inter-state flag disagree.",

@@ -55,7 +55,7 @@ def invoice_for_credit(tenant: Any, against_id: Any, *, lock: bool = False) -> S
         raise ValidationFailed({"against_id": ["Issue the invoice first."]})
     if invoice.party_id is None:
         raise ValidationFailed(
-            {"against_id": ["A walk-in bill has no party. Create the customer as a party first."]}
+            {"against_id": ["Save the quick-sale customer first, then record the return."]}
         )
     return invoice
 
@@ -91,7 +91,7 @@ def recompute(
     header = {k: v for k, v in payload.items() if k not in ("lines", "against_id", *META_KEYS)}
     if document.against_id is None:
         if "party_id" in header and not header["party_id"]:
-            raise ValidationFailed({"party_id": ["Choose a party"]})
+            raise ValidationFailed({"party_id": ["Choose a saved customer"]})
         header["walk_in_name"] = header["walk_in_mobile"] = None
         if "lines" in payload:
             header["lines"] = [
@@ -102,7 +102,7 @@ def recompute(
 
     invoice = invoice or invoice_for_credit(ctx.tenant, document.against_id)
     if header.get("party_id") and str(header["party_id"]) != str(invoice.party_id):
-        raise ValidationFailed({"party_id": ["The party must be the invoice's."]})
+        raise ValidationFailed({"party_id": ["The customer must be the invoice's."]})
     header.update(
         party_id=invoice.party_id,
         walk_in_name=None,
@@ -141,7 +141,7 @@ def create_credit_note(*, ctx: Ctx, payload: dict) -> dict:
     if payload.get("against_id"):
         document.against = invoice_for_credit(ctx.tenant, payload["against_id"])
     elif not payload.get("party_id"):
-        raise ValidationFailed({"party_id": ["Choose a party"]})
+        raise ValidationFailed({"party_id": ["Choose a saved customer"]})
     _apply_meta(document, payload)
     outcome = recompute(ctx, document, payload, strict=False, invoice=document.against)
     document.save()

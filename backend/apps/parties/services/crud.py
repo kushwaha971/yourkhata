@@ -114,7 +114,7 @@ def _validate(payload: dict, *, party: Party | None) -> None:
     if "name" in payload:
         name = payload.get("name") or ""
         if len(name) < NAME_MIN_LENGTH:
-            details["name"] = ["Enter the party's name."]
+            details["name"] = ["Enter the contact's name."]
 
     if payload.get("notes") and len(payload["notes"]) > NOTES_MAX_LENGTH:
         details["notes"] = [f"Keep notes under {NOTES_MAX_LENGTH} characters."]
@@ -234,7 +234,7 @@ def _raise_duplicate_mobile(existing: Party) -> None:
     """
     raise ValidationFailed(
         {
-            "mobile": ["This mobile number is already used by another party."],
+            "mobile": ["This mobile number is already used by another contact."],
             "existing_party_id": str(existing.id),
             "existing_status": existing.status,
         }
@@ -377,7 +377,7 @@ def update_party(*, ctx: Ctx, party: Party, payload: dict) -> tuple[Party, list[
         if offered:
             raise BusinessRuleViolation(
                 "party_archived",
-                "Restore this party before editing it.",
+                "Restore this contact before editing it.",
                 details={"fields": sorted(offered)},
             )
 

@@ -119,20 +119,20 @@ def _book(raw: Any, ctx: Ctx) -> str:
 def _check_remindable(party: Party | None, channel: str | None, book: str = "main") -> Party:
     """The three refusals every path shares, in the order a merchant hits them."""
     if party is None:
-        raise NotFound("No such party.")
+        raise NotFound("No such contact.")
     if party.status == PartyStatus.ARCHIVED:
         raise BusinessRuleViolation(
-            "party_archived", "This party is archived. Restore them to remind them."
+            "party_archived", "This contact is archived. Restore them to remind them."
         )
     if trade_balance(party, book) <= ZERO:
         # FR-8 / CCR-2 — nothing to collect, or money the MERCHANT owes.
         raise BusinessRuleViolation(
             "nothing_due",
-            "Nothing is due from this party.",
+            "Nothing is due from this contact.",
             details={"party_id": str(party.id), "balance": str(trade_balance(party, book))},
         )
     if channel in NEEDS_MOBILE and not party.mobile:
-        raise ValidationFailed({"party_id": ["Party has no mobile"]})
+        raise ValidationFailed({"party_id": ["Contact has no mobile number"]})
     return party
 
 
@@ -378,7 +378,7 @@ def bulk_reminders(*, ctx: Ctx, payload: dict) -> dict:
     raw_ids = payload.get("party_ids")
     if not isinstance(raw_ids, list) or not 1 <= len(raw_ids) <= BULK_REMINDER_MAX:
         raise ValidationFailed(
-            {"party_ids": [f"Select up to {BULK_REMINDER_MAX} parties at a time."]}
+            {"party_ids": [f"Select up to {BULK_REMINDER_MAX} contacts at a time."]}
         )
     note = _clean_note(payload.get("note") or "")
     ids = list(dict.fromkeys(str(i) for i in raw_ids))
@@ -558,10 +558,10 @@ def _source_people(ctx: Ctx, candidate: dict) -> tuple[Party, Party]:
     """
     person = _find_party(ctx, candidate["party_id"])
     if person is None:
-        raise NotFound("No such party.")
+        raise NotFound("No such contact.")
     if person.status == PartyStatus.ARCHIVED:
         raise BusinessRuleViolation(
-            "party_archived", "This party is archived. Restore them to remind them."
+            "party_archived", "This contact is archived. Restore them to remind them."
         )
     recipient = person
     if candidate.get("recipient_party_id"):
@@ -649,9 +649,9 @@ def _create_source_reminder(ctx: Ctx, payload: dict) -> Reminder:
     note = _source_note(module, payload.get("note"))
     person, recipient = _source_people(ctx, candidate)
     if payload.get("party_id") and str(payload["party_id"]) != str(person.pk):
-        raise ValidationFailed({"party_id": ["This record belongs to another party."]})
+        raise ValidationFailed({"party_id": ["This record belongs to another contact."]})
     if not recipient.mobile:
-        raise ValidationFailed({"party_id": ["Party has no mobile"]})
+        raise ValidationFailed({"party_id": ["Contact has no mobile number"]})
     # BR-1 — refuse before a row exists, so a refusal leaves nothing behind.
     check_reminder_allowed(
         tenant=ctx.tenant, module=module, party_id=person.pk, source_id=candidate["source_id"]
@@ -691,7 +691,7 @@ def _send_source_reminder(ctx: Ctx, reminder: Reminder, *, bulk: bool, text: Any
     if reminder.channel not in SOURCE_CHANNELS:
         raise ValidationFailed({"channel": ["Choose WhatsApp, SMS or Call."]})
     if not recipient.mobile:
-        raise ValidationFailed({"party_id": ["Party has no mobile"]})
+        raise ValidationFailed({"party_id": ["Contact has no mobile number"]})
     amount = candidate.get("amount")  # BR-6: frozen at SEND, the source's current figure
     composed = _compose_source(ctx, candidate, person, recipient)
     if reminder.channel != ReminderChannel.CALL:

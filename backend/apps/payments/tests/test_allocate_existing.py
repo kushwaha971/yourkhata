@@ -239,7 +239,7 @@ def test_a_walk_in_receipt_cannot_be_applied_later(shop: Any, owner: Any, make_i
     walk_in = Payment.objects.get(party__isnull=True, tenant=shop)
     response = allocate(owner, walk_in.id, {"allocations": "auto"})
     assert response.status_code == 400
-    assert "walk-in" in str(response.json()["error"]["details"]).lower()
+    assert "quick-sale" in str(response.json()["error"]["details"]).lower()
 
 
 def test_a_credit_notes_refund_voucher_cannot_be_applied(

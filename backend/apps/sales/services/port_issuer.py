@@ -76,7 +76,9 @@ def _required(request: dict) -> None:
 
     errors: dict[str, list[str]] = {}
     if not request.get("party_id"):
-        errors["party_id"] = ["A module document needs a party (never walk-in)."]
+        errors["party_id"] = [
+            "A module document needs a saved contact; quick sales are not supported."
+        ]
     if not request.get("document_date"):
         errors["document_date"] = ["Enter the document date."]
     if not request.get("origin_id"):

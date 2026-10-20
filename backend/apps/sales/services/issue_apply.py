@@ -71,7 +71,9 @@ def _lock_credit_notes(ctx: Ctx, document: Any, ids: list[str]) -> list[Any]:
             or note.status != DocumentStatus.ISSUED
             or note.amount_due <= ZERO
         ):
-            errors[f"apply_credit_note_ids.{index}"] = ["Choose an open credit note of this party."]
+            errors[f"apply_credit_note_ids.{index}"] = [
+                "Choose an open credit note of this customer."
+            ]
             continue
         notes.append(note)
     if errors:
@@ -110,7 +112,7 @@ def _lock_payments(ctx: Ctx, document: Any, ids: list[str], open_advances: bool)
             payment = locked.get(payment_id)
             if payment is None or not _usable(payment, document.party_id):
                 errors[f"apply_payment_ids.{index}"] = [
-                    "Choose a payment of this party with money left to apply."
+                    "Choose a payment of this customer with money left to apply."
                 ]
                 continue
             named.append(payment)
@@ -141,7 +143,7 @@ def lock_held_money(
         return HeldMoney()
     if document.party_id is None:
         raise ValidationFailed(
-            {"party_id": ["Credit notes and advances apply to a party's invoice."]}
+            {"party_id": ["Credit notes and advances apply to a customer's invoice."]}
         )
     return HeldMoney(
         credit_notes=_lock_credit_notes(ctx, document, note_ids),

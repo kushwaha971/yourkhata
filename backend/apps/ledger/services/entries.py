@@ -283,14 +283,14 @@ def post_entry(*, ctx: Ctx, payload: dict) -> dict:
     if party is None:
         # Canon §0.11 rule 2: an id from another tenant is NOT FOUND, never
         # forbidden. A 403 would confirm the row exists.
-        raise NotFound("No such party.")
+        raise NotFound("No such contact.")
 
     if party.status == PartyStatus.ARCHIVED:
         # BR-9. A merchant looking at an archived khata is looking at history;
         # the answer is to restore the party, which the client says.
         raise BusinessRuleViolation(
             "party_archived",
-            "This party is archived. Restore them to add entries.",
+            "This contact is archived. Restore them to add entries.",
             details={"party_id": str(party.id), "name": party.name},
         )
 

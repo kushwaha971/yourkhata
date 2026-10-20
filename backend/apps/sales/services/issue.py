@@ -125,7 +125,7 @@ def issue_invoice(
         if party is None or party.status == "archived":
             raise BusinessRuleViolation(
                 "party_archived",
-                "This party is archived. Restore them or choose another party.",
+                "This customer is archived. Restore them or choose another customer.",
                 details={"party_id": str(document.party_id)},
             )
 
@@ -155,7 +155,7 @@ def issue_invoice(
         warnings.append(
             {
                 "code": "b2c_large_needs_party",
-                "message": "Enter customer name and address (use a party) for inter-state sales above ₹2.5 lakh.",
+                "message": "Enter customer name and address (choose a saved customer) for inter-state sales above ₹2.5 lakh.",
                 "details": {},
             }
         )

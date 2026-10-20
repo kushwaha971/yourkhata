@@ -95,12 +95,12 @@ def confirm(*, ctx: Ctx, document_id: Any, version: Any = None) -> dict:
     if not outcome["rows"]:
         errors["lines"] = ["Add at least one item"]
     if document.party_id is None and not document.walk_in_name:
-        errors["party_id"] = ["Choose a party or enter a name"]
+        errors["party_id"] = ["Choose a saved customer or enter a name"]
     if errors:
         raise ValidationFailed(errors)
     party = document.party
     if party is not None and party.status == "archived":
-        raise ValidationFailed({"party_id": ["Party is archived; restore first"]})
+        raise ValidationFailed({"party_id": ["This customer is archived. Restore them first."]})
 
     document.number = allocate_number(
         tenant=ctx.tenant, kind=DocumentKind.SALES_ORDER, on_date=document.document_date

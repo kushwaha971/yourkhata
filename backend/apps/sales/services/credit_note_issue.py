@@ -151,7 +151,7 @@ def issue_credit_note(
     if not (meta.get("reason") or {}).get("code"):
         errors["reason"] = ["Choose a reason"]
     if note.party_id is None:
-        errors["party_id"] = ["Choose a party"]
+        errors["party_id"] = ["Choose a saved customer"]
     if errors:
         raise ValidationFailed(errors)
     requested_refund = clean_refund(refund) if refund is not None else meta.get("refund_request")

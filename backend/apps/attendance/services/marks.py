@@ -130,7 +130,7 @@ def _refuse_archived(party: Any) -> None:
     if party.status == "archived":
         raise BusinessRuleViolation(
             "party_archived",
-            "This party is archived. Restore them before marking attendance.",
+            "This contact is archived. Restore them before marking attendance.",
             details={"party_id": str(party.id)},
         )
 

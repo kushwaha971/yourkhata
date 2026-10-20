@@ -404,11 +404,11 @@ describe('sorting', () => {
     await waitFor(() => expect(lastAsked().ordering).toBe('-total'));
 
     head = await tableHead();
-    await user.click(head.getByRole('button', { name: /Party/ }));
+    await user.click(head.getByRole('button', { name: /Contact/ }));
     await waitFor(() => expect(lastAsked().ordering).toBe('-name'));
 
     head = await tableHead();
-    await user.click(head.getByRole('button', { name: /Party/ }));
+    await user.click(head.getByRole('button', { name: /Contact/ }));
     await waitFor(() => expect(lastAsked().ordering).toBe('name'));
 
     // A sort is a new question: it starts again at page one.

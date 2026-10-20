@@ -89,11 +89,11 @@ def lock_for_use(
 
     BR-3: outside `[valid_from, valid_to]` → 409 `entitlement_exhausted`
     `{total, used, expired: true}`; at `used = total` → `{total, used}`. An
-    entitlement of another party or module is a POLICY bug, not a refusal."""
+    entitlement of another contact or module is a POLICY bug, not a refusal."""
     ent = _lock(tenant, entitlement_id)
     if ent.party_id != party_id or ent.module != module:
         raise ImproperlyConfigured(
-            f"the policy named entitlement {entitlement_id} of another party or module"
+            f"the policy named entitlement {entitlement_id} of another contact or module"
         )
     if not ent.valid_from <= on <= ent.valid_to:
         raise _exhausted(ent, expired=True)

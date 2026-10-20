@@ -19,12 +19,7 @@ from django.urls import reverse
 
 from apps.common import exports
 from apps.reports.models import Export
-from apps.reports.tests.tax.builders import (
-    RAMESH_GSTIN,
-    csv_rows,
-    party,
-    sale,
-)
+from apps.reports.tests.tax.builders import RAMESH_GSTIN, csv_rows, party, sale
 
 pytestmark = pytest.mark.django_db
 
@@ -96,7 +91,7 @@ def test_b2b_is_a_gstin_on_the_frozen_snapshot_and_walk_ins_are_b2c(
     assert by_number["INV/26-27/0041"]["is_b2b"] is True
     walk_in = by_number["INV/26-27/0042"]
     assert walk_in["is_b2b"] is False
-    assert walk_in["party_name"] == "Walk-in (Sita)"
+    assert walk_in["party_name"] == "Quick sale (Sita)"
     assert walk_in["party_gstin"] == ""
     split = body["meta"]["totals"]
     assert split["b2b"] == {"count": 2, "taxable": "1244.94", "tax": "62.25"}

@@ -178,7 +178,7 @@
   "items.trade.bills": "{count, plural, one {# bill} other {# bills}}",
   "items.trade.byCustomer": "By customer",
   "items.trade.bySupplier": "By supplier",
-  "items.trade.empty.body": "Bills with this item will show here, grouped by party.",
+  "items.trade.empty.body": "Bills with this item will show here, grouped by contact.",
   "items.trade.empty.purchases": "Not bought yet",
   "items.trade.empty.sales": "Not sold yet",
   "items.trade.error": "Could not load this item's history.",
@@ -203,5 +203,5 @@
   "items.trade.totals.marginPct": "margin {amount} ({pct}%)",
   "items.trade.totals.sold": "Sold {qty} for {amount}",
   "items.trade.uncosted": "{count, plural, one {# sale has} other {# sales have}} no purchase price, so {count, plural, one {it is} other {they are}} left out of the margin.",
-  "items.trade.walkIn": "Walk-in customers"
+  "items.trade.walkIn": "Customers without saved details"
 }

@@ -66,8 +66,8 @@ for (const [size, viewport] of [['laptop-1280', { width: 1280, height: 800 }], [
     await page.goto(`${FE}/sales/invoices/new`, { waitUntil: 'networkidle' });
     const editor = page.getByTestId('line-items-editor');
     await editor.waitFor({ timeout: 30000 });
-    if ((await page.getByRole('radio', { name: 'Walk-in' }).getAttribute('aria-checked')) !== 'true') {
-      await page.getByRole('radio', { name: 'Walk-in' }).click();
+    if ((await page.getByRole('radio', { name: 'Quick Sale' }).getAttribute('aria-checked')) !== 'true') {
+      await page.getByRole('radio', { name: 'Quick Sale' }).click();
     }
     let keys = 0;
     const press = async (key) => {

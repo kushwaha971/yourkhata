@@ -105,12 +105,12 @@ def test_nothing_due_is_refused(tenant: Any, api_as: Any, balance: str) -> None:
 
 
 def test_no_mobile_is_a_field_error(tenant: Any, api_as: Any) -> None:
-    """§10 — `details.party_id: ["Party has no mobile"]`."""
+    """§10 — `details.party_id: ["Contact has no mobile number"]`."""
     client, _ = api_as(tenant)
     party = PartyFactory(tenant=tenant, mobile=None, balance=Decimal("10"))
     response = _create(client, party)
     assert response.status_code == 400
-    assert response.json()["error"]["details"]["party_id"] == ["Party has no mobile"]
+    assert response.json()["error"]["details"]["party_id"] == ["Contact has no mobile number"]
 
 
 def test_a_note_must_be_one_line(tenant: Any, api_as: Any, owes: Any) -> None:

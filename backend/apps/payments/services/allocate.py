@@ -83,7 +83,7 @@ def _refuse_unusable(payment: Payment) -> None:
             details={"payment_id": str(payment.id), "number": payment.number},
         )
     if payment.party_id is None:
-        raise ValidationFailed({"payment": ["A walk-in receipt cannot be applied later."]})
+        raise ValidationFailed({"payment": ["A quick-sale receipt cannot be applied later."]})
     if (payment.meta or {}).get("credit_note_id"):
         raise ValidationFailed(
             {"payment": ["A credit note's refund went back to the customer; it cannot be applied."]}

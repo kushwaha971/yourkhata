@@ -110,7 +110,7 @@ def apply_payload(ctx: Ctx, document: PurchaseDocument, payload: dict, *, strict
     if strict and party is None and "party_id" not in errors:
         errors["party_id"] = ["Choose a supplier."]
     elif strict and party is not None and not party.is_supplier:
-        errors["party_id"] = ["Choose a supplier. Mark this party as a supplier first."]
+        errors["party_id"] = ["Choose a supplier. Add this contact under Suppliers first."]
 
     doc_date = _parse_date(
         payload.get("document_date", document.document_date), "document_date", errors

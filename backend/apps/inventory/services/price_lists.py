@@ -263,7 +263,7 @@ def assign_party(*, ctx: Ctx, party_id: Any, list_id: Any) -> dict | None:
 
     party = _uuid_or_none(Party, ctx.tenant, party_id)
     if party is None:
-        raise NotFound("No such party.")
+        raise NotFound("No such contact.")
     if not list_id:
         PriceListParty.objects.filter(party=party).delete()
         price_list = None

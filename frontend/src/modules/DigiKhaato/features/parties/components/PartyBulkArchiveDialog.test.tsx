@@ -50,7 +50,7 @@ it('names why each party was left alone', async () => {
 
   expect(
     await screen.findByText(
-      'Mohan is the guardian of 1 active party. Remove the link, or archive that party first.'
+      'Mohan is the guardian of 1 active contact. Remove the link, or archive that contact first.'
     )
   ).toBeInTheDocument();
   expect(screen.getByText('Sita — already archived')).toBeInTheDocument();

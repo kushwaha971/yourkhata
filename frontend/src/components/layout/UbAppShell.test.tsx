@@ -183,7 +183,7 @@ describe('UAT D2 — the phone and tablet chrome', () => {
       1
     );
     expect(
-      within(mobileHeader()).queryByRole('button', { name: 'Search parties' })
+      within(mobileHeader()).queryByRole('button', { name: 'Search contacts' })
     ).not.toBeInTheDocument();
   });
 });
@@ -265,7 +265,7 @@ describe('CR-2026-09-29-SEC-A — a support session is view only', () => {
           Submit form
         </UbButton>
         <UbButton variant="secondary">Filters</UbButton>
-        <UbFab label="Add party" icon={<Plus aria-hidden className="h-6 w-6" />} />
+        <UbFab label="Add contact" icon={<Plus aria-hidden className="h-6 w-6" />} />
       </UbAppShell>
     );
 
@@ -277,7 +277,7 @@ describe('CR-2026-09-29-SEC-A — a support session is view only', () => {
     renderScreen();
 
     const reason = 'Support session · view only. Changes are turned off.';
-    for (const name of ['Save entry', 'Void bill', 'Submit form', 'Add party']) {
+    for (const name of ['Save entry', 'Void bill', 'Submit form', 'Add contact']) {
       const button = screen.getByRole('button', { name });
       expect(button).toBeDisabled();
       expect(button).toHaveAttribute('title', reason);
@@ -293,7 +293,7 @@ describe('CR-2026-09-29-SEC-A — a support session is view only', () => {
     /* The gate keys on the session flag, never on a role: the same screen in
        the owner's own session offers every action. */
     renderScreen();
-    for (const name of ['Save entry', 'Void bill', 'Submit form', 'Add party', 'Filters']) {
+    for (const name of ['Save entry', 'Void bill', 'Submit form', 'Add contact', 'Filters']) {
       const button = screen.getByRole('button', { name });
       expect(button).toBeEnabled();
       expect(button).not.toHaveAttribute('title');

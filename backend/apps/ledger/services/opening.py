@@ -135,14 +135,14 @@ def post_opening_balance(
     if party is None:
         party = lock_party(tenant=ctx.tenant, party_id=party_id)
         if party is None:
-            raise NotFound("No such party.")
+            raise NotFound("No such contact.")
 
     # EC-4 — an archived party may still be given an opening once restored, and
     # not before: the khata is closed while it is archived, and this is a write.
     if party.status == PartyStatus.ARCHIVED:
         raise BusinessRuleViolation(
             "party_archived",
-            "This party is archived. Restore them to add an opening balance.",
+            "This contact is archived. Restore them to add an opening balance.",
             details={"party_id": str(party.id), "name": party.name},
         )
 
@@ -150,7 +150,7 @@ def post_opening_balance(
     if existing is not None:
         raise BusinessRuleViolation(
             "opening_balance_exists",
-            "This party already has an opening balance. Correct it from the entry instead.",
+            "This contact already has an opening balance. Correct it from the entry instead.",
             details={"entry_id": str(existing.id)},
         )
 
@@ -175,7 +175,7 @@ def post_opening_balance(
         if "uq_ledger_one_opening_per_party" in str(exc):
             raise BusinessRuleViolation(
                 "opening_balance_exists",
-                "This party already has an opening balance. Correct it from the entry instead.",
+                "This contact already has an opening balance. Correct it from the entry instead.",
             ) from exc
         raise
 

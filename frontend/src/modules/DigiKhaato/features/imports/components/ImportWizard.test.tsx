@@ -273,7 +273,7 @@ describe('the review step', () => {
     service.commitImport.mockResolvedValue({ ...READY, status: 'importing', errorRows: 0 });
     // QA B44 — the button names the kinds: 9 customers and 1 supplier.
     await user.click(
-      await screen.findByRole('button', { name: 'Import 10 parties (9 customers, 1 supplier)' })
+      await screen.findByRole('button', { name: 'Import 10 contacts (9 customers, 1 supplier)' })
     );
     await waitFor(() => expect(service.commitImport).toHaveBeenCalledTimes(1));
     const [id, key] = service.commitImport.mock.calls[0] as [string, string];
@@ -341,7 +341,7 @@ describe('the outcomes', () => {
       },
     });
     // QA B44 — parties, not customers: a file mixes customers and suppliers.
-    expect(await screen.findByText('412 parties imported')).toBeInTheDocument();
+    expect(await screen.findByText('412 contacts imported')).toBeInTheDocument();
     expect(screen.getByText('₹1,24,500.00')).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Go to customers and suppliers' })).toHaveAttribute(
       'href',

@@ -54,7 +54,7 @@
   "reports.gst.issue.invalid_gstin_checksum": "GSTIN is not valid",
   "reports.gst.issue.legacy_rate_used": "GST rate had ended by this date",
   "reports.gst.issue.missing_hsn": "A line has no HSN/SAC",
-  "reports.gst.issue.missing_party_gstin": "Registered party, but no GSTIN on the document",
+  "reports.gst.issue.missing_party_gstin": "Registered contact, but no GSTIN on the document",
   "reports.gst.issue.missing_pos": "No place of supply",
   "reports.gst.issue.pos_state_mismatch": "Place of supply and inter-state disagree",
   "reports.gst.issue.zero_taxable_with_tax": "Tax on a zero taxable value",

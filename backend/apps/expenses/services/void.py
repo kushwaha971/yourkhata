@@ -83,7 +83,7 @@ def void_expense(*, ctx: Ctx, expense_id: Any, reason: Any) -> dict:
         if party is not None and party.status == PartyStatus.ARCHIVED:
             raise BusinessRuleViolation(
                 "party_archived",
-                "This party is archived. Restore them to void this expense.",
+                "This contact is archived. Restore them to void this expense.",
                 details={"party_id": str(party.id), "name": party.name},
             )
         reversal, balance = reverse_expense_payable(

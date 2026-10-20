@@ -535,11 +535,11 @@ def record_source_reminders(
         raise ValidationFailed({"sources": ["Name at least one record."]})
     party = Party.objects.for_tenant(ctx.tenant).filter(pk=party_id).first()
     if party is None:
-        raise ValidationFailed({"party_id": ["No such party."]})
+        raise ValidationFailed({"party_id": ["No such contact."]})
     if recipient_party_id is not None and not (
         Party.objects.for_tenant(ctx.tenant).filter(pk=recipient_party_id).exists()
     ):
-        raise ValidationFailed({"recipient_party_id": ["No such party."]})
+        raise ValidationFailed({"recipient_party_id": ["No such contact."]})
     moment = at or now()
     for source in sources:
         check_reminder_allowed(

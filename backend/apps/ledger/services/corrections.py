@@ -168,7 +168,7 @@ def _locked_open_party(*, tenant: Any, party_id: Any) -> Any:
     if party.status == PartyStatus.ARCHIVED:
         raise BusinessRuleViolation(
             "party_archived",
-            "This party is archived. Restore them to correct an entry.",
+            "This contact is archived. Restore them to correct an entry.",
         )
     return party
 

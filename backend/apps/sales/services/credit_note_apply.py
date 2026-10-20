@@ -73,7 +73,7 @@ def apply_credit_note(*, ctx: Ctx, document_id: Any, invoice_id: Any, amount: An
     if invoice is None:
         raise ValidationFailed({"invoice_id": ["Choose an invoice from your list."]})
     if invoice.party_id != note.party_id:
-        raise ValidationFailed({"invoice_id": ["Choose an invoice of the same party."]})
+        raise ValidationFailed({"invoice_id": ["Choose an invoice of the same contact."]})
     if invoice.status not in APPLICABLE_STATUSES or invoice.amount_due <= 0:
         raise ValidationFailed({"invoice_id": ["This invoice has nothing due."]})
     value = _amount(amount)

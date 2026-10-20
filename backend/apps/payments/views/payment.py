@@ -210,11 +210,11 @@ class PaymentViewSet(
         if direction not in PaymentDirection.values:
             raise ValidationFailed({"direction": ["Choose in or out."]})
         if not party_id:
-            raise ValidationFailed({"party_id": ["Choose a party."]})
+            raise ValidationFailed({"party_id": ["Choose a contact."]})
         try:
             uuid.UUID(str(party_id))
         except ValueError:
-            raise ValidationFailed({"party_id": ["Choose a party."]}) from None
+            raise ValidationFailed({"party_id": ["Choose a contact."]}) from None
         # A4a — Apply to bills asks for the payment's bucket; the record panel sends none.
         bucket = request.query_params.get("bucket") or None
         if bucket is not None and bucket not in LedgerBucket.values:

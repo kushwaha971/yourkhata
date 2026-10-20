@@ -114,10 +114,10 @@ const openForm = async (user: ReturnType<typeof userEvent.setup>) => {
   renderWithProviders(<PartyListPageContent />);
   await screen.findByTestId('ub-grid');
   // Two of them: the header action and the empty state's own call to action.
-  const [addButton] = screen.getAllByRole('button', { name: 'Add party' });
+  const [addButton] = screen.getAllByRole('button', { name: 'Add contact' });
   if (!addButton) throw new Error('the list offered no way to add a party');
   await user.click(addButton);
-  return screen.findByRole('dialog', { name: 'Add party' });
+  return screen.findByRole('dialog', { name: 'Add contact' });
 };
 
 describe('adding a party', () => {
@@ -195,7 +195,7 @@ describe('adding a party', () => {
 
     await user.type(within(drawer).getByLabelText('Name'), 'Ramesh Traders');
     await user.type(within(drawer).getByLabelText('Mobile number'), '9812345678');
-    await user.click(within(drawer).getByRole('button', { name: 'Save party' }));
+    await user.click(within(drawer).getByRole('button', { name: 'Save contact' }));
 
     await waitFor(() => expect(partyService.createParty).toHaveBeenCalledTimes(1));
     const [values, key] = partyService.createParty.mock.calls[0] as [
@@ -208,7 +208,7 @@ describe('adding a party', () => {
     expect(key).toBeTruthy();
 
     await waitFor(() =>
-      expect(screen.queryByRole('dialog', { name: 'Add party' })).not.toBeInTheDocument()
+      expect(screen.queryByRole('dialog', { name: 'Add contact' })).not.toBeInTheDocument()
     );
   });
 
@@ -218,7 +218,7 @@ describe('adding a party', () => {
 
     await user.type(within(drawer).getByLabelText('Name'), 'Nobody');
     await user.click(within(drawer).getByRole('switch', { name: 'I sell to them' }));
-    await user.click(within(drawer).getByRole('button', { name: 'Save party' }));
+    await user.click(within(drawer).getByRole('button', { name: 'Save contact' }));
 
     // FR-4 — a party this business neither buys from nor sells to is a contact,
     // and this product does not have contacts. Caught here rather than by a
@@ -241,7 +241,7 @@ describe('what the server says back', () => {
 
     const drawer = await openForm(user);
     await user.type(within(drawer).getByLabelText('Name'), 'Ramesh Traders');
-    await user.click(within(drawer).getByRole('button', { name: 'Save party' }));
+    await user.click(within(drawer).getByRole('button', { name: 'Save contact' }));
 
     // An error in a folded-away section is an error nobody can fix. The GST
     // group opens itself and the message is on the field.
@@ -265,7 +265,7 @@ describe('what the server says back', () => {
     const drawer = await openForm(user);
     await user.type(within(drawer).getByLabelText('Name'), 'Second Try');
     await user.type(within(drawer).getByLabelText('Mobile number'), '9812345678');
-    await user.click(within(drawer).getByRole('button', { name: 'Save party' }));
+    await user.click(within(drawer).getByRole('button', { name: 'Save contact' }));
 
     // The server deliberately does not send the other party's NAME — that is
     // another record's data, returned to somebody who asked about neither. So
@@ -285,7 +285,7 @@ describe('what the server says back', () => {
 
     const drawer = await openForm(user);
     await user.type(within(drawer).getByLabelText('Name'), 'Ramesh Traders');
-    await user.click(within(drawer).getByRole('button', { name: 'Save party' }));
+    await user.click(within(drawer).getByRole('button', { name: 'Save contact' }));
 
     // The request was well formed; the record's state said no. There is no
     // field to point at, and the merchant's next move is Restore.
@@ -301,7 +301,7 @@ describe('an accountant', () => {
 
     // Hidden, not disabled (§19.7.5). A disabled button invites a support call
     // about a permission that is never going to change.
-    expect(screen.queryByRole('button', { name: 'Add party' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Add contact' })).not.toBeInTheDocument();
   });
 });
 
@@ -322,7 +322,7 @@ describe('what the merchant is told afterwards', () => {
     const drawer = await openForm(user);
     await user.type(within(drawer).getByLabelText('Name'), 'Second Try');
     await user.type(within(drawer).getByLabelText('Mobile number'), '9812345678');
-    await user.click(within(drawer).getByRole('button', { name: 'Save party' }));
+    await user.click(within(drawer).getByRole('button', { name: 'Save contact' }));
 
     // `details` carries messages AND data. `applyServerErrors` anchors
     // anything it cannot match to a field as a form-level error, so the id and
@@ -349,7 +349,7 @@ describe('what the merchant is told afterwards', () => {
 
     const drawer = await openForm(user);
     await user.type(within(drawer).getByLabelText('Name'), 'Ramesh Traders');
-    await user.click(within(drawer).getByRole('button', { name: 'Save party' }));
+    await user.click(within(drawer).getByRole('button', { name: 'Save contact' }));
 
     // The record SAVED, and the drawer has closed — so the note has to live
     // outside the form. Asserted on the store rather than on the DOM because
@@ -399,7 +399,7 @@ describe('what the merchant is told afterwards', () => {
     await screen.findByTestId('ub-grid');
 
     expect(screen.queryByRole('button', { name: /“/ })).not.toBeInTheDocument();
-    expect(screen.getAllByRole('button', { name: 'Add party' }).length).toBeGreaterThan(0);
+    expect(screen.getAllByRole('button', { name: 'Add contact' }).length).toBeGreaterThan(0);
   });
 
   it('forgets the prefilled name the next time the form is opened blank', async () => {
@@ -419,7 +419,7 @@ describe('what the merchant is told afterwards', () => {
 
     // The drawer has both an X in its header and a Cancel in its footer.
     await user.click(screen.getByRole('button', { name: 'Cancel' }));
-    const [header] = screen.getAllByRole('button', { name: 'Add party' });
+    const [header] = screen.getAllByRole('button', { name: 'Add contact' });
     if (!header) throw new Error('the list offered no way to add a party');
     await user.click(header);
 
@@ -562,7 +562,7 @@ describe('a phone contact fills a new party (WP-07, PTY-07 FR-10)', () => {
 
 describe('the form speaks for the list that opened it (WP-07)', () => {
   /**
-   * Customers' "Add customer" opened a drawer titled "Add party" with "Save
+   * Customers' "Add customer" opened a drawer titled "Add contact" with "Save
    * party": the merchant tapped one word and was answered with another, which
    * on the Suppliers list also hid that the new person would be a supplier.
    * The drawer now takes its title and its Save from the kind it was opened for.
@@ -611,9 +611,9 @@ describe('a number held by an archived party (WP-07)', () => {
     const drawer = await openForm(user);
     await user.type(within(drawer).getByLabelText('Name'), 'Old Friend');
     await user.type(within(drawer).getByLabelText('Mobile number'), '9812345678');
-    await user.click(within(drawer).getByRole('button', { name: 'Save party' }));
+    await user.click(within(drawer).getByRole('button', { name: 'Save contact' }));
 
-    expect(await screen.findByText('You archived the party with this number')).toBeInTheDocument();
+    expect(await screen.findByText('You archived the contact with this number')).toBeInTheDocument();
     expect(screen.queryByText('That number is already in your book')).not.toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Open it to restore' })).toHaveAttribute(
       'href',

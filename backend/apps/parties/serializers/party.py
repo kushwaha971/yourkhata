@@ -515,7 +515,7 @@ class PartyBulkArchiveSerializer(serializers.Serializer):
         """
         if isinstance(self.initial_data, dict) and "write_off" in self.initial_data:
             raise serializers.ValidationError(
-                {"write_off": ["Write-offs are made one party at a time, not in bulk."]}
+                {"write_off": ["Write-offs are made one contact at a time, not in bulk."]}
             )
         return attrs
 

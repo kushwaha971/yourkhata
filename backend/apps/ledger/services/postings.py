@@ -239,7 +239,7 @@ def post_source_entry(
     if source_id is None:
         raise LedgerPostingError("a document posting needs its source_id")
     if party is None or party.tenant_id != ctx.tenant.id:
-        raise LedgerPostingError("the party does not belong to this tenant")
+        raise LedgerPostingError("the contact does not belong to this tenant")
     if amount is None or Decimal(amount) <= 0:
         raise LedgerPostingError("a posting amount must be greater than zero")
 

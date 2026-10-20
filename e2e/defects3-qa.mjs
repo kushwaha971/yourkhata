@@ -104,7 +104,7 @@ async function phaseP(browser) {
     const { ctx, page } = await session(browser, OWNER, vp, { clipboard: true });
     // party form: mobile + alt phone
     await page.goto(`${FE}/parties`, { waitUntil: 'networkidle' }); await page.waitForTimeout(1200);
-    await page.getByRole('button', { name: /Add party/ }).first().click(); await page.waitForTimeout(1500);
+    await page.getByRole('button', { name: /Add contact/ }).first().click(); await page.waitForTimeout(1500);
     const dlg = page.getByRole('dialog').last();
     await exerciseField(page, dlg.locator('input[type="tel"]').first(), `${vp.width} party form mobile`);
     await dlg.getByRole('button', { name: /More details/ }).click().catch(() => {});

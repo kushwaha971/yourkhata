@@ -102,7 +102,7 @@ def test_coalescing_merges_only_while_unread(tenant: Any, api_as: Any) -> None:
     assert again.pk == first.pk
     again.refresh_from_db()
     assert again.count == 3 and again.data["ids"] == ["p1", "p2", "p3"]
-    assert again.title == "3 parties have a payment due today"
+    assert again.title == "Contacts with payments due today: 3"
 
     owner.post(reverse("v1:notification-read", args=[first.id]))
     later = notify(tenant, "reminder_due", group_key="2026-09-24", ids=["p4"])

@@ -61,7 +61,9 @@ def validate_partner(data: dict, *, instance: Any = None) -> dict[str, list[str]
     if not modules <= known:
         errors["allowed_modules"] = [f"Unknown module {sorted(modules - known)[0]!r}."]
     elif not REQUIRED_MODULES <= modules:
-        errors["allowed_modules"] = ["Must include platform, parties and ledger."]
+        errors["allowed_modules"] = [
+            "Core platform, contact management and ledger modules are required."
+        ]
 
     plan = data.get("default_plan")
     if plan is not None and not getattr(plan, "is_active", True):

@@ -14,7 +14,7 @@ A walk-in has no khata for an advance to sit in; the money is handed back over
 the counter (the dialog says so). Leaving the receipt `recorded` kept that cash
 in the cashbook, day book and dashboard "cash in hand" for money the shop no
 longer holds. So a receipt allocated ONLY to this walk-in bill is voided through
-PAY-05's `void_payment` with reason "Walk-in bill voided: <reason>", inside the
+PAY-05's `void_payment` with reason "Quick-sale bill cancelled: <reason>", inside the
 bill void's transaction (the bill is already locked; `void_payment` takes no
 party lock for a walk-in and re-locks the same bill row, which this transaction
 holds). A receipt that also settles another document is released as before —
@@ -53,7 +53,9 @@ def _void_walk_in_receipts(*, ctx: Ctx, document: Any, reason: str) -> list[dict
     )
     voided: list[dict] = []
     for row in rows:
-        void_payment(ctx=ctx, payment_id=row.payment_id, reason=f"Walk-in bill voided: {reason}")
+        void_payment(
+            ctx=ctx, payment_id=row.payment_id, reason=f"Quick-sale bill cancelled: {reason}"
+        )
         voided.append(
             {
                 "payment_id": str(row.payment_id),

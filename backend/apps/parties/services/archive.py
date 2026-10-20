@@ -134,7 +134,7 @@ def _refuse_open_records(block: ArchiveBlock) -> None:
     """
     raise BusinessRuleViolation(
         "party_has_open_records",
-        "Close this party's open records first.",
+        "Close this contact's open records first.",
         details={
             "module": block["module"],
             "count": int(block["count"]),
@@ -270,7 +270,7 @@ def archive_party(
         # returns the original response without reaching here.
         raise BusinessRuleViolation(
             "party_already_archived",
-            "This party is already archived.",
+            "This contact is already archived.",
         )
 
     # Taken BEFORE the write-off, so the audit row says what the balance was
@@ -339,7 +339,7 @@ def restore_party(*, ctx: Ctx, party: Party, via: str = "api") -> Party:
     locked = Party.objects.select_for_update().get(pk=party.pk)
 
     if locked.status != PartyStatus.ARCHIVED:
-        raise BusinessRuleViolation("party_not_archived", "This party is not archived.")
+        raise BusinessRuleViolation("party_not_archived", "This contact is not archived.")
 
     before = _audit_snapshot(locked)
     locked.status = PartyStatus.ACTIVE

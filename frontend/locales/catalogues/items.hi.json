@@ -178,7 +178,7 @@
   "items.trade.bills": "{count, plural, one {# बिल} other {# बिल}}",
   "items.trade.byCustomer": "ग्राहक के हिसाब से",
   "items.trade.bySupplier": "सप्लायर के हिसाब से",
-  "items.trade.empty.body": "इस आइटम वाले बिल यहाँ पार्टी के हिसाब से दिखेंगे।",
+  "items.trade.empty.body": "इस आइटम वाले बिल यहाँ संपर्क के हिसाब से दिखेंगे।",
   "items.trade.empty.purchases": "अभी तक नहीं खरीदा",
   "items.trade.empty.sales": "अभी तक नहीं बिका",
   "items.trade.error": "इस आइटम का इतिहास लोड नहीं हो सका।",
@@ -203,5 +203,5 @@
   "items.trade.totals.marginPct": "मार्जिन {amount} ({pct}%)",
   "items.trade.totals.sold": "{qty} बिका, {amount} में",
   "items.trade.uncosted": "{count, plural, one {# बिक्री} other {# बिक्रियों}} की खरीद कीमत नहीं है, इसलिए मार्जिन में नहीं जोड़ी गई।",
-  "items.trade.walkIn": "वॉक-इन ग्राहक"
+  "items.trade.walkIn": "बिना सहेजे गए ग्राहक"
 }

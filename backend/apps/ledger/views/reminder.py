@@ -148,7 +148,7 @@ class ReminderListCreateView(_ReminderBase):
             try:
                 rows = rows.filter(party_id=uuid.UUID(params["party_id"]))
             except ValueError:
-                raise ValidationFailed({"party_id": ["That is not a party id."]}) from None
+                raise ValidationFailed({"party_id": ["That is not a contact id."]}) from None
         if params.get("status"):
             statuses = [s for s in params["status"].split(",") if s]
             if set(statuses) - set(ReminderStatus.values):

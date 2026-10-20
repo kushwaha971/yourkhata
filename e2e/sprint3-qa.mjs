@@ -820,7 +820,7 @@ async function phaseB(browser, state) {
       await page.waitForTimeout(1500);
       const tiles = await page.locator('[data-testid="ub-stat-grid"]').count();
       const gridAdd = await page.locator('[data-testid="ub-grid"]').getByRole('button', { name: /Add/ }).allInnerTexts();
-      const pageAdd = await page.getByRole('button', { name: 'Add party' }).evaluateAll((els) => els.filter((e) => e.getBoundingClientRect().width > 0).length);
+      const pageAdd = await page.getByRole('button', { name: 'Add contact' }).evaluateAll((els) => els.filter((e) => e.getBoundingClientRect().width > 0).length);
       // The parties list now carries Import / Export (IMP-01, EXP-01) for every
       // tenant, so the old "no Import" rule is gone. What must still be absent on
       // an empty book is a phone-contacts import, which this product does not have.
@@ -828,8 +828,8 @@ async function phaseB(browser, state) {
       const body = await page.locator('[data-testid="ub-grid"]').innerText().catch(() => '');
       await page.screenshot({ path: shotPath(tag, 'B3-new-tenant-empty') });
       record('B3', `${tag}: new tenant — no money tiles`, tiles === 0, `tiles=${tiles}`);
-      record('B3', `${tag}: new tenant — the empty state offers a single "Add party"`, gridAdd.length === 1 && gridAdd[0].trim() === 'Add party', JSON.stringify(gridAdd));
-      note(`${tag}: visible "Add party" controls on the whole page = ${pageAdd} (header + empty state)`);
+      record('B3', `${tag}: new tenant — the empty state offers a single "Add contact"`, gridAdd.length === 1 && gridAdd[0].trim() === 'Add contact', JSON.stringify(gridAdd));
+      note(`${tag}: visible "Add contact" controls on the whole page = ${pageAdd} (header + empty state)`);
       record('B3', `${tag}: new tenant — no phone-contacts import`, importish === 0, `matches=${importish}`);
       record('B3', `${tag}: new tenant — first-use copy "No customers yet"`, /No customers yet/i.test(body), body.replace(/\n/g, ' | ').slice(-160));
       record('B7', `${tag}: new-tenant state fits the viewport`, (await overflowPx(page)) <= 0, `overflow ${await overflowPx(page)}px`);
@@ -871,7 +871,7 @@ async function phaseB(browser, state) {
   // ── B1/B2/B5 on the owner's populated book, phone + desktop ───────────────
   for (const size of [PHONE, DESKTOP]) await listStatesFor(browser, state, size);
 
-  // ── B6 accountant: no Add party, no Archive in the selection bar ──────────
+  // ── B6 accountant: no Add contact, no Archive in the selection bar ──────────
   for (const size of [PHONE, DESKTOP]) {
     const tag = size.id;
     const ctx = await browser.newContext({ viewport: { width: size.width, height: size.height } });
@@ -882,8 +882,8 @@ async function phaseB(browser, state) {
     await page.goto(`${FRONTEND}/parties`, { waitUntil: 'networkidle', timeout: 120000 });
     await page.getByText('Ramesh Traders').first().waitFor({ timeout: 60000 });
     await page.waitForTimeout(1000);
-    const add = await page.getByRole('button', { name: /Add party/ }).count();
-    record('B6', `${tag}: accountant — no "Add party"`, add === 0, `count=${add}`);
+    const add = await page.getByRole('button', { name: /Add contact/ }).count();
+    record('B6', `${tag}: accountant — no "Add contact"`, add === 0, `count=${add}`);
     if (size.id === 'desktop') {
       const boxes = page.locator('[data-testid="ub-grid"] [role="checkbox"]');
       const n = await boxes.count();

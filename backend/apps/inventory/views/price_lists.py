@@ -74,7 +74,7 @@ class PriceListViewSet(_InventoryView, viewsets.ViewSet):
 
         party = ids(request.query_params.get("party") or "")
         if not party:
-            raise ValidationFailed({"party": ["Choose a party."]})
+            raise ValidationFailed({"party": ["Choose a contact."]})
         return StandardResponse.ok(
             svc.rates_for_party(
                 tenant=self.get_tenant(),

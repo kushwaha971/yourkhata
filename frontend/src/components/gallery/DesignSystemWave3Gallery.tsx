@@ -63,7 +63,7 @@ export function DesignSystemWave3Gallery(): React.JSX.Element {
           <UbSwitch
             checked={withPhone}
             onCheckedChange={setWithPhone}
-            label="Party has a mobile number"
+            label="Contact has a mobile number"
             className="w-auto"
           />
           <UbButton

@@ -157,7 +157,7 @@ def test_walk_in_requires_full_payment_and_posts_no_ledger(owner: Any, make_item
     none = issue(owner, doc["id"])
     assert none.status_code == 400 and "payment" in none.json()["error"]["details"]
     partial = issue(owner, doc["id"], payment=cash("100.00"))
-    assert partial.json()["error"]["details"]["payment"] == ["Walk-in sale must be paid in full"]
+    assert partial.json()["error"]["details"]["payment"] == ["quick sale must be paid in full"]
     split = {
         "mode_breakup": [
             {"mode": "upi", "amount": "150.00", "reference": "UTR1"},

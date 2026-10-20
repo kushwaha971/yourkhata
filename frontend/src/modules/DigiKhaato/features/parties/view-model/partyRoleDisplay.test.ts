@@ -61,7 +61,7 @@ describe('openRecordsMessage', () => {
   it("reads parties' own guardian guard from the parties catalogue", () => {
     const guardian = { module: 'parties', count: 1, labelId: 'parties.archive.activeGuardian' };
     expect(openRecordsMessage(translator(), guardian, 'Mohan')).toBe(
-      'Mohan is the guardian of 1 active party. Remove the link, or archive that party first.'
+      'Mohan is the guardian of 1 active contact. Remove the link, or archive that contact first.'
     );
   });
 });

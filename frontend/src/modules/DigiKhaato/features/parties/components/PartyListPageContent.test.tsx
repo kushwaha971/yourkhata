@@ -995,7 +995,7 @@ describe('tags on the party list', () => {
   it('tags a selection, and reports who was skipped rather than only how many', async () => {
     /**
      * FR-8. The dialog becomes the report for the same reason PTY-04's bulk
-     * archive does: "1 party" with no list sends a merchant back through forty
+     * archive does: "1 contact" with no list sends a merchant back through forty
      * rows to find the one that did not take.
      */
     setTier('full');
@@ -1023,7 +1023,7 @@ describe('tags on the party list', () => {
     await user.click(await screen.findByText('Route 2'));
     await user.click(within(dialog).getByRole('button', { name: 'Apply' }));
 
-    expect(await screen.findByText('Tagged 1 party')).toBeInTheDocument();
+    expect(await screen.findByText('Tagged 1 contact')).toBeInTheDocument();
     expect(screen.getByText('already carries 10 tags')).toBeInTheDocument();
   });
 
@@ -1220,7 +1220,7 @@ describe('tags on the party list', () => {
     await user.click(await screen.findByText('Route 2'));
     await user.click(within(dialog).getByRole('button', { name: 'Apply' }));
 
-    expect(await screen.findByText('Tagged 1 party')).toBeInTheDocument();
+    expect(await screen.findByText('Tagged 1 contact')).toBeInTheDocument();
     expect(screen.getByText('Sunita Stores already carries 10 tags')).toBeInTheDocument();
   });
 });
@@ -1547,7 +1547,7 @@ describe('PTY-02 §9 — the ten states of the party list', () => {
     expect(await screen.findByText('No customers yet')).toBeInTheDocument();
     expect(screen.queryByTestId('ub-stat-grid')).not.toBeInTheDocument();
     // Header action + the empty state's own primary action.
-    expect(screen.getAllByRole('button', { name: 'Add party' })).toHaveLength(2);
+    expect(screen.getAllByRole('button', { name: 'Add contact' })).toHaveLength(2);
     expect(screen.queryByRole('button', { name: /import/i })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /contacts/i })).not.toBeInTheDocument();
   });
@@ -1604,7 +1604,7 @@ describe('PTY-02 §9 — the ten states of the party list', () => {
     expect(screen.queryByText('No customers yet')).not.toBeInTheDocument();
     expect(screen.queryByText('No customers match these filters')).not.toBeInTheDocument();
     // Only the header's Add party remains; the empty state offers none.
-    expect(screen.getAllByRole('button', { name: 'Add party' })).toHaveLength(1);
+    expect(screen.getAllByRole('button', { name: 'Add contact' })).toHaveLength(1);
     expect(screen.getByRole('button', { name: 'Clear filters' })).toBeInTheDocument();
   });
 
@@ -1740,7 +1740,7 @@ describe('PTY-02 §9 — the ten states of the party list', () => {
 
     expect(await screen.findByText('Ramesh Traders')).toBeInTheDocument();
     expect(screen.getByText('Sunita Stores')).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: 'Add party' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Add contact' })).not.toBeInTheDocument();
     // Reading is what the role is for: the row opens the khata.
     expect(screen.getByRole('button', { name: 'Open Ramesh Traders' })).toBeInTheDocument();
 
@@ -1847,7 +1847,7 @@ describe('PTY-02 §9 — the ten states of the party list', () => {
       ],
       skipped: [],
     });
-    expect(await screen.findByText('Tagged 2 parties')).toBeInTheDocument();
+    expect(await screen.findByText('Tagged 2 contacts')).toBeInTheDocument();
   });
 
   it('§9 Completed — the result says how many were tagged and offers Undo', async () => {
@@ -1869,7 +1869,7 @@ describe('PTY-02 §9 — the ten states of the party list', () => {
 
     await user.click(within(dialog).getByRole('button', { name: 'Apply' }));
 
-    expect(await screen.findByText('Tagged 2 parties')).toBeInTheDocument();
+    expect(await screen.findByText('Tagged 2 contacts')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Undo' })).toBeInTheDocument();
   });
 
@@ -1890,7 +1890,7 @@ describe('PTY-02 §9 — the ten states of the party list', () => {
 
     await user.click(within(dialog).getByRole('button', { name: 'Apply' }));
 
-    expect(await screen.findByText('Tagged 1 party')).toBeInTheDocument();
+    expect(await screen.findByText('Tagged 1 contact')).toBeInTheDocument();
     expect(screen.getByText('Sunita Stores already carries 10 tags')).toBeInTheDocument();
   });
 });

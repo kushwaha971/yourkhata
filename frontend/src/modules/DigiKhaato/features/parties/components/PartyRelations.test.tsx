@@ -222,8 +222,8 @@ describe('Role badges and the guardian and payer section', () => {
 
     await user.click(screen.getByRole('button', { name: 'Add' }));
     const dialog = await screen.findByRole('dialog');
-    await user.type(within(dialog).getByLabelText(/Party/), 'Mo');
-    const results = await within(dialog).findByRole('listbox', { name: 'Matching parties' });
+    await user.type(within(dialog).getByLabelText(/Contact/), 'Mo');
+    const results = await within(dialog).findByRole('listbox', { name: 'Matching contacts' });
     // The party whose khata this is is never offered as their own guardian.
     expect(within(results).queryByText('Rahul')).not.toBeInTheDocument();
     const option = within(results).getByRole('option', {name:/Mohan/});

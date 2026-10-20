@@ -513,7 +513,7 @@ describe('the khata page', () => {
 
     renderWithProviders(<PartyDetailPageContent id={ID} />);
 
-    expect(await screen.findByText('This party was not found')).toBeInTheDocument();
+    expect(await screen.findByText('This contact was not found')).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Try again' })).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Back to customers' })).toBeInTheDocument();
   });
@@ -523,7 +523,7 @@ describe('the khata page', () => {
 
     renderWithProviders(<PartyDetailPageContent id={ID} />);
 
-    expect(await screen.findByText('We could not load this party')).toBeInTheDocument();
+    expect(await screen.findByText('We could not load this contact')).toBeInTheDocument();
     // R-E-4: the id is what support asks for, so it stays on screen.
     expect(screen.queryByText(/req_abc123/)).not.toBeInTheDocument(); // owner, 7 Oct 2026: no reference on errors
     expect(screen.getByRole('button', { name: 'Try again' })).toBeInTheDocument();
@@ -538,7 +538,7 @@ describe('the khata page', () => {
 
     renderWithProviders(<PartyDetailPageContent id={ID} />);
 
-    expect(await screen.findByText('This party is archived')).toBeInTheDocument();
+    expect(await screen.findByText('This contact is archived')).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Edit' })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'More actions' })).not.toBeInTheDocument();
   });
@@ -720,7 +720,7 @@ describe('the promise date', () => {
     });
 
     renderWithProviders(<PartyDetailPageContent id={ID} />);
-    await screen.findByText('This party is archived');
+    await screen.findByText('This contact is archived');
 
     expect(screen.queryByLabelText('Promised to pay on')).not.toBeInTheDocument();
   });
@@ -1194,7 +1194,7 @@ describe('archiving from the khata page', () => {
     const user = userEvent.setup();
 
     renderWithProviders(<PartyDetailPageContent id={ID} />);
-    await screen.findByText('This party is archived');
+    await screen.findByText('This contact is archived');
 
     await user.click(screen.getByRole('button', { name: 'Restore' }));
 
@@ -1211,7 +1211,7 @@ describe('archiving from the khata page', () => {
     signIn(['parties.party.read']);
 
     renderWithProviders(<PartyDetailPageContent id={ID} />);
-    await screen.findByText('This party is archived');
+    await screen.findByText('This contact is archived');
 
     expect(screen.queryByRole('button', { name: 'Restore' })).not.toBeInTheDocument();
   });
@@ -1619,7 +1619,7 @@ describe('focus returns to ⋯ when a dialog opened from the header menu closes 
   it.each([
     ['the reminder sheet', 'Send reminder', 'Send reminder'],
     ['the archive dialog', 'Archive', 'Archive Ramesh Traders?'],
-    ['the edit drawer', 'Edit', 'Edit party'],
+    ['the edit drawer', 'Edit', 'Edit contact'],
     ['the opening balance drawer', 'Add opening balance', 'Opening balance'],
   ])('returns focus to ⋯ after Escape on %s', async (_label, item, dialogName) => {
     const user = userEvent.setup();
@@ -1700,7 +1700,7 @@ describe('an archived party’s timeline (QA O4)', () => {
     });
     renderWithProviders(<PartyDetailPageContent id={ID} />);
 
-    await screen.findByText('This party is archived');
+    await screen.findByText('This contact is archived');
     expect(await screen.findByText('Cement bags')).toBeInTheDocument();
     expect(
       screen.queryByRole('button', { name: 'More actions for Cement bags' })
@@ -2219,13 +2219,13 @@ describe('who may edit, archive and restore a party', () => {
     });
     signIn(EVERY, 'staff');
     const { unmount } = renderWithProviders(<PartyDetailPageContent id={ID} />);
-    await screen.findByText('This party is archived');
+    await screen.findByText('This contact is archived');
     expect(screen.queryByRole('button', { name: 'Restore' })).not.toBeInTheDocument();
     unmount();
 
     signIn(EVERY, 'admin');
     renderWithProviders(<PartyDetailPageContent id={ID} />);
-    await screen.findByText('This party is archived');
+    await screen.findByText('This contact is archived');
     expect(screen.getByRole('button', { name: 'Restore' })).toBeInTheDocument();
   });
 });

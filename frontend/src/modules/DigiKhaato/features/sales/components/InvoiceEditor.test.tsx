@@ -119,7 +119,7 @@ describe('the bill editor', () => {
     renderWithProviders(<InvoiceEditorPageContent documentId={null} />);
     expect(await screen.findByTestId('invoice-issue')).toBeDisabled();
     expect(screen.getByRole('heading', { name: /Tax Invoice/ })).toBeInTheDocument();
-    expect(screen.getByRole('radio', { name: 'Walk-in', checked: true })).toBeInTheDocument();
+    expect(screen.getByRole('radio', { name: 'Quick Sale', checked: true })).toBeInTheDocument();
     expect(screen.getByTestId('invoice-grand-total')).toHaveTextContent('₹0.00');
     // Nothing typed, nothing saved: an untouched editor must not create a draft.
     // Let the context thunks and the form seed settle before the last look.
@@ -232,8 +232,8 @@ describe('the place of supply for a picked party (QA S-D1)', () => {
     renderWithProviders(<InvoiceEditorPageContent documentId={null} />);
     await screen.findByTestId('invoice-issue');
     expect(screen.getByText('Intra-state supply — CGST + SGST')).toBeInTheDocument();
-    await userEvent.click(screen.getByRole('radio', { name: 'Party' }));
-    await userEvent.type(screen.getByLabelText('Party'), 'Beng');
+    await userEvent.click(screen.getByRole('radio', { name: 'Saved customer' }));
+    await userEvent.type(screen.getByLabelText('Saved customer'), 'Beng');
     const match = await screen.findByRole('option', { name: /Bengaluru Traders/ });
     await waitFor(() => expect(match).toHaveAttribute('aria-disabled', 'false'));
     await userEvent.click(match);
@@ -372,8 +372,8 @@ it('B38 explains the sale date and later opening stock date on the refusal', asy
 it('asks only for customers when choosing who a sales bill is for', async () => {
   signIn(['sales.invoice.read', 'sales.invoice.write', 'parties.party.read']);
   renderWithProviders(<InvoiceEditorPageContent documentId={null} />);
-  await userEvent.click(await screen.findByRole('radio', { name: 'Party' }));
-  await userEvent.click(screen.getByRole('combobox', { name: 'Party' }));
+  await userEvent.click(await screen.findByRole('radio', { name: 'Saved customer' }));
+  await userEvent.click(screen.getByRole('combobox', { name: 'Saved customer' }));
   const parties = jest.requireMock('../../parties/api/partyService') as { listParties: jest.Mock };
   await waitFor(() =>
     expect(parties.listParties).toHaveBeenCalledWith(

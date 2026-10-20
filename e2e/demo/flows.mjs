@@ -100,7 +100,7 @@ export const shop = {
   billParty: async (st, party, { open = true } = {}) => {
     if (open) await st.go('/sales/invoices/new');
     await st.soft(`bill party ${party}`, async () => {
-      await st.tap(st.page.getByRole('radio', { name: 'Party' }), { after: 300 });
+      await st.tap(st.page.getByRole('radio', { name: 'Saved customer' }), { after: 300 });
       await st.tap(st.page.getByPlaceholder('Search by name or mobile'), { after: 120 });
       await st.type(party.slice(0, 5), 100);
       await st.pause(1100);

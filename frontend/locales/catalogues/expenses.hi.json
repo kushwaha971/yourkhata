@@ -59,7 +59,7 @@
   "expenses.saved": "₹{amount} सहेजा गया — {category}",
   "expenses.saving": "सहेज रहे हैं…",
   "expenses.search.label": "खर्च खोजें",
-  "expenses.search.placeholder": "नंबर, नोट या पार्टी",
+  "expenses.search.placeholder": "नंबर, नोट या संपर्क",
   "expenses.status.paid": "भुगतान हुआ",
   "expenses.status.unpaid": "बाकी",
   "expenses.tab.all": "सभी",

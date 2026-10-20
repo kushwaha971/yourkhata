@@ -227,11 +227,11 @@ def _lock_open_party(*, tenant: Any, party_id: Any) -> Any:
     if party is None:
         # Canon §0.11 rule 2 — another tenant's party is NOT FOUND, never
         # forbidden; a 403 would confirm the row exists.
-        raise NotFound("No such party.")
+        raise NotFound("No such contact.")
     if party.status == PartyStatus.ARCHIVED:
         raise BusinessRuleViolation(
             "party_archived",
-            "This party is archived. Restore them to record an expense against them.",
+            "This contact is archived. Restore them to record an expense against them.",
             details={"party_id": str(party.id), "name": party.name},
         )
     return party
@@ -259,7 +259,7 @@ def record_expense(*, ctx: Ctx, payload: dict) -> dict:
             except (ValueError, TypeError):
                 party = None
             if party is None:
-                raise NotFound("No such party.")
+                raise NotFound("No such contact.")
         else:
             party = _lock_open_party(tenant=ctx.tenant, party_id=cleaned["party_id"])
 

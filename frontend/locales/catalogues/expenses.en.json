@@ -59,7 +59,7 @@
   "expenses.saved": "Saved ₹{amount} — {category}",
   "expenses.saving": "Saving…",
   "expenses.search.label": "Search expenses",
-  "expenses.search.placeholder": "Number, note or party",
+  "expenses.search.placeholder": "Number, note or contact",
   "expenses.status.paid": "Paid",
   "expenses.status.unpaid": "Unpaid",
   "expenses.tab.all": "All",

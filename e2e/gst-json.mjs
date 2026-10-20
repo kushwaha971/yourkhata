@@ -70,7 +70,7 @@ const inv = async (body, payment) => {
 };
 const line = (item, qty) => ({ item_id: item.id, qty: String(qty) });
 const b2b = await inv({ party_id: ramesh.id, document_date: ON, due_on: ON, lines: [line(rice, 2), line(soap, 4)] });
-await inv({ walk_in_name: 'Walk-in', document_date: ON, lines: [line(rice, 1)] },
+await inv({ walk_in_name: 'Quick Sale', document_date: ON, lines: [line(rice, 1)] },
   { payment_date: ON, mode_breakup: [{ mode: 'cash', amount: '473.00' }] });
 const riceLine = b2b.lines.find((l) => l.item_id === rice.id);
 let r = await api('POST', '/sales/credit-notes', {

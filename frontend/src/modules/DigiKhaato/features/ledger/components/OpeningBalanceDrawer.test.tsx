@@ -56,7 +56,7 @@ const entry = (over: Partial<LedgerEntry> = {}): LedgerEntry => ({
 
 const apiError = (code: string, details: Record<string, unknown> = {}) => ({
   code,
-  message: 'This party already has an opening balance. Correct it from the entry instead.',
+  message: 'This contact already has an opening balance. Correct it from the entry instead.',
   details,
   requestId: 'req_abc',
   status: code === 'validation_error' ? 400 : 409,

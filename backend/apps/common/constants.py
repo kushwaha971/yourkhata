@@ -14,7 +14,7 @@ class ModuleCode(models.TextChoices):
     """Canon §0.3 module codes."""
 
     PLATFORM = "platform", _("Platform")
-    PARTIES = "parties", _("Parties")
+    PARTIES = "parties", _("Contacts")
     LEDGER = "ledger", _("Ledger")
     INVENTORY = "inventory", _("Inventory")
     SALES = "sales", _("Sales")

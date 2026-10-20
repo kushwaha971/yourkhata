@@ -9,7 +9,7 @@ class PartiesConfig(AppConfig):
     default_auto_field = "django.db.models.BigAutoField"
     name = "apps.parties"
     label = "parties"
-    verbose_name = "Parties"
+    verbose_name = "Contacts"
 
     def ready(self) -> None:
         from apps.parties import tasks  # noqa: F401  (registers job handlers)

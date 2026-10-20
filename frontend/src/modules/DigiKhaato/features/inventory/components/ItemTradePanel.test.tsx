@@ -84,7 +84,7 @@ test('sales by customer with margins, walk-ins together, and an uncosted sale na
   const [first, second] = rows as [HTMLElement, HTMLElement];
   expect(within(first).getByText('Suresh Traders')).toBeInTheDocument();
   expect(within(first).getByText(/Margin ₹200/)).toBeInTheDocument();
-  expect(within(second).getByText('Walk-in customers')).toBeInTheDocument();
+  expect(within(second).getByText('Customers without saved details')).toBeInTheDocument();
   expect(screen.getByTestId('item-trade-totals')).toHaveTextContent('(17.7%)');
   expect(screen.getByText(/1 sale has no purchase price/)).toBeInTheDocument();
   const line = screen.getByTestId('item-trade-line');

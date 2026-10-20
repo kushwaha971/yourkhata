@@ -92,14 +92,14 @@ def test_every_business_type_has_a_preset() -> None:
     ("business_type", "inventory", "labels", "due_days"),
     [
         ("retail", True, ("Customer", "Supplier"), 7),
-        ("wholesale", True, ("Party", "Supplier"), 15),
+        ("wholesale", True, ("Customer", "Supplier"), 15),
         ("distribution", True, ("Retailer", "Company"), 15),
         ("services", False, ("Client", "Vendor"), 30),
-        ("trader", True, ("Party", "Supplier"), 15),
+        ("trader", True, ("Customer", "Supplier"), 15),
         ("manufacturer", True, ("Customer", "Supplier"), 15),
         ("professional", False, ("Client", "Vendor"), 30),
         ("food", True, ("Customer", "Supplier"), 7),
-        ("other", True, ("Party", "Supplier"), 30),
+        ("other", True, ("Customer", "Supplier"), 30),
     ],
 )
 def test_the_preset_table_matches_the_frd(

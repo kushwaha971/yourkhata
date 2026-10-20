@@ -72,7 +72,7 @@ const stock = async (s, id) => (await must('GET', `/items/${id}`, null, s.token)
 const bal = async (s, id) => (await must('GET', `/parties/${id}`, null, s.token)).balance;
 
 async function pickParty(page, name) {
-  await page.getByRole('radio', { name: 'Party' }).click().catch(() => page.getByText('Party', { exact: true }).first().click());
+  await page.getByRole('radio', { name: 'Saved customer' }).click().catch(() => page.getByText('Saved customer', { exact: true }).first().click());
   await page.waitForTimeout(300);
   await page.getByPlaceholder('Search by name or mobile').fill(name.slice(0, 5));
   await page.waitForTimeout(1500);
@@ -208,7 +208,7 @@ async function sales(browser, s) {
 
   // ── Walk-in cash sale ──
   await go(page, '/sales/invoices/new', 3000);
-  await page.getByRole('radio', { name: /Walk-in/ }).click().catch(() => {});
+  await page.getByRole('radio', { name: /Quick Sale/ }).click().catch(() => {});
   await addItem(page, 'Toor', 'Toor Dal 1kg');
   await page.waitForTimeout(1200);
   await shot(page, D, '12-walkin-editor');

@@ -73,7 +73,7 @@ const inv = async (body, payment) => {
 };
 const line = (item, qty) => ({ item_id: item.id, qty: String(qty) });
 await inv({ party_id: ramesh.id, document_date: TODAY, due_on: TODAY, lines: [line(rice, 2), line(oil, 2)] });
-await inv({ walk_in_name: 'Walk-in', document_date: TODAY, lines: [line(rice, 1)] },
+await inv({ walk_in_name: 'Quick Sale', document_date: TODAY, lines: [line(rice, 1)] },
   { payment_date: TODAY, mode_breakup: [{ mode: 'cash', amount: '473.00' }] });
 const big = await inv({ party_id: gupta.id, document_date: TODAY, due_on: TODAY, lines: [line(rice, 4), line(delivery, 1)] });
 const riceLine = big.lines.find((l) => l.item_id === rice.id);

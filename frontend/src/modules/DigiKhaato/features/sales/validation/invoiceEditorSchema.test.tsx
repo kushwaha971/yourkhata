@@ -107,7 +107,7 @@ it('checks HSN shape and line discount bounds', () => {
 
 it('asks for a party on a party bill, and for a real mobile on a walk-in', () => {
   expect(errorsOf(bill({ mode: 'party', partyId: null })).partyId).toBe(
-    'Choose a party, or switch to walk-in.'
+    'Choose a saved customer, or switch to Quick Sale.'
   );
   expect(errorsOf(bill({ walkInMobile: '12345' })).walkInMobile).toBe(
     'Enter a 10-digit Indian mobile number.'

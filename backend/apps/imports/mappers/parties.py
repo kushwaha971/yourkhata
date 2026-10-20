@@ -163,7 +163,7 @@ TEMPLATE_ROWS = (
         "gstin": "27AAPFU0939F1ZV",
         "tags": "Suppliers",
     },
-    {"name": "Walk-in Anil", "type": "customer"},
+    {"name": "Radhe Krishna Enterprises", "type": "customer"},
 )
 
 

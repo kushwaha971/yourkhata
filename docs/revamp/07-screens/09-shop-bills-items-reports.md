@@ -1,6 +1,11 @@
 # Shop: bills, purchases, items, stock, imports, reports and settings
 
 Status: **implementation approved under R-DEC-16/25**, 20 Oct 2026. Continue one reviewed/tested screen at a time after Home acceptance. Financial proposals retain their individual approval boundaries.
+Wording override, R-DEC-28 (20 Oct): billing uses Quick Sale / Saved customer;
+sales Customer, purchases Supplier, neutral/shared identity Contact. Older terms
+below describe existing internal modes, not copy to restore. See DESIGN-SYSTEM
+plain-language guidance. No machine keys or business rules are renamed.
+
 Read with [02](../02-preserve-and-contracts.md) (what must keep working), [05 §3–4](../05-feedback-and-performance.md) (feedback and duplicate protection), [06](../06-shared-components-and-architecture.md) (reuse), the template in [README](README.md), and the Counter Mode design page (`docs/revamp/design/counter-mode.html`, sections `#billactions`, `#share`, `#pickers`, `#footer`, `#settings`), whose decisions are reused here rather than redesigned.
 
 Paths: `F/` is `frontend/src/modules/DigiKhaato/features/`; endpoints are under `/api/v1/` (constants in `frontend/src/api/APIPaths.ts`). Code was read at `dev` on 17 Oct 2026. Where the code and an older doc disagree, the code is described and the difference is listed in §12.

@@ -54,7 +54,7 @@
   "reports.gst.issue.invalid_gstin_checksum": "GSTIN सही नहीं है",
   "reports.gst.issue.legacy_rate_used": "इस तारीख़ तक यह GST दर बंद हो चुकी थी",
   "reports.gst.issue.missing_hsn": "एक लाइन में HSN/SAC नहीं है",
-  "reports.gst.issue.missing_party_gstin": "पार्टी पंजीकृत है, पर दस्तावेज़ पर GSTIN नहीं",
+  "reports.gst.issue.missing_party_gstin": "संपर्क पंजीकृत है, पर दस्तावेज़ पर GSTIN नहीं",
   "reports.gst.issue.missing_pos": "आपूर्ति का स्थान नहीं है",
   "reports.gst.issue.pos_state_mismatch": "आपूर्ति का स्थान और अंतर-राज्यीय मेल नहीं खाते",
   "reports.gst.issue.zero_taxable_with_tax": "शून्य कर योग्य राशि पर टैक्स",

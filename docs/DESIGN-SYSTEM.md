@@ -414,3 +414,15 @@ name beside the mark is plain text.
   "DigiKhaato", "YourKhata", "yourkhata.com" in their rendered HTML.
 - Don't imitate another khata app's mark (green book tiles, a plain "K" in a
   circle); the K on a tied indigo cover is ours.
+
+
+## Plain customer language · owner,20 October2026
+
+Use **Quick Sale** for billing without a saved customer and **Saved customer**
+for the saved-customer billing option. Hindi: **तुरंत बिक्री** and **सहेजा गया
+ग्राहक**. Use Customer on sales screens, Supplier on purchase screens and Contact
+for a neutral shared contact list, picker, activity entry or validation message.
+Avoid the accounting labels Party/Parties and Walk-in in newly rendered copy.
+Internal `Party`, `party_id`, `walkIn`, permission codes, import column names,
+API paths and user-entered/stored names retain their existing contracts. New
+words do not change credit eligibility, required payment, allocations or books.

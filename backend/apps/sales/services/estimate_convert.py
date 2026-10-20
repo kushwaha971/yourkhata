@@ -142,7 +142,7 @@ def convert_to_invoice(
         )
     party = estimate.party
     if party is not None and party.status == "archived":
-        raise ValidationFailed({"party_id": ["Party is archived; restore first"]})
+        raise ValidationFailed({"party_id": ["This customer is archived. Restore them first."]})
 
     lines = list(estimate.lines.select_related("item").all())
     payload = {

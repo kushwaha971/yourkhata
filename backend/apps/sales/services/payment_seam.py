@@ -46,11 +46,11 @@ def validate_payment(*, payment: dict | None, grand_total: Decimal, walk_in: boo
     if walk_in and grand_total == ZERO:
         return None  # EC-5 — a free sample needs no payment of zero
     if walk_in and not rows:
-        raise ValidationFailed({"payment": ["Walk-in sale must be paid in full"]})
+        raise ValidationFailed({"payment": ["quick sale must be paid in full"]})
     lines = validate_mode_breakup(rows, prefix="payment.mode_breakup")
     total = mode_total(lines)
     if walk_in and total != grand_total:
-        raise ValidationFailed({"payment": ["Walk-in sale must be paid in full"]})
+        raise ValidationFailed({"payment": ["quick sale must be paid in full"]})
     raw_date = (payment or {}).get("payment_date")
     return {
         "payment_date": str(raw_date) if raw_date else "",

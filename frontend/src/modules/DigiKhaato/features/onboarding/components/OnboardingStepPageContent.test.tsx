@@ -137,7 +137,7 @@ describe('the wizard — step 1 (FR-2)', () => {
     expect(grid).toBeInTheDocument();
     // The nine types of FR-7's table, each with its one-line hint (§8).
     expect(screen.getAllByRole('radio')).toHaveLength(9);
-    expect(screen.getByText('Walk-in customers, udhaar')).toBeInTheDocument();
+    expect(screen.getByText('Customers without saved details, udhaar')).toBeInTheDocument();
   });
 
   it('creates the tenant and advances to step 2', async () => {
