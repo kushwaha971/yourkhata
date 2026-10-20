@@ -24,6 +24,7 @@ from django.db.models import (
 )
 from django.db.models.functions import Coalesce, Greatest
 
+from apps.common.document_scope import shop_origin_q
 from apps.common.money import ZERO
 
 
@@ -41,7 +42,7 @@ def with_shop_facts(queryset: Any, *, tenant: Any) -> Any:
         return Coalesce(Subquery(grouped, output_field=money), Value(ZERO), output_field=money)
 
     sales = SalesDocument.objects.filter(tenant=tenant, party_id=OuterRef("pk")).filter(
-        Q(origin_module__isnull=True) | Q(origin_module="")
+        shop_origin_q()
     )
     invoices = sales.filter(
         kind__in=("invoice", "bill_of_supply"),

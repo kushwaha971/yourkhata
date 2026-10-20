@@ -84,7 +84,7 @@ export function ShopHomeWorkspace({
   const [payment, setPayment] = useState<PaymentContext | null>(null);
   const insightsId = useId();
   const [reminder, setReminder] = useState<LanePerson | null>(null);
-  const counter = useCounter(data.generatedAt);
+  const counter = useCounter(data.generatedAt, data.recentActivity);
   const overview = useHomeCharts(true, data.generatedAt);
   const canPay = hasModule('payments') && can('payments.payment.write');
   const canRemind = hasModule('ledger') && can('ledger.entry.read') && can('ledger.reminder.write');
@@ -432,7 +432,7 @@ export function ShopHomeWorkspace({
                   {failed(data, ['recent_activity']) ? (
                     <PartUnavailable onRetry={refresh} t={t} />
                   ) : (
-                    <RecentActivityList counter items={data.recentActivity} t={t} />
+                    <RecentActivityList counter items={data.recentActivity} documentFacts={counter.data?.documents} t={t} />
                   )}
                   <UbLink href={ROUTES.REPORT_DAY_BOOK}>{t('reports.home.daybook')}</UbLink>
                 </>

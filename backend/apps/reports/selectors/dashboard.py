@@ -39,6 +39,7 @@ from django.db.models import Count, DecimalField, Min, Q, Sum
 from django.db.models.functions import Coalesce
 
 from apps.common.constants import LedgerBucket
+from apps.common.document_scope import shop_origin_q
 from apps.common.money import ZERO
 from apps.common.overdue import overdue_q
 from apps.reports.constants import (
@@ -126,16 +127,20 @@ def document_tiles(*, tenant: Any, today: dt.date) -> dict[str, Any]:
 
     # WP-06 Finding 2 — decided on the day, as the list it opens decides it.
     overdue = Q(kind__in=SALE_KINDS) & overdue_q(today=today, open_statuses=SALE_OPEN)
-    row = SalesDocument.objects.filter(tenant=tenant).aggregate(
-        sales_today=_sum("grand_total", sale & Q(document_date=today)),
-        bills_today=Count("id", filter=sale & Q(document_date=today)),
-        credit_today=_sum("grand_total", credit & Q(document_date=today)),
-        sales_yesterday=_sum("grand_total", sale & Q(document_date=yesterday)),
-        credit_yesterday=_sum("grand_total", credit & Q(document_date=yesterday)),
-        overdue_count=Count("id", filter=overdue),
-        overdue_due=_sum("amount_due", overdue),
-        overdue_since=Min("due_on", filter=overdue),
-        overdue_first=Min("document_date", filter=overdue),
+    row = (
+        SalesDocument.objects.filter(tenant=tenant)
+        .filter(shop_origin_q())
+        .aggregate(
+            sales_today=_sum("grand_total", sale & Q(document_date=today)),
+            bills_today=Count("id", filter=sale & Q(document_date=today)),
+            credit_today=_sum("grand_total", credit & Q(document_date=today)),
+            sales_yesterday=_sum("grand_total", sale & Q(document_date=yesterday)),
+            credit_yesterday=_sum("grand_total", credit & Q(document_date=yesterday)),
+            overdue_count=Count("id", filter=overdue),
+            overdue_due=_sum("amount_due", overdue),
+            overdue_since=Min("due_on", filter=overdue),
+            overdue_first=Min("document_date", filter=overdue),
+        )
     )
     return {
         "today_sales": {
@@ -164,7 +169,10 @@ def open_orders(*, tenant: Any, today: dt.date) -> dict[str, Any]:
     from apps.sales.models import SalesDocument
 
     def waiting(model: Any, kind: str, status: str) -> dict[str, Any]:
-        row = model.objects.filter(tenant=tenant, kind=kind, status=status).aggregate(
+        rows = model.objects.filter(tenant=tenant, kind=kind, status=status)
+        if model is SalesDocument:
+            rows = rows.filter(shop_origin_q())
+        row = rows.aggregate(
             count=Count("id"), amount=_sum("grand_total", Q()), first=Min("document_date")
         )
         first = row["first"]
@@ -237,7 +245,9 @@ def period_figures(*, tenant: Any, today: dt.date) -> dict[str, Any]:
         paid = Q(payment_date__gte=lo, payment_date__lte=hi)
         paid_aggs[f"{key}_amount"] = _sum("amount", paid)
         paid_aggs[f"{key}_count"] = Count("id", filter=paid)
-    sales = SalesDocument.objects.filter(tenant=tenant).aggregate(**sales_aggs)
+    sales = (
+        SalesDocument.objects.filter(tenant=tenant).filter(shop_origin_q()).aggregate(**sales_aggs)
+    )
     paid_row = (
         Payment.objects.filter(tenant=tenant, bucket=LedgerBucket.SHOP, direction="in")
         .exclude(status=VOID)
@@ -525,9 +535,11 @@ def recent_activity(*, tenant: Any) -> list[dict[str, Any]]:
             )
         )
 
-    sales = SalesDocument.objects.filter(
-        tenant=tenant, kind__in=(*SALE_KINDS, CREDIT_NOTE_KIND)
-    ).select_related("party")
+    sales = (
+        SalesDocument.objects.filter(tenant=tenant, kind__in=(*SALE_KINDS, CREDIT_NOTE_KIND))
+        .filter(shop_origin_q())
+        .select_related("party")
+    )
     for doc in sales.exclude(status=DRAFT).order_by(_newest("issued_at"), "-id")[:limit]:
         events.append(
             _event(
@@ -671,7 +683,10 @@ def first_use(*, tenant: Any) -> dict[str, bool]:
     return {
         "has_party": Party.objects.for_tenant(tenant).exists(),
         "has_item": Item.objects.filter(tenant=tenant).exists(),
-        "has_document": SalesDocument.objects.filter(tenant=tenant).exclude(status=DRAFT).exists(),
+        "has_document": SalesDocument.objects.filter(tenant=tenant)
+        .filter(shop_origin_q())
+        .exclude(status=DRAFT)
+        .exists(),
         "has_upi": bool(getattr(tenant, "upi_vpa", None)),
     }
 

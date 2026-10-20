@@ -41,6 +41,7 @@ from django.db.models import DateField, DecimalField, ExpressionWrapper, F, Min,
 from django.db.models.functions import Coalesce, TruncDay, TruncMonth, TruncWeek, TruncYear
 
 from apps.common.constants import LedgerBucket
+from apps.common.document_scope import shop_origin_q
 from apps.common.money import ZERO
 from apps.reports.constants import (
     CREDIT_NOTE_KIND,
@@ -105,12 +106,15 @@ def _first_record(tenant: Any) -> dt.date | None:
 
     firsts = [
         SalesDocument.objects.filter(tenant=tenant)
+        .filter(shop_origin_q())
         .exclude(status=DRAFT)
         .aggregate(d=Min("document_date"))["d"],
         PurchaseDocument.objects.filter(tenant=tenant, kind="purchase_bill")
         .exclude(status=DRAFT)
         .aggregate(d=Min("document_date"))["d"],
-        Payment.objects.filter(tenant=tenant).aggregate(d=Min("payment_date"))["d"],
+        Payment.objects.filter(tenant=tenant, bucket=LedgerBucket.SHOP).aggregate(
+            d=Min("payment_date")
+        )["d"],
         Expense.objects.filter(tenant=tenant, app="shop").aggregate(d=Min("expense_date"))["d"],
     ]
     known = [day for day in firsts if day is not None]
@@ -232,7 +236,9 @@ class _Span:
 def sales_series(span: _Span) -> list[Decimal]:
     from apps.sales.models import SalesDocument
 
-    in_range = SalesDocument.objects.filter(tenant=span.tenant, **span.between("document_date"))
+    in_range = SalesDocument.objects.filter(
+        tenant=span.tenant, **span.between("document_date")
+    ).filter(shop_origin_q())
     sold = in_range.filter(kind__in=SALE_KINDS).exclude(status__in=(DRAFT, VOID))
     credited = in_range.filter(kind=CREDIT_NOTE_KIND, status__in=CREDIT_NOTE_LIVE_STATUSES)
     sold_series = _series(_grouped(sold, "document_date", "grand_total", span.group), span.starts)
@@ -257,7 +263,9 @@ def profit_series(span: _Span) -> tuple[list[Decimal], int]:
     # The profit report's own line arithmetic, so the graph and the report agree.
     from apps.reports.selectors.profit import line_figures, sold_lines
 
-    lines = sold_lines(tenant=span.tenant, date_from=span.first, date_to=span.last)
+    lines = sold_lines(tenant=span.tenant, date_from=span.first, date_to=span.last).filter(
+        shop_origin_q("document__")
+    )
     fig = line_figures()
     margin = ExpressionWrapper(fig["costed_sale"] - fig["cost"], output_field=_WIDE)
     rows = _grouped(lines, "document__document_date", margin, span.group)
@@ -313,6 +321,7 @@ def top_items(span: _Span, *, by: str = "value") -> list[dict[str, Any]]:
             document__document_date__lte=span.last,
             item__isnull=False,
         )
+        .filter(shop_origin_q("document__"))
         .exclude(document__status__in=(DRAFT, VOID))
         .values("item_id", name=F("item__name"), unit=F("item__unit__code"))
         .annotate(total=Sum("taxable_value"), qty_total=Sum("qty"))
@@ -342,6 +351,7 @@ def top_customers(span: _Span) -> list[dict[str, Any]]:
             party__isnull=False,
             **span.between("document_date"),
         )
+        .filter(shop_origin_q())
         .exclude(status__in=(DRAFT, VOID))
         .values("party_id", name=F("party__name"))
         .annotate(total=Sum("grand_total"))

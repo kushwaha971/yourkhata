@@ -65,7 +65,7 @@ The client can and will lock buttons (05 §4). The server is the last guard. The
 
 ## BP-08 · Explicit customer–supplier settlement (completion of existing placeholder)
 
-**Proposed, not approved for building.** 20 Oct 2026. Sections03/12 already
+**Approved under R-DEC-26; implementation pending.** 20 Oct 2026. Sections03/12 already
 referenced BP-08 but this file had no concrete entry. The owner chose separate
 balances until an explicit settlement (D-03); this does not mean automatic netting.
 
@@ -233,7 +233,7 @@ books. Add UI states to the Home matrix and rerun real payment→register refres
 
 ### BP-16 · Shop promises / follow-ups
 
-**Proposed; new write workflow, not approved.** Separate Shop role-scoped promise
+**Approved under R-DEC-26; implementation pending.** Separate Shop role-scoped promise
 records (business, contact, customer/supplier role, date, optional amount, state,
 actor/history). Do not reuse Party.collection_date or personal Udhaar promises.
 Record/edit/complete a follow-up without altering invoices, due dates or balances.
@@ -253,7 +253,7 @@ implementation; feature-off preserves saved history.
 
 ### BP-17 · Physical Shop cash counts
 
-**Proposed; new write workflow, not approved.** An append-only counted-cash
+**Approved under R-DEC-26; implementation pending.** An append-only counted-cash
 observation with actor/time, counted amount, server snapshot of expected Shop
 cash and variance. Reuse Shop money_position; never call recorded cash physical
 cash or combine other books. Record a count without posting an adjustment,
@@ -271,6 +271,7 @@ audit history and desktop/320 px review. Define the transactional snapshot and
 freshness rule before migration; don't subtract a stale browser tile at save.
 Feature-off retains counts/history, with no ledger movement to undo.
 
-BP-08/16/17 need one concrete backend-scope approval before building under this
-file's standing rule. BP-15 metadata reads can proceed without that approval.
+BP-08/16/17 approved by the owner: “Approve all three workflows”, recorded
+20 Oct 2026 at 06:03 UTC in R-DEC-26. BP-15 is the current read checkpoint;
+new workflows remain unbuilt until individually implemented and verified.
 Library/Lending endpoints, models, calculations and workflows remain frozen.

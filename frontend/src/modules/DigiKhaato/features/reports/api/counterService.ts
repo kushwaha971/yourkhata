@@ -25,13 +25,22 @@ export interface RepeatSource {
   uses: number;
   expense?: Omit<ExpenseFormValues, 'expenseDate'>;
 }
+export interface CounterDocumentFact {
+  readonly kind: string;
+  readonly status: string;
+  readonly amount_due: string;
+  readonly item_count: number;
+}
 export interface CounterData {
+  documents?: Readonly<Record<string, CounterDocumentFact>>;
   repeat?: readonly RepeatSource[];
   as_of: string;
   customers?: CounterLane;
   suppliers?: CounterLane;
 }
-export async function getCounter(signal: AbortSignal): Promise<CounterData> {
-  return (await api.get<{ data: CounterData }>('/reports/dashboard/counter', ubConfig({ signal })))
-    .data.data;
+export async function getCounter(signal: AbortSignal, documents: readonly string[] = []): Promise<CounterData> {
+  const query = new URLSearchParams();
+  if (documents.length) query.set('documents', documents.join(','));
+  const suffix = query.size ? `?${query}` : '';
+  return (await api.get<{ data: CounterData }>(`/reports/dashboard/counter${suffix}`, ubConfig({ signal }))).data.data;
 }

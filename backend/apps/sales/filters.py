@@ -14,6 +14,7 @@ from typing import Any
 import django_filters
 from django.db.models import Q, QuerySet
 
+from apps.common.document_scope import shop_origin_q
 from apps.common.filters import BaseTenantFilterSet
 from apps.sales.models import SalesDocument
 
@@ -37,7 +38,7 @@ class InvoiceFilterSet(BaseTenantFilterSet):
     def filter_book(self, queryset: QuerySet, name: str, value: Any) -> QuerySet:
         """BP-09: the Shop person must not list a vertical's invoice as Shop dues."""
         if value == "shop":
-            return queryset.filter(Q(origin_module__isnull=True) | Q(origin_module=""))
+            return queryset.filter(shop_origin_q())
         return queryset
 
     origin_module = django_filters.CharFilter(field_name="origin_module")

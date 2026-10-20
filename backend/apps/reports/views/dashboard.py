@@ -342,8 +342,15 @@ class DashboardCounterView(TenantScopeMixin, APIView):
 
     def get(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         from apps.common.book_access import require_book
+        from apps.common.exceptions import ValidationFailed
         from apps.common.permissions_registry import permissions_for_app
         from apps.reports.selectors.counter import counter_data
+        from apps.reports.selectors.counter_documents import parse_document_refs
+
+        try:
+            document_refs = parse_document_refs(request.query_params.get("documents"))
+        except ValueError as error:
+            raise ValidationFailed({"documents": [str(error)]}) from None
 
         require_book(request, "shop", "reports.basic.read")
         tenant = self.get_tenant()
@@ -353,6 +360,7 @@ class DashboardCounterView(TenantScopeMixin, APIView):
                 tenant=tenant,
                 granted=granted,
                 modules=frozenset(tenant.enabled_modules or ()),
+                document_refs=document_refs,
             )
         )
         response["Cache-Control"] = "private, no-store"

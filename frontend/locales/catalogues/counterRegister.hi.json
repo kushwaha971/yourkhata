@@ -1,0 +1,11 @@
+{
+  "counterRegister.items": "{count} सामान",
+  "counterRegister.status.applied": "क्रेडिट लगा",
+  "counterRegister.status.cancelled": "रद्द",
+  "counterRegister.status.draft": "ड्राफ्ट",
+  "counterRegister.status.issued": "जारी",
+  "counterRegister.status.overdue": "देर हुई",
+  "counterRegister.status.paid": "भुगतान हुआ",
+  "counterRegister.status.partially_paid": "आंशिक भुगतान",
+  "counterRegister.status.unpaid": "भुगतान बाकी"
+}

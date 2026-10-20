@@ -1,6 +1,6 @@
 Continue the existing YourKhata revamp on dev. Do not start another plan.
 
-CURRENT HANDOFF — 20 October 2026, R-DEC-21–25
+CURRENT HANDOFF — 20 October 2026, R-DEC-21–26
 The owner requires full reference fidelity and responsible verification across
 all future work. After Home acceptance, commit/push/report and proceed directly
 to Bills/POS/customer invoices, then the remaining Shop families. Do not ask the
@@ -24,8 +24,8 @@ Shop/customer counter drawer for this bill; server-provided allocation rows no
 longer trigger a false unsaved-changes prompt. No financial API/model change.
 The owner asked when Home's source-backed gaps finish: after this checkpoint,
 complete BP-15 status/line-count reads. BP-08/16/17 now have concrete scopes in08;
-an approval question is pending for settlement, Shop promises and cash counts.
-Read the actual answer before implementing those writes. No automatic netting,
+the owner answered “Approve all three workflows” (R-DEC-26,20 Oct06:03 UTC).
+Implement those approved writes one verified piece at a time after BP-15. No automatic netting,
 no cash adjustment from a count, no personal Udhaar promise reuse. After the
 Home follow-up, continue invoice/POS editor and remaining Shop families under
 R-DEC-25 without routine permission. Home's full-feature parity remains8.2/10;
@@ -76,9 +76,9 @@ Do not relabel that full run green. Exact screenshots, geometry, contrast,
 bundle/nav measurements and browser-flow evidence are recorded in the report.
 Physical devices, TalkBack and merchant research are not proved by Chromium.
 
-Actual recent register data does not contain every prototype payment-status/
-item-count datum, so none is fabricated. Shop promises do not borrow personal
-Udhaar dates. Physical cash count, BP-08 settlement, BP-10 historical role
+BP-15 register metadata now reads current statuses/item counts from bounded,
+permission-scoped source documents. See2026-10-20-home-register-facts.md: full
+backend4,673 passed/16 skipped, frontend4,547 passed and168 Home frames. Shop promises must not borrow personal Udhaar dates. Physical cash count, BP-08 settlement, BP-10 historical role
 statements, per-user Udhaar ownership and omitted shell work are not claimed.
 Do not rate the entire app from this screen or call the prototype fully built.
 

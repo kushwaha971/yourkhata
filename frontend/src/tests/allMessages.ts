@@ -18,6 +18,8 @@ import calendarEn from 'locales/catalogues/calendar.en.json';
 import calendarHi from 'locales/catalogues/calendar.hi.json';
 import cashbookEn from 'locales/catalogues/cashbook.en.json';
 import cashbookHi from 'locales/catalogues/cashbook.hi.json';
+import counterRegisterEn from 'locales/catalogues/counterRegister.en.json';
+import counterRegisterHi from 'locales/catalogues/counterRegister.hi.json';
 import counterSearchEn from 'locales/catalogues/counterSearch.en.json';
 import counterSearchHi from 'locales/catalogues/counterSearch.hi.json';
 import dataEn from 'locales/catalogues/data.en.json';
@@ -136,6 +138,7 @@ export const en: Readonly<Record<string, string>> = {
   ...businessProfileEn,
   ...calendarEn,
   ...cashbookEn,
+  ...counterRegisterEn,
   ...counterSearchEn,
   ...dataEn,
   ...dataStatusEn,
@@ -195,6 +198,7 @@ export const hi: Readonly<Record<string, string>> = {
   ...businessProfileHi,
   ...calendarHi,
   ...cashbookHi,
+  ...counterRegisterHi,
   ...counterSearchHi,
   ...dataHi,
   ...dataStatusHi,

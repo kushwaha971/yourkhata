@@ -28,9 +28,11 @@ import { formatInr } from 'src/utils/money';
 
 import { usePartyReminder } from 'modules/DigiKhaato/features/ledger/hooks/usePartyReminder';
 
+import { counterDocumentStatus } from '../view-model/counterDocumentDisplay';
 import { activityTitle, activityWhen } from '../view-model/dashboardDisplay';
 import { sourceHref } from '../view-model/drillThrough';
 
+import type { CounterData } from '../api/counterService';
 import type { ActivityItem, FirstUse, LowStockRow, TopDebtor } from '../types/reports.types';
 
 /* The sheet loads with the tap that opens it (CLAUDE.md, three times over). */
@@ -49,10 +51,12 @@ export function RecentActivityList({
   items,
   t,
   counter = false,
+  documentFacts,
 }: Readonly<{
   items: readonly ActivityItem[];
   t: TranslateFn;
   counter?: boolean;
+  documentFacts?: CounterData['documents'];
 }>): React.JSX.Element {
   const timeZone = useAppSelector(selectTenantTimezone);
   const content = (
@@ -67,6 +71,10 @@ export function RecentActivityList({
             const title = activityTitle(item, t);
             const href = sourceHref(item.source, item.number, item.type);
             if (counter) {
+              const fact = documentFacts?.[`${item.source.kind}:${item.source.id}`];
+              const status = item.type.endsWith('_void') ? null : counterDocumentStatus(fact, t);
+              const count = fact && Number.isInteger(fact.item_count) && fact.item_count >= 0
+                ? t('counterRegister.items', { count: fact.item_count }) : null;
               const clock = new Intl.DateTimeFormat('en-IN', {
                 hour: '2-digit',
                 minute: '2-digit',
@@ -82,6 +90,9 @@ export function RecentActivityList({
                 <UbStack
                   as="li"
                   key={item.id}
+                  data-testid="counter-register-row"
+                  data-source-reference={`${item.source.kind}:${item.source.id}`}
+                  data-event-type={item.type}
                   direction="row"
                   align="center"
                   className="gap-3 border-b border-border-hairline py-3 last:border-b-0"
@@ -92,13 +103,13 @@ export function RecentActivityList({
                   <UbText
                     variant="caption"
                     tone="secondary"
-                    className="hidden w-16 shrink-0 lg:block"
+                    className="hidden w-16 shrink-0 xl:block"
                   >
                     {kind}
                   </UbText>
                   <UbStack gap={1} className="min-w-0 flex-1">
-                    <UbText variant="caption" tone="secondary" className="lg:hidden">
-                      {kind}
+                    <UbText variant="caption" tone="secondary" className="xl:hidden">
+                      {[kind, status?.label].filter(Boolean).join(' · ')}
                     </UbText>
                     {href ? (
                       <UbLink
@@ -115,11 +126,12 @@ export function RecentActivityList({
                       <UbText variant="body-sm-medium">{title}</UbText>
                     )}
                     <UbText variant="caption" tone="secondary" className="break-words">
-                      {[item.number, activityWhen(item, t, timeZone ?? undefined)]
+                      {[item.number, activityWhen(item, t, timeZone ?? undefined), count]
                         .filter(Boolean)
                         .join(' · ')}
                     </UbText>
                   </UbStack>
+                  {status && <UbBox className="hidden shrink-0 xl:block"><UbStatusBadge tone={status.tone} label={status.label} /></UbBox>}
                   {item.amount && (
                     <UbBox className="min-w-0 max-w-[42%] shrink-0">
                       <UbText
@@ -452,3 +464,5 @@ export function FirstUseChecklist({
     </UbStack>
   );
 }
+
+import 'src/i18n/catalogues/counterRegister';

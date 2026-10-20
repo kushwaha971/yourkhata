@@ -9,6 +9,7 @@ from zoneinfo import ZoneInfo
 from django.db.models import Count, Q, Sum
 from django.utils import timezone
 
+from apps.common.document_scope import shop_origin_q
 from apps.common.money import ZERO
 from apps.reports.constants import SALE_KINDS
 
@@ -68,7 +69,12 @@ def role_lane(*, tenant: Any, today: dt.date, supplier: bool, can_mobile: bool) 
 
 
 def counter_data(
-    *, tenant: Any, granted: frozenset[str], modules: frozenset[str], now: dt.datetime | None = None
+    *,
+    tenant: Any,
+    granted: frozenset[str],
+    modules: frozenset[str],
+    now: dt.datetime | None = None,
+    document_refs: tuple = (),
 ) -> dict:
     """Optional blocks require their source read right."""
     now = now or timezone.now()
@@ -91,6 +97,12 @@ def counter_data(
     )
     if suggestions:
         result["repeat"] = suggestions
+    if document_refs:
+        from apps.reports.selectors.counter_documents import document_facts
+
+        result["documents"] = document_facts(
+            tenant=tenant, refs=document_refs, granted=granted, modules=modules, today=local.date()
+        )
     return result
 
 
@@ -98,9 +110,9 @@ def repeat_sources(
     *, tenant: Any, today: dt.date, granted: frozenset[str], modules: frozenset[str]
 ) -> list[dict]:
     """Frequent recent parties/categories; latest real source, never a posted copy."""
-    from apps.sales.models import SalesDocument
-    from apps.purchases.models import PurchaseDocument
     from apps.expenses.models import Expense
+    from apps.purchases.models import PurchaseDocument
+    from apps.sales.models import SalesDocument
 
     result = []
     start = today - dt.timedelta(days=13)
@@ -129,9 +141,7 @@ def repeat_sources(
             tenant=tenant, status__in=live, **{f"{date_field}__range": (start, today)}
         )
         if kind == "sale":
-            qs = qs.filter(kind__in=SALE_KINDS, party__status="active").filter(
-                Q(origin_module__isnull=True) | Q(origin_module="")
-            )
+            qs = qs.filter(kind__in=SALE_KINDS, party__status="active").filter(shop_origin_q())
         elif kind == "purchase":
             qs = qs.filter(kind="purchase_bill", party__status="active")
         else:

@@ -6,7 +6,9 @@ Replace the line marked `TASK` with what you want done next. If you leave it out
 
 ## Current handoff · 20 October 2026
 
-Read START-NEXT-SESSION-PROMPT.txt and the Home acceptance report first. R-DEC-25
+Read START-NEXT-SESSION-PROMPT.txt and the Home acceptance report first.
+R-DEC-26 records the owner approval for BP-08/16/17; no repeat question.
+BP-15 source metadata follow-up is verified in2026-10-20-home-register-facts.md. R-DEC-25
 authorizes immediate continuation to Bills/POS/customer invoices after Home's
 commit/push/report. Home's actual scope, 144 measured states, 4,532 frontend
 tests, backend scale-test caveat and remaining prototype parity gaps are explicit.

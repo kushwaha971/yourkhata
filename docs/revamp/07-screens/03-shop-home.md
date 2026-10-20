@@ -79,7 +79,13 @@ allocations. Repeat proposes fresh forms through shared mappings/hooks, preserve
 manual input and never copies old ids/numbers/dates/payments or silently posts.
 Search reuses the existing paged Shop sources and role-specific pages/forms.
 
-The register retains real recent-source data; missing status/item-count data is
-not fabricated. Cash by records is not a physical count. Settlement/historical
-role statements and personal Udhaar ownership retain their separate approvals.
+BP-15 register follow-up reads bounded current source statuses and line counts,
+with source permissions and freshness guards. Unknown facts remain absent.
+Cash by records is not a physical count. R-DEC-26 approves Shop promises, cash
+observations and explicit settlement; these workflows are next, not delivered.
+Historical role statements and personal Udhaar ownership remain separate.
 Evidence and exact remaining parity limits: docs/performance/2026-10-19-p5-shop-home.md.
+
+20 Oct BP-15 follow-up: source facts and Shop-origin read fences verified;
+168 measured English/Hindi states,4,547 frontend and4,673 backend tests pass.
+Evidence: docs/performance/2026-10-20-home-register-facts.md.
