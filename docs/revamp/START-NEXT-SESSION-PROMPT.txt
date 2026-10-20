@@ -33,11 +33,12 @@ the caret in the search; one-tap "Paid cash" for a Quick Sale; dock caption
 "N items · includes GST Rs x" + save state; picker stock in words + GST
 included/extra; restore archived look-alike / Create item from no match;
 "For this bill only. The usual price stays Rs450." on a changed rate.
+Also done: Hold (saves, then a blank bill) with an "On hold · N" row of
+time-stamped chips above the editor; "Add <name> as a new customer" from the
+Saved customer search (parties.party.write only, lazy PartyQuickCreate).
 Remaining, in order:
-1. Hold a bill and resume it: "On hold · 2" register row on the durable drafts.
-2. "Add <name>" from the Saved customer search (owner/write only).
-3. Jump to line chip on 50+ lines; expired-session return keeps the bill.
-4. Rescore in the artifact's table: point of view, score, evidence, still weak,
+1. Jump to line chip on 50+ lines; expired-session return keeps the bill.
+2. Rescore in the artifact's table: point of view, score, evidence, still weak,
    confidence, for phone and desktop, from frames and measurements.
 Then the remaining sales documents, purchases and returns (R-DEC-27).
 Open owner question: should jit=off (3421283) go to production or stay local?

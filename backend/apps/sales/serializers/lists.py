@@ -37,6 +37,9 @@ class InvoiceListSerializer(serializers.ModelSerializer):
             "converted_to_id",
             "created_by",
             "origin",
+            # Counter Mode hold and resume: when a draft was last touched, so
+            # three held walk-in bills of the same amount can be told apart.
+            "updated_at",
         )
 
     def get_party(self, obj: SalesDocument) -> dict | None:

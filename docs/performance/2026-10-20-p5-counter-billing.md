@@ -2,9 +2,9 @@
 
 20 October 2026. R-DEC-27 billing/POS, 07-screens/09 §3, measured against the
 owner's Counter Mode artifact (steps 9 and 10) as the acceptance reference.
-**This piece is part of the >8.5 plan; hold/resume, "Add <name>" from the
-customer search, Jump to line, the expired-session return and the rescore are
-still to come** (see "Not in this piece").
+**This is part of the >8.5 plan; Jump to line, the expired-session return and
+the rescore are still to come** (see "Not in this piece"). Two commits: the
+counter steps (b7a001a), then hold/resume and "Add <name>" (second section).
 
 ## What changed and why
 
@@ -67,10 +67,39 @@ still to come** (see "Not in this piece").
 - Navigation perf: see `data/2026-10-20-counter-billing-nav.json` (run quietly
   after the frames; compared with the 18 Oct baseline from this container).
 
+## Second step: hold a bill, add a customer from the search
+
+- **Hold** (header, beside Save) keeps the bill as a draft and opens a blank
+  one; the held bills sit above the editor as one quiet row, "On hold · 2",
+  each chip "Quick Sale 12:53 ₹531.00" a link back into that bill. It reads the
+  existing drafts (`listInvoices` tab=draft) and only restarts once the save has
+  answered, so an unsaved bill is never thrown away. myBillBook's "Hold & create
+  another", as the artifact's research appendix proposed.
+- **"Add “Ramesh Electricals” as a new customer"** under the Saved customer
+  search when nobody matches, for members with `parties.party.write`. It opens
+  the existing contact form with the name (`PartyQuickCreate`, `dynamic()`) and
+  puts the saved customer on the bill.
+- The list API's rows now carry `updated_at` (additive), so held bills of the
+  same amount are told apart by time.
+
+Found by looking at it live, not by tests: four held bills wrapped into **three
+rows of a 390 px phone** above the bill being written, and three held Quick
+Sales of ₹531.00 were **indistinguishable**. Now one row that scrolls sideways,
+each with its time. The harness itself had a defect: drafts created by a first
+save (a POST, as Hold makes) were never collected for clean-up, so ten held
+QA drafts piled up; it now reads the id from the POST body, and a re-run left
+nothing behind.
+
+Verification: 4,585 tests; type-check, lint, locales, build, bundle (sales
+editors +0.6–0.7 KB, purchase editors +0.0–0.1, raised to measured + 0.3 with a
+note), contrast; backend `test_draft_recovery.py` + `tests/contracts` 81 passed,
+4 skipped. Live: 54 English and 30 Hindi frames with zero overflow, cut text or
+low contrast, including the held row at 1280 and 390; Hold then a blank bill,
+verified on the docked total.
+
 ## Not in this piece
 
-Hold a bill and resume it ("On hold · 2"), "Add <name>" from the customer
-search, Jump to line on 50+ lines, the expired-session return, the per-line
+Jump to line on 50+ lines, the expired-session return, the per-line
 "₹450 usual price" caption (only the changed-rate note is shown, to keep phone
 cards short), and the rescore in the artifact's table. Physical scanners,
 phones and merchant timing are not proved by desktop Chromium.

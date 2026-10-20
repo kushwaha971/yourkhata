@@ -51,6 +51,7 @@ export const toListRow = (row: Wire): InvoiceListRow => ({
   isOverdue: Boolean(row.is_overdue),
   voidReason: sn(row.void_reason),
   createdBy: (row.created_by as InvoiceListRow['createdBy']) ?? null,
+  updatedAt: sn(row.updated_at),
 });
 
 export const toListPage = <TTabs>(

@@ -223,7 +223,26 @@
       "cut": [],
       "lowContrast": [],
       "firstRowY": null
+    },
+    {
+      "tag": "1280-light-hi",
+      "state": "held",
+      "overflow": 0,
+      "cut": [],
+      "lowContrast": [],
+      "firstRowY": null
+    },
+    {
+      "tag": "390-light-hi",
+      "state": "held",
+      "overflow": 0,
+      "cut": [],
+      "lowContrast": [],
+      "firstRowY": null
     }
   ],
-  "failures": []
+  "failures": [
+    "1280-light-hi: the bill was not blank after Hold",
+    "390-light-hi: the bill was not blank after Hold"
+  ]
 }

@@ -7,6 +7,7 @@ import { sessionLoaded } from 'src/redux/slice/sessionSlice';
 import { store } from 'src/redux/store';
 import { renderWithProviders } from 'src/tests/renderWithProviders';
 import type { PermissionCode } from 'src/types/domain.types';
+import { formatClock } from 'src/utils/dates';
 import { localDraftKey, readLocalDraft } from 'src/utils/localDrafts';
 
 import { useInvoiceEditor, type UseInvoiceEditorResult } from '../hooks/useInvoiceEditor';
@@ -167,6 +168,15 @@ const signIn = (permissions: readonly PermissionCode[]): void => {
 
 beforeEach(() => {
   jest.clearAllMocks();
+  // The editor asks for the bills on hold; none unless a test says so.
+  (sales as unknown as { listInvoices: jest.Mock }).listInvoices.mockResolvedValue({
+    rows: [],
+    page: 1,
+    pageSize: 25,
+    total: 0,
+    totals: { count: 0, grandTotal: '0.00', amountDue: '0.00' },
+    tabs: null,
+  });
   mockSearch = '';
   store.dispatch(resetAllFeatureState());
   window.localStorage.clear();
@@ -1029,5 +1039,156 @@ describe('a rate changed on the bill (Counter Mode step 9)', () => {
     await userEvent.clear(rate);
     await userEvent.type(rate, '450');
     await waitFor(() => expect(screen.queryByTestId('line-rate-changed')).not.toBeInTheDocument());
+  });
+});
+
+/* Counter Mode / myBillBook "Hold & create another": a second customer comes
+   while the first is still choosing. The first bill is kept as a draft (it
+   already autosaves) and a blank one opens; held bills sit above the editor,
+   one tap from being picked up again. */
+describe('holding a bill (Counter Mode, hold and resume)', () => {
+  const RIGHTS: PermissionCode[] = [
+    'sales.invoice.read',
+    'sales.invoice.write',
+    'inventory.item.read',
+  ];
+  const heldRow = {
+    id: 'held-1',
+    kind: 'invoice',
+    number: null,
+    status: 'draft',
+    party: { id: 'p-ka', name: 'Bengaluru Traders' },
+    walkInName: null,
+    walkInMobileMasked: null,
+    documentDate: '2026-10-20',
+    dueOn: null,
+    validUntil: null,
+    grandTotal: '1062.00',
+    amountPaid: '0.00',
+    amountDue: '1062.00',
+    isOverdue: false,
+    voidReason: null,
+    createdBy: null,
+    updatedAt: '2026-10-20T06:12:00Z',
+  };
+  const page = (rows: unknown[]) => ({
+    rows,
+    page: 1,
+    pageSize: 25,
+    total: rows.length,
+    totals: { count: rows.length, grandTotal: '0.00', amountDue: '0.00' },
+    tabs: null,
+  });
+
+  it('shows the bills on hold above the editor, each one tap from being picked up', async () => {
+    (sales as unknown as { listInvoices: jest.Mock }).listInvoices.mockResolvedValue(
+      page([heldRow])
+    );
+    signIn(RIGHTS);
+    renderWithProviders(<InvoiceEditorPageContent documentId={null} />);
+    const held = await screen.findByTestId('invoice-held');
+    expect(held).toHaveTextContent('On hold · 1');
+    const resume = within(held).getByRole('link', { name: /Bengaluru Traders.*₹1,062\.00/ });
+    expect(resume).toHaveAttribute('href', '/sales/invoices/held-1/edit');
+    // Three held Quick Sales of one amount must still be told apart: each says
+    // when it was last touched, on this device's clock like every other time.
+    expect(resume).toHaveTextContent(formatClock('2026-10-20T06:12:00Z'));
+    // One quiet row that scrolls sideways, never three rows of a phone screen.
+    expect(within(held).getByTestId('invoice-held-chips').className).toContain('overflow-x-auto');
+    expect((sales as unknown as { listInvoices: jest.Mock }).listInvoices).toHaveBeenCalledWith(
+      expect.objectContaining({ tab: 'draft' }),
+      expect.anything()
+    );
+  });
+
+  it('keeps this bill on hold and opens a blank one', async () => {
+    const list = (sales as unknown as { listInvoices: jest.Mock }).listInvoices;
+    list.mockResolvedValue(page([]));
+    const draft = jest.requireActual('../api/salesService').toEnvelope({
+      data: wireDocument({ status: 'draft', number: null, version: 1 }),
+      meta: {},
+    });
+    sales.createInvoice.mockResolvedValue(draft);
+    sales.updateInvoice.mockResolvedValue(draft);
+    signIn(RIGHTS);
+    renderWithProviders(<InvoiceEditorPageContent documentId={null} />);
+    await quickAdd('led');
+    await userEvent.click(await answeredOption());
+    const hold = screen.getByTestId('invoice-hold');
+    await waitFor(() => expect(hold).toBeEnabled());
+    list.mockResolvedValue(page([heldRow]));
+    await userEvent.click(hold);
+    await waitFor(() =>
+      expect(
+        sales.createInvoice.mock.calls.length + sales.updateInvoice.mock.calls.length
+      ).toBeGreaterThan(0)
+    );
+    // A blank bill: no line carries the item any more.
+    await waitFor(() => expect(screen.queryAllByText('Syska LED bulb 9W')).toHaveLength(0));
+    expect(await screen.findByTestId('invoice-held')).toHaveTextContent('On hold · 1');
+    expect(store.getState().snackbar.id).toBe('sales.hold.done');
+  });
+
+  it('cannot hold an empty bill', async () => {
+    (sales as unknown as { listInvoices: jest.Mock }).listInvoices.mockResolvedValue(page([]));
+    signIn(RIGHTS);
+    renderWithProviders(<InvoiceEditorPageContent documentId={null} />);
+    expect(await screen.findByTestId('invoice-hold')).toBeDisabled();
+  });
+});
+
+/* Counter Mode find-or-start: a customer who is not in the book yet is added
+   from the search itself, with the name already typed, and lands on the bill. */
+describe('a customer who is not saved yet', () => {
+  const parties = () =>
+    jest.requireMock('../../parties/api/partyService') as { listParties: jest.Mock };
+  // The book has nobody by the name typed.
+  const noneFor = () => () =>
+    Promise.resolve({
+      rows: [],
+      meta: { page: 1, pageSize: 8, total: 0, totalPages: 0 },
+      totals: null,
+    });
+
+  it('offers "Add" with the typed name and puts the saved customer on the bill', async () => {
+    parties().listParties.mockImplementation(noneFor());
+    signIn([
+      'sales.invoice.read',
+      'sales.invoice.write',
+      'parties.party.read',
+      'parties.party.write',
+    ]);
+    renderWithProviders(<InvoiceEditorPageContent documentId={null} />);
+    await userEvent.click(await screen.findByRole('radio', { name: 'Saved customer' }));
+    await userEvent.type(screen.getByLabelText('Saved customer'), 'Ramesh Electricals');
+    const add = await screen.findByRole(
+      'button',
+      { name: 'Add “Ramesh Electricals” as a new customer' },
+      { timeout: 8000 }
+    );
+    await userEvent.click(add);
+    await waitFor(() => expect(store.getState().partyForm.openFor).toBe('new'));
+    expect(store.getState().partyForm.prefillName).toBe('Ramesh Electricals');
+    act(() => {
+      store.dispatch({
+        type: 'partyForm/save/fulfilled',
+        payload: {
+          party: { id: 'p-new', name: 'Ramesh Electricals', stateCode: '27', billingAddress: {} },
+          warnings: [],
+        },
+      });
+    });
+    const line = await screen.findByTestId('invoice-customer-line');
+    expect(line).toHaveTextContent('Ramesh Electricals');
+  });
+
+  it('does not offer Add to a member who cannot add contacts', async () => {
+    parties().listParties.mockImplementation(noneFor());
+    signIn(['sales.invoice.read', 'sales.invoice.write', 'parties.party.read']);
+    renderWithProviders(<InvoiceEditorPageContent documentId={null} />);
+    await userEvent.click(await screen.findByRole('radio', { name: 'Saved customer' }));
+    await userEvent.type(screen.getByLabelText('Saved customer'), 'Ramesh');
+    await act(() => new Promise<void>((resolve) => setTimeout(resolve, 600)));
+    expect(screen.queryByRole('button', { name: /as a new customer/ })).not.toBeInTheDocument();
   });
 });

@@ -249,6 +249,8 @@ export interface InvoiceListRow {
   readonly isOverdue: boolean;
   readonly voidReason: string | null;
   readonly createdBy: SalesPerson | null;
+  /** When the document was last saved; tells held drafts apart (Counter Mode). */
+  readonly updatedAt?: string | null;
 }
 
 export interface InvoiceListTotals {

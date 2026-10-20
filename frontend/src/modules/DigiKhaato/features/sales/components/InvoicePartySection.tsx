@@ -1,6 +1,8 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+
+import dynamic from 'next/dynamic';
 
 import { type UseFormReturn } from 'react-hook-form';
 
@@ -20,6 +22,7 @@ import {
   useIsMobileLayer,
 } from 'src/design-system';
 import { useDocksEditorTotals } from 'src/hooks/useDocksEditorTotals';
+import { usePermissions } from 'src/hooks/usePermissions';
 import { useTranslation } from 'src/hooks/useTranslation';
 import type { Locale } from 'src/types/domain.types';
 import { formatBusinessDate } from 'src/utils/dates';
@@ -33,6 +36,12 @@ import {
   type BillingMode,
   type InvoiceFormValues,
 } from '../view-model/invoiceForm';
+
+/* The contact form belongs to the chunk that OPENS it (Counter Mode "Add"). */
+const PartyQuickCreate = dynamic(
+  () => import('../../parties/components/PartyQuickCreate').then((m) => m.PartyQuickCreate),
+  { ssr: false }
+);
 
 /**
  * SAL-02 §7 / SAL-07 §7 — who the bill is for, when, and where it is supplied.
@@ -77,6 +86,12 @@ export function InvoicePartySection({
    * place of supply.
    */
   const [shopDue, setShopDue] = useState<{ partyId: string; balance: string } | null>(null);
+  /** The name being added as a new customer from the search, while its form is open. */
+  const [adding, setAdding] = useState<string | null>(null);
+  const { can } = usePermissions();
+  const mayAdd = can('parties.party.write');
+  const stopAdding = useCallback(() => setAdding(null), []);
+  const createLabel = useCallback((name: string) => t('sales.party.addNew', { name }), [t]);
   // Picker and person-page shortcuts share one defaulting path. A manual
   // invoice-specific state is never overwritten by a late contact response.
   useEffect(() => {
@@ -193,10 +208,24 @@ export function InvoicePartySection({
                 setValue('partyName', name);
                 setValue('placeOfSupplyState', '', { shouldDirty: true });
               }}
+              onCreate={mayAdd ? setAdding : undefined}
+              createLabel={createLabel}
             />
           )}
         </UbField>
       ) : null}
+      {adding !== null && (
+        <PartyQuickCreate
+          name={adding}
+          kind="customer"
+          onCreated={(id, name) => {
+            setValue('partyId', id, { shouldDirty: true });
+            setValue('partyName', name);
+            setValue('placeOfSupplyState', '', { shouldDirty: true });
+          }}
+          onClosed={stopAdding}
+        />
+      )}
       {/* docs/mobile-redesign (A14) — on a phone the details that rarely change
           (walk-in name and mobile, the dates, the place of supply) fold under
           one line that says what they are, so the items come first. A desktop

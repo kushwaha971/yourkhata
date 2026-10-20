@@ -28,6 +28,9 @@ export interface ExpensePartyFieldProps {
   /** Shop owns this field's normal callers; null preserves another app's identity lookup. */
   readonly book?: LedgerBook | null;
   readonly disabled?: boolean;
+  /** "Add <name>" on no match; the caller opens the contact form. */
+  readonly onCreate?: (name: string) => void;
+  readonly createLabel?: (name: string) => string;
 }
 
 export function ExpensePartyField({
@@ -38,6 +41,8 @@ export function ExpensePartyField({
   type,
   book = 'shop',
   disabled,
+  onCreate,
+  createLabel,
 }: Readonly<ExpensePartyFieldProps>): React.JSX.Element {
   const labels = useMemo(
     () => ({
@@ -45,8 +50,9 @@ export function ExpensePartyField({
       noAccess: t('expenses.paidTo.noAccess'),
       results: t('expenses.paidTo.results'),
       noMatch: t('expenses.paidTo.noMatch'),
+      create: createLabel,
     }),
-    [t]
+    [t, createLabel]
   );
   return (
     <PartyPickerField
@@ -58,6 +64,7 @@ export function ExpensePartyField({
       type={type}
       book={book ?? undefined}
       disabled={disabled}
+      onCreate={onCreate}
     />
   );
 }

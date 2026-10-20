@@ -89,8 +89,12 @@ try {
     ]);
     const page = await ctx.newPage();
     page.on('response', (r) => {
-      const m = /\/api\/v1\/sales\/invoices\/([0-9a-f-]{36})$/.exec(new URL(r.url()).pathname);
+      const path = new URL(r.url()).pathname;
+      const m = /\/api\/v1\/sales\/invoices\/([0-9a-f-]{36})$/.exec(path);
       if (m && r.request().method() !== 'DELETE') drafts.add(m[1]);
+      // A first save (and a Hold) is a POST to the list: its id is in the body.
+      if (/\/api\/v1\/sales\/invoices$/.test(path) && r.request().method() === 'POST')
+        r.json().then((b) => b?.data?.id && drafts.add(b.data.id), () => undefined);
     });
     return { ctx, page };
   };
@@ -233,6 +237,31 @@ try {
     const issued = page.getByRole('dialog');
     await issued.getByText(/INV|बिल/).first().waitFor({ timeout: 15000 });
     await check(page, tag, 'issued', { root: '[role="dialog"]' });
+
+    // Hold this bill and start the next: it is kept as a draft, a blank bill
+    // opens, and the held one is one tap away above the editor.
+    for (const w of [1280, 390]) {
+      const held = w === 1280 ? { ctx, page } : await open(390, 'light');
+      const htag = `${w}-light-${locale}`;
+      await held.page.goto(`${base}/sales/invoices/new`, { waitUntil: 'networkidle' });
+      const box = held.page.getByRole('combobox', { name: WORDS.search });
+      await box.click();
+      await box.fill(ITEM);
+      await held.page.getByRole('option', { name: new RegExp(ITEM), selected: true }).first().waitFor();
+      await held.page.keyboard.press('Enter');
+      await held.page.getByTestId('invoice-hold').click();
+      const strip = held.page.getByTestId('invoice-held');
+      await strip.waitFor({ timeout: 10000 }).catch(() => failures.push(`${htag}: held bill not shown after Hold`));
+      // Blank: the docked total is back to nothing (the empty line keeps Qty 1).
+      await held.page
+        .getByTestId('invoice-dock')
+        .getByText('₹0.00')
+        .first()
+        .waitFor({ timeout: 5000 })
+        .catch(() => failures.push(`${htag}: the bill was not blank after Hold`));
+      await check(held.page, htag, 'held');
+      if (held.ctx !== ctx) await held.ctx.close();
+    }
     await ctx.close();
   }
 } finally {

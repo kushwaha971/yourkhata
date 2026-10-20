@@ -41,6 +41,8 @@ export interface PartyPickerLabels {
   readonly noAccess: string;
   readonly results: string;
   readonly noMatch: string;
+  /** "Add “{name}” as a new customer"; drawn with `onCreate`, on no match. */
+  readonly create?: (name: string) => string;
 }
 
 export interface PartyPickerFieldProps {
@@ -56,6 +58,11 @@ export interface PartyPickerFieldProps {
   readonly excludeId?: string;
   readonly disabled?: boolean;
   readonly testId?: string;
+  /**
+   * Counter Mode "find or start": nobody matches the name typed, so offer to
+   * add them with it. The caller opens the form and decides who may.
+   */
+  readonly onCreate?: (name: string) => void;
 }
 
 export function PartyPickerField({
@@ -69,6 +76,7 @@ export function PartyPickerField({
   excludeId,
   disabled = false,
   testId,
+  onCreate,
 }: Readonly<PartyPickerFieldProps>): React.JSX.Element {
   const search = usePartySearch({ type, book });
   const listId = useId();
@@ -89,7 +97,11 @@ export function PartyPickerField({
         justify="between"
         className="border-border-default min-h-10 rounded-control border px-3 py-2"
       >
-        <UbText variant="body" className="min-w-0 whitespace-normal break-words" data-testid={testId}>
+        <UbText
+          variant="body"
+          className="min-w-0 whitespace-normal break-words"
+          data-testid={testId}
+        >
           {pickedName}
         </UbText>
         {!disabled && (
@@ -215,7 +227,11 @@ export function PartyPickerField({
                 index === active && 'bg-surface-hover'
               )}
             >
-              <UbListItemText wrapPrimary="full" primary={party.name} secondary={party.mobile ?? undefined} />
+              <UbListItemText
+                wrapPrimary="full"
+                primary={party.name}
+                secondary={party.mobile ?? undefined}
+              />
             </UbBox>
           ))}
           {search.hasMore && (
@@ -238,6 +254,22 @@ export function PartyPickerField({
         <UbText variant="caption" tone="tertiary">
           {labels.noMatch}
         </UbText>
+      )}
+      {noMatch && onCreate && labels.create && search.query.trim() && (
+        <UbButton
+          variant="secondary"
+          size="sm"
+          className="self-start whitespace-normal text-left"
+          onMouseDown={(event: React.MouseEvent) => event.preventDefault()}
+          onClick={() => {
+            const name = search.query.trim();
+            setOpen(false);
+            search.clear();
+            onCreate(name);
+          }}
+        >
+          {labels.create(search.query.trim())}
+        </UbButton>
       )}
     </UbStack>
   );

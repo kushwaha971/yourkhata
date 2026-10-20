@@ -1,10 +1,10 @@
 'use client';
 
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 
 import dynamic from 'next/dynamic';
 
-import { Banknote, Save, Send, Trash2 } from 'lucide-react';
+import { Banknote, PauseCircle, Save, Send, Trash2 } from 'lucide-react';
 import { useStore } from 'react-redux';
 
 import {
@@ -29,10 +29,12 @@ import { useTranslation } from 'src/hooks/useTranslation';
 import { selectLocale } from 'src/redux/slice/localeSlice';
 import { selectNetworkState } from 'src/redux/slice/networkSlice';
 import { selectMayOverrideCreditLimit } from 'src/redux/slice/sessionSlice';
+import { showSnackbar } from 'src/redux/slice/snackbarSlice';
 import type { RootState } from 'src/redux/store';
 import { ROUTES } from 'src/routes';
 import { formatInr, sumMoney } from 'src/utils/money';
 
+import { listInvoices } from '../api/salesService';
 import { useDraftAutosave } from '../hooks/useDraftAutosave';
 import { useEditorWindowEffects } from '../hooks/useEditorWindowEffects';
 import { useInvoiceEditor, type EditorKind } from '../hooks/useInvoiceEditor';
@@ -42,10 +44,13 @@ import { documentTitleId, stockShortLines, stockShortMessage } from '../view-mod
 import { fullCashPayment, type PaymentRowForm } from '../view-model/invoiceForm';
 
 import { InvoiceEditorDialogs } from './InvoiceEditorDialogs';
+import { InvoiceHeldBills } from './InvoiceHeldBills';
 import { InvoiceLinesSection } from './InvoiceLinesSection';
 import { InvoicePartySection } from './InvoicePartySection';
 import { InvoiceSaveIndicator } from './InvoiceSaveIndicator';
 import { InvoiceTotalsPanel } from './InvoiceTotalsPanel';
+
+import type { InvoiceListRow } from '../types/sales.types';
 
 /* The payment sheet and the success sheet load with the tap that opens them. */
 const PaymentDrawerLazy = dynamic(
@@ -188,6 +193,53 @@ export function InvoiceEditorPageContent({
   );
   const { submitCount, errors } = form.formState;
   const refused = submitCount > 0 && Object.keys(errors).length > 0;
+
+  /*
+   * Counter Mode — hold a bill and start the next one ("Hold & create
+   * another"). A sales draft already saves itself; holding saves it NOW and
+   * opens a blank bill, and the held ones sit above the editor to be picked up.
+   * Only when the save answered: a hold that restarted over an unsaved bill
+   * would throw it away.
+   */
+  const [held, setHeld] = useState<{ rows: readonly InvoiceListRow[]; total: number }>({
+    rows: [],
+    total: 0,
+  });
+  const [heldSeq, setHeldSeq] = useState(0);
+  const currentId = server.documentId;
+  useEffect(() => {
+    if (kind !== 'invoice' || !canWrite) return undefined;
+    const controller = new AbortController();
+    listInvoices(
+      { tab: 'draft', dateFrom: '', dateTo: '', partyId: null, q: '', page: 1 },
+      controller.signal
+    )
+      .then((page) => {
+        const rows = page.rows.filter((row) => row.id !== currentId);
+        // The bill open here is a draft too, but it is not on hold.
+        const self = page.rows.length - rows.length;
+        setHeld({ rows, total: page.total - self });
+      })
+      .catch(() => undefined);
+    return () => controller.abort();
+  }, [kind, canWrite, currentId, heldSeq]);
+  const [holding, setHolding] = useState(false);
+  const hold = useCallback(async () => {
+    if (!hasLines || locked) return;
+    setHolding(true);
+    const saved = await save(false);
+    setHolding(false);
+    if (!saved) return;
+    autosave.clearLocal();
+    dispatch(showSnackbar({ severity: 'success', id: 'sales.hold.done' }));
+    setHeldSeq((seq) => seq + 1);
+    if (documentId) {
+      router.push(`${ROUTES.SALES_INVOICES}/new`);
+      return;
+    }
+    editor.restart();
+    window.history.replaceState(null, '', `${ROUTES.SALES_INVOICES}/new`);
+  }, [hasLines, locked, save, autosave, dispatch, documentId, router, editor]);
 
   const saveNow = useCallback(() => void save(false), [save]);
   useEditorWindowEffects({
@@ -333,6 +385,19 @@ export function InvoiceEditorPageContent({
                 {t('sales.editor.delete')}
               </UbButton>
             )}
+            {kind === 'invoice' && (
+              <UbButton
+                variant="ghost"
+                iconOnly="mobile"
+                icon={<PauseCircle className="h-4 w-4" aria-hidden />}
+                onClick={() => void hold()}
+                busy={holding}
+                disabled={!hasLines || locked}
+                data-testid="invoice-hold"
+              >
+                {t('sales.hold.action')}
+              </UbButton>
+            )}
             <UbButton
               variant="secondary"
               iconOnly="mobile"
@@ -385,6 +450,7 @@ export function InvoiceEditorPageContent({
       >
         <UbGrid columns={1} gap={4} className="2xl:grid-cols-3">
           <UbStack gap={4} className="2xl:col-span-2">
+            <InvoiceHeldBills rows={held.rows} total={held.total} />
             {/* From 1536 px Issue is in the header, so its reason heads the form. */}
             {issueNote && !docksTotals && (
               <UbText
