@@ -423,8 +423,9 @@ def test_a_picked_row_carries_its_gst_for_the_margin(
     margin of a GST-inclusive price is read without its GST. A list row named
     the GST code and not its rate, so the picker could only have shown the
     margin of an inclusive item wrong or not at all. The row now carries the
-    item's GST percent (rate plus cess, today's) for those who see costs, on
-    the list and on the scanner lookup alike; staff, who see no margin, get none."""
+    item's GST percent (rate plus cess, today's), on the list and on the
+    scanner lookup alike. Staff get it too (Counter Mode step 9: "GST 5%
+    included" is on every option), but still no cost to build a margin from."""
     made = create(
         owner, name="Soap", tax_code="GST18", selling_price="59", tax_inclusive_selling=True
     )
@@ -435,4 +436,6 @@ def test_a_picked_row_carries_its_gst_for_the_margin(
     assert lookup.json()["data"]["gst_percent"] == "18.000"
 
     staff = api_as(tenant, RoleCode.STAFF.value)[0]
-    assert "gst_percent" not in staff.get(reverse(ITEMS), {"q": "Soap"}).json()["data"][0]
+    staff_row = staff.get(reverse(ITEMS), {"q": "Soap"}).json()["data"][0]
+    assert staff_row["gst_percent"] == "18.000"
+    assert "purchase_price" not in staff_row

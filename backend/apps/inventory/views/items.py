@@ -210,7 +210,9 @@ class ItemViewSet(CsvExportMixin, _InventoryView, viewsets.ViewSet):
         # Any item at all, archived included, whatever the filters: an empty
         # catalogue hides its search, tabs and ₹0 totals (approved designs).
         meta["has_any"] = bool(page) or Item.objects.filter(tenant=self.get_tenant()).exists()
-        gst = _gst_percents(self.get_tenant(), page) if valuation else None
+        # Every member: "GST 5% included" is on the bill they are writing
+        # (Counter Mode step 9); only the margin built from it is cost-gated.
+        gst = _gst_percents(self.get_tenant(), page)
         return StandardResponse.ok(
             [item_row(item, valuation=valuation, gst_percent=gst) for item in page], meta=meta
         )
@@ -292,7 +294,7 @@ class ItemViewSet(CsvExportMixin, _InventoryView, viewsets.ViewSet):
         if item is None:
             raise NotFound(f"No item with barcode {code}.")
         valuation = _valuation_visible(request)
-        gst = _gst_percents(self.get_tenant(), [item]) if valuation else None
+        gst = _gst_percents(self.get_tenant(), [item])
         return StandardResponse.ok(item_row(item, valuation=valuation, gst_percent=gst))
 
     @action(detail=True, methods=["get"], url_path="movements")

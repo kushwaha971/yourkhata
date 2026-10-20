@@ -5,7 +5,12 @@
   "items.lastRate.use": "यही रेट लगाएँ",
   "items.list.searchPlaceholder": "नाम, SKU खोजें या बारकोड स्कैन करें",
   "items.picker.cost": "लागत {amount}",
+  "items.picker.gstExtra": "GST {rate}% अलग से",
+  "items.picker.gstIncluded": "GST {rate}% शामिल",
+  "items.picker.inStock": "{qty} स्टॉक में",
+  "items.picker.lowStock": "कम: {qty} बचे",
   "items.picker.margin": "{margin}% मार्जिन",
+  "items.picker.outOfStock": "स्टॉक खत्म",
   "items.picker.usualPrice": "आम कीमत {amount}",
   "items.scan.create": "आइटम बनाएँ",
   "items.scan.notFound": "बारकोड {code} का कोई आइटम नहीं"

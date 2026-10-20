@@ -1,6 +1,8 @@
 'use client';
 
-import { memo, useCallback, useId, useState } from 'react';
+import { memo, useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
+
+import dynamic from 'next/dynamic';
 
 import { UbBox, UbLoadMore, UbSearchInput, UbText } from 'src/design-system';
 import { useAppDispatch } from 'src/hooks/useAppStore';
@@ -9,6 +11,7 @@ import { useTranslation } from 'src/hooks/useTranslation';
 import { showSnackbar } from 'src/redux/slice/snackbarSlice';
 import { cn } from 'src/utils/cn';
 
+import { lookupItemByBarcode, restoreItem, searchItems } from '../api/itemService';
 import { useItemSearch } from '../hooks/useItemSearch';
 
 import type { ItemListRow } from '../types/item.types';
@@ -37,6 +40,21 @@ export interface ItemQuickAddLabels {
   readonly empty: (query: string) => string;
   readonly none: string;
   readonly askOwner: string;
+  /** "Create “ragi” as a new item"; without it nothing is offered. */
+  readonly create?: (query: string) => string;
+  /** "Restore Ragi flour 1 kg" — the archived look-alike, offered first. */
+  readonly restore?: (name: string) => string;
+}
+
+/* The form belongs to the chunk that OPENS it, never to the bill's route. */
+const ItemQuickCreate = dynamic(() => import('./ItemQuickCreate').then((m) => m.ItemQuickCreate), {
+  ssr: false,
+});
+
+interface NoMatchAction {
+  readonly id: string;
+  readonly label: string;
+  readonly run: () => void;
 }
 
 /*
@@ -45,9 +63,17 @@ export interface ItemQuickAddLabels {
  * and five strings in two languages there cost ~0.8 KB on routes that never
  * draw this search. The editor's own catalogue carries them instead.
  */
+/**
+ * How the row was chosen. A scan keeps the focus here, because a HID scanner
+ * types into whatever is focused: had the caret moved to Qty, the next code
+ * would have been typed into the quantity. A pick from the list hands the
+ * caret on, since a person choosing by name usually sets the quantity next.
+ */
+export type ItemQuickAddVia = 'scan' | 'list';
+
 export interface ItemQuickAddProps {
   readonly labels: ItemQuickAddLabels;
-  readonly onPick: (row: ItemListRow) => void;
+  readonly onPick: (row: ItemListRow, via: ItemQuickAddVia) => void;
   readonly disabled?: boolean;
   readonly className?: string;
 }
@@ -65,21 +91,91 @@ function ItemQuickAddBase({
   const listId = useId();
   const [open, setOpen] = useState(false);
   const [active, setActive] = useState(0);
+  /*
+   * The list closes a moment after the box loses focus, so a click on an
+   * option still lands. That close must not outlive a return: after a pick the
+   * caret moves to Qty, and a person who clicks back and types the next name
+   * inside those 150 ms had the list shut on them, answered but hidden.
+   */
+  const closing = useRef<number | undefined>(undefined);
+  useEffect(() => () => window.clearTimeout(closing.current), []);
+
+  /*
+   * Counter Mode step 9 — nothing matches. A member who may add items is
+   * offered the archived look-alike first ("ragi" is usually the Ragi flour
+   * archived last month, and a second one would split its history), then
+   * Create with the name typed. Whichever it is lands on the bill.
+   */
+  const mayAdd = can('inventory.item.write');
+  const offerAdd = mayAdd && !!labels.create;
+  const query = search.query.trim();
+  const noMatch = search.isEmpty && !search.pending && query !== '';
+  const [lookAlike, setLookAlike] = useState<{ query: string; row: ItemListRow | null } | null>(
+    null
+  );
+  useEffect(() => {
+    if (!noMatch || !offerAdd || !labels.restore) return undefined;
+    const controller = new AbortController();
+    searchItems(query, 1, controller.signal, { status: 'archived' })
+      .then((answer) => setLookAlike({ query, row: answer.rows[0] ?? null }))
+      .catch(() => undefined);
+    return () => controller.abort();
+  }, [noMatch, offerAdd, labels.restore, query]);
+  const archived = noMatch && lookAlike?.query === query ? lookAlike.row : null;
+  const [extra, setExtra] = useState(-1);
+
+  /** The name being made into a new item, while its form is open. */
+  const [creating, setCreating] = useState<string | null>(null);
+  const stopCreating = useCallback(() => setCreating(null), []);
 
   const choose = useCallback(
-    (row: ItemListRow) => {
+    (row: ItemListRow, via: ItemQuickAddVia = 'list') => {
       setOpen(false);
       setActive(0);
       search.clear();
-      onPick(row);
+      onPick(row, via);
     },
     [search, onPick]
+  );
+
+  const actions = useMemo<readonly NoMatchAction[]>(
+    () =>
+      !noMatch || !offerAdd
+        ? []
+        : [
+            ...(archived && labels.restore
+              ? [
+                  {
+                    id: 'restore',
+                    label: labels.restore(archived.name),
+                    run: () => {
+                      const row = archived;
+                      void restoreItem(row.id)
+                        .then(() => lookupItemByBarcode(row.sku))
+                        .then((restored) => {
+                          if (restored) choose(restored);
+                        })
+                        .catch(() => undefined);
+                    },
+                  },
+                ]
+              : []),
+            {
+              id: 'create',
+              label: labels.create?.(query) ?? '',
+              run: () => {
+                setOpen(false);
+                setCreating(query);
+              },
+            },
+          ],
+    [noMatch, offerAdd, archived, labels, query, choose]
   );
 
   const scan = useCallback(
     (code: string) => {
       void search.lookup(code).then((row) => {
-        if (row) choose(row);
+        if (row) choose(row, 'scan');
         else
           dispatch(
             showSnackbar({ severity: 'warning', id: 'items.scan.notFound', params: { code } })
@@ -99,8 +195,25 @@ function ItemQuickAddBase({
       if (event.key === 'Enter') {
         event.preventDefault();
         const chosen = search.pending ? undefined : search.results[active];
+        const action = open ? actions[extra] : undefined;
         if (chosen && open) choose(chosen);
+        else if (action) action.run();
         else if (code) scan(code);
+        return;
+      }
+      if (
+        !search.results.length &&
+        actions.length &&
+        (event.key === 'ArrowDown' || event.key === 'ArrowUp')
+      ) {
+        event.preventDefault();
+        setOpen(true);
+        const step = event.key === 'ArrowDown' ? 1 : -1;
+        setExtra((index) =>
+          index < 0 && step < 0
+            ? actions.length - 1
+            : (index + step + actions.length) % actions.length
+        );
         return;
       }
       if (search.pending || !search.results.length) return;
@@ -117,13 +230,12 @@ function ItemQuickAddBase({
         setActive((index) => (index - 1 + search.results.length) % search.results.length);
       }
     },
-    [search, active, open, choose, scan]
+    [search, active, open, choose, scan, actions, extra]
   );
 
   if (!search.canSearch) return null;
 
   const showList = open && search.active;
-  const query = search.query.trim();
 
   return (
     <UbBox className={cn('relative w-full', className)} data-testid="item-quick-add">
@@ -132,13 +244,17 @@ function ItemQuickAddBase({
         onChange={(next) => {
           search.setQuery(next);
           setActive(0);
+          setExtra(-1);
           setOpen(true);
         }}
         onFocus={() => {
+          window.clearTimeout(closing.current);
           search.activate();
           setOpen(true);
         }}
-        onBlur={() => window.setTimeout(() => setOpen(false), 150)}
+        onBlur={() => {
+          closing.current = window.setTimeout(() => setOpen(false), 150);
+        }}
         onKeyDown={handleKey}
         disabled={disabled}
         placeholder={labels.placeholder}
@@ -148,7 +264,11 @@ function ItemQuickAddBase({
         aria-controls={listId}
         aria-autocomplete="list"
         aria-activedescendant={
-          showList && search.results[active] ? `${listId}-${active}` : undefined
+          showList && search.results[active]
+            ? `${listId}-${active}`
+            : showList && actions[extra]
+              ? `${listId}-${actions[extra].id}`
+              : undefined
         }
       />
       {showList && (
@@ -171,54 +291,80 @@ function ItemQuickAddBase({
                     : labels.none}
               </UbText>
             </UbBox>
-          ) : (
-            search.options.map((option, index) => (
+          ) : null}
+          {search.options.length === 0 &&
+            actions.map((action, index) => (
               <UbBox
                 as="li"
-                key={option.value}
-                id={`${listId}-${index}`}
+                key={action.id}
+                id={`${listId}-${action.id}`}
                 role="option"
-                aria-selected={!search.pending && index === active}
-                aria-disabled={search.pending}
+                aria-selected={index === extra}
                 onMouseDown={(event: React.MouseEvent) => event.preventDefault()}
-                onClick={() => {
-                  const row = search.find(option.value);
-                  if (row && !search.pending) choose(row);
-                }}
-                onMouseEnter={() => setActive(index)}
+                onClick={action.run}
+                onMouseEnter={() => setExtra(index)}
                 className={cn(
-                  'flex cursor-pointer flex-col gap-0.5 px-3 py-2',
-                  index === active && 'bg-surface-hover'
+                  'flex min-h-11 cursor-pointer items-center px-3 py-2',
+                  index === extra && 'bg-surface-hover'
                 )}
               >
                 <UbText
                   as="span"
                   variant="inherit"
-                  className="ds-body-base-medium whitespace-normal break-words text-text-primary"
+                  className="ds-body-base-medium whitespace-normal break-words text-text-accent"
                 >
-                  {option.label}
+                  {action.label}
                 </UbText>
-                {option.description && (
-                  <UbText
-                    as="span"
-                    variant="inherit"
-                    className="ds-num-s-regular text-text-secondary"
-                  >
-                    {option.description}
-                  </UbText>
-                )}
-                {option.detail && (
-                  <UbText
-                    as="span"
-                    variant="inherit"
-                    className="ds-body-s-regular whitespace-normal break-words text-text-secondary"
-                  >
-                    {option.detail}
-                  </UbText>
-                )}
               </UbBox>
-            ))
-          )}
+            ))}
+          {search.options.length === 0
+            ? null
+            : search.options.map((option, index) => (
+                <UbBox
+                  as="li"
+                  key={option.value}
+                  id={`${listId}-${index}`}
+                  role="option"
+                  aria-selected={!search.pending && index === active}
+                  aria-disabled={search.pending}
+                  onMouseDown={(event: React.MouseEvent) => event.preventDefault()}
+                  onClick={() => {
+                    const row = search.find(option.value);
+                    if (row && !search.pending) choose(row);
+                  }}
+                  onMouseEnter={() => setActive(index)}
+                  className={cn(
+                    'flex cursor-pointer flex-col gap-0.5 px-3 py-2',
+                    index === active && 'bg-surface-hover'
+                  )}
+                >
+                  <UbText
+                    as="span"
+                    variant="inherit"
+                    className="ds-body-base-medium whitespace-normal break-words text-text-primary"
+                  >
+                    {option.label}
+                  </UbText>
+                  {option.description && (
+                    <UbText
+                      as="span"
+                      variant="inherit"
+                      className="ds-num-s-regular text-text-secondary"
+                    >
+                      {option.description}
+                    </UbText>
+                  )}
+                  {option.detail && (
+                    <UbText
+                      as="span"
+                      variant="inherit"
+                      className="ds-body-s-regular whitespace-normal break-words text-text-secondary"
+                    >
+                      {option.detail}
+                    </UbText>
+                  )}
+                </UbBox>
+              ))}
           {search.hasMore && search.options.length > 0 && (
             <UbLoadMore
               as="li"
@@ -229,6 +375,9 @@ function ItemQuickAddBase({
             />
           )}
         </UbBox>
+      )}
+      {creating !== null && (
+        <ItemQuickCreate name={creating} onCreated={choose} onClosed={stopCreating} />
       )}
     </UbBox>
   );

@@ -30,6 +30,13 @@ export interface UbTotalDockProps {
    * under the buttons — a disabled button with no reason reads as broken.
    */
   readonly note?: ReactNode;
+  /**
+   * What the total counts, under it ("1 item · includes GST ₹18.00"): a bare
+   * figure does not say whether GST is in it (Counter Mode step 10).
+   */
+  readonly caption?: ReactNode;
+  /** A quiet state line under the caption, e.g. "Draft saved 4:39 pm". */
+  readonly meta?: ReactNode;
   readonly className?: string;
   readonly 'data-testid'?: string;
 }
@@ -39,6 +46,8 @@ function UbTotalDockBase({
   total,
   children,
   note,
+  caption,
+  meta,
   className,
   'data-testid': testId,
 }: Readonly<UbTotalDockProps>) {
@@ -57,6 +66,15 @@ function UbTotalDockBase({
         <span className="ds-num whitespace-normal break-words text-[1.25rem] font-semibold leading-7 text-text-primary">
           {total}
         </span>
+        {caption ? (
+          <span
+            className="ds-caption whitespace-normal break-words text-text-secondary"
+            data-testid="total-dock-caption"
+          >
+            {caption}
+          </span>
+        ) : null}
+        {meta}
       </div>
       <div className="grid min-w-0 grid-cols-2 gap-2 sm:flex sm:shrink-0 sm:items-center [&>button]:h-auto [&>button]:min-h-11 [&>button]:whitespace-normal">
         {children}

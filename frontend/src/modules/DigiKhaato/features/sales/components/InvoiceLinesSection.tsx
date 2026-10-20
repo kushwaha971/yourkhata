@@ -17,11 +17,11 @@ import {
 } from 'src/design-system';
 import { useTranslation } from 'src/hooks/useTranslation';
 import { formatAmount, formatInr } from 'src/utils/money';
-import { exceedsQuantity, formatQuantity } from 'src/utils/quantity';
+import { exceedsQuantity, formatQuantity, stepQuantity } from 'src/utils/quantity';
 
 import { getPartyRates } from '../../inventory/api/priceListService';
 import { ItemLineCell } from '../../inventory/components/ItemLineCell';
-import { ItemQuickAdd } from '../../inventory/components/ItemQuickAdd';
+import { ItemQuickAdd, type ItemQuickAddVia } from '../../inventory/components/ItemQuickAdd';
 import { LastRateNote } from '../../inventory/components/LastRateNote';
 import { emptyLine, ratePlaces, type InvoiceFormValues } from '../view-model/invoiceForm';
 import { itemLineDefaults } from '../view-model/itemLineDefaults';
@@ -71,6 +71,8 @@ export function InvoiceLinesSection({
    * so "Only 5 in stock" is seen before Issue rather than after it.
    */
   const [stock, setStock] = useState<Record<string, { onHand: string; unit: string }>>({});
+  /** Counter Mode step 9 — each picked item's usual price, to say a change is this bill's only. */
+  const [usual, setUsual] = useState<Record<string, { price: string; inclusive: boolean }>>({});
 
   // FR-15 — item defaults fill a line when the item is PICKED, never later.
   const pick = useCallback(
@@ -85,6 +87,12 @@ export function InvoiceLinesSection({
       setValue(`${base}.taxCode`, defaults.taxCode);
       setValue(`${base}.hsnSac`, defaults.hsnSac);
       setValue(`${base}.taxInclusive`, defaults.taxInclusive);
+      const price = defaults.unitPrice;
+      if (price)
+        setUsual((current) => ({
+          ...current,
+          [row.id]: { price, inclusive: defaults.taxInclusive },
+        }));
       if (row.trackStock && row.onHand !== null) {
         const onHand = row.onHand;
         setStock((current) => ({ ...current, [row.id]: { onHand, unit: row.unit.code } }));
@@ -117,17 +125,31 @@ export function InvoiceLinesSection({
    */
   const [focusRequest, setFocusRequest] = useState<UbLineFocusRequest | null>(null);
   const quickAdd = useCallback(
-    (row: ItemListRow) => {
+    (row: ItemListRow, via: ItemQuickAddVia) => {
+      const caretTo = (index: number) => {
+        if (via === 'list')
+          setFocusRequest((previous) => ({ row: index, col: 1, seq: (previous?.seq ?? 0) + 1 }));
+      };
       const current = getValues('lines') ?? [];
+      // A second scan of an item already on the bill is one more of it, as at
+      // any counter: a new line per scan turned 6 bulbs into 6 rows to read.
+      const same = current.map((line) => line.itemId).lastIndexOf(row.id);
+      const counted = same >= 0 ? stepQuantity(current[same]?.qty ?? '') : null;
+      if (same >= 0 && counted !== null && counted !== current[same]?.qty) {
+        setValue(`lines.${same}.qty`, counted, { shouldDirty: true });
+        void trigger(`lines.${same}.qty`);
+        caretTo(same);
+        return;
+      }
       const last = current.length - 1;
       const trailingEmpty = last >= 0 && !current[last]?.itemId && !current[last]?.description;
       if (!trailingEmpty && current.length >= MAX_LINES) return;
       const index = trailingEmpty ? last : current.length;
       if (!trailingEmpty) fieldArray.append(emptyLine(), { shouldFocus: false });
       pick(index, row);
-      setFocusRequest((previous) => ({ row: index, col: 1, seq: (previous?.seq ?? 0) + 1 }));
+      caretTo(index);
     },
-    [getValues, fieldArray, pick]
+    [getValues, setValue, trigger, fieldArray, pick]
   );
 
   const quickAddLabels = useMemo(
@@ -137,6 +159,8 @@ export function InvoiceLinesSection({
       empty: (query: string) => t('sales.line.quickAdd.empty', { query }),
       none: t('sales.line.quickAdd.none'),
       askOwner: t('sales.line.quickAdd.askOwner'),
+      create: (query: string) => t('sales.line.quickAdd.create', { query }),
+      restore: (name: string) => t('sales.line.quickAdd.restore', { name }),
     }),
     [t]
   );
@@ -310,12 +334,30 @@ export function InvoiceLinesSection({
       const line = lines?.[index];
       if (!line?.itemId) return null;
       const stockNote = stockWarning(index);
-      if (!partyId) return stockNote;
       const fromList = listed[line.itemId];
-      const onList = fromList && Number(fromList.rate) === Number(line.unitPrice || 0);
+      const onList = !!fromList && Number(fromList.rate) === Number(line.unitPrice || 0);
+      const known = usual[line.itemId];
+      const rateChanged =
+        !!known &&
+        !onList &&
+        /^\d+(\.\d+)?$/.test((line.unitPrice ?? '').trim()) &&
+        (Number(line.unitPrice) !== Number(known.price) || line.taxInclusive !== known.inclusive);
+      const changedNote = rateChanged ? (
+        <UbText variant="caption" tone="secondary" data-testid="line-rate-changed">
+          {t('sales.line.rateThisBill', { amount: formatInr(known.price) })}
+        </UbText>
+      ) : null;
+      if (!partyId)
+        return stockNote || changedNote ? (
+          <UbStack gap={0}>
+            {stockNote}
+            {changedNote}
+          </UbStack>
+        ) : null;
       return (
         <UbStack gap={0}>
           {stockNote}
+          {changedNote}
           {onList && (
             <UbText variant="caption" tone="secondary" data-testid="price-list-applied">
               {t('sales.line.priceListRate', { list: fromList.name })}
@@ -336,7 +378,7 @@ export function InvoiceLinesSection({
         </UbStack>
       );
     },
-    [lines, partyId, partyName, setValue, listed, stockWarning, t]
+    [lines, partyId, partyName, setValue, listed, usual, stockWarning, t]
   );
 
   return (

@@ -8,11 +8,10 @@ import { usePagedSearch, type PagedSearchStatus } from 'src/hooks/usePagedSearch
 import { usePermissions } from 'src/hooks/usePermissions';
 import { useTranslation } from 'src/hooks/useTranslation';
 import { selectRequestScopeKey } from 'src/redux/slice/sessionSlice';
-import { formatQuantity } from 'src/utils/quantity';
 
 import { lookupItemByBarcode, searchItems } from '../api/itemService';
 import { ITEM_SEARCH_DEBOUNCE_MS } from '../constants/inventoryConstants';
-import { itemPriceNote } from '../view-model/itemPriceNote';
+import { itemPriceNote, itemStockNote } from '../view-model/itemPriceNote';
 
 import type { ItemListRow } from '../types/item.types';
 
@@ -93,10 +92,7 @@ export function useItemSearch(options: UseItemSearchOptions = {}): UseItemSearch
       visible.map((row) => ({
         value: row.id,
         label: row.name,
-        description:
-          row.onHand !== null
-            ? `${row.sku} · ${formatQuantity(row.onHand, row.unit.code)}`
-            : row.sku,
+        description: itemStockNote(row, t),
         // Its own wrapping line: cut by an ellipsis, the margin never showed.
         detail: itemPriceNote(row, t) ?? undefined,
       })),

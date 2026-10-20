@@ -279,11 +279,11 @@ export const searchItems = async (
   q: string,
   page: number,
   signal?: AbortSignal,
-  options: { readonly trackedOnly?: boolean } = {}
+  options: { readonly trackedOnly?: boolean; readonly status?: 'active' | 'archived' } = {}
 ): Promise<{ readonly rows: readonly ItemListRow[]; readonly hasMore: boolean }> => {
   const query = toQueryString({
     q: q || undefined,
-    status: 'active',
+    status: options.status ?? 'active',
     type: options.trackedOnly ? 'goods' : undefined,
     page,
     page_size: ITEM_SEARCH_PAGE_SIZE,

@@ -1039,6 +1039,7 @@
     "sharedApp": 114.1
   },
   "//routes": [
+    "20 Oct 2026, billing toward the Counter Mode standard: the same item scanned again raises Qty, a scan keeps the caret in the search, 'Paid cash' issues a Quick Sale in one tap, the docked total says '1 item \u00b7 includes GST \u20b9x' with the draft's save time, picker options say stock in words and 'GST 5% included', the archived look-alike is offered for restore and Create opens the item form (dynamic(): ItemQuickCreate keeps the form, its thunks and the items catalogue out of the editor routes, which had cost them the whole catalogue when imported statically), and a changed rate says 'For this bill only'. Sales editors +1.2 KB; purchase editors draw the same search, +0.0 (rounding). Raised to measured + 0.3.",
     "20 Oct 2026, 07-screens/09 \u00a73 bill editor composition: an always-open item search at the top of the lines (the existing useItemSearch and default-line owner), the picked customer as one line with their Shop dues and Change, Issue disabled offline with its reason, a 'Still issuing' line after 3 s, and the total in Issue's accessible name. Sales editor routes grow 2.9 KB and purchase editors 1.1 KB through the shared line editor and total dock. About 0.8-1.0 KB on unrelated routes is Turbopack re-splitting a shared chunk (measured on /settings/team: one 27.6 KB chunk became 20.4 + 8.2 KB, with no editor code in either), not new code there. The unchanged dev build (3e46380) already measured 0.1 KB over on 16 first-load scalars here. Only the 154 exceeded scalars across 80 routes use measured gzip +0.3 KB; framework and shared-app ceilings unchanged; no package added. Evidence: docs/performance/2026-10-20-p5-editor-compose.md.",
     "18 Oct 2026, R-DEC-09: the rail's app tree became one \"Apps\" row and a new /apps page (the app tiles and, for an owner, the apps to add, through the same useAddApp hook as the business menu). Removing the tree paid for the row, so no existing route grew; /apps gets its own firstLoad at measured + 0.3 (290.8), and /_not-found, on its ceiling, rounded over by 0.0 KB and is raised to 239.8.",
     "18 Oct 2026, revamp F4 app switching: every app screen now draws the phone App button (the open app's icon and short name) and the desktop sidebar's app tree, with one icon per app in the manifests and a per-app 'last screen' memory. The App sheet itself, which carries the whole More menu, is dynamic() and fetched when the browser is idle, which took the growth from about 3.5 KB to about 1.2 KB per route; what remains is drawn on every screen. 144 exceeded scalars use measured + 0.3 KB; the shared app stays 112.2 of 113. Largest overrun before adjustment: 1.5 KB.",
@@ -1418,12 +1419,12 @@
       "firstLoad": 327.1
     },
     "/sales/challans/new": {
-      "route": 165.3,
-      "firstLoad": 406.4
+      "route": 166.8,
+      "firstLoad": 407.9
     },
     "/sales/challans/[id]/edit": {
-      "route": 165.3,
-      "firstLoad": 406.4
+      "route": 166.8,
+      "firstLoad": 407.9
     },
     "/purchases/orders/[id]": {
       "route": 71.5,
@@ -1434,12 +1435,12 @@
       "firstLoad": 324.0
     },
     "/purchases/orders/new": {
-      "route": 161.5,
-      "firstLoad": 402.6
+      "route": 161.8,
+      "firstLoad": 402.9
     },
     "/purchases/orders/[id]/edit": {
       "route": 161.6,
-      "firstLoad": 402.6
+      "firstLoad": 402.9
     },
     "/sales/orders/[id]": {
       "route": 84.2,
@@ -1450,12 +1451,12 @@
       "firstLoad": 327.1
     },
     "/sales/orders/new": {
-      "route": 165.3,
-      "firstLoad": 406.4
+      "route": 166.8,
+      "firstLoad": 407.9
     },
     "/sales/orders/[id]/edit": {
-      "route": 165.3,
-      "firstLoad": 406.4
+      "route": 166.8,
+      "firstLoad": 407.9
     },
     "/parties": {
       "route": 109,
@@ -1466,12 +1467,12 @@
       "firstLoad": 336
     },
     "/sales/invoices/new": {
-      "route": 165.3,
-      "firstLoad": 406.3
+      "route": 166.8,
+      "firstLoad": 407.8
     },
     "/sales/invoices/[id]/edit": {
-      "route": 165.3,
-      "firstLoad": 406.4
+      "route": 166.8,
+      "firstLoad": 407.9
     },
     "/sales/invoices": {
       "route": 98,
@@ -1486,12 +1487,12 @@
       "firstLoad": 356
     },
     "/sales/estimates/new": {
-      "route": 165.3,
-      "firstLoad": 406.4
+      "route": 166.8,
+      "firstLoad": 407.9
     },
     "/sales/estimates/[id]/edit": {
-      "route": 165.3,
-      "firstLoad": 406.4
+      "route": 166.8,
+      "firstLoad": 407.9
     },
     "/sales/estimates/[id]": {
       "route": 84.2,
@@ -1643,14 +1644,14 @@
     },
     "/purchases/bills/[id]/edit": {
       "route": 161.6,
-      "firstLoad": 402.6
+      "firstLoad": 402.9
     },
     "/purchases/bills": {
       "route": 95,
       "firstLoad": 330
     },
     "/purchases/bills/new": {
-      "route": 161.5,
+      "route": 161.8,
       "firstLoad": 402.6
     },
     "/reports": {

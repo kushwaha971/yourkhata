@@ -107,6 +107,8 @@ destructive actions and frozen Library/Lending contracts retain their boundaries
 
 ## Progress
 
+20 Oct 2026 — Billing toward the Counter Mode standard (owner: >8.5 in every aspect, phone and desktop; the Counter Mode artifact is the acceptance reference): same item again raises Qty; a scan keeps the caret in the search; one-tap "Paid cash" on a Quick Sale ("UPI or other" opens the sheet; Save moves to the header, a deliberate difference from the artifact's dock, told to the owner); dock caption "1 item · includes GST ₹x" and save state; picker stock in words and GST included/extra (gst_percent now sent to every member, cost still gated); restore archived look-alike or Create from a no-match search; "For this bill only" on a changed rate. Found and fixed a list hidden by a stale blur timer and the item catalogue leaking into editor routes. 4,580 tests, 80 frames, real one-tap cash issue. Report: docs/performance/2026-10-20-p5-counter-billing.md.
+
 20 Oct 2026 — Shop Customers list: PostgreSQL JIT compiled every Shop-facts query for ~0.6 s before running it in ~0.04 s. `jit=off` on the app's connections; API 1.6–1.9 s → 0.44–0.52 s, Customers tab 1.65 s → 0.45–0.61 s. Backend 4,673 passed / 16 skipped / 2 timing failures (one already red). `docs/performance/2026-10-20-shop-customers-jit.md`.
 
 20 Oct 2026 — Bill editor composition (07-screens/09 §3): always-open item search, compact Shop customer line, offline/slow Issue states, Issue named with its total; live run found and fixed a squeezed customer name at 320 px, a red Restore and Escape discarding a kept bill. 4,564 frontend tests, 80 frames, real Quick Sale issue and draft restore on local QA. Found the Shop customer list API at 1.5–1.9 s. `docs/performance/2026-10-20-p5-editor-compose.md`.
@@ -170,10 +172,11 @@ and updated continuation prompt. This changes words, not the sequence below.
 3. Remaining Home workflows approved in R-DEC-26 (BP-08/16/17), integrated with
    the verified source workflows, followed by Home end-to-end acceptance.
 
-Immediate next: finish §3 (the Customers list JIT fix is in; its remaining ~0.3 s of totals/counts is noted in
-the 20-Oct JIT report): create/restore item from a no-match search, "Add <name>" from the
-customer search, the changed-rate note, Jump to line, expired-session return; then the remaining sales
-documents, purchases and returns. Editor composition delivered 20 Oct (see Progress). Continue review→build→LOOK→
+Immediate next (owner, 20 Oct: billing >8.5 in every aspect against the Counter Mode artifact): hold a bill and
+resume it ("On hold · 2" row, on the durable drafts), "Add <name>" from the customer search, Jump to line on
+50+ lines, expired-session return, then the rescore in the artifact's table (point of view, score, evidence,
+still weak, confidence). Create/restore item, changed-rate note, Paid cash, repeat-scan Qty are done
+(2026-10-20-p5-counter-billing.md). Then the remaining sales documents, purchases and returns. Editor composition delivered 20 Oct (see Progress). Continue review→build→LOOK→
 report→commit/push for each piece without routine permission questions. Preserve
 separate roles/books, source permissions and frozen Library/Lending contracts.
 

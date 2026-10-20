@@ -4,7 +4,7 @@ import { useCallback, useState } from 'react';
 
 import dynamic from 'next/dynamic';
 
-import { Save, Send, Trash2 } from 'lucide-react';
+import { Banknote, Save, Send, Trash2 } from 'lucide-react';
 import { useStore } from 'react-redux';
 
 import {
@@ -31,7 +31,7 @@ import { selectNetworkState } from 'src/redux/slice/networkSlice';
 import { selectMayOverrideCreditLimit } from 'src/redux/slice/sessionSlice';
 import type { RootState } from 'src/redux/store';
 import { ROUTES } from 'src/routes';
-import { formatInr } from 'src/utils/money';
+import { formatInr, sumMoney } from 'src/utils/money';
 
 import { useDraftAutosave } from '../hooks/useDraftAutosave';
 import { useEditorWindowEffects } from '../hooks/useEditorWindowEffects';
@@ -39,14 +39,13 @@ import { useInvoiceEditor, type EditorKind } from '../hooks/useInvoiceEditor';
 import { deleteEstimateDraft } from '../redux/salesFlowThunk';
 import { deleteInvoiceDraft } from '../redux/salesThunk';
 import { documentTitleId, stockShortLines, stockShortMessage } from '../view-model/invoiceDisplay';
+import { fullCashPayment, type PaymentRowForm } from '../view-model/invoiceForm';
 
 import { InvoiceEditorDialogs } from './InvoiceEditorDialogs';
 import { InvoiceLinesSection } from './InvoiceLinesSection';
 import { InvoicePartySection } from './InvoicePartySection';
 import { InvoiceSaveIndicator } from './InvoiceSaveIndicator';
 import { InvoiceTotalsPanel } from './InvoiceTotalsPanel';
-
-import type { PaymentRowForm } from '../view-model/invoiceForm';
 
 /* The payment sheet and the success sheet load with the tap that opens them. */
 const PaymentDrawerLazy = dynamic(
@@ -171,6 +170,22 @@ export function InvoiceEditorPageContent({
     () => void form.handleSubmit(() => startIssue())(),
     [form, startIssue]
   );
+  /*
+   * 07-screens/09 §3 — most Quick Sales are paid in cash, in full, and the
+   * sheet that opened for them only confirmed what it already said. "Paid
+   * cash" issues with exactly the row that sheet defaults to; anything else
+   * (UPI, a split) is one tap away on the other button. Same schema check, same
+   * keyed issue, same offline refusal.
+   */
+  const cashSale = walkIn && !estimate;
+  const requestCash = useCallback(
+    () =>
+      void form.handleSubmit(() => {
+        if (!hasLines || locked) return;
+        void finishIssue(fullCashPayment(preview.grandTotal));
+      })(),
+    [form, hasLines, locked, finishIssue, preview.grandTotal]
+  );
   const { submitCount, errors } = form.formState;
   const refused = submitCount > 0 && Object.keys(errors).length > 0;
 
@@ -237,8 +252,11 @@ export function InvoiceEditorPageContent({
         ? 'sales.challan.issue'
         : estimate
           ? 'sales.estimate.saveAndSend'
-          : 'sales.editor.issue'
+          : cashSale
+            ? 'sales.editor.otherPayment'
+            : 'sales.editor.issue'
   );
+  const cashLabel = t('sales.editor.paidCash');
   const issueBusyLabel = t(
     order
       ? 'sales.order.confirming'
@@ -258,6 +276,39 @@ export function InvoiceEditorPageContent({
         total: formatInr(preview.grandTotal),
       });
   const issueDisabled = !hasLines || locked || offline;
+  const cashName = server.issuing
+    ? undefined
+    : t('sales.editor.issueWithTotal', { action: cashLabel, total: formatInr(preview.grandTotal) });
+  /* The sheet's own confirm shows "Issuing…"; with no sheet the button tapped does. */
+  const cashBusy = server.issuing && !paying;
+
+  /*
+   * Counter Mode step 10 — under the docked total, what it counts and the GST
+   * in it, and the draft's save state beside the buttons that finish it (one
+   * place: two live regions saying the same thing would be read twice).
+   */
+  const saveIndicator = (
+    <InvoiceSaveIndicator
+      indicator={autosave.indicator}
+      savedAt={autosave.savedAt}
+      reason={server.error?.message}
+    />
+  );
+  const itemCount = values.lines.filter((l) => l.itemId || l.description).length;
+  const gst = sumMoney([
+    preview.cgstTotal,
+    preview.sgstTotal,
+    preview.igstTotal,
+    preview.cessTotal,
+  ]);
+  const dockCaption = itemCount
+    ? [
+        t('sales.dock.items', { count: itemCount }),
+        taxFree || gst === '0.00' ? null : t('sales.dock.includesGst', { amount: formatInr(gst) }),
+      ]
+        .filter(Boolean)
+        .join(' · ')
+    : undefined;
 
   return (
     <UbPageShell>
@@ -268,13 +319,7 @@ export function InvoiceEditorPageContent({
             : t('sales.editor.newTitle', { title })
         }
         subtitle={undefined}
-        controls={
-          <InvoiceSaveIndicator
-            indicator={autosave.indicator}
-            savedAt={autosave.savedAt}
-            reason={server.error?.message}
-          />
-        }
+        controls={docksTotals ? undefined : saveIndicator}
         actions={
           <>
             {server.documentId && (
@@ -295,16 +340,18 @@ export function InvoiceEditorPageContent({
               onClick={() => void save(false)}
               busy={server.saveState === 'saving'}
               disabled={locked}
-              /* Below 1536 px Save and Issue are docked under the total (below). */
-              className="max-2xl:hidden"
+              /* Below 1536 px Save and Issue are docked under the total (below);
+                 a cash Quick Sale's dock holds its two ways to be paid instead. */
+              className={cashSale ? undefined : 'max-2xl:hidden'}
             >
               {t('sales.editor.saveDraft')}
             </UbButton>
             <UbButton
+              variant={cashSale ? 'secondary' : 'primary'}
               iconOnly="mobile"
               icon={<Send className="h-4 w-4" aria-hidden />}
               onClick={requestIssue}
-              busy={server.issuing}
+              busy={server.issuing && !cashBusy}
               busyLabel={issueBusyLabel}
               disabled={issueDisabled}
               aria-label={issueName}
@@ -313,6 +360,21 @@ export function InvoiceEditorPageContent({
             >
               {issueLabel}
             </UbButton>
+            {cashSale && (
+              <UbButton
+                iconOnly="mobile"
+                icon={<Banknote className="h-4 w-4" aria-hidden />}
+                onClick={requestCash}
+                busy={cashBusy}
+                busyLabel={issueBusyLabel}
+                disabled={issueDisabled}
+                aria-label={cashName}
+                data-testid="invoice-paid-cash"
+                className="max-2xl:hidden"
+              >
+                {cashLabel}
+              </UbButton>
+            )}
           </>
         }
       />
@@ -412,25 +474,45 @@ export function InvoiceEditorPageContent({
           data-testid="invoice-dock"
           totalLabel={t('sales.totals.grand')}
           total={formatInr(preview.grandTotal)}
+          caption={dockCaption}
+          meta={saveIndicator}
           note={issueNote}
         >
+          {/* A cash Quick Sale's two finishing buttons take the dock; its
+              Save stays in the header (the device copy and autosave keep
+              the bill either way). */}
+          {!cashSale && (
+            <UbButton
+              variant="secondary"
+              onClick={() => void save(false)}
+              busy={server.saveState === 'saving'}
+              disabled={locked}
+            >
+              {t('sales.editor.saveDraft')}
+            </UbButton>
+          )}
           <UbButton
-            variant="secondary"
-            onClick={() => void save(false)}
-            busy={server.saveState === 'saving'}
-            disabled={locked}
-          >
-            {t('sales.editor.saveDraft')}
-          </UbButton>
-          <UbButton
+            variant={cashSale ? 'secondary' : 'primary'}
             onClick={requestIssue}
-            busy={server.issuing}
+            busy={server.issuing && !cashBusy}
             busyLabel={issueBusyLabel}
             disabled={issueDisabled}
             aria-label={issueName}
           >
             {issueLabel}
           </UbButton>
+          {cashSale && (
+            <UbButton
+              onClick={requestCash}
+              busy={cashBusy}
+              busyLabel={issueBusyLabel}
+              disabled={issueDisabled}
+              aria-label={cashName}
+              data-testid="invoice-dock-paid-cash"
+            >
+              {cashLabel}
+            </UbButton>
+          )}
         </UbTotalDock>
       )}
 

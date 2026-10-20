@@ -34,4 +34,24 @@ describe('UbTotalDock', () => {
     expect(dock).toHaveAttribute('data-ub-bottom-bar');
     expect(dock.className).toContain('bottom-[var(--ub-nav-offset)]');
   });
+
+  it('says what the total counts, and when the draft was saved, under it', () => {
+    /* Counter Mode step 10: "Total · 1 item · includes GST ₹18.00 … Draft
+       saved 4:39 pm" — a bare figure did not say whether GST was in it. */
+    render(
+      <UbTotalDock
+        totalLabel="Total"
+        total="₹378.00"
+        caption="1 item · includes GST ₹18.00"
+        meta="Draft saved 4:39 pm"
+        data-testid="dock"
+      >
+        <UbButton>Save bill</UbButton>
+      </UbTotalDock>
+    );
+    expect(screen.getByTestId('total-dock-caption')).toHaveTextContent(
+      '1 item · includes GST ₹18.00'
+    );
+    expect(screen.getByTestId('dock')).toHaveTextContent('Draft saved 4:39 pm');
+  });
 });

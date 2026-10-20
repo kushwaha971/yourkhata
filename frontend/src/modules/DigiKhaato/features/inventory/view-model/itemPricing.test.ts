@@ -1,6 +1,6 @@
 import type { TranslateFn } from 'src/hooks/useTranslation';
 
-import { itemPriceNote } from './itemPriceNote';
+import { itemPriceNote, itemStockNote } from './itemPriceNote';
 import { itemMargin, marginOf, priceAfterEdit, priceForMargin } from './itemPricing';
 
 /**
@@ -138,6 +138,8 @@ describe('itemPriceNote — the picker’s price line', () => {
       'items.picker.usualPrice': `Usual price ${params?.amount}`,
       'items.picker.cost': `Cost ${params?.amount}`,
       'items.picker.margin': `${params?.margin}% margin`,
+      'items.picker.gstIncluded': `GST ${params?.rate}% included`,
+      'items.picker.gstExtra': `plus GST ${params?.rate}%`,
     })[key] ?? key) as TranslateFn;
   const row = {
     sellingPrice: '50.00',
@@ -147,12 +149,14 @@ describe('itemPriceNote — the picker’s price line', () => {
   };
 
   it('names the usual price, the cost and the margin for someone who sees costs', () => {
-    expect(itemPriceNote(row, t)).toBe('Usual price ₹50.00 · Cost ₹40.00 · 20.0% margin');
+    expect(itemPriceNote(row, t)).toBe(
+      'Usual price ₹50.00 · plus GST 18% · Cost ₹40.00 · 20.0% margin'
+    );
   });
 
   it('reads an inclusive price without its GST', () => {
     expect(itemPriceNote({ ...row, sellingPrice: '59.00', taxInclusiveSelling: true }, t)).toBe(
-      'Usual price ₹59.00 · Cost ₹40.00 · 20.0% margin'
+      'Usual price ₹59.00 · GST 18% included · Cost ₹40.00 · 20.0% margin'
     );
   });
 
@@ -166,8 +170,44 @@ describe('itemPriceNote — the picker’s price line', () => {
   });
 
   it('gives a member who cannot see costs the usual price alone', () => {
-    expect(itemPriceNote({ ...row, purchasePrice: null }, t)).toBe('Usual price ₹50.00');
+    expect(itemPriceNote({ ...row, purchasePrice: null }, t)).toBe(
+      'Usual price ₹50.00 · plus GST 18%'
+    );
     expect(itemPriceNote({ ...row, purchasePrice: null, sellingPrice: '0.00' }, t)).toBeNull();
+  });
+});
+
+describe('itemStockNote — the picker’s stock, in words (Counter Mode step 9)', () => {
+  /* "LED-9W · 40 PCS" did not say whether 40 was plenty, few or the shelf's
+     count of something else; a counter reads "40 PCS in stock" or "Low: 3 left". */
+  const t = ((key: string, params?: Record<string, string>) =>
+    ({
+      'items.picker.inStock': `${params?.qty} in stock`,
+      'items.picker.lowStock': `Low: ${params?.qty} left`,
+      'items.picker.outOfStock': 'Out of stock',
+    })[key] ?? key) as TranslateFn;
+  const row = {
+    sku: 'LED-9W',
+    onHand: '40.000',
+    unit: { code: 'PCS' },
+    stockStatus: 'ok' as const,
+  };
+
+  it('says how many are in stock', () => {
+    expect(itemStockNote(row, t)).toBe('LED-9W · 40 PCS in stock');
+  });
+  it('says few are left', () => {
+    expect(itemStockNote({ ...row, onHand: '3.000', stockStatus: 'low' }, t)).toBe(
+      'LED-9W · Low: 3 PCS left'
+    );
+  });
+  it('says out of stock, including below zero', () => {
+    expect(itemStockNote({ ...row, onHand: '-2.000', stockStatus: 'out' }, t)).toBe(
+      'LED-9W · Out of stock'
+    );
+  });
+  it('gives an untracked item its code alone', () => {
+    expect(itemStockNote({ ...row, onHand: null, stockStatus: null }, t)).toBe('LED-9W');
   });
 });
 

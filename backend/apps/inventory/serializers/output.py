@@ -64,8 +64,9 @@ def item_row(
     contract `/stock/summary` has, so a client cannot mistake "hidden" for zero.
 
     `gst_percent` (WP-07) maps tax code → today's rate plus cess. Given, the row
-    carries its item's, so the picker can read the margin of a GST-inclusive
-    price; it is passed only to members who see costs, the margin's audience.
+    carries its item's, so the picker can say "GST 5% included" and read the
+    margin of a GST-inclusive price. Every member gets it: the rate is printed
+    on the bill they write; the margin built from it is what costs gate.
     """
     row = _item_row(item)
     if not valuation:

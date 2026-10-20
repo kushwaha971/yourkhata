@@ -5,7 +5,12 @@
   "items.lastRate.use": "Use this rate",
   "items.list.searchPlaceholder": "Search name, SKU or scan barcode",
   "items.picker.cost": "Cost {amount}",
+  "items.picker.gstExtra": "plus GST {rate}%",
+  "items.picker.gstIncluded": "GST {rate}% included",
+  "items.picker.inStock": "{qty} in stock",
+  "items.picker.lowStock": "Low: {qty} left",
   "items.picker.margin": "{margin}% margin",
+  "items.picker.outOfStock": "Out of stock",
   "items.picker.usualPrice": "Usual price {amount}",
   "items.scan.create": "Create item",
   "items.scan.notFound": "No item with barcode {code}"

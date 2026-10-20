@@ -145,13 +145,21 @@ try {
       if ((await search.inputValue()) !== '') failures.push(`${tag}: search kept its text after a pick`);
       await check(page, tag, 'item-added');
 
-      // A second item goes on a NEW line, and the caret follows it.
+      // The same item again is one more of it on the SAME line, not a new row.
       await addItem(page, tag);
       await page.keyboard.press('Enter');
-      await page.waitForFunction(() => document.activeElement?.closest('[data-line-cell][data-row="1"]'));
-      const caret2 = await caretCell(page);
-      if (caret2 !== '1:1') failures.push(`${tag}: second pick caret at ${caret2}, expected line 2 Qty`);
-      await check(page, tag, 'two-items');
+      await page
+        .waitForFunction(
+          () => document.querySelector('[data-line-cell][data-row="0"][data-col="1"] input')?.value === '2',
+          null,
+          { timeout: 5000 }
+        )
+        .catch(() => failures.push(`${tag}: a repeat pick did not raise line 1 to Qty 2`));
+      if (await page.locator('[data-line-cell][data-row="1"]').count())
+        failures.push(`${tag}: a repeat pick added a second line`);
+      const caption = await page.getByTestId('total-dock-caption').textContent().catch(() => null);
+      if (caption !== null && !/1/.test(caption)) failures.push(`${tag}: dock caption reads "${caption}"`);
+      await check(page, tag, 'qty-raised');
 
       // A saved customer collapses to one line with their Shop dues and Change.
       await page.getByRole('radio', { name: WORDS.saved }).click();
@@ -208,16 +216,20 @@ try {
       await page.getByText(new RegExp(ITEM)).first().waitFor();
       await check(page, tag, 'restored');
     }
-    // Issue it as a Quick Sale: payment sheet with the whole amount in cash.
-    // Below 1536 px the header's Issue is hidden and the dock carries it.
-    const issue = page.getByTestId('invoice-dock').getByRole('button').last();
-    const name = await issue.getAttribute('aria-label');
-    if (!/₹/.test(name ?? '')) failures.push(`${tag}: Issue's accessible name has no total (${name})`);
-    await issue.click();
+    // "UPI or other" still opens the payment sheet; close it and take the
+    // cash in one tap. Below 1536 px the header's buttons are hidden and the
+    // dock carries them.
+    const dock = page.getByTestId('invoice-dock');
+    await dock.getByRole('button', { name: locale === 'hi' ? /UPI या अन्य/ : /UPI or other/ }).click();
     const confirm = page.getByTestId('invoice-payment-confirm');
     await confirm.waitFor();
     await check(page, tag, 'payment-sheet', { root: '[role="dialog"]' });
-    await confirm.click();
+    await page.keyboard.press('Escape');
+    await confirm.waitFor({ state: 'detached' });
+    const cash = page.getByTestId('invoice-dock-paid-cash');
+    const name = await cash.getAttribute('aria-label');
+    if (!/₹/.test(name ?? '')) failures.push(`${tag}: Paid cash's accessible name has no total (${name})`);
+    await cash.click();
     const issued = page.getByRole('dialog');
     await issued.getByText(/INV|बिल/).first().waitFor({ timeout: 15000 });
     await check(page, tag, 'issued', { root: '[role="dialog"]' });
