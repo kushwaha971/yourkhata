@@ -123,6 +123,18 @@ English frames** at 390/320/1024/1280 light and dark and **38 Hindi** at
 (restore, UPI sheet, one-tap cash issue, Hold at 1280 and 390) 0 failures; the
 run's drafts deleted.
 
+## Fourth step: a session that expires mid-bill (verified, no change needed)
+
+Checked before building anything, and it already holds: with the bill's saves
+failing (so it lives only on the device), the session cookies cleared, and the
+next keystroke in the item search, the app sends the merchant to sign in with
+`next=/sales/invoices/new`; signed back in, they land on the bill and are asked
+"Restore the bill kept on this device at 13:39?", and Restore brings the item
+back. The device copy is kept per tenant and user and survives sign-out by
+design (`localDrafts.ts`). The harness now runs this as a flow at 1280
+(`session-return`), so a future change that breaks it fails loudly. Still weak:
+the dialog says when the bill was kept, not what is in it.
+
 ## Navigation timing
 
 `data/2026-10-20-counter-billing-nav.json`, three repetitions, run with nothing
@@ -139,7 +151,7 @@ the other; that is part of the rescore, and performance is not called above
 
 ## Not in this piece
 
-The expired-session return, the per-line
+ the per-line
 "₹450 usual price" caption (only the changed-rate note is shown, to keep phone
 cards short), and the rescore in the artifact's table. Physical scanners,
 phones and merchant timing are not proved by desktop Chromium.

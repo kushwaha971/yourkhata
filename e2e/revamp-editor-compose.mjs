@@ -266,6 +266,52 @@ try {
     await issued.getByText(/INV|बिल/).first().waitFor({ timeout: 15000 });
     await check(page, tag, 'issued', { root: '[role="dialog"]' });
 
+    // A session that expires mid-bill: the merchant is sent to sign in and,
+    // signed back in, lands on the bill with it offered back.
+    {
+      const s = await open(1280, 'light');
+      const stag = `1280-light-${locale}`;
+      await s.page.goto(`${base}/sales/invoices/new`, { waitUntil: 'networkidle' });
+      await s.page.route('**/api/v1/sales/invoices**', dropSaves);
+      const box = s.page.getByRole('combobox', { name: WORDS.search });
+      await box.click();
+      await box.fill(ITEM);
+      await s.page.getByRole('option', { name: new RegExp(ITEM), selected: true }).first().waitFor();
+      await s.page.keyboard.press('Enter');
+      await s.page.waitForTimeout(1500); // the 500 ms device copy
+      const host = new URL(base).hostname;
+      await s.ctx.clearCookies();
+      await s.ctx.addCookies([
+        { name: 'ub_locale', value: locale, domain: host, path: '/' },
+        { name: 'ub_theme_choice', value: 'light', domain: host, path: '/' },
+      ]);
+      await box.click();
+      await box.fill('a');
+      const sent = await s.page.waitForURL(/\/login/, { timeout: 15000 }).then(() => true, () => false);
+      if (!sent) failures.push(`${stag}: an expired session did not lead to sign-in`);
+      const next = new URL(s.page.url()).searchParams.get('next');
+      if (next !== '/sales/invoices/new') failures.push(`${stag}: sign-in returns to ${next}, not the bill`);
+      await s.page.unroute('**/api/v1/sales/invoices**', dropSaves);
+      await s.page.goto(`${base}/login/email?next=${encodeURIComponent(next ?? '')}`);
+      await s.page.fill('input[type=email]', 'scale@digikhaato.test');
+      await s.page.fill('input[type=password]', 'Scale-Run-2026!');
+      await s.page.click('button[type=submit]');
+      await s.page.waitForURL((u) => u.pathname === '/sales/invoices/new', { timeout: 15000 }).catch(() =>
+        failures.push(`${stag}: signed back in at ${s.page.url()}, not the bill`)
+      );
+      const back = s.page.getByRole('dialog');
+      const offeredBack = await back.waitFor({ timeout: 8000 }).then(() => true, () => false);
+      if (!offeredBack) failures.push(`${stag}: the bill was not offered back after signing in again`);
+      if (offeredBack) {
+        await check(s.page, stag, 'session-return', { root: '[role="dialog"]' });
+        await back.getByRole('button').filter({ hasText: locale === 'hi' ? /वापस|बहाल|रखें/ : /Restore/ }).first().click();
+        await s.page.getByText(new RegExp(ITEM)).first().waitFor({ timeout: 5000 }).catch(() =>
+          failures.push(`${stag}: the restored bill lost its item`)
+        );
+      }
+      await s.ctx.close();
+    }
+
     // Hold this bill and start the next: it is kept as a draft, a blank bill
     // opens, and the held one is one tap away above the editor.
     for (const w of [1280, 390]) {

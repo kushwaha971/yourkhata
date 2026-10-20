@@ -176,9 +176,8 @@ and updated continuation prompt. This changes words, not the sequence below.
 3. Remaining Home workflows approved in R-DEC-26 (BP-08/16/17), integrated with
    the verified source workflows, followed by Home end-to-end acceptance.
 
-Immediate next (owner, 20 Oct: billing >8.5 in every aspect against the Counter Mode artifact): expired-session
-return, a same-container old/new navigation timing (the 20 Oct run was slower everywhere, frozen apps too), then the rescore in the artifact's table (point of view, score, evidence,
-still weak, confidence). Find a line on a long bill, hold/resume, "Add <name>", create/restore item, changed-rate note, Paid cash, repeat-scan Qty are done
+Immediate next (owner, 20 Oct: billing >8.5 in every aspect against the Counter Mode artifact): a same-container old/new navigation timing (the 20 Oct run was slower everywhere, frozen apps too), then the rescore in the artifact's table (point of view, score, evidence,
+still weak, confidence). Expired-session return (verified working, now a harness flow), find a line on a long bill, hold/resume, "Add <name>", create/restore item, changed-rate note, Paid cash, repeat-scan Qty are done
 (2026-10-20-p5-counter-billing.md). Then the remaining sales documents, purchases and returns. Editor composition delivered 20 Oct (see Progress). Continue review→build→LOOK→
 report→commit/push for each piece without routine permission questions. Preserve
 separate roles/books, source permissions and frozen Library/Lending contracts.
