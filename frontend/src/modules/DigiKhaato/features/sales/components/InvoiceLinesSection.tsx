@@ -2,9 +2,12 @@
 
 import { useCallback, useMemo, useState } from 'react';
 
+import dynamic from 'next/dynamic';
+
 import { useFieldArray, type UseFormReturn } from 'react-hook-form';
 
 import {
+  UbBox,
   UbCheckbox,
   UbLineItemsEditor,
   UbMoneyInput,
@@ -29,7 +32,14 @@ import { itemLineDefaults } from '../view-model/itemLineDefaults';
 import type { ItemListRow } from '../../inventory/types/item.types';
 import type { EngineResult } from '../view-model/taxEngine';
 
+const InvoiceLineFinder = dynamic(
+  () => import('./InvoiceLineFinder').then((m) => m.InvoiceLineFinder),
+  { ssr: false }
+);
+
 const MAX_LINES = 100;
+/** From this many named lines a bill no longer fits a phone screen, so it can be searched. */
+const FIND_FROM = 10;
 
 /**
  * SAL-02 FR-2 / §7 — the line grid on `UbLineItemsEditor` (built to this
@@ -381,9 +391,45 @@ export function InvoiceLinesSection({
     [lines, partyId, partyName, setValue, listed, usual, stockWarning, t]
   );
 
+  /*
+   * A long bill's lines, searchable: forty lines are forty cards on a phone,
+   * and changing one quantity meant scrolling past the rest to find it. The
+   * line number and quantity are in each name, so two lines of one item (a
+   * second rate, say) are told apart. Choosing one asks the grid for its Qty,
+   * the same request the item search makes.
+   */
+  const lineOptions = useMemo(
+    () =>
+      (lines ?? []).flatMap((line, index) =>
+        line?.description
+          ? [
+              {
+                value: String(index),
+                label: [
+                  t('sales.line.label', { n: index + 1 }),
+                  line.description,
+                  `${line.qty || '0'} ${line.unitCode}`,
+                ].join(' · '),
+              },
+            ]
+          : []
+      ),
+    [lines, t]
+  );
+  const findLine = useCallback((value: string) => {
+    const row = Number(value);
+    if (Number.isInteger(row))
+      setFocusRequest((previous) => ({ row, col: 1, seq: (previous?.seq ?? 0) + 1 }));
+  }, []);
+
   return (
     <UbStack gap={3}>
       <ItemQuickAdd labels={quickAddLabels} onPick={quickAdd} disabled={disabled} />
+      {lineOptions.length >= FIND_FROM && (
+        <UbBox data-testid="invoice-line-finder">
+          <InvoiceLineFinder options={lineOptions} onFind={findLine} />
+        </UbBox>
+      )}
       <UbLineItemsEditor<InvoiceFormValues, 'lines'>
         focusRequest={focusRequest}
         tableFrom={1536}

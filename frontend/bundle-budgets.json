@@ -1039,6 +1039,7 @@
     "sharedApp": 114.1
   },
   "//routes": [
+    "20 Oct 2026, find a line on a long bill: from ten named lines the bill editor shows 'Find a line on this bill', which puts the caret in the chosen line's Qty. The finder is its own dynamic() module (statically imported it cost every editor 0.7 KB); what remains is under 0.05 KB of rounding on seven sales scalars, raised to measured + 0.3.",
     "20 Oct 2026, billing hold and customer add: 'Hold' keeps the bill as a draft and opens a blank one, with the held bills one tap away above the editor (InvoiceHeldBills over the existing listInvoices tab=draft), and the Saved customer search offers 'Add <name> as a new customer' on no match (PartyQuickCreate is dynamic(), so the contact form, schema and catalogue stay in the chunk that opens them). Sales editors +0.6-0.7 KB; purchase editors +0.0-0.1 through the shared picker. Raised to measured + 0.3.",
     "20 Oct 2026, billing toward the Counter Mode standard: the same item scanned again raises Qty, a scan keeps the caret in the search, 'Paid cash' issues a Quick Sale in one tap, the docked total says '1 item \u00b7 includes GST \u20b9x' with the draft's save time, picker options say stock in words and 'GST 5% included', the archived look-alike is offered for restore and Create opens the item form (dynamic(): ItemQuickCreate keeps the form, its thunks and the items catalogue out of the editor routes, which had cost them the whole catalogue when imported statically), and a changed rate says 'For this bill only'. Sales editors +1.2 KB; purchase editors draw the same search, +0.0 (rounding). Raised to measured + 0.3.",
     "20 Oct 2026, 07-screens/09 \u00a73 bill editor composition: an always-open item search at the top of the lines (the existing useItemSearch and default-line owner), the picked customer as one line with their Shop dues and Change, Issue disabled offline with its reason, a 'Still issuing' line after 3 s, and the total in Issue's accessible name. Sales editor routes grow 2.9 KB and purchase editors 1.1 KB through the shared line editor and total dock. About 0.8-1.0 KB on unrelated routes is Turbopack re-splitting a shared chunk (measured on /settings/team: one 27.6 KB chunk became 20.4 + 8.2 KB, with no editor code in either), not new code there. The unchanged dev build (3e46380) already measured 0.1 KB over on 16 first-load scalars here. Only the 154 exceeded scalars across 80 routes use measured gzip +0.3 KB; framework and shared-app ceilings unchanged; no package added. Evidence: docs/performance/2026-10-20-p5-editor-compose.md.",
@@ -1421,7 +1422,7 @@
     },
     "/sales/challans/new": {
       "route": 167.8,
-      "firstLoad": 408.8
+      "firstLoad": 409.1
     },
     "/sales/challans/[id]/edit": {
       "route": 167.8,
@@ -1445,7 +1446,7 @@
     },
     "/sales/orders/[id]": {
       "route": 84.2,
-      "firstLoad": 325.2
+      "firstLoad": 325.5
     },
     "/sales/orders": {
       "route": 86.1,
@@ -1453,7 +1454,7 @@
     },
     "/sales/orders/new": {
       "route": 167.8,
-      "firstLoad": 408.8
+      "firstLoad": 409.1
     },
     "/sales/orders/[id]/edit": {
       "route": 167.8,
@@ -1468,8 +1469,8 @@
       "firstLoad": 336
     },
     "/sales/invoices/new": {
-      "route": 167.7,
-      "firstLoad": 408.8
+      "route": 168.0,
+      "firstLoad": 409.1
     },
     "/sales/invoices/[id]/edit": {
       "route": 167.8,
@@ -1489,7 +1490,7 @@
     },
     "/sales/estimates/new": {
       "route": 167.8,
-      "firstLoad": 408.8
+      "firstLoad": 409.1
     },
     "/sales/estimates/[id]/edit": {
       "route": 167.8,
@@ -1505,7 +1506,7 @@
     },
     "/sales/credit-notes/new": {
       "route": 149.4,
-      "firstLoad": 390.4
+      "firstLoad": 390.7
     },
     "/sales/credit-notes/[id]": {
       "route": 84.2,

@@ -36,9 +36,15 @@ included/extra; restore archived look-alike / Create item from no match;
 Also done: Hold (saves, then a blank bill) with an "On hold · N" row of
 time-stamped chips above the editor; "Add <name> as a new customer" from the
 Saved customer search (parties.party.write only, lazy PartyQuickCreate).
+Also done: "Find a line on this bill" (lazy InvoiceLineFinder, from 10 named
+lines, caret to the line's Qty); UbCombobox options wrap instead of "...".
 Remaining, in order:
-1. Jump to line chip on 50+ lines; expired-session return keeps the bill.
-2. Rescore in the artifact's table: point of view, score, evidence, still weak,
+1. Expired-session return keeps the bill.
+2. Same-container navigation timing, old build vs new, one after the other:
+   the 20 Oct run (docs/performance/data/2026-10-20-counter-billing-nav.json)
+   was slower than 18 Oct everywhere, frozen Library/Lending included, so it
+   proves nothing either way; shop.home->customers +~470 ms is the outlier.
+3. Rescore in the artifact's table: point of view, score, evidence, still weak,
    confidence, for phone and desktop, from frames and measurements.
 Then the remaining sales documents, purchases and returns (R-DEC-27).
 Open owner question: should jit=off (3421283) go to production or stay local?

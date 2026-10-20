@@ -29,12 +29,16 @@ const WORDS = {
     saved: 'Saved customer',
     change: 'Change',
     offline: "No internet. Your bill is kept; issue it when you're back online.",
+    find: 'Find a line on this bill',
+    line: 'Line',
   },
   hi: {
     search: 'जोड़ने के लिए सामान खोजें',
     saved: 'सहेजा गया ग्राहक',
     change: 'बदलें',
     offline: 'इंटरनेट नहीं है। आपका बिल रखा है; इंटरनेट आने पर बिल बनाएँ।',
+    find: 'बिल में पंक्ति ढूँढें',
+    line: 'पंक्ति',
   },
 }[locale];
 const ITEM = 'Copper Electrical Cable';
@@ -164,6 +168,30 @@ try {
       const caption = await page.getByTestId('total-dock-caption').textContent().catch(() => null);
       if (caption !== null && !/1/.test(caption)) failures.push(`${tag}: dock caption reads "${caption}"`);
       await check(page, tag, 'qty-raised');
+
+      // A long bill: ten more items, then "Find a line on this bill" puts the
+      // caret in the chosen line's Qty instead of a scroll past every card.
+      for (let k = 0; k < 10; k += 1) {
+        await search.click();
+        await search.fill('a');
+        await page.getByRole('option', { selected: true }).first().waitFor();
+        for (let d = 0; d < k; d += 1) await page.keyboard.press('ArrowDown');
+        await page.keyboard.press('Enter');
+        await page.waitForTimeout(150);
+      }
+      const finder = page.getByRole('combobox', { name: WORDS.find });
+      const shown = await finder.waitFor({ timeout: 8000 }).then(() => true, () => false);
+      if (!shown) failures.push(`${tag}: no line finder on a bill of ${await page.locator('[data-line-cell][data-col="1"]').count()} lines`);
+      if (shown) {
+        await finder.click();
+        await page.getByRole('option', { name: new RegExp(`^${WORDS.line} 1 · `) }).waitFor();
+        await check(page, tag, 'finder-open', { root: '[role="listbox"]' });
+        await page.getByRole('option', { name: new RegExp(`^${WORDS.line} 1 · `) }).click();
+        await page.waitForFunction(() => document.activeElement?.closest('[data-line-cell]'), null, { timeout: 5000 }).catch(() => undefined);
+        const found = await caretCell(page);
+        if (found !== '0:1') failures.push(`${tag}: finder put the caret at ${found}, expected line 1 Qty`);
+        await check(page, tag, 'line-found');
+      }
 
       // A saved customer collapses to one line with their Shop dues and Change.
       await page.getByRole('radio', { name: WORDS.saved }).click();

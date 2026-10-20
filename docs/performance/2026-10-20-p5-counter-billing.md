@@ -2,9 +2,10 @@
 
 20 October 2026. R-DEC-27 billing/POS, 07-screens/09 §3, measured against the
 owner's Counter Mode artifact (steps 9 and 10) as the acceptance reference.
-**This is part of the >8.5 plan; Jump to line, the expired-session return and
-the rescore are still to come** (see "Not in this piece"). Two commits: the
-counter steps (b7a001a), then hold/resume and "Add <name>" (second section).
+**This is part of the >8.5 plan; the expired-session return and the rescore
+are still to come** (see "Not in this piece"). Three commits: the counter steps
+(b7a001a), hold/resume and "Add <name>" (38137e4, second section), then finding
+a line on a long bill (third section).
 
 ## What changed and why
 
@@ -64,8 +65,7 @@ counter steps (b7a001a), then hold/resume and "Add <name>" (second section).
 - Bundle: sales editors +1.2 KB route/first load (five features), purchase
   editors +0.0 (rounding); 21 exceeded scalars raised to measured + 0.3 with a
   note in `bundle-budgets.json`.
-- Navigation perf: see `data/2026-10-20-counter-billing-nav.json` (run quietly
-  after the frames; compared with the 18 Oct baseline from this container).
+- Navigation perf: see "Navigation timing" below.
 
 ## Second step: hold a bill, add a customer from the search
 
@@ -97,9 +97,49 @@ note), contrast; backend `test_draft_recovery.py` + `tests/contracts` 81 passed,
 low contrast, including the held row at 1280 and 390; Hold then a blank bill,
 verified on the docked total.
 
+## Third step: find a line on a long bill
+
+From ten named lines the editor shows **"Find a line on this bill"** under the
+item search: a searchable list of "Line 9 · Syska bulb 9W · 9 PCS", and
+choosing one puts the caret in that line's Qty (the grid's existing focus
+request, which also opens a phone card). Ten rather than the planned fifty,
+because ten cards already run past a phone screen. The line number and the
+quantity are in each name so two lines of one item are told apart. It is its own
+`dynamic()` module (`InvoiceLineFinder`): imported statically it cost every
+editor 0.7 KB; what remains is under 0.05 KB of rounding on seven sales scalars,
+raised to measured + 0.3.
+
+Found by looking at it live: on a 390 px phone the first option read **"Line 1 ·
+Radhe Krishna Enterprises Copper Ele…"** — every `UbCombobox` cut its options
+with an ellipsis, which the plain-words rule forbids and which hides exactly the
+half of a name that tells two cables apart. Options now wrap, in every combobox
+(regression test in `UbCombobox.test.tsx`).
+
+Verification: 4,589 tests (three new for the finder, one for the wrap);
+type-check, lint, locales, build, bundle, contrast (174 pairings). Live: **70
+English frames** at 390/320/1024/1280 light and dark and **38 Hindi** at
+320/1280, zero overflow, cut text or low contrast, including `finder-open` and
+`line-found` with the caret checked in line 1's Qty at every width; flows
+(restore, UPI sheet, one-tap cash issue, Hold at 1280 and 390) 0 failures; the
+run's drafts deleted.
+
+## Navigation timing
+
+`data/2026-10-20-counter-billing-nav.json`, three repetitions, run with nothing
+else on the machine, against the 18 Oct baseline: median 578 → 610 ms, p95
+1,243 → 1,470 ms over 36 cases. **This does not show the billing work is
+neutral, and it does not show it is to blame.** Almost every case is slower,
+including Library and Lending (library.home→members +547 ms throttled), which
+are frozen and which this work never touched, so the difference is mostly the
+machine, not the code. The largest single change is shop.home→customers
+(+463–488 ms unthrottled at both widths), which is worth a look on its own. A
+fair answer needs the old and new builds timed in the same container one after
+the other; that is part of the rescore, and performance is not called above
+8.5 until it is done.
+
 ## Not in this piece
 
-Jump to line on 50+ lines, the expired-session return, the per-line
+The expired-session return, the per-line
 "₹450 usual price" caption (only the changed-rate note is shown, to keep phone
 cards short), and the rescore in the artifact's table. Physical scanners,
 phones and merchant timing are not proved by desktop Chromium.

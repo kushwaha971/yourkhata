@@ -34,6 +34,22 @@
     },
     {
       "tag": "320-light-hi",
+      "state": "finder-open",
+      "overflow": 0,
+      "cut": [],
+      "lowContrast": [],
+      "firstRowY": null
+    },
+    {
+      "tag": "320-light-hi",
+      "state": "line-found",
+      "overflow": 0,
+      "cut": [],
+      "lowContrast": [],
+      "firstRowY": null
+    },
+    {
+      "tag": "320-light-hi",
       "state": "customer-line",
       "overflow": 0,
       "cut": [],
@@ -82,6 +98,22 @@
     },
     {
       "tag": "320-dark-hi",
+      "state": "finder-open",
+      "overflow": 0,
+      "cut": [],
+      "lowContrast": [],
+      "firstRowY": null
+    },
+    {
+      "tag": "320-dark-hi",
+      "state": "line-found",
+      "overflow": 0,
+      "cut": [],
+      "lowContrast": [],
+      "firstRowY": null
+    },
+    {
+      "tag": "320-dark-hi",
       "state": "customer-line",
       "overflow": 0,
       "cut": [],
@@ -130,6 +162,22 @@
     },
     {
       "tag": "1280-light-hi",
+      "state": "finder-open",
+      "overflow": 0,
+      "cut": [],
+      "lowContrast": [],
+      "firstRowY": null
+    },
+    {
+      "tag": "1280-light-hi",
+      "state": "line-found",
+      "overflow": 0,
+      "cut": [],
+      "lowContrast": [],
+      "firstRowY": null
+    },
+    {
+      "tag": "1280-light-hi",
       "state": "customer-line",
       "overflow": 0,
       "cut": [],
@@ -171,6 +219,22 @@
     {
       "tag": "1280-dark-hi",
       "state": "qty-raised",
+      "overflow": 0,
+      "cut": [],
+      "lowContrast": [],
+      "firstRowY": null
+    },
+    {
+      "tag": "1280-dark-hi",
+      "state": "finder-open",
+      "overflow": 0,
+      "cut": [],
+      "lowContrast": [],
+      "firstRowY": null
+    },
+    {
+      "tag": "1280-dark-hi",
+      "state": "line-found",
       "overflow": 0,
       "cut": [],
       "lowContrast": [],
@@ -241,8 +305,5 @@
       "firstRowY": null
     }
   ],
-  "failures": [
-    "1280-light-hi: the bill was not blank after Hold",
-    "390-light-hi: the bill was not blank after Hold"
-  ]
+  "failures": []
 }

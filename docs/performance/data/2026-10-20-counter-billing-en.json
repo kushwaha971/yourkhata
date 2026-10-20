@@ -34,6 +34,22 @@
     },
     {
       "tag": "390-light-en",
+      "state": "finder-open",
+      "overflow": 0,
+      "cut": [],
+      "lowContrast": [],
+      "firstRowY": null
+    },
+    {
+      "tag": "390-light-en",
+      "state": "line-found",
+      "overflow": 0,
+      "cut": [],
+      "lowContrast": [],
+      "firstRowY": null
+    },
+    {
+      "tag": "390-light-en",
       "state": "customer-line",
       "overflow": 0,
       "cut": [],
@@ -82,6 +98,22 @@
     },
     {
       "tag": "390-dark-en",
+      "state": "finder-open",
+      "overflow": 0,
+      "cut": [],
+      "lowContrast": [],
+      "firstRowY": null
+    },
+    {
+      "tag": "390-dark-en",
+      "state": "line-found",
+      "overflow": 0,
+      "cut": [],
+      "lowContrast": [],
+      "firstRowY": null
+    },
+    {
+      "tag": "390-dark-en",
       "state": "customer-line",
       "overflow": 0,
       "cut": [],
@@ -130,6 +162,22 @@
     },
     {
       "tag": "320-light-en",
+      "state": "finder-open",
+      "overflow": 0,
+      "cut": [],
+      "lowContrast": [],
+      "firstRowY": null
+    },
+    {
+      "tag": "320-light-en",
+      "state": "line-found",
+      "overflow": 0,
+      "cut": [],
+      "lowContrast": [],
+      "firstRowY": null
+    },
+    {
+      "tag": "320-light-en",
       "state": "customer-line",
       "overflow": 0,
       "cut": [],
@@ -178,6 +226,22 @@
     },
     {
       "tag": "320-dark-en",
+      "state": "finder-open",
+      "overflow": 0,
+      "cut": [],
+      "lowContrast": [],
+      "firstRowY": null
+    },
+    {
+      "tag": "320-dark-en",
+      "state": "line-found",
+      "overflow": 0,
+      "cut": [],
+      "lowContrast": [],
+      "firstRowY": null
+    },
+    {
+      "tag": "320-dark-en",
       "state": "customer-line",
       "overflow": 0,
       "cut": [],
@@ -226,6 +290,22 @@
     },
     {
       "tag": "1024-light-en",
+      "state": "finder-open",
+      "overflow": 0,
+      "cut": [],
+      "lowContrast": [],
+      "firstRowY": null
+    },
+    {
+      "tag": "1024-light-en",
+      "state": "line-found",
+      "overflow": 0,
+      "cut": [],
+      "lowContrast": [],
+      "firstRowY": null
+    },
+    {
+      "tag": "1024-light-en",
       "state": "customer-line",
       "overflow": 0,
       "cut": [],
@@ -274,6 +354,22 @@
     },
     {
       "tag": "1024-dark-en",
+      "state": "finder-open",
+      "overflow": 0,
+      "cut": [],
+      "lowContrast": [],
+      "firstRowY": null
+    },
+    {
+      "tag": "1024-dark-en",
+      "state": "line-found",
+      "overflow": 0,
+      "cut": [],
+      "lowContrast": [],
+      "firstRowY": null
+    },
+    {
+      "tag": "1024-dark-en",
       "state": "customer-line",
       "overflow": 0,
       "cut": [],
@@ -322,6 +418,22 @@
     },
     {
       "tag": "1280-light-en",
+      "state": "finder-open",
+      "overflow": 0,
+      "cut": [],
+      "lowContrast": [],
+      "firstRowY": null
+    },
+    {
+      "tag": "1280-light-en",
+      "state": "line-found",
+      "overflow": 0,
+      "cut": [],
+      "lowContrast": [],
+      "firstRowY": null
+    },
+    {
+      "tag": "1280-light-en",
       "state": "customer-line",
       "overflow": 0,
       "cut": [],
@@ -370,6 +482,22 @@
     },
     {
       "tag": "1280-dark-en",
+      "state": "finder-open",
+      "overflow": 0,
+      "cut": [],
+      "lowContrast": [],
+      "firstRowY": null
+    },
+    {
+      "tag": "1280-dark-en",
+      "state": "line-found",
+      "overflow": 0,
+      "cut": [],
+      "lowContrast": [],
+      "firstRowY": null
+    },
+    {
+      "tag": "1280-dark-en",
       "state": "customer-line",
       "overflow": 0,
       "cut": [],
@@ -411,6 +539,22 @@
     {
       "tag": "1280-light-en",
       "state": "issued",
+      "overflow": 0,
+      "cut": [],
+      "lowContrast": [],
+      "firstRowY": null
+    },
+    {
+      "tag": "1280-light-en",
+      "state": "held",
+      "overflow": 0,
+      "cut": [],
+      "lowContrast": [],
+      "firstRowY": null
+    },
+    {
+      "tag": "390-light-en",
+      "state": "held",
       "overflow": 0,
       "cut": [],
       "lowContrast": [],

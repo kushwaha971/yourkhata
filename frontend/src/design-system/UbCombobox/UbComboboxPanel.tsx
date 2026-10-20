@@ -78,7 +78,7 @@ export function UbComboboxPanel({
                   option.value === value ? 'opacity-100' : 'opacity-0'
                 )}
               />
-              <span className="truncate">{option.label}</span>
+              <span className="min-w-0 break-words">{option.label}</span>
             </MLCommandItem>
           ))}
           {showCreate && (
@@ -88,7 +88,7 @@ export function UbComboboxPanel({
               className="ds-body gap-2 text-text-accent"
             >
               <Plus aria-hidden className="h-4 w-4 shrink-0" />
-              <span className="truncate">{createLabel?.(typed)}</span>
+              <span className="min-w-0 break-words">{createLabel?.(typed)}</span>
             </MLCommandItem>
           )}
         </MLCommandGroup>
