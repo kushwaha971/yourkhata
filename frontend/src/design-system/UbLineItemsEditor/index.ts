@@ -5,4 +5,5 @@ export type {
   UbLineItemsColumn,
   UbLineItemsEditorLabels,
   UbLineItemsEditorProps,
+  UbLineFocusRequest,
 } from './UbLineItemsEditor';

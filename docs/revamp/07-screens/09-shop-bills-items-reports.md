@@ -205,6 +205,8 @@ limits are in the report.
 
 Tracking: R-DEC-27 authorizes continuing billing/POS before remaining Home. Shared compact cards, full selected labels and readable total dock are verified locally:4,550 tests and84 measured English/Hindi frames; numeric input checks fail before the320-field-stack/desktop-rate-width fixes. Component self-review8.7, not whole editor. Report: docs/performance/2026-10-20-p5-editor-lines.md. Next: always-visible item search, customer/editor composition, keyboard/save/offline states and real issue/recovery acceptance. Existing pricing/tax/stock/ledger engines remain unchanged; physical-device proof remains open.
 
+Tracking (20 Oct, editor composition): always-open item search (reused `useItemSearch`/scanner `lookup`, caret to Qty), picked customer as one line with Shop dues and Change, Issue disabled offline with its reason, "Still issuing…" after 3 s, total in Issue's name, and draft recovery fixed (Restore primary with time; Escape/× no longer discard). 4,564 tests; 80 measured English/Hindi frames; a real Quick Sale issued and a kept bill restored on the local QA stack. Report: docs/performance/2026-10-20-p5-editor-compose.md. Still open in §3: create/restore item from a no-match search, "Add Ramesh", the changed-rate note, Jump to line, expired-session return. Found: Shop customer list API 1.5–1.9 s (correlated dues subqueries), next in order.
+
 ---
 
 ## 4. Credit-note editor (return items) · `/sales/credit-notes/new?against=<invoice>`

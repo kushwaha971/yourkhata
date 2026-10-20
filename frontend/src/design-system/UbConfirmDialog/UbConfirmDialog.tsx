@@ -36,6 +36,14 @@ export interface UbConfirmDialogProps {
   readonly busyLabel?: string;
   readonly destructive?: boolean;
   /**
+   * The cancel button's own action, when it is an ANSWER rather than "close"
+   * (draft recovery's Discard). Escape, × and the backdrop still only call
+   * `onOpenChange(false)`, so a stray tap can never be taken for that answer.
+   */
+  readonly onCancel?: () => void;
+  /** Defaults to `!destructive`; a dialog guarding unsaved work passes false. */
+  readonly dismissOnBackdrop?: boolean;
+  /**
    * Where focus returns on close if the element that opened this is no longer
    * in the document — e.g. an item in a menu sheet that closed as it opened
    * this one (QA D1, WCAG 2.4.3). Pass the control that opened the menu.
@@ -55,6 +63,8 @@ function UbConfirmDialogBase({
   busy = false,
   busyLabel,
   destructive = true,
+  onCancel,
+  dismissOnBackdrop,
   returnFocusRef,
 }: Readonly<UbConfirmDialogProps>) {
   return (
@@ -64,14 +74,18 @@ function UbConfirmDialogBase({
       title={title}
       description={description}
       closeLabel={closeLabel}
-      dismissOnBackdrop={!destructive}
+      dismissOnBackdrop={dismissOnBackdrop ?? !destructive}
       returnFocusRef={returnFocusRef}
       icon={
         destructive ? <TriangleAlert aria-hidden className="h-5 w-5 text-warning" /> : undefined
       }
       footer={
         <>
-          <UbButton variant="secondary" onClick={() => onOpenChange(false)} disabled={busy}>
+          <UbButton
+            variant="secondary"
+            onClick={onCancel ?? (() => onOpenChange(false))}
+            disabled={busy}
+          >
             {cancelLabel}
           </UbButton>
           <UbButton

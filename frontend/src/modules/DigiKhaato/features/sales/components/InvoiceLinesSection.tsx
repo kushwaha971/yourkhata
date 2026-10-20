@@ -12,6 +12,7 @@ import {
   UbSelect,
   UbStack,
   UbText,
+  type UbLineFocusRequest,
   type UbLineItemsColumn,
 } from 'src/design-system';
 import { useTranslation } from 'src/hooks/useTranslation';
@@ -20,6 +21,7 @@ import { exceedsQuantity, formatQuantity } from 'src/utils/quantity';
 
 import { getPartyRates } from '../../inventory/api/priceListService';
 import { ItemLineCell } from '../../inventory/components/ItemLineCell';
+import { ItemQuickAdd } from '../../inventory/components/ItemQuickAdd';
 import { LastRateNote } from '../../inventory/components/LastRateNote';
 import { emptyLine, ratePlaces, type InvoiceFormValues } from '../view-model/invoiceForm';
 import { itemLineDefaults } from '../view-model/itemLineDefaults';
@@ -106,6 +108,37 @@ export function InvoiceLinesSection({
         .catch(() => undefined);
     },
     [setValue, getValues, partyId]
+  );
+
+  /*
+   * 07-screens/09 §3 — the always-open search fills the trailing empty line,
+   * or a new one, through the same `pick` a line's own cell uses, then asks the
+   * grid for that line's Qty: "Add item" first cost one tap per item.
+   */
+  const [focusRequest, setFocusRequest] = useState<UbLineFocusRequest | null>(null);
+  const quickAdd = useCallback(
+    (row: ItemListRow) => {
+      const current = getValues('lines') ?? [];
+      const last = current.length - 1;
+      const trailingEmpty = last >= 0 && !current[last]?.itemId && !current[last]?.description;
+      if (!trailingEmpty && current.length >= MAX_LINES) return;
+      const index = trailingEmpty ? last : current.length;
+      if (!trailingEmpty) fieldArray.append(emptyLine(), { shouldFocus: false });
+      pick(index, row);
+      setFocusRequest((previous) => ({ row: index, col: 1, seq: (previous?.seq ?? 0) + 1 }));
+    },
+    [getValues, fieldArray, pick]
+  );
+
+  const quickAddLabels = useMemo(
+    () => ({
+      label: t('sales.line.quickAdd.label'),
+      placeholder: t('sales.line.quickAdd.placeholder'),
+      empty: (query: string) => t('sales.line.quickAdd.empty', { query }),
+      none: t('sales.line.quickAdd.none'),
+      askOwner: t('sales.line.quickAdd.askOwner'),
+    }),
+    [t]
   );
 
   const taxOptions = useMemo(
@@ -307,47 +340,51 @@ export function InvoiceLinesSection({
   );
 
   return (
-    <UbLineItemsEditor<InvoiceFormValues, 'lines'>
-      tableFrom={1536}
-      tableWhen="fits"
-      control={control}
-      name="lines"
-      fieldArray={fieldArray}
-      columns={columns}
-      newLine={emptyLine}
-      maxLines={MAX_LINES}
-      disabled={disabled}
-      onSubmitShortcut={onSubmitShortcut}
-      renderLineNote={renderLineNote}
-      renderCardSummary={(index, expanded) => {
-        const line = lines?.[index];
-        return (
-          <UbStack gap={1}>
-            <UbText variant="body-sm-medium" className="break-words">
-              {line?.description || t('sales.line.itemPlaceholder')}
-            </UbText>
-            <UbStack direction="row" justify="between" gap={2} wrap>
-              <UbText variant="caption" tone="secondary" className="break-words">
-                {line?.qty || '0'} {line?.unitCode} × {formatInr(line?.unitPrice || '0')}
-                {line?.discountType && line.discountValue
-                  ? ` · −${line.discountValue}${line.discountType === 'percent' ? '%' : ''}`
-                  : ''}
+    <UbStack gap={3}>
+      <ItemQuickAdd labels={quickAddLabels} onPick={quickAdd} disabled={disabled} />
+      <UbLineItemsEditor<InvoiceFormValues, 'lines'>
+        focusRequest={focusRequest}
+        tableFrom={1536}
+        tableWhen="fits"
+        control={control}
+        name="lines"
+        fieldArray={fieldArray}
+        columns={columns}
+        newLine={emptyLine}
+        maxLines={MAX_LINES}
+        disabled={disabled}
+        onSubmitShortcut={onSubmitShortcut}
+        renderLineNote={renderLineNote}
+        renderCardSummary={(index, expanded) => {
+          const line = lines?.[index];
+          return (
+            <UbStack gap={1}>
+              <UbText variant="body-sm-medium" className="break-words">
+                {line?.description || t('sales.line.itemPlaceholder')}
               </UbText>
-              <UbText variant="body-sm-medium" className="ds-num break-words">
-                {formatInr(preview.lines[index]?.lineTotal ?? '0')}
-              </UbText>
+              <UbStack direction="row" justify="between" gap={2} wrap>
+                <UbText variant="caption" tone="secondary" className="break-words">
+                  {line?.qty || '0'} {line?.unitCode} × {formatInr(line?.unitPrice || '0')}
+                  {line?.discountType && line.discountValue
+                    ? ` · −${line.discountValue}${line.discountType === 'percent' ? '%' : ''}`
+                    : ''}
+                </UbText>
+                <UbText variant="body-sm-medium" className="ds-num break-words">
+                  {formatInr(preview.lines[index]?.lineTotal ?? '0')}
+                </UbText>
+              </UbStack>
+              {!expanded && stockWarning(index)}
             </UbStack>
-            {!expanded && stockWarning(index)}
-          </UbStack>
-        );
-      }}
-      labels={{
-        addLine: t('sales.line.add'),
-        removeLine: (n) => t('sales.line.remove', { n }),
-        lineLabel: (n) => t('sales.line.label', { n }),
-        empty: t('sales.line.empty'),
-        maxReached: t('sales.line.max'),
-      }}
-    />
+          );
+        }}
+        labels={{
+          addLine: t('sales.line.add'),
+          removeLine: (n) => t('sales.line.remove', { n }),
+          lineLabel: (n) => t('sales.line.label', { n }),
+          empty: t('sales.line.empty'),
+          maxReached: t('sales.line.max'),
+        }}
+      />
+    </UbStack>
   );
 }

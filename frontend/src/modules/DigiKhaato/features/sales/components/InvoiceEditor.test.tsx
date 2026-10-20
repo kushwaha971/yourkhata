@@ -2,6 +2,7 @@ import { act, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
 import { resetAllFeatureState } from 'src/redux/actions';
+import { browserWentOffline, responseObserved } from 'src/redux/slice/networkSlice';
 import { sessionLoaded } from 'src/redux/slice/sessionSlice';
 import { store } from 'src/redux/store';
 import { renderWithProviders } from 'src/tests/renderWithProviders';
@@ -68,9 +69,39 @@ jest.mock('../../parties/api/partyService', () => ({
   })),
 }));
 let mockSearch = '';
+const mockLedBulb = {
+  id: 'i-bulb',
+  name: 'Syska LED bulb 9W',
+  sku: 'LED-9W',
+  barcode: '8901234567890',
+  itemType: 'goods',
+  category: null,
+  unit: { code: 'PCS', allowDecimal: false },
+  sellingPrice: '450.00',
+  purchasePrice: null,
+  taxCode: 'GST5',
+  hsnSac: '8539',
+  taxInclusiveSelling: false,
+  trackStock: true,
+  onHand: '40.000',
+  avgCost: null,
+  reorderPoint: null,
+  stockStatus: 'in_stock',
+  stockValue: null,
+  status: 'active',
+  matchField: 'name',
+  updatedAt: '2026-10-20T10:00:00Z',
+};
 jest.mock('../../inventory/api/itemService', () => ({
   ...jest.requireActual('../../inventory/api/itemService'),
   getItem: jest.fn(),
+  searchItems: jest.fn(async (q: string) => ({
+    rows: !q || 'syska led bulb 9w'.includes(q.toLowerCase()) ? [mockLedBulb] : [],
+    hasMore: false,
+  })),
+  lookupItemByBarcode: jest.fn(async (code: string) =>
+    code === mockLedBulb.barcode ? mockLedBulb : null
+  ),
 }));
 jest.mock('next/navigation', () => ({
   useRouter: () => ({ push: jest.fn(), replace: jest.fn(), back: jest.fn(), prefetch: jest.fn() }),
@@ -572,4 +603,165 @@ it('seeds a new Home bill with default selling price without issuing it or chang
   expect(item.sellingPrice).toBe('900.00');
   expect(sales.createInvoice).not.toHaveBeenCalled();
   expect(sales.issueInvoice).not.toHaveBeenCalled();
+});
+
+/* 07-screens/09 §3 — the bill editor at a busy counter. Each of these failed
+   before the piece that made it pass: the search was a cell inside a line, so
+   every item cost a tap on "Add item" first; a picked customer stayed a search
+   field that said nothing about what they already owe in the Shop; and Issue
+   stayed live with the network gone, failing only after the tap. */
+const lineCellOf = (element: Element | null): { row?: string; col?: string } => {
+  const cell = element?.closest<HTMLElement>('[data-line-cell]');
+  return { row: cell?.dataset.row, col: cell?.dataset.col };
+};
+
+const quickAdd = async (text: string): Promise<void> => {
+  const search = await screen.findByRole('combobox', { name: 'Search items to add' });
+  await userEvent.click(search);
+  await userEvent.type(search, text);
+};
+
+/* An option drawn while the list still answers an earlier term is
+   `aria-disabled` and a click on it is ignored on purpose (it may be the wrong
+   item); wait for the list to answer the term typed. */
+const answeredOption = (): Promise<HTMLElement> =>
+  screen.findByRole('option', { name: /Syska LED bulb 9W/, selected: true }, { timeout: 3000 });
+
+describe('the always-visible item search (07-screens/09 §3)', () => {
+  const RIGHTS: PermissionCode[] = [
+    'sales.invoice.read',
+    'sales.invoice.write',
+    'inventory.item.read',
+  ];
+
+  it('fills the empty first line from a pick and puts the caret on Qty, without "Add item" first', async () => {
+    signIn(RIGHTS);
+    renderWithProviders(<InvoiceEditorPageContent documentId={null} />);
+    await quickAdd('led');
+    await userEvent.click(await answeredOption());
+    await waitFor(
+      () => expect(lineCellOf(document.activeElement)).toEqual({ row: '0', col: '1' }),
+      {
+        timeout: 3000,
+      }
+    );
+    expect(screen.getAllByText('Syska LED bulb 9W').length).toBeGreaterThan(0);
+    // The search is empty again and ready for the next item.
+    expect(screen.getByRole('combobox', { name: 'Search items to add' })).toHaveValue('');
+  });
+
+  it('appends a second line instead of overwriting the first', async () => {
+    signIn(RIGHTS);
+    renderWithProviders(<InvoiceEditorPageContent documentId={null} />);
+    await quickAdd('led');
+    await userEvent.click(await answeredOption());
+    await waitFor(() => expect(lineCellOf(document.activeElement).row).toBe('0'));
+    await quickAdd('led');
+    // Enter picks once the list answers this term; before that it is a scan.
+    await answeredOption();
+    await userEvent.keyboard('{Enter}');
+    await waitFor(
+      () => expect(lineCellOf(document.activeElement)).toEqual({ row: '1', col: '1' }),
+      {
+        timeout: 3000,
+      }
+    );
+  });
+
+  it('adds a scanned barcode on Enter even before any search answers', async () => {
+    const items = jest.requireMock('../../inventory/api/itemService') as {
+      lookupItemByBarcode: jest.Mock;
+    };
+    signIn(RIGHTS);
+    renderWithProviders(<InvoiceEditorPageContent documentId={null} />);
+    await quickAdd('8901234567890{Enter}');
+    await waitFor(() => expect(items.lookupItemByBarcode).toHaveBeenCalledWith('8901234567890'));
+    await waitFor(
+      () => expect(lineCellOf(document.activeElement)).toEqual({ row: '0', col: '1' }),
+      {
+        timeout: 3000,
+      }
+    );
+  });
+
+  it('says a scanned code matched nothing, and adds no line', async () => {
+    signIn(RIGHTS);
+    renderWithProviders(<InvoiceEditorPageContent documentId={null} />);
+    await quickAdd('0000000000000{Enter}');
+    await waitFor(() => expect(store.getState().snackbar.id).toBe('items.scan.notFound'));
+    expect(store.getState().snackbar.params).toEqual({ code: '0000000000000' });
+    expect(document.querySelectorAll('[data-line-cell][data-row="1"]')).toHaveLength(0);
+  });
+
+  it('tells a member who cannot add items to ask the owner when nothing matches', async () => {
+    signIn(RIGHTS);
+    renderWithProviders(<InvoiceEditorPageContent documentId={null} />);
+    await quickAdd('ragi');
+    expect(await screen.findByText(/Ask the owner to add it/)).toBeInTheDocument();
+  });
+
+  it('is not drawn for a member who cannot read items', async () => {
+    signIn(['sales.invoice.read', 'sales.invoice.write']);
+    renderWithProviders(<InvoiceEditorPageContent documentId={null} />);
+    await screen.findByTestId('invoice-issue');
+    expect(screen.queryByRole('combobox', { name: 'Search items to add' })).not.toBeInTheDocument();
+  });
+});
+
+describe('the picked customer (07-screens/09 §3)', () => {
+  it('collapses to one line with what they owe in the Shop, and Change brings the search back', async () => {
+    const parties = jest.requireMock('../../parties/api/partyService') as { getParty: jest.Mock };
+    parties.getParty.mockResolvedValue({
+      party: { id: 'p-ka', name: 'Bengaluru Traders', stateCode: '29', billingAddress: {} },
+      summary: { balance: '3100.00' },
+      credit: null,
+    });
+    signIn(['sales.invoice.read', 'sales.invoice.write', 'parties.party.read']);
+    renderWithProviders(<InvoiceEditorPageContent documentId={null} />);
+    await userEvent.click(await screen.findByRole('radio', { name: 'Saved customer' }));
+    await userEvent.type(screen.getByLabelText('Saved customer'), 'Beng');
+    await userEvent.click(await screen.findByRole('option', { name: /Bengaluru Traders/ }));
+    const line = await screen.findByTestId('invoice-customer-line');
+    expect(within(line).getByText('Bengaluru Traders')).toBeInTheDocument();
+    await waitFor(() => expect(line).toHaveTextContent('₹3,100.00'));
+    expect(line).toHaveTextContent('Due in Shop');
+    // DEC-019: the Shop's book, never the Udhaar book's balance.
+    expect(parties.getParty).toHaveBeenCalledWith('p-ka', expect.anything(), 'shop');
+    await userEvent.click(within(line).getByRole('button', { name: 'Change' }));
+    expect(screen.queryByTestId('invoice-customer-line')).not.toBeInTheDocument();
+    expect(screen.getByLabelText('Saved customer')).toBeInTheDocument();
+  });
+});
+
+describe('Issue with the network gone (07-screens/09 §3 offline)', () => {
+  afterEach(() => {
+    store.dispatch(responseObserved());
+  });
+
+  it('is disabled with the reason under it, and keeps what was typed', async () => {
+    signIn(['sales.invoice.read', 'sales.invoice.write', 'inventory.item.read']);
+    renderWithProviders(<InvoiceEditorPageContent documentId={null} />);
+    await quickAdd('led');
+    await userEvent.click(await answeredOption());
+    await waitFor(() => expect(screen.getByTestId('invoice-issue')).toBeEnabled());
+    act(() => {
+      store.dispatch(browserWentOffline());
+    });
+    expect(screen.getByTestId('invoice-issue')).toBeDisabled();
+    expect(
+      screen.getAllByText("No internet. Your bill is kept; issue it when you're back online.")
+        .length
+    ).toBeGreaterThan(0);
+    expect(screen.getAllByText('Syska LED bulb 9W').length).toBeGreaterThan(0);
+  });
+
+  it("names the total in Issue's accessible name", async () => {
+    signIn(['sales.invoice.read', 'sales.invoice.write', 'inventory.item.read']);
+    renderWithProviders(<InvoiceEditorPageContent documentId={null} />);
+    await quickAdd('led');
+    await userEvent.click(await answeredOption());
+    await waitFor(() =>
+      expect(screen.getByTestId('invoice-issue')).toHaveAccessibleName(/^Issue, ₹4\d\d\.\d\d$/)
+    );
+  });
 });

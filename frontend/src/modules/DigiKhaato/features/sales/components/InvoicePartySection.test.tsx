@@ -25,14 +25,15 @@ function SeededForm() {
     <UbText data-testid="pos-result">{pos}</UbText>
   </UbForm>;
 }
-const contact = { party: { stateCode: '29', billingAddress: {} } } as Awaited<ReturnType<typeof getParty>>;
+const contact = { party: { stateCode: '29', billingAddress: {} }, summary: { balance: '0.00' }, credit: null } as Awaited<ReturnType<typeof getParty>>;
 
 /** A preselected interstate customer must use the same GST default as a picker selection. */
 it('resolves the selected customer state instead of quietly keeping the shop state', async () => {
   get.mockResolvedValue(contact);
   renderWithProviders(<SeededForm />);
   await waitFor(()=>expect(screen.getByTestId('pos-result')).toHaveTextContent('29'));
-  expect(get).toHaveBeenCalledWith('p1', expect.anything());
+  // One read, from the Shop book (DEC-019): it also feeds the customer's dues line.
+  expect(get).toHaveBeenCalledWith('p1', expect.anything(), 'shop');
 });
 
 /** A late contact lookup must not replace the merchant's invoice-specific adjustment. */

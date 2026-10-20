@@ -24,6 +24,12 @@ export interface UbTotalDockProps {
   readonly total: string;
   /** The finishing actions, primary last. */
   readonly children: ReactNode;
+  /**
+   * Why the finishing action cannot run, or that it is still running ("No
+   * internet. Your bill is kept…", "Still issuing…"), on its own full-width line
+   * under the buttons — a disabled button with no reason reads as broken.
+   */
+  readonly note?: ReactNode;
   readonly className?: string;
   readonly 'data-testid'?: string;
 }
@@ -32,6 +38,7 @@ function UbTotalDockBase({
   totalLabel,
   total,
   children,
+  note,
   className,
   'data-testid': testId,
 }: Readonly<UbTotalDockProps>) {
@@ -39,8 +46,9 @@ function UbTotalDockBase({
     <UbBottomBar
       data-testid={testId}
       className={cn(
-        '-mx-4 flex flex-col items-stretch gap-3 sm:flex-row sm:items-center border-t border-border-hairline bg-surface-card px-4 pt-3',
+        '-mx-4 flex flex-col items-stretch gap-3 border-t border-border-hairline bg-surface-card px-4 pt-3 sm:flex-row sm:items-center',
         'pb-[calc(0.75rem+env(safe-area-inset-bottom,0px))]',
+        note ? 'sm:flex-wrap' : undefined,
         className
       )}
     >
@@ -53,6 +61,15 @@ function UbTotalDockBase({
       <div className="grid min-w-0 grid-cols-2 gap-2 sm:flex sm:shrink-0 sm:items-center [&>button]:h-auto [&>button]:min-h-11 [&>button]:whitespace-normal">
         {children}
       </div>
+      {note ? (
+        <p
+          role="status"
+          className="ds-body-sm basis-full text-text-secondary"
+          data-testid="total-dock-note"
+        >
+          {note}
+        </p>
+      ) : null}
     </UbBottomBar>
   );
 }

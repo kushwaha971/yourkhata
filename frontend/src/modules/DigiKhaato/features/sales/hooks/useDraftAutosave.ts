@@ -60,6 +60,8 @@ export interface UseDraftAutosaveResult {
   readonly restore: LocalDraft<InvoiceFormValues> | null;
   readonly acceptRestore: () => void;
   readonly discardRestore: () => void;
+  /** Close the offer without answering it: the device copy is kept. */
+  readonly postponeRestore: () => void;
   readonly clearLocal: () => void;
   readonly dirty: boolean;
 }
@@ -140,6 +142,7 @@ export const useDraftAutosave = (
     removeLocalDraft(key);
     setRestore(null);
   }, [key]);
+  const postponeRestore = useCallback(() => setRestore(null), []);
   /** FR-10 / §6 — issued or deleted: the device copy has done its job. */
   const clearLocal = useCallback(() => {
     removeLocalDraft(key);
@@ -166,6 +169,7 @@ export const useDraftAutosave = (
     restore,
     acceptRestore,
     discardRestore,
+    postponeRestore,
     clearLocal,
     dirty,
   };

@@ -18,13 +18,16 @@ import {
   UbPanel,
   UbStack,
   UbStatusBanner,
+  UbText,
   UbTotalDock,
 } from 'src/design-system';
 import { useAppRouter } from 'src/hooks/useAppRouter';
 import { useAppDispatch, useAppSelector } from 'src/hooks/useAppStore';
 import { useDocksEditorTotals } from 'src/hooks/useDocksEditorTotals';
+import { useStillWorking } from 'src/hooks/useStillWorking';
 import { useTranslation } from 'src/hooks/useTranslation';
 import { selectLocale } from 'src/redux/slice/localeSlice';
+import { selectNetworkState } from 'src/redux/slice/networkSlice';
 import { selectMayOverrideCreditLimit } from 'src/redux/slice/sessionSlice';
 import type { RootState } from 'src/redux/store';
 import { ROUTES } from 'src/routes';
@@ -122,6 +125,19 @@ export function InvoiceEditorPageContent({
   const stockShort =
     server.error?.code === 'insufficient_stock' ? stockShortLines(server.error.details) : [];
   const mayOverride = useAppSelector(selectMayOverrideCreditLimit);
+  /*
+   * 07-screens/09 §3 — with the network confirmed gone, Issue is disabled with
+   * its reason under it, BEFORE the tap: typing goes on and the device copy
+   * keeps the bill. Only `offline`; a `degraded` link still tries, because the
+   * issue is keyed and a slow answer is not a refused one.
+   */
+  const offline = useAppSelector(selectNetworkState) === 'offline';
+  const stillIssuing = useStillWorking(server.issuing);
+  const issueNote = offline
+    ? t('sales.editor.offlineIssue')
+    : stillIssuing
+      ? t('sales.editor.stillIssuing')
+      : null;
 
   const finishIssue = useCallback(
     async (payment: readonly PaymentRowForm[] | null, override = false) => {
@@ -233,6 +249,16 @@ export function InvoiceEditorPageContent({
           : 'sales.editor.issuing'
   );
 
+  // The accessible name carries the total ("Issue, ₹378.00"): a screen reader
+  // hears what it is about to bill without leaving the button.
+  const issueName = server.issuing
+    ? undefined
+    : t('sales.editor.issueWithTotal', {
+        action: issueLabel,
+        total: formatInr(preview.grandTotal),
+      });
+  const issueDisabled = !hasLines || locked || offline;
+
   return (
     <UbPageShell>
       <UbPageHeader
@@ -280,7 +306,8 @@ export function InvoiceEditorPageContent({
               onClick={requestIssue}
               busy={server.issuing}
               busyLabel={issueBusyLabel}
-              disabled={!hasLines || locked}
+              disabled={issueDisabled}
+              aria-label={issueName}
               data-testid="invoice-issue"
               className="max-2xl:hidden"
             >
@@ -296,6 +323,17 @@ export function InvoiceEditorPageContent({
       >
         <UbGrid columns={1} gap={4} className="2xl:grid-cols-3">
           <UbStack gap={4} className="2xl:col-span-2">
+            {/* From 1536 px Issue is in the header, so its reason heads the form. */}
+            {issueNote && !docksTotals && (
+              <UbText
+                variant="body-sm"
+                tone="secondary"
+                role="status"
+                data-testid="invoice-issue-note"
+              >
+                {issueNote}
+              </UbText>
+            )}
             {stockShort.length > 0 && (
               <UbStatusBanner
                 tone="error"
@@ -374,6 +412,7 @@ export function InvoiceEditorPageContent({
           data-testid="invoice-dock"
           totalLabel={t('sales.totals.grand')}
           total={formatInr(preview.grandTotal)}
+          note={issueNote}
         >
           <UbButton
             variant="secondary"
@@ -387,7 +426,8 @@ export function InvoiceEditorPageContent({
             onClick={requestIssue}
             busy={server.issuing}
             busyLabel={issueBusyLabel}
-            disabled={!hasLines || locked}
+            disabled={issueDisabled}
+            aria-label={issueName}
           >
             {issueLabel}
           </UbButton>

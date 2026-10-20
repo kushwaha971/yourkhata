@@ -265,6 +265,7 @@ export type {
   UbLineItemsColumn,
   UbLineItemsEditorLabels,
   UbLineItemsEditorProps,
+  UbLineFocusRequest,
 } from './UbLineItemsEditor';
 export { UbDateInput, isoFinancialYearStart, isoToday } from './UbDateInput';
 export type { UbDateInputProps, UbDateQuickChoice } from './UbDateInput';

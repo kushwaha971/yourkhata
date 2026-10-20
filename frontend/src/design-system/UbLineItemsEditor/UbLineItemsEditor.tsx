@@ -127,7 +127,20 @@ export interface UbLineItemsEditorProps<TForm extends FieldValues, TName extends
   readonly tableWhen?: 'viewport' | 'fits';
   /** Opt-in compact cards. Existing callers retain their full cards. */
   readonly renderCardSummary?: (index: number, expanded: boolean) => ReactNode;
+  /**
+   * Put the caret in a cell from OUTSIDE the grid — the bill editor's
+   * always-open item search fills a line and asks for its Qty. A new `seq`
+   * is a new request; a compact card is expanded first so the cell exists.
+   */
+  readonly focusRequest?: UbLineFocusRequest | null;
   readonly className?: string;
+}
+
+export interface UbLineFocusRequest {
+  readonly row: number;
+  /** Index among the EDITABLE columns (those with a `field`). */
+  readonly col: number;
+  readonly seq: number;
 }
 
 const REM_PX = 16;
@@ -206,6 +219,7 @@ export function UbLineItemsEditor<TForm extends FieldValues, TName extends Array
   tableFrom = 768,
   tableWhen = 'viewport',
   renderCardSummary,
+  focusRequest = null,
   className,
 }: UbLineItemsEditorProps<TForm, TName>): React.JSX.Element {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -245,6 +259,13 @@ export function UbLineItemsEditor<TForm extends FieldValues, TName extends Array
     }
     setExpansion({ keys, key, submitCount });
   }
+  // An outside focus request expands its row the same way, before commit.
+  const [focusSeq, setFocusSeq] = useState(focusRequest?.seq ?? 0);
+  if (focusRequest && focusRequest.seq !== focusSeq) {
+    setFocusSeq(focusRequest.seq);
+    const key = fields[focusRequest.row]?.key;
+    if (renderCardSummary && key) setExpansion({ keys, key, submitCount });
+  }
   /* Where the caret goes once the lines the last action changed are in the
      DOM. A ref, not state: it is consumed by the next commit and never drawn. */
   const pendingFocus = useRef<{ row: number; col: number } | null>(null);
@@ -269,6 +290,11 @@ export function UbLineItemsEditor<TForm extends FieldValues, TName extends Array
     },
     [editable.length]
   );
+
+  useEffect(() => {
+    if (focusRequest) pendingFocus.current = { row: focusRequest.row, col: focusRequest.col };
+    // The caller keeps the request in state, so a re-render is not a new one.
+  }, [focusRequest]);
 
   useEffect(() => {
     const pending = pendingFocus.current;

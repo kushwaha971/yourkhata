@@ -1,10 +1,12 @@
 'use client';
 
-import { useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
 import { type UseFormReturn } from 'react-hook-form';
 
 import {
+  UbAmount,
+  UbButton,
   UbChoiceChips,
   UbDateInput,
   UbDisclosure,
@@ -25,6 +27,7 @@ import { formatBusinessDate } from 'src/utils/dates';
 import { ExpensePartyField } from '../../expenses/components/ExpensePartyField';
 import { GST_STATES } from '../../onboarding/constants/gstStates';
 import { getParty } from '../../parties/api/partyService';
+import { balanceView } from '../../parties/view-model/partyDisplay';
 import {
   defaultPlaceOfSupply,
   type BillingMode,
@@ -67,17 +70,30 @@ export function InvoicePartySection({
   const documentDate = watch('documentDate');
   const pos = watch('placeOfSupplyState');
   const partyId = watch('partyId');
+  /*
+   * 07-screens/09 §3 — once a saved customer is picked, the field collapses to
+   * one line: who, and what they already owe in the SHOP book (DEC-019 — never
+   * the Udhaar book's figure), with Change. One read serves both this and the
+   * place of supply.
+   */
+  const [shopDue, setShopDue] = useState<{ partyId: string; balance: string } | null>(null);
   // Picker and person-page shortcuts share one defaulting path. A manual
   // invoice-specific state is never overwritten by a late contact response.
   useEffect(() => {
-    if (mode !== 'party' || !partyId || pos || disabled) return;
+    if (mode !== 'party' || !partyId) return;
     const controller = new AbortController();
-    void getParty(partyId, controller.signal).then(({ party }) => {
-      if (controller.signal.aborted || form.getValues('partyId') !== partyId || form.getValues('placeOfSupplyState')) return;
-      setValue('placeOfSupplyState', defaultPlaceOfSupply(party, tenantState));
-    }).catch(() => undefined);
+    void getParty(partyId, controller.signal, 'shop')
+      .then(({ party, summary }) => {
+        if (controller.signal.aborted || form.getValues('partyId') !== partyId) return;
+        if (!disabled && !form.getValues('placeOfSupplyState'))
+          setValue('placeOfSupplyState', defaultPlaceOfSupply(party, tenantState));
+        setShopDue({ partyId, balance: summary.balance });
+      })
+      .catch(() => undefined);
     return () => controller.abort();
-  }, [mode, partyId, pos, disabled, form, setValue, tenantState]);
+  }, [mode, partyId, disabled, form, setValue, tenantState]);
+  const due = shopDue && shopDue.partyId === partyId ? shopDue.balance : null;
+  const dueView = due === null ? null : balanceView(due);
   const interState = !!pos && pos !== tenantState;
 
   const modeOptions = useMemo(
@@ -111,7 +127,55 @@ export function InvoicePartySection({
           }}
         />
       )}
-      {mode === 'party' ? (
+      {mode === 'party' && partyId && partyName ? (
+        <UbStack
+          direction="row"
+          align="center"
+          justify="between"
+          gap={3}
+          wrap
+          data-testid="invoice-customer-line"
+          className="rounded-control border border-border-hairline px-3 py-2"
+        >
+          {/* The name owns its line: below ~12rem the figure and Change wrap
+              under it rather than squeezing it to "Bose &…" (320 px sweep). */}
+          <UbStack gap={0} className="min-w-[12rem] flex-1">
+            <UbText variant="caption" tone="tertiary">
+              {t('sales.editor.party')}
+            </UbText>
+            <UbText variant="body-medium" className="line-clamp-2 break-words">
+              {partyName}
+            </UbText>
+          </UbStack>
+          {due !== null && dueView && (
+            <UbAmount
+              value={due}
+              tone={dueView.tone}
+              sign={dueView.sign}
+              label={t(
+                dueView.tone === 'receivable'
+                  ? 'sales.editor.customerDue'
+                  : dueView.tone === 'payable'
+                    ? 'sales.editor.customerAdvance'
+                    : 'sales.editor.customerSettled'
+              )}
+              size="sm"
+            />
+          )}
+          <UbButton
+            variant="ghost"
+            size="sm"
+            disabled={disabled}
+            onClick={() => {
+              setValue('partyId', null, { shouldDirty: true });
+              setValue('partyName', '');
+              setValue('placeOfSupplyState', '', { shouldDirty: true });
+            }}
+          >
+            {t('sales.editor.changeCustomer')}
+          </UbButton>
+        </UbStack>
+      ) : mode === 'party' ? (
         <UbField
           name="partyId"
           label={t('sales.editor.party')}

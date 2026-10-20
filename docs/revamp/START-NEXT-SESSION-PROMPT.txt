@@ -23,13 +23,23 @@ Do not return to Home first. The owner explicitly deferred it because it needs
 those modules' final data. Do not ask routine phase/next-screen permission again.
 
 IMMEDIATE NEXT PIECE
-Continue the invoice/POS editor,07-screens/09 section3: always-visible item
-search using the existing search/default-line owners, compact customer context,
-whole editor composition, save/offline/keyboard states, and actual issue/draft
-recovery business flows. Then follow the order above. The compact line/totals
-component is delivered; the whole editor/POS/sales family is NOT complete.
+1. Shop customer list API: GET /parties?book=shop&type=customer takes 1.5-1.9 s
+   on the 2,000-contact QA tenant (Customers tab 131 -> 1,668 ms). Each
+   customer's Shop dues is a correlated SUM(amount_due) over sales_document,
+   paid by the list, the totals and the chip counts. Reproduce with EXPLAIN and
+   a failing performance test first; do not change what the figures mean.
+2. Finish 07-screens/09 section3: create/restore an item from a no-match search
+   (owner/item-write only), "Add <name>" from the customer search, the
+   changed-rate note "For this bill only. The usual price stays Rs450.", the
+   50+ line "Jump to line" chip and the expired-session return. Then follow the
+   order above. The editor composition (item search, customer line, offline/
+   slow Issue, recovery) is delivered; the sales/POS family is NOT complete.
 
 LATEST DELIVERED WORK
+- Bill editor composition (20 Oct): always-open item search, Shop customer
+  line, offline/slow Issue, draft recovery fixes; 4,564 tests, 80 frames, real
+  Quick Sale issued locally. Report: 2026-10-20-p5-editor-compose.md. Harness:
+  e2e/revamp-editor-compose.mjs (local QA only).
 - Home surface4a66b430; Bills register ed6d1a2b; bill detailb49df7f6.
 - Home bounded status/line-count facts and Shop source fencesfe6852ae.
 - Reordered delivery plan5ccbcbb0.

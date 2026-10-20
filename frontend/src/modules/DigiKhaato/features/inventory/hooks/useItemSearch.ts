@@ -48,6 +48,10 @@ export interface UseItemSearchResult {
   readonly canSearch: boolean;
   /** Start listing — the picker's `onOpen`. */
   readonly activate: () => void;
+  /** Listing has started (an always-open search draws its list only then). */
+  readonly active: boolean;
+  /** The last answer for the current term was an empty page. */
+  readonly isEmpty: boolean;
   readonly hasMore: boolean;
   readonly loadMore: () => void;
   readonly find: (id: string) => ItemListRow | undefined;
@@ -120,6 +124,8 @@ export function useItemSearch(options: UseItemSearchOptions = {}): UseItemSearch
       pending: search.pending,
       canSearch,
       activate: search.activate,
+      active: search.active,
+      isEmpty: search.isEmpty,
       hasMore: search.hasMore,
       loadMore: search.loadMore,
       find,

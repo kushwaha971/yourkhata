@@ -3,6 +3,7 @@
 import { UbConfirmDialog } from 'src/design-system';
 import { useAppDispatch } from 'src/hooks/useAppStore';
 import { useTranslation } from 'src/hooks/useTranslation';
+import { formatClock } from 'src/utils/dates';
 
 import { conflictResolved, type InvoiceEditorState } from '../redux/invoiceEditorSlice';
 
@@ -31,15 +32,23 @@ export function InvoiceEditorDialogs({
   const dispatch = useAppDispatch();
   return (
     <>
+      {/* 07-screens/09 §3 — Restore keeps the bill, so it is the primary, not
+          the red danger button; the time says WHICH bill. Only Discard throws
+          the copy away: Escape, × and the backdrop just close the offer. */}
       <UbConfirmDialog
         open={!!autosave.restore}
-        onOpenChange={(open) => !open && autosave.discardRestore()}
-        title={t('sales.draft.restoreTitle')}
-        description={t('sales.draft.restoreBody')}
+        onOpenChange={(open) => !open && autosave.postponeRestore()}
+        title={t('sales.draft.restoreTitleAt', {
+          time: formatClock(autosave.restore?.savedAt),
+        })}
+        description={t('sales.draft.restoreBodyKept')}
         confirmLabel={t('sales.draft.restore')}
         cancelLabel={t('sales.draft.discard')}
         closeLabel={t('common.action.close')}
         onConfirm={autosave.acceptRestore}
+        onCancel={autosave.discardRestore}
+        destructive={false}
+        dismissOnBackdrop={false}
       />
       <UbConfirmDialog
         open={server.saveState === 'conflict'}

@@ -107,6 +107,8 @@ destructive actions and frozen Library/Lending contracts retain their boundaries
 
 ## Progress
 
+20 Oct 2026 — Bill editor composition (07-screens/09 §3): always-open item search, compact Shop customer line, offline/slow Issue states, Issue named with its total; live run found and fixed a squeezed customer name at 320 px, a red Restore and Escape discarding a kept bill. 4,564 frontend tests, 80 frames, real Quick Sale issue and draft restore on local QA. Found the Shop customer list API at 1.5–1.9 s. `docs/performance/2026-10-20-p5-editor-compose.md`.
+
 
 19 Oct 2026 — BP-11/R-DEC-15: implementing shared-engine app/book authorization using existing grant roles; financial contact projections, ledger reads/exports, payment IDs/targets, reminders and module-owned deposits. New explicit-grant marker prevents clearing the last app from restoring legacy access. Verification and migration/rollout limits: docs/performance/2026-10-19-bp11-book-authorization.md. Verified: 22 security regressions, 149 compatibility/query-budget checks and 7 live HTTP checks. Full backend: 4,621 passed, 16 skipped, one Library wall-clock failure that passed alone afterward; do not relabel the original full run green. Migration applied only locally. Deliver/push before further UI work.
 
@@ -166,9 +168,11 @@ and updated continuation prompt. This changes words, not the sequence below.
 3. Remaining Home workflows approved in R-DEC-26 (BP-08/16/17), integrated with
    the verified source workflows, followed by Home end-to-end acceptance.
 
-Immediate next: continue invoice/POS editor,07-screens/09 §3. Compact line rows/
-readable totals are locally verified; finish item search/customer composition,
-keyboard/save/offline states and real issue/recovery flows. Continue review→build→LOOK→
+Immediate next: (a) the Shop customer list API, `GET /parties?book=shop&type=customer`, 1.5–1.9 s on the
+2,000-contact QA tenant because each customer's dues is a correlated SUM over sales_document (list, totals and
+chip counts each pay it); (b) finish §3: create/restore item from a no-match search, "Add <name>" from the
+customer search, the changed-rate note, Jump to line, expired-session return; then the remaining sales
+documents, purchases and returns. Editor composition delivered 20 Oct (see Progress). Continue review→build→LOOK→
 report→commit/push for each piece without routine permission questions. Preserve
 separate roles/books, source permissions and frozen Library/Lending contracts.
 
