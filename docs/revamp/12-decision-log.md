@@ -120,6 +120,8 @@ destructive actions and frozen Library/Lending contracts retain their boundaries
 
 ## Progress
 
+20 Oct 2026 — Purchase §7 step 2 delivered: item/GST caption and one save-state live region beside Record via existing UbTotalDock caption/meta. 4,597 tests,120 measured frames, no cuts/overflow/contrast failures; all production gates pass without a budget raise. Report: `docs/performance/2026-10-20-p5-purchase-editor.md`. Next honest save/leave state, cost wording, payment-refusal recovery, supplier summary and complete editor acceptance.
+
 20 Oct 2026 — Purchase §7 step 1 delivered: shared quick-add, dynamic labeled finder and compact cost rows reused by sales/purchases; repeat Qty preserves cost overrides, scanner/list focus, edited draft readback. 412 suites/4,596 tests, 108 measured en/hi frames, no cuts/overflow/contrast failures. Supplier-inclusive 30-line pick median36 ms phone CPU×4 /38 ms desktop; old/new/old/new navigation throttled526/840 ms unchanged. Component rubric8.75, not whole-purchase completion. Report: `docs/performance/2026-10-20-p5-purchase-quick-add.md`. Next dock caption/meta, then honest save/leave, cost words, refusal recovery, supplier summary.
 
 20 Oct review correction (R-DEC-27/29): the old Next still instructed another
@@ -205,7 +207,7 @@ and updated continuation prompt. This changes words, not the sequence below.
 Immediate next: purchase editor §7, under R-DEC-29's complete revamp composition.
 Step 1 (shared item search above lines, repeat Qty, list/scanner focus, dynamic
 line finder and compact cost rows) is delivered; evidence in
-`2026-10-20-p5-purchase-quick-add.md`. Immediate next is step 2 dock caption/meta, step 3 honest
+`2026-10-20-p5-purchase-quick-add.md`. Step 2 dock caption/meta is delivered. Immediate next is step 3 honest
 save/leave state, step 4 cost-update words, step 5 payment-refusal recovery,
 step 6 supplier summary verification. Finish purchase list/detail/returns and
 remaining sales documents before inventory/money/reports; remaining Home last.

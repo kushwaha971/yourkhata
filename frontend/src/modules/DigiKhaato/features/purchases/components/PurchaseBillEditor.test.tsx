@@ -331,6 +331,22 @@ const atWidth = (width: number): (() => void) => {
   };
 };
 
+it('keeps the item/GST caption and one server-save status beside the docked actions', async () => {
+  // Counter §7: a bare total hid GST and the save status was away from Record.
+  const restore = atWidth(390);
+  try {
+    renderWithProviders(<PurchaseBillEditorPageContent documentId="b1" />);
+    const caption = await screen.findByTestId('total-dock-caption');
+    expect(caption).toHaveTextContent('2 items · includes GST ₹139.10');
+    const dock = screen.getByTestId('purchase-dock');
+    await userEvent.click(within(dock).getByRole('button', { name: 'Save draft' }));
+    expect(await within(dock).findByRole('status')).toHaveTextContent('Draft saved');
+    expect(screen.getAllByText(/Draft saved/)).toHaveLength(1);
+  } finally {
+    restore();
+  }
+});
+
 describe('the supplier details on a 1280 laptop (WP-05 compact context)', () => {
   /* The review measured the supplier block at about 410 px before the first
      line on a laptop. Once the bill has its supplier invoice number, the

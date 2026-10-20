@@ -54,8 +54,8 @@ e2e/revamp-purchase-quick-add.mjs; perf-billing.mjs --side=purchases. The stale
 sales-customer test clicked a pending option on unchanged parent too; it now
 waits for selected:true without changing production customer behavior.
 NEXT: steps below, each reviewed/built/looked/reported/committed separately.
-2. Dock: caption "N items · includes GST Rs x" and the save state as `meta`
-   (UbTotalDock already has caption/meta), Record marigold.
+2. DELIVERED: dock caption/meta, one save status beside Record.4,597 tests,
+   120 measured frames, all gates pass/no budget raise. See purchase-editor report.
 3. Honest save caption: "Saved" only after the server answers; offline or
    unsaved "Not saved yet — don't close this screen"; × asks "Leave? This bill
    isn't saved." (purchases keep no device copy; §7 States).

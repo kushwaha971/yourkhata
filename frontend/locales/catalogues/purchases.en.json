@@ -70,6 +70,8 @@
   "purchases.detail.void": "Void bill",
   "purchases.detail.voidBanner": "This bill is void",
   "purchases.detail.voidBy": "{reason} — by {name}, {when}",
+  "purchases.dock.includesGst": "includes GST {amount}",
+  "purchases.dock.items": "{count, plural, one {# item} other {# items}}",
   "purchases.draft.conflictBody": "This draft was changed on another device.",
   "purchases.draft.conflictTitle": "Changed somewhere else",
   "purchases.draft.error": "Couldn't save the draft",

@@ -10,7 +10,7 @@ const arg = (k, d) => process.argv.find((x) => x.startsWith(`--${k}=`))?.slice(k
 const base = process.env.E2E_FRONTEND ?? 'http://localhost:3000';
 if (!['localhost', '127.0.0.1'].includes(new URL(base).hostname)) throw Error('Local QA only');
 const locale = arg('locale', 'en');
-const out = `${process.env.E2E_SHOTS ?? '/tmp/e2e-shots'}/revamp/purchase-quick-add`;
+const out = `${process.env.E2E_SHOTS ?? '/tmp/e2e-shots'}/revamp/${arg('piece', 'purchase-quick-add')}`;
 mkdirSync(out, { recursive: true });
 const results = [],
   failures = [],
@@ -95,6 +95,9 @@ try {
         await page.evaluate(() => document.fonts.ready);
         await page.waitForTimeout(200);
         const m = await measureCustomers(page, 'main');
+        const dock = await measureCustomers(page, '[data-testid="purchase-dock"]');
+        m.cut.push(...dock.cut);
+        m.lowContrast.push(...dock.lowContrast);
         const cutInputs = await page.locator('main input[inputmode]').evaluateAll((es) => {
           const ctx = document.createElement('canvas').getContext('2d');
           return es
@@ -188,6 +191,12 @@ try {
       );
       await shot('found');
       await page.locator('[data-line-cell][data-row="1"][data-col="1"] input').fill('7');
+      let releaseSave;
+      const saveGate = new Promise(resolve => { releaseSave = resolve; });
+      await page.route(`**/api/v1/purchases/bills/${bill.id}`, async route => {
+        if (['PATCH', 'PUT'].includes(route.request().method())) await saveGate;
+        await route.continue();
+      });
       const saved = page.waitForResponse(
         (r) =>
           r.url().endsWith(`/purchases/bills/${bill.id}`) &&
@@ -202,6 +211,9 @@ try {
         .filter({ visible: true })
         .first()
         .click();
+      await page.getByTestId('purchase-dock').getByRole('status').waitFor();
+      await shot('saving');
+      releaseSave();
       await saved;
       const back = await request('get', `/purchases/bills/${bill.id}`);
       assert(

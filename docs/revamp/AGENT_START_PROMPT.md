@@ -9,8 +9,8 @@ Replace the line marked `TASK` with what you want done next. If you leave it out
 Read START-NEXT-SESSION-PROMPT.txt and12's current Next first. R-DEC-27 orders
 billing/POS, purchases and returns, then inventory, payments, expenses and reports
 before the remaining Home workflows. Billing is finished for now (owner: Move on);
-purchase §7 step 1 is delivered. Immediate next: purchase dock caption/meta,
-then honest save/leave, cost-update words, payment-refusal recovery and supplier
+purchase §7 steps 1–2 are delivered (shared counter and dock caption/meta).
+Immediate next: honest save/leave, cost-update words, payment-refusal recovery and supplier
 summary. Read 2026-10-20-p5-purchase-quick-add.md: 4,596 tests/108 frames,
 supplier-inclusive phone/desktop picks36/38ms, unchanged A/B navigation;
 component-only8.75, not a whole-purchase completion claim.

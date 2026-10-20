@@ -70,6 +70,8 @@
   "purchases.detail.void": "बिल रद्द करें",
   "purchases.detail.voidBanner": "यह बिल रद्द है",
   "purchases.detail.voidBy": "{reason} — {name} ने, {when}",
+  "purchases.dock.includesGst": "GST {amount} शामिल",
+  "purchases.dock.items": "{count, plural, one {# सामान} other {# सामान}}",
   "purchases.draft.conflictBody": "यह ड्राफ्ट किसी दूसरे डिवाइस पर बदला गया है।",
   "purchases.draft.conflictTitle": "कहीं और बदला गया",
   "purchases.draft.error": "ड्राफ्ट सेव नहीं हुआ",

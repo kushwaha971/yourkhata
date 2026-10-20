@@ -27,7 +27,7 @@ import { useTranslation } from 'src/hooks/useTranslation';
 import { showSnackbar } from 'src/redux/slice/snackbarSlice';
 import { ROUTES } from 'src/routes';
 import { formatTimestamp } from 'src/utils/dates';
-import { formatInr } from 'src/utils/money';
+import { formatInr, sumMoney } from 'src/utils/money';
 
 import { usePurchaseBillEditor } from '../hooks/usePurchaseBillEditor';
 import {
@@ -165,6 +165,27 @@ export function PurchaseBillEditorPageContent({
           ? t('purchases.draft.saved', { time: savedTime })
           : null;
 
+  const saveIndicator = indicator ? (
+    <UbText variant="caption" tone="tertiary" role="status">
+      {indicator}
+    </UbText>
+  ) : undefined;
+  const itemCount = values.lines.filter((line) => line.itemId || line.description).length;
+  const gst = sumMoney([
+    preview.cgstTotal,
+    preview.sgstTotal,
+    preview.igstTotal,
+    preview.cessTotal,
+  ]);
+  const dockCaption = itemCount
+    ? [
+        t('purchases.dock.items', { count: itemCount }),
+        gst === '0.00' ? null : t('purchases.dock.includesGst', { amount: formatInr(gst) }),
+      ]
+        .filter(Boolean)
+        .join(' · ')
+    : undefined;
+
   return (
     <UbPageShell>
       <UbPageHeader
@@ -173,13 +194,7 @@ export function PurchaseBillEditorPageContent({
             ? t(order ? 'purchases.order.editTitle' : 'purchases.editor.editTitle')
             : t(order ? 'purchases.order.newTitle' : 'purchases.editor.newTitle')
         }
-        controls={
-          indicator ? (
-            <UbText variant="caption" tone="tertiary" role="status">
-              {indicator}
-            </UbText>
-          ) : undefined
-        }
+        controls={docksTotals ? undefined : saveIndicator}
         actions={
           <>
             {server.documentId && (
@@ -261,6 +276,8 @@ export function PurchaseBillEditorPageContent({
           data-testid="purchase-dock"
           totalLabel={t('purchases.totals.grand')}
           total={formatInr(preview.grandTotal)}
+          caption={dockCaption}
+          meta={saveIndicator}
         >
           <UbButton
             variant="secondary"
