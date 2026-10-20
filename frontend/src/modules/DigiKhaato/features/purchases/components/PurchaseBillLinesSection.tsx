@@ -157,6 +157,7 @@ export function PurchaseBillLinesSection({
           <UbQuantityInput
             id={id}
             aria-label={label}
+            disabled={disabled}
             value={(field?.value as string) ?? ''}
             onChange={(next) => field?.onChange(next)}
             decimals={lines?.[index]?.allowDecimal === false ? 0 : 3}
@@ -175,6 +176,7 @@ export function PurchaseBillLinesSection({
           <UbMoneyInput
             id={id}
             aria-label={label}
+            disabled={disabled}
             value={(field?.value as string) ?? ''}
             onChange={(next) => field?.onChange(next)}
             decimalPlaces={ratePlaces((field?.value as string) ?? '')}
@@ -193,6 +195,7 @@ export function PurchaseBillLinesSection({
           <UbMoneyInput
             id={id}
             aria-label={label}
+            disabled={disabled}
             value={(field?.value as string) ?? ''}
             currencySymbol="%"
             decimalPlaces={2}
@@ -213,10 +216,10 @@ export function PurchaseBillLinesSection({
           <UbSelect
             id={id}
             aria-label={label}
+            disabled={disabled}
             value={(field?.value as string) ?? ''}
             options={taxOptions}
             onChange={(next) => field?.onChange(next)}
-            disabled={disabled}
           />
         ),
       },

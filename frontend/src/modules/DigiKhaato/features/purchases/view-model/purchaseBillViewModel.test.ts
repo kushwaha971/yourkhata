@@ -15,6 +15,7 @@ import {
   emptyPurchaseLine,
   lastCostChange,
   purchasePreviewInput,
+  purchaseWireSnapshot,
   toPurchaseWireBody,
   type PurchaseBillFormValues,
 } from './purchaseBillForm';
@@ -260,4 +261,21 @@ describe('what a bill line may still send back (WP-03 D-05)', () => {
     expect(returnableQty({ lineNo: 1, qty: '2.000' }, {})).toBe('2');
     expect(returnableQty({ lineNo: 1, qty: '1.000' }, { '1': '3.000' })).toBe('0');
   });
+});
+
+it('compares decimal formatting without changing an invoice number or the blank-default intent', () => {
+  // Prevents broad numeric coercion from rewriting a supplier identifier or making blank cost free.
+  const body = {
+    supplier_invoice_number: '00042',
+    lines: [{ item_id: 'i1', qty: '1', unit_cost: '46.0000' }],
+  };
+  expect(purchaseWireSnapshot(body)).toBe(
+    purchaseWireSnapshot({ ...body, lines: [{ item_id: 'i1', qty: '1.000', unit_cost: '46.00' }] })
+  );
+  expect(purchaseWireSnapshot(body)).not.toBe(
+    purchaseWireSnapshot({ ...body, supplier_invoice_number: '42' })
+  );
+  expect(purchaseWireSnapshot({ lines: [{ unit_cost: null }] })).not.toBe(
+    purchaseWireSnapshot({ lines: [{ unit_cost: '0.00' }] })
+  );
 });

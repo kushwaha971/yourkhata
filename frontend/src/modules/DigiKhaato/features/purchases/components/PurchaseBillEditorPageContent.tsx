@@ -4,7 +4,7 @@ import { useCallback, useState } from 'react';
 
 import dynamic from 'next/dynamic';
 
-import { Save, Send, Trash2 } from 'lucide-react';
+import { Save, Send, Trash2, X } from 'lucide-react';
 
 import {
   UbButton,
@@ -22,9 +22,11 @@ import {
 } from 'src/design-system';
 import { useAppRouter } from 'src/hooks/useAppRouter';
 import { useAppDispatch } from 'src/hooks/useAppStore';
+import { useAsyncAction } from 'src/hooks/useAsyncAction';
 import { useDocksEditorTotals } from 'src/hooks/useDocksEditorTotals';
+import { useDocumentEditorWindowEffects } from 'src/hooks/useDocumentEditorWindowEffects';
 import { useTranslation } from 'src/hooks/useTranslation';
-import { showSnackbar } from 'src/redux/slice/snackbarSlice';
+import { hideSnackbar, showSnackbar } from 'src/redux/slice/snackbarSlice';
 import { ROUTES } from 'src/routes';
 import { formatTimestamp } from 'src/utils/dates';
 import { formatInr, sumMoney } from 'src/utils/money';
@@ -42,7 +44,7 @@ import { PurchaseBillHeaderSection } from './PurchaseBillHeaderSection';
 import { PurchaseBillLinesSection } from './PurchaseBillLinesSection';
 import { PurchaseBillTotalsPanel } from './PurchaseBillTotalsPanel';
 
-import type { PurchaseKind } from '../types/purchase.types';
+import type { PurchaseBillEnvelope, PurchaseKind } from '../types/purchase.types';
 
 /* The "Paid now" sheet loads with the tap on Record, never with the editor. */
 const PaidNowDrawerLazy = dynamic(
@@ -76,21 +78,21 @@ export function PurchaseBillEditorPageContent({
   const order = kind === 'purchase_order';
   const home = order ? ROUTES.PURCHASE_ORDERS : ROUTES.PURCHASE_BILLS;
   const { form, preview, editor: server, canWrite, save, record, values, today, regular } = editor;
-  const { validate, canPayNow } = editor;
+  const { validate, canPayNow, offline, hasUnsavedChanges, hasServerCopy } = editor;
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [paying, setPaying] = useState(false);
+  const [paymentTotal, setPaymentTotal] = useState<string | null>(null);
+  const [confirmLeave, setConfirmLeave] = useState(false);
 
+  const shortcutsBlocked =
+    paying || confirmLeave || confirmDelete || server.saveState === 'conflict';
   const context = server.context;
   const hasLines = hasRecordableLines(values, preview);
   const docksTotals = useDocksEditorTotals();
-  const locked = server.recording || !!server.recorded;
   const claimable = regular && values.itcEligible && !order;
 
-  const finishRecord = useCallback(
-    async (payment: readonly PurchasePaymentRow[] | null) => {
-      if (!hasLines || locked) return;
-      const result = await record(payment);
-      if (!result) return;
+  const openFinished = useCallback(
+    (result: PurchaseBillEnvelope) => {
       setPaying(false);
       dispatch(
         showSnackbar(
@@ -105,19 +107,64 @@ export function PurchaseBillEditorPageContent({
       );
       router.push(`${home}/${result.bill.id}`);
     },
-    [hasLines, locked, record, dispatch, router, values.partyName, order, home]
+    [dispatch, order, values.partyName, router, home]
+  );
+  const finishRecord = useCallback(
+    async (payment: readonly PurchasePaymentRow[] | null) => {
+      if (!hasLines || server.recording || server.recorded || offline) return;
+      const result = await record(payment);
+      if (result) openFinished(result);
+    },
+    [hasLines, server.recording, server.recorded, offline, record, openFinished]
   );
 
-  /* The header rules run BEFORE the sheet opens: asking "Paid now?" about a
-     bill that is then refused for a missing supplier is a question wasted. */
+  const { run: finishOnce, pending: finishing } = useAsyncAction(finishRecord);
+  const baseLocked = server.recording || finishing || !!server.recorded;
+  const needsSourceCosts = values.lines.some(
+    (line) => !!line.itemId && line.unitCost.trim() === ''
+  );
   const startRecord = useCallback(async () => {
-    if (!hasLines || locked) return;
-    if (order || !canPayNow || preview.grandTotal === '0.00') {
-      void finishRecord(null);
+    if (!hasLines || baseLocked || offline || shortcutsBlocked) return;
+    if (order || !canPayNow) {
+      finishOnce(null);
       return;
     }
-    if (await validate()) setPaying(true);
-  }, [hasLines, locked, order, canPayNow, preview.grandTotal, validate, finishRecord]);
+    if (!(await validate())) return;
+    let total = preview.grandTotal;
+    if (needsSourceCosts) {
+      const resolved = await save(false);
+      if (!resolved) return;
+      if (resolved.bill.status !== 'draft') {
+        openFinished(resolved);
+        return;
+      }
+      total = resolved.bill.grandTotal;
+    }
+    if (total === '0.00') {
+      finishOnce(null);
+      return;
+    }
+    setPaymentTotal(total);
+    setPaying(true);
+  }, [
+    hasLines,
+    baseLocked,
+    offline,
+    shortcutsBlocked,
+    order,
+    canPayNow,
+    finishOnce,
+    validate,
+    preview.grandTotal,
+    needsSourceCosts,
+    save,
+    openFinished,
+  ]);
+  const { run: startOnce, pending: preparing } = useAsyncAction(startRecord);
+  const locked = baseLocked || preparing;
+  const submitShortcut = useCallback(() => {
+    if (!shortcutsBlocked) void form.handleSubmit(() => startOnce())();
+  }, [form, startOnce, shortcutsBlocked]);
 
   const onPickSupplier = useCallback(
     (id: string, name: string) => {
@@ -134,11 +181,27 @@ export function PurchaseBillEditorPageContent({
         if (!party) return;
         form.setValue('partyStateCode', party.stateCode);
         form.setValue('partyCreditDays', party.creditDays);
-        form.reset(form.getValues(), { keepValues: true });
       });
     },
     [form, dispatch, save]
   );
+
+  const saveNow = useCallback(() => {
+    if (!locked && !offline && !shortcutsBlocked) void save(false);
+  }, [locked, offline, save, shortcutsBlocked]);
+  const requestClose = useCallback(() => {
+    dispatch(hideSnackbar());
+    if (hasUnsavedChanges) setConfirmLeave(true);
+    else router.push(home);
+  }, [dispatch, hasUnsavedChanges, router, home]);
+  useDocumentEditorWindowEffects({
+    basePath: home,
+    documentId,
+    savedId: server.documentId,
+    dirty: hasUnsavedChanges,
+    onSave: saveNow,
+    onIssue: submitShortcut,
+  });
 
   if (!canWrite) {
     return (
@@ -155,15 +218,18 @@ export function PurchaseBillEditorPageContent({
     return <UbPageSkeleton variant="card" />;
   }
 
-  const savedTime = server.savedAt ? (formatTimestamp(server.savedAt).split(', ')[1] ?? '') : '';
+  const savedAt = server.savedAt ?? server.document?.updatedAt;
+  const savedTime = savedAt ? (formatTimestamp(savedAt).split(', ')[1] ?? '') : '';
   const indicator =
-    server.saveState === 'saving'
-      ? t('purchases.draft.saving')
-      : server.saveState === 'error'
-        ? t('purchases.draft.error')
-        : server.saveState === 'saved'
-          ? t('purchases.draft.saved', { time: savedTime })
-          : null;
+    offline ||
+    (hasUnsavedChanges && server.saveState !== 'saving') ||
+    (!hasServerCopy && server.saveState !== 'saving')
+      ? t('purchases.draft.unsaved')
+      : server.saveState === 'saving'
+        ? t('purchases.draft.saving')
+        : server.saveState === 'error' || server.saveState === 'conflict'
+          ? t('purchases.draft.unsaved')
+          : t('purchases.draft.saved', { time: savedTime });
 
   const saveIndicator = indicator ? (
     <UbText variant="caption" tone="tertiary" role="status">
@@ -197,6 +263,15 @@ export function PurchaseBillEditorPageContent({
         controls={docksTotals ? undefined : saveIndicator}
         actions={
           <>
+            <UbButton
+              variant="ghost"
+              iconOnly
+              icon={<X className="h-4 w-4" aria-hidden />}
+              onClick={requestClose}
+              disabled={locked}
+            >
+              {t(order ? 'purchases.order.close' : 'purchases.editor.close')}
+            </UbButton>
             {server.documentId && (
               <UbButton
                 variant="ghost"
@@ -212,9 +287,9 @@ export function PurchaseBillEditorPageContent({
               variant="secondary"
               iconOnly="mobile"
               icon={<Save className="h-4 w-4" aria-hidden />}
-              onClick={() => void save(false)}
+              onClick={saveNow}
               busy={server.saveState === 'saving'}
-              disabled={locked}
+              disabled={locked || offline}
               /* Below 1536 px Save and Record are docked under the total (below). */
               className="max-2xl:hidden"
             >
@@ -223,10 +298,16 @@ export function PurchaseBillEditorPageContent({
             <UbButton
               iconOnly="mobile"
               icon={<Send className="h-4 w-4" aria-hidden />}
-              onClick={() => void startRecord()}
-              busy={server.recording}
-              busyLabel={t(order ? 'purchases.order.sending' : 'purchases.editor.recording')}
-              disabled={!hasLines || locked}
+              onClick={submitShortcut}
+              busy={preparing || finishing || server.recording}
+              busyLabel={t(
+                preparing
+                  ? 'purchases.editor.checking'
+                  : order
+                    ? 'purchases.order.sending'
+                    : 'purchases.editor.recording'
+              )}
+              disabled={!hasLines || locked || offline}
               data-testid="purchase-record"
               className="max-2xl:hidden"
             >
@@ -235,7 +316,7 @@ export function PurchaseBillEditorPageContent({
           </>
         }
       />
-      <UbForm form={form} onSubmit={() => void startRecord()}>
+      <UbForm form={form} onSubmit={() => startOnce()}>
         <UbGrid columns={1} gap={4} className="2xl:grid-cols-3">
           <UbStack gap={4} className="2xl:col-span-2">
             <UbPanel>
@@ -256,7 +337,7 @@ export function PurchaseBillEditorPageContent({
               preview={preview}
               rateOptions={context.rateOptions}
               disabled={locked}
-              onSubmitShortcut={() => void startRecord()}
+              onSubmitShortcut={submitShortcut}
             />
           </UbStack>
           <PurchaseBillTotalsPanel
@@ -281,17 +362,23 @@ export function PurchaseBillEditorPageContent({
         >
           <UbButton
             variant="secondary"
-            onClick={() => void save(false)}
+            onClick={saveNow}
             busy={server.saveState === 'saving'}
-            disabled={locked}
+            disabled={locked || offline}
           >
             {t('purchases.editor.saveDraft')}
           </UbButton>
           <UbButton
-            onClick={() => void startRecord()}
-            busy={server.recording}
-            busyLabel={t(order ? 'purchases.order.sending' : 'purchases.editor.recording')}
-            disabled={!hasLines || locked}
+            onClick={submitShortcut}
+            busy={preparing || finishing || server.recording}
+            busyLabel={t(
+              preparing
+                ? 'purchases.editor.checking'
+                : order
+                  ? 'purchases.order.sending'
+                  : 'purchases.editor.recording'
+            )}
+            disabled={!hasLines || locked || offline}
           >
             {t(order ? 'purchases.order.send' : 'purchases.editor.record')}
           </UbButton>
@@ -299,14 +386,28 @@ export function PurchaseBillEditorPageContent({
       )}
       {paying && (
         <PaidNowDrawerLazy
-          grandTotal={preview.grandTotal}
-          busy={server.recording}
+          grandTotal={paymentTotal ?? preview.grandTotal}
+          busy={preparing || finishing || server.recording}
           onClose={() => setPaying(false)}
-          onConfirm={(rows) => void finishRecord(rows)}
-          onPayLater={() => void finishRecord(null)}
+          onConfirm={(rows) => finishOnce(rows)}
+          onPayLater={() => finishOnce(null)}
         />
       )}
 
+      <UbConfirmDialog
+        open={confirmLeave}
+        onOpenChange={setConfirmLeave}
+        title={t(order ? 'purchases.order.leaveTitle' : 'purchases.draft.leaveTitle')}
+        description={t('purchases.draft.leaveBody')}
+        confirmLabel={t('purchases.draft.leave')}
+        cancelLabel={t('purchases.draft.stay')}
+        closeLabel={t('common.action.close')}
+        destructive
+        onConfirm={() => {
+          setConfirmLeave(false);
+          router.push(home);
+        }}
+      />
       <UbConfirmDialog
         open={server.saveState === 'conflict'}
         onOpenChange={(open) => {

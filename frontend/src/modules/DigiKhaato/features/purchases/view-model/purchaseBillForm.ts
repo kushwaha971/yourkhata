@@ -1,4 +1,5 @@
 import type { PaymentMode, UpiApp } from 'src/types/domain.types';
+import { draftSnapshot } from 'src/utils/draftCreation';
 import { compareMoney, toDecimal, toMoneyString } from 'src/utils/money';
 import { formQty } from 'src/utils/quantity';
 
@@ -91,6 +92,22 @@ export const isCompletePurchaseLine = (line: PurchaseLineForm): boolean =>
   Number(line.qty) > 0 &&
   (line.unitCost.trim() === '' || isNumber(line.unitCost));
 
+/** Drafts may omit incomplete input; Record must never silently omit it. */
+export const hasIncompletePurchaseInput = (line: PurchaseLineForm): boolean => {
+  if (isCompletePurchaseLine(line)) return false;
+  const empty = emptyPurchaseLine();
+  return (
+    !!line.itemId ||
+    !!line.description.trim() ||
+    !!line.unitCost ||
+    !!line.discountValue ||
+    line.qty !== empty.qty ||
+    line.taxCode !== empty.taxCode ||
+    line.unitCode !== empty.unitCode ||
+    line.discountType !== empty.discountType
+  );
+};
+
 export const toPurchaseWireBody = (values: PurchaseBillFormValues): Record<string, unknown> => ({
   party_id: values.partyId,
   supplier_invoice_number: values.supplierInvoiceNumber.trim() || null,
@@ -115,6 +132,28 @@ export const toPurchaseWireBody = (values: PurchaseBillFormValues): Record<strin
     tax_code: line.taxCode || null,
   })),
 });
+
+/** Comparison only: formatting a decimal does not change what the server saved. */
+export const purchaseWireSnapshot = (body: Record<string, unknown>): string => {
+  const canonical = (value: unknown): unknown =>
+    typeof value === 'string' && isNumber(value) ? toDecimal(value).toString() : value;
+  return draftSnapshot({
+    ...body,
+    discount_value: canonical(body.discount_value),
+    lines: Array.isArray(body.lines)
+      ? body.lines.map((raw: unknown) => {
+          if (!raw || typeof raw !== 'object') return raw;
+          const line = raw as Record<string, unknown>;
+          return {
+            ...line,
+            qty: canonical(line.qty),
+            unit_cost: canonical(line.unit_cost),
+            discount_value: canonical(line.discount_value),
+          };
+        })
+      : body.lines,
+  });
+};
 
 /** The server's draft back into the form — for "edit" and a reload. */
 export const fromPurchaseBill = (bill: PurchaseBill): PurchaseBillFormValues => ({

@@ -120,6 +120,8 @@ destructive actions and frozen Library/Lending contracts retain their boundaries
 
 ## Progress
 
+21 Oct2026 — Purchase §7 step3 delivered: current-input server acknowledgement, partial-row Record guard, offline/leave/native reload protection, source-default Paid-now preflight and locked numeric fields. Shared window hook moved, native money-input clear and toast occlusion regressions fixed. 4,611 tests/216 measured frames; production gates pass. Report: `docs/performance/2026-10-20-p5-purchase-editor.md`. Review correction: raw cost is not always catalog cost after tax/discounts; the separate supplier picker/More details is not the promised joined summary. Next steps4–6 and whole-editor acceptance; no whole-editor score yet.
+
 20 Oct 2026 — Purchase §7 step 2 delivered: item/GST caption and one save-state live region beside Record via existing UbTotalDock caption/meta. 4,597 tests,120 measured frames, no cuts/overflow/contrast failures; all production gates pass without a budget raise. Report: `docs/performance/2026-10-20-p5-purchase-editor.md`. Next honest save/leave state, cost wording, payment-refusal recovery, supplier summary and complete editor acceptance.
 
 20 Oct 2026 — Purchase §7 step 1 delivered: shared quick-add, dynamic labeled finder and compact cost rows reused by sales/purchases; repeat Qty preserves cost overrides, scanner/list focus, edited draft readback. 412 suites/4,596 tests, 108 measured en/hi frames, no cuts/overflow/contrast failures. Supplier-inclusive 30-line pick median36 ms phone CPU×4 /38 ms desktop; old/new/old/new navigation throttled526/840 ms unchanged. Component rubric8.75, not whole-purchase completion. Report: `docs/performance/2026-10-20-p5-purchase-quick-add.md`. Next dock caption/meta, then honest save/leave, cost words, refusal recovery, supplier summary.
@@ -207,8 +209,8 @@ and updated continuation prompt. This changes words, not the sequence below.
 Immediate next: purchase editor §7, under R-DEC-29's complete revamp composition.
 Step 1 (shared item search above lines, repeat Qty, list/scanner focus, dynamic
 line finder and compact cost rows) is delivered; evidence in
-`2026-10-20-p5-purchase-quick-add.md`. Step 2 dock caption/meta is delivered. Immediate next is step 3 honest
-save/leave state, step 4 cost-update words, step 5 payment-refusal recovery,
+`2026-10-20-p5-purchase-quick-add.md`. Steps 2–3 dock caption/meta and honest save/leave are delivered. Immediate next is
+step 4 cost-update words/precision, step 5 payment-refusal and lost-reply recovery,
 step 6 supplier summary verification. Finish purchase list/detail/returns and
 remaining sales documents before inventory/money/reports; remaining Home last.
 Billing phone performance stays 8/10 and its subscription redesign stays

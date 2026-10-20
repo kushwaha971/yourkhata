@@ -150,7 +150,8 @@ const UbMoneyInputInner = forwardRef<HTMLInputElement, UbMoneyInputProps>(
       [onChange, decimalPlaces]
     );
 
-    const shown = focused || !value ? (value ?? '') : groupIndian(value, decimalPlaces);
+    const raw = capDecimals(value ?? '', decimalPlaces);
+    const shown = focused || !value ? raw : groupIndian(value, decimalPlaces);
 
     return (
       <div className={cn('relative flex w-full items-center', className)}>
@@ -174,7 +175,6 @@ const UbMoneyInputInner = forwardRef<HTMLInputElement, UbMoneyInputProps>(
           invalid={invalid}
           onFocus={(event) => {
             const input = event.currentTarget;
-            const raw = value ?? '';
             const request = ++focusRequest.current;
             if (input.value !== raw) {
               // Native select() may focus the field before it establishes its

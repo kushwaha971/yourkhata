@@ -42,3 +42,61 @@ Still pending: honest current-input save status and leave warning (step3), cost
 update wording (step4),403 payment-refusal recovery (step5), supplier summary
 verification (step6), then whole-editor functional/merchant/visual/performance
 rescore. This dock delivery does not certify those remaining workflows.
+
+## Step 3 — current-input acknowledgement and safe finish (21 October)
+
+Saved now means the server acknowledged the current persisted inputs, not just
+that an earlier request finished. Actor/business/document-scoped snapshots compare
+exact decimal meaning; trailing zeros do not invent edits, while null source cost
+and an explicit zero remain different. A delayed reply cannot overwrite newer
+quantity/cost input. Omitted partial rows (including GST-only edits) remain
+unsaved and block Record with row focus rather than being silently discarded.
+Loaded server drafts count as saved. Purchases still keep no device copy.
+
+Close and native unload warn on unacknowledged input; Keep editing retains it.
+Offline disables Save/Record. One async lock spans save-before-record and paid-now
+preflight. When cost is blank, Paid now first obtains the actual saved default
+and total from the server; it does not offer payment against a zero preview.
+Quantity/cost/discount are disabled during finish. The shared window-effects
+hook was moved from sales, not copied. Sales keeps its existing behavior.
+
+Real Chromium found two defects unit rectangles missed: focusing a server value
+42.0000 expanded a two-place field underneath native select-all, leaving `00`
+after Clear; and a stale validation snackbar covered the leave dialog. The
+shared money input now preserves its configured focused precision without
+changing the stored value on focus. Close clears the stale snackbar. A new
+hit-test checks dialog text against the element actually painted over it.
+Both regressions fail before the fixes, including two occluded text nodes.
+
+Final gates: 412 suites / 4,611 tests pass (100.084s); the existing worker
+teardown warning remains recorded. Changed-file lint, type check, locale
+split/check, production build, bundle and 174 contrast pairs pass. Full cloud
+lint exceeds25min. Meaningful fail-before logs and exact gate logs are in
+`data/2026-10-20-purchase-editor/safety-*`.
+
+Live QA:216 frames (144en/72hi),18 states at390/320/1024/1280 light/dark,
+Hindi320/1280. All six final contact sheets and native Hindi320 leave and
+1280 dark source-default frames inspected. Main/dock/listbox/dialog contrast,
+text boxes, numeric widths, page overflow and dialog occlusion: zero failures.
+Actual PATCH delayed at Qty7 while8 is typed: server7/UI8 stays unsaved until a
+second acknowledgement. Null cost saves42; explicit0 saves0; catalog default
+remains42. Record with an unfinished row performs no write. Native reload cancel
+and Keep editing preserve path, supplier, ten lines, Qty8 and the note. Test-created
+drafts are deleted. Artifacts: chat workspace `artifacts/purchase-safety-2026-10-21/`.
+The existing shell business-name truncation is outside the editor's approved scope.
+
+Only16 exceeded route/first-load scalar ceilings changed, at measured+at most0.3KB.
+Final editors166.7KB route /407.6new–407.7edit first load; ceilings166.9/
+407.8–407.9. Shared113.7/framework127.3 unchanged. The bytes buy acknowledgement,
+finish/preflight, omitted-row and leave safety; no dependency or copied engine.
+Quiet navigation24/24 cases reps3 passes: phone content median145ms native/523ms
+throttled; desktop453/845ms. No improvement or unchanged-speed claim from this
+run alone; final old/new/old/new remains required after the remaining pieces.
+
+Review corrections for the next pieces: an unconditional promise that the raw
+cost becomes the catalog price is false for discounts/nonclaimable tax and
+repeated items (the backend's final applicable line wins). Preserve those engines
+and use truthful words. The old handoff's claimed supplier one-line summary is
+actually a separate picker plus More details card: build the joined summary in
+step6. Cost wording/precision, definitive payment403 recovery, lost Record-reply
+recovery and whole-editor acceptance remain pending. No whole-editor score yet.

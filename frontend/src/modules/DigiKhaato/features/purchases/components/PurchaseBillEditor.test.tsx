@@ -2,8 +2,9 @@ import { act, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
 import { resetAllFeatureState } from 'src/redux/actions';
-import { responseObserved } from 'src/redux/slice/networkSlice';
+import { browserWentOffline, responseObserved } from 'src/redux/slice/networkSlice';
 import { sessionLoaded } from 'src/redux/slice/sessionSlice';
+import { showSnackbar } from 'src/redux/slice/snackbarSlice';
 import { store } from 'src/redux/store';
 import { renderWithProviders } from 'src/tests/renderWithProviders';
 import type { ModuleCode, PermissionCode } from 'src/types/domain.types';
@@ -315,6 +316,14 @@ it('puts the duplicate supplier invoice under the number, with a link to the bil
   expect(mockPush).not.toHaveBeenCalled();
 });
 
+const deferred = () => {
+  let resolve!: (value: unknown) => void;
+  const promise = new Promise((done) => {
+    resolve = done;
+  });
+  return { promise, resolve };
+};
+
 /** Answers media queries as a screen of `width` px would. */
 const atWidth = (width: number): (() => void) => {
   const original = window.matchMedia;
@@ -345,6 +354,211 @@ it('keeps the item/GST caption and one server-save status beside the docked acti
   } finally {
     restore();
   }
+});
+
+describe('current draft safety (purchase §7)', () => {
+  const UNSAVED = "Not saved yet — don't close this screen";
+  it('does not claim current typing saved when an older save reply arrives', async () => {
+    // Defect: the server slice's last success stayed Saved after a newer edit.
+    const restore = atWidth(390);
+    const pending = deferred();
+    try {
+      renderWithProviders(<PurchaseBillEditorPageContent documentId="b1" />);
+      const qty = await screen.findByLabelText('Qty, line 1');
+      await userEvent.clear(qty);
+      await userEvent.type(qty, '21');
+      expect(within(screen.getByTestId('purchase-dock')).getByRole('status')).toHaveTextContent(
+        UNSAVED
+      );
+      service.updatePurchaseBill.mockImplementationOnce(() => pending.promise);
+      await userEvent.click(
+        within(screen.getByTestId('purchase-dock')).getByRole('button', { name: 'Save draft' })
+      );
+      await waitFor(() => expect(service.updatePurchaseBill).toHaveBeenCalledTimes(1));
+      await userEvent.clear(qty);
+      await userEvent.type(qty, '22');
+      await act(async () => pending.resolve(envelope({ ...DRAFT, version: 4 })));
+      expect(qty).toHaveValue('22');
+      expect(within(screen.getByTestId('purchase-dock')).getByRole('status')).toHaveTextContent(
+        UNSAVED
+      );
+    } finally {
+      pending.resolve(envelope(DRAFT));
+      restore();
+    }
+  });
+
+  it('keeps an incomplete line visibly unsaved when the draft request omits it', async () => {
+    // Defect: a partial row is filtered out of the wire body, so Saved would lose it on reload.
+    const restore = atWidth(390);
+    try {
+      renderWithProviders(<PurchaseBillEditorPageContent documentId="b1" />);
+      const qty = await screen.findByLabelText('Qty, line 1');
+      await userEvent.clear(qty);
+      await userEvent.click(
+        within(screen.getByTestId('purchase-dock')).getByRole('button', { name: 'Save draft' })
+      );
+      await waitFor(() => expect(service.updatePurchaseBill).toHaveBeenCalled());
+      expect(
+        (service.updatePurchaseBill.mock.calls[0]?.[1] as { lines: unknown[] }).lines
+      ).toHaveLength(1);
+      expect(qty).toHaveValue('');
+      expect(within(screen.getByTestId('purchase-dock')).getByRole('status')).toHaveTextContent(
+        UNSAVED
+      );
+    } finally {
+      restore();
+    }
+  });
+
+  it('guards a custom GST choice on an unfinished new line', async () => {
+    // Defect: an otherwise empty row is omitted from the draft, including a tax choice.
+    renderWithProviders(<PurchaseBillEditorPageContent documentId={null} />);
+    await userEvent.click(await screen.findByLabelText('GST, line 1'));
+    await userEvent.click(await screen.findByRole('option', { name: /5\s*%/ }));
+    const event = new Event('beforeunload', { cancelable: true });
+    window.dispatchEvent(event);
+    expect(event.defaultPrevented).toBe(true);
+  });
+
+  it('asks before unsaved closing, lets the merchant stay, and guards a tab reload', async () => {
+    // Defect: purchase edits have no device copy and closing the editor silently lost them.
+    const restore = atWidth(390);
+    try {
+      renderWithProviders(<PurchaseBillEditorPageContent documentId="b1" />);
+      await userEvent.type(
+        await screen.findByLabelText('Notes'),
+        'Radhe Krishna Enterprises electrical panel'
+      );
+      const event = new Event('beforeunload', { cancelable: true });
+      window.dispatchEvent(event);
+      expect(event.defaultPrevented).toBe(true);
+      await act(async () => {
+        store.dispatch(
+          showSnackbar({ severity: 'error', id: 'purchases.line.incomplete', params: { n: 2 } })
+        );
+      });
+      await userEvent.click(screen.getByRole('button', { name: 'Close bill' }));
+      // A stale toast covered the leave question on the phone in the browser review.
+      expect(store.getState().snackbar.snackbarOpen).toBe(false);
+      expect(
+        await screen.findByRole('dialog', { name: "Leave? This bill isn't saved." })
+      ).toBeVisible();
+      await userEvent.click(screen.getByRole('button', { name: 'Keep editing' }));
+      expect(screen.getByLabelText('Notes')).toHaveValue(
+        'Radhe Krishna Enterprises electrical panel'
+      );
+      expect(mockPush).not.toHaveBeenCalled();
+      await userEvent.click(screen.getByRole('button', { name: 'Close bill' }));
+      await userEvent.click(await screen.findByRole('button', { name: 'Leave without saving' }));
+      expect(mockPush).toHaveBeenCalledWith('/purchases/bills');
+    } finally {
+      restore();
+    }
+  });
+
+  it('does not offer server save or Record while offline or imply a device copy exists', async () => {
+    // Defect: an offline purchase could retain Saved and still offer finishing writes.
+    const restore = atWidth(390);
+    try {
+      renderWithProviders(<PurchaseBillEditorPageContent documentId="b1" />);
+      await screen.findByLabelText('Notes');
+      await act(async () => {
+        store.dispatch(browserWentOffline());
+      });
+      const dock = screen.getByTestId('purchase-dock');
+      expect(within(dock).getByRole('status')).toHaveTextContent(UNSAVED);
+      expect(within(dock).getByRole('button', { name: 'Save draft' })).toBeDisabled();
+      expect(within(dock).getByRole('button', { name: 'Record' })).toBeDisabled();
+    } finally {
+      store.dispatch(responseObserved());
+      restore();
+    }
+  });
+
+  it('never records a bill with a visible half-entered row and focuses that row', async () => {
+    // Defect: draft filtering omitted the bad row, then Record posted the remaining rows.
+    const restore = atWidth(390);
+    service.recordPurchaseBill.mockResolvedValue(envelope(RECORDED));
+    try {
+      renderWithProviders(<PurchaseBillEditorPageContent documentId="b1" />);
+      const row = await screen.findByRole('button', { name: 'line 2' });
+      await userEvent.click(row);
+      await userEvent.clear(screen.getByLabelText('Qty, line 2'));
+      await userEvent.click(row);
+      await userEvent.click(
+        within(screen.getByTestId('purchase-dock')).getByRole('button', { name: 'Record' })
+      );
+      await waitFor(() => expect(store.getState().snackbar.id).toBe('purchases.line.incomplete'));
+      expect(service.updatePurchaseBill).not.toHaveBeenCalled();
+      expect(service.recordPurchaseBill).not.toHaveBeenCalled();
+      expect(screen.getByLabelText('Qty, line 2')).toHaveFocus();
+    } finally {
+      restore();
+    }
+  });
+
+  it('keeps an unchanged server cost saved when the input only removes trailing zeros', async () => {
+    // Defect: blurring 46.0000 to 46.00 is formatting, not unsaved business data.
+    renderWithProviders(<PurchaseBillEditorPageContent documentId="b1" />);
+    const cost = await screen.findByLabelText('Cost, line 1');
+    await userEvent.click(cost);
+    await userEvent.tab();
+    expect(screen.getByRole('status')).toHaveTextContent('Draft saved');
+  });
+
+  it('resolves a blank cost from the server before asking how much was paid', async () => {
+    // Defect: blank means the item default on the server, but the client priced it as zero.
+    signInPayer();
+    renderWithProviders(<PurchaseBillEditorPageContent documentId="b1" />);
+    const cost = await screen.findByLabelText('Cost, line 1');
+    await userEvent.clear(cost);
+    await userEvent.click(screen.getByTestId('purchase-record'));
+    await waitFor(() => expect(service.updatePurchaseBill).toHaveBeenCalledTimes(1));
+    expect(await screen.findByTestId('purchase-paid-now-confirm')).toHaveTextContent('₹2,921.00');
+    expect(Number((screen.getByLabelText('Cost, line 1') as HTMLInputElement).value)).toBe(46);
+    expect(service.recordPurchaseBill).not.toHaveBeenCalled();
+  });
+
+  it('never replaces newer cost typing with a server-filled default from an older save', async () => {
+    // Defect guard for source-default hydration: a late fallback must not overwrite an explicit price.
+    const pending = deferred();
+    service.updatePurchaseBill.mockImplementationOnce(() => pending.promise);
+    try {
+      renderWithProviders(<PurchaseBillEditorPageContent documentId="b1" />);
+      const cost = await screen.findByLabelText('Cost, line 1');
+      await userEvent.clear(cost);
+      await userEvent.click(screen.getByRole('button', { name: 'Save draft' }));
+      await waitFor(() => expect(service.updatePurchaseBill).toHaveBeenCalledTimes(1));
+      await userEvent.type(cost, '40');
+      await act(async () => pending.resolve(envelope({ ...DRAFT, version: 4 })));
+      expect(Number((cost as HTMLInputElement).value)).toBe(40);
+      expect(screen.getByRole('status')).toHaveTextContent(
+        "Not saved yet — don't close this screen"
+      );
+    } finally {
+      pending.resolve(envelope(DRAFT));
+    }
+  });
+
+  it('locks the editor and drops repeated Record taps during the save before Record', async () => {
+    // Defect: the draft save happened before recording=true, leaving the counter editable and tappable.
+    const pending = deferred();
+    service.updatePurchaseBill.mockImplementationOnce(() => pending.promise);
+    service.recordPurchaseBill.mockResolvedValue(envelope(RECORDED));
+    try {
+      renderWithProviders(<PurchaseBillEditorPageContent documentId="b1" />);
+      const record = await screen.findByTestId('purchase-record');
+      await userEvent.dblClick(record);
+      await waitFor(() => expect(service.updatePurchaseBill).toHaveBeenCalledTimes(1));
+      expect(screen.getByLabelText('Qty, line 1')).toBeDisabled();
+      expect(record).toBeDisabled();
+      await act(async () => pending.resolve(envelope({ ...DRAFT, version: 4 })));
+      await waitFor(() => expect(service.recordPurchaseBill).toHaveBeenCalledTimes(1));
+    } finally {
+      pending.resolve(envelope(DRAFT));
+    }
+  });
 });
 
 describe('the supplier details on a 1280 laptop (WP-05 compact context)', () => {
@@ -522,13 +736,6 @@ describe('SH-011 — first-save recovery and one save lane (ADR-063)', () => {
   beforeEach(() => {
     store.dispatch(responseObserved());
   });
-  const deferred = () => {
-    let resolve!: (value: unknown) => void;
-    const promise = new Promise((done) => {
-      resolve = done;
-    });
-    return { promise, resolve };
-  };
 
   it('retries a lost first save with the same creation key', async () => {
     await open();

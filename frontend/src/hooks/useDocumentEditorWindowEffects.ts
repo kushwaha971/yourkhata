@@ -5,7 +5,7 @@ import { useEffect } from 'react';
 import { ROUTES } from 'src/routes';
 
 /**
- * The editor's three window-level behaviours, kept out of the page so it
+ * Shared document editors' three window-level behaviours, kept out of the page so it
  * only renders:
  *  · SAL-06 — after the first server save the address names the draft, so a
  *    reload reopens it rather than a blank bill;
@@ -13,7 +13,7 @@ import { ROUTES } from 'src/routes';
  *    device copy still exists, this is the belt to its braces);
  *  · SAL-02 §7 keyboard map — Ctrl+S saves, Ctrl+Enter and F8 issue.
  */
-export const useEditorWindowEffects = ({
+export const useDocumentEditorWindowEffects = ({
   documentId,
   savedId,
   dirty,

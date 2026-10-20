@@ -2,7 +2,7 @@ import { renderHook } from '@testing-library/react';
 
 import { ROUTES } from 'src/routes';
 
-import { useEditorWindowEffects } from './useEditorWindowEffects';
+import { useDocumentEditorWindowEffects } from './useDocumentEditorWindowEffects';
 
 /** A saved estimate/order/challan must reload its own editor, never an invoice 404. */
 it.each([
@@ -10,10 +10,12 @@ it.each([
   ROUTES.SALES_ESTIMATES,
   ROUTES.SALES_ORDERS,
   ROUTES.SALES_CHALLANS,
+  ROUTES.PURCHASE_BILLS,
+  ROUTES.PURCHASE_ORDERS,
 ])('keeps the document family in the recovered draft URL: %s', (basePath) => {
   const replace = jest.spyOn(window.history, 'replaceState').mockImplementation(() => undefined);
   renderHook(() =>
-    useEditorWindowEffects({
+    useDocumentEditorWindowEffects({
       documentId: null,
       savedId: 'draft-id',
       dirty: false,

@@ -1,6 +1,6 @@
 Continue the existing YourKhata revamp on dev. Do not start a new plan.
 
-CURRENT HANDOFF — 20 October 2026, through R-DEC-29
+CURRENT HANDOFF — 21 October 2026, through R-DEC-29
 On this Mac the repository is /Users/akashkushwaha/Projects/ims-platform; the chat
 workspace is a different folder. Elsewhere locate the existing checkout. Inspect
 git status/branch/log first. Preserve unrelated work, including the untracked
@@ -56,15 +56,19 @@ waits for selected:true without changing production customer behavior.
 NEXT: steps below, each reviewed/built/looked/reported/committed separately.
 2. DELIVERED: dock caption/meta, one save status beside Record.4,597 tests,
    120 measured frames, all gates pass/no budget raise. See purchase-editor report.
-3. Honest save caption: "Saved" only after the server answers; offline or
-   unsaved "Not saved yet — don't close this screen"; × asks "Leave? This bill
-   isn't saved." (purchases keep no device copy; §7 States).
+3. DELIVERED21Oct: server-acknowledged current input, offline/leave/native
+   unload guards, partial-row Record refusal and source-default payment preflight.
+   Shared window hook moved; native money clear and stale toast occlusion fixed.
+   4,611 tests/216 frames, all gates pass. See purchase-editor report.
 4. Cost note in words: "This bill's cost. The item's purchase price will
    update to Rs42 when you record." (replaces "Last cost Rs46 (+13 %)").
 5. Record refused for payment permission (403 details.payment): "You can record
    bills but not pay suppliers. Record it as Pay later, or ask the owner." with
    a "Record as Pay later" button.
-6. Supplier one-line summary exists below 1536 (16 Oct) — verify on phone.
+6. Build the actual joined supplier/number/date/due summary. Review found the
+   old handoff overstated a separate picker plus More details card.
+Cost note correction: backend applies discounts/tax and last duplicate-line cost;
+do not promise raw typed cost becomes the catalog default or copy that engine.
 Then LOOK (harness like e2e/revamp-editor-compose.mjs; the purchase harness is e2e/revamp-purchase-quick-add.mjs;
 e2e/purchase-recovery-look.mjs covers lost replies), perf, rescore.
 

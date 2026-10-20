@@ -55,6 +55,8 @@ try {
       barcode: '8909710000042',
     });
   const defaults = await request('get', `/items/${item.id}`);
+  if (typeof defaults.purchase_price !== 'string')
+    throw Error('QA owner purchase-cost visibility missing');
   const parties = await request('get', '/parties?type=supplier&page_size=5&module=shop');
   const supplier = parties[0];
   if (!supplier) throw Error('QA supplier missing');
@@ -77,7 +79,7 @@ try {
     return bill;
   };
   for (const width of arg('widths', '390,320,1024,1280').split(',').map(Number))
-    for (const theme of ['light', 'dark']) {
+    for (const theme of arg('themes', 'light,dark').split(',')) {
       const ctx = await browser.newContext({
         storageState: state,
         viewport: { width, height: width < 768 ? 844 : 900 },
@@ -89,16 +91,84 @@ try {
         { name: 'ub_theme_choice', value: theme, domain: new URL(base).hostname, path: '/' },
       ]);
       const page = await ctx.newPage();
+      let acceptNavigation = true;
+      let nativePrompts = 0;
+      let recordRequests = 0;
+      let draftWrites = 0;
+      page.on('request', (request) => {
+        if (
+          request.method() === 'POST' &&
+          /\/purchases\/bills\/[^/]+\/record$/.test(new URL(request.url()).pathname)
+        )
+          recordRequests += 1;
+        if (
+          ['PATCH', 'PUT'].includes(request.method()) &&
+          /\/purchases\/bills\/[^/]+$/.test(new URL(request.url()).pathname)
+        )
+          draftWrites += 1;
+      });
+      page.on('dialog', async (dialog) => {
+        if (dialog.type() !== 'beforeunload') {
+          failures.push(`${width}/${theme}: unexpected ${dialog.type()}`);
+          await dialog.dismiss();
+          return;
+        }
+        nativePrompts += 1;
+        if (acceptNavigation) await dialog.accept();
+        else await dialog.dismiss();
+      });
+      page.on('response', (response) => {
+        if (
+          new URL(response.url()).pathname === '/api/v1/purchases/bills' &&
+          response.request().method() === 'POST' &&
+          response.ok()
+        ) {
+          response.json().then(
+            (body) => body?.data?.id && drafts.add(body.data.id),
+            () => undefined
+          );
+        }
+      });
       page.on('pageerror', (error) => failures.push(error.message));
       const tag = `${width}-${theme}-${locale}`;
-      const shot = async (name) => {
+      const shot = async (name, root = 'main') => {
         await page.evaluate(() => document.fonts.ready);
         await page.waitForTimeout(200);
-        const m = await measureCustomers(page, 'main');
-        const dock = await measureCustomers(page, '[data-testid="purchase-dock"]');
-        m.cut.push(...dock.cut);
-        m.lowContrast.push(...dock.lowContrast);
-        const cutInputs = await page.locator('main input[inputmode]').evaluateAll((es) => {
+        const m = await measureCustomers(page, root);
+        if (root === 'main') {
+          const dock = await measureCustomers(page, '[data-testid="purchase-dock"]');
+          m.cut.push(...dock.cut);
+          m.lowContrast.push(...dock.lowContrast);
+        }
+        if (root === '[role=dialog]') {
+          const covered = await page.getByRole('dialog').evaluate((dialog) => {
+            const blocked = [];
+            const walker = document.createTreeWalker(dialog, NodeFilter.SHOW_TEXT);
+            let node;
+            while ((node = walker.nextNode())) {
+              if (
+                !node.textContent?.trim() ||
+                node.parentElement?.closest('.sr-only,[aria-hidden="true"]')
+              )
+                continue;
+              const range = document.createRange();
+              range.selectNodeContents(node);
+              for (const rect of range.getClientRects()) {
+                if (rect.width < 2 || rect.height < 2) continue;
+                const y = rect.top + rect.height / 2;
+                for (const x of [rect.left + 2, rect.left + rect.width / 2, rect.right - 2]) {
+                  if (x < 0 || x >= innerWidth || y < 0 || y >= innerHeight) continue;
+                  const top = document.elementFromPoint(x, y);
+                  if (top && !dialog.contains(top))
+                    blocked.push(node.textContent.trim().slice(0, 90));
+                }
+              }
+            }
+            return [...new Set(blocked)];
+          });
+          m.cut.push(...covered.map((text) => `Covered by another surface: ${text}`));
+        }
+        const cutInputs = await page.locator(`${root} input[inputmode]`).evaluateAll((es) => {
           const ctx = document.createElement('canvas').getContext('2d');
           return es
             .filter((e) => {
@@ -192,8 +262,10 @@ try {
       await shot('found');
       await page.locator('[data-line-cell][data-row="1"][data-col="1"] input').fill('7');
       let releaseSave;
-      const saveGate = new Promise(resolve => { releaseSave = resolve; });
-      await page.route(`**/api/v1/purchases/bills/${bill.id}`, async route => {
+      const saveGate = new Promise((resolve) => {
+        releaseSave = resolve;
+      });
+      await page.route(`**/api/v1/purchases/bills/${bill.id}`, async (route) => {
         if (['PATCH', 'PUT'].includes(route.request().method())) await saveGate;
         await route.continue();
       });
@@ -213,6 +285,7 @@ try {
         .click();
       await page.getByTestId('purchase-dock').getByRole('status').waitFor();
       await shot('saving');
+      await page.locator('[data-line-cell][data-row="1"][data-col="1"] input').fill('8');
       releaseSave();
       await saved;
       const back = await request('get', `/purchases/bills/${bill.id}`);
@@ -222,7 +295,206 @@ try {
           back.lines[0].unit_cost === '1240378.0000',
         `${tag}: edited draft readback`
       );
+      const dock = page.getByTestId('purchase-dock');
+      const unsaved = locale === 'hi' ? 'अभी सेव नहीं हुआ' : 'Not saved yet';
+      await page.waitForFunction(
+        (text) =>
+          document
+            .querySelector('[data-testid="purchase-dock"] [role=status]')
+            ?.textContent?.includes(text),
+        unsaved
+      );
+      assert(
+        (await page.locator('[data-line-cell][data-row="1"][data-col="1"] input').inputValue()) ===
+          '8',
+        `${tag}: late answer lost newer typing`
+      );
+      await shot('late-reply');
+      const saveAndRead = async () => {
+        const nextSave = page.waitForResponse(
+          (response) =>
+            response.url().endsWith(`/purchases/bills/${bill.id}`) &&
+            ['PATCH', 'PUT'].includes(response.request().method()) &&
+            response.ok()
+        );
+        await dock
+          .getByRole('button', {
+            name: locale === 'hi' ? 'ड्राफ्ट सेव करें' : 'Save draft',
+            exact: true,
+          })
+          .click();
+        await nextSave;
+        return request('get', `/purchases/bills/${bill.id}`);
+      };
+      const newer = await saveAndRead();
+      assert(
+        newer.lines[1].qty.replace(/\.0+$/, '') === '8',
+        `${tag}: newest quantity was not saved`
+      );
       await shot('saved');
+      const cost = page.locator('[data-line-cell][data-row="1"][data-col="2"] input');
+      await cost.fill('');
+      const defaulted = await saveAndRead();
+      assert(
+        Number(defaulted.lines[1].unit_cost) === Number(defaults.purchase_price),
+        `${tag}: server default cost`
+      );
+      await page
+        .waitForFunction(
+          (expected) =>
+            Number(
+              (
+                document.querySelector('[data-line-cell][data-row="1"][data-col="2"] input')
+                  ?.value ?? ''
+              ).replace(/,/g, '')
+            ) === expected,
+          Number(defaults.purchase_price),
+          { timeout: 5000 }
+        )
+        .catch(async (error) => {
+          await page.screenshot({ path: `${out}/${tag}-debug-source-default.png` });
+          console.log(
+            'Default diagnostic',
+            await page.locator('[data-line-cell]').evaluateAll((cells) =>
+              cells.map((cell) => ({
+                row: cell.dataset.row,
+                col: cell.dataset.col,
+                value: cell.querySelector('input')?.value,
+              }))
+            )
+          );
+          throw error;
+        });
+      assert(
+        Number((await cost.inputValue()).replace(/,/g, '')) === Number(defaults.purchase_price),
+        `${tag}: server default not reconciled to the field`
+      );
+      await shot('source-default-saved');
+      await cost.fill('0');
+      const free = await saveAndRead();
+      assert(
+        Number(free.lines[1].unit_cost) === 0,
+        `${tag}: explicit zero became the item default`
+      );
+      await shot('explicit-zero-saved');
+      await cost.fill(defaults.purchase_price);
+      await saveAndRead();
+      const qty = page.locator('[data-line-cell][data-row="1"][data-col="1"] input');
+      await qty.fill('');
+      const toggle = page
+        .getByTestId('line-items-editor')
+        .getByRole('button', { name: locale === 'hi' ? 'पंक्ति 2' : 'line 2', exact: true });
+      if (await toggle.count()) await toggle.click();
+      const beforeRecord = recordRequests;
+      const beforeWrites = draftWrites;
+      await dock
+        .getByRole('button', { name: locale === 'hi' ? 'दर्ज करें' : 'Record', exact: true })
+        .click();
+      await page.waitForFunction(
+        () =>
+          document.activeElement?.closest('[data-line-cell]')?.getAttribute('data-row') === '1' &&
+          document.activeElement?.closest('[data-line-cell]')?.getAttribute('data-col') === '1'
+      );
+      assert(
+        recordRequests === beforeRecord && draftWrites === beforeWrites,
+        `${tag}: unfinished row reached the server`
+      );
+      await shot('unfinished-row-blocked');
+      await qty.fill('8');
+      await ctx.setOffline(true);
+      const note = 'Radhe Krishna Enterprises electrical counter unsaved note';
+      await page.getByLabel(locale === 'hi' ? 'नोट' : 'Notes', { exact: true }).fill(note);
+      await page.waitForFunction(
+        (text) =>
+          document
+            .querySelector('[data-testid="purchase-dock"] [role=status]')
+            ?.textContent?.includes(text),
+        unsaved
+      );
+      assert(
+        await dock
+          .getByRole('button', {
+            name: locale === 'hi' ? 'ड्राफ्ट सेव करें' : 'Save draft',
+            exact: true,
+          })
+          .isDisabled(),
+        `${tag}: offline Save enabled`
+      );
+      await shot('offline');
+      await ctx.setOffline(false);
+      await search.fill(prefix);
+      await page.getByRole('option', { selected: true }).first().waitFor();
+      await page.keyboard.press('Escape');
+      const originalPath = new URL(page.url()).pathname;
+      const beforePrompts = nativePrompts;
+      acceptNavigation = false;
+      await page.reload({ waitUntil: 'domcontentloaded', timeout: 2000 }).catch((error) => {
+        if (
+          !/ERR_ABORTED/.test(error.message) &&
+          !(nativePrompts > beforePrompts && error.name === 'TimeoutError')
+        )
+          throw error;
+      });
+      assert(nativePrompts > beforePrompts, `${tag}: no native leave guard`);
+      assert(
+        (await page.getByLabel(locale === 'hi' ? 'नोट' : 'Notes', { exact: true }).inputValue()) ===
+          note,
+        `${tag}: reload dismissal lost typing`
+      );
+      assert(
+        new URL(page.url()).pathname === originalPath,
+        `${tag}: reload dismissal changed the draft route`
+      );
+      assert(
+        (await page.getByTestId('purchase-supplier').textContent()).includes(supplier.name),
+        `${tag}: reload dismissal lost the supplier`
+      );
+      assert(
+        (await page
+          .getByTestId('line-items-editor')
+          .locator('section[aria-label], [role=row][aria-label]')
+          .count()) === 10,
+        `${tag}: reload dismissal lost bill lines`
+      );
+      assert(
+        (await page.locator('[data-line-cell][data-row="1"][data-col="1"] input').inputValue()) ===
+          '8',
+        `${tag}: reload dismissal lost the quantity`
+      );
+      await shot('reload-stayed');
+      acceptNavigation = true;
+      const close = page.getByRole('button', {
+        name: locale === 'hi' ? 'बिल बंद करें' : 'Close bill',
+        exact: true,
+      });
+      await close.click();
+      const dialog = page.getByRole('dialog', {
+        name:
+          locale === 'hi' ? 'बाहर जाएँ? यह बिल सेव नहीं हुआ है।' : "Leave? This bill isn't saved.",
+        exact: true,
+      });
+      await dialog.waitFor();
+      await shot('leave-confirm', '[role=dialog]');
+      await dialog
+        .getByRole('button', {
+          name: locale === 'hi' ? 'बिल पर रहें' : 'Keep editing',
+          exact: true,
+        })
+        .click();
+      assert(
+        (await page.getByLabel(locale === 'hi' ? 'नोट' : 'Notes', { exact: true }).inputValue()) ===
+          note,
+        `${tag}: staying lost note`
+      );
+      await shot('kept-editing');
+      await close.click();
+      await page
+        .getByRole('button', {
+          name: locale === 'hi' ? 'बिना सेव किए बाहर जाएँ' : 'Leave without saving',
+          exact: true,
+        })
+        .click();
+      await page.waitForURL((url) => url.pathname === '/purchases/bills');
       await ctx.close();
     }
   const after = await request('get', `/items/${item.id}`);

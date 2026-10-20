@@ -24,6 +24,7 @@ import {
 import { useAppRouter } from 'src/hooks/useAppRouter';
 import { useAppDispatch, useAppSelector } from 'src/hooks/useAppStore';
 import { useDocksEditorTotals } from 'src/hooks/useDocksEditorTotals';
+import { useDocumentEditorWindowEffects } from 'src/hooks/useDocumentEditorWindowEffects';
 import { useStillWorking } from 'src/hooks/useStillWorking';
 import { useTranslation } from 'src/hooks/useTranslation';
 import { selectLocale } from 'src/redux/slice/localeSlice';
@@ -36,7 +37,6 @@ import { formatInr, sumMoney } from 'src/utils/money';
 
 import { listInvoices } from '../api/salesService';
 import { useDraftAutosave } from '../hooks/useDraftAutosave';
-import { useEditorWindowEffects } from '../hooks/useEditorWindowEffects';
 import { useInvoiceEditor, type EditorKind } from '../hooks/useInvoiceEditor';
 import { deleteEstimateDraft } from '../redux/salesFlowThunk';
 import { deleteInvoiceDraft } from '../redux/salesThunk';
@@ -242,7 +242,7 @@ export function InvoiceEditorPageContent({
   }, [hasLines, locked, save, autosave, dispatch, documentId, router, editor]);
 
   const saveNow = useCallback(() => void save(false), [save]);
-  useEditorWindowEffects({
+  useDocumentEditorWindowEffects({
     basePath: home,
     documentId,
     savedId: server.documentId,

@@ -1,0 +1,5 @@
+
+> digikhaato-frontend@0.1.0 check:contrast
+> node scripts/check-contrast.mjs
+
+✓ contrast — 174 pairings checked, all above their floor; 1382 source files free of -bright text

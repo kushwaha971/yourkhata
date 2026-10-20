@@ -118,6 +118,20 @@ describe('what the merchant sees while typing', () => {
     expect(field).toHaveValue('500.00');
   });
 
+  it('keeps stored trailing-zero precision from stranding digits during select-all clear', async () => {
+    // Browser purchase QA: 42.0000 expanded after selection and clear left 00, accidentally saving zero.
+    const onValue = jest.fn();
+    render(<Harness onValue={onValue} initial="42.0000" />);
+    const field = screen.getByLabelText<HTMLInputElement>('Amount');
+    await userEvent.click(field);
+    expect(field).toHaveValue('42.00');
+    expect(onValue).not.toHaveBeenCalled();
+    act(() => field.select());
+    await userEvent.keyboard('{Backspace}');
+    expect(onValue).toHaveBeenLastCalledWith('');
+    expect(field).toHaveValue('');
+  });
+
   it('shows a value that arrives while the field is focused, raw (Record payment prefill)', async () => {
     // Regression from the first S-D2 fix: the entry drawer autofocuses the
     // amount and the amount owed lands a render later; the focused field must

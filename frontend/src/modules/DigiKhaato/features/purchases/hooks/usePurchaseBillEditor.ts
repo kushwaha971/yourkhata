@@ -21,6 +21,7 @@ import {
   selectSessionUser,
   selectTenantTimezone,
 } from 'src/redux/slice/sessionSlice';
+import { showSnackbar } from 'src/redux/slice/snackbarSlice';
 import type { RootState } from 'src/redux/store';
 import { applyServerErrors } from 'src/utils/applyServerErrors';
 import { todayInTenantTz } from 'src/utils/dates';
@@ -51,8 +52,10 @@ import {
   emptyPurchaseForm,
   fromPurchaseBill,
   isCompletePurchaseLine,
+  hasIncompletePurchaseInput,
   purchasePaymentWireBody,
   purchasePreviewInput,
+  purchaseWireSnapshot,
   toPurchaseWireBody,
   type PurchaseBillFormValues,
   type PurchasePaymentRow,
@@ -115,6 +118,9 @@ export interface UsePurchaseBillEditorResult {
   readonly validate: () => Promise<boolean>;
   /** PUR-02 — "Paid now" is a supplier payment: the payments module and its write codename. */
   readonly canPayNow: boolean;
+  readonly offline: boolean;
+  readonly hasUnsavedChanges: boolean;
+  readonly hasServerCopy: boolean;
   readonly checkDuplicate: () => void;
   readonly restart: () => void;
 }
@@ -150,6 +156,12 @@ export const usePurchaseBillEditor = (
   // Seed the form ONCE per editor: from the draft, or from the shop's defaults.
   const seeded = useRef<string | null>(null);
   const [seededFor, setSeededFor] = useState<string | null>(null);
+  const scope = `${tenantId}:${userId}:${kind}:${documentId ?? 'new'}`;
+  const [draftState, setDraftState] = useState<{
+    scope: string;
+    initial: string;
+    acknowledged: string | null;
+  } | null>(null);
 
   // Load: the shop's context always, the draft when editing one. A different
   // document, business or user is a new editor: queued saves are abandoned.
@@ -172,21 +184,30 @@ export const usePurchaseBillEditor = (
     if (documentId) {
       if (document && document.id === documentId && seeded.current !== documentId) {
         seeded.current = documentId;
-        form.reset(fromPurchaseBill(document));
+        const opened = fromPurchaseBill(document);
+        form.reset(opened);
+        const snapshot = purchaseWireSnapshot(toPurchaseWireBody(opened));
+        setDraftState({ scope, initial: snapshot, acknowledged: snapshot });
         setSeededFor(documentId);
       }
       return;
     }
     if (context && seeded.current !== 'new') {
       seeded.current = 'new';
-      form.reset({
+      const opened = {
         ...emptyPurchaseForm(today, context.gstType === 'regular'),
         partyId: initialParty,
         partyName: initialPartyName,
+      };
+      form.reset(opened);
+      setDraftState({
+        scope,
+        initial: purchaseWireSnapshot(toPurchaseWireBody(opened)),
+        acknowledged: null,
       });
       setSeededFor('new');
     }
-  }, [documentId, document, context, form, today, initialParty, initialPartyName]);
+  }, [documentId, document, context, form, today, initialParty, initialPartyName, scope]);
 
   const readRepeat = useCallback(async (id: string, signal: AbortSignal) => {
     const source = await getPurchaseBill(id, signal);
@@ -255,7 +276,17 @@ export const usePurchaseBillEditor = (
           return null;
         };
         const id = current.documentId ?? documentId;
-        const body = toPurchaseWireBody(form.getValues());
+        const captureRows = () =>
+          form
+            .getValues('lines')
+            .flatMap((line, index) =>
+              isCompletePurchaseLine(line)
+                ? [{ index, itemId: line.itemId, snapshot: draftSnapshot(line) }]
+                : []
+            );
+        let submittedRows = captureRows();
+        let submittedBody = toPurchaseWireBody(form.getValues());
+        const body = { ...submittedBody };
         if (!id) {
           creationKey.current ??= newRequestId();
           body.client_draft_key = creationKey.current;
@@ -266,19 +297,70 @@ export const usePurchaseBillEditor = (
         if (outcome === 'adopt') {
           // The retry only looked the draft up. Save today's typing explicitly
           // against version 1, so an edit made elsewhere still conflicts.
-          result = await send({
-            id: result.bill.id,
-            version: 1,
-            body: toPurchaseWireBody(form.getValues()),
+          const latestBody = toPurchaseWireBody(form.getValues());
+          submittedBody = latestBody;
+          submittedRows = captureRows();
+          result = await send({ id: result.bill.id, version: 1, body: latestBody });
+        }
+        if (result && outcome !== 'conflict' && result.bill.status === 'draft') {
+          // Null cost means the item's default on the server, NOT a free item.
+          // Reconcile from the accepted response, never by repricing in the UI.
+          const wires = submittedBody.lines as Record<string, unknown>[];
+          const resolved = wires.map((wire, index) => {
+            const sent = submittedRows[index];
+            const actual = result.bill.lines[index];
+            if (
+              wire.unit_cost !== null ||
+              !sent?.itemId ||
+              !actual ||
+              actual.itemId !== sent.itemId
+            )
+              return wire;
+            const current = form.getValues(`lines.${sent.index}`);
+            if (current && draftSnapshot(current) === sent.snapshot) {
+              form.setValue(`lines.${sent.index}.unitCost`, actual.unitCost, {
+                shouldDirty: false,
+              });
+            }
+            return { ...wire, unit_cost: actual.unitCost };
           });
+          const submittedSnapshot = purchaseWireSnapshot({ ...submittedBody, lines: resolved });
+          setDraftState((previous) =>
+            previous?.scope === scope ? { ...previous, acknowledged: submittedSnapshot } : previous
+          );
         }
         return outcome === 'conflict' ? null : result;
       }),
-    [saves, store, documentId, dispatch, kind, form]
+    [saves, store, documentId, dispatch, kind, form, scope]
   );
 
   /** §10 — the header rules at Record only; a draft is saved half-entered (FR-8). */
   const validate = useCallback(async (): Promise<boolean> => {
+    form.clearErrors();
+    const rows = form.getValues('lines');
+    const incomplete = rows.findIndex(hasIncompletePurchaseInput);
+    if (incomplete >= 0) {
+      const line = rows[incomplete];
+      if (!line) return false;
+      const field =
+        !line.itemId && !line.description.trim()
+          ? 'itemId'
+          : !isCompletePurchaseLine({ ...line, unitCost: '' })
+            ? 'qty'
+            : 'unitCost';
+      form.setError(`lines.${incomplete}.${field}`, {
+        type: 'client',
+        message: t('purchases.line.incomplete', { n: incomplete + 1 }),
+      });
+      dispatch(
+        showSnackbar({
+          severity: 'error',
+          id: 'purchases.line.incomplete',
+          params: { n: incomplete + 1 },
+        })
+      );
+      return false;
+    }
     try {
       await purchaseBillSchema.validate(form.getValues(), { abortEarly: false });
       return true;
@@ -294,7 +376,7 @@ export const usePurchaseBillEditor = (
       }
       return false;
     }
-  }, [purchaseBillSchema, form]);
+  }, [purchaseBillSchema, form, t, dispatch]);
 
   const record = useCallback(
     async (
@@ -350,6 +432,14 @@ export const usePurchaseBillEditor = (
     void dispatch(checkDuplicateSupplierInvoice({ partyId, number, excludeId: savedId }));
   }, [dispatch, form, savedId]);
 
+  const currentSnapshot = useMemo(() => purchaseWireSnapshot(toPurchaseWireBody(values)), [values]);
+  const incompleteInput = (values.lines ?? []).some(hasIncompletePurchaseInput);
+  const currentDraft = draftState?.scope === scope ? draftState : null;
+  const hasUnsavedChanges =
+    !!currentDraft &&
+    !editor.recorded &&
+    (currentSnapshot !== (currentDraft.acknowledged ?? currentDraft.initial) || incompleteInput);
+
   // FR-8 — the quiet server copy, 10 s after the last change.
   const dirty = form.formState.isDirty;
   const meaningful = !!values.partyId || (values.lines ?? []).some(isCompletePurchaseLine);
@@ -358,7 +448,8 @@ export const usePurchaseBillEditor = (
   const saving = useRef(false);
   const [saveRevision, setSaveRevision] = useState(0);
   useEffect(() => {
-    if (repeatId || !dirty || blocked || !meaningful || !canWrite) return undefined;
+    if (repeatId || !dirty || !hasUnsavedChanges || blocked || !meaningful || !canWrite)
+      return undefined;
     const timer = window.setTimeout(() => {
       if (saving.current) return;
       saving.current = true;
@@ -370,7 +461,18 @@ export const usePurchaseBillEditor = (
       });
     }, PURCHASE_AUTOSAVE_MS);
     return () => window.clearTimeout(timer);
-  }, [values, dirty, blocked, meaningful, canWrite, save, form, saveRevision, repeatId]);
+  }, [
+    values,
+    dirty,
+    hasUnsavedChanges,
+    blocked,
+    meaningful,
+    canWrite,
+    save,
+    form,
+    saveRevision,
+    repeatId,
+  ]);
 
   /** "New bill" after recording on `/new`: a blank editor without a page load. */
   const restart = useCallback(() => {
@@ -378,10 +480,16 @@ export const usePurchaseBillEditor = (
     creationKey.current = null;
     dispatch(purchaseEditorReset());
     seeded.current = 'new';
-    form.reset(emptyPurchaseForm(today, context?.gstType === 'regular'));
+    const opened = emptyPurchaseForm(today, context?.gstType === 'regular');
+    form.reset(opened);
+    setDraftState({
+      scope,
+      initial: purchaseWireSnapshot(toPurchaseWireBody(opened)),
+      acknowledged: null,
+    });
     setSeededFor('new');
     idempotency.rotate();
-  }, [dispatch, form, today, context, idempotency, saves]);
+  }, [dispatch, form, today, context, idempotency, saves, scope]);
 
   return {
     form,
@@ -396,6 +504,9 @@ export const usePurchaseBillEditor = (
     record,
     validate,
     canPayNow: hasModule('payments') && can('payments.payment.write'),
+    offline,
+    hasUnsavedChanges,
+    hasServerCopy: !!currentDraft?.acknowledged,
     checkDuplicate,
     restart,
   };
