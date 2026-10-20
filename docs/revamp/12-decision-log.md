@@ -107,6 +107,8 @@ destructive actions and frozen Library/Lending contracts retain their boundaries
 
 ## Progress
 
+20 Oct 2026 — Owner chose "Move on": billing phone performance stays 8 (a pick costs ~190 ms at 4x CPU on any bill length; three targeted fixes measured within noise); the editor state redesign is deferred, and the remaining sales documents, purchases and returns are next (R-DEC-27).
+
 20 Oct 2026 — Billing rescore in the artifact's table: function/busy shop/UI 8.5–9 on phone and desktop; performance desktop 9, phone 8. Same-container old/new navigation: median 684 vs 688 ms (noise 8.5 ms), unchanged. New e2e/perf-billing.mjs: pick on a 30-line bill ~200 ms at 4x CPU, ~100 ms laptop; typing 48–72 ms. Report: 2026-10-20-p5-counter-billing.md.
 
 20 Oct 2026 — Billing: "Find a line on this bill" from ten named lines puts the caret in the chosen line's Qty (lazy `InvoiceLineFinder`). Live look found every combobox cutting long options with "…"; they wrap now. 4,589 tests; 108 frames. Navigation timing slower everywhere against 18 Oct, frozen apps included, so not attributable; same-container A/B owed before the rescore. Report: 2026-10-20-p5-counter-billing.md (third section).

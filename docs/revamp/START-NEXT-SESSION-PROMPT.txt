@@ -62,8 +62,8 @@ Remaining, in order:
    line on blur not on append. THIRD attempt (memo customer section +
    focus() deferred to a timer): no gain, reverted. The pick cost is FLAT
    (~190 ms at 4x from line 1 to line 30), so it is any pick on a slow phone;
-   below it needs an editor state redesign. Owner asked (20 Oct) whether to
-   do that now or accept 8 and move to purchases/returns. Target:
+   below it needs an editor state redesign. Owner chose (20 Oct, decision
+   card) MOVE ON: phone speed stays 8; redesign plan kept for later. Target:
    Enter < 120 ms at 4x CPU on 30 lines (node e2e/perf-billing.mjs), then
    rescore.
 Then the remaining sales documents, purchases and returns (R-DEC-27).
