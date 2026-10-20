@@ -297,6 +297,8 @@ Tracking: problems — purchase actions scattered in ⋯ · decisions — same c
 | Must keep working | Record requires an Idempotency-Key (`bills.py:53`); `?record=true` ignores `client_draft_key`; Paid-now goes in the same request and becomes a PAYOUT voucher in the same transaction; a role without `payments.payment.write` never sees Paid now; last cost updates on record, not on void; draft recovery for bills and orders (16 Oct). |
 | Fewer taps | supplier summary line; Pay later is one tap; Record + Paid now confirm is one flow, not two screens. |
 
+Review (20 Oct, R-DEC-27/29): gaps against this section and the Counter Mode standard are listed in order in START-NEXT-SESSION-PROMPT.txt (item search above lines via a shared useLineQuickAdd, dock caption/meta, honest save caption, cost note in words, Record as Pay later); nothing built yet.
+
 Tracking: problems — purchase drafts not kept on device; permission refusal wording · decisions — honest "Not saved yet" caption; Record as Pay later · dependencies — in-place re-auth (shell), compact rows · risks — data loss on reload after a lost reply is documented (draft remains listed under Drafts) · approval — pending · build — not started · tests — `purchase-recovery-look.mjs`, double-tap Record, permission matrix test for paid-now · outcome — —
 
 ---

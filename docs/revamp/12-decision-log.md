@@ -64,6 +64,19 @@ responsibile in everywhere in futruer”. This is a continuing quality standard,
 recorded in CLAUDE.md. Use the reference for whole compositions and real flows,
 not just isolated components; expose gaps rather than overstate completion.
 
+## R-DEC-29 · Revamp every module; do not patch the old design
+
+Owner, 20 Oct 2026: "do not rework on existing design for any module; follow
+the proper revamp instead of making changes in the existing." Every module is
+built to its approved revamp composition (07-screens; design/counter-mode.html
+for editors) as the acceptance reference, not by adjusting the old screens
+piecemeal. Spec/code disagreements are recorded here and the spec is followed
+unless it breaks a "Must keep working" contract in 02. Same day, the owner
+chose "Move on" from billing with phone performance at 8 (a pick ~190 ms at 4x
+CPU on any bill length; three trims within noise); purchases are next under
+R-DEC-27. The standard every module is scored against (design, busy shop,
+performance, and how each is measured) is in START-NEXT-SESSION-PROMPT.txt.
+
 ## R-DEC-28 · Plain labels throughout the application
 
 Owner,20 Oct2026, recorded07:21 UTC (12:51 IST): “Quick Sale and Saved customer”,

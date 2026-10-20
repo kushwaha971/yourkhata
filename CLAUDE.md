@@ -97,6 +97,13 @@ owner discover preventable inconsistencies, inflate ratings, or call a partial
 implementation complete. New owner instructions supersede a specific reference
 (e.g. Home's daily/weekly/monthly/yearly graph and header command search).
 
+**Revamp, do not patch (owner, 20 Oct 2026, R-DEC-29):** do not rework the
+existing design of any module; build its approved revamp composition
+(`docs/revamp/07-screens/`, `design/counter-mode.html` for editors) instead of
+adjusting the old screens. The scoring standard (design, busy shop,
+performance, and how each is measured) is in
+`docs/revamp/START-NEXT-SESSION-PROMPT.txt`.
+
 This has repeatedly paid off. Five separate defects shipped green tests because
 nothing exercised the real path: `seed_all`, `seed_demo` and `seed_e2e` were
 named by the Makefile and did not exist; `create_superadmin` likewise;

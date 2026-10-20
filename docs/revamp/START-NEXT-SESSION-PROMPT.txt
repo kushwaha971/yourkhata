@@ -1,6 +1,6 @@
 Continue the existing YourKhata revamp on dev. Do not start a new plan.
 
-CURRENT HANDOFF — 20 October 2026, through R-DEC-28
+CURRENT HANDOFF — 20 October 2026, through R-DEC-29
 On this Mac the repository is /Users/akashkushwaha/Projects/ims-platform; the chat
 workspace is a different folder. Elsewhere locate the existing checkout. Inspect
 git status/branch/log first. Preserve unrelated work, including the untracked
@@ -22,51 +22,94 @@ OWNER'S CURRENT ORDER — R-DEC-27
 Do not return to Home first. The owner explicitly deferred it because it needs
 those modules' final data. Do not ask routine phase/next-screen permission again.
 
-IMMEDIATE NEXT PIECE
-Owner, 20 Oct: billing must score above 8.5 in EVERY aspect (function, busy
-shop, UI/UX, performance) on phone AND desktop, "just like Customers", and
-"follow that standard": the Counter Mode artifact (design/counter-mode.html and
-the owner's live artifact) is the acceptance reference. Push after every step
-and keep these docs current; the owner may hand over to another agent.
-Done 20 Oct (2026-10-20-p5-counter-billing.md): repeat scan raises Qty and keeps
-the caret in the search; one-tap "Paid cash" for a Quick Sale; dock caption
-"N items · includes GST Rs x" + save state; picker stock in words + GST
-included/extra; restore archived look-alike / Create item from no match;
-"For this bill only. The usual price stays Rs450." on a changed rate.
-Also done: Hold (saves, then a blank bill) with an "On hold · N" row of
-time-stamped chips above the editor; "Add <name> as a new customer" from the
-Saved customer search (parties.party.write only, lazy PartyQuickCreate).
-Also done: "Find a line on this bill" (lazy InvoiceLineFinder, from 10 named
-lines, caret to the line's Qty); UbCombobox options wrap instead of "...".
-Verified, no change needed: an expired session sends the merchant to sign in
-with next=the bill, and the device copy is offered back after sign-in (harness
-flow session-return).
-Rescored 20 Oct (report's "Rescore" table): 8.5-9 everywhere EXCEPT phone
-performance 8. Navigation is unchanged (same-container old/new, median 684 vs
-688 ms). The weak number: adding an item to a 30-line bill at 4x CPU takes
-~200 ms (NODE_PATH=$(npm root -g) node e2e/perf-billing.mjs).
-Remaining, in order:
-1. Make a pick cheaper on a long phone bill. Diagnosed (report section
-   "Where a pick's time goes"): main-thread JS in the Enter, ~6 commits of the
-   lines section + 2 of the page per pick; UbLineItemsEditor rebuilds every
-   row inline (memoize rows; renderCardSummary/renderLineNote closures over
-   lines/preview defeat memo today); tax engine is cheap (0.6 ms).
-   TRIED 20 Oct: memoizing collapsed cards (cardSummaryKey) gave 185->183 ms,
-   noise, reverted. Appending the line filled (1 write not 9): no gain in 3
-   runs, reverted. Production profile (source maps, local): cost is spread:
-   react-dom 880/2130 ms, native focus() 245, RHF form copies 166, schema
-   re-run after each append (mode onTouched) 115, Decimal 61. REAL FIX is
-   structural: useInvoiceEditor's useWatch({control}) re-renders the whole
-   editor per change; subscribe sections to their own fields, compute the
-   preview once per change, defer the Qty focus() past paint, validate a new
-   line on blur not on append. THIRD attempt (memo customer section +
-   focus() deferred to a timer): no gain, reverted. The pick cost is FLAT
-   (~190 ms at 4x from line 1 to line 30), so it is any pick on a slow phone;
-   below it needs an editor state redesign. Owner chose (20 Oct, decision
-   card) MOVE ON: phone speed stays 8; redesign plan kept for later. Target:
-   Enter < 120 ms at 4x CPU on 30 lines (node e2e/perf-billing.mjs), then
-   rescore.
-Then the remaining sales documents, purchases and returns (R-DEC-27).
+OWNER RULE — R-DEC-29 (20 Oct): REVAMP, DO NOT PATCH THE OLD DESIGN
+"Do not rework on existing design for any module; follow the proper revamp
+instead of making changes in the existing." For every module, build the
+approved revamp composition in docs/revamp/07-screens/ (and design/
+counter-mode.html for editors) as the acceptance reference. Do not tweak old
+spacing/colours/layouts piecemeal or polish a screen the revamp replaces. Read
+the module's 07-screens section first, build THAT phone and desktop
+composition with src/design-system components, then measure it. If the spec
+and code disagree, record it in 12 and follow the spec unless it breaks a
+"Must keep working" contract in 02.
+
+IMMEDIATE NEXT PIECE — PURCHASES (R-DEC-27 item 1)
+Billing is finished for now. Owner, 20 Oct, decision card: "Move on". Billing
+scores 8.5-9 in every aspect except phone performance 8 (see below). Next is
+the purchase editor, 07-screens/09 §7 (then §5 list, §6 detail, returns/debit
+notes, and the remaining sales documents: estimates, orders, challans, credit
+notes, which share the sales editor and already get its counter features).
+Review done 20 Oct (code read, nothing built yet). Gaps against §7 and the
+Counter Mode standard, build in this order, one verified commit each:
+1. Item search ABOVE the lines (ItemQuickAdd), repeat scan raises Qty, a scan
+   keeps the caret in the search, a list pick puts it on Qty, and "Find a line
+   on this bill" from 10 lines. DO NOT COPY the sales code: extract the
+   quick-add logic from sales InvoiceLinesSection.quickAdd into a shared
+   features/inventory/hooks/useLineQuickAdd.ts and move InvoiceLineFinder to a
+   shared inventory LineFinder taking labels; then use both from sales and
+   PurchaseBillLinesSection. Purchase picks fill unitCost/lastCost/taxCode/
+   itemTaxCode (see its `pick`). Add purchases.line.quickAdd.* and
+   purchases.line.find* locale keys (en + hi; Hindi line = पंक्ति).
+   Tests to write first (PurchaseBillEditor.test.tsx, draft b1 has Rice qty 20
+   and Sugar): search adds a third line with the caret at row 2 col 1; scanning
+   Rice's barcode raises row 0 Qty 20 -> 21, no third row, focus stays in the
+   search. Mock itemService like sales InvoiceEditor.test.tsx does.
+2. Dock: caption "N items · includes GST Rs x" and the save state as `meta`
+   (UbTotalDock already has caption/meta), Record marigold.
+3. Honest save caption: "Saved" only after the server answers; offline or
+   unsaved "Not saved yet — don't close this screen"; × asks "Leave? This bill
+   isn't saved." (purchases keep no device copy; §7 States).
+4. Cost note in words: "This bill's cost. The item's purchase price will
+   update to Rs42 when you record." (replaces "Last cost Rs46 (+13 %)").
+5. Record refused for payment permission (403 details.payment): "You can record
+   bills but not pay suppliers. Record it as Pay later, or ask the owner." with
+   a "Record as Pay later" button.
+6. Supplier one-line summary exists below 1536 (16 Oct) — verify on phone.
+Then LOOK (harness like e2e/revamp-editor-compose.mjs; a purchase one does not
+exist yet — e2e/purchase-recovery-look.mjs is the closest), perf, rescore.
+
+THE STANDARD EVERY MODULE IS SCORED AGAINST (learned on billing, 20 Oct)
+Owner's bar: above 8.5 in EVERY aspect — function, busy shop, UI/UX,
+performance — on phone AND desktop, "just like Customers". Score in this table
+(the Counter Mode artifact's format), from frames and measurements only:
+  Point of view | Score | Evidence | Still weak | Confidence
+for Function / Busy shop / UI-UX / Performance x phone / desktop. Never round
+a number up; an aspect below 8.5 is said plainly with its measurement.
+DESIGN (UI/UX): the 07-screens composition at 390/320/1024/1280, light and
+  dark, Hindi 320/1280; zero page overflow, zero text cut against its own box,
+  every label >= 4.5:1. No word cut by "…" anywhere (UbCombobox options now
+  wrap); chip rows that would wrap above the work scroll sideways instead;
+  identical-looking rows must be told apart (time, number); money via
+  formatInr; plain words (Customer/Supplier/Contact, Quick Sale).
+BUSY SHOP: keyboard-only entry on desktop (search, Enter, Qty, Ctrl+Enter);
+  scanner path (Enter while results answer an older term = barcode lookup;
+  caret stays in search after a scan); repeat item raises Qty; one-tap finish
+  for the common case; hold/park work for the next customer; find a line on
+  long documents; add the missing contact/item from a no-match search (write
+  permission only); nothing typed is lost on reload, offline or expired
+  session (sales: device copy + restore dialog, verified by harness flow
+  session-return). Test double taps and lost replies (Idempotency-Key reuse).
+PERFORMANCE: (a) navigation: e2e/perf-app.mjs --reps=3 --only=nav, with
+  nothing else running. Never compare against an old baseline from another
+  day/container alone: on 20 Oct that showed every screen slower, including
+  untouched Library/Lending. Do an A/B: build the commit before your work in a
+  git worktree (copy node_modules with cp -al; a symlink breaks Turbopack),
+  serve it with the worktree's e2e/serve.sh, then alternate old/new/old/new
+  and pool (billing: 684 vs 688 ms median, noise 8.5 ms = unchanged).
+  (b) editor speed: e2e/perf-billing.mjs (390 px CPU 4x and 1280): Enter->line,
+  Event Timing per phase, scanner lookups counted. Billing phone pick ~190 ms
+  FLAT from line 1 to 30 (laptop ~100 ms). Three trims (memo collapsed cards,
+  one write per pick, memo customer section + deferred focus) measured within
+  noise and were reverted; the cause is that useInvoiceEditor watches the
+  whole form, so any change re-renders the whole editor. Do not repeat those
+  trims; the redesign (sections subscribed to their own fields, preview once
+  per change, focus after paint, validate a new line on blur) is deferred by
+  the owner. Purchases use the same pattern (usePurchaseBillEditor): measure it
+  the same way and report, do not assume.
+  (c) bundle: a drawer/form/finder is its own dynamic() module; raise budgets
+  only to measured + 0.3 with a note saying what bought the bytes.
+Billing evidence: docs/performance/2026-10-20-p5-counter-billing.md (all
+steps, the rescore table, the profile and every attempt) and data/ files.
 Open owner question: should jit=off (3421283) go to production or stay local?
 
 LATEST DELIVERED WORK
@@ -190,6 +233,6 @@ After each screen/form/card/drawer/sheet/dialog:
 6. Update dated performance report,07 tracking,12 Progress/Next and this handoff.
    Score only verified scope using09's weights; ratings are provisional self-
    assessments, not independent merchant research or whole-app certification.
-7. Commit with a prose WHY and "Assisted-by: OpenAI Codex", push dev, verify the
+7. Commit with a prose WHY and the attribution trailer your tool requires, push dev, verify the
    remote SHA, then report final screenshots/numbers/limits before the next piece.
    Continue approved work without routine permission questions.
