@@ -201,6 +201,30 @@ attempt should take a CPU profile of a production build with source maps
 (`productionBrowserSourceMaps`, local only) and cut the second page commit per
 pick before touching rows again.
 
+**Production profile with source maps** (local build only; ten picks on a
+30-line phone bill at 4×, about 213 ms of script each). There is no single
+culprit: React's own work (`react-dom`, 880 ms of the 2,130) dominates, spread
+over the editor, plus native `focus()` on the new Qty (245 ms, a forced layout
+of a page with thirty cards), React Hook Form copying the form (166 ms), the
+schema validation RHF runs after every field-array append under `mode:
+'onTouched'` (115 ms with Yup), and the tax engine's Decimal maths (61 ms; 0.6 ms
+in Node, many times per pick here). By file, inclusive: `UbLineItemsEditor` 432
+(focus included), `InvoiceLinesSection` 166, `InvoiceEditorPageContent` 120,
+the resolver 115, `useInvoiceEditor` 78, `ItemQuickAdd` 74.
+
+**Second attempt, measured and not kept.** Appending the picked line already
+filled (one write instead of nine) left Enter→line at 186–196 ms over three
+runs, and was reverted.
+
+**What the real fix is.** Both attempts trimmed one consumer; the cost is that
+`useInvoiceEditor` watches the WHOLE form (`useWatch({ control })`), so every
+pick re-renders and re-prices the entire editor several times. The fix is
+structural and wants its own piece: subscribe each section to the fields it
+draws, compute the preview once per change outside render, defer the caret's
+`focus()` until after the line paints, and validate a new line on blur rather
+than re-running the whole schema on append. Until then phone performance stays
+an honest 8.
+
 ## Rescore (20 Oct), in the Counter Mode artifact's table
 
 Against the owner's bar of above 8.5 in every aspect, phone and desktop.

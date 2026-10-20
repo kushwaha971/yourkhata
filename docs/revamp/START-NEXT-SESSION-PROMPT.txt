@@ -52,8 +52,14 @@ Remaining, in order:
    row inline (memoize rows; renderCardSummary/renderLineNote closures over
    lines/preview defeat memo today); tax engine is cheap (0.6 ms).
    TRIED 20 Oct: memoizing collapsed cards (cardSummaryKey) gave 185->183 ms,
-   noise, reverted. Next: production CPU profile with source maps (local
-   only), and remove the second page commit per pick. Target:
+   noise, reverted. Appending the line filled (1 write not 9): no gain in 3
+   runs, reverted. Production profile (source maps, local): cost is spread:
+   react-dom 880/2130 ms, native focus() 245, RHF form copies 166, schema
+   re-run after each append (mode onTouched) 115, Decimal 61. REAL FIX is
+   structural: useInvoiceEditor's useWatch({control}) re-renders the whole
+   editor per change; subscribe sections to their own fields, compute the
+   preview once per change, defer the Qty focus() past paint, validate a new
+   line on blur not on append. Target:
    Enter < 120 ms at 4x CPU on 30 lines (node e2e/perf-billing.mjs), then
    rescore.
 Then the remaining sales documents, purchases and returns (R-DEC-27).
