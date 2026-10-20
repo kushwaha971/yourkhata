@@ -83,12 +83,20 @@ try {
     const named = () =>
       page.evaluate(() => Number(/^(\d+)/.exec(document.querySelector('[data-testid="total-dock-caption"]')?.textContent ?? '')?.[1] ?? 0));
     const picks = [];
+    // Enter on a list that still answers an earlier term is the scanner's
+    // path: a lookup round trip, not a pick. Counted so a timing is read right.
+    let lookups = 0;
+    page.on('request', (r) => {
+      if (/\/items\/lookup/.test(r.url())) lookups += 1;
+    });
     await page.evaluate(() => (window.__phase = 'pick'));
     for (const [i, name] of items.entries()) {
+      await page.evaluate(() => (window.__phase = 'type'));
       await search.click();
       await search.fill(name);
       await page.getByRole('option', { selected: true }).first().waitFor();
       const before = await named();
+      await page.evaluate(() => (window.__phase = 'pick'));
       const t0 = Date.now();
       await page.keyboard.press('Enter');
       const drawn = await page
@@ -118,13 +126,16 @@ try {
       pickP95: p95(picks),
       lastFivePickMedian: median(picks.slice(-5)),
       slowestEventWhilePicking: worst('pick'),
+      slowestEventTypingSearch: worst('type'),
+      enterEvents: events.filter((e) => e.phase === 'pick' && e.name === 'keydown').map((e) => e.duration),
       slowestEventTypingQty: worst('qty'),
       linesOnBill: await named(),
+      lookups,
       events,
     };
     report.runs.push(run);
     console.log(
-      `${width}px cpu x${cpu}: Enter→line median ${run.pickMedian} ms, p95 ${run.pickP95}, last five ${run.lastFivePickMedian}; slowest event picking ${run.slowestEventWhilePicking} ms, typing Qty ${run.slowestEventTypingQty} ms; ${run.linesOnBill} lines`
+      `${width}px cpu x${cpu}: Enter→line median ${run.pickMedian} ms, p95 ${run.pickP95}, last five ${run.lastFivePickMedian}; slowest event picking ${run.slowestEventWhilePicking} ms (Enter median ${median(run.enterEvents)}), typing the search ${run.slowestEventTypingSearch} ms, typing Qty ${run.slowestEventTypingQty} ms; ${run.linesOnBill} lines, ${run.lookups} scanner lookups`
     );
     await ctx.close();
   }

@@ -162,6 +162,35 @@ slowest input (`data/2026-10-20-counter-billing-editor.json`; two runs agree).
 Typing is quick. **A pick on a long bill on a slow phone is about 200 ms**, the
 line where "good" responsiveness ends; it is the weakest number here.
 
+## Where a pick's time goes (diagnosis for the next piece)
+
+Measured with `e2e/perf-billing.mjs`, which now separates typing the search from
+the Enter that adds the line and counts scanner lookups (none: every timed pick
+is the list path, so no network is inside the number).
+
+- **The Enter itself is main-thread JavaScript, not network or layout.** A trace
+  of five picks on a 30-line phone bill: each Enter keydown ran 158–247 ms of
+  script (4× CPU, tracing on); style, layout and paint after it were 30–50 ms.
+  The tax engine is not it: 30 lines price in 0.6 ms.
+- **A React profiling build** (sections wrapped in `<Profiler>`, not committed)
+  put the editor's own sections at about 70 ms per pick at 4×, in **six commits
+  of the lines section and two of the whole page** per pick.
+- **A CPU profile of a dev build** names the largest single cost:
+  `UbLineItemsEditor` rebuilds every row (on a phone, all 29 collapsed cards and
+  their summaries) inline on every commit. The editor page itself
+  (`InvoiceEditorPageContent` + `useInvoiceEditor`, which watches the whole form)
+  and the always-mounted dialogs follow; `focus()` on the new Qty is about 9 ms.
+
+So the fix is two things, in this order: render rows as a memoized component so
+an unchanged line is skipped (the summary and note render props change identity
+every render today, so they need a per-line key or `useWatch` inside the row
+rather than closures over `lines` and `preview`), and cut the per-pick commits
+(the second page commit and the four extra lines commits). Re-run
+`perf-billing.mjs`; the target is Enter under 120 ms at 4× on a 30-line bill.
+
+Latest run on the normal build: phone 4× Enter→line median 185 ms (Enter event
+168 ms); laptop 91 ms (Enter event 48 ms).
+
 ## Rescore (20 Oct), in the Counter Mode artifact's table
 
 Against the owner's bar of above 8.5 in every aspect, phone and desktop.

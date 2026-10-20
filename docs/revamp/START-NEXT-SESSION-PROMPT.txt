@@ -46,8 +46,13 @@ performance 8. Navigation is unchanged (same-container old/new, median 684 vs
 688 ms). The weak number: adding an item to a 30-line bill at 4x CPU takes
 ~200 ms (NODE_PATH=$(npm root -g) node e2e/perf-billing.mjs).
 Remaining, in order:
-1. Make a pick cheaper on a long phone bill (whole editor re-renders and
-   re-prices every line per pick), re-run perf-billing.mjs, then rescore.
+1. Make a pick cheaper on a long phone bill. Diagnosed (report section
+   "Where a pick's time goes"): main-thread JS in the Enter, ~6 commits of the
+   lines section + 2 of the page per pick; UbLineItemsEditor rebuilds every
+   row inline (memoize rows; renderCardSummary/renderLineNote closures over
+   lines/preview defeat memo today); tax engine is cheap (0.6 ms). Target:
+   Enter < 120 ms at 4x CPU on 30 lines (node e2e/perf-billing.mjs), then
+   rescore.
 Then the remaining sales documents, purchases and returns (R-DEC-27).
 Open owner question: should jit=off (3421283) go to production or stay local?
 
