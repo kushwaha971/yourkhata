@@ -64,6 +64,17 @@ responsibile in everywhere in futruer”. This is a continuing quality standard,
 recorded in CLAUDE.md. Use the reference for whole compositions and real flows,
 not just isolated components; expose gaps rather than overstate completion.
 
+## R-DEC-27 · Finish Shop source workflows before remaining Home features
+
+Owner,20 Oct2026, recorded06:17 UTC (11:47 IST): “do home penidnfg work
+ after completion of Billing/POS, purchases and returns Inventory, payments,
+ expenses and reports” because “FROM THERE ASLO DETAIL REQUIRED”. This changes
+sequence, not approval or scope. Complete and verify billing/POS, purchases and
+returns, then inventory, payments, expenses and reports, then return to remaining
+Home promises/follow-ups, physical cash counts and explicit settlement. Reuse
+those verified source workflows and shared components in Home. R-DEC-26 remains
+approved; do not ask again. Immediate next piece: invoice/POS editor.
+
 ## R-DEC-26 · Remaining Home workflows approved
 
 Owner's decision-card answer: **“Approve all three workflows”**, followed by
@@ -97,6 +108,7 @@ destructive actions and frozen Library/Lending contracts retain their boundaries
 
 | Date | What was done | Files |
 |---|---|---|
+|20 Oct2026|R-DEC-27 owner reordered work: billing/POS, purchases/returns, inventory/money/expenses/reports first; approved remaining Home workflows afterward, using those sources. Next: invoice/POS editor.|07-screens/09; START-NEXT-SESSION-PROMPT.txt|
 |20 Oct2026|BP-15 Home source facts and Shop-origin read fences:4,673 backend passes/16 skips,4,547 frontend passes,168 measured frames; local payment refresh tested. R-DEC-26 approves promises, physical cash observations and explicit settlements; implement next.|docs/performance/2026-10-20-home-register-facts.md;08 BP-08/16/17|
 |20 Oct2026|R-DEC-25 bill reading/detail checkpoint: native phone lines, summary/rail, current cancellation facts, Shop-specific Receive, editable sharing and safe print. Full4,541 tests;230 measured frames;four local₹1 receipts;12 quiet nav samples. New Home workflow scope remains pending approval; metadata read follow-up is next.|docs/performance/2026-10-20-p5-bill-detail.md;08 BP-08/15/16/17|
 | 20 Oct 2026 | R-DEC-25 Bills register verified: visible statuses, compact totals, shared register/phone cards, header New, full dates/names, committed search and guarded N. 4,536 tests;102 en/hi measured states;12 quiet nav samples. Commit/push then invoice/POS editor/detail. | docs/performance/2026-10-20-p5-bills-register.md; 07-screens/09 |
@@ -133,19 +145,22 @@ destructive actions and frozen Library/Lending contracts retain their boundaries
 
 ## Next
 
-**R-DEC-25 current:** Home's approved surface is delivered as4a66b430; Bills
-register is delivered ased6d1a2b. Bill detail/actions is verified and delivered
-(see20-Oct report). The owner then asked
-when Home's missing source-backed features will be completed: follow with BP-15
-register-status/line-count reads, and the concrete BP-08/16/17 workflow scope in08.
-R-DEC-26 approves BP-08/16/17. Finish the BP-15 read checkpoint, then build
-Shop promises/follow-ups, cash-count observations and explicit settlements one
-verified piece at a time. These writes must preserve separate roles/books and
-all Library/Lending contracts.
-Then return to invoice/POS editor and the remaining Shop families without a
-routine phase-choice question. Home's8.76 surface review and8.8 implemented-flow
-review do not replace its8.2 full-feature-parity score. Physical/PWA limits and
-the last full backend scale-timeout caveat remain in the reports.
+**R-DEC-27 current order:**
+1. Billing/POS editor and remaining sales document flows, purchases and returns.
+2. Inventory, payments/advances/refunds, expenses/cashbook and reports.
+3. Remaining Home workflows approved in R-DEC-26 (BP-08/16/17), integrated with
+   the verified source workflows, followed by Home end-to-end acceptance.
+
+Immediate next: invoice/POS editor,07-screens/09 §3. Continue review→build→LOOK→
+report→commit/push for each piece without routine permission questions. Preserve
+separate roles/books, source permissions and frozen Library/Lending contracts.
+
+Delivered: Home surface4a66b430, Bills register ed6d1a2b, bill detailb49df7f6,
+Home source facts/read isolationfe6852ae. The latest read checkpoint passes
+4,673 backend tests/16 skipped,4,547 frontend tests and168 measured Home states.
+It resolves the earlier full-run timing caveat for that run; physical/PWA limits
+remain. Home's scoped8.76 surface/8.8 implemented-flow and8.2 full-parity reviews
+are not whole-Shop certification. Do not call remaining approved writes built.
 
 **R-DEC-16 active:** Customer register and the corrected Shop person piece are delivered (`06ac3b23`); BP-11 book authorization is delivered (`4e6d7b37`). Suppliers is delivered as `b0716d46`; after the R-DEC-18 access checkpoint continue Shop Home, then the remaining Shop screen families, then another app. Do not ask those phase/BP-09 approvals again. **R-DEC-13 supersedes the two-figure person-page design:** Customers shows only customer money and Receive/New bill; Suppliers only supplier money and Pay/Purchase bill; Udhaar independent. Current Shop facts are BP-09. Historical role-specific statements/aging are proposed BP-10, and shared-book authorization audit is BP-11 (implemented and pushed under R-DEC-15); BP-10 remains unapproved; the mixed Shop statement link is withheld from these views. Reports: `docs/performance/2026-10-18-p5-customers.md` and `docs/performance/2026-10-18-p5-shop-person.md`.
 

@@ -1,12 +1,13 @@
 Continue the existing YourKhata revamp on dev. Do not start another plan.
 
-CURRENT HANDOFF — 20 October 2026, R-DEC-21–26
-The owner requires full reference fidelity and responsible verification across
-all future work. After Home acceptance, commit/push/report and proceed directly
-to Bills/POS/customer invoices, then the remaining Shop families. Do not ask the
-phase/next-screen permission again. New business-rule/destructive decisions and
-frozen live contracts retain their boundaries. Read 12's current Progress/Next
-and the latest Home report before interpreting a status as complete.
+CURRENT HANDOFF — 20 October 2026, R-DEC-21–27
+R-DEC-27 changes the order: build/verify billing/POS, purchases and returns,
+then inventory, payments/advances/refunds, expenses/cashbook and reports FIRST.
+Then finish the approved remaining Home workflows using those verified sources.
+Immediate next: invoice/POS editor,07-screens/09 §3. Keep the same reference,
+reuse, business/access testing, mobile/desktop LOOK and commit/push loop. Do not
+ask routine next-screen permission. R-DEC-26 remains approved; it is deferred,
+not revoked. Frozen Library/Lending contracts remain unchanged.
 
 DELIVERED CHECKPOINTS
 Home is pushed as4a66b430. Bills register is pushed ased6d1a2b; read its report
@@ -22,14 +23,13 @@ lines, a money summary, visible Receive/Share, a fresh cancellation chooser,
 plain Cancel/Keep words and a wider paper dialog. Receive explicitly uses the
 Shop/customer counter drawer for this bill; server-provided allocation rows no
 longer trigger a false unsaved-changes prompt. No financial API/model change.
-The owner asked when Home's source-backed gaps finish: after this checkpoint,
-complete BP-15 status/line-count reads. BP-08/16/17 now have concrete scopes in08;
-the owner answered “Approve all three workflows” (R-DEC-26,20 Oct06:03 UTC).
-Implement those approved writes one verified piece at a time after BP-15. No automatic netting,
-no cash adjustment from a count, no personal Udhaar promise reuse. After the
-Home follow-up, continue invoice/POS editor and remaining Shop families under
-R-DEC-25 without routine permission. Home's full-feature parity remains8.2/10;
-do not relabel its scoped8.76 screen review as complete feature certification.
+BP-15 status/line-count read follow-up and Shop origin fences are pushed as
+fe6852ae:4,673 backend passes/16 skips,4,547 frontend passes,168 measured Home
+states and real phone/desktop payment refresh. Report:2026-10-20-home-register-facts.md.
+BP-08/16/17 approved by “Approve all three workflows” (R-DEC-26), now deferred
+until the source workflow groups above are completed (R-DEC-27). No automatic
+netting, cash adjustment from a count or personal Udhaar promise reuse.
+Home's8.2 full-parity review is not whole-feature certification.
 
 READ FIRST
 AGENTS.md, CLAUDE.md, docs/revamp/README.md, 12-decision-log.md,

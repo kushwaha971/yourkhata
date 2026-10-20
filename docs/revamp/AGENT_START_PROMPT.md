@@ -6,14 +6,13 @@ Replace the line marked `TASK` with what you want done next. If you leave it out
 
 ## Current handoff · 20 October 2026
 
-Read START-NEXT-SESSION-PROMPT.txt and the Home acceptance report first.
-R-DEC-26 records the owner approval for BP-08/16/17; no repeat question.
-BP-15 source metadata follow-up is verified in2026-10-20-home-register-facts.md. R-DEC-25
-authorizes immediate continuation to Bills/POS/customer invoices after Home's
-commit/push/report. Home's actual scope, 144 measured states, 4,532 frontend
-tests, backend scale-test caveat and remaining prototype parity gaps are explicit.
-Do not repeat phase-choice questions or inflate whole-app completion from one
-screen. CLAUDE.md now records the owner's standing whole-composition quality rule.
+Read START-NEXT-SESSION-PROMPT.txt and12's current Next first. R-DEC-27 orders
+billing/POS, purchases and returns, then inventory, payments, expenses and reports
+before the remaining Home workflows. Immediate next: invoice/POS editor. BP-08/
+16/17 remain approved under R-DEC-26; integrate them afterward using verified
+source workflows. BP-15 is delivered asfe6852ae; the dated source-facts report
+records4,673 backend passes/16 skips,4,547 frontend passes and168 Home states.
+Do not repeat approval questions or inflate whole-app completion from one screen.
 
 ```text
 You are continuing the YourKhata revamp: a redesign of the whole app (Shop, Udhaar
