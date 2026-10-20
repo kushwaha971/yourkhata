@@ -126,6 +126,7 @@ export function InvoiceLinesSection({
             id={id}
             label={label}
             invalid={invalid}
+            wrapLabel
             line={lines?.[index]}
             disabled={disabled}
             placeholder={t('sales.line.itemPlaceholder')}
@@ -157,7 +158,7 @@ export function InvoiceLinesSection({
         id: 'rate',
         header: t('sales.line.rate'),
         field: 'unitPrice',
-        track: 'minmax(6.25rem,1.3fr)',
+        track: 'minmax(9.5rem,1.3fr)',
         align: 'end',
         render: ({ field, id, label, invalid, index }) => (
           <UbStack gap={1}>
@@ -254,20 +255,28 @@ export function InvoiceLinesSection({
     [t, lines, disabled, pick, taxFree, taxOptions, preview, setValue, trigger]
   );
 
-  // Shop gap §1.5 — what this customer paid for this item last time.
-  const renderLineNote = useCallback(
+  const stockWarning = useCallback(
     (index: number) => {
       const line = lines?.[index];
       if (!line?.itemId) return null;
       const held = stock[line.itemId];
-      const short = held !== undefined && exceedsQuantity(line.qty, held.onHand);
-      const stockNote = short ? (
+      return held && exceedsQuantity(line.qty, held.onHand) ? (
         <UbText variant="caption" tone="error" data-testid="line-stock-short">
           {t('sales.line.stockShort', {
             qty: formatQuantity(String(Math.max(Number(held.onHand), 0)), held.unit),
           })}
         </UbText>
       ) : null;
+    },
+    [lines, stock, t]
+  );
+
+  // Stock warnings remain visible on a compact summary as well as in its form.
+  const renderLineNote = useCallback(
+    (index: number) => {
+      const line = lines?.[index];
+      if (!line?.itemId) return null;
+      const stockNote = stockWarning(index);
       if (!partyId) return stockNote;
       const fromList = listed[line.itemId];
       const onList = fromList && Number(fromList.rate) === Number(line.unitPrice || 0);
@@ -294,7 +303,7 @@ export function InvoiceLinesSection({
         </UbStack>
       );
     },
-    [lines, partyId, partyName, setValue, listed, stock, t]
+    [lines, partyId, partyName, setValue, listed, stockWarning, t]
   );
 
   return (
@@ -310,6 +319,28 @@ export function InvoiceLinesSection({
       disabled={disabled}
       onSubmitShortcut={onSubmitShortcut}
       renderLineNote={renderLineNote}
+      renderCardSummary={(index, expanded) => {
+        const line = lines?.[index];
+        return (
+          <UbStack gap={1}>
+            <UbText variant="body-sm-medium" className="break-words">
+              {line?.description || t('sales.line.itemPlaceholder')}
+            </UbText>
+            <UbStack direction="row" justify="between" gap={2} wrap>
+              <UbText variant="caption" tone="secondary" className="break-words">
+                {line?.qty || '0'} {line?.unitCode} × {formatInr(line?.unitPrice || '0')}
+                {line?.discountType && line.discountValue
+                  ? ` · −${line.discountValue}${line.discountType === 'percent' ? '%' : ''}`
+                  : ''}
+              </UbText>
+              <UbText variant="body-sm-medium" className="ds-num break-words">
+                {formatInr(preview.lines[index]?.lineTotal ?? '0')}
+              </UbText>
+            </UbStack>
+            {!expanded && stockWarning(index)}
+          </UbStack>
+        );
+      }}
       labels={{
         addLine: t('sales.line.add'),
         removeLine: (n) => t('sales.line.remove', { n }),

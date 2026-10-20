@@ -39,18 +39,20 @@ function UbTotalDockBase({
     <UbBottomBar
       data-testid={testId}
       className={cn(
-        '-mx-4 flex items-center gap-3 border-t border-border-hairline bg-surface-card px-4 pt-3',
+        '-mx-4 flex flex-col items-stretch gap-3 sm:flex-row sm:items-center border-t border-border-hairline bg-surface-card px-4 pt-3',
         'pb-[calc(0.75rem+env(safe-area-inset-bottom,0px))]',
         className
       )}
     >
       <div className="flex min-w-0 flex-1 flex-col">
         <span className="ds-caption text-text-tertiary">{totalLabel}</span>
-        <span className="ds-num truncate text-[1.25rem] font-semibold leading-7 text-text-primary">
+        <span className="ds-num whitespace-normal break-words text-[1.25rem] font-semibold leading-7 text-text-primary">
           {total}
         </span>
       </div>
-      <div className="flex shrink-0 items-center gap-2">{children}</div>
+      <div className="grid min-w-0 grid-cols-2 gap-2 sm:flex sm:shrink-0 sm:items-center [&>button]:h-auto [&>button]:min-h-11 [&>button]:whitespace-normal">
+        {children}
+      </div>
     </UbBottomBar>
   );
 }

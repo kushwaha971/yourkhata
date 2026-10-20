@@ -9,6 +9,13 @@ reuse, business/access testing, mobile/desktop LOOK and commit/push loop. Do not
 ask routine next-screen permission. R-DEC-26 remains approved; it is deferred,
 not revoked. Frozen Library/Lending contracts remain unchanged.
 
+Current billing component checkpoint: compact line summaries/edit retention/error
+focus, full selected item names and stacked phone total dock are verified.4,550
+frontend tests,84 measured frames. Read2026-10-20-p5-editor-lines.md for delivery
+status/evidence. Continue the editor's always-visible item search/customer
+composition, keyboard/save/offline states and actual issue/recovery business
+flows. Do not call the editor/POS/sales family complete from this component.
+
 DELIVERED CHECKPOINTS
 Home is pushed as4a66b430. Bills register is pushed ased6d1a2b; read its report
 2026-10-20-p5-bills-register.md and current12 for delivery status. It uses

@@ -15,6 +15,7 @@ import { Plus, Trash2 } from 'lucide-react';
 import {
   Controller,
   useWatch,
+  useFormState,
   type ArrayPath,
   type Control,
   type ControllerRenderProps,
@@ -124,6 +125,8 @@ export interface UbLineItemsEditorProps<TForm extends FieldValues, TName extends
    * measures nothing) it falls back to `tableFrom`.
    */
   readonly tableWhen?: 'viewport' | 'fits';
+  /** Opt-in compact cards. Existing callers retain their full cards. */
+  readonly renderCardSummary?: (index: number, expanded: boolean) => ReactNode;
   readonly className?: string;
 }
 
@@ -202,6 +205,7 @@ export function UbLineItemsEditor<TForm extends FieldValues, TName extends Array
   layout: forcedLayout,
   tableFrom = 768,
   tableWhen = 'viewport',
+  renderCardSummary,
   className,
 }: UbLineItemsEditorProps<TForm, TName>): React.JSX.Element {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -215,6 +219,32 @@ export function UbLineItemsEditor<TForm extends FieldValues, TName extends Array
   const layout: UbLineCellLayout = forcedLayout ?? (tableFits ? 'table' : 'card');
   const baseId = useId();
   const { fields, append, remove } = fieldArray;
+  const { submitCount, errors } = useFormState({ control });
+  const keys = fields.map((line) => line.key).join(',');
+  const [expansion, setExpansion] = useState(() => ({
+    keys,
+    key: fields[0]?.key ?? null,
+    submitCount,
+  }));
+  // Derive the row selection before commit when the field array or submit changes.
+  // No effect-driven second paint and no index identity after removing a row.
+  if (renderCardSummary && (expansion.keys !== keys || expansion.submitCount !== submitCount)) {
+    const oldKeys = new Set(expansion.keys.split(','));
+    const added = fields.filter((line) => !oldKeys.has(line.key));
+    let key = fields.some((line) => line.key === expansion.key)
+      ? expansion.key
+      : (fields[0]?.key ?? null);
+    if (added.length) key = added[added.length - 1]?.key ?? null;
+    if (expansion.submitCount !== submitCount) {
+      const invalid = fields.findIndex((_, index) =>
+        columns.some(
+          (column) => column.field && readError(errors, `${name}.${index}.${column.field}`)
+        )
+      );
+      if (invalid >= 0) key = fields[invalid]?.key ?? null;
+    }
+    setExpansion({ keys, key, submitCount });
+  }
   /* Where the caret goes once the lines the last action changed are in the
      DOM. A ref, not state: it is consumed by the next commit and never drawn. */
   const pendingFocus = useRef<{ row: number; col: number } | null>(null);
@@ -244,6 +274,24 @@ export function UbLineItemsEditor<TForm extends FieldValues, TName extends Array
     const pending = pendingFocus.current;
     if (pending && focusCell(pending.row, pending.col)) pendingFocus.current = null;
   });
+
+  const focusedSubmit = useRef(0);
+  useEffect(() => {
+    if (!renderCardSummary || !submitCount || focusedSubmit.current === submitCount) return;
+    const row = fields.findIndex((_, index) =>
+      editable.some(
+        (column) => column.field && readError(errors, `${name}.${index}.${column.field}`)
+      )
+    );
+    if (row < 0) {
+      focusedSubmit.current = submitCount;
+      return;
+    }
+    const col = editable.findIndex(
+      (column) => column.field && readError(errors, `${name}.${row}.${column.field}`)
+    );
+    if (focusCell(row, col)) focusedSubmit.current = submitCount;
+  }, [renderCardSummary, submitCount, fields, editable, errors, name, focusCell, expansion.key]);
 
   const addLine = useCallback(() => {
     if (atMax || disabled) return;
@@ -473,61 +521,104 @@ export function UbLineItemsEditor<TForm extends FieldValues, TName extends Array
           )}
           {fields.map((line, index) => {
             const title = columns.find((column) => column.card === 'title');
+            const expanded = !renderCardSummary || expansion.key === line.key;
             return (
               <section
                 key={line.key}
                 aria-label={labels.lineLabel(index + 1)}
                 className={cn(
-                  'flex flex-col gap-3 rounded-card border border-border-hairline p-3',
-                  lineInvalid?.(index) && 'border-formError'
+                  'flex flex-col rounded-card border border-border-hairline',
+                  expanded && 'gap-3 p-3',
+                  (lineInvalid?.(index) ||
+                    columns.some(
+                      (column) =>
+                        column.field && readError(errors, `${name}.${index}.${column.field}`)
+                    )) &&
+                    'border-formError'
                 )}
               >
-                <div className="flex items-start gap-2">
-                  <div className="min-w-0 flex-1">{title && renderCell(title, index, 'card')}</div>
+                {renderCardSummary && (
                   <button
                     type="button"
-                    onClick={() => remove(index)}
+                    aria-label={labels.lineLabel(index + 1)}
+                    aria-expanded={expanded}
+                    aria-controls={expanded ? `${baseId}-${line.key}-fields` : undefined}
+                    aria-describedby={`${baseId}-${line.key}-summary`}
                     disabled={disabled}
-                    aria-label={labels.removeLine(index + 1)}
-                    className="ub-hit flex h-10 w-10 shrink-0 items-center justify-center rounded-control text-text-tertiary hover:bg-surface-sunken hover:text-formError disabled:opacity-50"
+                    onClick={() =>
+                      setExpansion({ keys, submitCount, key: expanded ? null : line.key })
+                    }
+                    className={cn(
+                      'ub-hit min-h-16 w-full rounded-card text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent',
+                      !expanded && 'p-3'
+                    )}
                   >
-                    <Trash2 aria-hidden className="h-4 w-4" />
+                    <span id={`${baseId}-${line.key}-summary`} className="block min-w-0">
+                      <ComputedCell
+                        control={control}
+                        name={`${name}.${index}` as Path<TForm>}
+                        render={() => renderCardSummary(index, expanded)}
+                      />
+                    </span>
                   </button>
-                </div>
-                <div className="grid grid-cols-2 gap-3">
-                  {columns
-                    .filter(
-                      (column) =>
-                        column !== title &&
-                        (column.card ?? (column.field ? 'field' : 'inline')) === 'field'
-                    )
-                    .map((column) => (
-                      <label key={column.id} className="flex min-w-0 flex-col gap-1">
-                        <span className="ds-body-s-medium text-text-secondary">
-                          {column.header}
-                        </span>
-                        {renderCell(column, index, 'card')}
-                      </label>
-                    ))}
-                </div>
-                {columns
-                  .filter(
-                    (column) =>
-                      column !== title &&
-                      (column.card ?? (column.field ? 'field' : 'inline')) === 'inline'
-                  )
-                  .map((column) => (
-                    <div
-                      key={column.id}
-                      className="ds-body-s-regular flex items-center justify-between gap-3"
-                    >
-                      <span className="text-text-tertiary">{column.header}</span>
-                      <span className="min-w-0 text-right">
-                        {renderCell(column, index, 'card')}
-                      </span>
+                )}
+                {expanded && (
+                  <div id={`${baseId}-${line.key}-fields`} className="flex flex-col gap-3">
+                    <div className="flex items-start gap-2">
+                      <div className="min-w-0 flex-1">
+                        {title && renderCell(title, index, 'card')}
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => remove(index)}
+                        disabled={disabled}
+                        aria-label={labels.removeLine(index + 1)}
+                        className="ub-hit flex h-10 w-10 shrink-0 items-center justify-center rounded-control text-text-tertiary hover:bg-surface-sunken hover:text-formError disabled:opacity-50"
+                      >
+                        <Trash2 aria-hidden className="h-4 w-4" />
+                      </button>
                     </div>
-                  ))}
-                {renderLineNote?.(index)}
+                    <div
+                      className={cn(
+                        'grid gap-3',
+                        renderCardSummary ? 'grid-cols-1 min-[360px]:grid-cols-2' : 'grid-cols-2'
+                      )}
+                    >
+                      {columns
+                        .filter(
+                          (column) =>
+                            column !== title &&
+                            (column.card ?? (column.field ? 'field' : 'inline')) === 'field'
+                        )
+                        .map((column) => (
+                          <label key={column.id} className="flex min-w-0 flex-col gap-1">
+                            <span className="ds-body-s-medium text-text-secondary">
+                              {column.header}
+                            </span>
+                            {renderCell(column, index, 'card')}
+                          </label>
+                        ))}
+                    </div>
+                    {columns
+                      .filter(
+                        (column) =>
+                          column !== title &&
+                          (column.card ?? (column.field ? 'field' : 'inline')) === 'inline'
+                      )
+                      .map((column) => (
+                        <div
+                          key={column.id}
+                          className="ds-body-s-regular flex items-center justify-between gap-3"
+                        >
+                          <span className="text-text-tertiary">{column.header}</span>
+                          <span className="min-w-0 text-right">
+                            {renderCell(column, index, 'card')}
+                          </span>
+                        </div>
+                      ))}
+                    {renderLineNote?.(index)}
+                  </div>
+                )}
               </section>
             );
           })}

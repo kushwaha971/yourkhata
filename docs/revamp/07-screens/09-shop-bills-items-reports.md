@@ -198,7 +198,7 @@ limits are in the report.
 
 ### 3.1 Purchases share this editor's shape — see §6.
 
-Tracking: problems — 285 px phone line cards; dock cuts large totals in Hindi (TV-03); out-of-stock reason unclear · decisions — compact rows, always-open item search, settings-driven out-of-stock sentence · dependencies — `UbLineItemsEditor` compact cards, `UbTotalDock` stack, keyboard detection (04 §6) · risks — compact rows hide discount/GST until expanded (mitigation: a line with a non-default discount shows "−5%" in its row) · approval — WP-05 layout A approved 16 Oct; phone compact rows pending (Q3) · build — layout A built; rest not started · tests — `InvoiceEditor.test.tsx`, `counter-editor-review.mjs`, `counter-entry-timing.mjs` re-run at 390 with 1/10/50 lines, `sales-recovery-look.mjs`, double-tap Issue script (05 §5 "0 duplicates") · outcome — —
+Tracking: R-DEC-27 authorizes continuing billing/POS before remaining Home. Shared compact cards, full selected labels and readable total dock are verified locally:4,550 tests and84 measured English/Hindi frames; numeric input checks fail before the320-field-stack/desktop-rate-width fixes. Component self-review8.7, not whole editor. Report: docs/performance/2026-10-20-p5-editor-lines.md. Next: always-visible item search, customer/editor composition, keyboard/save/offline states and real issue/recovery acceptance. Existing pricing/tax/stock/ledger engines remain unchanged; physical-device proof remains open.
 
 ---
 

@@ -1,0 +1,322 @@
+{
+  "results": [
+    {
+      "width": 320,
+      "theme": "light",
+      "locale": "en",
+      "state": "1-lines",
+      "layout": "card",
+      "cards": [
+        338
+      ],
+      "dock": {
+        "cut": true,
+        "text": "₹1,180.00"
+      },
+      "overflow": 0,
+      "cut": [
+        "Radhe Krishna Enterprises Copper Electrical Cable QA",
+        "₹1,180.00"
+      ],
+      "lowContrast": [],
+      "firstRowY": null
+    },
+    {
+      "width": 320,
+      "theme": "light",
+      "locale": "en",
+      "state": "10-lines",
+      "layout": "card",
+      "cards": [
+        338,
+        338,
+        338,
+        338,
+        338,
+        338,
+        338,
+        338,
+        338,
+        338
+      ],
+      "dock": {
+        "cut": true,
+        "text": "₹11,800.00"
+      },
+      "overflow": 0,
+      "cut": [
+        "Radhe Krishna Enterprises Copper Electrical Cable QA",
+        "₹11,800.00"
+      ],
+      "lowContrast": [],
+      "firstRowY": null
+    },
+    {
+      "width": 320,
+      "theme": "light",
+      "locale": "en",
+      "state": "50-lines",
+      "layout": "card",
+      "cards": [
+        338,
+        338,
+        338,
+        338,
+        338,
+        338,
+        338,
+        338,
+        338,
+        338,
+        338,
+        338,
+        338,
+        338,
+        338,
+        338,
+        338,
+        338,
+        338,
+        338,
+        338,
+        338,
+        338,
+        338,
+        338,
+        338,
+        338,
+        338,
+        338,
+        338,
+        338,
+        338,
+        338,
+        338,
+        338,
+        338,
+        338,
+        338,
+        338,
+        338,
+        338,
+        338,
+        338,
+        338,
+        338,
+        338,
+        338,
+        338,
+        338,
+        338
+      ],
+      "dock": {
+        "cut": true,
+        "text": "₹59,000.00"
+      },
+      "overflow": 0,
+      "cut": [
+        "Radhe Krishna Enterprises Copper Electrical Cable QA",
+        "₹59,000.00"
+      ],
+      "lowContrast": [],
+      "firstRowY": null
+    },
+    {
+      "width": 320,
+      "theme": "light",
+      "locale": "en",
+      "state": "large-amount",
+      "layout": "card",
+      "cards": [
+        338,
+        338,
+        338,
+        338,
+        338,
+        338,
+        338,
+        338,
+        338,
+        338
+      ],
+      "dock": {
+        "cut": true,
+        "text": "₹14,74,266.00"
+      },
+      "overflow": 0,
+      "cut": [
+        "Radhe Krishna Enterprises Copper Electrical Cable QA",
+        "₹14,74,266.00"
+      ],
+      "lowContrast": [],
+      "firstRowY": null
+    },
+    {
+      "width": 320,
+      "theme": "dark",
+      "locale": "en",
+      "state": "1-lines",
+      "layout": "card",
+      "cards": [
+        338
+      ],
+      "dock": {
+        "cut": true,
+        "text": "₹1,180.00"
+      },
+      "overflow": 0,
+      "cut": [
+        "Radhe Krishna Enterprises Copper Electrical Cable QA",
+        "₹1,180.00"
+      ],
+      "lowContrast": [],
+      "firstRowY": null
+    },
+    {
+      "width": 320,
+      "theme": "dark",
+      "locale": "en",
+      "state": "10-lines",
+      "layout": "card",
+      "cards": [
+        338,
+        338,
+        338,
+        338,
+        338,
+        338,
+        338,
+        338,
+        338,
+        338
+      ],
+      "dock": {
+        "cut": true,
+        "text": "₹11,800.00"
+      },
+      "overflow": 0,
+      "cut": [
+        "Radhe Krishna Enterprises Copper Electrical Cable QA",
+        "₹11,800.00"
+      ],
+      "lowContrast": [],
+      "firstRowY": null
+    },
+    {
+      "width": 320,
+      "theme": "dark",
+      "locale": "en",
+      "state": "50-lines",
+      "layout": "card",
+      "cards": [
+        338,
+        338,
+        338,
+        338,
+        338,
+        338,
+        338,
+        338,
+        338,
+        338,
+        338,
+        338,
+        338,
+        338,
+        338,
+        338,
+        338,
+        338,
+        338,
+        338,
+        338,
+        338,
+        338,
+        338,
+        338,
+        338,
+        338,
+        338,
+        338,
+        338,
+        338,
+        338,
+        338,
+        338,
+        338,
+        338,
+        338,
+        338,
+        338,
+        338,
+        338,
+        338,
+        338,
+        338,
+        338,
+        338,
+        338,
+        338,
+        338,
+        338
+      ],
+      "dock": {
+        "cut": true,
+        "text": "₹59,000.00"
+      },
+      "overflow": 0,
+      "cut": [
+        "Radhe Krishna Enterprises Copper Electrical Cable QA",
+        "₹59,000.00"
+      ],
+      "lowContrast": [],
+      "firstRowY": null
+    },
+    {
+      "width": 320,
+      "theme": "dark",
+      "locale": "en",
+      "state": "large-amount",
+      "layout": "card",
+      "cards": [
+        338,
+        338,
+        338,
+        338,
+        338,
+        338,
+        338,
+        338,
+        338,
+        338
+      ],
+      "dock": {
+        "cut": true,
+        "text": "₹14,74,266.00"
+      },
+      "overflow": 0,
+      "cut": [
+        "Radhe Krishna Enterprises Copper Electrical Cable QA",
+        "₹14,74,266.00"
+      ],
+      "lowContrast": [],
+      "firstRowY": null
+    }
+  ],
+  "failures": [
+    "320-light-en 1-lines: {\"overflow\":0,\"cut\":[\"Radhe Krishna Enterprises Copper Electrical Cable QA\",\"₹1,180.00\"],\"lowContrast\":[],\"firstRowY\":null}",
+    "320-light-en 10-lines: {\"overflow\":0,\"cut\":[\"Radhe Krishna Enterprises Copper Electrical Cable QA\",\"₹11,800.00\"],\"lowContrast\":[],\"firstRowY\":null}",
+    "320-light-en: expected one expanded row, got 0",
+    "320-light-en 50-lines: {\"overflow\":0,\"cut\":[\"Radhe Krishna Enterprises Copper Electrical Cable QA\",\"₹59,000.00\"],\"lowContrast\":[],\"firstRowY\":null}",
+    "320-light-en: expected one expanded row, got 0",
+    "320-light-en large-amount: {\"overflow\":0,\"cut\":[\"Radhe Krishna Enterprises Copper Electrical Cable QA\",\"₹14,74,266.00\"],\"lowContrast\":[],\"firstRowY\":null}",
+    "320-light-en: expected one expanded row, got 0",
+    "320-dark-en 1-lines: {\"overflow\":0,\"cut\":[\"Radhe Krishna Enterprises Copper Electrical Cable QA\",\"₹1,180.00\"],\"lowContrast\":[],\"firstRowY\":null}",
+    "320-dark-en 10-lines: {\"overflow\":0,\"cut\":[\"Radhe Krishna Enterprises Copper Electrical Cable QA\",\"₹11,800.00\"],\"lowContrast\":[],\"firstRowY\":null}",
+    "320-dark-en: expected one expanded row, got 0",
+    "320-dark-en 50-lines: {\"overflow\":0,\"cut\":[\"Radhe Krishna Enterprises Copper Electrical Cable QA\",\"₹59,000.00\"],\"lowContrast\":[],\"firstRowY\":null}",
+    "320-dark-en: expected one expanded row, got 0",
+    "320-dark-en large-amount: {\"overflow\":0,\"cut\":[\"Radhe Krishna Enterprises Copper Electrical Cable QA\",\"₹14,74,266.00\"],\"lowContrast\":[],\"firstRowY\":null}",
+    "320-dark-en: expected one expanded row, got 0"
+  ]
+}

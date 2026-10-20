@@ -29,6 +29,7 @@ export function ItemLineCell({
   emptyLabel,
   onPick,
   focusNext,
+  wrapLabel = false,
 }: Readonly<{
   id: string;
   label: string;
@@ -39,6 +40,7 @@ export function ItemLineCell({
   emptyLabel: string;
   onPick: (row: ItemListRow) => void;
   focusNext: () => void;
+  wrapLabel?: boolean;
 }>): React.JSX.Element {
   const { t } = useTranslation();
   const dispatch = useAppDispatch();
@@ -49,6 +51,7 @@ export function ItemLineCell({
       aria-label={label}
       value={line?.itemId ?? null}
       selectedLabel={line?.description}
+      wrapSelectedLabel={wrapLabel}
       query={search.query}
       onQueryChange={search.setQuery}
       onOpen={search.activate}

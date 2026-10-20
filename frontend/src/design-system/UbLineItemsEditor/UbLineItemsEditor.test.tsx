@@ -75,6 +75,7 @@ function Harness({
   maxLines,
   responsive = false,
   fits = false,
+  compact = false,
 }: Readonly<{
   initial: Line[];
   layout?: UbLineCellLayout;
@@ -82,6 +83,7 @@ function Harness({
   maxLines?: number;
   responsive?: boolean;
   fits?: boolean;
+  compact?: boolean;
 }>) {
   const { control } = useForm<FormShape>({ defaultValues: { lines: initial } });
   const fieldArray = useFieldArray({ control, name: 'lines', keyName: 'key' });
@@ -92,6 +94,7 @@ function Harness({
       fieldArray={fieldArray}
       columns={fits ? SIZED_COLUMNS : COLUMNS}
       tableWhen={fits ? 'fits' : undefined}
+      renderCardSummary={compact ? (index) => <output>{`Summary ${index + 1}`}</output> : undefined}
       newLine={() => ({ name: '', qty: '' })}
       layout={responsive || fits ? undefined : layout}
       tableFrom={responsive ? 1536 : undefined}
@@ -323,4 +326,88 @@ describe('the table when its columns fit (WP-05 layout A)', () => {
       expect(screen.getByRole('region', { name: 'line 1' })).toBeInTheDocument();
     });
   });
+});
+
+describe('compact phone rows', () => {
+  it('keeps edited quantities when switching rows and opens only one line form', async () => {
+    // Prevents compact cards discarding bill-specific edits when a row unmounts.
+    const user = userEvent.setup();
+    render(
+      <Harness
+        compact
+        layout="card"
+        initial={[
+          { name: 'Copper cable', qty: '2' },
+          { name: 'Switch', qty: '3' },
+        ]}
+      />
+    );
+    expect(screen.queryByLabelText('Qty, line 2')).not.toBeInTheDocument();
+    const quantity = screen.getByLabelText('Qty, line 1');
+    await user.clear(quantity);
+    await user.type(quantity, '12');
+    await user.click(screen.getByRole('button', { name: 'line 2' }));
+    expect(screen.queryByLabelText('Qty, line 1')).not.toBeInTheDocument();
+    expect(screen.getByLabelText('Qty, line 2')).toHaveValue('3');
+    await user.click(screen.getByRole('button', { name: 'line 1' }));
+    expect(screen.getByLabelText('Qty, line 1')).toHaveValue('12');
+  });
+
+  it('opens and focuses a newly added row without losing earlier rows', async () => {
+    // Prevents Add line placing focus into an unmounted collapsed control.
+    const user = userEvent.setup();
+    render(<Harness compact layout="card" initial={[{ name: 'MCB', qty: '2' }]} />);
+    await user.click(screen.getByRole('button', { name: 'Add line' }));
+    expect(screen.getByRole('button', { name: 'line 2' })).toHaveAttribute('aria-expanded', 'true');
+    expect(screen.getByLabelText('Item, line 2')).toHaveFocus();
+    expect(screen.queryByLabelText('Qty, line 1')).not.toBeInTheDocument();
+  });
+});
+
+function InvalidCompactHarness() {
+  const form = useForm<FormShape>({
+    defaultValues: {
+      lines: [
+        { name: 'Cable', qty: '2' },
+        { name: 'Switch', qty: '' },
+      ],
+    },
+    resolver: () => ({
+      values: {},
+      errors: { lines: [{}, { qty: { type: 'required', message: 'Quantity required' } }] },
+    }),
+  });
+  const fieldArray = useFieldArray({ control: form.control, name: 'lines', keyName: 'key' });
+  return (
+    <form onSubmit={form.handleSubmit(() => undefined)}>
+      <UbLineItemsEditor
+        control={form.control}
+        name="lines"
+        fieldArray={fieldArray}
+        layout="card"
+        columns={COLUMNS}
+        newLine={() => ({ name: '', qty: '' })}
+        renderCardSummary={(index) => `Summary ${index + 1}`}
+        labels={{
+          addLine: 'Add line',
+          removeLine: (n) => `Remove ${n}`,
+          lineLabel: (n) => `line ${n}`,
+          empty: 'Empty',
+        }}
+      />
+      <button type="submit">Check form</button>
+    </form>
+  );
+}
+
+it('opens a collapsed invalid row after submission so its reason is visible', async () => {
+  // Prevents Issue refusing a bill while its required-field message stays hidden.
+  const user = userEvent.setup();
+  render(<InvalidCompactHarness />);
+  expect(screen.queryByLabelText('Qty, line 2')).not.toBeInTheDocument();
+  await user.click(screen.getByRole('button', { name: 'Check form' }));
+  expect(await screen.findByText('Quantity required')).toBeVisible();
+  expect(screen.getByLabelText('Qty, line 2')).toHaveFocus();
+  expect(screen.getByRole('button', { name: 'line 2' })).toHaveAttribute('aria-expanded', 'true');
+  expect(screen.queryByLabelText('Qty, line 1')).not.toBeInTheDocument();
 });

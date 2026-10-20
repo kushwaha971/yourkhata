@@ -108,6 +108,7 @@ destructive actions and frozen Library/Lending contracts retain their boundaries
 
 | Date | What was done | Files |
 |---|---|---|
+|20 Oct2026|R-DEC-27 billing component checkpoint: opt-in compact rows, edit/error focus retention, full names, readable total dock and numeric rates.4,550 tests,84 measured frames; whole POS remains in progress. Next: item search/customer composition and issue/recovery flows.|docs/performance/2026-10-20-p5-editor-lines.md;07-screens/09 §3|
 |20 Oct2026|R-DEC-27 owner reordered work: billing/POS, purchases/returns, inventory/money/expenses/reports first; approved remaining Home workflows afterward, using those sources. Next: invoice/POS editor.|07-screens/09; START-NEXT-SESSION-PROMPT.txt|
 |20 Oct2026|BP-15 Home source facts and Shop-origin read fences:4,673 backend passes/16 skips,4,547 frontend passes,168 measured frames; local payment refresh tested. R-DEC-26 approves promises, physical cash observations and explicit settlements; implement next.|docs/performance/2026-10-20-home-register-facts.md;08 BP-08/16/17|
 |20 Oct2026|R-DEC-25 bill reading/detail checkpoint: native phone lines, summary/rail, current cancellation facts, Shop-specific Receive, editable sharing and safe print. Full4,541 tests;230 measured frames;four local₹1 receipts;12 quiet nav samples. New Home workflow scope remains pending approval; metadata read follow-up is next.|docs/performance/2026-10-20-p5-bill-detail.md;08 BP-08/15/16/17|
@@ -151,7 +152,9 @@ destructive actions and frozen Library/Lending contracts retain their boundaries
 3. Remaining Home workflows approved in R-DEC-26 (BP-08/16/17), integrated with
    the verified source workflows, followed by Home end-to-end acceptance.
 
-Immediate next: invoice/POS editor,07-screens/09 §3. Continue review→build→LOOK→
+Immediate next: continue invoice/POS editor,07-screens/09 §3. Compact line rows/
+readable totals are locally verified; finish item search/customer composition,
+keyboard/save/offline states and real issue/recovery flows. Continue review→build→LOOK→
 report→commit/push for each piece without routine permission questions. Preserve
 separate roles/books, source permissions and frozen Library/Lending contracts.
 

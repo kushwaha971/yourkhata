@@ -60,6 +60,8 @@ export interface UbAsyncComboboxProps {
   readonly value: string | null | undefined;
   /** What the closed trigger shows for `value` — the caller knows the label. */
   readonly selectedLabel?: string;
+  /** Full selected item name on document rows, without an ellipsis. */
+  readonly wrapSelectedLabel?: boolean;
   readonly query: string;
   readonly onQueryChange: (query: string) => void;
   readonly options: readonly UbAsyncComboboxOption[];
@@ -116,6 +118,7 @@ const UbAsyncComboboxInner = forwardRef<HTMLButtonElement, UbAsyncComboboxProps>
     {
       value,
       selectedLabel,
+      wrapSelectedLabel = false,
       query,
       onQueryChange,
       options,
@@ -263,11 +266,17 @@ const UbAsyncComboboxInner = forwardRef<HTMLButtonElement, UbAsyncComboboxProps>
             invalid
               ? 'border-formError focus-visible:border-formError'
               : 'border-border-hairline hover:border-border-subtle focus-visible:border-text-primary',
+            wrapSelectedLabel && 'h-auto min-h-10 py-2',
             className
           )}
           {...aria}
         >
-          <span className={cn('truncate', !value && 'text-text-muted')}>
+          <span
+            className={cn(
+              wrapSelectedLabel ? 'min-w-0 whitespace-normal break-words' : 'truncate',
+              !value && 'text-text-muted'
+            )}
+          >
             {value ? (selectedLabel ?? value) : placeholder}
           </span>
           <ChevronDown aria-hidden className="h-4 w-4 shrink-0 text-text-tertiary" />
