@@ -1,0 +1,22 @@
+
+> digikhaato-frontend@0.1.0 i18n:check
+> node scripts/check-locales.mjs
+
+  ! "feedback.*" has no line in locales/catalogues.json — kept in the shell
+  ! imports a catalogue it never renders — app/(auth)/login/page.tsx: legal
+  ! imports a catalogue it never renders — app/(auth)/signup/page.tsx: legal
+  ! imports a catalogue it never renders — src/modules/DigiKhaato/features/expenses/components/ExpenseDetailDrawer.tsx: partyPicker
+  ! only its dynamic() children render paymentActions; importing it there keeps it out of first paint — app/(app)/sales/challans/[id]/page.tsx
+  ! only its dynamic() children render paymentActions; importing it there keeps it out of first paint — app/(app)/sales/credit-notes/[id]/page.tsx
+  ! only its dynamic() children render paymentActions; importing it there keeps it out of first paint — app/(app)/sales/estimates/[id]/page.tsx
+  ! only its dynamic() children render paymentActions; importing it there keeps it out of first paint — app/(app)/sales/invoices/[id]/page.tsx
+  ! only its dynamic() children render paymentActions; importing it there keeps it out of first paint — app/(app)/sales/orders/[id]/page.tsx
+  ! only its dynamic() children render validation; importing it there keeps it out of first paint — app/(app)/sales/challans/[id]/edit/page.tsx
+  ! only its dynamic() children render validation; importing it there keeps it out of first paint — app/(app)/sales/challans/new/page.tsx
+  ! only its dynamic() children render validation; importing it there keeps it out of first paint — app/(app)/sales/estimates/[id]/edit/page.tsx
+  ! only its dynamic() children render validation; importing it there keeps it out of first paint — app/(app)/sales/estimates/new/page.tsx
+  ! only its dynamic() children render validation; importing it there keeps it out of first paint — app/(app)/sales/invoices/[id]/edit/page.tsx
+  ! only its dynamic() children render validation; importing it there keeps it out of first paint — app/(app)/sales/invoices/new/page.tsx
+  ! only its dynamic() children render validation; importing it there keeps it out of first paint — app/(app)/sales/orders/[id]/edit/page.tsx
+  ! only its dynamic() children render validation; importing it there keeps it out of first paint — app/(app)/sales/orders/new/page.tsx
+✓ locales in step — 6657 keys in 57 catalogues (en and hi), disjoint, current, and loaded by every one of 391 chunks that renders them

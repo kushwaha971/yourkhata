@@ -29,7 +29,7 @@ import { ratePlaces } from '../../sales/view-model/invoiceForm';
 import { PURCHASE_MAX_LINES } from '../constants/purchaseConstants';
 import {
   emptyPurchaseLine,
-  lastCostChange,
+  purchaseCostChanged,
   type PurchaseBillFormValues,
 } from '../view-model/purchaseBillForm';
 
@@ -50,8 +50,7 @@ const LineFinder = dynamic(
  * GST"). Enter moves cell to cell, Alt+N adds a line, Ctrl+Enter records; a
  * phone gets cards.
  *
- * Under each line: "Last cost ₹46.00 (+13 %)" when the typed cost differs from
- * the item's (Alternate E), and "differs from item (GST5)" when the code does
+ * Changed costs explain the record-time effect without copying inbound costing; "differs from item (GST5)" when the code does
  * (§8) — both hints, never errors.
  */
 export function PurchaseBillLinesSection({
@@ -60,12 +59,14 @@ export function PurchaseBillLinesSection({
   rateOptions,
   disabled,
   onSubmitShortcut,
+  order = false,
 }: Readonly<{
   form: UseFormReturn<PurchaseBillFormValues>;
   preview: EngineResult;
   rateOptions: readonly { code: string; name: string }[];
   disabled: boolean;
   onSubmitShortcut: () => void;
+  order?: boolean;
 }>): React.JSX.Element {
   const { t } = useTranslation();
   const { control, watch, setValue, getValues, trigger } = form;
@@ -170,7 +171,7 @@ export function PurchaseBillLinesSection({
         id: 'cost',
         header: t('purchases.line.cost'),
         field: 'unitCost',
-        track: 'minmax(9.5rem,1.3fr)',
+        track: 'minmax(11rem,1.3fr)',
         align: 'end',
         render: ({ field, id, label, invalid }) => (
           <UbMoneyInput
@@ -180,6 +181,7 @@ export function PurchaseBillLinesSection({
             value={(field?.value as string) ?? ''}
             onChange={(next) => field?.onChange(next)}
             decimalPlaces={ratePlaces((field?.value as string) ?? '')}
+            maxDecimalPlaces={4}
             invalid={invalid}
             placeholder={t('purchases.line.costPlaceholder')}
           />
@@ -251,7 +253,9 @@ export function PurchaseBillLinesSection({
     (index: number) => {
       const line = lines?.[index];
       if (!line) return null;
-      const change = lastCostChange(line.unitCost, line.lastCost);
+      const original =
+        line.lastCost || form.formState.defaultValues?.lines?.[index]?.unitCost || '';
+      const change = purchaseCostChanged(line.unitCost, original);
       const taxDiffers = !!line.itemTaxCode && line.itemTaxCode !== line.taxCode;
       const remember = !!line.itemId && !!partyId;
       if (!change && !taxDiffers && !remember) return null;
@@ -272,10 +276,7 @@ export function PurchaseBillLinesSection({
           )}
           {change && (
             <UbText variant="caption" tone="tertiary">
-              {t('purchases.line.lastCost', {
-                amount: formatAmount(line.lastCost),
-                change: `${change.percent > 0 ? '+' : ''}${change.percent}`,
-              })}
+              {t(order ? 'purchases.line.orderCostNote' : 'purchases.line.costNote')}
             </UbText>
           )}
           {taxDiffers && (
@@ -286,7 +287,7 @@ export function PurchaseBillLinesSection({
         </UbStack>
       );
     },
-    [lines, t, partyId, partyName, setValue]
+    [lines, t, partyId, partyName, setValue, form.formState.defaultValues, order]
   );
 
   return (
@@ -326,6 +327,7 @@ export function PurchaseBillLinesSection({
               quantity={line?.qty || '0'}
               unit={line?.unitCode || ''}
               unitAmount={line?.unitCost || '0'}
+              unitAmountPlaces={ratePlaces(line?.unitCost || '')}
               total={preview.lines[index]?.lineTotal ?? '0'}
               discountType={line?.discountType}
               discountValue={line?.discountValue}

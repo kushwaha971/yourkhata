@@ -1,5 +1,6 @@
 {
   "//": [
+    "21 Oct2026 purchase cost words and four-place unit-rate entry: reuse the money input with opt-in entry precision and shared summary formatting; no pricing/stock engine change. Editors166.9 KB route/407.8\u2013407.9 first load; only seven exceeded route/first-load scalars use measured+0.3. Shared113.7/framework127.3 unchanged. See purchase-editor report step4.",
     "21 Oct 2026 purchase \u00a77 save/finish safety: server-acknowledged semantic input snapshots, omitted-row protection, source-default reconciliation before Paid now, offline/leave guards and shared window/async locks. Latest measured editors166.6 KB route /407.5\u2013407.6 KB first load; only exceeded scalars use measured +0.3 KB. Shared113.7/framework127.3 limits unchanged; no package, duplicated pricing engine or global app-switch guard. Final numbers and exact scoped budget changes are in docs/performance/2026-10-20-p5-purchase-editor.md.",
     "20 Oct 2026 purchase counter step 1: shared quick-add, dynamic labeled line finder and compact cost rows buy scanner/repeat Qty and keyboard selection. Purchase editors measure 164.2 KB route /405.1\u2013405.2 first load; sales extraction measures 168.2 /409.1\u2013409.2. Only 12 editor-route ceilings use measured +0.3 KB. Framework/shared ceilings unchanged; no new package. See docs/performance/2026-10-20-p5-purchase-quick-add.md.",
     "20 Oct 2026, R-DEC-27 billing line/dock piece: opt-in compact line cards retain field-array edits, expand/focus invalid rows and expose stock warnings; full item-label trigger and stacked phone total dock. Reusing one line-editor implementation adds 0.3 KB on purchase editor routes and 0.5\u20130.6 KB on sales editors. Only the 24 exceeded route/first-load scalars across 12 editor routes use measured gzip +0.3 KB. Framework127.3 and shared app113.7 ceilings unchanged; no package added. This is not a whole POS/Shop completion claim. Evidence: docs/performance/2026-10-20-p5-editor-lines.md.",
@@ -1408,7 +1409,7 @@
     },
     "/purchases/debit-notes/[id]": {
       "route": 71.9,
-      "firstLoad": 312.6
+      "firstLoad": 313.0
     },
     "/purchases/debit-notes": {
       "route": 83.3,
@@ -1432,7 +1433,7 @@
     },
     "/purchases/orders/[id]": {
       "route": 71.9,
-      "firstLoad": 312.6
+      "firstLoad": 313.0
     },
     "/purchases/orders": {
       "route": 83.3,
@@ -1440,10 +1441,10 @@
     },
     "/purchases/orders/new": {
       "route": 166.9,
-      "firstLoad": 407.8
+      "firstLoad": 408.1
     },
     "/purchases/orders/[id]/edit": {
-      "route": 166.9,
+      "route": 167.2,
       "firstLoad": 407.9
     },
     "/sales/orders/[id]": {
@@ -1644,7 +1645,7 @@
     },
     "/purchases/bills/[id]": {
       "route": 71.8,
-      "firstLoad": 312.6
+      "firstLoad": 313.0
     },
     "/purchases/bills/[id]/edit": {
       "route": 166.9,
@@ -1656,7 +1657,7 @@
     },
     "/purchases/bills/new": {
       "route": 166.9,
-      "firstLoad": 407.8
+      "firstLoad": 408.1
     },
     "/reports": {
       "route": 72,
@@ -1759,7 +1760,7 @@
       "firstLoad": 292.6
     },
     "/d/[token]": {
-      "route": 40.6,
+      "route": 40.9,
       "firstLoad": 281.7
     },
     "/accept-invite/[token]": {

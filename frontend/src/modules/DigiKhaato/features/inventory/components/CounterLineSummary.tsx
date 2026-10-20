@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 
 import { UbStack, UbText } from 'src/design-system';
-import { formatInr } from 'src/utils/money';
+import { formatInr, formatUnitPrice } from 'src/utils/money';
 
 /** Internal counter-row presentation. Callers supply their existing engine's amounts. */
 export function CounterLineSummary({
@@ -9,6 +9,7 @@ export function CounterLineSummary({
   quantity,
   unit,
   unitAmount,
+  unitAmountPlaces = 2,
   total,
   discountType,
   discountValue,
@@ -18,6 +19,7 @@ export function CounterLineSummary({
   quantity: string;
   unit: string;
   unitAmount: string;
+  unitAmountPlaces?: 2 | 4;
   total: string;
   discountType?: string;
   discountValue?: string;
@@ -30,7 +32,7 @@ export function CounterLineSummary({
       </UbText>
       <UbStack direction="row" justify="between" gap={2} wrap>
         <UbText variant="caption" tone="secondary" className="break-words">
-          {quantity || '0'} {unit} × {formatInr(unitAmount || '0')}
+          {quantity || '0'} {unit} × {formatUnitPrice(unitAmount || '0', unitAmountPlaces)}
           {discountType && discountValue
             ? ` · −${discountType === 'percent' ? `${discountValue}%` : formatInr(discountValue)}`
             : ''}

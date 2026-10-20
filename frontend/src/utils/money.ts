@@ -88,3 +88,14 @@ export const moneyOrZero = (value: MoneyString | number | null | undefined): Mon
 
 /** Strips grouping and symbols from user input back to a wire-shaped string. */
 export const parseAmountInput = (input: string): MoneyString => input.replace(/[^\d.-]/g, '');
+
+/** Unit rates can carry fractions of a paise; totals still use formatInr at2dp. */
+export const formatUnitPrice = (value: MoneyString, places: 2 | 4 = 2): string =>
+  places === 2
+    ? formatInr(value)
+    : new Intl.NumberFormat('en-IN', {
+        style: 'currency',
+        currency: 'INR',
+        minimumFractionDigits: places,
+        maximumFractionDigits: places,
+      }).format(toDecimal(value).toNumber());

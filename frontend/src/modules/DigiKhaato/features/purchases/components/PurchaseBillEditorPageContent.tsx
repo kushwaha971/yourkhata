@@ -333,6 +333,7 @@ export function PurchaseBillEditorPageContent({
               />
             </UbPanel>
             <PurchaseBillLinesSection
+              order={order}
               form={form}
               preview={preview}
               rateOptions={context.rateOptions}

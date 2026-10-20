@@ -13,7 +13,7 @@ import {
   defaultDueOn,
   emptyPurchaseForm,
   emptyPurchaseLine,
-  lastCostChange,
+  purchaseCostChanged,
   purchasePreviewInput,
   purchaseWireSnapshot,
   toPurchaseWireBody,
@@ -121,10 +121,10 @@ describe('the wire body', () => {
 });
 
 describe('hints', () => {
-  it('says how far the cost moved from the last one (Alternate E)', () => {
-    expect(lastCostChange('52', '46.00')).toEqual({ percent: 13 });
-    expect(lastCostChange('46', '46.00')).toBeNull();
-    expect(lastCostChange('46', '0.00')).toBeNull();
+  it('compares costs exactly, including a previous zero', () => {
+    expect(purchaseCostChanged('52', '46.00')).toBe(true);
+    expect(purchaseCostChanged('46', '46.00')).toBe(false);
+    expect(purchaseCostChanged('46', '0.00')).toBe(true);
   });
 
   it('defaults the due date from the supplier credit days, or the bill date itself (FR-2)', () => {

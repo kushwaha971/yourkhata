@@ -973,3 +973,31 @@ it('finds a numbered line on a long purchase bill, including identical item name
     expect(document.activeElement?.closest<HTMLElement>('[data-line-cell]')?.dataset.row).toBe('4')
   );
 });
+
+describe('purchase cost words and precision', () => {
+  it('keeps a newly typed four-place cost through Save instead of dropping the third digit', async () => {
+    // Defect: display precision started at2, so the third digit never reached ratePlaces.
+    const user = userEvent.setup();
+    renderWithProviders(<PurchaseBillEditorPageContent documentId="b1" />);
+    const cost = await screen.findByLabelText('Cost, line 1');
+    await user.clear(cost);
+    await user.type(cost, '40.1234');
+    expect(cost).toHaveValue('40.1234');
+    expect(screen.getByText(/NOS × ₹40\.1234/)).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Save draft' }));
+    await waitFor(() => expect(service.updatePurchaseBill).toHaveBeenCalled());
+    expect(service.updatePurchaseBill.mock.calls.at(-1)?.[1].lines[0].unit_cost).toBe('40.1234');
+    expect(screen.getByText(/This bill’s cost/)).toHaveTextContent('after discounts and tax');
+  });
+
+  it('does not promise that sending an order updates the item purchase cost', async () => {
+    // Defect: shared bill wording would imply Send changes stock/defaults, which only Record does.
+    const user = userEvent.setup();
+    renderWithProviders(<PurchaseBillEditorPageContent documentId="b1" kind="purchase_order" />);
+    const cost = await screen.findByLabelText('Cost, line 1');
+    await user.clear(cost);
+    await user.type(cost, '42');
+    expect(screen.getByText(/Expected cost for this order/)).toHaveTextContent('does not change');
+    expect(screen.queryByText(/This bill’s cost/)).not.toBeInTheDocument();
+  });
+});

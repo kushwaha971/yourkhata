@@ -377,6 +377,24 @@ try {
         `${tag}: explicit zero became the item default`
       );
       await shot('explicit-zero-saved');
+      await cost.fill('');
+      await cost.pressSequentially('40.1204');
+      assert((await cost.inputValue()) === '40.1204', `${tag}: typed four-place cost lost digits`);
+      const precise = await saveAndRead();
+      assert(precise.lines[1].unit_cost === '40.1204', `${tag}: saved four-place cost changed`);
+      await shot('precise-cost');
+      const firstToggle = page.getByTestId('line-items-editor').getByRole('button', {
+        name: locale === 'hi' ? 'पंक्ति 1' : 'line 1', exact: true,
+      });
+      if (await firstToggle.count()) await firstToggle.click();
+      const largeCost = page.locator('[data-line-cell][data-row="0"][data-col="2"] input');
+      await largeCost.fill('1240378.1234');
+      await largeCost.blur();
+      await shot('large-precise-cost');
+      const secondToggle = page.getByTestId('line-items-editor').getByRole('button', {
+        name: locale === 'hi' ? 'पंक्ति 2' : 'line 2', exact: true,
+      });
+      if (await secondToggle.count()) await secondToggle.click();
       await cost.fill(defaults.purchase_price);
       await saveAndRead();
       const qty = page.locator('[data-line-cell][data-row="1"][data-col="1"] input');

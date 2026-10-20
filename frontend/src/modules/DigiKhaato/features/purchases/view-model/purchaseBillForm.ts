@@ -228,20 +228,9 @@ export const hasRecordableLines = (
   preview: EngineResult
 ): boolean => preview.lines.length > 0 && values.lines.some(isCompletePurchaseLine);
 
-/**
- * Alternate E — "Last cost ₹46.00 (+13 %)". Null when there is no last cost to
- * compare with, or the cost has not moved.
- */
-export const lastCostChange = (
-  unitCost: string,
-  lastCost: string
-): { readonly percent: number } | null => {
-  if (!isNumber(unitCost) || !isNumber(lastCost)) return null;
-  const last = Number(lastCost);
-  const now = Number(unitCost);
-  if (last <= 0 || now === last) return null;
-  return { percent: Math.round(((now - last) / last) * 100) };
-};
+/** Exact comparison for the cost note; a zero previous cost is still meaningful. */
+export const purchaseCostChanged = (unitCost: string, lastCost: string): boolean =>
+  isNumber(unitCost) && isNumber(lastCost) && compareMoney(unitCost, lastCost) !== 0;
 
 /** FR-2 — due date = bill date + the supplier's credit days (the bill date itself when none). */
 export const defaultDueOn = (documentDate: string, creditDays: number | null): string => {

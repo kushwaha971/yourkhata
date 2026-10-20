@@ -57,6 +57,8 @@ export interface UbMoneyInputProps extends Omit<
   /** Defaults to `₹`. A partner in another currency passes its own. */
   readonly currencySymbol?: string;
   readonly decimalPlaces?: number;
+  /** Optional entry precision for unit rates; ordinary money keeps decimalPlaces. */
+  readonly maxDecimalPlaces?: number;
   readonly className?: string;
 }
 
@@ -134,6 +136,7 @@ const UbMoneyInputInner = forwardRef<HTMLInputElement, UbMoneyInputProps>(
       invalid,
       currencySymbol = '₹',
       decimalPlaces = 2,
+      maxDecimalPlaces = decimalPlaces,
       className,
       onFocus,
       onBlur,
@@ -146,11 +149,11 @@ const UbMoneyInputInner = forwardRef<HTMLInputElement, UbMoneyInputProps>(
 
     const handleChange = useCallback(
       (event: React.ChangeEvent<HTMLInputElement>) =>
-        onChange(capDecimals(sanitiseAmount(event.target.value), decimalPlaces)),
-      [onChange, decimalPlaces]
+        onChange(capDecimals(sanitiseAmount(event.target.value), maxDecimalPlaces)),
+      [onChange, maxDecimalPlaces]
     );
 
-    const raw = capDecimals(value ?? '', decimalPlaces);
+    const raw = capDecimals(value ?? '', maxDecimalPlaces);
     const shown = focused || !value ? raw : groupIndian(value, decimalPlaces);
 
     return (
@@ -192,10 +195,12 @@ const UbMoneyInputInner = forwardRef<HTMLInputElement, UbMoneyInputProps>(
                   shown.slice(0, offset ?? shown.length).replace(/,/g, '').length;
                 const start = rawOffset(input.selectionStart);
                 const end = rawOffset(input.selectionEnd);
+                const selectedAll =
+                  input.selectionStart === 0 && input.selectionEnd === shown.length;
                 flushSync(() => setFocused(true));
                 input.setSelectionRange(
                   Math.min(start, input.value.length),
-                  Math.min(end, input.value.length)
+                  selectedAll ? input.value.length : Math.min(end, input.value.length)
                 );
               });
             } else setFocused(true);
@@ -206,7 +211,7 @@ const UbMoneyInputInner = forwardRef<HTMLInputElement, UbMoneyInputProps>(
             setFocused(false);
             // Committed to the caller's precision on the way out, so the form
             // holds "2300.00" rather than "2300." or "2300".
-            if (value) onChange(padDecimals(value, decimalPlaces));
+            if (value) onChange(padDecimals(value, maxDecimalPlaces));
             onBlur?.(event);
           }}
           className={cn('ds-num pl-7 text-right', invalid && 'border-formError')}

@@ -100,3 +100,60 @@ and use truthful words. The old handoff's claimed supplier one-line summary is
 actually a separate picker plus More details card: build the joined summary in
 step6. Cost wording/precision, definitive payment403 recovery, lost Record-reply
 recovery and whole-editor acceptance remain pending. No whole-editor score yet.
+
+## Step 4 — truthful cost words and real unit-rate precision (21 October)
+
+The raw entered cost is not always the next item default: the backend uses
+net inbound cost after discounts and nonclaimable tax; the last applicable
+repeated-item line wins. The cost note now describes that effect in words,
+without a second pricing engine or a misleading guaranteed raw rupee amount.
+Orders say expected cost; Send does not change stock or item defaults.
+A zero previous cost is a meaningful comparison; exact decimal comparison
+replaces the old floating-point percent hint. Loaded draft baselines also work.
+This corrects §7's oversimplified price promise, preserving the real engine.
+
+A new test exposed a real entry defect: two-place display precision also capped
+what could be typed, so 40.1234 became40.12 before ratePlaces could expand it.
+UbMoneyInput now accepts optional entry precision (only purchase unit cost opts
+into4); ordinary money stays at its caller's precision. Select-all remains safe
+when removing grouping/changing focused precision. The shared counter summary
+uses optional unit-price precision so a collapsed row does not hide those digits.
+Totals remain two-place money; actual saved string40.1204 is read from the API.
+The desktop cost track fits ₹12,40,378.1234 without shrinking the font.
+
+Fail-before unit and real-browser evidence retained in cost-* data. The first
+full test run was RED: one new assertion assumed Qty20.000, but the form correctly
+normalizes it to20. The assertion now checks the actual rate summary, without
+weakening the wire-cost check. Final412 suites/4,613 tests pass in100.776s;
+existing act/network/worker-teardown diagnostics remain recorded. Changed-file
+lint, types, locale split/check, production build, bundle and174 contrast pass.
+29 existing backend record/payment tests pass on the isolated test DB, including
+ITC/nonclaimable cost, stock/ledger/audit and atomic payment403 refusal.
+
+Live QA240 frames (160en/80hi),20 states at the required twelve viewport/theme/
+locale profiles: zero overflow, text cuts, numeric-width, label contrast or
+runtime failures. All six sheets inspected, plus native320 and1280 large precise
+cost frames. Real typing40.1204 survives Save; null/explicit0/late-reply/native
+leave checks still pass; catalog defaults stay unchanged on draft saves. Test
+harness corrections expand the relevant card before interacting (opening one
+card correctly closes the previous card). Drafts created by the sweep are removed.
+Artifacts: chat workspace artifacts/purchase-cost-2026-10-21/.
+
+Bundle gate initially refused seven exceeded scalars (0–0.1KB over rounded
+ceilings). Only those seven use measured+0.3KB, documented in the budget file.
+Editor166.9KB route/407.8–407.9 first load; shared113.7/framework127.3 unchanged.
+No dependency, financial engine, payload, historical document or frozen app
+workflow change. Shared input/formatting changes are presentation only.
+
+The first broader nav run hit an unchanged legacy `nav a[href="/more"]`
+selector under the current shell; stopped, preserved red log, no whole-nav pass
+claim. Repeating the same two controls as prior/baseline runs completes24/24
+cases reps3, otherwise idle. Content medians below are observations, not an
+improvement claim; final fresh old/new/old/new remains outstanding.
+
+- 390 unthrottled: median144ms, p95251ms.
+- 390 throttled: median525ms, p95789ms.
+- 1280 unthrottled: median446ms, p95566ms.
+- 1280 throttled: median840ms, p951157ms.
+
+Next: definitive payment-permission recovery, lost Record-reply recovery, joined supplier summary and whole-editor acceptance. No whole-editor rating yet.

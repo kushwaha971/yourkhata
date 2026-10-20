@@ -60,8 +60,9 @@ NEXT: steps below, each reviewed/built/looked/reported/committed separately.
    unload guards, partial-row Record refusal and source-default payment preflight.
    Shared window hook moved; native money clear and stale toast occlusion fixed.
    4,611 tests/216 frames, all gates pass. See purchase-editor report.
-4. Cost note in words: "This bill's cost. The item's purchase price will
-   update to Rs42 when you record." (replaces "Last cost Rs46 (+13 %)").
+4. DELIVERED21Oct: truthful source-cost/order notes, exact comparison,
+   four-place typed/saved costs and readable shared summaries. 4,613 tests,
+   240 measured frames,29 backend checks; all production gates. See report.
 5. Record refused for payment permission (403 details.payment): "You can record
    bills but not pay suppliers. Record it as Pay later, or ask the owner." with
    a "Record as Pay later" button.

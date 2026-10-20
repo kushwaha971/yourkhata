@@ -1,0 +1,12 @@
+.............................                                            [100%]
+=============================== warnings summary ===============================
+apps/purchases/tests/test_record.py::test_the_worked_example_posts_stock_ledger_last_cost_number_and_audit
+apps/purchases/tests/test_record.py::test_the_worked_example_posts_stock_ledger_last_cost_number_and_audit
+apps/purchases/tests/test_record.py::test_the_worked_example_posts_stock_ledger_last_cost_number_and_audit
+apps/purchases/tests/test_record.py::test_the_worked_example_posts_stock_ledger_last_cost_number_and_audit
+apps/purchases/tests/test_record.py::test_the_worked_example_posts_stock_ledger_last_cost_number_and_audit
+apps/purchases/tests/test_record.py::test_the_worked_example_posts_stock_ledger_last_cost_number_and_audit
+  /Users/akashkushwaha/Projects/ims-platform/.venv/lib/python3.11/site-packages/rest_framework/urlpatterns.py:108: RemovedInDjango60Warning: Converter 'drf_format_suffix' is already registered. Support for overriding registered converters is deprecated and will be removed in Django 6.0.
+    register_converter(suffix_converter, converter_name)
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
