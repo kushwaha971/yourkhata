@@ -225,6 +225,21 @@ draws, compute the preview once per change outside render, defer the caret's
 than re-running the whole schema on append. Until then phone performance stays
 an honest 8.
 
+**Third attempt, measured and not kept**: memoizing the customer section and
+moving the caret's `focus()` out of the Enter (to a zero-delay timer). Two runs:
+Enter→line 192–193 ms on the phone, the Enter event 152 ms (from about 168), the
+laptop unchanged. Within noise; reverted.
+
+**The cost does not grow with the bill.** The per-pick times in
+`data/2026-10-20-counter-billing-editor.json` are as slow for the first line
+(about 250 ms) as for the thirtieth: on a 4×-slowed phone a pick costs a fixed
+~190 ms however long the bill is, and the laptop is ~40 ms rising to ~130. So
+"a long phone bill" was the wrong frame; it is any pick on a slow phone, and
+three targeted trims each moved it by less than the run-to-run noise. Getting
+well under it is a redesign of how the editor holds its state, not a tweak.
+This container's CPU, slowed 4×, is also likely harsher than the mid-range
+Android it stands in for; that has not been calibrated.
+
 ## Rescore (20 Oct), in the Counter Mode artifact's table
 
 Against the owner's bar of above 8.5 in every aspect, phone and desktop.
