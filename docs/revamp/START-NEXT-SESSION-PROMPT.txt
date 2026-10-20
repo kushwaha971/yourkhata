@@ -39,21 +39,21 @@ scores 8.5-9 in every aspect except phone performance 8 (see below). Next is
 the purchase editor, 07-screens/09 §7 (then §5 list, §6 detail, returns/debit
 notes, and the remaining sales documents: estimates, orders, challans, credit
 notes, which share the sales editor and already get its counter features).
-Review done 20 Oct (code read, nothing built yet). Gaps against §7 and the
-Counter Mode standard, build in this order, one verified commit each:
-1. Item search ABOVE the lines (ItemQuickAdd), repeat scan raises Qty, a scan
-   keeps the caret in the search, a list pick puts it on Qty, and "Find a line
-   on this bill" from 10 lines. DO NOT COPY the sales code: extract the
-   quick-add logic from sales InvoiceLinesSection.quickAdd into a shared
-   features/inventory/hooks/useLineQuickAdd.ts and move InvoiceLineFinder to a
-   shared inventory LineFinder taking labels; then use both from sales and
-   PurchaseBillLinesSection. Purchase picks fill unitCost/lastCost/taxCode/
-   itemTaxCode (see its `pick`). Add purchases.line.quickAdd.* and
-   purchases.line.find* locale keys (en + hi; Hindi line = पंक्ति).
-   Tests to write first (PurchaseBillEditor.test.tsx, draft b1 has Rice qty 20
-   and Sugar): search adds a third line with the caret at row 2 col 1; scanning
-   Rice's barcode raises row 0 Qty 20 -> 21, no third row, focus stays in the
-   search. Mock itemService like sales InvoiceEditor.test.tsx does.
+Purchase §7 step 1 is DELIVERED (20 Oct): shared inventory useLineQuickAdd,
+LineFinder and CounterLineSummary used by sales and purchases; top search,
+repeat Qty, scanner/list focus, finder from ten named lines, compact cost cards.
+No copied quick-add logic or pricing/stock engine. Existing purchase pick owns
+unitCost/lastCost/taxCode/itemTaxCode. 412 suites/4,596 tests pass (worker
+teardown warning recorded); 108 measured frames en/hi, zero cuts/contrast/page
+failures, actual edited draft readback and item defaults unchanged. Supplier-
+inclusive 30-line picks median36ms phone390 CPU×4 /38ms desktop1280; same-Mac
+old/new/old/new navigation pooled throttled526/840ms unchanged. Component rubric
+8.75 is NOT whole-purchase completion. Report and raw data:
+docs/performance/2026-10-20-p5-purchase-quick-add.md. New harness:
+e2e/revamp-purchase-quick-add.mjs; perf-billing.mjs --side=purchases. The stale
+sales-customer test clicked a pending option on unchanged parent too; it now
+waits for selected:true without changing production customer behavior.
+NEXT: steps below, each reviewed/built/looked/reported/committed separately.
 2. Dock: caption "N items · includes GST Rs x" and the save state as `meta`
    (UbTotalDock already has caption/meta), Record marigold.
 3. Honest save caption: "Saved" only after the server answers; offline or
@@ -65,8 +65,8 @@ Counter Mode standard, build in this order, one verified commit each:
    bills but not pay suppliers. Record it as Pay later, or ask the owner." with
    a "Record as Pay later" button.
 6. Supplier one-line summary exists below 1536 (16 Oct) — verify on phone.
-Then LOOK (harness like e2e/revamp-editor-compose.mjs; a purchase one does not
-exist yet — e2e/purchase-recovery-look.mjs is the closest), perf, rescore.
+Then LOOK (harness like e2e/revamp-editor-compose.mjs; the purchase harness is e2e/revamp-purchase-quick-add.mjs;
+e2e/purchase-recovery-look.mjs covers lost replies), perf, rescore.
 
 THE STANDARD EVERY MODULE IS SCORED AGAINST (learned on billing, 20 Oct)
 Owner's bar: above 8.5 in EVERY aspect — function, busy shop, UI/UX,

@@ -120,6 +120,15 @@ destructive actions and frozen Library/Lending contracts retain their boundaries
 
 ## Progress
 
+20 Oct 2026 — Purchase §7 step 1 delivered: shared quick-add, dynamic labeled finder and compact cost rows reused by sales/purchases; repeat Qty preserves cost overrides, scanner/list focus, edited draft readback. 412 suites/4,596 tests, 108 measured en/hi frames, no cuts/overflow/contrast failures. Supplier-inclusive 30-line pick median36 ms phone CPU×4 /38 ms desktop; old/new/old/new navigation throttled526/840 ms unchanged. Component rubric8.75, not whole-purchase completion. Report: `docs/performance/2026-10-20-p5-purchase-quick-add.md`. Next dock caption/meta, then honest save/leave, cost words, refusal recovery, supplier summary.
+
+20 Oct review correction (R-DEC-27/29): the old Next still instructed another
+billing pick-speed trim although the owner chose “Move on” and deferred the
+subscription redesign. The current handoff supersedes that instruction.
+Purchase §7 also explicitly requires compact cost rows as §3; step 1 therefore
+shares CounterLineSummary as well as quick-add/finder, instead of copying sales
+markup. This does not change cost, tax or posting ownership.
+
 20 Oct 2026 — Owner chose "Move on": billing phone performance stays 8 (a pick costs ~190 ms at 4x CPU on any bill length; three targeted fixes measured within noise); the editor state redesign is deferred, and the remaining sales documents, purchases and returns are next (R-DEC-27).
 
 20 Oct 2026 — Billing rescore in the artifact's table: function/busy shop/UI 8.5–9 on phone and desktop; performance desktop 9, phone 8. Same-container old/new navigation: median 684 vs 688 ms (noise 8.5 ms), unchanged. New e2e/perf-billing.mjs: pick on a 30-line bill ~200 ms at 4x CPU, ~100 ms laptop; typing 48–72 ms. Report: 2026-10-20-p5-counter-billing.md.
@@ -193,11 +202,15 @@ and updated continuation prompt. This changes words, not the sequence below.
 3. Remaining Home workflows approved in R-DEC-26 (BP-08/16/17), integrated with
    the verified source workflows, followed by Home end-to-end acceptance.
 
-Immediate next (owner, 20 Oct: billing >8.5 in every aspect against the Counter Mode artifact): rescored 20 Oct, all aspects 8.5–9 except phone performance 8 (a pick on a 30-line bill at 4x CPU ~200 ms;
-e2e/perf-billing.mjs). Make that pick cheaper, re-measure, rescore. Expired-session return (verified working, now a harness flow), find a line on a long bill, hold/resume, "Add <name>", create/restore item, changed-rate note, Paid cash, repeat-scan Qty are done
-(2026-10-20-p5-counter-billing.md). Then the remaining sales documents, purchases and returns. Editor composition delivered 20 Oct (see Progress). Continue review→build→LOOK→
-report→commit/push for each piece without routine permission questions. Preserve
-separate roles/books, source permissions and frozen Library/Lending contracts.
+Immediate next: purchase editor §7, under R-DEC-29's complete revamp composition.
+Step 1 (shared item search above lines, repeat Qty, list/scanner focus, dynamic
+line finder and compact cost rows) is delivered; evidence in
+`2026-10-20-p5-purchase-quick-add.md`. Immediate next is step 2 dock caption/meta, step 3 honest
+save/leave state, step 4 cost-update words, step 5 payment-refusal recovery,
+step 6 supplier summary verification. Finish purchase list/detail/returns and
+remaining sales documents before inventory/money/reports; remaining Home last.
+Billing phone performance stays 8/10 and its subscription redesign stays
+deferred; do not repeat rejected memo/one-write/deferred-focus trims.
 
 Delivered: Home surface4a66b430, Bills register ed6d1a2b, bill detailb49df7f6,
 Home source facts/read isolationfe6852ae. The latest read checkpoint passes

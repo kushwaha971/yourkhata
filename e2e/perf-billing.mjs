@@ -11,18 +11,24 @@
  * end. Nothing is issued and nothing is sent.
  */
 import { createRequire } from 'node:module';
-import { writeFileSync } from 'node:fs';
+import { mkdirSync, writeFileSync } from 'node:fs';
+import { dirname } from 'node:path';
 
 const { chromium } = createRequire(import.meta.url)('playwright');
 const arg = (k, d) => process.argv.find((x) => x.startsWith(`--${k}=`))?.slice(k.length + 3) ?? d;
 const base = process.env.E2E_FRONTEND ?? 'http://localhost:3000';
 if (!['localhost', '127.0.0.1'].includes(new URL(base).hostname)) throw Error('Local QA only');
+const SIDE = arg('side', 'sales');
+if (!['sales', 'purchases'].includes(SIDE)) throw Error('Unknown counter side');
+const DOCS = SIDE === 'purchases' ? 'purchases/bills' : 'sales/invoices';
 const LINES = Number(arg('lines', '30'));
-const out = `${process.env.E2E_SHOTS ?? '/tmp/claude-0'}/perf-billing-${new Date().toISOString().slice(0, 10)}.json`;
+const out = `${process.env.E2E_SHOTS ?? '/tmp/claude-0'}/perf-${SIDE}-billing-${new Date().toISOString().slice(0, 10)}.json`;
 
-const browser = await chromium.launch({ executablePath: process.env.CHROME ?? '/opt/pw-browsers/chromium' });
+const browser = await chromium.launch({
+  executablePath: process.env.CHROME ?? '/opt/pw-browsers/chromium',
+});
 const drafts = new Set();
-const report = { lines: LINES, runs: [] };
+const report = { side: SIDE, lines: LINES, runs: [] };
 let auth;
 let csrf;
 const median = (v) => {
@@ -42,7 +48,9 @@ try {
   await p.click('button[type=submit]');
   await p.waitForURL((u) => !u.pathname.startsWith('/login'));
   csrf = (await auth.cookies()).find((c) => c.name === 'ub_csrf')?.value;
-  const items = (await (await auth.request.get(`${base}/api/v1/items?status=active&page_size=60`)).json()).data
+  const items = (
+    await (await auth.request.get(`${base}/api/v1/items?status=active&page_size=60`)).json()
+  ).data
     .map((x) => x.name)
     .filter((name, i, all) => all.findIndex((y) => y.startsWith(name) || name.startsWith(y)) === i)
     .slice(0, LINES);
@@ -63,25 +71,50 @@ try {
     const page = await ctx.newPage();
     page.on('response', (r) => {
       const path = new URL(r.url()).pathname;
-      const m = /\/api\/v1\/sales\/invoices\/([0-9a-f-]{36})$/.exec(path);
+      const m = new RegExp(`/api/v1/${DOCS}/([0-9a-f-]{36})$`).exec(path);
       if (m && r.request().method() !== 'DELETE') drafts.add(m[1]);
-      if (/\/api\/v1\/sales\/invoices$/.test(path) && r.request().method() === 'POST')
-        r.json().then((b) => b?.data?.id && drafts.add(b.data.id), () => undefined);
+      if (path === `/api/v1/${DOCS}` && r.request().method() === 'POST')
+        r.json().then(
+          (b) => b?.data?.id && drafts.add(b.data.id),
+          () => undefined
+        );
     });
     const cdp = await ctx.newCDPSession(page);
     await cdp.send('Emulation.setCPUThrottlingRate', { rate: cpu });
-    await page.goto(`${base}/sales/invoices/new`, { waitUntil: 'networkidle' });
+    let editorUrl = `${base}/${DOCS}/new`;
+    if (SIDE === 'purchases') {
+      // A real supplier is mandatory at a purchase counter. Include last-cost
+      // lookups in the workload instead of timing an artificially empty supplier.
+      const suppliers = await (
+        await auth.request.get(`${base}/api/v1/parties?type=supplier&module=shop&page_size=1`)
+      ).json();
+      const partyId = suppliers.data?.[0]?.id;
+      if (!partyId) throw Error('Local QA supplier missing');
+      const created = await auth.request.post(`${base}/api/v1/${DOCS}`, {
+        headers: { 'X-CSRF-Token': csrf, 'Idempotency-Key': crypto.randomUUID() },
+        data: {
+          party_id: partyId,
+          supplier_invoice_number: `QA-PERF-${crypto.randomUUID().slice(0, 8)}`,
+          lines: [],
+        },
+      });
+      if (!created.ok())
+        throw Error(`purchase perf draft ${created.status()}: ${await created.text()}`);
+      const bill = (await created.json()).data;
+      drafts.add(bill.id);
+      editorUrl = `${base}/${DOCS}/${bill.id}/edit`;
+    }
+    await page.goto(editorUrl, { waitUntil: 'networkidle' });
     await page.evaluate(() => {
       window.__events = [];
       new PerformanceObserver((list) => {
-        for (const e of list.getEntries()) window.__events.push({ name: e.name, duration: e.duration, phase: window.__phase });
+        for (const e of list.getEntries())
+          window.__events.push({ name: e.name, duration: e.duration, phase: window.__phase });
       }).observe({ type: 'event', durationThreshold: 16, buffered: false });
     });
     const search = page.getByRole('combobox', { name: 'Search items to add' });
-    // The docked caption counts the bill's items ("12 items · includes GST"):
-    // collapsed phone cards draw no cells to count.
-    const named = () =>
-      page.evaluate(() => Number(/^(\d+)/.exec(document.querySelector('[data-testid="total-dock-caption"]')?.textContent ?? '')?.[1] ?? 0));
+    // A pick is drawn when its Qty receives focus after the line has mounted.
+    // Both counters share this focus contract; collapsed cards need no fake cell count.
     const picks = [];
     // Enter on a list that still answers an earlier term is the scanner's
     // path: a lookup round trip, not a pick. Counted so a timing is read right.
@@ -95,29 +128,38 @@ try {
       await search.click();
       await search.fill(name);
       await page.getByRole('option', { selected: true }).first().waitFor();
-      const before = await named();
+      const before = i;
       await page.evaluate(() => (window.__phase = 'pick'));
       const t0 = Date.now();
       await page.keyboard.press('Enter');
       const drawn = await page
         .waitForFunction(
-          (n) => Number(/^(\d+)/.exec(document.querySelector('[data-testid="total-dock-caption"]')?.textContent ?? '')?.[1] ?? 0) > n,
+          (n) =>
+            document.activeElement?.closest('[data-line-cell]')?.getAttribute('data-row') ===
+              String(n) &&
+            document.activeElement?.closest('[data-line-cell]')?.getAttribute('data-col') === '1',
           before,
           { polling: 'raf', timeout: 8000 }
         )
-        .then(() => true, () => false);
+        .then(
+          () => true,
+          () => false
+        );
       if (drawn) picks.push(Date.now() - t0);
       else console.log(`  pick ${i + 1} (${name}) did not add a line`);
     }
     // Typing a quantity on the last line of the long bill.
     await page.evaluate(() => (window.__phase = 'qty'));
-    const qty = page.locator(`[data-line-cell][data-row="${items.length - 1}"][data-col="1"] input`);
+    const qty = page.locator(
+      `[data-line-cell][data-row="${items.length - 1}"][data-col="1"] input`
+    );
     await qty.click();
     await qty.press('Control+a');
     await page.keyboard.type('125', { delay: 120 });
     await page.waitForTimeout(800);
     const events = await page.evaluate(() => window.__events);
-    const worst = (phase) => Math.max(0, ...events.filter((e) => e.phase === phase).map((e) => e.duration));
+    const worst = (phase) =>
+      Math.max(0, ...events.filter((e) => e.phase === phase).map((e) => e.duration));
     const run = {
       width,
       cpu,
@@ -127,9 +169,11 @@ try {
       lastFivePickMedian: median(picks.slice(-5)),
       slowestEventWhilePicking: worst('pick'),
       slowestEventTypingSearch: worst('type'),
-      enterEvents: events.filter((e) => e.phase === 'pick' && e.name === 'keydown').map((e) => e.duration),
+      enterEvents: events
+        .filter((e) => e.phase === 'pick' && e.name === 'keydown')
+        .map((e) => e.duration),
       slowestEventTypingQty: worst('qty'),
-      linesOnBill: await named(),
+      linesOnBill: picks.length,
       lookups,
       events,
     };
@@ -142,9 +186,12 @@ try {
 } finally {
   for (const id of drafts) {
     await auth?.request
-      .delete(`${base}/api/v1/sales/invoices/${id}`, { headers: { 'X-CSRF-Token': csrf, 'Idempotency-Key': crypto.randomUUID() } })
+      .delete(`${base}/api/v1/${DOCS}/${id}`, {
+        headers: { 'X-CSRF-Token': csrf, 'Idempotency-Key': crypto.randomUUID() },
+      })
       .catch(() => undefined);
   }
+  mkdirSync(dirname(out), { recursive: true });
   writeFileSync(out, JSON.stringify(report, null, 2));
   await browser.close();
 }

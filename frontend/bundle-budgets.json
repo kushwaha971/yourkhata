@@ -1,5 +1,6 @@
 {
   "//": [
+    "20 Oct 2026 purchase counter step 1: shared quick-add, dynamic labeled line finder and compact cost rows buy scanner/repeat Qty and keyboard selection. Purchase editors measure 164.2 KB route /405.1\u2013405.2 first load; sales extraction measures 168.2 /409.1\u2013409.2. Only 12 editor-route ceilings use measured +0.3 KB. Framework/shared ceilings unchanged; no new package. See docs/performance/2026-10-20-p5-purchase-quick-add.md.",
     "20 Oct 2026, R-DEC-27 billing line/dock piece: opt-in compact line cards retain field-array edits, expand/focus invalid rows and expose stock warnings; full item-label trigger and stacked phone total dock. Reusing one line-editor implementation adds 0.3 KB on purchase editor routes and 0.5\u20130.6 KB on sales editors. Only the 24 exceeded route/first-load scalars across 12 editor routes use measured gzip +0.3 KB. Framework127.3 and shared app113.7 ceilings unchanged; no package added. This is not a whole POS/Shop completion claim. Evidence: docs/performance/2026-10-20-p5-editor-lines.md.",
     "20 Oct 2026, R-DEC-21\u201324 Shop Home: real role lanes and reviewed Repeat forms, compact daily/week/month/year filters, mobile joined figures/segmented tabs and a lazy Shop command search in the global header. Home is 90.1 KB route /331.1 KB first load (first-load ceiling remains 336); shared app113.7 KB stays under114.1. Reused repeat/default-line seed adds up to2.8 KB to existing sales/purchase editors; Home copy, chart helpers and opt-in UI-kit treatments add up to0.6 KB on affected report/control consumers. Only 40 exceeded route/first-load scalars use final measured gzip +0.3 KB; shared/framework budgets are unchanged. No new package or eager search/payout form. Full measurements: docs/performance/2026-10-19-p5-shop-home.md.",
     "19 Oct 2026, BP-13: common authenticated-request actor/business preconditions, late account/revision response cancellation and cross-context retry refusal add 1.1 KB gzip shared code (112.5 -> 113.6 KB; baseline 239.7 -> 240.9 KB). This code must run before every authenticated feature call, not in a deferred drawer. Raise only 93 exceeded shared/first-load scalars to measured + 0.5 KB; no route-chunk limit, framework limit or dependency changes. Regression tests prove the old transport can replay a write in the new cookie context; the shared cost buys that prevention.",
@@ -1421,12 +1422,12 @@
       "firstLoad": 327.1
     },
     "/sales/challans/new": {
-      "route": 167.8,
-      "firstLoad": 409.1
+      "route": 168.5,
+      "firstLoad": 409.4
     },
     "/sales/challans/[id]/edit": {
-      "route": 167.8,
-      "firstLoad": 408.9
+      "route": 168.5,
+      "firstLoad": 409.5
     },
     "/purchases/orders/[id]": {
       "route": 71.5,
@@ -1437,12 +1438,12 @@
       "firstLoad": 324.0
     },
     "/purchases/orders/new": {
-      "route": 161.8,
-      "firstLoad": 402.9
+      "route": 164.5,
+      "firstLoad": 405.4
     },
     "/purchases/orders/[id]/edit": {
-      "route": 161.9,
-      "firstLoad": 402.9
+      "route": 164.5,
+      "firstLoad": 405.5
     },
     "/sales/orders/[id]": {
       "route": 84.2,
@@ -1453,12 +1454,12 @@
       "firstLoad": 327.1
     },
     "/sales/orders/new": {
-      "route": 167.8,
-      "firstLoad": 409.1
+      "route": 168.5,
+      "firstLoad": 409.4
     },
     "/sales/orders/[id]/edit": {
-      "route": 167.8,
-      "firstLoad": 408.9
+      "route": 168.5,
+      "firstLoad": 409.5
     },
     "/parties": {
       "route": 109,
@@ -1469,12 +1470,12 @@
       "firstLoad": 336
     },
     "/sales/invoices/new": {
-      "route": 168.0,
-      "firstLoad": 409.1
+      "route": 168.5,
+      "firstLoad": 409.4
     },
     "/sales/invoices/[id]/edit": {
-      "route": 167.8,
-      "firstLoad": 408.9
+      "route": 168.5,
+      "firstLoad": 409.5
     },
     "/sales/invoices": {
       "route": 98,
@@ -1489,12 +1490,12 @@
       "firstLoad": 356
     },
     "/sales/estimates/new": {
-      "route": 167.8,
-      "firstLoad": 409.1
+      "route": 168.5,
+      "firstLoad": 409.4
     },
     "/sales/estimates/[id]/edit": {
-      "route": 167.8,
-      "firstLoad": 408.9
+      "route": 168.5,
+      "firstLoad": 409.5
     },
     "/sales/estimates/[id]": {
       "route": 84.2,
@@ -1645,16 +1646,16 @@
       "firstLoad": 312.6
     },
     "/purchases/bills/[id]/edit": {
-      "route": 161.9,
-      "firstLoad": 402.9
+      "route": 164.5,
+      "firstLoad": 405.5
     },
     "/purchases/bills": {
       "route": 95,
       "firstLoad": 330
     },
     "/purchases/bills/new": {
-      "route": 161.8,
-      "firstLoad": 403.0
+      "route": 164.5,
+      "firstLoad": 405.4
     },
     "/reports": {
       "route": 72,

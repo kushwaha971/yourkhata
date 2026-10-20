@@ -15,31 +15,30 @@ import {
   UbSelect,
   UbStack,
   UbText,
-  type UbLineFocusRequest,
   type UbLineItemsColumn,
 } from 'src/design-system';
 import { useTranslation } from 'src/hooks/useTranslation';
 import { formatAmount, formatInr } from 'src/utils/money';
-import { exceedsQuantity, formatQuantity, stepQuantity } from 'src/utils/quantity';
+import { exceedsQuantity, formatQuantity } from 'src/utils/quantity';
 
 import { getPartyRates } from '../../inventory/api/priceListService';
+import { CounterLineSummary } from '../../inventory/components/CounterLineSummary';
 import { ItemLineCell } from '../../inventory/components/ItemLineCell';
-import { ItemQuickAdd, type ItemQuickAddVia } from '../../inventory/components/ItemQuickAdd';
+import { ItemQuickAdd } from '../../inventory/components/ItemQuickAdd';
 import { LastRateNote } from '../../inventory/components/LastRateNote';
+import { LINE_FINDER_FROM, useLineQuickAdd } from '../../inventory/hooks/useLineQuickAdd';
 import { emptyLine, ratePlaces, type InvoiceFormValues } from '../view-model/invoiceForm';
 import { itemLineDefaults } from '../view-model/itemLineDefaults';
 
 import type { ItemListRow } from '../../inventory/types/item.types';
 import type { EngineResult } from '../view-model/taxEngine';
 
-const InvoiceLineFinder = dynamic(
-  () => import('./InvoiceLineFinder').then((m) => m.InvoiceLineFinder),
+const LineFinder = dynamic(
+  () => import('../../inventory/components/LineFinder').then((m) => m.LineFinder),
   { ssr: false }
 );
 
 const MAX_LINES = 100;
-/** From this many named lines a bill no longer fits a phone screen, so it can be searched. */
-const FIND_FROM = 10;
 
 /**
  * SAL-02 FR-2 / §7 — the line grid on `UbLineItemsEditor` (built to this
@@ -133,34 +132,19 @@ export function InvoiceLinesSection({
    * or a new one, through the same `pick` a line's own cell uses, then asks the
    * grid for that line's Qty: "Add item" first cost one tap per item.
    */
-  const [focusRequest, setFocusRequest] = useState<UbLineFocusRequest | null>(null);
-  const quickAdd = useCallback(
-    (row: ItemListRow, via: ItemQuickAddVia) => {
-      const caretTo = (index: number) => {
-        if (via === 'list')
-          setFocusRequest((previous) => ({ row: index, col: 1, seq: (previous?.seq ?? 0) + 1 }));
-      };
-      const current = getValues('lines') ?? [];
-      // A second scan of an item already on the bill is one more of it, as at
-      // any counter: a new line per scan turned 6 bulbs into 6 rows to read.
-      const same = current.map((line) => line.itemId).lastIndexOf(row.id);
-      const counted = same >= 0 ? stepQuantity(current[same]?.qty ?? '') : null;
-      if (same >= 0 && counted !== null && counted !== current[same]?.qty) {
-        setValue(`lines.${same}.qty`, counted, { shouldDirty: true });
-        void trigger(`lines.${same}.qty`);
-        caretTo(same);
-        return;
-      }
-      const last = current.length - 1;
-      const trailingEmpty = last >= 0 && !current[last]?.itemId && !current[last]?.description;
-      if (!trailingEmpty && current.length >= MAX_LINES) return;
-      const index = trailingEmpty ? last : current.length;
-      if (!trailingEmpty) fieldArray.append(emptyLine(), { shouldFocus: false });
-      pick(index, row);
-      caretTo(index);
+  const { quickAdd, focusRequest, lineOptions, findLine } = useLineQuickAdd({
+    lines,
+    readLines: () => getValues('lines') ?? [],
+    appendEmpty: () => fieldArray.append(emptyLine(), { shouldFocus: false }),
+    pick,
+    setQuantity: (index, quantity) => {
+      setValue(`lines.${index}.qty`, quantity, { shouldDirty: true });
+      void trigger(`lines.${index}.qty`);
     },
-    [getValues, setValue, trigger, fieldArray, pick]
-  );
+    maxLines: MAX_LINES,
+    lineLabel: (n) => t('sales.line.label', { n }),
+    disabled,
+  });
 
   const quickAddLabels = useMemo(
     () => ({
@@ -391,43 +375,20 @@ export function InvoiceLinesSection({
     [lines, partyId, partyName, setValue, listed, usual, stockWarning, t]
   );
 
-  /*
-   * A long bill's lines, searchable: forty lines are forty cards on a phone,
-   * and changing one quantity meant scrolling past the rest to find it. The
-   * line number and quantity are in each name, so two lines of one item (a
-   * second rate, say) are told apart. Choosing one asks the grid for its Qty,
-   * the same request the item search makes.
-   */
-  const lineOptions = useMemo(
-    () =>
-      (lines ?? []).flatMap((line, index) =>
-        line?.description
-          ? [
-              {
-                value: String(index),
-                label: [
-                  t('sales.line.label', { n: index + 1 }),
-                  line.description,
-                  `${line.qty || '0'} ${line.unitCode}`,
-                ].join(' · '),
-              },
-            ]
-          : []
-      ),
-    [lines, t]
-  );
-  const findLine = useCallback((value: string) => {
-    const row = Number(value);
-    if (Number.isInteger(row))
-      setFocusRequest((previous) => ({ row, col: 1, seq: (previous?.seq ?? 0) + 1 }));
-  }, []);
-
   return (
     <UbStack gap={3}>
       <ItemQuickAdd labels={quickAddLabels} onPick={quickAdd} disabled={disabled} />
-      {lineOptions.length >= FIND_FROM && (
+      {lineOptions.length >= LINE_FINDER_FROM && (
         <UbBox data-testid="invoice-line-finder">
-          <InvoiceLineFinder options={lineOptions} onFind={findLine} />
+          <LineFinder
+            options={lineOptions}
+            onFind={findLine}
+            labels={{
+              label: t('sales.line.find'),
+              search: t('sales.line.findSearch'),
+              empty: t('sales.line.findEmpty'),
+            }}
+          />
         </UbBox>
       )}
       <UbLineItemsEditor<InvoiceFormValues, 'lines'>
@@ -446,23 +407,17 @@ export function InvoiceLinesSection({
         renderCardSummary={(index, expanded) => {
           const line = lines?.[index];
           return (
-            <UbStack gap={1}>
-              <UbText variant="body-sm-medium" className="break-words">
-                {line?.description || t('sales.line.itemPlaceholder')}
-              </UbText>
-              <UbStack direction="row" justify="between" gap={2} wrap>
-                <UbText variant="caption" tone="secondary" className="break-words">
-                  {line?.qty || '0'} {line?.unitCode} × {formatInr(line?.unitPrice || '0')}
-                  {line?.discountType && line.discountValue
-                    ? ` · −${line.discountValue}${line.discountType === 'percent' ? '%' : ''}`
-                    : ''}
-                </UbText>
-                <UbText variant="body-sm-medium" className="ds-num break-words">
-                  {formatInr(preview.lines[index]?.lineTotal ?? '0')}
-                </UbText>
-              </UbStack>
+            <CounterLineSummary
+              name={line?.description || t('sales.line.itemPlaceholder')}
+              quantity={line?.qty || '0'}
+              unit={line?.unitCode || ''}
+              unitAmount={line?.unitPrice || '0'}
+              total={preview.lines[index]?.lineTotal ?? '0'}
+              discountType={line?.discountType}
+              discountValue={line?.discountValue}
+            >
               {!expanded && stockWarning(index)}
-            </UbStack>
+            </CounterLineSummary>
           );
         }}
         labels={{

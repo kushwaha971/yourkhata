@@ -44,6 +44,56 @@ jest.mock('../../inventory/api/mastersService', () => ({
   ]),
 }));
 const mockPush = jest.fn();
+const mockDriver = {
+  id: 'driver',
+  name: 'Radhe Krishna Enterprises LED driver',
+  sku: 'DRIVER-12',
+  barcode: '8900000000012',
+  itemType: 'goods',
+  category: null,
+  unit: { id: 'u-nos', code: 'NOS', allowDecimal: false },
+  sellingPrice: '55.00',
+  purchasePrice: '42.00',
+  taxCode: 'GST5',
+  hsnSac: '8504',
+  taxInclusiveSelling: false,
+  trackStock: false,
+  onHand: null,
+  avgCost: null,
+  reorderPoint: null,
+  stockStatus: null,
+  stockValue: null,
+  status: 'active',
+  matchField: 'name',
+  updatedAt: '2026-10-20T10:00:00Z',
+};
+const mockRice = {
+  ...mockDriver,
+  id: 'rice',
+  name: 'Rice',
+  barcode: '8900000000001',
+  purchasePrice: '46.00',
+};
+jest.mock('../../inventory/api/itemService', () => ({
+  ...jest.requireActual('../../inventory/api/itemService'),
+  searchItems: jest.fn(
+    async (query: string, _page: number, _signal: unknown, options?: { status?: string }) => ({
+      rows:
+        options?.status === 'archived'
+          ? []
+          : [mockDriver, mockRice].filter((row) =>
+              row.name.toLowerCase().includes(query.toLowerCase())
+            ),
+      hasMore: false,
+    })
+  ),
+  lookupItemByBarcode: jest.fn(async (code: string) =>
+    code === mockRice.barcode ? mockRice : null
+  ),
+}));
+jest.mock('../../inventory/api/itemTradeService', () => ({
+  getLastRate: jest.fn(async () => null),
+}));
 jest.mock('next/navigation', () => ({
   useRouter: () => ({ push: mockPush, replace: jest.fn(), back: jest.fn(), prefetch: jest.fn() }),
   useSearchParams: () => new URLSearchParams(''),
@@ -614,4 +664,89 @@ describe('SH-011 — first-save recovery and one save lane (ADR-063)', () => {
     });
     expect(store.getState().purchaseBillEditor?.documentId ?? null).toBeNull();
   });
+});
+
+describe('purchase counter quick-add', () => {
+  it('adds a list pick as the third line, preserves purchase cost defaults and focuses its Qty', async () => {
+    // Missing composition: entering a supplier item required opening a line picker first.
+    renderWithProviders(<PurchaseBillEditorPageContent documentId="b1" />);
+    const user = userEvent.setup();
+    const search = await screen.findByRole('combobox', { name: 'Search items to add' });
+    await user.click(search);
+    await user.type(search, 'driver');
+    await user.click(await screen.findByRole('option', { name: /LED driver/, selected: true }));
+    await waitFor(() => {
+      const cell = document.activeElement?.closest<HTMLElement>('[data-line-cell]');
+      expect({ row: cell?.dataset.row, col: cell?.dataset.col }).toEqual({ row: '2', col: '1' });
+    });
+    const cost = document.querySelector<HTMLInputElement>(
+      '[data-line-cell][data-row="2"][data-col="2"] input'
+    );
+    expect(cost).toHaveValue('42.00');
+    expect(document.querySelectorAll('[data-testid="line-items-editor"] section')).toHaveLength(3);
+    expect(mockDriver.purchasePrice).toBe('42.00');
+    expect(service.recordPurchaseBill).not.toHaveBeenCalled();
+  });
+
+  it('a repeated barcode raises the existing Qty from20 to21 without adding a row or moving the scan caret', async () => {
+    // Missing counter path: a repeat scan must not create another supplier bill line.
+    renderWithProviders(<PurchaseBillEditorPageContent documentId="b1" />);
+    const user = userEvent.setup();
+    const search = await screen.findByRole('combobox', { name: 'Search items to add' });
+    await user.click(search);
+    await user.type(search, '8900000000001{Enter}');
+    await waitFor(() =>
+      expect(document.querySelector('[data-testid="line-items-editor"] section')).toHaveTextContent(
+        '21 NOS'
+      )
+    );
+    expect(document.querySelectorAll('[data-testid="line-items-editor"] section')).toHaveLength(2);
+    expect(search).toHaveFocus();
+    expect(search).toHaveValue('');
+    expect(service.recordPurchaseBill).not.toHaveBeenCalled();
+  });
+});
+
+it("re-picking an item preserves this bill's edited cost and focuses the existing Qty", async () => {
+  // Regression: a repeat pick must not overwrite a supplier's bill-specific cost.
+  renderWithProviders(<PurchaseBillEditorPageContent documentId="b1" />);
+  await screen.findByTestId('purchase-grand-total');
+  const user = userEvent.setup();
+  const first = document.querySelector('[data-testid="line-items-editor"] section');
+  if (!first) throw new Error('Missing purchase line');
+  const toggle = first.querySelector<HTMLButtonElement>('button[aria-expanded]');
+  if (toggle?.getAttribute('aria-expanded') === 'false') await user.click(toggle);
+  const cost = screen.getByLabelText('Cost, line 1');
+  await user.clear(cost);
+  await user.type(cost, '40');
+  const search = await screen.findByRole('combobox', { name: 'Search items to add' });
+  await user.click(search);
+  await user.type(search, 'Rice');
+  await user.click(await screen.findByRole('option', { name: /^Rice/, selected: true }));
+  await waitFor(() =>
+    expect(
+      document.querySelector<HTMLInputElement>('[data-line-cell][data-row="0"][data-col="1"] input')
+    ).toHaveValue('21')
+  );
+  expect(cost).toHaveValue('40.00');
+  expect(document.activeElement?.closest<HTMLElement>('[data-line-cell]')?.dataset.row).toBe('0');
+  expect(document.querySelectorAll('[data-testid="line-items-editor"] section')).toHaveLength(2);
+});
+
+it('finds a numbered line on a long purchase bill, including identical item names', async () => {
+  // Prevents a long bill's finder selecting an indistinguishable duplicate name.
+  service.getPurchaseBill.mockResolvedValue(
+    envelope({
+      ...DRAFT,
+      lines: Array.from({ length: 10 }, (_, i) => line({ id: `l${i}`, lineNo: i + 1 })),
+    })
+  );
+  renderWithProviders(<PurchaseBillEditorPageContent documentId="b1" />);
+  const user = userEvent.setup();
+  const finder = await screen.findByRole('combobox', { name: 'Find a line on this bill' });
+  await user.click(finder);
+  await user.click(await screen.findByRole('option', { name: /^line 5 · Rice/i }));
+  await waitFor(() =>
+    expect(document.activeElement?.closest<HTMLElement>('[data-line-cell]')?.dataset.row).toBe('4')
+  );
 });

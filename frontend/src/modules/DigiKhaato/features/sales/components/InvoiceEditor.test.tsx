@@ -768,7 +768,10 @@ describe('the picked customer (07-screens/09 §3)', () => {
     renderWithProviders(<InvoiceEditorPageContent documentId={null} />);
     await userEvent.click(await screen.findByRole('radio', { name: 'Saved customer' }));
     await userEvent.type(screen.getByLabelText('Saved customer'), 'Beng');
-    await userEvent.click(await screen.findByRole('option', { name: /Bengaluru Traders/ }));
+    // Pending choices intentionally refuse clicks; wait for this query's answer.
+    await userEvent.click(
+      await screen.findByRole('option', { name: /Bengaluru Traders/, selected: true })
+    );
     const line = await screen.findByTestId('invoice-customer-line');
     expect(within(line).getByText('Bengaluru Traders')).toBeInTheDocument();
     await waitFor(() => expect(line).toHaveTextContent('₹3,100.00'));

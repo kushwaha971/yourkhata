@@ -1,0 +1,313 @@
+FAIL src/modules/DigiKhaato/features/purchases/components/PurchaseBillEditor.test.tsx
+  ✓ previews the §17.7.0 bill at ₹2,921.00 from the draft it opened (96 ms)
+  ✓ saves, then records with the version read and an Idempotency-Key, then opens the bill (146 ms)
+  ✓ puts the duplicate supplier invoice under the number, with a link to the bill (FR-7) (79 ms)
+  ✓ asks "Paid now?" at Record and sends the money with the record call (PUR-01 FR-6h) (83 ms)
+  ✓ P-D4: "Paid now" by PhonePe is sent as UPI with upi_app phonepe, not Other UPI (104 ms)
+  ✓ "Pay later" records the bill on credit with no payment (PUR-01 FR-6h) (74 ms)
+  ✓ never opens the "Paid now" sheet for a role that cannot pay suppliers (53 ms)
+  ✓ never offers input tax credit to a composition shop (FR-11) (19 ms)
+  the supplier details on a 1280 laptop (WP-05 compact context)
+    ✓ folds a filled draft to one line naming the invoice number and the dates (61 ms)
+    ✓ opens the folded details when the number is a duplicate, so the warning is seen (151 ms)
+  SH-011 — first-save recovery and one save lane (ADR-063)
+    ✓ retries a lost first save with the same creation key (56 ms)
+    ✓ queues an overlapping save behind the first create instead of POSTing twice (112 ms)
+    ✓ adopts a recovered untouched draft with an explicit version-1 PATCH of current typing (58 ms)
+    ✓ asks for review instead of overwriting a recovered draft edited elsewhere (59 ms)
+    ✓ never records again a recovered bill that was already recorded (60 ms)
+    ✓ keeps typing made during a slow autosave dirty, and saves it next (10 ms)
+    ✓ ignores a late save reply after the editor and account are gone (112 ms)
+  purchase counter quick-add
+    ✕ adds a list pick as the third line, preserves purchase cost defaults and focuses its Qty (1019 ms)
+    ✕ a repeated barcode raises the existing Qty from20 to21 without adding a row or moving the scan caret (1012 ms)
+
+  ● purchase counter quick-add › adds a list pick as the third line, preserves purchase cost defaults and focuses its Qty
+
+    Unable to find role="combobox" and name "Search items to add"
+
+    Ignored nodes: comments, script, style
+    [36m<body[39m
+      [33mstyle[39m=[32m""[39m
+    [36m>[39m
+      [36m<div>[39m
+        [36m<div[39m
+          [33mclass[39m=[32m"flex min-h-full w-full flex-col bg-canvas"[39m
+        [36m>[39m
+          [36m<div[39m
+            [33mclass[39m=[32m"mx-auto flex w-full flex-1 flex-col gap-4 px-4 pb-6 pt-4 lg:px-6 lg:pb-3 lg:pt-3 max-w-none"[39m
+          [36m>[39m
+            [36m<header[39m
+              [33mclass[39m=[32m"flex flex-col gap-3"[39m
+              [33mdata-ub-page-header[39m=[32m""[39m
+            [36m>[39m
+              [36m<div[39m
+                [33mclass[39m=[32m"flex flex-wrap items-center gap-x-4 gap-y-2"[39m
+              [36m>[39m
+                [36m<div[39m
+                  [33mclass[39m=[32m"flex min-w-[8rem] flex-1 flex-col gap-0.5"[39m
+                [36m>[39m
+                  [36m<h1[39m
+                    [33mclass[39m=[32m"ds-h1 truncate leading-8 text-text-primary"[39m
+                  [36m>[39m
+                    [0mPurchase bill[0m
+                  [36m</h1>[39m
+                [36m</div>[39m
+                [36m<div[39m
+                  [33mclass[39m=[32m"flex max-w-full shrink-0 flex-wrap items-center gap-2 max-sm:gap-3"[39m
+                [36m>[39m
+                  [36m<button[39m
+                    [33mclass[39m=[32m"inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-control [&_svg]:shrink-0 ub-hit transition-colors duration-fast ease-standard active:scale-[0.98] motion-reduce:active:scale-100 disabled:active:scale-100 disabled:cursor-not-allowed disabled:opacity-45 text-text-primary hover:bg-surface-hover active:bg-surface-active h-10 px-4 text-button max-sm:h-8 max-sm:w-8 max-sm:px-0"[39m
+                    [33mtype[39m=[32m"button"[39m
+                  [36m>[39m
+                    [36m<svg[39m
+                      [33maria-hidden[39m=[32m"true"[39m
+                      [33mclass[39m=[32m"lucide lucide-trash2 h-4 w-4"[39m
+                      [33mfill[39m=[32m"none"[39m
+                      [33mheight[39m=[32m"24"[39m
+                      [33mstroke[39m=[32m"currentColor"[39m
+                      [33mstroke-linecap[39m=[32m"round"[39m
+                      [33mstroke-linejoin[39m=[32m"round"[39m
+                      [33mstroke-width[39m=[32m"2"[39m
+                      [33mviewBox[39m=[32m"0 0 24 24"[39m
+                      [33mwidth[39m=[32m"24"[39m
+                      [33mxmlns[39m=[32m"http://www.w3.org/2000/svg"[39m
+                    [36m>[39m
+                      [36m<path[39m
+                        [33md[39m=[32m"M3 6h18"[39m
+                      [36m/>[39m
+                      [36m<path[39m
+                        [33md[39m=[32m"M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"[39m
+                      [36m/>[39m
+                      [36m<path[39m
+                        [33md[39m=[32m"M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"[39m
+                      [36m/>[39m
+                      [36m<line[39m
+                        [33mx1[39m=[32m"10"[39m
+                        [33mx2[39m=[32m"10"[39m
+                        [33my1[39m=[32m"11"[39m
+                        [33my2[39m=[32m"17"[39m
+                      [36m/>[39m
+                      [36m<line[39m
+                        [33mx1[39m=[32m"14"[39m
+                        [33mx2[39m=[32m"14"[39m
+                        [33my1[39m=[32m"11"[39m
+                        [33my2[39m=[32m"17"[39m
+                      [36m/>[39m
+                    [36m</svg>[39m
+                    [36m<span[39m
+                      [33mclass[39m=[32m"inline-flex items-center gap-2 max-sm:sr-only"[39m
+                    [36m>[39m
+                      [0mDelete draft[0m
+                    [36m</span>[39m
+                  [36m</button>[39m
+                  [36m<button[39m
+                    [33mclass[39m=[32m"inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-control [&_svg]:shrink-0 ub-hit transition-colors duration-fast ease-standard active:scale-[0.98] motion-reduce:active:scale-100 disabled:active:scale-100 disabled:cursor-not-allowed disabled:opacity-45 bg-surface-sunken text-text-primary hover:bg-surface-hover active:bg-surface-active h-10 px-4 text-button max-sm:h-8 max-sm:w-8 max-sm:px-0 max-2xl:hidden"[39m
+                    [33mtype[39m=[32m"button"[39m
+                  [36m>[39m
+                    [36m<svg[39m
+                      [33maria-hidden[39m=[32m"true"[39m
+                      [33mclass[39m=[32m"lucide lucide-save h-4 w-4"[39m
+                      [33mfill[39m=[32m"none"[39m
+                      [33mheight[39m=[32m"24"[39m
+                      [33mstroke[39m=[32m"currentColor"[39m
+                      [33mstroke-linecap[39m=[32m"round"[39m
+                      [33mstroke-linejoin[39m=[32m"round"[39m
+                      [33mstroke-width[39m=[32m"2"[39m
+                      [33mviewBox[39m=[32m"0 0 24 24"[39m
+                      [33mwidth[39m=[32m"24"[39m
+                      [33mxmlns[39m=[32m"http://www.w3.org/2000/svg"[39m
+                    [36m>[39m
+                      [36m<path[39m
+                        [33md[39m=[32m"M15.2 3a2 2 0 0 1 1.4.6l3.8 3.8a2 2 0 0 1 .6 1.4V19a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z"[39m
+                      [36m/>[39m
+                      [36m<path[39m
+                        [33md[39m=[32m"M17 21v-7a1 1 0 0 0-1-1H8a1 1 0 0 0-1 1v7"[39m
+                      [36m/>[39m
+                      [36m<path[39m
+                        [33md[39m=[32m"M7 3v4a1 1 0 0 0 1 1h7"[39m
+                      [36m/>[39m
+                    [36m</svg>[39m
+                    [36m<span[39m
+                      [33mclass[39m=[32m"inline-flex items-center gap-2 max-sm:sr-only"[39m
+                    [36m>[39m
+                      [0mSave draft[0m
+                    [36m</span>[39m
+                  [36m</button>[39m
+                  [36m<button[39m
+                    [33mclass[39m=[32m"inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-control [&_svg]:shrink-0 ub-hit transition-colors duration-fast ease-standard active:scale-[0.98] motion-reduce:active:scale-100 disabled:active:scale-100 disabled:cursor-not-allowed disabled:opacity-45 bg-cta text-cta-foreground hover:bg-cta-hover active:bg-cta-press h-10 px-4 text-button max-sm:h-8 max-sm:w-8 max-sm:px-0 max-2xl:hidden"[39m
+                    [33mdata-testid[39m=[32m"purchase-record"[39m
+                    [33mtype[39m=[32m"button"[39m
+                  [36m>[39m
+                    [36m<svg[39m
+                      [33maria-hidden[39m=[32m"true"[39m
+                      [33mclass[39m=[32m"lucide lucide-send h-4 w-4"[39m
+                      [33mfill[39m=[32m"none"[39m
+                      [33mheight[39m=[32m"24"[39m
+                      [33mstroke[39m=[32m"currentColor"[39m
+                      [33mstroke-linecap[39m=[32m"round"[39m
+                      [33mstroke-linejoin[39m=[32m"round"[39m
+                      [33mstroke-width[39m=[32m"2"[39m
+                      [33mviewBox[39m=[32m"0 0 24 24"[39m
+                      [33mwidth[39m=[32m"24"[39m
+                      [33mxmlns[39m=[32m"http:/...
+
+      639 |     renderWithProviders(<PurchaseBillEditorPageContent documentId="b1" />);
+      640 |     const user = userEvent.setup();
+    > 641 |     const search = await screen.findByRole('combobox', {name: 'Search items to add'});
+          |                                 ^
+      642 |     await user.click(search); await user.type(search, 'driver');
+      643 |     await user.click(await screen.findByRole('option', {name: /LED driver/, selected: true}));
+      644 |     await waitFor(() => {
+
+      at waitForWrapper (node_modules/@testing-library/dom/dist/wait-for.js:163:27)
+      at findByRole (node_modules/@testing-library/dom/dist/query-helpers.js:86:33)
+      at Object.<anonymous> (src/modules/DigiKhaato/features/purchases/components/PurchaseBillEditor.test.tsx:641:33)
+
+  ● purchase counter quick-add › a repeated barcode raises the existing Qty from20 to21 without adding a row or moving the scan caret
+
+    Unable to find role="combobox" and name "Search items to add"
+
+    Ignored nodes: comments, script, style
+    [36m<body[39m
+      [33mstyle[39m=[32m""[39m
+    [36m>[39m
+      [36m<div>[39m
+        [36m<div[39m
+          [33mclass[39m=[32m"flex min-h-full w-full flex-col bg-canvas"[39m
+        [36m>[39m
+          [36m<div[39m
+            [33mclass[39m=[32m"mx-auto flex w-full flex-1 flex-col gap-4 px-4 pb-6 pt-4 lg:px-6 lg:pb-3 lg:pt-3 max-w-none"[39m
+          [36m>[39m
+            [36m<header[39m
+              [33mclass[39m=[32m"flex flex-col gap-3"[39m
+              [33mdata-ub-page-header[39m=[32m""[39m
+            [36m>[39m
+              [36m<div[39m
+                [33mclass[39m=[32m"flex flex-wrap items-center gap-x-4 gap-y-2"[39m
+              [36m>[39m
+                [36m<div[39m
+                  [33mclass[39m=[32m"flex min-w-[8rem] flex-1 flex-col gap-0.5"[39m
+                [36m>[39m
+                  [36m<h1[39m
+                    [33mclass[39m=[32m"ds-h1 truncate leading-8 text-text-primary"[39m
+                  [36m>[39m
+                    [0mPurchase bill[0m
+                  [36m</h1>[39m
+                [36m</div>[39m
+                [36m<div[39m
+                  [33mclass[39m=[32m"flex max-w-full shrink-0 flex-wrap items-center gap-2 max-sm:gap-3"[39m
+                [36m>[39m
+                  [36m<button[39m
+                    [33mclass[39m=[32m"inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-control [&_svg]:shrink-0 ub-hit transition-colors duration-fast ease-standard active:scale-[0.98] motion-reduce:active:scale-100 disabled:active:scale-100 disabled:cursor-not-allowed disabled:opacity-45 text-text-primary hover:bg-surface-hover active:bg-surface-active h-10 px-4 text-button max-sm:h-8 max-sm:w-8 max-sm:px-0"[39m
+                    [33mtype[39m=[32m"button"[39m
+                  [36m>[39m
+                    [36m<svg[39m
+                      [33maria-hidden[39m=[32m"true"[39m
+                      [33mclass[39m=[32m"lucide lucide-trash2 h-4 w-4"[39m
+                      [33mfill[39m=[32m"none"[39m
+                      [33mheight[39m=[32m"24"[39m
+                      [33mstroke[39m=[32m"currentColor"[39m
+                      [33mstroke-linecap[39m=[32m"round"[39m
+                      [33mstroke-linejoin[39m=[32m"round"[39m
+                      [33mstroke-width[39m=[32m"2"[39m
+                      [33mviewBox[39m=[32m"0 0 24 24"[39m
+                      [33mwidth[39m=[32m"24"[39m
+                      [33mxmlns[39m=[32m"http://www.w3.org/2000/svg"[39m
+                    [36m>[39m
+                      [36m<path[39m
+                        [33md[39m=[32m"M3 6h18"[39m
+                      [36m/>[39m
+                      [36m<path[39m
+                        [33md[39m=[32m"M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"[39m
+                      [36m/>[39m
+                      [36m<path[39m
+                        [33md[39m=[32m"M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"[39m
+                      [36m/>[39m
+                      [36m<line[39m
+                        [33mx1[39m=[32m"10"[39m
+                        [33mx2[39m=[32m"10"[39m
+                        [33my1[39m=[32m"11"[39m
+                        [33my2[39m=[32m"17"[39m
+                      [36m/>[39m
+                      [36m<line[39m
+                        [33mx1[39m=[32m"14"[39m
+                        [33mx2[39m=[32m"14"[39m
+                        [33my1[39m=[32m"11"[39m
+                        [33my2[39m=[32m"17"[39m
+                      [36m/>[39m
+                    [36m</svg>[39m
+                    [36m<span[39m
+                      [33mclass[39m=[32m"inline-flex items-center gap-2 max-sm:sr-only"[39m
+                    [36m>[39m
+                      [0mDelete draft[0m
+                    [36m</span>[39m
+                  [36m</button>[39m
+                  [36m<button[39m
+                    [33mclass[39m=[32m"inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-control [&_svg]:shrink-0 ub-hit transition-colors duration-fast ease-standard active:scale-[0.98] motion-reduce:active:scale-100 disabled:active:scale-100 disabled:cursor-not-allowed disabled:opacity-45 bg-surface-sunken text-text-primary hover:bg-surface-hover active:bg-surface-active h-10 px-4 text-button max-sm:h-8 max-sm:w-8 max-sm:px-0 max-2xl:hidden"[39m
+                    [33mtype[39m=[32m"button"[39m
+                  [36m>[39m
+                    [36m<svg[39m
+                      [33maria-hidden[39m=[32m"true"[39m
+                      [33mclass[39m=[32m"lucide lucide-save h-4 w-4"[39m
+                      [33mfill[39m=[32m"none"[39m
+                      [33mheight[39m=[32m"24"[39m
+                      [33mstroke[39m=[32m"currentColor"[39m
+                      [33mstroke-linecap[39m=[32m"round"[39m
+                      [33mstroke-linejoin[39m=[32m"round"[39m
+                      [33mstroke-width[39m=[32m"2"[39m
+                      [33mviewBox[39m=[32m"0 0 24 24"[39m
+                      [33mwidth[39m=[32m"24"[39m
+                      [33mxmlns[39m=[32m"http://www.w3.org/2000/svg"[39m
+                    [36m>[39m
+                      [36m<path[39m
+                        [33md[39m=[32m"M15.2 3a2 2 0 0 1 1.4.6l3.8 3.8a2 2 0 0 1 .6 1.4V19a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z"[39m
+                      [36m/>[39m
+                      [36m<path[39m
+                        [33md[39m=[32m"M17 21v-7a1 1 0 0 0-1-1H8a1 1 0 0 0-1 1v7"[39m
+                      [36m/>[39m
+                      [36m<path[39m
+                        [33md[39m=[32m"M7 3v4a1 1 0 0 0 1 1h7"[39m
+                      [36m/>[39m
+                    [36m</svg>[39m
+                    [36m<span[39m
+                      [33mclass[39m=[32m"inline-flex items-center gap-2 max-sm:sr-only"[39m
+                    [36m>[39m
+                      [0mSave draft[0m
+                    [36m</span>[39m
+                  [36m</button>[39m
+                  [36m<button[39m
+                    [33mclass[39m=[32m"inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-control [&_svg]:shrink-0 ub-hit transition-colors duration-fast ease-standard active:scale-[0.98] motion-reduce:active:scale-100 disabled:active:scale-100 disabled:cursor-not-allowed disabled:opacity-45 bg-cta text-cta-foreground hover:bg-cta-hover active:bg-cta-press h-10 px-4 text-button max-sm:h-8 max-sm:w-8 max-sm:px-0 max-2xl:hidden"[39m
+                    [33mdata-testid[39m=[32m"purchase-record"[39m
+                    [33mtype[39m=[32m"button"[39m
+                  [36m>[39m
+                    [36m<svg[39m
+                      [33maria-hidden[39m=[32m"true"[39m
+                      [33mclass[39m=[32m"lucide lucide-send h-4 w-4"[39m
+                      [33mfill[39m=[32m"none"[39m
+                      [33mheight[39m=[32m"24"[39m
+                      [33mstroke[39m=[32m"currentColor"[39m
+                      [33mstroke-linecap[39m=[32m"round"[39m
+                      [33mstroke-linejoin[39m=[32m"round"[39m
+                      [33mstroke-width[39m=[32m"2"[39m
+                      [33mviewBox[39m=[32m"0 0 24 24"[39m
+                      [33mwidth[39m=[32m"24"[39m
+                      [33mxmlns[39m=[32m"http:/...
+
+      657 |     renderWithProviders(<PurchaseBillEditorPageContent documentId="b1" />);
+      658 |     const user = userEvent.setup();
+    > 659 |     const search = await screen.findByRole('combobox', {name: 'Search items to add'});
+          |                                 ^
+      660 |     await user.click(search); await user.type(search, '8900000000001{Enter}');
+      661 |     await waitFor(() => expect(document.querySelector<HTMLInputElement>('[data-line-cell][data-row="0"][data-col="1"] input')).toHaveValue('21'));
+      662 |     expect(document.querySelectorAll('[data-line-cell][data-col="0"]')).toHaveLength(2);
+
+      at waitForWrapper (node_modules/@testing-library/dom/dist/wait-for.js:163:27)
+      at findByRole (node_modules/@testing-library/dom/dist/query-helpers.js:86:33)
+      at Object.<anonymous> (src/modules/DigiKhaato/features/purchases/components/PurchaseBillEditor.test.tsx:659:33)
+
+Test Suites: 1 failed, 1 total
+Tests:       2 failed, 17 passed, 19 total
+Snapshots:   0 total
+Time:        5.066 s
+Ran all test suites matching /src\/modules\/DigiKhaato\/features\/purchases\/components\/PurchaseBillEditor.test.tsx/i.

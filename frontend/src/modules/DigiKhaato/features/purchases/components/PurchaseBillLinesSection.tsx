@@ -2,9 +2,12 @@
 
 import { useCallback, useMemo } from 'react';
 
+import dynamic from 'next/dynamic';
+
 import { useFieldArray, type UseFormReturn } from 'react-hook-form';
 
 import {
+  UbBox,
   UbLineItemsEditor,
   UbMoneyInput,
   UbQuantityInput,
@@ -14,11 +17,14 @@ import {
   type UbLineItemsColumn,
 } from 'src/design-system';
 import { useTranslation } from 'src/hooks/useTranslation';
-import { formatAmount } from 'src/utils/money';
+import { formatAmount, formatInr } from 'src/utils/money';
 import { taxRateLabel } from 'src/utils/taxRateLabel';
 
+import { CounterLineSummary } from '../../inventory/components/CounterLineSummary';
 import { ItemLineCell } from '../../inventory/components/ItemLineCell';
+import { ItemQuickAdd } from '../../inventory/components/ItemQuickAdd';
 import { LastRateNote } from '../../inventory/components/LastRateNote';
+import { LINE_FINDER_FROM, useLineQuickAdd } from '../../inventory/hooks/useLineQuickAdd';
 import { ratePlaces } from '../../sales/view-model/invoiceForm';
 import { PURCHASE_MAX_LINES } from '../constants/purchaseConstants';
 import {
@@ -29,6 +35,11 @@ import {
 
 import type { ItemListRow } from '../../inventory/types/item.types';
 import type { EngineResult } from '../../sales/view-model/taxEngine';
+
+const LineFinder = dynamic(
+  () => import('../../inventory/components/LineFinder').then((m) => m.LineFinder),
+  { ssr: false }
+);
 
 /**
  * PUR-01 FR-3 / §7 — the purchase-mode lines on `UbLineItemsEditor`, the same
@@ -57,7 +68,7 @@ export function PurchaseBillLinesSection({
   onSubmitShortcut: () => void;
 }>): React.JSX.Element {
   const { t } = useTranslation();
-  const { control, watch, setValue } = form;
+  const { control, watch, setValue, getValues, trigger } = form;
   const fieldArray = useFieldArray({ control, name: 'lines', keyName: 'key' });
   const lines = watch('lines');
   const partyId = watch('partyId');
@@ -82,6 +93,32 @@ export function PurchaseBillLinesSection({
     [setValue]
   );
 
+  const { quickAdd, focusRequest, lineOptions, findLine } = useLineQuickAdd({
+    lines,
+    readLines: () => getValues('lines') ?? [],
+    appendEmpty: () => fieldArray.append(emptyPurchaseLine(), { shouldFocus: false }),
+    pick,
+    setQuantity: (index, quantity) => {
+      setValue(`lines.${index}.qty`, quantity, { shouldDirty: true });
+      void trigger(`lines.${index}.qty`);
+    },
+    maxLines: PURCHASE_MAX_LINES,
+    lineLabel: (n) => t('purchases.line.label', { n }),
+    disabled,
+  });
+  const quickAddLabels = useMemo(
+    () => ({
+      label: t('purchases.line.quickAdd.label'),
+      placeholder: t('purchases.line.quickAdd.placeholder'),
+      empty: (query: string) => t('purchases.line.quickAdd.empty', { query }),
+      none: t('purchases.line.quickAdd.none'),
+      askOwner: t('purchases.line.quickAdd.askOwner'),
+      create: (query: string) => t('purchases.line.quickAdd.create', { query }),
+      restore: (name: string) => t('purchases.line.quickAdd.restore', { name }),
+    }),
+    [t]
+  );
+
   const taxOptions = useMemo(
     () => rateOptions.map((r) => ({ value: r.code, label: taxRateLabel(r, t) })),
     [rateOptions, t]
@@ -100,6 +137,7 @@ export function PurchaseBillLinesSection({
             id={id}
             label={label}
             invalid={invalid}
+            wrapLabel
             line={lines?.[index]}
             disabled={disabled}
             placeholder={t('purchases.line.itemPlaceholder')}
@@ -131,7 +169,7 @@ export function PurchaseBillLinesSection({
         id: 'cost',
         header: t('purchases.line.cost'),
         field: 'unitCost',
-        track: 'minmax(8rem,1.3fr)',
+        track: 'minmax(9.5rem,1.3fr)',
         align: 'end',
         render: ({ field, id, label, invalid }) => (
           <UbMoneyInput
@@ -187,10 +225,12 @@ export function PurchaseBillLinesSection({
         header: t('purchases.line.total'),
         track: 'minmax(6.5rem,1fr)',
         align: 'end',
-        render: ({ index }) => (
+        render: ({ index, layout }) => (
           <UbStack gap={0} className="items-end">
             <UbText as="span" variant="body-sm" className="ds-num leading-10">
-              {formatAmount(preview.lines[index]?.lineTotal ?? '0')}
+              {(layout === 'card' ? formatInr : formatAmount)(
+                preview.lines[index]?.lineTotal ?? '0'
+              )}
             </UbText>
             <UbText as="span" variant="caption" tone="tertiary" className="ds-num">
               {t('purchases.line.taxable', {
@@ -213,7 +253,7 @@ export function PurchaseBillLinesSection({
       const remember = !!line.itemId && !!partyId;
       if (!change && !taxDiffers && !remember) return null;
       return (
-        <UbStack gap={0}>
+        <UbStack gap={0} className="empty:hidden">
           {/* Shop gap §1.5 — what this supplier charged for it last time. */}
           {remember && (
             <LastRateNote
@@ -247,25 +287,58 @@ export function PurchaseBillLinesSection({
   );
 
   return (
-    <UbLineItemsEditor<PurchaseBillFormValues, 'lines'>
-      tableFrom={1536}
-      tableWhen="fits"
-      control={control}
-      name="lines"
-      fieldArray={fieldArray}
-      columns={columns}
-      newLine={emptyPurchaseLine}
-      maxLines={PURCHASE_MAX_LINES}
-      disabled={disabled}
-      onSubmitShortcut={onSubmitShortcut}
-      renderLineNote={renderLineNote}
-      labels={{
-        addLine: t('purchases.line.add'),
-        removeLine: (n) => t('purchases.line.remove', { n }),
-        lineLabel: (n) => t('purchases.line.label', { n }),
-        empty: t('purchases.line.empty'),
-        maxReached: t('purchases.line.max'),
-      }}
-    />
+    <UbStack gap={3}>
+      <ItemQuickAdd labels={quickAddLabels} onPick={quickAdd} disabled={disabled} />
+      {lineOptions.length >= LINE_FINDER_FROM && (
+        <UbBox data-testid="purchase-line-finder">
+          <LineFinder
+            options={lineOptions}
+            onFind={findLine}
+            labels={{
+              label: t('purchases.line.find'),
+              search: t('purchases.line.findSearch'),
+              empty: t('purchases.line.findEmpty'),
+            }}
+          />
+        </UbBox>
+      )}
+      <UbLineItemsEditor<PurchaseBillFormValues, 'lines'>
+        focusRequest={focusRequest}
+        tableFrom={1536}
+        tableWhen="fits"
+        control={control}
+        name="lines"
+        fieldArray={fieldArray}
+        columns={columns}
+        newLine={emptyPurchaseLine}
+        maxLines={PURCHASE_MAX_LINES}
+        disabled={disabled}
+        onSubmitShortcut={onSubmitShortcut}
+        renderLineNote={renderLineNote}
+        renderCardSummary={(index, expanded) => {
+          const line = lines?.[index];
+          return (
+            <CounterLineSummary
+              name={line?.description || t('purchases.line.itemPlaceholder')}
+              quantity={line?.qty || '0'}
+              unit={line?.unitCode || ''}
+              unitAmount={line?.unitCost || '0'}
+              total={preview.lines[index]?.lineTotal ?? '0'}
+              discountType={line?.discountType}
+              discountValue={line?.discountValue}
+            >
+              {!expanded && renderLineNote(index)}
+            </CounterLineSummary>
+          );
+        }}
+        labels={{
+          addLine: t('purchases.line.add'),
+          removeLine: (n) => t('purchases.line.remove', { n }),
+          lineLabel: (n) => t('purchases.line.label', { n }),
+          empty: t('purchases.line.empty'),
+          maxReached: t('purchases.line.max'),
+        }}
+      />
+    </UbStack>
   );
 }
