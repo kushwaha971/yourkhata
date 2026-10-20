@@ -85,6 +85,7 @@ destructive actions and frozen Library/Lending contracts retain their boundaries
 
 | Date | What was done | Files |
 |---|---|---|
+|20 Oct2026|R-DEC-25 bill reading/detail checkpoint: native phone lines, summary/rail, current cancellation facts, Shop-specific Receive, editable sharing and safe print. Full4,541 tests;230 measured frames;four local₹1 receipts;12 quiet nav samples. New Home workflow scope remains pending approval; metadata read follow-up is next.|docs/performance/2026-10-20-p5-bill-detail.md;08 BP-08/15/16/17|
 | 20 Oct 2026 | R-DEC-25 Bills register verified: visible statuses, compact totals, shared register/phone cards, header New, full dates/names, committed search and guarded N. 4,536 tests;102 en/hi measured states;12 quiet nav samples. Commit/push then invoice/POS editor/detail. | docs/performance/2026-10-20-p5-bills-register.md; 07-screens/09 |
 | 20 Oct 2026 | R-DEC-21–25 Home accepted locally: header command, real Repeat/role lanes, compact period/group graph, joined phone figures and filled tabs; 4,532 frontend tests, 144 Home and 64 measured flow frames, local double-tap/receipt. Backend latest 4,665 pass/16 skip/one existing scale timeout; isolated pass48.66s. Commit/push checkpoint, then Bills/POS without reapproval. | docs/performance/2026-10-19-p5-shop-home.md; 03-shop-home.md; START-NEXT-SESSION-PROMPT.txt |
 | 19 Oct 2026 | Superseded first Home composition (not the accepted delivery): Counter Mode figures, role-separated lanes, shared search/payment/reminder, tabs and lazy Insights; source-scoped local chart state and wrapping chart geometry. Final browser verification and delivery in progress; no new finance API. | docs/performance/2026-10-19-p5-shop-home.md; 07-screens/03-shop-home.md |
@@ -119,11 +120,18 @@ destructive actions and frozen Library/Lending contracts retain their boundaries
 
 ## Next
 
-**R-DEC-25 current:** Home is delivered on dev as4a66b430. Bills register is
-delivered (4,536 tests;102 measured en/hi states); immediately continue invoice/POS editor and detail actions in07-screens/09.
-Do not ask the phase choice. Exact source/timing/physical-device limits remain
-in the reports. BP-14 is bab3dd24; BP-15 is read-only Home data. Whole-Shop/editor
-accounting-flow completion is not claimed.
+**R-DEC-25 current:** Home's approved surface is delivered as4a66b430; Bills
+register is delivered ased6d1a2b. Bill detail/actions is verified and delivered
+(see20-Oct report). The owner then asked
+when Home's missing source-backed features will be completed: follow with BP-15
+register-status/line-count reads, and the concrete BP-08/16/17 workflow scope in08.
+An approval question is pending for explicit settlement, Shop promises and cash
+counts; do not treat the question or a missing answer as approval. These new
+writes must preserve separate roles/books and all Library/Lending contracts.
+Then return to invoice/POS editor and the remaining Shop families without a
+routine phase-choice question. Home's8.76 surface review and8.8 implemented-flow
+review do not replace its8.2 full-feature-parity score. Physical/PWA limits and
+the last full backend scale-timeout caveat remain in the reports.
 
 **R-DEC-16 active:** Customer register and the corrected Shop person piece are delivered (`06ac3b23`); BP-11 book authorization is delivered (`4e6d7b37`). Suppliers is delivered as `b0716d46`; after the R-DEC-18 access checkpoint continue Shop Home, then the remaining Shop screen families, then another app. Do not ask those phase/BP-09 approvals again. **R-DEC-13 supersedes the two-figure person-page design:** Customers shows only customer money and Receive/New bill; Suppliers only supplier money and Pay/Purchase bill; Udhaar independent. Current Shop facts are BP-09. Historical role-specific statements/aging are proposed BP-10, and shared-book authorization audit is BP-11 (implemented and pushed under R-DEC-15); BP-10 remains unapproved; the mixed Shop statement link is withheld from these views. Reports: `docs/performance/2026-10-18-p5-customers.md` and `docs/performance/2026-10-18-p5-shop-person.md`.
 

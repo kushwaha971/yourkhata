@@ -1,0 +1,17 @@
+{
+  "billDetail.goodsBack": "Goods came back",
+  "billDetail.goodsBackHint": "Choose which items and quantities came back using a credit note.",
+  "billDetail.items": "Items on this bill",
+  "billDetail.keepBill": "Keep bill",
+  "billDetail.mistake": "The bill was a mistake",
+  "billDetail.mistakeHint": "Cancel the bill. We check its payments and returns before showing what changes. The number stays.",
+  "billDetail.money": "Bill summary",
+  "billDetail.noRefund": "Nothing was paid on this bill, so there is nothing to refund.",
+  "billDetail.payments": "Payments",
+  "billDetail.receive": "Receive money",
+  "billDetail.refund": "Give money back",
+  "billDetail.refundHint": "Cancelling does not give money back. Check the saved payment and available Shop advance before recording a refund.",
+  "billDetail.seePrinted": "See as printed",
+  "billDetail.share": "Share",
+  "billDetail.wrongTitle": "What happened with {number}?"
+}

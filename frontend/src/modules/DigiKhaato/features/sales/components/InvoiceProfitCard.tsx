@@ -86,7 +86,7 @@ export function InvoiceProfitCard({ id }: Readonly<{ id: string }>): React.JSX.E
                   justify="between"
                   className="gap-3"
                 >
-                  <UbText variant="body-sm" truncate>
+                  <UbText variant="body-sm" className="min-w-0 break-words">
                     {line.description}
                   </UbText>
                   <UbText variant="body-sm" tone="secondary" className="shrink-0 tabular-nums">

@@ -180,17 +180,27 @@ export function PaymentFormDrawer({
   const allocationEdited = useRef(false);
   useEffect(() => {
     allocationEdited.current = false;
-    setValue(
-      'allocations',
-      allocationRowsFor(
-        openDocuments,
-        context.documentId ? { documentId: context.documentId, amount: total } : undefined
-      )
+    const rows = allocationRowsFor(
+      openDocuments,
+      context.documentId ? { documentId: context.documentId, amount: total } : undefined
     );
+    // Loaded allocation rows are the baseline, not a merchant edit. Keep other
+    // typed values/dirty flags while updating only this server-provided default.
+    if (counter)
+      form.reset(
+        { ...defaults, allocations: rows },
+        {
+          keepValues: true,
+          keepDirty: true,
+          keepTouched: true,
+          keepErrors: true,
+        }
+      );
+    setValue('allocations', rows);
     // `total` deliberately excluded: re-seeding every row on each keystroke would
     // erase typed rows. The effect below moves only the preset bill's row.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [openDocuments, context.documentId, setValue]);
+  }, [openDocuments, context.documentId, setValue, counter, defaults, form]);
 
   /* P-D2 — a part payment from an invoice (or "Pay supplier" from a bill): the
      preset bill's row follows the amount, min(amount, due), until the merchant

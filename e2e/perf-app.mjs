@@ -232,6 +232,7 @@ function navigations(vp) {
   const list = [
     { id: 'shop.home→customers', start: '/dashboard', target: '^/customers$', tap: navLink('/customers'), kind: phone ? 'bottom tab' : 'sidebar row' },
     { id: 'shop.customers→bills', start: '/customers', target: '^/sales/invoices$', tap: navLink('/sales/invoices'), kind: phone ? 'bottom tab' : 'sidebar row' },
+    { id: 'shop.bill row→detail', start: '/sales/invoices', target: '^/sales/invoices/[0-9a-f-]{36}$', tap: customerRow(vp), kind: 'bill register row' },
   ];
   if (phone) {
     list.push({ id: 'shop.bills→more', start: '/sales/invoices', target: '^/more$', tap: navLink('/more'), kind: 'bottom tab' });

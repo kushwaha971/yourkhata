@@ -8,7 +8,7 @@ import type { PrintBranding } from 'src/print/brandingPrintService';
 import type { Locale } from 'src/types/domain.types';
 import { amountInWords } from 'src/utils/amountInWords';
 import { formatBusinessDate } from 'src/utils/dates';
-import { formatAmount, formatInr, subtractMoney } from 'src/utils/money';
+import { formatAmount, formatInr } from 'src/utils/money';
 import { formatPhoneForDisplay } from 'src/utils/share';
 
 import { stateName } from 'modules/DigiKhaato/features/onboarding/constants/gstStates';
@@ -22,12 +22,13 @@ import {
 
 import { InvoicePrintLines } from './InvoicePrintLines';
 import {
+  documentTotalRows,
+  documentCredited,
+  taxColumns,
   halfRate,
-  hasCess,
   hsnSummary,
   isPaidStamp,
   pct,
-  taxColumns,
   watermark,
 } from './printModel';
 
@@ -77,32 +78,13 @@ export function InvoicePrintA4({
   locale: Locale;
   t: TranslateFn;
 }>): React.JSX.Element {
-  const columns = taxColumns(doc);
   const mark = watermark(doc);
   const party = doc.partySnapshot;
   const supplier = doc.supplier;
   const rule = branding?.primaryHex ?? 'hsl(var(--print-ink))';
+  const columns = taxColumns(doc);
   const sgst = t(sgstLabelId(doc.placeOfSupplyState, doc.isInterState));
-  const totals: [string, string][] = [
-    [t('sales.totals.subtotal'), formatInr(doc.subtotal)],
-    ...(doc.discountAmount !== '0.00'
-      ? ([[t('sales.totals.discount'), `−${formatInr(doc.discountAmount)}`]] as [string, string][])
-      : []),
-    [t('sales.totals.taxable'), formatInr(doc.taxableTotal)],
-    ...(columns === 'intra'
-      ? ([
-          [t('sales.tax.cgst'), formatInr(doc.cgstTotal)],
-          [sgst, formatInr(doc.sgstTotal)],
-        ] as [string, string][])
-      : []),
-    ...(columns === 'inter'
-      ? ([[t('sales.tax.igst'), formatInr(doc.igstTotal)]] as [string, string][])
-      : []),
-    ...(hasCess(doc)
-      ? ([[t('sales.tax.cess'), formatInr(doc.cessTotal)]] as [string, string][])
-      : []),
-    [t('sales.totals.roundOff'), formatInr(doc.roundOff)],
-  ];
+  const totals = documentTotalRows(doc, t);
 
   const buyerName = party?.name || doc.walkInName || t('sales.walkIn.customer');
   const buyerMobile = party?.mobile || doc.walkInMobile;
@@ -115,7 +97,7 @@ export function InvoicePrintA4({
     [t('sales.print.branch'), bank.branch],
   ];
   const business = supplier.legalName || supplier.name;
-  const credited = subtractMoney(subtractMoney(doc.grandTotal, doc.amountPaid), doc.amountDue);
+  const credited = documentCredited(doc);
 
   return (
     <article
@@ -460,7 +442,7 @@ export function InvoicePrintA4({
         </div>
       </div>
 
-      <footer className="mt-1 flex justify-between text-[0.5625rem] text-printInk/60">
+      <footer className="mt-1 flex justify-between text-[0.5625rem] text-printInk/75">
         <p>{t('sales.print.computerGenerated')}</p>
         {/* CR-2026-09-29-BRAND-A: signed by the business that issued it. No
             product name, no domain, nothing of ours. */}

@@ -377,9 +377,35 @@ it('does not record a Shop payment before its unpaid bills are available', async
 
 it('uses Shop search for a default payment context without an explicit bucket', async () => {
   /** The payment API defaults to Shop; its empty party picker must not default to Udhaar. */
-  const parties=jest.requireMock('../../parties/api/partyService') as {listParties:jest.Mock};
-  parties.listParties.mockResolvedValue({rows:[],meta:{page:1,pageSize:20,total:0,totalPages:0},totals:null});
-  renderWithProviders(<PaymentFormDrawer context={{direction:'in',entry:'list'}} onClose={jest.fn()} />);
-  await userEvent.click(screen.getByRole('combobox',{name:/from/i}));
-  await waitFor(()=>expect(parties.listParties).toHaveBeenLastCalledWith(expect.objectContaining({book:'shop'}),expect.any(AbortSignal)));
+  const parties = jest.requireMock('../../parties/api/partyService') as { listParties: jest.Mock };
+  parties.listParties.mockResolvedValue({
+    rows: [],
+    meta: { page: 1, pageSize: 20, total: 0, totalPages: 0 },
+    totals: null,
+  });
+  renderWithProviders(
+    <PaymentFormDrawer context={{ direction: 'in', entry: 'list' }} onClose={jest.fn()} />
+  );
+  await userEvent.click(screen.getByRole('combobox', { name: /from/i }));
+  await waitFor(() =>
+    expect(parties.listParties).toHaveBeenLastCalledWith(
+      expect.objectContaining({ book: 'shop' }),
+      expect.any(AbortSignal)
+    )
+  );
+});
+
+it('loading the selected bill allocation does not count as a merchant edit', async () => {
+  // Defect: an untouched invoice payment prompted Discard after its server rows arrived.
+  const close = jest.fn();
+  renderWithProviders(
+    <PaymentFormDrawer
+      context={{ ...fromInvoice, bucket: 'shop', tradeRole: 'customer' }}
+      onClose={close}
+    />
+  );
+  await screen.findByText('INV/26-27/0040');
+  await userEvent.click(screen.getByRole('button', { name: 'Close' }));
+  expect(screen.queryByRole('dialog', { name: 'Leave without saving?' })).not.toBeInTheDocument();
+  expect(close).toHaveBeenCalledTimes(1);
 });

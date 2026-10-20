@@ -190,7 +190,7 @@ export function VoidDocumentDialog({
         footer={
           <>
             <UbButton variant="secondary" onClick={onClose}>
-              {t('common.action.cancel')}
+              {t('billDetail.keepBill')}
             </UbButton>
             <UbButton variant="destructive" disabled data-testid="void-confirm">
               {t(credit ? 'sales.void.confirmCreditNote' : 'sales.void.confirm')}
@@ -215,6 +215,7 @@ export function VoidDocumentDialog({
   return (
     <ReasonConfirmDialog
       title={title}
+      keepLabel={t('billDetail.keepBill')}
       confirmLabel={
         originQuestion
           ? t('sales.void.confirmAnyway')
@@ -264,3 +265,5 @@ export function VoidDocumentDialog({
     </ReasonConfirmDialog>
   );
 }
+
+import 'src/i18n/catalogues/salesDetail';

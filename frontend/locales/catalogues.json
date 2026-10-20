@@ -118,6 +118,7 @@
     "lending.": "lending",
     "nav.lending.": "lending",
     "appSetup.": "appSetup",
-    "shopSearch.": "counterSearch"
+    "shopSearch.": "counterSearch",
+    "billDetail.": "salesDetail"
   }
 }

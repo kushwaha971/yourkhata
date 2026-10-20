@@ -5,15 +5,25 @@ import { useState } from 'react';
 import dynamic from 'next/dynamic';
 import { useSearchParams } from 'next/navigation';
 
-import { Link2, MessageCircle, Pencil, Printer, ReceiptText, RotateCcw } from 'lucide-react';
+import {
+  Link2,
+  MessageCircle,
+  Pencil,
+  Printer,
+  ReceiptText,
+  RotateCcw,
+  Wallet,
+} from 'lucide-react';
 
 import {
   UbActionLink,
+  UbAmount,
+  UbDialog,
+  UbInfoRow,
   UbButton,
   UbEmptyState,
   UbLink,
   UbPageHeader,
-  UbPageHeaderMobileActions,
   UbPageShell,
   UbPageSkeleton,
   UbPanel,
@@ -25,18 +35,19 @@ import { useAppSelector } from 'src/hooks/useAppStore';
 import { usePermissions } from 'src/hooks/usePermissions';
 import { useTranslation } from 'src/hooks/useTranslation';
 import { selectLocale } from 'src/redux/slice/localeSlice';
+import { selectNetworkImpaired } from 'src/redux/slice/networkSlice';
 import { ROUTES } from 'src/routes';
 import { formatBusinessDate } from 'src/utils/dates';
 import { formatInr } from 'src/utils/money';
 
-import { RecordPaymentButton } from '../../payments/components/RecordPaymentButton';
 import { useInvoiceDetail } from '../hooks/useInvoiceDetail';
 import { STATUS_TONE, partyLabel } from '../view-model/invoiceDisplay';
 
 import { DocumentActions } from './DocumentActions';
+import { DocumentLinesList } from './DocumentLinesList';
 import { DocumentLinksPanel } from './DocumentLinksPanel';
-import { InvoiceProfitCard } from './InvoiceProfitCard';
 import { OriginBadge } from './OriginBadge';
+import { documentCredited } from './print/printModel';
 
 import type { PaymentContext } from '../../payments/types/payment.types';
 import type { FlowKind } from '../types/salesFlows.types';
@@ -50,6 +61,11 @@ const PrintSheetLazy = dynamic(
 /* MSG-02 — the editable share composer arrives only when somebody shares. */
 const InvoiceShareSheetLazy = dynamic(
   () => import('./InvoiceShareSheet').then((m) => m.InvoiceShareSheet),
+  { ssr: false }
+);
+
+const InvoiceProfitCardLazy = dynamic(
+  () => import('./InvoiceProfitCard').then((m) => m.InvoiceProfitCard),
   { ssr: false }
 );
 
@@ -80,7 +96,7 @@ const READ_PERMISSION = {
  * read, the title on paper and the actions — estimate moves and convert, a
  * bill's return and void, a note's apply and void (`DocumentActions`).
  */
-export function InvoiceDetailPageContent({
+function InvoiceDetailScreen({
   id,
   kind = 'invoice',
 }: Readonly<{ id: string; kind?: DetailKind }>): React.JSX.Element {
@@ -89,6 +105,8 @@ export function InvoiceDetailPageContent({
   const locale = useAppSelector(selectLocale);
   const { can, hasModule } = usePermissions();
   const detail = useInvoiceDetail(id, search?.get('print') === '1', kind);
+  const impaired = useAppSelector(selectNetworkImpaired);
+  const [previewOpen, setPreviewOpen] = useState(false);
   const [paymentContext, setPaymentContext] = useState<PaymentContext | null>(null);
   const doc = detail.document?.id === id ? detail.document : null;
 
@@ -118,6 +136,18 @@ export function InvoiceDetailPageContent({
 
   const draft = doc.status === 'draft';
   const invoice = kind === 'invoice';
+  const summaryRows: readonly (readonly [string, string])[] = [
+    ['sales.totals.grand', doc.grandTotal],
+    ...(!draft && invoice
+      ? ([
+          ['sales.print.paid', doc.amountPaid],
+          ...(documentCredited(doc) !== '0.00'
+            ? [['sales.print.credited', documentCredited(doc)] as [string, string]]
+            : []),
+          ['sales.print.balance', doc.amountDue],
+        ] as [string, string][])
+      : []),
+  ];
   return (
     <UbPageShell>
       {paymentContext && (
@@ -131,156 +161,191 @@ export function InvoiceDetailPageContent({
         className="ub-print-hide"
         title={doc.number ?? t('sales.status.draft')}
         wrapTitle
-        subtitle={partyLabel(doc) ?? t('sales.walkIn.customer')}
+        subtitle={doc.partySnapshot?.name || partyLabel(doc) || t('sales.walkIn.customer')}
         controls={
           // The controls row is full-width; the badge sizes to its label.
           <UbStack direction="row">
             <UbStatusBadge tone={STATUS_TONE[doc.status]} label={t(`sales.status.${doc.status}`)} />
           </UbStack>
         }
-        /* docs/mobile-redesign (A3) — on a phone these actions are a worded ⋯ sheet. */
-        renderMobileActions={(actions) => (
-          <UbPageHeaderMobileActions
-            actions={actions}
-            mobile={{
-              menuLabel: t('common.action.moreActions'),
-              closeLabel: t('common.action.close'),
-            }}
-          />
-        )}
-        actions={
-          <>
-            {invoice && draft && can('sales.invoice.write') && (
-              <UbActionLink
-                href={`${ROUTES.SALES_INVOICES}/${doc.id}/edit`}
-                variant="secondary"
-                iconOnly="mobile"
-                icon={<Pencil className="h-4 w-4" aria-hidden />}
-              >
-                {t('sales.detail.edit')}
-              </UbActionLink>
-            )}
-            {/* PAY-01 FR-1 — a party bill still owing takes a payment from here,
-                allocated to THIS bill first; the page re-reads it on save. */}
-            {invoice &&
-              doc.party &&
-              ['issued', 'partially_paid', 'overdue'].includes(doc.status) && (
-                <RecordPaymentButton
-                  onRecord={setPaymentContext}
-                  context={{
-                    direction: 'in',
-                    partyId: doc.party.id,
-                    partyName: doc.partySnapshot?.name || doc.party.name,
-                    documentId: doc.id,
-                    documentNumber: doc.number ?? undefined,
-                    documentDue: doc.amountDue,
-                    entry: 'invoice',
-                  }}
-                  onSaved={detail.reload}
-                />
-              )}
-            <DocumentActions doc={doc} />
-            <UbButton
-              variant="secondary"
-              iconOnly="mobile"
-              icon={<ReceiptText className="h-4 w-4" aria-hidden />}
-              onClick={() => detail.print('thermal80')}
-              data-testid="print-thermal-action"
-            >
-              {t('sales.print.thermal')}
-            </UbButton>
-            <UbButton
-              iconOnly="mobile"
-              icon={<Printer className="h-4 w-4" aria-hidden />}
-              onClick={() => detail.print('a4')}
-              data-testid="print-a4-action"
-            >
-              {t('sales.print.a4')}
-            </UbButton>
-          </>
-        }
+        actions={<DocumentActions doc={doc} menu />}
       />
-      <UbStack gap={4}>
-        <UbPanel className="ub-print-hide">
-          <UbStack gap={3} className="p-4">
-            <UbText variant="body-sm">
-              {t(invoice ? 'sales.detail.summary' : 'sales.detail.summaryTotal', {
-                date: formatBusinessDate(doc.documentDate),
-                total: formatInr(doc.grandTotal),
-                due: formatInr(doc.amountDue),
-              })}
-            </UbText>
-            {doc.origin && <OriginBadge origin={doc.origin} />}
-            <DocumentLinksPanel doc={doc} />
-            {!draft && doc.status !== 'void' && (
-              <UbStack direction="row" gap={2} className="flex-wrap">
+      <UbStack className="gap-4 xl:grid xl:grid-cols-[minmax(0,1fr)_360px]">
+        <UbStack className="ub-print-hide min-w-0 gap-4 xl:col-start-2 xl:row-start-1">
+          <UbPanel aria-label={t('billDetail.money')}>
+            <UbStack as="dl" gap={3} className="p-4">
+              {summaryRows.map(([key, value]) => (
+                <UbStack
+                  key={key}
+                  direction="row"
+                  gap={3}
+                  align="baseline"
+                  justify="between"
+                  className={
+                    key === 'sales.print.balance'
+                      ? 'flex-col border-t border-border-hairline pt-3'
+                      : ''
+                  }
+                >
+                  <UbText as="dt" id={`summary-${key}`} variant="body-sm" tone="secondary">
+                    {t(key)}
+                  </UbText>
+                  <UbStack as="dd" aria-labelledby={`summary-${key}`}>
+                    <UbAmount
+                      value={value ?? null}
+                      size={key === 'sales.print.balance' ? 'lg' : 'md'}
+                    />
+                  </UbStack>
+                </UbStack>
+              ))}
+            </UbStack>
+            <UbStack gap={2} className="p-4">
+              <UbInfoRow
+                label={t('sales.editor.date')}
+                value={formatBusinessDate(doc.documentDate)}
+              />
+              {doc.dueOn && (
+                <UbInfoRow label={t('sales.editor.dueOn')} value={formatBusinessDate(doc.dueOn)} />
+              )}
+              {doc.origin && <OriginBadge origin={doc.origin} />}
+            </UbStack>
+          </UbPanel>
+          <UbStack gap={2}>
+            <UbStack className="grid grid-cols-2 gap-2">
+              {invoice &&
+                doc.party &&
+                ['issued', 'partially_paid', 'overdue'].includes(doc.status) &&
+                hasModule('payments') &&
+                can('payments.payment.write') && (
+                  <UbButton
+                    disabled={impaired}
+                    icon={<Wallet className="h-4 w-4" aria-hidden />}
+                    className="h-auto min-h-11 whitespace-normal"
+                    data-testid="record-payment-action"
+                    onClick={() =>
+                      setPaymentContext({
+                        direction: 'in',
+                        bucket: 'shop',
+                        tradeRole: 'customer',
+                        partyId: doc.party?.id ?? '',
+                        partyName: (doc.partySnapshot?.name || doc.party?.name) ?? '',
+                        documentId: doc.id,
+                        documentNumber: doc.number ?? undefined,
+                        documentDue: doc.amountDue,
+                        entry: 'invoice',
+                      })
+                    }
+                  >
+                    {t('billDetail.receive')}
+                  </UbButton>
+                )}
+              {!draft && doc.status !== 'void' && (
                 <UbButton
                   variant="secondary"
-                  size="sm"
+                  disabled={impaired}
+                  className="h-auto min-h-11 whitespace-normal"
                   icon={<MessageCircle className="h-4 w-4" aria-hidden />}
                   busy={detail.sharing}
                   onClick={() => void detail.share('whatsapp')}
                 >
-                  {t('sales.share.whatsapp')}
+                  {t('billDetail.share')}
                 </UbButton>
-                <UbButton
-                  variant="secondary"
-                  size="sm"
-                  icon={<Link2 className="h-4 w-4" aria-hidden />}
-                  onClick={() => void detail.share('link')}
+              )}
+              {invoice && draft && can('sales.invoice.write') && (
+                <UbActionLink
+                  href={`${ROUTES.SALES_INVOICES}/${doc.id}/edit`}
+                  variant="primary"
+                  icon={<Pencil className="h-4 w-4" aria-hidden />}
                 >
-                  {t('sales.share.copyLink')}
-                </UbButton>
-              </UbStack>
-            )}
-            {doc.payments.length > 0 && (
-              <UbStack gap={1} data-testid="invoice-payments">
-                {doc.payments.map((row) => (
-                  <UbText key={row.id} variant="caption" tone="secondary">
-                    <UbLink href={`${ROUTES.PAYMENTS}/${row.id}`}>{row.number}</UbLink>
-                    {` · ${formatBusinessDate(row.paymentDate)} · ${formatInr(row.amount)}`}
-                    {row.status === 'void' ? ` · ${t('payments.status.void')}` : ''}
-                  </UbText>
-                ))}
-              </UbStack>
-            )}
-            {detail.shareLink && (
-              <UbStack direction="row" gap={2} className="flex-wrap items-center">
-                <UbText variant="caption" tone="tertiary">
-                  {t('sales.share.validUntil', {
-                    date: formatBusinessDate(detail.shareLink.expiresAt.slice(0, 10)),
-                  })}
-                </UbText>
-                {/* UAT D1 — sharing again reuses the live link; rotating it is an
-                    explicit owner/admin act (the revoke permission), never a side
-                    effect of tapping Copy link. */}
-                {can('sales.invoice.void') && (
+                  {t('sales.detail.edit')}
+                </UbActionLink>
+              )}
+            </UbStack>
+            {!draft && (
+              <>
+                <UbStack className="grid grid-cols-2 gap-2">
                   <UbButton
-                    variant="ghost"
-                    size="sm"
-                    icon={<RotateCcw className="h-4 w-4" aria-hidden />}
-                    busy={detail.sharing}
-                    onClick={() => void detail.resetLink()}
+                    variant="secondary"
+                    className="h-auto min-h-11 whitespace-normal"
+                    icon={<Printer className="h-4 w-4" aria-hidden />}
+                    onClick={() => detail.print('a4')}
+                    data-testid="print-a4-action"
                   >
-                    {t('sales.share.reset')}
+                    {t('sales.print.a4')}
                   </UbButton>
-                )}
-              </UbStack>
+                  <UbButton
+                    variant="secondary"
+                    className="h-auto min-h-11 whitespace-normal"
+                    icon={<ReceiptText className="h-4 w-4" aria-hidden />}
+                    onClick={() => detail.print('thermal80')}
+                    data-testid="print-thermal-action"
+                  >
+                    {t('sales.print.thermal')}
+                  </UbButton>
+                </UbStack>
+                <UbButton
+                  variant="ghost"
+                  className="xl:hidden"
+                  onClick={() => setPreviewOpen(true)}
+                >
+                  {t('billDetail.seePrinted')}
+                </UbButton>
+              </>
             )}
           </UbStack>
-        </UbPanel>
-        {/* docs/platform/15 §1.4 — bill-wise profit, for whoever may see costs. */}
-        {invoice && !draft && doc.status !== 'void' && can('reports.financial.read') && (
-          <InvoiceProfitCard id={doc.id} />
-        )}
-        {/* A region that scrolls sideways on a phone must be reachable by
-            keyboard, and named, or its right half is unreadable without a
-            pointer (axe scrollable-region-focusable, Sprint 12 sweep). */}
+          <DocumentLinksPanel doc={doc} />
+          {doc.payments.length > 0 && (
+            <UbPanel aria-label={t('billDetail.payments')}>
+              <UbText className="p-4 font-semibold" variant="body-sm">
+                {t('billDetail.payments')}
+              </UbText>
+              {doc.payments.map((row) => (
+                <UbStack key={row.id} gap={1} className="p-4" data-testid="invoice-payments">
+                  <UbLink href={`${ROUTES.PAYMENTS}/${row.id}`}>{row.number}</UbLink>
+                  <UbText variant="caption" tone="secondary">
+                    {formatBusinessDate(row.paymentDate)} · {formatInr(row.amount)}
+                    {row.status === 'void' ? ` · ${t('payments.status.void')}` : ''}
+                  </UbText>
+                </UbStack>
+              ))}
+            </UbPanel>
+          )}
+          {detail.shareLink && (
+            <UbStack gap={2}>
+              <UbText variant="caption" tone="secondary">
+                {t('sales.share.validUntil', {
+                  date: formatBusinessDate(detail.shareLink.expiresAt.slice(0, 10)),
+                })}
+              </UbText>
+              <UbButton
+                variant="secondary"
+                disabled={impaired}
+                icon={<Link2 className="h-4 w-4" aria-hidden />}
+                onClick={() => void detail.share('link')}
+              >
+                {t('sales.share.copyLink')}
+              </UbButton>
+              {can('sales.invoice.void') && (
+                <UbButton
+                  variant="ghost"
+                  disabled={impaired}
+                  icon={<RotateCcw className="h-4 w-4" aria-hidden />}
+                  busy={detail.sharing}
+                  onClick={() => void detail.resetLink()}
+                >
+                  {t('sales.share.reset')}
+                </UbButton>
+              )}
+            </UbStack>
+          )}
+          {invoice && !draft && doc.status !== 'void' && can('reports.financial.read') && (
+            <InvoiceProfitCardLazy id={doc.id} />
+          )}
+        </UbStack>
+        <DocumentLinesList doc={doc} />
         <UbStack
-          role="region"
-          aria-label={t('sales.print.preview')}
-          tabIndex={0}
-          className="overflow-x-auto rounded-card border border-border-hairline bg-white print:overflow-visible print:rounded-none print:border-0"
+          className="hidden min-w-0 overflow-x-auto rounded-card border border-border-hairline bg-white xl:col-start-1 xl:row-start-1 xl:flex print:flex print:overflow-visible print:rounded-none print:border-0"
+          data-testid="desktop-paper-preview"
         >
           <PrintSheetLazy
             doc={doc}
@@ -291,6 +356,31 @@ export function InvoiceDetailPageContent({
           />
         </UbStack>
       </UbStack>
+      {previewOpen && (
+        <UbDialog
+          open
+          onOpenChange={setPreviewOpen}
+          title={t('sales.print.preview')}
+          closeLabel={t('common.action.close')}
+          className="sm:w-[calc(100vw-2rem)] sm:max-w-4xl"
+        >
+          <UbStack
+            className="overflow-x-auto bg-white"
+            role="region"
+            aria-label={t('sales.print.preview')}
+            tabIndex={0}
+          >
+            <PrintSheetLazy
+              doc={doc}
+              upi={detail.upi}
+              branding={detail.branding}
+              locale={locale}
+              template={detail.template}
+            />
+          </UbStack>
+        </UbDialog>
+      )}
+
       {detail.composer && (
         <InvoiceShareSheetLazy
           title={t('sales.share.whatsapp')}
@@ -302,4 +392,11 @@ export function InvoiceDetailPageContent({
       )}
     </UbPageShell>
   );
+}
+
+import 'src/i18n/catalogues/salesDetail';
+
+/** A different document must never retain the previous payment/share/print state. */
+export function InvoiceDetailPageContent({ id, kind = 'invoice' }: Readonly<{ id: string; kind?: DetailKind }>): React.JSX.Element {
+  return <InvoiceDetailScreen key={`${kind}:${id}`} id={id} kind={kind} />;
 }

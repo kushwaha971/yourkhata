@@ -478,10 +478,31 @@ describe('the void of a document another module issued (A5, R55)', () => {
     expect(await screen.findByTestId('void-origin-confirm')).toHaveTextContent(
       'This also ends membership M-0042.'
     );
-    expect(screen.getByTestId('void-confirm')).toHaveTextContent('Void anyway');
+    expect(screen.getByTestId('void-confirm')).toHaveTextContent('Cancel anyway');
     await userEvent.click(screen.getByTestId('void-confirm'));
     await waitFor(() => expect(onClose).toHaveBeenCalled());
     expect(credits.voidInvoice).toHaveBeenNthCalledWith(1, doc.id, 'Wrong member');
     expect(credits.voidInvoice).toHaveBeenNthCalledWith(2, doc.id, 'Wrong member', true);
   });
+});
+
+it('Counter cancellation checks the current bill before showing consequences', async () => {
+  // Defect: the old cancel action described a cached bill after payments/returns changed elsewhere.
+  signIn(['sales.invoice.read', 'sales.invoice.void', 'sales.credit_note.write']);
+  const fresh = makeDocument({ amount_paid: '100.00', amount_due: '373.00' });
+  sales.getInvoice.mockResolvedValue({
+    document: fresh,
+    warnings: [],
+    rule46: null,
+    partyBalance: null,
+    ledgerEntryId: null,
+  });
+  renderWithProviders(<DocumentActions doc={makeDocument()} menu />);
+  await userEvent.click(screen.getByRole('button', { name: 'More actions' }));
+  expect(
+    screen.getByText('Nothing was paid on this bill, so there is nothing to refund.')
+  ).toBeInTheDocument();
+  await userEvent.click(screen.getByRole('button', { name: /The bill was a mistake/ }));
+  await waitFor(() => expect(sales.getInvoice).toHaveBeenCalledWith('d1', expect.anything()));
+  expect(await screen.findByTestId('void-consequences')).toBeInTheDocument();
 });

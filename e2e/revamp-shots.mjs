@@ -54,6 +54,14 @@ const EMAIL = process.env.E2E_EMAIL ?? 'scale@digikhaato.test';
 const PASSWORD = process.env.E2E_PASSWORD ?? 'Scale-Run-2026!';
 const arg = (n, d) => (process.argv.find((a) => a.startsWith(`--${n}=`)) ?? `--${n}=${d}`).slice(n.length + 3);
 const PIECE = arg('piece', 'loading');
+// Screen-specific harnesses keep the same approved piece entry point.
+if (['bills', 'bill-detail'].includes(PIECE)) {
+  process.env.E2E_SHOTS = `${process.env.E2E_SHOTS ?? '/tmp/e2e-shots'}/revamp/${PIECE}`;
+  if (PIECE === 'bills') await import('./revamp-bills.mjs');
+  else await import('./revamp-bill-detail.mjs');
+  process.exit(process.exitCode ?? 0);
+}
+
 const DIR = `${process.env.E2E_SHOTS ?? '/tmp/e2e-shots'}/revamp/${PIECE}`;
 mkdirSync(DIR, { recursive: true });
 

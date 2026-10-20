@@ -63,6 +63,38 @@ The client can and will lock buttons (05 §4). The server is the last guard. The
 - **Why**: the PWA opens `/dashboard` for everyone (A-05). The server already resolves a landing (`landing` in `auth/me`).
 - **Proposal**: frontend only (`proxy.ts` and manifest `start_url`); **no backend change** if `landing` already returns the last app's home. Phase 1 verifies. Listed here only so the dependency is visible.
 
+## BP-08 · Explicit customer–supplier settlement (completion of existing placeholder)
+
+**Proposed, not approved for building.** 20 Oct 2026. Sections03/12 already
+referenced BP-08 but this file had no concrete entry. The owner chose separate
+balances until an explicit settlement (D-03); this does not mean automatic netting.
+
+- Merchant action: select the same Shop contact's two roles, enter the amount,
+  review both before/after balances, then confirm once. Example: Radhe Krishna
+  Enterprises has a customer who owes ₹1,000 and a supplier balance of ₹600 for
+  the same contact. An explicit ₹600 settlement leaves customer dues ₹400 and
+  supplier dues ₹0. The lists never show a synthetic ₹400 before that action.
+- Write prerequisite: an audited, idempotent, atomic non-cash settlement source
+  incorporated into the existing role-fact selectors and document allocation
+  rules. Verify those services before choosing a model; a combined contact-cache
+  edit or fake cash receipt is prohibited. No stock, tax, revenue, cash, Library,
+  Lending or personal Udhaar movement. Require both role permissions and fresh
+  tenant/Shop authorization, row locks and current available balances at confirm.
+- Evidence/history: actor, timestamp, amount, affected source documents and
+  before/after role values; merchant-readable receipt signed only by the business,
+  editable share message. No delete/edit of posted settlements; any reversal must
+  use the established immutable correction rules, and be specified before build.
+- Acceptance: partial/full/zero/negative/over-limit, two staff devices, double tap,
+  retries after timeout, contact in another tenant/module, disabled app, role
+  removed, archived party, returns/advance/refunds, simultaneous payment, no
+  permission and separate-role statement reconciliation. Query-count/scale tests
+  plus the real phone/desktop confirmation/history/print flows.
+- Risk/compatibility: high financial-integrity risk; additive source/API only,
+  existing clients/contracts remain valid. Role selectors must reconcile the
+  new non-cash source before rollout.
+- Rollback: feature off stops new settlements; posted sources/history remain and
+  continue reconciling. Never remove their financial effect with a UI rollback.
+
 ## Not proposed
 
 - No change to any Library or Lending calculation, model, migration, or response field.
@@ -171,3 +203,74 @@ Tests cover separate dual-role balances, band sums/oldest dates, unreadable-sour
 omission, tenant and Shop grants, real eligible repeat sources and no writes.
 Rollback removes the additive read and its consumers; source records stay intact.
 Full source, measurements, rollout limits and test results are in the Home report.
+
+
+## Home completion follow-up · 20 Oct 2026
+
+Owner asked when the missing source-backed features would be completed. Home's
+implemented-surface review is8.76/10; full reference-feature parity is8.2/10.
+This is not an end-to-end claim for the unfinished features below. Finish the
+current Bills checkpoint, then the metadata read pass and the workflow proposals.
+No completion date is asserted before the service/schema work is sized.
+
+### BP-15 follow-up · Register status and item counts
+
+Within the existing approved read scope. The current recent_activity selector
+emits type/amount/party/number without document status/line counts. Use an
+additive, permission-filtered read on the Counter endpoint; preserve the old
+feed/response contract. Batch the bounded source IDs, reuse source permissions,
+and annotate counts rather than issuing one query per row. A count means bill
+lines, not total units; non-document events omit it instead of claiming zero.
+Current document status/remaining due must come from the source, including
+partial payment, returns and cancellation. Event time and document date remain
+distinct. Never infer Paid from a screenshot or a positive amount.
+
+Acceptance: party and walk-in bills, paid/partial/overdue/cancelled, returns,
+services, duplicate item lines, multi-unit quantities, zero lines on an invalid
+historical source, same bill numbers across tenants, denied source permissions,
+foreign module origins, actor/business changes, query-count bounds and large
+books. Add UI states to the Home matrix and rerun real payment→register refresh.
+
+### BP-16 · Shop promises / follow-ups
+
+**Proposed; new write workflow, not approved.** Separate Shop role-scoped promise
+records (business, contact, customer/supplier role, date, optional amount, state,
+actor/history). Do not reuse Party.collection_date or personal Udhaar promises.
+Record/edit/complete a follow-up without altering invoices, due dates or balances.
+Home and person pages use the same source. No automatic SMS/WhatsApp sending;
+manual reminders retain the editable composer and fresh Shop amounts.
+
+Risk/compatibility: cross-business/role disclosure; additive Shop-only source
+and permissions, no change to existing personal promises or other apps.
+
+Acceptance: the same mobile in all four apps, a contact who owns another shop,
+shared owner/staff Shop permissions, business switching, a person in both roles,
+archived/removed roles, expired promise, partial/full payment before reminder,
+concurrent edits, tenant timezone/date boundaries and notification recipients
+restricted to the authorized business/module/user. No customer document exposes
+an internal promise note. Add permission/audit/migration/rollback tests before
+implementation; feature-off preserves saved history.
+
+### BP-17 · Physical Shop cash counts
+
+**Proposed; new write workflow, not approved.** An append-only counted-cash
+observation with actor/time, counted amount, server snapshot of expected Shop
+cash and variance. Reuse Shop money_position; never call recorded cash physical
+cash or combine other books. Record a count without posting an adjustment,
+opening balance or cash payment. Those would require a separate business rule.
+Show when a count was taken and distinguish later cash activity from the snapshot.
+
+Risk/compatibility: a counted observation must never be mistaken for a ledger
+adjustment. Additive Shop-only source/permission; old cash/report contracts stay.
+
+Acceptance: positive/zero counts; negative calculated cash; split cash/UPI;
+backdated records; payment/expense cancellation; concurrent transactions while
+counting; duplicate submit/retry; timezone midnight; unauthorized staff; all-book
+reader vs Shop-only staff; tenant/module changes; exact Decimal/paise arithmetic;
+audit history and desktop/320 px review. Define the transactional snapshot and
+freshness rule before migration; don't subtract a stale browser tile at save.
+Feature-off retains counts/history, with no ledger movement to undo.
+
+BP-08/16/17 need one concrete backend-scope approval before building under this
+file's standing rule. BP-15 metadata reads can proceed without that approval.
+Library/Lending endpoints, models, calculations and workflows remain frozen.

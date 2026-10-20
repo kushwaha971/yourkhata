@@ -46,3 +46,5 @@ This folder extends, and does not replace: `docs/mobile-redesign/` (bottom nav a
 3. **Notifications** become a popover on desktop and a page on phones, with the same backend.
 4. **Library and Lending change only how they look.** Their endpoints and rules are listed in 02 and checked by contract snapshots and figure parity before release.
 5. **The foundation design scores 8.74 provisionally**; whole-module scores wait until each module's screens are specified, and every score lists what still has to be measured or tested before it counts.
+
+Bill detail checkpoint: [20-Oct reading/payment/share/print report](../performance/2026-10-20-p5-bill-detail.md). Home metadata and new-workflow scope follow in08/12; no full-Home feature completion claim.

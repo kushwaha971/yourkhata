@@ -4,17 +4,35 @@ import { useCallback, useState } from 'react';
 
 import dynamic from 'next/dynamic';
 
-import { Ban, CheckCircle2, FileOutput, HandCoins, Pencil, Undo2, XCircle } from 'lucide-react';
+import {
+  Ban,
+  CheckCircle2,
+  FileOutput,
+  HandCoins,
+  MoreHorizontal,
+  Pencil,
+  Undo2,
+  XCircle,
+} from 'lucide-react';
 
-import { UbActionLink, UbButton, UbConfirmDialog } from 'src/design-system';
+import {
+  UbActionLink,
+  UbActionSheet,
+  UbButton,
+  UbConfirmDialog,
+  UbStack,
+  UbText,
+} from 'src/design-system';
 import { useAppRouter } from 'src/hooks/useAppRouter';
-import { useAppDispatch } from 'src/hooks/useAppStore';
+import { useAppDispatch, useAppSelector } from 'src/hooks/useAppStore';
 import { usePermissions } from 'src/hooks/usePermissions';
 import { useTranslation } from 'src/hooks/useTranslation';
+import { selectNetworkImpaired } from 'src/redux/slice/networkSlice';
 import { showSnackbar } from 'src/redux/slice/snackbarSlice';
 import { ROUTES } from 'src/routes';
 
 import { convertEstimate, moveEstimate } from '../redux/salesFlowThunk';
+import { fetchInvoice } from '../redux/salesThunk';
 import {
   canApply,
   canReturn,
@@ -55,11 +73,17 @@ type Open = 'void' | 'apply' | 'convert' | 'reject' | 'cancelOrder' | 'voidChall
  *
  * Icon-only on a phone, so the header stays one row (owner's rule).
  */
-export function DocumentActions({ doc }: Readonly<{ doc: SalesDocument }>): React.JSX.Element {
+export function DocumentActions({
+  doc,
+  menu = false,
+}: Readonly<{ doc: SalesDocument; menu?: boolean }>): React.JSX.Element {
   const { t } = useTranslation();
   const router = useAppRouter();
   const dispatch = useAppDispatch();
   const { can } = usePermissions();
+  const impaired = useAppSelector(selectNetworkImpaired);
+  const [checkedDoc, setCheckedDoc] = useState<SalesDocument | null>(null);
+  const [menuOpen, setMenuOpen] = useState(false);
   const [open, setOpen] = useState<Open>(null);
   const [busy, setBusy] = useState(false);
   const close = useCallback(() => setOpen(null), []);
@@ -107,7 +131,17 @@ export function DocumentActions({ doc }: Readonly<{ doc: SalesDocument }>): Reac
     (!doc.links.convertedTo || doc.links.convertedTo.status === 'void');
   const writesEstimates = can('sales.estimate.write');
   const voidable = isVoidable(doc) && can('sales.invoice.void') && !estimate && !order && !challan;
-  return (
+  const checkedVoid = async () => {
+    setBusy(true);
+    const result = await dispatch(fetchInvoice(doc.id));
+    setBusy(false);
+    if (!fetchInvoice.fulfilled.match(result)) return;
+    setCheckedDoc(result.payload.document);
+    setOpen('void');
+  };
+  const isBill = doc.kind === 'invoice' || doc.kind === 'bill_of_supply';
+  const invoiceMenu = menu && isBill;
+  const actions = (
     <>
       {challan && doc.status === 'draft' && can('sales.invoice.write') && (
         <UbActionLink
@@ -260,7 +294,81 @@ export function DocumentActions({ doc }: Readonly<{ doc: SalesDocument }>): Reac
           {t('sales.void.action')}
         </UbButton>
       )}
-      {open === 'void' && <VoidDialogLazy doc={doc} onClose={close} />}
+    </>
+  );
+  return (
+    <>
+      {menu &&
+      isBill &&
+      !voidable &&
+      !(canReturn(doc) && can('sales.credit_note.write')) ? null : menu ? (
+        <>
+          <UbButton
+            variant="secondary"
+            disabled={impaired}
+            busy={busy}
+            iconOnly="mobile"
+            icon={<MoreHorizontal className="h-4 w-4" aria-hidden />}
+            onClick={() => setMenuOpen(true)}
+          >
+            {t('common.action.moreActions')}
+          </UbButton>
+          <UbActionSheet
+            open={menuOpen}
+            onOpenChange={setMenuOpen}
+            title={
+              invoiceMenu
+                ? t('billDetail.wrongTitle', { number: doc.number ?? '' })
+                : t('common.action.moreActions')
+            }
+            rows={
+              invoiceMenu
+                ? [
+                    ...(voidable
+                      ? [
+                          {
+                            key: 'mistake',
+                            label: t('billDetail.mistake'),
+                            caption: t('billDetail.mistakeHint'),
+                            onSelect: () => void checkedVoid(),
+                          },
+                        ]
+                      : []),
+                    ...(canReturn(doc) && can('sales.credit_note.write')
+                      ? [
+                          {
+                            key: 'return',
+                            label: t('billDetail.goodsBack'),
+                            caption: t('billDetail.goodsBackHint'),
+                            href: `${ROUTES.SALES_CREDIT_NOTES}/new?against=${encodeURIComponent(doc.id)}`,
+                          },
+                        ]
+                      : []),
+                  ]
+                : undefined
+            }
+            closeLabel={t('common.action.close')}
+          >
+            {invoiceMenu ? (
+              <UbStack gap={2} className="border-t border-border-hairline px-4 py-3">
+                <UbText variant="body-sm" className="font-medium">
+                  {t('billDetail.refund')}
+                </UbText>
+                <UbText variant="body-sm" tone="secondary">
+                  {t(
+                    doc.amountPaid === '0.00' ? 'billDetail.noRefund' : 'billDetail.refundHint'
+                  )}
+                </UbText>
+              </UbStack>
+            ) : (
+              actions
+            )}
+          </UbActionSheet>
+        </>
+      ) : (
+        actions
+      )}
+      {open === 'void' && <VoidDialogLazy doc={checkedDoc ?? doc} onClose={close} />}
       {open === 'apply' && <ApplyDialogLazy note={doc} onClose={close} />}
       {open === 'cancelOrder' && <CancelOrderDialogLazy doc={doc} onClose={close} />}
       {open === 'voidChallan' && <CancelOrderDialogLazy doc={doc} onClose={close} move="void" />}
@@ -295,3 +403,5 @@ export function DocumentActions({ doc }: Readonly<{ doc: SalesDocument }>): Reac
     </>
   );
 }
+
+import 'src/i18n/catalogues/salesDetail';

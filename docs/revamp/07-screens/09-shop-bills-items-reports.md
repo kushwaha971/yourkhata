@@ -152,7 +152,28 @@ Reuses `PaymentFormDrawer` + `PaymentAllocationPicker` + `PaymentModeEditor` exa
 
 `InvoiceShareSheet` over `UbShareSheet` with the editable message (`#share`): recipient visible, the text with the live link, 900-character counter, WhatsApp/SMS as real links, Copy. Copy says "Link copied", never "Sent". The message is signed with the business name only.
 
-Tracking: problems — A4 sheet scrolls sideways on phones; Void and Return are separate ⋯ items with no explanation; "Checked just now" needs a fresh read · decisions — phone lines list from `printModel`, chooser, settle row hidden · dependencies — owner Q1 (settle), MLDialog autoFocus fix · risks — chooser adds one step for owners who knew "Void" (mitigated: desktop ⋯ keeps the four rows one tap away) · approval — pending · build — not started · tests — `SalesFlows.test.tsx`, `final-sales-qa.mjs`, void API tests, a new e2e: cancel with a payment → advance shown on the person page in the Shop book · outcome — —
+Tracking: problems — paper instead of phone lines, hidden payment, stale cancellation facts,1024 dialog clipping and a false unsaved-payment prompt · decisions — shared native lines/totals, summary/rail, existing Shop counter drawer, fresh mistake/return chooser · dependencies — BP-08 settlement and direct advance-refund verification remain separate · approval — R-DEC-16/25 for this presentation/flow-preservation piece · build — delivered on dev · tests — full4,541; revamp-shots --piece=bill-detail,230 measured frames, four local₹1 receipts including rapid duplicate taps · outcome — reading/payment/share/print piece verified; whole invoice/POS/return family is not certified. Report: docs/performance/2026-10-20-p5-bill-detail.md.
+
+### 2.2 Implementation review · 20 Oct 2026
+
+One existing detail component still serves all sales kinds. Native lines below
+1280 and the wide paper/360 px rail use the same stored print model. Controls
+live in the summary rail on desktop, rather than duplicating them in the header.
+A4/80 mm are visible choices; a saved paper preference is not claimed. The existing
+shared reason form still focuses Reason; the draft safe-choice focus requirement
+is not claimed. Cancelled copy changes no internal void status or server rule.
+The mistake action fetches the current invoice before mounting that form.
+
+Receive explicitly passes Shop/customer plus the selected bill to the existing
+counter payment drawer. Its loaded allocations are a default baseline; actual
+user edits still invoke the discard guard. A keyed detail boundary clears the
+old bill's drawer/composer state when the document changes. No new financial API,
+model or posting formula. Four real local receipts and their source bill changes
+are verified; actual cancel→advance and return/stock journeys remain family work.
+The chooser's refund explanation does not pretend to be a direct refund action;
+settlement stays withheld pending BP-08. Exact scope differences and source data
+limits are in the report.
+
 
 ---
 

@@ -117,7 +117,8 @@ export async function measureCustomers(page, rootSelector) {
     let node;
     while ((node = walker.nextNode())) {
       const el = node.parentElement; const text = node.textContent.trim();
-      if (!text || el.closest('.sr-only,[hidden],script,style,option')) continue;
+      // Print watermarks repeat the visible status and are explicitly decorative.
+      if (!text || el.closest('.sr-only,[hidden],script,style,option,[aria-hidden="true"] [data-testid="print-watermark"]')) continue;
       const box = el.getBoundingClientRect(); const cs = getComputedStyle(el);
       if (!box.width || !box.height || cs.visibility === 'hidden' || el.checkVisibility?.() === false) continue;
       // Responsive screen-reader labels (e.g. max-sm:sr-only) are invisible too.

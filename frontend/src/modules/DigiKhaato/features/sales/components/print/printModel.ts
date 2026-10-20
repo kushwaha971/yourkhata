@@ -1,8 +1,9 @@
-import { sumMoney } from 'src/utils/money';
+import type { TranslateFn } from 'src/hooks/useTranslation';
+import { formatInr, subtractMoney, sumMoney } from 'src/utils/money';
 import { sumQuantities, trimQuantity } from 'src/utils/quantity';
 
 import { THERMAL_NAME_CHARS } from '../../constants/salesConstants';
-import { showsTax } from '../../view-model/invoiceDisplay';
+import { sgstLabelId, showsTax } from '../../view-model/invoiceDisplay';
 
 import type { SalesDocument, SalesDocumentLine } from '../../types/sales.types';
 
@@ -140,3 +141,32 @@ export const pct = (rate: string): string => `${rateLabel(rate)}%`;
 
 /** The line's gross (qty × rate) is printed per line (Rule 46 "total value"). */
 export const trimQty = (qty: string): string => trimQuantity(qty);
+
+/** Stored document totals shared by paper and the phone reading view. */
+export const documentTotalRows = (doc: SalesDocument, t: TranslateFn): [string, string][] => {
+  const columns = taxColumns(doc);
+  return [
+    [t('sales.totals.subtotal'), formatInr(doc.subtotal)],
+    ...(doc.discountAmount !== '0.00'
+      ? ([[t('sales.totals.discount'), `−${formatInr(doc.discountAmount)}`]] as [string, string][])
+      : []),
+    [t('sales.totals.taxable'), formatInr(doc.taxableTotal)],
+    ...(columns === 'intra'
+      ? ([
+          [t('sales.tax.cgst'), formatInr(doc.cgstTotal)],
+          [t(sgstLabelId(doc.placeOfSupplyState, doc.isInterState)), formatInr(doc.sgstTotal)],
+        ] as [string, string][])
+      : []),
+    ...(columns === 'inter'
+      ? ([[t('sales.tax.igst'), formatInr(doc.igstTotal)]] as [string, string][])
+      : []),
+    ...(hasCess(doc)
+      ? ([[t('sales.tax.cess'), formatInr(doc.cessTotal)]] as [string, string][])
+      : []),
+    [t('sales.totals.roundOff'), formatInr(doc.roundOff)],
+  ];
+};
+
+/** Credit-note reductions are separate from cash received. */
+export const documentCredited = (doc: SalesDocument): string =>
+  subtractMoney(subtractMoney(doc.grandTotal, doc.amountPaid), doc.amountDue);

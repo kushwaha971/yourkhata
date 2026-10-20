@@ -1,0 +1,17 @@
+{
+  "billDetail.goodsBack": "सामान वापस आया",
+  "billDetail.goodsBackHint": "क्रेडिट नोट में सामान और मात्रा चुनें।",
+  "billDetail.items": "इस बिल में सामान",
+  "billDetail.keepBill": "बिल रखें",
+  "billDetail.mistake": "बिल गलती से बना",
+  "billDetail.mistakeHint": "बिल रद्द करें। पहले भुगतान और वापसी जाँचे जाएँगे। बिल नंबर रहेगा।",
+  "billDetail.money": "बिल का सारांश",
+  "billDetail.noRefund": "इस बिल पर भुगतान नहीं हुआ। पैसे वापस नहीं देने हैं।",
+  "billDetail.payments": "भुगतान",
+  "billDetail.receive": "पैसे लें",
+  "billDetail.refund": "पैसे वापस दें",
+  "billDetail.refundHint": "रद्द करने से पैसे वापस नहीं जाते। पहले सहेजा भुगतान और दुकान एडवांस जाँचें।",
+  "billDetail.seePrinted": "छपने वाला बिल देखें",
+  "billDetail.share": "शेयर करें",
+  "billDetail.wrongTitle": "बिल {number}: क्या हुआ?"
+}

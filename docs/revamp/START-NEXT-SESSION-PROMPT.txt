@@ -9,14 +9,27 @@ frozen live contracts retain their boundaries. Read 12's current Progress/Next
 and the latest Home report before interpreting a status as complete.
 
 DELIVERED CHECKPOINTS
-Home is pushed as4a66b430. Bills register is delivered; read its report
+Home is pushed as4a66b430. Bills register is pushed ased6d1a2b; read its report
 2026-10-20-p5-bills-register.md and current12 for delivery status. It uses
 visible status chips, shared RecordTotals, register grid/stacked phone cards,
 header New, full dates/names and useCommittedSearch. N no longer steals command
 input; header navigation is tested. No backend/accounting changes. Full FE:
 406 suites/4,536 tests;102 measured en/hi states pass; unchanged bundle budgets.
-Immediate next work: invoice/POS editor and invoice detail/actions, not another
-list-only polish. R-DEC-25 authorizes continuing without routine permission.
+Bill detail/actions is verified; check its20-Oct report and12 for the delivery
+commit before making a whole-family completion claim. Full4,541 tests,230
+measured frames and four local₹1 receipts pass. It adds native phone
+lines, a money summary, visible Receive/Share, a fresh cancellation chooser,
+plain Cancel/Keep words and a wider paper dialog. Receive explicitly uses the
+Shop/customer counter drawer for this bill; server-provided allocation rows no
+longer trigger a false unsaved-changes prompt. No financial API/model change.
+The owner asked when Home's source-backed gaps finish: after this checkpoint,
+complete BP-15 status/line-count reads. BP-08/16/17 now have concrete scopes in08;
+an approval question is pending for settlement, Shop promises and cash counts.
+Read the actual answer before implementing those writes. No automatic netting,
+no cash adjustment from a count, no personal Udhaar promise reuse. After the
+Home follow-up, continue invoice/POS editor and remaining Shop families under
+R-DEC-25 without routine permission. Home's full-feature parity remains8.2/10;
+do not relabel its scoped8.76 screen review as complete feature certification.
 
 READ FIRST
 AGENTS.md, CLAUDE.md, docs/revamp/README.md, 12-decision-log.md,
