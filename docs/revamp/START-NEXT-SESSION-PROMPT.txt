@@ -50,7 +50,10 @@ Remaining, in order:
    "Where a pick's time goes"): main-thread JS in the Enter, ~6 commits of the
    lines section + 2 of the page per pick; UbLineItemsEditor rebuilds every
    row inline (memoize rows; renderCardSummary/renderLineNote closures over
-   lines/preview defeat memo today); tax engine is cheap (0.6 ms). Target:
+   lines/preview defeat memo today); tax engine is cheap (0.6 ms).
+   TRIED 20 Oct: memoizing collapsed cards (cardSummaryKey) gave 185->183 ms,
+   noise, reverted. Next: production CPU profile with source maps (local
+   only), and remove the second page commit per pick. Target:
    Enter < 120 ms at 4x CPU on 30 lines (node e2e/perf-billing.mjs), then
    rescore.
 Then the remaining sales documents, purchases and returns (R-DEC-27).

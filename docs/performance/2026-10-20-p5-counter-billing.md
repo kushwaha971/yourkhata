@@ -191,6 +191,16 @@ rather than closures over `lines` and `preview`), and cut the per-pick commits
 Latest run on the normal build: phone 4× Enter→line median 185 ms (Enter event
 168 ms); laptop 91 ms (Enter event 48 ms).
 
+**First attempt, measured and not kept.** Collapsed phone cards were memoized
+behind a caller-supplied summary key (`cardSummaryKey`), with tests that a
+collapsed card skips a render its summary does not need and still updates when
+it does. Phone Enter→line went from 185 to 183 ms, which is noise, so the change
+was reverted rather than shipped as complexity that buys nothing. The dev-build
+attribution to the editor's row loop is therefore not the main cost; the next
+attempt should take a CPU profile of a production build with source maps
+(`productionBrowserSourceMaps`, local only) and cut the second page commit per
+pick before touching rows again.
+
 ## Rescore (20 Oct), in the Counter Mode artifact's table
 
 Against the owner's bar of above 8.5 in every aspect, phone and desktop.
