@@ -12,6 +12,7 @@ const arg = (k,d) => process.argv.find(x=>x.startsWith(`--${k}=`))?.slice(k.leng
 const base=process.env.E2E_FRONTEND ?? 'http://localhost:3000';
 for(const u of [base,process.env.E2E_BACKEND ?? 'http://localhost:8000/api/v1']) if(!['localhost','127.0.0.1'].includes(new URL(u).hostname)) throw Error('Local QA only');
 const locale=arg('locale','en'),hi=locale==='hi';
+const ledger=JSON.parse(readFileSync(new URL(`../frontend/locales/catalogues/money.${locale}.json`,import.meta.url),'utf8'));
 const words=JSON.parse(readFileSync(new URL(`../frontend/locales/catalogues/purchases.${locale}.json`,import.meta.url),'utf8'));
 const word=key=>words[`purchases.${key}`];
 const out=`${process.env.E2E_SHOTS ?? '/tmp/e2e-shots'}/revamp/${arg('piece','purchase-finish')}`;
@@ -55,6 +56,12 @@ try {
   await page.goto(`${base}/purchases/bills/${bill.id}/edit`);
   await page.getByTestId('purchase-dock').getByRole('button',{name:word('editor.record'),exact:true}).click();
   await page.getByTestId('purchase-paid-now-confirm').waitFor();await shot('paid-now','[role=dialog]');
+  const amount=page.getByRole('dialog').getByLabel(word('payment.amount'),{exact:true});
+  await amount.fill('20');await page.getByRole('radio',{name:ledger['ledger.upiApp.phonepe'],exact:true}).click();await shot('part-upi','[role=dialog]');
+  await amount.fill('150');await shot('advance','[role=dialog]');
+  await amount.fill('1240378');await shot('large-payment','[role=dialog]');
+  await amount.fill('94');await page.getByRole('radio',{name:ledger['ledger.mode.cash'],exact:true}).click();
+
   await page.getByTestId('purchase-paid-now-confirm').click();
   await page.waitForFunction(()=>document.querySelector('[data-testid=purchase-paid-now-confirm]')?.getAttribute('aria-busy')==='true');
   check(await page.getByRole('dialog').locator('input[inputmode=decimal]').isDisabled(),`${tag}: submitted payment still editable`);

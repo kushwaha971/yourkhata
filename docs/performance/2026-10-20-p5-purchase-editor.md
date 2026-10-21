@@ -3,7 +3,7 @@
 20 October 2026, dev. Continue R-DEC-27/29 from93c6d3fe. Scope: the remaining
 approved purchase editor composition and business states, one verified commit
 per piece. No new plan, no Home work or Library/Lending contract change.
-Final whole-editor score waits for all pieces and end-to-end acceptance.
+The dated checkpoints below are historical. The final 21 October acceptance at the end supersedes their pending-editor status; it does not certify the entire Purchases module.
 
 ## Step 2 — the finishing dock
 
@@ -235,3 +235,208 @@ no speed improvement claim from this checkpoint.
 - Purchase editor 1280/throttled: content median566ms, samples[1364, 559, 566].
 
 Next: true joined supplier context and complete editor acceptance/performance/rating. Purchase list/detail/returns remain later, followed by source modules and Home last. No whole-editor score yet.
+
+
+## 21 October — joined supplier composition and final editor acceptance
+
+**§7 editor implementation and local end-to-end acceptance are complete.**
+This covers bill and purchase-order creation/editing, the supplier summary,
+line entry, totals, Save draft, Record/Paid now, Send and their recovery states.
+Purchase register/detail/return redesigns are the next pieces, not included in
+this completion claim. The owner approved continuing them without a phase question.
+
+### Composition and reusable behavior
+
+Below1536, selecting a supplier produces one joined supplier/number/date/due
+summary with Edit; long names wrap. Edit opens the original fields, including
+invoice date, tax credit and reverse charge; duplicate/error states open them.
+An empty editor keeps the supplier visible and secondary details folded. Desktop
+retains the table when it fits and the side totals from1536. Search stays above
+lines, list selection focuses Qty, scanner entry keeps search focus, a repeat
+raises Qty without resetting a cost override, and the finder appears at ten
+named lines. The finishing dock carries item/GST caption and one truthful save
+state. Record is marigold, with no new financial engine.
+
+No-match supplier creation reuses the lazy PartyQuickCreate, permission-gated,
+Shop-scoped and defaulted to Supplier. It retains entered lines. A React portal
+submit defect was reproduced: saving the child form also submitted the opening
+document. UbForm now stops submit propagation; its failing-before regression
+and the real browser supplier Save prove no Record/payment question occurs.
+There is no second contact form or copied search/price/stock/tax engine.
+
+Context-load failure now offers Retry instead of an endless skeleton; stale
+context request responses are fenced. A sent/posted/voided/cancelled edit URL or
+browser Back opens read-only detail. Orders reuse the scoped immutable intent
+and GET-before-replay path: a lost Send reply checks the existing order, rather
+than issuing another operation blindly. Recovery of an already-applied write
+also reuses the existing invalidation map so warm stock/payment/report caches
+refresh; a new warm-cache regression fails before that correction.
+
+Quantity masks previously turned1.5 into15 for whole-number units and-5 into5.
+They now preserve numeric intent and the existing central validator refuses it.
+Purchase Record rejects invalid quantities; a negative return row cannot be
+silently omitted while another positive row is issued. The shared input has no
+Library/Lending consumers; their endpoint/model/workflow contracts are unchanged.
+The return correction is safety coverage, not acceptance of the whole return UI.
+A remaining UX limit: reopened custom counted-unit metadata is inferred for
+NOS/PCS; other invalid custom-unit fractions still receive an authoritative
+server refusal. Inventory metadata review remains in the planned inventory phase.
+
+### Regressions and production gates
+
+Failing-before cases retained in data/2026-10-20-purchase-editor/complete-*:
+joined summary, blank-editor density, inline supplier permission/creation,
+portal submit, order Send uncertainty, order-specific finder words, numeric
+intent, invalid return row, posted edit URL and warm cache recovery. Existing
+step3–5 regressions retain partial-row refusal, stale save acknowledgement,
+source defaults/zero/precise costs, double taps, immutable retry and actor fences.
+
+Final frozen app: **414 suites /4,639 frontend tests pass in105.369s**.
+Changed-file ESLint --fix/max-warnings0, types, locale split/check, standard
+production build, final bundle gate and174 contrast pairs pass. Full cloud lint
+exceeds25minutes, so changed-file lint is used. Jest ran before the build, not
+concurrently. Existing act/network-probe/worker-teardown warnings remain in the
+raw log; passing does not mean warning-free. The gate helper stopped at the
+initial exceeded bundle ceiling; after documented measured budgets, the final
+manual bundle and contrast checks pass. The initial red log is retained.
+
+All **80 purchase backend tests pass** against an isolated local test database;
+Django converter deprecation warnings remain. No backend application code or
+schema changed, and this is not an all-API security certificate or a rerun of
+the entire backend suite. Build env: NEXT_PUBLIC_API_BASE_URL=/api/v1,
+API_PROXY_TARGET=http://127.0.0.1:8000, SW/analytics false; standalone restarted
+after build. QA database revamp_20261018, console OTP only. No Railway or
+production data, external messages or actual money movement.
+
+### Browser acceptance:498 final frames
+
+| Family | Frames | What is proved |
+|---|---:|---|
+| Core editor |240|20 states ×12 profiles: editing, list/scanner, repeat, finder, Save, offline, native unload cancel, explicit zero/source default and four-place/large cost |
+| Supplier/context/order contracts |144|12 states ×12 profiles: real inline creation, retry, summary/Edit, invalid quantity, lost Send reply, read-only Back/edit link, return input guard |
+| Finishing |96|8 states ×12 profiles: cash/part UPI/advance/large payment, pending, lost Record reply, uncertain leave, explicit payment403 choice |
+| Wide desktop |14|1536 light/dark, seven states, full metadata and side totals |
+| Real money graph |4|390/1280 part PhonePe, advance cash; readbacks described below |
+
+Twelve profiles means390/320/1024/1280 light/dark, plus Hindi320/1280 light/dark.
+Computed foreground/background contrast, text against its own box, page width,
+input-value widths and overlay hit tests are measured, not inferred from markup.
+Final results: zero page overflow, cut labels, active-label contrast failures,
+uncaught page errors or measured dialog/recovery-text occlusion. All20 contact
+sheets were inspected, plus native supplier/large-money/Hindi recovery frames.
+The omitted shell business-name/email ellipsis is a known separately scoped
+shell issue; editor measurements are not a claim of whole-shell conformance.
+
+Fresh Radhe Krishna Enterprises QA owners and electrical products were used
+for actual writes. The scale book remains the load/performance fixture; its
+existing supplier names are not relabelled. Browser facts:
+
+- Lost Record response: the real server records one paid bill and2 stock units;
+  GET recovery opens it without a second Record. Original default40/selling55
+  remains distinct from bill pricing. The controlled browser payment403 keeps
+  a draft; explicit Pay later then records paid0/due94. The actual ACL refusal
+  is separately covered by backend tests, not claimed as browser role revocation.
+- Real PhonePe part payment20 leaves133 due; a second supplier supplies the same
+  two products on credit150. A200 cash payment on153 creates47 advance. Free
+  goods total0 records without the payment drawer/body. Two actual PAYOUT
+  vouchers per money-graph profile; stock reaches4 for each product. Later
+  supplier costs39/88 do not reprice the earlier40/90 bill; selling defaults55/125
+  remain unchanged. Final purchase default0 comes only from the explicit free
+  goods record, not draft editing. Server engines remain authoritative.
+- Send recovery changes no stock, catalog defaults or Shop debt; one actual
+  Send despite its lost reply. Same phone in another shop's owner/contact does
+  not merge identities: the other owner gets404 for this purchase/item/contact.
+  Warm-cache invalidation is a focused integration regression; it does not
+  pretend to be a new all-module access audit.
+- Return invalid/valid inputs were exercised against recorded local fixtures;
+  no return was issued in that input-only check. Actual return business rules
+  remain in the80 backend tests and the forthcoming return acceptance piece.
+
+Final harnesses: revamp-purchase-quick-add.mjs, revamp-purchase-finish.mjs,
+revamp-purchase-contracts.mjs, revamp-purchase-money.mjs. Artifacts are in this
+chat's artifacts/purchase-{editor-final,finishing-final,contracts-final,
+editor-wide,money}-2026-10-21 directories. Raw result JSON is committed beside
+this report. Meaningful harness reds are preserved: deterministic timestamp
+GSTIN collision409 (now random valid PAN entropy) and return-button readiness
+race (now wait for the attached action before choosing the phone menu).
+Neither is hidden as a product test pass.
+
+### Bundle cost
+
+Final purchase editors:168.4KB route /409.8KB first load. Shared app114.2KB
+(previous checkpoint113.7); framework127.3KB unchanged.98 exceeded route/first-
+load scalars and the shared-app ceiling were adjusted with a reason in
+bundle-budgets.json. Each changed route ceiling is measured+0.3KB; shared114.4.
+These bytes buy reused lazy supplier creation, context/order/read-only/cache
+recovery and common form/quantity safety. Default/framework limits were not
+raised. No package was added.
+
+### Final performance and evidence-based rating
+
+Same Mac/API/database, otherwise quiet:93c6d3fe detached worktree (built with
+real hardlinked node_modules), then final app, then old, then final again.
+Current perf-app.mjs --reps=3 --only=nav, three identical cases (purchase register
+→new editor, Home→Customers, Home→Suppliers),390/1280 and both profiles.
+**144/144 navigation samples, no errors/timeouts.** Each table cell below pools
+six samples; p95 uses nearest rank (the maximum for six), not a reassuring
+interpolated tail. Throttled is CPU×4,150ms RTT,1.6Mbps down. Values are ms.
+
+|Purchase editor route|Old content median /p95|Final content median /p95|Final first-change max|
+|---|---:|---:|---:|
+|390 unthrottled|69 /81|75 /371|3|
+|390 throttled|431.5 /1325|443.5 /1390|8|
+|1280 unthrottled|68.5 /433|64 /426|53|
+|1280 throttled|559.5 /1309|557 /1356|72|
+
+Warm phone median431.5→443.5ms (+12); final repeat-run medians425/451 differ26ms.
+Warm desktop559.5→557ms; final repeat medians552/559 differ7ms. Controls:
+phone Customers529→532.5/Suppliers522.5→524; desktop822.5→841.5/842→840.
+First throttled editor sample each run is slower: phone1305/1325→1372/1390,
+median+66ms (+5.0%); desktop1290/1309→1348/1356,+52.5ms (+4.0%). One unthrottled
+phone final first sample is371ms versus old75/81; it is retained, not discarded.
+This is a modest measured first-load cost, not a speed improvement or proof of
+bit-for-bit unchanged navigation. Pending feedback still appears promptly.
+F4's97→91ms first-change median (excluding Lending) and17Oct363ms baseline
+measure other case sets/environments; they are historical context, not a causal
+comparison for today's purchase editor. No F4 whole-app speed claim is made.
+
+Actual30-line purchase entry, selected supplier, Enter→render+Qty focus:
+phone390 CPU×4 median36/p9541ms, last-five36; desktop1280 median38/p9550,
+last-five50. Event Timing maxima while picking/search typing/Qty typing:
+phone32/56/40ms, desktop40/48/48ms. Zero unexpected scanner lookups during list
+picks; scanner behavior itself is checked separately by the core acceptance
+harness. The step1 medians36/38ms remain the same; this is not a new acceleration.
+Final frontend restored after the serial comparison. Raw pooled samples and
+per-event data are committed in complete-ab-* and complete-editor-speed.json.
+
+### Whole-editor score (provisional self-assessment, not merchant research)
+
+|Point of view|Score /10|Evidence|Still weak|Confidence|
+|---|---:|---|---|---|
+|Function · phone|8.9|Real Save/Record/Send, part/advance/free/credit readbacks, recovery and80 backend tests|No device copy or crash guarantee; custom-unit metadata UX|High for local flows|
+|Function · desktop|8.9|Same source engines, warm-cache/posted-edit guards, permission and identity regressions|Not an all-API permission audit|High for tested paths|
+|Busy shop · phone|8.7|Top search, repeat Qty, finder, inline supplier, common finishing flow|Real scanner/IME and merchant task study unproved|Medium|
+|Busy shop · desktop|8.9|Keyboard entry, scanner focus,30-line picks, lazy shared create|Hardware scanner/printer unproved|Medium-high|
+|UI/UX · phone|8.7|320/390 compact composition, Hindi, full words, dock, measured sheets/large money|OS text scaling/TalkBack and shell truncation outside scope|Medium-high|
+|UI/UX · desktop|8.8|1024 cards/1280 table/1536 side totals, both themes and recovery states|No independent usability study|Medium-high|
+|Performance · phone|8.6|36ms picks,≤56ms measured input events, prompt route feedback|First throttled load~1.39s;~5% more than baseline|Medium, emulated|
+|Performance · desktop|8.8|38ms picks;557ms throttled warm navigation|First load~1.36s; small added common bytes|Medium-high, local|
+
+09's separate design weights (20/15/15/15/10/10/10/5): mobile8.7, ease8.8,
+visual8.8, feedback8.9, accessibility8.6, desktop8.8, safety9.0, reuse9.0 =
+**8.805, reported conservatively as8.80/10**. This design rubric does not
+replace the eight aspect scores above; lowest verified aspect is8.6. Scores
+apply only to the completed editor, not purchase register/detail/returns or
+whole-Shop readiness. Hardware/accessibility research could change them.
+
+
+Physical phones, installed PWA, scanner/printer hardware, native phone contacts,
+OS keyboard/text scaling and TalkBack are not proved by desktop Chromium.
+Purchases intentionally have no device copy: native leave cancellation protects
+an open tab, not a browser crash or forced reload. In-place re-auth remains a
+shell dependency. No independent merchant research or whole-Shop certification
+is claimed. These limits remain visible in the rating.
+
+Next: purchase register §5, detail §6 and complete returns/debit-note redesign,
+then remaining sales documents; inventory/money/expenses/reports afterward.
+Approved remaining Home workflows stay last (R-DEC-27).

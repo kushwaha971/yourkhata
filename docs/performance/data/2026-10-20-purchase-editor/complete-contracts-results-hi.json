@@ -1,0 +1,490 @@
+{
+  "results": [
+    {
+      "tag": "320-light-hi",
+      "name": "context-loading",
+      "overflow": 0,
+      "cut": [],
+      "lowContrast": [],
+      "firstRowY": null
+    },
+    {
+      "tag": "320-light-hi",
+      "name": "context-error",
+      "overflow": 0,
+      "cut": [],
+      "lowContrast": [],
+      "firstRowY": null
+    },
+    {
+      "tag": "320-light-hi",
+      "name": "supplier-summary",
+      "overflow": 0,
+      "cut": [],
+      "lowContrast": [],
+      "firstRowY": null
+    },
+    {
+      "tag": "320-light-hi",
+      "name": "supplier-edit",
+      "overflow": 0,
+      "cut": [],
+      "lowContrast": [],
+      "firstRowY": null
+    },
+    {
+      "tag": "320-light-hi",
+      "name": "invalid-whole-quantity",
+      "overflow": 0,
+      "cut": [],
+      "lowContrast": [],
+      "firstRowY": null
+    },
+    {
+      "tag": "320-light-hi",
+      "name": "negative-quantity",
+      "overflow": 0,
+      "cut": [],
+      "lowContrast": [],
+      "firstRowY": null
+    },
+    {
+      "tag": "320-light-hi",
+      "name": "supplier-no-match",
+      "overflow": 0,
+      "cut": [],
+      "lowContrast": [],
+      "firstRowY": null
+    },
+    {
+      "tag": "320-light-hi",
+      "name": "supplier-create",
+      "overflow": 0,
+      "cut": [],
+      "lowContrast": [],
+      "firstRowY": null
+    },
+    {
+      "tag": "320-light-hi",
+      "name": "supplier-created",
+      "overflow": 0,
+      "cut": [],
+      "lowContrast": [],
+      "firstRowY": null
+    },
+    {
+      "tag": "320-light-hi",
+      "name": "order-send-reply-lost",
+      "overflow": 0,
+      "cut": [],
+      "lowContrast": [],
+      "firstRowY": null
+    },
+    {
+      "tag": "320-light-hi",
+      "name": "return-invalid-quantity",
+      "overflow": 0,
+      "cut": [],
+      "lowContrast": [],
+      "firstRowY": null
+    },
+    {
+      "tag": "320-light-hi",
+      "name": "return-valid-quantity",
+      "overflow": 0,
+      "cut": [],
+      "lowContrast": [],
+      "firstRowY": null
+    },
+    {
+      "tag": "320-dark-hi",
+      "name": "context-loading",
+      "overflow": 0,
+      "cut": [],
+      "lowContrast": [],
+      "firstRowY": null
+    },
+    {
+      "tag": "320-dark-hi",
+      "name": "context-error",
+      "overflow": 0,
+      "cut": [],
+      "lowContrast": [],
+      "firstRowY": null
+    },
+    {
+      "tag": "320-dark-hi",
+      "name": "supplier-summary",
+      "overflow": 0,
+      "cut": [],
+      "lowContrast": [],
+      "firstRowY": null
+    },
+    {
+      "tag": "320-dark-hi",
+      "name": "supplier-edit",
+      "overflow": 0,
+      "cut": [],
+      "lowContrast": [],
+      "firstRowY": null
+    },
+    {
+      "tag": "320-dark-hi",
+      "name": "invalid-whole-quantity",
+      "overflow": 0,
+      "cut": [],
+      "lowContrast": [],
+      "firstRowY": null
+    },
+    {
+      "tag": "320-dark-hi",
+      "name": "negative-quantity",
+      "overflow": 0,
+      "cut": [],
+      "lowContrast": [],
+      "firstRowY": null
+    },
+    {
+      "tag": "320-dark-hi",
+      "name": "supplier-no-match",
+      "overflow": 0,
+      "cut": [],
+      "lowContrast": [],
+      "firstRowY": null
+    },
+    {
+      "tag": "320-dark-hi",
+      "name": "supplier-create",
+      "overflow": 0,
+      "cut": [],
+      "lowContrast": [],
+      "firstRowY": null
+    },
+    {
+      "tag": "320-dark-hi",
+      "name": "supplier-created",
+      "overflow": 0,
+      "cut": [],
+      "lowContrast": [],
+      "firstRowY": null
+    },
+    {
+      "tag": "320-dark-hi",
+      "name": "order-send-reply-lost",
+      "overflow": 0,
+      "cut": [],
+      "lowContrast": [],
+      "firstRowY": null
+    },
+    {
+      "tag": "320-dark-hi",
+      "name": "return-invalid-quantity",
+      "overflow": 0,
+      "cut": [],
+      "lowContrast": [],
+      "firstRowY": null
+    },
+    {
+      "tag": "320-dark-hi",
+      "name": "return-valid-quantity",
+      "overflow": 0,
+      "cut": [],
+      "lowContrast": [],
+      "firstRowY": null
+    },
+    {
+      "tag": "1280-light-hi",
+      "name": "context-loading",
+      "overflow": 0,
+      "cut": [],
+      "lowContrast": [],
+      "firstRowY": null
+    },
+    {
+      "tag": "1280-light-hi",
+      "name": "context-error",
+      "overflow": 0,
+      "cut": [],
+      "lowContrast": [],
+      "firstRowY": null
+    },
+    {
+      "tag": "1280-light-hi",
+      "name": "supplier-summary",
+      "overflow": 0,
+      "cut": [],
+      "lowContrast": [],
+      "firstRowY": null
+    },
+    {
+      "tag": "1280-light-hi",
+      "name": "supplier-edit",
+      "overflow": 0,
+      "cut": [],
+      "lowContrast": [],
+      "firstRowY": null
+    },
+    {
+      "tag": "1280-light-hi",
+      "name": "invalid-whole-quantity",
+      "overflow": 0,
+      "cut": [],
+      "lowContrast": [],
+      "firstRowY": null
+    },
+    {
+      "tag": "1280-light-hi",
+      "name": "negative-quantity",
+      "overflow": 0,
+      "cut": [],
+      "lowContrast": [],
+      "firstRowY": null
+    },
+    {
+      "tag": "1280-light-hi",
+      "name": "supplier-no-match",
+      "overflow": 0,
+      "cut": [],
+      "lowContrast": [],
+      "firstRowY": null
+    },
+    {
+      "tag": "1280-light-hi",
+      "name": "supplier-create",
+      "overflow": 0,
+      "cut": [],
+      "lowContrast": [],
+      "firstRowY": null
+    },
+    {
+      "tag": "1280-light-hi",
+      "name": "supplier-created",
+      "overflow": 0,
+      "cut": [],
+      "lowContrast": [],
+      "firstRowY": null
+    },
+    {
+      "tag": "1280-light-hi",
+      "name": "order-send-reply-lost",
+      "overflow": 0,
+      "cut": [],
+      "lowContrast": [],
+      "firstRowY": null
+    },
+    {
+      "tag": "1280-light-hi",
+      "name": "return-invalid-quantity",
+      "overflow": 0,
+      "cut": [],
+      "lowContrast": [],
+      "firstRowY": null
+    },
+    {
+      "tag": "1280-light-hi",
+      "name": "return-valid-quantity",
+      "overflow": 0,
+      "cut": [],
+      "lowContrast": [],
+      "firstRowY": null
+    },
+    {
+      "tag": "1280-dark-hi",
+      "name": "context-loading",
+      "overflow": 0,
+      "cut": [],
+      "lowContrast": [],
+      "firstRowY": null
+    },
+    {
+      "tag": "1280-dark-hi",
+      "name": "context-error",
+      "overflow": 0,
+      "cut": [],
+      "lowContrast": [],
+      "firstRowY": null
+    },
+    {
+      "tag": "1280-dark-hi",
+      "name": "supplier-summary",
+      "overflow": 0,
+      "cut": [],
+      "lowContrast": [],
+      "firstRowY": null
+    },
+    {
+      "tag": "1280-dark-hi",
+      "name": "supplier-edit",
+      "overflow": 0,
+      "cut": [],
+      "lowContrast": [],
+      "firstRowY": null
+    },
+    {
+      "tag": "1280-dark-hi",
+      "name": "invalid-whole-quantity",
+      "overflow": 0,
+      "cut": [],
+      "lowContrast": [],
+      "firstRowY": null
+    },
+    {
+      "tag": "1280-dark-hi",
+      "name": "negative-quantity",
+      "overflow": 0,
+      "cut": [],
+      "lowContrast": [],
+      "firstRowY": null
+    },
+    {
+      "tag": "1280-dark-hi",
+      "name": "supplier-no-match",
+      "overflow": 0,
+      "cut": [],
+      "lowContrast": [],
+      "firstRowY": null
+    },
+    {
+      "tag": "1280-dark-hi",
+      "name": "supplier-create",
+      "overflow": 0,
+      "cut": [],
+      "lowContrast": [],
+      "firstRowY": null
+    },
+    {
+      "tag": "1280-dark-hi",
+      "name": "supplier-created",
+      "overflow": 0,
+      "cut": [],
+      "lowContrast": [],
+      "firstRowY": null
+    },
+    {
+      "tag": "1280-dark-hi",
+      "name": "order-send-reply-lost",
+      "overflow": 0,
+      "cut": [],
+      "lowContrast": [],
+      "firstRowY": null
+    },
+    {
+      "tag": "1280-dark-hi",
+      "name": "return-invalid-quantity",
+      "overflow": 0,
+      "cut": [],
+      "lowContrast": [],
+      "firstRowY": null
+    },
+    {
+      "tag": "1280-dark-hi",
+      "name": "return-valid-quantity",
+      "overflow": 0,
+      "cut": [],
+      "lowContrast": [],
+      "firstRowY": null
+    }
+  ],
+  "facts": [
+    {
+      "case": "other-owner-same-phone",
+      "resource": "purchases",
+      "status": 404
+    },
+    {
+      "case": "other-owner-same-phone",
+      "resource": "parties",
+      "status": 404
+    },
+    {
+      "case": "other-owner-same-phone",
+      "resource": "items",
+      "status": 404
+    },
+    {
+      "tag": "320-light-hi",
+      "case": "inline-supplier",
+      "recordRequests": 0,
+      "lines": 1,
+      "unitCost": "42.0000"
+    },
+    {
+      "tag": "320-light-hi",
+      "case": "order-send-lost-reply",
+      "sendRequests": 1,
+      "status": "sent",
+      "stockUnchanged": true
+    },
+    {
+      "tag": "320-light-hi",
+      "case": "posted-read-only-and-return-safety",
+      "orderBackReadOnly": true,
+      "billEditReadOnly": true,
+      "returnRequests": 0
+    },
+    {
+      "tag": "320-dark-hi",
+      "case": "inline-supplier",
+      "recordRequests": 0,
+      "lines": 1,
+      "unitCost": "42.0000"
+    },
+    {
+      "tag": "320-dark-hi",
+      "case": "order-send-lost-reply",
+      "sendRequests": 1,
+      "status": "sent",
+      "stockUnchanged": true
+    },
+    {
+      "tag": "320-dark-hi",
+      "case": "posted-read-only-and-return-safety",
+      "orderBackReadOnly": true,
+      "billEditReadOnly": true,
+      "returnRequests": 0
+    },
+    {
+      "tag": "1280-light-hi",
+      "case": "inline-supplier",
+      "recordRequests": 0,
+      "lines": 1,
+      "unitCost": "42.0000"
+    },
+    {
+      "tag": "1280-light-hi",
+      "case": "order-send-lost-reply",
+      "sendRequests": 1,
+      "status": "sent",
+      "stockUnchanged": true
+    },
+    {
+      "tag": "1280-light-hi",
+      "case": "posted-read-only-and-return-safety",
+      "orderBackReadOnly": true,
+      "billEditReadOnly": true,
+      "returnRequests": 0
+    },
+    {
+      "tag": "1280-dark-hi",
+      "case": "inline-supplier",
+      "recordRequests": 0,
+      "lines": 1,
+      "unitCost": "42.0000"
+    },
+    {
+      "tag": "1280-dark-hi",
+      "case": "order-send-lost-reply",
+      "sendRequests": 1,
+      "status": "sent",
+      "stockUnchanged": true
+    },
+    {
+      "tag": "1280-dark-hi",
+      "case": "posted-read-only-and-return-safety",
+      "orderBackReadOnly": true,
+      "billEditReadOnly": true,
+      "returnRequests": 0
+    }
+  ],
+  "failures": []
+}

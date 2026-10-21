@@ -20,6 +20,7 @@ import { useAppRouter } from 'src/hooks/useAppRouter';
 import { useAppDispatch } from 'src/hooks/useAppStore';
 import { useIdempotencyKey } from 'src/hooks/useIdempotencyKey';
 import { useTranslation } from 'src/hooks/useTranslation';
+import { useValidationSchemas } from 'src/hooks/useValidationSchemas';
 import { showSnackbar } from 'src/redux/slice/snackbarSlice';
 import { ROUTES } from 'src/routes';
 import type { ApiErrorShape } from 'src/types/api.types';
@@ -41,6 +42,7 @@ import {
 
 // Loaded with dynamic(), so its own words come with its own chunk.
 import 'src/i18n/catalogues/purchases';
+import 'src/i18n/catalogues/validation';
 
 /**
  * Shop P0 (PUR-07 US-1, US-2, US-6) — "Return goods" from a recorded bill: each line
@@ -74,6 +76,22 @@ export function DebitNoteDrawer({
     () => bill.lines.map((line) => ({ line, left: returnableQty(line, bill.links.returned) })),
     [bill.lines, bill.links.returned]
   );
+  const { quantityValidation } = useValidationSchemas();
+  const quantitySchema = useMemo(() => quantityValidation(), [quantityValidation]);
+  const quantityErrors = useMemo<Record<number, string>>(() => {
+    const errors: Record<number, string> = {};
+    for (const { line } of lines) {
+      const value = qty[line.lineNo]?.trim() ?? '';
+      if (!value || Number(value) === 0) continue;
+      try {
+        quantitySchema.validateSync(value);
+      } catch (error) {
+        errors[line.lineNo] = error instanceof Error ? error.message : t('validation.qty.format');
+      }
+    }
+    return errors;
+  }, [lines, qty, quantitySchema, t]);
+  const invalidQuantity = Object.keys(quantityErrors).length > 0;
   const picked = lines.filter(({ line }) => Number(qty[line.lineNo] || 0) > 0);
   const over = picked.some(({ line, left }) => exceedsQuantity(qty[line.lineNo], left));
   const reasonOptions = useMemo(
@@ -87,6 +105,7 @@ export function DebitNoteDrawer({
   const short = error?.code === 'insufficient_stock' ? shortLines(error.details) : [];
 
   const submit = async () => {
+    if (busy || invalidQuantity || picked.length === 0 || over || !reason) return;
     setBusy(true);
     setError(null);
     const result = await dispatch(
@@ -135,7 +154,7 @@ export function DebitNoteDrawer({
           <UbButton
             busy={busy}
             busyLabel={t('purchases.debitNote.working')}
-            disabled={picked.length === 0 || over || !reason}
+            disabled={picked.length === 0 || over || invalidQuantity || !reason}
             onClick={() => void submit()}
             data-testid="debit-note-issue"
           >
@@ -170,17 +189,26 @@ export function DebitNoteDrawer({
                       })}
                     </UbText>
                   </UbStack>
-                  <UbQuantityInput
-                    id={`${baseId}-qty-${line.lineNo}`}
-                    aria-label={t('purchases.debitNote.qtyLabel', { name: line.description })}
-                    value={value}
-                    onChange={(next) => setQty((current) => ({ ...current, [line.lineNo]: next }))}
-                    unit={line.unitCode}
-                    invalid={tooMany}
-                    disabled={left === '0'}
-                    placeholder="0"
-                    className="w-32 shrink-0"
-                  />
+                  <UbStack gap={1} className="w-32 shrink-0">
+                    <UbQuantityInput
+                      id={`${baseId}-qty-${line.lineNo}`}
+                      aria-label={t('purchases.debitNote.qtyLabel', { name: line.description })}
+                      value={value}
+                      onChange={(next) =>
+                        setQty((current) => ({ ...current, [line.lineNo]: next }))
+                      }
+                      unit={line.unitCode}
+                      invalid={tooMany || !!quantityErrors[line.lineNo]}
+                      disabled={left === '0'}
+                      placeholder="0"
+                      className="w-full"
+                    />
+                    {quantityErrors[line.lineNo] && (
+                      <UbText variant="caption" tone="error">
+                        {quantityErrors[line.lineNo]}
+                      </UbText>
+                    )}
+                  </UbStack>
                 </UbStack>
               </UbStack>
             );

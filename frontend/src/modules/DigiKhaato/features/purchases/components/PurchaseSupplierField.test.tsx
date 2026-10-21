@@ -74,8 +74,8 @@ it('P-D6: supplier matches are a listbox of options, pickable with the arrow key
   expect(options.map((o) => o.textContent)).toEqual(['Gupta Wholesale', 'Gupta Agro']);
   expect(screen.getByRole('listbox')).toBeInTheDocument();
   expect(input).toHaveAttribute('aria-expanded', 'true');
-  await waitFor(()=>expect(options[0]).toHaveAttribute('aria-selected', 'true'));
-  expect(options[0]).toHaveAttribute('aria-disabled','false');
+  await waitFor(() => expect(options[0]).toHaveAttribute('aria-selected', 'true'));
+  expect(options[0]).toHaveAttribute('aria-disabled', 'false');
   await user.keyboard('{ArrowDown}{Enter}');
   expect(onPick).toHaveBeenCalledWith('s2', 'Gupta Agro');
 });
@@ -84,6 +84,45 @@ it('opens recent supplier matches in the Shop book for Shop-only staff', async (
   /** An unscoped recent-activity sort is correctly refused by BP-11 for Shop-only grants. */
   renderWithProviders(<Field onPick={jest.fn()} />);
   await userEvent.click(screen.getByRole('combobox'));
-  const service = jest.requireMock('../../parties/api/partyService') as {listParties: jest.Mock};
-  await waitFor(()=>expect(service.listParties).toHaveBeenLastCalledWith(expect.objectContaining({book:'shop',type:'supplier',ordering:'-last_activity_at'}),expect.any(AbortSignal)));
+  const service = jest.requireMock('../../parties/api/partyService') as { listParties: jest.Mock };
+  await waitFor(() =>
+    expect(service.listParties).toHaveBeenLastCalledWith(
+      expect.objectContaining({ book: 'shop', type: 'supplier', ordering: '-last_activity_at' }),
+      expect.any(AbortSignal)
+    )
+  );
 });
+
+it.each([false, true])(
+  'does not strand a no-match supplier search; create permission=%s',
+  async (mayCreate) => {
+    // Defect: a missing supplier forced bill-entry staff out of the editor even when allowed to add one.
+    const session = store.getState().session;
+    if (!session.user || !session.activeTenant)
+      throw new Error('Expected signed-in supplier fixture');
+    store.dispatch(
+      sessionLoaded({
+        ...session,
+        user: session.user,
+        activeTenant: session.activeTenant,
+        version: session.version ?? 1,
+        permissions: [
+          ...session.permissions,
+          ...(mayCreate ? ['parties.party.write' as const] : []),
+        ],
+      })
+    );
+    const service = jest.requireMock('../../parties/api/partyService') as {
+      listParties: jest.Mock;
+    };
+    service.listParties.mockResolvedValue({ rows: [], count: 0 });
+    renderWithProviders(<Field onPick={jest.fn()} />);
+    await userEvent.type(screen.getByRole('combobox'), 'Radhe Krishna Electricals');
+    await screen.findByText(/No supplier matches/);
+    const add = screen.queryByRole('button', {
+      name: 'Add “Radhe Krishna Electricals” as a new supplier',
+    });
+    if (mayCreate) expect(add).toBeVisible();
+    else expect(add).not.toBeInTheDocument();
+  }
+);

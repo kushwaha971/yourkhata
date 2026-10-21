@@ -8,10 +8,10 @@ import { cn } from 'src/utils/cn';
 /**
  * Part 17 §17.6.0 "Quantity input rules" — a quantity with the unit as addon.
  *
- * `decimals` is `unit.allow_decimal ? 3 : 0`: a whole-number unit (NOS, BOX)
- * refuses the decimal point AT THE KEYBOARD, so "1.5 pieces" cannot be typed
- * rather than being typed and then refused by the server's `qty_must_be_whole`.
- * `signed` admits one leading minus, for the adjustment editor's "Adjust by".
+ * `decimals` follows unit.allow_decimal. A pasted/typed invalid fraction or
+ * leading minus is preserved so the form/API can refuse it: dropping the point
+ * made1.5 into15, and dropping a minus made-5 into5. `signed` selects the keyboard
+ * for a signed adjustment; the caller's validator decides which signs are valid.
  *
  * The value is the sanitised string the merchant typed — never a number, for
  * the reason money is never a number here (canon rule 3).
@@ -30,13 +30,14 @@ export interface UbQuantityInputProps extends Omit<
   readonly className?: string;
 }
 
-/** Keep digits, one point (if decimals allow) within `decimals` places, one leading minus. */
-export const sanitiseQuantity = (raw: string, decimals: number, signed: boolean): string => {
-  const negative = signed && raw.trim().startsWith('-');
-  const kept = raw.replace(decimals > 0 ? /[^\d.]/g : /[^\d]/g, '');
+/** Preserve numeric intent; the legacy signed argument stays compatible while callers validate direction. */
+export const sanitiseQuantity = (raw: string, decimals: number, _signed: boolean): string => {
+  const negative = raw.trim().replace(/−/g, '-').startsWith('-');
+  const places = decimals === 0 ? 3 : decimals;
+  const kept = raw.replace(/[^\d.]/g, '');
   const [whole = '', ...rest] = kept.split('.');
-  const fraction = rest.join('').slice(0, decimals);
-  const body = rest.length > 0 && decimals > 0 ? `${whole}.${fraction}` : whole;
+  const fraction = rest.join('').slice(0, places);
+  const body = rest.length > 0 && places > 0 ? `${whole}.${fraction}` : whole;
   return negative ? `-${body}` : body;
 };
 

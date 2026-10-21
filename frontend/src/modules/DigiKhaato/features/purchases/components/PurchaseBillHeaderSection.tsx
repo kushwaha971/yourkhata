@@ -12,7 +12,7 @@ import {
   UbSwitch,
   UbText,
   UbTextInput,
-  useIsMobileLayer,
+  UbPanel,
 } from 'src/design-system';
 import { useDocksEditorTotals } from 'src/hooks/useDocksEditorTotals';
 import { useTranslation } from 'src/hooks/useTranslation';
@@ -56,7 +56,6 @@ export function PurchaseBillHeaderSection({
   order?: boolean;
 }>): React.JSX.Element {
   const { t } = useTranslation();
-  const isMobileLayer = useIsMobileLayer();
   const folds = useDocksEditorTotals();
   const { watch, setValue } = form;
   const partyName = watch('partyName');
@@ -89,7 +88,7 @@ export function PurchaseBillHeaderSection({
   /* An error or a duplicate warning in a section nobody can see is one nobody
      can fix, so either forces the fold open. */
   const { errors } = form.formState;
-  const mustOpen =
+  const mustOpenDetails =
     !!duplicate ||
     !!(
       errors.supplierInvoiceNumber ??
@@ -98,32 +97,33 @@ export function PurchaseBillHeaderSection({
       errors.dueOn
     );
 
+  const supplierField = (
+    <UbField
+      name="partyId"
+      label={t('purchases.editor.supplier')}
+      placeholder={t('purchases.editor.supplierPlaceholder')}
+      required
+    >
+      {(field) => (
+        <PurchaseSupplierField
+          field={{ ...field, value: field.value ?? '' }}
+          supplierName={partyName}
+          disabled={disabled}
+          t={t}
+          onPick={(id, name) => {
+            field.onChange(id || null);
+            onPickSupplier(id, name);
+          }}
+        />
+      )}
+    </UbField>
+  );
   return (
-    <UbStack gap={3} className="p-4">
-      <UbField
-        name="partyId"
-        label={t('purchases.editor.supplier')}
-        placeholder={t('purchases.editor.supplierPlaceholder')}
-        required
-      >
-        {(field) => (
-          <PurchaseSupplierField
-            field={{ ...field, value: field.value ?? '' }}
-            supplierName={partyName}
-            disabled={disabled}
-            t={t}
-            onPick={(id, name) => {
-              field.onChange(id || null);
-              onPickSupplier(id, name);
-            }}
-          />
-        )}
-      </UbField>
+    <UbStack gap={3} data-testid="purchase-header">
       {/* docs/mobile-redesign (A14) — on a phone the supplier's invoice number,
           the dates and the tax switches fold under one line that says what
           they hold, so the items come first. WP-05 extends the fold to every
-          width below 1536 px, where the lines now come before the totals; a
-          new bill on a laptop opens it, because its number is still to type. */}
+          width below 1536 px, where the lines now come before the totals; an empty bill keeps the supplier visible while optional details stay folded. */}
       {(() => {
         const details = (
           <>
@@ -245,15 +245,47 @@ export function PurchaseBillHeaderSection({
             )}
           </>
         );
-        if (!folds) return details;
+        if (!folds)
+          return (
+            <UbPanel>
+              <UbStack gap={3} className="p-4">
+                {supplierField}
+                {details}
+              </UbStack>
+            </UbPanel>
+          );
+        if (!partyId)
+          return (
+            <UbStack gap={3}>
+              <UbPanel>
+                <UbStack gap={3} className="p-4">
+                  {supplierField}
+                </UbStack>
+              </UbPanel>
+              <UbDisclosure
+                label={t('purchases.editor.moreDetails')}
+                hint={summary}
+                open={mustOpenDetails ? true : undefined}
+              >
+                <UbStack gap={3}>{details}</UbStack>
+              </UbDisclosure>
+            </UbStack>
+          );
         return (
           <UbDisclosure
-            label={t('purchases.editor.moreDetails')}
+            label={
+              partyId && partyName
+                ? `${partyName} · ${t('purchases.editor.editSupplier')}`
+                : t('purchases.editor.moreDetails')
+            }
             hint={summary}
-            defaultOpen={!isMobileLayer && !order && !supplierInvoiceNumber.trim()}
-            open={mustOpen ? true : undefined}
+            defaultOpen={false}
+            open={mustOpenDetails || !!errors.partyId ? true : undefined}
           >
-            <UbStack gap={3}>{details}</UbStack>
+            <UbStack gap={3}>
+              {supplierField}
+              {details}
+            </UbStack>
           </UbDisclosure>
         );
       })()}

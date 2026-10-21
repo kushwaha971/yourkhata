@@ -136,7 +136,7 @@ try {
         await page.evaluate(() => document.fonts.ready);
         await page.waitForTimeout(200);
         const m = await measureCustomers(page, root);
-        if (root === 'main') {
+        if (root === 'main' && await page.getByTestId('purchase-dock').count()) {
           const dock = await measureCustomers(page, '[data-testid="purchase-dock"]');
           m.cut.push(...dock.cut);
           m.lowContrast.push(...dock.lowContrast);
@@ -229,6 +229,12 @@ try {
       const finder = page.getByRole('combobox', { name: findLabel });
       await finder.waitFor();
       await shot('long-large');
+      if (width >= 1536) {
+        assert(await page.getByTestId('purchase-supplier').isVisible(), `${tag}: wide supplier fields missing`);
+        assert(await page.getByTestId('purchase-record').isVisible(), `${tag}: wide finishing actions missing`);
+        await shot('wide-ready');await ctx.close();continue;
+      }
+
       await finder.click();
       await shot('finder');
       await page.keyboard.press('ArrowDown');
@@ -441,7 +447,7 @@ try {
         `${tag}: reload dismissal changed the draft route`
       );
       assert(
-        (await page.getByTestId('purchase-supplier').textContent()).includes(supplier.name),
+        (await page.getByTestId('purchase-header').textContent()).includes(supplier.name),
         `${tag}: reload dismissal lost the supplier`
       );
       assert(

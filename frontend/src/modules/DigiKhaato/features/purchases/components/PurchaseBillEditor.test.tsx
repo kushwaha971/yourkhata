@@ -9,6 +9,8 @@ import { store } from 'src/redux/store';
 import { renderWithProviders } from 'src/tests/renderWithProviders';
 import type { ModuleCode, PermissionCode } from 'src/types/domain.types';
 
+import { selectStockSummaryStale } from '../../inventory/redux/stockSummarySlice';
+import { fetchStockSummary } from '../../inventory/redux/stockThunk';
 import {
   usePurchaseBillEditor,
   type UsePurchaseBillEditorResult,
@@ -45,6 +47,7 @@ jest.mock('../../inventory/api/mastersService', () => ({
   ]),
 }));
 const mockPush = jest.fn();
+const mockReplace = jest.fn();
 const mockDriver = {
   id: 'driver',
   name: 'Radhe Krishna Enterprises LED driver',
@@ -96,7 +99,7 @@ jest.mock('../../inventory/api/itemTradeService', () => ({
   getLastRate: jest.fn(async () => null),
 }));
 jest.mock('next/navigation', () => ({
-  useRouter: () => ({ push: mockPush, replace: jest.fn(), back: jest.fn(), prefetch: jest.fn() }),
+  useRouter: () => ({ push: mockPush, replace: mockReplace, back: jest.fn(), prefetch: jest.fn() }),
   useSearchParams: () => new URLSearchParams(''),
   usePathname: () => '/purchases/bills/b1/edit',
 }));
@@ -106,6 +109,7 @@ const service = jest.requireMock('../api/purchaseBillService') as {
   getPurchaseBill: jest.Mock;
   updatePurchaseBill: jest.Mock;
   recordPurchaseBill: jest.Mock;
+  movePurchaseOrder: jest.Mock;
 };
 
 const line = (over: Partial<PurchaseBill['lines'][number]>): PurchaseBill['lines'][number] => ({
@@ -569,9 +573,11 @@ describe('the supplier details on a 1280 laptop (WP-05 compact context)', () => 
     const restore = atWidth(1280);
     try {
       renderWithProviders(<PurchaseBillEditorPageContent documentId="b1" />);
-      const fold = await screen.findByRole('button', { name: /More details/ });
+      const fold = await screen.findByRole('button', { name: /Agro Traders.*Edit/ });
       expect(fold).toHaveAttribute('aria-expanded', 'false');
+      expect(fold).toHaveTextContent('Agro Traders');
       expect(fold).toHaveTextContent('AT/778');
+      expect(screen.queryByTestId('purchase-supplier')).not.toBeInTheDocument();
       expect(fold).toHaveTextContent('Due date');
       expect(screen.queryByText('Input tax credit')).toBeNull();
     } finally {
@@ -590,12 +596,12 @@ describe('the supplier details on a 1280 laptop (WP-05 compact context)', () => 
     const restore = atWidth(1280);
     try {
       renderWithProviders(<PurchaseBillEditorPageContent documentId="b1" />);
-      await screen.findByRole('button', { name: /More details/ });
+      await screen.findByRole('button', { name: /Agro Traders.*Edit/ });
       await userEvent.click(
         within(screen.getByTestId('purchase-dock')).getByRole('button', { name: 'Record' })
       );
       expect(await screen.findByTestId('duplicate-warning')).toBeVisible();
-      expect(screen.getByRole('button', { name: /More details/ })).toHaveAttribute(
+      expect(screen.getByRole('button', { name: /Agro Traders.*Edit/ })).toHaveAttribute(
         'aria-expanded',
         'true'
       );
@@ -1111,4 +1117,171 @@ describe('purchase finish refusal and uncertain replies', () => {
     expect(screen.getByRole('dialog')).toBeInTheDocument();
     await act(async () => pending.resolve(envelope(RECORDED)));
   });
+});
+
+describe('joined purchase supplier context', () => {
+  it('shows one supplier/number/date summary on a phone and preserves fields through Edit', async () => {
+    // Defect: the purported joined summary still had a separate supplier picker and a second card.
+    const restore = atWidth(390);
+    try {
+      renderWithProviders(<PurchaseBillEditorPageContent documentId="b1" />);
+      const summary = await screen.findByRole('button', { name: /Agro Traders.*Edit/ });
+      expect(summary).toHaveTextContent('AT/778');
+      expect(screen.queryByTestId('purchase-supplier')).not.toBeInTheDocument();
+      await userEvent.click(summary);
+      expect(screen.getByTestId('purchase-supplier')).toHaveTextContent('Agro Traders');
+      expect(screen.getByLabelText('Supplier invoice no.')).toHaveValue('AT/778');
+      expect(screen.getByText('Input tax credit')).toBeVisible();
+      await userEvent.click(summary);
+      await userEvent.click(summary);
+      expect(screen.getByLabelText('Supplier invoice no.')).toHaveValue('AT/778');
+    } finally {
+      restore();
+    }
+  });
+  it('offers a retry if the shop/tax context fails instead of an endless skeleton', async () => {
+    // Defect: context failures never left the loading branch, even when a bill loaded successfully.
+    const profile = jest.requireMock('../../business-profile/api/businessProfileService') as {
+      fetchTenant: jest.Mock;
+    };
+    profile.fetchTenant.mockRejectedValueOnce({
+      code: 'network_error',
+      message: 'Lost context',
+      details: {},
+      requestId: null,
+      status: null,
+      warnings: [],
+    });
+    renderWithProviders(<PurchaseBillEditorPageContent documentId="b1" />);
+    await userEvent.click(await screen.findByRole('button', { name: 'Try again' }));
+    expect(await screen.findByTestId('purchase-grand-total')).toHaveTextContent('₹2,921.00');
+  });
+});
+
+it('keeps optional bill details folded while a new phone bill is still choosing its supplier', async () => {
+  // Defect: joining the context must not open every date/tax field on an empty phone bill.
+  const restore = atWidth(390);
+  try {
+    renderWithProviders(<PurchaseBillEditorPageContent documentId={null} />);
+    expect(await screen.findByRole('combobox', { name: 'Supplier' })).toBeVisible();
+    expect(screen.queryByLabelText('Supplier invoice no.')).not.toBeInTheDocument();
+  } finally {
+    restore();
+  }
+});
+
+it('checks a lost order Send reply without trying to PATCH an already sent order', async () => {
+  // Defect: orders shared the save-before-Send path but had no uncertain-outcome recovery.
+  service.movePurchaseOrder.mockRejectedValueOnce({
+    code: 'network_error',
+    message: 'Lost Send reply',
+    details: {},
+    requestId: null,
+    status: null,
+    warnings: [],
+  });
+  renderWithProviders(<PurchaseBillEditorPageContent documentId="b1" kind="purchase_order" />);
+  await userEvent.click(await screen.findByTestId('purchase-record'));
+  const check = await screen.findByRole('button', { name: 'Check sent order' });
+  expect(screen.getByRole('button', { name: 'Save draft' })).toBeDisabled();
+  service.getPurchaseBill.mockResolvedValueOnce(
+    envelope({ ...DRAFT, kind: 'purchase_order', status: 'sent', number: 'PO/26-27/0001' })
+  );
+  await userEvent.click(check);
+  await waitFor(() => expect(mockPush).toHaveBeenCalledWith('/purchases/orders/b1'));
+  expect(service.updatePurchaseBill).toHaveBeenCalledTimes(1);
+  expect(service.movePurchaseOrder).toHaveBeenCalledTimes(1);
+  expect(service.recordPurchaseBill).not.toHaveBeenCalled();
+});
+
+it('calls the long purchase-order finder an order, not a bill', async () => {
+  // Defect: the shared long-line finder used bill words even in a purchase order.
+  service.getPurchaseBill.mockResolvedValueOnce(
+    envelope({
+      ...DRAFT,
+      kind: 'purchase_order',
+      lines: Array.from({ length: 10 }, (_, i) =>
+        line({ id: `order-${i}`, lineNo: i + 1, description: `LED driver ${i + 1}` })
+      ),
+    })
+  );
+  renderWithProviders(<PurchaseBillEditorPageContent documentId="b1" kind="purchase_order" />);
+  expect(
+    await screen.findByRole('combobox', { name: 'Find a line on this order' })
+  ).toBeInTheDocument();
+});
+
+it.each(['1.5', '-5'])(
+  'never turns invalid NOS quantity %s into a different positive whole number',
+  async (quantity) => {
+    // Defect: the quantity mask turned1.5 into15 and-5 into5, silently changing stock and money.
+    const user = userEvent.setup();
+    renderWithProviders(<PurchaseBillEditorPageContent documentId="b1" />);
+    const input = await screen.findByLabelText('Qty, line 1');
+    await user.clear(input);
+    await user.type(input, quantity);
+    expect(input).toHaveValue(quantity);
+    await user.click(screen.getByTestId('purchase-record'));
+    expect(input).toHaveAttribute('aria-invalid', 'true');
+    expect(service.updatePurchaseBill).not.toHaveBeenCalled();
+    expect(service.recordPurchaseBill).not.toHaveBeenCalled();
+  }
+);
+
+it.each(['purchase_bill', 'purchase_order'] as const)(
+  'opens a posted %s read-only when Back or a saved edit URL reaches it',
+  async (kind) => {
+    // Defect: /edit loaded an already recorded/sent document into editable fields until Save was refused.
+    service.getPurchaseBill.mockResolvedValueOnce(
+      envelope({
+        ...DRAFT,
+        kind,
+        status: kind === 'purchase_order' ? 'sent' : 'recorded',
+        number: 'RKE/1',
+      })
+    );
+    renderWithProviders(<PurchaseBillEditorPageContent documentId="b1" kind={kind} />);
+    await waitFor(() =>
+      expect(mockReplace).toHaveBeenCalledWith(
+        `/purchases/${kind === 'purchase_order' ? 'orders' : 'bills'}/b1`
+      )
+    );
+    expect(screen.queryByLabelText('Cost, line 1')).not.toBeInTheDocument();
+  }
+);
+
+it('marks a warm stock view stale when a lost Record is recovered by reading its posted outcome', async () => {
+  // Defect: GET recovery bypassed the fulfilled mutation, so already loaded stock/payment/dues caches stayed fresh incorrectly.
+  store.dispatch(
+    fetchStockSummary.fulfilled(
+      {
+        rows: [],
+        page: 1,
+        pageSize: 50,
+        total: 0,
+        totals: { items: 0, value: '0.00' },
+        asOf: null,
+        historical: false,
+        valuationVisible: true,
+      },
+      'warm',
+      { q: '', categoryId: '', status: '', hideZero: false, asOf: null, ordering: '', page: 1 }
+    )
+  );
+  expect(selectStockSummaryStale(store.getState())).toBe(false);
+  service.recordPurchaseBill.mockRejectedValueOnce({
+    code: 'network_error',
+    message: 'Lost response',
+    details: {},
+    requestId: null,
+    status: null,
+    warnings: [],
+  });
+  renderWithProviders(<PurchaseBillEditorPageContent documentId="b1" />);
+  await userEvent.click(await screen.findByTestId('purchase-record'));
+  await screen.findByRole('button', { name: 'Check recorded bill' });
+  expect(selectStockSummaryStale(store.getState())).toBe(false);
+  service.getPurchaseBill.mockResolvedValueOnce(envelope(RECORDED));
+  await userEvent.click(screen.getByRole('button', { name: 'Check recorded bill' }));
+  await waitFor(() => expect(selectStockSummaryStale(store.getState())).toBe(true));
 });

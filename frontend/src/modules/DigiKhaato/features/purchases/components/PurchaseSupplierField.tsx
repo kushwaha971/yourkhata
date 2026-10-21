@@ -1,11 +1,19 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useMemo, useState, useCallback } from 'react';
+
+import dynamic from 'next/dynamic';
 
 import type { UbFieldRenderProps } from 'src/design-system';
+import { usePermissions } from 'src/hooks/usePermissions';
 import type { TranslateFn } from 'src/hooks/useTranslation';
 
 import { PartyPickerField } from '../../parties/components/PartyPickerField';
+
+const PartyQuickCreate = dynamic(
+  () => import('../../parties/components/PartyQuickCreate').then((m) => m.PartyQuickCreate),
+  { ssr: false }
+);
 
 /**
  * PUR-01 FR-2 / §7 — the supplier. The source is `usePartySearch({ type:
@@ -17,8 +25,7 @@ import { PartyPickerField } from '../../parties/components/PartyPickerField';
  * The field itself is `PartyPickerField`: it lists suppliers on focus, pages
  * on scroll and narrows as you type.
  *
- * Not here yet: "Create supplier" inline (the PTY-01 quick form, FR-2's "Mark
- * as supplier too"). A supplier is added from Parties today.
+ * No match reuses the existing lazy Shop contact form for authorized writers.
  */
 export interface PurchaseSupplierFieldProps {
   readonly field: UbFieldRenderProps;
@@ -35,26 +42,45 @@ export function PurchaseSupplierField({
   disabled,
   t,
 }: Readonly<PurchaseSupplierFieldProps>): React.JSX.Element {
+  const { can } = usePermissions();
+  const mayAdd = can('parties.party.write') && !disabled;
+  const [adding, setAdding] = useState<string | null>(null);
+  const stopAdding = useCallback(() => setAdding(null), []);
   const labels = useMemo(
     () => ({
       clear: (name: string) => t('purchases.supplier.clear', { name }),
       noAccess: t('purchases.supplier.noAccess'),
       results: t('purchases.supplier.results'),
-      noMatch: t('purchases.supplier.noMatch'),
+      noMatch: t(mayAdd ? 'purchases.supplier.noMatch' : 'purchases.supplier.askOwner'),
+      create: (name: string) => t('purchases.supplier.addNew', { name }),
     }),
-    [t]
+    [t, mayAdd]
   );
   return (
-    <PartyPickerField
-      field={field}
-      pickedName={supplierName}
-      onPick={onPick}
-      labels={labels}
-      t={t}
-      type="supplier"
-      book="shop"
-      disabled={disabled}
-      testId="purchase-supplier"
-    />
+    <>
+      <PartyPickerField
+        field={field}
+        pickedName={supplierName}
+        onPick={onPick}
+        labels={labels}
+        t={t}
+        type="supplier"
+        book="shop"
+        disabled={disabled}
+        testId="purchase-supplier"
+        onCreate={mayAdd ? setAdding : undefined}
+      />
+      {adding !== null && (
+        <PartyQuickCreate
+          name={adding}
+          kind="supplier"
+          onCreated={(id, name) => {
+            field.onChange(id);
+            onPick(id, name);
+          }}
+          onClosed={stopAdding}
+        />
+      )}
+    </>
   );
 }

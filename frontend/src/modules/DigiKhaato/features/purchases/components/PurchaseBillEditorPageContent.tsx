@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 
 import dynamic from 'next/dynamic';
 
@@ -15,7 +15,6 @@ import {
   UbPageHeader,
   UbPageShell,
   UbPageSkeleton,
-  UbPanel,
   UbStack,
   UbText,
   UbTotalDock,
@@ -36,7 +35,11 @@ import {
   purchaseConflictResolved,
   purchaseDuplicateCleared,
 } from '../redux/purchaseBillEditorSlice';
-import { deletePurchaseBillDraft, fetchPurchaseBill } from '../redux/purchaseBillThunk';
+import {
+  deletePurchaseBillDraft,
+  fetchPurchaseBill,
+  fetchPurchaseContext,
+} from '../redux/purchaseBillThunk';
 import { hasRecordableLines, type PurchasePaymentRow } from '../view-model/purchaseBillForm';
 import { recordedToast } from '../view-model/purchaseToasts';
 
@@ -85,6 +88,7 @@ export function PurchaseBillEditorPageContent({
   const [confirmLeave, setConfirmLeave] = useState(false);
 
   const paymentRefused =
+    !order &&
     !recordRecovery &&
     server.error?.code === 'permission_denied' &&
     server.error.status === 403 &&
@@ -104,16 +108,16 @@ export function PurchaseBillEditorPageContent({
       setPaying(false);
       dispatch(
         showSnackbar(
-          order
+          recordRecovery
             ? {
                 severity: 'success',
-                id: 'purchases.order.sent',
+                id: order ? 'purchases.order.recovered' : 'purchases.record.recovered',
                 params: { number: result.bill.number ?? '' },
               }
-            : recordRecovery
+            : order
               ? {
                   severity: 'success',
-                  id: 'purchases.record.recovered',
+                  id: 'purchases.order.sent',
                   params: { number: result.bill.number ?? '' },
                 }
               : recordedToast(result, values.partyName)
@@ -227,6 +231,19 @@ export function PurchaseBillEditorPageContent({
     onIssue: submitShortcut,
   });
 
+  const loadedReadOnly = Boolean(
+    documentId &&
+    server.loadStatus === 'succeeded' &&
+    server.document &&
+    server.document.id === documentId &&
+    server.document.status !== 'draft' &&
+    !server.recorded
+  );
+  useEffect(() => {
+    if (loadedReadOnly && documentId) router.replace(`${home}/${documentId}`);
+  }, [loadedReadOnly, documentId, router, home]);
+  if (loadedReadOnly) return <UbPageSkeleton variant="card" />;
+
   if (!canWrite) {
     return (
       <UbPageShell>
@@ -238,14 +255,23 @@ export function PurchaseBillEditorPageContent({
       </UbPageShell>
     );
   }
-  if (documentId && server.loadStatus === 'failed' && !recordRecovery) {
+  if (
+    !recordRecovery &&
+    (server.contextStatus === 'failed' || (documentId && server.loadStatus === 'failed'))
+  ) {
     return (
       <UbPageShell>
         <UbEmptyState
           variant="error"
           title={t('purchases.detail.error.title')}
           action={
-            <UbButton onClick={() => void dispatch(fetchPurchaseBill({ id: documentId, kind }))}>
+            <UbButton
+              onClick={() => {
+                if (server.contextStatus === 'failed') void dispatch(fetchPurchaseContext(today));
+                if (documentId && server.loadStatus === 'failed')
+                  void dispatch(fetchPurchaseBill({ id: documentId, kind }));
+              }}
+            >
               {t('common.action.retry')}
             </UbButton>
           }
@@ -264,7 +290,7 @@ export function PurchaseBillEditorPageContent({
   const savedAt = server.savedAt ?? server.document?.updatedAt;
   const savedTime = savedAt ? (formatTimestamp(savedAt).split(', ')[1] ?? '') : '';
   const indicator = recordRecovery
-    ? t('purchases.record.uncertainShort')
+    ? t(order ? 'purchases.order.uncertainShort' : 'purchases.record.uncertainShort')
     : offline ||
         (hasUnsavedChanges && server.saveState !== 'saving') ||
         (!hasServerCopy && server.saveState !== 'saving')
@@ -316,7 +342,9 @@ export function PurchaseBillEditorPageContent({
                 >
                   {t(
                     recordRecovery
-                      ? 'purchases.record.uncertain'
+                      ? order
+                        ? 'purchases.order.uncertain'
+                        : 'purchases.record.uncertain'
                       : 'purchases.record.paymentRefused'
                   )}
                 </UbText>
@@ -376,7 +404,9 @@ export function PurchaseBillEditorPageContent({
             >
               {t(
                 recordRecovery
-                  ? 'purchases.record.check'
+                  ? order
+                    ? 'purchases.order.checkSent'
+                    : 'purchases.record.check'
                   : paymentRefused
                     ? 'purchases.record.payLater'
                     : order
@@ -391,19 +421,17 @@ export function PurchaseBillEditorPageContent({
       <UbForm form={form} onSubmit={() => startOnce()}>
         <UbGrid columns={1} gap={4} className="2xl:grid-cols-3">
           <UbStack gap={4} className="2xl:col-span-2">
-            <UbPanel>
-              <PurchaseBillHeaderSection
-                form={form}
-                today={today}
-                regular={regular}
-                interState={preview.isInterState}
-                duplicate={server.duplicate}
-                disabled={locked}
-                onPickSupplier={onPickSupplier}
-                onInvoiceNumberBlur={editor.checkDuplicate}
-                order={order}
-              />
-            </UbPanel>
+            <PurchaseBillHeaderSection
+              form={form}
+              today={today}
+              regular={regular}
+              interState={preview.isInterState}
+              duplicate={server.duplicate}
+              disabled={locked}
+              onPickSupplier={onPickSupplier}
+              onInvoiceNumberBlur={editor.checkDuplicate}
+              order={order}
+            />
             <PurchaseBillLinesSection
               order={order}
               form={form}
@@ -455,7 +483,9 @@ export function PurchaseBillEditorPageContent({
           >
             {t(
               recordRecovery
-                ? 'purchases.record.check'
+                ? order
+                  ? 'purchases.order.checkSent'
+                  : 'purchases.record.check'
                 : paymentRefused
                   ? 'purchases.record.payLater'
                   : order
@@ -480,13 +510,27 @@ export function PurchaseBillEditorPageContent({
         onOpenChange={setConfirmLeave}
         title={t(
           recordRecovery
-            ? 'purchases.record.leaveTitle'
+            ? order
+              ? 'purchases.order.uncertainLeaveTitle'
+              : 'purchases.record.leaveTitle'
             : order
               ? 'purchases.order.leaveTitle'
               : 'purchases.draft.leaveTitle'
         )}
-        description={t(recordRecovery ? 'purchases.record.leaveBody' : 'purchases.draft.leaveBody')}
-        confirmLabel={t(recordRecovery ? 'purchases.record.leave' : 'purchases.draft.leave')}
+        description={t(
+          recordRecovery
+            ? order
+              ? 'purchases.order.uncertainLeaveBody'
+              : 'purchases.record.leaveBody'
+            : 'purchases.draft.leaveBody'
+        )}
+        confirmLabel={t(
+          recordRecovery
+            ? order
+              ? 'purchases.order.uncertainLeave'
+              : 'purchases.record.leave'
+            : 'purchases.draft.leave'
+        )}
         cancelLabel={t('purchases.draft.stay')}
         closeLabel={t('common.action.close')}
         destructive

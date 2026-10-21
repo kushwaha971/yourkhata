@@ -1,0 +1,13 @@
+........................................................................ [ 90%]
+........                                                                 [100%]
+=============================== warnings summary ===============================
+apps/purchases/tests/test_debit_notes.py::test_a_return_takes_the_goods_off_the_shelf_and_the_amount_off_the_bill
+apps/purchases/tests/test_debit_notes.py::test_a_return_takes_the_goods_off_the_shelf_and_the_amount_off_the_bill
+apps/purchases/tests/test_debit_notes.py::test_a_return_takes_the_goods_off_the_shelf_and_the_amount_off_the_bill
+apps/purchases/tests/test_debit_notes.py::test_a_return_takes_the_goods_off_the_shelf_and_the_amount_off_the_bill
+apps/purchases/tests/test_debit_notes.py::test_a_return_takes_the_goods_off_the_shelf_and_the_amount_off_the_bill
+apps/purchases/tests/test_debit_notes.py::test_a_return_takes_the_goods_off_the_shelf_and_the_amount_off_the_bill
+  /Users/akashkushwaha/Projects/ims-platform/.venv/lib/python3.11/site-packages/rest_framework/urlpatterns.py:108: RemovedInDjango60Warning: Converter 'drf_format_suffix' is already registered. Support for overriding registered converters is deprecated and will be removed in Django 6.0.
+    register_converter(suffix_converter, converter_name)
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html

@@ -120,6 +120,10 @@ destructive actions and frozen Library/Lending contracts retain their boundaries
 
 ## Progress
 
+21 Oct2026 — Purchase §7 full editor acceptance: joined supplier/metadata summary and permission-gated reused inline supplier create; failed context retry; order Send lost-reply recovery; posted edit/Back read-only guard; recovered-write cache invalidation. Portal submit propagation and quantity sign/point corruption reproduced/fixed with regressions; negative return rows cannot be silently omitted.414 suites/4,639 frontend tests,80 purchase backend tests,498 final measured en/hi frames. Final performance/rating in `docs/performance/2026-10-20-p5-purchase-editor.md`. No backend engine/contract change. Current Next: purchase register §5, detail §6, full returns/debit-note redesign, remaining sales documents; Home last.
+
+Source-review corrections21Oct (not new owner decisions): the old supplier picker plus separate More details was not the §7 joined summary; the earlier16Oct-built wording is superseded by21Oct acceptance. §17.6's keyboard-only whole-quantity masking changed1.5→15/-5→5, so numeric intent is now preserved and refused by the existing central validator. The cost-note correction remains: tax/discount/last duplicate-line rules belong to the server, not a promise that raw typed cost always becomes the default. In-place re-auth/device copy remains outside §7 delivery; no silent scope expansion.
+
 21 Oct2026 — Purchase §7 step5 delivered: definitive payment403 explicit Pay later; scoped immutable lost-Record recovery with GET-before-replay; pending money locks; initial/check-load retry and late-actor request fence. Browser hit-test caught/corrected a toast covering instructions. 4,624 tests/80 backend tests/60 final measured frames; production gates pass. Navigation36/36 includes actual New purchase. Report: purchase-editor. Next joined supplier summary and whole-editor acceptance/rescore; Home remains last.
 
 21 Oct2026 — Purchase §7 step4 delivered: truthful record/order cost notes, exact zero-aware comparisons, opt-in four-place cost entry and rate summaries. 4,613 frontend tests/29 backend checks/240 measured frames; all production gates pass. Seven measured budget scalars adjusted; no engine/payload change. Broad nav legacy More selector red log retained; scoped controls24/24 pass. Next payment-refusal/lost Record-reply recovery, joined supplier summary and whole-editor acceptance. See purchase-editor report.
@@ -210,12 +214,7 @@ and updated continuation prompt. This changes words, not the sequence below.
 3. Remaining Home workflows approved in R-DEC-26 (BP-08/16/17), integrated with
    the verified source workflows, followed by Home end-to-end acceptance.
 
-Immediate next: purchase editor §7, under R-DEC-29's complete revamp composition.
-Step 1 (shared item search above lines, repeat Qty, list/scanner focus, dynamic
-line finder and compact cost rows) is delivered; evidence in
-`2026-10-20-p5-purchase-quick-add.md`. Steps 2–3 dock caption/meta and honest save/leave are delivered. Cost words/precision (step4) are delivered. Step5 refusal/lost-reply recovery is delivered. Immediate next is
-step6 joined supplier summary and complete editor acceptance. Finish purchase list/detail/returns and
-remaining sales documents before inventory/money/reports; remaining Home last.
+Immediate next: **purchase register §5**, then detail §6 and complete returns/debit-note composition under R-DEC-29. Purchase editor §7 steps1–6 and whole-editor local acceptance are delivered; the21Oct final section of `2026-10-20-p5-purchase-editor.md` supersedes earlier pending-editor checkpoints and scoped8.75. Full414 suites/4,639 frontend tests,80 backend tests,498 measured frames and final performance evidence are recorded there. The return input safety regression is not a complete return redesign. Finish these and remaining sales documents before inventory/money/reports; remaining Home last.
 Billing phone performance stays 8/10 and its subscription redesign stays
 deferred; do not repeat rejected memo/one-write/deferred-focus trims.
 

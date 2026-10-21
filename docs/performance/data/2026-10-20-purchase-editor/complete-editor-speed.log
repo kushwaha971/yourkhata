@@ -1,0 +1,2 @@
+390px cpu x4: Enter→line median 36 ms, p95 41, last five 36; slowest event picking 32 ms (Enter median 24), typing the search 56 ms, typing Qty 40 ms; 30 lines, 0 scanner lookups
+1280px cpu x1: Enter→line median 38 ms, p95 50, last five 50; slowest event picking 40 ms (Enter median 40), typing the search 48 ms, typing Qty 48 ms; 30 lines, 0 scanner lookups

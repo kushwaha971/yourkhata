@@ -15,6 +15,8 @@ import { usePartyEditorSeed } from 'src/hooks/usePartyEditorSeed';
 import { usePermissions } from 'src/hooks/usePermissions';
 import { useReviewedRepeat } from 'src/hooks/useReviewedRepeat';
 import { useTranslation } from 'src/hooks/useTranslation';
+import { cacheInvalidated } from 'src/redux/invalidation/listener';
+import { INVALIDATION } from 'src/redux/invalidation/map';
 import { selectNetworkImpaired } from 'src/redux/slice/networkSlice';
 import {
   selectActiveTenant,
@@ -146,7 +148,7 @@ export const usePurchaseBillEditor = (
   const timezone = useAppSelector(selectTenantTimezone);
   const offline = useAppSelector(selectNetworkImpaired);
   const { can, hasModule } = usePermissions();
-  const { purchaseBillSchema } = usePurchaseBillSchemas();
+  const { purchaseBillSchema, quantityValidation } = usePurchaseBillSchemas();
   const today = useMemo(() => todayInTenantTz(timezone ?? undefined), [timezone]);
   const canWrite = hasModule('purchases') && can('purchases.bill.write');
   const idempotency = useIdempotencyKey();
@@ -373,6 +375,23 @@ export const usePurchaseBillEditor = (
       );
       return false;
     }
+    for (const [index, line] of rows.entries()) {
+      if (!line.itemId && !line.description.trim()) continue;
+      try {
+        quantityValidation(line.allowDecimal !== false).validateSync(line.qty);
+      } catch (error) {
+        if (!(error instanceof ValidationError)) throw error;
+        form.setError(`lines.${index}.qty`, { type: 'client', message: error.message });
+        dispatch(
+          showSnackbar({
+            severity: 'error',
+            id: 'purchases.line.quantityInvalid',
+            params: { n: index + 1 },
+          })
+        );
+        return false;
+      }
+    }
     try {
       await purchaseBillSchema.validate(form.getValues(), { abortEarly: false });
       return true;
@@ -388,7 +407,7 @@ export const usePurchaseBillEditor = (
       }
       return false;
     }
-  }, [purchaseBillSchema, form, t, dispatch]);
+  }, [purchaseBillSchema, quantityValidation, form, t, dispatch]);
 
   const record = useCallback(
     async (
@@ -401,21 +420,14 @@ export const usePurchaseBillEditor = (
         const saved = await save(false);
         if (!saved) return null;
         if (saved.bill.status !== 'draft') return saved;
-        if (kind === 'purchase_order') {
-          const sent = await dispatch(
-            movePurchaseOrder({ id: saved.bill.id, verb: 'send', version: saved.bill.version })
-          );
-          if (!movePurchaseOrder.fulfilled.match(sent)) return null;
-          form.reset(form.getValues());
-          return sent.payload;
-        }
         arg = {
           id: saved.bill.id,
           version: saved.bill.version,
           idempotencyKey: idempotency.key,
-          payment: payment?.length
-            ? purchasePaymentWireBody(payment, form.getValues('documentDate'))
-            : null,
+          payment:
+            kind === 'purchase_bill' && payment?.length
+              ? purchasePaymentWireBody(payment, form.getValues('documentDate'))
+              : null,
         };
       }
       const original = arg;
@@ -429,6 +441,12 @@ export const usePurchaseBillEditor = (
           if (!currentScope() || !fetchPurchaseBill.fulfilled.match(checked)) return null;
           if (checked.payload.bill.status !== 'draft') {
             dispatch(purchaseRecordRecovered(checked.payload));
+            // The write happened despite its lost reply. Reuse normal cache rules,
+            // without fabricating a fulfilled mutation or patching balances twice.
+            const entry =
+              INVALIDATION[kind === 'purchase_order' ? 'movePurchaseOrder' : 'recordPurchaseBill'];
+            if (entry.stale?.length)
+              dispatch(cacheInvalidated({ slices: entry.stale, urgency: 'next-mount' }));
             recordIntent.current = null;
             setUncertainScope(null);
             idempotency.rotate();
@@ -436,11 +454,20 @@ export const usePurchaseBillEditor = (
           }
         }
         recordIntent.current = { scope, arg: original };
-        const pending = dispatch(recordPurchaseBill(original));
+        const pending =
+          kind === 'purchase_order'
+            ? dispatch(
+                movePurchaseOrder({ id: original.id, verb: 'send', version: original.version })
+              )
+            : dispatch(recordPurchaseBill(original));
         saves.track(pending);
         const result = await pending;
         if (!currentScope()) return null;
-        if (recordPurchaseBill.fulfilled.match(result)) {
+        if (
+          recordPurchaseBill.fulfilled.match(result) ||
+          movePurchaseOrder.fulfilled.match(result)
+        ) {
+          if (kind === 'purchase_order') dispatch(purchaseRecordRecovered(result.payload));
           recordIntent.current = null;
           setUncertainScope(null);
           idempotency.rotate();

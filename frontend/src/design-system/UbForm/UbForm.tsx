@@ -56,6 +56,8 @@ function UbFormBase<T extends FieldValues>({
      dropped one, or it would fall back to a native POST. */
   const inFlight = useRef(false);
   const submit = (event: FormEvent<HTMLFormElement>) => {
+    // A child form rendered through a portal must never submit its opening document.
+    event.stopPropagation();
     if (inFlight.current) {
       event.preventDefault();
       return;

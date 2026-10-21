@@ -1,0 +1,10 @@
+file:///Users/akashkushwaha/Projects/ims-platform/e2e/lib/fixtures.mjs:67
+  if (r.status >= 400) throw new Error(`fixture: ${method} ${path} → ${r.status} ${JSON.stringify(r.body).slice(0, 300)}`);
+                             ^
+
+Error: fixture: PATCH /tenants/current → 409 {"error":{"code":"gstin_in_use","message":"This GSTIN is already registered with another business.","details":{},"request_id":"52cfde8d29264088a73cf32c99257dda"}}
+    at must (file:///Users/akashkushwaha/Projects/ims-platform/e2e/lib/fixtures.mjs:67:30)
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async file:///Users/akashkushwaha/Projects/ims-platform/e2e/revamp-purchase-contracts.mjs:25:2
+
+Node.js v26.8.1

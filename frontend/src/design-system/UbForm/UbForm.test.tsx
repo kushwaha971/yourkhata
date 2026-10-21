@@ -1,5 +1,6 @@
 import { yupResolver } from '@hookform/resolvers/yup';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { createPortal } from 'react-dom';
 import { useForm } from 'react-hook-form';
 import * as Yup from 'yup';
 
@@ -22,7 +23,9 @@ interface Values {
 
 function Harness({ onSubmit }: Readonly<{ onSubmit: (values: Values) => Promise<void> }>) {
   const form = useForm<Values>({
-    resolver: yupResolver(Yup.object({ amount: Yup.string().required('Enter an amount').defined() })),
+    resolver: yupResolver(
+      Yup.object({ amount: Yup.string().required('Enter an amount').defined() })
+    ),
     defaultValues: { amount: '500' },
   });
   return (
@@ -87,4 +90,31 @@ describe('UbForm double-tap lock', () => {
       await pending.promise;
     });
   });
+});
+
+it('saving a form in a portal never submits the document form that opened it', async () => {
+  // Defect: React submit events cross portal boundaries; saving an inline contact/item could submit its bill too.
+  const saveContact = jest.fn(async () => undefined);
+  const recordBill = jest.fn(async () => undefined);
+  function Contact() {
+    const form = useForm({ defaultValues: { name: 'Radhe Krishna Electricals' } });
+    return createPortal(
+      <UbForm form={form} onSubmit={saveContact}>
+        <UbButton type="submit">Save contact</UbButton>
+      </UbForm>,
+      document.body
+    );
+  }
+  function Bill() {
+    const form = useForm({ defaultValues: { qty: '1' } });
+    return (
+      <UbForm form={form} onSubmit={recordBill}>
+        <Contact />
+      </UbForm>
+    );
+  }
+  render(<Bill />);
+  fireEvent.click(screen.getByRole('button', { name: 'Save contact' }));
+  await waitFor(() => expect(saveContact).toHaveBeenCalledTimes(1));
+  expect(recordBill).not.toHaveBeenCalled();
 });

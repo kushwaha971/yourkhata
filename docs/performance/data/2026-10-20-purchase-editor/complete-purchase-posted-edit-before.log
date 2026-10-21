@@ -1,0 +1,360 @@
+FAIL src/modules/DigiKhaato/features/purchases/components/PurchaseBillEditor.test.tsx
+  ✕ opens a posted purchase_bill read-only when Back or a saved edit URL reaches it (1039 ms)
+  ✕ opens a posted purchase_order read-only when Back or a saved edit URL reaches it (1020 ms)
+  ○ skipped previews the §17.7.0 bill at ₹2,921.00 from the draft it opened
+  ○ skipped saves, then records with the version read and an Idempotency-Key, then opens the bill
+  ○ skipped puts the duplicate supplier invoice under the number, with a link to the bill (FR-7)
+  ○ skipped keeps the item/GST caption and one server-save status beside the docked actions
+  ○ skipped asks "Paid now?" at Record and sends the money with the record call (PUR-01 FR-6h)
+  ○ skipped P-D4: "Paid now" by PhonePe is sent as UPI with upi_app phonepe, not Other UPI
+  ○ skipped "Pay later" records the bill on credit with no payment (PUR-01 FR-6h)
+  ○ skipped never opens the "Paid now" sheet for a role that cannot pay suppliers
+  ○ skipped never offers input tax credit to a composition shop (FR-11)
+  ○ skipped re-picking an item preserves this bill's edited cost and focuses the existing Qty
+  ○ skipped finds a numbered line on a long purchase bill, including identical item names
+  ○ skipped keeps optional bill details folded while a new phone bill is still choosing its supplier
+  ○ skipped checks a lost order Send reply without trying to PATCH an already sent order
+  ○ skipped calls the long purchase-order finder an order, not a bill
+  ○ skipped never turns invalid NOS quantity 1.5 into a different positive whole number
+  ○ skipped never turns invalid NOS quantity -5 into a different positive whole number
+  current draft safety (purchase §7)
+    ○ skipped does not claim current typing saved when an older save reply arrives
+    ○ skipped keeps an incomplete line visibly unsaved when the draft request omits it
+    ○ skipped guards a custom GST choice on an unfinished new line
+    ○ skipped asks before unsaved closing, lets the merchant stay, and guards a tab reload
+    ○ skipped does not offer server save or Record while offline or imply a device copy exists
+    ○ skipped never records a bill with a visible half-entered row and focuses that row
+    ○ skipped keeps an unchanged server cost saved when the input only removes trailing zeros
+    ○ skipped resolves a blank cost from the server before asking how much was paid
+    ○ skipped never replaces newer cost typing with a server-filled default from an older save
+    ○ skipped locks the editor and drops repeated Record taps during the save before Record
+  the supplier details on a 1280 laptop (WP-05 compact context)
+    ○ skipped folds a filled draft to one line naming the invoice number and the dates
+    ○ skipped opens the folded details when the number is a duplicate, so the warning is seen
+  SH-011 — first-save recovery and one save lane (ADR-063)
+    ○ skipped retries a lost first save with the same creation key
+    ○ skipped queues an overlapping save behind the first create instead of POSTing twice
+    ○ skipped adopts a recovered untouched draft with an explicit version-1 PATCH of current typing
+    ○ skipped asks for review instead of overwriting a recovered draft edited elsewhere
+    ○ skipped never records again a recovered bill that was already recorded
+    ○ skipped keeps typing made during a slow autosave dirty, and saves it next
+    ○ skipped ignores a late save reply after the editor and account are gone
+  purchase counter quick-add
+    ○ skipped adds a list pick as the third line, preserves purchase cost defaults and focuses its Qty
+    ○ skipped a repeated barcode raises the existing Qty from20 to21 without adding a row or moving the scan caret
+  purchase cost words and precision
+    ○ skipped keeps a newly typed four-place cost through Save instead of dropping the third digit
+    ○ skipped does not promise that sending an order updates the item purchase cost
+  purchase finish refusal and uncertain replies
+    ○ skipped offers an explicit credit-only retry only for a definitive payment permission refusal
+    ○ skipped never offers Pay later for permission_denied outside the definitive payment403
+    ○ skipped never offers Pay later for precondition_failed outside the definitive payment403
+    ○ skipped never offers Pay later for network_error outside the definitive payment403
+    ○ skipped retries a lost Record reply with the original body/key without PATCHing the recorded bill
+    ○ skipped keeps recovery available when its outcome check fails, without offering an unsafe credit retry
+    ○ skipped opens an already recorded outcome without another Record POST or draft PATCH
+    ○ skipped shows a retry when the initial bill load fails rather than an endless skeleton
+    ○ skipped locks payment fields and keeps the sheet open while the actual Record is pending
+  joined purchase supplier context
+    ○ skipped shows one supplier/number/date summary on a phone and preserves fields through Edit
+    ○ skipped offers a retry if the shop/tax context fails instead of an endless skeleton
+
+  ● opens a posted purchase_bill read-only when Back or a saved edit URL reaches it
+
+    expect(jest.fn()).toHaveBeenCalledWith(...expected)
+
+    Expected: "/purchases/bills/b1"
+
+    Number of calls: 0
+
+    Ignored nodes: comments, script, style
+    [36m<html>[39m
+      [36m<head />[39m
+      [36m<body>[39m
+        [36m<div>[39m
+          [36m<div[39m
+            [33mclass[39m=[32m"flex min-h-full w-full flex-col bg-canvas"[39m
+          [36m>[39m
+            [36m<div[39m
+              [33mclass[39m=[32m"mx-auto flex w-full flex-1 flex-col gap-4 px-4 pb-6 pt-4 lg:px-6 lg:pb-3 lg:pt-3 max-w-none"[39m
+            [36m>[39m
+              [36m<header[39m
+                [33mclass[39m=[32m"flex flex-col gap-3"[39m
+                [33mdata-ub-page-header[39m=[32m""[39m
+              [36m>[39m
+                [36m<div[39m
+                  [33mclass[39m=[32m"flex flex-wrap items-center gap-x-4 gap-y-2"[39m
+                [36m>[39m
+                  [36m<div[39m
+                    [33mclass[39m=[32m"flex min-w-[8rem] flex-1 flex-col gap-0.5"[39m
+                  [36m>[39m
+                    [36m<h1[39m
+                      [33mclass[39m=[32m"ds-h1 truncate leading-8 text-text-primary"[39m
+                    [36m>[39m
+                      [0mRecord bill[0m
+                    [36m</h1>[39m
+                  [36m</div>[39m
+                  [36m<div[39m
+                    [33mclass[39m=[32m"flex max-w-full shrink-0 flex-wrap items-center gap-2 max-sm:gap-3"[39m
+                  [36m>[39m
+                    [36m<button[39m
+                      [33mclass[39m=[32m"inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-control [&_svg]:shrink-0 ub-hit transition-colors duration-fast ease-standard active:scale-[0.98] motion-reduce:active:scale-100 disabled:active:scale-100 disabled:cursor-not-allowed disabled:opacity-45 text-text-primary hover:bg-surface-hover active:bg-surface-active h-10 text-button aspect-square px-0"[39m
+                      [33mtype[39m=[32m"button"[39m
+                    [36m>[39m
+                      [36m<svg[39m
+                        [33maria-hidden[39m=[32m"true"[39m
+                        [33mclass[39m=[32m"lucide lucide-x h-4 w-4"[39m
+                        [33mfill[39m=[32m"none"[39m
+                        [33mheight[39m=[32m"24"[39m
+                        [33mstroke[39m=[32m"currentColor"[39m
+                        [33mstroke-linecap[39m=[32m"round"[39m
+                        [33mstroke-linejoin[39m=[32m"round"[39m
+                        [33mstroke-width[39m=[32m"2"[39m
+                        [33mviewBox[39m=[32m"0 0 24 24"[39m
+                        [33mwidth[39m=[32m"24"[39m
+                        [33mxmlns[39m=[32m"http://www.w3.org/2000/svg"[39m
+                      [36m>[39m
+                        [36m<path[39m
+                          [33md[39m=[32m"M18 6 6 18"[39m
+                        [36m/>[39m
+                        [36m<path[39m
+                          [33md[39m=[32m"m6 6 12 12"[39m
+                        [36m/>[39m
+                      [36m</svg>[39m
+                      [36m<span[39m
+                        [33mclass[39m=[32m"inline-flex items-center gap-2 sr-only"[39m
+                      [36m>[39m
+                        [0mClose bill[0m
+                      [36m</span>[39m
+                    [36m</button>[39m
+                    [36m<button[39m
+                      [33mclass[39m=[32m"inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-control [&_svg]:shrink-0 ub-hit transition-colors duration-fast ease-standard active:scale-[0.98] motion-reduce:active:scale-100 disabled:active:scale-100 disabled:cursor-not-allowed disabled:opacity-45 text-text-primary hover:bg-surface-hover active:bg-surface-active h-10 px-4 text-button max-sm:h-8 max-sm:w-8 max-sm:px-0"[39m
+                      [33mtype[39m=[32m"button"[39m
+                    [36m>[39m
+                      [36m<svg[39m
+                        [33maria-hidden[39m=[32m"true"[39m
+                        [33mclass[39m=[32m"lucide lucide-trash2 h-4 w-4"[39m
+                        [33mfill[39m=[32m"none"[39m
+                        [33mheight[39m=[32m"24"[39m
+                        [33mstroke[39m=[32m"currentColor"[39m
+                        [33mstroke-linecap[39m=[32m"round"[39m
+                        [33mstroke-linejoin[39m=[32m"round"[39m
+                        [33mstroke-width[39m=[32m"2"[39m
+                        [33mviewBox[39m=[32m"0 0 24 24"[39m
+                        [33mwidth[39m=[32m"24"[39m
+                        [33mxmlns[39m=[32m"http://www.w3.org/2000/svg"[39m
+                      [36m>[39m
+                        [36m<path[39m
+                          [33md[39m=[32m"M3 6h18"[39m
+                        [36m/>[39m
+                        [36m<path[39m
+                          [33md[39m=[32m"M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"[39m
+                        [36m/>[39m
+                        [36m<path[39m
+                          [33md[39m=[32m"M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"[39m
+                        [36m/>[39m
+                        [36m<line[39m
+                          [33mx1[39m=[32m"10"[39m
+                          [33mx2[39m=[32m"10"[39m
+                          [33my1[39m=[32m"11"[39m
+                          [33my2[39m=[32m"17"[39m
+                        [36m/>[39m
+                        [36m<line[39m
+                          [33mx1[39m=[32m"14"[39m
+                          [33mx2[39m=[32m"14"[39m
+                          [33my1[39m=[32m"11"[39m
+                          [33my2[39m=[32m"17"[39m
+                        [36m/>[39m
+                      [36m</svg>[39m
+                      [36m<span[39m
+                        [33mclass[39m=[32m"inline-flex items-center gap-2 max-sm:sr-only"[39m
+                      [36m>[39m
+                        [0mDelete draft[0m
+                      [36m</span>[39m
+                    [36m</button>[39m
+                    [36m<button[39m
+                      [33mclass[39m=[32m"inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-control [&_svg]:shrink-0 ub-hit transition-colors duration-fast ease-standard active:scale-[0.98] motion-reduce:active:scale-100 disabled:active:scale-100 disabled:cursor-not-allowed disabled:opacity-45 bg-surface-sunken text-text-primary hover:bg-surface-hover active:bg-surface-active h-10 px-4 text-button max-sm:h-8 max-sm:w-8 max-sm:px-0 max-2xl:hidden"[39m
+                      [33mtype[39m=[32m"button"[39m
+                    [36m>[39m
+                      [36m<svg[39m
+                        [33maria-hidden[39m=[32m"true"[39m
+                        [33mclass[39m=[32m"lucide lucide-save h-4 w-4"[39m
+                        [33mfill[39m=[32m"none"[39m
+                        [33mheight[39m=[32m"24"[39m
+                        [33mstroke[39m=[32m"currentColor"[39m
+                        [33mstroke-linecap[39m=[32m"round"[39m
+                        [33mstroke-linejoin[39m=[32m"round"[39m
+                        [33mstroke-width[39m=[32m"2"[39m
+                        [33mviewBox[39m=[32m"0 0 24 24"[39m
+                        [33mwidth[39m=[32m"24"[39m
+                        [33mxmlns[39m=[32m"http://www.w3.org/2000/svg"[39m
+                      [36m>[39m
+                        [36m<path[39m
+                          [33md[39m=[32m...
+
+      1232 |   service.getPurchaseBill.mockResolvedValueOnce(envelope({...DRAFT,kind,status:kind==='purchase_order'?'sent':'recorded',number:'RKE/1'}));
+      1233 |   renderWithProviders(<PurchaseBillEditorPageContent documentId="b1" kind={kind} />);
+    > 1234 |   await waitFor(()=>expect(mockReplace).toHaveBeenCalledWith(`/purchases/${kind==='purchase_order'?'orders':'bills'}/b1`));
+           |                                         ^
+      1235 |   expect(screen.queryByLabelText('Cost, line 1')).not.toBeInTheDocument();
+      1236 | });
+      1237 |
+
+      at src/modules/DigiKhaato/features/purchases/components/PurchaseBillEditor.test.tsx:1234:41
+      at runWithExpensiveErrorDiagnosticsDisabled (node_modules/@testing-library/dom/dist/config.js:47:12)
+      at checkCallback (node_modules/@testing-library/dom/dist/wait-for.js:124:77)
+      at checkRealTimersCallback (node_modules/@testing-library/dom/dist/wait-for.js:118:16)
+      at Timeout.task [as _onTimeout] (node_modules/jsdom/lib/jsdom/browser/Window.js:520:19)
+
+  ● opens a posted purchase_order read-only when Back or a saved edit URL reaches it
+
+    expect(jest.fn()).toHaveBeenCalledWith(...expected)
+
+    Expected: "/purchases/orders/b1"
+
+    Number of calls: 0
+
+    Ignored nodes: comments, script, style
+    [36m<html>[39m
+      [36m<head />[39m
+      [36m<body>[39m
+        [36m<div>[39m
+          [36m<div[39m
+            [33mclass[39m=[32m"flex min-h-full w-full flex-col bg-canvas"[39m
+          [36m>[39m
+            [36m<div[39m
+              [33mclass[39m=[32m"mx-auto flex w-full flex-1 flex-col gap-4 px-4 pb-6 pt-4 lg:px-6 lg:pb-3 lg:pt-3 max-w-none"[39m
+            [36m>[39m
+              [36m<header[39m
+                [33mclass[39m=[32m"flex flex-col gap-3"[39m
+                [33mdata-ub-page-header[39m=[32m""[39m
+              [36m>[39m
+                [36m<div[39m
+                  [33mclass[39m=[32m"flex flex-wrap items-center gap-x-4 gap-y-2"[39m
+                [36m>[39m
+                  [36m<div[39m
+                    [33mclass[39m=[32m"flex min-w-[8rem] flex-1 flex-col gap-0.5"[39m
+                  [36m>[39m
+                    [36m<h1[39m
+                      [33mclass[39m=[32m"ds-h1 truncate leading-8 text-text-primary"[39m
+                    [36m>[39m
+                      [0mPurchase order[0m
+                    [36m</h1>[39m
+                  [36m</div>[39m
+                  [36m<div[39m
+                    [33mclass[39m=[32m"flex max-w-full shrink-0 flex-wrap items-center gap-2 max-sm:gap-3"[39m
+                  [36m>[39m
+                    [36m<button[39m
+                      [33mclass[39m=[32m"inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-control [&_svg]:shrink-0 ub-hit transition-colors duration-fast ease-standard active:scale-[0.98] motion-reduce:active:scale-100 disabled:active:scale-100 disabled:cursor-not-allowed disabled:opacity-45 text-text-primary hover:bg-surface-hover active:bg-surface-active h-10 text-button aspect-square px-0"[39m
+                      [33mtype[39m=[32m"button"[39m
+                    [36m>[39m
+                      [36m<svg[39m
+                        [33maria-hidden[39m=[32m"true"[39m
+                        [33mclass[39m=[32m"lucide lucide-x h-4 w-4"[39m
+                        [33mfill[39m=[32m"none"[39m
+                        [33mheight[39m=[32m"24"[39m
+                        [33mstroke[39m=[32m"currentColor"[39m
+                        [33mstroke-linecap[39m=[32m"round"[39m
+                        [33mstroke-linejoin[39m=[32m"round"[39m
+                        [33mstroke-width[39m=[32m"2"[39m
+                        [33mviewBox[39m=[32m"0 0 24 24"[39m
+                        [33mwidth[39m=[32m"24"[39m
+                        [33mxmlns[39m=[32m"http://www.w3.org/2000/svg"[39m
+                      [36m>[39m
+                        [36m<path[39m
+                          [33md[39m=[32m"M18 6 6 18"[39m
+                        [36m/>[39m
+                        [36m<path[39m
+                          [33md[39m=[32m"m6 6 12 12"[39m
+                        [36m/>[39m
+                      [36m</svg>[39m
+                      [36m<span[39m
+                        [33mclass[39m=[32m"inline-flex items-center gap-2 sr-only"[39m
+                      [36m>[39m
+                        [0mClose order[0m
+                      [36m</span>[39m
+                    [36m</button>[39m
+                    [36m<button[39m
+                      [33mclass[39m=[32m"inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-control [&_svg]:shrink-0 ub-hit transition-colors duration-fast ease-standard active:scale-[0.98] motion-reduce:active:scale-100 disabled:active:scale-100 disabled:cursor-not-allowed disabled:opacity-45 text-text-primary hover:bg-surface-hover active:bg-surface-active h-10 px-4 text-button max-sm:h-8 max-sm:w-8 max-sm:px-0"[39m
+                      [33mtype[39m=[32m"button"[39m
+                    [36m>[39m
+                      [36m<svg[39m
+                        [33maria-hidden[39m=[32m"true"[39m
+                        [33mclass[39m=[32m"lucide lucide-trash2 h-4 w-4"[39m
+                        [33mfill[39m=[32m"none"[39m
+                        [33mheight[39m=[32m"24"[39m
+                        [33mstroke[39m=[32m"currentColor"[39m
+                        [33mstroke-linecap[39m=[32m"round"[39m
+                        [33mstroke-linejoin[39m=[32m"round"[39m
+                        [33mstroke-width[39m=[32m"2"[39m
+                        [33mviewBox[39m=[32m"0 0 24 24"[39m
+                        [33mwidth[39m=[32m"24"[39m
+                        [33mxmlns[39m=[32m"http://www.w3.org/2000/svg"[39m
+                      [36m>[39m
+                        [36m<path[39m
+                          [33md[39m=[32m"M3 6h18"[39m
+                        [36m/>[39m
+                        [36m<path[39m
+                          [33md[39m=[32m"M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"[39m
+                        [36m/>[39m
+                        [36m<path[39m
+                          [33md[39m=[32m"M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"[39m
+                        [36m/>[39m
+                        [36m<line[39m
+                          [33mx1[39m=[32m"10"[39m
+                          [33mx2[39m=[32m"10"[39m
+                          [33my1[39m=[32m"11"[39m
+                          [33my2[39m=[32m"17"[39m
+                        [36m/>[39m
+                        [36m<line[39m
+                          [33mx1[39m=[32m"14"[39m
+                          [33mx2[39m=[32m"14"[39m
+                          [33my1[39m=[32m"11"[39m
+                          [33my2[39m=[32m"17"[39m
+                        [36m/>[39m
+                      [36m</svg>[39m
+                      [36m<span[39m
+                        [33mclass[39m=[32m"inline-flex items-center gap-2 max-sm:sr-only"[39m
+                      [36m>[39m
+                        [0mDelete draft[0m
+                      [36m</span>[39m
+                    [36m</button>[39m
+                    [36m<button[39m
+                      [33mclass[39m=[32m"inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-control [&_svg]:shrink-0 ub-hit transition-colors duration-fast ease-standard active:scale-[0.98] motion-reduce:active:scale-100 disabled:active:scale-100 disabled:cursor-not-allowed disabled:opacity-45 bg-surface-sunken text-text-primary hover:bg-surface-hover active:bg-surface-active h-10 px-4 text-button max-sm:h-8 max-sm:w-8 max-sm:px-0 max-2xl:hidden"[39m
+                      [33mtype[39m=[32m"button"[39m
+                    [36m>[39m
+                      [36m<svg[39m
+                        [33maria-hidden[39m=[32m"true"[39m
+                        [33mclass[39m=[32m"lucide lucide-save h-4 w-4"[39m
+                        [33mfill[39m=[32m"none"[39m
+                        [33mheight[39m=[32m"24"[39m
+                        [33mstroke[39m=[32m"currentColor"[39m
+                        [33mstroke-linecap[39m=[32m"round"[39m
+                        [33mstroke-linejoin[39m=[32m"round"[39m
+                        [33mstroke-width[39m=[32m"2"[39m
+                        [33mviewBox[39m=[32m"0 0 24 24"[39m
+                        [33mwidth[39m=[32m"24"[39m
+                        [33mxmlns[39m=[32m"http://www.w3.org/2000/svg"[39m
+                      [36m>[39m
+                        [36m<path[39m
+                          [33md[39m=...
+
+      1232 |   service.getPurchaseBill.mockResolvedValueOnce(envelope({...DRAFT,kind,status:kind==='purchase_order'?'sent':'recorded',number:'RKE/1'}));
+      1233 |   renderWithProviders(<PurchaseBillEditorPageContent documentId="b1" kind={kind} />);
+    > 1234 |   await waitFor(()=>expect(mockReplace).toHaveBeenCalledWith(`/purchases/${kind==='purchase_order'?'orders':'bills'}/b1`));
+           |                                         ^
+      1235 |   expect(screen.queryByLabelText('Cost, line 1')).not.toBeInTheDocument();
+      1236 | });
+      1237 |
+
+      at src/modules/DigiKhaato/features/purchases/components/PurchaseBillEditor.test.tsx:1234:41
+      at runWithExpensiveErrorDiagnosticsDisabled (node_modules/@testing-library/dom/dist/config.js:47:12)
+      at checkCallback (node_modules/@testing-library/dom/dist/wait-for.js:124:77)
+      at checkRealTimersCallback (node_modules/@testing-library/dom/dist/wait-for.js:118:16)
+      at Timeout.task [as _onTimeout] (node_modules/jsdom/lib/jsdom/browser/Window.js:520:19)
+
+Test Suites: 1 failed, 1 total
+Tests:       2 failed, 50 skipped, 52 total
+Snapshots:   0 total
+Time:        2.996 s, estimated 6 s
+Ran all test suites matching /PurchaseBillEditor.test.tsx/i with tests matching "opens a posted".

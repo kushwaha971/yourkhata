@@ -4,19 +4,24 @@ Give the block below to any coding agent (Codex, Cursor, Claude Code, Copilot, W
 
 Replace the line marked `TASK` with what you want done next. If you leave it out, the agent does the next item in `docs/revamp/12-decision-log.md` → "Next".
 
-## Current handoff · 20 October 2026
+## Current handoff · 21 October 2026
 
 Read START-NEXT-SESSION-PROMPT.txt and12's current Next first. R-DEC-27 orders
 billing/POS, purchases and returns, then inventory, payments, expenses and reports
-before the remaining Home workflows. Billing is finished for now (owner: Move on);
-purchase §7 steps 1–5 are delivered (shared counter, dock and honest save/leave).
-4,611 tests/216 safety frames pass; see purchase-editor report.
-Cost words/precision verified:4,613 tests/240 frames/29 backend checks.
-Step5:4,624 tests/80 backend checks/60 final frames, immutable Record recovery,
-explicit payment403 retry and uncovered instructions. Immediate next: joined supplier
-summary and complete editor acceptance. Read 2026-10-20-p5-purchase-quick-add.md: 4,596 tests/108 frames,
-supplier-inclusive phone/desktop picks36/38ms, unchanged A/B navigation;
-component-only8.75, not a whole-purchase completion claim.
+before remaining Home. Billing is finished for now (owner: Move on).
+Purchase editor §7 is now complete within its documented local scope: steps1–6,
+joined supplier summary, lazy shared supplier creation, recovery and context
+states.414 suites/4,639 tests,80 purchase backend tests and498 final measured
+frames pass. Final quiet A/B,30-line speed and eight-row rating are in the final
+21Oct section of docs/performance/2026-10-20-p5-purchase-editor.md; use that,
+not the historical component-only8.75 or pending-editor notes. Design8.80,
+lowest aspect8.6;30-line picks36/38ms. First throttled phone load~1.39s,~5%
+more than baseline; no speed-up claim. Next is the
+purchase register §5, then detail §6 and full return/debit-note redesign.
+Read-only posted edit/Back and recovery cache refresh are covered; no device
+copy/crash or physical-phone guarantee. Shared portal submit and quantity-intent
+regressions were fixed without copying business engines. The return input guard
+alone does not certify the return workflow. Keep all same-loop evidence rules.
 Compact line/totals component407d9caa is delivered; it is not the whole editor.
 R-DEC-28 adds app-wide Quick Sale / Saved customer and role-appropriate Customer,
 Supplier, Contact copy. Read2026-10-20-plain-contact-terms.md for verification and

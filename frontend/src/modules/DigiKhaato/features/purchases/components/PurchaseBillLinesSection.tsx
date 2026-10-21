@@ -299,7 +299,7 @@ export function PurchaseBillLinesSection({
             options={lineOptions}
             onFind={findLine}
             labels={{
-              label: t('purchases.line.find'),
+              label: t(order ? 'purchases.order.findLine' : 'purchases.line.find'),
               search: t('purchases.line.findSearch'),
               empty: t('purchases.line.findEmpty'),
             }}

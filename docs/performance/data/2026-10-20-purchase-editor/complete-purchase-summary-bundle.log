@@ -1,0 +1,140 @@
+
+> digikhaato-frontend@0.1.0 bundle:check
+> node scripts/check-bundle.mjs
+
+
+  First-load JavaScript, gzip -9, modern browser (noModule polyfill excluded)
+
+  route                                route   budget first load   budget
+  ───────────────────────────────────────────────────────────────────────
+  framework (react-dom, next)          127.3      128
+  shared app (every route)             114.2    114.4
+  ───────────────────────────────────────────────────────────────────────
+  /sales/challans/[id]/edit            168.4    168.5      409.8    410.1
+  /sales/orders/[id]/edit              168.4    168.5      409.8    410.1
+  /sales/estimates/[id]/edit           168.4    168.5      409.8    410.1
+  /purchases/orders/[id]/edit          168.4    168.6      409.8      410
+  /sales/invoices/[id]/edit            168.4    168.5      409.8    410.1
+  /purchases/bills/[id]/edit           168.4    168.3      409.8    409.9 ✗
+  /sales/challans/new                  168.4    168.5      409.8    410.1
+  /sales/orders/new                    168.4    168.5      409.8    410.1
+  /sales/estimates/new                 168.4    168.5      409.8    410.1
+  /purchases/orders/new                168.4    168.5      409.8    409.9
+  /sales/invoices/new                  168.4    168.5      409.8    410.1
+  /purchases/bills/new                 168.4    168.5      409.8    409.9
+  /sales/credit-notes/new              149.4    149.7      390.8    391.1
+  /settings/profile                    143.6    143.9      385.0      385
+  /lending/loans/new                   140.5    140.7      381.9    382.2
+  /library/settings                    119.5    119.5      360.9    361.2
+  /reports/day-book                    117.9    118.1      359.3    359.6
+  /reports/purchase-register           115.3    115.5      356.7      357
+  /reports/sales-register              115.3    115.5      356.7      357
+  /reports/gst-summary                 114.8      115      356.2    356.5
+  /parties/[id]                        113.4    113.6      354.8    355.1
+  /design-system                       112.7    112.8      354.1    354.4
+  /reports/profit                      110.2    110.4      351.6    351.9
+  /items/[id]                          108.7    108.9      350.1    350.4
+  /stock/summary                       108.6      115      350.0      360
+  /settings                            108.0    108.3      349.5    349.7
+  /reports/aging                        99.9    100.1      341.3    341.6
+  /ledger/aging                         99.9    100.1      341.3    341.6
+  /settings/branding                    95.8       96      337.2    337.5
+  /onboarding/step/[n]                  92.9       93      334.4    334.6
+  /settings/team                        91.2     91.4      332.6    332.9
+  /dashboard                            91.2     91.4      332.6      336
+  /suppliers                            91.1      110      332.5      344
+  /customers                            91.1      110      332.5      344
+  /khata                                91.1      109      332.5      344
+  /parties                              91.1      109      332.5      344
+  /items/price-lists/[id]               89.8     89.9      331.2    331.5
+  /library/members                      86.3     86.5      327.7      328
+  /sales/challans                       86.1     86.1      327.5    327.8
+  /sales/credit-notes                   86.1       98      327.5      356
+  /sales/orders                         86.1     86.1      327.5    327.8
+  /sales/estimates                      86.1       98      327.5      356
+  /library/members/[membershipId]       85.9     86.1      327.3    327.6
+  /items                                85.7      108      327.1      344
+  /library/catalogue                    85.2     85.4      326.6    326.9
+  /sales/invoices                       85.0       98      326.4      333
+  /sales/challans/[id]                  84.2     84.2      325.6    325.9
+  /sales/orders/[id]                    84.2     84.2      325.6    325.9
+  /sales/credit-notes/[id]              84.2     84.2      325.6      336
+  /sales/estimates/[id]                 84.2     84.2      325.6      336
+  /sales/invoices/[id]                  84.2     84.2      325.6    325.9
+  /purchases/orders                     83.6     83.7      325.0    325.3
+  /purchases/debit-notes                83.6     83.7      325.0    325.3
+  /purchases/bills                      83.6       95      325.0      330
+  /expenses                             82.9      107      324.3      341
+  /library/counter                      82.6     82.8      324.0    324.3
+  /library/copies                       82.6     82.8      324.0    324.3
+  /library/seats                        80.9     81.1      322.3    322.6
+  /payments                             80.9      104      322.3      339
+  /library/fees                         79.0     79.2      320.4    320.7
+  /library                              79.0     79.2      320.4    320.7
+  /parties/[id]/statement               78.8       93      320.3      328
+  /lending/borrowers                    78.8       79      320.2    320.5
+  /ledger/reminders                     77.8       78      319.2    319.5
+  /library/copies/[copyId]              77.6     77.8      319.0    319.3
+  /lending/loans                        76.5     76.7      317.9    318.2
+  /library/attendance                   75.3     75.5      316.7      317
+  /library/money                        75.2     75.4      316.6    316.9
+  /library/catalogue/[titleId]          74.7     74.9      316.1    316.4
+  /cashbook                             74.6       92      316.0      327
+  /settings/activity                    74.0      101      315.4      335
+  /library/messages                     73.1     73.3      314.5    314.8
+  /library/catalogue/locations          72.4     72.6      313.8    314.1
+  /library/catalogue/categories         72.4     72.6      313.8    314.1
+  /stock/low                            72.3     72.5      313.7      314
+  /purchases/orders/[id]                72.1     72.3      313.6    313.8
+  /purchases/debit-notes/[id]           72.1     72.3      313.6    313.8
+  /purchases/bills/[id]                 72.1     72.2      313.5    313.8
+  /lending                              71.6     71.8      313.0    313.3
+  /lending/loans/[loanId]               71.4     71.6      312.8    313.1
+  /parties/tags                         70.0     70.2      311.4    311.7
+  /payments/[id]                        68.5     68.7      309.9    310.2
+  /settings/business-days               67.1     67.4      308.6    308.8
+  /lending/messages                     66.4     66.6      307.8    308.1
+  /lending/routes                       63.2     63.4      304.6    304.9
+  /settings/data                        63.0     63.2      304.4    304.7
+  /reports                              61.5       72      302.9      320
+  /settings/devices                     61.0     61.2      302.4    302.7
+  /login/email                          57.9     58.6      299.3    299.7
+  /imports/[id]                         56.5     56.7      297.9    298.2
+  /signup                               56.4       57      297.9    298.1
+  /login                                56.4       57      297.9    298.1
+  /items/masters                        56.4     56.6      297.8    298.1
+  /imports                              56.4     56.6      297.8    298.1
+  /items/price-lists                    56.2     56.4      297.6    297.9
+  /switch                               55.2     55.4      296.6    296.9
+  /more                                 54.4       56      295.8    296.1
+  /settings/plan                        54.1     54.3      295.5    295.8
+  /apps                                 53.7       56      295.1    295.4
+  /reset-password                       52.4     52.6      293.9    294.1
+  /set-password                         51.3     51.6      292.7      293
+  /forgot-password                      50.7       52      292.2    292.4
+  /                                     42.8       43      284.3    284.5
+  /d/[token]                            40.6     40.9      282.0    282.3
+  /admin/tenants                        32.2     32.5      273.6    273.9
+  /admin/partners                       27.7     27.8      269.1    269.4
+  /admin/tenants/[id]                   25.0     25.2      266.4    266.7
+  /admin/health                         20.7       21      262.1    262.4
+  /pay/[token]                          15.3       56      256.7      288
+  /accept-invite/[token]                11.1     11.4      252.6    252.8
+  /admin                                11.0       11      252.4    252.7
+  /in/[token]                            7.6       56      249.0      288
+  /legal/terms                           6.7        8      248.1    248.4
+  /legal/privacy                         6.7        8      248.1    248.4
+  /solutions                             6.4       56      247.8      288
+  /solutions/[slug]                      6.4       56      247.8      288
+  /onboarding                            4.6        6      246.0    246.3
+  /_not-found                            0.0        1      241.4    241.7
+
+  baseline every route pays: 241.4 KB gz  (framework 127.3 + shared app 114.2)
+
+  ✗ 1 bundle budget exceeded
+
+      route chunk  /purchases/bills/[id]/edit   168.4 KB  >  168.3 KB   over by 0.1 KB (+0%)
+
+  Either take the bytes back out, or raise the number in frontend/bundle-budgets.json
+  in the same commit and say in the PR description what bought the increase.
+

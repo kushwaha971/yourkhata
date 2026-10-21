@@ -40,6 +40,8 @@ export interface PurchaseBillEditorState {
   loadRequestId: string | null;
   saveRequestId: string | null;
   context: PurchaseContext | null;
+  contextStatus: RequestStatus;
+  contextRequestId: string | null;
   saveState: PurchaseSaveState;
   savedAt: string | null;
   recording: boolean;
@@ -58,6 +60,8 @@ const initialState: PurchaseBillEditorState = {
   loadRequestId: null,
   saveRequestId: null,
   context: null,
+  contextStatus: 'idle',
+  contextRequestId: null,
   saveState: 'idle',
   savedAt: null,
   recording: false,
@@ -119,7 +123,18 @@ const purchaseBillEditorSlice = createSlice({
   },
   extraReducers: (builder) => {
     builder
+      .addCase(fetchPurchaseContext.pending, (state, action) => {
+        state.contextStatus = 'loading';
+        state.contextRequestId = action.meta.requestId;
+      })
+      .addCase(fetchPurchaseContext.rejected, (state, action) => {
+        if (action.meta.aborted || state.contextRequestId !== action.meta.requestId) return;
+        state.contextStatus = 'failed';
+        state.error = (action.payload ?? null) as Draft<ApiErrorShape> | null;
+      })
       .addCase(fetchPurchaseContext.fulfilled, (state, action) => {
+        if (state.contextRequestId !== action.meta.requestId) return;
+        state.contextStatus = 'succeeded';
         state.context = action.payload as Draft<PurchaseContext>;
       })
       .addCase(fetchPurchaseBill.pending, (state, action) => {

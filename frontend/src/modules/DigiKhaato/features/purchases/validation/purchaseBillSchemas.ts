@@ -25,6 +25,7 @@ export interface PurchaseBillHeader {
 
 export interface PurchaseBillSchemas {
   readonly purchaseBillSchema: Yup.ObjectSchema<PurchaseBillHeader>;
+  readonly quantityValidation: (allowDecimal?: boolean) => Yup.StringSchema<string>;
 }
 
 export const usePurchaseBillSchemas = (): PurchaseBillSchemas => {
@@ -42,6 +43,6 @@ export const usePurchaseBillSchemas = (): PurchaseBillSchemas => {
       notes: v.boundedText(2000),
     }) as Yup.ObjectSchema<PurchaseBillHeader>;
 
-    return { purchaseBillSchema };
+    return { purchaseBillSchema, quantityValidation: v.quantityValidation };
   }, [v, t]);
 };

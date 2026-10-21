@@ -1,7 +1,7 @@
 import { resetAllFeatureState } from 'src/redux/actions';
 
 import { purchaseBillEditorReducer } from './purchaseBillEditorSlice';
-import { recordPurchaseBill } from './purchaseBillThunk';
+import { recordPurchaseBill, fetchPurchaseContext } from './purchaseBillThunk';
 
 import type { PurchaseBillEnvelope } from '../types/purchase.types';
 
@@ -39,4 +39,28 @@ it('ignores a late Record refusal after actor/business state was reset', () => {
     })
   );
   expect(result.error).toBeNull();
+});
+
+it('ignores an old shop tax-context reply after actor/business reset', () => {
+  // Defect guard: a former business response must not seed the new editor's tax defaults.
+  const pending = purchaseBillEditorReducer(
+    undefined,
+    fetchPurchaseContext.pending('old-context', '2026-10-21')
+  );
+  const reset = purchaseBillEditorReducer(pending, resetAllFeatureState());
+  const result = purchaseBillEditorReducer(
+    reset,
+    fetchPurchaseContext.fulfilled(
+      {
+        gstType: 'composition',
+        stateCode: '27',
+        rates: {},
+        rateOptions: [],
+        ratesDate: '2026-10-21',
+      },
+      'old-context',
+      '2026-10-21'
+    )
+  );
+  expect(result.context).toBeNull();
 });
