@@ -47,16 +47,15 @@ Every UI piece that is built, whether a form, card, drawer, sheet, dialog, list 
 ## R-DEC-31 · Viewport behavior across all modules (21 Oct)
 
 Owner explicitly wants this in every module, not only Purchases. Track the
-rollout within this existing revamp; this is not a new redesign plan. Only
-Purchases has been implemented/verified so far. The next implementation group
-is the already-redesigned Shop Customers/Suppliers/Bills registers. Then apply
+rollout within this existing revamp; this is not a new redesign plan. Purchases and the already-redesigned Shop Customers/Suppliers/Bills registers
+have been implemented/verified. Next: remaining sales-document lists. Then apply
 and verify the same behavior on each remaining module's real list composition.
 This shared behavior rollout does not certify or replace their full revamps.
 
 | Surface group | Status | Guard |
 |---|---|---|
 | Purchases / shared orders and returns register | Verified in Purchases only;32px/44px correction passes |32px face,44px mobile hit area; pinned pager/toast clearance |
-| Shop Customers, Suppliers, Bills | Next | Preserve separate roles/books, filtering and row actions |
+| Shop Customers, Suppliers, Bills | Verified:522 final frames,4,648 frontend tests;21Oct viewport-shop report | Preserve separate roles/books, filtering and row actions |
 | Remaining sales documents | Pending | Shared list kinds, permissions and links unchanged |
 | Items, stock, payments, expenses | Pending | No stock/pricing/payment calculations changed |
 | Personal Udhaar people, aging, reminders | Pending | Independent personal book; no mixed Shop balances |

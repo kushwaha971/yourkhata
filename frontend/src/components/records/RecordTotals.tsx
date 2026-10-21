@@ -8,6 +8,7 @@ export function RecordTotals({
   figures,
   testId,
   columns = false,
+  compactShort = false,
 }: Readonly<{
   label: string;
   count: number;
@@ -21,17 +22,23 @@ export function RecordTotals({
   testId?: string;
   /** Two readable money columns on phones without a stack of stat cards. */
   columns?: boolean;
+  /** Avoid duplicate count chrome on short phones; status chips still show the count. */
+  compactShort?: boolean;
 }>): React.JSX.Element {
   return (
     <UbStack
       direction="row"
       align="baseline"
-      className="flex-wrap justify-between gap-3 py-2"
+      className={`flex-wrap justify-between gap-3 py-2 ${compactShort ? 'max-md:[@media(max-height:640px)]:gap-1 max-md:[@media(max-height:640px)]:py-1' : ''}`}
       aria-label={label}
       role="status"
       data-testid={testId}
     >
-      <UbText variant="body-sm" tone="secondary">
+      <UbText
+        variant="body-sm"
+        tone="secondary"
+        className={compactShort ? 'max-md:[@media(max-height:640px)]:sr-only' : undefined}
+      >
         {count} {countLabel}
       </UbText>
       <UbStack

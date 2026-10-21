@@ -42,7 +42,7 @@ export const ShopPartySummary = memo(function ShopPartySummary({
       role="status"
       aria-label={t('parties.list.totals.region')}
       data-testid="shop-customer-summary"
-      className="py-4 lg:flex-row lg:items-center lg:justify-between"
+      className="py-2 lg:flex-row lg:items-center lg:justify-between"
     >
       {loading ? (
         <UbSkeleton className="h-5 w-full max-w-80" label={t('parties.list.totals.loading')} />
@@ -64,8 +64,14 @@ export const ShopPartySummary = memo(function ShopPartySummary({
             )}
           </UbText>
           <UbStack direction="row" align="baseline" gap={2} wrap>
-            <UbText variant="caption" tone="tertiary">
-              {t(supplier ? 'parties.list.supplier.matches' : 'parties.list.shop.matches', { count: total })}
+            <UbText
+              variant="caption"
+              tone="tertiary"
+              className="max-md:[@media(max-height:640px)]:sr-only"
+            >
+              {t(supplier ? 'parties.list.supplier.matches' : 'parties.list.shop.matches', {
+                count: total,
+              })}
             </UbText>
             <UbAmount
               value={supplier ? totals.payable : totals.receivable}
@@ -87,7 +93,9 @@ export const ShopPartySummary = memo(function ShopPartySummary({
               {t(
                 scope === 'filtered'
                   ? 'parties.list.shop.inTotal'
-                  : supplier ? 'parties.list.supplier.pageScope' : 'parties.list.totals.scope.page',
+                  : supplier
+                    ? 'parties.list.supplier.pageScope'
+                    : 'parties.list.totals.scope.page',
                 { count: rowCount }
               )}
             </UbText>

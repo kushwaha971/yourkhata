@@ -786,3 +786,6 @@ Every area is above 8.6; the smallest margins are Settings (8.71) and Reports (8
 21 Oct2026 §7 safety checkpoint: 4,611 tests,216 measured en/hi frames, native unload/partial rows/server defaults/late acknowledgement and dialog occlusion verified. See purchase-editor report. Cost wording and true joined supplier summary require the corrections recorded in12; whole-editor acceptance remains open.
 
 21Oct §7 finish checkpoint:4,624 tests/80 backend checks/60 final en/hi frames. Explicit payment403 choice, immutable lost-Record checking, locks, failed-load retry and request fences delivered; actual toast occlusion fails before/corrected after. See purchase-editor step5 report.
+
+
+Tracking follow-up (21 Oct2026, R-DEC-31/32): Bills §1 opts into shared bounded viewport rows with the existing paging/Show more outside. Manual append preserves position; new filters reset it.32px chip faces/44px phone targets and short/offline height verified. Report: `docs/performance/2026-10-21-viewport-shop-registers.md` (522 final frames,416 suites/4,648 tests). This layout follow-up does not supersede the original full-feature gaps or certify other modules.

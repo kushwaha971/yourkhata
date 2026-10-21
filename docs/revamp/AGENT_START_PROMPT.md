@@ -15,7 +15,7 @@ docs/performance/2026-10-21-p5-purchase-register.md —416 suites/4,647 tests,
 80 backend checks,240 final measured frames/hit tests and same-machine serial
 A/B. Read its final rating/limits, not historical scoped editor scores.
 Register design8.75, lowest aspect8.6; throttled pooled content538.5ms phone /837ms desktop (+9/+10ms vs baseline), feedback≤12/28ms. No speedup claim.
-Next: R-DEC-31 viewport rollout, starting with existing Shop Customers/Suppliers/Bills; see11's matrix. Only Purchases is currently implemented. Then resume purchase detail §6/order conversion/returns under R-DEC-27.
+R-DEC-31 viewport group1 is delivered: Customers/Suppliers/Bills,522 final measured frames,416 suites/4,648 frontend tests. See2026-10-21-viewport-shop-registers.md for A/B and limits. Next: remaining sales-document lists, then each pending module group in11. Purchases is already verified; do not claim all other lists migrated. Then resume purchase detail §6/order conversion/returns under R-DEC-27.
 R-DEC-30:80% mobile, complete redesign; rows alone scroll while pagination and
 actions remain reachable. Reuse UbViewportPageShell/UbDataGrid fillHeight and
 existing RecordTotals/search/filter/clearance; ordinary pages do not measure.

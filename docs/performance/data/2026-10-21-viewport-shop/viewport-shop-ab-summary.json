@@ -1,0 +1,757 @@
+{
+  "samples": 192,
+  "results": [
+    {
+      "vp": 390,
+      "profile": "unthrottled",
+      "id": "shop.customers\u2192bills",
+      "old": {
+        "content": {
+          "n": 6,
+          "median": 100.5,
+          "p95": 422,
+          "max": 422
+        },
+        "firstChange": {
+          "n": 6,
+          "median": 28.0,
+          "p95": 30,
+          "max": 30
+        },
+        "interaction": {
+          "n": 6,
+          "median": 32.0,
+          "p95": 32,
+          "max": 32
+        },
+        "longTasks": 0
+      },
+      "new": {
+        "content": {
+          "n": 6,
+          "median": 105.0,
+          "p95": 416,
+          "max": 416
+        },
+        "firstChange": {
+          "n": 6,
+          "median": 29.5,
+          "p95": 32,
+          "max": 32
+        },
+        "interaction": {
+          "n": 6,
+          "median": 32.0,
+          "p95": 32,
+          "max": 32
+        },
+        "longTasks": 0
+      }
+    },
+    {
+      "vp": 390,
+      "profile": "unthrottled",
+      "id": "shop.home\u2192customers",
+      "old": {
+        "content": {
+          "n": 6,
+          "median": 241.0,
+          "p95": 275,
+          "max": 275
+        },
+        "firstChange": {
+          "n": 6,
+          "median": 29.5,
+          "p95": 32,
+          "max": 32
+        },
+        "interaction": {
+          "n": 6,
+          "median": 32.0,
+          "p95": 32,
+          "max": 32
+        },
+        "longTasks": 0
+      },
+      "new": {
+        "content": {
+          "n": 6,
+          "median": 246.5,
+          "p95": 270,
+          "max": 270
+        },
+        "firstChange": {
+          "n": 6,
+          "median": 31.5,
+          "p95": 36,
+          "max": 36
+        },
+        "interaction": {
+          "n": 6,
+          "median": 32.0,
+          "p95": 32,
+          "max": 32
+        },
+        "longTasks": 0
+      }
+    },
+    {
+      "vp": 390,
+      "profile": "unthrottled",
+      "id": "shop.home\u2192purchases",
+      "old": {
+        "content": {
+          "n": 6,
+          "median": 82.0,
+          "p95": 88,
+          "max": 88
+        },
+        "firstChange": {
+          "n": 6,
+          "median": 3.0,
+          "p95": 6,
+          "max": 6
+        },
+        "interaction": {
+          "n": 6,
+          "median": 48.0,
+          "p95": 56,
+          "max": 56
+        },
+        "longTasks": 0
+      },
+      "new": {
+        "content": {
+          "n": 6,
+          "median": 79.5,
+          "p95": 82,
+          "max": 82
+        },
+        "firstChange": {
+          "n": 6,
+          "median": 3.5,
+          "p95": 6,
+          "max": 6
+        },
+        "interaction": {
+          "n": 6,
+          "median": 48.0,
+          "p95": 64,
+          "max": 64
+        },
+        "longTasks": 0
+      }
+    },
+    {
+      "vp": 390,
+      "profile": "unthrottled",
+      "id": "shop.home\u2192suppliers",
+      "old": {
+        "content": {
+          "n": 6,
+          "median": 142.0,
+          "p95": 151,
+          "max": 151
+        },
+        "firstChange": {
+          "n": 6,
+          "median": 30.5,
+          "p95": 32,
+          "max": 32
+        },
+        "interaction": {
+          "n": 6,
+          "median": 32.0,
+          "p95": 32,
+          "max": 32
+        },
+        "longTasks": 0
+      },
+      "new": {
+        "content": {
+          "n": 6,
+          "median": 146.0,
+          "p95": 151,
+          "max": 151
+        },
+        "firstChange": {
+          "n": 6,
+          "median": 34.0,
+          "p95": 35,
+          "max": 35
+        },
+        "interaction": {
+          "n": 6,
+          "median": 32.0,
+          "p95": 32,
+          "max": 32
+        },
+        "longTasks": 0
+      }
+    },
+    {
+      "vp": 390,
+      "profile": "throttled",
+      "id": "shop.customers\u2192bills",
+      "old": {
+        "content": {
+          "n": 6,
+          "median": 532.5,
+          "p95": 901,
+          "max": 901
+        },
+        "firstChange": {
+          "n": 6,
+          "median": 30.0,
+          "p95": 30,
+          "max": 30
+        },
+        "interaction": {
+          "n": 6,
+          "median": 32.0,
+          "p95": 32,
+          "max": 32
+        },
+        "longTasks": 0
+      },
+      "new": {
+        "content": {
+          "n": 6,
+          "median": 546.5,
+          "p95": 908,
+          "max": 908
+        },
+        "firstChange": {
+          "n": 6,
+          "median": 30.0,
+          "p95": 32,
+          "max": 32
+        },
+        "interaction": {
+          "n": 6,
+          "median": 32.0,
+          "p95": 32,
+          "max": 32
+        },
+        "longTasks": 0
+      }
+    },
+    {
+      "vp": 390,
+      "profile": "throttled",
+      "id": "shop.home\u2192customers",
+      "old": {
+        "content": {
+          "n": 6,
+          "median": 537.0,
+          "p95": 748,
+          "max": 748
+        },
+        "firstChange": {
+          "n": 6,
+          "median": 32.0,
+          "p95": 33,
+          "max": 33
+        },
+        "interaction": {
+          "n": 6,
+          "median": 32.0,
+          "p95": 32,
+          "max": 32
+        },
+        "longTasks": 0
+      },
+      "new": {
+        "content": {
+          "n": 6,
+          "median": 553.0,
+          "p95": 761,
+          "max": 761
+        },
+        "firstChange": {
+          "n": 6,
+          "median": 31.5,
+          "p95": 33,
+          "max": 33
+        },
+        "interaction": {
+          "n": 6,
+          "median": 32.0,
+          "p95": 32,
+          "max": 32
+        },
+        "longTasks": 0
+      }
+    },
+    {
+      "vp": 390,
+      "profile": "throttled",
+      "id": "shop.home\u2192purchases",
+      "old": {
+        "content": {
+          "n": 6,
+          "median": 540.0,
+          "p95": 930,
+          "max": 930
+        },
+        "firstChange": {
+          "n": 6,
+          "median": 7.0,
+          "p95": 12,
+          "max": 12
+        },
+        "interaction": {
+          "n": 6,
+          "median": 48.0,
+          "p95": 64,
+          "max": 64
+        },
+        "longTasks": 0
+      },
+      "new": {
+        "content": {
+          "n": 6,
+          "median": 540.0,
+          "p95": 916,
+          "max": 916
+        },
+        "firstChange": {
+          "n": 6,
+          "median": 7.0,
+          "p95": 11,
+          "max": 11
+        },
+        "interaction": {
+          "n": 6,
+          "median": 48.0,
+          "p95": 48,
+          "max": 48
+        },
+        "longTasks": 0
+      }
+    },
+    {
+      "vp": 390,
+      "profile": "throttled",
+      "id": "shop.home\u2192suppliers",
+      "old": {
+        "content": {
+          "n": 6,
+          "median": 528.0,
+          "p95": 549,
+          "max": 549
+        },
+        "firstChange": {
+          "n": 6,
+          "median": 30.0,
+          "p95": 31,
+          "max": 31
+        },
+        "interaction": {
+          "n": 6,
+          "median": 32.0,
+          "p95": 32,
+          "max": 32
+        },
+        "longTasks": 0
+      },
+      "new": {
+        "content": {
+          "n": 6,
+          "median": 544.0,
+          "p95": 580,
+          "max": 580
+        },
+        "firstChange": {
+          "n": 6,
+          "median": 30.0,
+          "p95": 31,
+          "max": 31
+        },
+        "interaction": {
+          "n": 6,
+          "median": 32.0,
+          "p95": 32,
+          "max": 32
+        },
+        "longTasks": 0
+      }
+    },
+    {
+      "vp": 1280,
+      "profile": "unthrottled",
+      "id": "shop.customers\u2192bills",
+      "old": {
+        "content": {
+          "n": 6,
+          "median": 96.0,
+          "p95": 106,
+          "max": 106
+        },
+        "firstChange": {
+          "n": 6,
+          "median": 29.5,
+          "p95": 32,
+          "max": 32
+        },
+        "interaction": {
+          "n": 6,
+          "median": 16.0,
+          "p95": 16,
+          "max": 16
+        },
+        "longTasks": 0
+      },
+      "new": {
+        "content": {
+          "n": 6,
+          "median": 103.5,
+          "p95": 115,
+          "max": 115
+        },
+        "firstChange": {
+          "n": 6,
+          "median": 30.5,
+          "p95": 34,
+          "max": 34
+        },
+        "interaction": {
+          "n": 6,
+          "median": 16.0,
+          "p95": 16,
+          "max": 16
+        },
+        "longTasks": 0
+      }
+    },
+    {
+      "vp": 1280,
+      "profile": "unthrottled",
+      "id": "shop.home\u2192customers",
+      "old": {
+        "content": {
+          "n": 6,
+          "median": 530.5,
+          "p95": 544,
+          "max": 544
+        },
+        "firstChange": {
+          "n": 6,
+          "median": 27.0,
+          "p95": 29,
+          "max": 29
+        },
+        "interaction": {
+          "n": 6,
+          "median": 16.0,
+          "p95": 16,
+          "max": 16
+        },
+        "longTasks": 0
+      },
+      "new": {
+        "content": {
+          "n": 6,
+          "median": 538.0,
+          "p95": 550,
+          "max": 550
+        },
+        "firstChange": {
+          "n": 6,
+          "median": 30.0,
+          "p95": 33,
+          "max": 33
+        },
+        "interaction": {
+          "n": 6,
+          "median": 16.0,
+          "p95": 16,
+          "max": 16
+        },
+        "longTasks": 0
+      }
+    },
+    {
+      "vp": 1280,
+      "profile": "unthrottled",
+      "id": "shop.home\u2192purchases",
+      "old": {
+        "content": {
+          "n": 6,
+          "median": 382.5,
+          "p95": 426,
+          "max": 426
+        },
+        "firstChange": {
+          "n": 6,
+          "median": 27.5,
+          "p95": 31,
+          "max": 31
+        },
+        "interaction": {
+          "n": 6,
+          "median": 16.0,
+          "p95": 16,
+          "max": 16
+        },
+        "longTasks": 0
+      },
+      "new": {
+        "content": {
+          "n": 6,
+          "median": 385.0,
+          "p95": 417,
+          "max": 417
+        },
+        "firstChange": {
+          "n": 6,
+          "median": 27.0,
+          "p95": 31,
+          "max": 31
+        },
+        "interaction": {
+          "n": 6,
+          "median": 16.0,
+          "p95": 16,
+          "max": 16
+        },
+        "longTasks": 0
+      }
+    },
+    {
+      "vp": 1280,
+      "profile": "unthrottled",
+      "id": "shop.home\u2192suppliers",
+      "old": {
+        "content": {
+          "n": 6,
+          "median": 442.5,
+          "p95": 453,
+          "max": 453
+        },
+        "firstChange": {
+          "n": 6,
+          "median": 25.5,
+          "p95": 28,
+          "max": 28
+        },
+        "interaction": {
+          "n": 6,
+          "median": 16.0,
+          "p95": 16,
+          "max": 16
+        },
+        "longTasks": 0
+      },
+      "new": {
+        "content": {
+          "n": 6,
+          "median": 447.5,
+          "p95": 455,
+          "max": 455
+        },
+        "firstChange": {
+          "n": 6,
+          "median": 30.0,
+          "p95": 31,
+          "max": 31
+        },
+        "interaction": {
+          "n": 6,
+          "median": 16.0,
+          "p95": 16,
+          "max": 16
+        },
+        "longTasks": 0
+      }
+    },
+    {
+      "vp": 1280,
+      "profile": "throttled",
+      "id": "shop.customers\u2192bills",
+      "old": {
+        "content": {
+          "n": 6,
+          "median": 541.5,
+          "p95": 928,
+          "max": 928
+        },
+        "firstChange": {
+          "n": 6,
+          "median": 33.5,
+          "p95": 36,
+          "max": 36
+        },
+        "interaction": {
+          "n": 6,
+          "median": 16.0,
+          "p95": 24,
+          "max": 24
+        },
+        "longTasks": 0
+      },
+      "new": {
+        "content": {
+          "n": 6,
+          "median": 555.0,
+          "p95": 927,
+          "max": 927
+        },
+        "firstChange": {
+          "n": 6,
+          "median": 31.5,
+          "p95": 33,
+          "max": 33
+        },
+        "interaction": {
+          "n": 6,
+          "median": 16.0,
+          "p95": 16,
+          "max": 16
+        },
+        "longTasks": 0
+      }
+    },
+    {
+      "vp": 1280,
+      "profile": "throttled",
+      "id": "shop.home\u2192customers",
+      "old": {
+        "content": {
+          "n": 6,
+          "median": 846.0,
+          "p95": 1079,
+          "max": 1079
+        },
+        "firstChange": {
+          "n": 6,
+          "median": 27.0,
+          "p95": 27,
+          "max": 27
+        },
+        "interaction": {
+          "n": 6,
+          "median": 16.0,
+          "p95": 16,
+          "max": 16
+        },
+        "longTasks": 0
+      },
+      "new": {
+        "content": {
+          "n": 6,
+          "median": 856.5,
+          "p95": 1100,
+          "max": 1100
+        },
+        "firstChange": {
+          "n": 6,
+          "median": 26.5,
+          "p95": 27,
+          "max": 27
+        },
+        "interaction": {
+          "n": 6,
+          "median": 16.0,
+          "p95": 16,
+          "max": 16
+        },
+        "longTasks": 0
+      }
+    },
+    {
+      "vp": 1280,
+      "profile": "throttled",
+      "id": "shop.home\u2192purchases",
+      "old": {
+        "content": {
+          "n": 6,
+          "median": 834.0,
+          "p95": 1249,
+          "max": 1249
+        },
+        "firstChange": {
+          "n": 6,
+          "median": 26.5,
+          "p95": 28,
+          "max": 28
+        },
+        "interaction": {
+          "n": 6,
+          "median": 16.0,
+          "p95": 16,
+          "max": 16
+        },
+        "longTasks": 0
+      },
+      "new": {
+        "content": {
+          "n": 6,
+          "median": 833.0,
+          "p95": 1239,
+          "max": 1239
+        },
+        "firstChange": {
+          "n": 6,
+          "median": 26.0,
+          "p95": 28,
+          "max": 28
+        },
+        "interaction": {
+          "n": 6,
+          "median": 16.0,
+          "p95": 16,
+          "max": 16
+        },
+        "longTasks": 0
+      }
+    },
+    {
+      "vp": 1280,
+      "profile": "throttled",
+      "id": "shop.home\u2192suppliers",
+      "old": {
+        "content": {
+          "n": 6,
+          "median": 846.0,
+          "p95": 866,
+          "max": 866
+        },
+        "firstChange": {
+          "n": 6,
+          "median": 26.5,
+          "p95": 27,
+          "max": 27
+        },
+        "interaction": {
+          "n": 6,
+          "median": 16.0,
+          "p95": 16,
+          "max": 16
+        },
+        "longTasks": 0
+      },
+      "new": {
+        "content": {
+          "n": 6,
+          "median": 864.0,
+          "p95": 894,
+          "max": 894
+        },
+        "firstChange": {
+          "n": 6,
+          "median": 25.5,
+          "p95": 27,
+          "max": 27
+        },
+        "interaction": {
+          "n": 6,
+          "median": 16.0,
+          "p95": 16,
+          "max": 16
+        },
+        "longTasks": 0
+      }
+    }
+  ]
+}

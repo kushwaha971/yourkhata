@@ -1,5 +1,7 @@
 {
   "//": [
+    "21 Oct2026 R-DEC-31 Shop viewport group1 final: 5 additional rounding-sized route ceilings use measured+0.3KB for shared compact count/short-height and pager state support. No default/framework/shared ceiling increase. Actual changed layouts: Shop Customers/Suppliers/Bills; other modules remain pending. See viewport-shop-registers report.",
+    "21 Oct2026 R-DEC-31 Shop viewport group1: reusable resetScrollOnPageChange preserves Customer/Supplier append position; existing pagers/32px chips retained. One rounded Library copies first-load ceiling324.3 was exceeded by less than0.1KB through shared grid bytes; measured324.3+0.3=324.6. No Library layout/workflow migration claimed and no default/framework/shared ceiling raised. Evidence: docs/performance/2026-10-21-viewport-shop-registers.md.",
     "21 Oct2026 purchase register (R-DEC-30): opt-in UbViewportPageShell owns visual-height measurement separately from ordinary page rendering; shared DataGrid row scroll/persistent pager/page reset and compact RecordTotals are reused. 61 exceeded ceiling scalars only use measured+0.3KB; shared app 114.2KB/framework 127.3KB, no package/default/framework increase. First unsplit measurement raised157 scalars; extracted viewport hook avoids making ordinary pages import that measurement implementation. Exact final route costs/A-B: docs/performance/2026-10-21-p5-purchase-register.md.",
     "21 Oct2026 purchase editor completion: joined supplier context/lazy contact creation, context/Send recovery, immutable edit-route guard, canonical cache invalidation after recovered writes, portal submit isolation and quantity intent preservation with central validation/return safeguard. Shared app114.2 KB vs113.7; framework127.3 unchanged. Editor measurements and exact deltas are in the purchase-editor report. Only exceeded ceilings use measured+0.3KB; versus step5, 98 route/first-load scalars and the shared-app scalar change. No default/framework ceiling, package, duplicate engine or frozen backend contract change.",
     "21 Oct2026 purchase finish recovery: immutable scoped Record intent, GET-before-replay, explicit payment403 credit choice, failed-load retry and pending payment locks. Editors167.6 KB route/408.6 first load. Only the15 exceeded purchase route/first-load scalars use measured+0.3 KB. Shared113.7/framework127.3 unchanged; no new package or financial engine. See purchase-editor report step5.",
@@ -1531,7 +1533,7 @@
       "firstLoad": 333.3
     },
     "/parties/[id]": {
-      "route": 113.6,
+      "route": 113.9,
       "firstLoad": 355.1
     },
     "/parties/tags": {
@@ -1551,7 +1553,7 @@
       "firstLoad": 296.9
     },
     "/settings/plan": {
-      "route": 54.3,
+      "route": 54.6,
       "firstLoad": 295.8
     },
     "/settings": {
@@ -1579,7 +1581,7 @@
       "firstLoad": 360
     },
     "/items/masters": {
-      "route": 56.6,
+      "route": 56.9,
       "firstLoad": 298.1
     },
     "/items": {
@@ -1587,7 +1589,7 @@
       "firstLoad": 344
     },
     "/items/[id]": {
-      "route": 108.9,
+      "route": 109.2,
       "firstLoad": 350.4
     },
     "/stock/low": {
@@ -1643,7 +1645,7 @@
       "firstLoad": 274.3
     },
     "/settings/data": {
-      "route": 63.2,
+      "route": 63.5,
       "firstLoad": 304.7
     },
     "/purchases/bills/[id]": {
@@ -1704,7 +1706,7 @@
     },
     "/library/copies": {
       "route": 83.2,
-      "firstLoad": 324.3
+      "firstLoad": 324.6
     },
     "/library/copies/[copyId]": {
       "route": 77.8,

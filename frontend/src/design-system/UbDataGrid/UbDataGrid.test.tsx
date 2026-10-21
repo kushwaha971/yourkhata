@@ -943,3 +943,38 @@ it('starts a new page at the first row without scrolling the document', () => {
   rerender(<UbDataGrid {...props} page={{ ...PAGE, page: 2, total: 50, totalPages: 2 }} />);
   expect(region.scrollTop).toBe(0);
 });
+
+it('preserves the row offset when a mobile register appends another page', () => {
+  /** R-DEC-31 defect: resetting on API page changes jumps appended Customer/Supplier lists back to the top. */
+  const props = {
+    rows: ROWS,
+    columns: COLUMNS,
+    rowId: (row: Row) => row.id,
+    rowName: (row: Row) => row.name,
+    state: 'rows' as const,
+    labels: LABELS,
+    emptyStates: EMPTY,
+    caption: 'Append register',
+    onPageChange: jest.fn(),
+    tier: 'cards' as const,
+    fillHeight: true,
+    resetScrollOnPageChange: false,
+    scrollResetKey: 'all',
+  };
+  const { rerender } = render(
+    <UbDataGrid {...props} page={{ ...PAGE, total: 50, totalPages: 2 }} />
+  );
+  const region = screen.getByRole('region', { name: 'Append register' });
+  region.scrollTop = 180;
+  rerender(<UbDataGrid {...props} page={{ ...PAGE, page: 2, total: 50, totalPages: 2 }} />);
+  expect(region.scrollTop).toBe(180);
+  // A new search/filter starts a different result set, even in append mode.
+  rerender(
+    <UbDataGrid
+      {...props}
+      scrollResetKey="new-search"
+      page={{ ...PAGE, total: 50, totalPages: 2 }}
+    />
+  );
+  expect(region.scrollTop).toBe(0);
+});

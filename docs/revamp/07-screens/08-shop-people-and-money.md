@@ -455,3 +455,6 @@ Every area is above 8.6; the weakest are Payments list (8.69) and Cash book (8.7
 - **Q1 · Settling dual-role people** — record it as two linked payments (design proposal) / a new settlement record / don't offer it. Recommendation: two linked payments, written up as BP-08 before any build.
 - **Q2 · Shop person page main action** — docked Receive payment + New bill (recommended) / Receive payment only / keep it in ⋯.
 - **Q3 · After a payment saves** — keep the saved panel with Share receipt (works today, recommended now) / close and show a toast with Share receipt (needs the snackbar action slot, shared with Udhaar undo).
+
+
+Tracking follow-up (21 Oct2026, R-DEC-31/32): Customer/Supplier §1–2 opts into shared bounded viewport rows with the existing paging/Show more outside. Manual append preserves position; new filters reset it.32px chip faces/44px phone targets and short/offline height verified. Report: `docs/performance/2026-10-21-viewport-shop-registers.md` (522 final frames,416 suites/4,648 tests). This layout follow-up does not supersede the original full-feature gaps or certify other modules.

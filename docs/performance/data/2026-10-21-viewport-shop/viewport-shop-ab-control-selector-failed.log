@@ -1,0 +1,154 @@
+
+=== 390px — signing in as scale@digikhaato.test
+nav   390 unthrottled r1 shop.home→customers: first change 21 (childList body) · url 32 · content 237 · loading UI 21 · prefetched 2 · nav RSC 54→70 · js done 77 · after: rsc 1 (+1 prefetch), api 2, js 4 · long 0/0 · inp 32
+nav   390 unthrottled r1 shop.customers→bills: first change 21 (childList body) · url 31 · content 106 · loading UI 21 · prefetched 2 · nav RSC 58→70 · js done 94 · after: rsc 1 (+1 prefetch), api 1, js 9 · long 0/0 · inp 32
+nav   390 unthrottled r1 shop.home→suppliers: first change 23 (childList body) · url 37 · content 141 · loading UI 23 · prefetched 2 · nav RSC 54→71 · js done 75 · after: rsc 1 (+1 prefetch), api 2, js 4 · long 0/0 · inp 32
+nav   390 unthrottled r1 library.home→members: ERROR locator.waitFor: Timeout 20000ms exceeded.
+Call log:
+[2m  - waiting for locator('nav a[href="/library/members"]').filter({ visible: true }).first() to be visib
+nav   390 unthrottled r2 shop.home→customers: first change 32 (childList body) · url 32 · content 234 · loading UI 32 · prefetched 2 · nav RSC 55→75 · js done 74 · after: rsc 1 (+1 prefetch), api 2, js 4 · long 0/0 · inp 32
+nav   390 unthrottled r2 shop.customers→bills: first change 28 (childList body) · url 36 · content 101 · loading UI 28 · prefetched 2 · nav RSC 56→72 · js done 87 · after: rsc 1 (+1 prefetch), api 1, js 9 · long 0/0 · inp 32
+nav   390 unthrottled r2 shop.home→suppliers: first change 31 (childList body) · url 35 · content 146 · loading UI 31 · prefetched 2 · nav RSC 56→74 · js done 73 · after: rsc 1 (+1 prefetch), api 2, js 4 · long 0/0 · inp 32
+nav   390 unthrottled r2 library.home→members: ERROR locator.waitFor: Timeout 20000ms exceeded.
+Call log:
+[2m  - waiting for locator('nav a[href="/library/members"]').filter({ visible: true }).first() to be visib
+nav   390 unthrottled r3 shop.home→customers: first change 29 (childList body) · url 35 · content 235 · loading UI 29 · prefetched 2 · nav RSC 56→73 · js done 72 · after: rsc 1 (+1 prefetch), api 2, js 4 · long 0/0 · inp 32
+nav   390 unthrottled r3 shop.customers→bills: first change 26 (childList body) · url 33 · content 95 · loading UI 26 · prefetched 2 · nav RSC 56→72 · js done 87 · after: rsc 1 (+1 prefetch), api 1, js 9 · long 0/0 · inp 32
+nav   390 unthrottled r3 shop.home→suppliers: first change 25 (childList body) · url 33 · content 122 · loading UI 25 · prefetched 2 · nav RSC 52→70 · js done 70 · after: rsc 1 (+1 prefetch), api 2, js 4 · long 0/0 · inp 32
+nav   390 unthrottled r3 library.home→members: ERROR locator.waitFor: Timeout 20000ms exceeded.
+Call log:
+[2m  - waiting for locator('nav a[href="/library/members"]').filter({ visible: true }).first() to be visib
+nav   390 throttled r1 shop.home→customers: ERROR page.goto: Target page, context or browser has been closed
+Call log:
+[2m  - navigating to "http://localhost:3000/dashboard", waiting until "load"[22m
+
+nav   390 throttled r1 shop.customers→bills: ERROR page.goto: Target page, context or browser has been closed
+nav   390 throttled r1 shop.home→suppliers: ERROR page.goto: Target page, context or browser has been closed
+nav   390 throttled r1 library.home→members: ERROR page.goto: Target page, context or browser has been closed
+nav   390 throttled r2 shop.home→customers: ERROR page.goto: Target page, context or browser has been closed
+nav   390 throttled r2 shop.customers→bills: ERROR page.goto: Target page, context or browser has been closed
+nav   390 throttled r2 shop.home→suppliers: ERROR page.goto: Target page, context or browser has been closed
+nav   390 throttled r2 library.home→members: ERROR page.goto: Target page, context or browser has been closed
+nav   390 throttled r3 shop.home→customers: ERROR page.goto: Target page, context or browser has been closed
+nav   390 throttled r3 shop.customers→bills: ERROR page.goto: Target page, context or browser has been closed
+nav   390 throttled r3 shop.home→suppliers: ERROR page.goto: Target page, context or browser has been closed
+nav   390 throttled r3 library.home→members: ERROR page.goto: Target page, context or browser has been closed
+
+=== 1280px — signing in as scale@digikhaato.test
+node:internal/modules/run_main:107
+    triggerUncaughtException(
+    ^
+
+browserContext.newPage: Target page, context or browser has been closed
+Browser logs:
+
+<launching> /Applications/Google Chrome.app/Contents/MacOS/Google Chrome --disable-field-trial-config --disable-background-networking --disable-background-timer-throttling --disable-backgrounding-occluded-windows --disable-back-forward-cache --disable-breakpad --disable-client-side-phishing-detection --disable-component-extensions-with-background-pages --disable-component-update --no-default-browser-check --disable-default-apps --disable-dev-shm-usage --disable-extensions --disable-features=AcceptCHFrame,AvoidUnnecessaryBeforeUnloadCheckSync,DestroyProfileOnBrowserClose,DialMediaRouteProvider,GlobalMediaControls,HttpsUpgrades,LensOverlay,MediaRouter,PaintHolding,ThirdPartyStoragePartitioning,Translate,AutoDeElevate,RenderDocument --enable-features=CDPScreenshotNewSurface --allow-pre-commit-input --disable-hang-monitor --disable-ipc-flooding-protection --disable-popup-blocking --disable-prompt-on-repost --disable-renderer-backgrounding --force-color-profile=srgb --metrics-recording-only --no-first-run --password-store=basic --use-mock-keychain --no-service-autorun --export-tagged-pdf --disable-search-engine-choice-screen --unsafely-disable-devtools-self-xss-warnings --edge-skip-compat-layer-relaunch --enable-automation --enable-unsafe-swiftshader --headless --hide-scrollbars --mute-audio --blink-settings=primaryHoverType=2,availableHoverTypes=2,primaryPointerType=4,availablePointerTypes=4 --no-sandbox --user-data-dir=/var/folders/yj/ymgdwvjj1t5br3k8knywwr6m0000gn/T/playwright_chromiumdev_profile-P2TrL2 --remote-debugging-pipe --no-startup-window
+<launched> pid=26393
+[pid=26393][err] Trying to load the allocator multiple times. This is *not* supported.
+[pid=26393][err] [26399:2811426:1021/215614.595693:ERROR:ui/display/mac/cv_display_link_mac.mm:188] CVDisplayLinkCreateWithCGDisplay failed. CVReturn: -6670
+[pid=26393][err] [26399:2811505:1021/215614.595933:ERROR:ui/display/mac/cv_display_link_mac.mm:188] CVDisplayLinkCreateWithCGDisplay failed. CVReturn: -6670
+[pid=26393][err] [26399:2811426:1021/215614.597492:ERROR:ui/display/mac/cv_display_link_mac.mm:188] CVDisplayLinkCreateWithCGDisplay failed. CVReturn: -6670
+[pid=26393][err] [26399:2811505:1021/215614.597522:ERROR:ui/display/mac/cv_display_link_mac.mm:188] CVDisplayLinkCreateWithCGDisplay failed. CVReturn: -6670
+[pid=26393][err] [26399:2811426:1021/215614.597869:ERROR:ui/display/mac/cv_display_link_mac.mm:188] CVDisplayLinkCreateWithCGDisplay failed. CVReturn: -6670
+[pid=26393][err] [26399:2811505:1021/215614.597911:ERROR:ui/display/mac/cv_display_link_mac.mm:188] CVDisplayLinkCreateWithCGDisplay failed. CVReturn: -6670
+[pid=26393][err] [26399:2811426:1021/215614.597999:ERROR:ui/display/mac/cv_display_link_mac.mm:188] CVDisplayLinkCreateWithCGDisplay failed. CVReturn: -6670
+[pid=26393][err] [26399:2811505:1021/215614.598021:ERROR:ui/display/mac/cv_display_link_mac.mm:188] CVDisplayLinkCreateWithCGDisplay failed. CVReturn: -6670
+[pid=26393][err] [26399:2811426:1021/215614.598083:ERROR:ui/display/mac/cv_display_link_mac.mm:188] CVDisplayLinkCreateWithCGDisplay failed. CVReturn: -6670
+[pid=26393][err] [26399:2811505:1021/215614.598102:ERROR:ui/display/mac/cv_display_link_mac.mm:188] CVDisplayLinkCreateWithCGDisplay failed. CVReturn: -6670
+[pid=26393][err] [26399:2811426:1021/215616.222736:ERROR:ui/display/mac/cv_display_link_mac.mm:188] CVDisplayLinkCreateWithCGDisplay failed. CVReturn: -6670
+[pid=26393][err] [26399:2811505:1021/215616.222781:ERROR:ui/display/mac/cv_display_link_mac.mm:188] CVDisplayLinkCreateWithCGDisplay failed. CVReturn: -6670
+[pid=26393][err] [26399:2811426:1021/215616.223573:ERROR:ui/display/mac/cv_display_link_mac.mm:188] CVDisplayLinkCreateWithCGDisplay failed. CVReturn: -6670
+[pid=26393][err] [26399:2811505:1021/215616.223605:ERROR:ui/display/mac/cv_display_link_mac.mm:188] CVDisplayLinkCreateWithCGDisplay failed. CVReturn: -6670
+[pid=26393][err] [26399:2811426:1021/215616.224255:ERROR:ui/display/mac/cv_display_link_mac.mm:188] CVDisplayLinkCreateWithCGDisplay failed. CVReturn: -6670
+[pid=26393][err] [26399:2811505:1021/215616.224307:ERROR:ui/display/mac/cv_display_link_mac.mm:188] CVDisplayLinkCreateWithCGDisplay failed. CVReturn: -6670
+[pid=26393][err] [26399:2811426:1021/215616.224394:ERROR:ui/display/mac/cv_display_link_mac.mm:188] CVDisplayLinkCreateWithCGDisplay failed. CVReturn: -6670
+[pid=26393][err] [26399:2811505:1021/215616.224449:ERROR:ui/display/mac/cv_display_link_mac.mm:188] CVDisplayLinkCreateWithCGDisplay failed. CVReturn: -6670
+[pid=26393][err] [26399:2811426:1021/215616.224524:ERROR:ui/display/mac/cv_display_link_mac.mm:188] CVDisplayLinkCreateWithCGDisplay failed. CVReturn: -6670
+[pid=26393][err] [26399:2811505:1021/215616.224551:ERROR:ui/display/mac/cv_display_link_mac.mm:188] CVDisplayLinkCreateWithCGDisplay failed. CVReturn: -6670
+[pid=26393][err] [26399:2811426:1021/215616.306120:ERROR:ui/display/mac/cv_display_link_mac.mm:188] CVDisplayLinkCreateWithCGDisplay failed. CVReturn: -6670
+[pid=26393][err] [26399:2811505:1021/215616.306165:ERROR:ui/display/mac/cv_display_link_mac.mm:188] CVDisplayLinkCreateWithCGDisplay failed. CVReturn: -6670
+[pid=26393][err] [26399:2811426:1021/215616.307798:ERROR:ui/display/mac/cv_display_link_mac.mm:188] CVDisplayLinkCreateWithCGDisplay failed. CVReturn: -6670
+[pid=26393][err] [26399:2811505:1021/215616.307836:ERROR:ui/display/mac/cv_display_link_mac.mm:188] CVDisplayLinkCreateWithCGDisplay failed. CVReturn: -6670
+[pid=26393][err] [26399:2811426:1021/215616.308910:ERROR:ui/display/mac/cv_display_link_mac.mm:188] CVDisplayLinkCreateWithCGDisplay failed. CVReturn: -6670
+[pid=26393][err] [26399:2811505:1021/215616.308944:ERROR:ui/display/mac/cv_display_link_mac.mm:188] CVDisplayLinkCreateWithCGDisplay failed. CVReturn: -6670
+[pid=26393][err] [26399:2811426:1021/215616.309051:ERROR:ui/display/mac/cv_display_link_mac.mm:188] CVDisplayLinkCreateWithCGDisplay failed. CVReturn: -6670
+[pid=26393][err] [26399:2811505:1021/215616.309078:ERROR:ui/display/mac/cv_display_link_mac.mm:188] CVDisplayLinkCreateWithCGDisplay failed. CVReturn: -6670
+[pid=26393][err] [26399:2811426:1021/215616.309174:ERROR:ui/display/mac/cv_display_link_mac.mm:188] CVDisplayLinkCreateWithCGDisplay failed. CVReturn: -6670
+[pid=26393][err] [26399:2811505:1021/215616.309223:ERROR:ui/display/mac/cv_display_link_mac.mm:188] CVDisplayLinkCreateWithCGDisplay failed. CVReturn: -6670
+[pid=26393][err] Created TensorFlow Lite XNNPACK delegate for CPU.
+[pid=26393][err] [26481:2812129:1021/215633.677591:VERBOSE1:chrome/updater/event_history.cc:176] Failed to set permissions on /Library/Application Support/Google/GoogleUpdater/updater_history.jsonl: Operation not permitted (1)
+[pid=26393][err] [26481:2812129:1021/215633.679112:VERBOSE1:chrome/updater/updater.cc:375] Version: 157.0.8089.0, opt, ARM_64, command line: /Library/Application Support/Google/GoogleUpdater/157.0.8089.0/GoogleUpdater.app/Contents/MacOS/GoogleUpdater --wake-all --system --enable-logging --vmodule=*/components/update_client/*=2,*/chrome/enterprise_companion/*=2,*/chrome/updater/*=2
+[pid=26393][err] [26481:2812129:1021/215633.679134:VERBOSE1:chrome/updater/updater.cc:378] OS version: 15.7.3, arch: arm64, System uptime (seconds): 133594, parent pid: 26393
+[pid=26393][err] [26481:2812129:1021/215633.680668:VERBOSE1:chrome/updater/updater.cc:383] Available disk space in install directory (/Library/Application Support/Google/GoogleUpdater): 15774101504B (14.691GiB) / 245107195904B (228.274GiB)
+[pid=26393][err] [26481:2812129:1021/215633.680691:VERBOSE1:chrome/updater/updater.cc:387] Available disk space in temporary directory (/var/folders/yj/ymgdwvjj1t5br3k8knywwr6m0000gn/T/): 15774101504B (14.691GiB) / 245107195904B (228.274GiB)
+[pid=26393][err] [26481:2812129:1021/215633.680725:VERBOSE1:chrome/updater/event_history.cc:239] Failed to write history event: logging not initialized
+[pid=26393][err] [26483:2812133:1021/215633.683957:VERBOSE1:chrome/updater/event_history.cc:176] Failed to set permissions on /Library/Application Support/Google/GoogleUpdater/updater_history.jsonl: Operation not permitted (1)
+[pid=26393][err] [26483:2812133:1021/215633.684959:VERBOSE1:chrome/updater/updater.cc:375] Version: 157.0.8089.0, opt, ARM_64, command line: /Library/Application Support/Google/GoogleUpdater/157.0.8089.0/GoogleUpdater.app/Contents/MacOS/GoogleUpdater --crash-handler --system --database=/Library/Application Support/Google/GoogleUpdater/157.0.8089.0/Crashpad --url=https://clients2.google.com/cr/report --annotation=prod=Update4 --annotation=ver=157.0.8089.0 --handshake-fd=4 --enable-logging --vmodule=*/components/update_client/*=2,*/chrome/enterprise_companion/*=2,*/chrome/updater/*=2
+[pid=26393][err] [26483:2812133:1021/215633.684989:VERBOSE1:chrome/updater/updater.cc:378] OS version: 15.7.3, arch: arm64, System uptime (seconds): 133594, parent pid: 1
+[pid=26393][err] [26483:2812133:1021/215633.686144:VERBOSE1:chrome/updater/updater.cc:383] Available disk space in install directory (/Library/Application Support/Google/GoogleUpdater): 15774101504B (14.691GiB) / 245107195904B (228.274GiB)
+[pid=26393][err] [26483:2812133:1021/215633.686163:VERBOSE1:chrome/updater/updater.cc:387] Available disk space in temporary directory (/var/folders/yj/ymgdwvjj1t5br3k8knywwr6m0000gn/T/): 15774101504B (14.691GiB) / 245107195904B (228.274GiB)
+[pid=26393][err] [26483:2812133:1021/215633.686190:VERBOSE1:chrome/updater/event_history.cc:239] Failed to write history event: logging not initialized
+[pid=26393][err] [26483:2812133:1021/215633.686216:ERROR:third_party/crashpad/crashpad/client/crash_report_database_mac.mm:109] mkdir /Library/Application Support/Google/GoogleUpdater/157.0.8089.0/Crashpad/new: Permission denied (13)
+[pid=26393][err] [26483:2812133:1021/215633.686238:VERBOSE1:chrome/updater/event_history.cc:239] Failed to write history event: logging not initialized
+[pid=26393][err] [26483:2812133:1021/215633.686244:VERBOSE1:chrome/updater/updater.cc:420] UpdaterMain (--crash-handler) returned 1.
+[pid=26393][err] [26481:2812129:1021/215633.686542:ERROR:third_party/crashpad/crashpad/util/file/file_io.cc:103] ReadExactly: expected 8, observed 0
+[pid=26393][err] [26481:2812129:1021/215633.686599:VERBOSE1:chrome/updater/crash_reporter.cc:119] Failed to start handler.
+[pid=26393][err] [26481:2812129:1021/215633.686654:ERROR:third_party/crashpad/crashpad/client/crash_report_database_mac.mm:109] mkdir /Library/Application Support/Google/GoogleUpdater/157.0.8089.0/Crashpad/new: Permission denied (13)
+[pid=26393][err] [26481:2812129:1021/215633.686668:ERROR:chrome/updater/crash_client.cc:77] Failed to initialize Crashpad database.
+[pid=26393][err] [26481:2812129:1021/215633.686677:VERBOSE1:chrome/updater/updater.cc:101] Crash reporting is not available.
+[pid=26393][err] [26481:2812138:1021/215633.686942:VERBOSE1:chrome/updater/app/app_wakeall.cc:58] Launching `/Library/Application Support/Google/GoogleUpdater/157.0.8089.0/GoogleUpdater.app/Contents/MacOS/GoogleUpdater --wake --system`
+[pid=26393][err] [26484:2812144:1021/215633.690127:VERBOSE1:chrome/updater/event_history.cc:176] Failed to set permissions on /Library/Application Support/Google/GoogleUpdater/updater_history.jsonl: Operation not permitted (1)
+[pid=26393][err] [26484:2812144:1021/215633.691175:VERBOSE1:chrome/updater/updater.cc:375] Version: 157.0.8089.0, opt, ARM_64, command line: /Library/Application Support/Google/GoogleUpdater/157.0.8089.0/GoogleUpdater.app/Contents/MacOS/GoogleUpdater --wake --system --enable-logging --vmodule=*/components/update_client/*=2,*/chrome/enterprise_companion/*=2,*/chrome/updater/*=2
+[pid=26393][err] [26484:2812144:1021/215633.691190:VERBOSE1:chrome/updater/updater.cc:378] OS version: 15.7.3, arch: arm64, System uptime (seconds): 133594, parent pid: 26481
+[pid=26393][err] [26484:2812144:1021/215633.692379:VERBOSE1:chrome/updater/updater.cc:383] Available disk space in install directory (/Library/Application Support/Google/GoogleUpdater): 15774101504B (14.691GiB) / 245107195904B (228.274GiB)
+[pid=26393][err] [26484:2812144:1021/215633.692398:VERBOSE1:chrome/updater/updater.cc:387] Available disk space in temporary directory (/var/folders/yj/ymgdwvjj1t5br3k8knywwr6m0000gn/T/): 15774101504B (14.691GiB) / 245107195904B (228.274GiB)
+[pid=26393][err] [26484:2812144:1021/215633.692434:VERBOSE1:chrome/updater/event_history.cc:239] Failed to write history event: logging not initialized
+[pid=26393][err] [26486:2812148:1021/215633.695843:VERBOSE1:chrome/updater/event_history.cc:176] Failed to set permissions on /Library/Application Support/Google/GoogleUpdater/updater_history.jsonl: Operation not permitted (1)
+[pid=26393][err] [26486:2812148:1021/215633.696919:VERBOSE1:chrome/updater/updater.cc:375] Version: 157.0.8089.0, opt, ARM_64, command line: /Library/Application Support/Google/GoogleUpdater/157.0.8089.0/GoogleUpdater.app/Contents/MacOS/GoogleUpdater --crash-handler --system --database=/Library/Application Support/Google/GoogleUpdater/157.0.8089.0/Crashpad --url=https://clients2.google.com/cr/report --annotation=prod=Update4 --annotation=ver=157.0.8089.0 --handshake-fd=4 --enable-logging --vmodule=*/components/update_client/*=2,*/chrome/enterprise_companion/*=2,*/chrome/updater/*=2
+[pid=26393][err] [26486:2812148:1021/215633.696936:VERBOSE1:chrome/updater/updater.cc:378] OS version: 15.7.3, arch: arm64, System uptime (seconds): 133594, parent pid: 1
+[pid=26393][err] [26486:2812148:1021/215633.698020:VERBOSE1:chrome/updater/updater.cc:383] Available disk space in install directory (/Library/Application Support/Google/GoogleUpdater): 15774101504B (14.691GiB) / 245107195904B (228.274GiB)
+[pid=26393][err] [26486:2812148:1021/215633.698036:VERBOSE1:chrome/updater/updater.cc:387] Available disk space in temporary directory (/var/folders/yj/ymgdwvjj1t5br3k8knywwr6m0000gn/T/): 15774101504B (14.691GiB) / 245107195904B (228.274GiB)
+[pid=26393][err] [26486:2812148:1021/215633.698064:VERBOSE1:chrome/updater/event_history.cc:239] Failed to write history event: logging not initialized
+[pid=26393][err] [26486:2812148:1021/215633.698090:ERROR:third_party/crashpad/crashpad/client/crash_report_database_mac.mm:109] mkdir /Library/Application Support/Google/GoogleUpdater/157.0.8089.0/Crashpad/new: Permission denied (13)
+[pid=26393][err] [26486:2812148:1021/215633.698109:VERBOSE1:chrome/updater/event_history.cc:239] Failed to write history event: logging not initialized
+[pid=26393][err] [26486:2812148:1021/215633.698116:VERBOSE1:chrome/updater/updater.cc:420] UpdaterMain (--crash-handler) returned 1.
+[pid=26393][err] [26484:2812144:1021/215633.698406:ERROR:third_party/crashpad/crashpad/util/file/file_io.cc:103] ReadExactly: expected 8, observed 0
+[pid=26393][err] [26484:2812144:1021/215633.698451:VERBOSE1:chrome/updater/crash_reporter.cc:119] Failed to start handler.
+[pid=26393][err] [26484:2812144:1021/215633.698484:ERROR:third_party/crashpad/crashpad/client/crash_report_database_mac.mm:109] mkdir /Library/Application Support/Google/GoogleUpdater/157.0.8089.0/Crashpad/new: Permission denied (13)
+[pid=26393][err] [26484:2812144:1021/215633.698495:ERROR:chrome/updater/crash_client.cc:77] Failed to initialize Crashpad database.
+[pid=26393][err] [26484:2812144:1021/215633.698504:VERBOSE1:chrome/updater/updater.cc:101] Crash reporting is not available.
+[pid=26393][err] [26484:2812144:1021/215633.698657:VERBOSE1:chrome/updater/ipc/update_service_internal_proxy_mojo.cc:61] Run
+[pid=26393][err] [26484:2812144:1021/215651.651558:VERBOSE1:chrome/updater/app/app.cc:52] Shutdown: 0
+[pid=26393][err] [26484:2812144:1021/215651.652653:VERBOSE1:chrome/updater/event_history.cc:239] Failed to write history event: logging not initialized
+[pid=26393][err] [26484:2812144:1021/215651.652754:VERBOSE1:chrome/updater/updater.cc:420] UpdaterMain (--wake) returned 0.
+[pid=26393][err] [26481:2812138:1021/215651.853258:VERBOSE1:chrome/updater/app/app_wakeall.cc:68] `/Library/Application Support/Google/GoogleUpdater/157.0.8089.0/GoogleUpdater.app/Contents/MacOS/GoogleUpdater --wake --system` exited 0
+[pid=26393][err] [26481:2812129:1021/215651.853692:VERBOSE1:chrome/updater/app/app.cc:52] Shutdown: 0
+[pid=26393][err] [26481:2812129:1021/215651.854881:VERBOSE1:chrome/updater/event_history.cc:239] Failed to write history event: logging not initialized
+[pid=26393][err] [26481:2812129:1021/215651.854999:VERBOSE1:chrome/updater/updater.cc:420] UpdaterMain (--wake-all) returned 0.
+[pid=26393][err] [26393:2811424:1021/215748.936061:ERROR:base/process/process_mac.cc:45] task_policy_set TASK_CATEGORY_POLICY: (os/kern) invalid argument (4)
+[pid=26393][err] [26393:2811424:1021/215748.936082:ERROR:base/process/process_mac.cc:90] task_policy_set TASK_SUPPRESSION_POLICY: (os/kern) invalid argument (4)
+[pid=26393][err] [26399:2811426:1021/215748.991867:ERROR:ui/display/mac/cv_display_link_mac.mm:188] CVDisplayLinkCreateWithCGDisplay failed. CVReturn: -6670
+[pid=26393][err] [26399:2811505:1021/215748.991919:ERROR:ui/display/mac/cv_display_link_mac.mm:188] CVDisplayLinkCreateWithCGDisplay failed. CVReturn: -6670
+[pid=26393][err] [26399:2811426:1021/215748.992587:ERROR:ui/display/mac/cv_display_link_mac.mm:188] CVDisplayLinkCreateWithCGDisplay failed. CVReturn: -6670
+[pid=26393][err] [26399:2811505:1021/215748.992621:ERROR:ui/display/mac/cv_display_link_mac.mm:188] CVDisplayLinkCreateWithCGDisplay failed. CVReturn: -6670
+[pid=26393][err] [26399:2811426:1021/215748.993040:ERROR:ui/display/mac/cv_display_link_mac.mm:188] CVDisplayLinkCreateWithCGDisplay failed. CVReturn: -6670
+[pid=26393][err] [26399:2811505:1021/215748.993072:ERROR:ui/display/mac/cv_display_link_mac.mm:188] CVDisplayLinkCreateWithCGDisplay failed. CVReturn: -6670
+[pid=26393][err] [26399:2811426:1021/215748.993179:ERROR:ui/display/mac/cv_display_link_mac.mm:188] CVDisplayLinkCreateWithCGDisplay failed. CVReturn: -6670
+[pid=26393][err] [26399:2811505:1021/215748.993205:ERROR:ui/display/mac/cv_display_link_mac.mm:188] CVDisplayLinkCreateWithCGDisplay failed. CVReturn: -6670
+[pid=26393][err] [26399:2811426:1021/215748.995333:ERROR:ui/display/mac/cv_display_link_mac.mm:188] CVDisplayLinkCreateWithCGDisplay failed. CVReturn: -6670
+[pid=26393][err] [26399:2811505:1021/215748.995380:ERROR:ui/display/mac/cv_display_link_mac.mm:188] CVDisplayLinkCreateWithCGDisplay failed. CVReturn: -6670
+[pid=26393][err] [26399:2811426:1021/215749.086191:ERROR:ui/display/mac/cv_display_link_mac.mm:188] CVDisplayLinkCreateWithCGDisplay failed. CVReturn: -6670
+[pid=26393][err] [26399:2811505:1021/215749.086233:ERROR:ui/display/mac/cv_display_link_mac.mm:188] CVDisplayLinkCreateWithCGDisplay failed. CVReturn: -6670
+[pid=26393][err] [26399:2811426:1021/215749.088714:ERROR:ui/display/mac/cv_display_link_mac.mm:188] CVDisplayLinkCreateWithCGDisplay failed. CVReturn: -6670
+[pid=26393][err] [26399:2811505:1021/215749.088759:ERROR:ui/display/mac/cv_display_link_mac.mm:188] CVDisplayLinkCreateWithCGDisplay failed. CVReturn: -6670
+[pid=26393][err] [26399:2811426:1021/215749.090212:ERROR:ui/display/mac/cv_display_link_mac.mm:188] CVDisplayLinkCreateWithCGDisplay failed. CVReturn: -6670
+[pid=26393][err] [26399:2811505:1021/215749.090249:ERROR:ui/display/mac/cv_display_link_mac.mm:188] CVDisplayLinkCreateWithCGDisplay failed. CVReturn: -6670
+[pid=26393][err] [26399:2811426:1021/215749.090338:ERROR:ui/display/mac/cv_display_link_mac.mm:188] CVDisplayLinkCreateWithCGDisplay failed. CVReturn: -6670
+[pid=26393][err] [26399:2811505:1021/215749.090366:ERROR:ui/display/mac/cv_display_link_mac.mm:188] CVDisplayLinkCreateWithCGDisplay failed. CVReturn: -6670
+[pid=26393][err] [26399:2811426:1021/215749.090451:ERROR:ui/display/mac/cv_display_link_mac.mm:188] CVDisplayLinkCreateWithCGDisplay failed. CVReturn: -6670
+[pid=26393][err] [26399:2811505:1021/215749.090504:ERROR:ui/display/mac/cv_display_link_mac.mm:188] CVDisplayLinkCreateWithCGDisplay failed. CVReturn: -6670
+[pid=26393] <gracefully close start>
+    at signIn (/Users/akashkushwaha/Projects/ims-platform/e2e/perf-app.mjs:211:26)
+    at async file:///Users/akashkushwaha/Projects/ims-platform/e2e/perf-app.mjs:427:17
+
+Node.js v26.8.1

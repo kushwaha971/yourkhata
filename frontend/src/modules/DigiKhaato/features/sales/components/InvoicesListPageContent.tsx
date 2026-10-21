@@ -15,6 +15,7 @@ import {
   UbPageHeader,
   UbPageHeaderMobileActions,
   UbPageShell,
+  UbViewportPageShell,
   UbSearchInput,
   UbStack,
 } from 'src/design-system';
@@ -274,10 +275,11 @@ export function InvoicesListPageContent(): React.JSX.Element {
       cardAvatar={false}
       cardLayout="stacked"
       variant="register"
+      fillHeight
     />
   );
   return (
-    <UbPageShell>
+    <UbViewportPageShell>
       <UbPageHeader
         title={t('sales.list.title')}
         actions={<SalesSectionLinks current="invoice" />}
@@ -316,7 +318,11 @@ export function InvoicesListPageContent(): React.JSX.Element {
           />
         )}
       />
-      <UbStack gap={4} data-testid="invoices-screen">
+      <UbStack
+        gap={3}
+        className="min-h-0 flex-1 !shrink max-md:[@media(max-height:640px)]:gap-1"
+        data-testid="invoices-screen"
+      >
         {emptyBook ? (
           /* Owner, 12 Oct 2026: "I don't want that type of screen in case of
              empty" — one sentence and one button on the page, not a dashed box
@@ -386,13 +392,13 @@ export function InvoicesListPageContent(): React.JSX.Element {
               onChange={list.setTab}
               options={tabs.map((tab) => ({ value: tab.value, label: tab.label }))}
               ariaLabel={t('sales.tab.label')}
-              className="flex-nowrap overflow-x-auto py-1 [&>button]:shrink-0"
+              className="flex-nowrap overflow-x-auto py-1.5 [&>button]:shrink-0"
             />
             {totals && <InvoiceListStats totals={totals} />}
             {grid}
           </>
         )}
       </UbStack>
-    </UbPageShell>
+    </UbViewportPageShell>
   );
 }

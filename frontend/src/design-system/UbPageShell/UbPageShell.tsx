@@ -100,7 +100,7 @@ function UbPageShellBase({
         className={cn(
           'mx-auto flex w-full flex-1 flex-col gap-4 px-4 pb-6 pt-4 lg:px-6 lg:pb-3 lg:pt-3',
           WIDTH[width],
-          viewport && 'min-h-0 gap-3 [&>*]:shrink-0'
+          viewport && 'min-h-0 gap-3 pb-3 [&>*]:shrink-0'
         )}
       >
         {header}

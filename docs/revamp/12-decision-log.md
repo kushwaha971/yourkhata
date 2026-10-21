@@ -255,6 +255,8 @@ markup. This does not change cost, tax or posting ownership.
 | 18 Oct 2026 | Phase 4 piece 4 built: phone App button and App sheet; desktop sidebar app tree; dark teal rail (#0B3F45, dark theme #0E2427) with the logo on a white tile and a marigold edge on the current row; white page (R-DEC-02); each app reopens on the screen it was left on (per business, per app, session storage). The App sheet holds the app tiles and everything `/more` held (one `MoreMenu` body for both) and is `dynamic()`, fetched when the browser is idle. The screenshots found three defects, all fixed with a check that fails before the fix: in the light theme every rail label was dark ink on dark teal (1.4:1, now 7.7:1); the sheet's search ran edge to edge; and at the old 180 px rail "Delivery challans" and "Purchase orders" were cut, so the rail is now the specified 232 px and labels wrap instead of cutting. Navigation unchanged within spread | frontend (features/navigation: AppSwitcherSheet, SidebarAppTree, MoreMenu, appPlace, useOpenApp; UbBottomNav, MobileTabBar, NavSections, UbSidebar, tokens), e2e/revamp-shots.mjs `--piece=apps`, e2e/perf-app.mjs, bundle-budgets.json, docs/performance/2026-10-18-f4-app-button.md |
 | 17 Oct 2026 | Tool-neutral start prompt for any coding agent; root AGENTS.md; design page copied into the repo | AGENT_START_PROMPT.md, design/ |
 
+21 Oct2026 — R-DEC-31/32 viewport group1: Customers/Suppliers/Bills use shared row-only scroll and reachable paging. Manual append preserves position; result-set changes reset.522 measured final frames and416 suites/4,648 frontend tests pass; no financial writes/backend changes. Report: `docs/performance/2026-10-21-viewport-shop-registers.md`. Remaining lists stay pending in11.
+
 ## Next
 
 R-DEC-28 terminology checkpoint is delivered on dev; see the20-Oct label report
@@ -266,7 +268,7 @@ and updated continuation prompt. This changes words, not the sequence below.
 3. Remaining Home workflows approved in R-DEC-26 (BP-08/16/17), integrated with
    the verified source workflows, followed by Home end-to-end acceptance.
 
-Immediate next under owner R-DEC-31: complete the reference chip-face correction and commit/push the verified purchase register, then roll out viewport/pager behavior to the already-redesigned Shop Customers/Suppliers/Bills, followed by all module list groups tracked in11. Only Purchases is currently implemented. This shared layout rollout is not a whole-module revamp certificate. Resume purchase detail §6, order conversion and full returns under the existing R-DEC-27 order; inventory/money/reports and remaining Home retain their full-workflow sequence. Do not copy fixed offsets or imply pending modules are fixed.
+Immediate next under owner R-DEC-31: Purchases and Shop Customers/Suppliers/Bills viewport groups are verified (21Oct viewport-shop report). Continue remaining sales-document lists, then each module list group tracked in11. Other matrix rows remain pending. This shared layout rollout is not a whole-module revamp certificate. Resume purchase detail §6, order conversion and full returns under the existing R-DEC-27 order; inventory/money/reports and remaining Home retain their full-workflow sequence. Do not copy fixed offsets or imply pending modules are fixed.
 Billing phone performance stays 8/10 and its subscription redesign stays
 deferred; do not repeat rejected memo/one-write/deferred-focus trims.
 

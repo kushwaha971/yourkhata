@@ -60,7 +60,7 @@ Measure page height, row scroll, actual button hit tests, widths, full words and
 contrast. Chip faces stay32px; reserve the existing44px mobile touch target without enlarging the face. Previously
 delivered lists are not all migrated; apply/verify through each approved module.
 
-NEXT: finish the chip-face verification/purchase checkpoint, then apply/verify viewport behavior in all module groups in11, beginning Customers/Suppliers/Bills. Do not ask routine permission or claim all modules already fixed. This UI-layout rollout does not authorize new financial workflows.
+NEXT: purchase checkpoint and Customers/Suppliers/Bills viewport group1 are verified. Group1:522 final measured frames and416 suites/4,648 frontend tests; read2026-10-21-viewport-shop-registers.md for A/B, actual scope and limits. Continue remaining sales-document lists, then each pending module group in11. Do not ask routine permission or claim all modules already fixed. This UI-layout rollout does not authorize new financial workflows.
 
 After that, review07-screens/09 §6 and real PurchaseBillDetailPageContent before any
 UI. Build the approved phone summary/actions/lines and desktop1280 two-column

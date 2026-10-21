@@ -51,7 +51,7 @@ export const ShopPartyToolbar = memo(function ShopPartyToolbar({
       <UbStack
         direction="row"
         gap={3}
-        className="col-span-2 row-start-2 overflow-x-auto py-1 2xl:col-span-1 2xl:col-start-2 2xl:row-start-1"
+        className="col-span-2 row-start-2 overflow-x-auto py-1.5 2xl:col-span-1 2xl:col-start-2 2xl:row-start-1"
         aria-label={t('parties.list.filter.balance.label')}
       >
         <UbFilterChip

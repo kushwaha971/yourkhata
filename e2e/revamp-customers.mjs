@@ -3,7 +3,7 @@
  * only the list response changes for loading/error/stress/empty screenshots. */
 import { writeFileSync } from 'node:fs';
 
-export async function shootCustomers({ signedInContext, widths, themes, locale, dir, frontend, failures, baseline, kind = 'customer' }) {
+export async function shootCustomers({ signedInContext, widths, themes, locale, dir, frontend, failures, baseline, kind = 'customer', journeys = true, viewport = false }) {
   const results = [];
   const supplier = kind === 'supplier';
   const listPath = supplier ? '/suppliers' : '/customers';
@@ -15,6 +15,10 @@ export async function shootCustomers({ signedInContext, widths, themes, locale, 
       await page.evaluate(() => document.fonts.ready);
       const measure = await measureCustomers(page);
       if(supplier && locale === 'en' && /\bcustomers\b/i.test(await ((await page.getByRole('dialog').count()) ? page.getByRole('dialog') : page.locator('main')).innerText())) failures.push(`${tag} ${state}: supplier content named customers`);
+      if(viewport && !await page.getByRole('dialog').count()){
+        const bounded=await page.evaluate(()=>{const footer=document.querySelector('[data-testid="ub-grid"]>[data-ub-bottom-bar]');return {pageY:Math.max(0,document.documentElement.scrollHeight-innerHeight),blocked:[...(footer?.querySelectorAll('button:not(:disabled)')??[])].filter(button=>{const r=button.getBoundingClientRect();return r.width&&r.height&&!button.contains(document.elementFromPoint(r.x+r.width/2,r.y+r.height/2));}).map(button=>button.textContent)};});
+        Object.assign(measure,bounded);if(bounded.pageY>1||bounded.blocked.length)failures.push(`${tag} ${state}: viewport ${JSON.stringify(bounded)}`);
+      }
       results.push({ width, theme, locale, state, ...measure });
       await page.screenshot({ path: `${dir}/${tag}-${state}.png`, fullPage: false });
       console.log(`${tag} ${state}: overflow ${measure.overflow}px, cut ${measure.cut.length}, contrast ${measure.lowContrast.length}, first row y=${measure.firstRowY}`);
@@ -35,8 +39,8 @@ export async function shootCustomers({ signedInContext, widths, themes, locale, 
         await page.keyboard.press('Escape');await page.getByRole('dialog').waitFor({state:'hidden'});
       }
     }
-    if (supplier && !baseline && locale === 'en' && theme === 'light' && [320, 1280].includes(width)) await supplierJourney(page, frontend, check);
-    if (!supplier && !baseline && locale === 'en' && theme === 'light' && [320, 1280].includes(width)) await customerJourney(page, frontend, { dir, tag });
+    if (journeys && supplier && !baseline && locale === 'en' && theme === 'light' && [320, 1280].includes(width)) await supplierJourney(page, frontend, check);
+    if (journeys && !supplier && !baseline && locale === 'en' && theme === 'light' && [320, 1280].includes(width)) await customerJourney(page, frontend, { dir, tag });
     const response = await ctx.request.get(`${frontend}/api/v1/parties?book=shop&type=${kind}&page_size=25`);
     if (!response.ok()) throw new Error(`Fixture source ${response.status()}`);
     const original = await response.json();
@@ -98,6 +102,7 @@ export async function shootCustomers({ signedInContext, widths, themes, locale, 
     await ctx.close();
   }
   writeFileSync(`${dir}/measurements-${locale}.json`, JSON.stringify(results, null, 2));
+  return results;
 }
 
 /** Measures actual text-node rectangles, ancestor clipping and computed colours.

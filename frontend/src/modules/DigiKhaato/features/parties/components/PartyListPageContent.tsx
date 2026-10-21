@@ -13,6 +13,7 @@ import {
   UbPageHeader,
   UbPageHeaderMobileActions,
   UbPageShell,
+  UbViewportPageShell,
   UbStack,
   UbStatusBanner,
   UbTextInput,
@@ -191,6 +192,7 @@ export function PartyListPageContent({
     [baseT, book, kind]
   );
   const compactShop = book === 'shop' && Boolean(kind);
+  const PageShell = compactShop ? UbViewportPageShell : UbPageShell;
   const supplier = kind === 'supplier';
   const [payingSupplier, setPayingSupplier] = useState<Party | null>(null);
   const openSupplierPayment = useCallback((party: Party) => setPayingSupplier(party), []);
@@ -687,10 +689,15 @@ export function PartyListPageContent({
     // `full` rather than the default `measure`: this is the data-grid opt-out
     // the shell documents. A 1120 px column on a 1440 px screen left a band of
     // empty canvas down the right of a table that had columns truncating in it.
-    <UbPageShell
+    <PageShell
       width="full"
       header={
         <UbPageHeader
+          className={
+            compactShop
+              ? 'max-md:[@media(max-height:640px)]:[&_[data-ub-page-subtitle]]:sr-only'
+              : undefined
+          }
           title={
             kind === 'supplier'
               ? t('parties.list.supplier.title')
@@ -793,7 +800,7 @@ export function PartyListPageContent({
           onSaved={refetch}
         />
       )}
-      <UbStack gap={4}>
+      <UbStack gap={4} className={compactShop ? 'min-h-0 flex-1 !shrink' : undefined}>
         {showStats && !compactShop && (
           <PartyListStats
             payableFirst={kind === 'supplier'}
@@ -894,6 +901,13 @@ export function PartyListPageContent({
           />
         ) : (
           <UbDataGrid
+            fillHeight={compactShop}
+            scrollResetKey={
+              compactShop
+                ? JSON.stringify([book, kind, { ...filters, page: undefined, pageSize: undefined }])
+                : undefined
+            }
+            resetScrollOnPageChange={!(compactShop && tier === 'cards')}
             rows={rows}
             variant={compactShop ? 'register' : 'panel'}
             className={
@@ -958,9 +972,16 @@ export function PartyListPageContent({
             cardAvatar={!compactShop}
             footer={
               compactShop && tier === 'cards' ? (
-                <UbStack gap={3} className="py-4">
-                  <UbText variant="caption" tone="tertiary">
-                    {t(supplier ? 'parties.list.supplier.loaded' : 'parties.list.shop.loaded', { count: rows.length, total: meta.total })}
+                <UbStack gap={3} className="py-2">
+                  <UbText
+                    variant="caption"
+                    tone="tertiary"
+                    className={rows.length < meta.total ? 'sr-only' : undefined}
+                  >
+                    {t(supplier ? 'parties.list.supplier.loaded' : 'parties.list.shop.loaded', {
+                      count: rows.length,
+                      total: meta.total,
+                    })}
                   </UbText>
                   {rows.length < meta.total && (
                     <UbButton
@@ -1097,6 +1118,6 @@ export function PartyListPageContent({
           />
         )}
       </UbStack>
-    </UbPageShell>
+    </PageShell>
   );
 }

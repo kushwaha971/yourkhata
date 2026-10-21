@@ -130,6 +130,10 @@ export interface UbDataGridProps<TRow> {
   readonly maxHeight?: 'fill' | string;
   /** A bounded parent provides height; only rows scroll, pager stays outside. */
   readonly fillHeight?: boolean;
+  /** Append-mode mobile lists keep their position when fetching the next API page. */
+  readonly resetScrollOnPageChange?: boolean;
+  /** Result-set identity excluding pagination, so new filters reset append lists too. */
+  readonly scrollResetKey?: string;
   /** BrandHub's `rowHeight`. Defaults to 52 px. */
   readonly rowHeight?: number;
   /**
@@ -318,6 +322,8 @@ export function UbDataGrid<TRow>({
   storageId,
   maxHeight,
   fillHeight = false,
+  resetScrollOnPageChange = true,
+  scrollResetKey,
   rowHeight,
   tier: forcedTier,
   skeletonRows = 6,
@@ -327,8 +333,13 @@ export function UbDataGrid<TRow>({
   const tier = useGridTier(forcedTier);
   const scrollRegion = useRef<HTMLDivElement>(null);
   useEffect(() => {
-    if (fillHeight && scrollRegion.current) scrollRegion.current.scrollTop = 0;
-  }, [fillHeight, page.page]);
+    if (fillHeight && resetScrollOnPageChange && scrollRegion.current)
+      scrollRegion.current.scrollTop = 0;
+  }, [fillHeight, resetScrollOnPageChange, page.page]);
+  useEffect(() => {
+    if (fillHeight && scrollResetKey !== undefined && scrollRegion.current)
+      scrollRegion.current.scrollTop = 0;
+  }, [fillHeight, scrollResetKey]);
 
   const needsTable = tier !== 'cards';
   useEffect(() => {

@@ -148,7 +148,10 @@ function UbPageHeaderBase({
             // QA D8 — the subtitle is a sentence, and on a phone Branding's and
             // Activity's were cut to an ellipsis mid-thought. It wraps; the
             // title (a name) still truncates.
-            <p className="ds-body-base-regular break-words leading-5 text-text-tertiary">
+            <p
+              data-ub-page-subtitle=""
+              className="ds-body-base-regular break-words leading-5 text-text-tertiary"
+            >
               {subtitle}
             </p>
           )}

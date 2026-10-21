@@ -1,0 +1,97 @@
+FAIL src/design-system/UbDataGrid/UbDataGrid.test.tsx
+  ✓ keeps pagination outside the bounded phone rows and gives keyboard users a scroll region (6 ms)
+  ✓ starts a new page at the first row without scrolling the document (3 ms)
+  ✕ preserves the row offset when a mobile register appends another page (4 ms)
+  the three renderings
+    ✓ below md it is a real LIST of cards and there is no table at all (40 ms)
+    ✓ between md and lg it is a table of the PRIORITY columns only (40 ms)
+    ✓ at lg and up it is the full table, with selection (70 ms)
+    ✓ the card is a 44 px tap target with an accessible name when a row can be opened (26 ms)
+  opening a record from the table
+    ✓ puts ONE named control in the row, in the first cell (31 ms)
+    ✓ leaves the cells as plain text when there is nowhere to go (9 ms)
+  table semantics
+    ✓ is a real <table> with scoped header cells and a caption (23 ms)
+    ✓ puts aria-sort on the header cell and the control in a button (52 ms)
+    ✓ selection reports the ids it was given, by row (84 ms)
+  no horizontal scroll on a primary list, at any width
+    ✓ holds at the cards tier (1 ms)
+    ✓ holds at the compact tier (7 ms)
+    ✓ holds at the full tier (7 ms)
+    ✓ still holds when the grid is asked for a scroller it is not allowed (6 ms)
+    ✓ is the ONE opt-in: an accountant report at lg announces itself (7 ms)
+  the states a list has
+    ✓ announces the skeleton rather than merely drawing it (3 ms)
+    ✓ renders the empty state
+    ✓ renders the filtered-empty state (1 ms)
+    ✓ renders the error state (1 ms)
+    ✓ dims the rows and shows an indeterminate bar while busy, and leaves the toolbar alone (5 ms)
+    ✓ ignores busy on every state but rows — the skeleton already says it (1 ms)
+    ✓ carries the request id on the error state and nowhere else (1 ms)
+    ✓ shows the page summary at every tier and the page size only at lg (10 ms)
+  UbDataGrid — pagination
+    ✓ shows page numbers with an ellipsis, and the current one is marked (30 ms)
+    ✓ jumps straight to a page when its number is pressed (20 ms)
+    ✓ disables the step controls at each end rather than hiding them (15 ms)
+    ✓ drops the numbers on a phone and keeps the sentence (8 ms)
+    ✓ shows no page numbers at all when there is only one page (9 ms)
+  UbDataGrid — selection and sort state
+    ✓ tints a selected row, so a bulk action is not aimed blind (8 ms)
+    ✓ replaces the toolbar with a count once rows are selected (12 ms)
+    ✓ draws no toolbar for a selectable grid with only bulk actions until a row is ticked (8 ms)
+    ✓ marks the sorted column on the cell, where a screen reader reads it (35 ms)
+  the states are drawn inside the table
+    ✓ keeps the column headers up while the rows are still loading (16 ms)
+    ✓ draws one skeleton cell per column, so the shape matches what lands (14 ms)
+    ✓ follows BrandHub's long-first, short-last bar widths (13 ms)
+    ✓ puts the empty panel in ONE row that spans every column (16 ms)
+    ✓ puts the filtered-empty panel in ONE row that spans every column (17 ms)
+    ✓ puts the error panel in ONE row that spans every column (16 ms)
+    ✓ counts the checkbox column in the span, or the panel stops short (6 ms)
+    ✓ leaves the card tier alone — there is no table there to keep a place in (1 ms)
+  the column menu
+    ✓ appears on a grid that already has a toolbar, and not on one that does not (20 ms)
+    ✓ is never offered on a phone, where columns are not the model (2 ms)
+    ✓ switches a column off and the table loses that header (110 ms)
+    ✓ locks the priority-1 columns on, visibly, rather than hiding the control (119 ms)
+    ✓ offers only what the WIDTH already allowed, so nothing can bring the scrollbar back (49 ms)
+    ✓ puts every column back (133 ms)
+    ✓ remembers the choice for the session, and only when the screen opted in (98 ms)
+    ✓ survives a stored value that is corrupt or hostile (17 ms)
+    ✓ does not remember anything when the screen did not opt in (83 ms)
+  the paging bar
+    ✓ offers the page size at `full` and at no smaller tier (10 ms)
+    ✓ paints the selection label exactly as the feature resolved it (11 ms)
+  BrandHub's height logic
+    ✓ gives every row the same 52px, set as a height rather than a class (9 ms)
+    ✓ reserves the same height in the skeleton, or the rows would jump (2 ms)
+    ✓ lets the PAGE scroll by default, and caps the body only when asked (13 ms)
+  the card avatar
+    ✓ is drawn by default, because most of these lists are people (2 ms)
+    ✓ draws a per-row icon in place of initials where the row has no name (QA O3) (1 ms)
+    ✓ is absent when the grid says the rows are not people (1 ms)
+  the loading skeleton cannot be wider than its container (N1)
+    ✓ cards: draws a card — disc, two fluid text bars, an amount — with no uncapped fixed bar (3 ms)
+    ✓ table tiers: every skeleton bar is bounded by its cell (max-w-full) (4 ms)
+
+  ● preserves the row offset when a mobile register appends another page
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: 180
+    Received: 0
+
+      952 |  const region=screen.getByRole('region',{name:'Append register'});region.scrollTop=180;
+      953 |  rerender(<UbDataGrid {...props} page={{...PAGE,page:2,total:50,totalPages:2}}/>);
+    > 954 |  expect(region.scrollTop).toBe(180);
+          |                           ^
+      955 | });
+      956 |
+
+      at Object.<anonymous> (src/design-system/UbDataGrid/UbDataGrid.test.tsx:954:27)
+
+Test Suites: 1 failed, 1 total
+Tests:       1 failed, 60 passed, 61 total
+Snapshots:   0 total
+Time:        2.562 s
+Ran all test suites within paths "src/design-system/UbDataGrid/UbDataGrid.test.tsx".
