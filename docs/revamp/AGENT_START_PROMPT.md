@@ -9,11 +9,12 @@ Replace the line marked `TASK` with what you want done next. If you leave it out
 Read START-NEXT-SESSION-PROMPT.txt and12's current Next first. R-DEC-27 orders
 billing/POS, purchases and returns, then inventory, payments, expenses and reports
 before the remaining Home workflows. Billing is finished for now (owner: Move on);
-purchase §7 steps 1–4 are delivered (shared counter, dock and honest save/leave).
+purchase §7 steps 1–5 are delivered (shared counter, dock and honest save/leave).
 4,611 tests/216 safety frames pass; see purchase-editor report.
 Cost words/precision verified:4,613 tests/240 frames/29 backend checks.
-Immediate next: payment-refusal/lost-reply recovery and supplier
-summary. Read 2026-10-20-p5-purchase-quick-add.md: 4,596 tests/108 frames,
+Step5:4,624 tests/80 backend checks/60 final frames, immutable Record recovery,
+explicit payment403 retry and uncovered instructions. Immediate next: joined supplier
+summary and complete editor acceptance. Read 2026-10-20-p5-purchase-quick-add.md: 4,596 tests/108 frames,
 supplier-inclusive phone/desktop picks36/38ms, unchanged A/B navigation;
 component-only8.75, not a whole-purchase completion claim.
 Compact line/totals component407d9caa is delivered; it is not the whole editor.

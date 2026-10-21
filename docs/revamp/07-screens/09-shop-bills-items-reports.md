@@ -297,9 +297,9 @@ Tracking: problems — purchase actions scattered in ⋯ · decisions — same c
 | Must keep working | Record requires an Idempotency-Key (`bills.py:53`); `?record=true` ignores `client_draft_key`; Paid-now goes in the same request and becomes a PAYOUT voucher in the same transaction; a role without `payments.payment.write` never sees Paid now; last cost updates on record, not on void; draft recovery for bills and orders (16 Oct). |
 | Fewer taps | supplier summary line; Pay later is one tap; Record + Paid now confirm is one flow, not two screens. |
 
-Review (20 Oct, R-DEC-27/29): gaps against this section and the Counter Mode standard are listed in order in START-NEXT-SESSION-PROMPT.txt (item search above lines via a shared useLineQuickAdd, dock caption/meta, honest save caption, cost note in words, Record as Pay later); steps 1–4 delivered: shared quick-add/finder, compact cost rows and dock caption/meta; remaining steps 5–6 are next. See docs/performance/2026-10-20-p5-purchase-quick-add.md.
+Review (20 Oct, R-DEC-27/29): gaps against this section and the Counter Mode standard are listed in order in START-NEXT-SESSION-PROMPT.txt (item search above lines via a shared useLineQuickAdd, dock caption/meta, honest save caption, cost note in words, Record as Pay later); steps 1–5 delivered: shared quick-add/finder, compact cost rows and dock caption/meta; remaining step6 and whole-editor acceptance are next. See docs/performance/2026-10-20-p5-purchase-quick-add.md.
 
-Tracking: problems — purchase drafts not kept on device; permission refusal wording · decisions — honest "Not saved yet" caption; Record as Pay later · dependencies — in-place re-auth (shell), compact rows · risks — data loss on reload after a lost reply is documented (draft remains listed under Drafts) · approval — R-DEC-27/29 · build — steps 1–4 delivered, steps 5–6 pending · tests — `revamp-purchase-quick-add.mjs` (108 frames), `purchase-recovery-look.mjs`, double-tap Record, permission matrix test for paid-now · outcome — —
+Tracking: problems — purchase drafts not kept on device; permission refusal wording · decisions — honest "Not saved yet" caption; Record as Pay later · dependencies — in-place re-auth (shell), compact rows · risks — data loss on reload after a lost reply is documented (draft remains listed under Drafts) · approval — R-DEC-27/29 · build — steps 1–5 delivered, step6/whole-editor acceptance pending · tests — `revamp-purchase-quick-add.mjs` (108 frames), `purchase-recovery-look.mjs`, double-tap Record, permission matrix test for paid-now · outcome — —
 
 ---
 
@@ -784,3 +784,5 @@ Every area is above 8.6; the smallest margins are Settings (8.71) and Reports (8
 4. Reports' cards show three fields; an accountant on a phone may still want the table, and the answer offered is Download.
 
 21 Oct2026 §7 safety checkpoint: 4,611 tests,216 measured en/hi frames, native unload/partial rows/server defaults/late acknowledgement and dialog occlusion verified. See purchase-editor report. Cost wording and true joined supplier summary require the corrections recorded in12; whole-editor acceptance remains open.
+
+21Oct §7 finish checkpoint:4,624 tests/80 backend checks/60 final en/hi frames. Explicit payment403 choice, immutable lost-Record checking, locks, failed-load retry and request fences delivered; actual toast occlusion fails before/corrected after. See purchase-editor step5 report.

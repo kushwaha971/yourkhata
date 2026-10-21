@@ -4,6 +4,7 @@
  */
 import { createRequire } from 'node:module';
 import { mkdirSync, writeFileSync } from 'node:fs';
+import { coveredOverlayText } from './lib/measureOverlayText.mjs';
 import { measureCustomers } from './revamp-customers.mjs';
 const { chromium } = createRequire(import.meta.url)('playwright');
 const arg = (k, d) => process.argv.find((x) => x.startsWith(`--${k}=`))?.slice(k.length + 3) ?? d;
@@ -141,31 +142,7 @@ try {
           m.lowContrast.push(...dock.lowContrast);
         }
         if (root === '[role=dialog]') {
-          const covered = await page.getByRole('dialog').evaluate((dialog) => {
-            const blocked = [];
-            const walker = document.createTreeWalker(dialog, NodeFilter.SHOW_TEXT);
-            let node;
-            while ((node = walker.nextNode())) {
-              if (
-                !node.textContent?.trim() ||
-                node.parentElement?.closest('.sr-only,[aria-hidden="true"]')
-              )
-                continue;
-              const range = document.createRange();
-              range.selectNodeContents(node);
-              for (const rect of range.getClientRects()) {
-                if (rect.width < 2 || rect.height < 2) continue;
-                const y = rect.top + rect.height / 2;
-                for (const x of [rect.left + 2, rect.left + rect.width / 2, rect.right - 2]) {
-                  if (x < 0 || x >= innerWidth || y < 0 || y >= innerHeight) continue;
-                  const top = document.elementFromPoint(x, y);
-                  if (top && !dialog.contains(top))
-                    blocked.push(node.textContent.trim().slice(0, 90));
-                }
-              }
-            }
-            return [...new Set(blocked)];
-          });
+          const covered = await coveredOverlayText(page.getByRole('dialog'));
           m.cut.push(...covered.map((text) => `Covered by another surface: ${text}`));
         }
         const cutInputs = await page.locator(`${root} input[inputmode]`).evaluateAll((es) => {

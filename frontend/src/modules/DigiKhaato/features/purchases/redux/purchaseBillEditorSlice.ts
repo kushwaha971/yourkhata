@@ -43,6 +43,7 @@ export interface PurchaseBillEditorState {
   saveState: PurchaseSaveState;
   savedAt: string | null;
   recording: boolean;
+  recordRequestId: string | null;
   recorded: PurchaseBillEnvelope | null;
   warnings: PurchaseWarning[];
   duplicate: DuplicateSupplierInvoice | null;
@@ -60,6 +61,7 @@ const initialState: PurchaseBillEditorState = {
   saveState: 'idle',
   savedAt: null,
   recording: false,
+  recordRequestId: null,
   recorded: null,
   warnings: [],
   duplicate: null,
@@ -105,6 +107,11 @@ const purchaseBillEditorSlice = createSlice({
     purchaseConflictResolved(state, action: PayloadAction<{ version: number }>) {
       state.version = action.payload.version;
       state.saveState = 'idle';
+    },
+    purchaseRecordRecovered(state, action: PayloadAction<PurchaseBillEnvelope>) {
+      accept(state, action.payload);
+      state.recorded = action.payload as Draft<PurchaseBillEnvelope>;
+      state.error = null;
     },
     purchaseDuplicateCleared(state) {
       state.duplicate = null;
@@ -155,17 +162,20 @@ const purchaseBillEditorSlice = createSlice({
         state.saveState = action.payload?.code === 'stale_version' ? 'conflict' : 'error';
         state.error = (action.payload ?? null) as Draft<ApiErrorShape> | null;
       })
-      .addCase(recordPurchaseBill.pending, (state) => {
+      .addCase(recordPurchaseBill.pending, (state, action) => {
+        state.recordRequestId = action.meta.requestId;
         state.recording = true;
         state.error = null;
       })
       .addCase(recordPurchaseBill.fulfilled, (state, action) => {
+        if (state.recordRequestId !== action.meta.requestId) return;
         accept(state, action.payload);
         state.recording = false;
         state.recorded = action.payload as Draft<PurchaseBillEnvelope>;
         state.duplicate = null;
       })
       .addCase(recordPurchaseBill.rejected, (state, action) => {
+        if (action.meta.aborted || state.recordRequestId !== action.meta.requestId) return;
         state.recording = false;
         state.error = (action.payload ?? null) as Draft<ApiErrorShape> | null;
         state.duplicate = duplicateFrom(action.payload) ?? state.duplicate;
@@ -181,8 +191,12 @@ const purchaseBillEditorSlice = createSlice({
   },
 });
 
-export const { purchaseEditorReset, purchaseConflictResolved, purchaseDuplicateCleared } =
-  purchaseBillEditorSlice.actions;
+export const {
+  purchaseEditorReset,
+  purchaseConflictResolved,
+  purchaseDuplicateCleared,
+  purchaseRecordRecovered,
+} = purchaseBillEditorSlice.actions;
 export const purchaseBillEditorReducer = purchaseBillEditorSlice.reducer;
 
 declare module 'src/redux/store' {

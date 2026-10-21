@@ -58,7 +58,7 @@ export function PurchasePaidNowDrawer({
   return (
     <UbDrawer
       open
-      onOpenChange={(next) => !next && onClose()}
+      onOpenChange={(next) => !next && !busy && onClose()}
       title={t('purchases.payment.title')}
       description={t('purchases.payment.hint')}
       closeLabel={t('common.action.close')}
@@ -93,6 +93,7 @@ export function PurchasePaidNowDrawer({
           >
             <PaymentMethodField
               id={`${baseId}-mode-${index}`}
+              disabled={busy}
               mode={row.mode}
               app={row.upiApp}
               onChange={(mode, upiApp) => update(index, { mode, upiApp })}
@@ -104,12 +105,14 @@ export function PurchasePaidNowDrawer({
                 id={`${baseId}-amount-${index}`}
                 aria-label={t('purchases.payment.amount')}
                 placeholder={t('purchases.payment.amountPlaceholder')}
+                disabled={busy}
                 value={row.amount}
                 onChange={(amount) => update(index, { amount })}
                 className="flex-1"
               />
               {rows.length > 1 && (
                 <UbButton
+                  disabled={busy}
                   variant="ghost"
                   iconOnly
                   icon={<Trash2 className="h-4 w-4" aria-hidden />}
@@ -124,6 +127,7 @@ export function PurchasePaidNowDrawer({
                 id={`${baseId}-ref-${index}`}
                 aria-label={t('purchases.payment.reference')}
                 placeholder={t('purchases.payment.referencePlaceholder')}
+                disabled={busy}
                 value={row.reference}
                 onChange={(reference) => update(index, { reference })}
                 maxLength={64}
@@ -133,6 +137,7 @@ export function PurchasePaidNowDrawer({
         ))}
         {rows.length < 4 && (
           <UbButton
+            disabled={busy}
             variant="secondary"
             icon={<Plus className="h-4 w-4" aria-hidden />}
             onClick={() =>

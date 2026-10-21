@@ -35,6 +35,7 @@ import { PURCHASE_AUTOSAVE_MS } from '../constants/purchaseConstants';
 import {
   purchaseDraftReply,
   purchaseEditorReset,
+  purchaseRecordRecovered,
   selectPurchaseBillEditor,
   type PurchaseBillEditorState,
 } from '../redux/purchaseBillEditorSlice';
@@ -46,6 +47,7 @@ import {
   recordPurchaseBill,
   savePurchaseBillDraft,
   type SavePurchaseDraftArg,
+  type RecordPurchaseBillArg,
 } from '../redux/purchaseBillThunk';
 import { usePurchaseBillSchemas } from '../validation/purchaseBillSchemas';
 import {
@@ -121,6 +123,8 @@ export interface UsePurchaseBillEditorResult {
   readonly offline: boolean;
   readonly hasUnsavedChanges: boolean;
   readonly hasServerCopy: boolean;
+  /** A Record reply was lost: freeze the intent until its actual outcome is checked. */
+  readonly recordRecovery: boolean;
   readonly checkDuplicate: () => void;
   readonly restart: () => void;
 }
@@ -157,6 +161,10 @@ export const usePurchaseBillEditor = (
   const seeded = useRef<string | null>(null);
   const [seededFor, setSeededFor] = useState<string | null>(null);
   const scope = `${tenantId}:${userId}:${kind}:${documentId ?? 'new'}`;
+  const recordIntent = useRef<{ scope: string; arg: RecordPurchaseBillArg } | null>(null);
+  const [uncertainScope, setUncertainScope] = useState<string | null>(null);
+  const recordRecovery = uncertainScope === scope;
+
   const [draftState, setDraftState] = useState<{
     scope: string;
     initial: string;
@@ -168,6 +176,7 @@ export const usePurchaseBillEditor = (
   useEffect(() => {
     saves.invalidate();
     creationKey.current = null;
+    recordIntent.current = null;
     seeded.current = null;
     dispatch(purchaseEditorReset());
     const context = dispatch(fetchPurchaseContext(today));
@@ -193,6 +202,8 @@ export const usePurchaseBillEditor = (
       return;
     }
     if (context && seeded.current !== 'new') {
+      recordIntent.current = null;
+      setUncertainScope(null);
       seeded.current = 'new';
       const opened = {
         ...emptyPurchaseForm(today, context.gstType === 'regular'),
@@ -257,6 +268,7 @@ export const usePurchaseBillEditor = (
         // just created the draft or moved its version.
         const current = selectPurchaseBillEditor(store.getState());
         if (
+          recordIntent.current?.scope === scope ||
           current.saveState === 'conflict' ||
           current.recorded ||
           (documentId && current.loadStatus !== 'succeeded')
@@ -382,46 +394,74 @@ export const usePurchaseBillEditor = (
     async (
       payment?: readonly PurchasePaymentRow[] | null
     ): Promise<PurchaseBillEnvelope | null> => {
-      if (!(await validate())) return null;
-      const saved = await save(false);
-      if (!saved) return null;
-      // Recovered as already recorded/sent: show it, never post it again.
-      if (saved.bill.status !== 'draft') return saved;
-      if (kind === 'purchase_order') {
-        // Shop item 3 — an order's "Record" is Send: numbered, owing nothing, no stock.
-        const sent = await dispatch(
-          movePurchaseOrder({ id: saved.bill.id, verb: 'send', version: saved.bill.version })
-        );
-        if (!movePurchaseOrder.fulfilled.match(sent)) return null;
-        form.reset(form.getValues());
-        return sent.payload;
-      }
-      const result = await dispatch(
-        recordPurchaseBill({
+      const retry = recordIntent.current?.scope === scope ? recordIntent.current.arg : null;
+      let arg = retry;
+      if (!arg) {
+        if (!(await validate())) return null;
+        const saved = await save(false);
+        if (!saved) return null;
+        if (saved.bill.status !== 'draft') return saved;
+        if (kind === 'purchase_order') {
+          const sent = await dispatch(
+            movePurchaseOrder({ id: saved.bill.id, verb: 'send', version: saved.bill.version })
+          );
+          if (!movePurchaseOrder.fulfilled.match(sent)) return null;
+          form.reset(form.getValues());
+          return sent.payload;
+        }
+        arg = {
           id: saved.bill.id,
           version: saved.bill.version,
           idempotencyKey: idempotency.key,
-          // FR-6h — dated with the bill, as the invoice editor dates money taken at issue.
           payment: payment?.length
             ? purchasePaymentWireBody(payment, form.getValues('documentDate'))
             : null,
-        })
-      );
-      if (recordPurchaseBill.fulfilled.match(result)) {
-        idempotency.rotate();
-        form.reset(form.getValues());
-        return result.payload;
+        };
       }
-      // A network failure keeps the key for the retry (EC-11); anything the
-      // server answered is a new attempt next time.
-      const code = result.payload?.code;
-      if (!mayHaveBeenSaved(result.payload)) idempotency.rotate();
-      if (code === 'validation_error' && result.payload) {
-        applyServerErrors(result.payload, form.setError, FORM_FIELDS, t);
-      }
-      return null;
+      const original = arg;
+      return saves.enqueue(async (currentScope) => {
+        if (!currentScope()) return null;
+        if (retry) {
+          // Read first: the server may already have recorded money while its reply was lost.
+          const read = dispatch(fetchPurchaseBill({ id: original.id, kind }));
+          saves.track(read);
+          const checked = await read;
+          if (!currentScope() || !fetchPurchaseBill.fulfilled.match(checked)) return null;
+          if (checked.payload.bill.status !== 'draft') {
+            dispatch(purchaseRecordRecovered(checked.payload));
+            recordIntent.current = null;
+            setUncertainScope(null);
+            idempotency.rotate();
+            return checked.payload;
+          }
+        }
+        recordIntent.current = { scope, arg: original };
+        const pending = dispatch(recordPurchaseBill(original));
+        saves.track(pending);
+        const result = await pending;
+        if (!currentScope()) return null;
+        if (recordPurchaseBill.fulfilled.match(result)) {
+          recordIntent.current = null;
+          setUncertainScope(null);
+          idempotency.rotate();
+          form.reset(form.getValues());
+          return result.payload;
+        }
+        if (retry || mayHaveBeenSaved(result.payload)) {
+          // A definitive refusal on a later CHECK cannot disprove an earlier lost payment.
+          setUncertainScope(scope);
+        } else {
+          recordIntent.current = null;
+          setUncertainScope(null);
+          idempotency.rotate();
+        }
+        if (result.payload?.code === 'validation_error') {
+          applyServerErrors(result.payload, form.setError, FORM_FIELDS, t);
+        }
+        return null;
+      });
     },
-    [validate, form, save, dispatch, idempotency, t, kind]
+    [validate, form, save, dispatch, idempotency, t, kind, saves, scope]
   );
 
   /** FR-7 — on blur of the supplier invoice number. */
@@ -444,7 +484,11 @@ export const usePurchaseBillEditor = (
   const dirty = form.formState.isDirty;
   const meaningful = !!values.partyId || (values.lines ?? []).some(isCompletePurchaseLine);
   const blocked =
-    offline || editor.saveState === 'conflict' || editor.recording || !!editor.recorded;
+    offline ||
+    recordRecovery ||
+    editor.saveState === 'conflict' ||
+    editor.recording ||
+    !!editor.recorded;
   const saving = useRef(false);
   const [saveRevision, setSaveRevision] = useState(0);
   useEffect(() => {
@@ -479,6 +523,8 @@ export const usePurchaseBillEditor = (
     saves.invalidate();
     creationKey.current = null;
     dispatch(purchaseEditorReset());
+    recordIntent.current = null;
+    setUncertainScope(null);
     seeded.current = 'new';
     const opened = emptyPurchaseForm(today, context?.gstType === 'regular');
     form.reset(opened);
@@ -507,6 +553,7 @@ export const usePurchaseBillEditor = (
     offline,
     hasUnsavedChanges,
     hasServerCopy: !!currentDraft?.acknowledged,
+    recordRecovery,
     checkDuplicate,
     restart,
   };

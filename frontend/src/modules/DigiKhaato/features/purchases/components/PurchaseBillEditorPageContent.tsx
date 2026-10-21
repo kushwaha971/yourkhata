@@ -36,7 +36,7 @@ import {
   purchaseConflictResolved,
   purchaseDuplicateCleared,
 } from '../redux/purchaseBillEditorSlice';
-import { deletePurchaseBillDraft } from '../redux/purchaseBillThunk';
+import { deletePurchaseBillDraft, fetchPurchaseBill } from '../redux/purchaseBillThunk';
 import { hasRecordableLines, type PurchasePaymentRow } from '../view-model/purchaseBillForm';
 import { recordedToast } from '../view-model/purchaseToasts';
 
@@ -78,14 +78,22 @@ export function PurchaseBillEditorPageContent({
   const order = kind === 'purchase_order';
   const home = order ? ROUTES.PURCHASE_ORDERS : ROUTES.PURCHASE_BILLS;
   const { form, preview, editor: server, canWrite, save, record, values, today, regular } = editor;
-  const { validate, canPayNow, offline, hasUnsavedChanges, hasServerCopy } = editor;
+  const { validate, canPayNow, offline, hasUnsavedChanges, hasServerCopy, recordRecovery } = editor;
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [paying, setPaying] = useState(false);
   const [paymentTotal, setPaymentTotal] = useState<string | null>(null);
   const [confirmLeave, setConfirmLeave] = useState(false);
 
+  const paymentRefused =
+    !recordRecovery &&
+    server.error?.code === 'permission_denied' &&
+    server.error.status === 403 &&
+    Object.hasOwn(server.error.details ?? {}, 'payment');
   const shortcutsBlocked =
-    paying || confirmLeave || confirmDelete || server.saveState === 'conflict';
+    (paying && !paymentRefused && !recordRecovery) ||
+    confirmLeave ||
+    confirmDelete ||
+    server.saveState === 'conflict';
   const context = server.context;
   const hasLines = hasRecordableLines(values, preview);
   const docksTotals = useDocksEditorTotals();
@@ -102,20 +110,26 @@ export function PurchaseBillEditorPageContent({
                 id: 'purchases.order.sent',
                 params: { number: result.bill.number ?? '' },
               }
-            : recordedToast(result, values.partyName)
+            : recordRecovery
+              ? {
+                  severity: 'success',
+                  id: 'purchases.record.recovered',
+                  params: { number: result.bill.number ?? '' },
+                }
+              : recordedToast(result, values.partyName)
         )
       );
       router.push(`${home}/${result.bill.id}`);
     },
-    [dispatch, order, values.partyName, router, home]
+    [dispatch, order, values.partyName, router, home, recordRecovery]
   );
   const finishRecord = useCallback(
     async (payment: readonly PurchasePaymentRow[] | null) => {
-      if (!hasLines || server.recording || server.recorded || offline) return;
+      if (!hasLines || server.recording || server.recorded || (offline && !recordRecovery)) return;
       const result = await record(payment);
       if (result) openFinished(result);
     },
-    [hasLines, server.recording, server.recorded, offline, record, openFinished]
+    [hasLines, server.recording, server.recorded, offline, recordRecovery, record, openFinished]
   );
 
   const { run: finishOnce, pending: finishing } = useAsyncAction(finishRecord);
@@ -124,7 +138,12 @@ export function PurchaseBillEditorPageContent({
     (line) => !!line.itemId && line.unitCost.trim() === ''
   );
   const startRecord = useCallback(async () => {
-    if (!hasLines || baseLocked || offline || shortcutsBlocked) return;
+    if (!hasLines || baseLocked || (offline && !recordRecovery) || shortcutsBlocked) return;
+    if (recordRecovery || paymentRefused) {
+      setPaying(false);
+      finishOnce(null);
+      return;
+    }
     if (order || !canPayNow) {
       finishOnce(null);
       return;
@@ -148,6 +167,8 @@ export function PurchaseBillEditorPageContent({
     setPaying(true);
   }, [
     hasLines,
+    recordRecovery,
+    paymentRefused,
     baseLocked,
     offline,
     shortcutsBlocked,
@@ -161,10 +182,13 @@ export function PurchaseBillEditorPageContent({
     openFinished,
   ]);
   const { run: startOnce, pending: preparing } = useAsyncAction(startRecord);
-  const locked = baseLocked || preparing;
+  const locked = baseLocked || preparing || recordRecovery;
   const submitShortcut = useCallback(() => {
-    if (!shortcutsBlocked) void form.handleSubmit(() => startOnce())();
-  }, [form, startOnce, shortcutsBlocked]);
+    if (!shortcutsBlocked) {
+      if (recordRecovery) startOnce();
+      else void form.handleSubmit(() => startOnce())();
+    }
+  }, [form, startOnce, shortcutsBlocked, recordRecovery]);
 
   const onPickSupplier = useCallback(
     (id: string, name: string) => {
@@ -191,14 +215,14 @@ export function PurchaseBillEditorPageContent({
   }, [locked, offline, save, shortcutsBlocked]);
   const requestClose = useCallback(() => {
     dispatch(hideSnackbar());
-    if (hasUnsavedChanges) setConfirmLeave(true);
+    if (hasUnsavedChanges || recordRecovery) setConfirmLeave(true);
     else router.push(home);
-  }, [dispatch, hasUnsavedChanges, router, home]);
+  }, [dispatch, hasUnsavedChanges, recordRecovery, router, home]);
   useDocumentEditorWindowEffects({
     basePath: home,
     documentId,
     savedId: server.documentId,
-    dirty: hasUnsavedChanges,
+    dirty: hasUnsavedChanges || recordRecovery,
     onSave: saveNow,
     onIssue: submitShortcut,
   });
@@ -214,16 +238,36 @@ export function PurchaseBillEditorPageContent({
       </UbPageShell>
     );
   }
-  if (!context || (documentId && server.loadStatus !== 'succeeded') || !editor.seeded) {
+  if (documentId && server.loadStatus === 'failed' && !recordRecovery) {
+    return (
+      <UbPageShell>
+        <UbEmptyState
+          variant="error"
+          title={t('purchases.detail.error.title')}
+          action={
+            <UbButton onClick={() => void dispatch(fetchPurchaseBill({ id: documentId, kind }))}>
+              {t('common.action.retry')}
+            </UbButton>
+          }
+        />
+      </UbPageShell>
+    );
+  }
+  if (
+    !context ||
+    (documentId && server.loadStatus !== 'succeeded' && !recordRecovery) ||
+    !editor.seeded
+  ) {
     return <UbPageSkeleton variant="card" />;
   }
 
   const savedAt = server.savedAt ?? server.document?.updatedAt;
   const savedTime = savedAt ? (formatTimestamp(savedAt).split(', ')[1] ?? '') : '';
-  const indicator =
-    offline ||
-    (hasUnsavedChanges && server.saveState !== 'saving') ||
-    (!hasServerCopy && server.saveState !== 'saving')
+  const indicator = recordRecovery
+    ? t('purchases.record.uncertainShort')
+    : offline ||
+        (hasUnsavedChanges && server.saveState !== 'saving') ||
+        (!hasServerCopy && server.saveState !== 'saving')
       ? t('purchases.draft.unsaved')
       : server.saveState === 'saving'
         ? t('purchases.draft.saving')
@@ -260,7 +304,26 @@ export function PurchaseBillEditorPageContent({
             ? t(order ? 'purchases.order.editTitle' : 'purchases.editor.editTitle')
             : t(order ? 'purchases.order.newTitle' : 'purchases.editor.newTitle')
         }
-        controls={docksTotals ? undefined : saveIndicator}
+        controls={
+          !docksTotals || paymentRefused || recordRecovery ? (
+            <UbStack gap={2}>
+              {!docksTotals && saveIndicator}
+              {(paymentRefused || recordRecovery) && (
+                <UbText
+                  role="status"
+                  variant="body-sm"
+                  className="rounded-card border border-border-hairline bg-surface-sunken p-3"
+                >
+                  {t(
+                    recordRecovery
+                      ? 'purchases.record.uncertain'
+                      : 'purchases.record.paymentRefused'
+                  )}
+                </UbText>
+              )}
+            </UbStack>
+          ) : undefined
+        }
         actions={
           <>
             <UbButton
@@ -268,7 +331,7 @@ export function PurchaseBillEditorPageContent({
               iconOnly
               icon={<X className="h-4 w-4" aria-hidden />}
               onClick={requestClose}
-              disabled={locked}
+              disabled={baseLocked || preparing}
             >
               {t(order ? 'purchases.order.close' : 'purchases.editor.close')}
             </UbButton>
@@ -307,15 +370,24 @@ export function PurchaseBillEditorPageContent({
                     ? 'purchases.order.sending'
                     : 'purchases.editor.recording'
               )}
-              disabled={!hasLines || locked || offline}
+              disabled={!hasLines || baseLocked || preparing || (offline && !recordRecovery)}
               data-testid="purchase-record"
               className="max-2xl:hidden"
             >
-              {t(order ? 'purchases.order.send' : 'purchases.editor.record')}
+              {t(
+                recordRecovery
+                  ? 'purchases.record.check'
+                  : paymentRefused
+                    ? 'purchases.record.payLater'
+                    : order
+                      ? 'purchases.order.send'
+                      : 'purchases.editor.record'
+              )}
             </UbButton>
           </>
         }
       />
+
       <UbForm form={form} onSubmit={() => startOnce()}>
         <UbGrid columns={1} gap={4} className="2xl:grid-cols-3">
           <UbStack gap={4} className="2xl:col-span-2">
@@ -379,13 +451,21 @@ export function PurchaseBillEditorPageContent({
                   ? 'purchases.order.sending'
                   : 'purchases.editor.recording'
             )}
-            disabled={!hasLines || locked || offline}
+            disabled={!hasLines || baseLocked || preparing || (offline && !recordRecovery)}
           >
-            {t(order ? 'purchases.order.send' : 'purchases.editor.record')}
+            {t(
+              recordRecovery
+                ? 'purchases.record.check'
+                : paymentRefused
+                  ? 'purchases.record.payLater'
+                  : order
+                    ? 'purchases.order.send'
+                    : 'purchases.editor.record'
+            )}
           </UbButton>
         </UbTotalDock>
       )}
-      {paying && (
+      {paying && !paymentRefused && !recordRecovery && (
         <PaidNowDrawerLazy
           grandTotal={paymentTotal ?? preview.grandTotal}
           busy={preparing || finishing || server.recording}
@@ -398,9 +478,15 @@ export function PurchaseBillEditorPageContent({
       <UbConfirmDialog
         open={confirmLeave}
         onOpenChange={setConfirmLeave}
-        title={t(order ? 'purchases.order.leaveTitle' : 'purchases.draft.leaveTitle')}
-        description={t('purchases.draft.leaveBody')}
-        confirmLabel={t('purchases.draft.leave')}
+        title={t(
+          recordRecovery
+            ? 'purchases.record.leaveTitle'
+            : order
+              ? 'purchases.order.leaveTitle'
+              : 'purchases.draft.leaveTitle'
+        )}
+        description={t(recordRecovery ? 'purchases.record.leaveBody' : 'purchases.draft.leaveBody')}
+        confirmLabel={t(recordRecovery ? 'purchases.record.leave' : 'purchases.draft.leave')}
         cancelLabel={t('purchases.draft.stay')}
         closeLabel={t('common.action.close')}
         destructive

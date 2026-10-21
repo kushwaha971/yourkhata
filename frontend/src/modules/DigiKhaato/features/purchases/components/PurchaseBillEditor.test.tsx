@@ -1001,3 +1001,114 @@ describe('purchase cost words and precision', () => {
     expect(screen.queryByText(/This bill’s cost/)).not.toBeInTheDocument();
   });
 });
+
+describe('purchase finish refusal and uncertain replies', () => {
+  const failure = (code: string, details = {}, status: number | null = 403) => ({
+    code,
+    message: 'Test refusal',
+    details,
+    status,
+    requestId: null,
+  });
+  const pay = async () => {
+    signInPayer();
+    renderWithProviders(<PurchaseBillEditorPageContent documentId="b1" />);
+    await userEvent.click(await screen.findByTestId('purchase-record'));
+    await userEvent.click(await screen.findByTestId('purchase-paid-now-confirm'));
+    await waitFor(() => expect(service.recordPurchaseBill).toHaveBeenCalledTimes(1));
+  };
+  it('offers an explicit credit-only retry only for a definitive payment permission refusal', async () => {
+    // Defect: the atomic payment403 left a merchant at an unchanged Paid-now sheet with no explanation.
+    service.recordPurchaseBill.mockRejectedValueOnce(
+      failure('permission_denied', { payment: ['Not allowed.'] })
+    );
+    service.recordPurchaseBill.mockResolvedValueOnce(envelope(RECORDED, '-2921.00'));
+    await pay();
+    const retry = await screen.findByRole('button', { name: 'Record as Pay later' });
+    expect(screen.getByText(/You can record bills but not pay suppliers/)).toBeInTheDocument();
+    expect(service.recordPurchaseBill).toHaveBeenCalledTimes(1);
+    await userEvent.click(retry);
+    await waitFor(() => expect(service.recordPurchaseBill).toHaveBeenCalledTimes(2));
+    expect(service.recordPurchaseBill.mock.calls[1]?.[1]).toEqual({ version: 4 });
+    expect(service.recordPurchaseBill.mock.calls[1]?.[2]).not.toBe(
+      service.recordPurchaseBill.mock.calls[0]?.[2]
+    );
+  });
+  it.each([
+    ['permission_denied', { document: ['Not allowed.'] }, 403],
+    ['precondition_failed', { payment: ['Context changed'] }, 412],
+    ['network_error', {}, null],
+  ])(
+    'never offers Pay later for %s outside the definitive payment403',
+    async (code, details, status) => {
+      // Defect guard: an uncertain payment or different permission cannot safely become a credit bill.
+      service.recordPurchaseBill.mockRejectedValueOnce(failure(code, details, status));
+      await pay();
+      expect(screen.queryByRole('button', { name: 'Record as Pay later' })).not.toBeInTheDocument();
+    }
+  );
+  it('retries a lost Record reply with the original body/key without PATCHing the recorded bill', async () => {
+    // Defect: retry Save PATCHed a posted bill before the idempotent Record replay and got stuck.
+    service.recordPurchaseBill.mockRejectedValueOnce(failure('network_error', {}, null));
+    service.recordPurchaseBill.mockResolvedValueOnce({
+      ...envelope({ ...RECORDED, status: 'paid' }),
+      payment: { paymentId: 'pay1', number: 'PAYOUT/1', amount: '2921.00' },
+    });
+    await pay();
+    const retry = await screen.findByRole('button', { name: 'Check recorded bill' });
+    expect(screen.getByLabelText('Cost, line 1')).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Save draft' })).toBeDisabled();
+    expect(screen.queryByTestId('purchase-paid-now-confirm')).not.toBeInTheDocument();
+    await userEvent.click(retry);
+    await waitFor(() => expect(service.recordPurchaseBill).toHaveBeenCalledTimes(2));
+    expect(service.updatePurchaseBill).toHaveBeenCalledTimes(1);
+    expect(service.recordPurchaseBill.mock.calls[1]).toEqual(
+      service.recordPurchaseBill.mock.calls[0]
+    );
+    expect(mockPush).toHaveBeenCalledWith('/purchases/bills/b1');
+  });
+  it('keeps recovery available when its outcome check fails, without offering an unsafe credit retry', async () => {
+    // Defect: a failed recovery GET put the known draft behind an endless loading skeleton.
+    service.recordPurchaseBill.mockRejectedValueOnce(failure('network_error', {}, null));
+    await pay();
+    service.getPurchaseBill.mockRejectedValueOnce(
+      failure('permission_denied', { payment: ['Check refused.'] })
+    );
+    await userEvent.click(await screen.findByRole('button', { name: 'Check recorded bill' }));
+    await waitFor(() => expect(service.getPurchaseBill).toHaveBeenCalledTimes(2));
+    expect(screen.getByRole('button', { name: 'Check recorded bill' })).toBeVisible();
+    expect(screen.queryByRole('button', { name: 'Record as Pay later' })).not.toBeInTheDocument();
+    expect(service.recordPurchaseBill).toHaveBeenCalledTimes(1);
+  });
+  it('opens an already recorded outcome without another Record POST or draft PATCH', async () => {
+    // Defect guard: checking the server outcome must not submit a second supplier payment.
+    service.recordPurchaseBill.mockRejectedValueOnce(failure('network_error', {}, null));
+    await pay();
+    service.getPurchaseBill.mockResolvedValueOnce(envelope({ ...RECORDED, status: 'paid' }));
+    await userEvent.click(await screen.findByRole('button', { name: 'Check recorded bill' }));
+    await waitFor(() => expect(mockPush).toHaveBeenCalledWith('/purchases/bills/b1'));
+    expect(service.recordPurchaseBill).toHaveBeenCalledTimes(1);
+    expect(service.updatePurchaseBill).toHaveBeenCalledTimes(1);
+    expect(store.getState().snackbar.id).toBe('purchases.record.recovered');
+  });
+  it('shows a retry when the initial bill load fails rather than an endless skeleton', async () => {
+    // Defect: loadStatus failed matched the loading-only branch forever.
+    service.getPurchaseBill.mockRejectedValueOnce(failure('network_error', {}, null));
+    renderWithProviders(<PurchaseBillEditorPageContent documentId="b1" />);
+    await userEvent.click(await screen.findByRole('button', { name: 'Try again' }));
+    expect(await screen.findByTestId('purchase-grand-total')).toHaveTextContent('₹2,921.00');
+  });
+  it('locks payment fields and keeps the sheet open while the actual Record is pending', async () => {
+    // Defect: amounts/methods were editable after their old values had already been submitted.
+    const pending = deferred();
+    service.recordPurchaseBill.mockImplementationOnce(() => pending.promise);
+    await pay();
+    expect(screen.getByLabelText('Amount', { exact: true })).toBeDisabled();
+    expect(screen.getByRole('radio', { name: 'PhonePe' })).toBeDisabled();
+    await userEvent.click(
+      within(screen.getByRole('dialog')).getByRole('button', { name: 'Close' })
+    );
+    expect(screen.getByRole('dialog')).toBeInTheDocument();
+    await act(async () => pending.resolve(envelope(RECORDED)));
+  });
+});

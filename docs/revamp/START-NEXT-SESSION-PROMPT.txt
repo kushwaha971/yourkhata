@@ -63,9 +63,11 @@ NEXT: steps below, each reviewed/built/looked/reported/committed separately.
 4. DELIVERED21Oct: truthful source-cost/order notes, exact comparison,
    four-place typed/saved costs and readable shared summaries. 4,613 tests,
    240 measured frames,29 backend checks; all production gates. See report.
-5. Record refused for payment permission (403 details.payment): "You can record
-   bills but not pay suppliers. Record it as Pay later, or ask the owner." with
-   a "Record as Pay later" button.
+5. DELIVERED21Oct: explicit payment403 credit choice; immutable scoped Record
+   intent, GET-before-replay, no retry PATCH, pending money locks, failed-load
+   retry and actor request fence.4,624 tests/80 backend checks/60 final frames.
+   Actual toast occlusion reproduced and fixed by using measured header controls.
+   Navigation36/36 now includes New purchase; final fresh A/B after step6.
 6. Build the actual joined supplier/number/date/due summary. Review found the
    old handoff overstated a separate picker plus More details card.
 Cost note correction: backend applies discounts/tax and last duplicate-line cost;

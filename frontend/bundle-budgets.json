@@ -1,5 +1,6 @@
 {
   "//": [
+    "21 Oct2026 purchase finish recovery: immutable scoped Record intent, GET-before-replay, explicit payment403 credit choice, failed-load retry and pending payment locks. Editors167.6 KB route/408.6 first load. Only the15 exceeded purchase route/first-load scalars use measured+0.3 KB. Shared113.7/framework127.3 unchanged; no new package or financial engine. See purchase-editor report step5.",
     "21 Oct2026 purchase cost words and four-place unit-rate entry: reuse the money input with opt-in entry precision and shared summary formatting; no pricing/stock engine change. Editors166.9 KB route/407.8\u2013407.9 first load; only seven exceeded route/first-load scalars use measured+0.3. Shared113.7/framework127.3 unchanged. See purchase-editor report step4.",
     "21 Oct 2026 purchase \u00a77 save/finish safety: server-acknowledged semantic input snapshots, omitted-row protection, source-default reconciliation before Paid now, offline/leave guards and shared window/async locks. Latest measured editors166.6 KB route /407.5\u2013407.6 KB first load; only exceeded scalars use measured +0.3 KB. Shared113.7/framework127.3 limits unchanged; no package, duplicated pricing engine or global app-switch guard. Final numbers and exact scoped budget changes are in docs/performance/2026-10-20-p5-purchase-editor.md.",
     "20 Oct 2026 purchase counter step 1: shared quick-add, dynamic labeled line finder and compact cost rows buy scanner/repeat Qty and keyboard selection. Purchase editors measure 164.2 KB route /405.1\u2013405.2 first load; sales extraction measures 168.2 /409.1\u2013409.2. Only 12 editor-route ceilings use measured +0.3 KB. Framework/shared ceilings unchanged; no new package. See docs/performance/2026-10-20-p5-purchase-quick-add.md.",
@@ -1408,12 +1409,12 @@
       "firstLoad": 316.5
     },
     "/purchases/debit-notes/[id]": {
-      "route": 71.9,
+      "route": 72.3,
       "firstLoad": 313.0
     },
     "/purchases/debit-notes": {
-      "route": 83.3,
-      "firstLoad": 324.3
+      "route": 83.7,
+      "firstLoad": 324.7
     },
     "/sales/challans/[id]": {
       "route": 84.2,
@@ -1432,20 +1433,20 @@
       "firstLoad": 409.5
     },
     "/purchases/orders/[id]": {
-      "route": 71.9,
+      "route": 72.3,
       "firstLoad": 313.0
     },
     "/purchases/orders": {
-      "route": 83.3,
-      "firstLoad": 324.3
+      "route": 83.7,
+      "firstLoad": 324.7
     },
     "/purchases/orders/new": {
-      "route": 166.9,
-      "firstLoad": 408.1
+      "route": 167.9,
+      "firstLoad": 408.9
     },
     "/purchases/orders/[id]/edit": {
-      "route": 167.2,
-      "firstLoad": 407.9
+      "route": 167.9,
+      "firstLoad": 408.9
     },
     "/sales/orders/[id]": {
       "route": 84.2,
@@ -1644,20 +1645,20 @@
       "firstLoad": 304.3
     },
     "/purchases/bills/[id]": {
-      "route": 71.8,
+      "route": 72.2,
       "firstLoad": 313.0
     },
     "/purchases/bills/[id]/edit": {
-      "route": 166.9,
-      "firstLoad": 407.9
+      "route": 167.9,
+      "firstLoad": 408.9
     },
     "/purchases/bills": {
       "route": 95,
       "firstLoad": 330
     },
     "/purchases/bills/new": {
-      "route": 166.9,
-      "firstLoad": 408.1
+      "route": 167.9,
+      "firstLoad": 408.9
     },
     "/reports": {
       "route": 72,
