@@ -6,22 +6,21 @@ Replace the line marked `TASK` with what you want done next. If you leave it out
 
 ## Current handoff · 21 October 2026
 
+R-DEC-32: CLAUDE.md's mandatory revamp acceptance gates are strict. Verify explicit reference/component values before coding; final LOOK and measured evidence are required. Never make the owner catch documented deviations.
+
 Read START-NEXT-SESSION-PROMPT.txt and12's current Next first. R-DEC-27 orders
-billing/POS, purchases and returns, then inventory, payments, expenses and reports
-before remaining Home. Billing is finished for now (owner: Move on).
-Purchase editor §7 is now complete within its documented local scope: steps1–6,
-joined supplier summary, lazy shared supplier creation, recovery and context
-states.414 suites/4,639 tests,80 purchase backend tests and498 final measured
-frames pass. Final quiet A/B,30-line speed and eight-row rating are in the final
-21Oct section of docs/performance/2026-10-20-p5-purchase-editor.md; use that,
-not the historical component-only8.75 or pending-editor notes. Design8.80,
-lowest aspect8.6;30-line picks36/38ms. First throttled phone load~1.39s,~5%
-more than baseline; no speed-up claim. Next is the
-purchase register §5, then detail §6 and full return/debit-note redesign.
-Read-only posted edit/Back and recovery cache refresh are covered; no device
-copy/crash or physical-phone guarantee. Shared portal submit and quantity-intent
-regressions were fixed without copying business engines. The return input guard
-alone does not certify the return workflow. Keep all same-loop evidence rules.
+billing/purchases/returns, then inventory/money/expenses/reports, then Home.
+Purchase editor §7 and register §5 are delivered. Register evidence:
+docs/performance/2026-10-21-p5-purchase-register.md —416 suites/4,647 tests,
+80 backend checks,240 final measured frames/hit tests and same-machine serial
+A/B. Read its final rating/limits, not historical scoped editor scores.
+Register design8.75, lowest aspect8.6; throttled pooled content538.5ms phone /837ms desktop (+9/+10ms vs baseline), feedback≤12/28ms. No speedup claim.
+Next: R-DEC-31 viewport rollout, starting with existing Shop Customers/Suppliers/Bills; see11's matrix. Only Purchases is currently implemented. Then resume purchase detail §6/order conversion/returns under R-DEC-27.
+R-DEC-30:80% mobile, complete redesign; rows alone scroll while pagination and
+actions remain reachable. Reuse UbViewportPageShell/UbDataGrid fillHeight and
+existing RecordTotals/search/filter/clearance; ordinary pages do not measure.
+Earlier registers are not all migrated by this piece. BP-18 draft timestamps
+are proposed only; physical PWA/keyboard/text scaling remain unproved.
 Compact line/totals component407d9caa is delivered; it is not the whole editor.
 R-DEC-28 adds app-wide Quick Sale / Saved customer and role-appropriate Customer,
 Supplier, Contact copy. Read2026-10-20-plain-contact-terms.md for verification and
@@ -117,3 +116,15 @@ and how, and what is still unproven. Keep it short; details belong in the docs.
 - **Cursor** also reads `AGENTS.md`; for older setups, add this file under Rules ("Add rule → reference file").
 - **Claude Code** reads `CLAUDE.md` automatically and `AGENTS.md` when asked; the prompt above covers both.
 - **Any chat-only tool** without repository access: paste the prompt, then paste README.md, 12-decision-log.md, 02 and the files your task touches.
+
+
+R-DEC-32 ADDITION — FUNCTION, USER VALUE AND COMPETITION ARE STRICT GATES
+For each piece, explain the user's task, why the feature/action is necessary
+and belongs there, and what benefit is measured versus assumed. Verify real
+UI/API/persisted business results, permissions/isolation and failure/recovery.
+Compare relevant competitors on the same task using dated verified evidence;
+state better/equal/worse honestly, never invent superiority. Map every necessary
+requirement/must-keep contract to implementation and test/journey evidence with
+passed/missing/deferred/unproven status in the existing report. A high design
+score cannot excuse critical financial/access/data-loss or essential-flow gaps.
+No claim that this research or all-module acceptance is already complete.

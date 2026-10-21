@@ -11,7 +11,10 @@ import { selectNetworkImpaired } from 'src/redux/slice/networkSlice';
 import { selectTenantTimezone } from 'src/redux/slice/sessionSlice';
 import { todayInTenantTz } from 'src/utils/dates';
 
-import { PURCHASE_BILL_TABS_ORDER } from '../constants/purchaseConstants';
+import {
+  DEFAULT_PURCHASE_BILL_PRESET,
+  PURCHASE_BILL_TABS_ORDER,
+} from '../constants/purchaseConstants';
 import {
   purchaseBillFiltersChanged,
   selectPurchaseBillList,
@@ -178,8 +181,18 @@ export const usePurchaseBillList = (
   const setQuery = useCallback((q: string) => push({ ...filters, q, page: 1 }), [push, filters]);
   const setPage = useCallback((page: number) => push({ ...filters, page }), [push, filters]);
   const clearFilters = useCallback(
-    () => push({ ...filters, tab: 'all', q: '', page: 1, dueFrom: null, dueTo: null }),
-    [push, filters]
+    () =>
+      push({
+        ...filters,
+        ...resolvePurchasePreset(DEFAULT_PURCHASE_BILL_PRESET, today),
+        preset: DEFAULT_PURCHASE_BILL_PRESET,
+        tab: 'all',
+        q: '',
+        page: 1,
+        dueFrom: null,
+        dueTo: null,
+      }),
+    [push, filters, today]
   );
   const clearDue = useCallback(
     () => push({ ...filters, dueFrom: null, dueTo: null, page: 1 }),

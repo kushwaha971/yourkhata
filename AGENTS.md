@@ -4,3 +4,7 @@
 2. For the app-wide redesign and performance work, follow `docs/revamp/AGENT_START_PROMPT.md`. It says what to read, what must never change (Library and Lending are live), how to write specs, score designs and keep the plan up to date.
 3. For the Shop/IMS readiness programme, follow `docs/shop-ims-readiness/AGENT_START_PROMPT.md`.
 4. When the two disagree with the code, the code is the truth; record the difference in the relevant decision log rather than guessing.
+
+5. The owner's mandatory revamp gates in `CLAUDE.md` (R-DEC-32) are hard requirements for every piece: check explicit reference values before coding, distinguish visible size from touch size, verify final rendered behavior, and report only actually completed scope.
+
+6. R-DEC-32 also requires separate functional/business correctness, explicit end-user value/feature necessity, evidence-based competitor comparison and requirement-to-test traceability. Never substitute a design score for required working behavior or claim an unverified competitive advantage.

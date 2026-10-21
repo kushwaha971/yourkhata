@@ -1,22 +1,24 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useMemo } from 'react';
 
 import { Plus, X } from 'lucide-react';
 
 import {
   UbActionLink,
   UbButton,
-  UbDateRangePicker,
+  UbPeriodSelect,
+  useMediaQuery,
+  UbChoiceChips,
   UbEmptyState,
   UbFilterChip,
   UbFilterSheet,
   UbPageHeader,
   UbPageHeaderMobileActions,
   UbPageShell,
+  UbViewportPageShell,
   UbSearchInput,
   UbStack,
-  UbTabs,
 } from 'src/design-system';
 import type { UbFilterSpec, UbFilterValues } from 'src/design-system';
 import {
@@ -27,7 +29,7 @@ import {
   type UbGridState,
 } from 'src/design-system/UbDataGrid';
 import { useAppRouter } from 'src/hooks/useAppRouter';
-import { useDebounce } from 'src/hooks/useDebounce';
+import { useCommittedSearch } from 'src/hooks/useCommittedSearch';
 import { useTranslation } from 'src/hooks/useTranslation';
 import { ROUTES } from 'src/routes';
 import { formatBusinessDate } from 'src/utils/dates';
@@ -98,18 +100,20 @@ export function PurchaseBillsListPageContent({
 }: Readonly<{ kind?: PurchaseKind }>): React.JSX.Element {
   const { t } = useTranslation();
   const router = useAppRouter();
-  const tier = useGridTier();
+  const gridTier = useGridTier();
+  const wide = useMediaQuery('(min-width: 1280px)');
+  const tier = gridTier === 'full' && !wide ? 'compact' : gridTier;
   const list = usePurchaseBillList(kind);
   const copy = LIST_COPY[kind];
   const order = kind === 'purchase_order';
   const NEW_BILL = `${copy.home}/new`;
 
-  const [search, setSearch] = useState(list.filters.q);
-  const debounced = useDebounce(search, PURCHASE_BILL_SEARCH_DEBOUNCE_MS);
   const { setQuery, filters, canWrite } = list;
-  useEffect(() => {
-    if (debounced.trim() !== filters.q.trim()) setQuery(debounced);
-  }, [debounced, filters.q, setQuery]);
+  const [search, setSearch] = useCommittedSearch(
+    filters.q,
+    setQuery,
+    PURCHASE_BILL_SEARCH_DEBOUNCE_MS
+  );
 
   const columns = useMemo(
     () =>
@@ -117,6 +121,7 @@ export function PurchaseBillsListPageContent({
         t,
         today: list.today,
         isCards: tier === 'cards',
+        compact: tier === 'compact',
         order,
         note: kind === 'debit_note',
       }),
@@ -189,7 +194,7 @@ export function PurchaseBillsListPageContent({
       : list.status === 'failed'
         ? 'error'
         : list.rows.length === 0
-          ? isPurchaseListNarrowed(filters)
+          ? isPurchaseListNarrowed(filters) || list.hasAny === true
             ? 'filtered-empty'
             : 'empty'
           : 'rows';
@@ -242,19 +247,6 @@ export function PurchaseBillsListPageContent({
   const phoneSpecs: UbFilterSpec[] = [
     {
       kind: 'single',
-      key: 'tab',
-      label: t('purchases.tab.label'),
-      anyLabel: t(`${copy.tab}.all`),
-      options: copy.tabs
-        .filter((tab: PurchaseBillTab) => tab !== 'all')
-        .map((value: PurchaseBillTab) => ({
-          value,
-          label: t(`${copy.tab}.${value}`),
-          hint: list.counts?.[value] ? String(list.counts[value]) : undefined,
-        })),
-    },
-    {
-      kind: 'single',
       key: 'preset',
       label: t('purchases.period.label'),
       anyLabel: t(`purchases.period.${DEFAULT_PURCHASE_BILL_PRESET}`),
@@ -275,7 +267,6 @@ export function PurchaseBillsListPageContent({
   ];
   const custom = filters.preset === 'custom';
   const phoneValues: UbFilterValues = {
-    tab: filters.tab === 'all' ? '' : filters.tab,
     preset: filters.preset === DEFAULT_PURCHASE_BILL_PRESET || custom ? '' : filters.preset,
     dateFrom: custom ? filters.dateFrom : '',
     dateTo: custom ? filters.dateTo : '',
@@ -283,7 +274,7 @@ export function PurchaseBillsListPageContent({
   const applyPhone = (next: UbFilterValues) => {
     const ranged = Boolean(next.dateFrom || next.dateTo);
     list.applyFilters({
-      tab: (next.tab || 'all') as PurchaseBillTab,
+      tab: filters.tab,
       preset: ranged
         ? 'custom'
         : ((next.preset || DEFAULT_PURCHASE_BILL_PRESET) as PurchaseBillPreset),
@@ -338,12 +329,26 @@ export function PurchaseBillsListPageContent({
       onPageChange={list.setPage}
       onRowOpen={openRow}
       cardAvatar={false}
+      cardLayout="stacked"
+      variant="register"
+      fillHeight
+      tier={tier}
+      compactCutoff={1}
+      className="[&_th]:whitespace-normal [&_th]:break-words"
+      busy={list.status === 'refreshing'}
     />
   );
   return (
-    <UbPageShell>
+    <UbViewportPageShell>
       <UbPageHeader
         title={t(copy.title)}
+        actions={Object.entries(LIST_COPY)
+          .filter(([key]) => key !== kind)
+          .map(([key, section]) => (
+            <UbActionLink key={key} href={section.home} variant="secondary">
+              {t(section.title)}
+            </UbActionLink>
+          ))}
         primaryAction={
           canWrite && copy.newLabel && !emptyBook ? (
             <UbActionLink
@@ -363,6 +368,7 @@ export function PurchaseBillsListPageContent({
           <UbPageHeaderMobileActions
             actions={actions}
             mobile={{
+              primaryPlacement: 'header',
               menuLabel: t('common.action.moreActions'),
               closeLabel: t('common.action.close'),
               // The empty book's one button is in the middle of the screen.
@@ -378,7 +384,7 @@ export function PurchaseBillsListPageContent({
           />
         )}
       />
-      <UbStack gap={4} data-testid="purchase-bills-screen">
+      <UbStack gap={3} className="min-h-0 flex-1 !shrink" data-testid="purchase-bills-screen">
         {emptyBook ? (
           /* Owner, 12 Oct 2026: an empty book is one sentence and one button —
              no period, ₹0 totals, tabs or search over nothing. */
@@ -388,62 +394,63 @@ export function PurchaseBillsListPageContent({
             description={emptyStates.firstUse.description}
             action={emptyStates.firstUse.action}
           />
-        ) : phone ? (
+        ) : (
           <>
-            <UbStack direction="row" gap={2} align="center">
+            <UbStack
+              direction="row"
+              align="center"
+              className="shrink-0 flex-wrap gap-2"
+              data-testid="purchase-register-toolbar"
+            >
               {searchBox}
-              <UbFilterSheet
-                compact
-                specs={phoneSpecs}
-                values={phoneValues}
-                onApply={applyPhone}
-                labels={{
-                  title: t('common.filters.title'),
-                  apply: t('common.action.apply'),
-                  reset: t('common.action.reset'),
-                  close: t('common.action.close'),
-                }}
-              />
+              {phone ? (
+                <UbFilterSheet
+                  compact
+                  specs={phoneSpecs}
+                  values={phoneValues}
+                  onApply={applyPhone}
+                  labels={{
+                    title: t('common.filters.title'),
+                    apply: t('common.action.apply'),
+                    reset: t('common.action.reset'),
+                    close: t('common.action.close'),
+                  }}
+                />
+              ) : (
+                <UbPeriodSelect<PurchaseBillPreset>
+                  presets={presets}
+                  value={filters.preset}
+                  customValue="custom"
+                  from={filters.dateFrom}
+                  to={filters.dateTo}
+                  max={list.today}
+                  onChange={(preset, from, to) => {
+                    if (preset === 'custom' && from && to) list.setRange(from, to);
+                    else list.setPreset(preset);
+                  }}
+                  labels={{
+                    period: t('purchases.period.label'),
+                    from: t('purchases.period.from'),
+                    to: t('purchases.period.to'),
+                    apply: t('common.action.apply'),
+                    close: t('common.action.close'),
+                  }}
+                />
+              )}
             </UbStack>
+            <UbChoiceChips<PurchaseBillTab>
+              value={filters.tab}
+              onChange={list.setTab}
+              options={tabs}
+              ariaLabel={t('purchases.tab.label')}
+              className="shrink-0 flex-nowrap overflow-x-auto py-1.5 [&>button]:shrink-0"
+            />
             {dueChip}
             {stats}
             {grid}
           </>
-        ) : (
-          <>
-            <UbDateRangePicker<PurchaseBillPreset>
-              presets={presets}
-              preset={filters.preset}
-              onPresetChange={list.setPreset}
-              customPreset="custom"
-              from={filters.dateFrom}
-              to={filters.dateTo}
-              onRangeChange={list.setRange}
-              max={list.today}
-              name="purchase-period"
-              labels={{
-                presets: t('purchases.period.label'),
-                from: t('purchases.period.from'),
-                to: t('purchases.period.to'),
-                apply: t('common.action.apply'),
-                close: t('common.action.close'),
-              }}
-            />
-            {dueChip}
-            {stats}
-            <UbTabs<PurchaseBillTab>
-              value={filters.tab}
-              onValueChange={list.setTab}
-              tabs={tabs}
-              ariaLabel={t('purchases.tab.label')}
-              layout="fit"
-              trailing={searchBox}
-            >
-              {grid}
-            </UbTabs>
-          </>
         )}
       </UbStack>
-    </UbPageShell>
+    </UbViewportPageShell>
   );
 }

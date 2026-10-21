@@ -81,6 +81,77 @@ a repo move. The mark and its rules are `docs/DESIGN-SYSTEM.md` §7.
 
 ## How to work here
 
+### Mandatory revamp acceptance gates — owner, 21 October 2026 (R-DEC-32)
+
+These are hard requirements, not optional guidelines. Apply them to every future
+piece. Do not make the owner discover deviations already specified in the docs.
+
+1. Before coding, read the screen spec, approved visual reference and actual
+   component contracts. Write a short spec-to-check mapping in the existing
+   piece report: composition, dimensions, typography, spacing, states and
+   interactions, with their source and verification. Do not substitute a new
+   interpretation for an explicit reference value. Latest owner instructions
+   override earlier references; record genuine conflicts rather than guessing.
+2. Build the complete approved composition, not minor changes to an old design.
+   R-DEC-31's explicitly requested shared viewport rollout is a scoped exception;
+   it does not certify those modules' entire redesigns.
+3. Preserve documented visible sizes separately from hit areas. Chips have32px
+   visible faces and44px mobile targets through the existing hit-area mechanism.
+   Do not inflate visible controls to obtain accessibility. Other components
+   follow their own documented sizes;32px is not a universal control height.
+4. Prioritize mobile users throughout. Registers fit the available viewport:
+   rows/list content scroll internally; pagination and key actions stay usable,
+   including under notices/toasts. Track every module's rollout explicitly;
+   a shared component existing does not mean every screen uses it.
+5. Reuse existing components, hooks and business engines. Preserve separate
+   app/book/role/user data, permissions, internal cost privacy, financial rules
+   and frozen Library/Lending contracts. Never invent absent source facts.
+6. Verify real local frontend/backend journeys, business rules, busy-counter
+   interactions, error/pending/offline/recovery states and meaningful edge cases.
+   Check phone/desktop, themes and required locales. Reproduce defects before
+   fixing them and retain meaningful regression evidence.
+7. LOOK at the final rendered results and measure computed dimensions, contrast,
+   text bounds, viewport overflow and real hit targets. Compare the full screen
+   with the approved reference. Tests passing alone are not visual acceptance.
+   Measure performance against a valid baseline; no unsupported speed claims.
+8. A piece is not delivered until its required gates, reference checks, final
+   LOOK and evidence report are complete. Ratings must describe verified scope
+   and unresolved limits honestly; the target above8.5 is not permission to
+   inflate a score. Update tracking/handoff and, when authorized, commit/push
+   and verify the remote SHA. Never imply partial or pending modules are done.
+
+
+9. **Functional correctness is a separate hard gate.** Verify each required
+   workflow from UI through the real local API and persisted/read-back result:
+   calculations, stock/money effects, history, permissions, tenant/app/book/role
+   isolation, validation, repeated actions and failure/recovery. A good-looking
+   screen or passing component test is not proof that the business task works.
+10. **Prove end-user value and necessity.** For every feature/action explain who
+    needs it, the real business problem, why it belongs on this screen, and how
+    it reduces effort, errors or uncertainty. Review from shopkeeper/operator,
+    owner/product-manager, designer and engineer perspectives. Consider mobile,
+    busy-counter use, feasibility and ongoing maintenance. Do not add clicks,
+    data or features merely to appear feature-rich; do not remove an existing
+    required capability without authorization.
+11. **Use evidence-based competitive comparison.** Identify relevant competitors
+    and compare the same actual user task: required capability, steps, clarity,
+    mobile usability, feedback/recovery, speed and business fit. Verify current
+    competitor facts with dated primary evidence or clearly labelled hands-on
+    observations. Record where we are better, equal or worse and the trade-offs.
+    Do not invent competitor limitations or claim superiority from appearance,
+    a self-rating or marketing copy. Distinguish proposed advantage from tested
+    advantage; missing research means unproven, not better.
+12. **Trace every necessary requirement to evidence.** In the existing piece
+    report map user needs and must-keep contracts to implementation, meaningful
+    tests/real journeys and explicit status: passed, missing, deferred with
+    reason, or unproven. Include user-relevant edge cases and source/backend
+    gaps, not an impossible promise that all imaginable cases are covered.
+    Required acceptance checks must pass before declaring that scope complete.
+    No aggregate rating can compensate for incorrect money/stock, unauthorized
+    access, lost work or an essential broken/unavailable workflow. New features
+    and backend changes still respect their approval/frozen-contract boundaries.
+
+
 The owner asked for a specific loop, in these words: **review, build, look,
 report** — design review *before* implementing, not screenshots afterwards. And
 after each feature: **bring the stack up, test it like a tester, fix what you
@@ -96,6 +167,14 @@ state missing source data or unsupported behavior explicitly. Do not make the
 owner discover preventable inconsistencies, inflate ratings, or call a partial
 implementation complete. New owner instructions supersede a specific reference
 (e.g. Home's daily/weekly/monthly/yearly graph and header command search).
+
+**Mobile-first registers (owner,21Oct2026,R-DEC-30):** about80% of users are on
+phones. Redesign complete workflows, not old styling. Tables/mobile lists fit
+the available visual viewport: only rows scroll, pagination/actions remain in
+reach. Prefer shared opt-in page/grid sizing, measured header/navigation space
+and dynamic viewport height over copied fixed offsets. Verify phone readability,
+44px hit targets, keyboard/short-height behavior and real scroll measurements.
+Do not claim all older registers migrated when only the current piece is done.
 
 **Revamp, do not patch (owner, 20 Oct 2026, R-DEC-29):** do not rework the
 existing design of any module; build its approved revamp composition

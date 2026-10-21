@@ -31,6 +31,7 @@ export interface PurchaseBillListState {
   status: RequestStatus;
   error: ApiErrorShape | null;
   filters: PurchaseBillListQuery | null;
+  requestId: string | null;
   stale: boolean;
   staleUrgency: 'now' | 'next-mount' | null;
 }
@@ -46,6 +47,7 @@ const initialState: PurchaseBillListState = {
   status: 'idle',
   error: null,
   filters: null,
+  requestId: null,
   stale: false,
   staleUrgency: null,
 };
@@ -58,7 +60,9 @@ const sameFilters = (a: PurchaseBillListQuery | null, b: PurchaseBillListQuery):
   a.dateTo === b.dateTo &&
   a.partyId === b.partyId &&
   a.q === b.q &&
-  a.page === b.page;
+  a.page === b.page &&
+  (a.dueFrom ?? null) === (b.dueFrom ?? null) &&
+  (a.dueTo ?? null) === (b.dueTo ?? null);
 
 const purchaseBillListSlice = createSlice({
   name: 'purchaseBillList',
@@ -70,6 +74,7 @@ const purchaseBillListSlice = createSlice({
       state.filters = action.payload as Draft<PurchaseBillListQuery>;
       state.rows = [];
       state.totals = null;
+      state.counts = null;
       state.status = 'loading';
       state.error = null;
     },
@@ -77,12 +82,17 @@ const purchaseBillListSlice = createSlice({
   extraReducers: (builder) => {
     acceptInvalidation<PurchaseBillListState>('purchaseBillList')(builder);
     builder
-      .addCase(fetchPurchaseBillList.pending, (state) => {
+      .addCase(fetchPurchaseBillList.pending, (state, action) => {
+        state.requestId = action.meta.requestId;
         state.status = state.rows.length > 0 ? 'refreshing' : 'loading';
         state.error = null;
       })
       .addCase(fetchPurchaseBillList.fulfilled, (state, action) => {
-        if (!sameFilters(state.filters, action.meta.arg)) return;
+        if (
+          state.requestId !== action.meta.requestId ||
+          !sameFilters(state.filters, action.meta.arg)
+        )
+          return;
         state.rows = action.payload.rows as Draft<PurchaseBillListRow>[];
         state.totals = action.payload.totals;
         state.counts = action.payload.counts as Draft<PurchaseBillTabCounts>;
@@ -95,7 +105,12 @@ const purchaseBillListSlice = createSlice({
         state.staleUrgency = null;
       })
       .addCase(fetchPurchaseBillList.rejected, (state, action) => {
-        if (action.meta.aborted) return;
+        if (
+          action.meta.aborted ||
+          state.requestId !== action.meta.requestId ||
+          !sameFilters(state.filters, action.meta.arg)
+        )
+          return;
         state.status = 'failed';
         state.error = (action.payload ?? null) as Draft<ApiErrorShape> | null;
       })

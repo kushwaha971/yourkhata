@@ -240,8 +240,8 @@ Tracking: problems — none severe; consequence line below the fold on phones to
 |---|---|
 | Purpose | See what the shop bought, what it still owes suppliers, and find a supplier bill by its number. |
 | Who and when | Owner and the staff member who enters supplier bills; when goods arrive and when paying suppliers. |
-| Phone layout | Reached from the App sheet › More in Shop › Purchases (not a tab). Header "Purchases" + ⋯ (Orders, Returns to supplier). Money strip: **Bought** and **To pay** (filtered set, Shop book, "To pay" never mixed with customer dues). Search ("supplier, our number or their bill number") + status chips (All · To pay · Overdue · Paid · Draft · Cancelled) + Filters (period). Cards: supplier (wraps) · amount; number · their number · date · status · "₹4,000 to pay". |
-| Desktop layout | Sidebar Shop › Purchases. Header with Orders / Returns links and **+ Record bill** (marigold). Stats, tabs, filter bar, table: Number · Their no. · Date · Supplier · Total · To pay · Status. |
+| Phone layout | Reached from the App sheet › More in Shop › Purchases (not a tab). Header "Purchases" + ⋯ (Orders, Returns to supplier). Money strip: **Bought** and **To pay** (filtered set, Shop book, "To pay" never mixed with customer dues). Search ("supplier, our number or their bill number") + status chips (All · To pay · Overdue · Paid · Draft · Cancelled) + Filters (period). Cards: supplier (wraps) · amount; number · their number · date · status · "₹4,000 to pay". R-DEC-30: page fits the visual viewport; rows alone scroll and pagination remains outside the scroll region. Status chips scroll sideways with32px faces and44px mobile targets, not into extra toolbar rows. |
+| Desktop layout | Sidebar Shop › Purchases. Header with Orders / Returns links and **+ Record bill** (marigold). Compact server summary, visible status chips, search/period bar, bounded table: Number · Their no. · Date · Supplier · Total · To pay · Status. At1024, paper identity/date join the supplier cell; full columns from1280. Sticky table header, independently visible pagination (R-DEC-30). |
 | What matters most | to pay → find a bill → record a new one. |
 | Components | same as §1. No new component. |
 | Main / other actions | + Record bill / + New order. Debit notes: no New (from a bill, "Return goods"). |
@@ -251,7 +251,7 @@ Tracking: problems — none severe; consequence line below the fold on phones to
 | Must keep working | supplier dues in the Shop book only; duplicate supplier number rule; list paging and totals from the server. |
 | Fewer taps | status chips visible; search matches the supplier's own bill number. |
 
-Tracking: problems — Purchases lives only in More on phones · decisions — no fifth Shop tab (N-1 keeps 4 + App) · dependencies — R-DEC-04 · risks — none new · approval — pending · build — not started · tests — `final-sales-qa.mjs` purchase part, list e2e at 4 widths · outcome — —
+Tracking: problems — old page-growing list/hidden phone statuses, clipped supplier/paper facts and buried pagination · decisions — R-DEC-30 mobile-first bounded register, compact server money strip, visible status chips, full paper identity, pager outside rows and toast clearance · dependencies — existing APIs; BP-18 proposes saved timestamps for identical drafts, not built · risks — physical PWA/keyboard/text scaling unproved; orders/returns actual workflows remain separate · approval — R-DEC-27/29/30 · build — §5 composition delivered21Oct, including shared empty order/return-list presentation · tests —416 suites/4,647 frontend tests,80 purchase backend tests,240 measured frames/hit tests and quiet same-machine A/B · outcome — see docs/performance/2026-10-21-p5-purchase-register.md for rating/limits. Next §6 detail, order conversion and full returns/debit-note acceptance.
 
 ---
 

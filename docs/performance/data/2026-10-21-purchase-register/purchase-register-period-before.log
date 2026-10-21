@@ -1,0 +1,154 @@
+FAIL src/modules/DigiKhaato/features/purchases/components/PurchaseBillsListPageContent.test.tsx
+  ✓ lists this financial year and shows the server payables totals (PUR-03 FR-3) (95 ms)
+  ✓ asks for the bills due in the window a link names, says so, and can drop it (WP-06) (51 ms)
+  ✓ asks the server for unpaid bills when the Unpaid tab is chosen (AC-1) (44 ms)
+  ✓ shows a shop that has never bought anything one sentence, not tabs and ₹0 (24 ms)
+  ✓ keeps the filters when a search found nothing in a book that has bills (9 ms)
+  ✓ offers New bill only to a role that can record one (the accountant reads) (15 ms)
+  ✓ tells a member without access so, and asks nothing (2 ms)
+  ✓ keeps bill status choices visible and supplier paper numbers readable on phones (36 ms)
+  ✕ treats an empty period in a used book as filtered empty and clears the date filter (1017 ms)
+
+  ● treats an empty period in a used book as filtered empty and clears the date filter
+
+    Unable to find role="button" and name "Clear filters"
+
+    Ignored nodes: comments, script, style
+    [36m<body>[39m
+      [36m<div>[39m
+        [36m<div[39m
+          [33mclass[39m=[32m"flex w-full flex-col bg-canvas min-h-0 overflow-hidden"[39m
+          [33mdata-ub-viewport[39m=[32m"true"[39m
+          [33mstyle[39m=[32m"--ub-page-top: 0px; --ub-page-viewport: 768px;"[39m
+        [36m>[39m
+          [36m<div[39m
+            [33mclass[39m=[32m"mx-auto flex w-full flex-1 flex-col px-4 pb-6 pt-4 lg:px-6 lg:pb-3 lg:pt-3 max-w-none min-h-0 gap-3 [&>*]:shrink-0"[39m
+          [36m>[39m
+            [36m<header[39m
+              [33mclass[39m=[32m"flex flex-col gap-3"[39m
+              [33mdata-ub-page-header[39m=[32m""[39m
+            [36m>[39m
+              [36m<div[39m
+                [33mclass[39m=[32m"flex flex-wrap items-center gap-x-4 gap-y-2"[39m
+              [36m>[39m
+                [36m<div[39m
+                  [33mclass[39m=[32m"flex min-w-[8rem] flex-1 flex-col gap-0.5"[39m
+                [36m>[39m
+                  [36m<h1[39m
+                    [33mclass[39m=[32m"ds-h1 truncate leading-8 text-text-primary"[39m
+                  [36m>[39m
+                    [0mPurchases[0m
+                  [36m</h1>[39m
+                [36m</div>[39m
+                [36m<div[39m
+                  [33mclass[39m=[32m"flex max-w-full shrink-0 flex-wrap items-center gap-2 max-sm:gap-3 max-lg:hidden"[39m
+                [36m>[39m
+                  [36m<a[39m
+                    [33mclass[39m=[32m"inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-control [&_svg]:shrink-0 ub-hit transition-colors duration-fast ease-standard active:scale-[0.98] motion-reduce:active:scale-100 disabled:active:scale-100 disabled:cursor-not-allowed disabled:opacity-45 bg-surface-sunken text-text-primary hover:bg-surface-hover active:bg-surface-active h-10 px-4 text-button outline-none focus-visible:shadow-focus"[39m
+                    [33mhref[39m=[32m"/purchases/orders"[39m
+                  [36m>[39m
+                    [36m<span[39m
+                      [33mclass[39m=[32m"inline-flex items-center gap-2"[39m
+                    [36m>[39m
+                      [0mPurchase orders[0m
+                    [36m</span>[39m
+                  [36m</a>[39m
+                  [36m<a[39m
+                    [33mclass[39m=[32m"inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-control [&_svg]:shrink-0 ub-hit transition-colors duration-fast ease-standard active:scale-[0.98] motion-reduce:active:scale-100 disabled:active:scale-100 disabled:cursor-not-allowed disabled:opacity-45 bg-surface-sunken text-text-primary hover:bg-surface-hover active:bg-surface-active h-10 px-4 text-button outline-none focus-visible:shadow-focus"[39m
+                    [33mhref[39m=[32m"/purchases/debit-notes"[39m
+                  [36m>[39m
+                    [36m<span[39m
+                      [33mclass[39m=[32m"inline-flex items-center gap-2"[39m
+                    [36m>[39m
+                      [0mDebit notes[0m
+                    [36m</span>[39m
+                  [36m</a>[39m
+                [36m</div>[39m
+              [36m</div>[39m
+            [36m</header>[39m
+            [36m<div[39m
+              [33mclass[39m=[32m"flex flex-col gap-3 min-h-0 flex-1 !shrink"[39m
+              [33mdata-testid[39m=[32m"purchase-bills-screen"[39m
+            [36m>[39m
+              [36m<div[39m
+                [33mclass[39m=[32m"flex flex-row items-center shrink-0 flex-wrap gap-2"[39m
+                [33mdata-testid[39m=[32m"purchase-register-toolbar"[39m
+              [36m>[39m
+                [36m<div[39m
+                  [33mclass[39m=[32m"flex h-10 w-full items-center gap-2 rounded-control border bg-surface-card px-3 transition-colors duration-fast ease-standard focus-within:border-text-primary border-border-hairline hover:border-border-subtle focus-visible:border-text-primary min-w-0 flex-1"[39m
+                [36m>[39m
+                  [36m<svg[39m
+                    [33maria-hidden[39m=[32m"true"[39m
+                    [33mclass[39m=[32m"lucide lucide-search h-4 w-4 shrink-0 text-text-tertiary"[39m
+                    [33mfill[39m=[32m"none"[39m
+                    [33mheight[39m=[32m"24"[39m
+                    [33mstroke[39m=[32m"currentColor"[39m
+                    [33mstroke-linecap[39m=[32m"round"[39m
+                    [33mstroke-linejoin[39m=[32m"round"[39m
+                    [33mstroke-width[39m=[32m"2"[39m
+                    [33mviewBox[39m=[32m"0 0 24 24"[39m
+                    [33mwidth[39m=[32m"24"[39m
+                    [33mxmlns[39m=[32m"http://www.w3.org/2000/svg"[39m
+                  [36m>[39m
+                    [36m<circle[39m
+                      [33mcx[39m=[32m"11"[39m
+                      [33mcy[39m=[32m"11"[39m
+                      [33mr[39m=[32m"8"[39m
+                    [36m/>[39m
+                    [36m<path[39m
+                      [33md[39m=[32m"m21 21-4.3-4.3"[39m
+                    [36m/>[39m
+                  [36m</svg>[39m
+                  [36m<input[39m
+                    [33maria-label[39m=[32m"Search bills"[39m
+                    [33mclass[39m=[32m"ds-body-base-regular h-full min-w-0 flex-1 bg-transparent text-text-primary outline-none placeholder:text-text-muted [&::-webkit-search-cancel-button]:hidden"[39m
+                    [33mplaceholder[39m=[32m"Bill number or supplier"[39m
+                    [33mtype[39m=[32m"search"[39m
+                    [33mvalue[39m=[32m""[39m
+                  [36m/>[39m
+                [36m</div>[39m
+                [36m<button[39m
+                  [33maria-haspopup[39m=[32m"dialog"[39m
+                  [33maria-label[39m=[32m"Filters (1)"[39m
+                  [33mclass[39m=[32m"ub-hit ds-body-s-regular inline-flex h-9 max-w-full shrink-0 items-center gap-1.5 rounded-control border px-2.5 sm:h-10 sm:gap-2 sm:px-3 transition-colors duration-fast ease-standard motion-reduce:transition-none outline-none focus-visible:shadow-focus disabled:cursor-not-allowed disabled:opacity-60 border-transparent bg-accent-quiet text-text-accent"[39m
+                  [33mdata-testid[39m=[32m"filters-button"[39m
+                  [33mtype[39m=[32m"button"[39m
+                [36m>[39m
+                  [36m<svg[39m
+                    [33maria-hidden[39m=[32m"true"[39m
+                    [33mclass[39m=[32m"lucide lucide-sliders-horizontal h-4 w-4 shrink-0"[39m
+                    [33mfill[39m=[32m"none"[39m
+                    [33mheight[39m=[32m"24"[39m
+                    [33mstroke[39m=[32m"currentColor"[39m
+                    [33mstroke-linecap[39m=[32m"round"[39m
+                    [33mstroke-linejoin[39m=[32m"round"[39m
+                    [33mstroke-width[39m=[32m"2"[39m
+                    [33mviewBox[39m=[32m"0 0 24 24"[39m
+                    [33mwidth[39m=[32m"24"[39m
+                    [33mxmlns[39m=[32m"http://www.w3.org/2000/svg"[39m
+                  [36m>[39m
+                    [36m<line[39m
+                      [33mx1[39m=[32m"21"[39m
+                      [33mx2[39m=[32m"14"[39m
+                      [33my1[39m=[32m"4"[39m
+                      [33my2[39m=[32m"4"[39m
+                    [36m/>[39m
+            ...
+
+      210 |  signIn(['purchases.bill.read']);
+      211 |  renderWithProviders(<PurchaseBillsListPageContent/>);
+    > 212 |  const clear=await screen.findByRole('button',{name:'Clear filters'});
+          |                           ^
+      213 |  expect(screen.queryByText('No purchase bills yet')).not.toBeInTheDocument();
+      214 |  await userEvent.setup().click(clear);
+      215 |  await waitFor(()=>expect(mockSearch).not.toContain('period='));
+
+      at waitForWrapper (node_modules/@testing-library/dom/dist/wait-for.js:163:27)
+      at findByRole (node_modules/@testing-library/dom/dist/query-helpers.js:86:33)
+      at Object.<anonymous> (src/modules/DigiKhaato/features/purchases/components/PurchaseBillsListPageContent.test.tsx:212:27)
+
+Test Suites: 1 failed, 1 total
+Tests:       1 failed, 8 passed, 9 total
+Snapshots:   0 total
+Time:        2.264 s
+Ran all test suites within paths "src/modules/DigiKhaato/features/purchases/components/PurchaseBillsListPageContent.test.tsx".

@@ -293,3 +293,14 @@ it('publishes a dialog footer so an error toast cannot cover Discard changes', a
   place(footer, VIEWPORT - 144, 144);
   await waitFor(() => expect(publishedInset()).toBe('144px'));
 });
+
+it('clears the whole bottom stack when a register pager sits above navigation', async () => {
+  /** Defect: a pinned pager was above the phone nav, so height-only clearance let error toasts cover Next page. */
+  renderWithProviders(
+    <UbBottomBar sticky={false} clearToBottom data-testid="pager">
+      Next page
+    </UbBottomBar>
+  );
+  place(screen.getByTestId('pager'), VIEWPORT - 150, 60);
+  await waitFor(() => expect(publishedInset()).toBe('150px'));
+});

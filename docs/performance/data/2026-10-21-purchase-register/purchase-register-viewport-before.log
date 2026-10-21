@@ -1,0 +1,273 @@
+FAIL src/design-system/UbDataGrid/UbDataGrid.test.tsx
+  ● keeps pagination outside the bounded phone rows and gives keyboard users a scroll region
+
+    TestingLibraryElementError: Unable to find an accessible element with the role "region" and name "Counter register"
+
+    Here are the accessible roles:
+
+      list:
+
+      Name "Counter register":
+      [36m<ul[39m
+        [33maria-label[39m=[32m"Counter register"[39m
+        [33mclass[39m=[32m"w-full min-w-0 overflow-x-hidden"[39m
+        [33mdata-card-layout[39m=[32m"inline"[39m
+        [33mdata-testid[39m=[32m"ub-grid-cards"[39m
+        [33mdata-ub-scroll-x[39m=[32m"off"[39m
+      [36m/>[39m
+
+      --------------------------------------------------
+      listitem:
+
+      Name "":
+      [36m<li[39m
+        [33mclass[39m=[32m"border-b border-border-hairline last:border-b-0"[39m
+        [33mdata-testid[39m=[32m"ub-grid-card"[39m
+      [36m/>[39m
+
+      Name "":
+      [36m<li[39m
+        [33mclass[39m=[32m"border-b border-border-hairline last:border-b-0"[39m
+        [33mdata-testid[39m=[32m"ub-grid-card"[39m
+      [36m/>[39m
+
+      --------------------------------------------------
+      button:
+
+      Name "Previous page":
+      [36m<button[39m
+        [33maria-label[39m=[32m"Previous page"[39m
+        [33mclass[39m=[32m"inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-control [&_svg]:shrink-0 ub-hit transition-colors duration-fast ease-standard active:scale-[0.98] motion-reduce:active:scale-100 disabled:active:scale-100 disabled:cursor-not-allowed disabled:opacity-45 hover:bg-surface-hover active:bg-surface-active text-button h-11 w-11 p-0 text-text-tertiary hover:text-text-primary"[39m
+        [33mdisabled[39m=[32m""[39m
+        [33mtype[39m=[32m"button"[39m
+      [36m/>[39m
+
+      Name "Next page":
+      [36m<button[39m
+        [33maria-label[39m=[32m"Next page"[39m
+        [33mclass[39m=[32m"inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-control [&_svg]:shrink-0 ub-hit transition-colors duration-fast ease-standard active:scale-[0.98] motion-reduce:active:scale-100 disabled:active:scale-100 disabled:cursor-not-allowed disabled:opacity-45 hover:bg-surface-hover active:bg-surface-active text-button h-11 w-11 p-0 text-text-tertiary hover:text-text-primary"[39m
+        [33mtype[39m=[32m"button"[39m
+      [36m/>[39m
+
+      --------------------------------------------------
+      paragraph:
+
+      Name "":
+      [36m<p[39m
+        [33mclass[39m=[32m"ds-caption text-text-tertiary"[39m
+      [36m/>[39m
+
+      --------------------------------------------------
+
+    Ignored nodes: comments, script, style
+    [36m<body>[39m
+      [36m<div>[39m
+        [36m<div[39m
+          [33mclass[39m=[32m"w-full min-w-0 overflow-hidden rounded-card border border-border-hairline bg-surface-card"[39m
+          [33mdata-testid[39m=[32m"ub-grid"[39m
+          [33mdata-ub-tier[39m=[32m"cards"[39m
+        [36m>[39m
+          [36m<div[39m
+            [33mclass[39m=[32m"transition-opacity duration-base"[39m
+          [36m>[39m
+            [36m<ul[39m
+              [33maria-label[39m=[32m"Counter register"[39m
+              [33mclass[39m=[32m"w-full min-w-0 overflow-x-hidden"[39m
+              [33mdata-card-layout[39m=[32m"inline"[39m
+              [33mdata-testid[39m=[32m"ub-grid-cards"[39m
+              [33mdata-ub-scroll-x[39m=[32m"off"[39m
+            [36m>[39m
+              [36m<li[39m
+                [33mclass[39m=[32m"border-b border-border-hairline last:border-b-0"[39m
+                [33mdata-testid[39m=[32m"ub-grid-card"[39m
+              [36m>[39m
+                [36m<div[39m
+                  [33mclass[39m=[32m"flex min-h-[60px] w-full items-center gap-3 px-4 py-3 text-left"[39m
+                [36m>[39m
+                  [36m<span[39m
+                    [33maria-hidden[39m=[32m"true"[39m
+                    [33mclass[39m=[32m"ds-label flex shrink-0 items-center justify-center rounded-pill h-10 w-10 bg-surface-sunken text-text-secondary"[39m
+                  [36m>[39m
+                    [0mRT[0m
+                  [36m</span>[39m
+                  [36m<span[39m
+                    [33mclass[39m=[32m"flex min-w-0 flex-1 flex-col"[39m
+                  [36m>[39m
+                    [36m<span[39m
+                      [33mclass[39m=[32m"ds-body-sm-medium text-text-primary truncate"[39m
+                    [36m>[39m
+                      [0mRamesh Traders[0m
+                    [36m</span>[39m
+                    [36m<span[39m
+                      [33mclass[39m=[32m"ds-caption flex min-w-0 flex-wrap items-center gap-x-2 text-text-tertiary"[39m
+                    [36m>[39m
+                      [36m<span[39m
+                        [33mclass[39m=[32m"truncate"[39m
+                      [36m>[39m
+                        [0m3 days ago[0m
+                      [36m</span>[39m
+                      [36m<span[39m
+                        [33mclass[39m=[32m"truncate"[39m
+                      [36m>[39m
+                        [0mC-001 · 98765 43210[0m
+                      [36m</span>[39m
+                    [36m</span>[39m
+                  [36m</span>[39m
+                  [36m<span[39m
+                    [33mclass[39m=[32m"shrink-0"[39m
+                  [36m>[39m
+                    [0m₹2,800.00[0m
+                  [36m</span>[39m
+                [36m</div>[39m
+              [36m</li>[39m
+              [36m<li[39m
+                [33mclass[39m=[32m"border-b border-border-hairline last:border-b-0"[39m
+                [33mdata-testid[39m=[32m"ub-grid-card"[39m
+              [36m>[39m
+                [36m<div[39m
+                  [33mclass[39m=[32m"flex min-h-[60px] w-full items-center gap-3 px-4 py-3 text-left"[39m
+                [36m>[39m
+                  [36m<span[39m
+                    [33maria-hidden[39m=[32m"true"[39m
+                    [33mclass[39m=[32m"ds-label flex shrink-0 items-center justify-center rounded-pill h-10 w-10 bg-surface-sunken text-text-secondary"[39m
+                  [36m>[39m
+                    [0mSS[0m
+                  [36m</span>[39m
+                  [36m<span[39m
+                    [33mclass[39m=[32m"flex min-w-0 flex-1 flex-col"[39m
+                  [36m>[39m
+                    [36m<span[39m
+                      [33mclass[39m=[32m"ds-body-sm-medium text-text-primary truncate"[39m
+                    [36m>[39m
+                      [0mSunita Stores[0m
+                    [36m</span>[39m
+                    [36m<span[39m
+                      [33mclass[39m=[32m"ds-caption flex min-w-0 flex-wrap items-center gap-x-2 text-text-tertiary"[39m
+                    [36m>[39m
+                      [36m<span[39m
+                        [33mclass[39m=[32m"truncate"[39m
+                      [36m>[39m
+                        [0mToday[0m
+                      [36m</span>[39m
+                      [36m<span[39m
+                        [33mclass[39m=[32m"truncate"[39m
+                      [36m>[39m
+                        [0mC-002 · 98111 22334[0m
+                      [36m</span>[39m
+                    [36m</span>[39m
+                  [36m</span>[39m
+                  [36m<span[39m
+                    [33mclass[39m=[32m"shrink-0"[39m
+                  [36m>[39m
+                    [0m₹900.00[0m
+                  [36m</span>[39m
+                [36m</div>[39m
+              [36m</li>[39m
+            [36m</ul>[39m
+          [36m</div>[39m
+          [36m<div[39m
+            [33mclass[39m=[32m"grid w-full grid-cols-[auto_1fr_auto] items-center gap-3 border-t border-border-hairline p-4"[39m
+            [33mdata-testid[39m=[32m"ub-grid-pagination"[39m
+          [36m>[39m
+            [36m<div[39m
+              [33mclass[39m=[32m"col-start-1 flex items-center gap-1 justify-self-start"[39m
+            [36m>[39m
+              [36m<button[39m
+                [33maria-label[39m=[32m"Previous page"[39m
+                [33mclass[39m=[32m"inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-control [&_svg]:shrink-0 ub-hit transition-colors duration-fast ease-standard active:scale-[0.98] motion-reduce:active:scale-100 disabled:active:scale-100 disabled:cursor-not-allowed disabled:opacity-45 hover:bg-surface-hover active:bg-surface-active text-button h-11 w-11 p-0 text-text-tertiary hover:text-text-primary"[39m
+                [33mdisabled[39m=[32m""[39m
+                [33mtype[39m=[32m"button"[39m
+              [36m>[39m
+                [36m<svg[39m
+                  [33maria-hidden[39m=[32m"true"[39m
+                  [33mclass[39m=[32m"lucide lucide-chevron-left h-4 w-4"[39m
+                  [33mfill[39m=[32m"none"[39m
+                  [33mheight[39m=[32m"24"[39m
+                  [33mstroke[39m=[32m"currentColor"[39m
+                  [33mstroke-linecap[39m=[32m"round"[39m
+                  [33mstroke-linejoin[39m=[32m"round"[39m
+                  [33mstroke-width[39m=[32m"2"[39m
+                  [33mviewBox[39m=[32m"0 0 24 24"[39m
+                  [33mwidth[39m=[32m"24"[39m
+                  [33mxmlns[39m=[32m"http://www.w3.org/2000/svg"[39m
+                [36m>[39m
+                  [36m<path[39m
+                    [33md[39m=[32m"m15 18-6-6 6-6"[39m
+                  [36m/>[39m
+                [36m</svg>[39m
+              [36m</button>[39m
+              [36m<button[39m
+                [33maria-label[39m=[32m"Next page"[39m
+                [33mclass[39m=[32m"inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-control [&_svg]:shrink-0 ub-hit transition-colors duration-fast ease-standard active:scale-[0.98] motion-reduce:active:scale-100 disabled:active:scale-100 disabled:cursor-not-allowed disabled:opacity-45 hover:bg-surface-hover active:bg-surface-active text-button h-11 w-11 p-0 text-text-tertiary hover:text-text-primary"[39m
+                [33mtype[39m=[32m"button"[39m
+              [36m>[39m
+                [36m<svg[39m
+                  [33maria-hidden[39m=[32m"true"[39m
+                  [33mclass[39m=[32m"lucide lucide-chevron-right h-4 w-4"[39m
+                  [33mfill[39m=[32m"none"[39m
+                  [33mheight[39m=[32m"24"[39m
+                  [33mstroke[39m=[32m"currentColor"[39m
+                  [33mstroke-linecap[39m=[32m"round"[39m
+                  [33mstroke-linejoin[39m=[32m"round"[39m
+                  [33mstroke-width[39m=[32m"2"[39m
+                  [33mviewBox[39m=[32m"0 0 24 24"[39m
+                  [33mwidth[39m=[32m"24"[39m
+                  [33mxmlns[39m=[32m"http://www.w3.org/2000/svg"[39m
+                [36m>[39m
+                  [36m<path[39m
+                    [33md[39m=[32m"m9 18 6-6-6-6"[39m
+                  [36m/>[39m
+                [36m</svg>[39m
+              [36m</button>[39m
+            [36m</div>[39m
+            [36m<div[39m
+              [33mclass[39m=[32m"col-start-3 flex items-center gap-2 justify-self-end"[39m
+            [36m>[39m
+              [36m<p[39m
+                [33mclass[39m=[32m"ds-caption text-text-tertiary"[39m
+              [36m>[39m
+                [0mPage 1 of 2[0m
+              [36m</p>[39m
+            [36m</div>[39m
+          [36m</div>[39m
+        [36m</div>[39m
+      [36m</div>[39m
+    [36m</body>[39m
+
+      901 |  /** Defect: maxHeight only applied to tables; phone cards grew the page and hid its pager. */
+      902 |  render(<UbDataGrid rows={ROWS} columns={COLUMNS} rowId={row=>row.id} rowName={row=>row.name} state="rows" labels={LABELS} emptyStates={EMPTY} caption="Counter register" page={{...PAGE,total:50,totalPages:2}} onPageChange={jest.fn()} tier="cards" fillHeight />);
+    > 903 |  const region=screen.getByRole('region',{name:'Counter register'});
+          |                      ^
+      904 |  expect(region).toHaveAttribute('tabindex','0');
+      905 |  expect(region).toContainElement(screen.getByTestId('ub-grid-cards'));
+      906 |  expect(region).not.toContainElement(screen.getByTestId('ub-grid-pagination'));
+
+      at Object.getElementError (node_modules/@testing-library/dom/dist/config.js:37:19)
+      at node_modules/@testing-library/dom/dist/query-helpers.js:76:38
+      at node_modules/@testing-library/dom/dist/query-helpers.js:52:17
+      at getByRole (node_modules/@testing-library/dom/dist/query-helpers.js:95:19)
+      at Object.<anonymous> (src/design-system/UbDataGrid/UbDataGrid.test.tsx:903:22)
+
+FAIL src/design-system/UbPageShell/UbPageShell.test.tsx
+  ● sizes an opted-in register from its measured header and visual viewport
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: "112px"
+    Received: ""
+
+       8 |  const {container,unmount}=render(<UbPageShell viewport>Register</UbPageShell>);
+       9 |  const frame=container.firstElementChild as HTMLElement;
+    > 10 |  expect(frame.style.getPropertyValue('--ub-page-top')).toBe('112px');
+         |                                                        ^
+      11 |  expect(frame.style.getPropertyValue('--ub-page-viewport')).toBe('520px');
+      12 |  Object.assign(viewport,{height:380,offsetTop:8});act(()=>viewport.dispatchEvent(new Event('resize')));
+      13 |  expect(frame.style.getPropertyValue('--ub-page-top')).toBe('104px');
+
+      at Object.<anonymous> (src/design-system/UbPageShell/UbPageShell.test.tsx:10:56)
+
+Test Suites: 2 failed, 2 total
+Tests:       2 failed, 58 passed, 60 total
+Snapshots:   0 total
+Time:        1.988 s, estimated 2 s
+Ran all test suites within paths "src/design-system/UbPageShell/UbPageShell.test.tsx", "src/design-system/UbDataGrid/UbDataGrid.test.tsx".

@@ -895,3 +895,51 @@ describe('the loading skeleton cannot be wider than its container (N1)', () => {
     }
   });
 });
+
+it('keeps pagination outside the bounded phone rows and gives keyboard users a scroll region', () => {
+  /** Defect: maxHeight only applied to tables; phone cards grew the page and hid its pager. */
+  render(
+    <UbDataGrid
+      rows={ROWS}
+      columns={COLUMNS}
+      rowId={(row) => row.id}
+      rowName={(row) => row.name}
+      state="rows"
+      labels={LABELS}
+      emptyStates={EMPTY}
+      caption="Counter register"
+      page={{ ...PAGE, total: 50, totalPages: 2 }}
+      onPageChange={jest.fn()}
+      tier="cards"
+      fillHeight
+    />
+  );
+  const region = screen.getByRole('region', { name: 'Counter register' });
+  expect(region).toHaveAttribute('tabindex', '0');
+  expect(region).toContainElement(screen.getByTestId('ub-grid-cards'));
+  expect(region).not.toContainElement(screen.getByTestId('ub-grid-pagination'));
+});
+
+it('starts a new page at the first row without scrolling the document', () => {
+  /** Defect: a bounded list retained the previous page's row scroll offset after paging. */
+  const props = {
+    rows: ROWS,
+    columns: COLUMNS,
+    rowId: (row: Row) => row.id,
+    rowName: (row: Row) => row.name,
+    state: 'rows' as const,
+    labels: LABELS,
+    emptyStates: EMPTY,
+    caption: 'Counter register',
+    onPageChange: jest.fn(),
+    tier: 'cards' as const,
+    fillHeight: true,
+  };
+  const { rerender } = render(
+    <UbDataGrid {...props} page={{ ...PAGE, total: 50, totalPages: 2 }} />
+  );
+  const region = screen.getByRole('region', { name: 'Counter register' });
+  region.scrollTop = 200;
+  rerender(<UbDataGrid {...props} page={{ ...PAGE, page: 2, total: 50, totalPages: 2 }} />);
+  expect(region.scrollTop).toBe(0);
+});

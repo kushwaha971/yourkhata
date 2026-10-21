@@ -64,6 +64,56 @@ responsibile in everywhere in futruer”. This is a continuing quality standard,
 recorded in CLAUDE.md. Use the reference for whole compositions and real flows,
 not just isolated components; expose gaps rather than overstate completion.
 
+## R-DEC-32 · These requirements are strict, not discretionary
+
+Owner,21Oct2026: “all these thigns are hard stricts to follow”. The reference,
+documented component values, mobile-first behavior, all-module viewport rollout,
+reuse/business boundaries and review/build/LOOK/measure/report loop are mandatory.
+Root CLAUDE.md contains the acceptance gates; AGENTS.md and both handoffs point
+to them. Before coding, record the spec-to-check mapping in the existing piece
+report. No invented reference parity, completion or rating. The owner must not
+have to catch deviations that the approved docs already specify. This does not
+introduce routine permission questions; continue authorized work within scope.
+
+R-DEC-32 extension,21Oct2026: owner explicitly adds functional correctness,
+why each feature is useful/necessary for end users, comparison with competitors,
+and checking that necessary requirements are fulfilled. These are hard gates
+alongside design. Each report must trace required needs/contracts to evidence
+and state missing/deferred/unproven work. Competitive claims require dated,
+verified task-level evidence and honest better/equal/worse trade-offs. No rating
+can excuse broken money/stock, access isolation, lost work or essential flows.
+This records the requirement; it does not claim competitor research or all
+module requirements are already complete. See CLAUDE.md gates9–12.
+
+## R-DEC-31 · All-module viewport behavior; reference-size chip faces
+
+Owner,21Oct2026: wants table/list viewport sizing and persistent pagination in
+all modules, not only Purchases. Current purchase implementation is not a claim
+that all other lists have been migrated. Roll out the same shared behavior to
+Shop, personal Udhaar, Library and Lending registers, including already-delivered
+lists; verify each actual page, not a blind global switch. Library/Lending
+financial endpoints, models and workflows remain frozen. This authorizes the
+list-layout behavior, not unrelated new workflows or whole-module completion.
+
+Owner also questioned the enlarged chip faces. The purchase implementation
+mistakenly forced44px visible height; committed reference/DS requires32px faces
+and44px mobile touch targets. Restore the32px face and reserve6px vertical room
+for the existing transparent hit area. Measure both actual face and hit testing.
+The live Claude artifact was inaccessible; local committed reference was checked.
+
+## R-DEC-30 · Mobile-first viewport registers, complete redesign
+
+Owner,21Oct2026 (recorded11:04 UTC /16:34 IST), reaffirmed a proper redesign
+like Customers, Suppliers and Bills, not minor styling. Tables and mobile lists
+must fit the available viewport; rows scroll internally while pagination and
+key actions remain accessible. Around80% of users use mobile: prioritize
+readability, touch, navigation/accessibility, speed and busy-counter use.
+Apply this as an acceptance rule for each remaining register; reuse one opt-in
+page/grid pattern and measure real heights rather than copy fixed offsets.
+Previously delivered registers have not all been migrated by this purchase
+piece; adopt/verify the pattern through their approved module work. Forms and
+detail screens retain task-appropriate layouts. No financial contract change.
+
 ## R-DEC-29 · Revamp every module; do not patch the old design
 
 Owner, 20 Oct 2026: "do not rework on existing design for any module; follow
@@ -119,6 +169,8 @@ confirmation or repeat the phase choice. Genuine new business-rule decisions,
 destructive actions and frozen Library/Lending contracts retain their boundaries.
 
 ## Progress
+
+21Oct2026 — Purchase register §5 redesigned to R-DEC-30: viewport-sized phone list/desktop table, internally scrolling rows and visible pagination, compact server totals, status chips, full supplier/paper identity and header actions. Shared opt-in viewport/grid and existing search/stats/clearance reused. Due-window identity, late failure, empty-month Clear, row-page offset and toast covering Next reproduced/fixed.416 suites/4,647 tests,80 purchase backend checks,240 final frames; exact performance/rating in `2026-10-21-p5-purchase-register.md`. BP-18 records missing draft timestamps as unapproved, not invented. Next purchase detail §6/order conversion/full returns; Home last.
 
 21 Oct2026 — Purchase §7 full editor acceptance: joined supplier/metadata summary and permission-gated reused inline supplier create; failed context retry; order Send lost-reply recovery; posted edit/Back read-only guard; recovered-write cache invalidation. Portal submit propagation and quantity sign/point corruption reproduced/fixed with regressions; negative return rows cannot be silently omitted.414 suites/4,639 frontend tests,80 purchase backend tests,498 final measured en/hi frames. Final performance/rating in `docs/performance/2026-10-20-p5-purchase-editor.md`. No backend engine/contract change. Current Next: purchase register §5, detail §6, full returns/debit-note redesign, remaining sales documents; Home last.
 
@@ -214,7 +266,7 @@ and updated continuation prompt. This changes words, not the sequence below.
 3. Remaining Home workflows approved in R-DEC-26 (BP-08/16/17), integrated with
    the verified source workflows, followed by Home end-to-end acceptance.
 
-Immediate next: **purchase register §5**, then detail §6 and complete returns/debit-note composition under R-DEC-29. Purchase editor §7 steps1–6 and whole-editor local acceptance are delivered; the21Oct final section of `2026-10-20-p5-purchase-editor.md` supersedes earlier pending-editor checkpoints and scoped8.75. Full414 suites/4,639 frontend tests,80 backend tests,498 measured frames and final performance evidence are recorded there. The return input safety regression is not a complete return redesign. Finish these and remaining sales documents before inventory/money/reports; remaining Home last.
+Immediate next under owner R-DEC-31: complete the reference chip-face correction and commit/push the verified purchase register, then roll out viewport/pager behavior to the already-redesigned Shop Customers/Suppliers/Bills, followed by all module list groups tracked in11. Only Purchases is currently implemented. This shared layout rollout is not a whole-module revamp certificate. Resume purchase detail §6, order conversion and full returns under the existing R-DEC-27 order; inventory/money/reports and remaining Home retain their full-workflow sequence. Do not copy fixed offsets or imply pending modules are fixed.
 Billing phone performance stays 8/10 and its subscription redesign stays
 deferred; do not repeat rejected memo/one-write/deferred-focus trims.
 

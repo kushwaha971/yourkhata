@@ -128,6 +128,9 @@ export async function measureCustomers(page, rootSelector) {
       if (rects.some((r) => r.right > box.right + 1.5 || r.left < box.left - 1.5) && cs.display !== 'inline') cut.push(text);
       for (let p = el; p && p !== root.parentElement; p = p.parentElement) {
         const style = getComputedStyle(p); const b = p.getBoundingClientRect();
+        // A deliberate sideways chip scroller exposes its options on scroll;
+        // test their own boxes, not clipping by ancestors outside that scroller.
+        if (style.overflowX === 'auto' && p.scrollWidth > p.clientWidth + 1) break;
         if (['hidden','clip'].includes(style.overflowX) && rects.some((r) => r.right > b.right + 1.5 || r.left < b.left - 1.5)) { cut.push(text); break; }
         if (parseInt(style.webkitLineClamp) > 0 && p.scrollHeight > p.clientHeight + 1) cut.push(text);
       }

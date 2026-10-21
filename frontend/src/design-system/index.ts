@@ -125,6 +125,7 @@ export { UbPageHeader, UbPageHeaderMobileActions } from './UbPageHeader';
 export type { UbPageHeaderMobile, UbPageHeaderProps, UbPageHeaderWidth } from './UbPageHeader';
 
 export { UbPageShell } from './UbPageShell';
+export { UbViewportPageShell } from './UbPageShell/UbViewportPageShell';
 export type { UbPageShellProps, UbPageShellWidth } from './UbPageShell';
 
 export { UbPageSkeleton, UbSkeleton } from './UbSkeleton';

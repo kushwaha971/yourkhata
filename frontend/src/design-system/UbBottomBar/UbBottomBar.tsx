@@ -37,6 +37,8 @@ export interface UbBottomBarProps extends HTMLAttributes<HTMLElement> {
    * not be given `position: sticky` it never had.
    */
   readonly sticky?: boolean;
+  /** Include navigation/gaps below this bar when clearing the global snackbar. */
+  readonly clearToBottom?: boolean;
   readonly className?: string;
   readonly children?: ReactNode;
 }
@@ -44,11 +46,12 @@ export interface UbBottomBarProps extends HTMLAttributes<HTMLElement> {
 function UbBottomBarBase({
   as = 'div',
   sticky = true,
+  clearToBottom = false,
   className,
   children,
   ...rest
 }: Readonly<UbBottomBarProps>): React.JSX.Element {
-  const ref = useBottomInset<HTMLElement>();
+  const ref = useBottomInset<HTMLElement>(true, clearToBottom);
 
   return createElement(
     as,

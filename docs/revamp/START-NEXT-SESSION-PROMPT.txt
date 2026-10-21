@@ -1,11 +1,13 @@
 Continue the existing YourKhata revamp on dev. Do not start a new plan.
 
-CURRENT HANDOFF — 21 October 2026, through R-DEC-29
+CURRENT HANDOFF — 21 October 2026, through R-DEC-32
 On this Mac the repository is /Users/akashkushwaha/Projects/ims-platform; the chat
 workspace is a different folder. Elsewhere locate the existing checkout. Inspect
 git status/branch/log first. Preserve unrelated work, including the untracked
 nested ims-platform/ checkout. Never reset or blindly stage it. Update dev with
 a safe fast-forward when appropriate; commit and push verified pieces to dev.
+
+R-DEC-32: CLAUDE.md's mandatory revamp acceptance gates are strict. Verify explicit reference/component values before coding; final LOOK and measured evidence are required. Never make the owner catch documented deviations.
 
 READ FIRST, IN ORDER
 AGENTS.md, CLAUDE.md, docs/revamp/README.md, docs/revamp/12-decision-log.md,
@@ -33,47 +35,52 @@ composition with src/design-system components, then measure it. If the spec
 and code disagree, record it in 12 and follow the spec unless it breaks a
 "Must keep working" contract in 02.
 
-IMMEDIATE NEXT PIECE — PURCHASE REGISTER §5 (R-DEC-27 item1)
+IMMEDIATE NEXT — ALL-MODULE VIEWPORT ROLLOUT (R-DEC-31), THEN PURCHASE DETAIL
 Billing is finished for now (owner: Move on; phone performance8 remains openly
-reported). Purchase editor §7 is COMPLETE within the verified local scope.
-Read the FINAL21Oct section of docs/performance/2026-10-20-p5-purchase-editor.md:
-414 suites/4,639 tests;80 purchase backend tests;498 final frames across phone,
-desktop, both themes and Hindi; final serial old/new navigation and30-line speed.
-Final design self-review8.80, lowest aspect8.6;30-line picks36/38ms phone/desktop.
-First throttled editor load costs~5% more on phone (1.39s), reported openly.
-Use that rating, not the historical scoped8.75/pending-editor checkpoints.
+reported). Purchase editor §7 and register §5 are DELIVERED. Read the final
+21Oct sections in 2026-10-20-p5-purchase-editor.md and the new
+2026-10-21-p5-purchase-register.md for exact scores, evidence and limits.
+Register:416 suites/4,647 frontend tests;80 purchase backend tests;240 final
+frames at390/320/1024/1280 light/dark plus Hindi320/1280. Actual paper-number
+search, paging, loaded detail→Back, filtered-month recovery and pager hit tests.
+No business writes/external sends in that register harness. No whole-Purchases
+or whole-Shop completion claim.
+Register design8.75, lowest aspect8.6; throttled pooled content538.5ms phone /837ms desktop (+9/+10ms vs baseline), feedback≤12/28ms. No speedup claim. Editor:498 frames,30-line picks36/38ms,8.80
+provisional design score; its first-load cost and no-device-copy limit remain.
 
-Delivered steps1–6: shared quick-add/finder/counter rows; item/GST dock caption;
-truthful saved/unsaved/leave behavior; exact four-place cost notes; explicit
-payment403 Pay later and immutable Record recovery; joined supplier metadata
-summary with Edit below1536. Optional metadata stays folded in empty editors.
-No-match supplier creates through lazy shared PartyQuickCreate, Shop-scoped,
-write-permission gated; typed lines survive. Portal submit propagation was a
-real defect (child Save also submitted opening document); UbForm now stops it.
-Quantity masks preserve1.5/-5 and central validation refuses invalid intent.
-Negative return rows cannot be silently omitted, but this is NOT full return
-acceptance. No Library/Lending backend/workflow changes or new pricing engines.
+OWNER R-DEC-30 — MOBILE-FIRST BOUNDED REGISTERS
+Around80% mobile. Redesign complete approved compositions, not old styling.
+Tables/mobile lists fit the available visual viewport; only rows scroll,
+pagination/actions stay accessible. Reuse UbViewportPageShell (measurement is
+its own opt-in module), UbDataGrid fillHeight, RecordTotals columns,
+useCommittedSearch and existing filter/clearance components. No copied fixed
+pixel offsets. Pinned paging uses UbBottomBar clearToBottom so the global toast
+cannot cover Next above navigation. Ordinary bars retain their default behavior.
+Measure page height, row scroll, actual button hit tests, widths, full words and
+contrast. Chip faces stay32px; reserve the existing44px mobile touch target without enlarging the face. Previously
+delivered lists are not all migrated; apply/verify through each approved module.
 
-Also verified: failed-context retry/request fence; sent/posted edit URL and Back
-open read-only detail; lost order Send reply GET checking; recovered-write cache
-invalidation uses the existing map. Same-phone second-shop owner/contact gets
-404 for another tenant's purchase/item/contact. Real part/advance/free-goods
-records, two suppliers supplying both electrical products, stock/default/history
-readbacks are in the report. No actual money, messages or production data.
+NEXT: finish the chip-face verification/purchase checkpoint, then apply/verify viewport behavior in all module groups in11, beginning Customers/Suppliers/Bills. Do not ask routine permission or claim all modules already fixed. This UI-layout rollout does not authorize new financial workflows.
 
-NEXT: review07-screens/09 §5 against real purchase register code and build THAT
-complete phone/desktop composition, not old-spacing tweaks. Then §6 purchase
-detail, full returns/debit notes and remaining sales documents (estimates,
-orders, challans, credit notes). Follow the same review/build/LOOK/report/gates,
-commit/push loop for each piece; no routine phase permission question.
-Inventory, money/expenses/reports follow; approved remaining Home stays LAST.
+After that, review07-screens/09 §6 and real PurchaseBillDetailPageContent before any
+UI. Build the approved phone summary/actions/lines and desktop1280 two-column
+composition. Reuse the sales SomethingWrong chooser with supplier words rather
+than copy it. Verify Pay supplier allocation/advance, void refusal consequences,
+linked debit notes/payments, archived supplier and order billed once. Verify
+whether the existing payment engine supports Supplier gave money back before
+exposing it; never invent an unsupported action. Detail and full return forms
+must get their own LOOK/business/recovery/access/performance acceptance.
+Then order conversion, full returns/debit notes and remaining sales documents;
+inventory/money/expenses/reports afterward, approved remaining Home LAST.
+No routine phase permission question. New rules/contract boundaries still apply.
 
-Keep remaining limits honest: no purchase device copy or crash recovery,
-in-place re-auth is shell work, physical/PWA/hardware unproved. Reopened custom
-counted-unit metadata currently infers NOS/PCS; server refuses other invalid
-fractions, but inventory metadata UX still needs review in its planned phase.
-Cost notes must not promise raw typed cost becomes the catalog default: existing
-server tax/discount/last duplicate-line rules govern. No duplicated engine.
+SOURCE LIMITS TO KEEP HONEST
+BP-18 proposes optional purchase-list created_at/updated_at for indistinguishable
+unnumbered drafts; not approved/built. No made-up saved timestamps. Purchase
+editor keeps no device copy/crash guarantee; in-place re-auth is shell work.
+Custom counted-unit metadata UX and physical PWA/hardware remain unproved.
+Server tax/discount/last duplicate-line rules govern purchase cost defaults.
+Same-phone contacts across shops never grant access or combine balances.
 
 THE STANDARD EVERY MODULE IS SCORED AGAINST (learned on billing, 20 Oct)
 Owner's bar: above 8.5 in EVERY aspect — function, busy shop, UI/UX,
@@ -243,3 +250,15 @@ After each screen/form/card/drawer/sheet/dialog:
 7. Commit with a prose WHY and the attribution trailer your tool requires, push dev, verify the
    remote SHA, then report final screenshots/numbers/limits before the next piece.
    Continue approved work without routine permission questions.
+
+
+R-DEC-32 ADDITION — FUNCTION, USER VALUE AND COMPETITION ARE STRICT GATES
+For each piece, explain the user's task, why the feature/action is necessary
+and belongs there, and what benefit is measured versus assumed. Verify real
+UI/API/persisted business results, permissions/isolation and failure/recovery.
+Compare relevant competitors on the same task using dated verified evidence;
+state better/equal/worse honestly, never invent superiority. Map every necessary
+requirement/must-keep contract to implementation and test/journey evidence with
+passed/missing/deferred/unproven status in the existing report. A high design
+score cannot excuse critical financial/access/data-loss or essential-flow gaps.
+No claim that this research or all-module acceptance is already complete.

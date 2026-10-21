@@ -122,7 +122,7 @@ it('lists this financial year and shows the server payables totals (PUR-03 FR-3)
   // On a phone (jsdom's width) the tabs are inside the one Filters sheet.
   expect(screen.queryByRole('tab')).not.toBeInTheDocument();
   expect(screen.getByTestId('filters-button')).toBeInTheDocument();
-  expect(screen.getByRole('link', { name: /New bill/ })).toBeInTheDocument();
+  expect(screen.getByRole('link', { name: /Record bill/ })).toBeInTheDocument();
   expect(lastAsked()).toMatchObject({ tab: 'all', dateFrom: expect.stringMatching(/-04-01$/) });
 });
 
@@ -145,10 +145,8 @@ it('asks the server for unpaid bills when the Unpaid tab is chosen (AC-1)', asyn
   renderWithProviders(<PurchaseBillsListPageContent />);
   await screen.findAllByText(/Agro Traders/);
   const user = userEvent.setup();
-  await user.click(screen.getByTestId('filters-button'));
-  const group = await screen.findByRole('radiogroup', { name: 'Bills by status' });
-  await user.click(within(group).getByRole('radio', { name: /Unpaid/ }));
-  await user.click(screen.getByTestId('filters-apply'));
+  const group = screen.getByRole('radiogroup', { name: 'Bills by status' });
+  await user.click(within(group).getByRole('radio', { name: /To pay/ }));
   await waitFor(() => expect(lastAsked().tab).toBe('unpaid'));
   expect(mockSearch).toContain('tab=unpaid');
 });
@@ -163,8 +161,8 @@ it('shows a shop that has never bought anything one sentence, not tabs and ₹0'
   expect(screen.queryByRole('searchbox')).not.toBeInTheDocument();
   expect(screen.queryByText('₹4,921.00')).not.toBeInTheDocument();
   // One button, in the middle of the screen — not a second one in the header.
-  expect(screen.getAllByRole('button', { name: /New bill/ })).toHaveLength(1);
-  expect(screen.queryByRole('link', { name: /New bill/ })).not.toBeInTheDocument();
+  expect(screen.getAllByRole('button', { name: /Record bill/ })).toHaveLength(1);
+  expect(screen.queryByRole('link', { name: /Record bill/ })).not.toBeInTheDocument();
 });
 
 it('keeps the filters when a search found nothing in a book that has bills', async () => {
@@ -178,7 +176,7 @@ it('offers New bill only to a role that can record one (the accountant reads)', 
   signIn(['purchases.bill.read']);
   renderWithProviders(<PurchaseBillsListPageContent />);
   await screen.findAllByText(/Agro Traders/);
-  expect(screen.queryByRole('link', { name: /New bill/ })).not.toBeInTheDocument();
+  expect(screen.queryByRole('link', { name: /Record bill/ })).not.toBeInTheDocument();
 });
 
 it('tells a member without access so, and asks nothing', () => {
@@ -186,4 +184,33 @@ it('tells a member without access so, and asks nothing', () => {
   renderWithProviders(<PurchaseBillsListPageContent />);
   expect(screen.getByText('Purchases are not available')).toBeInTheDocument();
   expect(service.listPurchaseBills).not.toHaveBeenCalled();
+});
+
+it('keeps bill status choices visible and supplier paper numbers readable on phones', async () => {
+  /** Revamp defect: status was buried in Filters and the supplier paper number was absent from phone rows. */
+  signIn(['purchases.bill.read']);
+  renderWithProviders(<PurchaseBillsListPageContent />);
+  await screen.findAllByText(/Agro Traders/);
+  const statuses = screen.getByRole('radiogroup', { name: 'Bills by status' });
+  expect(within(statuses).getByRole('radio', { name: /To pay/ })).toBeVisible();
+  expect(screen.getByText(/AT\/778/)).toBeVisible();
+  expect(screen.getByTestId('ub-grid-scroll-region')).toContainElement(
+    screen.getByTestId('ub-grid-cards')
+  );
+  expect(screen.getByTestId('ub-grid-scroll-region')).not.toContainElement(
+    screen.getByTestId('ub-grid-pagination')
+  );
+});
+
+it('treats an empty period in a used book as filtered empty and clears the date filter', async () => {
+  /** Defect: an empty month claimed the shop had never bought anything; Clear filters kept the same empty date range. */
+  mockSearch = 'period=lastMonth';
+  service.listPurchaseBills.mockImplementation(async () => ({ ...page([]), hasAny: true }));
+  signIn(['purchases.bill.read']);
+  renderWithProviders(<PurchaseBillsListPageContent />);
+  const clear = await screen.findByRole('button', { name: 'Clear filters' });
+  expect(screen.queryByText('No purchase bills yet')).not.toBeInTheDocument();
+  await userEvent.setup().click(clear);
+  await waitFor(() => expect(mockSearch).not.toContain('period='));
+  expect(lastAsked().dateFrom).toMatch(/-04-01$/);
 });

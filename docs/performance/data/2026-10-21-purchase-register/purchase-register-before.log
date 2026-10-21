@@ -1,0 +1,348 @@
+FAIL src/modules/DigiKhaato/features/purchases/redux/purchaseBillListSlice.test.ts
+  ● refuses a response for a different supplier-due window
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: "loading"
+    Received: "succeeded"
+
+      10 |  state=purchaseBillListReducer(state,fetchPurchaseBillList.pending('new',query));
+      11 |  state=purchaseBillListReducer(state,fetchPurchaseBillList.fulfilled(result,'old',{...query,dueFrom:null,dueTo:null}));
+    > 12 |  expect(state.status).toBe('loading');
+         |                       ^
+      13 |  expect(state.totals).toBeNull();
+      14 | });
+      15 | it('ignores a late rejected request after the current request succeeded',()=>{
+
+      at Object.<anonymous> (src/modules/DigiKhaato/features/purchases/redux/purchaseBillListSlice.test.ts:12:23)
+
+  ● ignores a late rejected request after the current request succeeded
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: "succeeded"
+    Received: "failed"
+
+      19 |  state=purchaseBillListReducer(state,fetchPurchaseBillList.fulfilled(result,'new',query));
+      20 |  state=purchaseBillListReducer(state,fetchPurchaseBillList.rejected(new Error('old network'),'old',query));
+    > 21 |  expect(state.status).toBe('succeeded');
+         |                       ^
+      22 |  expect(state.error).toBeNull();
+      23 | });
+      24 |
+
+      at Object.<anonymous> (src/modules/DigiKhaato/features/purchases/redux/purchaseBillListSlice.test.ts:21:23)
+
+FAIL src/modules/DigiKhaato/features/purchases/components/PurchaseBillsListPageContent.test.tsx
+  ● keeps bill status choices visible and supplier paper numbers readable on phones
+
+    TestingLibraryElementError: Unable to find an accessible element with the role "radiogroup" and name "Bills by status"
+
+    Here are the accessible roles:
+
+      banner:
+
+      Name "":
+      [36m<header[39m
+        [33mclass[39m=[32m"flex flex-col gap-3"[39m
+        [33mdata-ub-page-header[39m=[32m""[39m
+      [36m/>[39m
+
+      --------------------------------------------------
+      heading:
+
+      Name "Purchases":
+      [36m<h1[39m
+        [33mclass[39m=[32m"ds-h1 truncate leading-8 text-text-primary"[39m
+      [36m/>[39m
+
+      --------------------------------------------------
+      searchbox:
+
+      Name "Search bills":
+      [36m<input[39m
+        [33maria-label[39m=[32m"Search bills"[39m
+        [33mclass[39m=[32m"ds-body-base-regular h-full min-w-0 flex-1 bg-transparent text-text-primary outline-none placeholder:text-text-muted [&::-webkit-search-cancel-button]:hidden"[39m
+        [33mplaceholder[39m=[32m"Bill number or supplier"[39m
+        [33mtype[39m=[32m"search"[39m
+        [33mvalue[39m=[32m""[39m
+      [36m/>[39m
+
+      --------------------------------------------------
+      button:
+
+      Name "Filters":
+      [36m<button[39m
+        [33maria-haspopup[39m=[32m"dialog"[39m
+        [33maria-label[39m=[32m"Filters"[39m
+        [33mclass[39m=[32m"ub-hit ds-body-s-regular inline-flex h-9 max-w-full shrink-0 items-center gap-1.5 rounded-control border px-2.5 sm:h-10 sm:gap-2 sm:px-3 transition-colors duration-fast ease-standard motion-reduce:transition-none outline-none focus-visible:shadow-focus disabled:cursor-not-allowed disabled:opacity-60 border-border bg-surface-card text-text-primary hover:bg-surface-hover"[39m
+        [33mdata-testid[39m=[32m"filters-button"[39m
+        [33mtype[39m=[32m"button"[39m
+      [36m/>[39m
+
+      Name "Details":
+      [36m<button[39m
+        [33maria-controls[39m=[32m"_r_15_"[39m
+        [33maria-expanded[39m=[32m"false"[39m
+        [33maria-label[39m=[32m"Details"[39m
+        [33mclass[39m=[32m"ub-hit flex min-h-9 w-full items-center gap-2 rounded-control border border-border-hairline bg-surface-card px-3 py-1.5 text-left outline-none transition-colors hover:bg-surface-hover focus-visible:shadow-focus motion-reduce:transition-none"[39m
+        [33mtype[39m=[32m"button"[39m
+      [36m/>[39m
+
+      Name "Open PB/26-27/0001 Agro Traders":
+      [36m<button[39m
+        [33maria-label[39m=[32m"Open PB/26-27/0001 Agro Traders"[39m
+        [33mclass[39m=[32m"flex min-h-[60px] w-full items-center gap-3 px-4 py-3 text-left outline-none transition-colors duration-fast ease-standard hover:bg-surface-hover focus-visible:shadow-focus active:bg-surface-active"[39m
+        [33mtype[39m=[32m"button"[39m
+      [36m/>[39m
+
+      Name "Previous page":
+      [36m<button[39m
+        [33maria-label[39m=[32m"Previous page"[39m
+        [33mclass[39m=[32m"inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-control [&_svg]:shrink-0 ub-hit transition-colors duration-fast ease-standard active:scale-[0.98] motion-reduce:active:scale-100 disabled:active:scale-100 disabled:cursor-not-allowed disabled:opacity-45 hover:bg-surface-hover active:bg-surface-active text-button h-11 w-11 p-0 text-text-tertiary hover:text-text-primary"[39m
+        [33mdisabled[39m=[32m""[39m
+        [33mtype[39m=[32m"button"[39m
+      [36m/>[39m
+
+      Name "Next page":
+      [36m<button[39m
+        [33maria-label[39m=[32m"Next page"[39m
+        [33mclass[39m=[32m"inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-control [&_svg]:shrink-0 ub-hit transition-colors duration-fast ease-standard active:scale-[0.98] motion-reduce:active:scale-100 disabled:active:scale-100 disabled:cursor-not-allowed disabled:opacity-45 hover:bg-surface-hover active:bg-surface-active text-button h-11 w-11 p-0 text-text-tertiary hover:text-text-primary"[39m
+        [33mdisabled[39m=[32m""[39m
+        [33mtype[39m=[32m"button"[39m
+      [36m/>[39m
+
+      --------------------------------------------------
+      term:
+
+      Name "":
+      [36m<dt[39m
+        [33mclass[39m=[32m"ds-caption truncate text-text-tertiary"[39m
+      [36m/>[39m
+
+      Name "":
+      [36m<dt[39m
+        [33mclass[39m=[32m"ds-caption truncate text-text-tertiary"[39m
+      [36m/>[39m
+
+      Name "":
+      [36m<dt[39m
+        [33mclass[39m=[32m"ds-caption truncate text-text-tertiary"[39m
+      [36m/>[39m
+
+      --------------------------------------------------
+      definition:
+
+      Name "":
+      [36m<dd[39m
+        [33mclass[39m=[32m"ds-body-sm-medium ds-num whitespace-nowrap text-text-primary"[39m
+      [36m/>[39m
+
+      Name "":
+      [36m<dd[39m
+        [33mclass[39m=[32m"ds-body-sm-medium ds-num whitespace-nowrap text-text-primary"[39m
+      [36m/>[39m
+
+      Name "":
+      [36m<dd[39m
+        [33mclass[39m=[32m"ds-body-sm-medium ds-num whitespace-nowrap text-text-primary"[39m
+      [36m/>[39m
+
+      --------------------------------------------------
+      list:
+
+      Name "Purchase bills":
+      [36m<ul[39m
+        [33maria-label[39m=[32m"Purchase bills"[39m
+        [33mclass[39m=[32m"w-full min-w-0 overflow-x-hidden"[39m
+        [33mdata-card-layout[39m=[32m"inline"[39m
+        [33mdata-testid[39m=[32m"ub-grid-cards"[39m
+        [33mdata-ub-scroll-x[39m=[32m"off"[39m
+      [36m/>[39m
+
+      --------------------------------------------------
+      listitem:
+
+      Name "":
+      [36m<li[39m
+        [33mclass[39m=[32m"border-b border-border-hairline last:border-b-0"[39m
+        [33mdata-testid[39m=[32m"ub-grid-card"[39m
+      [36m/>[39m
+
+      --------------------------------------------------
+      paragraph:
+
+      Name "":
+      [36m<p[39m
+        [33mclass[39m=[32m"ds-caption text-text-tertiary"[39m
+      [36m/>[39m
+
+      --------------------------------------------------
+
+    Ignored nodes: comments, script, style
+    [36m<body[39m
+      [33mstyle[39m=[32m""[39m
+    [36m>[39m
+      [36m<div>[39m
+        [36m<div[39m
+          [33mclass[39m=[32m"flex min-h-full w-full flex-col bg-canvas"[39m
+        [36m>[39m
+          [36m<div[39m
+            [33mclass[39m=[32m"mx-auto flex w-full flex-1 flex-col gap-4 px-4 pb-6 pt-4 lg:px-6 lg:pb-3 lg:pt-3 max-w-none"[39m
+          [36m>[39m
+            [36m<header[39m
+              [33mclass[39m=[32m"flex flex-col gap-3"[39m
+              [33mdata-ub-page-header[39m=[32m""[39m
+            [36m>[39m
+              [36m<div[39m
+                [33mclass[39m=[32m"flex flex-wrap items-center gap-x-4 gap-y-2"[39m
+              [36m>[39m
+                [36m<div[39m
+                  [33mclass[39m=[32m"flex min-w-[8rem] flex-1 flex-col gap-0.5"[39m
+                [36m>[39m
+                  [36m<h1[39m
+                    [33mclass[39m=[32m"ds-h1 truncate leading-8 text-text-primary"[39m
+                  [36m>[39m
+                    [0mPurchases[0m
+                  [36m</h1>[39m
+                [36m</div>[39m
+              [36m</div>[39m
+            [36m</header>[39m
+            [36m<div[39m
+              [33mclass[39m=[32m"flex flex-col gap-4"[39m
+              [33mdata-testid[39m=[32m"purchase-bills-screen"[39m
+            [36m>[39m
+              [36m<div[39m
+                [33mclass[39m=[32m"flex flex-row gap-2 items-center"[39m
+              [36m>[39m
+                [36m<div[39m
+                  [33mclass[39m=[32m"flex h-10 w-full items-center gap-2 rounded-control border bg-surface-card px-3 transition-colors duration-fast ease-standard focus-within:border-text-primary border-border-hairline hover:border-border-subtle focus-visible:border-text-primary min-w-0 flex-1"[39m
+                [36m>[39m
+                  [36m<svg[39m
+                    [33maria-hidden[39m=[32m"true"[39m
+                    [33mclass[39m=[32m"lucide lucide-search h-4 w-4 shrink-0 text-text-tertiary"[39m
+                    [33mfill[39m=[32m"none"[39m
+                    [33mheight[39m=[32m"24"[39m
+                    [33mstroke[39m=[32m"currentColor"[39m
+                    [33mstroke-linecap[39m=[32m"round"[39m
+                    [33mstroke-linejoin[39m=[32m"round"[39m
+                    [33mstroke-width[39m=[32m"2"[39m
+                    [33mviewBox[39m=[32m"0 0 24 24"[39m
+                    [33mwidth[39m=[32m"24"[39m
+                    [33mxmlns[39m=[32m"http://www.w3.org/2000/svg"[39m
+                  [36m>[39m
+                    [36m<circle[39m
+                      [33mcx[39m=[32m"11"[39m
+                      [33mcy[39m=[32m"11"[39m
+                      [33mr[39m=[32m"8"[39m
+                    [36m/>[39m
+                    [36m<path[39m
+                      [33md[39m=[32m"m21 21-4.3-4.3"[39m
+                    [36m/>[39m
+                  [36m</svg>[39m
+                  [36m<input[39m
+                    [33maria-label[39m=[32m"Search bills"[39m
+                    [33mclass[39m=[32m"ds-body-base-regular h-full min-w-0 flex-1 bg-transparent text-text-primary outline-none placeholder:text-text-muted [&::-webkit-search-cancel-button]:hidden"[39m
+                    [33mplaceholder[39m=[32m"Bill number or supplier"[39m
+                    [33mtype[39m=[32m"search"[39m
+                    [33mvalue[39m=[32m""[39m
+                  [36m/>[39m
+                [36m</div>[39m
+                [36m<button[39m
+                  [33maria-haspopup[39m=[32m"dialog"[39m
+                  [33maria-label[39m=[32m"Filters"[39m
+                  [33mclass[39m=[32m"ub-hit ds-body-s-regular inline-flex h-9 max-w-full shrink-0 items-center gap-1.5 rounded-control border px-2.5 sm:h-10 sm:gap-2 sm:px-3 transition-colors duration-fast ease-standard motion-reduce:transition-none outline-none focus-visible:shadow-focus disabled:cursor-not-allowed disabled:opacity-60 border-border bg-surface-card text-text-primary hover:bg-surface-hover"[39m
+                  [33mdata-testid[39m=[32m"filters-button"[39m
+                  [33mtype[39m=[32m"button"[39m
+                [36m>[39m
+                  [36m<svg[39m
+                    [33maria-hidden[39m=[32m"true"[39m
+                    [33mclass[39m=[32m"lucide lucide-sliders-horizontal h-4 w-4 shrink-0"[39m
+                    [33mfill[39m=[32m"none"[39m
+                    [33mheight[39m=[32m"24"[39m
+                    [33mstroke[39m=[32m"currentColor"[39m
+                    [33mstroke-linecap[39m=[32m"round"[39m
+                    [33mstroke-linejoin[39m=[32m"round"[39m
+                    [33mstroke-width[39m=[32m"2"[39m
+                    [33mviewBox[39m=[32m"0 0 24 24"[39m
+                    [33mwidth[39m=[32m"24"[39m
+                    [33mxmlns[39m=[32m"http://www.w3.org/2000/svg"[39m
+                  [36m>[39m
+                    [36m<line[39m
+                      [33mx1[39m=[32m"21"[39m
+                      [33mx2[39m=[32m"14"[39m
+                      [33my1[39m=[32m"4"[39m
+                      [33my2[39m=[32m"4"[39m
+                    [36m/>[39m
+                    [36m<line[39m
+                      [33mx1[39m=[32m"10"[39m
+                      [33mx2[39m=[32m"3"[39m
+                      [33my1[39m=[32m"4"[39m
+                      [33my2[39m=[32m"4"[39m
+                    [36m/>[39m
+                    [36m<line[39m
+                      [33mx1[39m=[32m"21"[39m
+                      [33mx2[39m=[32m"12"[39m
+                      [33my1[39m=[32m"12"[39m
+                      [33my2[39m=[32m"12"[39m
+                    [36m/>[39m
+                    [36m<line[39m
+                      [33mx1[39m=[32m"8"[39m
+                      [33mx2[39m=[32m"3"[39m
+                      [33my1[39m=[32m"12"[39m
+                      [33my2[39m=[32m"12"[39m
+                    [36m/>[39m
+                    [36m<line[39m
+                      [33mx1[39m=[32m"21"[39m
+                      [33mx2[39m=[32m"16"[39m
+                      [33my1[39m=[32m"20"[39m
+                      [33my2[39m=[32m"20"[39m
+                    [36m/>[39m
+                    [36m<line[39m
+                      [33mx1[39m=[32m"12"[39m
+                      [33mx2[39m=[32m"3"[39m
+                      [33my1[39m=[32m"20"[39m
+                      [33my2[39m=[32m"20"[39m
+                    [36m/>[39m
+                    [36m<line[39m
+                      [33mx1[39m=[32m"14"[39m
+                      [33mx2[39m=[32m"14"[39m
+                      [33my1[39m=[32m"2"[39m
+                      [33my2[39m=[32m"6"[39m
+                    [36m/>[39m
+                    [36m<line[39m
+                      [33mx1[39m=[32m"8"[39m
+                      [33mx2[39m=[32m"8"[39m
+                      [33my1[39m=[32m"10"[39m
+                      [33my2[39m=[32m"14"[39m
+                    [36m/>[39m
+                    [36m<line[39m
+                      [33mx1[39m=[32m"16"[39m
+                      [33mx2[39m=[32m"16"[39m
+                      [33my1[39m=[32m"18"[39m
+                      [33my2[39m=[32m"22"[39m
+                    [36m/>[39m
+                  [36m</svg>[39m
+                  [36m<span[39m
+                    [33mclass[39m=[32m"max-sm:hidden"[39m
+             ...
+
+      195 |   renderWithProviders(<PurchaseBillsListPageContent />);
+      196 |   await screen.findAllByText(/Agro Traders/);
+    > 197 |   const statuses = screen.getByRole('radiogroup', { name: 'Bills by status' });
+          |                           ^
+      198 |   expect(within(statuses).getByRole('radio', { name: /To pay/ })).toBeVisible();
+      199 |   expect(screen.getByText(/AT\/778/)).toBeVisible();
+      200 |   expect(screen.getByTestId('ub-grid-scroll-region')).toContainElement(screen.getByTestId('ub-grid-cards'));
+
+      at Object.getElementError (node_modules/@testing-library/dom/dist/config.js:37:19)
+      at node_modules/@testing-library/dom/dist/query-helpers.js:76:38
+      at node_modules/@testing-library/dom/dist/query-helpers.js:52:17
+      at getByRole (node_modules/@testing-library/dom/dist/query-helpers.js:95:19)
+      at Object.<anonymous> (src/modules/DigiKhaato/features/purchases/components/PurchaseBillsListPageContent.test.tsx:197:27)
+
+Test Suites: 2 failed, 2 total
+Tests:       3 failed, 7 passed, 10 total
+Snapshots:   0 total
+Time:        2.107 s
+Ran all test suites within paths "src/modules/DigiKhaato/features/purchases/components/PurchaseBillsListPageContent.test.tsx", "src/modules/DigiKhaato/features/purchases/redux/purchaseBillListSlice.test.ts".

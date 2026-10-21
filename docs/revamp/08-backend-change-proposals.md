@@ -275,3 +275,25 @@ BP-08/16/17 approved by the owner: “Approve all three workflows”, recorded
 20 Oct 2026 at 06:03 UTC in R-DEC-26. BP-15 is the current read checkpoint;
 new workflows remain unbuilt until individually implemented and verified.
 Library/Lending endpoints, models, calculations and workflows remain frozen.
+
+## BP-18 · Saved-time identity for otherwise identical purchase drafts
+
+Proposed21Oct2026; **not approved or implemented**. The §5 register LOOK found
+that several unnumbered drafts can have the same supplier, document date and
+amount. BillListSerializer exposes no created/updated timestamp, so the client
+cannot honestly label which was saved most recently. Do not invent a timestamp
+or pretend its UUID is an official bill number.
+
+Proposed additive Shop purchase-list read fields: created_at and updated_at
+from PurchaseDocument, for bills/orders only. No new endpoint, model, sorting,
+financial rule or customer-facing document. Existing purchase read permission,
+tenant/app scope and paging remain authoritative. UI would label unnumbered
+drafts by saved time in the business timezone; old responses without the fields
+retain the present fallback. No Library/Lending contract change.
+
+Before building: owner approval under this document's proposal rule. Tests must
+prove timestamps match the stored source, respect list scope/permissions and
+remain stable through paging; distinguish same-day drafts and format long
+Hindi/phone labels. No new customer/supplier balance or cross-module identity.
+Rollback: omit the two new optional read fields and the timestamp caption.
+This does not block approved purchase detail and return work.

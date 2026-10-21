@@ -230,7 +230,10 @@ const customerRow = (vp) => (page) => (vp === 390
 function navigations(vp) {
   const phone = vp === 390;
   const list = [
-    { id: 'shop.purchases→new', start: '/purchases/bills', target: '^/purchases/bills/new$', tap: (page) => (phone ? page.getByRole('button', {name: 'New bill', exact: true}) : page.getByTestId('purchase-bill-new')).filter({visible: true}).first(), kind: 'new purchase editor' },
+    { id: 'shop.home→purchases', start: '/dashboard', target: '^/purchases/bills$', kind: phone ? 'App sheet purchase link' : 'sidebar purchase link',
+      before: phone ? async(page) => {await page.getByRole('button',{name:'Apps and more, now in Shop'}).click();await page.getByRole('dialog').waitFor();} : undefined,
+      tap: phone ? (page) => page.getByRole('dialog').locator('a[href="/purchases/bills"]').filter({visible:true}).first() : navLink('/purchases/bills') },
+    { id: 'shop.purchases→new', start: '/purchases/bills', target: '^/purchases/bills/new$', tap: (page) => (phone ? page.getByRole('button', {name: /New bill|Record bill/, exact: true}) : page.getByTestId('purchase-bill-new')).filter({visible: true}).first(), kind: 'new purchase editor' },
     { id: 'shop.home→customers', start: '/dashboard', target: '^/customers$', tap: navLink('/customers'), kind: phone ? 'bottom tab' : 'sidebar row' },
     { id: 'shop.customers→bills', start: '/customers', target: '^/sales/invoices$', tap: navLink('/sales/invoices'), kind: phone ? 'bottom tab' : 'sidebar row' },
     { id: 'shop.bill row→detail', start: '/sales/invoices', target: '^/sales/invoices/[0-9a-f-]{36}$', tap: customerRow(vp), kind: 'bill register row' },

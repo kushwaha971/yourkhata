@@ -7,6 +7,7 @@ export function RecordTotals({
   countLabel,
   figures,
   testId,
+  columns = false,
 }: Readonly<{
   label: string;
   count: number;
@@ -18,6 +19,8 @@ export function RecordTotals({
     tone?: 'neutral' | 'receivable' | 'payable';
   }[];
   testId?: string;
+  /** Two readable money columns on phones without a stack of stat cards. */
+  columns?: boolean;
 }>): React.JSX.Element {
   return (
     <UbStack
@@ -31,7 +34,15 @@ export function RecordTotals({
       <UbText variant="body-sm" tone="secondary">
         {count} {countLabel}
       </UbText>
-      <UbStack direction="row" align="baseline" className="flex-wrap gap-x-5 gap-y-2">
+      <UbStack
+        direction="row"
+        align="baseline"
+        className={
+          columns
+            ? 'grid w-full grid-cols-2 gap-x-3 gap-y-2 md:flex md:w-auto md:gap-x-5'
+            : 'flex-wrap gap-x-5 gap-y-2'
+        }
+      >
         {figures.map((f) => (
           <UbAmount
             key={f.key}
@@ -39,7 +50,11 @@ export function RecordTotals({
             label={f.label}
             tone={f.tone ?? 'neutral'}
             size="sm"
-            className="flex-row-reverse items-baseline gap-1.5"
+            className={
+              columns
+                ? 'flex-col-reverse items-start gap-1 md:flex-row-reverse md:items-baseline md:gap-1.5'
+                : 'flex-row-reverse items-baseline gap-1.5'
+            }
           />
         ))}
       </UbStack>

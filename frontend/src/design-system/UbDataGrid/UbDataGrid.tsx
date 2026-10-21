@@ -1,10 +1,11 @@
 'use client';
 
-import { useEffect, useMemo, type ReactNode } from 'react';
+import { useEffect, useMemo, useRef, type ReactNode } from 'react';
 
 import dynamic from 'next/dynamic';
 
 import { MLSkeleton } from 'src/design-system/primitives';
+import { UbBottomBar } from 'src/design-system/UbBottomBar';
 import { cn } from 'src/utils/cn';
 
 import { visibleColumns } from './columnModel';
@@ -127,6 +128,8 @@ export interface UbDataGridProps<TRow> {
    * them under a header that stays put.
    */
   readonly maxHeight?: 'fill' | string;
+  /** A bounded parent provides height; only rows scroll, pager stays outside. */
+  readonly fillHeight?: boolean;
   /** BrandHub's `rowHeight`. Defaults to 52 px. */
   readonly rowHeight?: number;
   /**
@@ -314,6 +317,7 @@ export function UbDataGrid<TRow>({
   columnMenu,
   storageId,
   maxHeight,
+  fillHeight = false,
   rowHeight,
   tier: forcedTier,
   skeletonRows = 6,
@@ -321,6 +325,10 @@ export function UbDataGrid<TRow>({
   className,
 }: Readonly<UbDataGridProps<TRow>>): React.JSX.Element {
   const tier = useGridTier(forcedTier);
+  const scrollRegion = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (fillHeight && scrollRegion.current) scrollRegion.current.scrollTop = 0;
+  }, [fillHeight, page.page]);
 
   const needsTable = tier !== 'cards';
   useEffect(() => {
@@ -362,6 +370,21 @@ export function UbDataGrid<TRow>({
   // which is a different model that this menu does not describe.
   const showColumnMenu = (columnMenu ?? Boolean(search || filters)) && needsTable;
 
+  const pagination =
+    footer !== undefined ? (
+      footer
+    ) : (
+      <UbDataGridPagination
+        className={fillHeight ? 'shrink-0 bg-surface-card px-2 py-2' : undefined}
+        page={page}
+        tier={tier}
+        labels={labels}
+        pageSizeOptions={pageSizeOptions}
+        onPageChange={onPageChange}
+        onPageSizeChange={onPageSizeChange}
+      />
+    );
+
   return (
     <div
       data-testid="ub-grid"
@@ -369,6 +392,7 @@ export function UbDataGrid<TRow>({
       className={cn(
         'w-full min-w-0 overflow-hidden rounded-card border border-border-hairline bg-surface-card',
         variant === 'register' && 'overflow-visible rounded-none border-0 bg-transparent',
+        fillHeight && 'flex min-h-0 flex-1 flex-col overflow-hidden',
         className
       )}
     >
@@ -401,124 +425,130 @@ export function UbDataGrid<TRow>({
       )}
       {beforeRows}
 
-      {/* Loading, empty, filtered-empty and error are drawn INSIDE the table on
+      <div
+        ref={scrollRegion}
+        data-testid="ub-grid-scroll-region"
+        role={fillHeight ? 'region' : undefined}
+        aria-label={fillHeight ? caption : undefined}
+        tabIndex={fillHeight ? 0 : undefined}
+        className={cn(
+          fillHeight &&
+            'relative min-h-0 flex-1 overflow-y-auto overscroll-contain outline-none focus-visible:shadow-focus'
+        )}
+      >
+        {/* Loading, empty, filtered-empty and error are drawn INSIDE the table on
           a table tier — BrandHub's arrangement, and see `UbDataGridStateTable`
           for the three reasons. `cards` keeps the stacked shapes and the plain
           panel, because there is no table there to keep the reader's place in. */}
-      {state === 'loading' &&
-        (tier === 'cards' ? (
-          <SkeletonRows
-            count={skeletonRows}
-            columns={Math.max(shown.length, 1)}
-            label={labels.loading}
-            isCards
-          />
-        ) : (
-          // The live region wraps the table rather than living in it: `role` on
-          // a `<tbody>` would cost the table its own semantics, and a merchant
-          // navigating by table keys needs those more than the announcement
-          // needs a tidy home.
-          <div role="status" aria-busy aria-label={labels.loading}>
-            <UbDataGridStateTable columns={shown} caption={caption} selectable={canSelect}>
-              <UbDataGridSkeletonRows
-                columnCount={shown.length}
-                rowCount={skeletonRows}
-                selectable={canSelect}
-                rowHeight={rowHeight}
-              />
-            </UbDataGridStateTable>
-          </div>
-        ))}
-
-      {state !== 'loading' &&
-        state !== 'rows' &&
-        (tier === 'cards' ? (
-          <UbDataGridEmptyState state={state} copy={emptyStates} className="m-4" />
-        ) : (
-          <UbDataGridStateTable columns={shown} caption={caption} selectable={canSelect}>
-            <UbDataGridStateRow colSpan={shown.length + (canSelect ? 1 : 0)}>
-              <UbDataGridEmptyState state={state} copy={emptyStates} className="m-4" />
-            </UbDataGridStateRow>
-          </UbDataGridStateTable>
-        ))}
-
-      {/* Indeterminate on purpose: a list request has no progress to report,
-          and a bar that crept to 90 % and waited would be a lie with a
-          percentage on it. No `aria-valuenow` is how ARIA says "indeterminate". */}
-      {state === 'rows' && busy && (
-        <div
-          role="progressbar"
-          aria-label={labels.loading}
-          data-testid="ub-grid-busy"
-          className="h-0.5 w-full overflow-hidden bg-surface-sunken"
-        >
-          <div className="h-full w-1/3 animate-pulse bg-action motion-reduce:animate-none" />
-        </div>
-      )}
-
-      {state === 'rows' && (
-        <div
-          aria-busy={busy || undefined}
-          className={cn('transition-opacity duration-base', busy && 'opacity-60')}
-        >
-          {tier === 'cards' ? (
-            <UbDataGridMobileList
-              rows={rows}
-              columns={shown}
-              rowId={rowId}
-              rowName={rowName}
-              onRowOpen={onRowOpen}
-              labels={labels}
-              listLabel={caption}
-              className={
-                variant === 'register'
-                  ? 'rounded-card border border-border-hairline bg-surface-card'
-                  : undefined
-              }
-              actions={cardActions}
-              layout={cardLayout}
-              avatar={cardAvatar}
-              avatarIcon={cardAvatarIcon}
+        {state === 'loading' &&
+          (tier === 'cards' ? (
+            <SkeletonRows
+              count={skeletonRows}
+              columns={Math.max(shown.length, 1)}
+              label={labels.loading}
+              isCards
             />
           ) : (
-            <UbDataGridTableLazy
-              className={
-                variant === 'register'
-                  ? 'overflow-hidden rounded-card border border-border-hairline bg-surface-card'
-                  : undefined
-              }
-              rows={rows}
-              columns={shown}
-              rowId={rowId}
-              rowName={rowName}
-              onRowOpen={onRowOpen}
-              labels={labels}
-              caption={caption}
-              sort={sort}
-              onSortChange={onSortChange}
-              selectable={canSelect}
-              selectedIds={selectedIds}
-              onSelectionChange={onSelectionChange}
-              allowHorizontalScroll={scrollX}
-              maxHeight={maxHeight}
-              rowHeight={rowHeight}
-            />
-          )}
-        </div>
-      )}
+            // The live region wraps the table rather than living in it: `role` on
+            // a `<tbody>` would cost the table its own semantics, and a merchant
+            // navigating by table keys needs those more than the announcement
+            // needs a tidy home.
+            <div role="status" aria-busy aria-label={labels.loading}>
+              <UbDataGridStateTable columns={shown} caption={caption} selectable={canSelect}>
+                <UbDataGridSkeletonRows
+                  columnCount={shown.length}
+                  rowCount={skeletonRows}
+                  selectable={canSelect}
+                  rowHeight={rowHeight}
+                />
+              </UbDataGridStateTable>
+            </div>
+          ))}
 
+        {state !== 'loading' &&
+          state !== 'rows' &&
+          (tier === 'cards' ? (
+            <UbDataGridEmptyState state={state} copy={emptyStates} className="m-4" />
+          ) : (
+            <UbDataGridStateTable columns={shown} caption={caption} selectable={canSelect}>
+              <UbDataGridStateRow colSpan={shown.length + (canSelect ? 1 : 0)}>
+                <UbDataGridEmptyState state={state} copy={emptyStates} className="m-4" />
+              </UbDataGridStateRow>
+            </UbDataGridStateTable>
+          ))}
+
+        {/* Indeterminate on purpose: a list request has no progress to report,
+          and a bar that crept to 90 % and waited would be a lie with a
+          percentage on it. No `aria-valuenow` is how ARIA says "indeterminate". */}
+        {state === 'rows' && busy && (
+          <div
+            role="progressbar"
+            aria-label={labels.loading}
+            data-testid="ub-grid-busy"
+            className="h-0.5 w-full overflow-hidden bg-surface-sunken"
+          >
+            <div className="h-full w-1/3 animate-pulse bg-action motion-reduce:animate-none" />
+          </div>
+        )}
+
+        {state === 'rows' && (
+          <div
+            aria-busy={busy || undefined}
+            className={cn('transition-opacity duration-base', busy && 'opacity-60')}
+          >
+            {tier === 'cards' ? (
+              <UbDataGridMobileList
+                rows={rows}
+                columns={shown}
+                rowId={rowId}
+                rowName={rowName}
+                onRowOpen={onRowOpen}
+                labels={labels}
+                listLabel={caption}
+                className={
+                  variant === 'register'
+                    ? 'rounded-card border border-border-hairline bg-surface-card'
+                    : undefined
+                }
+                actions={cardActions}
+                layout={cardLayout}
+                avatar={cardAvatar}
+                avatarIcon={cardAvatarIcon}
+              />
+            ) : (
+              <UbDataGridTableLazy
+                className={cn(
+                  variant === 'register' &&
+                    'rounded-card border border-border-hairline bg-surface-card',
+                  fillHeight ? 'overflow-visible' : 'overflow-hidden'
+                )}
+                rows={rows}
+                columns={shown}
+                rowId={rowId}
+                rowName={rowName}
+                onRowOpen={onRowOpen}
+                labels={labels}
+                caption={caption}
+                sort={sort}
+                onSortChange={onSortChange}
+                selectable={canSelect}
+                selectedIds={selectedIds}
+                onSelectionChange={onSelectionChange}
+                allowHorizontalScroll={scrollX}
+                maxHeight={fillHeight ? 'fill' : maxHeight}
+                rowHeight={rowHeight}
+              />
+            )}
+          </div>
+        )}
+      </div>
       {state === 'rows' &&
-        (footer !== undefined ? (
-          footer
+        (fillHeight ? (
+          <UbBottomBar sticky={false} clearToBottom className="shrink-0">
+            {pagination}
+          </UbBottomBar>
         ) : (
-          <UbDataGridPagination
-            page={page}
-            tier={tier}
-            labels={labels}
-            pageSizeOptions={pageSizeOptions}
-            onPageChange={onPageChange}
-            onPageSizeChange={onPageSizeChange}
-          />
+          pagination
         ))}
     </div>
   );

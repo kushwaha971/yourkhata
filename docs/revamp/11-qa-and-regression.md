@@ -43,3 +43,54 @@ Every UI piece that is built, whether a form, card, drawer, sheet, dialog, list 
 4. Performance targets met or the gap shown with numbers.
 5. Rollback drill done on staging: flag off restores the old screens with no data change.
 6. Staged rollout per app: internal → one friendly customer per app → all, with a watch period between.
+
+## R-DEC-31 · Viewport behavior across all modules (21 Oct)
+
+Owner explicitly wants this in every module, not only Purchases. Track the
+rollout within this existing revamp; this is not a new redesign plan. Only
+Purchases has been implemented/verified so far. The next implementation group
+is the already-redesigned Shop Customers/Suppliers/Bills registers. Then apply
+and verify the same behavior on each remaining module's real list composition.
+This shared behavior rollout does not certify or replace their full revamps.
+
+| Surface group | Status | Guard |
+|---|---|---|
+| Purchases / shared orders and returns register | Verified in Purchases only;32px/44px correction passes |32px face,44px mobile hit area; pinned pager/toast clearance |
+| Shop Customers, Suppliers, Bills | Next | Preserve separate roles/books, filtering and row actions |
+| Remaining sales documents | Pending | Shared list kinds, permissions and links unchanged |
+| Items, stock, payments, expenses | Pending | No stock/pricing/payment calculations changed |
+| Personal Udhaar people, aging, reminders | Pending | Independent personal book; no mixed Shop balances |
+| Library members, catalogue, copies and other collection views | Pending | Presentation only; exact endpoints/bodies/calculations frozen |
+| Lending borrowers, loans and Today collections | Pending | Preserve schedules/collections; inspect custom list/paging first |
+| Reports and other register views | Pending | Keep exports/prints and report-specific horizontal-scroll exceptions |
+| Embedded import/admin/team tables | Inventory separately | Bound their own container; do not turn a form or detail page into a register |
+
+For each actual page: use UbViewportPageShell + UbDataGrid fillHeight where it
+fits; keep existing paging APIs. Inspect custom/load-more/infinite lists first:
+a pinned auto-load sentinel must not fetch every page merely because it stays
+visible. Do not invent totals, pagination endpoints or new Library/Lending
+workflows. Preserve current filters, context fences, financial facts and access.
+Measure document height, rows-only scrolling, unchanged pager position, real
+button hit-testing with toasts, short height and reference32px chip faces with
+44px mobile targets. Run the standing gates/LOOK/performance/report loop per
+verified group. An unchecked row remains pending, never implied complete.
+
+
+## R-DEC-32 · Functional value, competition and requirement coverage
+
+For each piece, put the following in its existing evidence report before
+claiming completion. Reuse this structure rather than starting another plan.
+
+| Required question | Evidence to record |
+|---|---|
+| Who needs this and why? | Role, business task, necessity and placement rationale |
+| Does it work end to end? | Actual local UI/API/persisted readback, business effects and recovery |
+| Does it make the user's work better? | Fewer steps/errors, clearer decisions; distinguish measured from assumed benefit |
+| Is it feasible and maintainable? | Existing engines/components, data availability, performance/cost and boundaries |
+| How does it compare? | Same task against relevant competitors; dated verified sources/observations; better/equal/worse and trade-offs |
+| Are necessary requirements fulfilled? | Requirement → implementation → test/journey → passed/missing/deferred/unproven |
+
+Research not yet performed is unproven. Requirements not implemented are not
+passed. Preserve critical correctness/access/data-recovery gates independently
+of ratings. Competition does not justify unnecessary features or copying another
+product's appearance. No claim here that all modules have met these gates.
