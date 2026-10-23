@@ -9,6 +9,11 @@ a safe fast-forward when appropriate; commit and push verified pieces to dev.
 
 R-DEC-32: CLAUDE.md's mandatory revamp acceptance gates are strict. Verify explicit reference/component values before coding; final LOOK and measured evidence are required. Never make the owner catch documented deviations.
 
+R-DEC-34 (owner, 23 Oct): go FEATURE BY FEATURE. Finish one feature completely
+(build, gates, LOOK, phone+desktop acceptance, perf, docs, commit, push) before
+opening the next. Never leave several modules half-verified. Current feature:
+the sales-document lists under R-DEC-33; each other list group comes after it.
+
 READ FIRST, IN ORDER
 AGENTS.md, CLAUDE.md, docs/revamp/README.md, docs/revamp/12-decision-log.md,
 docs/revamp/02-preserve-and-contracts.md, the screen spec in07-screens/, then the

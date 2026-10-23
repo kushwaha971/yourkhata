@@ -308,3 +308,10 @@ This latest decision supersedes earlier mobile manual/arrow-paging acceptance an
 
 
 23Oct2026 owner checkpoint request: "commit and push and give me updated prompt in same manner". Preserve current unfinished sales/mobile composition as an explicit IN-PROGRESS checkpoint. Latest continuation is the23Oct section in both revamp prompts; it supersedes stale Next entries. Latest1024 compact-breakpoint correction needs fresh full visual acceptance/performance. No final rating or all-module certification. R-DEC-33 follow-up includes previously verified Bills/Customers/Suppliers/Purchases; Home retains its approved single command field.
+
+
+## R-DEC-34 · Feature by feature (23 Oct 2026)
+
+Owner: "and I would say go feature wise fetaure else will never complete our developemnt".
+
+Finish one feature completely before starting the next: build, full gates, LOOK, phone and desktop acceptance, performance, docs, commit and push. Only then open the next feature. Do not spread a shared change across several modules and leave each half-verified. The order stays as R-DEC-27 and the IMMEDIATE NEXT list give it. The current feature is the sales-document lists (Estimates, Orders, Challans, Credit Notes) under R-DEC-33. Bills, Customers, Suppliers and Purchases are each a later feature, one at a time.

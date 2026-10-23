@@ -176,6 +176,10 @@ and dynamic viewport height over copied fixed offsets. Verify phone readability,
 44px hit targets, keyboard/short-height behavior and real scroll measurements.
 Do not claim all older registers migrated when only the current piece is done.
 
+**Feature by feature (owner, 23 Oct 2026, R-DEC-34):** finish one feature
+completely (gates, LOOK, phone and desktop acceptance, performance, docs, push)
+before starting the next; never leave several modules half-verified.
+
 **Revamp, do not patch (owner, 20 Oct 2026, R-DEC-29):** do not rework the
 existing design of any module; build its approved revamp composition
 (`docs/revamp/07-screens/`, `design/counter-mode.html` for editors) instead of

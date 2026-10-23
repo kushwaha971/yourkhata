@@ -8,6 +8,11 @@ Replace the line marked `TASK` with what you want done next. If you leave it out
 
 R-DEC-32: CLAUDE.md's mandatory revamp acceptance gates are strict. Verify explicit reference/component values before coding; final LOOK and measured evidence are required. Never make the owner catch documented deviations.
 
+R-DEC-34 (owner, 23 Oct): go FEATURE BY FEATURE. Finish one feature completely
+(build, gates, LOOK, phone+desktop acceptance, perf, docs, commit, push) before
+opening the next. Never leave several modules half-verified. Current feature:
+the sales-document lists under R-DEC-33; each other list group comes after it.
+
 Read START-NEXT-SESSION-PROMPT.txt and12's current Next first. R-DEC-27 orders
 billing/purchases/returns, then inventory/money/expenses/reports, then Home.
 Purchase editor §7 and register §5 are delivered. Register evidence:
