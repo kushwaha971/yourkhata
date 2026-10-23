@@ -276,7 +276,7 @@ R-DEC-33 phone follow-up (23 Oct): bills, orders and debit notes now join pages 
 | Must keep working | `purchases/services/void.py`: void keeps rows and number, reverses stock (negative-stock policy applies), reverses supplier credit dated today, payments become advance; average cost **does** change on void (CR-2026-09-24-INV-A; never print "Average cost unchanged"); refused with a standing debit note; debit note amounts are the server's; order billed once. |
 | Fewer taps | Pay supplier on the page; chooser instead of separate Void / Debit note items. |
 
-Tracking: problems — purchase actions scattered in ⋯ · decisions — same chooser as sales, supplier words · dependencies — §2 chooser · risks — "Supplier gave money back" depends on the payments "paid in from supplier" direction existing (verify in Phase 2; hide if not) · approval — pending · build — not started · tests — `apps/purchases/tests/test_void.py`, `purchase-recovery-look.mjs` · outcome — —
+Tracking: problems — purchase actions scattered in ⋯ · decisions — same chooser as sales, supplier words · dependencies — §2 chooser · risks — "Supplier gave money back" depends on the payments "paid in from supplier" direction existing (verified 23 Oct: no advance figure on the page, so hidden) · approval — proceeded under R-DEC-27/29 (owner: continue without stopping, 23 Oct) · build — delivered 23 Oct: money first, Pay supplier + chooser, links, lines; void refusals linked; Cancel order/Delete draft in the action row instead of ⋯ · tests — 17 page tests, `e2e/purchase-detail.mjs` 118/118 real journeys · outcome — docs/performance/2026-10-23-purchase-detail.md
 
 ---
 

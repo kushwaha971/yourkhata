@@ -138,3 +138,13 @@ Earlier mobile manual/arrow-pager matrix acceptance is superseded. Existing desk
 | Debit note card wording | LOOK: "to pay" → "open credit" | fixed |
 | Speed vs 5714a94 | phone −58 ms; desktop 4x CPU +75/+129 ms, unexplained | open |
 | Competitor comparison | none this session | unproven |
+
+### Purchase detail §6 · 23 Oct 2026 (R-DEC-34)
+
+| Requirement | Evidence | Status |
+|---|---|---|
+| Money first, Pay supplier, chooser, links, lines | e2e/purchase-detail.mjs 390/320/1280 EN/HI | passed |
+| Pay, refused void, void→advance, order→bill, delete draft | same, read back from the local API | passed |
+| Archived supplier refusal | unit test only | partial |
+| Speed vs 216d456 | phone −93 ms both rounds; desktop mixed | passed, small sample |
+| Competitor comparison | none | unproven |

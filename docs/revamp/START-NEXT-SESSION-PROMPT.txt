@@ -304,11 +304,12 @@ DONE 23 Oct night: Purchase registers on a phone — bills, orders, debit notes
 (report docs/performance/2026-10-23-purchase-registers-phone.md; cards 47% ->
 61-65%). OPEN: desktop at 4x CPU +75 ms register / +129 ms New bill in both
 rounds, unexplained; phone New-bill timing invalid (negative content times).
-1. Purchase detail §6 (bills/orders/debit notes): money first, Pay supplier +
-   "Something's wrong…" chooser, links, lines; void refusals with links.
-   Defaults taken: "Supplier gave money back" hidden (no advance figure on the
-   page); Cancel order / Delete draft in the action row, not a ⋯ menu.
-2. Then Stock, Payments, Expenses, Reports; approved Home workflows LAST.
+DONE 23 Oct night: Purchase detail §6 incl. order -> bill and returns entry
+(report docs/performance/2026-10-23-purchase-detail.md; e2e/purchase-detail.mjs
+118/118). Defaults awaiting owner: "Supplier gave money back" hidden; Cancel
+order / Delete draft in the action row, not a ⋯ menu.
+1. Stock (Items list and stock screens), then Payments, Expenses, Reports
+   (keep exports/prints); approved Home workflows LAST.
 
 ## LATEST CHECKPOINT —23 October2026 (owner requested commit/push)
 

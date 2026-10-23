@@ -1,0 +1,121 @@
+set up PB/26-27/1373, PB/26-27/1374 with DN/26-27/0062, draft, order
+ok   bill 390 en: no sideways scroll — 0px
+ok   bill 390 en: no text cut
+ok   bill 390 en: actions ≥ 44 px — 44,44
+ok   bill 390 en: money, then actions, then lines — 179.015625/474.21875/572.234375
+ok   bill-with-note 390 en: no sideways scroll — 0px
+ok   bill-with-note 390 en: no text cut
+ok   bill-with-note 390 en: actions ≥ 44 px — 44,44
+ok   bill-with-note 390 en: money, then actions, then lines — 179.015625/506.234375/698.28125
+ok   debit-note 390 en: no sideways scroll — 0px
+ok   debit-note 390 en: no text cut
+ok   debit-note 390 en: actions ≥ 44 px — 44
+ok   debit-note 390 en: money, then actions, then lines — 179.015625/445.078125/675.15625
+ok   order 390 en: no sideways scroll — 0px
+ok   order 390 en: no text cut
+ok   order 390 en: actions ≥ 44 px — 44,44
+ok   order 390 en: money, then actions, then lines — 179.015625/303.171875/401.1875
+ok   draft 390 en: no sideways scroll — 0px
+ok   draft 390 en: no text cut
+ok   draft 390 en: actions ≥ 44 px — 44,44
+ok   draft 390 en: money, then actions, then lines — 179.015625/332.3125/430.328125
+ok   bill 320 en: no sideways scroll — 0px
+ok   bill 320 en: no text cut
+ok   bill 320 en: actions ≥ 44 px — 44,44
+ok   bill 320 en: money, then actions, then lines — 179.015625/492.609375/590.625
+ok   bill-with-note 320 en: no sideways scroll — 0px
+ok   bill-with-note 320 en: no text cut
+ok   bill-with-note 320 en: actions ≥ 44 px — 44,44
+ok   bill-with-note 320 en: money, then actions, then lines — 179.015625/524.625/736.6875
+ok   debit-note 320 en: no sideways scroll — 0px
+ok   debit-note 320 en: no text cut
+ok   debit-note 320 en: actions ≥ 44 px — 44
+ok   debit-note 320 en: money, then actions, then lines — 179.015625/463.546875/733.65625
+ok   order 320 en: no sideways scroll — 0px
+ok   order 320 en: no text cut
+ok   order 320 en: actions ≥ 44 px — 44,44
+ok   order 320 en: money, then actions, then lines — 179.015625/303.09375/401.109375
+ok   draft 320 en: no sideways scroll — 0px
+ok   draft 320 en: no text cut
+ok   draft 320 en: actions ≥ 44 px — 44,44
+ok   draft 320 en: money, then actions, then lines — 179.015625/351.125/449.140625
+ok   bill 1280 en: no sideways scroll — 0px
+ok   bill 1280 en: no text cut
+ok   bill 1280 en: actions ≥ 44 px — 44,44
+ok   bill-with-note 1280 en: no sideways scroll — 0px
+ok   bill-with-note 1280 en: no text cut
+ok   bill-with-note 1280 en: actions ≥ 44 px — 44,44
+ok   debit-note 1280 en: no sideways scroll — 0px
+ok   debit-note 1280 en: no text cut
+ok   debit-note 1280 en: actions ≥ 44 px — 44
+ok   order 1280 en: no sideways scroll — 0px
+ok   order 1280 en: no text cut
+ok   order 1280 en: actions ≥ 44 px — 44,44
+ok   draft 1280 en: no sideways scroll — 0px
+ok   draft 1280 en: no text cut
+ok   draft 1280 en: actions ≥ 44 px — 44,44
+ok   bill 390 hi: no sideways scroll — 0px
+ok   bill 390 hi: no text cut
+ok   bill 390 hi: actions ≥ 44 px — 44,44
+ok   bill 390 hi: money, then actions, then lines — 181.0625/483.8125/582.8125
+ok   bill-with-note 390 hi: no sideways scroll — 0px
+ok   bill-with-note 390 hi: no text cut
+ok   bill-with-note 390 hi: actions ≥ 44 px — 44,44
+ok   bill-with-note 390 hi: money, then actions, then lines — 181.0625/516.8125/711.8125
+ok   debit-note 390 hi: no sideways scroll — 0px
+ok   debit-note 390 hi: no text cut
+ok   debit-note 390 hi: actions ≥ 44 px — 44
+ok   debit-note 390 hi: money, then actions, then lines — 181.0625/453.140625/667.140625
+ok   order 390 hi: no sideways scroll — 0px
+ok   order 390 hi: no text cut
+ok   order 390 hi: actions ≥ 44 px — 44,44
+ok   order 390 hi: money, then actions, then lines — 181.0625/307.734375/406.734375
+ok   draft 390 hi: no sideways scroll — 0px
+ok   draft 390 hi: no text cut
+ok   draft 390 hi: actions ≥ 44 px — 44,44
+ok   draft 390 hi: money, then actions, then lines — 181.0625/338.40625/437.40625
+ok   bill 320 hi: no sideways scroll — 0px
+ok   bill 320 hi: no text cut
+ok   bill 320 hi: actions ≥ 44 px — 44,44
+ok   bill 320 hi: money, then actions, then lines — 180.5625/482.640625/581.640625
+ok   bill-with-note 320 hi: no sideways scroll — 0px
+ok   bill-with-note 320 hi: no text cut
+ok   bill-with-note 320 hi: actions ≥ 44 px — 44,44
+ok   bill-with-note 320 hi: money, then actions, then lines — 180.5625/515.640625/731.640625
+ok   debit-note 320 hi: no sideways scroll — 0px
+ok   debit-note 320 hi: no text cut
+ok   debit-note 320 hi: actions ≥ 44 px — 44
+ok   debit-note 320 hi: money, then actions, then lines — 180.5625/452.078125/687.078125
+ok   order 320 hi: no sideways scroll — 0px
+ok   order 320 hi: no text cut
+ok   order 320 hi: actions ≥ 44 px — 44,44
+ok   order 320 hi: money, then actions, then lines — 180.5625/307.125/406.125
+ok   draft 320 hi: no sideways scroll — 0px
+ok   draft 320 hi: no text cut
+ok   draft 320 hi: actions ≥ 44 px — 44,44
+ok   draft 320 hi: money, then actions, then lines — 180.5625/337.6875/436.6875
+ok   bill 1280 hi: no sideways scroll — 0px
+ok   bill 1280 hi: no text cut
+ok   bill 1280 hi: actions ≥ 44 px — 44,44
+ok   bill-with-note 1280 hi: no sideways scroll — 0px
+ok   bill-with-note 1280 hi: no text cut
+ok   bill-with-note 1280 hi: actions ≥ 44 px — 44,44
+ok   debit-note 1280 hi: no sideways scroll — 0px
+ok   debit-note 1280 hi: no text cut
+ok   debit-note 1280 hi: actions ≥ 44 px — 44
+ok   order 1280 hi: no sideways scroll — 0px
+ok   order 1280 hi: no text cut
+ok   order 1280 hi: actions ≥ 44 px — 44,44
+ok   draft 1280 hi: no sideways scroll — 0px
+ok   draft 1280 hi: no text cut
+ok   draft 1280 hi: actions ≥ 44 px — 44,44
+ok   Pay supplier: To pay fell by exactly ₹100 — 897.00 → 797.00
+ok   Pay supplier: the payment is listed on the bill
+ok   void with a standing note: refused and linked to the note
+ok   void with a standing note: bill unchanged on the server — recorded
+ok   void: status void, payment released as advance — void paid 0.00 due 897.00
+ok   void: no actions left on a void bill
+ok   Create bill: order billed and the new draft opened — billed
+ok   Delete draft: gone on the server — 404
+
+118/118 passed
