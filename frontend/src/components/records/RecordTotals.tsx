@@ -32,7 +32,7 @@ export function RecordTotals({
     <UbStack
       direction="row"
       align="baseline"
-      className={`flex-wrap justify-between gap-3 py-2 ${compactShort ? 'max-md:[@media(max-height:640px)]:gap-1 max-md:[@media(max-height:640px)]:py-1' : ''}`}
+      className={`flex-wrap justify-between gap-3 py-2 ${compactShort ? 'max-md:py-1 max-md:[@media(max-height:640px)]:gap-1' : ''}`}
       aria-label={label}
       role="status"
       data-testid={testId}
@@ -56,7 +56,10 @@ export function RecordTotals({
         className={
           columns
             ? 'grid w-full grid-cols-2 gap-x-3 gap-y-2 md:flex md:w-auto md:gap-x-5'
-            : 'flex-wrap gap-x-5 gap-y-2'
+            : compactShort
+              ? // R-DEC-33: a phone's money strip keeps to one line where it can.
+                'flex-wrap gap-x-3 gap-y-1 md:gap-x-5 md:gap-y-2'
+              : 'flex-wrap gap-x-5 gap-y-2'
         }
       >
         {figures.map((f) => (
@@ -66,6 +69,7 @@ export function RecordTotals({
             label={f.label}
             tone={f.tone ?? 'neutral'}
             size="sm"
+            inline={!columns}
             className={
               columns
                 ? 'flex-col-reverse items-start gap-1 md:flex-row-reverse md:items-baseline md:gap-1.5'

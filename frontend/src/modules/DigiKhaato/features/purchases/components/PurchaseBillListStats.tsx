@@ -16,7 +16,8 @@ export function PurchaseBillListStats({
   const { t } = useTranslation();
   return (
     <RecordTotals
-      columns
+      compactShort
+      countInMobileChips
       label={t('purchases.list.filteredTotals')}
       count={totals.count}
       countLabel={t(

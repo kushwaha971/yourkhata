@@ -13,6 +13,7 @@ import {
   UbEmptyState,
   UbFilterChip,
   UbFilterSheet,
+  UbLoadMore,
   UbPageHeader,
   UbPageHeaderMobileActions,
   UbPageShell,
@@ -103,7 +104,7 @@ export function PurchaseBillsListPageContent({
   const gridTier = useGridTier();
   const wide = useMediaQuery('(min-width: 1280px)');
   const tier = gridTier === 'full' && !wide ? 'compact' : gridTier;
-  const list = usePurchaseBillList(kind);
+  const list = usePurchaseBillList(kind, tier === 'cards' ? 'append' : 'replace');
   const copy = LIST_COPY[kind];
   const order = kind === 'purchase_order';
   const NEW_BILL = `${copy.home}/new`;
@@ -188,8 +189,11 @@ export function PurchaseBillsListPageContent({
     [t, copy, canWrite, newBill, clearFilters, error, refetch]
   );
 
-  const gridState: UbGridState =
-    list.status === 'loading' || (list.status === 'idle' && list.canRead)
+  // The next page loading (or failing) under the cards keeps the cards on screen.
+  const keepingCards = tier === 'cards' && filters.page > 1 && list.rows.length > 0;
+  const gridState: UbGridState = keepingCards
+    ? 'rows'
+    : list.status === 'loading' || (list.status === 'idle' && list.canRead)
       ? 'loading'
       : list.status === 'failed'
         ? 'error'
@@ -328,6 +332,36 @@ export function PurchaseBillsListPageContent({
       }}
       onPageChange={list.setPage}
       onRowOpen={openRow}
+      /* R-DEC-33: a phone joins the next page under the cards as the merchant
+         scrolls, with Try again in place when it fails; a desktop pages. */
+      resetScrollOnPageChange={!phone}
+      scrollResetKey={JSON.stringify([
+        filters.q,
+        filters.tab,
+        filters.dateFrom,
+        filters.dateTo,
+        filters.dueFrom ?? null,
+        filters.dueTo ?? null,
+      ])}
+      footer={phone ? null : undefined}
+      afterRows={
+        phone && gridState === 'rows' && list.page * list.pageSize < list.total ? (
+          <UbLoadMore
+            loading={list.status === 'loading' || list.status === 'refreshing'}
+            automatic={list.status !== 'failed'}
+            repeatWhileVisible={false}
+            loadingLabel={t('common.search.loadingMore')}
+            moreLabel={t(
+              list.status === 'failed' ? 'common.action.retry' : 'common.search.showMore'
+            )}
+            className={list.status === 'failed' ? 'pb-20' : undefined}
+            onLoadMore={() => {
+              if (list.status === 'failed') list.refetch();
+              else if (list.status === 'succeeded') list.setPage(list.page + 1);
+            }}
+          />
+        ) : undefined
+      }
       cardAvatar={false}
       cardLayout="stacked"
       variant="register"
@@ -384,7 +418,11 @@ export function PurchaseBillsListPageContent({
           />
         )}
       />
-      <UbStack gap={3} className="min-h-0 flex-1 !shrink" data-testid="purchase-bills-screen">
+      <UbStack
+        gap={3}
+        className="min-h-0 flex-1 !shrink max-md:gap-2"
+        data-testid="purchase-bills-screen"
+      >
         {emptyBook ? (
           /* Owner, 12 Oct 2026: an empty book is one sentence and one button —
              no period, ₹0 totals, tabs or search over nothing. */

@@ -197,9 +197,40 @@ it('keeps bill status choices visible and supplier paper numbers readable on pho
   expect(screen.getByTestId('ub-grid-scroll-region')).toContainElement(
     screen.getByTestId('ub-grid-cards')
   );
-  expect(screen.getByTestId('ub-grid-scroll-region')).not.toContainElement(
-    screen.getByTestId('ub-grid-pagination')
-  );
+  // R-DEC-33: a phone has no page arrows at all; the next bills join the cards.
+  expect(screen.queryByTestId('ub-grid-pagination')).not.toBeInTheDocument();
+});
+
+/** R-DEC-33: page two replaced page one on a phone, and a failed page wiped the cards. */
+it('joins the next page of purchase bills under the phone cards and keeps them on failure', async () => {
+  const bills = Array.from({ length: 30 }, (_, i) => ({
+    ...AGRO,
+    id: `pb-${i + 1}`,
+    number: `PB/26-27/${String(i + 1).padStart(4, '0')}`,
+  }));
+  let secondAsks = 0;
+  service.listPurchaseBills.mockImplementation(async (query: PurchaseBillListQuery) => {
+    if (query.page === 2) {
+      secondAsks += 1;
+      if (secondAsks === 1) throw new Error('offline');
+    }
+    return {
+      ...page(query.page === 2 ? bills.slice(25) : bills.slice(0, 25)),
+      page: query.page,
+      total: 30,
+    };
+  });
+  signIn(['purchases.bill.read']);
+  renderWithProviders(<PurchaseBillsListPageContent />);
+  expect(await screen.findAllByTestId('ub-grid-card')).toHaveLength(25);
+  expect(screen.queryByText(/Page 1 of/)).not.toBeInTheDocument();
+  await userEvent.click(screen.getByRole('button', { name: 'Show more' }));
+  const retry = await screen.findByRole('button', { name: 'Try again' });
+  expect(screen.getAllByTestId('ub-grid-card')).toHaveLength(25);
+  await userEvent.click(retry);
+  await waitFor(() => expect(screen.getAllByTestId('ub-grid-card')).toHaveLength(30));
+  expect(lastAsked().page).toBe(2);
+  expect(screen.queryByRole('button', { name: 'Show more' })).not.toBeInTheDocument();
 });
 
 it('treats an empty period in a used book as filtered empty and clears the date filter', async () => {

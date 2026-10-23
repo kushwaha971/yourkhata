@@ -360,7 +360,7 @@ export function InvoicesListPageContent(): React.JSX.Element {
       />
       <UbStack
         gap={3}
-        className="min-h-0 flex-1 !shrink max-md:[@media(max-height:640px)]:gap-1"
+        className="min-h-0 flex-1 !shrink max-md:gap-2 max-md:[@media(max-height:640px)]:gap-1"
         data-testid="invoices-screen"
       >
         {emptyBook ? (

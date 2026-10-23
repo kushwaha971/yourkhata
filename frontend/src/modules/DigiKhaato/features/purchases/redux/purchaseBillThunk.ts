@@ -33,12 +33,18 @@ const service = () => import('../api/purchaseBillService');
 type Reject = { rejectValue: ApiErrorShape };
 
 /** QUERY. PUR-03 — one page of the list with its totals and tab counts. */
+export interface PurchaseBillListArg extends PurchaseBillListQuery {
+  readonly kind?: PurchaseKind;
+  /** Client presentation mode; `purchaseBillListQuery` whitelists wire parameters. */
+  readonly mode?: 'replace' | 'append';
+}
+
 export const fetchPurchaseBillList = createAsyncThunk<
   PurchaseBillListPage,
-  PurchaseBillListQuery & { readonly kind?: PurchaseKind },
+  PurchaseBillListArg,
   Reject
 >('purchaseBillList/fetchPurchaseBillList', async (arg, { signal, rejectWithValue }) => {
-  const { kind = 'purchase_bill', ...filters } = arg;
+  const { kind = 'purchase_bill', mode: _mode, ...filters } = arg;
   try {
     return await (await service()).listPurchaseBills(filters, signal, kind);
   } catch (error) {

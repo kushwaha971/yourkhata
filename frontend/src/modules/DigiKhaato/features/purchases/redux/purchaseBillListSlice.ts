@@ -4,12 +4,12 @@ import { resetAllFeatureState } from 'src/redux/actions';
 import { acceptInvalidation } from 'src/redux/invalidation/listener';
 import { rootReducer, type RootState } from 'src/redux/store';
 import type { ApiErrorShape, RequestStatus } from 'src/types/api.types';
+import { mergePageRows } from 'src/utils/mergePageRows';
 
 import { PURCHASE_BILL_PAGE_SIZE } from '../constants/purchaseConstants';
 
-import { fetchPurchaseBillList } from './purchaseBillThunk';
+import { fetchPurchaseBillList, type PurchaseBillListArg } from './purchaseBillThunk';
 
-import type { PurchaseBillListQuery } from '../api/purchaseBillService';
 import type {
   PurchaseBillListRow,
   PurchaseBillTabCounts,
@@ -30,7 +30,7 @@ export interface PurchaseBillListState {
   total: number;
   status: RequestStatus;
   error: ApiErrorShape | null;
-  filters: PurchaseBillListQuery | null;
+  filters: PurchaseBillListArg | null;
   requestId: string | null;
   stale: boolean;
   staleUrgency: 'now' | 'next-mount' | null;
@@ -52,7 +52,11 @@ const initialState: PurchaseBillListState = {
   staleUrgency: null,
 };
 
-const sameFilters = (a: PurchaseBillListQuery | null, b: PurchaseBillListQuery): boolean =>
+const sameFilters = (
+  a: PurchaseBillListArg | null,
+  b: PurchaseBillListArg,
+  ignorePage = false
+): boolean =>
   !!a &&
   a.kind === b.kind &&
   a.tab === b.tab &&
@@ -60,7 +64,8 @@ const sameFilters = (a: PurchaseBillListQuery | null, b: PurchaseBillListQuery):
   a.dateTo === b.dateTo &&
   a.partyId === b.partyId &&
   a.q === b.q &&
-  a.page === b.page &&
+  (ignorePage || a.page === b.page) &&
+  (a.mode ?? 'replace') === (b.mode ?? 'replace') &&
   (a.dueFrom ?? null) === (b.dueFrom ?? null) &&
   (a.dueTo ?? null) === (b.dueTo ?? null);
 
@@ -69,13 +74,21 @@ const purchaseBillListSlice = createSlice({
   initialState,
   reducers: {
     /** Rows AND totals clear together — a total over the previous filter's rows was never true. */
-    purchaseBillFiltersChanged(state, action: PayloadAction<PurchaseBillListQuery>) {
+    purchaseBillFiltersChanged(state, action: PayloadAction<PurchaseBillListArg>) {
       if (sameFilters(state.filters, action.payload)) return;
-      state.filters = action.payload as Draft<PurchaseBillListQuery>;
-      state.rows = [];
-      state.totals = null;
-      state.counts = null;
-      state.status = 'loading';
+      // R-DEC-33: a phone's next page keeps the cards above it, their totals and counts.
+      const appending =
+        action.payload.mode === 'append' &&
+        action.payload.page > 1 &&
+        sameFilters(state.filters, action.payload, true) &&
+        state.rows.length > 0;
+      state.filters = action.payload as Draft<PurchaseBillListArg>;
+      if (!appending) {
+        state.rows = [];
+        state.totals = null;
+        state.counts = null;
+      }
+      state.status = appending ? 'refreshing' : 'loading';
       state.error = null;
     },
   },
@@ -93,7 +106,11 @@ const purchaseBillListSlice = createSlice({
           !sameFilters(state.filters, action.meta.arg)
         )
           return;
-        state.rows = action.payload.rows as Draft<PurchaseBillListRow>[];
+        state.rows = (
+          action.meta.arg.mode === 'append' && action.meta.arg.page > 1
+            ? mergePageRows(state.rows, action.payload.rows)
+            : action.payload.rows
+        ) as Draft<PurchaseBillListRow>[];
         state.totals = action.payload.totals;
         state.counts = action.payload.counts as Draft<PurchaseBillTabCounts>;
         state.hasAny = action.payload.hasAny ?? null;

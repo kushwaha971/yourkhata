@@ -20,7 +20,7 @@ import {
   selectPurchaseBillList,
   type PurchaseBillListState,
 } from '../redux/purchaseBillListSlice';
-import { fetchPurchaseBillList } from '../redux/purchaseBillThunk';
+import { fetchPurchaseBillList, type PurchaseBillListArg } from '../redux/purchaseBillThunk';
 import {
   DEBIT_NOTE_TABS,
   PURCHASE_ORDER_TABS,
@@ -34,7 +34,6 @@ import {
   type PurchaseBillListFilters,
 } from '../view-model/purchaseBillDisplay';
 
-import type { PurchaseBillListQuery } from '../api/purchaseBillService';
 import type { PurchaseBillPreset } from '../constants/purchaseConstants';
 
 /**
@@ -66,7 +65,8 @@ export interface UsePurchaseBillListResult extends Omit<PurchaseBillListState, '
 }
 
 export const usePurchaseBillList = (
-  kind: PurchaseKind = 'purchase_bill'
+  kind: PurchaseKind = 'purchase_bill',
+  mode: 'replace' | 'append' = 'replace'
 ): UsePurchaseBillListResult => {
   const dispatch = useAppDispatch();
   const router = useAppRouter();
@@ -95,9 +95,10 @@ export const usePurchaseBillList = (
       ),
     [queryString, today, kind]
   );
-  const query = useMemo<PurchaseBillListQuery>(
+  const query = useMemo<PurchaseBillListArg>(
     () => ({
       kind,
+      mode,
       tab: filters.tab,
       dateFrom: filters.dateFrom,
       dateTo: filters.dateTo,
@@ -107,7 +108,7 @@ export const usePurchaseBillList = (
       dueFrom: filters.dueFrom,
       dueTo: filters.dueTo,
     }),
-    [filters, kind]
+    [filters, kind, mode]
   );
 
   useEffect(() => {
