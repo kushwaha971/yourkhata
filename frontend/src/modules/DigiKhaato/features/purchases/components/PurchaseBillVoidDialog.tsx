@@ -1,8 +1,9 @@
 'use client';
 
 import { ReasonConfirmDialog } from 'src/components/records/ReasonConfirmDialog';
-import { UbStack, UbStatusBanner, UbText } from 'src/design-system';
+import { UbActionLink, UbStack, UbStatusBanner, UbText } from 'src/design-system';
 import { useTranslation } from 'src/hooks/useTranslation';
+import { ROUTES, partyPath } from 'src/routes';
 import type { ApiErrorShape } from 'src/types/api.types';
 import { formatInr } from 'src/utils/money';
 
@@ -22,7 +23,9 @@ import 'src/i18n/catalogues/purchases';
  * advance. The confirm is outlined, never filled red (§8, Koper rule).
  *
  * A refusal is shown here, where the merchant is looking: goods already sold
- * read "Rice would go to −8 NOS" (AC-4), and the fix is named.
+ * read "Rice would go to −8 NOS" (AC-4), and the fix is named. The two refusals
+ * that need another screen first (§6 States) carry the way there: a standing
+ * debit note links to that note, an archived supplier to their page (Restore).
  *
  * Deliberately absent: FR-4's "Average cost unchanged". CR-2026-09-24-INV-A
  * made the void remove the value the bill blended in, so it does change.
@@ -45,6 +48,7 @@ export function PurchaseBillVoidDialog({
   const { t } = useTranslation();
   const consequences = voidConsequences(bill);
   const short = error?.code === 'insufficient_stock' ? shortLines(error.details) : [];
+  const blocker = voidBlocker(bill, error, t);
 
   return (
     <ReasonConfirmDialog
@@ -97,9 +101,59 @@ export function PurchaseBillVoidDialog({
             .join(' · ')} ${t('purchases.void.shortFix')}`}
         />
       )}
-      {error && error.code !== 'insufficient_stock' && (
+      {blocker && (
+        <UbStatusBanner
+          tone="error"
+          title={blocker.title}
+          action={
+            blocker.href ? (
+              <UbActionLink
+                href={blocker.href}
+                variant="secondary"
+                size="sm"
+                data-testid="purchase-void-blocker-link"
+              >
+                {blocker.label}
+              </UbActionLink>
+            ) : undefined
+          }
+        />
+      )}
+      {error && !blocker && error.code !== 'insufficient_stock' && (
         <UbStatusBanner tone="error" title={error.message} />
       )}
     </ReasonConfirmDialog>
   );
 }
+
+type Translate = ReturnType<typeof useTranslation>['t'];
+
+/**
+ * The void refusals whose fix is on another screen, in the merchant's words and with
+ * the link there. The numbers are the SERVER's (`details.documents`), never re-derived
+ * from what this page holds, which may be stale.
+ */
+const voidBlocker = (
+  bill: PurchaseBill,
+  error: ApiErrorShape | null,
+  t: Translate
+): { title: string; href: string | null; label: string } | null => {
+  if (error?.code === 'has_dependent_documents') {
+    const raw = (error.details as { documents?: unknown } | null)?.documents;
+    const numbers = Array.isArray(raw) ? raw.map(String) : [];
+    const first = bill.links.debitNotes.find((dn) => dn.number && numbers.includes(dn.number));
+    return {
+      title: t('purchases.void.notesFirst', { numbers: numbers.join(', ') }),
+      href: first ? `${ROUTES.DEBIT_NOTES}/${first.id}` : null,
+      label: t('purchases.void.openNote'),
+    };
+  }
+  if (error?.code === 'party_archived') {
+    return {
+      title: t('purchases.void.archived'),
+      href: bill.party ? partyPath(bill.party.id, 'supplier') : null,
+      label: t('purchases.void.openSupplier'),
+    };
+  }
+  return null;
+};

@@ -1,7 +1,8 @@
-import { screen, waitFor } from '@testing-library/react';
+import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
 import { resetAllFeatureState } from 'src/redux/actions';
+import { browserWentOffline, responseObserved } from 'src/redux/slice/networkSlice';
 import { sessionLoaded } from 'src/redux/slice/sessionSlice';
 import { store } from 'src/redux/store';
 import { renderWithProviders } from 'src/tests/renderWithProviders';
@@ -19,8 +20,9 @@ import type { PurchaseBill, PurchaseBillEnvelope } from '../types/purchase.types
  * banner with the reason (AC-3), and staff never see Void (§12).
  */
 jest.mock('../api/purchaseBillService');
+const push = jest.fn();
 jest.mock('next/navigation', () => ({
-  useRouter: () => ({ push: jest.fn(), replace: jest.fn(), back: jest.fn(), prefetch: jest.fn() }),
+  useRouter: () => ({ push, replace: jest.fn(), back: jest.fn(), prefetch: jest.fn() }),
   useSearchParams: () => new URLSearchParams(''),
   usePathname: () => '/purchases/bills/b1',
 }));
@@ -28,6 +30,7 @@ jest.mock('next/navigation', () => ({
 const service = jest.requireMock('../api/purchaseBillService') as {
   getPurchaseBill: jest.Mock;
   voidPurchaseBill: jest.Mock;
+  deletePurchaseBill: jest.Mock;
 };
 
 const BILL: PurchaseBill = {
@@ -158,8 +161,15 @@ const OWNER: PermissionCode[] = [
   'purchases.bill.void',
 ];
 
+/** The void opens from the chooser: "Something's wrong…" → "The bill was entered wrongly". */
+const openVoid = async (): Promise<void> => {
+  await userEvent.click(await screen.findByTestId('purchase-wrong'));
+  await userEvent.click(await screen.findByTestId('purchase-void'));
+};
+
 beforeEach(() => {
   jest.clearAllMocks();
+  store.dispatch(responseObserved());
   store.dispatch(resetAllFeatureState());
   service.getPurchaseBill.mockResolvedValue(envelope(BILL));
 });
@@ -167,7 +177,7 @@ beforeEach(() => {
 it('lists what the void will do before a reason is typed, and never promises the average', async () => {
   signIn(OWNER);
   renderWithProviders(<PurchaseBillDetailPageContent id="b1" />);
-  await userEvent.click(await screen.findByRole('button', { name: /Void bill/ }));
+  await openVoid();
   const consequences = await screen.findByTestId('purchase-void-consequences');
   expect(consequences).toHaveTextContent('Stock: −20 NOS Rice');
   expect(consequences).toHaveTextContent('Khata: ₹2,921.00 less to give Agro Traders');
@@ -187,7 +197,7 @@ it('shows the refusal in the dialog when the goods were already sold (AC-4)', as
     status: 409,
   });
   renderWithProviders(<PurchaseBillDetailPageContent id="b1" />);
-  await userEvent.click(await screen.findByRole('button', { name: /Void bill/ }));
+  await openVoid();
   await userEvent.type(screen.getByLabelText(/Reason/), 'Entered twice');
   await userEvent.click(screen.getByTestId('purchase-void-confirm'));
   expect(await screen.findByText(/Rice would go to −8 NOS/)).toBeInTheDocument();
@@ -206,7 +216,7 @@ it('shows the Void banner with the reason once voided (AC-3)', async () => {
     })
   );
   renderWithProviders(<PurchaseBillDetailPageContent id="b1" />);
-  await userEvent.click(await screen.findByRole('button', { name: /Void bill/ }));
+  await openVoid();
   await userEvent.type(screen.getByLabelText(/Reason/), 'Entered twice');
   await userEvent.click(screen.getByTestId('purchase-void-confirm'));
   expect(await screen.findByText('This bill is void')).toBeInTheDocument();
@@ -220,7 +230,9 @@ it('never offers Void to staff (PUR-04 §12)', async () => {
   signIn(['purchases.bill.read', 'purchases.bill.write']);
   renderWithProviders(<PurchaseBillDetailPageContent id="b1" />);
   expect(await screen.findByText('Rice')).toBeInTheDocument();
-  expect(screen.queryByRole('button', { name: /Void bill/ })).not.toBeInTheDocument();
+  await userEvent.click(screen.getByTestId('purchase-wrong'));
+  expect(await screen.findByTestId('purchase-return')).toBeInTheDocument();
+  expect(screen.queryByTestId('purchase-void')).not.toBeInTheDocument();
 });
 
 const PAYER: PermissionCode[] = [...OWNER, 'payments.payment.read', 'payments.payment.write'];
@@ -291,7 +303,7 @@ it('says how much stays as advance when a paid bill is voided (PUR-02 BR-4)', as
     )
   );
   renderWithProviders(<PurchaseBillDetailPageContent id="b1" />);
-  await userEvent.click(await screen.findByRole('button', { name: /Void bill/ }));
+  await openVoid();
   await userEvent.type(screen.getByLabelText(/Reason/), 'Entered twice');
   await userEvent.click(screen.getByTestId('purchase-void-confirm'));
   await waitFor(() => expect(store.getState().snackbar.id).toBe('purchases.void.doneAdvance'));
@@ -325,7 +337,9 @@ describe('a purchase order', () => {
     expect(screen.getByTestId('purchase-order-cancel')).toBeInTheDocument();
     expect(screen.queryByTestId('purchase-void')).not.toBeInTheDocument();
     expect(screen.queryByText('To pay')).not.toBeInTheDocument();
-    expect(screen.getByText('Estimated total')).toBeInTheDocument();
+    expect(
+      within(screen.getByTestId('purchase-money')).getByText('Estimated total')
+    ).toBeInTheDocument();
     expect(service.getPurchaseBill).toHaveBeenCalledWith('o1', expect.anything(), 'purchase_order');
   });
 
@@ -385,6 +399,7 @@ describe('debit notes', () => {
         })
       );
     renderWithProviders(<PurchaseBillDetailPageContent id="b1" />);
+    await userEvent.click(await screen.findByTestId('purchase-wrong'));
     await userEvent.click(await screen.findByTestId('purchase-return'));
     expect(await screen.findByText(/can return 5 NOS/)).toBeInTheDocument();
     const issue = screen.getByTestId('debit-note-issue');
@@ -438,6 +453,10 @@ describe('debit notes', () => {
     renderWithProviders(<PurchaseBillDetailPageContent id="b1" />);
     expect(await screen.findByText('DN/26-27/0001')).toBeInTheDocument();
     expect(screen.getByText('Less debit notes')).toBeInTheDocument();
+    // LOOK 23 Oct: the deduction rendered as "₹241.50", reading as money ADDED to the bill.
+    expect(screen.getByTestId('purchase-money')).toHaveTextContent(
+      /Less debit notes\s*−\s*₹241\.50/
+    );
   });
 
   it('shows a note against its bill with Void and nothing to pay', async () => {
@@ -468,5 +487,131 @@ describe('debit notes', () => {
     expect(screen.queryByTestId('purchase-return')).not.toBeInTheDocument();
     expect(screen.queryByText('To pay')).not.toBeInTheDocument();
     expect(screen.getByText('Taken off the bill')).toBeInTheDocument();
+  });
+});
+
+/**
+ * Revamp §6 — the page reads in the order a merchant needs it: what is still to pay,
+ * then paying it, then a single "Something's wrong…" chooser instead of separate
+ * Void and Return buttons. What these protect: the chooser names the supplier and the
+ * money that stays with them, the two server refusals a void can meet are explained
+ * where the merchant is looking with a way out, writes are refused offline with the
+ * reason, and a draft can be deleted from its own page.
+ */
+describe('§6 phone composition', () => {
+  it('puts To pay first, then Pay supplier and the chooser with supplier words', async () => {
+    signIn(PAYER, ['purchases', 'payments']);
+    service.getPurchaseBill.mockResolvedValue(
+      envelope({ ...BILL, status: 'partially_paid', amountPaid: '1000.00', amountDue: '1921.00' })
+    );
+    renderWithProviders(<PurchaseBillDetailPageContent id="b1" />);
+    const money = await screen.findByTestId('purchase-money');
+    expect(money).toHaveTextContent(/Total.*₹2,921\.00.*Paid.*₹1,000\.00.*To pay.*₹1,921\.00/);
+    const actions = screen.getByTestId('purchase-actions');
+    expect(actions).toHaveTextContent(/Pay supplier.*Something.s wrong/);
+    // Money first, actions next, lines last — DOM order is the phone's reading order.
+    expect(
+      money.compareDocumentPosition(screen.getByTestId('purchase-lines')) &
+        Node.DOCUMENT_POSITION_FOLLOWING
+    ).toBeTruthy();
+    await userEvent.click(screen.getByTestId('purchase-wrong'));
+    expect(await screen.findByText('What happened with PB/26-27/0007?')).toBeInTheDocument();
+    expect(screen.getByTestId('purchase-void')).toHaveTextContent(/payments stay as advance/);
+    expect(screen.getByTestId('purchase-return')).toHaveTextContent('Goods went back');
+    expect(
+      screen.getByText(/does not bring back the ₹1,000\.00 you paid.*Agro Traders/)
+    ).toBeInTheDocument();
+  });
+
+  it('names the standing debit note when the void is refused for it, with a link', async () => {
+    signIn(OWNER);
+    service.getPurchaseBill.mockResolvedValue(
+      envelope({
+        ...BILL,
+        links: {
+          ...BILL.links,
+          debitNotes: [
+            {
+              id: 'dn1',
+              number: 'DN/26-27/0003',
+              status: 'issued',
+              grandTotal: '241.50',
+              documentDate: '2026-09-20',
+            },
+          ],
+        },
+      })
+    );
+    service.voidPurchaseBill.mockRejectedValue({
+      code: 'has_dependent_documents',
+      message: 'Void the debit note DN/26-27/0003 first.',
+      details: { documents: ['DN/26-27/0003'] },
+      requestId: null,
+      status: 409,
+    });
+    renderWithProviders(<PurchaseBillDetailPageContent id="b1" />);
+    await openVoid();
+    await userEvent.type(screen.getByLabelText(/Reason/), 'Entered twice');
+    await userEvent.click(screen.getByTestId('purchase-void-confirm'));
+    expect(await screen.findByText('Cancel debit note DN/26-27/0003 first.')).toBeInTheDocument();
+    expect(screen.getByTestId('purchase-void-blocker-link')).toHaveAttribute(
+      'href',
+      '/purchases/debit-notes/dn1'
+    );
+  });
+
+  it('says an archived supplier must be restored, and links to them', async () => {
+    signIn(OWNER);
+    service.voidPurchaseBill.mockRejectedValue({
+      code: 'party_archived',
+      message: 'This supplier is archived. Restore them to void this bill.',
+      details: { party_id: 'p1', name: 'Agro Traders' },
+      requestId: null,
+      status: 409,
+    });
+    renderWithProviders(<PurchaseBillDetailPageContent id="b1" />);
+    await openVoid();
+    await userEvent.type(screen.getByLabelText(/Reason/), 'Entered twice');
+    await userEvent.click(screen.getByTestId('purchase-void-confirm'));
+    expect(
+      await screen.findByText('This supplier is archived. Restore them to cancel this bill.')
+    ).toBeInTheDocument();
+    expect(screen.getByTestId('purchase-void-blocker-link')).toHaveAttribute(
+      'href',
+      '/parties/p1?from=suppliers'
+    );
+  });
+
+  it('refuses writes offline and says why', async () => {
+    signIn(PAYER, ['purchases', 'payments']);
+    renderWithProviders(<PurchaseBillDetailPageContent id="b1" />);
+    await screen.findByTestId('purchase-actions');
+    store.dispatch(browserWentOffline());
+    await waitFor(() => expect(screen.getByTestId('record-payment-action')).toBeDisabled());
+    expect(screen.getByTestId('purchase-wrong')).toBeDisabled();
+    expect(screen.getByTestId('purchase-offline')).toHaveTextContent(/No internet/);
+  });
+
+  it('deletes a draft from its own page after asking, then goes back to the list', async () => {
+    signIn(OWNER);
+    service.getPurchaseBill.mockResolvedValue(
+      envelope({ ...BILL, status: 'draft', number: null, amountDue: '0.00' })
+    );
+    service.deletePurchaseBill.mockResolvedValue(undefined);
+    renderWithProviders(<PurchaseBillDetailPageContent id="b1" />);
+    expect(await screen.findByRole('link', { name: /Edit draft/ })).toHaveAttribute(
+      'href',
+      '/purchases/bills/b1/edit'
+    );
+    expect(screen.queryByTestId('purchase-wrong')).not.toBeInTheDocument();
+    await userEvent.click(screen.getByTestId('purchase-delete-draft'));
+    expect(service.deletePurchaseBill).not.toHaveBeenCalled();
+    await userEvent.click(
+      within(await screen.findByRole('dialog')).getByRole('button', { name: 'Delete draft' })
+    );
+    await waitFor(() =>
+      expect(service.deletePurchaseBill).toHaveBeenCalledWith('b1', 'purchase_bill')
+    );
+    await waitFor(() => expect(push).toHaveBeenCalledWith('/purchases/bills'));
   });
 });

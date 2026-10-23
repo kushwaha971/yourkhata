@@ -69,6 +69,8 @@ export type ApiErrorCode =
   | 'insufficient_stock'
   | 'document_not_draft'
   | 'document_already_void'
+  // PUR-04 BR-10 — a bill with a standing debit note is voided only after the note.
+  | 'has_dependent_documents'
   // ── A5 ── R55: a document another module issued — its origin refuses the void,
   // or asks first (the void dialog resends with `confirm_origin`).
   | 'document_origin_locked'
