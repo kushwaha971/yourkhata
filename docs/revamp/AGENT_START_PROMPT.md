@@ -159,8 +159,9 @@ DONE 23 Oct evening: Bills register on a phone (report
 docs/performance/2026-10-23-bills-phone-register.md; known limit: 320 px with
 crore totals gives cards 58.5% because Billed/Due wrap).
 DONE 23 Oct night: Customers register on a phone (b6aa7af; report
-docs/performance/2026-10-23-customers-phone-register.md; known limits: 320 px
-English summary wraps when To pay is non-zero; Hindi checked by eye only).
+docs/performance/2026-10-23-customers-phone-register.md; the 320 px summary
+wrap and Hindi measurement were closed the same evening — contract takes
+--locale=hi).
 1. Suppliers register (07-screens/08 §2): it renders through the same
    PartyListPageContent and already passes mobile-sales-contract.mjs
    --kinds=suppliers, so the work is its OWN acceptance: LOOK every state

@@ -17,12 +17,12 @@ b6aa7af on dev (baseline e0da36f).
 | New search resets the batches; clearing it returns 25 | R-DEC-33 | contract new-query, query-reset | passed |
 | Compact header: title + ⋯ + New, one list search + Filters, 44 px global icon | R-DEC-33, 08 §1 | contract `searchFields:1`, 56 px header, 40/40 px search/filter, 44 px icon; "Shop book" now sr-only below md | passed |
 | Pressed chip visible, counts in chips | 08 §1 | contract `activeChipVisible` (harness now accepts `aria-pressed` toggles) | passed |
-| One-line summary over the filtered set | R-DEC-33 | measured summary height 36–37 px at 390 EN/HI and 320 HI | passed; **320 EN two lines** when To pay is non-zero (64 px) |
+| One-line summary over the filtered set | R-DEC-33 | measured summary height 36–37 px at 390 and 320, EN and HI, with To pay non-zero (was 64 px at 320 EN) | passed (follow-up below) |
 | Cards ≥ 60% of a normal phone viewport | handoff | 390 and 320: 61.5% (was 53% at 390) | passed |
 | No-match state usable on a phone | 08 §1 EC | LOOK found both actions off-screen; fixed in `UbEmptyState`; script finds no off-screen empty-state button at 390/320 EN/HI | passed |
 | Desktop: table and visible pager | R-DEC-30/33 | contract 1280 `tables:1, pager:true` | passed |
 | Cut text, contrast, overflow; light/dark | R-DEC-32 #7 | contract measures every frame: 0 failures (Customers and Suppliers, 390/320/1280, light/dark) | passed |
-| Hindi | R-DEC-32 #6 | LOOK 390 light, 320 dark | passed (visual only, not in the contract) |
+| Hindi | R-DEC-32 #6 | contract `--locale=hi` at 390/320/1280 light/dark, plus LOOK | passed (follow-up below) |
 
 ## What changed and why
 
@@ -76,3 +76,25 @@ Desktop is mixed and no desktop claim is made. Six samples per cell.
 
 Competitor comparison: none gathered this session — any advantage over
 Khatabook/Vyapar/myBillBook customer lists is **unproven**. Not above 8.5 overall.
+
+## Follow-up the same evening (owner: "fixed and proceed")
+
+The two weak spots above are closed.
+
+- **320 px summary on one line.** It was 22 px too wide, measured piece by piece:
+  two empty 0.6em sign slots before each ₹ (only useful in a column of figures)
+  and 8 px gaps. `UbAmount` gained `inline`, which drops the slot for an
+  unsigned figure, and the summary tightens its gaps below 360 px. The strip now
+  ends exactly at the gutter for ₹2,06,31,292.55 + ₹900.00; larger figures wrap
+  rather than cut. Cards rose to 65.1% at 320 and 390 (were 61.5%). A
+  `UbAmount` test fails without the prop.
+- **Hindi measured, not only looked at.** `mobile-sales-contract.mjs --locale=hi`
+  reads its button labels from the locale file and sets the locale cookie; 0
+  failures for Customers and Suppliers at 390/320/1280 light/dark.
+- **One harness race found, not an app defect.** In 1 of 9 runs the reset check
+  counted cards a frame before React painted page 1 (re-reading gave 25). The
+  check now waits up to 5 s for exactly 25 painted cards and still fails if it
+  never gets there; 2 further full runs clean.
+
+Gates: type-check, lint, Jest 4,677, i18n, bundle (one route,
+`/library/attendance`, raised to measured + 0.3 for the `inline` prop).

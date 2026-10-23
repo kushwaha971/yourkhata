@@ -66,7 +66,10 @@ export const ShopPartySummary = memo(function ShopPartySummary({
                         : 'parties.list.shop.showingAll'
             )}
           </UbText>
-          <UbStack direction="row" align="baseline" gap={2} wrap>
+          {/* Tighter gaps below 360 px keep "₹2,06,31,292.55 To collect ₹900.00
+              To pay" on one line on a 320 px phone (measured: it ends at the
+              gutter); larger figures still wrap rather than cut. */}
+          <UbStack direction="row" align="baseline" gap={2} wrap className="max-[359px]:gap-x-1">
             <UbText
               variant="caption"
               tone="tertiary"
@@ -83,7 +86,8 @@ export const ShopPartySummary = memo(function ShopPartySummary({
               tone={supplier ? 'payable' : 'receivable'}
               label={t(supplier ? 'parties.list.shop.toPay' : 'parties.list.shop.toCollect')}
               size="sm"
-              className="flex-row items-baseline gap-1"
+              inline
+              className="flex-row items-baseline gap-1 max-[359px]:gap-0.5"
             />
             {!isZeroAmount(supplier ? totals.receivable : totals.payable) && (
               <UbAmount
@@ -91,7 +95,8 @@ export const ShopPartySummary = memo(function ShopPartySummary({
                 tone={supplier ? 'receivable' : 'payable'}
                 label={t(supplier ? 'parties.list.supplier.advance' : 'parties.list.shop.toPay')}
                 size="sm"
-                className="flex-row items-baseline gap-1"
+                inline
+                className="flex-row items-baseline gap-1 max-[359px]:gap-0.5"
               />
             )}
             {/* On a phone the pressed chip already says the figures cover every

@@ -8,6 +8,18 @@ import { UbAmount } from './UbAmount';
  * before, which is why they are pinned here rather than left to review.
  */
 describe('UbAmount', () => {
+  it('drops the empty sign slot only when inline, so a strip of totals fits a 320 px phone', () => {
+    /** R-DEC-33: two 0.6em slots pushed the Customers summary onto a second line. */
+    const { container, rerender } = render(
+      <UbAmount value="900.00" tone="payable" label="To pay" size="sm" />
+    );
+    expect(container.querySelector('.min-w-\\[0\\.6em\\]')).not.toBeNull();
+    rerender(<UbAmount value="900.00" tone="payable" label="To pay" size="sm" inline />);
+    expect(container.querySelector('.min-w-\\[0\\.6em\\]')).toBeNull();
+    rerender(<UbAmount value="900.00" tone="payable" sign="minus" label="To pay" inline />);
+    expect(container.querySelector('.min-w-\\[0\\.6em\\]')).not.toBeNull();
+  });
+
   it('renders the U+2212 minus BEFORE the ₹ inside one non-wrapping element', () => {
     const { container } = render(
       <UbAmount value="500.00" tone="receivable" sign="minus" label="You gave" />
