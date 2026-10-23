@@ -37,6 +37,40 @@ export const stockBadge = (
   return { tone: 'success', labelId: 'items.stock.in', params: {} };
 };
 
+/**
+ * 09 §8.1 — a phone card says the stock in words: "318 NOS in stock", "Low: 3 NOS
+ * left", "Out of stock" (with how far below zero), "Service" for an untracked
+ * service. A low or out item is in warning/error tone AND in words, never colour
+ * alone. `null` for goods whose stock is not tracked.
+ */
+export const stockWords = (
+  row: Pick<ItemListRow, 'stockStatus' | 'onHand' | 'unit' | 'itemType'>
+): {
+  labelId: string;
+  params: Record<string, string>;
+  tone: 'secondary' | 'warning' | 'error';
+} | null => {
+  if (row.stockStatus === null || row.onHand === null) {
+    return row.itemType === 'service'
+      ? { labelId: 'items.list.card.service', params: {}, tone: 'secondary' }
+      : null;
+  }
+  const qty = formatQuantity(row.onHand, row.unit.code);
+  if (row.stockStatus === 'out') {
+    return row.onHand.trim().startsWith('-')
+      ? {
+          labelId: 'items.stock.outNegative',
+          params: { qty: formatSignedQuantity(row.onHand, row.unit.code) },
+          tone: 'error',
+        }
+      : { labelId: 'items.stock.out', params: {}, tone: 'error' };
+  }
+  if (row.stockStatus === 'low') {
+    return { labelId: 'items.list.card.low', params: { qty }, tone: 'warning' };
+  }
+  return { labelId: 'items.list.card.inStock', params: { qty }, tone: 'secondary' };
+};
+
 /** "−3 NOS" / "+12 NOS" — a true minus sign, never a hyphen. */
 export const formatSignedQuantity = (qty: string, unitCode?: string): string => {
   const negative = qty.trim().startsWith('-');

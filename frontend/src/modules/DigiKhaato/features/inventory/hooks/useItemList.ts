@@ -93,7 +93,11 @@ export interface UseItemListResult {
   readonly refetch: () => void;
 }
 
-export function useItemList(): UseItemListResult {
+/**
+ * `append` is a phone's card list (R-DEC-33): the next page joins the cards already
+ * shown instead of replacing them. A desktop table pages by replacement.
+ */
+export function useItemList(mode: 'replace' | 'append' = 'replace'): UseItemListResult {
   const dispatch = useAppDispatch();
   const router = useAppRouter();
   const search = useSearchParams();
@@ -117,19 +121,25 @@ export function useItemList(): UseItemListResult {
      render, and a memo on it re-dispatches forever (LED-04's lesson). */
   const queryString = search?.toString() ?? '';
   const filters = useMemo(() => filtersFromQuery(new URLSearchParams(queryString)), [queryString]);
+  /* One argument for the first load, the stale refresh and Try again: a retried
+     page two must JOIN the cards, never replace them with page two alone. */
+  const query = useMemo(
+    () => ({ ...filters, mode: mode === 'append' && filters.page > 1 ? mode : 'replace' }) as const,
+    [filters, mode]
+  );
 
   useEffect(() => {
     if (!canRead) return undefined;
-    dispatch(itemFiltersChanged(filters));
-    const promise = dispatch(fetchItemList(filters));
+    dispatch(itemFiltersChanged(query));
+    const promise = dispatch(fetchItemList(query));
     return () => promise.abort();
-  }, [dispatch, canRead, filters]);
+  }, [dispatch, canRead, query]);
 
   useEffect(() => {
     if (!stale || impaired || !canRead) return undefined;
-    const promise = dispatch(fetchItemList(filters));
+    const promise = dispatch(fetchItemList(query));
     return () => promise.abort();
-  }, [dispatch, stale, impaired, canRead, filters]);
+  }, [dispatch, stale, impaired, canRead, query]);
 
   const update = useCallback(
     (patch: Partial<ItemListFilters>) => {
@@ -147,8 +157,8 @@ export function useItemList(): UseItemListResult {
   }, [router]);
 
   const refetch = useCallback(() => {
-    void dispatch(fetchItemList(filters));
-  }, [dispatch, filters]);
+    void dispatch(fetchItemList(query));
+  }, [dispatch, query]);
 
   const isFiltered = Boolean(
     filters.q ||

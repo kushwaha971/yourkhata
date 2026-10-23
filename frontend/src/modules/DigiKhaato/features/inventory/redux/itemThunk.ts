@@ -25,9 +25,17 @@ const itemService = () => import('../api/itemService');
 type Reject = { rejectValue: ApiErrorShape };
 
 /** QUERY. One page of the item list for the filters in the address bar. */
-export const fetchItemList = createAsyncThunk<ItemListResult, ItemListFilters, Reject>(
+/**
+ * `mode: 'append'` is a phone's card list (R-DEC-33): page two joins the cards
+ * already shown. It never reaches the server — it only says how the reply lands.
+ */
+export interface ItemListArg extends ItemListFilters {
+  readonly mode?: 'replace' | 'append';
+}
+
+export const fetchItemList = createAsyncThunk<ItemListResult, ItemListArg, Reject>(
   'itemList/fetchItemList',
-  async (filters, { signal, rejectWithValue }) => {
+  async ({ mode: _mode, ...filters }, { signal, rejectWithValue }) => {
     try {
       return await (await itemService()).listItems(filters, signal);
     } catch (error) {

@@ -7,6 +7,7 @@ import dynamic from 'next/dynamic';
 import {
   BarChart3,
   Boxes,
+  ListOrdered,
   Package,
   PackageMinus,
   Plus,
@@ -19,10 +20,13 @@ import { SummaryStatGrid } from 'src/components/stats/SummaryStatGrid';
 import {
   UbActionLink,
   UbButton,
+  UbChoiceChips,
   UbEmptyState,
+  UbLoadMore,
   UbPageHeader,
   UbPageHeaderMobileActions,
   UbPageShell,
+  UbViewportPageShell,
   UbSearchInput,
   UbStack,
   UbStatCard,
@@ -94,7 +98,7 @@ export function ItemListPageContent(): React.JSX.Element {
   const router = useAppRouter();
   const dispatch = useAppDispatch();
   const tier = useGridTier();
-  const list = useItemList();
+  const list = useItemList(tier === 'cards' ? 'append' : 'replace');
   const itemForm = useItemForm();
   const adjustment = useStockAdjustment();
   const { can } = usePermissions();
@@ -104,24 +108,6 @@ export function ItemListPageContent(): React.JSX.Element {
   const { filters, update } = list;
   const phone = tier === 'cards';
   const sheetSpecs: UbFilterSpec[] = [
-    /* On a phone the stock tabs move into the one Filters sheet as well
-       (approved design, 12 Oct 2026): four tabs and a sheet button were two
-       rows of controls above the first item. */
-    ...(phone
-      ? [
-          {
-            kind: 'single' as const,
-            key: 'tab',
-            label: t('items.list.tabs'),
-            anyLabel: t('items.list.tab.all'),
-            options: (['in', 'low', 'out'] as const).map((tab) => ({
-              value: tab,
-              label: t(`items.list.tab.${tab}`),
-              hint: list.counts ? String(list.counts[tab]) : undefined,
-            })),
-          },
-        ]
-      : []),
     {
       kind: 'single',
       key: 'type',
@@ -149,17 +135,12 @@ export function ItemListPageContent(): React.JSX.Element {
   ];
   // "Active" is the list's default, so to the sheet it is "no filter".
   const sheetValues: UbFilterValues = {
-    tab: phone && filters.tab !== 'all' ? filters.tab : '',
     type: filters.type,
     categoryId: filters.categoryId ?? '',
     status: filters.status === 'archived' ? 'archived' : '',
   };
   const applySheet = (next: UbFilterValues) =>
     update({
-      // Only a CHANGED tab: `update` resets the sort for a new tab.
-      ...(phone && (next.tab || 'all') !== filters.tab
-        ? { tab: (next.tab || 'all') as StockTab }
-        : {}),
       type: (next.type ?? '') as '' | 'goods' | 'service',
       categoryId: next.categoryId ?? '',
       status: next.status === 'archived' ? 'archived' : 'active',
@@ -257,8 +238,11 @@ export function ItemListPageContent(): React.JSX.Element {
     [t, canWrite, itemForm, filters.type, filters.tab, list.clearFilters, list.error, list.refetch]
   );
 
-  const gridState: UbGridState =
-    list.status === 'loading' || (list.status === 'idle' && list.rows.length === 0)
+  // The next page loading (or failing) under the cards keeps the cards on screen.
+  const keepingCards = phone && filters.page > 1 && list.rows.length > 0;
+  const gridState: UbGridState = keepingCards
+    ? 'rows'
+    : list.status === 'loading' || (list.status === 'idle' && list.rows.length === 0)
       ? 'loading'
       : list.status === 'failed'
         ? 'error'
@@ -301,6 +285,20 @@ export function ItemListPageContent(): React.JSX.Element {
     [counts, t]
   );
 
+  /* 09 §8.1 — on a phone the stock states are chips, not a sheet: All · Low · Out of
+     stock, with the server's counts. "Low" holds out-of-stock too, as the tab does. */
+  const chips = useMemo(
+    () =>
+      (['all', 'low', 'out'] as const).map((tab) => {
+        const label = t(tab === 'out' ? 'items.stock.out' : `items.list.tab.${tab}`);
+        return {
+          value: tab,
+          label: counts ? t('items.list.tab.withCount', { label, count: counts[tab] }) : label,
+        };
+      }),
+    [counts, t]
+  );
+
   const handleOpen = useCallback((row: ItemListRow) => router.push(itemPath(row.id)), [router]);
   const rowId = useCallback((row: ItemListRow) => row.id, []);
   const rowName = useCallback((row: ItemListRow) => row.name, []);
@@ -321,6 +319,53 @@ export function ItemListPageContent(): React.JSX.Element {
 
   /** No item at all, archived included (the server's `hasAny`). */
   const emptyBook = list.status === 'succeeded' && list.rows.length === 0 && list.hasAny === false;
+  const searchBox = (
+    <UbSearchInput
+      value={draft}
+      onChange={setDraft}
+      placeholder={t('items.list.searchPlaceholder')}
+      aria-label={t('items.list.searchPlaceholder')}
+      className={phone ? 'min-w-0 flex-1' : undefined}
+      onKeyDown={(event) => {
+        /* FR-7 — a code typed or scanned into the search box plus
+           Enter tries the exact lookup first. */
+        if (event.key === 'Enter' && draft.trim().length >= 4) {
+          event.preventDefault();
+          void openScan(draft.trim()).then((found) => {
+            if (!found) update({ q: draft.trim() });
+          });
+        }
+      }}
+    />
+  );
+  /* Owner, 6 Oct 2026: type, category and status behind ONE Filters button
+     (they took three selects, and three rows on a phone); what is on shows
+     beside it as pills. */
+  const filterControls = (
+    <>
+      <UbFilterSheet
+        compact
+        specs={sheetSpecs}
+        values={sheetValues}
+        onApply={applySheet}
+        labels={{
+          title: t('common.filters.title'),
+          apply: t('common.action.apply'),
+          reset: t('common.action.reset'),
+          close: t('common.action.close'),
+        }}
+      />
+      <UbActiveFilters
+        specs={sheetSpecs}
+        values={sheetValues}
+        onChange={applySheet}
+        labels={{
+          remove: (pill) => t('common.filters.remove', { filter: pill }),
+          clearAll: t('common.filters.clearAll'),
+        }}
+      />
+    </>
+  );
   const grid = (
     <UbDataGrid
       rows={list.rows}
@@ -333,6 +378,11 @@ export function ItemListPageContent(): React.JSX.Element {
       caption={t('items.list.caption')}
       storageId="items.list"
       cardAvatarIcon={itemIcon}
+      /* A phone card is the register shape every list shares (R-DEC-33): the
+         name owns its line and wraps, the price moves under it below 360 px.
+         The kind disc stays on the desktop tier; at 320 px it cost the name. */
+      cardAvatar={!phone}
+      cardLayout={phone ? 'stacked' : 'inline'}
       page={{
         page: list.page,
         pageSize: list.pageSize,
@@ -343,57 +393,45 @@ export function ItemListPageContent(): React.JSX.Element {
       sort={sort}
       onSortChange={handleSort}
       onRowOpen={tier === 'cards' ? handleOpen : undefined}
-      search={
-        <UbSearchInput
-          value={draft}
-          onChange={setDraft}
-          placeholder={t('items.list.searchPlaceholder')}
-          aria-label={t('items.list.searchPlaceholder')}
-          onKeyDown={(event) => {
-            /* FR-7 — a code typed or scanned into the search box plus
-               Enter tries the exact lookup first. */
-            if (event.key === 'Enter' && draft.trim().length >= 4) {
-              event.preventDefault();
-              void openScan(draft.trim()).then((found) => {
-                if (!found) update({ q: draft.trim() });
-              });
-            }
-          }}
-        />
-      }
-      filters={
-        /* Owner, 6 Oct 2026: type, category and status behind ONE Filters
-           button (they took three selects, and three rows on a phone);
-           what is on shows beside it as pills. */
-        <>
-          <UbFilterSheet
-            compact
-            specs={sheetSpecs}
-            values={sheetValues}
-            onApply={applySheet}
-            labels={{
-              title: t('common.filters.title'),
-              apply: t('common.action.apply'),
-              reset: t('common.action.reset'),
-              close: t('common.action.close'),
+      /* R-DEC-33: a phone joins the next page under the cards as the merchant
+         scrolls, with Try again in place when it fails; a desktop pages. */
+      resetScrollOnPageChange={!phone}
+      scrollResetKey={JSON.stringify([
+        filters.q,
+        filters.tab,
+        filters.type,
+        filters.categoryId,
+        filters.status,
+        filters.ordering,
+      ])}
+      footer={phone ? null : undefined}
+      afterRows={
+        phone && gridState === 'rows' && list.page * list.pageSize < list.total ? (
+          <UbLoadMore
+            loading={list.status === 'loading' || list.status === 'refreshing'}
+            automatic={list.status !== 'failed'}
+            repeatWhileVisible={false}
+            loadingLabel={t('common.search.loadingMore')}
+            moreLabel={t(
+              list.status === 'failed' ? 'common.action.retry' : 'common.search.showMore'
+            )}
+            className={list.status === 'failed' ? 'pb-20' : undefined}
+            onLoadMore={() => {
+              if (list.status === 'failed') list.refetch();
+              else if (list.status === 'succeeded') update({ page: list.page + 1 });
             }}
           />
-          <UbActiveFilters
-            specs={sheetSpecs}
-            values={sheetValues}
-            onChange={applySheet}
-            labels={{
-              remove: (pill) => t('common.filters.remove', { filter: pill }),
-              clearAll: t('common.filters.clearAll'),
-            }}
-          />
-        </>
+        ) : undefined
       }
+      fillHeight
+      busy={list.status === 'refreshing'}
+      search={phone ? undefined : searchBox}
+      filters={phone ? undefined : filterControls}
     />
   );
 
   return (
-    <UbPageShell>
+    <UbViewportPageShell>
       <UbPageHeader
         title={t('items.list.title')}
         actions={
@@ -406,6 +444,28 @@ export function ItemListPageContent(): React.JSX.Element {
                 iconOnly="mobile"
               >
                 {t('items.list.stockSummary')}
+              </UbActionLink>
+            )}
+            {/* The phone's ⋯ reaches Low stock and Price lists (09 §8.1); a desktop
+                has both in the sidebar, and two more header buttons wrapped it. */}
+            {phone && canReadStock && (
+              <UbActionLink
+                href={ROUTES.STOCK_LOW}
+                variant="secondary"
+                icon={<TriangleAlert className="h-4 w-4" aria-hidden />}
+                iconOnly="mobile"
+              >
+                {t('items.list.lowStock')}
+              </UbActionLink>
+            )}
+            {phone && (
+              <UbActionLink
+                href={ROUTES.ITEM_PRICE_LISTS}
+                variant="secondary"
+                icon={<ListOrdered className="h-4 w-4" aria-hidden />}
+                iconOnly="mobile"
+              >
+                {t('items.list.priceLists')}
               </UbActionLink>
             )}
             <UbActionLink
@@ -453,6 +513,7 @@ export function ItemListPageContent(): React.JSX.Element {
           <UbPageHeaderMobileActions
             actions={actions}
             mobile={{
+              primaryPlacement: 'header',
               menuLabel: t('common.action.moreActions'),
               closeLabel: t('common.action.close'),
               // The empty catalogue's one button is in the middle of the screen.
@@ -469,7 +530,11 @@ export function ItemListPageContent(): React.JSX.Element {
         )}
       />
 
-      <UbStack gap={4} data-testid="item-list-screen">
+      <UbStack
+        gap={4}
+        className="min-h-0 flex-1 !shrink max-md:gap-2"
+        data-testid="item-list-screen"
+      >
         {unknownCode && (
           <UbStatusBanner
             tone="warning"
@@ -491,7 +556,9 @@ export function ItemListPageContent(): React.JSX.Element {
           />
         )}
 
-        {list.totals && !emptyBook && (
+        {/* 09 §8.1 — a phone goes straight from the search to the items; the
+            low/out count is on its chip and the stock value on Stock summary. */}
+        {list.totals && !emptyBook && !phone && (
           <SummaryStatGrid storageKey="items">
             <UbStatCard
               icon={<Boxes className="h-4 w-4" aria-hidden />}
@@ -532,7 +599,25 @@ export function ItemListPageContent(): React.JSX.Element {
             action={emptyStates.firstUse.action}
           />
         ) : phone ? (
-          grid
+          <>
+            <UbStack
+              direction="row"
+              align="center"
+              className="shrink-0 flex-wrap gap-2"
+              data-testid="item-list-toolbar"
+            >
+              {searchBox}
+              {filterControls}
+            </UbStack>
+            <UbChoiceChips<StockTab>
+              value={filters.tab === 'in' ? 'all' : filters.tab}
+              onChange={(tab) => update({ tab })}
+              options={chips}
+              ariaLabel={t('items.list.tabs')}
+              className="shrink-0 flex-nowrap overflow-x-auto py-1.5 [&>button]:shrink-0"
+            />
+            {grid}
+          </>
         ) : (
           <UbTabs<StockTab>
             value={filters.tab}
@@ -540,6 +625,9 @@ export function ItemListPageContent(): React.JSX.Element {
             tabs={tabs}
             ariaLabel={t('items.list.tabs')}
             layout="fit"
+            /* The table's rows scroll inside the viewport and its pager stays in
+               reach (R-DEC-30): the panel must pass the height down. */
+            className="min-h-0 flex-1 [&>[role=tabpanel]]:min-h-0 [&>[role=tabpanel]]:flex-1"
           >
             {grid}
           </UbTabs>
@@ -548,6 +636,6 @@ export function ItemListPageContent(): React.JSX.Element {
 
       {itemForm.open && <ItemFormDrawer form={itemForm} />}
       {adjustment.open && <StockAdjustmentDrawer adjustment={adjustment} />}
-    </UbPageShell>
+    </UbViewportPageShell>
   );
 }

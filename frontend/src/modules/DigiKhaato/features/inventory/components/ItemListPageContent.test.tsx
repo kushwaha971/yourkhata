@@ -79,7 +79,8 @@ it('an empty catalogue is one sentence and one button', async () => {
   expect(screen.getAllByRole('button', { name: /Add item/ })).toHaveLength(1);
 });
 
-it('on a phone, Low stock is chosen in the one Filters sheet', async () => {
+it('on a phone, Low is a chip above the cards, not inside the Filters sheet (09 §8.1)', async () => {
+  /** R-DEC-30: status chips stay visible; a stock state hidden in a sheet took two taps. */
   jest.mocked(service.listItems).mockResolvedValue({
     ...PAGE,
     hasAny: true,
@@ -88,57 +89,67 @@ it('on a phone, Low stock is chosen in the one Filters sheet', async () => {
   signIn(['inventory.item.read']);
   const user = userEvent.setup();
   renderWithProviders(<ItemListPageContent />);
-  await user.click(await screen.findByTestId('filters-button'));
-  expect(screen.queryByRole('tab')).not.toBeInTheDocument();
   const group = await screen.findByRole('radiogroup', { name: 'Stock' });
-  await user.click(within(group).getByRole('radio', { name: /Low/ }));
-  await user.click(screen.getByTestId('filters-apply'));
+  expect(within(group).getByRole('radio', { name: 'Out of stock · 0' })).toBeInTheDocument();
+  await user.click(within(group).getByRole('radio', { name: 'Low · 1' }));
   await waitFor(() =>
     expect(mockReplace).toHaveBeenCalledWith(expect.stringContaining('tab=low'), {
       scroll: false,
     })
   );
+  await user.click(screen.getByTestId('filters-button'));
+  expect(await screen.findByTestId('filters-apply')).toBeInTheDocument();
+  expect(screen.getAllByRole('radiogroup', { name: 'Stock' })).toHaveLength(1);
 });
 
-it('on a phone, each item card says its selling price per unit (SH-012)', async () => {
+const ROW = {
+  id: 'i1',
+  name: 'Lifebuoy Soap 100g',
+  sku: 'LIFEBUOY-001',
+  barcode: null,
+  itemType: 'goods',
+  category: { id: 'c1', name: 'Soap & co' },
+  unit: { id: 'u-nos', code: 'NOS', allowDecimal: false },
+  sellingPrice: '1059.00',
+  purchasePrice: '40.00',
+  taxCode: 'GST18',
+  trackStock: true,
+  onHand: '12',
+  avgCost: '40.00',
+  reorderPoint: null,
+  stockStatus: 'ok',
+  stockValue: '480.00',
+  status: 'active',
+  matchField: null,
+  updatedAt: '2026-10-17T05:00:00Z',
+} as const;
+
+it('on a phone, a card reads price, stock in words and code — never the cost (09 §8.1)', async () => {
   /**
-   * The phone card showed the name, SKU and stock and nothing about price, so
-   * a shopkeeper checking what to charge had to open every item. The price
-   * per unit is the line under the name; the cost stays off the card.
+   * SH-012 put the price on the card; 09 §8.1 moves it to the trailing slot and
+   * writes the stock as words. LOOK 23 Oct: "SKU · category" was cut mid-word on
+   * every 390 px card, so the category leaves the card for the filter.
    */
   jest.mocked(service.listItems).mockResolvedValue({
     ...PAGE,
     hasAny: true,
-    total: 1,
+    total: 3,
     totalPages: 1,
-    counts: { all: 1, in: 1, low: 0, out: 0 },
+    counts: { all: 3, in: 1, low: 1, out: 1 },
     rows: [
-      {
-        id: 'i1',
-        name: 'Lifebuoy Soap 100g',
-        sku: 'LIFEBUOY-001',
-        barcode: null,
-        itemType: 'goods',
-        category: null,
-        unit: { id: 'u-nos', code: 'NOS', allowDecimal: false },
-        sellingPrice: '1059.00',
-        purchasePrice: '40.00',
-        taxCode: 'GST18',
-        trackStock: true,
-        onHand: '12',
-        avgCost: '40.00',
-        reorderPoint: null,
-        stockStatus: 'ok',
-        stockValue: '480.00',
-        status: 'active',
-        matchField: null,
-        updatedAt: '2026-10-17T05:00:00Z',
-      },
+      ROW,
+      { ...ROW, id: 'i2', name: 'Rin Bar', sku: 'RIN-002', onHand: '3', stockStatus: 'low' },
+      { ...ROW, id: 'i3', name: 'Surf 1kg', sku: 'SURF-003', onHand: '0', stockStatus: 'out' },
     ],
   });
   signIn(['inventory.item.read', 'reports.financial.read']);
   renderWithProviders(<ItemListPageContent />);
   const card = (await screen.findByText('Lifebuoy Soap 100g')).closest('li') as HTMLElement;
-  expect(within(card).getByText('₹1,059.00 per NOS')).toBeInTheDocument();
+  expect(card).toHaveTextContent('₹1,059.00usual price');
+  expect(within(card).getByText('12 NOS in stock')).toBeInTheDocument();
+  expect(within(card).getByText('LIFEBUOY-001')).toBeInTheDocument();
+  expect(card).not.toHaveTextContent('Soap & co');
   expect(within(card).queryByText(/₹40\.00/)).not.toBeInTheDocument();
+  expect(screen.getByText('Low: 3 NOS left')).toBeInTheDocument();
+  expect(screen.getAllByText('Out of stock').length).toBeGreaterThan(0);
 });

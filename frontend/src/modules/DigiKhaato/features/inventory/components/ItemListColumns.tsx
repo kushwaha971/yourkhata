@@ -1,10 +1,10 @@
-import { UbLink, UbStack, UbText } from 'src/design-system';
+import { UbAmount, UbLink, UbStack, UbText } from 'src/design-system';
 import type { UbDataGridColumn, UbGridTier } from 'src/design-system/UbDataGrid';
 import type { TranslateFn } from 'src/hooks/useTranslation';
 import { itemPath } from 'src/routes';
 import { formatInr } from 'src/utils/money';
 
-import { hasPurchasePrice, onHandText } from '../view-model/itemDisplay';
+import { hasPurchasePrice, onHandText, stockWords } from '../view-model/itemDisplay';
 import { taxCodeLabel } from '../view-model/taxCodeLabel';
 
 import { StockBadge } from './StockBadge';
@@ -13,8 +13,10 @@ import type { ItemListRow } from '../types/item.types';
 
 /**
  * INV-02 §7 — Item (name + SKU) · Category · Unit · Selling · Purchase · GST ·
- * On hand (badge + quantity). On a phone card: the price per unit, then SKU and
- * category, as meta, the badge and quantity trailing (FR-11, SH-012).
+ * On hand (badge + quantity). On a phone card (09 §8.1): the name, the usual
+ * price trailing, then the stock in WORDS ("318 NOS in stock", "Low: 3 NOS
+ * left", "Out of stock") and the code. The category is left to the filter: on
+ * a 320 px card it was the line cut mid-word. The cost never goes on the card.
  */
 export const createItemColumns = ({
   t,
@@ -53,15 +55,41 @@ export const createItemColumns = ({
       id: 'category',
       header: t('items.list.col.category'),
       priority: 3,
-      /* On a phone card this is the meta line: the SKU disambiguates two
-         items of one name (EC-11), the category says which shelf. */
-      cardSlot: 'meta',
+      cardSlot: 'none',
       widthShare: 14,
-      cell: (row) =>
-        isCards
-          ? [row.sku, row.category?.name].filter(Boolean).join(' · ')
-          : (row.category?.name ?? '—'),
+      cell: (row) => row.category?.name ?? '—',
     },
+    ...(isCards
+      ? ([
+          {
+            id: 'stockWords',
+            header: t('items.list.col.onHand'),
+            priority: 1,
+            cardSlot: 'meta',
+            cell: (row: ItemListRow) => {
+              const words = stockWords(row);
+              return words ? (
+                <UbText
+                  as="span"
+                  variant="caption"
+                  tone={words.tone}
+                  className={words.tone === 'secondary' ? undefined : 'font-semibold'}
+                >
+                  {t(words.labelId, words.params)}
+                </UbText>
+              ) : null;
+            },
+          },
+          {
+            id: 'code',
+            header: t('items.list.col.code'),
+            priority: 2,
+            cardSlot: 'meta',
+            /* The code tells two items of one name apart (EC-11). */
+            cell: (row: ItemListRow) => row.sku,
+          },
+        ] satisfies UbDataGridColumn<ItemListRow>[])
+      : []),
     {
       id: 'unit',
       header: t('items.list.col.unit'),
@@ -78,12 +106,23 @@ export const createItemColumns = ({
       /* SH-012 — on a phone the price per unit is the line under the name: a
          shopkeeper checking what to charge should not open the item for it.
          The cost never goes on the card. */
-      cardSlot: 'meta',
+      cardSlot: 'trailing',
       sortField: 'selling_price',
       widthShare: 12,
       cell: (row) =>
         isCards ? (
-          t('items.list.card.price', { price: formatInr(row.sellingPrice), unit: row.unit.code })
+          /* Below 360 px the price moves under the name (stacked card) and reads
+             as one line, "₹419.32 usual price", instead of a right-aligned pair. */
+          <UbStack
+            gap={0}
+            align="end"
+            className="max-[359px]:flex-row max-[359px]:items-baseline max-[359px]:gap-1"
+          >
+            <UbAmount value={row.sellingPrice} size="sm" inline />
+            <UbText as="span" variant="caption" tone="tertiary">
+              {t('items.list.card.usualPrice')}
+            </UbText>
+          </UbStack>
         ) : (
           <UbText as="span" variant="body-sm" className="ds-num">
             {formatInr(row.sellingPrice)}
@@ -121,7 +160,7 @@ export const createItemColumns = ({
       header: t('items.list.col.onHand'),
       priority: 1,
       align: 'end',
-      cardSlot: 'trailing',
+      cardSlot: isCards ? 'none' : 'trailing',
       sortField: 'on_hand',
       widthShare: 18,
       cell: (row) => (
@@ -139,13 +178,5 @@ export const createItemColumns = ({
       ),
     },
   ];
-  /* A card's meta lines follow column order, and the price is the one the
-     shopkeeper is looking for, so on a phone it comes first. */
-  const ordered = isCards
-    ? [
-        ...columns.filter((column) => column.id === 'item' || column.id === 'sellingPrice'),
-        ...columns.filter((column) => column.id !== 'item' && column.id !== 'sellingPrice'),
-      ]
-    : columns;
-  return valuation ? ordered : ordered.filter((column) => column.id !== 'purchasePrice');
+  return valuation ? columns : columns.filter((column) => column.id !== 'purchasePrice');
 };
