@@ -315,3 +315,5 @@ This latest decision supersedes earlier mobile manual/arrow-paging acceptance an
 Owner: "and I would say go feature wise fetaure else will never complete our developemnt".
 
 Finish one feature completely before starting the next: build, full gates, LOOK, phone and desktop acceptance, performance, docs, commit and push. Only then open the next feature. Do not spread a shared change across several modules and leave each half-verified. The order stays as R-DEC-27 and the IMMEDIATE NEXT list give it. The current feature is the sales-document lists (Estimates, Orders, Challans, Credit Notes) under R-DEC-33. Bills, Customers, Suppliers and Purchases are each a later feature, one at a time.
+
+Progress 23 Oct 2026 (afternoon): sales-document lists verified on the exact checkpoint (gates, sweep EN/HI, mobile contract, LOOK, A/B). Phone 4x-CPU navigation is ~50 ms slower than 477916b and is recorded, not hidden. Next feature under R-DEC-34: Bills register mobile cards (R-DEC-33), then Customers, Suppliers, Purchases, one at a time.

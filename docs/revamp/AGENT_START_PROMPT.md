@@ -135,6 +135,35 @@ score cannot excuse critical financial/access/data-loss or essential-flow gaps.
 No claim that this research or all-module acceptance is already complete.
 
 
+## LATEST — 23 October 2026 afternoon (supersedes the checkpoint section below)
+
+The sales-document lists (Estimates, Sales orders, Delivery challans, Credit
+notes) are VERIFIED on the exact checkpoint: full gates (Jest 4,667), the
+four-kind sweep EN 390/320/1024/1280 light+dark and Hindi 320/1280, the mobile
+contract on all four kinds, LOOK, and an old/new/old/new A/B against 477916b.
+Report: docs/performance/2026-10-21-viewport-sales-documents.md §23 Oct
+afternoon. Scores there are scoped and provisional; overall NOT above 8.5.
+
+Before any sweep on a fresh container run
+  NODE_PATH=$(npm root -g) node e2e/seed-sales-flow.mjs
+because seed_scale writes invoices only and the four lists are otherwise empty
+(every "ready" frame becomes first-use and every width fails).
+
+Open on this feature (record, do not hide): phone 4x-CPU navigation to these
+lists is ~50 ms (+6%) slower than 477916b in both rounds, unprofiled; at 1024 px
+the header stacks on three lines and rows get 45% of the viewport; the desktop
+credit-note draft row says Draft in the caption and the badge.
+
+IMMEDIATE NEXT (R-DEC-34: one feature at a time, finished before the next)
+1. Bills register (07-screens/09 §1) phone composition under R-DEC-33: joined
+   cards, scroll-next with retry, compact header/one search. Reuse the sales
+   lists' shared pieces; run revamp-bills.mjs (kind invoice) and extend
+   mobile-sales-contract.mjs to Bills. Gates, LOOK, A/B, docs, push.
+2. Then Customers, then Suppliers, then Purchases registers, each finished
+   completely the same way.
+3. Then purchase detail/order conversion/returns and remaining source modules
+   under R-DEC-27; approved remaining Home workflows LAST.
+
 ## LATEST CHECKPOINT —23 October2026 (owner requested commit/push)
 
 This section supersedes stale Next/current-handoff statements below/elsewhere.

@@ -98,3 +98,20 @@ product's appearance. No claim here that all modules have met these gates.
 ### R-DEC-33 amendment ·22Oct2026
 
 Earlier mobile manual/arrow-pager matrix acceptance is superseded. Existing desktop verification remains; Customers/Suppliers/Bills/Purchases mobile follow-up is pending. Phone acceptance: joined cards, scroll-next with accessible fallback, one list-search field and compact global search icon. Measure header height, card-area share, offset preservation, no eager fetch-all, duplicate IDs, failed-append retry and filter/context reset. Desktop remains a table with reachable pagination. This is not a whole-module completion claim.
+
+
+### Sales-document lists · 23 Oct 2026 (R-DEC-33, R-DEC-34)
+
+| Requirement | Evidence | Status |
+|---|---|---|
+| Phone joined cards, no table/pager/FAB | mobile-sales-contract, 4 kinds × 320/390 × 2 themes | passed |
+| Scroll-next, no eager page 2 | same | passed |
+| Failed append keeps cards, 44 px retry, keeps scroll | same, real page-2 count | passed |
+| New query resets | same | passed |
+| One list search, 44 px global icon, active chip visible | same | passed |
+| Cards ≥ 60% of a normal phone | 62.0% at 844 px | passed |
+| Desktop table + visible pager | 1024/1280 | passed |
+| No cut text/contrast/overflow EN/HI light/dark | revamp-bills, 4 kinds | passed |
+| 1024 header density | rows 45% of viewport | weak, recorded |
+| Phone nav speed vs 477916b | +50 ms median at 4x CPU | regression, unprofiled |
+| Competitor comparison | none this session | unproven |
