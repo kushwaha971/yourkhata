@@ -181,8 +181,11 @@ export const createPurchaseBillColumns = ({
               className="whitespace-normal"
             >
               {status(row)}
+              {/* A return's open amount is credit the supplier owes back, never "to pay". */}
               {!order && due(row)
-                ? ` · ${t('purchases.list.amountToPay', { amount: formatInr(row.amountDue) })}`
+                ? ` · ${t(note ? 'purchases.list.openCredit' : 'purchases.list.amountToPay', {
+                    amount: formatInr(row.amountDue),
+                  })}`
                 : ''}
             </UbText>
             {row.isOverdue && row.dueOn && (

@@ -170,6 +170,7 @@
   "purchases.list.filteredTotals": "Totals for these purchases",
   "purchases.list.loading": "Loading bills…",
   "purchases.list.open": "Open {name}",
+  "purchases.list.openCredit": "{amount} open credit",
   "purchases.list.selectAll": "Select all bills",
   "purchases.list.selectRow": "Select {name}",
   "purchases.list.title": "Purchases",

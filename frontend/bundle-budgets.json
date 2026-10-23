@@ -1050,6 +1050,7 @@
     "sharedApp": 114.4
   },
   "//routes": [
+    "23 Oct 2026, R-DEC-33 purchase registers on a phone: /purchases/orders, /purchases/debit-notes at most 0.1 KB over from the append slice and UbLoadMore under the cards. Raised to measured + 0.3.",
     "23 Oct 2026, Customers 320 px summary: /library/attendance reached its ceiling (75.8 / 317.4) after UbAmount gained `inline` (drops the empty sign slot so a totals strip fits one line). Raised to measured + 0.3; /library/fees likewise (79.5 / 321.1 -> 79.8 / 321.4) once the payment drawer's still-due figure used it.",
     "23 Oct 2026, R-DEC-33 Customers phone register: 77 routes at most 0.3 KB over after UbEmptyState let its actions wrap (two actions ran off both edges of a 390 px phone) and the party list gained scroll-next with retry. Shared app 114.4 and framework 127.3 within unchanged ceilings. Only exceeded scalars raised to measured + 0.3.",
     "23 Oct 2026, R-DEC-33 sales-document lists (mobile joined cards, scroll-next with retry, compact 1024 identity): full gates on the exact checkpoint found 35 routes at most 0.1 KB over, from the shared list composition (UbLoadMore sentinel and retry, card summary) that registers, editors and other consumers of the shared grid carry. Shared app 114.3 and framework 127.3 stay within unchanged ceilings. Only exceeded scalars raised to measured + 0.3.",
@@ -1423,8 +1424,8 @@
       "firstLoad": 314.6
     },
     "/purchases/debit-notes": {
-      "route": 84.4,
-      "firstLoad": 326.0
+      "route": 84.8,
+      "firstLoad": 326.4
     },
     "/sales/challans/[id]": {
       "route": 85.1,
@@ -1447,8 +1448,8 @@
       "firstLoad": 314.6
     },
     "/purchases/orders": {
-      "route": 84.4,
-      "firstLoad": 326.0
+      "route": 84.8,
+      "firstLoad": 326.4
     },
     "/purchases/orders/new": {
       "route": 169.4,

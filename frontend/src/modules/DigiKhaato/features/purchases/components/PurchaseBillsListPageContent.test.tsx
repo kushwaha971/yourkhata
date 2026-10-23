@@ -245,3 +245,14 @@ it('treats an empty period in a used book as filtered empty and clears the date 
   await waitFor(() => expect(mockSearch).not.toContain('period='));
   expect(lastAsked().dateFrom).toMatch(/-04-01$/);
 });
+
+/** LOOK defect: a return-to-supplier card said "₹144.00 to pay" for credit the supplier owes back. */
+it('calls an open return amount credit, not money to pay', async () => {
+  service.listPurchaseBills.mockImplementation(async () =>
+    page([{ ...AGRO, id: 'dn1', number: 'DN/26-27/0001', status: 'issued', amountDue: '144.00' }])
+  );
+  signIn(['purchases.bill.read']);
+  renderWithProviders(<PurchaseBillsListPageContent kind="debit_note" />);
+  expect(await screen.findByText(/₹144\.00 open credit/)).toBeInTheDocument();
+  expect(screen.queryByText(/to pay$/)).not.toBeInTheDocument();
+});
