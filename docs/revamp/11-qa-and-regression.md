@@ -127,3 +127,14 @@ Earlier mobile manual/arrow-pager matrix acceptance is superseded. Existing desk
 | EN/HI, light/dark, all states | revamp-bills invoice | passed |
 | Phone open speed vs 7b27948 | −200 ms median at 4x CPU, both rounds (n=6) | passed, small sample |
 | Competitor comparison | none this session | unproven |
+
+### Purchase registers on a phone · 23 Oct 2026 (R-DEC-33, R-DEC-34)
+
+| Requirement | Evidence | Status |
+|---|---|---|
+| Phone joined cards, scroll-next, no pager | contract purchase-bills/orders/debit-notes 390/320 × 2 themes, EN and HI | passed |
+| Failed append keeps cards; new query resets | same, plus slice/page tests | passed |
+| Cards ≥ 60% of phone | 47.0% before → 64.6% (390), 61.5% (320) | passed |
+| Debit note card wording | LOOK: "to pay" → "open credit" | fixed |
+| Speed vs 5714a94 | phone −58 ms; desktop 4x CPU +75/+129 ms, unexplained | open |
+| Competitor comparison | none this session | unproven |

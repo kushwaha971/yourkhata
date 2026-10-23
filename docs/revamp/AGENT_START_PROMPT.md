@@ -166,10 +166,15 @@ DONE 23 Oct night: Suppliers register on a phone (report
 docs/performance/2026-10-23-suppliers-phone-register.md). OPEN: supplier card
 -> person page is ~220 ms slower at 4x CPU in all four rounds, unexplained;
 take a profiled trace (old e0da36f vs new) before claiming anything.
-1. Purchases registers (purchase bills, purchase orders, debit notes) under
-   R-DEC-33, each finished completely: contract, LOOK EN/HI, A/B, report, push.
-2. Then purchase detail/order conversion/returns and remaining source modules
-   under R-DEC-27; approved remaining Home workflows LAST.
+DONE 23 Oct night: Purchase registers on a phone — bills, orders, debit notes
+(report docs/performance/2026-10-23-purchase-registers-phone.md; cards 47% ->
+61-65%). OPEN: desktop at 4x CPU +75 ms register / +129 ms New bill in both
+rounds, unexplained; phone New-bill timing invalid (negative content times).
+1. Purchase detail §6 (bills/orders/debit notes): money first, Pay supplier +
+   "Something's wrong…" chooser, links, lines; void refusals with links.
+   Defaults taken: "Supplier gave money back" hidden (no advance figure on the
+   page); Cancel order / Delete draft in the action row, not a ⋯ menu.
+2. Then Stock, Payments, Expenses, Reports; approved Home workflows LAST.
 
 ## LATEST CHECKPOINT —23 October2026 (owner requested commit/push)
 

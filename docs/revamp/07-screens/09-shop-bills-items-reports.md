@@ -253,6 +253,8 @@ Tracking: problems — none severe; consequence line below the fold on phones to
 
 Tracking: problems — old page-growing list/hidden phone statuses, clipped supplier/paper facts and buried pagination · decisions — R-DEC-30 mobile-first bounded register, compact server money strip, visible status chips, full paper identity, pager outside rows and toast clearance · dependencies — existing APIs; BP-18 proposes saved timestamps for identical drafts, not built · risks — physical PWA/keyboard/text scaling unproved; orders/returns actual workflows remain separate · approval — R-DEC-27/29/30 · build — §5 composition delivered21Oct, including shared empty order/return-list presentation · tests —416 suites/4,647 frontend tests,80 purchase backend tests,240 measured frames/hit tests and quiet same-machine A/B · outcome — see docs/performance/2026-10-21-p5-purchase-register.md for rating/limits. Next §6 detail, order conversion and full returns/debit-note acceptance.
 
+R-DEC-33 phone follow-up (23 Oct): bills, orders and debit notes now join pages as you scroll on a phone (no pager), keep cards on a failed next page with Try again, and reset on a new search; cards 47% → 61–65% of a phone; debit-note cards say "open credit". Report docs/performance/2026-10-23-purchase-registers-phone.md (desktop 4x-CPU timing open).
+
 ---
 
 ## 6. Purchase detail · `/purchases/{bills|orders|debit-notes}/[id]`
