@@ -12,6 +12,7 @@ import {
   UbFilterSelect,
   UbEmptyState,
   UbFilterSheet,
+  UbLoadMore,
   UbPageHeader,
   UbPageHeaderMobileActions,
   UbPageShell,
@@ -60,7 +61,8 @@ export function InvoicesListPageContent(): React.JSX.Element {
   const { t } = useTranslation();
   const router = useAppRouter();
   const tier = useGridTier();
-  const list = useInvoiceList();
+  // R-DEC-33: a phone scrolls one joined card list; a desktop table pages.
+  const list = useInvoiceList(tier === 'cards' ? 'append' : 'replace');
 
   const { setQuery, filters } = list;
   const [search, setSearch] = useCommittedSearch(filters.q, setQuery, INVOICE_SEARCH_DEBOUNCE_MS);
@@ -133,8 +135,11 @@ export function InvoicesListPageContent(): React.JSX.Element {
     [t, canWrite, newBill, clearFilters, error, refetch]
   );
 
-  const gridState: UbGridState =
-    list.status === 'loading' || (list.status === 'idle' && list.canRead)
+  // The next page loading (or failing) under the cards keeps the cards on screen.
+  const keepingCards = tier === 'cards' && filters.page > 1 && list.rows.length > 0;
+  const gridState: UbGridState = keepingCards
+    ? 'rows'
+    : list.status === 'loading' || (list.status === 'idle' && list.canRead)
       ? 'loading'
       : list.status === 'failed'
         ? 'error'
@@ -272,6 +277,34 @@ export function InvoicesListPageContent(): React.JSX.Element {
       }}
       onPageChange={list.setPage}
       onRowOpen={openRow}
+      resetScrollOnPageChange={!phone}
+      scrollResetKey={JSON.stringify([
+        filters.q,
+        filters.tab,
+        filters.dateFrom,
+        filters.dateTo,
+        filters.originModule ?? null,
+      ])}
+      busy={list.status === 'refreshing'}
+      footer={phone ? null : undefined}
+      afterRows={
+        phone && gridState === 'rows' && list.page * list.pageSize < list.total ? (
+          <UbLoadMore
+            loading={list.status === 'loading' || list.status === 'refreshing'}
+            automatic={list.status !== 'failed'}
+            repeatWhileVisible={false}
+            loadingLabel={t('common.search.loadingMore')}
+            moreLabel={t(
+              list.status === 'failed' ? 'common.action.retry' : 'common.search.showMore'
+            )}
+            className={list.status === 'failed' ? 'pb-20' : undefined}
+            onLoadMore={() => {
+              if (list.status === 'failed') list.refetch();
+              else if (list.status === 'succeeded') list.setPage(list.page + 1);
+            }}
+          />
+        ) : undefined
+      }
       cardAvatar={false}
       cardLayout="stacked"
       variant="register"
@@ -296,8 +329,7 @@ export function InvoicesListPageContent(): React.JSX.Element {
             </UbActionLink>
           ) : undefined
         }
-        /* docs/mobile-redesign (A3) — on a phone: a worded ⋯ sheet and the
-           primary action as the floating button. Desktop is unchanged. */
+        /* R-DEC-33: phone New stays in the compact title row, never above the cards. */
         renderMobileActions={(actions) => (
           <UbPageHeaderMobileActions
             actions={actions}

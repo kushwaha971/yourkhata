@@ -4,12 +4,12 @@ import { resetAllFeatureState } from 'src/redux/actions';
 import { acceptInvalidation } from 'src/redux/invalidation/listener';
 import { rootReducer, type RootState } from 'src/redux/store';
 import type { ApiErrorShape, RequestStatus } from 'src/types/api.types';
+import { mergePageRows } from 'src/utils/mergePageRows';
 
 import { INVOICE_PAGE_SIZE } from '../constants/salesConstants';
 
-import { fetchInvoices } from './salesThunk';
+import { fetchInvoices, type InvoiceListArg } from './salesThunk';
 
-import type { InvoiceListQuery } from '../api/salesService';
 import type { InvoiceListRow, InvoiceListTotals, InvoiceTabCounts } from '../types/sales.types';
 
 /**
@@ -27,7 +27,9 @@ export interface InvoiceListState {
   total: number;
   status: RequestStatus;
   error: ApiErrorShape | null;
-  filters: InvoiceListQuery | null;
+  filters: InvoiceListArg | null;
+  /** The latest request; an older reply for the same filters is not allowed to win. */
+  requestId: string | null;
   stale: boolean;
   staleUrgency: 'now' | 'next-mount' | null;
 }
@@ -43,43 +45,67 @@ const initialState: InvoiceListState = {
   status: 'idle',
   error: null,
   filters: null,
+  requestId: null,
   stale: false,
   staleUrgency: null,
 };
 
-const sameFilters = (a: InvoiceListQuery | null, b: InvoiceListQuery): boolean =>
+const sameFilters = (
+  a: InvoiceListArg | null,
+  b: InvoiceListArg,
+  ignorePage = false
+): boolean =>
   !!a &&
   a.tab === b.tab &&
   a.dateFrom === b.dateFrom &&
   a.dateTo === b.dateTo &&
   a.partyId === b.partyId &&
   a.q === b.q &&
-  a.page === b.page;
+  (a.originModule ?? null) === (b.originModule ?? null) &&
+  (ignorePage || a.page === b.page) &&
+  (a.mode ?? 'replace') === (b.mode ?? 'replace');
 
 const invoiceListSlice = createSlice({
   name: 'invoiceList',
   initialState,
   reducers: {
     /** Rows AND totals clear together — a total over the previous filter's rows was never true. */
-    invoiceFiltersChanged(state, action: PayloadAction<InvoiceListQuery>) {
+    invoiceFiltersChanged(state, action: PayloadAction<InvoiceListArg>) {
       if (sameFilters(state.filters, action.payload)) return;
-      state.filters = action.payload as Draft<InvoiceListQuery>;
-      state.rows = [];
-      state.totals = null;
-      state.status = 'loading';
+      // R-DEC-33: a phone's next page keeps the cards above it and their totals.
+      const appending =
+        action.payload.mode === 'append' &&
+        action.payload.page > 1 &&
+        sameFilters(state.filters, action.payload, true) &&
+        state.rows.length > 0;
+      state.filters = action.payload as Draft<InvoiceListArg>;
+      if (!appending) {
+        state.rows = [];
+        state.totals = null;
+      }
+      state.status = appending ? 'refreshing' : 'loading';
       state.error = null;
     },
   },
   extraReducers: (builder) => {
     acceptInvalidation<InvoiceListState>('invoiceList')(builder);
     builder
-      .addCase(fetchInvoices.pending, (state) => {
+      .addCase(fetchInvoices.pending, (state, action) => {
+        state.requestId = action.meta.requestId;
         state.status = state.rows.length > 0 ? 'refreshing' : 'loading';
         state.error = null;
       })
       .addCase(fetchInvoices.fulfilled, (state, action) => {
-        if (!sameFilters(state.filters, action.meta.arg)) return;
-        state.rows = action.payload.rows as Draft<InvoiceListRow>[];
+        if (
+          state.requestId !== action.meta.requestId ||
+          !sameFilters(state.filters, action.meta.arg)
+        )
+          return;
+        state.rows = (
+          action.meta.arg.mode === 'append' && action.meta.arg.page > 1
+            ? mergePageRows(state.rows, action.payload.rows)
+            : action.payload.rows
+        ) as Draft<InvoiceListRow>[];
         state.totals = action.payload.totals;
         state.tabs = action.payload.tabs as Draft<InvoiceTabCounts>;
         state.hasAny = action.payload.hasAny ?? null;
@@ -91,7 +117,12 @@ const invoiceListSlice = createSlice({
         state.staleUrgency = null;
       })
       .addCase(fetchInvoices.rejected, (state, action) => {
-        if (action.meta.aborted) return;
+        if (
+          action.meta.aborted ||
+          state.requestId !== action.meta.requestId ||
+          !sameFilters(state.filters, action.meta.arg)
+        )
+          return;
         state.status = 'failed';
         state.error = (action.payload ?? null) as Draft<ApiErrorShape> | null;
       })

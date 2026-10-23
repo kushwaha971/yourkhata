@@ -18,7 +18,7 @@ import {
   selectInvoiceList,
   type InvoiceListState,
 } from '../redux/invoiceListSlice';
-import { fetchInvoices } from '../redux/salesThunk';
+import { fetchInvoices, type InvoiceListArg } from '../redux/salesThunk';
 import {
   invoiceFiltersFromQuery,
   invoiceQueryFromFilters,
@@ -26,7 +26,6 @@ import {
   type InvoiceListFilters,
 } from '../view-model/invoiceDisplay';
 
-import type { InvoiceListQuery } from '../api/salesService';
 import type { InvoicePreset } from '../constants/salesConstants';
 import type { InvoiceTab } from '../types/sales.types';
 
@@ -58,7 +57,11 @@ export interface UseInvoiceListResult extends Omit<InvoiceListState, 'filters'> 
   readonly refetch: () => void;
 }
 
-export const useInvoiceList = (): UseInvoiceListResult => {
+/**
+ * `append` is a phone's card list (R-DEC-33): the next page joins the cards
+ * already shown instead of replacing them. A desktop table pages by replacement.
+ */
+export const useInvoiceList = (mode: 'replace' | 'append' = 'replace'): UseInvoiceListResult => {
   const dispatch = useAppDispatch();
   const router = useAppRouter();
   const search = useSearchParams();
@@ -77,8 +80,9 @@ export const useInvoiceList = (): UseInvoiceListResult => {
     () => invoiceFiltersFromQuery(new URLSearchParams(queryString), today),
     [queryString, today]
   );
-  const query = useMemo<InvoiceListQuery>(
+  const query = useMemo<InvoiceListArg>(
     () => ({
+      mode,
       tab: filters.tab,
       dateFrom: filters.dateFrom,
       dateTo: filters.dateTo,
@@ -87,7 +91,7 @@ export const useInvoiceList = (): UseInvoiceListResult => {
       page: filters.page,
       originModule: filters.originModule ?? null,
     }),
-    [filters]
+    [mode, filters]
   );
 
   useEffect(() => {

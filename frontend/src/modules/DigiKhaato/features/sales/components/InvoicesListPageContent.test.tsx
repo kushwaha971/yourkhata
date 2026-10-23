@@ -244,3 +244,37 @@ it('follows an external search URL while the register stays mounted', async () =
   expect(mockSearch).toBe('q=Radhe');
   expect(lastAsked().q).toBe('Radhe');
 });
+
+/** R-DEC-33: a phone scrolls one joined card list; there are no page arrows to aim at. */
+it('joins the next page of bills under the phone cards instead of paging', async () => {
+  const media = jest.spyOn(window, 'matchMedia').mockImplementation((query) => ({
+    matches: query.includes('max-width'),
+    media: query,
+    onchange: null,
+    addEventListener: () => undefined,
+    removeEventListener: () => undefined,
+    addListener: () => undefined,
+    removeListener: () => undefined,
+    dispatchEvent: () => false,
+  }));
+  const bills = Array.from({ length: 30 }, (_, i) => ({
+    ...RAMESH,
+    id: `bill-${i + 1}`,
+    number: `INV/26-27/${String(i + 1).padStart(4, '0')}`,
+  }));
+  service.listInvoices.mockImplementation(async (query: InvoiceListQuery) => ({
+    ...page(query.page === 2 ? bills.slice(25) : bills.slice(0, 25)),
+    page: query.page,
+    total: 30,
+  }));
+  signIn(['sales.invoice.read']);
+  const view = renderWithProviders(<InvoicesListPageContent />);
+  expect(await screen.findAllByTestId('ub-grid-card')).toHaveLength(25);
+  expect(screen.queryByText(/Page 1 of/)).not.toBeInTheDocument();
+  await userEvent.click(screen.getByRole('button', { name: 'Show more' }));
+  await waitFor(() => expect(screen.getAllByTestId('ub-grid-card')).toHaveLength(30));
+  expect(lastAsked().page).toBe(2);
+  expect(screen.queryByRole('button', { name: 'Show more' })).not.toBeInTheDocument();
+  view.unmount();
+  media.mockRestore();
+});

@@ -23,7 +23,12 @@ const service = () => import('../api/salesService');
 
 type Reject = { rejectValue: ApiErrorShape };
 
-export const fetchInvoices = createAsyncThunk<InvoiceListPage, InvoiceListQuery, Reject>(
+export interface InvoiceListArg extends InvoiceListQuery {
+  /** Client presentation mode; invoiceListQuery whitelists wire parameters. */
+  readonly mode?: 'replace' | 'append';
+}
+
+export const fetchInvoices = createAsyncThunk<InvoiceListPage, InvoiceListArg, Reject>(
   'invoiceList/fetchInvoices',
   async (filters, { signal, rejectWithValue }) => {
     try {

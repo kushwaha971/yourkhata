@@ -10,8 +10,8 @@ export function InvoiceListStats({
   const { t } = useTranslation();
   return (
     <RecordTotals
-      columns
       compactShort
+      countInMobileChips
       label={t('sales.list.filteredTotals')}
       count={totals.count}
       countLabel={t('sales.total.count')}
