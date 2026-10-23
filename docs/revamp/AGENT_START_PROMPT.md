@@ -158,11 +158,15 @@ IMMEDIATE NEXT (R-DEC-34: one feature at a time, finished before the next)
 DONE 23 Oct evening: Bills register on a phone (report
 docs/performance/2026-10-23-bills-phone-register.md; known limit: 320 px with
 crore totals gives cards 58.5% because Billed/Due wrap).
-1. Customers register (07-screens/08) phone composition under R-DEC-33: joined
-   cards, scroll-next with retry, compact header/one search. Reuse the Bills
-   and sales-list pieces (append mode in the list slice, UbLoadMore afterRows,
-   latest-request guard). Gates, sweep, mobile contract, LOOK, A/B, docs, push.
-2. Then Suppliers, then Purchases registers, each finished completely.
+DONE 23 Oct night: Customers register on a phone (b6aa7af; report
+docs/performance/2026-10-23-customers-phone-register.md; known limits: 320 px
+English summary wraps when To pay is non-zero; Hindi checked by eye only).
+1. Suppliers register (07-screens/08 §2): it renders through the same
+   PartyListPageContent and already passes mobile-sales-contract.mjs
+   --kinds=suppliers, so the work is its OWN acceptance: LOOK every state
+   (ready, append error, no match, advance chip, Pay action) EN/HI, supplier
+   copy, A/B (shop.home→suppliers, shop.supplier row→person), report, push.
+2. Then Purchases registers, each finished completely.
 3. Then purchase detail/order conversion/returns and remaining source modules
    under R-DEC-27; approved remaining Home workflows LAST.
 
