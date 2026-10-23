@@ -81,7 +81,9 @@ try {
 
   const haveNotes = (await get('/sales/credit-notes?tab=draft&page_size=1')).meta.total ?? 0;
   if (haveNotes < COUNT) {
-    const paid = (await get(`/sales/invoices?tab=paid&page_size=${COUNT}`)).data;
+    // A return needs a saved customer; quick-sale bills are refused by the server.
+    const paid = (await get('/sales/invoices?tab=paid&page_size=200')).data.filter((row) => row.party);
+    if (!paid.length) throw Error('Local QA tenant has no paid bills to a saved customer');
     for (let i = haveNotes; i < COUNT; i += 1) {
       const invoice = (await get(`/sales/invoices/${pick(paid, i).id}`)).data;
       await post('/sales/credit-notes', {
