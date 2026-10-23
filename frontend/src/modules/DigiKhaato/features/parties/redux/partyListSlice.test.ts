@@ -102,6 +102,24 @@ describe('partyListSlice', () => {
     expect(replay.rows.map((party) => party.id)).toEqual([row.id, 'second']);
   });
 
+  /** R-DEC-33: a failed next page erased every card already on the phone, behind an error state. */
+  it('keeps the cards and marks the append as failed when the next page does not arrive', () => {
+    const loaded = partyListReducer(initial, fulfilled());
+    const failed = partyListReducer(loaded, {
+      type: fetchPartyList.rejected.type,
+      payload: { code: 'server_error', message: 'Down', details: {} },
+      meta: {
+        arg: { params: { ...initial.filters, page: 2 }, mode: 'append' },
+        requestId: 'r2',
+      },
+    });
+    expect(failed.rows).toHaveLength(1);
+    expect(failed.status).toBe('failed');
+    expect(failed.appendFailed).toBe(true);
+    // A failed next page is not an out-of-date list; the saved-list banner stays away.
+    expect(failed.showingSaved).toBe(false);
+  });
+
   it('treats an aborted request as a superseded keystroke, not a failure', () => {
     const loaded = partyListReducer(initial, fulfilled());
     const aborted = partyListReducer(loaded, {

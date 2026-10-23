@@ -10,6 +10,7 @@ import {
   UbActionLink,
   UbButton,
   UbEmptyState,
+  UbLoadMore,
   UbPageHeader,
   UbPageHeaderMobileActions,
   UbPageShell,
@@ -228,6 +229,7 @@ export function PartyListPageContent({
     refetch,
     isRefreshing,
     showingSaved,
+    appendFailed,
   } = usePartyList(compactShop && tier === 'cards' ? 'append' : 'replace', kind, book);
 
   /** Read outside render, so the column array's memo key is stable. */
@@ -514,7 +516,7 @@ export function PartyListPageContent({
   const gridState: UbGridState =
     status === 'loading'
       ? 'loading'
-      : status === 'failed' && !showingSaved
+      : status === 'failed' && !showingSaved && !appendFailed
         ? 'error'
         : rows.length === 0
           ? isFiltered
@@ -695,7 +697,9 @@ export function PartyListPageContent({
         <UbPageHeader
           className={
             compactShop
-              ? 'max-md:[@media(max-height:640px)]:[&_[data-ub-page-subtitle]]:sr-only'
+              ? // R-DEC-33: a phone's header is the title and its actions; the
+                // book's name stays for screen readers.
+                'max-md:[&_[data-ub-page-subtitle]]:sr-only'
               : undefined
           }
           title={
@@ -965,35 +969,44 @@ export function PartyListPageContent({
                   late={filters.late}
                   page={meta.page}
                   pageSize={meta.pageSize}
+                  countInChips={Boolean(shopCounts) && filters.balance !== 'settled'}
                 />
               ) : undefined
             }
             cardLayout={compactShop ? 'stacked' : 'inline'}
             cardAvatar={!compactShop}
-            footer={
-              compactShop && tier === 'cards' ? (
-                <UbStack gap={3} className="py-2">
-                  <UbText
-                    variant="caption"
-                    tone="tertiary"
-                    className={rows.length < meta.total ? 'sr-only' : undefined}
-                  >
+            /* R-DEC-33: a phone joins the next page under the cards as the
+               merchant scrolls, with a retry in place when it fails; the
+               pinned "Show more" button sat outside the scroll region and
+               took a row's height from every screen. */
+            footer={compactShop && tier === 'cards' ? null : undefined}
+            afterRows={
+              compactShop && tier === 'cards' && gridState === 'rows' ? (
+                rows.length < meta.total ? (
+                  <UbLoadMore
+                    loading={isRefreshing}
+                    automatic={status !== 'failed'}
+                    repeatWhileVisible={false}
+                    loadingLabel={t('common.search.loadingMore')}
+                    moreLabel={
+                      status === 'failed'
+                        ? t('common.action.retry')
+                        : t('parties.list.shop.more', { count: meta.total - rows.length })
+                    }
+                    className={status === 'failed' ? 'pb-20' : undefined}
+                    onLoadMore={() => {
+                      if (status === 'failed') refetch();
+                      else if (status === 'succeeded') setPage(meta.page + 1);
+                    }}
+                  />
+                ) : (
+                  <UbText variant="caption" tone="tertiary" className="py-3 text-center">
                     {t(supplier ? 'parties.list.supplier.loaded' : 'parties.list.shop.loaded', {
                       count: rows.length,
                       total: meta.total,
                     })}
                   </UbText>
-                  {rows.length < meta.total && (
-                    <UbButton
-                      variant="outlineNeutral"
-                      busy={isRefreshing}
-                      disabled={isRefreshing}
-                      onClick={() => setPage(meta.page + 1)}
-                    >
-                      {t('parties.list.shop.more', { count: meta.total - rows.length })}
-                    </UbButton>
-                  )}
-                </UbStack>
+                )
               ) : undefined
             }
             cardActions={compactShop ? renderCustomerActions : undefined}

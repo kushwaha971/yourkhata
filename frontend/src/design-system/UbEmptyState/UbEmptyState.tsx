@@ -97,7 +97,11 @@ function UbEmptyStateBase({
       </span>
       <MLEmptyTitle>{title}</MLEmptyTitle>
       {description && <MLEmptyDescription>{description}</MLEmptyDescription>}
-      {action && <span className="mt-2 inline-flex">{action}</span>}
+      {/* Wraps: two actions side by side ran off both edges of a 390 px phone
+          ("Add <the name you searched>" beside Clear filters). */}
+      {action && (
+        <span className="mt-2 inline-flex max-w-full flex-wrap justify-center gap-2">{action}</span>
+      )}
       {requestId && requestIdLabel && <UbRequestId id={requestId} label={requestIdLabel} />}
     </MLEmpty>
   );

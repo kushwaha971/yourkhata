@@ -19,6 +19,7 @@ import {
   selectPartyListError,
   selectPartyListMeta,
   selectPartyListShowingSaved,
+  selectPartyListAppendFailed,
   selectPartyListStale,
   selectPartyListStatus,
   selectPartyListTotals,
@@ -70,6 +71,8 @@ export interface UsePartyListResult {
    * same query: show them under the "Showing saved list" banner, not the error.
    */
   readonly showingSaved: boolean;
+  /** R-DEC-33 — a phone's next page failed; the cards above it are still the answer. */
+  readonly appendFailed: boolean;
   /** Any narrowing at all is applied — the search box or any of the chips. */
   readonly isFiltered: boolean;
   /** How many, for the "Clear filters (2)" affordance (§19.3.4's example). */
@@ -116,6 +119,7 @@ export function usePartyList(
   const error = useAppSelector(selectPartyListError);
   const stale = useAppSelector(selectPartyListStale);
   const showingSaved = useAppSelector(selectPartyListShowingSaved);
+  const appendFailed = useAppSelector(selectPartyListAppendFailed);
   const serverTotals = useAppSelector(selectPartyListTotals);
   const totalsScope = useAppSelector(selectPartyListTotalsScope);
   const overLimit = useAppSelector(selectPartyOverLimit);
@@ -196,11 +200,18 @@ export function usePartyList(
   // `GET /auth/me` instead of queueing behind it (see `partyListWarmup.ts`).
   // Claiming it takes over that exact request — abort handle included — rather
   // than issuing a second identical GET.
-  useEffect(() => {
-    const arg = {
+  /* One request shape for the first load, a stale refresh and Try again: on a
+     phone a later page JOINS the cards. A retry sent as `replace` turned a
+     failed page 2 into a list holding page 2 alone. */
+  const fetchArg = useMemo(
+    () => ({
       params: filters,
       mode: mode === 'append' && filters.page > 1 ? ('append' as const) : ('replace' as const),
-    };
+    }),
+    [filters, mode]
+  );
+  useEffect(() => {
+    const arg = fetchArg;
     // Claimed: the warm-up owns that request's lifetime, so there is nothing to
     // dispatch and nothing to abort here. Not claimed: this is something the
     // warm-up did not predict, so anything still speculating is superseded
@@ -209,7 +220,7 @@ export function usePartyList(
     abortWarmPartyList();
     const promise = dispatch(fetchPartyList(arg));
     return () => promise.abort();
-  }, [dispatch, filters, mode]);
+  }, [dispatch, fetchArg]);
 
   // A mutation elsewhere marked us stale — refetch once, silently (§19.3.6).
   //
@@ -224,9 +235,9 @@ export function usePartyList(
   // actually does.
   useEffect(() => {
     if (!stale || isImpaired) return;
-    const promise = dispatch(fetchPartyList({ params: filters, mode: 'replace' }));
+    const promise = dispatch(fetchPartyList(fetchArg));
     return () => promise.abort();
-  }, [stale, isImpaired, dispatch, filters]);
+  }, [stale, isImpaired, dispatch, fetchArg]);
 
   /* A6 (PLT-X04 EC-2) — a role the server does not know (its module was switched
      off since the link was shared) is a 400 for the whole list. Drop that one
@@ -346,8 +357,8 @@ export function usePartyList(
     if (book) dispatch(filtersChanged({ book }));
   }, [dispatch, kind, book]);
   const refetch = useCallback(() => {
-    void dispatch(fetchPartyList({ params: filters, mode: 'replace' }));
-  }, [dispatch, filters]);
+    void dispatch(fetchPartyList(fetchArg));
+  }, [dispatch, fetchArg]);
 
   return {
     rows,
@@ -373,6 +384,7 @@ export function usePartyList(
     isLoading: status === 'loading',
     isRefreshing: status === 'refreshing',
     showingSaved,
+    appendFailed,
     isFiltered: activeFilterCount > 0,
     activeFilterCount,
   };

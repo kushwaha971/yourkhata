@@ -73,6 +73,12 @@ export interface PartyListState {
    * under a "Showing saved list · Try again" banner rather than the error state.
    */
   showingSaved: boolean;
+  /**
+   * R-DEC-33: a phone's NEXT page failed. The cards already loaded are still
+   * the right answer to the query, so they stay and the list offers Try again
+   * at its foot instead of the whole-list error.
+   */
+  appendFailed: boolean;
   /** Set by the invalidation listener (§19.3.6); the hook refetches on it. */
   stale: boolean;
   staleUrgency: 'now' | 'next-mount' | null;
@@ -120,6 +126,7 @@ const initialState: PartyListState = {
   lastFetchedAt: null,
   rowsQuery: null,
   showingSaved: false,
+  appendFailed: false,
   stale: false,
   staleUrgency: null,
 };
@@ -197,6 +204,7 @@ const partyListSlice = createSlice({
               : 'refreshing';
         state.error = null;
         state.showingSaved = false;
+        state.appendFailed = false;
       })
       .addCase(fetchPartyList.fulfilled, (state, action) => {
         state.status = 'succeeded';
@@ -231,6 +239,7 @@ const partyListSlice = createSlice({
         state.lastFetchedAt = Date.now();
         state.rowsQuery = { ...action.meta.arg.params };
         state.showingSaved = false;
+        state.appendFailed = false;
         state.stale = false;
         state.staleUrgency = null;
       })
@@ -242,6 +251,13 @@ const partyListSlice = createSlice({
         // `details` is readonly by contract (R-TS-5). The object is frozen by
         // `toApiError` and never mutated in the store, so the cast is safe.
         state.error = (action.payload ?? null) as Draft<ApiErrorShape> | null;
+        const { params, mode } = action.meta.arg;
+        state.appendFailed =
+          mode === 'append' &&
+          state.rows.length > 0 &&
+          state.rowsQuery !== null &&
+          state.rowsQuery.page !== params.page &&
+          sameQuery(state.rowsQuery, params, { ignorePage: true });
         // FR-15 — keep the saved rows only when they answer the query that failed.
         state.showingSaved =
           state.rows.length > 0 &&
@@ -278,6 +294,8 @@ export const selectPartyOverLimit = (state: RootState): number | null => state.p
 export const selectPartyRolesOn = (state: RootState): boolean => state.partyList.rolesOn;
 export const selectPartyListShowingSaved = (state: RootState): boolean =>
   state.partyList.showingSaved;
+export const selectPartyListAppendFailed = (state: RootState): boolean =>
+  state.partyList.appendFailed;
 
 export const selectShopPartyCounts = (state: RootState): ShopPartyCounts | null =>
   state.partyList.shopCounts;

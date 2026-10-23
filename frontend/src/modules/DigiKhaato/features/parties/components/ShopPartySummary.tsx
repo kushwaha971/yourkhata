@@ -23,6 +23,7 @@ export const ShopPartySummary = memo(function ShopPartySummary({
   late,
   page,
   pageSize,
+  countInChips = false,
 }: Readonly<{
   t: TranslateFn;
   supplier?: boolean;
@@ -35,6 +36,8 @@ export const ShopPartySummary = memo(function ShopPartySummary({
   late?: string;
   page: number;
   pageSize: number;
+  /** The pressed chip already carries the count, so a phone shows it once. */
+  countInChips?: boolean;
 }>) {
   return (
     <UbStack
@@ -67,7 +70,9 @@ export const ShopPartySummary = memo(function ShopPartySummary({
             <UbText
               variant="caption"
               tone="tertiary"
-              className="max-md:[@media(max-height:640px)]:sr-only"
+              className={
+                countInChips ? 'max-md:sr-only' : 'max-md:[@media(max-height:640px)]:sr-only'
+              }
             >
               {t(supplier ? 'parties.list.supplier.matches' : 'parties.list.shop.matches', {
                 count: total,
@@ -89,7 +94,14 @@ export const ShopPartySummary = memo(function ShopPartySummary({
                 className="flex-row items-baseline gap-1"
               />
             )}
-            <UbText variant="caption" tone="tertiary">
+            {/* On a phone the pressed chip already says the figures cover every
+                match, so "in total" stays for screen readers and the strip
+                keeps to one line; a page-only sum still says so out loud. */}
+            <UbText
+              variant="caption"
+              tone="tertiary"
+              className={scope === 'filtered' && countInChips ? 'max-md:sr-only' : undefined}
+            >
               {t(
                 scope === 'filtered'
                   ? 'parties.list.shop.inTotal'

@@ -221,6 +221,45 @@ describe('PartyListPageContent', () => {
     expect(document.querySelector('[data-ub-fab]')).toBeNull();
   });
 
+  /** R-DEC-33: a phone joins the next customers under the cards and keeps them when it fails. */
+  it('joins the next page on a phone and keeps the cards when it fails', async () => {
+    const twoPages = (rows: readonly unknown[], page: number) => ({
+      rows,
+      meta: { page, pageSize: 25, total: 26, totalPages: 2 },
+      totals: null,
+    });
+    let secondPageAsks = 0;
+    partyService.listParties.mockImplementation(async ({ page }: { page: number }) => {
+      if (page === 1) return twoPages([RAMESH], 1);
+      secondPageAsks += 1;
+      if (secondPageAsks === 1) throw new Error('offline');
+      return twoPages([SUNITA], 2);
+    });
+    const user = userEvent.setup();
+    renderWithProviders(<PartyListPageContent kind="customer" book="shop" />);
+    await screen.findByText('Ramesh Traders');
+    // No pinned pager or page counter on a phone: the next batch loads under the cards.
+    expect(screen.queryByText(/Page 1 of/)).not.toBeInTheDocument();
+    // Inside the region that scrolls, so it travels with the cards.
+    expect(
+      screen
+        .getByTestId('ub-grid-scroll-region')
+        .contains(screen.getByRole('button', { name: /Show more \(25 left\)/ }))
+    ).toBe(true);
+    await user.click(screen.getByRole('button', { name: /Show more/ }));
+    // The failed batch keeps what the merchant already scrolled through.
+    const retry = await screen.findByRole('button', { name: 'Try again' });
+    expect(screen.getByText('Ramesh Traders')).toBeInTheDocument();
+    expect(screen.queryByText(/could not load/i)).not.toBeInTheDocument();
+    await user.click(retry);
+    expect(await screen.findByText('Sunita Stores')).toBeInTheDocument();
+    expect(screen.getByText('Ramesh Traders')).toBeInTheDocument();
+    expect(partyService.listParties).toHaveBeenLastCalledWith(
+      expect.objectContaining({ page: 2 }),
+      expect.anything()
+    );
+  });
+
   /** BP-09: the Shop sort label existed but its menu omitted the selected late order. */
   it('offers the real bill-age order in the Shop sort menu', async () => {
     setTier('full');
