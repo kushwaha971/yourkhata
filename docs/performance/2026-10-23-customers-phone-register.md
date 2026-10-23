@@ -98,3 +98,7 @@ The two weak spots above are closed.
 
 Gates: type-check, lint, Jest 4,677, i18n, bundle (one route,
 `/library/attendance`, raised to measured + 0.3 for the `inline` prop).
+
+A second timing batch for the Suppliers report re-ran Customer card → person at
+4x CPU: 1624 → 1640 ms (rounds 1678,1476 / 1805,1624), so the −100 ms above did
+not repeat and that case is **no change**, not a gain.

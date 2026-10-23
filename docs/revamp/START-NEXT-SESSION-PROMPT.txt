@@ -296,13 +296,13 @@ DONE 23 Oct night: Customers register on a phone (b6aa7af; report
 docs/performance/2026-10-23-customers-phone-register.md; the 320 px summary
 wrap and Hindi measurement were closed the same evening — contract takes
 --locale=hi).
-1. Suppliers register (07-screens/08 §2): it renders through the same
-   PartyListPageContent and already passes mobile-sales-contract.mjs
-   --kinds=suppliers, so the work is its OWN acceptance: LOOK every state
-   (ready, append error, no match, advance chip, Pay action) EN/HI, supplier
-   copy, A/B (shop.home→suppliers, shop.supplier row→person), report, push.
-2. Then Purchases registers, each finished completely.
-3. Then purchase detail/order conversion/returns and remaining source modules
+DONE 23 Oct night: Suppliers register on a phone (report
+docs/performance/2026-10-23-suppliers-phone-register.md). OPEN: supplier card
+-> person page is ~220 ms slower at 4x CPU in all four rounds, unexplained;
+take a profiled trace (old e0da36f vs new) before claiming anything.
+1. Purchases registers (purchase bills, purchase orders, debit notes) under
+   R-DEC-33, each finished completely: contract, LOOK EN/HI, A/B, report, push.
+2. Then purchase detail/order conversion/returns and remaining source modules
    under R-DEC-27; approved remaining Home workflows LAST.
 
 ## LATEST CHECKPOINT —23 October2026 (owner requested commit/push)

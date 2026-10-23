@@ -321,7 +321,7 @@ export function PaymentFormDrawer({
               <UbText variant="caption" tone="secondary">
                 {t(afterLabel)}
               </UbText>
-              <UbAmount value={amountLeft} sign="none" size="sm" className="self-start" />
+              <UbAmount value={amountLeft} sign="none" size="sm" inline className="self-start" />
             </UbStack>
           )}
           <UbStack direction="row" gap={3} wrap className="ml-auto">

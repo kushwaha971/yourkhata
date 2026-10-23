@@ -71,7 +71,7 @@
   "payments.mode.duplicate": "दो लाइनों का तरीका एक है — एक में मिलाएँ?",
   "payments.mode.fillRemaining": "बाकी ₹{amount} भरें",
   "payments.mode.heading": "भुगतान का तरीका",
-  "payments.mode.label": "कैसे मिला",
+  "payments.mode.label": "कैसे भुगतान हुआ",
   "payments.mode.maxLines": "अधिकतम {count} तरीके",
   "payments.mode.once": "हर तरीका एक बार — लाइनें मिलाएँ",
   "payments.mode.plusMore": "{mode} +{count}",
