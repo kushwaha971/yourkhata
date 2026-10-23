@@ -22,6 +22,10 @@ import type { InvoiceListRow } from '../types/sales.types';
  * | Status | 1 | meta     | Draft / Issued / Part paid / Paid / Overdue / Void. |
  * | Due    | 2 | none     | Amount still owed; "Overdue 3 d" in error tone (§8). |
  *
+ * Below 1280 px (`isCompact`) the date joins the number under the party and
+ * the Date column goes, as on the other sales lists: a 1024 px table beside the
+ * sidebar has no room for a full date column and a long bill number together.
+ *
  * A5 (PLT-X05 §7) — a document another module issued says so under its number
  * ("From Gym · Membership M-0042"); on a card, after the date.
  */
@@ -29,10 +33,12 @@ export const createInvoiceColumns = ({
   t,
   today,
   isCards,
+  isCompact = false,
 }: {
   readonly t: TranslateFn;
   readonly today: string;
   readonly isCards: boolean;
+  readonly isCompact?: boolean;
 }): readonly UbDataGridColumn<InvoiceListRow>[] => [
   {
     id: 'party',
@@ -55,38 +61,47 @@ export const createInvoiceColumns = ({
           >
             {walkIn && row.walkInName ? `${t('sales.walkIn.label')} · ${name}` : name}
           </UbText>
-          <UbText as="span" variant="caption" tone="tertiary" className="ds-num">
-            {number}
+          <UbText
+            as="span"
+            variant="caption"
+            tone="tertiary"
+            className="ds-num whitespace-normal break-words"
+          >
+            {isCompact ? `${number} · ${formatBusinessDate(row.documentDate)}` : number}
           </UbText>
           {row.origin && <OriginBadge origin={row.origin} />}
         </UbStack>
       );
     },
   },
-  {
-    id: 'date',
-    header: t('sales.column.date'),
-    priority: 1,
-    cardSlot: 'meta',
-    widthShare: 16,
-    cell: (row) => {
-      const date = formatBusinessDate(row.documentDate);
-      if (!isCards)
-        return (
-          <UbText as="span" variant="body-sm" className="block whitespace-normal break-words">
-            {date}
-          </UbText>
-        );
-      const caption = `${row.number ?? t('sales.status.draft')} · ${date}`;
-      if (!row.origin) return caption;
-      const words = originWords(row.origin);
-      const from = t(words.id, {
-        module: words.moduleId ? t(words.moduleId) : words.module,
-        label: words.label ?? '',
-      });
-      return `${caption} · ${from}`;
-    },
-  },
+  ...(isCompact
+    ? []
+    : ([
+        {
+          id: 'date',
+          header: t('sales.column.date'),
+          priority: 1,
+          cardSlot: 'meta',
+          widthShare: 16,
+          cell: (row) => {
+            const date = formatBusinessDate(row.documentDate);
+            if (!isCards)
+              return (
+                <UbText as="span" variant="body-sm" className="block whitespace-normal break-words">
+                  {date}
+                </UbText>
+              );
+            const caption = `${row.number ?? t('sales.status.draft')} · ${date}`;
+            if (!row.origin) return caption;
+            const words = originWords(row.origin);
+            const from = t(words.id, {
+              module: words.moduleId ? t(words.moduleId) : words.module,
+              label: words.label ?? '',
+            });
+            return `${caption} · ${from}`;
+          },
+        },
+      ] satisfies UbDataGridColumn<InvoiceListRow>[])),
   {
     id: 'status',
     header: t('sales.column.status'),

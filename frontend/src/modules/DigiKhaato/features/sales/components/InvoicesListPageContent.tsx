@@ -19,6 +19,7 @@ import {
   UbViewportPageShell,
   UbSearchInput,
   UbStack,
+  useMediaQuery,
 } from 'src/design-system';
 import type { UbFilterSpec, UbFilterValues } from 'src/design-system';
 import {
@@ -61,6 +62,7 @@ export function InvoicesListPageContent(): React.JSX.Element {
   const { t } = useTranslation();
   const router = useAppRouter();
   const tier = useGridTier();
+  const wide = useMediaQuery('(min-width: 1280px)');
   // R-DEC-33: a phone scrolls one joined card list; a desktop table pages.
   const list = useInvoiceList(tier === 'cards' ? 'append' : 'replace');
 
@@ -93,8 +95,14 @@ export function InvoicesListPageContent(): React.JSX.Element {
   }, [canWrite, router]);
 
   const columns = useMemo(
-    () => createInvoiceColumns({ t, today: list.today, isCards: tier === 'cards' }),
-    [t, list.today, tier]
+    () =>
+      createInvoiceColumns({
+        t,
+        today: list.today,
+        isCards: tier === 'cards',
+        isCompact: tier !== 'cards' && !wide,
+      }),
+    [t, list.today, tier, wide]
   );
   const labels = useSalesGridLabels();
 

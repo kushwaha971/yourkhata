@@ -278,3 +278,24 @@ it('joins the next page of bills under the phone cards instead of paging', async
   view.unmount();
   media.mockRestore();
 });
+
+/** At 1024 px a full Date column beside the sidebar cut long bill numbers mid-character. */
+it('joins the date under the bill number below 1280 px', async () => {
+  const media = jest.spyOn(window, 'matchMedia').mockImplementation((query) => ({
+    matches: query === '(min-width: 768px)' || query === '(min-width: 1024px)',
+    media: query,
+    onchange: null,
+    addEventListener: () => undefined,
+    removeEventListener: () => undefined,
+    addListener: () => undefined,
+    removeListener: () => undefined,
+    dispatchEvent: () => false,
+  }));
+  signIn(['sales.invoice.read']);
+  const view = renderWithProviders(<InvoicesListPageContent />);
+  await screen.findByRole('columnheader', { name: 'Customer' });
+  expect(screen.queryByRole('columnheader', { name: 'Date' })).not.toBeInTheDocument();
+  expect(screen.getByText('INV/26-27/0002 · 24/09/2026')).toBeInTheDocument();
+  view.unmount();
+  media.mockRestore();
+});
