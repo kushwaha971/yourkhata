@@ -20,6 +20,8 @@ const credits = () => import('../api/creditNoteService');
 type Reject = { rejectValue: ApiErrorShape };
 
 export interface FlowListArg extends FlowListQuery {
+  /** Client presentation mode; invoiceListQuery whitelists wire parameters. */
+  readonly mode?: 'replace' | 'append';
   readonly kind: FlowKind;
 }
 

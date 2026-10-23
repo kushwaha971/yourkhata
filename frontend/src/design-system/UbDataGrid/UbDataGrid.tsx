@@ -95,6 +95,8 @@ export interface UbDataGridProps<TRow> {
   /** Optional complete toolbar composition; selection still uses the shared bulk bar. */
   readonly toolbar?: ReactNode;
   readonly beforeRows?: ReactNode;
+  /** Inside the clipped row region: mobile scroll-loading sentinel, never pinned. */
+  readonly afterRows?: ReactNode;
   readonly footer?: ReactNode;
   readonly variant?: 'panel' | 'register';
   readonly cardActions?: (row: TRow) => ReactNode;
@@ -308,6 +310,7 @@ export function UbDataGrid<TRow>({
   search,
   toolbar,
   beforeRows,
+  afterRows,
   footer,
   variant = 'panel',
   cardActions,
@@ -552,8 +555,10 @@ export function UbDataGrid<TRow>({
             )}
           </div>
         )}
+        {afterRows}
       </div>
-      {state === 'rows' &&
+      {pagination !== null &&
+        state === 'rows' &&
         (fillHeight ? (
           <UbBottomBar sticky={false} clearToBottom className="shrink-0">
             {pagination}

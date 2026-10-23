@@ -13,6 +13,7 @@ import { todayInTenantTz } from 'src/utils/dates';
 
 import {
   flowFiltersChanged,
+  sameFlowListQuery,
   selectSalesDocList,
   type SalesDocListState,
 } from '../redux/salesDocListSlice';
@@ -50,7 +51,10 @@ export interface UseSalesFlowListResult extends Omit<SalesDocListState, 'filters
   readonly refetch: () => void;
 }
 
-export const useSalesFlowList = (kind: FlowKind): UseSalesFlowListResult => {
+export const useSalesFlowList = (
+  kind: FlowKind,
+  mode: 'replace' | 'append' = 'replace'
+): UseSalesFlowListResult => {
   const dispatch = useAppDispatch();
   const router = useAppRouter();
   const search = useSearchParams();
@@ -86,6 +90,7 @@ export const useSalesFlowList = (kind: FlowKind): UseSalesFlowListResult => {
   const query = useMemo<FlowListArg>(
     () => ({
       kind,
+      mode,
       tab: filters.tab,
       dateFrom: filters.dateFrom,
       dateTo: filters.dateTo,
@@ -93,7 +98,7 @@ export const useSalesFlowList = (kind: FlowKind): UseSalesFlowListResult => {
       q: filters.q,
       page: filters.page,
     }),
-    [kind, filters]
+    [kind, mode, filters]
   );
 
   useEffect(() => {
@@ -165,8 +170,26 @@ export const useSalesFlowList = (kind: FlowKind): UseSalesFlowListResult => {
     void dispatch(fetchFlowDocuments(query));
   }, [dispatch, query]);
 
+  // URL/kind changes render before the fetch effect. Never label the previous source as this one.
+  const sourceMatches = sameFlowListQuery(
+    state.filters,
+    query,
+    mode === 'append' && filters.page > 1
+  );
   return {
     ...state,
+    ...(!sourceMatches
+      ? {
+          rows: [],
+          totals: null,
+          tabs: null,
+          hasAny: null,
+          total: 0,
+          page: filters.page,
+          status: 'loading' as const,
+          error: null,
+        }
+      : {}),
     filters,
     today,
     canRead,

@@ -4,6 +4,7 @@ import { resetAllFeatureState } from 'src/redux/actions';
 import { acceptInvalidation } from 'src/redux/invalidation/listener';
 import type { RootState } from 'src/redux/store';
 import type { ApiErrorShape, PageMeta, RequestStatus } from 'src/types/api.types';
+import { mergePageRows } from 'src/utils/mergePageRows';
 
 import { DEFAULT_ORDERING, DEFAULT_PAGE_SIZE, SELECTION_CAP } from '../constants/partyListDefaults';
 
@@ -208,11 +209,7 @@ const partyListSlice = createSlice({
           action.payload.mode === 'append' &&
           state.rowsQuery &&
           sameQuery(state.rowsQuery, action.meta.arg.params, { ignorePage: true })
-            ? [
-                ...new Map(
-                  [...state.rows, ...action.payload.rows].map((party) => [party.id, party])
-                ).values(),
-              ]
+            ? mergePageRows(state.rows, action.payload.rows)
             : [...action.payload.rows]
         ) as Draft<Party>[];
         state.meta = action.payload.meta;

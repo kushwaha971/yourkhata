@@ -128,3 +128,101 @@ requirement/must-keep contract to implementation and test/journey evidence with
 passed/missing/deferred/unproven status in the existing report. A high design
 score cannot excuse critical financial/access/data-loss or essential-flow gaps.
 No claim that this research or all-module acceptance is already complete.
+
+
+## LATEST CHECKPOINT —23 October2026 (owner requested commit/push)
+
+This section supersedes stale Next/current-handoff statements below/elsewhere.
+Continue the existing revamp on dev; do not start a new plan. Read AGENTS.md,
+CLAUDE.md, revamp README/12/02,09 §1, DESIGN-SYSTEM and counter-mode.html.
+Preserve untracked ims-platform/; never reset or blindly stage it.
+
+CURRENT WORK IS IN PROGRESS, NOT FINAL ACCEPTANCE. Parent delivered commit is
+477916b1. The owner explicitly requested committing this unfinished checkpoint.
+No final new rating, all-module completion or deployment claim is justified.
+
+R-DEC-33 is strict across previously verified screens too: desktop tables with
+bounded row scrolling and visible pagination; mobile joined cards with loading
+next batches on scroll and manual retry/fallback, no desktop page arrows.
+Sentinel belongs INSIDE the card scroll region, not pinned where it fetches
+all pages. Preserve position, deduplicate IDs, reset on filter/context changes,
+retain cards on failed append.32px chip face/44px mobile targets. Compact title
+and New in header, one list search+Filters row, useful chips, concise summary.
+No duplicate full-width search: global Shop search is a44px icon on lists.
+Home has no list search, so its approved prominent Find or start field remains.
+Dashboard/forms/settings follow their own approved composition, not a table.
+Owner supplied21Oct22:41 mobile Customers and Bills/printing screenshots as
+reference. Live Claude artifact has not been freshly inspected in this piece.
+
+IMPLEMENTED IN THIS CHECKPOINT
+- Estimates/Orders/Challans/Credit Notes share the approved compact register,
+  visible status chips and server totals. Mobile append Redux mode uses existing
+  paging APIs; latest request/kind/filter fences; render-time stale-source guard.
+- Shared grid afterRows slot keeps load-next inside scrolling cards; UbLoadMore
+  has optional automatic/repeatWhileVisible controls and44px manual fallback.
+  Identity merge helper reused in existing party reducer (behavior preserved).
+- Compact mobile global search; Home command field retained. Shared filter
+  button40px matches search, with44px mobile hit area; explicit small filters
+  remain32px. Active chip reveals horizontally without vertical page scrolling.
+- Challans no longer show Open credit. Credit-note All renamed Recorded because
+  server All intentionally excludes draft/void; empty recorded view offers Show
+  drafts when source counts say drafts exist. No generic New return.
+- Latest1024 fix: use existing min-width1280 media query, NOT grid full tier
+  (full begins1024), join date into identity below1280; wide date stays separate.
+  Wrap long document references and titles. This latest fix still needs LOOK.
+
+VERIFICATION — DO NOT OVERSTATE
+- Before latest compact-breakpoint changes,421 suites/4,663 frontend tests passed,
+  full build/types/lint/locales/contrast and corrected bundle gate passed.
+-75 selected backend sales tests passed (6 deprecation warnings). No backend
+  source/schema/API/financial calculation changes.104 local draft API fixtures
+  (26/kind) were created for real paging, never issued/paid. Local QA only.
+- The full four-kind sweep had Orders green, other English runs red at1024:
+  Estimates/Credit Notes dates clipped; Challan first-use title clipped. Hindi
+  runs passed. These failures are not final green. Fixes are now implemented;
+  repeat the exact sweep after latest build/restart. The current focused test
+  group and latest production build pass; exact checkpoint gates in report.
+- Earlier phone probe:56px shell header,44px global icon, exactly one list
+  search, cards62% of usable844px viewport;25→26 source-backed append, manual
+  failure retry, no automatic retry loop, query reset. Recheck after final build.
+- Initial static-asset500/login failures were serving setup: rebuilding deletes
+  standalone copied static/public; always restart and recopy AFTER each build.
+- No final performance A/B for this piece, final all-frame LOOK or final rating.
+  Do not reuse477916b1 performance numbers as if they measured current code.
+
+IMMEDIATE NEXT
+1. Finish exact-current full gates sequentially (Jest before build), then restart
+   task frontend with copied static/public and verify a real JS asset200.
+2. e2e/revamp-bills.mjs now supports --kind=estimate|sales_order|delivery_challan|
+   credit_note, --locale, --widths, --themes. Use390/320/1024/1280 light/dark and
+   Hindi320/1280. Reused source-backed data with explicit synthetic UI states.
+   Credit-note draft fixture path uses tab=draft; server Recorded is unchanged.
+3. e2e/mobile-sales-contract.mjs: actual append failure/retry, query reset,
+   no eager page2, one search,40px toolbar match, active-chip visible, cards
+   >=60% usable normal phone viewport, desktop table/pager. --kinds/--widths
+   supported. Run all4 kinds/phone+desktop; fix real failures before rating.
+4. LOOK native frames/contact sheets, measure own-text bounds/contrast/hit tests.
+   Short600px with network banner is a separate stress case, not60% guarantee.
+5. Quiet same-machine old/new/old/new perf using e2e/perf-app.mjs --reps=3
+   --only=nav --cases=shop.bills→estimates,shop.bills→orders,
+   shop.bills→challans,shop.bills→credit-notes. Parent477916b1 build is in chat
+   artifacts/mobile-cards-2026-10-22/baseline if still available; otherwise
+   create a clean baseline and cp -al node_modules, not a symlink.
+6. Update dated report,07 tracking,11 matrix,12 Next and BOTH prompts; commit
+   verified result, pushdev, verify remote SHA, report final screenshots/numbers.
+7. R-DEC-33 mobile follow-up is still PENDING for Bills, Customers, Suppliers,
+   Purchases and other lists. Shared primitives existing does not migrate them.
+   Verify Home after shared shell changes against its approved reference.
+   Continue each list group, then purchase detail/order conversion/returns and
+   remaining source modules under R-DEC-27; approved remaining Home workflows LAST.
+
+Boundaries: separate user/business/app/book/role access, no phone-number-based
+access or automatic netting, internal costs never customer-facing, editable
+outgoing messages/no autosend, weighted-average supplier-return stock cost,
+original bill credit amount. Library/Lending financial contracts frozen.
+No package/new engine; DS reuse, no raw feature JSX, lazy overlays. Use electrical
+examples and Radhe Krishna Enterprises. Ratings provisional and scoped; no
+competitor superiority or physical/PWA/hardware/research claim without evidence.
+No production/Railway writes. Commit attribution: Assisted-by: OpenAI Codex.
+
+Exact23Oct checkpoint verification: changed-file lint0, type-check0,7 focused suites/84 tests pass (3.864s); latest production build passed. Full final browser/LOOK/A-B remains pending.

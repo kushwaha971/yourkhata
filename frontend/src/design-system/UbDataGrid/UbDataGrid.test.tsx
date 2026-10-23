@@ -978,3 +978,29 @@ it('preserves the row offset when a mobile register appends another page', () =>
   );
   expect(region.scrollTop).toBe(0);
 });
+
+it('keeps the mobile load-next sentinel inside the row scroll region', () => {
+  /** R-DEC-33: a pinned sentinel stays visible and can fetch every page without scrolling. */
+  render(
+    <UbDataGrid
+      rows={ROWS}
+      columns={COLUMNS}
+      rowId={(r) => r.id}
+      rowName={(r) => r.name}
+      state="rows"
+      labels={LABELS}
+      emptyStates={EMPTY}
+      caption="Cards"
+      page={PAGE}
+      onPageChange={jest.fn()}
+      tier="cards"
+      fillHeight
+      footer={null}
+      afterRows={<button type="button">Load next cards</button>}
+    />
+  );
+  expect(screen.getByRole('region', { name: 'Cards' })).toContainElement(
+    screen.getByRole('button', { name: 'Load next cards' })
+  );
+  expect(screen.queryByTestId('ub-grid-pagination')).not.toBeInTheDocument();
+});

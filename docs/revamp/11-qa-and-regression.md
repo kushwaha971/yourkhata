@@ -93,3 +93,8 @@ Research not yet performed is unproven. Requirements not implemented are not
 passed. Preserve critical correctness/access/data-recovery gates independently
 of ratings. Competition does not justify unnecessary features or copying another
 product's appearance. No claim here that all modules have met these gates.
+
+
+### R-DEC-33 amendment ·22Oct2026
+
+Earlier mobile manual/arrow-pager matrix acceptance is superseded. Existing desktop verification remains; Customers/Suppliers/Bills/Purchases mobile follow-up is pending. Phone acceptance: joined cards, scroll-next with accessible fallback, one list-search field and compact global search icon. Measure header height, card-area share, offset preservation, no eager fetch-all, duplicate IDs, failed-append retry and filter/context reset. Desktop remains a table with reachable pagination. This is not a whole-module completion claim.

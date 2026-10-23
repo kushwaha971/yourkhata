@@ -18,10 +18,12 @@ export const createFlowColumns = ({
   t,
   kind,
   isCards,
+  isCompact = false,
 }: {
   readonly t: TranslateFn;
   readonly kind: FlowKind;
   readonly isCards: boolean;
+  readonly isCompact?: boolean;
 }): readonly UbDataGridColumn<InvoiceListRow>[] => [
   {
     id: 'party',
@@ -32,27 +34,41 @@ export const createFlowColumns = ({
     cell: (row) => {
       const name = row.party?.name ?? row.walkInName ?? t('sales.walkIn.label');
       const number = row.number ?? t('sales.status.draft');
-      if (isCards) return `${name} · ${number}`;
-      return (
-        <UbStack gap={0} className="min-w-0">
-          <UbText as="span" variant="body-sm" className="line-clamp-2">
+      if (isCards)
+        return (
+          <UbText
+            as="span"
+            variant="body-sm"
+            className="whitespace-normal break-words font-semibold"
+          >
             {name}
           </UbText>
-          <UbText as="span" variant="caption" tone="tertiary" className="ds-num">
-            {number}
+        );
+      return (
+        <UbStack gap={0} className="min-w-0">
+          <UbText as="span" variant="body-sm" className="whitespace-normal break-words">
+            {name}
+          </UbText>
+          <UbText as="span" variant="caption" tone="tertiary" className="ds-num whitespace-normal break-words">
+            {isCompact ? `${number} · ${formatBusinessDate(row.documentDate)}` : number}
           </UbText>
         </UbStack>
       );
     },
   },
+  ...(isCompact ? [] : ([
   {
     id: 'date',
     header: t('sales.column.date'),
     priority: 1,
     cardSlot: 'meta',
     widthShare: 12,
-    cell: (row) => formatBusinessDate(row.documentDate),
-  },
+    cell: (row) =>
+      isCards
+        ? [row.number, formatBusinessDate(row.documentDate)].filter(Boolean).join(' · ')
+        : formatBusinessDate(row.documentDate),
+  }
+  ] satisfies UbDataGridColumn<InvoiceListRow>[])),
   {
     id: 'status',
     header: t('sales.column.status'),
@@ -67,7 +83,7 @@ export const createFlowColumns = ({
       ),
   },
   // Shop item 3 — an order has no validity and no credit: its status says it all.
-  ...(kind === 'sales_order'
+  ...(kind === 'sales_order' || kind === 'delivery_challan'
     ? []
     : ([
         kind === 'estimate'

@@ -4,6 +4,7 @@ import { resetAllFeatureState } from 'src/redux/actions';
 import { acceptInvalidation } from 'src/redux/invalidation/listener';
 import { rootReducer, type RootState } from 'src/redux/store';
 import type { ApiErrorShape, RequestStatus } from 'src/types/api.types';
+import { mergePageRows } from 'src/utils/mergePageRows';
 
 import { INVOICE_PAGE_SIZE } from '../constants/salesConstants';
 
@@ -29,6 +30,7 @@ export interface SalesDocListState {
   status: RequestStatus;
   error: ApiErrorShape | null;
   filters: FlowListArg | null;
+  requestId: string | null;
   stale: boolean;
   staleUrgency: 'now' | 'next-mount' | null;
 }
@@ -44,11 +46,16 @@ const initialState: SalesDocListState = {
   status: 'idle',
   error: null,
   filters: null,
+  requestId: null,
   stale: false,
   staleUrgency: null,
 };
 
-const same = (a: FlowListArg | null, b: FlowListArg): boolean =>
+export const sameFlowListQuery = (
+  a: FlowListArg | null,
+  b: FlowListArg,
+  ignorePage = false
+): boolean =>
   !!a &&
   a.kind === b.kind &&
   a.tab === b.tab &&
@@ -56,7 +63,8 @@ const same = (a: FlowListArg | null, b: FlowListArg): boolean =>
   a.dateTo === b.dateTo &&
   a.partyId === b.partyId &&
   a.q === b.q &&
-  a.page === b.page;
+  (ignorePage || a.page === b.page) &&
+  (a.mode ?? 'replace') === (b.mode ?? 'replace');
 
 const salesDocListSlice = createSlice({
   name: 'salesDocList',
@@ -64,25 +72,41 @@ const salesDocListSlice = createSlice({
   reducers: {
     /** Rows AND totals clear together — a total over another filter's rows was never true. */
     flowFiltersChanged(state, action: PayloadAction<FlowListArg>) {
-      if (same(state.filters, action.payload)) return;
+      if (sameFlowListQuery(state.filters, action.payload)) return;
+      const appending =
+        action.payload.mode === 'append' &&
+        action.payload.page > 1 &&
+        sameFlowListQuery(state.filters, action.payload, true) &&
+        state.rows.length > 0;
       state.filters = action.payload as Draft<FlowListArg>;
-      state.rows = [];
-      state.totals = null;
-      state.tabs = null;
-      state.status = 'loading';
+      if (!appending) {
+        state.rows = [];
+        state.totals = null;
+        state.tabs = null;
+      }
+      state.status = appending ? 'refreshing' : 'loading';
       state.error = null;
     },
   },
   extraReducers: (builder) => {
     acceptInvalidation<SalesDocListState>('salesDocList')(builder);
     builder
-      .addCase(fetchFlowDocuments.pending, (state) => {
+      .addCase(fetchFlowDocuments.pending, (state, action) => {
+        state.requestId = action.meta.requestId;
         state.status = state.rows.length > 0 ? 'refreshing' : 'loading';
         state.error = null;
       })
       .addCase(fetchFlowDocuments.fulfilled, (state, action) => {
-        if (!same(state.filters, action.meta.arg)) return;
-        state.rows = action.payload.rows as Draft<InvoiceListRow>[];
+        if (
+          state.requestId !== action.meta.requestId ||
+          !sameFlowListQuery(state.filters, action.meta.arg)
+        )
+          return;
+        state.rows = (
+          action.meta.arg.mode === 'append' && action.meta.arg.page > 1
+            ? mergePageRows(state.rows, action.payload.rows)
+            : action.payload.rows
+        ) as Draft<InvoiceListRow>[];
         state.totals = action.payload.totals;
         state.tabs = action.payload.tabs;
         state.hasAny = action.payload.hasAny ?? null;
@@ -94,7 +118,12 @@ const salesDocListSlice = createSlice({
         state.staleUrgency = null;
       })
       .addCase(fetchFlowDocuments.rejected, (state, action) => {
-        if (action.meta.aborted) return;
+        if (
+          action.meta.aborted ||
+          state.requestId !== action.meta.requestId ||
+          !sameFlowListQuery(state.filters, action.meta.arg)
+        )
+          return;
         state.status = 'failed';
         state.error = (action.payload ?? null) as Draft<ApiErrorShape> | null;
       })

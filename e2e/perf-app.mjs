@@ -238,6 +238,11 @@ function navigations(vp) {
     { id: 'shop.customers→bills', start: '/customers', target: '^/sales/invoices$', tap: navLink('/sales/invoices'), kind: phone ? 'bottom tab' : 'sidebar row' },
     { id: 'shop.bill row→detail', start: '/sales/invoices', target: '^/sales/invoices/[0-9a-f-]{36}$', tap: customerRow(vp), kind: 'bill register row' },
   ];
+  for (const [slug, kind] of [['estimates','estimate'],['orders','sales_order'],['challans','delivery_challan'],['credit-notes','credit_note']]) {
+    list.push({ id: `shop.bills→${slug}`, start: '/sales/invoices', target: `^/sales/${slug}$`, kind: phone ? 'header sheet sales-kind link' : 'header sales-kind link',
+      before: phone ? async (page) => {await page.getByRole('button',{name:'More actions',exact:true}).filter({visible:true}).first().click();await page.getByRole('dialog').waitFor();} : undefined,
+      tap: (page) => page.getByTestId(`sales-section-${kind}`).filter({visible:true}).first() });
+  }
   if (phone) {
     list.push({ id: 'shop.bills→more', start: '/sales/invoices', target: '^/more$', tap: navLink('/more'), kind: 'bottom tab' });
     list.push({ id: 'shop.more→items', start: '/more', target: '^/items$', tap: mainLink('/items'), kind: 'More row (link)' });

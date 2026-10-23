@@ -1,6 +1,6 @@
 'use client';
 import { UbAmount, UbStack, UbText } from 'src/design-system';
-/** A filtered register's server totals. No extra cards, icons or hidden count. */
+/** Filtered server totals; status chips can carry the visible mobile count. */
 export function RecordTotals({
   label,
   count,
@@ -9,6 +9,7 @@ export function RecordTotals({
   testId,
   columns = false,
   compactShort = false,
+  countInMobileChips = false,
 }: Readonly<{
   label: string;
   count: number;
@@ -24,6 +25,8 @@ export function RecordTotals({
   columns?: boolean;
   /** Avoid duplicate count chrome on short phones; status chips still show the count. */
   compactShort?: boolean;
+  /** Keep the count accessible without repeating a count already visible in status chips. */
+  countInMobileChips?: boolean;
 }>): React.JSX.Element {
   return (
     <UbStack
@@ -37,7 +40,13 @@ export function RecordTotals({
       <UbText
         variant="body-sm"
         tone="secondary"
-        className={compactShort ? 'max-md:[@media(max-height:640px)]:sr-only' : undefined}
+        className={
+          countInMobileChips
+            ? 'sr-only md:not-sr-only'
+            : compactShort
+              ? 'max-md:[@media(max-height:640px)]:sr-only'
+              : undefined
+        }
       >
         {count} {countLabel}
       </UbText>

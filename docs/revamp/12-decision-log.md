@@ -257,6 +257,8 @@ markup. This does not change cost, tax or posting ownership.
 
 21 Oct2026 — R-DEC-31/32 viewport group1: Customers/Suppliers/Bills use shared row-only scroll and reachable paging. Manual append preserves position; result-set changes reset.522 measured final frames and416 suites/4,648 frontend tests pass; no financial writes/backend changes. Report: `docs/performance/2026-10-21-viewport-shop-registers.md`. Remaining lists stay pending in11.
 
+21 Oct2026 review in progress — remaining sales lists still used tall stat cards/status-in-sheet despite09 §1. Correct the complete approved register composition under R-DEC-29/31; do not count them as covered by Bills. Reproduced stale query input, Challan Open credit column, and older-source reply/error replacement; regressions precede correction. Evidence continues in `docs/performance/2026-10-21-viewport-sales-documents.md`; this is not a new backend workflow approval or completion claim.
+
 ## Next
 
 R-DEC-28 terminology checkpoint is delivered on dev; see the20-Oct label report
@@ -292,3 +294,17 @@ are not whole-Shop certification. Do not call remaining approved writes built.
 2. Owner answers the five open questions (Udhaar undo, reminder tabs, Close khata, Shop person bottom bar, "Plan ended"), plus R-DEC-03, R-DEC-04 and the BP items. These do not block step 1.
 3. Write the proposals the specs raised into 08 (BP-08 dual-role settle; Lending Today returning every loan and the loans / members N+1s; Library P-01…06; Lending FP-1…9; Shop P-08-01…06).
 4. List the six new overlay pieces from 12-shared-overlays in 06.
+
+
+## R-DEC-33 · Distinct mobile cards and compact search (22 Oct2026)
+
+Owner: "but in mobile these are not table they should be like cards and there should on scroll paginratuon right"; "in desktop and mobile there is diffrenr way to showing data"; "in mobile view half of the screen are taken by filter, search and chip and title"; "why there is two search". The supplied21Oct22:41 Customers/settings screenshots are the mobile composition reference.
+
+Desktop keeps tables and visible pagination. Mobile uses joined cards, scroll-next and a manual accessible fallback, without desktop page arrows. Put the sentinel inside the card scroll region, never pinned where it fetches every page. Preserve position and source scope, deduplicate overlapping pages, reset on filter/context changes and retain cards with retry on an append failure.
+
+Mobile has one visible list-search field. Global Shop search remains a44px header icon rather than another full-width search row. Compact title/New in the header, search+Filters, one quick-chip strip and a one-line summary; no FAB covering records/paging. Preserve touch targets and required data. Supplied settings-row reference informs that future screen; no new settings workflows or frozen financial changes are authorized here.
+
+This latest decision supersedes earlier mobile manual/arrow-paging acceptance and Next references: desktop viewport verification remains; Customers/Suppliers/Bills/Purchases mobile need follow-up. Finish the active sales-register/mobile shared composition and reverify before a final rating or push. Continue remaining module list groups, then R-DEC-27 workflows; Home stays last.
+
+
+23Oct2026 owner checkpoint request: "commit and push and give me updated prompt in same manner". Preserve current unfinished sales/mobile composition as an explicit IN-PROGRESS checkpoint. Latest continuation is the23Oct section in both revamp prompts; it supersedes stale Next entries. Latest1024 compact-breakpoint correction needs fresh full visual acceptance/performance. No final rating or all-module certification. R-DEC-33 follow-up includes previously verified Bills/Customers/Suppliers/Purchases; Home retains its approved single command field.

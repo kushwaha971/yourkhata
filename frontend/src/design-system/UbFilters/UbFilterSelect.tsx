@@ -43,9 +43,9 @@ export const SHEET_QUERY = '(max-width: 639px)';
 const panels = deferredModule(() => import('./filterPanels'));
 
 export const FILTER_BUTTON_CLASS = cn(
-  // Owner, 12 Oct 2026: smaller on a phone so a toolbar fits one row; `ub-hit`
-  // keeps the touch target at 44 px whatever the drawn height.
-  'ub-hit ds-body-s-regular inline-flex h-9 max-w-full shrink-0 items-center gap-1.5 rounded-control border px-2.5 sm:h-10 sm:gap-2 sm:px-3',
+  // R-DEC-33: match the 40 px search field; compact phone padding fits one row.
+  // `ub-hit` keeps a 44 px mobile target; explicit small chart filters remain 32 px.
+  'ub-hit ds-body-s-regular inline-flex h-10 max-w-full shrink-0 items-center gap-1.5 rounded-control border px-2.5 sm:gap-2 sm:px-3',
   'transition-colors duration-fast ease-standard motion-reduce:transition-none',
   'outline-none focus-visible:shadow-focus disabled:cursor-not-allowed disabled:opacity-60'
 );

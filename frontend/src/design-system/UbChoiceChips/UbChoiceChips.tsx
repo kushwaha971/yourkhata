@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useRef, type KeyboardEvent, type ReactNode } from 'react';
+import { useCallback, useLayoutEffect, useRef, type KeyboardEvent, type ReactNode } from 'react';
 
 import { cn } from 'src/utils/cn';
 
@@ -37,6 +37,8 @@ export interface UbChoiceChipsProps<T extends string> {
   readonly disabled?: boolean;
   readonly onBlur?: () => void;
   readonly className?: string;
+  /** Horizontal register strips keep the active status visible; wrapped form choices stay unchanged. */
+  readonly revealSelected?: boolean;
 }
 
 export function UbChoiceChips<T extends string>({
@@ -50,12 +52,30 @@ export function UbChoiceChips<T extends string>({
   disabled,
   onBlur,
   className,
+  revealSelected = false,
 }: Readonly<UbChoiceChipsProps<T>>): React.JSX.Element {
   const refs = useRef<(HTMLButtonElement | null)[]>([]);
   const checkedIndex = options.findIndex((option) => option.value === value);
   /* Roving tabindex: the checked chip is the one in the tab order, or the
      first when nothing is checked yet — so Tab reaches the group once. */
   const tabStop = checkedIndex >= 0 ? checkedIndex : 0;
+  useLayoutEffect(() => {
+    if (!revealSelected) return undefined;
+    const button = refs.current[checkedIndex];
+    const group = button?.parentElement;
+    if (!button || !group) return undefined;
+    const reveal = () => {
+      if (group.scrollWidth <= group.clientWidth) return;
+      const item = button.getBoundingClientRect();
+      const frame = group.getBoundingClientRect();
+      if (item.left < frame.left) group.scrollLeft -= frame.left - item.left;
+      else if (item.right > frame.right) group.scrollLeft += item.right - frame.right;
+    };
+    reveal();
+    const observer = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(reveal);
+    observer?.observe(group);
+    return () => observer?.disconnect();
+  }, [checkedIndex, options, revealSelected]);
 
   const onKeyDown = useCallback(
     (event: KeyboardEvent<HTMLDivElement>) => {

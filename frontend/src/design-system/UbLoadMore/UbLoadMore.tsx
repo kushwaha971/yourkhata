@@ -19,6 +19,10 @@ import { cn } from 'src/utils/cn';
 export interface UbLoadMoreProps {
   readonly onLoadMore: () => void;
   readonly loading: boolean;
+  /** Failed append keeps its manual retry without an automatic retry loop. */
+  readonly automatic?: boolean;
+  /** Prevent a stationary sentinel chaining every page after a short/overlapping response. */
+  readonly repeatWhileVisible?: boolean;
   /** "Loading more…" — said while the next page is on its way. */
   readonly loadingLabel: string;
   /** "Show more" — the fallback button's name. */
@@ -31,6 +35,8 @@ export interface UbLoadMoreProps {
 function UbLoadMoreBase({
   onLoadMore,
   loading,
+  automatic = true,
+  repeatWhileVisible = true,
   loadingLabel,
   moreLabel,
   as = 'div',
@@ -38,19 +44,23 @@ function UbLoadMoreBase({
 }: Readonly<UbLoadMoreProps>): React.JSX.Element {
   const node = useRef<HTMLElement | null>(null);
   const latest = useRef(onLoadMore);
+  const visible = useRef(false);
   useEffect(() => {
     latest.current = onLoadMore;
   }, [onLoadMore]);
 
   useEffect(() => {
     const target = node.current;
-    if (!target || loading || typeof IntersectionObserver !== 'function') return undefined;
+    if (!target || loading || !automatic || typeof IntersectionObserver !== 'function')
+      return undefined;
     const observer = new IntersectionObserver((entries) => {
-      if (entries.some((entry) => entry.isIntersecting)) latest.current();
+      const intersects = entries.some((entry) => entry.isIntersecting);
+      if (intersects && (repeatWhileVisible || !visible.current)) latest.current();
+      visible.current = intersects;
     });
     observer.observe(target);
     return () => observer.disconnect();
-  }, [loading]);
+  }, [loading, automatic, repeatWhileVisible]);
 
   const Tag = as;
   return (
@@ -72,7 +82,7 @@ function UbLoadMoreBase({
           tabIndex={as === 'li' ? -1 : 0}
           onMouseDown={(event) => event.preventDefault()}
           onClick={() => latest.current()}
-          className="ds-body-s-medium text-text-accent hover:underline"
+          className="ub-hit ds-body-s-medium min-h-11 px-3 text-text-accent hover:underline"
         >
           {moreLabel}
         </button>

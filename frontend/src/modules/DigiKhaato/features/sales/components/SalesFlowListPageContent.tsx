@@ -1,23 +1,25 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useMemo } from 'react';
 
-import { FileText, IndianRupee, Plus, Receipt } from 'lucide-react';
+import { Plus } from 'lucide-react';
 
-import { SummaryStatGrid } from 'src/components/stats/SummaryStatGrid';
+import { RecordTotals } from 'src/components/records/RecordTotals';
 import {
   UbActionLink,
   UbButton,
-  UbDateRangePicker,
+  UbChoiceChips,
+  UbPeriodSelect,
   UbEmptyState,
   UbFilterSheet,
   UbPageHeader,
   UbPageHeaderMobileActions,
+  UbLoadMore,
   UbPageShell,
+  UbViewportPageShell,
   UbSearchInput,
   UbStack,
-  UbStatCard,
-  UbTabs,
+  useMediaQuery,
 } from 'src/design-system';
 import type { UbFilterSpec, UbFilterValues } from 'src/design-system';
 import {
@@ -27,9 +29,9 @@ import {
   type UbGridState,
 } from 'src/design-system/UbDataGrid';
 import { useAppRouter } from 'src/hooks/useAppRouter';
-import { useDebounce } from 'src/hooks/useDebounce';
+import { useCommittedSearch } from 'src/hooks/useCommittedSearch';
 import { useTranslation } from 'src/hooks/useTranslation';
-import { formatInr } from 'src/utils/money';
+import { formatBusinessDate } from 'src/utils/dates';
 
 import {
   DEFAULT_INVOICE_PRESET,
@@ -67,7 +69,8 @@ export function SalesFlowListPageContent({
   const { t } = useTranslation();
   const router = useAppRouter();
   const tier = useGridTier();
-  const list = useSalesFlowList(kind);
+  const wide = useMediaQuery('(min-width: 1280px)');
+  const list = useSalesFlowList(kind, tier === 'cards' ? 'append' : 'replace');
   const labels = useSalesGridLabels();
   const { ns, stat } = COPY[kind];
   const newHref = `${FLOW_HOME[kind]}/new`;
@@ -78,18 +81,16 @@ export function SalesFlowListPageContent({
         ? 'sales.challan.new'
         : 'sales.estimate.new';
 
-  const [search, setSearch] = useState(list.filters.q);
-  const debounced = useDebounce(search, INVOICE_SEARCH_DEBOUNCE_MS);
-  const { setQuery, filters, refetch, clearFilters, error, canWrite } = list;
-  useEffect(() => {
-    if (debounced.trim() !== filters.q.trim()) setQuery(debounced);
-  }, [debounced, filters.q, setQuery]);
+  const { setQuery, filters, refetch, clearFilters, error, canWrite, setTab } = list;
+  const [search, setSearch] = useCommittedSearch(filters.q, setQuery, INVOICE_SEARCH_DEBOUNCE_MS);
 
   const columns = useMemo(
-    () => createFlowColumns({ t, kind, isCards: tier === 'cards' }),
-    [t, kind, tier]
+    () => createFlowColumns({ t, kind, isCards: tier === 'cards', isCompact: tier !== 'cards' && !wide }),
+    [t, kind, tier, wide]
   );
   const newEstimate = canWrite && kind !== 'credit_note';
+  const existingDrafts =
+    kind === 'credit_note' && filters.tab === 'all' && (list.tabs?.draft ?? 0) > 0;
   const emptyStates = useMemo<UbDataGridEmptyStates>(
     () => ({
       firstUse: {
@@ -108,8 +109,11 @@ export function SalesFlowListPageContent({
         title: t(`${ns}.empty.filtered`),
         description: t('sales.empty.filteredBody'),
         action: (
-          <UbButton variant="secondary" onClick={clearFilters}>
-            {t('common.action.clearFilters')}
+          <UbButton
+            variant="secondary"
+            onClick={existingDrafts ? () => setTab('draft') : clearFilters}
+          >
+            {t(existingDrafts ? 'sales.flow.showDrafts' : 'common.action.clearFilters')}
           </UbButton>
         ),
       },
@@ -125,18 +129,32 @@ export function SalesFlowListPageContent({
         ),
       },
     }),
-    [t, ns, newEstimate, router, newHref, newLabelId, clearFilters, error, refetch]
+    [
+      t,
+      ns,
+      newEstimate,
+      router,
+      newHref,
+      newLabelId,
+      clearFilters,
+      error,
+      refetch,
+      existingDrafts,
+      setTab,
+    ]
   );
 
   const narrowed =
     filters.tab !== 'all' || !!filters.q.trim() || filters.preset !== DEFAULT_INVOICE_PRESET;
-  const gridState: UbGridState =
-    list.status === 'loading' || (list.status === 'idle' && list.canRead)
+  const keepingCards = tier === 'cards' && filters.page > 1 && list.rows.length > 0;
+  const gridState: UbGridState = keepingCards
+    ? 'rows'
+    : list.status === 'loading' || (list.status === 'idle' && list.canRead)
       ? 'loading'
       : list.status === 'failed'
         ? 'error'
         : list.rows.length === 0
-          ? narrowed
+          ? narrowed || list.hasAny === true
             ? 'filtered-empty'
             : 'empty'
           : 'rows';
@@ -150,15 +168,15 @@ export function SalesFlowListPageContent({
       FLOW_TABS[kind].map((value) => {
         const count = list.tabs?.[value];
         const label = t(`${ns}.tab.${value}`);
-        return { value, label: count ? `${label} · ${count}` : label };
+        return { value, label: count !== undefined ? `${label} · ${count}` : label };
       }),
     [t, ns, kind, list.tabs]
   );
   const rowId = useCallback((row: InvoiceListRow) => row.id, []);
   const rowName = useCallback(
     (row: InvoiceListRow) =>
-      `${row.number ?? ''} ${row.party?.name ?? row.walkInName ?? ''}`.trim(),
-    []
+      `${row.number ?? t('sales.status.draft')} · ${row.party?.name ?? row.walkInName ?? ''} · ${formatBusinessDate(row.documentDate)}`.trim(),
+    [t]
   );
   const openRow = useCallback(
     (row: InvoiceListRow) => router.push(flowRowHref(kind, row.id, row.status)),
@@ -183,22 +201,8 @@ export function SalesFlowListPageContent({
      this kind at all is reduced to the empty card. */
   const emptyBook = list.status === 'succeeded' && list.rows.length === 0 && list.hasAny === false;
   const phone = tier === 'cards';
-  /* On a phone: the search and ONE Filters button holding the tabs and the
-     period; each default reads as "no filter". */
+  // Status stays visible; the sheet holds only the less frequent period choices.
   const phoneSpecs: UbFilterSpec[] = [
-    {
-      kind: 'single',
-      key: 'tab',
-      label: t('sales.tab.label'),
-      anyLabel: t(`${ns}.tab.all`),
-      options: FLOW_TABS[kind]
-        .filter((tab) => tab !== 'all')
-        .map((value) => ({
-          value,
-          label: t(`${ns}.tab.${value}`),
-          hint: list.tabs?.[value] ? String(list.tabs[value]) : undefined,
-        })),
-    },
     {
       kind: 'single',
       key: 'preset',
@@ -221,7 +225,6 @@ export function SalesFlowListPageContent({
   ];
   const custom = filters.preset === 'custom';
   const phoneValues: UbFilterValues = {
-    tab: filters.tab === 'all' ? '' : filters.tab,
     preset: filters.preset === DEFAULT_INVOICE_PRESET || custom ? '' : filters.preset,
     dateFrom: custom ? filters.dateFrom : '',
     dateTo: custom ? filters.dateTo : '',
@@ -229,7 +232,7 @@ export function SalesFlowListPageContent({
   const applyPhone = (next: UbFilterValues) => {
     const ranged = Boolean(next.dateFrom || next.dateTo);
     list.applyFilters({
-      tab: (next.tab || 'all') as FlowTab,
+      tab: filters.tab,
       preset: ranged ? 'custom' : ((next.preset || DEFAULT_INVOICE_PRESET) as InvoicePreset),
       dateFrom: next.dateFrom || filters.dateFrom,
       dateTo: next.dateTo || filters.dateTo,
@@ -241,31 +244,28 @@ export function SalesFlowListPageContent({
       onChange={setSearch}
       placeholder={t('sales.search.placeholder')}
       aria-label={t('sales.search.label')}
-      className={phone ? 'min-w-0 flex-1' : 'w-56'}
+      className="min-w-0 flex-1"
     />
   );
   const stats = totals ? (
-    <SummaryStatGrid storageKey="salesFlows">
-      <UbStatCard
-        icon={<Receipt className="h-4 w-4" aria-hidden />}
-        label={t(stat)}
-        value={formatInr(totals.grandTotal)}
-      />
-      {kind === 'credit_note' ? (
-        <UbStatCard
-          icon={<IndianRupee className="h-4 w-4" aria-hidden />}
-          label={t('sales.creditNote.openCredit')}
-          value={formatInr(totals.amountDue)}
-        />
-      ) : (
-        <UbStatCard
-          icon={<FileText className="h-4 w-4" aria-hidden />}
-          // The list's own noun: an estimates list counts estimates, not "Bills".
-          label={t(`${ns}.count`)}
-          value={String(totals.count)}
-        />
-      )}
-    </SummaryStatGrid>
+    <RecordTotals
+      compactShort
+      countInMobileChips
+      label={t('sales.flow.filteredTotals')}
+      count={totals.count}
+      countLabel={t(`${ns}.count`)}
+      testId="sales-flow-summary"
+      figures={[
+        {
+          key: 'total',
+          label: t(kind === 'credit_note' && filters.tab === 'draft' ? 'sales.column.total' : stat),
+          amount: totals.grandTotal,
+        },
+        ...(kind === 'credit_note'
+          ? [{ key: 'open', label: t('sales.creditNote.openCredit'), amount: totals.amountDue }]
+          : []),
+      ]}
+    />
   ) : null;
   const grid = (
     <UbDataGrid
@@ -286,12 +286,44 @@ export function SalesFlowListPageContent({
       }}
       onPageChange={list.setPage}
       onRowOpen={openRow}
+      resetScrollOnPageChange={!phone}
+      scrollResetKey={JSON.stringify([
+        kind,
+        filters.q,
+        filters.tab,
+        filters.dateFrom,
+        filters.dateTo,
+      ])}
+      busy={list.status === 'refreshing'}
+      footer={phone ? null : undefined}
+      afterRows={
+        phone && gridState === 'rows' && list.page * list.pageSize < list.total ? (
+          <UbLoadMore
+            loading={list.status === 'loading' || list.status === 'refreshing'}
+            automatic={list.status !== 'failed'}
+            repeatWhileVisible={false}
+            loadingLabel={t('common.search.loadingMore')}
+            moreLabel={t(
+              list.status === 'failed' ? 'common.action.retry' : 'common.search.showMore'
+            )}
+            className={list.status === 'failed' ? 'pb-20' : undefined}
+            onLoadMore={() => {
+              if (list.status === 'failed') list.refetch();
+              else if (list.status === 'succeeded') list.setPage(list.page + 1);
+            }}
+          />
+        ) : undefined
+      }
       cardAvatar={false}
+      cardLayout="stacked"
+      variant="register"
+      fillHeight
     />
   );
   return (
-    <UbPageShell>
+    <UbViewportPageShell>
       <UbPageHeader
+        wrapTitle
         title={t(`${ns}.listTitle`)}
         actions={<SalesSectionLinks current={kind} />}
         primaryAction={
@@ -307,28 +339,32 @@ export function SalesFlowListPageContent({
             </UbActionLink>
           ) : undefined
         }
-        /* docs/mobile-redesign (A3) — on a phone: a worded ⋯ sheet and the
-           primary action as the floating button. Desktop is unchanged. */
+        /* R-DEC-33: phone New stays in the compact title row, never above the cards. */
         renderMobileActions={(actions) => (
           <UbPageHeaderMobileActions
             actions={actions}
             mobile={{
               menuLabel: t('common.action.moreActions'),
               closeLabel: t('common.action.close'),
+              primaryPlacement: 'header',
               // The empty book's one button is in the middle of the screen.
               primary:
                 newEstimate && !emptyBook
                   ? {
                       label: t(newLabelId),
                       icon: <Plus className="h-6 w-6" aria-hidden />,
-                      href: newHref,
+                      onClick: () => router.push(newHref),
                     }
                   : undefined,
             }}
           />
         )}
       />
-      <UbStack gap={4} data-testid={`${kind}-list-screen`}>
+      <UbStack
+        gap={3}
+        className="min-h-0 flex-1 !shrink max-md:[@media(max-height:640px)]:gap-1"
+        data-testid={`${kind}-list-screen`}
+      >
         {emptyBook ? (
           /* Owner, 12 Oct 2026: an empty book is one sentence and one button —
              no period, ₹0 totals, tabs or search over nothing. */
@@ -338,60 +374,58 @@ export function SalesFlowListPageContent({
             description={emptyStates.firstUse.description}
             action={emptyStates.firstUse.action}
           />
-        ) : phone ? (
+        ) : (
           <>
-            <UbStack direction="row" gap={2} align="center">
+            <UbStack direction="row" align="center" className="flex-wrap gap-3">
               {searchBox}
-              <UbFilterSheet
-                compact
-                specs={phoneSpecs}
-                values={phoneValues}
-                onApply={applyPhone}
-                labels={{
-                  title: t('common.filters.title'),
-                  apply: t('common.action.apply'),
-                  reset: t('common.action.reset'),
-                  close: t('common.action.close'),
-                }}
-              />
+              {phone ? (
+                <UbFilterSheet
+                  compact
+                  specs={phoneSpecs}
+                  values={phoneValues}
+                  onApply={applyPhone}
+                  labels={{
+                    title: t('common.filters.title'),
+                    apply: t('common.action.apply'),
+                    reset: t('common.action.reset'),
+                    close: t('common.action.close'),
+                  }}
+                />
+              ) : (
+                <UbPeriodSelect<InvoicePreset>
+                  presets={presets}
+                  value={filters.preset}
+                  customValue="custom"
+                  from={filters.dateFrom}
+                  to={filters.dateTo}
+                  max={list.today}
+                  onChange={(preset, from, to) => {
+                    if (preset === 'custom' && from && to) list.setRange(from, to);
+                    else list.setPreset(preset);
+                  }}
+                  labels={{
+                    period: t('sales.period.label'),
+                    from: t('sales.period.from'),
+                    to: t('sales.period.to'),
+                    apply: t('common.action.apply'),
+                    close: t('common.action.close'),
+                  }}
+                />
+              )}
             </UbStack>
+            <UbChoiceChips<FlowTab>
+              revealSelected
+              value={filters.tab}
+              onChange={list.setTab}
+              options={tabs}
+              ariaLabel={t('sales.flow.status')}
+              className="flex-nowrap overflow-x-auto py-1.5 [&>button]:shrink-0"
+            />
             {stats}
             {grid}
           </>
-        ) : (
-          <>
-            <UbDateRangePicker<InvoicePreset>
-              presets={presets}
-              preset={filters.preset}
-              onPresetChange={list.setPreset}
-              customPreset="custom"
-              from={filters.dateFrom}
-              to={filters.dateTo}
-              onRangeChange={list.setRange}
-              max={list.today}
-              name={`${kind}-period`}
-              labels={{
-                presets: t('sales.period.label'),
-                from: t('sales.period.from'),
-                to: t('sales.period.to'),
-                apply: t('common.action.apply'),
-                close: t('common.action.close'),
-              }}
-            />
-            {stats}
-            <UbTabs<FlowTab>
-              value={filters.tab}
-              onValueChange={list.setTab}
-              tabs={tabs}
-              ariaLabel={t('sales.tab.label')}
-              layout="fit"
-              trailing={searchBox}
-            >
-              {grid}
-            </UbTabs>
-          </>
         )}
       </UbStack>
-    </UbPageShell>
+    </UbViewportPageShell>
   );
 }
