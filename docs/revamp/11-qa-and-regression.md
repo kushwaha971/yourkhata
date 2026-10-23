@@ -115,3 +115,15 @@ Earlier mobile manual/arrow-pager matrix acceptance is superseded. Existing desk
 | 1024 header density | rows 45% of viewport | weak, recorded |
 | Phone nav speed vs 477916b | +50 ms median at 4x CPU | regression, unprofiled |
 | Competitor comparison | none this session | unproven |
+
+### Bills register on a phone · 23 Oct 2026 (R-DEC-33, R-DEC-34)
+
+| Requirement | Evidence | Status |
+|---|---|---|
+| Phone joined cards, scroll-next, no pager/FAB | mobile-sales-contract invoices, 390/320 × 2 themes | passed |
+| Failed append keeps cards, retry 44 px, keeps scroll; new query resets | same | passed |
+| Cards ≥ 60% of phone | 390: 62.0%; 320: 58.5% with crore totals | weak at 320 |
+| 1024 long numbers whole | revamp-bills invoice 1024 light/dark | passed |
+| EN/HI, light/dark, all states | revamp-bills invoice | passed |
+| Phone open speed vs 7b27948 | −200 ms median at 4x CPU, both rounds (n=6) | passed, small sample |
+| Competitor comparison | none this session | unproven |
