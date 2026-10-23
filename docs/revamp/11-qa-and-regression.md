@@ -148,3 +148,13 @@ Earlier mobile manual/arrow-pager matrix acceptance is superseded. Existing desk
 | Archived supplier refusal | unit test only | partial |
 | Speed vs 216d456 | phone −93 ms both rounds; desktop mixed | passed, small sample |
 | Competitor comparison | none | unproven |
+
+### Items list on a phone · 24 Oct 2026 (R-DEC-33, R-DEC-34)
+
+| Requirement | Evidence | Status |
+|---|---|---|
+| Joined cards, chips, no pager/FAB, page fits | contract items 390/320/1280 × 2 themes, EN and HI | passed |
+| Low chip, open item, code + Enter, unknown code | e2e/items-phone.mjs 6/6 | passed |
+| Desktop pager in reach | contract 1280 | passed (regression fixed) |
+| Speed vs 925b2b3 | 4x CPU list open slower, round 1 heavy | open |
+| Competitor comparison | none | unproven |

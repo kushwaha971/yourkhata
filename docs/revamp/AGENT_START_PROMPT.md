@@ -174,8 +174,13 @@ DONE 23 Oct night: Purchase detail §6 incl. order -> bill and returns entry
 (report docs/performance/2026-10-23-purchase-detail.md; e2e/purchase-detail.mjs
 118/118). Defaults awaiting owner: "Supplier gave money back" hidden; Cancel
 order / Delete draft in the action row, not a ⋯ menu.
-1. Stock (Items list and stock screens), then Payments, Expenses, Reports
-   (keep exports/prints); approved Home workflows LAST.
+DONE 24 Oct: Items list on a phone §8.1 (report
+docs/performance/2026-10-24-items-phone-register.md; cards 69%). OPEN: list
+open at 4x CPU slower (round 1 heavy, both sizes). Deviations awaiting owner:
+no kind disc and no category on the phone card.
+1. Rest of Stock: item detail §8.2 (Adjust stock on the page), item form §8.3,
+   adjustment §8.4, low stock/summary §8.7 (Order from a low row), masters and
+   price lists; then Payments, Expenses, Reports; approved Home workflows LAST.
 
 ## LATEST CHECKPOINT —23 October2026 (owner requested commit/push)
 

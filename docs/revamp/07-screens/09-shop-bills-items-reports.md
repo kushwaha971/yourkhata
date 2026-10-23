@@ -436,7 +436,7 @@ Tracking: problems — purchase drafts have no device copy; payment403 ambiguity
 | Must keep working | potential sale value definition unchanged (RPT-06 BR-10; change request pending in 14). |
 | Fewer taps | Order from the low-stock row. |
 
-Tracking (all of §8): problems — Items buried in More; low stock has no next action · decisions — Adjust stock on the item page; Order from low stock · dependencies — purchase order prefill (route query, no new endpoint — verify the editor accepts it) · risks — "Order selected" grouping by supplier unproven · approval — pending · build — not started · tests — `item-pricing-review.mjs`, `stock-date-look.mjs`, inventory unit tests · outcome — —
+Tracking (all of §8): problems — Items buried in More; low stock has no next action · decisions — Adjust stock on the item page; Order from low stock · dependencies — purchase order prefill (route query, no new endpoint — verify the editor accepts it) · risks — "Order selected" grouping by supplier unproven · approval — proceeded under R-DEC-27/29 (owner: continue without stopping, 23 Oct) · build — §8.1 Items list delivered 24 Oct (joined cards, chips, stock in words; disc and category off the phone card, recorded); §8.2–8.7 not started · tests — `item-pricing-review.mjs`, `stock-date-look.mjs`, inventory unit tests, `e2e/items-phone.mjs`, contract `--kinds=items` · outcome — §8.1: docs/performance/2026-10-24-items-phone-register.md
 
 ---
 
