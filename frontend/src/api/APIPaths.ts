@@ -226,6 +226,8 @@ export const API_PATHS = {
   EXPENSE_CATEGORIES: '/expense-categories',
   /** EXP-03 — served by the expenses app for now (see its urls.py). */
   CASHBOOK: '/cashbook',
+  /** BP-17 — the Shop's counted-drawer observations. */
+  REPORT_CASH_COUNTS: '/reports/cash-counts',
   REPORT_DASHBOARD: '/reports/dashboard',
   REPORT_DASHBOARD_CHARTS: '/reports/dashboard/charts',
   REPORT_ITEM_TRADE: (id: string) => `/reports/items/${seg(id)}/trade`,
@@ -316,6 +318,8 @@ export const IDEMPOTENT_POST_PATHS: readonly string[] = [
   API_PATHS.DEBIT_NOTES,
   API_PATHS.PAYMENTS,
   API_PATHS.STOCK_ADJUSTMENTS,
+  // BP-17 — a retried count must not record the drawer twice.
+  API_PATHS.REPORT_CASH_COUNTS,
   // INV-01 — a retried item create must not mint a second SKU for one item.
   API_PATHS.ITEMS,
   API_PATHS.EXPENSES,

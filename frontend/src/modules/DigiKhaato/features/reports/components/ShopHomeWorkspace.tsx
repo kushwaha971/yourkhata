@@ -7,6 +7,7 @@ import { useSearchParams } from 'next/navigation';
 
 import { RefreshCw } from 'lucide-react';
 
+import { DEFAULT_TENANT_TIMEZONE } from 'src/constants';
 import {
   useIsMobileLayer,
   UbActionLink,
@@ -25,13 +26,15 @@ import { useAppSelector } from 'src/hooks/useAppStore';
 import { usePermissions } from 'src/hooks/usePermissions';
 import { useTranslation } from 'src/hooks/useTranslation';
 import { selectNetworkImpaired } from 'src/redux/slice/networkSlice';
-import { selectActiveTenant } from 'src/redux/slice/sessionSlice';
+import { selectActiveTenant, selectTenantTimezone } from 'src/redux/slice/sessionSlice';
 import { ROUTES } from 'src/routes';
 import { formatBusinessDate } from 'src/utils/dates';
 import { formatInr, isZeroAmount } from 'src/utils/money';
+import { formatInrUnbroken } from 'src/utils/moneyUnbroken';
 
 import { useCounter } from '../hooks/useCounter';
 import { useHomeCharts } from '../hooks/useHomeCharts';
+import { VARIANCE_TONE, countedWhen, varianceWords } from '../view-model/cashCountDisplay';
 import { advancesLine, tileHref, overdueHref, dueWeekHref } from '../view-model/dashboardDisplay';
 
 import { LowStockCard, RecentActivityList } from './DashboardLists';
@@ -54,6 +57,9 @@ const Charts = dynamic(() => import('./DashboardCharts').then((m) => m.Dashboard
 });
 const Payment = dynamic(() =>
   import('../../payments/components/PaymentFormDrawer').then((m) => m.PaymentFormDrawer)
+);
+const CashCount = dynamic(() =>
+  import('./CashCountDrawer').then((m) => m.CashCountDrawer)
 );
 const Remind = dynamic(() =>
   import('../../parties/components/ShopCustomerReminder').then((m) => m.ShopCustomerReminder)
@@ -84,6 +90,8 @@ export function ShopHomeWorkspace({
   const [payment, setPayment] = useState<PaymentContext | null>(null);
   const insightsId = useId();
   const [reminder, setReminder] = useState<LanePerson | null>(null);
+  const [counting, setCounting] = useState(false);
+  const timezone = useAppSelector(selectTenantTimezone) ?? DEFAULT_TENANT_TIMEZONE;
   const counter = useCounter(data.generatedAt, data.recentActivity);
   const overview = useHomeCharts(true, data.generatedAt);
   const canPay = hasModule('payments') && can('payments.payment.write');
@@ -374,12 +382,12 @@ export function ShopHomeWorkspace({
               <UbText
                 as="div"
                 variant="body"
-                className={`ds-num font-bold ${figure.amount && formatInr(figure.amount).length > 11 ? 'text-sm lg:text-xl' : 'text-xl'} ${figure.amount && !isZeroAmount(figure.amount) ? (figure.key === 'received' ? 'text-get' : figure.key === 'paidOut' ? 'text-give' : '') : ''}`}
+                className={`ds-num whitespace-nowrap font-bold ${figure.amount && formatInr(figure.amount).length > 11 ? 'text-sm lg:text-base' : 'text-xl'} ${figure.amount && !isZeroAmount(figure.amount) ? (figure.key === 'received' ? 'text-get' : figure.key === 'paidOut' ? 'text-give' : '') : ''}`}
               >
                 {figure.amount === null ? (
                   <UbSkeleton className="h-6 w-20" />
                 ) : (
-                  formatInr(figure.amount)
+                  formatInrUnbroken(figure.amount)
                 )}
               </UbText>
             </UbLink>
@@ -390,6 +398,52 @@ export function ShopHomeWorkspace({
                   ? t('reports.home.cashPhoneBasis')
                   : figure.caption}
             </UbText>
+            {figure.key === 'cash' && data.tiles.cashInHand?.lastCount !== undefined && (
+              /* The reference's "Not counted · Count cash": the count's state and
+                 the act share one caption line (Counter Mode, rev 3). */
+              <UbText
+                variant="caption"
+                className="ds-num"
+                data-testid="home-cash-count"
+              >
+                <UbText as="span" variant="inherit" data-testid="home-cash-count-last">
+                  {data.tiles.cashInHand.lastCount ? (
+                    <>
+                      <UbText as="span" variant="inherit" tone="secondary">
+                        {countedWhen(t, data.tiles.cashInHand.lastCount, data.asOf, timezone)}
+                      </UbText>
+                      {' · '}
+                      <UbText
+                        as="span"
+                        variant="inherit"
+                        className="font-semibold"
+                        tone={VARIANCE_TONE[varianceWords(t, data.tiles.cashInHand.lastCount.variance).kind]}
+                      >
+                        {varianceWords(t, data.tiles.cashInHand.lastCount.variance).text}
+                      </UbText>
+                    </>
+                  ) : (
+                    <UbText as="span" variant="inherit" tone="secondary">
+                      {t('reports.cashCount.notCounted')}
+                    </UbText>
+                  )}
+                </UbText>
+                {/* A phone's half-width cell puts the act on its own line, with
+                    room below it for the 44 px target inside the rounded card. */}
+                <UbText as="span" variant="inherit" tone="secondary" className="max-sm:hidden">
+                  {' · '}
+                </UbText>
+                <UbButton
+                  variant="link"
+                  size="sm"
+                  className="ub-hit inline h-auto px-0 align-baseline text-caption font-semibold [&>span]:underline [&>span]:underline-offset-2 max-sm:mb-1.5 max-sm:mt-1 max-sm:flex"
+                  onClick={() => setCounting(true)}
+                  data-testid="home-cash-count-open"
+                >
+                  {t('reports.cashCount.action')}
+                </UbButton>
+              </UbText>
+            )}
           </UbStack>
         ))}
         {overview.status === 'ready' && overview.charts.trend?.series.includes('sales') && (
@@ -494,6 +548,14 @@ export function ShopHomeWorkspace({
         </UbBox>
       </UbBox>
       {payment && <Payment context={payment} onClose={() => setPayment(null)} onSaved={refresh} />}
+      {counting && (
+        <CashCount
+          open
+          since={data.tiles.cashInHand?.since ?? null}
+          onClose={() => setCounting(false)}
+          onSaved={refresh}
+        />
+      )}
       {reminder && (
         <Remind
           party={{ ...reminder, mobile: reminder.mobile ?? null }}

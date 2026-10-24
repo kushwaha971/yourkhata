@@ -35,7 +35,7 @@ DASHBOARD_MAX_AGE_SECONDS = 60
 #: The payload's SHAPE version, used as `params_hash`. Bump it when the stored
 #: payload changes shape, so a row written by the previous release is a miss
 #: rather than a KeyError.
-DASHBOARD_PAYLOAD_VERSION = "dashboard-v2-shop-origins"
+DASHBOARD_PAYLOAD_VERSION = "dashboard-v3-cash-count"
 #: FR-3 / FR-4 / FR-5 — how many of each list.
 RECENT_ACTIVITY_LIMIT = 10
 TOP_DEBTORS_LIMIT = 5

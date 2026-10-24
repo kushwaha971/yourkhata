@@ -10,6 +10,7 @@ from __future__ import annotations
 from django.urls import path, re_path
 
 from apps.reports.views.aging import PayablesAgingView, ReceivablesAgingView
+from apps.reports.views.cash_count import CashCountView
 from apps.reports.views.dashboard import (
     DashboardChartsView,
     DashboardCounterView,
@@ -45,6 +46,8 @@ urlpatterns = [
         name="report-export-download",
     ),
     # RPT-01 / RPT-02 / RPT-05 / RPT-06 (W4-A).
+    # BP-17 (R-DEC-26) — counted drawer observations.
+    path("cash-counts", CashCountView.as_view(), name="report-cash-counts"),
     path("dashboard", DashboardView.as_view(), name="report-dashboard"),
     path("dashboard/counter", DashboardCounterView.as_view(), name="report-dashboard-counter"),
     path("dashboard/charts", DashboardChartsView.as_view(), name="report-dashboard-charts"),

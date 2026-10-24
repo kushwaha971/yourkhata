@@ -49,6 +49,8 @@ WATCHED_MODELS: tuple[str, ...] = (
     "inventory.StockAdjustment",
     "inventory.Item",
     "platform.Tenant",
+    # BP-17 — a new count changes the Shop cash tile's "last counted" line.
+    "reports.CashCount",
 )
 
 #: The cached reports a business write makes stale.

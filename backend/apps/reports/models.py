@@ -11,7 +11,7 @@ from __future__ import annotations
 
 from django.db import models
 
-from apps.common.models import TenantModel
+from apps.common.models import ImmutableModel, TenantModel
 
 
 class ExportStatus(models.TextChoices):
@@ -99,3 +99,49 @@ class Snapshot(TenantModel):
 
     def __str__(self) -> str:  # pragma: no cover - admin convenience
         return f"{self.report_name}:{self.as_of}:{self.computed_at:%H:%M:%S}"
+
+
+class CashCount(TenantModel, ImmutableModel):
+    """BP-17 (R-DEC-26) — the Shop's drawer as somebody COUNTED it, once.
+
+    An observation, never a posting. `expected_amount` is the Shop's cash by
+    its records (`money_position`, the day book's and the Home tile's one
+    definition) computed by the server inside the same transaction that writes
+    the row, so it is the figure the count was compared with and never a tile
+    the browser had been holding. `variance` is `counted - expected`, stored
+    so the history reads exactly what the merchant was shown; a CHECK keeps
+    the three in step.
+
+    Nothing else moves: no ledger line, no cash payment, no opening balance,
+    no adjustment. A short or over drawer is something the owner reads and
+    decides about; turning it into money would need its own business rule.
+    Append-only, by the model and by a trigger (migration 0003).
+    """
+
+    business_date = models.DateField()
+    counted_amount = models.DecimalField(max_digits=14, decimal_places=2)
+    expected_amount = models.DecimalField(max_digits=14, decimal_places=2)
+    variance = models.DecimalField(max_digits=14, decimal_places=2)
+    note = models.CharField(max_length=200, blank=True, default="")
+
+    class Meta:
+        db_table = "reports_cash_count"
+        verbose_name = "cash count"
+        verbose_name_plural = "cash counts"
+        indexes = [
+            models.Index(fields=["tenant", "-created_at"], name="ix_cash_count_tenant_created"),
+        ]
+        constraints = [
+            models.CheckConstraint(
+                condition=models.Q(counted_amount__gte=0), name="ck_cash_count_counted_nonneg"
+            ),
+            models.CheckConstraint(
+                condition=models.Q(
+                    variance=models.F("counted_amount") - models.F("expected_amount")
+                ),
+                name="ck_cash_count_variance",
+            ),
+        ]
+
+    def __str__(self) -> str:  # pragma: no cover - admin convenience
+        return f"cash count {self.business_date} {self.counted_amount}"

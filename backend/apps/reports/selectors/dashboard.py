@@ -337,9 +337,15 @@ def shop_drawer(*, tenant: Any, today: dt.date) -> dict[str, Any]:
         before=today + dt.timedelta(days=1),
         sources=frozenset({"payments", "expenses", "ledger"}),
     )
+    from apps.reports.selectors.cash_count import latest_count
+
+    amount = cash_in_hand(tenant=tenant, today=today)
     return {
-        "amount": _money(cash_in_hand(tenant=tenant, today=today)),
+        "amount": _money(amount),
         "since": since.isoformat() if since else None,
+        # BP-17 — the last time somebody COUNTED the drawer, with how far the
+        # records have moved since; `null` when nobody has.
+        "last_count": latest_count(tenant=tenant, expected_now=amount),
     }
 
 

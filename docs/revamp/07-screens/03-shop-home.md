@@ -82,7 +82,8 @@ Search reuses the existing paged Shop sources and role-specific pages/forms.
 BP-15 register follow-up reads bounded current source statuses and line counts,
 with source permissions and freshness guards. Unknown facts remain absent.
 Cash by records is not a physical count. R-DEC-26 approves Shop promises, cash
-observations and explicit settlement; these workflows are next, not delivered.
+observations and explicit settlement. Cash counts (BP-17) delivered 25 Oct:
+docs/performance/2026-10-25-cash-count.md. Promises and settlement are next.
 Historical role statements and personal Udhaar ownership remain separate.
 Evidence and exact remaining parity limits: docs/performance/2026-10-19-p5-shop-home.md.
 

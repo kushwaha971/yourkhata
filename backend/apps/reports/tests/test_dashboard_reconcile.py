@@ -680,7 +680,11 @@ def test_cash_in_hand_says_from_which_day_it_counts(tenant: Any) -> None:
     recorded in since then. The Udhaar book's cash and a UPI receipt never moved
     the Shop's drawer, so they do not start it."""
     ramesh = b.party(tenant)
-    assert _tiles(tenant)["shop_cash_in_hand"] == {"amount": "0.00", "since": None}
+    assert _tiles(tenant)["shop_cash_in_hand"] == {
+        "amount": "0.00",
+        "since": None,
+        "last_count": None,
+    }
 
     b.khata(tenant, TODAY - dt.timedelta(days=40), 300, party=ramesh, mode="cash")
     b.payment(tenant, TODAY - dt.timedelta(days=30), {"upi": 500}, party=ramesh)
@@ -698,6 +702,7 @@ def test_cash_in_hand_says_from_which_day_it_counts(tenant: Any) -> None:
     assert _tiles(tenant)["shop_cash_in_hand"] == {
         "amount": "-110.00",
         "since": (TODAY - dt.timedelta(days=15)).isoformat(),
+        "last_count": None,
     }
 
 

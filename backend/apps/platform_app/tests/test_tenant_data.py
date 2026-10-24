@@ -472,7 +472,7 @@ def test_deletion_removes_sales_imports_and_reports_rows(
     from apps.inventory.models import Item, Unit
     from apps.platform_app.models import Job
     from apps.platform_app.services.tenant_delete import enqueue_due
-    from apps.reports.models import Export
+    from apps.reports.models import CashCount, Export
     from apps.sales.models import SalesDocument, SalesDocumentLine
 
     seed_units()
@@ -498,6 +498,14 @@ def test_deletion_removes_sales_imports_and_reports_rows(
         )
         ImportJob.objects.create(tenant=t, kind="parties")
         Export.objects.create(tenant=t, report_name="list:parties")
+        # BP-17: append-only by trigger, which the job must disable to delete.
+        CashCount.objects.create(
+            tenant=t,
+            business_date=dt.date(2026, 9, 1),
+            counted_amount=Decimal("10.00"),
+            expected_amount=Decimal("12.00"),
+            variance=Decimal("-2.00"),
+        )
 
     _book(tenant)
     _book(other_tenant)
@@ -511,12 +519,14 @@ def test_deletion_removes_sales_imports_and_reports_rows(
     assert not SalesDocumentLine.objects.filter(document__tenant=tenant).exists()
     assert not ImportJob.objects.filter(tenant=tenant).exists()
     assert not Export.objects.filter(tenant=tenant).exists()
+    assert not CashCount.objects.filter(tenant=tenant).exists()
     assert not Item.objects.filter(tenant=tenant).exists()
     # The other business keeps all four.
     assert SalesDocument.objects.filter(tenant=other_tenant).count() == 1
     assert SalesDocumentLine.objects.filter(document__tenant=other_tenant).count() == 1
     assert ImportJob.objects.filter(tenant=other_tenant).count() == 1
     assert Export.objects.filter(tenant=other_tenant).count() == 1
+    assert CashCount.objects.filter(tenant=other_tenant).count() == 1
 
 
 def test_a_cancelled_request_is_never_executed(tenant: Any) -> None:

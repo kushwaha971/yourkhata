@@ -151,6 +151,9 @@ class AuditAction:
     EXPENSE_RECORDED = "expense.recorded"
     EXPENSE_VOIDED = "expense.voided"
     EXPENSE_CATEGORY_CREATED = "expense_category.created"
+    # ── BP-17 (R-DEC-26): a counted drawer. `after` carries the count, the
+    # records' figure it was compared with and the variance; nothing posts.
+    CASH_COUNTED = "cash.counted"
     # ── Sprint 8: PAY-01 … PAY-05 (17-02 §17.3, §16) ──────────────────────
     #
     # `payment.recorded` carries the full row and its allocations in `after`;

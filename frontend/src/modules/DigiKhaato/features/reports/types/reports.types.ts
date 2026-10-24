@@ -40,7 +40,12 @@ export interface DashboardTiles {
    * The Shop's drawer. `since` is the first day its cash moved (null: none yet;
    * absent: an older server). No opening cash is modelled (WP-06 Finding 4).
    */
-  readonly cashInHand?: { readonly amount: MoneyString; readonly since?: string | null };
+  readonly cashInHand?: {
+    readonly amount: MoneyString;
+    readonly since?: string | null;
+    /** BP-17 — the last counted drawer; null when nobody has counted, absent from an older server. */
+    readonly lastCount?: CashCount | null;
+  };
   /** WP-06 — the Shop's receipts dated today (sales is not cash). */
   readonly todayReceived?: CountAmount;
   /** WP-06 — purchase bills overdue (with the oldest's age) and due this week. */
@@ -280,4 +285,21 @@ export interface DayBookFilters {
   readonly types: readonly DayBookTypeFilter[];
   readonly includeVoid: boolean;
   readonly page: number;
+}
+
+/**
+ * BP-17 — one counted drawer: what was counted, the Shop's cash by its records
+ * that the SERVER compared it with when it was saved, and the difference.
+ * `movedSince` (newest count only) is how far the records moved after it.
+ */
+export interface CashCount {
+  readonly id: string;
+  readonly businessDate: string;
+  readonly countedAt: string;
+  readonly countedAmount: MoneyString;
+  readonly expectedAmount: MoneyString;
+  readonly variance: MoneyString;
+  readonly note: string;
+  readonly countedBy: { readonly id: string; readonly name: string } | null;
+  readonly movedSince?: MoneyString;
 }

@@ -35,6 +35,10 @@ jest.mock('../api/counterService', () => ({
 // The graphs have their own read and their own suite (DashboardCharts.test);
 // here they would be a second, unmocked request on every render.
 jest.mock('./DashboardCharts', () => ({ DashboardCharts: () => null }));
+jest.mock('../api/cashCountService', () => ({
+  ...jest.requireActual('../api/cashCountService'),
+  listCashCounts: jest.fn().mockResolvedValue({ counts: [], expectedNow: '800.00' }),
+}));
 
 const mockPush = jest.fn();
 const mockReplace = jest.fn();
@@ -234,7 +238,60 @@ it('labels negative cash as records and states the excluded opening cash', async
   const today = await screen.findByRole('region', { name: 'Today so far' });
   expect(within(today).getByText('Cash by your records')).toBeInTheDocument();
   expect(within(today).getByText(/opening cash excluded/)).toBeInTheDocument();
-  expect(within(today).getByText(/150\.00/)).toHaveTextContent(/[-−]/);
+  expect(within(today).getByText(/150\.00/)).toHaveTextContent(/[-‑−]/);
+});
+
+/** BP-17 — Home says when the drawer was last counted and how it compared. */
+it('says the drawer is not counted and offers Count cash on the same line', async () => {
+  const data = DATA();
+  service.getDashboard.mockResolvedValue({
+    ...data,
+    tiles: { ...data.tiles, cashInHand: { amount: '800.00', lastCount: null } },
+  });
+  signIn(OWNER);
+  renderWithProviders(<DashboardPageContent />);
+  const today = await screen.findByRole('region', { name: 'Today so far' });
+  expect(within(today).getByTestId('home-cash-count-last')).toHaveTextContent('Not counted');
+  expect(within(today).getByTestId('home-cash-count')).toHaveTextContent('Not counted · Count cash');
+  await userEvent.click(within(today).getByRole('button', { name: 'Count cash' }));
+  expect(await screen.findByTestId('cash-count-drawer')).toBeInTheDocument();
+});
+
+it("shows today's last count beside the records' figure in words", async () => {
+  const data = DATA();
+  service.getDashboard.mockResolvedValue({
+    ...data,
+    asOf: '2026-09-18',
+    tiles: {
+      ...data.tiles,
+      cashInHand: {
+        amount: '800.00',
+        lastCount: {
+          id: 'c1',
+          businessDate: '2026-09-18',
+          countedAt: '2026-09-18T10:42:00Z',
+          countedAmount: '750.00',
+          expectedAmount: '800.00',
+          variance: '-50.00',
+          note: '',
+          countedBy: null,
+          movedSince: '0.00',
+        },
+      },
+    },
+  });
+  signIn(OWNER);
+  renderWithProviders(<DashboardPageContent />);
+  const line = await screen.findByTestId('home-cash-count-last');
+  expect(line).toHaveTextContent('Counted at 16:12 · Short by ₹50.00');
+});
+
+it("offers no count to an older server's Home that sends no count", async () => {
+  service.getDashboard.mockResolvedValue(DATA());
+  signIn(OWNER);
+  renderWithProviders(<DashboardPageContent />);
+  await screen.findByRole('region', { name: 'Today so far' });
+  expect(screen.queryByTestId('home-cash-count')).not.toBeInTheDocument();
 });
 
 it('lists the orders waiting on someone in Needs attention, each opening its list', async () => {

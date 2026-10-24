@@ -253,7 +253,7 @@ implementation; feature-off preserves saved history.
 
 ### BP-17 · Physical Shop cash counts
 
-**Approved under R-DEC-26; implementation pending.** An append-only counted-cash
+**Approved under R-DEC-26; built 25 Oct 2026** (`reports_cash_count`, `GET/POST /reports/cash-counts`, `last_count` on the dashboard's Shop cash tile; snapshot and freshness rule in docs/performance/2026-10-25-cash-count.md). An append-only counted-cash
 observation with actor/time, counted amount, server snapshot of expected Shop
 cash and variance. Reuse Shop money_position; never call recorded cash physical
 cash or combine other books. Record a count without posting an adjustment,

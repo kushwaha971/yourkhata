@@ -278,8 +278,12 @@ e2e/profit.mjs): figure line with loss in words, phone cards, row sheet.
 Old dues §10.7 delivered 24 Oct for the Shop (docs/performance/2026-10-24-old-dues.md,
 e2e/old-dues.mjs): side words with totals, age bars, phone cards, row sheet with
 Remind + Receive payment or Pay. The Udhaar book's aging is unchanged.
+Home 1/3 cash count (BP-17) delivered 25 Oct (docs/performance/2026-10-25-cash-count.md,
+e2e/cash-count.mjs): append-only counts against the server's figure at the save,
+"Not counted · Count cash" on Home's cash figure, a count drawer with history.
 1. Payments, Expenses, Cash book, Reports hub, Day book, registers, GST,
-   Profit, Old dues done. Next approved Home LAST (R-DEC-26 workflows). Owner, 24 Oct:
+   Profit, Old dues done. Home: cash count done; next BP-16 Shop promises, then
+   BP-08 settlement (R-DEC-26 workflows). Owner, 24 Oct:
    after Home commit and push, then STOP and wait; do not start Udhaar.
 
 ## LATEST CHECKPOINT —23 October2026 (owner requested commit/push)

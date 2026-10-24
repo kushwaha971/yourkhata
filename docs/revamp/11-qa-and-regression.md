@@ -336,6 +336,24 @@ Earlier mobile manual/arrow-pager matrix acceptance is superseded. Existing desk
 | Speed | no request; copy and columns only | not measured |
 | Competitor comparison | none | unproven |
 
+### Home 1 of 3 · cash count · 25 Oct 2026 (BP-17, R-DEC-26, R-DEC-34)
+
+| Requirement | Evidence | Status |
+|---|---|---|
+| Append-only count: actor, time, counted, server's expected figure, difference | test_cash_count.py (model, trigger, audit) | passed |
+| Expected figure is the server's at the save, never the browser's | test_cash_count.py; CashCountDrawer.test.tsx; e2e/cash-count.mjs | passed |
+| A count posts nothing; the records' figure is unchanged after it | test_cash_count.py; e2e reads the dashboard before and after | passed |
+| Retry or double tap records one count | test_cash_count.py (idempotent replay); drawer test (same key); e2e double tap | passed |
+| Only a reader of the Shop's cash; other businesses see none | test_cash_count.py (staff 403, replay refused, tenant) | passed |
+| Home: when it was counted and how it compared, "Not counted · Count cash" | DashboardPageContent.test.tsx; e2e EN/HI 320–1280 | passed |
+| Later cash activity distinguished from the snapshot | `moved_since` on the newest count; drawer test | passed |
+| Negative records figure, zero count | backend tests; live QA book is negative | passed |
+| Counts in the data export; deletion removes them through the trigger | test_tenant_data.py | passed |
+| Offline: no count against a stale figure | drawer test | passed |
+| 44 px target, no cut text, no broken figure, EN/HI 320–1280 | e2e measuring checks | passed (broken minus on desktop fixed) |
+| Split cash/UPI, backdated records, cancellations | the records' figure is the existing cash book's `money_position`, unchanged | kept, not re-tested here |
+| Competitor comparison | none | unproven |
+
 ### Old dues · 24 Oct 2026 (09 §10.7, R-DEC-34)
 
 | Requirement | Evidence | Status |

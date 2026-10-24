@@ -2,6 +2,8 @@ import { API_PATHS } from 'src/api/APIPaths';
 import { api, ubConfig } from 'src/api/AxiosInstances';
 import { toQueryString } from 'src/utils/queryString';
 
+import { toCashCount, type CashCountWire } from './cashCountService';
+
 import type {
   ActivityItem,
   AgedCountAmount,
@@ -48,7 +50,11 @@ interface DashboardWire {
       };
       readonly cash_in_hand?: { readonly amount: string };
       /** WP-06 — the Shop's own drawer; `cash_in_hand` is every book's (DEC-019). */
-      readonly shop_cash_in_hand?: { readonly amount: string; readonly since?: string | null };
+      readonly shop_cash_in_hand?: {
+        readonly amount: string;
+        readonly since?: string | null;
+        readonly last_count?: CashCountWire | null;
+      };
       readonly today_received?: CountAmountWire;
       readonly supplier_bills?: { readonly overdue: AgedWire; readonly due_week: AgedWire };
       /** WP-06 — the period chips' figures, keyed today/yesterday/week/month. */
@@ -172,13 +178,22 @@ const dues = (wire: { readonly amount: string; readonly advances?: string }) => 
 });
 
 const cashInHand = (
-  wire: { readonly amount: string; readonly since?: string | null } | undefined
+  wire:
+    | {
+        readonly amount: string;
+        readonly since?: string | null;
+        readonly last_count?: CashCountWire | null;
+      }
+    | undefined
 ) =>
   wire
     ? {
         cashInHand: {
           amount: wire.amount,
           ...(wire.since === undefined ? {} : { since: wire.since }),
+          ...(wire.last_count === undefined
+            ? {}
+            : { lastCount: wire.last_count ? toCashCount(wire.last_count) : null }),
         },
       }
     : {};
