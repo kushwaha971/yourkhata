@@ -73,6 +73,29 @@ export const fetchOpenDocuments = createAsyncThunk<
   }
 );
 
+/**
+ * QUERY. 08 §6 P-08-04 — the same list, read again to ask whether the dues
+ * changed on another device since the drawer opened. Deliberately a separate
+ * action that no reducer handles: re-reading through `fetchOpenDocuments`
+ * empties the rows while it waits and re-seeds every typed allocation, which
+ * is the opposite of a quiet check on focus or before Save.
+ */
+export const checkOpenDocuments = createAsyncThunk<
+  readonly OpenDocument[],
+  {
+    readonly partyId: string;
+    readonly direction: PaymentDirection;
+    readonly bucket?: PaymentBucket;
+  },
+  Reject
+>('paymentForm/checkOpenDocuments', async ({ partyId, direction, bucket }, { rejectWithValue }) => {
+  try {
+    return await (await service()).listOpenDocuments(partyId, direction, undefined, bucket, true);
+  } catch (error) {
+    return rejectWithValue(toApiError(error, 'payments.alloc.error'));
+  }
+});
+
 /** QUERY. PAY-03 — the Collect QR, or the receipt footer's static one. */
 export const fetchCollectQr = createAsyncThunk<
   CollectQr,
@@ -94,13 +117,14 @@ export const recordPayment = createAsyncThunk<
     readonly idempotencyKey: string;
     readonly context: string;
     readonly bucket?: PaymentBucket;
+    readonly quiet?: boolean;
   },
   Reject
 >(
   'paymentForm/recordPayment',
-  async ({ values, idempotencyKey, context, bucket }, { rejectWithValue }) => {
+  async ({ values, idempotencyKey, context, bucket, quiet }, { rejectWithValue }) => {
     try {
-      return await (await service()).recordPayment(values, idempotencyKey, context, bucket);
+      return await (await service()).recordPayment(values, idempotencyKey, context, bucket, quiet);
     } catch (error) {
       return rejectWithValue(toApiError(error, 'payments.save.error'));
     }

@@ -28,6 +28,13 @@ export interface UbStatusBannerProps {
   readonly description?: string;
   /** At most one action: the move the banner enables. */
   readonly action?: ReactNode;
+  /**
+   * Put the action under the words instead of beside them. For a banner whose
+   * words are a sentence or two and whose action is a phrase ("Use the new
+   * figures"): side by side on a phone, the words were squeezed into a column
+   * a word or two wide (08 §6, found by looking at 390 px).
+   */
+  readonly actionBelow?: boolean;
   readonly className?: string;
 }
 
@@ -64,6 +71,7 @@ function UbStatusBannerBase({
   title,
   description,
   action,
+  actionBelow = false,
   className,
 }: Readonly<UbStatusBannerProps>) {
   const Icon = ICON[tone];
@@ -79,8 +87,9 @@ function UbStatusBannerBase({
       <div className="flex min-w-0 flex-1 flex-col gap-0.5">
         <MLAlertTitle>{title}</MLAlertTitle>
         {description && <MLAlertDescription>{description}</MLAlertDescription>}
+        {action && actionBelow && <div className="mt-2 flex">{action}</div>}
       </div>
-      {action && <div className="shrink-0">{action}</div>}
+      {action && !actionBelow && <div className="shrink-0">{action}</div>}
     </MLAlert>
   );
 }

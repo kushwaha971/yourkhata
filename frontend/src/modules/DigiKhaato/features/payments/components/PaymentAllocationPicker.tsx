@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 
 import { useWatch, type UseFormReturn } from 'react-hook-form';
 
@@ -27,6 +27,9 @@ import { BillPickRow } from './BillPickRow';
 
 import type { OpenDocument, PaymentFormValues } from '../types/payment.types';
 
+// The counter's words (08 §6) come with the drawers that render this list.
+import 'src/i18n/catalogues/paymentCounter';
+
 /**
  * PAY-01 FR-2 / FR-5 / FR-6 — which bills this money settles.
  *
@@ -47,12 +50,19 @@ export function PaymentAllocationPicker({
   t,
   disabled,
   onEdit,
+  counter = false,
 }: Readonly<{
   form: UseFormReturn<PaymentFormValues>;
   documents: readonly OpenDocument[];
   status: RequestStatus;
   t: TranslateFn;
   disabled?: boolean;
+  /**
+   * 08 §6 Shop counter: each bill says what it gets and what it is left with
+   * ("₹200 · ₹245 left", "clears it"), the advance is a row of its own before
+   * saving, and the totals line speaks only when something is wrong.
+   */
+  counter?: boolean;
   /** Told when the merchant sets a row by hand (typing or Fill), so the drawer
    *  stops moving a preset bill's row with the amount (P-D2). */
   onEdit?: () => void;
@@ -67,39 +77,55 @@ export function PaymentAllocationPicker({
   const allocated = auto ? subtractMoney(total, preview.advance) : manual.allocated;
   const overAllocated = !auto && compareMoney(manual.advance, '0.00') < 0;
   const listError = form.formState.errors.allocations?.message;
+  const [showAll, setShowAll] = useState(false);
 
   if (status === 'loading' || status === 'idle') {
     return <UbSkeleton variant="list" count={2} label={t('payments.alloc.loading')} />;
   }
 
   if (documents.length === 0) {
+    const noneId = !counter
+      ? 'payments.alloc.none'
+      : compareMoney(total, '0.00') > 0
+        ? 'payments.counter.none'
+        : 'payments.counter.noneEmpty';
     return (
-      <UbText variant="caption" tone="tertiary" data-testid="alloc-none">
-        {t('payments.alloc.none')}
+      <UbText variant="caption" tone={counter ? 'secondary' : 'tertiary'} data-testid="alloc-none">
+        {t(noneId, { amount: formatAmount(total) })}
       </UbText>
     );
   }
+
+  /* 08 §6 Thousands — a supplier with 400 open bills shows the 20 oldest; Auto
+     still settles over all of them on the server. */
+  const shown = counter && !showAll ? documents.slice(0, COUNTER_ROWS) : documents;
 
   return (
     <UbStack gap={3} data-testid="alloc-picker">
       <UbSwitch
         checked={auto}
         onCheckedChange={(next) => form.setValue('autoAllocate', next, { shouldDirty: true })}
-        label={t('payments.alloc.auto')}
-        description={t('payments.alloc.autoHint')}
+        label={t(counter ? 'payments.counter.auto' : 'payments.alloc.auto')}
+        description={t(counter ? 'payments.counter.autoHint' : 'payments.alloc.autoHint')}
         disabled={disabled}
       />
       <UbPanel as="ul">
-        {documents.map((doc, index) => (
+        {shown.map((doc, index) => (
           <BillPickRow
             key={doc.documentId}
             number={doc.number}
-            caption={t('payments.alloc.rowMeta', {
+            caption={t(counter ? 'payments.counter.row' : 'payments.alloc.rowMeta', {
               date: formatBusinessDate(doc.documentDate),
               amount: formatAmount(doc.amountDue),
             })}
           >
-            {auto ? (
+            {auto && counter ? (
+              <CounterShare
+                amount={preview.allocations[doc.documentId] ?? '0.00'}
+                due={doc.amountDue}
+                t={t}
+              />
+            ) : auto ? (
               <UbAmount value={preview.allocations[doc.documentId] ?? '0.00'} size="sm" />
             ) : (
               <ManualRow
@@ -115,25 +141,79 @@ export function PaymentAllocationPicker({
           </BillPickRow>
         ))}
       </UbPanel>
+      {shown.length < documents.length && (
+        <UbStack direction="row">
+          <UbButton variant="ghost" size="sm" onClick={() => setShowAll(true)}>
+            {t('payments.counter.showAll', { count: String(documents.length) })}
+          </UbButton>
+        </UbStack>
+      )}
+      {counter && auto && compareMoney(advance, '0.00') > 0 && (
+        <UbPanel as="ul" className="border-dashed" data-testid="alloc-advance-row">
+          <BillPickRow
+            plain
+            number={t('payments.counter.advanceRow')}
+            caption={t('payments.counter.advanceHint')}
+          >
+            <UbStack gap={0} align="end" className="shrink-0">
+              <UbAmount value={advance} size="sm" />
+              <UbText variant="caption" tone="tertiary">
+                {t('payments.counter.shopBook')}
+              </UbText>
+            </UbStack>
+          </BillPickRow>
+        </UbPanel>
+      )}
       {listError && <UbFieldError id="alloc-error">{listError}</UbFieldError>}
-      <UbStack direction="row" justify="between" className="flex-wrap gap-2">
-        <UbText variant="caption" tone="secondary">
-          {t('payments.alloc.allocated', {
-            amount: formatAmount(allocated),
-          })}
-        </UbText>
-        {overAllocated ? (
-          <UbText variant="caption" tone="formError" role="alert">
-            {t('payments.alloc.exceeds')}
+      {!counter && (
+        <UbStack direction="row" justify="between" className="flex-wrap gap-2">
+          <UbText variant="caption" tone="secondary">
+            {t('payments.alloc.allocated', {
+              amount: formatAmount(allocated),
+            })}
           </UbText>
-        ) : (
-          compareMoney(advance, '0.00') > 0 && (
-            <UbText variant="caption" tone="warning" data-testid="alloc-advance">
-              {t('payments.alloc.unallocated', { amount: formatAmount(advance) })}
+          {overAllocated ? (
+            <UbText variant="caption" tone="formError" role="alert">
+              {t('payments.alloc.exceeds')}
             </UbText>
-          )
-        )}
-      </UbStack>
+          ) : (
+            compareMoney(advance, '0.00') > 0 && (
+              <UbText variant="caption" tone="warning" data-testid="alloc-advance">
+                {t('payments.alloc.unallocated', { amount: formatAmount(advance) })}
+              </UbText>
+            )
+          )}
+        </UbStack>
+      )}
+      {counter && !auto && !overAllocated && (
+        <UbText variant="caption" tone="secondary">
+          {t('payments.alloc.allocated', { amount: formatAmount(allocated) })}
+          {compareMoney(advance, '0.00') > 0 &&
+            ` · ${t('payments.alloc.unallocated', { amount: formatAmount(advance) })}`}
+        </UbText>
+      )}
+    </UbStack>
+  );
+}
+
+const COUNTER_ROWS = 20;
+
+/** One bill's share on the counter: what it gets, and "clears it" or what it is left with. */
+function CounterShare({
+  amount,
+  due,
+  t,
+}: Readonly<{ amount: string; due: string; t: TranslateFn }>): React.JSX.Element | null {
+  if (compareMoney(amount, '0.00') <= 0) return null;
+  const left = subtractMoney(due, amount);
+  return (
+    <UbStack gap={0} align="end" className="shrink-0">
+      <UbAmount value={amount} size="sm" />
+      <UbText variant="caption" tone={compareMoney(left, '0.00') > 0 ? 'tertiary' : 'success'}>
+        {compareMoney(left, '0.00') > 0
+          ? t('payments.counter.rowLeft', { amount: formatAmount(left) })
+          : t('payments.counter.clears')}
+      </UbText>
     </UbStack>
   );
 }

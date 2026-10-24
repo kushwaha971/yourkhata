@@ -2,6 +2,7 @@ import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
 import { sessionLoaded } from 'src/redux/slice/sessionSlice';
+import { hideSnackbar } from 'src/redux/slice/snackbarSlice';
 import { store } from 'src/redux/store';
 import { renderWithProviders } from 'src/tests/renderWithProviders';
 
@@ -181,6 +182,8 @@ it('opens from a purchase bill as "Pay supplier", money out, preset to that bill
   expect(await screen.findByTestId('payment-saved')).toHaveTextContent('Paid ₹1,921.00');
 });
 
+const shop: PaymentContext = { ...context, bucket: 'shop' };
+
 const fromInvoice: PaymentContext = {
   direction: 'in',
   partyId: 'p1',
@@ -332,7 +335,7 @@ it('keeps the Shop amount before the method and secondary fields behind More det
   );
   const dialog = screen.getByRole('dialog');
   const amount = within(dialog).getByRole('textbox', { name: 'Amount' });
-  const mode = within(dialog).getByRole('combobox', { name: 'How it was paid' });
+  const mode = within(dialog).getByRole('combobox', { name: 'Paid by' });
   expect(amount.compareDocumentPosition(mode) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   expect(within(dialog).queryByLabelText('Date')).not.toBeInTheDocument();
   expect(within(dialog).getByText('Still due after this')).toBeInTheDocument();
@@ -366,13 +369,22 @@ it('asks before discarding a changed Shop payment instead of losing the amount o
   expect(onClose).toHaveBeenCalledTimes(1);
 });
 
-it('does not record a Shop payment before its unpaid bills are available', async () => {
-  /** Counter defect: an empty loading/error result must not silently classify a collection as an advance. */
+it('does not record a Shop payment against a bill before that bill is available', async () => {
+  /** Counter defect: an empty loading/error result must not silently classify a
+   *  collection as an advance. A payment for ONE bill waits for that bill. */
   jest.mocked(service.listOpenDocuments).mockReturnValue(new Promise(() => undefined));
   renderWithProviders(
-    <PaymentFormDrawer context={{ ...context, bucket: 'shop' }} onClose={jest.fn()} />
+    <PaymentFormDrawer context={{ ...fromInvoice, bucket: 'shop' }} onClose={jest.fn()} />
   );
   expect(screen.getByTestId('payment-save')).toBeDisabled();
+});
+
+/** 08 §6 Loading — with Auto on, the server settles oldest first under its lock,
+ *  so a slow bill list does not hold up the counter. */
+it('lets the counter receive with Auto on while the bills are still loading', () => {
+  jest.mocked(service.listOpenDocuments).mockReturnValue(new Promise(() => undefined));
+  renderWithProviders(<PaymentFormDrawer context={shop} onClose={jest.fn()} />);
+  expect(screen.getByTestId('payment-save')).toBeEnabled();
 });
 
 it('uses Shop search for a default payment context without an explicit bucket', async () => {
@@ -408,4 +420,170 @@ it('loading the selected bill allocation does not count as a merchant edit', asy
   await userEvent.click(screen.getByRole('button', { name: 'Close' }));
   expect(screen.queryByRole('dialog', { name: 'Leave without saving?' })).not.toBeInTheDocument();
   expect(close).toHaveBeenCalledTimes(1);
+});
+
+// ── 08 §6 — the Shop's counter drawer ──────────────────────────────────────
+
+const apiError = (code: string) => ({
+  code,
+  message: '',
+  details: {},
+  requestId: null,
+  status: null,
+  warnings: [],
+});
+
+it('says who owes what, how many bills are unpaid, and what the amount leaves due', async () => {
+  /** 08 §6 Ready — the header and the amount's line were bare: "Receive payment ·
+   *  Ramesh Traders" and nothing under the amount until the footer. */
+  const user = userEvent.setup();
+  renderWithProviders(<PaymentFormDrawer context={shop} onClose={jest.fn()} />);
+  expect(screen.getByText('Ramesh Traders · owes ₹1,000.00')).toBeInTheDocument();
+  expect(await screen.findByText('2 unpaid bills')).toBeInTheDocument();
+  expect(screen.getByTestId('payment-hint')).toHaveTextContent('This clears everything due.');
+  const amount = screen.getByRole('textbox', { name: 'Amount' });
+  await user.clear(amount);
+  await user.type(amount, '600');
+  expect(screen.getByTestId('payment-hint')).toHaveTextContent(
+    '₹400.00 will still be due after this.'
+  );
+  expect(screen.getByTestId('payment-left')).toHaveTextContent('₹400.00');
+});
+
+it("shows each bill's share and the advance as a row before saving", async () => {
+  /** 08 §6 More than due — ₹600 against ₹445: the bill "clears it", ₹155 is an
+   *  advance row in the Shop book, and the amount's line says it is not a refund. */
+  const user = userEvent.setup();
+  jest
+    .mocked(service.listOpenDocuments)
+    .mockResolvedValue([bill('d1', 'INV-0412', '445.00', '2026-10-08')]);
+  renderWithProviders(
+    <PaymentFormDrawer context={{ ...shop, receivable: '445.00' }} onClose={jest.fn()} />
+  );
+  await screen.findByTestId('alloc-picker');
+  const amount = screen.getByRole('textbox', { name: 'Amount' });
+  await user.clear(amount);
+  await user.type(amount, '600');
+  expect(screen.getByText('clears it')).toBeInTheDocument();
+  const advance = screen.getByTestId('alloc-advance-row');
+  expect(advance).toHaveTextContent('Advance');
+  expect(advance).toHaveTextContent('₹155.00');
+  expect(advance).toHaveTextContent('Shop book');
+  expect(screen.getByTestId('payment-hint')).toHaveTextContent(
+    '₹155.00 more than what is due. It stays with Ramesh Traders as advance, not a refund.'
+  );
+  expect(screen.getByTestId('payment-left')).toHaveTextContent('₹0.00');
+});
+
+it('says a failure in the drawer and tries again with the same key', async () => {
+  /** 08 §0.2 Failed — the drawer stayed as it was with only a toast; "Try again"
+   *  must resend the SAME idempotency key so a request that landed is not doubled. */
+  const user = userEvent.setup();
+  jest
+    .mocked(service.recordPayment)
+    .mockReset()
+    .mockRejectedValueOnce(apiError('timeout'))
+    .mockResolvedValueOnce(savedAs('1000.00'));
+  renderWithProviders(<PaymentFormDrawer context={shop} onClose={jest.fn()} />);
+  await screen.findByTestId('alloc-picker');
+  await user.click(screen.getByTestId('payment-save'));
+  expect(await screen.findByRole('alert')).toHaveTextContent('No answer yet.');
+  const retry = screen.getByTestId('payment-save');
+  expect(retry).toHaveTextContent('Try again');
+  await user.click(retry);
+  await waitFor(() => expect(service.recordPayment).toHaveBeenCalledTimes(2));
+  const calls = jest.mocked(service.recordPayment).mock.calls;
+  expect(calls[1]?.[1]).toBe(calls[0]?.[1]);
+  // The counter drawer says it; the global toast does not repeat it.
+  expect(calls[0]?.[4]).toBe(true);
+});
+
+it('says plainly that nothing was saved when the server refuses', async () => {
+  const user = userEvent.setup();
+  jest.mocked(service.recordPayment).mockReset().mockRejectedValueOnce(apiError('server_error'));
+  renderWithProviders(<PaymentFormDrawer context={shop} onClose={jest.fn()} />);
+  await screen.findByTestId('alloc-picker');
+  await user.click(screen.getByTestId('payment-save'));
+  expect(await screen.findByRole('alert')).toHaveTextContent(
+    "Didn't go through. Nothing was saved."
+  );
+});
+
+it('stops a save when the dues changed on another device, and offers the new figures', async () => {
+  /** 08 §6 Changed elsewhere (P-08-04) — ₹898 was received on the other phone
+   *  meanwhile. The drawer re-reads just before Save, says so, and records
+   *  nothing until the merchant takes the new figure. */
+  const user = userEvent.setup();
+  jest.mocked(service.recordPayment).mockReset().mockResolvedValue(savedAs('102.00'));
+  renderWithProviders(<PaymentFormDrawer context={shop} onClose={jest.fn()} />);
+  await screen.findByTestId('alloc-picker');
+  jest.mocked(service.listOpenDocuments).mockResolvedValue([BILLS[1] as OpenDocument]);
+  await user.click(screen.getByTestId('payment-save'));
+  expect(
+    await screen.findByText('Dues for Ramesh Traders changed on another device.')
+  ).toBeInTheDocument();
+  expect(screen.getByText(/Now due ₹102.00, not ₹1,000.00/)).toBeInTheDocument();
+  expect(service.recordPayment).not.toHaveBeenCalled();
+  expect(screen.getByTestId('payment-save')).toBeDisabled();
+  await user.click(screen.getByRole('button', { name: 'Use the new figures' }));
+  expect(await screen.findByText('Ramesh Traders · now owes ₹102.00')).toBeInTheDocument();
+  // The amount was the old figure in full, so it follows.
+  expect(screen.getByRole('textbox', { name: 'Amount' })).toHaveValue('102.00');
+  await screen.findByTestId('alloc-picker');
+  await user.click(screen.getByTestId('payment-save'));
+  await waitFor(() => expect(service.recordPayment).toHaveBeenCalledTimes(1));
+});
+
+it('ends on one saved message with Share receipt first, and no toast repeating it', async () => {
+  /** 08 §6 Success — the panel and a snackbar said the same thing, and the next
+   *  act at a counter (send the receipt) was two screens away. */
+  const user = userEvent.setup();
+  jest.mocked(service.recordPayment).mockReset().mockResolvedValue(savedAs('1000.00'));
+  store.dispatch(hideSnackbar());
+  renderWithProviders(<PaymentFormDrawer context={shop} onClose={jest.fn()} />);
+  await screen.findByTestId('alloc-picker');
+  await user.click(screen.getByTestId('payment-save'));
+  const saved = await screen.findByTestId('payment-saved');
+  expect(saved).toHaveTextContent('Received ₹1,000.00 from Ramesh Traders.');
+  expect(saved).toHaveTextContent('Nothing due now · RCT/26-27/0018');
+  expect(screen.getByRole('button', { name: 'Share receipt' })).toBeInTheDocument();
+  expect(screen.getByRole('link', { name: 'Print' })).toHaveAttribute(
+    'href',
+    '/payments/pay3?print=1'
+  );
+  expect(store.getState().snackbar.snackbarOpen).toBe(false);
+});
+
+it('lets the counter save with Auto when the bills could not be read, and says how', async () => {
+  /** 08 §6 Error / partial — a failed read blocked every save; with Auto the
+   *  server decides, so the counter goes on, told what will happen. */
+  jest.mocked(service.listOpenDocuments).mockRejectedValue(apiError('server_error'));
+  renderWithProviders(<PaymentFormDrawer context={shop} onClose={jest.fn()} />);
+  expect(await screen.findByText("Couldn't load bills")).toBeInTheDocument();
+  expect(screen.getByTestId('payment-save')).toBeEnabled();
+  expect(screen.getByText('Bills will be matched oldest first when saved.')).toBeInTheDocument();
+});
+
+it('names an over-allocation with its figures and holds Save until it is fixed', async () => {
+  const user = userEvent.setup();
+  renderWithProviders(<PaymentFormDrawer context={shop} onClose={jest.fn()} />);
+  await screen.findByTestId('alloc-picker');
+  const amount = screen.getByRole('textbox', { name: 'Amount' });
+  await user.clear(amount);
+  await user.type(amount, '500');
+  await user.click(screen.getByRole('switch', { name: /Auto, oldest first/ }));
+  await user.type(screen.getByRole('textbox', { name: 'Amount against INV/26-27/0040' }), '700');
+  expect(screen.getByTestId('alloc-over')).toHaveTextContent(
+    "You've put ₹700.00 on bills but are receiving only ₹500.00."
+  );
+  expect(screen.getByTestId('payment-save')).toBeDisabled();
+});
+
+it('says a customer with no unpaid bills keeps the money as advance, in Shop words', async () => {
+  jest.mocked(service.listOpenDocuments).mockResolvedValue([]);
+  renderWithProviders(<PaymentFormDrawer context={shop} onClose={jest.fn()} />);
+  expect(await screen.findByTestId('alloc-none')).toHaveTextContent(
+    'No unpaid bills. The full ₹1,000.00 is kept as advance for the next bill.'
+  );
+  expect(screen.queryByText(/khata/)).not.toBeInTheDocument();
 });

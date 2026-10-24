@@ -90,6 +90,7 @@
     "reminders.sheet.": "share",
     "payments.record.title": "paymentActions",
     "payments.upi.collect": "paymentActions",
+    "payments.counter.": "paymentCounter",
     "data.export.status.": "dataStatus",
     "data.support.status.": "dataStatus",
     "settings.profile.": "businessProfile",

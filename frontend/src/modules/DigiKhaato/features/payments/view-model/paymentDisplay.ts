@@ -128,6 +128,10 @@ export const manualTotals = (
   return { allocated, advance: subtractMoney(clean(amount), allocated) };
 };
 
+/** 08 §6 P-08-04 — what the open bills still owe together, the figure a re-read is compared on. */
+export const dueTotal = (documents: readonly Pick<OpenDocument, 'amountDue'>[]): string =>
+  sumMoney(documents.map((doc) => clean(doc.amountDue)));
+
 /** Is a row's typed amount more than the bill can take ("Max ₹898")? */
 export const exceedsDue = (row: Pick<AllocationRowForm, 'amount' | 'due'>): boolean =>
   compareMoney(clean(row.amount), clean(row.due)) > 0;

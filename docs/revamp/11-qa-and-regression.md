@@ -263,6 +263,21 @@ Earlier mobile manual/arrow-pager matrix acceptance is superseded. Existing desk
 | Stale, offline, no-permission states | unchanged, not re-run | not re-proven |
 | Competitor comparison | none | unproven |
 
+### Receive payment drawer · 24 Oct 2026 (08 §6, §0.2, R-DEC-34)
+
+| Requirement | Evidence | Status |
+|---|---|---|
+| Header owes figure, unpaid-bill count, "will still be due" under the amount | PaymentFormDrawer.test.tsx; e2e/receive-payment.mjs at 390/320/1024/1280 EN/HI | passed (fixed: the line sat under Paid by) |
+| Each bill's share ("clears it" / "₹X left") and the advance as a row before saving | drawer test; e2e | passed |
+| Over-allocation named with both figures beside the held Save | drawer test; e2e | passed (fixed: it was below the fold) |
+| Bills unread: Save allowed with Auto, footer says how; one-bill payments still wait | drawer tests; e2e (503 on the bill list) | passed |
+| Slow save, refused save, lost save: Still working, red banner, Try again on the SAME key | drawer tests; e2e compares the Idempotency-Key header across tries | passed |
+| Changed on another device: found on focus, Save held, Use the new figures | drawer test; e2e (a ₹1 receipt from the API while the drawer is open) | passed (fixed: banner squeezed at 390) |
+| Double tap posts once; saved panel says it once; Share asks once; message names no product | e2e real ₹1 receipt, read back from the server | passed |
+| Speed vs dcaddbc | 4x CPU, n=24: phone 961 → 985 ms, desktop 737 → 751 ms | level |
+| Offline, expired session, Ctrl ↵, 20+ bills | unchanged or no QA data | not re-proven |
+| Competitor comparison | none | unproven |
+
 ### Payment receipt · 24 Oct 2026 (08 §10, §10.1, §10.2, R-DEC-34)
 
 | Requirement | Evidence | Status |

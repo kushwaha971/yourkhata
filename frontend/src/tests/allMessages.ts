@@ -72,6 +72,8 @@ import payLinkEn from 'locales/catalogues/payLink.en.json';
 import payLinkHi from 'locales/catalogues/payLink.hi.json';
 import paymentActionsEn from 'locales/catalogues/paymentActions.en.json';
 import paymentActionsHi from 'locales/catalogues/paymentActions.hi.json';
+import paymentCounterEn from 'locales/catalogues/paymentCounter.en.json';
+import paymentCounterHi from 'locales/catalogues/paymentCounter.hi.json';
 import paymentsEn from 'locales/catalogues/payments.en.json';
 import paymentsHi from 'locales/catalogues/payments.hi.json';
 import periodEn from 'locales/catalogues/period.en.json';
@@ -165,6 +167,7 @@ export const en: Readonly<Record<string, string>> = {
   ...partyPickerEn,
   ...payLinkEn,
   ...paymentActionsEn,
+  ...paymentCounterEn,
   ...paymentsEn,
   ...periodEn,
   ...planEn,
@@ -225,6 +228,7 @@ export const hi: Readonly<Record<string, string>> = {
   ...partyPickerHi,
   ...payLinkHi,
   ...paymentActionsHi,
+  ...paymentCounterHi,
   ...paymentsHi,
   ...periodHi,
   ...planHi,

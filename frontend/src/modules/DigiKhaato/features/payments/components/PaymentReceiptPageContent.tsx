@@ -19,7 +19,6 @@ import {
   UbPageShell,
   UbPageSkeleton,
   UbPanel,
-  UbShareSheet,
   UbStack,
   UbStatusBadge,
   UbStatusBanner,
@@ -28,8 +27,6 @@ import {
 } from 'src/design-system';
 import { useAppDispatch, useAppSelector } from 'src/hooks/useAppStore';
 import { usePermissions } from 'src/hooks/usePermissions';
-import { useShareFeedback } from 'src/hooks/useShareFeedback';
-import { useShareSheetLabels } from 'src/hooks/useShareSheetLabels';
 import { useTranslation, type TranslateFn } from 'src/hooks/useTranslation';
 import { selectLocale } from 'src/redux/slice/localeSlice';
 import { selectNetworkImpaired } from 'src/redux/slice/networkSlice';
@@ -42,6 +39,8 @@ import { formatAmount, formatInr, isZeroAmount } from 'src/utils/money';
 import { usePaymentReceipt } from '../hooks/usePaymentReceipt';
 import { allocationHref } from '../view-model/allocationLinks';
 import { modeLabelIds } from '../view-model/paymentDisplay';
+
+import { ReceiptShareSheet } from './ReceiptShareSheet';
 
 import type { Payment, PaymentContext } from '../types/payment.types';
 
@@ -107,7 +106,6 @@ export function PaymentReceiptPageContent({ id }: Readonly<{ id: string }>): Rea
   const impaired = useAppSelector(selectNetworkImpaired);
   const { can, hasModule } = usePermissions();
   const receipt = usePaymentReceipt(id, search?.get('print') === '1');
-  const feedback = useShareFeedback();
   /* Two ⋯ triggers (the header's and the dock's), one visible at a time; the
      cancel dialog returns focus to the one that opened it. */
   const headerMore = useRef<HTMLButtonElement | null>(null);
@@ -119,8 +117,6 @@ export function PaymentReceiptPageContent({ id }: Readonly<{ id: string }>): Rea
   const [sharing, setSharing] = useState(false);
   const [again, setAgain] = useState<PaymentContext | null>(null);
   const payment = receipt.payment?.id === id ? receipt.payment : null;
-
-  const labels = useShareSheetLabels();
 
   const { startShare, submitVoid, submitApply } = receipt;
   const confirmApply = useCallback(
@@ -519,26 +515,14 @@ export function PaymentReceiptPageContent({ id }: Readonly<{ id: string }>): Rea
         />
       )}
       {sharing && receipt.shareText && (
-        <UbShareSheet
-          open
-          onOpenChange={(next) => !next && setSharing(false)}
-          title={t('payments.receipt.share')}
-          description={t(`payments.receipt.shareAbout.${payment.direction}`, {
-            number: payment.number,
-            amount: formatAmount(payment.amount),
-            name: payment.party?.name ?? t('payments.list.quickSale'),
-          })}
-          /* 08 §10.2 — the honest line: we open their app, they press Send. */
-          notice={
-            <UbText variant="caption" tone="secondary">
-              {t('payments.receipt.shareHonest')}
-            </UbText>
-          }
-          message={receipt.shareText}
-          phone={receipt.shareMobile}
-          labels={labels}
-          onShared={feedback.onShared}
-          onFailed={feedback.onFailed}
+        <ReceiptShareSheet
+          number={payment.number}
+          amount={payment.amount}
+          direction={payment.direction}
+          name={payment.party?.name ?? null}
+          text={receipt.shareText}
+          mobile={receipt.shareMobile}
+          onClose={() => setSharing(false)}
         />
       )}
       {again && <PaymentFormDrawerLazy context={again} onClose={() => setAgain(null)} />}

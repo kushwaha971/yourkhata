@@ -233,8 +233,18 @@ the dock under the phone menu, the toast covering Record again, cut reason chips
 and bill numbers split on the print; all fixed. Desktop ~120 ms slower at 4x
 CPU; recorded. Open: the server's share text (§10.2 wording, link) and the
 shared sheet's counter wait for approval.
-1. Payments: Receive payment drawer §6; then Expenses, Reports; approved Home
-   LAST.
+Receive payment drawer §6 delivered 24 Oct (docs/performance/2026-10-24-
+receive-payment.md, e2e/receive-payment.mjs): owes figure in the header, what
+the amount leaves due under it, each bill's share and the advance as rows,
+failure said in the drawer with Try again on the same key, dues re-read on
+focus and before Save (P-08-04), Save allowed with Auto when bills won't load,
+one saved panel with Share receipt first. Library path unchanged. Speed level.
+Owner, 24 Oct: old Udhaar-book bills on the QA data are discarded (fresh app);
+cancel dialogs keep the caret in the reason; "proceed" read as approval for
+the receipt message wording on the server (§10.2). After Udhaar, STOP: Library
+and Lending wait until the owner has tested Shop and Udhaar.
+1. Payments: receipt message wording on the server (§10.2); then Expenses,
+   Reports; approved Home LAST; then Udhaar. Then stop.
 
 ## LATEST CHECKPOINT —23 October2026 (owner requested commit/push)
 

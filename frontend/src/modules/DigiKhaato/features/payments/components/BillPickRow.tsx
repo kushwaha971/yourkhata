@@ -15,15 +15,21 @@ export function BillPickRow({
   number,
   caption,
   children,
+  plain = false,
 }: Readonly<{
   number: string;
   caption: string;
   children: ReactNode;
+  /** A row that is not a bill (the counter's "Advance"): its title in body type, not mono. */
+  plain?: boolean;
 }>): React.JSX.Element {
   return (
     <UbStack direction="row" justify="between" align="center" className="gap-3 px-3 py-2">
       <UbStack gap={0} className="min-w-0">
-        <UbText variant="body-sm" className="ds-mono break-all">
+        <UbText
+          variant={plain ? 'body-sm-medium' : 'body-sm'}
+          className={plain ? undefined : 'ds-mono break-all'}
+        >
           {number}
         </UbText>
         <UbText variant="caption" tone="tertiary">

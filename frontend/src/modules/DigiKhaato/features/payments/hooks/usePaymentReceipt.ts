@@ -7,7 +7,6 @@ import { useIdempotencyKey } from 'src/hooks/useIdempotencyKey';
 import { usePermissions } from 'src/hooks/usePermissions';
 import type { PrintBranding } from 'src/print/brandingPrintService';
 import { usePrintBranding } from 'src/print/usePrintBranding';
-import { selectLocale } from 'src/redux/slice/localeSlice';
 import { showSnackbar } from 'src/redux/slice/snackbarSlice';
 import type { ApiErrorShape } from 'src/types/api.types';
 import { formatAmount } from 'src/utils/money';
@@ -18,10 +17,11 @@ import {
   fetchApplyCandidates,
   fetchCollectQr,
   fetchPayment,
-  shareReceipt,
   voidPayment,
 } from '../redux/paymentThunk';
 import { applyRequestRows, canApplyAdvance } from '../view-model/applyGate';
+
+import { useReceiptShare } from './useReceiptShare';
 
 import type { ApplyRowForm } from '../types/payment.types';
 
@@ -54,15 +54,12 @@ export const usePaymentReceipt = (id: string, autoPrint: boolean): UsePaymentRec
   const dispatch = useAppDispatch();
   const state = useAppSelector(selectPaymentReceipt);
   const branding = usePrintBranding();
-  const locale = useAppSelector(selectLocale);
   const { can, hasModule } = usePermissions();
   const voidKey = useIdempotencyKey();
-  const shareKey = useIdempotencyKey();
   const applyKey = useIdempotencyKey();
   const [applyErrors, setApplyErrors] = useState<readonly string[]>([]);
   const [printing, setPrinting] = useState(autoPrint);
-  const [shareText, setShareText] = useState<string | null>(null);
-  const [shareMobile, setShareMobile] = useState<string | null>(null);
+  const share = useReceiptShare(id);
   const [voidErrors, setVoidErrors] = useState<readonly string[]>([]);
 
   useEffect(() => {
@@ -101,16 +98,7 @@ export const usePaymentReceipt = (id: string, autoPrint: boolean): UsePaymentRec
 
   const print = useCallback(() => setPrinting(true), []);
 
-  const { key: shareIdem, rotate: rotateShare } = shareKey;
-  const startShare = useCallback(async (): Promise<boolean> => {
-    setShareText(null);
-    const result = await dispatch(shareReceipt({ id, locale, idempotencyKey: shareIdem }));
-    rotateShare();
-    if (!shareReceipt.fulfilled.match(result)) return false;
-    setShareText(result.payload.text);
-    setShareMobile(result.payload.mobile);
-    return true;
-  }, [dispatch, id, locale, shareIdem, rotateShare]);
+  const { start: startShare, text: shareText, mobile: shareMobile } = share;
 
   const { key: voidIdem, rotate: rotateVoid } = voidKey;
   const submitVoid = useCallback(

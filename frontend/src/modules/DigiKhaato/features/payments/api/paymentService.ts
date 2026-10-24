@@ -277,11 +277,13 @@ export const listOpenDocuments = async (
   direction: PaymentDirection,
   signal?: AbortSignal,
   /** A4a — Apply to bills asks for the payment's bucket; the record panel sends none. */
-  bucket?: PaymentBucket
+  bucket?: PaymentBucket,
+  /** 08 §6 P-08-04 — a background re-read that fails says nothing; the save decides. */
+  quiet = false
 ): Promise<readonly OpenDocument[]> => {
   const response = await api.get<{ data: readonly Wire[] }>(
     `${API_PATHS.PAYMENTS_OPEN_DOCUMENTS}${toQueryString({ party_id: partyId, direction, bucket })}`,
-    ubConfig({ signal })
+    ubConfig({ signal, suppressErrorSnackbar: quiet })
   );
   return response.data.data.map((row) => ({
     documentType: s(row.document_type),
@@ -303,12 +305,14 @@ export const recordPayment = async (
   values: PaymentFormValues,
   idempotencyKey: string,
   context: string,
-  bucket?: PaymentBucket
+  bucket?: PaymentBucket,
+  /** 08 §6 — the counter drawer says a failure in its own banner, so no toast repeats it. */
+  quiet = false
 ): Promise<PaymentSaveResult> => {
   const response = await api.post<WriteResponse>(
     API_PATHS.PAYMENTS,
     { ...toWireBody(values), context, ...(bucket ? { bucket } : {}) },
-    ubConfig({ headers: { 'Idempotency-Key': idempotencyKey } })
+    ubConfig({ headers: { 'Idempotency-Key': idempotencyKey }, suppressErrorSnackbar: quiet })
   );
   return toSaveResult(response.data);
 };

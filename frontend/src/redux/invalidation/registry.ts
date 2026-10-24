@@ -109,6 +109,8 @@ export const QUERIES = {
   fetchPayments: 'paymentList/fetchPayments',
   fetchPayment: 'paymentReceipt/fetchPayment',
   fetchOpenDocuments: 'paymentForm/fetchOpenDocuments',
+  // 08 §6 P-08-04 — the drawer's quiet re-read of the dues; reads only.
+  checkOpenDocuments: 'paymentForm/checkOpenDocuments',
   fetchCollectQr: 'paymentForm/fetchCollectQr',
   fetchImportJob: 'importJob/fetchImportJob',
   // QA B34 — the review's paged rows; reads only.

@@ -1050,6 +1050,7 @@
     "sharedApp": 114.7
   },
   "//routes": [
+    "24 Oct 2026, 08 \u00a76 receive payment drawer: the counter's new words went into their own catalogue (paymentCounter, loaded only by the drawer's chunk) after a first build put them in the payments catalogue and cost /payments/[id] 1.6 KB. What remains is UbStatusBanner's opt-in actionBelow, which every route that loads the banner carries: 25 figures moved by 0.0-0.1 KB. Shared app unchanged. Raised to measured + 0.3; recorded in docs/performance/2026-10-24-receive-payment.md.",
     "24 Oct 2026, 08 \u00a710 payment receipt: /payments/[id] gained the summary panel, the docked Share \u00b7 Print \u00b7 \u22ef (UbBottomBar, UbMoreActions and its action sheet) and the money catalogue for the mode names, 69.3 -> 74.4 KB route. The same commit gave UbStatusBanner a neutral tone and moved ReasonConfirmDialog's reason chips to UbChoiceChips, which every route that loads those shared modules (or whose chunks Turbopack regrouped around them) carries by 0.0-0.4 KB; /lending/loans moved 1.1 KB through that regrouping. A first build that gave the banner its own Ban icon cost 24 more routes; it uses Info instead. Shared app unchanged (114.6). Raised to measured + 0.3; recorded in docs/performance/2026-10-24-payment-receipt.md.",
     "24 Oct 2026, UbDataGrid renders an already-loaded table directly instead of through the lazy wrapper, which suspended and held the skeleton for React's 300 ms fallback minimum on every desktop register open (GridTable, preloadGridTable). Measured after it: /sales/challans and /sales/orders first load over by 0.0 KB (rounding), /admin/partners route 28.3 -> 28.9 and first load 270.0 -> 270.8; raised to measured + 0.3.",
     "24 Oct 2026, 09 \u00a78.6 price lists: both screens moved onto UbDataGrid (cards on a phone, a table on a desktop, as the spec names it), which brings the grid and TanStack Table into these routes: list route 57.0 -> 62.7 KB, detail 90.6 -> 97.1 KB. A first build was 3 KB heavier still because gridLabels.ts named two items-catalogue keys; the selection label ids are now passed in (view-model/itemGridIds.ts) so the price lists do not load the items catalogue. Raised to measured + 0.3 KB; the cost is recorded in docs/performance/2026-10-24-price-lists.md.",
@@ -1446,11 +1447,11 @@
     },
     "/sales/challans/new": {
       "route": 169.4,
-      "firstLoad": 411.1
+      "firstLoad": 411.4
     },
     "/sales/challans/[id]/edit": {
       "route": 169.5,
-      "firstLoad": 411.1
+      "firstLoad": 411.5
     },
     "/purchases/orders/[id]": {
       "route": 74.2,
@@ -1478,11 +1479,11 @@
     },
     "/sales/orders/new": {
       "route": 169.4,
-      "firstLoad": 411.1
+      "firstLoad": 411.4
     },
     "/sales/orders/[id]/edit": {
       "route": 169.5,
-      "firstLoad": 411.1
+      "firstLoad": 411.5
     },
     "/parties": {
       "route": 109,
@@ -1494,11 +1495,11 @@
     },
     "/sales/invoices/new": {
       "route": 169.4,
-      "firstLoad": 411.1
+      "firstLoad": 411.4
     },
     "/sales/invoices/[id]/edit": {
       "route": 169.5,
-      "firstLoad": 411.1
+      "firstLoad": 411.4
     },
     "/sales/invoices": {
       "route": 98,
@@ -1513,12 +1514,12 @@
       "firstLoad": 356
     },
     "/sales/estimates/new": {
-      "route": 169.2,
-      "firstLoad": 411.1
+      "route": 169.6,
+      "firstLoad": 411.4
     },
     "/sales/estimates/[id]/edit": {
       "route": 169.5,
-      "firstLoad": 411.1
+      "firstLoad": 411.5
     },
     "/sales/estimates/[id]": {
       "route": 85.6,
@@ -1562,7 +1563,7 @@
     },
     "/ledger/aging": {
       "route": 101.0,
-      "firstLoad": 342.7
+      "firstLoad": 343.0
     },
     "/switch": {
       "route": 56.0,
@@ -1578,7 +1579,7 @@
     },
     "/settings/profile": {
       "route": 144.4,
-      "firstLoad": 386.0
+      "firstLoad": 386.3
     },
     "/settings/branding": {
       "route": 96.6,
@@ -1666,7 +1667,7 @@
     },
     "/purchases/bills/[id]": {
       "route": 74.2,
-      "firstLoad": 315.7
+      "firstLoad": 316.0
     },
     "/purchases/bills/[id]/edit": {
       "route": 170.9,
@@ -1702,7 +1703,7 @@
     },
     "/reports/sales-register": {
       "route": 116.2,
-      "firstLoad": 357.9
+      "firstLoad": 358.2
     },
     "/login": {
       "route": 57,
@@ -1718,7 +1719,7 @@
     },
     "/library/catalogue": {
       "route": 86.1,
-      "firstLoad": 327.8
+      "firstLoad": 328.1
     },
     "/library/copies": {
       "route": 83.6,
@@ -1726,23 +1727,23 @@
     },
     "/library/copies/[copyId]": {
       "route": 78.3,
-      "firstLoad": 319.9
+      "firstLoad": 320.2
     },
     "/library/settings": {
       "route": 120.2,
-      "firstLoad": 361.8
+      "firstLoad": 362.1
     },
     "/library/members": {
-      "route": 86.8,
+      "route": 87.1,
       "firstLoad": 328.7
     },
     "/library/members/[membershipId]": {
       "route": 86.6,
-      "firstLoad": 328.2
+      "firstLoad": 328.5
     },
     "/library/catalogue/[titleId]": {
       "route": 75.4,
-      "firstLoad": 317.0
+      "firstLoad": 317.3
     },
     "/library/catalogue/categories": {
       "route": 73.1,
@@ -1846,15 +1847,15 @@
     },
     "/lending/messages": {
       "route": 67.1,
-      "firstLoad": 308.7
+      "firstLoad": 309.0
     },
     "/lending/routes": {
       "route": 63.9,
-      "firstLoad": 305.5
+      "firstLoad": 305.8
     },
     "/lending/borrowers": {
       "route": 79.7,
-      "firstLoad": 321.4
+      "firstLoad": 321.7
     },
     "/items/price-lists": {
       "route": 63.4,
@@ -1870,15 +1871,15 @@
     },
     "/more": {
       "route": 56,
-      "firstLoad": 296.8
+      "firstLoad": 297.1
     },
     "/reports/aging": {
       "route": 101.2,
-      "firstLoad": 342.7
+      "firstLoad": 343.0
     },
     "/apps": {
       "route": 56,
-      "firstLoad": 296.1
+      "firstLoad": 296.4
     }
   },
   "//ignoreRoutes": [

@@ -35,8 +35,11 @@ export async function shootPerson({ signedInContext, widths, themes, locale, dir
       const amount=drawer.locator('input[inputmode="decimal"]').first(); await amount.waitFor();
       const geometry=await drawer.evaluate(panel=>({width:panel.getBoundingClientRect().width,active:document.activeElement?.getAttribute('name')}));
       await check('drawer-loading'); releaseBills();
-      await drawer.getByText(words['payments.alloc.error'],{exact:true}).waitFor();
-      if(!(await drawer.getByTestId('payment-save').isDisabled())) failures.push(`${tag}: save allowed without bill read`);
+      await drawer.getByText(words['payments.counter.billsError'],{exact:true}).waitFor();
+      /* 08 §6 Error / partial: with Auto on the server settles oldest first, so
+         Save stays allowed and the footer says how the bills will be matched. */
+      if(await drawer.getByTestId('payment-save').isDisabled()) failures.push(`${tag}: Auto save held without bill read`);
+      if(!(await drawer.getByText(words['payments.counter.matchLater'],{exact:true}).count())) failures.push(`${tag}: no "matched oldest first" note`);
       await check('drawer-read-error');
       await page.unroute('**/api/v1/payments/open-documents?**');
       await drawer.getByRole('button',{name:common['common.action.retry'],exact:true}).click();

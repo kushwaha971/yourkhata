@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { Fragment, useRef, useState, type ReactNode } from 'react';
 
 import { Plus, Trash2 } from 'lucide-react';
 import { useFieldArray, useWatch, type UseFormReturn } from 'react-hook-form';
@@ -34,6 +34,7 @@ import type { PaymentFormValues } from '../types/payment.types';
 // them itself so a drawer that reuses it (the library's admission, QA F2) cannot
 // forget and print raw message ids.
 import 'src/i18n/catalogues/money';
+import 'src/i18n/catalogues/paymentCounter';
 import 'src/i18n/catalogues/payments';
 
 /** A reference placeholder by mode (PAY-02 §7): what the merchant would copy in. */
@@ -60,6 +61,7 @@ export function PaymentModeEditor({
   t,
   disabled,
   compact = false,
+  amountHint,
 }: Readonly<{
   form: UseFormReturn<PaymentFormValues>;
   /** What the lines are meant to add up to — the bill's due or the receivable. */
@@ -68,6 +70,11 @@ export function PaymentModeEditor({
   disabled?: boolean;
   /** Shop Counter Mode: amount first, payment method second; shared split logic. */
   compact?: boolean;
+  /**
+   * 08 §6 — what this amount leaves due ("₹245 will still be due after this."),
+   * under the amount while there is one line, under the total once it is split.
+   */
+  amountHint?: ReactNode;
 }>): React.JSX.Element {
   const { fields, append, remove, replace } = useFieldArray({
     control: form.control,
@@ -83,6 +90,9 @@ export function PaymentModeEditor({
      typed, then "Add mode", is ₹700 in two parts, so "Fill remaining" works to
      ₹700 — not to the bill's original due (or the khata's receivable) it used to. */
   const [splitTarget, setSplitTarget] = useState<string | null>(null);
+  /* 08 §6 Desktop — Enter in an amount moves on to how it was paid rather
+     than saving half a payment; Ctrl ↵ still submits from the amount. */
+  const methodIds = useRef<Record<number, string>>({});
   const fillTarget = splitTarget ?? target;
 
   const addLine = () => {
@@ -117,64 +127,78 @@ export function PaymentModeEditor({
                 <UbField
                   key="method"
                   name={`lines.${index}.mode`}
-                  label={t('payments.mode.label')}
+                  label={t(compact ? 'payments.mode.heading' : 'payments.mode.label')}
                   labelHidden={!compact}
                 >
-                  {(field) => (
-                    <PaymentMethodField
-                      presentation={compact ? 'select' : 'chips'}
-                      id={field.id}
-                      t={t}
-                      ariaLabel={t('payments.mode.label')}
-                      mode={field.value as PaymentMode | ''}
-                      app={line?.upiApp ?? ''}
-                      invalid={field.invalid}
-                      describedBy={field['aria-describedby']}
-                      onBlur={field.onBlur}
-                      disabled={disabled}
-                      onChange={(mode, app) => {
-                        field.onChange(mode);
-                        form.setValue(`lines.${index}.upiApp`, app, { shouldDirty: true });
-                      }}
-                    />
-                  )}
+                  {(field) => {
+                    methodIds.current[index] = field.id;
+                    return (
+                      <PaymentMethodField
+                        presentation={compact ? 'select' : 'chips'}
+                        id={field.id}
+                        t={t}
+                        ariaLabel={t(compact ? 'payments.mode.heading' : 'payments.mode.label')}
+                        mode={field.value as PaymentMode | ''}
+                        app={line?.upiApp ?? ''}
+                        invalid={field.invalid}
+                        describedBy={field['aria-describedby']}
+                        onBlur={field.onBlur}
+                        disabled={disabled}
+                        onChange={(mode, app) => {
+                          field.onChange(mode);
+                          form.setValue(`lines.${index}.upiApp`, app, { shouldDirty: true });
+                        }}
+                      />
+                    );
+                  }}
                 </UbField>
               ) : (
-                <UbStack key="amount" direction="row" gap={2} align="start">
-                  <UbField
-                    name={`lines.${index}.amount`}
-                    label={t('payments.mode.amount')}
-                    labelHidden={!compact}
-                    placeholder={t('payments.amount.placeholder')}
-                    className="min-w-0 flex-1"
-                  >
-                    {(field) => (
-                      <UbMoneyInput
-                        {...field}
-                        value={field.value as string}
-                        inputMode="decimal"
-                        disabled={disabled}
-                        className={
-                          compact
-                            ? '[&_input]:text-left [&_input]:text-lg [&_input]:font-semibold'
-                            : undefined
-                        }
-                        autoFocus={index === 0}
-                      />
-                    )}
-                  </UbField>
-                  {fields.length > 1 && (
-                    <UbButton
-                      variant="ghost"
-                      iconOnly
-                      icon={<Trash2 className="h-4 w-4" aria-hidden />}
-                      onClick={() => remove(index)}
-                      disabled={disabled}
+                <Fragment key="amount">
+                  <UbStack direction="row" gap={2} align="start">
+                    <UbField
+                      name={`lines.${index}.amount`}
+                      label={t('payments.mode.amount')}
+                      labelHidden={!compact}
+                      placeholder={t('payments.amount.placeholder')}
+                      className="min-w-0 flex-1"
                     >
-                      {t('payments.mode.remove')}
-                    </UbButton>
-                  )}
-                </UbStack>
+                      {(field) => (
+                        <UbMoneyInput
+                          {...field}
+                          value={field.value as string}
+                          inputMode="decimal"
+                          disabled={disabled}
+                          className={
+                            compact
+                              ? '[&_input]:text-left [&_input]:text-lg [&_input]:font-semibold'
+                              : undefined
+                          }
+                          autoFocus={index === 0}
+                          onKeyDown={(event) => {
+                            if (!compact || event.key !== 'Enter' || event.ctrlKey || event.metaKey)
+                              return;
+                            const method = document.getElementById(methodIds.current[index] ?? '');
+                            if (!method) return;
+                            event.preventDefault();
+                            method.focus();
+                          }}
+                        />
+                      )}
+                    </UbField>
+                    {fields.length > 1 && (
+                      <UbButton
+                        variant="ghost"
+                        iconOnly
+                        icon={<Trash2 className="h-4 w-4" aria-hidden />}
+                        onClick={() => remove(index)}
+                        disabled={disabled}
+                      >
+                        {t('payments.mode.remove')}
+                      </UbButton>
+                    )}
+                  </UbStack>
+                  {compact && index === 0 && fields.length === 1 && amountHint}
+                </Fragment>
               )
             )}
             {line?.mode && line.mode !== 'cash' && (
@@ -244,7 +268,7 @@ export function PaymentModeEditor({
             onClick={addLine}
             disabled={disabled}
           >
-            {t('payments.mode.add')}
+            {t(compact && fields.length === 1 ? 'payments.counter.split' : 'payments.mode.add')}
           </UbButton>
         ) : (
           <UbText variant="caption" tone="tertiary">
@@ -260,6 +284,7 @@ export function PaymentModeEditor({
           </UbStack>
         )}
       </UbStack>
+      {compact && fields.length > 1 && amountHint}
     </UbStack>
   );
 }
