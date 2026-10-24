@@ -88,7 +88,9 @@ export const createProfitColumns = ({
       if (isCards) return [name, missing].filter(Boolean).join(' · ');
       return (
         <UbStack gap={0.5} className="min-w-0">
-          <UbText as="span" variant="body-sm" className="line-clamp-2">
+          {/* Wraps in full: "Radhe Krishna Enterprises Copper Electrical Cable
+              2.5 sq mm" lost its size to a two-line clamp. */}
+          <UbText as="span" variant="body-sm" className="break-words">
             {name}
           </UbText>
           <UbText as="span" variant="caption" tone="tertiary" className="ds-num">

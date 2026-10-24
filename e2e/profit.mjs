@@ -1,199 +1,175 @@
-// Shop item 1 — the profit report against a live stack.
-//
-// Seeds a GST shop through the API with figures a person can check by hand,
-// asserts the report's numbers against them, then walks /reports/profit at
-// 1280 and 390 px: every view, losses first, a search, a row that opens, the
-// hub row, and a staff member who must not see it. Every screen is measured
-// (page wider than the viewport, a text node cut by its own box) and
-// photographed into /tmp/e2e-shots/profit.
-//
-//   node e2e/profit.mjs
-//
-// The book (taxable values; costs are the opening stock's unit cost):
-//   Ramesh  rice 2 × 450 = 900 (cost 600)   oil 2 × 180 = 360 (cost 400, a loss)
-//   Walk-in rice 1 × 450 = 450 (cost 300)
-//   Gupta   rice 4 × 450 = 1800, one returned → 1350 (cost 900); delivery 50, no cost
-//   Expense 500
-// So: rice 2700 / 1800 / +900; oil 360 / 400 / −40; sales 3110, cost 2200,
-// gross profit 860 (28.1% of the 3060 that has a cost), net 360.
-import { chromium } from 'playwright';
-import { mkdirSync, writeFileSync } from 'node:fs';
+/**
+ * Revamp 09 §10.6 — the Profit report on the LOCAL QA stack.
+ *
+ *   NODE_PATH=$(npm root -g) node e2e/profit.mjs [--shots=/tmp/e2e-shots/profit]
+ *
+ *  * at 320, 360, 390, 1024 and 1280 in English and Hindi, by item and by
+ *    bill: no sideways scroll, no text cut, no figure broken across lines;
+ *  * the figure line is the server's: sales, cost, profit, margin; the expenses
+ *    line too;
+ *  * on a phone: one card per server row on the page, each 44 px or more, its
+ *    "Sold" and profit the server's, a loss said in words; the pager; no table;
+ *  * from 1024: the table, no cards;
+ *  * a card opens the row sheet, and its Open reaches the item or the bill;
+ *  * the phone search asks the server and keeps its input.
+ * Read-only: it writes nothing.
+ */
+import { mkdirSync } from 'node:fs';
+import { createRequire } from 'node:module';
 
-import { api, must, uniq, PASSWORD } from './lib/fixtures.mjs';
+const { chromium } = createRequire(import.meta.url)('playwright');
+const arg = (k, d) => process.argv.find((x) => x.startsWith(`--${k}=`))?.slice(k.length + 3) ?? d;
+const base = process.env.E2E_FRONTEND ?? 'http://localhost:3000';
+if (!['localhost', '127.0.0.1'].includes(new URL(base).hostname)) throw Error('Local QA only');
+const SHOTS = arg('shots', '');
+if (SHOTS) mkdirSync(SHOTS, { recursive: true });
 
-const FE = process.env.FE ?? 'http://localhost:3000';
-const ROOT = '/tmp/e2e-shots/profit';
-mkdirSync(ROOT, { recursive: true });
-let failed = 0;
-const check = (name, ok, extra = '') => {
-  if (!ok) failed += 1;
-  console.log(`${ok ? 'PASS' : 'FAIL'}  ${name}${extra ? ` — ${extra}` : ''}`);
+const results = [];
+const check = (name, ok, detail = '') => {
+  results.push({ name, ok, detail });
+  console.log(`${ok ? 'ok  ' : 'FAIL'} ${name}${detail ? ` — ${detail}` : ''}`);
 };
-const B36 = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ';
-const gstinFor = (seed) => {
-  const letters = String(seed).slice(-5).split('').map((d) => B36[10 + Number(d)]).join('');
-  const body = `27${letters}${String(seed).slice(-4)}F1Z`;
-  let sum = 0;
-  [...body].forEach((ch, i) => {
-    const p = B36.indexOf(ch) * (i % 2 ? 2 : 1);
-    sum += Math.floor(p / 36) + (p % 36);
-  });
-  return body + B36[(36 - (sum % 36)) % 36];
-};
-const TODAY = new Date(Date.now() + 5.5 * 3600e3).toISOString().slice(0, 10);
+const rupees = (text) => Number(String(text).replace(/‑/g, '-').replace(/[^\d.-]/g, ''));
+const near = (a, b) => Math.abs(Number(a) - Number(b)) < 0.005;
+const inr = (v) => Number(v).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
-// ── Seed ────────────────────────────────────────────────────────────────────
-const email = `profitqa-${uniq()}@e2e.test`;
-let tok = (await must('POST', '/auth/register', { email, password: PASSWORD, full_name: 'Profit QA Owner' })).access_token;
-const ten = await must('POST', '/tenants', { name: 'Shree Ganesh Kirana', business_type: 'retail', state_code: '27' }, tok);
-tok = ten.access_token ?? tok;
-for (const step of [2, 3, 4]) await must('PATCH', '/tenants/current', { onboarding_step: step }, tok);
-const stamp = Date.now();
-await must('PATCH', '/tenants/current', {
-  gst_type: 'regular',
-  gstin: gstinFor(stamp),
-  address: { line1: '4 Station Road', city: 'Pune', state: 'Maharashtra', pincode: '411001' },
-}, tok);
-const nos = (await must('GET', '/units', null, tok)).find((u) => u.code === 'NOS');
-const mkItem = (name, price, cost, stock, extra = {}) => must('POST', '/items', {
-  name, unit_id: nos.id, selling_price: price, tax_code: 'GST5', hsn_sac: '1006',
-  ...(cost ? { purchase_price: cost, opening_stock: { qty: stock, unit_cost: cost } } : {}),
-  ...extra,
-}, tok);
-const rice = await mkItem('Basmati Rice 5kg', '450.00', '300.00', '40');
-const oil = await mkItem('Mustard Oil 1L', '180.00', '200.00', '20');
-const delivery = await mkItem('Home delivery', '50.00', null, null, { item_type: 'service', tax_code: 'GST18', hsn_sac: '9968' });
-const ramesh = await must('POST', '/parties', { name: 'Ramesh Traders', is_customer: true, state_code: '27' }, tok);
-const gupta = await must('POST', '/parties', { name: 'Gupta Provision Store', is_customer: true, state_code: '27' }, tok);
-
-const inv = async (body, payment) => {
-  const r = await api('POST', '/sales/invoices?issue=true', { ...body, ...(payment ? { payment } : {}) }, tok);
-  if (r.status >= 400) throw new Error(`invoice ${r.status} ${JSON.stringify(r.body).slice(0, 400)}`);
-  return r.body.data;
-};
-const line = (item, qty) => ({ item_id: item.id, qty: String(qty) });
-await inv({ party_id: ramesh.id, document_date: TODAY, due_on: TODAY, lines: [line(rice, 2), line(oil, 2)] });
-await inv({ walk_in_name: 'Quick Sale', document_date: TODAY, lines: [line(rice, 1)] },
-  { payment_date: TODAY, mode_breakup: [{ mode: 'cash', amount: '473.00' }] });
-const big = await inv({ party_id: gupta.id, document_date: TODAY, due_on: TODAY, lines: [line(rice, 4), line(delivery, 1)] });
-const riceLine = big.lines.find((l) => l.item_id === rice.id);
-let r = await api('POST', '/sales/credit-notes', {
-  against_id: big.id, party_id: gupta.id, document_date: TODAY, reason: 'sales_return', restock: true,
-  lines: [{ item_id: rice.id, qty: '1', against_line_id: riceLine.id }],
-}, tok);
-check('seed: credit note draft', r.status < 300, `${r.status} ${JSON.stringify(r.body?.error ?? '').slice(0, 300)}`);
-r = await api('POST', `/sales/credit-notes/${r.body.data.id}/issue`, {}, tok);
-check('seed: credit note issued', r.status < 300, `${r.status}`);
-const cats = await must('GET', '/expense-categories', null, tok);
-r = await api('POST', '/expenses', { amount: '500', category_id: cats[0].id, expense_date: TODAY, mode: 'cash', note: 'Shop rent share' }, tok);
-check('seed: expense 500', r.status < 300, `${r.status}`);
-
-// ── The figures, through the API ───────────────────────────────────────────
-const report = async (query) => {
-  const got = await api('GET', `/reports/profit?date_from=${TODAY}&date_to=${TODAY}&${query}`, null, tok);
-  return got.body;
-};
-const byItem = await report('group=item');
-const items = Object.fromEntries(byItem.data.map((row) => [row.name, row]));
-check('rice: what stayed sold, at its frozen cost', items['Basmati Rice 5kg']?.sale_value === '2700.00' && items['Basmati Rice 5kg']?.profit === '900.00', JSON.stringify(items['Basmati Rice 5kg']));
-check('oil: sold below cost is a loss', items['Mustard Oil 1L']?.profit === '-40.00', items['Mustard Oil 1L']?.profit);
-check('delivery: no cost, so no invented profit', items['Home delivery']?.uncosted_lines === 1 && items['Home delivery']?.margin_pct === null, JSON.stringify(items['Home delivery']));
-const t = byItem.meta.totals;
-check('P&L: sales, cost, gross, margin, expenses, net', t.sale_value === '3110.00' && t.cost === '2200.00' && t.profit === '860.00' && t.margin_pct === '28.1' && t.expenses === '500.00' && t.net_profit === '360.00', JSON.stringify(t));
-const byParty = await report('group=party');
-check('by customer: walk-in sales are one row', byParty.data.some((row) => row.id === null && row.profit === '150.00'), JSON.stringify(byParty.data.map((row) => [row.name, row.profit])));
-const losses = await report('group=item&ordering=profit');
-check('losses first', losses.data[0]?.name === 'Mustard Oil 1L', losses.data[0]?.name);
-
-const staffEmail = `profitqa-staff-${uniq()}@e2e.test`;
-const made = await must('POST', '/members', { full_name: 'Counter Staff', email: staffEmail, role: 'staff' }, tok);
-let st = (await must('POST', '/auth/login', { email: staffEmail, password: made.password })).access_token;
-await must('POST', '/auth/password/set', { current_password: made.password, new_password: PASSWORD }, st);
-st = (await must('POST', '/auth/login', { email: staffEmail, password: PASSWORD })).access_token;
-const refused = await api('GET', '/reports/profit', null, st);
-check('staff are refused by the server', refused.status === 403, `${refused.status}`);
-
-// ── The screen ──────────────────────────────────────────────────────────────
-// The house check (ledger.mjs): a leaf whose text overflows its own box is a word
-// a merchant cannot finish reading; `sr-only` is clipped by design and excluded.
-const measure = (page) => page.evaluate(() => ({
-  overflow: document.documentElement.scrollWidth - window.innerWidth,
-  // Inside the page: the shell's business name truncates with an ellipsis by design.
-  cut: Array.from((document.querySelector('main') ?? document).querySelectorAll('p, span, div, h1, h2, h3'))
-    .filter((node) => node.children.length === 0 && (node.textContent ?? '').trim())
-    .filter((node) => !node.className.toString().includes('sr-only'))
-    .filter((node) => node.scrollWidth - node.clientWidth > 1)
-    .map((node) => (node.textContent ?? '').trim())
-    .slice(0, 6),
-}));
-
-// PW_CHROMIUM: a Chromium already on the machine, when the pinned one is not installed.
-const browser = await chromium.launch(
-  process.env.PW_CHROMIUM ? { executablePath: process.env.PW_CHROMIUM } : {}
-);
-async function signIn(viewport, who) {
-  const ctx = await browser.newContext({ viewport, locale: 'en-IN' });
-  const page = await ctx.newPage();
-  const errors = [];
-  const bad = [];
-  page.on('pageerror', (e) => errors.push(e.message));
-  page.on('response', (res) => {
-    const probe = /\/auth\/(me|refresh)$/.test(new URL(res.url()).pathname);
-    if (res.status() >= 400 && res.url().includes('/api/') && !probe) bad.push(`${res.status()} ${res.url().replace(/.*\/api\/v1/, '')}`);
-  });
-  await page.goto(`${FE}/login/email`, { waitUntil: 'networkidle', timeout: 120000 });
-  await page.fill('input[type="email"]', who);
-  await page.fill('input[type="password"]', PASSWORD);
-  await page.click('button[type="submit"]');
-  await page.waitForURL((u) => !u.pathname.startsWith('/login'), { timeout: 60000 });
-  await page.waitForTimeout(1500);
-  return { ctx, page, errors, bad };
-}
-
-for (const [size, viewport] of [['desktop', { width: 1280, height: 860 }], ['phone', { width: 390, height: 844 }]]) {
-  const { ctx, page, errors, bad } = await signIn(viewport, email);
-  const look = async (name, path) => {
-    if (path) await page.goto(`${FE}${path}`, { waitUntil: 'domcontentloaded' });
-    await page.waitForTimeout(2500);
-    const m = await measure(page);
-    check(`${size} ${name}: fits the screen`, m.overflow === 0 && m.cut.length === 0, JSON.stringify(m));
-    await page.screenshot({ path: `${ROOT}/${size}-${name}.png`, fullPage: true });
+const measure = () => {
+  const cut = [];
+  for (const el of document.querySelectorAll('main *')) {
+    if (el.children.length || !el.textContent?.trim()) continue;
+    const r = el.getBoundingClientRect();
+    if (r.width <= 1) continue;
+    const s = getComputedStyle(el);
+    const clamped = s.webkitLineClamp && s.webkitLineClamp !== 'none';
+    if (el.scrollWidth > el.clientWidth + 1 && el.clientWidth > 0 && s.overflow !== 'visible')
+      cut.push(el.textContent.trim().slice(0, 30));
+    if (clamped && el.scrollHeight > el.clientHeight + 1) cut.push(`clamped:${el.textContent.trim().slice(0, 30)}`);
+    if (r.right > innerWidth + 1 && !el.closest('[data-testid="ub-grid-table-scroller"]'))
+      cut.push(`offscreen:${el.textContent.trim().slice(0, 30)}`);
+  }
+  const broken = [];
+  for (const el of document.querySelectorAll('[data-testid="profit-figures"] span, [data-testid="profit-row"] span')) {
+    if (el.children.length) continue;
+    for (const m of el.textContent.matchAll(/[-‑]?₹[\d,.]+/g)) {
+      const node = el.firstChild;
+      if (!node || node.nodeType !== 3) continue;
+      const range = document.createRange();
+      range.setStart(node, m.index);
+      range.setEnd(node, m.index + m[0].length);
+      if (range.getClientRects().length > 1) broken.push(m[0]);
+    }
+  }
+  const figure = (key) => document.querySelector(`[data-testid="profit-figure-${key}"]`)?.textContent ?? '';
+  return {
+    overflow: document.documentElement.scrollWidth - innerWidth,
+    cut: [...new Set(cut)],
+    broken,
+    figures: { sales: figure('sales'), cost: figure('cost'), profit: figure('profit'), margin: figure('margin') },
+    after: document.querySelector('[data-testid="profit-after-expenses"]')?.textContent ?? null,
+    cards: [...document.querySelectorAll('[data-testid="profit-row"]')].map((c) => ({
+      h: Math.round(c.getBoundingClientRect().height),
+      label: c.getAttribute('aria-label'),
+    })),
+    table: Boolean(document.querySelector('[data-testid="ub-grid-table"]')),
+    pager: /Page 1 of|पेज 1/.test(document.querySelector('main')?.textContent ?? ''),
   };
-  await look('hub', '/reports');
-  check(`${size}: the hub lists the report`, await page.getByText('Profit and loss').first().isVisible());
-  await page.evaluate(() => localStorage.setItem('ub.statSummary.profit', 'open'));
-  await look('by-item', '/reports/profit');
-  const text = await page.locator('main').innerText();
-  check(`${size}: the P&L is on top`, text.includes('₹860.00') && text.includes('₹360.00') && text.includes('Net profit'), '');
-  check(`${size}: the uncosted line is owned up to`, text.includes('1 line has no cost recorded'));
-  await look('by-customer', '/reports/profit?by=party');
-  await look('by-category', '/reports/profit?by=category');
-  await look('by-bill', '/reports/profit?by=bill');
-  await look('losses-first', '/reports/profit?sort=profit');
-  const first = await page.locator('main').innerText();
-  check(`${size}: losses first puts the oil on top`, first.indexOf('Mustard Oil 1L') > -1 && first.indexOf('Mustard Oil 1L') < first.indexOf('Basmati Rice 5kg'));
-  await page.goto(`${FE}/reports/profit`, { waitUntil: 'domcontentloaded' });
-  await page.waitForTimeout(2000);
-  await page.getByRole('searchbox').fill('oil');
-  await page.waitForTimeout(1500);
-  check(`${size}: search narrows the list`, page.url().includes('q=oil'), page.url());
-  await look('searched');
-  await page.getByText('Mustard Oil 1L').first().click();
-  await page.waitForURL((u) => u.pathname.startsWith('/items/'), { timeout: 15000 }).catch(() => {});
-  check(`${size}: a row opens the item`, new URL(page.url()).pathname === `/items/${oil.id}`, page.url());
-  check(`${size}: no page errors`, errors.length === 0, errors.join(' | '));
-  check(`${size}: no failed requests`, bad.length === 0, bad.join(' | '));
-  await ctx.close();
+};
+
+const browser = await chromium.launch({ executablePath: process.env.CHROME ?? '/opt/pw-browsers/chromium' });
+try {
+  const ctx = await browser.newContext();
+  const page = await ctx.newPage();
+  await page.goto(`${base}/login/email`);
+  await page.fill('input[type=email]', 'scale@digikhaato.test');
+  await page.fill('input[type=password]', 'Scale-Run-2026!');
+  await page.click('button[type=submit]');
+  await page.waitForURL((u) => !u.pathname.startsWith('/login'));
+
+  const today = await page.evaluate(() =>
+    new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kolkata' }).format(new Date())
+  );
+  const from = `${today.slice(0, 8)}01`;
+  const served = (group) =>
+    page.evaluate(async ([g, f, to]) => {
+      const r = await fetch(`/api/v1/reports/profit?group=${g}&date_from=${f}&date_to=${to}&ordering=-profit`);
+      return r.json();
+    }, [group, from, today]);
+  const item = await served('item');
+  const totals = item.meta.totals;
+  check('the QA book has profit this month', item.data.length > 0, `${item.meta.total} items`);
+
+  for (const locale of ['en', 'hi']) {
+    await ctx.addCookies([{ name: 'ub_locale', value: locale, url: base }]);
+    for (const width of [320, 360, 390, 1024, 1280]) {
+      await page.setViewportSize({ width, height: width >= 1024 ? 900 : 780 });
+      for (const by of ['item', 'bill']) {
+        await page.goto(`${base}/reports/profit?period=thisMonth${by === 'bill' ? '&by=bill' : ''}`, { waitUntil: 'networkidle' });
+        await page.getByTestId('profit-figures').waitFor();
+        const tag = `${width} ${locale} by ${by}`;
+        const m = await page.evaluate(measure);
+        check(`${tag}: no sideways scroll`, m.overflow <= 0, `${m.overflow}px`);
+        check(`${tag}: no text cut`, m.cut.length === 0, m.cut.join(' | '));
+        check(`${tag}: no figure broken across lines`, m.broken.length === 0, m.broken.join(' | '));
+        if (by === 'item' && locale === 'en' && (width === 390 || width === 1280)) {
+          check(`${tag}: Sales is the server's`, near(rupees(m.figures.sales.replace(/\d+ bills?$/, '')), totals.sale_value), `${m.figures.sales} vs ${totals.sale_value}`);
+          check(`${tag}: Cost is the server's`, near(rupees(m.figures.cost), totals.cost), `${m.figures.cost} vs ${totals.cost}`);
+          check(`${tag}: Profit is the server's`, near(rupees(m.figures.profit), Math.abs(Number(totals.profit))), `${m.figures.profit} vs ${totals.profit}`);
+          check(`${tag}: Margin is the server's`, m.figures.margin.includes(`${totals.margin_pct}%`), `${m.figures.margin} vs ${totals.margin_pct}`);
+          if (totals.expenses !== null)
+            check(`${tag}: after expenses is the server's`, m.after?.includes(inr(totals.expenses)) && m.after.includes(inr(Math.abs(Number(totals.net_profit)))), m.after);
+        }
+        if (width < 1024) {
+          check(`${tag}: cards, no table`, m.cards.length > 0 && !m.table, `${m.cards.length} cards`);
+          check(`${tag}: every card is a 44 px target`, m.cards.every((c) => c.h >= 44), JSON.stringify([...new Set(m.cards.map((c) => c.h))]));
+          if (by === 'item' && locale === 'en' && width === 390) {
+            check(`${tag}: one card per server row`, m.cards.length === item.data.length, `${m.cards.length} vs ${item.data.length}`);
+            const wrong = item.data.filter((r, i) => {
+              const label = m.cards[i]?.label ?? '';
+              const loss = String(r.profit).startsWith('-');
+              const word = r.profit === null ? 'Cost not known' : `${loss ? 'Loss' : 'Profit'} ₹${inr(Math.abs(Number(r.profit)))}`;
+              return !label.includes(`Sold ₹${inr(r.sale_value)}`) || !label.includes(word);
+            });
+            check(`${tag}: every card's Sold and Profit/Loss are the server's`, wrong.length === 0, wrong.slice(0, 3).map((r) => r.name).join(', '));
+            check(`${tag}: a pager under the cards`, item.meta.total_pages <= 1 || m.pager, String(item.meta.total_pages));
+          }
+        } else {
+          check(`${tag}: the table, no cards`, m.table && m.cards.length === 0, `table=${m.table} cards=${m.cards.length}`);
+        }
+        if (SHOTS) await page.screenshot({ path: `${SHOTS}/${by}-${width}-${locale}.png`, fullPage: true });
+      }
+    }
+  }
+
+  await ctx.addCookies([{ name: 'ub_locale', value: 'en', url: base }]);
+  await page.setViewportSize({ width: 390, height: 780 });
+  await page.goto(`${base}/reports/profit?period=thisMonth`, { waitUntil: 'networkidle' });
+  const first = item.data[0];
+  await page.getByTestId('profit-row').first().click();
+  const sheet = page.getByTestId('profit-row-sheet');
+  await sheet.waitFor();
+  const text = await sheet.innerText();
+  check('the sheet carries sales, cost, profit and margin', [inr(first.sale_value), inr(first.cost), inr(Math.abs(Number(first.profit))), `${first.margin_pct}%`].every((v) => text.includes(v)), text.replace(/\n/g, ' ').slice(0, 140));
+  if (SHOTS) await page.screenshot({ path: `${SHOTS}/sheet-390.png` });
+  await page.getByRole('link', { name: `Open ${first.name}` }).click();
+  await page.waitForURL((u) => u.pathname.startsWith('/items/'), { timeout: 15000 }).catch(() => undefined);
+  check('Open reaches the item', page.url().includes(`/items/${first.id}`), page.url());
+
+  // Search on a phone: asks the server, keeps the input focused.
+  await page.goto(`${base}/reports/profit?period=thisMonth`, { waitUntil: 'networkidle' });
+  const word = first.name.split(' ')[0];
+  const box = page.getByPlaceholder('Search items');
+  await box.fill(word);
+  await page.waitForURL((u) => u.searchParams.get('q') === word, { timeout: 10000 }).catch(() => undefined);
+  await page.waitForLoadState('networkidle');
+  await page.getByTestId('profit-row').first().waitFor({ timeout: 15000 }).catch(() => undefined);
+  const labels = await page.getByTestId('profit-row').evaluateAll((cs) => cs.map((c) => c.getAttribute('aria-label')));
+  check('the phone search asks the server', new URL(page.url()).searchParams.get('q') === word && labels.length > 0 && labels.every((l) => l.toLowerCase().includes(word.toLowerCase())), `${labels.length} cards for "${word}"`);
+  check('the search box keeps focus', await box.evaluate((el) => el === document.activeElement));
+} catch (error) {
+  check('harness ran to the end', false, error.message);
+} finally {
+  await browser.close();
 }
-
-const staff = await signIn({ width: 390, height: 844 }, staffEmail);
-await staff.page.goto(`${FE}/reports/profit`, { waitUntil: 'domcontentloaded' });
-await staff.page.waitForTimeout(2500);
-check('staff see why, not a broken page', (await staff.page.locator('main').innerText()).includes('Profit is for the owner and the accountant'));
-await staff.page.screenshot({ path: `${ROOT}/phone-staff.png`, fullPage: true });
-await staff.ctx.close();
-await browser.close();
-
-writeFileSync(`${ROOT}/accounts.json`, JSON.stringify({ email, staffEmail }, null, 1));
-console.log(failed ? `${failed} FAILED` : 'all passed');
-process.exit(failed ? 1 : 0);
+const failed = results.filter((r) => !r.ok);
+console.log(`\n${results.length - failed.length}/${results.length} passed`);
+process.exit(failed.length ? 1 : 0);

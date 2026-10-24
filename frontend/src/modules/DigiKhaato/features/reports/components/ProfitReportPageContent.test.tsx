@@ -127,7 +127,6 @@ const OWNER: PermissionCode[] = [
 const MODULES: ModuleCode[] = ['reports', 'sales'];
 
 beforeEach(() => {
-  window.localStorage.setItem('ub.statSummary.profit', 'open');
   jest.clearAllMocks();
   mockSearch = '';
   mockReplace.mockImplementation((url: string) => {
@@ -147,35 +146,69 @@ beforeEach(() => {
 it('shows the period P&L from the server and says a net loss in words', async () => {
   signIn(OWNER, MODULES);
   renderWithProviders(<ProfitReportPageContent />);
-  expect(await screen.findByText('₹98,765.00')).toBeInTheDocument();
-  expect(screen.getByText('Gross profit')).toBeInTheDocument();
-  expect(screen.getByText('19.0% margin')).toBeInTheDocument();
-  expect(screen.getByText('Net loss')).toBeInTheDocument();
+  // 09 §10.6: Sales · Cost · Profit · Margin, always in view.
+  const figures = await screen.findByTestId('profit-figures');
+  expect(screen.getByTestId('profit-figure-sales')).toHaveTextContent('₹98,765.00');
+  expect(screen.getByTestId('profit-figure-cost')).toHaveTextContent('₹80,000.00');
+  expect(screen.getByTestId('profit-figure-profit')).toHaveTextContent('₹18,765.00');
+  expect(screen.getByTestId('profit-figure-margin')).toHaveTextContent('19.0%');
+  expect(figures).toHaveTextContent('12 bills');
+  expect(screen.getByTestId('profit-basis')).toHaveTextContent(
+    'Cost is what each item cost when it was sold.'
+  );
+  // A loss is a word, and its figure is not also signed.
+  const after = screen.getByTestId('profit-after-expenses');
+  expect(after).toHaveTextContent('Loss after expenses');
+  expect(after).toHaveTextContent('₹6,235.00');
+  expect(after).not.toHaveTextContent('-₹6,235.00');
   expect(screen.getByText('2 lines have no cost recorded')).toBeInTheDocument();
   expect(lastAsked()).toMatchObject({ preset: 'thisMonth', group: 'item', ordering: '-profit' });
 });
 
-it('names the catch-all row and owns up to the line it could not cost', async () => {
+it('draws a card per row: name, what it covers, what sold, and the profit or loss in words', async () => {
   signIn(OWNER, MODULES);
   renderWithProviders(<ProfitReportPageContent />);
-  expect(
-    (await screen.findAllByText('Lines without an item · 1 line has no cost')).length
-  ).toBeGreaterThan(0);
-  // A loss carries its sign in the accessible name, never colour alone.
-  expect(screen.getAllByText('Less, ₹20.00').length).toBeGreaterThan(0);
+  const cards = await screen.findAllByTestId('profit-row');
+  expect(cards).toHaveLength(3);
+  expect(cards[0]).toHaveAccessibleName('Open Rice 5 kg · Sold ₹1,400.00 · Profit ₹280.00');
+  expect(cards[0]).toHaveTextContent('28 NOS');
+  expect(cards[0]).toHaveTextContent('20.0% margin');
+  // A loss carries the word, never colour alone.
+  expect(cards[1]).toHaveAccessibleName('Open Mustard oil · Sold ₹1,400.00 · Loss ₹20.00');
+  // The catch-all row is named, and owns up to the line it could not cost.
+  expect(cards[2]).toHaveTextContent('Lines without an item');
+  expect(cards[2]).toHaveTextContent('1 line has no cost');
+  expect(screen.queryByRole('table')).not.toBeInTheDocument();
+});
+
+it('opens the whole row in a sheet, and the item from it', async () => {
+  signIn(OWNER, MODULES);
+  renderWithProviders(<ProfitReportPageContent />);
+  await userEvent.click(await screen.findByRole('button', { name: /^Open Mustard oil/ }));
+  const sheet = await screen.findByTestId('profit-row-sheet');
+  expect(sheet).toHaveTextContent('Quantity sold');
+  expect(sheet).toHaveTextContent('₹1,120.00');
+  expect(sheet).toHaveTextContent('Loss₹20.00');
+  expect(sheet).toHaveTextContent('-11.1%');
+  expect(screen.getByRole('link', { name: 'Open Mustard oil' })).toHaveAttribute(
+    'href',
+    '/items/i2'
+  );
 });
 
 it('asks the server again when the view changes to customers, and opens the khata', async () => {
   signIn(OWNER, MODULES);
   renderWithProviders(<ProfitReportPageContent />);
-  await screen.findAllByText('Rice 5 kg');
+  await screen.findAllByTestId('profit-row');
   await userEvent.click(screen.getByRole('button', { name: /^View:/ }));
   await userEvent.click(await screen.findByRole('option', { name: 'By customer' }));
   await waitFor(() => expect(lastAsked().group).toBe('party'));
   expect(mockSearch).toBe('by=party');
-  const [firstRow] = await screen.findAllByRole('button', { name: /Rice 5 kg/ });
-  await userEvent.click(firstRow as HTMLElement);
-  expect(mockPush).toHaveBeenCalledWith('/parties/i1');
+  await userEvent.click(await screen.findByRole('button', { name: /^Open Rice 5 kg/ }));
+  expect(screen.getByRole('link', { name: 'Open Rice 5 kg' })).toHaveAttribute(
+    'href',
+    '/parties/i1'
+  );
 });
 
 it('tells a member without the financial read, and asks nothing', async () => {

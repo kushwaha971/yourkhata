@@ -407,9 +407,11 @@ payment form's optional Note.
 GST summary §10.5 delivered 24 Oct (docs/performance/2026-10-24-gst-summary.md,
 e2e/gst-summary.mjs): net to pay first, phone section cards, labelled JSON
 disabled for an open month, official 3B grid on desktop.
-1. Payments, Expenses, Cash book, Reports hub, Day book, registers, GST done.
-   Next §10.6 Profit, §10.7 Old dues; approved Home LAST; then Udhaar.
-   Then stop.
+Profit §10.6 delivered 24 Oct (docs/performance/2026-10-24-profit.md,
+e2e/profit.mjs): figure line with loss in words, phone cards, row sheet.
+1. Payments, Expenses, Cash book, Reports hub, Day book, registers, GST,
+   Profit done. Next §10.7 Old dues, then approved Home LAST. Owner, 24 Oct:
+   after Home commit and push, then STOP and wait; do not start Udhaar.
 
 ## LATEST CHECKPOINT —23 October2026 (owner requested commit/push)
 

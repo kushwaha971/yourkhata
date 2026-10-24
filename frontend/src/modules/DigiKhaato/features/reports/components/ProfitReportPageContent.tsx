@@ -1,8 +1,10 @@
 'use client';
 
-import { useCallback, useMemo } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 
-import { UbActionLink, UbFilterSelect, UbSearchInput } from 'src/design-system';
+import dynamic from 'next/dynamic';
+
+import { UbActionLink, UbDivider, UbFilterSelect, UbSearchInput, UbStack } from 'src/design-system';
 import {
   UbDataGrid,
   useGridTier,
@@ -19,14 +21,22 @@ import { PROFIT_GROUPS } from '../constants/profitReportConstants';
 import { TAX_PERIOD_PRESETS } from '../constants/taxReportConstants';
 import { useProfitReport } from '../hooks/useProfitReport';
 import { useReportGridLabels } from '../hooks/useReportGridLabels';
+import { profitCard } from '../view-model/profitCards';
 import { orderingOf, profitRowHref, sortOf } from '../view-model/profitDisplay';
 
 import { createProfitColumns, profitRowName } from './ProfitColumns';
 import { ProfitSummary } from './ProfitSummary';
+import { ReportCardRow } from './ReportCardRow';
+import { ReportPager } from './ReportPager';
 import { ReportPageShell } from './ReportPageShell';
 
 import type { ProfitGroup, ProfitRow } from '../types/profitReport.types';
 import type { TaxPeriodPreset } from '../types/taxReports.types';
+
+// The row sheet opens from a phone card; a visit that only reads never loads it.
+const ProfitRowSheetLazy = dynamic(() => import('./ProfitRowSheet').then((m) => m.ProfitRowSheet), {
+  ssr: false,
+});
 
 /** Where a bill is made — the empty book's one action. */
 const NEW_BILL = `${ROUTES.SALES_INVOICES}/new`;
@@ -53,6 +63,10 @@ export function ProfitReportPageContent(): React.JSX.Element {
   const { group } = filters;
   const { can, hasModule } = usePermissions();
   const canBill = hasModule('sales') && can('sales.invoice.write');
+
+  const phone = tier === 'cards';
+  const [sheetRow, setSheetRow] = useState<ProfitRow | null>(null);
+  const closeSheet = useCallback(() => setSheetRow(null), []);
 
   const commitSearch = useCallback((q: string) => update({ q }), [update]);
   const [search, setSearch] = useCommittedSearch(filters.q, commitSearch, SEARCH_DEBOUNCE_MS);
@@ -102,6 +116,19 @@ export function ProfitReportPageContent(): React.JSX.Element {
 
   const rowId = useCallback((row: ProfitRow) => row.id ?? `none-${group}`, [group]);
   const rowName = useCallback((row: ProfitRow) => profitRowName(t, group, row), [t, group]);
+  const card = useMemo(() => profitCard(t, group, rowName), [t, group, rowName]);
+  const pages = Math.max(
+    Math.ceil((report.data?.total ?? 0) / Math.max(report.data?.pageSize ?? 50, 1)),
+    1
+  );
+  const searchInput = (
+    <UbSearchInput
+      value={search}
+      onChange={setSearch}
+      placeholder={t(`reports.profit.search.${group}`)}
+      aria-label={t(`reports.profit.search.${group}`)}
+    />
+  );
   const openRow = useCallback(
     (row: ProfitRow) => {
       const href = profitRowHref(group, row);
@@ -185,39 +212,69 @@ export function ProfitReportPageContent(): React.JSX.Element {
       loadingLabel={t('reports.grid.loading')}
     >
       {report.data && report.data.totals.bills > 0 && <ProfitSummary totals={report.data.totals} />}
-      <UbDataGrid
-        rows={rows}
-        columns={columns}
-        rowId={rowId}
-        rowName={rowName}
-        state={gridState}
-        labels={labels}
-        emptyStates={emptyStates}
-        caption={t(`reports.profit.caption.${group}`)}
-        storageId={`reports.profit.${group}`}
-        page={{
-          page: report.data?.page ?? filters.page,
-          pageSize: report.data?.pageSize ?? 50,
-          total: report.data?.total ?? 0,
-          totalPages: Math.max(
-            Math.ceil((report.data?.total ?? 0) / Math.max(report.data?.pageSize ?? 50, 1)),
-            1
-          ),
-        }}
-        onPageChange={report.setPage}
-        sort={sortOf(filters.ordering)}
-        onSortChange={(next) => update({ ordering: orderingOf(next.columnId, next.direction) })}
-        onRowOpen={group === 'category' ? undefined : openRow}
-        search={
-          <UbSearchInput
-            value={search}
-            onChange={setSearch}
-            placeholder={t(`reports.profit.search.${group}`)}
-            aria-label={t(`reports.profit.search.${group}`)}
+      {/* 09 §10.6 on a phone: the search stays put (one input, so typing into
+          a search that finds nothing keeps focus), the rows are cards and a
+          tap opens the whole row; the grid draws loading, error and empty. */}
+      {phone && !emptyBook && searchInput}
+      {phone && gridState === 'rows' ? (
+        <>
+          <UbStack
+            as="ul"
+            gap={0}
+            aria-label={t(`reports.profit.caption.${group}`)}
+            data-testid="profit-cards"
+          >
+            {rows.map((row, index) => (
+              <UbStack as="li" key={rowId(row)} gap={0}>
+                {index > 0 && <UbDivider />}
+                <ReportCardRow
+                  view={card(row)}
+                  onOpen={() => setSheetRow(row)}
+                  testId="profit-row"
+                />
+              </UbStack>
+            ))}
+          </UbStack>
+          <ReportPager
+            page={report.data?.page ?? filters.page}
+            pages={pages}
+            onPage={report.setPage}
+            label={t('reports.profit.pageOf', { page: report.data?.page ?? filters.page, pages })}
           />
-        }
-        cardAvatar={false}
-      />
+        </>
+      ) : (
+        <UbDataGrid
+          rows={rows}
+          columns={columns}
+          rowId={rowId}
+          rowName={rowName}
+          state={gridState}
+          labels={labels}
+          emptyStates={emptyStates}
+          caption={t(`reports.profit.caption.${group}`)}
+          storageId={`reports.profit.${group}`}
+          page={{
+            page: report.data?.page ?? filters.page,
+            pageSize: report.data?.pageSize ?? 50,
+            total: report.data?.total ?? 0,
+            totalPages: pages,
+          }}
+          onPageChange={report.setPage}
+          sort={sortOf(filters.ordering)}
+          onSortChange={(next) => update({ ordering: orderingOf(next.columnId, next.direction) })}
+          onRowOpen={group === 'category' ? undefined : openRow}
+          search={phone ? undefined : searchInput}
+          cardAvatar={false}
+        />
+      )}
+      {sheetRow && (
+        <ProfitRowSheetLazy
+          row={sheetRow}
+          group={group}
+          name={rowName(sheetRow)}
+          onClose={closeSheet}
+        />
+      )}
     </ReportPageShell>
   );
 }

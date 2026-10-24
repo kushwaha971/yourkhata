@@ -71,7 +71,7 @@ const measure = () => {
     figures: { bills: figure('bills'), taxable: figure('taxable'), tax: figure('tax'), total: figure('total') },
     cards: [...document.querySelectorAll('[data-testid="register-row"]')].map((c) => ({
       h: Math.round(c.getBoundingClientRect().height),
-      what: c.querySelector('.line-clamp-2')?.textContent ?? '',
+      what: c.querySelector('.break-words')?.textContent ?? '',
     })),
     table: Boolean(document.querySelector('[data-testid="ub-grid-table"]')),
     // The last column is reachable: either it fits, or the table scrolls sideways inside itself.

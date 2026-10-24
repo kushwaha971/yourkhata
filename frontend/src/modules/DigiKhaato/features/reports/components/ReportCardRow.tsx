@@ -7,7 +7,8 @@ import { formatInrUnbroken } from 'src/utils/moneyUnbroken';
 
 /** One card's three things (09 §10.0). */
 export interface ReportCard {
-  /** WHO or WHAT: the contact, the item. Two lines at most. */
+  /** WHO or WHAT: the contact, the item. Wraps in full: a word cut by an
+   *  ellipsis is not a word (a 59-letter cable name lost its size). */
   readonly what: string;
   /** WHICH: the time, the type word, the number — each kept whole on a line. */
   readonly which: readonly {
@@ -46,7 +47,7 @@ export function ReportCardRow({
   const body = (
     <UbStack direction="row" align="start" justify="between" className="gap-3 py-2">
       <UbStack gap={0} className="min-w-0 flex-1 text-left">
-        <UbText as="span" variant="body-sm-medium" className="line-clamp-2">
+        <UbText as="span" variant="body-sm-medium" className="break-words">
           {view.what}
         </UbText>
         {/* Each piece stays whole: at 320 px "INV/26-27/10028" split after

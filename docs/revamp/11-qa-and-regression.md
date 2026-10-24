@@ -336,6 +336,19 @@ Earlier mobile manual/arrow-pager matrix acceptance is superseded. Existing desk
 | Speed | no request; copy and columns only | not measured |
 | Competitor comparison | none | unproven |
 
+### Profit · 24 Oct 2026 (09 §10.6, R-DEC-34)
+
+| Requirement | Evidence | Status |
+|---|---|---|
+| Sales, Cost, Profit/Loss, Margin equal the server's; loss in words | ProfitReportPageContent.test.tsx; e2e/profit.mjs | passed |
+| Phone cards: one per server row, Sold and Profit/Loss the server's | e2e at 390 | passed |
+| Row sheet figures; Open reaches the item | page tests; e2e | passed |
+| Desktop table, no cards | e2e at 1024/1280 | passed |
+| No sideways scroll, no cut text, item and bill, EN/HI 320–1280 | e2e measuring checks | passed (a long item name was clamped; fixed) |
+| By day; link to fix costs; Print | — | missing (server / decision / no report has Print) |
+| Speed | pfab.sh, n = 24 | phone level, desktop −21.7% (cause not traced) |
+| Competitor comparison | none | unproven |
+
 ### GST summary · 24 Oct 2026 (09 §10.5, R-DEC-34)
 
 | Requirement | Evidence | Status |
