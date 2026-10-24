@@ -1,13 +1,58 @@
 'use client';
 
+import { useMemo } from 'react';
+
 import { UbInfoRow, UbStack, UbText } from 'src/design-system';
-import { useTranslation } from 'src/hooks/useTranslation';
+import { useGridTier, type UbDataGridColumn } from 'src/design-system/UbDataGrid';
+import { useTranslation, type TranslateFn } from 'src/hooks/useTranslation';
 import { formatInr } from 'src/utils/money';
 
-import { GstSection } from './GstSection';
+import { GstSection, GstTable } from './GstSection';
 import { ReportAmount } from './ReportAmount';
 
-import type { Gstr3b } from '../types/taxReports.types';
+import type { GstBox, Gstr3b } from '../types/taxReports.types';
+
+type BoxRow = { readonly box: string; readonly figures: GstBox };
+
+const boxFigure = (id: keyof Omit<GstBox, 'note'>, header: string): UbDataGridColumn<BoxRow> => ({
+  id,
+  header,
+  priority: 1,
+  align: 'end',
+  cardSlot: 'none',
+  widthShare: 12,
+  cell: (row) =>
+    row.figures.note === 'not_modelled' ? '—' : <ReportAmount value={row.figures[id]} />,
+});
+
+/** The portal's own grid for 3.1 and 4: one row per box, a column per head. */
+const boxColumns = (t: TranslateFn): UbDataGridColumn<BoxRow>[] => [
+  {
+    id: 'box',
+    header: t('reports.gst.column.box'),
+    priority: 1,
+    cardSlot: 'title',
+    widthShare: 40,
+    // The code is read with its meaning (09 §10.5 Accessibility).
+    cell: (row) => (
+      <UbStack gap={0} className="min-w-0">
+        <UbText as="span" variant="body-sm" className="whitespace-normal">
+          {`${row.box} · ${t(`reports.gst.box.${row.box}`)}`}
+        </UbText>
+        {row.figures.note === 'not_modelled' && (
+          <UbText as="span" variant="caption" tone="tertiary" className="whitespace-normal">
+            {t('reports.gst.box.notModelled')}
+          </UbText>
+        )}
+      </UbStack>
+    ),
+  },
+  boxFigure('taxable', t('reports.gst.column.taxable')),
+  boxFigure('igst', 'IGST'),
+  boxFigure('cgst', 'CGST'),
+  boxFigure('sgst', 'SGST'),
+  boxFigure('cess', t('reports.gst.column.cess')),
+];
 
 /**
  * RPT-07 FR-8 — the GSTR-3B boxes top to bottom, each figure beside its
@@ -17,32 +62,55 @@ import type { Gstr3b } from '../types/taxReports.types';
  */
 export function Gstr3bBoxes({ gstr3b }: Readonly<{ gstr3b: Gstr3b }>): React.JSX.Element {
   const { t } = useTranslation();
+  // 09 §10.5: the official grid on a desktop; a stacked list of labelled
+  // boxes on a phone, never a grid that scrolls.
+  const phone = useGridTier() === 'cards';
+  const columns = useMemo(() => boxColumns(t), [t]);
   return (
     <UbStack gap={4}>
-      {gstr3b.boxes.map(({ box, figures }) => (
+      {!phone && (
         <GstSection
-          key={box}
-          title={t(`reports.gst.box.${box}`)}
-          coordinate={`GSTR-3B · ${box}`}
-          hint={figures.note === 'not_modelled' ? t('reports.gst.box.notModelled') : undefined}
+          title={t('reports.gst.box.grid')}
+          coordinate="GSTR-3B · 3.1 · 4"
+          testId="gstr3b-grid"
         >
-          {figures.note !== 'not_modelled' && (
-            <>
-              <UbInfoRow
-                label={t('reports.gst.column.taxable')}
-                value={<ReportAmount value={figures.taxable} />}
-              />
-              <UbInfoRow label="IGST" value={<ReportAmount value={figures.igst} />} />
-              <UbInfoRow label="CGST" value={<ReportAmount value={figures.cgst} />} />
-              <UbInfoRow label="SGST" value={<ReportAmount value={figures.sgst} />} />
-              <UbInfoRow
-                label={t('reports.gst.column.cess')}
-                value={<ReportAmount value={figures.cess} />}
-              />
-            </>
-          )}
+          <GstTable<BoxRow>
+            rows={gstr3b.boxes}
+            columns={columns}
+            rowId={(row) => row.box}
+            rowName={(row) => row.box}
+            caption={t('reports.gst.box.grid')}
+            card={() => ({ what: '', which: [], amount: null, struck: false, label: '' })}
+            testId="gstr3b-boxes"
+          />
         </GstSection>
-      ))}
+      )}
+      {phone &&
+        gstr3b.boxes.map(({ box, figures }) => (
+          <GstSection
+            key={box}
+            title={t(`reports.gst.box.${box}`)}
+            coordinate={`GSTR-3B · ${box}`}
+            testId="gstr3b-box"
+            hint={figures.note === 'not_modelled' ? t('reports.gst.box.notModelled') : undefined}
+          >
+            {figures.note !== 'not_modelled' && (
+              <>
+                <UbInfoRow
+                  label={t('reports.gst.column.taxable')}
+                  value={<ReportAmount value={figures.taxable} />}
+                />
+                <UbInfoRow label="IGST" value={<ReportAmount value={figures.igst} />} />
+                <UbInfoRow label="CGST" value={<ReportAmount value={figures.cgst} />} />
+                <UbInfoRow label="SGST" value={<ReportAmount value={figures.sgst} />} />
+                <UbInfoRow
+                  label={t('reports.gst.column.cess')}
+                  value={<ReportAmount value={figures.cess} />}
+                />
+              </>
+            )}
+          </GstSection>
+        ))}
       <GstSection title={t('reports.gst.box.3.2')} coordinate="GSTR-3B · 3.2">
         {gstr3b.stateWise.length === 0 ? (
           <UbText variant="body-sm" tone="tertiary">

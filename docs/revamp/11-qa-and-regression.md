@@ -336,6 +336,19 @@ Earlier mobile manual/arrow-pager matrix acceptance is superseded. Existing desk
 | Speed | no request; copy and columns only | not measured |
 | Competitor comparison | none | unproven |
 
+### GST summary · 24 Oct 2026 (09 §10.5, R-DEC-34)
+
+| Requirement | Evidence | Status |
+|---|---|---|
+| Net to pay first; four figures equal the server's | GstSummaryPageContent.test.tsx; e2e/gst-summary.mjs | passed |
+| Phone section rows as cards with taxable and GST; 3B as a stacked list | page tests; e2e at 320/360/390 EN/HI | passed |
+| Desktop tables and the official 3B grid, last columns reachable | e2e at 1024/1280 | passed |
+| JSON labelled; disabled for an open month; downloads for a closed one | page tests; e2e | passed |
+| No sideways scroll, no cut text in all three views, EN/HI | e2e measuring checks | passed (3B titles were cut at 320/360; fixed) |
+| Print | — | missing (no report has it) |
+| Speed | gsab.sh, n = 24 | level |
+| Competitor comparison | none | unproven |
+
 ### Sales and Purchase registers · 24 Oct 2026 (09 §10.3/§10.4, R-DEC-34)
 
 | Requirement | Evidence | Status |

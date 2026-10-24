@@ -4,7 +4,7 @@ import { useState } from 'react';
 
 import { FileDown } from 'lucide-react';
 
-import { UbButton } from 'src/design-system';
+import { UbButton, UbStack, UbText } from 'src/design-system';
 import { useAppDispatch } from 'src/hooks/useAppStore';
 import { usePermissions } from 'src/hooks/usePermissions';
 import { useTranslation } from 'src/hooks/useTranslation';
@@ -27,7 +27,16 @@ import type { GstQuery } from '../types/taxReports.types';
 export function GstReturnJsonButton({
   kind,
   query,
-}: Readonly<{ kind: 'gstr1' | 'gstr3b'; query: GstQuery }>): React.JSX.Element | null {
+  closed,
+  block = false,
+}: Readonly<{
+  kind: 'gstr1' | 'gstr3b';
+  query: GstQuery;
+  /** The period has ended (09 §10.5: the file is for closed months only). */
+  closed: boolean;
+  /** 09 §10.5 on a phone: a full-width button with what the file is for. */
+  block?: boolean;
+}>): React.JSX.Element | null {
   const { t } = useTranslation();
   const dispatch = useAppDispatch();
   const { can } = usePermissions();
@@ -59,16 +68,31 @@ export function GstReturnJsonButton({
     }
   };
 
-  return (
+  // A month still running cannot be filed; the server refuses it too, and says
+  // why, but a button that only fails teaches nothing (09 §10.5 States).
+  const reason = closed ? t('reports.gst.json.caption') : t('reports.gst.json.openMonth');
+  const button = (
     <UbButton
       variant="secondary"
       icon={<FileDown className="h-4 w-4" aria-hidden />}
-      iconOnly="mobile"
+      iconOnly={block ? undefined : 'mobile'}
       busy={busy}
       busyLabel={t('reports.gst.json.busy')}
+      disabled={!closed}
+      title={closed ? undefined : reason}
+      className={block ? 'w-full' : undefined}
       onClick={() => void download()}
     >
-      {t(`reports.gst.json.${kind}`)}
+      {t(`reports.gst.json.download.${kind}`)}
     </UbButton>
+  );
+  if (!block) return button;
+  return (
+    <UbStack gap={1} data-testid="gst-json">
+      {button}
+      <UbText variant="caption" tone="tertiary" className="text-center">
+        {reason}
+      </UbText>
+    </UbStack>
   );
 }

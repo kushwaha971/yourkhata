@@ -2,18 +2,18 @@
 
 import { useCallback, useMemo } from 'react';
 
-import { SummaryStatGrid } from 'src/components/stats/SummaryStatGrid';
+import { FigureBox, type Figure } from 'src/components/stats/FigureBox';
 import {
   UbActionLink,
   UbButton,
   UbEmptyState,
   UbPageShell,
   UbStack,
-  UbStatCard,
   UbStatusBanner,
   UbSwitch,
   UbTabs,
 } from 'src/design-system';
+import { useGridTier } from 'src/design-system/UbDataGrid';
 import { useAppRouter } from 'src/hooks/useAppRouter';
 import { useTranslation } from 'src/hooks/useTranslation';
 import { ROUTES } from 'src/routes';
@@ -22,6 +22,14 @@ import { absMoney, formatInr, isZeroAmount } from 'src/utils/money';
 
 import { TAX_PERIOD_PRESETS } from '../constants/taxReportConstants';
 import { useGstSummary } from '../hooks/useGstSummary';
+import {
+  b2csCard,
+  docsCard,
+  exceptionCard,
+  hsnCard,
+  natureCard,
+  rateCard,
+} from '../view-model/gstCards';
 import { gstDrillHref } from '../view-model/gstDisplay';
 
 import {
@@ -68,6 +76,9 @@ export function GstReport(): React.JSX.Element {
   const router = useAppRouter();
   const report = useGstSummary();
   const { data, query, view, setView } = report;
+  const phone = useGridTier() === 'cards';
+  // The portal takes an ended period; one that runs to today or later is open.
+  const closed = query.dateTo < report.today;
 
   const tabs = useMemo(
     () => VIEWS.map((value) => ({ value, label: t(`reports.gst.view.${value}`) })),
@@ -147,8 +158,8 @@ export function GstReport(): React.JSX.Element {
       /* Shop item 2 — the portal file for the open tab. A composition business
          files CMP-08 instead, so it is offered neither. */
       actions={
-        view !== 'details' && data && !data.composition ? (
-          <GstReturnJsonButton kind={view} query={query} />
+        view !== 'details' && data && !data.composition && !phone ? (
+          <GstReturnJsonButton kind={view} query={query} closed={closed} />
         ) : undefined
       }
       exportAction={{
@@ -188,6 +199,11 @@ export function GstReport(): React.JSX.Element {
           rounding={query.rounding}
           openRate={openRate}
           openException={openException}
+          json={
+            phone && view !== 'details' && !data.composition ? (
+              <GstReturnJsonButton kind={view} query={query} closed={closed} block />
+            ) : null
+          }
         />
       )}
     </ReportPageShell>
@@ -202,6 +218,7 @@ function GstBody({
   rounding,
   openRate,
   openException,
+  json,
 }: Readonly<{
   data: GstSummary;
   view: GstView;
@@ -210,6 +227,8 @@ function GstBody({
   rounding: 'paise' | 'rupee';
   openRate: (row: GstRateRow) => void;
   openException: (row: GstException) => void;
+  /** The phone's labelled JSON download, under the return it files. */
+  json: React.ReactNode;
 }>): React.JSX.Element {
   const { t } = useTranslation();
   // §19.9.4 — column models are memoised, never rebuilt inline on every render.
@@ -225,9 +244,49 @@ function GstBody({
     }),
     [t]
   );
+  const cards = useMemo(
+    () => ({
+      nature: natureCard(t),
+      b2cs: b2csCard(t),
+      hsn: hsnCard(t),
+      docs: docsCard(t),
+      outward: rateCard(t),
+      inward: rateCard(t, true),
+      exceptions: exceptionCard(t),
+    }),
+    [t]
+  );
   const net = data.gstr3b?.net;
   const netNegative = !!net && net.total.startsWith('-');
   const issues = data.meta.exceptionCount;
+  // 09 §10.5: net payable first, then what it is made of.
+  const figures: Figure[] = [
+    {
+      key: 'net',
+      label: t(netNegative ? 'reports.gst.tile.carryForward' : 'reports.gst.tile.net'),
+      value: net ? formatInr(absMoney(net.total)) : '—',
+      caption: t('reports.gst.tile.due', { date: formatBusinessDate(data.meta.gstr3bDue) }),
+    },
+    {
+      key: 'output',
+      label: t('reports.gst.tile.output'),
+      value: net ? formatInr(net.outputTax) : '—',
+      caption: t('reports.gst.figure.output'),
+    },
+    {
+      key: 'itc',
+      label: t('reports.gst.tile.itc'),
+      value: net ? formatInr(net.itc) : '—',
+      caption: t('reports.gst.figure.itc'),
+      tone: 'success',
+    },
+    {
+      key: 'taxable',
+      label: t('reports.gst.tile.taxable'),
+      value: data.outwardByRate ? formatInr(data.outwardByRate.total.taxableValue) : '—',
+      caption: t('reports.gst.tile.documents', { count: data.meta.documentCount }),
+    },
+  ];
   const rateId = (row: GstRateRow) =>
     `${row.taxCode}-${row.taxRate}-${row.isInterState}-${row.itcEligible}-${row.reverseCharge}`;
   const rateName = (row: GstRateRow) => `${row.taxCode} ${row.taxRate}`;
@@ -245,28 +304,12 @@ function GstBody({
           })}
         />
       ) : (
-        <SummaryStatGrid storageKey="gstReport" label={t('reports.gst.tiles')}>
-          <UbStatCard
-            label={t('reports.gst.tile.taxable')}
-            value={formatInr(data.outwardByRate?.total.taxableValue ?? null)}
-            subtext={t('reports.gst.tile.documents', { count: data.meta.documentCount })}
-          />
-          <UbStatCard
-            label={t('reports.gst.tile.output')}
-            value={formatInr(net?.outputTax ?? null)}
-          />
-          <UbStatCard
-            label={t('reports.gst.tile.itc')}
-            value={formatInr(net?.itc ?? null)}
-            tone="success"
-          />
-          <UbStatCard
-            label={t(netNegative ? 'reports.gst.tile.carryForward' : 'reports.gst.tile.net')}
-            value={formatInr(net ? absMoney(net.total) : null)}
-            tone="warning"
-            subtext={t('reports.gst.tile.due', { date: formatBusinessDate(data.meta.gstr3bDue) })}
-          />
-        </SummaryStatGrid>
+        <FigureBox
+          figures={figures}
+          label={t('reports.gst.tiles')}
+          testId="gst-figures"
+          figureTestId="gst-figure"
+        />
       )}
 
       <UbStatusBanner
@@ -304,6 +347,8 @@ function GstBody({
                 <GstTable<GstNatureRow>
                   rows={data.byNature}
                   columns={columns.nature}
+                  card={cards.nature}
+                  testId="gst-nature"
                   rowId={(row) => row.nature}
                   rowName={(row) => row.nature}
                   caption={t('reports.gst.section.nature')}
@@ -317,6 +362,8 @@ function GstBody({
                 <GstTable<GstB2csRow>
                   rows={data.b2cs}
                   columns={columns.b2cs}
+                  card={cards.b2cs}
+                  testId="gst-b2cs"
                   rowId={(row) => `${row.posState}-${row.taxRate}-${row.isInterState}`}
                   rowName={(row) => row.posState}
                   caption={t('reports.gst.section.b2cs')}
@@ -330,6 +377,9 @@ function GstBody({
                 <GstTable<GstHsnRow>
                   rows={data.hsn?.rows ?? []}
                   columns={columns.hsn}
+                  card={cards.hsn}
+                  testId="gst-hsn"
+                  totals={data.hsn?.total}
                   rowId={(row) => `${row.hsnSac}-${row.uqc}-${row.taxRate}-${row.supplyType}`}
                   rowName={(row) => row.hsnSac}
                   caption={t('reports.gst.section.hsn')}
@@ -343,6 +393,8 @@ function GstBody({
                 <GstTable<GstDocsRow>
                   rows={data.docs}
                   columns={columns.docs}
+                  card={cards.docs}
+                  testId="gst-docs"
                   rowId={(row) => `${row.nature}-${row.seriesPrefix}`}
                   rowName={(row) => row.seriesPrefix}
                   caption={t('reports.gst.section.docs')}
@@ -351,6 +403,7 @@ function GstBody({
             </>
           )}
           {view === 'gstr3b' && data.gstr3b && <Gstr3bBoxes gstr3b={data.gstr3b} />}
+          {json}
           {view === 'details' && (
             <>
               <GstSection
@@ -361,6 +414,9 @@ function GstBody({
                 <GstTable<GstRateRow>
                   rows={data.outwardByRate?.rows ?? []}
                   columns={columns.outward}
+                  card={cards.outward}
+                  testId="gst-outward"
+                  totals={data.outwardByRate?.total}
                   rowId={rateId}
                   rowName={rateName}
                   caption={t('reports.gst.section.outward')}
@@ -382,6 +438,9 @@ function GstBody({
                   <GstTable<GstRateRow>
                     rows={data.inwardByRate.rows}
                     columns={columns.inward}
+                    card={cards.inward}
+                    testId="gst-inward"
+                    totals={data.inwardByRate.total}
                     rowId={rateId}
                     rowName={rateName}
                     caption={t('reports.gst.section.inward')}
@@ -396,6 +455,8 @@ function GstBody({
                 <GstTable<GstException>
                   rows={data.exceptions}
                   columns={columns.exceptions}
+                  card={cards.exceptions}
+                  testId="gst-exceptions"
                   rowId={(row) => `${row.documentId}-${row.issueCode}`}
                   rowName={(row) => row.number}
                   caption={t('reports.gst.section.exceptions')}

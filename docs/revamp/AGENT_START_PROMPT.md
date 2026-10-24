@@ -270,8 +270,11 @@ Words (owner, 24 Oct): "Aging" is now "Old dues"; the hub says "Money to
 collect" / "Money to pay". Owner, 24 Oct: Old dues rows get a sheet with
 Remind + Receive (to collect) or Pay (to pay); notes come from the existing
 payment form's optional Note.
-1. Payments, Expenses, Cash book, Reports hub, Day book, registers done. Next
-   §10.5 GST, §10.6 Profit, §10.7 Old dues; approved Home LAST; then Udhaar.
+GST summary §10.5 delivered 24 Oct (docs/performance/2026-10-24-gst-summary.md,
+e2e/gst-summary.mjs): net to pay first, phone section cards, labelled JSON
+disabled for an open month, official 3B grid on desktop.
+1. Payments, Expenses, Cash book, Reports hub, Day book, registers, GST done.
+   Next §10.6 Profit, §10.7 Old dues; approved Home LAST; then Udhaar.
    Then stop.
 
 ## LATEST CHECKPOINT —23 October2026 (owner requested commit/push)

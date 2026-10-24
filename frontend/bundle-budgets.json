@@ -1,5 +1,6 @@
 {
   "//": [
+    "24 Oct 2026, GST summary (09 §10.5): net payable first in the figure box, section rows as phone cards with their GST, folding sections, the labelled JSON download with the closed-month rule, and the official GSTR-3B grid on a desktop. The card row was split out of the day book's bands (ReportCardRow) so both share it; the day book moved by rounding (+0.1 first load). Raised by measured + 0.3: /reports/gst-summary route 117.2->118.2, firstLoad 359.0->360.1; /reports/day-book route 118.8->119.1, firstLoad 360.6->361.0.",
     "24 Oct 2026, Sales and Purchase registers (09 §10.3/10.4): a phone now gets cards under a band per date with the day's total, a pager and a lazy row sheet, and the figure line moved to the shared FigureBox. The cards and bands are statically imported because they are what a phone draws first; the row sheet is its own chunk. Raised by measured + 0.3: both registers route 116.2->117.4 (measured 117.1/117.0), firstLoad 358.2->359.2 (measured 358.9).",
     "24 Oct 2026, Day book (09 §10.2): the day book gained its figure line, card words and row sheet. Its new strings live in the reports catalogue, which `i18n:split` places in a chunk shared with /reports/gst-summary (checked in the build: that chunk carries 99 day book keys), so GST summary's route grew 0.4 KB without importing any day book code. The row sheet is its own lazy chunk. Two helpers first added to `dates.ts` and `money.ts` tipped every sales editor by 0.4 KB and five library routes by rounding; they were moved to `utils/weekday.ts` and `utils/moneyUnbroken.ts` and those routes are back under unchanged budgets. Raised by measured + 0.3: /reports/day-book route 118.5->118.8, firstLoad 360.0->360.6 (measured 360.4 after the desktop table rework); /reports/gst-summary route 116.5->117.2, firstLoad 358.5->359.0.",
     "24 Oct2026 08 \u00a711 Cash book: the baseline rounds 241.8 -> 241.9 KB with framework127.3/shared app114.6 unchanged and no new cash book code in any shared chunk (checked by name); the likely cause, inferred not traced, is the runtime chunk map gaining the new lazy chunks. Seven first-load scalars over by less than 0.1 KB use measured+0.3 KB. No route, default, framework or shared ceiling raised. See docs/performance/2026-10-24-cashbook.md.",
@@ -1689,12 +1690,12 @@
       "firstLoad": 320
     },
     "/reports/day-book": {
-      "route": 118.8,
-      "firstLoad": 360.6
+      "route": 119.1,
+      "firstLoad": 361.0
     },
     "/reports/gst-summary": {
-      "route": 117.2,
-      "firstLoad": 359.0
+      "route": 118.2,
+      "firstLoad": 360.1
     },
     "/reports/profit": {
       "route": 112.0,

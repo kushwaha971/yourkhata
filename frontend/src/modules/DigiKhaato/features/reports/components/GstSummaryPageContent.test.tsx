@@ -1,6 +1,6 @@
 import type * as ReactModule from 'react';
 
-import { screen, waitFor } from '@testing-library/react';
+import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
 import { resetAllFeatureState } from 'src/redux/actions';
@@ -218,7 +218,11 @@ it('names the issues to fix and opens them in Details', async () => {
   renderWithProviders(<GstSummaryPageContent />);
   expect(await screen.findByText('1 issue to fix')).toBeInTheDocument();
   await userEvent.click(screen.getByRole('button', { name: 'Review' }));
-  expect(await screen.findByText('A line has no HSN/SAC')).toBeInTheDocument();
+  const issue = await screen.findByTestId('gst-exceptions-row');
+  expect(issue).toHaveTextContent('Mohan');
+  expect(issue).toHaveTextContent('A line has no HSN/SAC');
+  await userEvent.click(issue);
+  expect(mockPush).toHaveBeenCalledWith('/sales/invoices/d9');
   expect(mockSearch).toBe('view=details');
 });
 
@@ -288,9 +292,12 @@ it('downloads the GSTR-1 file on its tab and the GSTR-3B file on the other', asy
     blob: new Blob(['{}']),
     filename: 'GSTR1_27AAPFU0939F1ZV_092026.json',
   });
+  // A closed month: the portal takes nothing else (09 §10.5).
+  mockSearch = 'period=lastMonth';
   renderWithProviders(<GstSummaryPageContent />);
   await screen.findByText('Ready to file');
-  await userEvent.click(screen.getByRole('button', { name: 'GSTR-1 JSON' }));
+  expect(screen.getByTestId('gst-json')).toHaveTextContent('For the GST offline tool');
+  await userEvent.click(screen.getByRole('button', { name: 'Download GSTR-1 JSON' }));
   await waitFor(() => expect(files.saveBlob).toHaveBeenCalled());
   expect(getFile.mock.calls[0][0]).toBe('gstr1');
   expect(getFile.mock.calls[0][1]).toMatchObject({ dateFrom: lastAsked().dateFrom });
@@ -302,7 +309,7 @@ it('downloads the GSTR-1 file on its tab and the GSTR-3B file on the other', asy
   });
 
   await userEvent.click(screen.getByRole('tab', { name: 'GSTR-3B' }));
-  expect(await screen.findByRole('button', { name: 'GSTR-3B JSON' })).toBeInTheDocument();
+  expect(await screen.findByRole('button', { name: 'Download GSTR-3B JSON' })).toBeInTheDocument();
   await userEvent.click(screen.getByRole('tab', { name: 'Details' }));
   expect(screen.queryByRole('button', { name: /JSON/ })).not.toBeInTheDocument();
 });
@@ -323,9 +330,20 @@ it('says why a month cannot be filed yet, and hides the file from a reader who m
       },
     },
   });
+  // This month is still running: the button says so before anyone taps it.
+  const open = renderWithProviders(<GstSummaryPageContent />);
+  await screen.findByText('Ready to file');
+  expect(screen.getByRole('button', { name: 'Download GSTR-1 JSON' })).toBeDisabled();
+  expect(screen.getByTestId('gst-json')).toHaveTextContent('Available after the month closes');
+  open.unmount();
+
+  // A closed month the server still refuses: its own sentence reaches the snackbar.
+  store.dispatch(resetAllFeatureState());
+  signIn(FINANCIAL);
+  mockSearch = 'period=lastMonth';
   const view = renderWithProviders(<GstSummaryPageContent />);
   await screen.findByText('Ready to file');
-  await userEvent.click(screen.getByRole('button', { name: 'GSTR-1 JSON' }));
+  await userEvent.click(screen.getByRole('button', { name: 'Download GSTR-1 JSON' }));
   await waitFor(() =>
     expect(store.getState().snackbar.snackbarMessage).toBe(
       'You can make this file once the month has ended.'
@@ -339,4 +357,58 @@ it('says why a month cannot be filed yet, and hides the file from a reader who m
   renderWithProviders(<GstSummaryPageContent />);
   await screen.findByText('Ready to file');
   expect(screen.queryByRole('button', { name: /JSON/ })).not.toBeInTheDocument();
+});
+
+/**
+ * 09 §10.5 on a phone (jsdom's width). The four tiles were folded behind a
+ * "Taxable sales … +3" line and every section row was a grid card cut at
+ * "GST5 · 5% · Intra-s…" with one figure. Now: net payable first, in view; each
+ * row is what · which · taxable with its GST under it; the 3B boxes are a
+ * stacked list.
+ */
+it('puts net GST to pay first, with what it is made of, always in view', async () => {
+  signIn(FINANCIAL);
+  renderWithProviders(<GstSummaryPageContent />);
+  const figures = await screen.findByTestId('gst-figures');
+  const keys = [...figures.querySelectorAll('[data-testid^="gst-figure-"]')].map((el) =>
+    el.getAttribute('data-testid')
+  );
+  expect(keys).toEqual([
+    'gst-figure-net',
+    'gst-figure-output',
+    'gst-figure-itc',
+    'gst-figure-taxable',
+  ]);
+  expect(screen.getByTestId('gst-figure-net')).toHaveTextContent('₹105.00');
+  expect(figures).toHaveTextContent('Net GST to pay');
+  expect(figures).toHaveTextContent('GSTR-3B due 20/09/2026');
+  expect(screen.getByTestId('gst-figure-taxable')).toHaveTextContent('₹2,099.94');
+});
+
+it('shows each section row as a card with its taxable value and the GST on it', async () => {
+  signIn(FINANCIAL);
+  renderWithProviders(<GstSummaryPageContent />);
+  const [b2b] = await screen.findAllByTestId('gst-nature-row');
+  expect(b2b).toHaveTextContent('GSTR-1 · 4A');
+  expect(b2b).toHaveTextContent('1 bill');
+  expect(b2b).toHaveTextContent('₹1,688.57');
+  expect(b2b).toHaveTextContent('GST ₹105.00');
+  const docs = screen.getByTestId('gst-docs-row');
+  expect(docs).toHaveTextContent('INV/26-27/0041');
+  expect(docs).toHaveTextContent('to INV/26-27/0048');
+  expect(docs).toHaveTextContent('2 cancelled');
+  // A section line with nothing behind it is not a button.
+  expect(within(docs).queryByRole('button')).not.toBeInTheDocument();
+  expect(screen.queryByTestId('ub-grid-cards')).not.toBeInTheDocument();
+});
+
+it('lists the GSTR-3B boxes one under another on a phone, each read with its meaning', async () => {
+  signIn(FINANCIAL);
+  mockSearch = 'view=gstr3b';
+  renderWithProviders(<GstSummaryPageContent />);
+  const boxes = await screen.findAllByTestId('gstr3b-box');
+  expect(boxes).toHaveLength(2);
+  expect(boxes[0]).toHaveTextContent('GSTR-3B · 3.1(a)');
+  expect(screen.queryByTestId('gstr3b-grid')).not.toBeInTheDocument();
+  expect(screen.queryByRole('table')).not.toBeInTheDocument();
 });
