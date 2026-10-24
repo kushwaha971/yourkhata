@@ -550,7 +550,7 @@ describe('the states that are not a list', () => {
     const user = userEvent.setup();
     renderWithProviders(<AgingPageContent />);
 
-    expect(await screen.findByText('Couldn’t load aging')).toBeInTheDocument();
+    expect(await screen.findByText('Couldn’t load old dues')).toBeInTheDocument();
     expect(screen.queryByTestId('request-id')).not.toBeInTheDocument(); // owner, 7 Oct 2026: no reference on errors
     const before = agingService.getLedgerAging.mock.calls.length;
 

@@ -161,7 +161,7 @@ describe('ReportsHubPageContent', () => {
       '/reports/day-book'
     );
     expect(
-      screen.getByRole('link', { name: 'Whom do I owe, and since when? · What you owe' })
+      screen.getByRole('link', { name: 'Whom have I not paid yet? · Money to pay' })
     ).toHaveAttribute('href', '/reports/aging?type=payable');
     expect(screen.queryByRole('link', { name: /Stock summary/ })).not.toBeInTheDocument();
     expect(screen.queryByRole('link', { name: /Cash book/ })).not.toBeInTheDocument();
@@ -176,7 +176,7 @@ describe('ReportsHubPageContent', () => {
     );
     renderWithProviders(<ReportsHubPageContent />);
     const people = screen.getByRole('region', { name: 'People' });
-    expect(people).toHaveTextContent('Who owes me, and since when?Who owes you');
+    expect(people).toHaveTextContent('Who has not paid me yet?Money to collect');
     expect(screen.getByRole('region', { name: 'Sales and tax' })).toHaveTextContent(
       'How much did I earn?Profit'
     );
