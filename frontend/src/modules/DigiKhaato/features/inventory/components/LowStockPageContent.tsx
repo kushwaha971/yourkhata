@@ -35,6 +35,7 @@ import { useStockAdjustment } from '../hooks/useStockAdjustment';
 import { useLowStock } from '../hooks/useStockReports';
 import { inventoryGridLabels } from '../view-model/gridLabels';
 import { lowStockOrderLine, lowStockWords } from '../view-model/itemDisplay';
+import { ITEM_SELECT_IDS } from '../view-model/itemGridIds';
 
 import { StockBadge } from './StockBadge';
 import { StockOffState } from './StockOffState';
@@ -265,7 +266,11 @@ export function LowStockPageContent(): React.JSX.Element {
 
   const labels = useMemo(
     () => ({
-      ...inventoryGridLabels(t, 'stock.low.loading', 'items.list.open'),
+      ...inventoryGridLabels(t, {
+        loading: 'stock.low.loading',
+        open: 'items.list.open',
+        ...ITEM_SELECT_IDS,
+      }),
       selectedCount: t('stock.low.selected', { count: selected.length }),
     }),
     [t, selected.length]

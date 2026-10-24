@@ -364,6 +364,7 @@ export {
   loadColumnVisibility,
   MAX_CARD_META,
   MD_QUERY,
+  preloadGridTable,
   UbDataGrid,
   UbDataGridEmptyState,
   UbDataGridMobileList,

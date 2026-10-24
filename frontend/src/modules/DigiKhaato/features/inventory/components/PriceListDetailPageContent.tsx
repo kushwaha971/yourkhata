@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import dynamic from 'next/dynamic';
 
@@ -9,24 +9,29 @@ import { Pencil, Trash2 } from 'lucide-react';
 import {
   UbAsyncCombobox,
   UbButton,
-  UbCard,
   UbConfirmDialog,
   UbEmptyState,
-  UbListItemText,
   UbMoneyInput,
   UbPageHeader,
   UbPageHeaderMobileActions,
   UbPageShell,
   UbPageSkeleton,
-  UbPressable,
-  UbSectionHeading,
+  UbPanel,
+  UbPanelSection,
   UbStack,
   UbText,
 } from 'src/design-system';
+import {
+  preloadGridTable,
+  UbDataGrid,
+  useGridTier,
+  type UbDataGridColumn,
+  type UbGridTier,
+} from 'src/design-system/UbDataGrid';
 import { useAppRouter } from 'src/hooks/useAppRouter';
 import { useAppDispatch } from 'src/hooks/useAppStore';
 import { usePermissions } from 'src/hooks/usePermissions';
-import { useTranslation } from 'src/hooks/useTranslation';
+import { useTranslation, type TranslateFn } from 'src/hooks/useTranslation';
 import { showSnackbar } from 'src/redux/slice/snackbarSlice';
 import { ROUTES } from 'src/routes';
 import { formatInr } from 'src/utils/money';
@@ -36,16 +41,82 @@ import {
   deletePriceList,
   getPriceList,
   setPinnedRate,
+  type PinnedRate,
   type PriceList,
   type PriceListDetail,
 } from '../api/priceListService';
 import { useItemSearch } from '../hooks/useItemSearch';
+import { inventoryGridLabels } from '../view-model/gridLabels';
 import { priceRule } from '../view-model/priceListDisplay';
+
+/* A desktop's list arrives before the table engine does; start it now. */
+preloadGridTable();
 
 const PriceListFormDialog = dynamic(
   () => import('./PriceListFormDialog').then((m) => m.PriceListFormDialog),
   { ssr: false }
 );
+
+type Repin = {
+  readonly itemId: string;
+  readonly name: string;
+  readonly rate: string;
+  readonly usual: string | null;
+};
+
+/**
+ * 09 §8.6 — a pinned rate on a phone: the item, "Usual price ₹450.00", and the
+ * list's rate on the right; a desktop table adds what the rule alone would
+ * charge, which is what the pin overrides.
+ */
+const createRateColumns = (t: TranslateFn, tier: UbGridTier): UbDataGridColumn<PinnedRate>[] => [
+  {
+    id: 'item',
+    header: t('priceLists.col.item'),
+    priority: 1,
+    cardSlot: 'title',
+    widthShare: 34,
+    cell: (row) => (
+      <UbText as="span" variant="body-sm-medium" className="break-words">
+        {row.item.name}
+      </UbText>
+    ),
+  },
+  {
+    id: 'usual',
+    header: t('priceLists.col.usual'),
+    priority: 1,
+    align: 'end',
+    cardSlot: 'meta',
+    widthShare: 18,
+    cell: (row) =>
+      tier === 'cards'
+        ? t('priceLists.rate.usual', { amount: formatInr(row.sellingPrice) })
+        : formatInr(row.sellingPrice),
+  },
+  {
+    id: 'byRule',
+    header: t('priceLists.col.byRule'),
+    priority: 2,
+    align: 'end',
+    cardSlot: 'none',
+    widthShare: 18,
+    cell: (row) => formatInr(row.fromPercent),
+  },
+  {
+    id: 'rate',
+    header: t('priceLists.col.rate'),
+    priority: 1,
+    align: 'end',
+    cardSlot: 'trailing',
+    widthShare: 18,
+    cell: (row) => (
+      <UbText as="span" variant="body-sm-medium" className="ds-num whitespace-nowrap">
+        {formatInr(row.rate)}
+      </UbText>
+    ),
+  },
+];
 
 type Load =
   | { readonly status: 'loading' }
@@ -59,13 +130,13 @@ function PinRate({
   onPinned,
 }: Readonly<{
   listId: string;
-  initial: { itemId: string; name: string; rate: string } | null;
+  initial: Repin | null;
   onPinned: () => void;
 }>): React.JSX.Element {
   const { t } = useTranslation();
   const search = useItemSearch();
-  const [item, setItem] = useState<{ id: string; name: string } | null>(
-    initial ? { id: initial.itemId, name: initial.name } : null
+  const [item, setItem] = useState<{ id: string; name: string; usual: string | null } | null>(
+    initial ? { id: initial.itemId, name: initial.name, usual: initial.usual } : null
   );
   const [rate, setRate] = useState(initial?.rate ?? '');
   const [busy, setBusy] = useState(false);
@@ -84,43 +155,54 @@ function PinRate({
     }
   };
   return (
-    <UbStack direction="row" gap={2} align="end" wrap data-testid="price-list-pin">
-      <UbStack gap={1} className="min-w-0 flex-[2_1_14rem]">
-        <UbAsyncCombobox
-          aria-label={t('priceLists.pin.item')}
-          value={item?.id ?? null}
-          selectedLabel={item?.name}
-          query={search.query}
-          onQueryChange={search.setQuery}
-          onOpen={search.activate}
-          paging={comboPaging(search, t)}
-          options={search.options}
-          loading={search.status === 'loading'}
-          pending={search.pending}
-          onSelect={(option) => {
-            const row = search.find(option.value);
-            if (row) {
-              setItem({ id: row.id, name: row.name });
-              setRate(row.sellingPrice);
-            }
-          }}
-          placeholder={t('priceLists.pin.item')}
-          searchPlaceholder={t('items.list.searchPlaceholder')}
-          emptyLabel={t('priceLists.pin.noItems')}
-          loadingLabel={t('common.loading')}
-        />
+    <UbStack gap={2} data-testid="price-list-pin">
+      <UbText as="span" variant="label" tone="secondary">
+        {t('priceLists.pin.title')}
+      </UbText>
+      <UbStack direction="row" gap={2} align="end" wrap>
+        <UbStack gap={1} className="min-w-0 flex-[2_1_14rem]">
+          <UbAsyncCombobox
+            aria-label={t('priceLists.pin.item')}
+            value={item?.id ?? null}
+            selectedLabel={item?.name}
+            query={search.query}
+            onQueryChange={search.setQuery}
+            onOpen={search.activate}
+            paging={comboPaging(search, t)}
+            options={search.options}
+            loading={search.status === 'loading'}
+            pending={search.pending}
+            onSelect={(option) => {
+              const row = search.find(option.value);
+              if (row) {
+                setItem({ id: row.id, name: row.name, usual: row.sellingPrice });
+                setRate(row.sellingPrice);
+              }
+            }}
+            placeholder={t('priceLists.pin.item')}
+            searchPlaceholder={t('items.list.searchPlaceholder')}
+            emptyLabel={t('priceLists.pin.noItems')}
+            loadingLabel={t('common.loading')}
+          />
+        </UbStack>
+        <UbStack gap={1} className="flex-[1_1_8rem]">
+          <UbMoneyInput
+            aria-label={t('priceLists.pin.rate')}
+            value={rate}
+            onChange={setRate}
+            placeholder={t('priceLists.pin.rate')}
+          />
+        </UbStack>
+        <UbButton onClick={() => void pin()} disabled={!item || rate === ''} busy={busy}>
+          {t('priceLists.pin.action')}
+        </UbButton>
       </UbStack>
-      <UbStack gap={1} className="flex-[1_1_8rem]">
-        <UbMoneyInput
-          aria-label={t('priceLists.pin.rate')}
-          value={rate}
-          onChange={setRate}
-          placeholder={t('priceLists.pin.rate')}
-        />
-      </UbStack>
-      <UbButton onClick={() => void pin()} disabled={!item || rate === ''} busy={busy}>
-        {t('priceLists.pin.action')}
-      </UbButton>
+      {/* What the rate is being compared with: the item's usual price. */}
+      {item?.usual && (
+        <UbText variant="caption" tone="tertiary" data-testid="price-list-pin-usual">
+          {t('priceLists.rate.usual', { amount: formatInr(item.usual) })}
+        </UbText>
+      )}
     </UbStack>
   );
 }
@@ -141,7 +223,19 @@ export function PriceListDetailPageContent({ id }: Readonly<{ id: string }>): Re
   const [deleting, setDeleting] = useState(false);
   const [busy, setBusy] = useState(false);
   /** Tapping a pinned row puts it back in the pin row to change. */
-  const [repin, setRepin] = useState<{ itemId: string; name: string; rate: string } | null>(null);
+  const [repin, setRepin] = useState<Repin | null>(null);
+  const tier = useGridTier();
+  const baseColumns = useMemo(() => createRateColumns(t, tier), [t, tier]);
+  const labels = useMemo(
+    () =>
+      inventoryGridLabels(t, {
+        loading: 'priceLists.loading',
+        open: 'priceLists.changeRate',
+        selectAll: 'priceLists.selectAll',
+        selectRow: 'priceLists.selectRow',
+      }),
+    [t]
+  );
 
   useEffect(() => {
     const controller = new AbortController();
@@ -156,14 +250,52 @@ export function PriceListDetailPageContent({ id }: Readonly<{ id: string }>): Re
   }, [id, attempt]);
   const refetch = useCallback(() => setAttempt((n) => n + 1), []);
 
-  const unpin = async (itemId: string) => {
-    try {
-      await setPinnedRate(id, itemId, null);
-      refetch();
-    } catch {
-      // The global snackbar has said why.
-    }
-  };
+  const unpin = useCallback(
+    async (itemId: string) => {
+      try {
+        await setPinnedRate(id, itemId, null);
+        refetch();
+      } catch {
+        // The global snackbar has said why.
+      }
+    },
+    [id, refetch]
+  );
+  const unpinButton = useCallback(
+    (row: PinnedRate) => (
+      <UbButton
+        size="sm"
+        variant="ghost"
+        icon={<Trash2 className="h-4 w-4" aria-hidden />}
+        iconOnly
+        aria-label={t('priceLists.unpin', { item: row.item.name })}
+        onClick={() => void unpin(row.item.id)}
+        data-testid="price-list-unpin"
+      >
+        {t('priceLists.unpin', { item: row.item.name })}
+      </UbButton>
+    ),
+    [t, unpin]
+  );
+  const columns = useMemo(
+    () =>
+      canWrite && tier !== 'cards'
+        ? [
+            ...baseColumns,
+            {
+              id: 'actions',
+              header: t('priceLists.col.actions'),
+              headerHidden: true,
+              priority: 1 as const,
+              align: 'end' as const,
+              cardSlot: 'none' as const,
+              widthShare: 12,
+              cell: unpinButton,
+            },
+          ]
+        : baseColumns,
+    [canWrite, tier, baseColumns, unpinButton, t]
+  );
   const remove = async () => {
     setBusy(true);
     try {
@@ -199,8 +331,9 @@ export function PriceListDetailPageContent({ id }: Readonly<{ id: string }>): Re
     <UbPageShell>
       <UbPageHeader
         title={list.name}
-        subtitle={priceRule(list.adjustPercent, t)}
-        /* docs/mobile-redesign (A3) — on a phone these actions are a worded ⋯ sheet. */
+        /* The list's name is what this page is; it wraps rather than being cut. */
+        wrapTitle
+        /* docs/mobile-redesign (A3) — on a phone this is a worded ⋯ sheet. */
         renderMobileActions={(actions) => (
           <UbPageHeaderMobileActions
             actions={actions}
@@ -212,108 +345,118 @@ export function PriceListDetailPageContent({ id }: Readonly<{ id: string }>): Re
         )}
         actions={
           canWrite ? (
-            <>
-              <UbButton
-                variant="secondary"
-                icon={<Pencil className="h-4 w-4" aria-hidden />}
-                iconOnly="mobile"
-                onClick={() => setEditing(true)}
-              >
-                {t('priceLists.edit')}
-              </UbButton>
-              <UbButton
-                variant="secondary"
-                icon={<Trash2 className="h-4 w-4" aria-hidden />}
-                iconOnly="mobile"
-                onClick={() => setDeleting(true)}
-              >
-                {t('priceLists.delete')}
-              </UbButton>
-            </>
+            <UbButton
+              variant="secondary"
+              icon={<Trash2 className="h-4 w-4" aria-hidden />}
+              iconOnly="mobile"
+              onClick={() => setDeleting(true)}
+            >
+              {t('priceLists.delete')}
+            </UbButton>
           ) : undefined
         }
       />
-      <UbStack gap={3}>
-        <UbText variant="body-sm" tone="secondary">
-          {t('priceLists.detail.explain', { rule: priceRule(list.adjustPercent, t) })}
-        </UbText>
-        <UbSectionHeading
-          as="h2"
-          title={t('priceLists.pinnedTitle')}
-          meta={t('priceLists.pinned', { count: list.rates.length })}
-        />
-        {canWrite && (
-          <PinRate
-            key={repin?.itemId ?? 'new'}
-            listId={list.id}
-            initial={repin}
-            onPinned={() => {
-              setRepin(null);
-              refetch();
+      {/* 09 §8.6 — the rule first, then its exceptions: one column on a
+          phone, the rule on the left and the pinned rates on the right. */}
+      <UbStack
+        gap={4}
+        className="lg:grid lg:grid-cols-[minmax(0,20rem)_minmax(0,1fr)] lg:items-start"
+      >
+        <UbPanel data-testid="price-list-rule">
+          <UbPanelSection
+            title={t('priceLists.ruleCard.title')}
+            action={
+              canWrite ? (
+                <UbButton
+                  variant="secondary"
+                  size="sm"
+                  icon={<Pencil className="h-4 w-4" aria-hidden />}
+                  onClick={() => setEditing(true)}
+                  aria-label={t('priceLists.editRule', { name: list.name })}
+                >
+                  {t('priceLists.edit')}
+                </UbButton>
+              ) : undefined
+            }
+          >
+            <UbText variant="body-medium" data-testid="price-list-rule-text">
+              {priceRule(list.adjustPercent, t)}
+            </UbText>
+            <UbText variant="body-sm" tone="secondary">
+              {t('priceLists.detail.explain', { rule: priceRule(list.adjustPercent, t) })}
+            </UbText>
+            <UbText variant="caption" tone="tertiary">
+              {t('priceLists.detail.customers', { count: list.partyCount })}
+            </UbText>
+          </UbPanelSection>
+        </UbPanel>
+        <UbStack gap={3}>
+          <UbStack direction="row" justify="between" align="center" gap={2}>
+            <UbText as="h2" variant="h4">
+              {t('priceLists.pinnedTitle')}
+            </UbText>
+            <UbText variant="caption" tone="tertiary">
+              {t('priceLists.pinned', { count: list.rates.length })}
+            </UbText>
+          </UbStack>
+          {canWrite && (
+            <UbPanel>
+              <UbStack className="p-4">
+                <PinRate
+                  key={repin?.itemId ?? 'new'}
+                  listId={list.id}
+                  initial={repin}
+                  onPinned={() => {
+                    setRepin(null);
+                    refetch();
+                  }}
+                />
+              </UbStack>
+            </UbPanel>
+          )}
+          <UbDataGrid
+            rows={list.rates}
+            columns={columns}
+            rowId={(row) => row.item.id}
+            rowName={(row) => row.item.name}
+            state={list.rates.length === 0 ? 'empty' : 'rows'}
+            labels={labels}
+            emptyStates={{
+              firstUse: {
+                title: t('priceLists.pinnedEmpty'),
+                description: t('priceLists.pinnedEmpty.body'),
+              },
+              filtered: { title: t('priceLists.pinnedEmpty'), description: '' },
+              error: { title: t('priceLists.error'), description: '' },
             }}
+            caption={t('priceLists.pinnedTitle')}
+            storageId="items.priceListRates"
+            cardAvatar={false}
+            cardLayout="stacked"
+            cardActions={canWrite ? unpinButton : undefined}
+            page={{
+              page: 1,
+              pageSize: Math.max(list.rates.length, 1),
+              total: list.rates.length,
+              totalPages: 1,
+            }}
+            onPageChange={() => undefined}
+            /* Every pinned rate arrives at once; no pager. */
+            footer={null}
+            /* Tapping a pinned rate puts it in the pin row to change. */
+            onRowOpen={
+              canWrite
+                ? (row) =>
+                    setRepin({
+                      itemId: row.item.id,
+                      name: row.item.name,
+                      rate: row.rate,
+                      usual: row.sellingPrice,
+                    })
+                : undefined
+            }
           />
-        )}
-        {list.rates.length === 0 ? (
-          <UbText variant="caption" tone="tertiary">
-            {t('priceLists.pinnedEmpty')}
-          </UbText>
-        ) : (
-          <UbCard padded>
-            <UbStack as="ul" gap={0} aria-label={t('priceLists.pinnedTitle')}>
-              {list.rates.map((row) => {
-                const body = (
-                  <UbListItemText
-                    className="min-w-0 flex-1"
-                    primary={row.item.name}
-                    secondary={t('priceLists.pinnedLine', {
-                      selling: formatInr(row.sellingPrice),
-                      rule: formatInr(row.fromPercent),
-                    })}
-                  />
-                );
-                return (
-                  <UbStack
-                    as="li"
-                    key={row.item.id}
-                    direction="row"
-                    align="center"
-                    gap={3}
-                    className="border-b border-border-hairline py-3 last:border-b-0"
-                    data-testid="price-list-rate"
-                  >
-                    {canWrite ? (
-                      <UbPressable
-                        className="min-w-0 flex-1 text-left"
-                        onClick={() =>
-                          setRepin({ itemId: row.item.id, name: row.item.name, rate: row.rate })
-                        }
-                      >
-                        {body}
-                      </UbPressable>
-                    ) : (
-                      body
-                    )}
-                    <UbText variant="body-sm-medium" className="ds-num shrink-0">
-                      {formatInr(row.rate)}
-                    </UbText>
-                    {canWrite && (
-                      <UbButton
-                        size="sm"
-                        variant="ghost"
-                        icon={<Trash2 className="h-4 w-4" aria-hidden />}
-                        iconOnly
-                        aria-label={t('priceLists.unpin', { item: row.item.name })}
-                        onClick={() => void unpin(row.item.id)}
-                      >
-                        {t('priceLists.unpin', { item: row.item.name })}
-                      </UbButton>
-                    )}
-                  </UbStack>
-                );
-              })}
-            </UbStack>
-          </UbCard>
-        )}
+        </UbStack>
       </UbStack>
       {editing && (
         <PriceListFormDialog

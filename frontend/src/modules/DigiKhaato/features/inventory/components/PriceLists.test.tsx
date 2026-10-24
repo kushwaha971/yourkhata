@@ -9,6 +9,7 @@ import type { PermissionCode } from 'src/types/domain.types';
 import { priceRule } from '../view-model/priceListDisplay';
 
 import { PartyPriceListControl } from './PartyPriceListControl';
+import { PriceListDetailPageContent } from './PriceListDetailPageContent';
 import { PriceListsPageContent } from './PriceListsPageContent';
 
 /**
@@ -20,6 +21,8 @@ import { PriceListsPageContent } from './PriceListsPageContent';
 jest.mock('../api/priceListService', () => ({
   ...jest.requireActual('../api/priceListService'),
   listPriceLists: jest.fn(),
+  getPriceList: jest.fn(),
+  setPinnedRate: jest.fn(),
   getPartyRates: jest.fn(),
   assignPriceList: jest.fn(),
 }));
@@ -31,6 +34,8 @@ jest.mock('next/navigation', () => ({
 }));
 const service = jest.requireMock('../api/priceListService') as {
   listPriceLists: jest.Mock;
+  getPriceList: jest.Mock;
+  setPinnedRate: jest.Mock;
   getPartyRates: jest.Mock;
   assignPriceList: jest.Mock;
 };
@@ -82,10 +87,9 @@ test('the list page says what each list does and who is on it', async () => {
   service.listPriceLists.mockResolvedValue([wholesale]);
   signIn(['inventory.item.read', 'inventory.item.write']);
   renderWithProviders(<PriceListsPageContent />);
-  const row = await screen.findByTestId('price-list-row');
-  expect(row).toHaveTextContent('Wholesale');
-  expect(row).toHaveTextContent('5% below selling price');
-  expect(row).toHaveTextContent('1 customer · 2 fixed rates');
+  expect(await screen.findByText('Wholesale')).toBeInTheDocument();
+  expect(screen.getByText('5% below usual price')).toBeInTheDocument();
+  expect(screen.getByText('1 customer')).toBeInTheDocument();
   await userEvent.click(screen.getByText('Wholesale'));
   expect(push).toHaveBeenCalledWith('/items/price-lists/w1');
 });
@@ -96,7 +100,7 @@ test('a customer is put on a list and taken off it from the khata', async () => 
   service.assignPriceList.mockResolvedValue({ id: 'w1', name: 'Wholesale' });
   renderWithProviders(<PartyPriceListControl partyId="p1" canWrite />);
   const select = await screen.findByRole('combobox', { name: 'Price list' });
-  expect(select).toHaveTextContent('Normal selling prices');
+  expect(select).toHaveTextContent('Usual prices');
   await userEvent.click(select);
   await userEvent.click(await screen.findByRole('option', { name: /Wholesale/ }));
   await waitFor(() => expect(service.assignPriceList).toHaveBeenCalledWith('p1', 'w1'));
@@ -114,4 +118,51 @@ test('a reader who may not set prices sees the list as a link, or nothing', asyn
     '/items/price-lists/w1'
   );
   expect(screen.queryByRole('combobox')).toBeNull();
+});
+
+const detail = {
+  ...wholesale,
+  rates: [
+    {
+      item: { id: 'i1', name: 'Toor dal 1kg', sku: 'S1', unitCode: 'NOS' },
+      sellingPrice: '450.00',
+      fromPercent: '427.50',
+      rate: '420.00',
+    },
+  ],
+};
+
+/**
+ * 09 §8.6 — the detail reads as the rule first and its exceptions after: the
+ * rule is a sentence, a pinned rate shows the usual price beside the list's
+ * rate, and tapping it puts it back in the pin row to change. A reader sees
+ * the same facts and none of the controls.
+ */
+test('the detail shows the rule, and each pinned rate against the usual price', async () => {
+  service.getPriceList.mockResolvedValue(detail);
+  signIn(['inventory.item.read', 'inventory.item.write']);
+  renderWithProviders(<PriceListDetailPageContent id="w1" />);
+  expect(await screen.findByTestId('price-list-rule-text')).toHaveTextContent(
+    '5% below usual price'
+  );
+  expect(screen.getByText('1 customer is on this list.')).toBeInTheDocument();
+  expect(screen.getByText('Usual price ₹450.00')).toBeInTheDocument();
+  expect(screen.getByText('₹420.00')).toBeInTheDocument();
+  await userEvent.click(screen.getByRole('button', { name: 'Change the rate for Toor dal 1kg' }));
+  expect(screen.getByTestId('price-list-pin-usual')).toHaveTextContent('Usual price ₹450.00');
+  service.setPinnedRate.mockResolvedValue(undefined);
+  await userEvent.click(
+    screen.getByRole('button', { name: 'Remove the pinned rate for Toor dal 1kg' })
+  );
+  await waitFor(() => expect(service.setPinnedRate).toHaveBeenCalledWith('w1', 'i1', null));
+});
+
+test('a reader sees the rule and the rates, and no control to change them', async () => {
+  service.getPriceList.mockResolvedValue(detail);
+  signIn(['inventory.item.read']);
+  renderWithProviders(<PriceListDetailPageContent id="w1" />);
+  expect(await screen.findByText('Toor dal 1kg')).toBeInTheDocument();
+  expect(screen.queryByTestId('price-list-pin')).toBeNull();
+  expect(screen.queryByRole('button', { name: /Edit the rule/ })).toBeNull();
+  expect(screen.queryByRole('button', { name: /Remove the pinned rate/ })).toBeNull();
 });

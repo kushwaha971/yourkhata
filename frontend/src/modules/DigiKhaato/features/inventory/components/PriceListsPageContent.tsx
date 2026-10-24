@@ -1,35 +1,93 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import dynamic from 'next/dynamic';
 
 import { Plus } from 'lucide-react';
 
+import { UbButton, UbEmptyState, UbLink, UbPageHeader, UbPageShell, UbText } from 'src/design-system';
 import {
-  UbButton,
-  UbCard,
-  UbEmptyState,
-  UbListItemText,
-  UbPageHeader,
-  UbPageShell,
-  UbPressable,
-  UbSkeleton,
-  UbStack,
-  UbText,
-} from 'src/design-system';
+  preloadGridTable,
+  UbDataGrid,
+  useGridTier,
+  type UbDataGridColumn,
+  type UbGridState,
+  type UbGridTier,
+} from 'src/design-system/UbDataGrid';
 import { useAppRouter } from 'src/hooks/useAppRouter';
 import { usePermissions } from 'src/hooks/usePermissions';
-import { useTranslation } from 'src/hooks/useTranslation';
+import { useTranslation, type TranslateFn } from 'src/hooks/useTranslation';
 import { priceListPath } from 'src/routes';
 
 import { listPriceLists, type PriceList } from '../api/priceListService';
+import { inventoryGridLabels } from '../view-model/gridLabels';
 import { priceRule } from '../view-model/priceListDisplay';
+
+/* A desktop's list arrives before the table engine does; start it now. */
+preloadGridTable();
 
 const PriceListFormDialog = dynamic(
   () => import('./PriceListFormDialog').then((m) => m.PriceListFormDialog),
   { ssr: false }
 );
+
+/**
+ * 09 §8.6 — a phone card reads name · rule · "12 customers"; a desktop table
+ * adds how many rates are pinned. Module-level, so no cell is a component
+ * defined during render.
+ */
+const createListColumns = (t: TranslateFn, tier: UbGridTier): UbDataGridColumn<PriceList>[] => [
+  {
+    id: 'name',
+    header: t('priceLists.col.name'),
+    priority: 1,
+    cardSlot: 'title',
+    widthShare: 30,
+    /* A card is one button already, so its name is text; a table row opens
+       from a link in its first cell. */
+    cell: (row) =>
+      tier === 'cards' ? (
+        <UbText as="span" variant="body-sm-medium" className="break-words">
+          {row.name}
+        </UbText>
+      ) : (
+        <UbLink href={priceListPath(row.id)} variant="body-sm-medium">
+          {row.name}
+        </UbLink>
+      ),
+  },
+  {
+    id: 'rule',
+    header: t('priceLists.col.rule'),
+    priority: 1,
+    cardSlot: 'meta',
+    widthShare: 30,
+    cell: (row) => priceRule(row.adjustPercent, t),
+  },
+  {
+    id: 'customers',
+    header: t('priceLists.col.customers'),
+    priority: 1,
+    align: 'end',
+    cardSlot: 'trailing',
+    widthShare: 20,
+    cell: (row) => (
+      <UbText as="span" variant={tier === 'cards' ? 'caption' : 'body-sm'} tone="secondary">
+        {t('priceLists.customers', { count: row.partyCount })}
+      </UbText>
+    ),
+  },
+  {
+    id: 'pinned',
+    header: t('priceLists.col.pinned'),
+    priority: 2,
+    align: 'end',
+    cardSlot: 'none',
+    widthShare: 20,
+    cell: (row) => t('priceLists.pinned', { count: row.rateCount }),
+  },
+];
 
 type Load =
   | { readonly status: 'loading' }
@@ -37,10 +95,11 @@ type Load =
   | { readonly status: 'failed' };
 
 /**
- * Shop gap §1.6 — `/items/price-lists`. A price list is a rate card for a
- * group of customers ("Wholesale": 5% below selling price, with a few exact
- * rates pinned). A customer is put on a list from their khata page, and their
- * bills then start from the list's rate.
+ * Shop gap §1.6 / 09 §8.6 — `/items/price-lists`. A price list is a rate card
+ * for a group of customers ("Wholesale": 5% below the usual price, with a few
+ * exact rates pinned). A customer is put on a list from their own page, and
+ * their bills then start from the list's rate. Cards on a phone, a table on a
+ * desktop, through the same grid every other register uses.
  */
 export function PriceListsPageContent(): React.JSX.Element {
   const { t } = useTranslation();
@@ -71,6 +130,28 @@ export function PriceListsPageContent(): React.JSX.Element {
     [router]
   );
 
+  const tier = useGridTier();
+  const columns = useMemo(() => createListColumns(t, tier), [t, tier]);
+  const labels = useMemo(
+    () =>
+      inventoryGridLabels(t, {
+        loading: 'priceLists.loading',
+        open: 'priceLists.open',
+        selectAll: 'priceLists.selectAll',
+        selectRow: 'priceLists.selectRow',
+      }),
+    [t]
+  );
+  const rows = load.status === 'ready' ? load.lists : [];
+  const gridState: UbGridState =
+    load.status === 'loading'
+      ? 'loading'
+      : load.status === 'failed'
+        ? 'error'
+        : rows.length === 0
+          ? 'empty'
+          : 'rows';
+
   if (!canRead) {
     return (
       <UbPageShell>
@@ -100,66 +181,44 @@ export function PriceListsPageContent(): React.JSX.Element {
           ) : undefined
         }
       />
-      {load.status === 'loading' && <UbSkeleton variant="list" count={3} />}
-      {load.status === 'failed' && (
-        <UbEmptyState
-          variant="error"
-          title={t('priceLists.error')}
-          action={
-            <UbButton variant="secondary" onClick={() => setAttempt((n) => n + 1)}>
-              {t('common.action.retry')}
-            </UbButton>
-          }
-        />
-      )}
-      {load.status === 'ready' && load.lists.length === 0 && (
-        <UbEmptyState
-          variant="firstUse"
-          title={t('priceLists.empty.title')}
-          description={t('priceLists.empty.body')}
-          action={
-            canWrite ? (
+      <UbDataGrid
+        rows={rows}
+        columns={columns}
+        rowId={(row) => row.id}
+        rowName={(row) => row.name}
+        state={gridState}
+        labels={labels}
+        emptyStates={{
+          firstUse: {
+            title: t('priceLists.empty.title'),
+            description: t('priceLists.empty.body'),
+            action: canWrite ? (
               <UbButton variant="secondary" onClick={() => setAdding(true)}>
                 {t('priceLists.new')}
               </UbButton>
-            ) : undefined
-          }
-        />
-      )}
-      {load.status === 'ready' && load.lists.length > 0 && (
-        <UbCard padded>
-          <UbStack as="ul" gap={0} aria-label={t('priceLists.title')}>
-            {load.lists.map((list) => (
-              <UbStack
-                as="li"
-                key={list.id}
-                gap={0}
-                className="border-b border-border-hairline py-3 last:border-b-0"
-                data-testid="price-list-row"
-              >
-                <UbPressable
-                  className="w-full text-left"
-                  onClick={() => router.push(priceListPath(list.id))}
-                >
-                  <UbStack direction="row" justify="between" align="center" gap={3}>
-                    <UbListItemText
-                      className="min-w-0 flex-1"
-                      primary={list.name}
-                      secondary={priceRule(list.adjustPercent, t)}
-                    />
-                    <UbText variant="caption" tone="secondary" className="shrink-0">
-                      {[
-                        t('priceLists.customers', { count: list.partyCount }),
-                        t('priceLists.pinned', { count: list.rateCount }),
-                      ].join(' · ')}
-                    </UbText>
-                  </UbStack>
-                </UbPressable>
-              </UbStack>
-            ))}
-          </UbStack>
-        </UbCard>
-      )}
+            ) : undefined,
+          },
+          filtered: { title: t('priceLists.empty.title'), description: t('priceLists.empty.body') },
+          error: {
+            title: t('priceLists.error'),
+            description: '',
+            action: (
+              <UbButton variant="secondary" onClick={() => setAttempt((n) => n + 1)}>
+                {t('common.action.retry')}
+              </UbButton>
+            ),
+          },
+        }}
+        caption={t('priceLists.title')}
+        storageId="items.priceLists"
+        cardAvatar={false}
+        cardLayout="stacked"
+        page={{ page: 1, pageSize: Math.max(rows.length, 1), total: rows.length, totalPages: 1 }}
+        onPageChange={() => undefined}
+        /* Every list arrives at once; a pager reading "Page 1 of 1" is noise. */
+        footer={null}
+        onRowOpen={(row) => router.push(priceListPath(row.id))}
+      />
       {adding && (
         <PriceListFormDialog editing={null} onClose={() => setAdding(false)} onSaved={saved} />
       )}

@@ -125,10 +125,12 @@ try {
     for (let i = 0; i < 10; i++) {
       const card = page.getByTestId('ub-grid-card').filter({ hasText: name });
       if (await card.count()) return card.first();
-      const next = page.getByRole('button', { name: /Next page|अगला/ }).first();
+      const next = page.getByRole('button', { name: /Next page|अगला/ }).locator('visible=true').first();
       if (!(await next.count()) || (await next.isDisabled())) break;
-      await next.click();
-      await page.waitForLoadState('networkidle');
+      /* networkidle can settle before the page's request is even sent, and
+         a tick then lands on the PREVIOUS page's row; wait for the rows. */
+      await Promise.all([page.waitForResponse((r) => r.url().includes('/stock/low')), next.click()]);
+      await page.waitForTimeout(300);
     }
     return null;
   };
@@ -208,10 +210,12 @@ try {
         await row.first().getByRole('checkbox').check();
         return true;
       }
-      const next = page.getByRole('button', { name: /Next page/ }).first();
+      const next = page.getByRole('button', { name: /Next page/ }).locator('visible=true').first();
       if (!(await next.count()) || (await next.isDisabled())) return false;
-      await next.click();
-      await page.waitForLoadState('networkidle');
+      /* networkidle can settle before the page's request is even sent, and
+         a tick then lands on the PREVIOUS page's row; wait for the rows. */
+      await Promise.all([page.waitForResponse((r) => r.url().includes('/stock/low')), next.click()]);
+      await page.waitForTimeout(300);
     }
     return false;
   };

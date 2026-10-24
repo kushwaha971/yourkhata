@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useRef, type ReactNode } from 'react';
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 
 import dynamic from 'next/dynamic';
 
@@ -19,7 +19,7 @@ import {
 } from './UbDataGridStateTable';
 import { UbDataGridToolbar } from './UbDataGridToolbar';
 import { useColumnVisibility } from './useColumnVisibility';
-import { useGridTier } from './useGridTier';
+import { MD_QUERY, useGridTier } from './useGridTier';
 
 import type {
   UbColumnPriority,
@@ -284,8 +284,43 @@ const UbDataGridColumnMenuLazy = dynamic(
  * mounts — in parallel with the list's own fetch — rather than when the rows
  * finally arrive. On a phone it is never requested at all.
  */
+type TableComponent = <TRow>(props: UbDataGridTableProps<TRow>) => React.JSX.Element;
+
+/** The table itself, once its chunk has arrived; see `GridTable`. */
+let loadedTable: TableComponent | null = null;
+
 const warmTableChunk = (): void => {
-  void import('./UbDataGridTable');
+  void import('./UbDataGridTable').then((m) => {
+    loadedTable = m.UbDataGridTable as TableComponent;
+  });
+};
+
+/**
+ * Renders the table directly when its chunk is already here, and through the
+ * lazy wrapper only when it is not. The wrapper suspends on its first render
+ * even for a module that has loaded, and React holds a Suspense fallback on
+ * screen for at least 300 ms before revealing what replaced it — so a list
+ * whose rows were in hand sat behind the skeleton for that long on every
+ * desktop open (measured on `/items/price-lists` at 4x CPU: rows ready at
+ * ~830 ms, table painted at ~1,150). The choice is made once per mount, so a
+ * table never swaps component type under the merchant's scroll.
+ */
+function GridTable<TRow>(props: UbDataGridTableProps<TRow>): React.JSX.Element {
+  const [Table] = useState<TableComponent>(() => loadedTable ?? UbDataGridTableLazy);
+  return <Table {...props} />;
+}
+
+/**
+ * The same warm-up, one step earlier, for a route whose list is small enough
+ * to arrive before the table chunk does. Called at a route module's top level
+ * it starts while the page is still hydrating, instead of in the grid's mount
+ * effect after it, so the chunk is here when the rows are and `GridTable` can
+ * render it without suspending. Does nothing on a phone, which never renders
+ * the table, or on a server.
+ */
+export const preloadGridTable = (): void => {
+  if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') return;
+  if (window.matchMedia(MD_QUERY).matches) warmTableChunk();
 };
 
 export function UbDataGrid<TRow>({
@@ -530,7 +565,7 @@ export function UbDataGrid<TRow>({
                 avatarIcon={cardAvatarIcon}
               />
             ) : (
-              <UbDataGridTableLazy
+              <GridTable
                 className={cn(
                   variant === 'register' &&
                     'rounded-card border border-border-hairline bg-surface-card',

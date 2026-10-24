@@ -49,6 +49,7 @@ import { useInventoryMasters } from '../hooks/useInventoryMasters';
 import { useStockAdjustment } from '../hooks/useStockAdjustment';
 import { useStockSummary } from '../hooks/useStockReports';
 import { inventoryGridLabels } from '../view-model/gridLabels';
+import { ITEM_SELECT_IDS } from '../view-model/itemGridIds';
 
 import { StockBadge } from './StockBadge';
 import { StockOffState } from './StockOffState';
@@ -254,7 +255,12 @@ export function StockSummaryPageContent(): React.JSX.Element {
   const columns = useMemo(() => createSummaryColumns({ t, tier, valuation }), [t, tier, valuation]);
 
   const labels = useMemo(
-    () => inventoryGridLabels(t, 'stock.summary.loading', 'items.list.open'),
+    () =>
+      inventoryGridLabels(t, {
+        loading: 'stock.summary.loading',
+        open: 'items.list.open',
+        ...ITEM_SELECT_IDS,
+      }),
     [t]
   );
   const rows = summary?.rows ?? [];

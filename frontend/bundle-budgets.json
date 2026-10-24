@@ -1050,6 +1050,8 @@
     "sharedApp": 114.7
   },
   "//routes": [
+    "24 Oct 2026, UbDataGrid renders an already-loaded table directly instead of through the lazy wrapper, which suspended and held the skeleton for React's 300 ms fallback minimum on every desktop register open (GridTable, preloadGridTable). Measured after it: /sales/challans and /sales/orders first load over by 0.0 KB (rounding), /admin/partners route 28.3 -> 28.9 and first load 270.0 -> 270.8; raised to measured + 0.3.",
+    "24 Oct 2026, 09 \u00a78.6 price lists: both screens moved onto UbDataGrid (cards on a phone, a table on a desktop, as the spec names it), which brings the grid and TanStack Table into these routes: list route 57.0 -> 62.7 KB, detail 90.6 -> 97.1 KB. A first build was 3 KB heavier still because gridLabels.ts named two items-catalogue keys; the selection label ids are now passed in (view-model/itemGridIds.ts) so the price lists do not load the items catalogue. Raised to measured + 0.3 KB; the cost is recorded in docs/performance/2026-10-24-price-lists.md.",
     "24 Oct 2026, 09 \u00a78.5 categories and units: /items/masters gained a search per section, find-then-add, the standard/own unit groups and the small UbChipTabs (route +1.3 KB, first load +1.5 KB). The 0.0 KB rows (/items/[id], purchase routes) were already at their ceiling; most likely UbStatusBadge's new srLabel, which they render; not isolated. Each raised to measured + 0.3 KB.",
     "24 Oct 2026, 09 \u00a78.7 low stock and stock summary: /stock/low gained Order per row, the selection with Order selected, the low-stock words and the stock-off state (route +0.8 KB); the purchase editors gained the ?items= prefill, whose item fetch is a dynamic import (first load +0.1 to 0.2 KB); the remaining +0.1 KB first loads are chunk regrouping, most likely from the two new helpers in src/routes.ts (not isolated). Each raised to measured + 0.3 KB.",
     "24 Oct 2026, 09 \u00a78.4 stock adjustment: the snackbar learned one action button (shared app chunk, every first load by under 0.05 KB); /items/[id] and /stock/low gained the reason chips, the note fold and, on the list and low-stock pages, the adjustment detail dialog's dynamic() stub; the purchase bill and order editors moved +0.8 KB though they import none of the changed modules (checked) \u2014 chunk regrouping, cause not isolated. Raised to measured + 0.3.",
@@ -1439,7 +1441,7 @@
     },
     "/sales/challans": {
       "route": 87.2,
-      "firstLoad": 328.8
+      "firstLoad": 329.1
     },
     "/sales/challans/new": {
       "route": 169.4,
@@ -1471,7 +1473,7 @@
     },
     "/sales/orders": {
       "route": 87.2,
-      "firstLoad": 328.8
+      "firstLoad": 329.1
     },
     "/sales/orders/new": {
       "route": 169.4,
@@ -1642,8 +1644,8 @@
       "firstLoad": 253.1
     },
     "/admin/partners": {
-      "route": 28.3,
-      "firstLoad": 270.0
+      "route": 29.2,
+      "firstLoad": 271.1
     },
     "/admin/health": {
       "route": 21,
@@ -1838,8 +1840,8 @@
       "firstLoad": 344
     },
     "/items/price-lists/[id]": {
-      "route": 90.6,
-      "firstLoad": 332.3
+      "route": 97.4,
+      "firstLoad": 339.3
     },
     "/lending/messages": {
       "route": 67.1,
@@ -1854,8 +1856,8 @@
       "firstLoad": 321.4
     },
     "/items/price-lists": {
-      "route": 57.0,
-      "firstLoad": 298.6
+      "route": 63.0,
+      "firstLoad": 304.8
     },
     "/login/email": {
       "route": 58.6,

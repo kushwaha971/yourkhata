@@ -210,8 +210,14 @@ e2e/masters.mjs 56/56). A search per section; no match offers to add the typed
 text; "Already exists" before sending; standard units first and locked; chips
 on a phone, two panels on a desktop (layout by CSS, not a JS media query).
 Opens about 75-80 ms slower at 4x CPU (both lists rendered); recorded.
-1. Rest of Stock: price lists §8.6; then Payments, Expenses, Reports; approved
-   Home workflows LAST.
+DONE 24 Oct: Price lists §8.6 (report docs/performance/2026-10-24-price-lists.md;
+e2e/price-lists.mjs 49/49). List and detail on UbDataGrid; rule card with Edit,
+Pin a rate inline, tap a pinned row to change it, usual price beside the list
+rate; "usual price" wording everywhere. Found in the A/B: UbDataGrid held every
+desktop table behind its skeleton for React's 300 ms Suspense minimum; it now
+renders a loaded table directly (GridTable, preloadGridTable). Phone detail
+opens about 150 ms slower (bigger route chunk); recorded.
+1. Payments, then Expenses, then Reports; approved Home workflows LAST.
 
 ## LATEST CHECKPOINT —23 October2026 (owner requested commit/push)
 

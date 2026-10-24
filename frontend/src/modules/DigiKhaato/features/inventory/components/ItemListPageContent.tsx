@@ -65,6 +65,7 @@ import { useItemForm } from '../hooks/useItemForm';
 import { useItemList } from '../hooks/useItemList';
 import { useStockAdjustment } from '../hooks/useStockAdjustment';
 import { inventoryGridLabels } from '../view-model/gridLabels';
+import { ITEM_SELECT_IDS } from '../view-model/itemGridIds';
 
 import { createItemColumns } from './ItemListColumns';
 
@@ -197,7 +198,12 @@ export function ItemListPageContent(): React.JSX.Element {
     [t, tier, can]
   );
   const labels = useMemo(
-    () => inventoryGridLabels(t, 'items.list.loading', 'items.list.open'),
+    () =>
+      inventoryGridLabels(t, {
+        loading: 'items.list.loading',
+        open: 'items.list.open',
+        ...ITEM_SELECT_IDS,
+      }),
     [t]
   );
 

@@ -232,3 +232,18 @@ Earlier mobile manual/arrow-pager matrix acceptance is superseded. Existing desk
 | No sideways scroll or cut text, including a 60-character search at 320 | e2e/masters.mjs | passed |
 | Speed vs dcaddbc | page open 988 → 1,067 ms phone, 1,013 → 1,088 desktop, 4x CPU | slower (recorded) |
 | Competitor comparison | none | unproven |
+
+### Price lists · 24 Oct 2026 (09 §8.6, R-DEC-34)
+
+| Requirement | Evidence | Status |
+|---|---|---|
+| List: name · rule · customers on a phone, a table on a desktop with row links | PriceLists.test.tsx; e2e/price-lists.mjs | passed |
+| Detail: rule card with Edit, then Pin a rate, then pinned rates (usual price beside the list rate) | unit tests; e2e/price-lists.mjs reads -10% back | passed |
+| Pin, change by tapping the row, remove; the server holds one pin, then none | e2e/price-lists.mjs | passed |
+| A customer on the list gets the pinned rate and the rule's rate on other items | e2e/price-lists.mjs reads /price-lists/for-party | passed |
+| Read only without write permission | unit test | passed |
+| No sideways scroll or cut text, targets ≥ 44 px, at 390/320/1280 × EN/HI | e2e/price-lists.mjs | passed |
+| Desktop tables no longer wait 300 ms behind the skeleton (shared grid) | paint trace and A/B in data/2026-10-24-price-lists/ | passed (price lists measured only) |
+| Speed vs dcaddbc | 4x CPU: phone list 1,004 → 939 ms, phone detail 1,042 → 1,188, desktop list 978 → 975, desktop detail 1,175 → 1,131 | phone detail slower (recorded) |
+| Bill lines start from the list's rate | unchanged bill editor | kept, not re-run |
+| Competitor comparison | none | unproven |
