@@ -1,5 +1,6 @@
 {
   "//": [
+    "24 Oct 2026, Old dues (09 \u00a710.7): the Shop's aging gained phone cards, a pager and the lazy loaders for its age bars, row sheet and Remind/Receive/Pay flows (the bars and flows are dynamic(), so they are not in this figure). /reports/aging and /ledger/aging share the component: route 102.9, first load 344.7, raised by measured + 0.3.",
     "24 Oct 2026, Profit (09 §10.6): Sales · Cost · Profit · Margin in the figure box, the cost basis line, phone cards with Sold and Profit/Loss in words, a pager and a lazy row sheet. ReportCardRow and ReportPager now have a third report importing them, so the bundler regrouped the shared report chunk: the registers +0.2, day book +0.1 by rounding, and /imports first load by under 0.1 (runtime chunk map). Raised by measured + 0.3: profit route 112.0->113.3, firstLoad 354.0->355.2; registers route 117.4->117.9, firstLoad 359.2->359.7; day-book route 119.1->119.5, firstLoad 361.0->361.3; gst-summary route 118.2->118.5, firstLoad 360.1->360.4; /imports firstLoad 298.9->299.2.",
     "24 Oct 2026, GST summary (09 §10.5): net payable first in the figure box, section rows as phone cards with their GST, folding sections, the labelled JSON download with the closed-month rule, and the official GSTR-3B grid on a desktop. The card row was split out of the day book's bands (ReportCardRow) so both share it; the day book moved by rounding (+0.1 first load). Raised by measured + 0.3: /reports/gst-summary route 117.2->118.2, firstLoad 359.0->360.1; /reports/day-book route 118.8->119.1, firstLoad 360.6->361.0.",
     "24 Oct 2026, Sales and Purchase registers (09 §10.3/10.4): a phone now gets cards under a band per date with the day's total, a pager and a lazy row sheet, and the figure line moved to the shared FigureBox. The cards and bands are statically imported because they are what a phone draws first; the row sheet is its own chunk. Raised by measured + 0.3: both registers route 116.2->117.4 (measured 117.1/117.0), firstLoad 358.2->359.2 (measured 358.9).",
@@ -1567,8 +1568,8 @@
       "firstLoad": 328
     },
     "/ledger/aging": {
-      "route": 101.0,
-      "firstLoad": 343.0
+      "route": 103.2,
+      "firstLoad": 345.0
     },
     "/switch": {
       "route": 56.0,
@@ -1879,8 +1880,8 @@
       "firstLoad": 297.1
     },
     "/reports/aging": {
-      "route": 101.2,
-      "firstLoad": 343.0
+      "route": 103.2,
+      "firstLoad": 345.0
     },
     "/apps": {
       "route": 56,

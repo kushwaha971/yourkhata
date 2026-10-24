@@ -336,6 +336,21 @@ Earlier mobile manual/arrow-pager matrix acceptance is superseded. Existing desk
 | Speed | no request; copy and columns only | not measured |
 | Competitor comparison | none | unproven |
 
+### Old dues · 24 Oct 2026 (09 §10.7, R-DEC-34)
+
+| Requirement | Evidence | Status |
+|---|---|---|
+| Customers owe you / You owe suppliers, separate, with the server's totals | AgingPageContent.test.tsx; e2e/old-dues.mjs | passed |
+| Age bars carry the server's buckets, with a table view | page test; e2e | passed |
+| Phone cards: name, oldest bucket in words (red past 90), total with its word | page tests; e2e at 390 | passed |
+| Row sheet: every bucket; Remind + Receive payment or Pay; only for roles that may | page tests; e2e opens each flow, saves nothing | passed |
+| Desktop table with a ⋯ per row opening the same sheet | page test; e2e at 1024/1280 | passed |
+| Settled Shop book says so in the Shop's words | page test | passed |
+| No sideways scroll, no cut text, EN/HI 320–1280, both sides | e2e measuring checks | passed (the second tab ran off the phone; fixed) |
+| Tap a bar to filter; oldest days | — | missing (server has neither) |
+| Udhaar book aging unchanged | page test | kept |
+| Competitor comparison | none | unproven |
+
 ### Profit · 24 Oct 2026 (09 §10.6, R-DEC-34)
 
 | Requirement | Evidence | Status |

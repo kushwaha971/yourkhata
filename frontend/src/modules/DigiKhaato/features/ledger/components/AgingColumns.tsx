@@ -1,4 +1,6 @@
-import { UbAmount, UbLink, UbText } from 'src/design-system';
+import { MoreHorizontal } from 'lucide-react';
+
+import { UbAmount, UbButton, UbLink, UbText } from 'src/design-system';
 import type { UbDataGridColumn, UbGridTier } from 'src/design-system/UbDataGrid';
 import type { TranslateFn } from 'src/hooks/useTranslation';
 import { formatInr } from 'src/utils/money';
@@ -45,6 +47,9 @@ export interface AgingColumnDeps {
   readonly asOf: string;
   readonly tier: UbGridTier;
   readonly book?: 'main' | 'shop';
+  /** 09 §10.7 — the Shop's table: a last column that opens the row's sheet
+   *  (Remind, Receive payment or Pay, and every bucket). */
+  readonly onActions?: (row: AgingRow) => void;
 }
 
 const BUCKET_WIDTH = 11;
@@ -55,6 +60,7 @@ export const createAgingColumns = ({
   asOf,
   tier,
   book = 'main',
+  onActions,
 }: AgingColumnDeps): readonly UbDataGridColumn<AgingRow>[] => {
   const isCards = tier === 'cards';
   const bucketLabel = (bucket: AgingBucket) => t(bucketLabelId(bucket));
@@ -175,5 +181,30 @@ export const createAgingColumns = ({
         />
       ),
     },
+    ...(onActions
+      ? [
+          {
+            id: 'actions',
+            header: t('ledger.aging.column.actions'),
+            headerHidden: true,
+            priority: 1 as const,
+            align: 'end' as const,
+            cardSlot: 'none' as const,
+            widthShare: 8,
+            cell: (row: AgingRow) => (
+              <UbButton
+                variant="ghost"
+                size="sm"
+                iconOnly
+                icon={<MoreHorizontal className="h-4 w-4" aria-hidden />}
+                onClick={() => onActions(row)}
+                data-testid="aging-row-actions"
+              >
+                {t('ledger.aging.more', { name: row.partyName })}
+              </UbButton>
+            ),
+          },
+        ]
+      : []),
   ];
 };

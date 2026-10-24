@@ -275,8 +275,11 @@ e2e/gst-summary.mjs): net to pay first, phone section cards, labelled JSON
 disabled for an open month, official 3B grid on desktop.
 Profit §10.6 delivered 24 Oct (docs/performance/2026-10-24-profit.md,
 e2e/profit.mjs): figure line with loss in words, phone cards, row sheet.
+Old dues §10.7 delivered 24 Oct for the Shop (docs/performance/2026-10-24-old-dues.md,
+e2e/old-dues.mjs): side words with totals, age bars, phone cards, row sheet with
+Remind + Receive payment or Pay. The Udhaar book's aging is unchanged.
 1. Payments, Expenses, Cash book, Reports hub, Day book, registers, GST,
-   Profit done. Next §10.7 Old dues, then approved Home LAST. Owner, 24 Oct:
+   Profit, Old dues done. Next approved Home LAST (R-DEC-26 workflows). Owner, 24 Oct:
    after Home commit and push, then STOP and wait; do not start Udhaar.
 
 ## LATEST CHECKPOINT —23 October2026 (owner requested commit/push)
