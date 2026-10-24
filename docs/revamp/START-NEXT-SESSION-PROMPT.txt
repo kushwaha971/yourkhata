@@ -391,7 +391,10 @@ Cash book §11 delivered 24 Oct (docs/performance/2026-10-24-cashbook.md,
 e2e/cashbook.mjs): four figures always in view, Cash · Bank · Both chips,
 close the day offers the filled-in fix (expense when short, receive when
 extra) and re-reads after the payment, rows open receipt or expense.
-1. Payments, Expenses and Cash book done. Next Reports, then
+Reports hub §10.1 delivered 24 Oct (docs/performance/2026-10-24-reports-hub.md,
+e2e/reports-hub.mjs): rows titled by the question, report name under it.
+1. Payments, Expenses, Cash book, Reports hub done. Next Reports §10.2 Day
+   book, then §10.3/4 registers, §10.5 GST, §10.6 Profit, §10.7 Aging;
    approved Home LAST; then Udhaar. Then stop.
 
 ## LATEST CHECKPOINT —23 October2026 (owner requested commit/push)

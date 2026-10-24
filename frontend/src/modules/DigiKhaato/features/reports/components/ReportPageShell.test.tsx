@@ -156,15 +156,37 @@ describe('ReportsHubPageContent', () => {
   it('lists only the built reports this reader can open (no "Soon" rows)', () => {
     signIn(['reports.basic.read', 'ledger.entry.read'], ['reports', 'ledger']);
     renderWithProviders(<ReportsHubPageContent />);
-    expect(screen.getByRole('link', { name: 'Day book' })).toHaveAttribute(
+    expect(screen.getByRole('link', { name: 'What happened today? · Day book' })).toHaveAttribute(
       'href',
       '/reports/day-book'
     );
-    expect(screen.getByRole('link', { name: 'Payables aging' })).toHaveAttribute(
-      'href',
-      '/reports/aging?type=payable'
+    expect(
+      screen.getByRole('link', { name: 'Whom do I owe, and since when? · What you owe' })
+    ).toHaveAttribute('href', '/reports/aging?type=payable');
+    expect(screen.queryByRole('link', { name: /Stock summary/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: /Cash book/ })).not.toBeInTheDocument();
+  });
+
+  it("titles each row by the merchant's question, with the report's name under it", () => {
+    /* 09 §10.1 — the question is what a shopkeeper knows; "Receivables
+       aging" was a word they had to learn before they could find the answer. */
+    signIn(
+      ['reports.basic.read', 'ledger.entry.read', 'sales.invoice.read', 'reports.financial.read'],
+      ['reports', 'ledger', 'sales']
     );
-    expect(screen.queryByRole('link', { name: 'Stock summary' })).not.toBeInTheDocument();
-    expect(screen.queryByRole('link', { name: 'Cashbook' })).not.toBeInTheDocument();
+    renderWithProviders(<ReportsHubPageContent />);
+    const people = screen.getByRole('region', { name: 'People' });
+    expect(people).toHaveTextContent('Who owes me, and since when?Who owes you');
+    expect(screen.getByRole('region', { name: 'Sales and tax' })).toHaveTextContent(
+      'How much did I earn?Profit'
+    );
+    expect(screen.queryByText(/aging|Profit and loss/)).not.toBeInTheDocument();
+  });
+
+  it('tells a reader with no report what to do', () => {
+    signIn([], ['reports']);
+    renderWithProviders(<ReportsHubPageContent />);
+    expect(screen.getByText('No reports for your role')).toBeInTheDocument();
+    expect(screen.getByText('Ask the owner.')).toBeInTheDocument();
   });
 });

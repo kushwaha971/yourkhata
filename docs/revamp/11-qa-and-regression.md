@@ -325,3 +325,13 @@ Earlier mobile manual/arrow-pager matrix acceptance is superseded. Existing desk
 | Partial source failure | server has no per-source failure | not supported |
 | Offline cached, error state | unchanged, not re-run | not re-proven |
 | Competitor comparison | none | unproven |
+
+### Reports hub · 24 Oct 2026 (09 §10.1, R-DEC-34)
+
+| Requirement | Evidence | Status |
+|---|---|---|
+| Groups and question titles with the report name under each, EN/HI | ReportPageShell.test.tsx; e2e/reports-hub.mjs at 390/320/1024/1280 | passed |
+| One column on a phone, two on a desktop; rows 44 px+ and tappable at the edge | e2e | passed |
+| Every row opens a real screen; role gates unchanged | e2e; page tests | passed |
+| Speed | no request; copy and columns only | not measured |
+| Competitor comparison | none | unproven |

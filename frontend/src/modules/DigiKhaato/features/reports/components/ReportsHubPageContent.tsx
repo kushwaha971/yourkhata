@@ -53,8 +53,12 @@ const ICONS: Readonly<Record<ReportCatalogueEntry['icon'], LucideIcon>> = {
 /**
  * `/reports` — the index of reports this reader can open (RPT-common:
  * "index of reports by permission"), grouped as a merchant thinks about them:
- * money, parties, stock. Every row is a built screen; a report its reader may
- * not open is not listed at all, rather than listed and refused.
+ * money, people, stock, sales and tax. Every row is a built screen; a report
+ * its reader may not open is not listed at all, rather than listed and refused.
+ *
+ * 09 §10.1 — each row is titled by the QUESTION it answers ("What happened
+ * today?") with the report's name under it: a shopkeeper knows the question,
+ * not that its answer is called a day book.
  */
 export function ReportsHubPageContent(): React.JSX.Element {
   const { t } = useTranslation();
@@ -70,8 +74,8 @@ export function ReportsHubPageContent(): React.JSX.Element {
       {visible.length === 0 ? (
         <UbEmptyState
           variant="firstUse"
-          title={t('reports.shell.noAccess.title')}
-          description={t('reports.shell.noAccess.body')}
+          title={t('reports.shell.hub.empty.title')}
+          description={t('reports.shell.hub.empty.body')}
         />
       ) : (
         <UbStack gap={4} data-testid="reports-hub">
@@ -90,12 +94,14 @@ export function ReportsHubPageContent(): React.JSX.Element {
                     rows in a single bordered card, not a stack of cards with
                     underlined links; a desktop keeps its grid of cards. */}
                 <UbGrid
-                  columns={{ base: 1, md: 2, lg: 3 }}
+                  columns={{ base: 1, lg: 2 }}
                   gap={3}
                   className="max-lg:gap-0 max-lg:overflow-hidden max-lg:rounded-card max-lg:border max-lg:border-border-hairline"
                 >
                   {entries.map((entry) => {
                     const Icon = ICONS[entry.icon];
+                    const question = t(`reports.shell.hub.${entry.key}.question`);
+                    const name = t(`reports.shell.hub.${entry.key}.title`);
                     return (
                       // The card carries a chevron and reads as one target, so it
                       // is one: the title link's `::after` covers the card (a
@@ -112,12 +118,13 @@ export function ReportsHubPageContent(): React.JSX.Element {
                             <UbLink
                               href={entry.href}
                               variant="body-medium"
+                              aria-label={t('reports.shell.hub.link', { question, name })}
                               className="after:absolute after:inset-0 after:rounded-card after:content-[''] max-lg:no-underline"
                             >
-                              {t(`reports.shell.hub.${entry.key}.title`)}
+                              {question}
                             </UbLink>
                             <UbText variant="body-sm" tone="tertiary">
-                              {t(`reports.shell.hub.${entry.key}.description`)}
+                              {name}
                             </UbText>
                           </UbStack>
                           <ChevronRight
