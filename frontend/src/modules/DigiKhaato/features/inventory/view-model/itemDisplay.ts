@@ -1,9 +1,10 @@
 import type { UbStatusBadgeTone } from 'src/design-system';
+import type { TranslateFn } from 'src/hooks/useTranslation';
 import { formatQuantity } from 'src/utils/quantity';
 
 import { MOVEMENT_TYPE_LABEL_ID } from '../constants/inventoryConstants';
 
-import type { ItemListRow, MovementType, StockStatus } from '../types/item.types';
+import type { ItemListRow, LowStockRow, MovementType, StockStatus } from '../types/item.types';
 
 /**
  * §17.6.0 "Stock badge tones" — out (danger), low (warning), in stock
@@ -112,3 +113,31 @@ export const looksLikeBarcode = (text: string): boolean => /^\d{8,14}$/.test(tex
  */
 export const hasPurchasePrice = (value: string | null): value is string =>
   value !== null && Number(value) !== 0;
+
+/**
+ * 09 §8.7 — a low-stock row in words, for a phone card: "3 NOS left · reorder
+ * at 5 NOS", or "Out of stock" when nothing is left. An item with no reorder
+ * point is here only because it ran out, so it says just that.
+ */
+export const lowStockWords = (row: LowStockRow, t: TranslateFn): string => {
+  const left =
+    row.stockStatus === 'out'
+      ? t('stock.low.words.out')
+      : t('stock.low.words.left', { qty: formatQuantity(row.onHand, row.item.unitCode) });
+  return row.reorderPoint === null
+    ? left
+    : t('stock.low.words.withReorder', {
+        left,
+        qty: formatQuantity(row.reorderPoint, row.item.unitCode),
+      });
+};
+
+/**
+ * What "Order" puts on the purchase order: the suggested quantity, or one when
+ * there is no suggestion (an item with no reorder point that ran out) — an
+ * order line of nothing is not an order.
+ */
+export const lowStockOrderLine = (row: LowStockRow): { itemId: string; qty: string } => ({
+  itemId: row.item.id,
+  qty: Number(row.suggestedQty) > 0 ? row.suggestedQty : '1',
+});

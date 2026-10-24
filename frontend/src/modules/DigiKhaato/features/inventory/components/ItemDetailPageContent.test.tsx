@@ -86,7 +86,13 @@ const MOVE: StockMovement = {
   onHandAfter: '24.000',
   avgCostAfter: null,
   reason: 'void',
-  source: { type: 'purchase_document', id: 'b1', number: 'PB/0012', kind: 'purchase_bill', status: 'void' },
+  source: {
+    type: 'purchase_document',
+    id: 'b1',
+    number: 'PB/0012',
+    kind: 'purchase_bill',
+    status: 'void',
+  },
   reversesId: 'm0',
   isBackdated: false,
   createdBy: null,
@@ -152,9 +158,7 @@ it('shows the usual price with its GST, and the margin only with the cost permis
   unmount();
 
   signIn(OWNER.filter((p) => p !== 'reports.financial.read'));
-  jest
-    .mocked(service.getItem)
-    .mockResolvedValue({ ...ITEM, purchasePrice: null, avgCost: null });
+  jest.mocked(service.getItem).mockResolvedValue({ ...ITEM, purchasePrice: null, avgCost: null });
   renderWithProviders(<ItemDetailPageContent id="i1" />);
   const hidden = await screen.findByTestId('item-price');
   expect(within(hidden).queryByText('Purchase price')).not.toBeInTheDocument();

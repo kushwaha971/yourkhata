@@ -8,9 +8,16 @@ import {
   totalValueImpact,
   valueImpact,
 } from './adjustmentMath';
-import { formatSignedQuantity, looksLikeBarcode, skuPrefix, stockBadge } from './itemDisplay';
+import {
+  formatSignedQuantity,
+  looksLikeBarcode,
+  lowStockOrderLine,
+  lowStockWords,
+  skuPrefix,
+  stockBadge,
+} from './itemDisplay';
 
-import type { AdjustmentFormLine } from '../types/item.types';
+import type { AdjustmentFormLine, LowStockRow } from '../types/item.types';
 
 const line = (over: Partial<AdjustmentFormLine>): AdjustmentFormLine => ({
   itemId: 'i1',
@@ -124,5 +131,41 @@ describe('item display', () => {
   it('spots a barcode scanned into the name field (EC-3)', () => {
     expect(looksLikeBarcode('8901234567890')).toBe(true);
     expect(looksLikeBarcode('Rice 5kg')).toBe(false);
+  });
+});
+
+/**
+ * 09 §8.7 — a low-stock phone card says the row in words, and Order never puts
+ * a line of nothing on a purchase order.
+ */
+describe('low stock in words', () => {
+  const t = (id: string, params?: Record<string, string | number | Date>) =>
+    `${id}${params ? JSON.stringify(params) : ''}`;
+  const row = (over: Partial<LowStockRow>): LowStockRow => ({
+    item: { id: 'i1', name: 'Dal', sku: 'S1', unitCode: 'NOS', allowDecimal: false },
+    onHand: '3.000',
+    reorderPoint: '5.000',
+    stockStatus: 'low',
+    avgCost: null,
+    lastPurchaseCost: null,
+    suggestedQty: '7.000',
+    ...over,
+  });
+
+  it('says what is left and where it reorders', () => {
+    expect(lowStockWords(row({}), t)).toBe(
+      'stock.low.words.withReorder{"left":"stock.low.words.left{\\"qty\\":\\"3 NOS\\"}","qty":"5 NOS"}'
+    );
+  });
+
+  it('says only "Out of stock" for an item with no reorder point', () => {
+    expect(lowStockWords(row({ onHand: '0.000', stockStatus: 'out', reorderPoint: null }), t)).toBe(
+      'stock.low.words.out'
+    );
+  });
+
+  it('orders the suggestion, or one when there is none', () => {
+    expect(lowStockOrderLine(row({}))).toEqual({ itemId: 'i1', qty: '7.000' });
+    expect(lowStockOrderLine(row({ suggestedQty: '0.000' }))).toEqual({ itemId: 'i1', qty: '1' });
   });
 });

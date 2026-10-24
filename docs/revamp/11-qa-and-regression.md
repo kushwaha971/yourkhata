@@ -203,3 +203,19 @@ Earlier mobile manual/arrow-pager matrix acceptance is superseded. Existing desk
 | After announced to a screen reader | aria-live only | unproven |
 | Speed vs dcaddbc | drawer open 738 → 680 ms phone, 715 → 665 desktop, 4x CPU | unchanged (within noise) |
 | Competitor comparison | none | unproven |
+
+### Low stock and Stock summary · 24 Oct 2026 (09 §8.7, R-DEC-34)
+
+| Requirement | Evidence | Status |
+|---|---|---|
+| Low card in words: "3 NOS left · reorder at 10 NOS", Purchase price with permission | e2e/stock-reports.mjs; inventoryViewModel.test.ts | passed |
+| Order opens a new purchase order with the item and the suggested quantity | e2e/stock-reports.mjs (17 = 10 × 2 − 3) | passed (new) |
+| That order saves: server holds a draft with the item and 17 | e2e/stock-reports.mjs read-back by id | passed (new) |
+| Order selected opens ONE order with every selected item | e2e/stock-reports.mjs at 1280 | passed (no supplier split: recorded) |
+| `?items=` survives a malformed or zero pair | routes.test.ts | passed |
+| Summary: Adjust stock in the header; no SKU/category line on a card | e2e/stock-reports.mjs | passed |
+| Stock off: both pages say so; Settings link only for Settings readers | StockSummaryPageContent.test.tsx | passed (unit); not switched off live |
+| "Nothing is low" | words only | unproven live |
+| No sideways scroll, no cut text, no button cut by the table frame, Order ≥ 44 px | e2e/stock-reports.mjs at 390/320/1280 × EN/HI | passed |
+| Speed vs dcaddbc | Low stock open, 4x CPU | 1,073 → 1,104 ms phone, 746 → 761 desktop; within noise |
+| Competitor comparison | none | unproven |

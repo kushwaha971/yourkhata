@@ -1050,6 +1050,7 @@
     "sharedApp": 114.7
   },
   "//routes": [
+    "24 Oct 2026, 09 \u00a78.7 low stock and stock summary: /stock/low gained Order per row, the selection with Order selected, the low-stock words and the stock-off state (route +0.8 KB); the purchase editors gained the ?items= prefill, whose item fetch is a dynamic import (first load +0.1 to 0.2 KB); the remaining +0.1 KB first loads are chunk regrouping, most likely from the two new helpers in src/routes.ts (not isolated). Each raised to measured + 0.3 KB.",
     "24 Oct 2026, 09 \u00a78.4 stock adjustment: the snackbar learned one action button (shared app chunk, every first load by under 0.05 KB); /items/[id] and /stock/low gained the reason chips, the note fold and, on the list and low-stock pages, the adjustment detail dialog's dynamic() stub; the purchase bill and order editors moved +0.8 KB though they import none of the changed modules (checked) \u2014 chunk regrouping, cause not isolated. Raised to measured + 0.3.",
     "24 Oct 2026, 09 \u00a78.3 item form: /stock/low route chunk (73.6) and /reset-password first load (294.1) went over by less than 0.05 KB after the item form gained the leave-without-saving dialog, the barcode Open it link and one more fold; raised to measured + 0.3.",
     "24 Oct 2026 (09 \u00a78.2 item detail): /items/[id] route 109.9 KB and first load 351.5 KB, +0.3 KB each \u2014 the movement words (movementView), the history chips (UbChoiceChips) and the failed-tab retry. /set-password first load measured 293.0x KB against 293 (over by less than 0.05 KB, the shell's rounding); its route chunk fell, cause of the shell drift not traced. Each raised to measured + 0.3.",
@@ -1429,7 +1430,7 @@
     },
     "/purchases/debit-notes": {
       "route": 84.8,
-      "firstLoad": 326.4
+      "firstLoad": 326.7
     },
     "/sales/challans/[id]": {
       "route": 85.1,
@@ -1453,15 +1454,15 @@
     },
     "/purchases/orders": {
       "route": 84.8,
-      "firstLoad": 326.4
+      "firstLoad": 326.7
     },
     "/purchases/orders/new": {
-      "route": 170.3,
-      "firstLoad": 412.0
+      "route": 170.6,
+      "firstLoad": 412.4
     },
     "/purchases/orders/[id]/edit": {
       "route": 170.4,
-      "firstLoad": 412.0
+      "firstLoad": 412.5
     },
     "/sales/orders/[id]": {
       "route": 85.1,
@@ -1537,7 +1538,7 @@
     },
     "/design-system": {
       "route": 112.8,
-      "firstLoad": 354.4
+      "firstLoad": 354.8
     },
     "/settings/team": {
       "route": 92.3,
@@ -1601,11 +1602,11 @@
     },
     "/items/[id]": {
       "route": 110.5,
-      "firstLoad": 352.2
+      "firstLoad": 352.6
     },
     "/stock/low": {
-      "route": 74.2,
-      "firstLoad": 315.9
+      "route": 75.3,
+      "firstLoad": 317.1
     },
     "/expenses": {
       "route": 107,
@@ -1637,7 +1638,7 @@
     },
     "/admin": {
       "route": 11,
-      "firstLoad": 252.7
+      "firstLoad": 253.1
     },
     "/admin/partners": {
       "route": 28.3,
@@ -1653,7 +1654,7 @@
     },
     "/admin/tenants": {
       "route": 32.8,
-      "firstLoad": 274.3
+      "firstLoad": 274.7
     },
     "/settings/data": {
       "route": 63.9,
@@ -1664,8 +1665,8 @@
       "firstLoad": 315.4
     },
     "/purchases/bills/[id]/edit": {
-      "route": 170.3,
-      "firstLoad": 412.0
+      "route": 170.6,
+      "firstLoad": 412.4
     },
     "/purchases/bills": {
       "route": 95,
@@ -1673,7 +1674,7 @@
     },
     "/purchases/bills/new": {
       "route": 170.3,
-      "firstLoad": 412.0
+      "firstLoad": 412.4
     },
     "/reports": {
       "route": 72,
@@ -1793,11 +1794,11 @@
     },
     "/onboarding": {
       "route": 6,
-      "firstLoad": 246.3
+      "firstLoad": 246.7
     },
     "/_not-found": {
       "route": 1,
-      "firstLoad": 241.7
+      "firstLoad": 242.1
     },
     "/library": {
       "route": 79.7,
@@ -1857,7 +1858,7 @@
     },
     "/login/email": {
       "route": 58.6,
-      "firstLoad": 299.7
+      "firstLoad": 300.0
     },
     "/khata": {
       "route": 109,

@@ -139,8 +139,12 @@ export function ItemDetailPageContent({ id }: Readonly<{ id: string }>): React.J
 
   const showMovements = tracked && can.stock;
   const tabs = [
-    ...(showMovements ? [{ value: 'movements' as const, label: t('items.detail.movementsTab') }] : []),
-    ...(canOpenModule('sales') ? [{ value: 'sales' as const, label: t('items.trade.tab.sales') }] : []),
+    ...(showMovements
+      ? [{ value: 'movements' as const, label: t('items.detail.movementsTab') }]
+      : []),
+    ...(canOpenModule('sales')
+      ? [{ value: 'sales' as const, label: t('items.trade.tab.sales') }]
+      : []),
     ...(canOpenModule('purchases')
       ? [{ value: 'purchases' as const, label: t('items.trade.tab.purchases') }]
       : []),
@@ -392,7 +396,9 @@ function ItemStockPanel({
         <UbPanelSection title={t('items.detail.stock.title')}>
           <UbStack gap={2}>
             <UbText variant="body-sm" tone="muted">
-              {item.itemType === 'service' ? t('items.detail.service') : t('items.detail.notTracked')}
+              {item.itemType === 'service'
+                ? t('items.detail.service')
+                : t('items.detail.notTracked')}
             </UbText>
             {item.itemType === 'goods' && can.write && can.adjust && item.status !== 'archived' && (
               <UbButton variant="secondary" size="sm" onClick={onEnableTracking}>

@@ -22,6 +22,8 @@ import {
   isPublicPath,
   loginPathWithNext,
   onboardingStepPath,
+  purchaseOrderForItemsPath,
+  readOrderItems,
 } from 'src/routes';
 
 import { APP_MANIFESTS } from 'modules/appManifests';
@@ -290,5 +292,29 @@ describe('the sidebar only links to pages that exist', () => {
 
   it.each(rows)('%s → %s has a page', (_key, href) => {
     expect(pageDirs).toContain(href);
+  });
+});
+
+/**
+ * 09 §8.7 — "Order" from Low stock carries its items to the purchase editor in
+ * the address. The editor reads exactly what the list wrote, and a hand-edited
+ * address with nonsense in it fills nothing rather than a line of "abc".
+ */
+describe('purchase order for items', () => {
+  it('round-trips the items and their quantities', () => {
+    const path = purchaseOrderForItemsPath([
+      { itemId: 'a1', qty: '35.000' },
+      { itemId: 'b2', qty: '1' },
+    ]);
+    expect(path).toBe('/purchases/orders/new?items=a1:35.000,b2:1');
+    expect(readOrderItems(new URL(path, 'http://x').searchParams.get('items'))).toEqual([
+      { itemId: 'a1', qty: '35.000' },
+      { itemId: 'b2', qty: '1' },
+    ]);
+  });
+
+  it('drops a pair with no item, no quantity, or a zero', () => {
+    expect(readOrderItems(':5,a1:,b2:0,c3:abc,d4:2')).toEqual([{ itemId: 'd4', qty: '2' }]);
+    expect(readOrderItems(null)).toEqual([]);
   });
 });

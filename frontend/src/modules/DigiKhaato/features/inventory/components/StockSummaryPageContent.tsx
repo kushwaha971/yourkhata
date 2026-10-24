@@ -2,7 +2,9 @@
 
 import { useMemo } from 'react';
 
-import { Package, TriangleAlert } from 'lucide-react';
+import dynamic from 'next/dynamic';
+
+import { SlidersHorizontal, TriangleAlert } from 'lucide-react';
 
 import { SummaryStatGrid } from 'src/components/stats/SummaryStatGrid';
 import {
@@ -44,15 +46,25 @@ import { ListExportButton } from 'modules/DigiKhaato/features/imports/components
 
 import { stockSummaryExportPath } from '../api/stockService';
 import { useInventoryMasters } from '../hooks/useInventoryMasters';
+import { useStockAdjustment } from '../hooks/useStockAdjustment';
 import { useStockSummary } from '../hooks/useStockReports';
 import { inventoryGridLabels } from '../view-model/gridLabels';
 
 import { StockBadge } from './StockBadge';
+import { StockOffState } from './StockOffState';
 
 import type { StockSummaryFilters, StockSummaryRow } from '../types/item.types';
 
-/** The phone card's disc: a package, not initials — an item is not a person. */
-const goodsIcon = (): React.ReactNode => <Package className="h-4 w-4" aria-hidden />;
+/* 09 §8.7 — Adjust stock is one of this page's actions; the drawer and the
+   saved adjustment's detail belong to the chunk that opens them. */
+const StockAdjustmentDrawer = dynamic(
+  () => import('./StockAdjustmentDrawer').then((m) => m.StockAdjustmentDrawer),
+  { ssr: false }
+);
+const AdjustmentDetailDialog = dynamic(
+  () => import('./AdjustmentDetailDialog').then((m) => m.AdjustmentDetailDialog),
+  { ssr: false }
+);
 
 /** The summary's columns — a module-level factory, so no cell is a component
  * defined during render (react/no-unstable-nested-components). */
@@ -73,7 +85,7 @@ const createSummaryColumns = ({
       priority: 1,
       cardSlot: 'title',
       sortField: 'name',
-      widthShare: 30,
+      widthShare: 24,
       cell: (row) =>
         isCards ? (
           row.item.name
@@ -92,12 +104,11 @@ const createSummaryColumns = ({
       id: 'category',
       header: t('items.list.col.category'),
       priority: 3,
-      cardSlot: 'meta',
+      /* 09 §8.7 — a phone card is item · on hand · value. The SKU and category
+         were a third line cut to "SKU-001012 · Suga…" on every card. */
+      cardSlot: 'none',
       widthShare: 14,
-      cell: (row) =>
-        isCards
-          ? [row.item.sku, row.category?.name].filter(Boolean).join(' · ')
-          : (row.category?.name ?? '—'),
+      cell: (row) => row.category?.name ?? '—',
     },
     {
       id: 'onHand',
@@ -165,7 +176,7 @@ const createSummaryColumns = ({
     header: t('stock.summary.col.lastMovement'),
     priority: 4,
     cardSlot: 'none',
-    widthShare: 14,
+    widthShare: 20,
     cell: (row) => (row.lastMovementAt ? formatTimestamp(row.lastMovementAt) : '—'),
   });
   return base;
@@ -238,6 +249,7 @@ export function StockSummaryPageContent(): React.JSX.Element {
   const { can, hasModule } = usePermissions();
   const canExport = hasModule('reports') && can('reports.basic.read');
   const canAddItems = can('inventory.item.write');
+  const adjustment = useStockAdjustment();
 
   const columns = useMemo(() => createSummaryColumns({ t, tier, valuation }), [t, tier, valuation]);
 
@@ -265,6 +277,7 @@ export function StockSummaryPageContent(): React.JSX.Element {
      (an older server) never hides anything. */
   const emptyBook = report.status === 'succeeded' && rows.length === 0 && summary?.hasAny === false;
 
+  if (report.moduleOff) return <StockOffState />;
   if (!report.canRead) {
     return (
       <UbPageShell>
@@ -299,6 +312,17 @@ export function StockSummaryPageContent(): React.JSX.Element {
                   update({ asOf: value && value !== today ? value : null })
                 }
               />
+              {adjustment.canAdjust && (
+                <UbButton
+                  variant="secondary"
+                  icon={<SlidersHorizontal className="h-4 w-4" aria-hidden />}
+                  iconOnly="mobile"
+                  onClick={() => adjustment.openFor()}
+                  data-testid="summary-adjust"
+                >
+                  {t('items.detail.adjust')}
+                </UbButton>
+              )}
               <UbActionLink
                 href={ROUTES.STOCK_LOW}
                 variant="secondary"
@@ -395,7 +419,9 @@ export function StockSummaryPageContent(): React.JSX.Element {
               }}
               caption={t('stock.summary.caption')}
               storageId="stock.summary"
-              cardAvatarIcon={goodsIcon}
+              cardAvatar={false}
+              /* An item's name wraps on a phone card instead of being cut. */
+              cardLayout="stacked"
               page={{
                 page: summary?.page ?? 1,
                 pageSize: summary?.pageSize ?? 25,
@@ -467,6 +493,8 @@ export function StockSummaryPageContent(): React.JSX.Element {
           </>
         )}
       </UbStack>
+      {adjustment.open && <StockAdjustmentDrawer adjustment={adjustment} />}
+      {adjustment.viewingId && <AdjustmentDetailDialog canAdjust={adjustment.canAdjust} />}
     </UbPageShell>
   );
 }

@@ -197,8 +197,14 @@ with cost permission, "Stock adjusted · View" (the snackbar now carries one
 action). Recorded for the owner: the server has no "Free sample" reason (Own use
 is shown); the 640 px drawer shows cards because the 7-column table needs about
 728 px; on a phone the line's After figure needs a short scroll.
-1. Rest of Stock: low stock/summary §8.7
-   (Order from a low row), masters and price lists; then Payments, Expenses,
+DONE 24 Oct: Low stock and Stock summary §8.7 (report
+docs/performance/2026-10-24-stock-reports.md; e2e/stock-reports.mjs 44/44;
+Low stock open 1,073 -> 1,104 ms phone at 4x CPU, within noise). Low cards in words with Order; Order opens
+/purchases/orders/new?items=id:qty with the suggested quantity, which the
+editor now prefills (no new endpoint); desktop Order selected makes ONE order
+(items carry no supplier, so no split); summary has Adjust stock and no category
+line on cards; both pages say when stock tracking is off.
+1. Rest of Stock: masters §8.5 and price lists §8.6; then Payments, Expenses,
    Reports; approved Home workflows LAST.
 
 ## LATEST CHECKPOINT —23 October2026 (owner requested commit/push)

@@ -121,7 +121,8 @@ export function ItemMovementList({
                   qty: formatQuantity(movement.onHandAfter, unitCode),
                   cost: formatInr(movement.avgCostAfter),
                 });
-          const cancelled = movement.source.status === 'void' && movement.movementType !== 'reversal';
+          const cancelled =
+            movement.source.status === 'void' && movement.movementType !== 'reversal';
           const row = (
             <UbStack direction="row" gap={3} justify="between" className="min-h-11 px-4 py-3">
               <UbStack gap={1} className="min-w-0 flex-1">

@@ -377,6 +377,30 @@ export const priceListPath = (id: string): string =>
 export const itemPath = (id: string): string => `${ROUTES.ITEMS}/${encodeURIComponent(id)}`;
 
 /**
+ * 09 §8.7 — a new purchase order with these items on it ("Order" from Low
+ * stock). `?items=<id>:<qty>,…` is read by the purchase editor, which fetches
+ * each item and fills its lines; the merchant still picks the supplier.
+ */
+export const purchaseOrderForItemsPath = (
+  lines: readonly { readonly itemId: string; readonly qty: string }[]
+): string =>
+  `${ROUTES.PURCHASE_ORDERS}/new?items=${lines
+    .map((line) => `${encodeURIComponent(line.itemId)}:${encodeURIComponent(line.qty)}`)
+    .join(',')}`;
+
+/** Reads `purchaseOrderForItemsPath`'s query back; malformed pairs are dropped. */
+export const readOrderItems = (
+  value: string | null | undefined
+): { readonly itemId: string; readonly qty: string }[] =>
+  (value ?? '')
+    .split(',')
+    .map((pair) => pair.split(':').map((part) => decodeURIComponent(part)))
+    .filter((parts): parts is [string, string] => parts.length === 2 && Boolean(parts[0]))
+    .filter(([, qty]) => /^\d+(\.\d{1,3})?$/.test(qty) && Number(qty) > 0)
+    .slice(0, 50)
+    .map(([itemId, qty]) => ({ itemId, qty }));
+
+/**
  * IMP-01 FR-14 — the wizard opened from a module page with its kind chosen,
  * and one import's own page (the notification's deep link, and where the
  * wizard lands after an upload so a reload keeps the job).

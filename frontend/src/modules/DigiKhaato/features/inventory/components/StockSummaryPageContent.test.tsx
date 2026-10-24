@@ -152,3 +152,23 @@ it.each([
   expect(screen.getAllByText('As of').length).toBeGreaterThan(0);
   expect(screen.queryByRole('link', { name: 'Go to items' })).not.toBeInTheDocument();
 });
+
+/**
+ * 09 §8.7 States — a business with stock tracking switched off is told so in
+ * words, and an owner gets the way to Settings. It used to read "You can't see
+ * this", which sends a merchant looking for a permission nobody took away.
+ */
+test('stock tracking off says so and links to Settings for an owner', () => {
+  signIn(['inventory.stock.read', 'platform.audit.read'], ['reports']);
+  renderWithProviders(<StockSummaryPageContent />);
+  expect(screen.getByText('Stock tracking is off')).toBeInTheDocument();
+  expect(screen.getByRole('link', { name: 'Open Settings' })).toHaveAttribute('href', '/settings');
+  expect(service.getStockSummary).not.toHaveBeenCalled();
+});
+
+test('stock tracking off offers no Settings link to staff', () => {
+  signIn(['inventory.stock.read'], ['reports']);
+  renderWithProviders(<StockSummaryPageContent />);
+  expect(screen.getByText('Stock tracking is off')).toBeInTheDocument();
+  expect(screen.queryByRole('link', { name: 'Open Settings' })).toBeNull();
+});

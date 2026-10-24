@@ -25,9 +25,11 @@ import {
 } from 'src/redux/slice/sessionSlice';
 import { showSnackbar } from 'src/redux/slice/snackbarSlice';
 import type { RootState } from 'src/redux/store';
+import { readOrderItems } from 'src/routes';
 import { applyServerErrors } from 'src/utils/applyServerErrors';
 import { todayInTenantTz } from 'src/utils/dates';
 import { draftReplyOutcome, draftSnapshot, settleAutosave } from 'src/utils/draftCreation';
+import { formQty } from 'src/utils/quantity';
 import { newRequestId } from 'src/utils/requestId';
 import { mayHaveBeenSaved } from 'src/utils/requestKey';
 
@@ -54,10 +56,12 @@ import {
 import { usePurchaseBillSchemas } from '../validation/purchaseBillSchemas';
 import {
   emptyPurchaseForm,
+  emptyPurchaseLine,
   fromPurchaseBill,
   isCompletePurchaseLine,
   hasIncompletePurchaseInput,
   purchasePaymentWireBody,
+  purchaseLineFromItem,
   purchasePreviewInput,
   purchaseWireSnapshot,
   toPurchaseWireBody,
@@ -245,6 +249,36 @@ export const usePurchaseBillEditor = (
     read: readRepeat,
   });
   const repeatId = useSearchParams()?.get('repeat');
+
+  /* 09 §8.7 — "Order" from Low stock opens a new order with its items on it
+     (`purchaseOrderForItemsPath`). Each item is fetched, so the line takes the
+     item's own unit, tax and (permission allowing) purchase price; the supplier
+     is still the merchant's choice. Like a repeat, it seeds a form nobody has
+     typed into and never overwrites one somebody has. */
+  const orderItems = useSearchParams()?.get('items');
+  useEffect(() => {
+    const wanted = readOrderItems(orderItems);
+    if (!wanted.length || documentId || !context || seededFor !== 'new') return undefined;
+    const abort = new AbortController();
+    void import('../../inventory/api/itemService')
+      .then(({ getItem }) => Promise.all(wanted.map((line) => getItem(line.itemId, abort.signal))))
+      .then((items) => {
+        if (abort.signal.aborted || form.formState.isDirty) return;
+        form.reset({
+          ...form.getValues(),
+          lines: items.map((item, index) => ({
+            ...emptyPurchaseLine(),
+            ...purchaseLineFromItem(item),
+            qty: formQty(wanted[index]?.qty ?? '1', item.unit.allowDecimal),
+          })),
+        });
+      })
+      .catch(() => {
+        if (!abort.signal.aborted)
+          dispatch(showSnackbar({ severity: 'error', id: 'error.generic' }));
+      });
+    return () => abort.abort();
+  }, [orderItems, documentId, context, seededFor, form, dispatch]);
 
   // Rates are by the bill's date; a changed date re-reads them.
   const documentDate = values.documentDate;

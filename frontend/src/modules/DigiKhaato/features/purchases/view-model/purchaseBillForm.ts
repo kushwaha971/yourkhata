@@ -3,6 +3,7 @@ import { draftSnapshot } from 'src/utils/draftCreation';
 import { compareMoney, toDecimal, toMoneyString } from 'src/utils/money';
 import { formQty } from 'src/utils/quantity';
 
+import type { ItemListRow } from '../../inventory/types/item.types';
 import type { EngineDocumentInput, EngineResult } from '../../sales/view-model/taxEngine';
 import type { PurchaseBill, PurchaseDiscountType } from '../types/purchase.types';
 
@@ -64,6 +65,44 @@ export const emptyPurchaseLine = (): PurchaseLineForm => ({
   discountValue: '',
   taxCode: 'GST0',
 });
+
+/** What a line needs from an item: the list row and the item page both carry it. */
+export type PurchasableItem = Pick<
+  ItemListRow,
+  'id' | 'name' | 'unit' | 'purchasePrice' | 'taxCode'
+>;
+
+/**
+ * FR-3 — the item's defaults a line takes when the item is PICKED (and when a
+ * low-stock Order opens the editor with it). `purchasePrice` is null for a role
+ * without cost visibility (INV-01), so the line starts empty rather than
+ * carrying "null"; a zero price is no price either.
+ */
+export const purchaseLineFromItem = (
+  item: PurchasableItem
+): Pick<
+  PurchaseLineForm,
+  | 'itemId'
+  | 'description'
+  | 'unitCode'
+  | 'allowDecimal'
+  | 'unitCost'
+  | 'lastCost'
+  | 'taxCode'
+  | 'itemTaxCode'
+> => {
+  const cost = item.purchasePrice ?? '';
+  return {
+    itemId: item.id,
+    description: item.name,
+    unitCode: item.unit.code,
+    allowDecimal: item.unit.allowDecimal,
+    unitCost: cost === '0.00' ? '' : cost,
+    lastCost: cost,
+    taxCode: item.taxCode,
+    itemTaxCode: item.taxCode,
+  };
+};
 
 export const emptyPurchaseForm = (today: string, itcDefault: boolean): PurchaseBillFormValues => ({
   partyId: null,

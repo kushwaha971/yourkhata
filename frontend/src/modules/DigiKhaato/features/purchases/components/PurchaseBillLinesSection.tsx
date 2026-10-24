@@ -30,6 +30,7 @@ import { PURCHASE_MAX_LINES } from '../constants/purchaseConstants';
 import {
   emptyPurchaseLine,
   purchaseCostChanged,
+  purchaseLineFromItem,
   type PurchaseBillFormValues,
 } from '../view-model/purchaseBillForm';
 
@@ -79,17 +80,15 @@ export function PurchaseBillLinesSection({
   const pick = useCallback(
     (index: number, row: ItemListRow) => {
       const base = `lines.${index}` as const;
-      setValue(`${base}.itemId`, row.id, { shouldDirty: true });
-      setValue(`${base}.description`, row.name);
-      setValue(`${base}.unitCode`, row.unit.code);
-      setValue(`${base}.allowDecimal`, row.unit.allowDecimal);
-      // `purchasePrice` is null for a role without cost visibility (INV-01):
-      // the line starts empty rather than carrying "null" into the form.
-      const cost = row.purchasePrice ?? '';
-      setValue(`${base}.unitCost`, cost === '0.00' ? '' : cost);
-      setValue(`${base}.lastCost`, cost);
-      setValue(`${base}.taxCode`, row.taxCode);
-      setValue(`${base}.itemTaxCode`, row.taxCode);
+      const line = purchaseLineFromItem(row);
+      setValue(`${base}.itemId`, line.itemId, { shouldDirty: true });
+      setValue(`${base}.description`, line.description);
+      setValue(`${base}.unitCode`, line.unitCode);
+      setValue(`${base}.allowDecimal`, line.allowDecimal);
+      setValue(`${base}.unitCost`, line.unitCost);
+      setValue(`${base}.lastCost`, line.lastCost);
+      setValue(`${base}.taxCode`, line.taxCode);
+      setValue(`${base}.itemTaxCode`, line.itemTaxCode);
     },
     [setValue]
   );
