@@ -5,8 +5,8 @@ import { useId, useState } from 'react';
 import { UbButton, UbCard, UbMoneyInput, UbStack, UbStatusBadge, UbText } from 'src/design-system';
 import type { TranslateFn } from 'src/hooks/useTranslation';
 import { formatAmount } from 'src/utils/money';
+import { formatInrUnbroken } from 'src/utils/moneyUnbroken';
 
-import { cashFigure } from '../view-model/cashFigure';
 import { countDifference } from '../view-model/expenseDisplay';
 
 /**
@@ -45,7 +45,7 @@ export function CashbookClosePanel({
     <UbCard title={t('cashbook.closeDay')} padded>
       <UbStack gap={3} data-testid="close-the-day">
         <UbText variant="body-sm">
-          {t('cashbook.expectedCash', { amount: cashFigure(expectedCash) })}
+          {t('cashbook.expectedCash', { amount: formatInrUnbroken(expectedCash) })}
         </UbText>
         <UbText as="label" variant="label" htmlFor={inputId}>
           {t('cashbook.close.prompt')}

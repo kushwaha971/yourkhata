@@ -1,5 +1,6 @@
 {
   "//": [
+    "24 Oct 2026, Day book (09 §10.2): the day book gained its figure line, card words and row sheet. Its new strings live in the reports catalogue, which `i18n:split` places in a chunk shared with /reports/gst-summary (checked in the build: that chunk carries 99 day book keys), so GST summary's route grew 0.4 KB without importing any day book code. The row sheet is its own lazy chunk. Two helpers first added to `dates.ts` and `money.ts` tipped every sales editor by 0.4 KB and five library routes by rounding; they were moved to `utils/weekday.ts` and `utils/moneyUnbroken.ts` and those routes are back under unchanged budgets. Raised by measured + 0.3: /reports/day-book route 118.5->118.8, firstLoad 360.0->360.6 (measured 360.4 after the desktop table rework); /reports/gst-summary route 116.5->117.2, firstLoad 358.5->359.0.",
     "24 Oct2026 08 \u00a711 Cash book: the baseline rounds 241.8 -> 241.9 KB with framework127.3/shared app114.6 unchanged and no new cash book code in any shared chunk (checked by name); the likely cause, inferred not traced, is the runtime chunk map gaining the new lazy chunks. Seven first-load scalars over by less than 0.1 KB use measured+0.3 KB. No route, default, framework or shared ceiling raised. See docs/performance/2026-10-24-cashbook.md.",
     "23 Oct2026 final R-DEC-33: 39 measured route/first-load overruns only use measured+0.3KB for shared selected-chip reveal, consistent filter targets and in-scroll retry. No framework/shared/default cap increase. Evidence: viewport-sales-documents report.",
     "23 Oct2026 mobile correction: compact global search icon, shared in-scroll load sentinel/manual error retry and deduplicated append cards. Exact/rounding route overruns only use measured+0.3KB; no framework/shared/default cap increase. Frozen financial contracts unchanged. See viewport-sales-documents report and bundle measurements.",
@@ -1687,12 +1688,12 @@
       "firstLoad": 320
     },
     "/reports/day-book": {
-      "route": 118.5,
-      "firstLoad": 360.0
+      "route": 118.8,
+      "firstLoad": 360.6
     },
     "/reports/gst-summary": {
-      "route": 116.5,
-      "firstLoad": 358.5
+      "route": 117.2,
+      "firstLoad": 359.0
     },
     "/reports/profit": {
       "route": 112.0,

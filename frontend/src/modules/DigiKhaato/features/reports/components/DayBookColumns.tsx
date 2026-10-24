@@ -8,6 +8,7 @@ import { formatAmount, formatInr, subtractMoney } from 'src/utils/money';
 import {
   baseType,
   isWalkInRow,
+  rowAmountWord,
   rowPartyName,
   typeLabelId,
   typeTone,
@@ -17,25 +18,27 @@ import { sourceHref } from '../view-model/drillThrough';
 import type { DayBookRow } from '../types/reports.types';
 
 /**
- * RPT-02 §7's table — Time · Type · Number · Party · Description · In · Out ·
- * Mode · Cash · Bank · By — scored against the question the owner asks at
- * closing time: "does the drawer match, and if not, which line is wrong?"
+ * 09 §10.2's desktop table — When · Type and number · Contact · Amount · Cash
+ * after · Bank after — for the question the owner asks at closing time: "does
+ * the drawer match, and if not, which line is wrong?"
  *
- * | Column      | Priority | Why |
- * |---|---|---|
- * | Type, In, Out | 1 | What happened and what it did to the drawer. |
- * | Party, Cash   | 1/2 | Who, and the running figure being tallied. |
- * | Number, Time, Description | 2–3 | Finding the line on paper. |
- * | Mode, Bank, By | 3–4 | The desk-sized details. |
+ * It had twelve columns (Date, Time, Type, Number, Contact, Description, In,
+ * Out, Mode, Cash, Bank, By) in a fixed-layout table, and measured on the live
+ * stack every date read "01/1…", every time "15:…" and every running figure
+ * "-12,7…" at 1280 px, worse at 1024: a running cash figure needs about 118 px
+ * and was given 56–75. So the table keeps what tallies the drawer and finds the
+ * line, and the rest moved to the row sheet the first cell opens, the same
+ * sheet a phone card opens:
  *
- * Widths (QA R-D1) are sized for a 1280 desktop (~1050 px of table): Time and
- * Number never truncate ("16:49", "INV/26-27/0001"); Party, Mode and By wrap
- * to two lines instead of ending in "…", since a name and a mode split are
- * read, not scanned.
+ *  * Date and time are one cell (the date only when the range spans days);
+ *  * the type word and the number are one cell;
+ *  * In and Out are one Amount cell said in words, as on the phone card —
+ *    In, Out, or for a bill that moved no cash, Paid or On credit, which is
+ *    what the Description column existed to say;
+ *  * Description, Mode and By are in the sheet.
  *
  * The balance columns exist only when the server sent them
- * (`balancesVisible`) — absent, never blank. A Date column joins when the
- * range is longer than a day.
+ * (`balancesVisible`) — absent, never blank.
  */
 export interface DayBookColumnDeps {
   readonly t: TranslateFn;
@@ -92,25 +95,14 @@ export const describeModes = (row: DayBookRow, t: TranslateFn): string =>
     .map((part) => `${t(`reports.daybook.mode.${part.mode}`)} ${formatInr(part.amount)}`)
     .join(' + ');
 
-const money = (value: string | null | undefined, tone: 'success' | 'error', muted: boolean) =>
-  value ? (
-    <UbText
-      as="span"
-      variant="body-sm"
-      tone={muted ? 'tertiary' : tone}
-      className={muted ? 'ds-num line-through' : 'ds-num'}
-    >
-      {formatAmount(value)}
-    </UbText>
-  ) : (
-    <UbText as="span" variant="body-sm" tone="tertiary">
-      —
-    </UbText>
-  );
-
-const wrapped = (text: string) => (
-  <UbText as="span" variant="body-sm" className="line-clamp-2 whitespace-normal break-words">
-    {text}
+const figure = (value: string | null | undefined, muted: boolean) => (
+  <UbText
+    as="span"
+    variant="body-sm"
+    tone={muted ? 'tertiary' : 'primary'}
+    className="ds-num whitespace-nowrap"
+  >
+    {formatAmount(value)}
   </UbText>
 );
 
@@ -119,61 +111,63 @@ export const createDayBookColumns = ({
   balances,
   multiDay,
 }: DayBookColumnDeps): readonly UbDataGridColumn<DayBookRow>[] => {
-  const columns: UbDataGridColumn<DayBookRow>[] = [];
-  if (multiDay) {
-    columns.push({
-      id: 'date',
-      header: t('reports.daybook.column.date'),
-      priority: 2,
-      cardSlot: 'meta',
-      widthShare: 9,
-      cell: (row) => formatBusinessDate(row.date),
-    });
-  }
-  columns.push(
+  // Shares of the table; the money columns need about 118 px each at 1024.
+  const share = balances
+    ? { when: 14, entry: 19, party: 19, amount: 16, balance: 16 }
+    : { when: 16, entry: 27, party: 31, amount: 26, balance: 0 };
+  const columns: UbDataGridColumn<DayBookRow>[] = [
     {
-      id: 'time',
-      header: t('reports.daybook.column.time'),
-      priority: 3,
+      id: 'when',
+      header: t(multiDay ? 'reports.daybook.column.date' : 'reports.daybook.column.time'),
+      priority: 1,
       cardSlot: 'meta',
-      widthShare: 6.8,
-      cell: (row) => row.time,
+      widthShare: share.when,
+      cell: (row) =>
+        multiDay ? (
+          <UbStack gap={0}>
+            <UbText as="span" variant="body-sm" className="ds-num whitespace-nowrap">
+              {formatBusinessDate(row.date)}
+            </UbText>
+            <UbText as="span" variant="caption" tone="tertiary" className="ds-num">
+              {row.time}
+            </UbText>
+          </UbStack>
+        ) : (
+          <UbText as="span" variant="body-sm" className="ds-num whitespace-nowrap">
+            {row.time}
+          </UbText>
+        ),
     },
     {
       id: 'type',
       header: t('reports.daybook.column.type'),
       priority: 1,
       cardSlot: 'title',
-      widthShare: 11.4,
-      cell: (row) => (
-        <UbStack direction="row" align="center" className="flex-wrap gap-1">
-          <UbStatusBadge tone={typeTone(row)} label={t(typeLabelId(row))} />
-          {row.void && <UbStatusBadge tone="neutral" label={t('reports.daybook.void')} />}
-        </UbStack>
-      ),
-    },
-    {
-      id: 'number',
-      header: t('reports.daybook.column.number'),
-      priority: 2,
-      cardSlot: 'none',
-      widthShare: 13.6,
+      widthShare: share.entry,
       cell: (row) => {
         const href = sourceHref(row.source, row.number, row.type);
-        const text = row.number ?? '—';
-        return href && row.number ? (
-          // QA retest R-D1: "PAYOUT/26-27/0004" is wider than the column at
-          // 1280; the number is the column people read, so it wraps at its
-          // slashes instead of ending in "…".
-          <UbLink
-            href={href}
-            variant="body-sm-medium"
-            className="whitespace-normal [overflow-wrap:anywhere]"
-          >
-            {text}
-          </UbLink>
-        ) : (
-          text
+        return (
+          <UbStack gap={0.5} align="start">
+            <UbStack direction="row" align="center" className="flex-wrap gap-1">
+              <UbStatusBadge tone={typeTone(row)} label={t(typeLabelId(row))} />
+              {row.void && <UbStatusBadge tone="neutral" label={t('reports.daybook.void')} />}
+            </UbStack>
+            {row.number &&
+              (href ? (
+                // "PAYOUT/26-27/0004" wraps at its slashes rather than ending in "…".
+                <UbLink
+                  href={href}
+                  variant="body-sm-medium"
+                  className="whitespace-normal [overflow-wrap:anywhere]"
+                >
+                  {row.number}
+                </UbLink>
+              ) : (
+                <UbText as="span" variant="body-sm" className="[overflow-wrap:anywhere]">
+                  {row.number}
+                </UbText>
+              ))}
+          </UbStack>
         );
       },
     },
@@ -182,7 +176,7 @@ export const createDayBookColumns = ({
       header: t('reports.daybook.column.party'),
       priority: 1,
       cardSlot: 'meta',
-      widthShare: 12,
+      widthShare: share.party,
       cell: (row) => {
         const name = rowPartyName(row);
         if (!name) return isWalkInRow(row) ? t('reports.daybook.walkIn') : '—';
@@ -195,54 +189,42 @@ export const createDayBookColumns = ({
             {name}
           </UbLink>
         ) : (
-          wrapped(name)
+          <UbText as="span" variant="body-sm" className="line-clamp-2 whitespace-normal break-words">
+            {name}
+          </UbText>
         );
       },
     },
     {
-      id: 'description',
-      header: t('reports.daybook.column.description'),
-      priority: 3,
-      cardSlot: 'none',
-      widthShare: 12.5,
-      cell: (row) => (
-        <UbText
-          as="span"
-          variant="body-sm"
-          tone="secondary"
-          className="line-clamp-2 whitespace-normal break-words"
-        >
-          {describeRow(row, t) || '—'}
-        </UbText>
-      ),
-    },
-    {
-      id: 'in',
-      header: t('reports.daybook.column.in'),
+      id: 'amount',
+      header: t('reports.daybook.column.amount'),
       priority: 1,
       align: 'end',
       cardSlot: 'trailing',
-      widthShare: 8,
-      cell: (row) => money(row.moneyIn, 'success', row.void),
+      widthShare: share.amount,
+      cell: (row) => {
+        const amount = rowAmountWord(row);
+        if (!amount.value) return '—';
+        return (
+          <UbStack gap={0} align="end">
+            <UbText as="span" variant="caption" tone="secondary">
+              {t(amount.id)}
+            </UbText>
+            <UbText
+              as="span"
+              variant="body-sm-medium"
+              tone={row.void ? 'tertiary' : amount.direction === 'in' ? 'success' : 'primary'}
+              className={
+                row.void ? 'ds-num whitespace-nowrap line-through' : 'ds-num whitespace-nowrap'
+              }
+            >
+              {formatAmount(amount.value)}
+            </UbText>
+          </UbStack>
+        );
+      },
     },
-    {
-      id: 'out',
-      header: t('reports.daybook.column.out'),
-      priority: 1,
-      align: 'end',
-      cardSlot: 'none',
-      widthShare: 7.5,
-      cell: (row) => money(row.moneyOut, 'error', row.void),
-    },
-    {
-      id: 'mode',
-      header: t('reports.daybook.column.mode'),
-      priority: 4,
-      cardSlot: 'none',
-      widthShare: 9.5,
-      cell: (row) => wrapped(describeModes(row, t) || '—'),
-    }
-  );
+  ];
   if (balances) {
     columns.push(
       {
@@ -251,35 +233,19 @@ export const createDayBookColumns = ({
         priority: 2,
         align: 'end',
         cardSlot: 'none',
-        widthShare: 8.6,
-        cell: (row) => (
-          <UbText as="span" variant="body-sm" className="ds-num">
-            {formatAmount(row.cashAfter)}
-          </UbText>
-        ),
+        widthShare: share.balance,
+        cell: (row) => figure(row.cashAfter, row.void),
       },
       {
         id: 'bank',
         header: t('reports.daybook.column.bank'),
-        priority: 3,
+        priority: 2,
         align: 'end',
         cardSlot: 'none',
-        widthShare: 7.6,
-        cell: (row) => (
-          <UbText as="span" variant="body-sm" className="ds-num">
-            {formatAmount(row.bankAfter)}
-          </UbText>
-        ),
+        widthShare: share.balance,
+        cell: (row) => figure(row.bankAfter, row.void),
       }
     );
   }
-  columns.push({
-    id: 'by',
-    header: t('reports.daybook.column.by'),
-    priority: 4,
-    cardSlot: 'none',
-    widthShare: 8,
-    cell: (row) => wrapped(row.createdBy?.name || '—'),
-  });
   return columns;
 };

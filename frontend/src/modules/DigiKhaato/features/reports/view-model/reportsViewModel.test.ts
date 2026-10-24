@@ -260,18 +260,29 @@ describe('the day book view-model', () => {
     expect(isWalkInRow(row({ type: 'expense' }))).toBe(false);
   });
 
-  it('QA R-D1: at 1280 (≈1050 px of table) Time and Number have room for "16:49" and "INV/26-27/0001"', () => {
-    // Time rendered "16:…" and Number "INV/26-27/…" at 1280 with every column shown.
+  it('09 §10.2: at 1024 (≈742 px of table) the running figures, the date and the number fit', () => {
+    // Twelve columns rendered "01/1…", "15:…" and "-12,7…" at 1024 and 1280:
+    // "-12,76,735.04" needs about 94 px of text and 24 px of padding.
     const columns = createDayBookColumns({
       t: (id: string) => id,
       balances: true,
-      multiDay: false,
+      multiDay: true,
     });
-    const widths = columnWidths(columns).map((w) => (Number.parseFloat(w) / 100) * 1050);
-    const px = (id: string) => widths[columns.findIndex((column) => column.id === id)];
-    expect(px('time')).toBeGreaterThanOrEqual(66); // 42 px of text + 24 px padding
-    expect(px('number')).toBeGreaterThanOrEqual(130); // ~106 px of text + padding
-    expect(px('type')).toBeGreaterThanOrEqual(110); // the "Payment in" / "Credit note" badge
+    const widths = columnWidths(columns).map((w) => (Number.parseFloat(w) / 100) * 742);
+    const px = (id: string) => widths[columns.findIndex((column) => column.id === id)] ?? 0;
+    expect(columns.map((column) => column.id)).toEqual([
+      'when',
+      'type',
+      'party',
+      'amount',
+      'cash',
+      'bank',
+    ]);
+    expect(px('cash')).toBeGreaterThanOrEqual(118);
+    expect(px('bank')).toBeGreaterThanOrEqual(118);
+    expect(px('amount')).toBeGreaterThanOrEqual(118);
+    expect(px('when')).toBeGreaterThanOrEqual(100); // "01/10/2026" + padding
+    expect(px('type')).toBeGreaterThanOrEqual(130); // the "Payment received" badge
   });
 
   it('labels a void row by the type it voids, in a neutral tone (FR-7)', () => {

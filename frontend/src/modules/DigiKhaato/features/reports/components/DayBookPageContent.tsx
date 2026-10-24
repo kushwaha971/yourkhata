@@ -2,9 +2,9 @@
 
 import { useCallback, useMemo, useState } from 'react';
 
-import { ArrowDownLeft, ArrowUpRight, Landmark, Wallet } from 'lucide-react';
+import dynamic from 'next/dynamic';
 
-import { SummaryStatGrid } from 'src/components/stats/SummaryStatGrid';
+import { FigureBox, type Figure } from 'src/components/stats/FigureBox';
 import {
   UbButton,
   UbCard,
@@ -13,7 +13,6 @@ import {
   UbInfoRow,
   UbInputHint,
   UbStack,
-  UbStatCard,
   UbSwitch,
   UbText,
   type UbFilterSpec,
@@ -26,7 +25,8 @@ import {
 } from 'src/design-system/UbDataGrid';
 import { useTranslation } from 'src/hooks/useTranslation';
 import { formatBusinessDate } from 'src/utils/dates';
-import { formatInr } from 'src/utils/money';
+import { formatInr, isNegativeAmount } from 'src/utils/money';
+import { formatInrUnbroken } from 'src/utils/moneyUnbroken';
 
 import { dayBookExportPath } from '../api/dayBookService';
 import { useDayBook } from '../hooks/useDayBook';
@@ -37,6 +37,13 @@ import { spansDays } from '../view-model/reportPeriod';
 import { createDayBookColumns } from './DayBookColumns';
 import { DayBookDayGroups } from './DayBookDayGroups';
 import { ReportPageShell } from './ReportPageShell';
+
+// The row sheet is opened by a tap; a visit that only reads the day never
+// downloads it.
+const DayBookRowSheetLazy = dynamic(
+  () => import('./DayBookRowSheet').then((m) => m.DayBookRowSheet),
+  { ssr: false }
+);
 
 /**
  * RPT-02 — `/reports/day-book`: everything that happened on a day or a range,
@@ -54,7 +61,7 @@ import { ReportPageShell } from './ReportPageShell';
  * and the day's money in and out, with a hint saying who sees the rest.
  */
 export function DayBookPageContent(): React.JSX.Element {
-  const { t } = useTranslation();
+  const { t, locale } = useTranslation();
   const typeSpecs = useMemo<readonly UbFilterSpec[]>(
     () => [
       {
@@ -142,9 +149,53 @@ export function DayBookPageContent(): React.JSX.Element {
       : 'ready';
   const quiet = state === 'empty' && !narrowed && !filters.includeVoid;
   const today = filters.preset === 'today';
-  // A phone reads the day as a list; the full table is one tap away.
-  const [fullTable, setFullTable] = useState(false);
+  const oneDay = filters.dateFrom === filters.dateTo;
+  // 09 §10.0: a phone reads the day as cards and a row's every column in its
+  // sheet; the wide table is Download, never a table scrolled sideways.
   const phone = tier === 'cards';
+  const [openRow, setOpenRow] = useState<DayBookRow | null>(null);
+  const closeRow = useCallback(() => setOpenRow(null), []);
+
+  /* 09 §10.2 — the answer first: money in and out, and when the reader may
+     see the drawer, the cash and the bank at close with where each opened. */
+  const figures = useMemo<Figure[]>(() => {
+    if (!data) return [];
+    const inRange = t('reports.daybook.inRange');
+    const list: Figure[] = [
+      {
+        key: 'in',
+        label: t('reports.daybook.moneyIn'),
+        value: formatInr(data.totals.moneyIn),
+        caption: inRange,
+        tone: 'success',
+      },
+      {
+        key: 'out',
+        label: t('reports.daybook.moneyOut'),
+        value: formatInr(data.totals.moneyOut),
+        caption: inRange,
+      },
+    ];
+    if (balances && data.closing && data.opening) {
+      list.push(
+        {
+          key: 'cash',
+          label: t('reports.daybook.closingCash'),
+          value: formatInr(data.closing.cash),
+          caption: t('reports.daybook.openedAt', { amount: formatInrUnbroken(data.opening.cash) }),
+          tone: isNegativeAmount(data.closing.cash) ? 'error' : undefined,
+        },
+        {
+          key: 'bank',
+          label: t('reports.daybook.closingBank'),
+          value: formatInr(data.closing.bank),
+          caption: t('reports.daybook.openedAt', { amount: formatInrUnbroken(data.opening.bank) }),
+          tone: isNegativeAmount(data.closing.bank) ? 'error' : undefined,
+        }
+      );
+    }
+    return list;
+  }, [data, balances, t]);
 
   return (
     <ReportPageShell<ReportPreset>
@@ -228,7 +279,11 @@ export function DayBookPageContent(): React.JSX.Element {
       onRetry={book.refetch}
       loadingLabel={t('reports.daybook.loading')}
       empty={{
-        title: t(today ? 'reports.daybook.empty.todayTitle' : 'reports.daybook.empty.title'),
+        title: today
+          ? t('reports.daybook.empty.todayTitle')
+          : oneDay
+            ? t('reports.daybook.empty.dayTitle', { date: formatBusinessDate(filters.dateFrom) })
+            : t('reports.daybook.empty.title'),
         description: narrowed
           ? t('reports.daybook.empty.filtered')
           : t(today ? 'reports.daybook.empty.todayBody' : 'reports.daybook.empty.body'),
@@ -242,56 +297,29 @@ export function DayBookPageContent(): React.JSX.Element {
     >
       {data && (
         <UbStack gap={4}>
-          <SummaryStatGrid storageKey="dayBook">
-            {balances && data.opening && (
-              <UbStatCard
-                icon={<Wallet className="h-4 w-4" aria-hidden />}
-                label={t('reports.daybook.opening')}
-                value={formatInr(data.opening.cash)}
-                subtext={t('reports.daybook.bankFigure', { amount: formatInr(data.opening.bank) })}
-              />
-            )}
-            <UbStatCard
-              icon={<ArrowDownLeft className="h-4 w-4" aria-hidden />}
-              label={t('reports.daybook.moneyIn')}
-              value={formatInr(data.totals.moneyIn)}
-              subtext={t('reports.daybook.inRange')}
-              tone="success"
-            />
-            <UbStatCard
-              icon={<ArrowUpRight className="h-4 w-4" aria-hidden />}
-              label={t('reports.daybook.moneyOut')}
-              value={formatInr(data.totals.moneyOut)}
-              subtext={t('reports.daybook.inRange')}
-              tone="danger"
-            />
-            {balances && data.closing && (
-              <>
-                <UbStatCard
-                  icon={<Wallet className="h-4 w-4" aria-hidden />}
-                  label={t('reports.daybook.closingCash')}
-                  value={formatInr(data.closing.cash)}
-                  subtext={t('reports.daybook.asOn', { date: formatBusinessDate(filters.dateTo) })}
-                />
-                <UbStatCard
-                  icon={<Landmark className="h-4 w-4" aria-hidden />}
-                  label={t('reports.daybook.closingBank')}
-                  value={formatInr(data.closing.bank)}
-                  subtext={t('reports.daybook.asOn', { date: formatBusinessDate(filters.dateTo) })}
-                />
-              </>
-            )}
-          </SummaryStatGrid>
+          <FigureBox
+            figures={figures}
+            label={t('reports.daybook.figures')}
+            testId="day-book-figures"
+            figureTestId="day-book-figure"
+          />
           {!balances && <UbInputHint>{t('reports.daybook.balancesHidden')}</UbInputHint>}
 
-          {phone && !fullTable ? (
+          {phone ? (
             <>
               {data.rows.length === 0 ? (
                 <UbText variant="body-sm" tone="tertiary">
                   {narrowed ? t('reports.daybook.empty.filtered') : t('reports.daybook.empty.body')}
                 </UbText>
               ) : (
-                <DayBookDayGroups rows={data.rows} balances={balances} t={t} />
+                <DayBookDayGroups
+                  rows={data.rows}
+                  t={t}
+                  locale={locale}
+                  continuesBefore={data.page > 1}
+                  continuesAfter={data.page < data.totalPages}
+                  onOpenRow={setOpenRow}
+                />
               )}
               {data.totalPages > 1 && (
                 <UbStack direction="row" justify="between" align="center" className="gap-2">
@@ -316,43 +344,29 @@ export function DayBookPageContent(): React.JSX.Element {
                   </UbButton>
                 </UbStack>
               )}
-              {data.rows.length > 0 && (
-                <UbButton variant="secondary" fullWidth onClick={() => setFullTable(true)}>
-                  {t('reports.daybook.fullTable')}
-                </UbButton>
-              )}
             </>
           ) : (
-            <>
-              {phone && (
-                <UbButton variant="secondary" fullWidth onClick={() => setFullTable(false)}>
-                  {t('reports.daybook.backToList')}
-                </UbButton>
-              )}
-              <UbDataGrid
-                rows={data.rows}
-                columns={columns}
-                rowId={rowId}
-                rowName={rowName}
-                state={data.rows.length === 0 ? (narrowed ? 'filtered-empty' : 'empty') : 'rows'}
-                labels={labels}
-                emptyStates={emptyStates}
-                caption={t('reports.daybook.caption')}
-                storageId="reports.daybook"
-                // "Open as full table" on a phone: every column, scrolled
-                // sideways inside the table rather than the page.
-                tier={phone ? 'full' : tier}
-                allowHorizontalScroll={phone}
-                page={{
-                  page: data.page,
-                  pageSize: data.pageSize,
-                  total: data.total,
-                  totalPages: data.totalPages,
-                }}
-                onPageChange={book.setPage}
-                busy={book.status === 'refreshing'}
-              />
-            </>
+            <UbDataGrid
+              rows={data.rows}
+              columns={columns}
+              rowId={rowId}
+              rowName={rowName}
+              state={data.rows.length === 0 ? (narrowed ? 'filtered-empty' : 'empty') : 'rows'}
+              labels={labels}
+              emptyStates={emptyStates}
+              caption={t('reports.daybook.caption')}
+              storageId="reports.daybook"
+              tier={tier}
+              page={{
+                page: data.page,
+                pageSize: data.pageSize,
+                total: data.total,
+                totalPages: data.totalPages,
+              }}
+              onPageChange={book.setPage}
+              onRowOpen={setOpenRow}
+              busy={book.status === 'refreshing'}
+            />
           )}
 
           <UbCard title={t('reports.daybook.totals.title')} padded>
@@ -373,26 +387,15 @@ export function DayBookPageContent(): React.JSX.Element {
                   value={formatInr(value)}
                 />
               ))}
-              {balances && data.closing && (
-                <>
-                  <UbInfoRow
-                    variant="total"
-                    label={t('reports.daybook.closingCash')}
-                    value={formatInr(data.closing.cash)}
-                  />
-                  <UbInfoRow
-                    variant="total"
-                    label={t('reports.daybook.closingBank')}
-                    value={formatInr(data.closing.bank)}
-                  />
-                </>
-              )}
               <UbText variant="caption" tone="tertiary">
                 {t('reports.daybook.totals.rows', { count: data.total })}
               </UbText>
             </UbStack>
           </UbCard>
         </UbStack>
+      )}
+      {openRow && (
+        <DayBookRowSheetLazy row={openRow} balances={balances} onClose={closeRow} />
       )}
     </ReportPageShell>
   );

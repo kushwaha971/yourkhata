@@ -1,3 +1,6 @@
+import type { TranslateFn } from 'src/hooks/useTranslation';
+import { sumMoney, toDecimal, type MoneyString } from 'src/utils/money';
+
 import { DAY_BOOK_TYPE_FILTERS } from '../types/reports.types';
 
 import { periodFromQuery, periodToQuery, REPORT_PRESETS } from './reportPeriod';
@@ -123,3 +126,76 @@ export const groupByDate = (
   }
   return groups;
 };
+
+/**
+ * 09 §10.2 — the phone card's three things. WHAT: who the line is about (the
+ * contact, "Quick sale" for a counter line with nobody named, or the type for
+ * a line that has no customer at all).
+ */
+export const rowWhat = (
+  row: Pick<DayBookRow, 'party' | 'walkInName' | 'type'>,
+  t: TranslateFn
+): string =>
+  rowPartyName(row) ?? t(isWalkInRow(row) ? 'reports.daybook.walkIn' : typeLabelId(row));
+
+/**
+ * WHICH: the type word with its number ("Bill INV/26-27/0418"), an expense's
+ * category ("Expense: Tea"), or a stock adjustment's reason — the words that
+ * find the line on paper. The time is joined by the caller.
+ */
+export const rowWhich = (
+  row: Pick<DayBookRow, 'type' | 'number' | 'detail'>,
+  t: TranslateFn
+): string => {
+  const base = baseType(row);
+  const type = t(typeLabelId(row));
+  if (base === 'expense' && row.detail) {
+    return t('reports.daybook.which.detail', { type, detail: row.detail });
+  }
+  if (base === 'stock_adjustment' && row.detail) {
+    return t('reports.daybook.which.detail', {
+      type,
+      detail: t(`reports.daybook.adjustment.${row.detail}`),
+    });
+  }
+  return row.number ? `${type} ${row.number}` : type;
+};
+
+/**
+ * The card's one amount, in words: "In" or "Out" when the line moved money,
+ * and for a bill that moved none, whether it was paid or is on credit — the
+ * reason a ₹2,260 sale did not change the drawer. Anything else is its total.
+ */
+export const rowAmountWord = (
+  row: Pick<DayBookRow, 'type' | 'moneyIn' | 'moneyOut' | 'amount' | 'amountDue'>
+): {
+  readonly id: string;
+  readonly value: MoneyString | null;
+  readonly direction: 'in' | 'out' | null;
+} => {
+  if (row.moneyIn) return { id: 'reports.daybook.amount.in', value: row.moneyIn, direction: 'in' };
+  if (row.moneyOut)
+    return { id: 'reports.daybook.amount.out', value: row.moneyOut, direction: 'out' };
+  const base = baseType(row);
+  if ((base === 'sale' || base === 'purchase') && row.amount && row.amountDue !== null) {
+    const due = toDecimal(row.amountDue);
+    const id =
+      due.lte(0)
+        ? 'reports.daybook.amount.paid'
+        : due.gte(toDecimal(row.amount))
+          ? 'reports.daybook.amount.credit'
+          : 'reports.daybook.amount.part';
+    return { id, value: row.amount, direction: null };
+  }
+  return { id: 'reports.daybook.amount.total', value: row.amount, direction: null };
+};
+
+/** A date band's money in and out, from the lines a cancelled one does not count. */
+export const bandMoney = (
+  rows: readonly Pick<DayBookRow, 'void' | 'moneyIn' | 'moneyOut'>[]
+): { readonly moneyIn: MoneyString; readonly moneyOut: MoneyString } => ({
+  moneyIn: sumMoney(rows.filter((row) => !row.void && row.moneyIn).map((row) => row.moneyIn ?? '0')),
+  moneyOut: sumMoney(
+    rows.filter((row) => !row.void && row.moneyOut).map((row) => row.moneyOut ?? '0')
+  ),
+});

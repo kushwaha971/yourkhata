@@ -259,8 +259,11 @@ close the day offers the filled-in fix (expense when short, receive when
 extra) and re-reads after the payment, rows open receipt or expense.
 Reports hub §10.1 delivered 24 Oct (docs/performance/2026-10-24-reports-hub.md,
 e2e/reports-hub.mjs): rows titled by the question, report name under it.
-1. Payments, Expenses, Cash book, Reports hub done. Next Reports §10.2 Day
-   book, then §10.3/4 registers, §10.5 GST, §10.6 Profit, §10.7 Aging;
+Day book §10.2 delivered 24 Oct (docs/performance/2026-10-24-day-book.md,
+e2e/day-book.mjs): figure line, date bands, three-thing cards, row sheet on
+phone and desktop; desktop table cut to six columns that fit at 1024.
+1. Payments, Expenses, Cash book, Reports hub, Day book done. Next Reports
+   §10.3/4 registers, then §10.5 GST, §10.6 Profit, §10.7 Aging;
    approved Home LAST; then Udhaar. Then stop.
 
 ## LATEST CHECKPOINT —23 October2026 (owner requested commit/push)

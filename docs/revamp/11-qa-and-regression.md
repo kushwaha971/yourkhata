@@ -335,3 +335,17 @@ Earlier mobile manual/arrow-pager matrix acceptance is superseded. Existing desk
 | Every row opens a real screen; role gates unchanged | e2e; page tests | passed |
 | Speed | no request; copy and columns only | not measured |
 | Competitor comparison | none | unproven |
+
+### Day book · 24 Oct 2026 (09 §10.2, R-DEC-34)
+
+| Requirement | Evidence | Status |
+|---|---|---|
+| Figure line equals the server's four figures; two without the drawer permission | DayBookPageContent.test.tsx; e2e/day-book.mjs | passed |
+| Date bands with each day's in/out, recomputed from the server's rows | page test; e2e | passed |
+| Phone cards of three things, 44 px+, no running cash; row sheet with every column and Open | page tests; e2e at 320/360/390 EN/HI | passed |
+| No sideways scroll, no cut text, no broken number or figure at 320–1280 EN/HI | e2e measuring checks | passed (desktop table was cutting every figure; fixed) |
+| Shop book only (DEC-019): a Udhaar-book cash entry is not in the Shop's day book | e2e, live, then reversed | passed |
+| Print | — | missing (not built for any report) |
+| Speed | dbab.sh, n = 24 | phone level to slightly faster, desktop level |
+| Competitor comparison | none | unproven |
+

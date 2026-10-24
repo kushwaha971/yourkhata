@@ -6,6 +6,7 @@ import dynamic from 'next/dynamic';
 
 import { Plus } from 'lucide-react';
 
+import { FigureBox, type Figure } from 'src/components/stats/FigureBox';
 import {
   UbButton,
   UbCard,
@@ -37,7 +38,6 @@ import { isNegative, shareOf } from '../view-model/expenseDisplay';
 
 import { CashbookClosePanel } from './CashbookClosePanel';
 import { CashbookDayCard } from './CashbookDayCard';
-import { CashbookFigures, type CashbookFigure } from './CashbookFigures';
 
 import type { CashbookBucketFilter, CashFigures, CashRow } from '../types/cashbook.types';
 import type { ExpensePreset } from '../types/expense.types';
@@ -165,7 +165,7 @@ export function CashbookPageContent(): React.JSX.Element {
      it; `null` (an older server) never hides anything. */
   const emptyBook = book.status === 'succeeded' && book.hasAny === false && !data?.days.length;
 
-  const figures: CashbookFigure[] = data
+  const figures: Figure[] = data
     ? [
         {
           key: 'opening',
@@ -298,7 +298,12 @@ export function CashbookPageContent(): React.JSX.Element {
         {data && !emptyBook && (
           <>
             <UbStack gap={1.5}>
-              <CashbookFigures figures={figures} label={t('cashbook.figures')} />
+              <FigureBox
+                figures={figures}
+                label={t('cashbook.figures')}
+                testId="cashbook-figures"
+                figureTestId="cashbook-figure"
+              />
               <UbText variant="caption" tone="tertiary">
                 {t('cashbook.openingSource', { date: formatBusinessDate(filters.dateFrom) })}
               </UbText>

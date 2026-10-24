@@ -11,10 +11,10 @@ import {
   UbText,
 } from 'src/design-system';
 import type { TranslateFn } from 'src/hooks/useTranslation';
-import { formattingLocale } from 'src/i18n/formattingLocale';
 import { formatBusinessDate } from 'src/utils/dates';
+import { formatInrUnbroken } from 'src/utils/moneyUnbroken';
+import { weekdayShort } from 'src/utils/weekday';
 
-import { cashFigure } from '../view-model/cashFigure';
 import { isNegative, modeLabelId } from '../view-model/expenseDisplay';
 
 import type { CashDay, CashRow } from '../types/cashbook.types';
@@ -41,12 +41,6 @@ export interface CashbookDayCardProps {
   /** Opens a payment's receipt or an expense's sheet; absent rows stay plain. */
   readonly onOpenRow?: (row: CashRow) => void;
 }
-
-const weekday = (iso: string, locale: string): string =>
-  new Date(`${iso}T00:00:00Z`).toLocaleDateString(formattingLocale(locale), {
-    weekday: 'short',
-    timeZone: 'UTC',
-  });
 
 /** Which rows have something to open. */
 export const isOpenableRow = (row: CashRow): boolean =>
@@ -78,10 +72,10 @@ export function CashbookDayCard({
 }: Readonly<CashbookDayCardProps>): React.JSX.Element {
   const header = t('cashbook.day.header', {
     date: formatBusinessDate(day.date),
-    weekday: weekday(day.date, locale),
-    in: cashFigure(day.in.total),
-    out: cashFigure(day.out.total),
-    closing: cashFigure(day.closing.total),
+    weekday: weekdayShort(day.date, locale),
+    in: formatInrUnbroken(day.in.total),
+    out: formatInrUnbroken(day.out.total),
+    closing: formatInrUnbroken(day.closing.total),
   });
 
   return (
@@ -128,7 +122,7 @@ export function CashbookDayCard({
                       rows alternate between cash and bank, and a bare
                       "Balance" jumped between two different numbers. */}
                   {t(`cashbook.row.balance.${row.bucket}`, {
-                    amount: cashFigure(row.runningAfter[row.bucket] ?? row.runningAfter.total),
+                    amount: formatInrUnbroken(row.runningAfter[row.bucket] ?? row.runningAfter.total),
                   })}
                 </UbText>
               </UbStack>
@@ -169,14 +163,14 @@ export function CashbookDayCard({
         <UbDivider />
         <UbStack direction="row" justify="between" className="flex-wrap gap-x-3 pt-2">
           <UbText variant="caption" tone="tertiary" className="ds-num">
-            {t('cashbook.opening')}: {cashFigure(day.opening.total)}
+            {t('cashbook.opening')}: {formatInrUnbroken(day.opening.total)}
           </UbText>
           <UbText
             variant="caption"
             tone={isNegative(day.closing.total) ? 'error' : 'secondary'}
             className="ds-num"
           >
-            {t('cashbook.closing')}: {cashFigure(day.closing.total)}
+            {t('cashbook.closing')}: {formatInrUnbroken(day.closing.total)}
           </UbText>
         </UbStack>
         {day.voidedCount > 0 && (
