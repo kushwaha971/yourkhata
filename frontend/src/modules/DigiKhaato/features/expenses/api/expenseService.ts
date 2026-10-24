@@ -177,6 +177,15 @@ export const listExpenses = async (
   };
 };
 
+/** One expense by id — the cash book opens a row's detail from it (08 §11). */
+export const getExpense = async (id: string, signal?: AbortSignal): Promise<Expense> => {
+  const response = await api.get<{ data: ExpenseApiRow }>(
+    `${API_PATHS.EXPENSES}/${encodeURIComponent(id)}`,
+    ubConfig({ signal })
+  );
+  return toExpense(response.data.data);
+};
+
 /**
  * Every category, archived ones included, fetched once per session.
  *

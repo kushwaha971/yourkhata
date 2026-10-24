@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { useAppDispatch, useAppSelector } from 'src/hooks/useAppStore';
 import { useDegradedNetwork } from 'src/hooks/useDegradedNetwork';
@@ -21,6 +21,7 @@ import {
   expenseDraftDiscarded,
   expenseDrawerClosed,
   expenseDrawerOpened,
+  expenseRepeatOpened,
   expenseVoidClosed,
   expenseVoidOpened,
   selectCreatingCategory,
@@ -33,6 +34,7 @@ import {
   selectExpenseVoidStatus,
   selectExpenseVoiding,
 } from '../redux/expenseFormSlice';
+import { fetchExpense } from '../redux/expenseReadThunk';
 import {
   createExpense,
   createExpenseCategory,
@@ -69,6 +71,11 @@ export interface UseExpenseFormResult {
   readonly isVoiding: boolean;
   readonly voidErrors: readonly string[];
   readonly openDrawer: () => void;
+  /**
+   * Open with these values — the cash book's "Add the missing expense" with
+   * the shortfall in cash. A failed save's draft still wins (FR-13).
+   */
+  readonly openPrefilled: (values: ExpenseFormValues) => void;
   readonly close: () => void;
   readonly discardDraft: () => void;
   readonly submit: (
@@ -78,6 +85,8 @@ export interface UseExpenseFormResult {
   ) => Promise<boolean>;
   readonly addCategory: (name: string) => Promise<ExpenseCategory | null>;
   readonly openDetail: (expense: Expense) => void;
+  /** The cash book holds a row, not the expense: read it, then open the sheet. */
+  readonly openDetailById: (id: string) => Promise<void>;
   readonly closeDetail: () => void;
   readonly openVoid: (expense: Expense) => void;
   readonly closeVoid: () => void;
@@ -121,9 +130,26 @@ export const useExpenseForm = (): UseExpenseFormResult => {
     setFormErrors([]);
     dispatch(expenseDrawerOpened());
   }, [dispatch]);
+  /* A prefill closed unsaved is dropped, so the next plain "Add expense" opens
+     empty; once Save is tapped it is an ordinary draft again (FR-13). */
+  const prefilled = useRef(false);
+  const openPrefilled = useCallback(
+    (values: ExpenseFormValues) => {
+      setFormErrors([]);
+      if (draft) {
+        dispatch(expenseDrawerOpened());
+        return;
+      }
+      prefilled.current = true;
+      dispatch(expenseRepeatOpened(values));
+    },
+    [dispatch, draft]
+  );
   const close = useCallback(() => {
     setFormErrors([]);
     dispatch(expenseDrawerClosed());
+    if (prefilled.current) dispatch(expenseDraftDiscarded());
+    prefilled.current = false;
   }, [dispatch]);
   const discardDraft = useCallback(() => dispatch(expenseDraftDiscarded()), [dispatch]);
   /* DEC-019 (QA B10) — an expense is recorded in the app the merchant has open. */
@@ -135,6 +161,7 @@ export const useExpenseForm = (): UseExpenseFormResult => {
       setError: UseFormSetError<ExpenseFormValues>,
       options: { readonly keepOpen?: boolean } = {}
     ): Promise<boolean> => {
+      prefilled.current = false;
       setFormErrors([]);
       try {
         const saved = await dispatch(
@@ -205,6 +232,23 @@ export const useExpenseForm = (): UseExpenseFormResult => {
     (expense: Expense) => dispatch(expenseDetailOpened(expense)),
     [dispatch]
   );
+  /* A second tap while the first read is out opens nothing more (08 §11
+     Repeated taps); a failed read is toasted by the interceptor. */
+  const reading = useRef<string | null>(null);
+  const openDetailById = useCallback(
+    async (id: string) => {
+      if (reading.current) return;
+      reading.current = id;
+      try {
+        dispatch(expenseDetailOpened(await dispatch(fetchExpense(id)).unwrap()));
+      } catch {
+        /* toasted */
+      } finally {
+        reading.current = null;
+      }
+    },
+    [dispatch]
+  );
   const closeDetail = useCallback(() => dispatch(expenseDetailClosed()), [dispatch]);
   const openVoid = useCallback(
     (expense: Expense) => {
@@ -259,11 +303,13 @@ export const useExpenseForm = (): UseExpenseFormResult => {
       isVoiding: voidStatus === 'loading',
       voidErrors,
       openDrawer,
+      openPrefilled,
       close,
       discardDraft,
       submit,
       addCategory,
       openDetail,
+      openDetailById,
       closeDetail,
       openVoid,
       closeVoid,
@@ -285,11 +331,13 @@ export const useExpenseForm = (): UseExpenseFormResult => {
       voidStatus,
       voidErrors,
       openDrawer,
+      openPrefilled,
       close,
       discardDraft,
       submit,
       addCategory,
       openDetail,
+      openDetailById,
       closeDetail,
       openVoid,
       closeVoid,

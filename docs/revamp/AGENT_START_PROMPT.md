@@ -253,8 +253,12 @@ Cancelled chips, category-first cards, six one-tap categories, nothing red
 until Save, Save and add another refocuses Amount, Cancel expense dialog in
 Shop words. Unpaid expenses post in the Shop book (verified). The Library
 shares the page; its requests are unchanged.
-1. Payments and Expenses done. Next Cash book (§11), then
-   Reports; approved Home LAST; then Udhaar. Then stop.
+Cash book §11 delivered 24 Oct (docs/performance/2026-10-24-cashbook.md,
+e2e/cashbook.mjs): four figures always in view, Cash · Bank · Both chips,
+close the day offers the filled-in fix (expense when short, receive when
+extra) and re-reads after the payment, rows open receipt or expense.
+1. Payments, Expenses and Cash book done. Next Reports, then
+   approved Home LAST; then Udhaar. Then stop.
 
 ## LATEST CHECKPOINT —23 October2026 (owner requested commit/push)
 

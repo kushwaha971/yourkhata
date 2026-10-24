@@ -309,3 +309,19 @@ Earlier mobile manual/arrow-pager matrix acceptance is superseded. Existing desk
 | Speed vs dcaddbc | 4x CPU, n=24: phone 1,336 → 1,357 ms, desktop 975 → 1,060 | desktop slower (recorded) |
 | Error, stale, offline queue | unchanged, not re-run | not re-proven |
 | Competitor comparison | none | unproven |
+
+### Cash book · 24 Oct 2026 (08 §11, R-DEC-34)
+
+| Requirement | Evidence | Status |
+|---|---|---|
+| The four figures equal the server's, for Both and for Cash | e2e/cashbook.mjs reads `GET /cashbook` with the screen's own query | passed |
+| 2 × 2 on a phone, one line of four from 1024; nothing cut, no split amounts, at 390/320/1024/1280 EN/HI | e2e | passed (fixed: minus split at 320) |
+| Cash · Bank · Both chips 32 px with 44 px targets | e2e | passed (fixed: clipped in the period row) |
+| Close the day: Short → expense drawer with the shortfall in cash; closed unsaved → next Add expense empty | CashbookPageContent.test.tsx; e2e | passed |
+| Close the day: Extra ₹1 → Receive with ₹1 cash; real receipt moves expected cash +₹1 on the server; same count reads Matches | page test (fails without the re-read); e2e | passed (fixed: the screen never re-read) |
+| Payment row opens its receipt; expense row its detail sheet; khata line not a button | page test; e2e | passed |
+| Hindi weekday in the day header | e2e | passed (fixed) |
+| Speed vs dcaddbc | 4x CPU, n=24: phone 1,533 → 1,497 ms, desktop 1,637 → 1,606 | level |
+| Partial source failure | server has no per-source failure | not supported |
+| Offline cached, error state | unchanged, not re-run | not re-proven |
+| Competitor comparison | none | unproven |

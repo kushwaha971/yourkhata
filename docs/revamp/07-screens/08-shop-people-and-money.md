@@ -338,7 +338,7 @@ Tracking (§10): problems — "Void" wording (now Cancel receipt); Share placeme
 | Must keep | Shop-only on the server (`app="shop"`, bucket SHOP); unpaid expenses never appear (BR-4); voided items noted per day. |
 | Fewer taps | close-the-day offers the fix in place. |
 
-Tracking: problems — stale "payments not built" assumption; name "Cashbook" · decisions — add Receive as a close-the-day fix · dependencies — none · risks — low · approval — pending · build — not started · tests — cashbook unit tests kept; shots at 320 Hindi · outcome — —
+Tracking (§11): problems — stale "payments not built" assumption (now Receive is offered); name "Cashbook" (now "Cash book") · decisions — Receive offered for an EXTRA count and Add expense for a SHORT one (the spec put both under "Short by"); period stays the shared dropdown; no partial-failure state (server has none) · dependencies — none · approval — proceeded under R-DEC-34 (owner: continue without stopping) · build — delivered 24 Oct (four figures always in view, 2 × 2 / one line, Cash · Bank · Both chips, close the day with the fix filled in and a re-read after the payment, rows open receipt or expense, desktop rail, Hindi weekday, non-breaking minus) · tests — `e2e/cashbook.mjs` 85/85 (real ₹1 receipt → Matches), `CashbookPageContent.test.tsx` · outcome — docs/performance/2026-10-24-cashbook.md
 
 ## 12. Expenses · `/expenses`
 

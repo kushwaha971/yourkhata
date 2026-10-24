@@ -1,5 +1,6 @@
 {
   "//": [
+    "24 Oct2026 08 \u00a711 Cash book: the baseline rounds 241.8 -> 241.9 KB with framework127.3/shared app114.6 unchanged and no new cash book code in any shared chunk (checked by name); the likely cause, inferred not traced, is the runtime chunk map gaining the new lazy chunks. Seven first-load scalars over by less than 0.1 KB use measured+0.3 KB. No route, default, framework or shared ceiling raised. See docs/performance/2026-10-24-cashbook.md.",
     "23 Oct2026 final R-DEC-33: 39 measured route/first-load overruns only use measured+0.3KB for shared selected-chip reveal, consistent filter targets and in-scroll retry. No framework/shared/default cap increase. Evidence: viewport-sales-documents report.",
     "23 Oct2026 mobile correction: compact global search icon, shared in-scroll load sentinel/manual error retry and deduplicated append cards. Exact/rounding route overruns only use measured+0.3KB; no framework/shared/default cap increase. Frozen financial contracts unchanged. See viewport-sales-documents report and bundle measurements.",
     "21 Oct2026 remaining sales registers: reuse viewport/grid/compact totals and visible status; fence latest source replies. Only Profit route111.4/first352.8 rounding overruns receive measured+0.3KB (111.7/353.1); no default/framework/shared cap increase. See viewport-sales-documents report.",
@@ -1427,7 +1428,7 @@
   "routes": {
     "/library/money": {
       "route": 76.1,
-      "firstLoad": 317.7
+      "firstLoad": 318.0
     },
     "/purchases/debit-notes/[id]": {
       "route": 74.2,
@@ -1575,7 +1576,7 @@
     },
     "/settings": {
       "route": 108.9,
-      "firstLoad": 350.5
+      "firstLoad": 350.8
     },
     "/settings/profile": {
       "route": 144.4,
@@ -1599,7 +1600,7 @@
     },
     "/items/masters": {
       "route": 58.9,
-      "firstLoad": 300.7
+      "firstLoad": 301.0
     },
     "/items": {
       "route": 108,
@@ -1639,7 +1640,7 @@
     },
     "/imports/[id]": {
       "route": 57.3,
-      "firstLoad": 298.9
+      "firstLoad": 299.2
     },
     "/admin": {
       "route": 11,
@@ -1651,7 +1652,7 @@
     },
     "/admin/health": {
       "route": 21,
-      "firstLoad": 262.7
+      "firstLoad": 263.0
     },
     "/admin/tenants/[id]": {
       "route": 25.5,
@@ -1715,7 +1716,7 @@
     },
     "/settings/business-days": {
       "route": 68.0,
-      "firstLoad": 309.6
+      "firstLoad": 309.9
     },
     "/library/catalogue": {
       "route": 86.1,
@@ -1827,7 +1828,7 @@
     },
     "/lending/loans/[loanId]": {
       "route": 72.1,
-      "firstLoad": 313.7
+      "firstLoad": 314.0
     },
     "/lending/loans": {
       "route": 78.4,

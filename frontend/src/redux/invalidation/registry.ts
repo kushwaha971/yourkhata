@@ -81,6 +81,7 @@ export const QUERIES = {
   fetchLowStock: 'stockSummary/fetchLowStock',
   // EXP-01 / EXP-02 — the expense list and the category picker
   fetchExpenses: 'expenseList/fetchExpenses',
+  fetchExpense: 'expenseForm/fetchExpense',
   fetchExpenseCategories: 'expenseForm/fetchExpenseCategories',
   // EXP-03 — the cashbook
   fetchCashbook: 'cashbook/fetchCashbook',
