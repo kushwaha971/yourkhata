@@ -324,7 +324,14 @@ e2e/item-form.mjs 29/29). Fast path is name, type, unit, selling price with
 Includes GST, Save; Cost and margin and Category are folds; a used barcode links
 to its item; a dirty Cancel asks "Leave without saving?". No route change, so no
 navigation A/B. Competitor comparison not done (unproven).
-1. Rest of Stock: adjustment §8.4, low stock/summary §8.7
+DONE 24 Oct: Stock adjustment §8.4 (report docs/performance/2026-10-24-stock-adjustment.md;
+e2e/stock-adjust.mjs 47/47; drawer open 738 -> 680 ms phone at 4x CPU, within
+noise). Reason chips, Add / Remove / Set to with no minus sign, value shown only
+with cost permission, "Stock adjusted · View" (the snackbar now carries one
+action). Recorded for the owner: the server has no "Free sample" reason (Own use
+is shown); the 640 px drawer shows cards because the 7-column table needs about
+728 px; on a phone the line's After figure needs a short scroll.
+1. Rest of Stock: low stock/summary §8.7
    (Order from a low row), masters and price lists; then Payments, Expenses,
    Reports; approved Home workflows LAST.
 

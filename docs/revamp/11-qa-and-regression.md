@@ -187,3 +187,19 @@ Earlier mobile manual/arrow-pager matrix acceptance is superseded. Existing desk
 | No sideways scroll or cut text, Save target ≥ 44 px, EN and HI | e2e/item-form.mjs at 390/320/1280 | passed |
 | Drawer-open speed | no harness | unproven |
 | Competitor comparison | none | unproven |
+
+### Stock adjustment · 24 Oct 2026 (09 §8.4, R-DEC-34)
+
+| Requirement | Evidence | Status |
+|---|---|---|
+| Reason chips; Counted makes lines Set to, a loss makes them Remove | StockAdjustmentDrawer.test.tsx; e2e/stock-adjust.mjs | passed |
+| Add / Remove / Set to, no typed sign; server on-hand matches | e2e/stock-adjust.mjs (17, then 20) | passed |
+| Value only with cost permission; units otherwise | StockAdjustmentDrawer.test.tsx | passed |
+| Saved → snackbar View → the adjustment | unit test; e2e/stock-adjust.mjs | passed (new) |
+| 409 short line says what is available, nothing posted | e2e/stock-adjust.mjs | passed |
+| Offline: Save disabled with a reason | e2e/stock-adjust.mjs | passed (new) |
+| No sideways scroll or cut text; chips 32 px with ≥ 44 px target | e2e/stock-adjust.mjs at 390/320/1280 × EN/HI | passed |
+| 640 px desktop drawer | e2e/stock-adjust.mjs | passed (cards, not table: recorded) |
+| After announced to a screen reader | aria-live only | unproven |
+| Speed vs dcaddbc | drawer open 738 → 680 ms phone, 715 → 665 desktop, 4x CPU | unchanged (within noise) |
+| Competitor comparison | none | unproven |

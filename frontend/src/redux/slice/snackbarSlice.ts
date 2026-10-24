@@ -1,4 +1,4 @@
-import { createSlice, type PayloadAction } from '@reduxjs/toolkit';
+import { createSlice, type PayloadAction, type UnknownAction } from '@reduxjs/toolkit';
 
 import type { RootState } from 'src/redux/store';
 
@@ -55,6 +55,20 @@ export interface SnackbarState {
   params?: Record<string, string | number>;
   /** Rendered as `ds-mono` caption so a screenshot carries the trace (R-E-4). */
   requestId: string | null;
+  /** One follow-up the message enables ("Stock adjusted · View"). */
+  action?: SnackbarAction;
+}
+
+/**
+ * The toast's one button, as data: a label key and a plain Redux action the
+ * host dispatches when it is tapped. An action object rather than a callback
+ * keeps the slice serialisable and lets a dispatcher with no React tree offer
+ * the move too. The screen that handles the action must be mounted for the tap
+ * to do anything; a caller offers it only where that is true.
+ */
+export interface SnackbarAction {
+  readonly labelId: string;
+  readonly then: UnknownAction;
 }
 
 const initialState: SnackbarState = {
@@ -73,6 +87,7 @@ export interface ShowSnackbarPayload {
   readonly id?: string;
   readonly params?: Record<string, string | number>;
   readonly requestId?: string | null;
+  readonly action?: SnackbarAction;
 }
 
 const snackbarSlice = createSlice({
@@ -94,6 +109,7 @@ const snackbarSlice = createSlice({
       state.id = action.payload.id ?? undefined;
       state.params = action.payload.params ?? {};
       state.requestId = action.payload.requestId ?? null;
+      state.action = action.payload.action;
     },
 
     hideSnackbar(state) {
@@ -102,6 +118,7 @@ const snackbarSlice = createSlice({
       state.id = undefined;
       state.params = {};
       state.requestId = null;
+      state.action = undefined;
     },
   },
 });

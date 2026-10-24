@@ -78,6 +78,12 @@ const StockAdjustmentDrawer = dynamic(
   () => import('./StockAdjustmentDrawer').then((m) => m.StockAdjustmentDrawer),
   { ssr: false }
 );
+/* 09 §8.4 — the saved snackbar's View opens this, so every screen that
+   mounts the drawer mounts it too. */
+const AdjustmentDetailDialog = dynamic(
+  () => import('./AdjustmentDetailDialog').then((m) => m.AdjustmentDetailDialog),
+  { ssr: false }
+);
 
 /** The phone card's disc: what KIND of item this is, not initials — an item
  *  is not a person (the tag list learned this in PTY-05). */
@@ -636,6 +642,7 @@ export function ItemListPageContent(): React.JSX.Element {
 
       {itemForm.open && <ItemFormDrawer form={itemForm} />}
       {adjustment.open && <StockAdjustmentDrawer adjustment={adjustment} />}
+      {adjustment.viewingId && <AdjustmentDetailDialog canAdjust={adjustment.canAdjust} />}
     </UbViewportPageShell>
   );
 }

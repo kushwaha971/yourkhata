@@ -259,6 +259,13 @@ export interface StockAdjustment {
   readonly createdAt: string;
 }
 
+/**
+ * 09 §8.4 — how a line's quantity is read: added to stock, taken out of it, or
+ * the count found on the shelf. The server receives one signed quantity either
+ * way (`signedQty`); the three words are so nobody types a minus sign.
+ */
+export type AdjustmentMode = 'add' | 'remove' | 'to';
+
 /** One line in the adjustment editor — strings as the controls hold them. */
 export interface AdjustmentFormLine {
   itemId: string;
@@ -267,7 +274,7 @@ export interface AdjustmentFormLine {
   allowDecimal: boolean;
   onHand: string;
   avgCost: string;
-  mode: 'by' | 'to';
+  mode: AdjustmentMode;
   qty: string;
   unitCost: string;
 }

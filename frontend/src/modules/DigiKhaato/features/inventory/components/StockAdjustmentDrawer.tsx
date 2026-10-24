@@ -9,7 +9,9 @@ import { CompactDrawer as UbDrawer } from 'src/components/records/CompactOverlay
 import {
   UbAsyncCombobox,
   UbButton,
+  UbChoiceChips,
   UbDateInput,
+  UbDisclosure,
   UbField,
   UbForm,
   UbInfoRow,
@@ -36,15 +38,24 @@ import { useItemSearch } from '../hooks/useItemSearch';
 import { lineFromRow, type UseStockAdjustmentResult } from '../hooks/useStockAdjustment';
 import { useInventorySchemas } from '../validation/inventorySchemas';
 import {
+  defaultModeFor,
   isInboundLine,
   onHandAfter,
+  quantityChanges,
   totalValueImpact,
   valueImpact,
 } from '../view-model/adjustmentMath';
+import { formatSignedQuantity } from '../view-model/itemDisplay';
 
 import { SignedAmount } from './SignedAmount';
 
-import type { AdjustmentFormLine, AdjustmentFormValues, ItemListRow } from '../types/item.types';
+import type {
+  AdjustmentFormLine,
+  AdjustmentFormValues,
+  AdjustmentMode,
+  AdjustmentReason,
+  ItemListRow,
+} from '../types/item.types';
 
 // Loaded with dynamic(), so its own words come with its own chunk rather than
 // with the screen that opens it (src/i18n/catalogueRegistry.ts).
@@ -56,11 +67,14 @@ import 'src/i18n/catalogues/stock';
 import 'src/i18n/catalogues/validation';
 
 /**
- * INV-06 — post a stock adjustment: a reason, a date, and lines in the
- * line-items editor's adjustment subset (Item · On hand · Mode · Qty · Unit
- * cost · After · Value). The footer's consequence line ("2 items · −₹312.00")
- * is the confirmation; the mandatory reason is why there is no extra dialog.
- * A 409 marks every short line at once with what is actually available.
+ * INV-06 / 09 §8.4 — post a stock adjustment: a reason (chips, not a select:
+ * the five words are the whole choice), a date, and lines in the line-items
+ * editor's adjustment subset (Item · On hand · Add / Remove / Set to · Qty ·
+ * Unit cost · After · Value). The merchant never types a minus sign; the mode
+ * is the sign. The footer's consequence line ("2 items · −₹312.00", or
+ * "2 items · −4 BAG" for a member who may not see costs) is the confirmation;
+ * the mandatory reason is why there is no extra dialog. A 409 marks every
+ * short line at once with what is actually available.
  */
 const EMPTY_LINE = (): AdjustmentFormLine => ({
   itemId: '',
@@ -69,10 +83,23 @@ const EMPTY_LINE = (): AdjustmentFormLine => ({
   allowDecimal: true,
   onHand: '0.000',
   avgCost: '0.0000',
-  mode: 'by',
+  mode: 'remove',
   qty: '',
   unitCost: '',
 });
+
+const MODES: readonly AdjustmentMode[] = ['add', 'remove', 'to'];
+/* 09 §8.4 — the chips in the order a shop uses them: a shelf count first. The
+   server's reason list is ADJUSTMENT_REASONS; this is only its display order. */
+const REASON_ORDER: readonly AdjustmentReason[] = [
+  'count',
+  ...ADJUSTMENT_REASONS.filter((reason) => reason !== 'count'),
+];
+const QTY_PLACEHOLDER: Readonly<Record<AdjustmentMode, string>> = {
+  add: 'stock.adjust.qty.add.placeholder',
+  remove: 'stock.adjust.qty.remove.placeholder',
+  to: 'stock.adjust.qty.setTo.placeholder',
+};
 
 function ItemCell({
   index,
@@ -98,6 +125,9 @@ function ItemCell({
       aria-label={label}
       value={line.itemId || null}
       selectedLabel={line.itemName}
+      /* An item name is never cut with an ellipsis: on a 320 px card the
+         picked name wraps instead (CLAUDE.md, plain words). */
+      wrapSelectedLabel
       query={search.query}
       onQueryChange={search.setQuery}
       onOpen={search.activate}
@@ -137,6 +167,8 @@ export function StockAdjustmentDrawer({
     prefill,
     isPosting,
     canAdjust,
+    canSeeValue,
+    impaired,
     shortLines,
     negativeOff,
     formErrors,
@@ -168,15 +200,29 @@ export function StockAdjustmentDrawer({
   const lines = useWatch({ control, name: 'lines' });
   const reason = useWatch({ control, name: 'reason' });
 
+  /* 09 §8.4 "Fewer taps" — choosing Counted turns every line not yet typed
+     into "Set to"; Damaged, Lost and Own use into Remove. A line with a
+     quantity keeps its mode: the merchant has already said what they meant. */
+  const chooseReason = useCallback(
+    (next: AdjustmentReason) => {
+      getValues('lines').forEach((line, index) => {
+        if (line.qty.trim()) return;
+        const mode = defaultModeFor(next, line.mode);
+        if (mode !== line.mode) setValue(`lines.${index}.mode`, mode);
+      });
+    },
+    [getValues, setValue]
+  );
+
   const pick = useCallback(
     (index: number, row: ItemListRow) => {
       const current = getValues('lines');
       const existing = current.findIndex((line, i) => i !== index && line.itemId === row.id);
       if (existing >= 0) {
-        /* EC-9 — the same item again: "Adjust by" counts one more; "Set to"
+        /* EC-9 — the same item again: Add or Remove counts one more; "Set to"
            just goes back to the line (a count is typed, not tallied). */
         const line = current[existing];
-        if (line && line.mode === 'by') {
+        if (line && line.mode !== 'to') {
           const next = stepQuantity(line.qty || '0');
           setValue(`lines.${existing}.qty`, next, { shouldValidate: true });
         }
@@ -185,7 +231,10 @@ export function StockAdjustmentDrawer({
       }
       setValue(
         `lines.${index}`,
-        { ...lineFromRow(row), mode: current[index]?.mode ?? 'by' },
+        {
+          ...lineFromRow(row),
+          mode: current[index]?.mode ?? defaultModeFor(getValues('reason'), 'remove'),
+        },
         { shouldValidate: false }
       );
     },
@@ -209,7 +258,7 @@ export function StockAdjustmentDrawer({
         const blank = current.findIndex((line) => !line.itemId);
         if (existing >= 0) {
           const line = current[existing];
-          if (line?.mode === 'by') {
+          if (line && line.mode !== 'to') {
             setValue(`lines.${existing}.qty`, stepQuantity(line.qty || '0'), {
               shouldValidate: true,
             });
@@ -217,7 +266,11 @@ export function StockAdjustmentDrawer({
         } else if (blank >= 0) {
           pick(blank, row);
         } else if (current.length < ADJUSTMENT_MAX_LINES) {
-          fieldArray.append({ ...lineFromRow(row), qty: '1' });
+          fieldArray.append({
+            ...lineFromRow(row),
+            mode: defaultModeFor(getValues('reason'), 'remove'),
+            qty: '1',
+          });
         }
       });
     },
@@ -280,12 +333,9 @@ export function StockAdjustmentDrawer({
           <UbSelect
             id={id}
             aria-label={label}
-            value={(field?.value as string) ?? 'by'}
+            value={(field?.value as string) ?? 'remove'}
             onChange={(next) => field?.onChange(next)}
-            options={[
-              { value: 'by', label: t('stock.adjust.mode.by') },
-              { value: 'to', label: t('stock.adjust.mode.to') },
-            ]}
+            options={MODES.map((mode) => ({ value: mode, label: t(`stock.adjust.mode.${mode}`) }))}
           />
         ),
       },
@@ -305,14 +355,10 @@ export function StockAdjustmentDrawer({
               onChange={(next) => field?.onChange(next)}
               onBlur={field?.onBlur}
               decimals={line?.allowDecimal === false ? 0 : 3}
-              signed={line?.mode !== 'to'}
+              signed={false}
               unit={line?.unitCode || undefined}
               invalid={invalid || Boolean(shortAt(index))}
-              placeholder={
-                line?.mode === 'to'
-                  ? t('stock.adjust.qty.setTo.placeholder')
-                  : t('stock.adjust.qty.by.placeholder')
-              }
+              placeholder={t(QTY_PLACEHOLDER[line?.mode ?? 'remove'])}
             />
           );
         },
@@ -359,39 +405,49 @@ export function StockAdjustmentDrawer({
               variant="body-sm"
               tone={after && after.startsWith('-') ? 'error' : 'primary'}
               className="ds-num leading-10"
+              /* 09 §8.4 Accessibility — the figure the line will leave, read
+                 out as the merchant types. */
+              aria-live="polite"
             >
               {after ? formatQuantity(after, line?.unitCode) : '—'}
             </UbText>
           );
         },
       },
-      {
-        id: 'value',
-        header: t('stock.adjust.col.value'),
-        track: 'minmax(5.5rem,1.2fr)',
-        align: 'end',
-        render: ({ index }) => {
-          const line = lines?.[index];
-          const impact = line?.itemId ? valueImpact(line) : null;
-          return impact ? (
-            <SignedAmount
-              value={impact}
-              size="sm"
-              label={t('stock.adjust.col.value')}
-              className="h-10 justify-center"
-            />
-          ) : (
-            <UbText as="span" variant="body-sm" tone="tertiary" className="leading-10">
-              —
-            </UbText>
-          );
-        },
-      },
+      /* The value impact is internal cost: only with reports.financial.read
+         (09 §0.4). Without it the column is absent, not "—". */
+      ...(canSeeValue
+        ? ([
+            {
+              id: 'value',
+              header: t('stock.adjust.col.value'),
+              track: 'minmax(5.5rem,1.2fr)',
+              align: 'end',
+              render: ({ index }) => {
+                const line = lines?.[index];
+                const impact = line?.itemId ? valueImpact(line) : null;
+                return impact ? (
+                  <SignedAmount
+                    value={impact}
+                    size="sm"
+                    label={t('stock.adjust.col.value')}
+                    className="h-10 justify-center"
+                  />
+                ) : (
+                  <UbText as="span" variant="body-sm" tone="tertiary" className="leading-10">
+                    —
+                  </UbText>
+                );
+              },
+            },
+          ] satisfies UbLineItemsColumn[])
+        : []),
     ],
-    [t, lines, pick, shortAt]
+    [t, lines, pick, shortAt, canSeeValue]
   );
 
   const total = useMemo(() => totalValueImpact(lines ?? []), [lines]);
+  const changes = useMemo(() => quantityChanges(lines ?? []), [lines]);
   const filled = (lines ?? []).filter((line) => line.itemId).length;
 
   const handleSubmit = useCallback(
@@ -403,7 +459,7 @@ export function StockAdjustmentDrawer({
   );
 
   const reasonOptions = useMemo(
-    () => ADJUSTMENT_REASONS.map((value) => ({ value, label: t(`stock.adjust.reason.${value}`) })),
+    () => REASON_ORDER.map((value) => ({ value, label: t(`stock.adjust.reason.${value}`) })),
     [t]
   );
 
@@ -415,12 +471,26 @@ export function StockAdjustmentDrawer({
       description={t('stock.adjust.subtitle')}
       closeLabel={t('common.action.close')}
       dismissOnBackdrop={!formState.isDirty}
-      className="lg:w-[960px]"
+      /* 09 §8.4 Desktop — a 640 px drawer; the line table shows when its
+         columns fit the drawer and falls back to cards when they do not. */
+      className="lg:w-[640px]"
       footer={
         <>
-          <UbText variant="body-sm" tone="secondary" className="mr-auto self-center">
+          <UbText
+            variant="body-sm"
+            tone="secondary"
+            /* Above the dock on a phone (the footer stacks reversed there). */
+            className="mr-auto self-center max-sm:order-last max-sm:self-start"
+            data-testid="adjust-consequence"
+          >
             {t('stock.adjust.consequence', { count: filled })}{' '}
-            <SignedAmount value={total} size="sm" label={t('stock.adjust.valueImpact')} />
+            {canSeeValue ? (
+              <SignedAmount value={total} size="sm" label={t('stock.adjust.valueImpact')} />
+            ) : (
+              changes
+                .map((change) => formatSignedQuantity(change.qty, change.unitCode))
+                .join(' · ') || '—'
+            )}
           </UbText>
           <UbButton variant="secondary" onClick={close} disabled={isPosting}>
             {t('common.action.cancel')}
@@ -430,7 +500,7 @@ export function StockAdjustmentDrawer({
             form={formId}
             busy={isPosting}
             busyLabel={t('stock.adjust.posting')}
-            disabled={!canAdjust || filled === 0}
+            disabled={!canAdjust || filled === 0 || impaired}
           >
             {t('stock.adjust.post')}
           </UbButton>
@@ -438,6 +508,11 @@ export function StockAdjustmentDrawer({
       }
     >
       <UbForm id={formId} form={form} onSubmit={handleSubmit} formErrors={formErrors}>
+        {impaired && (
+          <UbText variant="caption" tone="warning" data-testid="adjust-offline">
+            {t('items.detail.offline')}
+          </UbText>
+        )}
         {shortLines.length > 0 && (
           <UbStatusBanner
             tone="error"
@@ -445,13 +520,22 @@ export function StockAdjustmentDrawer({
             description={negativeOff ? t('stock.adjust.short.negativeOff') : undefined}
           />
         )}
-        <UbField
-          name="reason"
-          label={t('stock.adjust.reason.label')}
-          placeholder={t('stock.adjust.reason.placeholder')}
-          required
-        >
-          {(field) => <UbSelect {...field} value={field.value as string} options={reasonOptions} />}
+        <UbField name="reason" label={t('stock.adjust.reason.label')} required>
+          {(field) => (
+            <UbChoiceChips<AdjustmentReason>
+              id={field.id}
+              ariaLabel={t('stock.adjust.reason.label')}
+              value={field.value as AdjustmentReason | ''}
+              options={reasonOptions}
+              invalid={field.invalid}
+              describedBy={field['aria-describedby']}
+              onBlur={field.onBlur}
+              onChange={(next) => {
+                field.onChange(next);
+                chooseReason(next);
+              }}
+            />
+          )}
         </UbField>
         <UbField
           name="adjustmentDate"
@@ -460,16 +544,24 @@ export function StockAdjustmentDrawer({
         >
           {(field) => <UbDateInput {...field} value={field.value as string} max={isoToday()} />}
         </UbField>
-        <UbField
-          name="note"
-          label={t('stock.adjust.note.label')}
-          placeholder={t('stock.adjust.note.placeholder')}
-          required={reason === 'other'}
+        {/* 09 §8.4 — reason, then items: the note is a fold until "Other"
+            makes it required, or a refused note puts an error inside it. */}
+        <UbDisclosure
+          label={t('stock.adjust.note.add')}
+          open={reason === 'other' || Boolean(formState.errors.note) || undefined}
         >
-          {(field) => <UbTextInput {...field} autoComplete="off" maxLength={255} />}
-        </UbField>
+          <UbField
+            name="note"
+            label={t('stock.adjust.note.label')}
+            placeholder={t('stock.adjust.note.placeholder')}
+            required={reason === 'other'}
+          >
+            {(field) => <UbTextInput {...field} autoComplete="off" maxLength={255} />}
+          </UbField>
+        </UbDisclosure>
 
         <UbLineItemsEditor<AdjustmentFormValues, 'lines'>
+          tableWhen="fits"
           control={control}
           name="lines"
           fieldArray={fieldArray}
@@ -496,11 +588,13 @@ export function StockAdjustmentDrawer({
             maxReached: t('stock.adjust.lines.max'),
           }}
           footer={
-            <UbInfoRow
-              variant="total"
-              label={t('stock.adjust.valueImpact')}
-              value={<SignedAmount value={total} label={t('stock.adjust.valueImpact')} />}
-            />
+            canSeeValue ? (
+              <UbInfoRow
+                variant="total"
+                label={t('stock.adjust.valueImpact')}
+                value={<SignedAmount value={total} label={t('stock.adjust.valueImpact')} />}
+              />
+            ) : undefined
           }
         />
       </UbForm>

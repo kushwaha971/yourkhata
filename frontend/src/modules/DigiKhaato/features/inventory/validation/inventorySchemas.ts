@@ -8,7 +8,12 @@ import { useTranslation } from 'src/hooks/useTranslation';
 import { useValidationSchemas } from 'src/hooks/useValidationSchemas';
 import { hasReason } from 'src/utils/reason';
 
-import type { AdjustmentFormValues, ItemFormValues, Unit } from '../types/item.types';
+import type {
+  AdjustmentFormValues,
+  AdjustmentMode,
+  ItemFormValues,
+  Unit,
+} from '../types/item.types';
 
 export interface CategoryFormValues {
   name: string;
@@ -178,7 +183,7 @@ export const useInventorySchemas = (units: readonly Unit[]): InventorySchemas =>
             allowDecimal: Yup.boolean().defined(),
             onHand: Yup.string().defined(),
             avgCost: Yup.string().defined(),
-            mode: Yup.mixed<'by' | 'to'>().oneOf(['by', 'to']).defined(),
+            mode: Yup.mixed<AdjustmentMode>().oneOf(['add', 'remove', 'to']).defined(),
             qty: Yup.string()
               .defined()
               .test('qty', function check(value) {
@@ -186,9 +191,8 @@ export const useInventorySchemas = (units: readonly Unit[]): InventorySchemas =>
                 if (!this.parent.itemId) return true;
                 if (!text)
                   return this.createError({ message: t('stock.adjust.line.qty.required') });
-                const signed = this.parent.mode === 'by';
-                const body = signed && text.startsWith('-') ? text.slice(1) : text;
-                if (!QTY(this.parent.allowDecimal).test(body)) {
+                // 09 §8.4 — every mode takes an unsigned number; the mode is the sign.
+                if (!QTY(this.parent.allowDecimal).test(text)) {
                   return this.createError({
                     message: t(
                       this.parent.allowDecimal
@@ -210,10 +214,13 @@ export const useInventorySchemas = (units: readonly Unit[]): InventorySchemas =>
               .test('cost', function check(value) {
                 const text = (this.parent.qty ?? '').trim();
                 if (!this.parent.itemId) return true;
+                // Stock coming IN needs its cost; "Remove" never does (BR-3).
                 const delta =
                   this.parent.mode === 'to'
                     ? Number(text) - Number(this.parent.onHand || 0)
-                    : Number(text);
+                    : this.parent.mode === 'remove'
+                      ? -Number(text)
+                      : Number(text);
                 if (!(delta > 0)) return true;
                 if (!value)
                   return this.createError({ message: t('stock.adjust.line.cost.required') });

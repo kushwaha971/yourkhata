@@ -25,6 +25,7 @@ import {
   selectAdjustmentViewingStatus,
 } from '../redux/stockAdjustmentSlice';
 import { fetchStockAdjustment } from '../redux/stockThunk';
+import { lineModeFor } from '../view-model/adjustmentMath';
 import { formatSignedQuantity } from '../view-model/itemDisplay';
 
 import { SignedAmount } from './SignedAmount';
@@ -72,8 +73,7 @@ export function AdjustmentDetailDialog({
           allowDecimal: true,
           onHand: line.onHandAfter,
           avgCost: line.avgCostAfter,
-          mode: 'by' as const,
-          qty: line.qty.startsWith('-') ? line.qty.slice(1) : `-${line.qty}`,
+          ...lineModeFor(line.qty.startsWith('-') ? line.qty.slice(1) : `-${line.qty}`),
           unitCost: line.unitCost ?? '',
         }))
       )

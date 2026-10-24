@@ -43,6 +43,12 @@ const StockAdjustmentDrawer = dynamic(
   () => import('./StockAdjustmentDrawer').then((m) => m.StockAdjustmentDrawer),
   { ssr: false }
 );
+/* 09 §8.4 — the saved snackbar's View opens this, so every screen that
+   mounts the drawer mounts it too. */
+const AdjustmentDetailDialog = dynamic(
+  () => import('./AdjustmentDetailDialog').then((m) => m.AdjustmentDetailDialog),
+  { ssr: false }
+);
 
 /** The phone card's disc: a package, not initials — an item is not a person. */
 const goodsIcon = (): React.ReactNode => <Package className="h-4 w-4" aria-hidden />;
@@ -298,6 +304,7 @@ export function LowStockPageContent(): React.JSX.Element {
         />
       </UbStack>
       {adjustment.open && <StockAdjustmentDrawer adjustment={adjustment} />}
+      {adjustment.viewingId && <AdjustmentDetailDialog canAdjust={adjustment.canAdjust} />}
     </UbPageShell>
   );
 }

@@ -13,8 +13,8 @@
  *    ("Bought on PB/…", "PB/… cancelled") and the row opens it; without it the
  *    row says its type and links nowhere; never a raw message id either way;
  *  * the history chips: Sales loads its own panel on tap;
- *  * Adjust stock from the page (not ⋯): posts −1 Damage, the server's on-hand
- *    fell by exactly 1 and the newest row reads "Adjusted: Damage";
+ *  * Adjust stock from the page (not ⋯): removes 1 as Damaged, the server's
+ *    on-hand fell by exactly 1 and the newest row reads "Adjusted: Damaged";
  *  * ⋯ → Edit on a phone opens the item form (the 17 Oct capture-phase defect);
  *  * a service has no stock block and no Adjust stock; an archived item has a
  *    banner whose Restore brings it back on the server.
@@ -205,16 +205,15 @@ try {
   await page.getByTestId('item-primary-actions').getByRole('button', { name: /Adjust stock/ }).click();
   const dialog = page.getByRole('dialog');
   await dialog.waitFor();
-  await dialog.getByPlaceholder('Enter the change').first().fill('-1');
-  await dialog.getByRole('combobox', { name: /Reason/ }).click();
-  await page.getByRole('option', { name: 'Damage' }).click();
+  await dialog.getByRole('radio', { name: 'Damaged' }).click();
+  await dialog.getByPlaceholder('How many').first().fill('1');
   if (SHOTS) await page.screenshot({ path: `${SHOTS}/adjust-filled-390.png` });
-  await dialog.getByRole('button', { name: 'Post adjustment' }).click();
+  await dialog.getByRole('button', { name: 'Save adjustment' }).click();
   await dialog.waitFor({ state: 'detached', timeout: 15000 });
   const after = Number((await get(`/items/${goods.id}`)).on_hand);
   check('Adjust stock: on hand fell by exactly 1', after === before - 1, `${before} → ${after}`);
-  await page.getByText('Adjusted: Damage').first().waitFor({ timeout: 15000 });
-  check('Adjust stock: the newest row reads "Adjusted: Damage"', true);
+  await page.getByText('Adjusted: Damaged').first().waitFor({ timeout: 15000 });
+  check('Adjust stock: the newest row reads "Adjusted: Damaged"', true);
   // The item and its movements refetch side by side; the row can land first.
   const moved = await page
     .getByTestId('item-stock-figure')

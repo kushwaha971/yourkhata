@@ -1047,9 +1047,10 @@
   ],
   "shared": {
     "framework": 128,
-    "sharedApp": 114.4
+    "sharedApp": 114.7
   },
   "//routes": [
+    "24 Oct 2026, 09 \u00a78.4 stock adjustment: the snackbar learned one action button (shared app chunk, every first load by under 0.05 KB); /items/[id] and /stock/low gained the reason chips, the note fold and, on the list and low-stock pages, the adjustment detail dialog's dynamic() stub; the purchase bill and order editors moved +0.8 KB though they import none of the changed modules (checked) \u2014 chunk regrouping, cause not isolated. Raised to measured + 0.3.",
     "24 Oct 2026, 09 \u00a78.3 item form: /stock/low route chunk (73.6) and /reset-password first load (294.1) went over by less than 0.05 KB after the item form gained the leave-without-saving dialog, the barcode Open it link and one more fold; raised to measured + 0.3.",
     "24 Oct 2026 (09 \u00a78.2 item detail): /items/[id] route 109.9 KB and first load 351.5 KB, +0.3 KB each \u2014 the movement words (movementView), the history chips (UbChoiceChips) and the failed-tab retry. /set-password first load measured 293.0x KB against 293 (over by less than 0.05 KB, the shell's rounding); its route chunk fell, cause of the shell drift not traced. Each raised to measured + 0.3.",
     "23 Oct 2026 (revamp \u00a76 purchase detail): /purchases/{bills,orders,debit-notes}/[id] +0.5 KB for the Something's-wrong chooser (UbActionSheet), the delete-draft confirm and the payment drawer launcher moving onto the page; /onboarding/step/[n] +0.5 KB with no source change of its own \u2014 shared-chunk regrouping, cause not isolated. Raised to measured + 0.3.",
@@ -1455,12 +1456,12 @@
       "firstLoad": 326.4
     },
     "/purchases/orders/new": {
-      "route": 169.4,
-      "firstLoad": 411.0
+      "route": 170.3,
+      "firstLoad": 412.0
     },
     "/purchases/orders/[id]/edit": {
-      "route": 169.4,
-      "firstLoad": 411.1
+      "route": 170.4,
+      "firstLoad": 412.0
     },
     "/sales/orders/[id]": {
       "route": 85.1,
@@ -1599,12 +1600,12 @@
       "firstLoad": 344
     },
     "/items/[id]": {
-      "route": 110.2,
-      "firstLoad": 351.8
+      "route": 110.5,
+      "firstLoad": 352.2
     },
     "/stock/low": {
-      "route": 73.9,
-      "firstLoad": 315.3
+      "route": 74.2,
+      "firstLoad": 315.9
     },
     "/expenses": {
       "route": 107,
@@ -1663,16 +1664,16 @@
       "firstLoad": 315.4
     },
     "/purchases/bills/[id]/edit": {
-      "route": 169.4,
-      "firstLoad": 411.0
+      "route": 170.3,
+      "firstLoad": 412.0
     },
     "/purchases/bills": {
       "route": 95,
       "firstLoad": 330
     },
     "/purchases/bills/new": {
-      "route": 169.4,
-      "firstLoad": 411.0
+      "route": 170.3,
+      "firstLoad": 412.0
     },
     "/reports": {
       "route": 72,
@@ -1768,27 +1769,27 @@
     },
     "/forgot-password": {
       "route": 52,
-      "firstLoad": 292.4
+      "firstLoad": 292.7
     },
     "/set-password": {
       "route": 51.6,
       "firstLoad": 293.3
     },
     "/d/[token]": {
-      "route": 40.9,
-      "firstLoad": 282.6
+      "route": 41.2,
+      "firstLoad": 282.9
     },
     "/accept-invite/[token]": {
       "route": 11.4,
-      "firstLoad": 252.8
+      "firstLoad": 253.1
     },
     "/legal/privacy": {
       "route": 8,
-      "firstLoad": 248.4
+      "firstLoad": 248.7
     },
     "/legal/terms": {
       "route": 8,
-      "firstLoad": 248.4
+      "firstLoad": 248.7
     },
     "/onboarding": {
       "route": 6,
