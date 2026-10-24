@@ -1,6 +1,8 @@
 'use client';
 
-import { useCallback, useMemo } from 'react';
+import { useCallback, useMemo, useState } from 'react';
+
+import dynamic from 'next/dynamic';
 
 import {
   UbActionLink,
@@ -38,8 +40,10 @@ import { useRegisterReport } from '../hooks/useRegisterReport';
 import { useReportGridLabels } from '../hooks/useReportGridLabels';
 import { documentHref, isRegisterNarrowed } from '../view-model/registerDisplay';
 
+import { RegisterCards } from './RegisterCards';
 import { createRegisterColumns } from './RegisterColumns';
 import { RegisterTotals } from './RegisterTotals';
+import { ReportPager } from './ReportPager';
 import { ReportPageShell } from './ReportPageShell';
 
 import type {
@@ -49,6 +53,13 @@ import type {
   RegisterRow,
   TaxPeriodPreset,
 } from '../types/taxReports.types';
+
+// The row sheet is opened by a tap on a phone card; a visit that only reads
+// the register never downloads it.
+const RegisterRowSheetLazy = dynamic(
+  () => import('./RegisterRowSheet').then((m) => m.RegisterRowSheet),
+  { ssr: false }
+);
 
 /** Where each book's documents are made — the empty book's one action. */
 const NEW_DOCUMENT: Readonly<
@@ -77,8 +88,10 @@ const NEW_DOCUMENT: Readonly<
  * shown as a pressed chip that clears it.
  */
 export function RegisterReport({ book }: Readonly<{ book: RegisterBook }>): React.JSX.Element {
-  const { t } = useTranslation();
+  const { t, locale } = useTranslation();
   const router = useAppRouter();
+  const [sheetRow, setSheetRow] = useState<RegisterRow | null>(null);
+  const closeSheet = useCallback(() => setSheetRow(null), []);
   const tier = useGridTier();
   const report = useRegisterReport(book);
   const labels = useReportGridLabels();
@@ -141,6 +154,10 @@ export function RegisterReport({ book }: Readonly<{ book: RegisterBook }>): Reac
   const emptyBook =
     report.status === 'succeeded' && rows.length === 0 && report.data?.hasAny === false;
 
+  const pages = Math.max(
+    Math.ceil((report.data?.total ?? 0) / Math.max(report.data?.pageSize ?? 100, 1)),
+    1
+  );
   const rowId = useCallback((row: RegisterRow) => row.id, []);
   const rowName = useCallback((row: RegisterRow) => `${row.number} ${row.partyName}`.trim(), []);
   const openRow = useCallback(
@@ -356,30 +373,64 @@ export function RegisterReport({ book }: Readonly<{ book: RegisterBook }>): Reac
       {report.data && report.data.total > 0 && (
         <RegisterTotals book={book} totals={report.data.totals} />
       )}
-      <UbDataGrid
-        rows={rows}
-        columns={columns}
-        rowId={rowId}
-        rowName={rowName}
-        state={gridState}
-        labels={labels}
-        emptyStates={emptyStates}
-        caption={t(`${ns}.caption`)}
-        storageId={`reports.${book}Register.${filters.level}`}
-        page={{
-          page: report.data?.page ?? filters.page,
-          pageSize: report.data?.pageSize ?? 100,
-          total: report.data?.total ?? 0,
-          totalPages: Math.max(
-            Math.ceil((report.data?.total ?? 0) / Math.max(report.data?.pageSize ?? 100, 1)),
-            1
-          ),
-        }}
-        onPageChange={report.setPage}
-        onRowOpen={openRow}
-        cardAvatar={false}
-        allowHorizontalScroll
-      />
+      {/* 09 §10.0: on a phone the rows are cards under a band per date and a
+          tap opens the whole row; the wide table stays for a desktop. The
+          grid still draws the loading, error and empty states everywhere. */}
+      {phone && gridState === 'rows' ? (
+        <>
+          <RegisterCards
+            rows={rows}
+            level={filters.level}
+            t={t}
+            locale={locale}
+            continuesBefore={(report.data?.page ?? 1) > 1}
+            continuesAfter={(report.data?.page ?? 1) < pages}
+            onOpenRow={setSheetRow}
+          />
+          <ReportPager
+            page={report.data?.page ?? filters.page}
+            pages={pages}
+            onPage={report.setPage}
+            label={t('reports.register.pageOf', {
+              page: report.data?.page ?? filters.page,
+              pages,
+            })}
+          />
+        </>
+      ) : (
+        <UbDataGrid
+          rows={rows}
+          columns={columns}
+          rowId={rowId}
+          rowName={rowName}
+          state={gridState}
+          labels={labels}
+          emptyStates={emptyStates}
+          caption={t(`${ns}.caption`)}
+          storageId={`reports.${book}Register.${filters.level}`}
+          page={{
+            page: report.data?.page ?? filters.page,
+            pageSize: report.data?.pageSize ?? 100,
+            total: report.data?.total ?? 0,
+            totalPages: Math.max(
+              Math.ceil((report.data?.total ?? 0) / Math.max(report.data?.pageSize ?? 100, 1)),
+              1
+            ),
+          }}
+          onPageChange={report.setPage}
+          onRowOpen={openRow}
+          cardAvatar={false}
+          allowHorizontalScroll
+        />
+      )}
+      {sheetRow && (
+        <RegisterRowSheetLazy
+          row={sheetRow}
+          book={book}
+          level={filters.level}
+          onClose={closeSheet}
+        />
+      )}
     </ReportPageShell>
   );
 }

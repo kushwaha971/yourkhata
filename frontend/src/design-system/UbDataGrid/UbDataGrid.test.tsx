@@ -334,6 +334,18 @@ describe('no horizontal scroll on a primary list, at any width', () => {
       'div[data-testid="ub-grid-table-scroller"] → data-ub-scroll-x="on"'
     );
   });
+
+  it('really scrolls when it opts in, even inside the grid’s clipped frame', async () => {
+    // The grid hands the table `overflow-hidden` for its rounded frame, and
+    // tailwind-merge let that remove `overflow-x-auto`: the sales register's
+    // Total and Due columns sat clipped past the edge at 1024 px, unreachable.
+    const { container } = await renderGridWithTable('full', { allowHorizontalScroll: true });
+    const scroller = container.querySelector('[data-testid="ub-grid-table-scroller"]');
+    expect(scroller).toHaveClass('overflow-x-auto');
+    // …and holds its cells' screen-reader words, which are absolutely placed:
+    // from a static scroller they escaped and made the PAGE 250 px too wide.
+    expect(scroller).toHaveClass('relative');
+  });
 });
 
 describe('the states a list has', () => {

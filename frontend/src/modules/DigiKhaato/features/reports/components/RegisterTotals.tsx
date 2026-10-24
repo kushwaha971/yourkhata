@@ -1,9 +1,10 @@
 'use client';
 
-import { SummaryStatGrid } from 'src/components/stats/SummaryStatGrid';
-import { UbInfoRow, UbPanel, UbPanelSection, UbStatCard } from 'src/design-system';
+import { FigureBox, type Figure } from 'src/components/stats/FigureBox';
+import { UbInfoRow, UbPanel, UbPanelSection } from 'src/design-system';
 import { useTranslation } from 'src/hooks/useTranslation';
 import { formatInr } from 'src/utils/money';
+import { formatInrUnbroken } from 'src/utils/moneyUnbroken';
 
 import { ReportAmount } from './ReportAmount';
 
@@ -11,8 +12,10 @@ import type { RegisterBook, RegisterTotals as Totals } from '../types/taxReports
 
 /**
  * RPT-03 FR-4 / RPT-04 FR-4 — the totals over the FILTERED set, every one of
- * them the server's figure (the page's rows are one page of it). Four tiles
- * for the questions asked at a glance; the panel below carries the rest of
+ * them the server's figure (the page's rows are one page of it). Four figures
+ * always in view (09 §10.3: Bills · Taxable · GST · Total, with what is still
+ * to collect or pay under the total and the ITC under purchase GST); the
+ * panel below carries the rest of
  * the footer — each head, round-off, paid and due, the B2B/B2C split for
  * sales, and ITC / RCM / not-claimable for purchases.
  */
@@ -22,38 +25,57 @@ export function RegisterTotals({
 }: Readonly<{ book: RegisterBook; totals: Totals }>): React.JSX.Element {
   const { t } = useTranslation();
   const ns = book === 'sales' ? 'reports.salesRegister' : 'reports.purchaseRegister';
+  const inPeriod = t('reports.register.figure.inPeriod');
+  const creditNotes = totals.countByKind.credit_note ?? 0;
+  // 09 §10.3 — the answer first: Bills · Taxable · GST · Total, always in view.
+  const figures: Figure[] = [
+    {
+      key: 'bills',
+      label: t('reports.register.figure.bills'),
+      value: String(totals.count),
+      caption:
+        creditNotes > 0
+          ? t('reports.register.figure.creditNotes', { count: creditNotes })
+          : inPeriod,
+    },
+    {
+      key: 'taxable',
+      label: t('reports.register.tile.taxable'),
+      value: formatInr(totals.taxableTotal),
+      caption: inPeriod,
+    },
+    {
+      key: 'tax',
+      label: t('reports.register.tile.tax'),
+      value: formatInr(totals.tax),
+      caption:
+        book === 'purchase' && totals.itcEligible
+          ? t('reports.register.figure.itc', {
+              amount: formatInrUnbroken(totals.itcEligible.total),
+            })
+          : inPeriod,
+    },
+    {
+      key: 'total',
+      label: t('reports.register.tile.total'),
+      value: formatInr(totals.grandTotal),
+      caption: t('reports.register.figure.due', {
+        label: t(`${ns}.tile.due`),
+        amount: formatInrUnbroken(totals.amountDue),
+      }),
+    },
+  ];
   const row = (label: string, value: string | null) => (
     <UbInfoRow key={label} label={label} value={<ReportAmount value={value} />} />
   );
   return (
     <>
-      <SummaryStatGrid storageKey="register" label={t('reports.register.totals')}>
-        <UbStatCard
-          label={t('reports.register.tile.taxable')}
-          value={formatInr(totals.taxableTotal)}
-          subtext={t('reports.register.tile.documents', { count: totals.count })}
-        />
-        <UbStatCard label={t('reports.register.tile.tax')} value={formatInr(totals.tax)} />
-        {book === 'purchase' && totals.itcEligible ? (
-          <UbStatCard
-            label={t('reports.purchaseRegister.tile.itc')}
-            value={formatInr(totals.itcEligible.total)}
-            tone="success"
-          />
-        ) : (
-          <UbStatCard
-            label={t('reports.register.tile.total')}
-            value={formatInr(totals.grandTotal)}
-          />
-        )}
-        <UbStatCard
-          label={t(`${ns}.tile.due`)}
-          value={formatInr(totals.amountDue)}
-          tone={
-            totals.amountDue.startsWith('-') || totals.amountDue === '0.00' ? 'default' : 'warning'
-          }
-        />
-      </SummaryStatGrid>
+      <FigureBox
+        figures={figures}
+        label={t('reports.register.totals')}
+        testId="register-figures"
+        figureTestId="register-figure"
+      />
       <UbPanel as="section">
         <UbPanelSection title={t('reports.register.footer.title')} collapsible defaultOpen={false}>
           {row(t('reports.register.column.cgst'), totals.cgst)}

@@ -115,17 +115,7 @@ export const isWalkInRow = (row: Pick<DayBookRow, 'party' | 'walkInName' | 'type
   !rowPartyName(row) && COUNTER_TYPES.includes(baseType(row));
 
 /** The rows grouped by business date, in the order they came (FR: mobile timeline). */
-export const groupByDate = (
-  rows: readonly DayBookRow[]
-): readonly { readonly date: string; readonly rows: readonly DayBookRow[] }[] => {
-  const groups: { date: string; rows: DayBookRow[] }[] = [];
-  for (const row of rows) {
-    const last = groups[groups.length - 1];
-    if (last && last.date === row.date) last.rows.push(row);
-    else groups.push({ date: row.date, rows: [row] });
-  }
-  return groups;
-};
+export { groupByDate } from './reportBands';
 
 /**
  * 09 §10.2 — the phone card's three things. WHAT: who the line is about (the
@@ -135,8 +125,7 @@ export const groupByDate = (
 export const rowWhat = (
   row: Pick<DayBookRow, 'party' | 'walkInName' | 'type'>,
   t: TranslateFn
-): string =>
-  rowPartyName(row) ?? t(isWalkInRow(row) ? 'reports.daybook.walkIn' : typeLabelId(row));
+): string => rowPartyName(row) ?? t(isWalkInRow(row) ? 'reports.daybook.walkIn' : typeLabelId(row));
 
 /**
  * WHICH: the type word with its number ("Bill INV/26-27/0418"), an expense's
@@ -179,12 +168,11 @@ export const rowAmountWord = (
   const base = baseType(row);
   if ((base === 'sale' || base === 'purchase') && row.amount && row.amountDue !== null) {
     const due = toDecimal(row.amountDue);
-    const id =
-      due.lte(0)
-        ? 'reports.daybook.amount.paid'
-        : due.gte(toDecimal(row.amount))
-          ? 'reports.daybook.amount.credit'
-          : 'reports.daybook.amount.part';
+    const id = due.lte(0)
+      ? 'reports.daybook.amount.paid'
+      : due.gte(toDecimal(row.amount))
+        ? 'reports.daybook.amount.credit'
+        : 'reports.daybook.amount.part';
     return { id, value: row.amount, direction: null };
   }
   return { id: 'reports.daybook.amount.total', value: row.amount, direction: null };
@@ -194,7 +182,9 @@ export const rowAmountWord = (
 export const bandMoney = (
   rows: readonly Pick<DayBookRow, 'void' | 'moneyIn' | 'moneyOut'>[]
 ): { readonly moneyIn: MoneyString; readonly moneyOut: MoneyString } => ({
-  moneyIn: sumMoney(rows.filter((row) => !row.void && row.moneyIn).map((row) => row.moneyIn ?? '0')),
+  moneyIn: sumMoney(
+    rows.filter((row) => !row.void && row.moneyIn).map((row) => row.moneyIn ?? '0')
+  ),
   moneyOut: sumMoney(
     rows.filter((row) => !row.void && row.moneyOut).map((row) => row.moneyOut ?? '0')
   ),

@@ -234,11 +234,18 @@ function UbDataGridTableBase<TRow>({
       // rather than the page, and a header that sticks to a box that never
       // scrolls is a header that never sticks.
       style={capped ? { maxHeight } : undefined}
+      // The sideways scroll goes AFTER `className`: the grid passes
+      // `overflow-hidden` there for its rounded frame, and tailwind-merge lets a
+      // later `overflow-*` remove an earlier `overflow-x-*` — so a report that
+      // opted in got a clipped table whose last columns could not be reached.
+      // `relative` makes it the box the cells' `sr-only` words are placed in;
+      // without it they escaped past the scroller and widened the whole page.
       className={cn(
         GRID_SCROLLER,
-        allowHorizontalScroll ? 'overflow-x-auto' : 'overflow-x-hidden',
+        !allowHorizontalScroll && 'overflow-x-hidden',
         capped && 'overflow-y-auto',
-        className
+        className,
+        allowHorizontalScroll && 'relative overflow-x-auto'
       )}
     >
       <table

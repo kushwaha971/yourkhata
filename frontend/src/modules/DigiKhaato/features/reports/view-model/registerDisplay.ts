@@ -1,5 +1,6 @@
 import { API_PATHS } from 'src/api/APIPaths';
 import { ROUTES } from 'src/routes';
+import { sumMoney } from 'src/utils/money';
 import { toQueryString, type QueryValue } from 'src/utils/queryString';
 
 import {
@@ -132,3 +133,7 @@ export const gstPath = (query: GstQuery): string =>
     date_to: query.dateTo,
     rounding: query.rounding === 'rupee' ? 'rupee' : null,
   })}`;
+
+/** 09 §10.3 — the band's figure: the day's bills, a cancelled one left out. */
+export const bandTotal = (rows: readonly RegisterRow[]): string =>
+  sumMoney(rows.filter((row) => !isVoidRow(row)).map((row) => row.grandTotal || '0'));

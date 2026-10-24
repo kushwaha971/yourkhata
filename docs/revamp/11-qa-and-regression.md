@@ -336,6 +336,19 @@ Earlier mobile manual/arrow-pager matrix acceptance is superseded. Existing desk
 | Speed | no request; copy and columns only | not measured |
 | Competitor comparison | none | unproven |
 
+### Sales and Purchase registers · 24 Oct 2026 (09 §10.3/§10.4, R-DEC-34)
+
+| Requirement | Evidence | Status |
+|---|---|---|
+| Figure line equals the server's Bills · Taxable · GST · Total, both books | RegisterPages.test.tsx; e2e/registers.mjs | passed |
+| Phone cards under date bands, each band's total recomputed from the server's live bills | page tests; e2e at 390 | passed |
+| By item cards titled by the server's item names | page test; e2e both books | passed |
+| Row sheet with the tax breakup and Open to the bill | page tests; e2e both books | passed |
+| No sideways scroll, no cut text, no broken number at 320–1280 EN/HI; desktop last column reachable | e2e measuring checks | passed (desktop hid Total/Due; fixed in UbDataGridTable) |
+| Totals as `dl`; Print | — | not met; missing |
+| Speed | rgab.sh, n = 24 | phone level to slightly faster; desktop median −20.6%, cause not traced |
+| Competitor comparison | none | unproven |
+
 ### Day book · 24 Oct 2026 (09 §10.2, R-DEC-34)
 
 | Requirement | Evidence | Status |

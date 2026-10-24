@@ -1,6 +1,6 @@
 import type * as ReactModule from 'react';
 
-import { screen, waitFor } from '@testing-library/react';
+import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
 import { resetAllFeatureState } from 'src/redux/actions';
@@ -150,13 +150,6 @@ const lastAsked = (): RegisterQuery => {
   return last[0];
 };
 
-/* These tests read the figures on the cards. The owner folded the cards into a
-   summary line (6 Oct 2026) that opens with "Details"; open it, as a merchant
-   who wants the cards does once and the screen remembers. */
-beforeEach(() => {
-  window.localStorage.setItem('ub.statSummary.register', 'open');
-});
-
 beforeEach(() => {
   jest.clearAllMocks();
   mockSearch = '';
@@ -187,9 +180,14 @@ const SALES_READ: PermissionCode[] = ['reports.basic.read', 'sales.invoice.read'
 it('shows the server totals over the filtered set, not the sum of the page (RPT-03 FR-4)', async () => {
   signIn([...SALES_READ, 'reports.export'], ['reports', 'sales']);
   renderWithProviders(<SalesRegisterPageContent />);
-  expect(await screen.findByText('₹99,999.99')).toBeInTheDocument();
-  expect(screen.getByText('₹4,321.00')).toBeInTheDocument();
-  expect(screen.getByText('in 12 documents')).toBeInTheDocument();
+  // 09 §10.3: Bills · Taxable · GST · Total always in view, every one the server's.
+  const figures = await screen.findByTestId('register-figures');
+  expect(within(figures).getByTestId('register-figure-bills')).toHaveTextContent('12');
+  expect(figures).toHaveTextContent('incl. 1 credit note');
+  expect(within(figures).getByTestId('register-figure-taxable')).toHaveTextContent('₹99,999.99');
+  expect(within(figures).getByTestId('register-figure-tax')).toHaveTextContent('₹20.00');
+  expect(within(figures).getByTestId('register-figure-total')).toHaveTextContent('₹1,23,456.00');
+  expect(figures).toHaveTextContent('To collect ₹4,321.00');
   expect(lastAsked()).toMatchObject({
     book: 'sales',
     filters: { preset: 'thisMonth', level: 'document', status: 'all', includeVoid: false },
@@ -197,19 +195,61 @@ it('shows the server totals over the filtered set, not the sum of the page (RPT-
   expect(screen.getByRole('button', { name: /Export/ })).toBeInTheDocument();
 });
 
-it('reads a credit note as negative, in the error tone, with its CN badge (§8)', async () => {
+it('draws a phone card per bill under a band per date carrying that day’s total (09 §10.3)', async () => {
+  signIn(SALES_READ, ['reports', 'sales']);
+  service.getRegister.mockImplementation(async () =>
+    page([
+      row({}),
+      row({
+        id: 'r3',
+        number: 'INV/26-27/0042',
+        partyName: '',
+        isWalkIn: true,
+        grandTotal: '228.00',
+      }),
+      row({
+        id: 'r4',
+        number: 'INV/26-27/0040',
+        date: '2026-09-04',
+        status: 'void',
+        grandTotal: '50.00',
+      }),
+    ])
+  );
+  renderWithProviders(<SalesRegisterPageContent />);
+  const bands = await screen.findAllByTestId('register-band');
+  expect(bands).toHaveLength(2);
+  const [first, second] = bands as [HTMLElement, HTMLElement];
+  expect(within(first).getByRole('heading', { level: 2 })).toHaveTextContent('05/09/2026');
+  // The day's total is the two live bills; a cancelled one is not money.
+  expect(first).toHaveTextContent('Total ₹2,000.00');
+  expect(second).toHaveTextContent('Total ₹0.00');
+  const cards = within(first).getAllByTestId('register-row');
+  expect(cards[0]).toHaveAccessibleName('Open Ramesh Traders · INV/26-27/0041 · Total ₹1,772.00');
+  expect(cards[1]).toHaveAccessibleName('Open Quick Sale · INV/26-27/0042 · Total ₹228.00');
+  expect(within(second).getByTestId('register-row')).toHaveTextContent('Cancelled');
+  // No wide table scrolled sideways on a phone.
+  expect(screen.queryByRole('table')).not.toBeInTheDocument();
+});
+
+it('reads a credit note as negative, in the error tone, with its Credit note word (§8)', async () => {
   signIn(SALES_READ, ['reports', 'sales']);
   renderWithProviders(<SalesRegisterPageContent />);
-  const badge = (await screen.findAllByText(/^CN · CN\/26-27\/0001/))[0];
-  expect(badge).toBeInTheDocument();
-  // The sign is in the accessible name, never colour alone.
-  expect(screen.getAllByText('Less, ₹465.81').length).toBeGreaterThan(0);
+  const card = await screen.findByRole('button', {
+    name: /^Open Ramesh Traders · CN\/26-27\/0001/,
+  });
+  expect(card).toHaveTextContent('Credit note');
+  // The sign is in the figure and the name, never colour alone.
+  expect(card).toHaveAccessibleName(
+    'Open Ramesh Traders · CN/26-27/0001 · Credit note · Total \u2011₹465.81'
+  );
+  expect(within(card).getByText('\u2011₹465.81')).toHaveClass('text-error');
 });
 
 it('asks the server for unpaid documents when the Unpaid chip is pressed (FR-6)', async () => {
   signIn(SALES_READ, ['reports', 'sales']);
   renderWithProviders(<SalesRegisterPageContent />);
-  await screen.findAllByText(/^CN · /);
+  await screen.findAllByTestId('register-row');
   // Owner, 6 Oct 2026: three or more filters live behind ONE Filters button.
   await userEvent.click(screen.getByTestId('filters-button'));
   await userEvent.click(await screen.findByRole('radio', { name: 'Unpaid' }));
@@ -218,30 +258,79 @@ it('asks the server for unpaid documents when the Unpaid chip is pressed (FR-6)'
   expect(mockSearch).toBe('status=unpaid');
 });
 
-it('switches to line level and back as a request, keeping the period (FR-3)', async () => {
+it('switches to By item and back as a request, keeping the period (FR-3)', async () => {
   signIn(SALES_READ, ['reports', 'sales']);
   mockSearch = 'period=lastMonth';
   renderWithProviders(<SalesRegisterPageContent />);
-  await screen.findAllByText(/^CN · /);
-  await userEvent.click(screen.getByRole('button', { name: /^Show:/ }));
-  await userEvent.click(await screen.findByRole('option', { name: 'Lines' }));
+  await screen.findAllByTestId('register-row');
+  await userEvent.click(screen.getByRole('button', { name: 'Show: By bill' }));
+  await userEvent.click(await screen.findByRole('option', { name: 'By item' }));
   await waitFor(() => expect(lastAsked().filters.level).toBe('line'));
   expect(lastAsked().filters.preset).toBe('lastMonth');
+});
+
+it('titles a By item card by the item, with the bill and the contact under it', async () => {
+  signIn(SALES_READ, ['reports', 'sales']);
+  mockSearch = 'level=line';
+  service.getRegister.mockImplementation(async () =>
+    page([
+      row({
+        lineNo: 1,
+        itemName: 'Tata Salt 1 kg',
+        qty: '2',
+        unit: 'PCS',
+        taxRate: '5',
+        grandTotal: '56.00',
+      }),
+    ])
+  );
+  renderWithProviders(<SalesRegisterPageContent />);
+  const card = await screen.findByTestId('register-row');
+  expect(card).toHaveAccessibleName('Open Tata Salt 1 kg · INV/26-27/0041 · Line total ₹56.00');
+  expect(card).toHaveTextContent('· Ramesh Traders');
+  await userEvent.click(card);
+  const sheet = await screen.findByTestId('register-row-sheet');
+  expect(sheet).toHaveTextContent('2 PCS');
+  expect(sheet).toHaveTextContent('5%');
 });
 
 it('hides Export from a member without reports.export (staff, RPT-03 §12)', async () => {
   signIn(SALES_READ, ['reports', 'sales']);
   renderWithProviders(<SalesRegisterPageContent />);
-  await screen.findAllByText(/^CN · /);
+  await screen.findAllByTestId('register-row');
   expect(screen.queryByRole('button', { name: /Export/ })).not.toBeInTheDocument();
 });
 
-it('opens the document a row names — a credit note on its own route', async () => {
+it('opens the whole row in a sheet, and the bill from it — a credit note on its own route', async () => {
   signIn(SALES_READ, ['reports', 'sales']);
   renderWithProviders(<SalesRegisterPageContent />);
-  const [open] = await screen.findAllByRole('button', { name: /Open CN\/26-27\/0001/ });
-  await userEvent.click(open as HTMLElement);
-  expect(mockPush).toHaveBeenCalledWith('/sales/credit-notes/d2');
+  await userEvent.click(
+    await screen.findByRole('button', { name: /^Open Ramesh Traders · CN\/26-27\/0001/ })
+  );
+  const sheet = await screen.findByTestId('register-row-sheet');
+  expect(sheet).toHaveTextContent('CN/26-27/0001 · Credit note');
+  expect(sheet).toHaveTextContent('27AAACR5055K1Z7');
+  expect(sheet).toHaveTextContent('Same state (CGST + SGST)');
+  expect(sheet).toHaveTextContent('-₹11.09');
+  expect(screen.getByRole('link', { name: /Open CN\/26-27\/0001/ })).toHaveAttribute(
+    'href',
+    '/sales/credit-notes/d2'
+  );
+});
+
+it('pages a long register at the foot and marks a band that runs over the page', async () => {
+  signIn(SALES_READ, ['reports', 'sales']);
+  service.getRegister.mockImplementation(async (query: RegisterQuery) => ({
+    ...page([row({})]),
+    page: query.filters.page ?? 1,
+    total: 250,
+  }));
+  renderWithProviders(<SalesRegisterPageContent />);
+  const band = await screen.findByTestId('register-band');
+  expect(band).toHaveTextContent('On this page: Total ₹1,772.00');
+  expect(screen.getByText('Page 1 of 3')).toBeInTheDocument();
+  await userEvent.click(screen.getByRole('button', { name: /next/i }));
+  await waitFor(() => expect(lastAsked().filters.page).toBe(2));
 });
 
 it('tells a member without the reads so, and asks nothing', () => {
@@ -262,8 +351,9 @@ it('shows ITC eligible on the purchase register and asks by the ITC chip (RPT-04
     })
   );
   renderWithProviders(<PurchaseRegisterPageContent />);
-  expect(await screen.findByText('₹900.00')).toBeInTheDocument();
-  expect(screen.getAllByText('To pay').length).toBeGreaterThan(0);
+  const figures = await screen.findByTestId('register-figures');
+  expect(figures).toHaveTextContent('ITC ₹900.00');
+  expect(figures).toHaveTextContent('To pay ₹4,321.00');
   expect(lastAsked().book).toBe('purchase');
   await userEvent.click(screen.getByTestId('filters-button'));
   await userEvent.click(await screen.findByRole('radio', { name: 'No ITC' }));
@@ -299,7 +389,7 @@ it('reduces a sales book with no document to one empty state and a way to bill',
   );
   expect(screen.queryByRole('button', { name: /^Show:/ })).not.toBeInTheDocument();
   expect(screen.queryByTestId('filters-button')).not.toBeInTheDocument();
-  expect(screen.queryByRole('switch', { name: 'Show void' })).not.toBeInTheDocument();
+  expect(screen.queryByRole('switch', { name: 'Show cancelled' })).not.toBeInTheDocument();
   expect(screen.queryByRole('button', { name: /Export/ })).not.toBeInTheDocument();
   expect(screen.queryByText('This month')).not.toBeInTheDocument();
 });
@@ -324,9 +414,9 @@ it.each([
   // The same controls the empty book asserts ABSENT, so neither test is vacuous.
   expect(screen.getByRole('button', { name: /^Show:/ })).toBeInTheDocument();
   expect(screen.getByTestId('filters-button')).toBeInTheDocument();
-  // On a phone (jsdom's width) "Show void" is a choice inside Filters, so the
+  // On a phone (jsdom's width) "Show cancelled" is a choice inside Filters, so the
   // toolbar stays one row; it is not a switch running off the end of it.
-  expect(screen.queryByRole('switch', { name: 'Show void' })).not.toBeInTheDocument();
+  expect(screen.queryByRole('switch', { name: 'Show cancelled' })).not.toBeInTheDocument();
   expect(screen.getByRole('button', { name: /Export/ })).toBeInTheDocument();
   expect(screen.getAllByText('This month').length).toBeGreaterThan(0);
   expect(screen.queryByText('No sales yet')).not.toBeInTheDocument();

@@ -36,6 +36,7 @@ import { spansDays } from '../view-model/reportPeriod';
 
 import { createDayBookColumns } from './DayBookColumns';
 import { DayBookDayGroups } from './DayBookDayGroups';
+import { ReportPager } from './ReportPager';
 import { ReportPageShell } from './ReportPageShell';
 
 // The row sheet is opened by a tap; a visit that only reads the day never
@@ -321,29 +322,12 @@ export function DayBookPageContent(): React.JSX.Element {
                   onOpenRow={setOpenRow}
                 />
               )}
-              {data.totalPages > 1 && (
-                <UbStack direction="row" justify="between" align="center" className="gap-2">
-                  <UbButton
-                    variant="secondary"
-                    size="sm"
-                    disabled={filters.page <= 1}
-                    onClick={() => book.setPage(filters.page - 1)}
-                  >
-                    {t('common.grid.previousPage')}
-                  </UbButton>
-                  <UbText variant="caption" tone="tertiary">
-                    {t('reports.daybook.pageOf', { page: filters.page, pages: data.totalPages })}
-                  </UbText>
-                  <UbButton
-                    variant="secondary"
-                    size="sm"
-                    disabled={filters.page >= data.totalPages}
-                    onClick={() => book.setPage(filters.page + 1)}
-                  >
-                    {t('common.grid.nextPage')}
-                  </UbButton>
-                </UbStack>
-              )}
+              <ReportPager
+                page={filters.page}
+                pages={data.totalPages}
+                onPage={book.setPage}
+                label={t('reports.daybook.pageOf', { page: filters.page, pages: data.totalPages })}
+              />
             </>
           ) : (
             <UbDataGrid
@@ -394,9 +378,7 @@ export function DayBookPageContent(): React.JSX.Element {
           </UbCard>
         </UbStack>
       )}
-      {openRow && (
-        <DayBookRowSheetLazy row={openRow} balances={balances} onClose={closeRow} />
-      )}
+      {openRow && <DayBookRowSheetLazy row={openRow} balances={balances} onClose={closeRow} />}
     </ReportPageShell>
   );
 }
