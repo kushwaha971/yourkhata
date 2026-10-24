@@ -24,6 +24,11 @@ class PurchasesConfig(AppConfig):
 
         register_source_resolver(SourceType.PURCHASE_DOCUMENT, resolve_purchase_documents)
 
+        # §8.2 — an item's stock movements name the same document the same way.
+        from apps.inventory.selectors.sources import register_movement_source_resolver
+
+        register_movement_source_resolver(SourceType.PURCHASE_DOCUMENT, resolve_purchase_documents)
+
         # PUR-02 — a payment OUT settles supplier bills and nothing else
         # (CR-2026-09-28-INT-A). Purchases owns the target and registers it
         # (A14, ADR-056), deferred-importing the payments registry.

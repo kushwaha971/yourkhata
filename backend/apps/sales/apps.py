@@ -24,6 +24,11 @@ class SalesConfig(AppConfig):
 
         register_source_resolver(SourceType.SALES_DOCUMENT, resolve_sales_documents)
 
+        # §8.2 — an item's stock movements name the same document the same way.
+        from apps.inventory.selectors.sources import register_movement_source_resolver
+
+        register_movement_source_resolver(SourceType.SALES_DOCUMENT, resolve_sales_documents)
+
         # PAY-01 — a payment IN settles sales invoices. Sales owns the target
         # and registers it itself (A14, ADR-056); the import of the payments
         # registry is deferred, rule D5's pattern, so the matrix still has

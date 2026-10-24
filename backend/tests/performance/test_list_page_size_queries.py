@@ -91,7 +91,7 @@ def rows_of(body: Any) -> list:
     raise AssertionError(f"cannot find the rows in {list(body)} / {type(data)}")
 
 
-def source_types(rows: list) -> int:
+def source_types(rows: list, only: frozenset[str] | None = None) -> int:
     """LED-10's batched resolvers: ONE query per document source type on the page
     (`ledger.selectors.sources.resolve_sources`), by design — bounded by the
     number of document kinds, never by the rows. A khata page of five manual
@@ -103,12 +103,16 @@ def source_types(rows: list) -> int:
         # `source: {type, id, …}` (null for a manual line) — read that.
         source = row.get("source") if isinstance(row, dict) else None
         if isinstance(source, dict) and source.get("type"):
-            kinds.add(source["type"])
+            if only is None or source["type"] in only:
+                kinds.add(source["type"])
     return len(kinds)
 
 
 #: The two ledger lists that resolve document sources per type (LED-10).
 LEDGER_LISTS = {"khata-timeline", "statement"}
+#: BP-19 — an item's movements resolve the same way, one lookup per document type
+#: (sale, purchase, and inventory's own adjustments); an opening looks nothing up.
+RESOLVED_MOVEMENT_TYPES = frozenset({"sales_document", "purchase_document", "stock_adjustment"})
 
 #: (id, path builder, page-size parameter, extra params)
 LISTS: tuple[tuple[str, Callable[[dict], str], str, dict], ...] = (
@@ -145,14 +149,17 @@ LISTS: tuple[tuple[str, Callable[[dict], str], str, dict], ...] = (
 )
 
 
-def _count(client: APIClient, path: str, params: dict, net: bool) -> tuple[int, int]:
+def _count(
+    client: APIClient, path: str, params: dict, net: bool | frozenset[str]
+) -> tuple[int, int]:
     """`(queries net of LED-10's per-source-type lookups, rows)`."""
     first = client.get(path, params)
     assert first.status_code == 200, (path, params, first.content[:300])
     with CaptureQueriesContext(connection) as captured:
         response = client.get(path, params)
     rows = rows_of(response.json())
-    return len(captured.captured_queries) - (source_types(rows) if net else 0), len(rows)
+    only = net if isinstance(net, frozenset) else None
+    return len(captured.captured_queries) - (source_types(rows, only) if net else 0), len(rows)
 
 
 @pytest.mark.parametrize("list_id,path,size_param,extra", LISTS, ids=[x[0] for x in LISTS])
@@ -170,7 +177,9 @@ def test_list_query_count_is_constant_in_the_page_size(
     }
     params = {k: swap.get(v, v) for k, v in extra.items()}
     url = path(book)
-    net = list_id in LEDGER_LISTS
+    net: bool | frozenset[str] = list_id in LEDGER_LISTS
+    if list_id == "item-movements":
+        net = RESOLVED_MOVEMENT_TYPES
     with mock.patch(
         "rest_framework.throttling.SimpleRateThrottle.allow_request", return_value=True
     ):

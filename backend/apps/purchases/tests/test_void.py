@@ -342,3 +342,30 @@ def test_the_detail_carries_what_the_void_dialog_lists(
         ("Freight", "1.000", "NOS", False),
     ]
     assert detail["grand_total"] == data["grand_total"]
+
+
+def test_an_items_movements_name_and_link_the_bill_that_moved_them(
+    shop: Any, owner: Any, make_item: Any, make_supplier: Any
+) -> None:
+    """§8.2 — the item page reads "Bought on PB/…" and "PB/… cancelled" and opens the
+    bill. Before, the server named adjustments only: a purchase row said "Purchase" with
+    no number, and the void's reversal printed the raw message id of its `reason`
+    ("stock.adjust.reason.void"). Each document row now carries the bill's number, kind
+    and status; an opening keeps its three keys exactly."""
+    supplier = make_supplier()
+    rice = make_item("Rice", "40.00", stock="5", stock_cost="30")
+    data = recorded_bill(owner, party_id=str(supplier.id), lines=[line(rice, "20", "46")])
+    assert void(owner, data["id"], "Entered twice").status_code == 200
+
+    rows = owner.get(f"/api/v1/items/{rice.id}/movements").json()["data"]
+    by_type = {row["movement_type"]: row["source"] for row in rows}
+    expected = {
+        "type": "purchase_document",
+        "id": data["id"],
+        "number": data["number"],
+        "kind": "purchase_bill",
+        "status": "void",
+    }
+    assert by_type["purchase_in"] == expected
+    assert by_type["reversal"] == expected
+    assert set(by_type["opening"]) == {"type", "id", "number"}

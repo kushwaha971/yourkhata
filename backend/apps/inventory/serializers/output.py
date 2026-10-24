@@ -111,7 +111,7 @@ def _item_row(item: Item) -> dict:
 
 
 def movement_dict(
-    movement: StockMovement, *, numbers: dict[Any, str], valuation: bool = True
+    movement: StockMovement, *, numbers: dict[str, dict], valuation: bool = True
 ) -> dict:
     row = _movement_dict(movement, numbers=numbers)
     if not valuation:
@@ -120,10 +120,22 @@ def movement_dict(
     return row
 
 
-def _movement_dict(movement: StockMovement, *, numbers: dict[Any, str]) -> dict:
+def _movement_dict(movement: StockMovement, *, numbers: dict[str, dict]) -> dict:
     value = None
     if movement.unit_cost is not None:
         value = str(q2(movement.qty * movement.unit_cost))
+    found = numbers.get(str(movement.source_id), {}) if movement.source_id else {}
+    source = {
+        "type": movement.source_type,
+        "id": _s(movement.source_id),
+        "number": found.get("number"),
+    }
+    # A sale or purchase document also says WHICH kind and whether it is void,
+    # so the row reads "Sold on …" and links to the right page (§8.2). Added
+    # only when resolved: an adjustment or an opening keeps its three keys.
+    for key in ("kind", "status"):
+        if key in found:
+            source[key] = found[key]
     return {
         "id": str(movement.id),
         "sequence_no": movement.sequence_no,
@@ -135,11 +147,7 @@ def _movement_dict(movement: StockMovement, *, numbers: dict[Any, str]) -> dict:
         "on_hand_after": str(movement.on_hand_after),
         "avg_cost_after": str(movement.avg_cost_after),
         "reason": movement.reason,
-        "source": {
-            "type": movement.source_type,
-            "id": _s(movement.source_id),
-            "number": numbers.get(movement.source_id),
-        },
+        "source": source,
         "reverses_id": _s(movement.reverses_id),
         "is_backdated": bool(getattr(movement, "is_backdated", False)),
         "created_by": _user(movement.created_by),

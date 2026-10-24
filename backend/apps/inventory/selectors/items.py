@@ -36,6 +36,7 @@ from apps.inventory.constants import (
     StockStatus,
 )
 from apps.inventory.models import Category, Item, ItemStock, StockAdjustment, StockMovement
+from apps.inventory.selectors.sources import resolve_documents
 
 QTY = DecimalField(max_digits=14, decimal_places=3)
 COST = DecimalField(max_digits=14, decimal_places=4)
@@ -267,16 +268,25 @@ def annotate_backdated(rows: list[StockMovement]) -> None:
                 high = row.movement_date
 
 
-def resolve_sources(rows: list[StockMovement]) -> dict[Any, str]:
-    """`source.number` for a page in one query per source type (≤ 3 queries/page)."""
+def resolve_sources(rows: list[StockMovement]) -> dict[str, dict]:
+    """`{source_id: {"number", …}}` for a page, one query per source type.
+
+    Adjustments are inventory's own; a sale or purchase document is named by the
+    resolver its app registered (`selectors.sources`), with its `kind` and
+    `status` so the row can say "Sold on …" and link to the right page.
+    """
     adjustment_ids = {
         row.source_id
         for row in rows
         if row.source_type == MovementSource.STOCK_ADJUSTMENT and row.source_id
     }
-    if not adjustment_ids:
-        return {}
-    return dict(StockAdjustment.objects.filter(pk__in=adjustment_ids).values_list("id", "number"))
+    found = resolve_documents(rows)
+    if adjustment_ids:
+        for pk, number in StockAdjustment.objects.filter(pk__in=adjustment_ids).values_list(
+            "id", "number"
+        ):
+            found[str(pk)] = {"number": number}
+    return found
 
 
 def category_tree(*, tenant: Any) -> list[dict]:
