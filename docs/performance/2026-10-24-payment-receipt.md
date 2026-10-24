@@ -82,13 +82,30 @@ due, and cancel it when it was a mistake.
 
 ## Deviations and decisions recorded
 
-1. **The share text is the server's**, unchanged: "Received Rs 2 from you on
-   24/10 (Cash + UPI, UTR …4417). Against INV/… Balance: Rs 2 (we will give).
-   Thank you — Shop". §10.2's example adds a greeting, the due on the bill and
-   a link to the `/d/` page; that is a backend change (and the link needs the
-   share-link work), so it waits for approval. The sheet's character counter
-   and "Use the default text" are not added: they belong to the shared
-   `UbShareSheet` and would change every sheet; recorded rather than done here.
+1. **The share text** was the old server text ("Received Rs 2 from you on
+   24/10 (Cash + UPI, UTR …4417). Against INV/… Balance: Rs 2 (we will
+   give). Thank you — Shop"). **Changed 24 Oct on the owner's "proceed"**
+   (`apps/payments/services/receipt.py`): one fact per line, a greeting, what
+   was received and how, the bills, the receipt number, what is still due from
+   the customer's side, and the shop's thanks:
+
+   ```
+   Namaste Verma Enterprises 1,
+   Received Rs 2 by cash and UPI (UTR …4417) on 24 Oct 2026 for bill INV/25-26/5877.
+   Receipt RCT/26-27/5090.
+   Advance with us: Rs 2.
+   Thank you — Scale Traders 20260928
+   ```
+
+   Money paid out says "Paid", "Voucher", "Still to pay you" / "Advance with
+   you", and no thanks. Hindi says the same in Hindi. "Rs", never "₹" (one SMS,
+   not three). The first LOOK of the live text found "by cash + UPI" and a
+   cheque number labelled "UTR"; it now says "and", and labels a cheque's
+   number "cheque" and anything else "ref" (test
+   `test_a_split_payment_says_and_and_a_cheque_is_not_a_utr`). Still not done:
+   §10.2's link to the `/d/` page, which needs the share-link work, and the
+   sheet's character counter and "Use the default text", which belong to the
+   shared `UbShareSheet` and would change every sheet.
 2. **Side by side from 1280, stacked at 1024.** At 1024 the A5 sheet and a
    380 px panel do not fit beside the sidebar; the bill page makes the same
    choice (`xl`).
@@ -153,8 +170,19 @@ Not done for this piece; unproven.
 
 | Point of view | Score | Evidence | Still weak | Confidence |
 |---|---|---|---|---|
-| Function | 8.7 | Amount, modes and dues equal the server's; a real cancel reaches the server and the bill's due returns; Keep keeps | Loading, not-found and share-failure paths not re-run; message wording is the old server text | Medium-high |
+| Function | 8.7 | Amount, modes and dues equal the server's; a real cancel reaches the server and the bill's due returns; Keep keeps | Loading, not-found and share-failure paths not re-run; the message has no link yet | Medium-high |
 | Busy shop | 8.6 | Share is one tap from the thumb; a double tap sends once; the due on each bill is on screen | ⋯ hides cancel by one tap (intended) | Medium |
 | UI/UX phone | 8.6 | Measured EN/HI at 320/390; dock tappable above the menu; nothing cut in page, dock or dialogs | The A5 preview needs a sideways scroll to read its right half | Medium |
 | UI/UX desktop | 8.5 | Header actions; panel beside the print at 1280 | Stacked at 1024 | Medium |
 | Performance | 7.6 | Phone level; desktop about 120 ms slower at 4x CPU, n=24 a side | Route chunk +5.1 KB, not isolated | Medium-low |
+
+### Wording change gates (24 Oct, §10.2)
+
+- Backend full run: green except `apps/dues/tests/test_run_scale.py::test_five_thousand_schedules_run_under_a_minute`,
+  which took 91.8 s against its 60 s limit with this change and 80.4 s without it
+  (stashed), so it is this machine's speed, not the change; the limit is left alone.
+  `test_staff_still_set_and_clear_the_promise_date` failed on a fixed date
+  (20 Oct) that became the past today; it now promises a week ahead.
+- `test_upi_and_receipt.py`: 8 of 8 (split and cheque test new).
+- `e2e/payment-receipt.mjs`: 69 of 69; the message is now checked line by line
+  (greeting, received in Rs, receipt number, still due, thanks).

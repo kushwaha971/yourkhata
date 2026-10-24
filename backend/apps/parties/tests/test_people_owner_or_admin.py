@@ -10,10 +10,12 @@ because a rule that locked those away would be a regression nobody asked for.
 
 from __future__ import annotations
 
+from datetime import timedelta
 from typing import Any
 
 import pytest
 from django.urls import reverse
+from django.utils import timezone
 from rest_framework.test import APIClient
 
 from apps.parties.models import Party
@@ -160,9 +162,12 @@ def test_staff_still_set_and_clear_the_promise_date(tenant: Any, api_as: Any) ->
     client, _ = api_as(tenant, role="staff")
     party = PartyFactory(tenant=tenant, balance="500.00")  # a promise needs money owed
     url = reverse(DETAIL, args=[party.id])
-    set_ = client.patch(url, {"collection_date": "2026-10-20"}, format="json")
+    # A week ahead, not a fixed day: "2026-10-20" turned into a past date on
+    # 24 Oct 2026 and the server rightly refused it.
+    promised = (timezone.localdate() + timedelta(days=7)).isoformat()
+    set_ = client.patch(url, {"collection_date": promised}, format="json")
     assert set_.status_code == 200, set_.content
-    assert set_.json()["data"]["collection_date"] == "2026-10-20"
+    assert set_.json()["data"]["collection_date"] == promised
     cleared = client.patch(url, {"collection_date": None}, format="json")
     assert cleared.status_code == 200
     party.refresh_from_db()

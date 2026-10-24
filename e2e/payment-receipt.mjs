@@ -240,7 +240,15 @@ try {
   const message = await sheet.locator('textarea').inputValue().catch(async () => sheet.innerText());
   check('the message names the business', message.includes(held.business.name), message.slice(0, 120));
   check('the message never names the product', !PRODUCT.test(message), message);
-  check('the message says the amount', message.includes('2.00') || message.includes('2'), message.slice(0, 80));
+  /* §10.2 (owner, 24 Oct): a greeting, what was received and how, the receipt
+     number, what is still due, and the shop's thanks, one line each, in "Rs". */
+  const lines = message.split('\n');
+  check('the message opens with a greeting to the customer', lines[0] === `Namaste ${customer.name},`, lines[0]);
+  check('the message says what was received, in Rs', /^Received Rs 2 /.test(lines[1] ?? '') && !message.includes('₹'), lines[1]);
+  check('the message carries the receipt number', lines.includes(`Receipt ${made.number}.`), message);
+  check('the message says what is still due or that nothing is', /^(Still due: Rs [\d,]+(\.\d\d)?\.|Advance with us: Rs [\d,]+(\.\d\d)?\.|Nothing due now\.)$/.test(lines[3] ?? ''), lines[3]);
+  check('the message is signed with thanks from the business', lines.at(-1) === `Thank you — ${held.business.name}`, lines.at(-1));
+  console.log(`     message: ${JSON.stringify(message)}`);
   check('the sheet says what is shared and that we cannot see it delivered', (await sheet.innerText()).includes(`${made.number} · ₹2.00 from ${customer.name}`) && (await sheet.innerText()).includes("can't tell whether it was delivered"));
   const ms = await page.evaluate(measure, '[role=dialog] *');
   check('share sheet 390: no text cut', ms.cut.length === 0, ms.cut.join(' | '));

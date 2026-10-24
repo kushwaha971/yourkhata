@@ -377,7 +377,11 @@ Owner, 24 Oct: old Udhaar-book bills on the QA data are discarded (fresh app);
 cancel dialogs keep the caret in the reason; "proceed" read as approval for
 the receipt message wording on the server (§10.2). After Udhaar, STOP: Library
 and Lending wait until the owner has tested Shop and Udhaar.
-1. Payments: receipt message wording on the server (§10.2); then Expenses,
+Receipt message wording (§10.2) delivered 24 Oct on the owner's "proceed":
+greeting, what was received and how, bills, receipt number, what is still due,
+shop's thanks, one per line, en/hi, "Rs" (payments/services/receipt.py,
+docs/performance/2026-10-24-payment-receipt.md deviation 1). No link yet.
+1. Payments done. Next Expenses (§12), then
    Reports; approved Home LAST; then Udhaar. Then stop.
 
 ## LATEST CHECKPOINT —23 October2026 (owner requested commit/push)
