@@ -8,9 +8,12 @@ import { useTranslation } from 'src/hooks/useTranslation';
 import { useValidationSchemas } from 'src/hooks/useValidationSchemas';
 import { hasReason } from 'src/utils/reason';
 
+import { categoryExists, unitCodeExists } from '../view-model/mastersView';
+
 import type {
   AdjustmentFormValues,
   AdjustmentMode,
+  Category,
   ItemFormValues,
   Unit,
 } from '../types/item.types';
@@ -53,7 +56,11 @@ export interface InventorySchemas {
   readonly unitSchema: Yup.ObjectSchema<UnitFormValues>;
 }
 
-export const useInventorySchemas = (units: readonly Unit[]): InventorySchemas => {
+export const useInventorySchemas = (
+  units: readonly Unit[],
+  /** 09 §8.5 — only the add-category dialog passes these, for "Already exists". */
+  categories: readonly Category[] = []
+): InventorySchemas => {
   const v = useValidationSchemas();
   const { t } = useTranslation();
 
@@ -239,7 +246,12 @@ export const useInventorySchemas = (units: readonly Unit[]): InventorySchemas =>
     });
 
     const categorySchema: Yup.ObjectSchema<CategoryFormValues> = Yup.object({
-      name: v.requiredText(60, 'inventory.masters.category.name.required').defined(),
+      name: v
+        .requiredText(60, 'inventory.masters.category.name.required')
+        .test('exists', t('inventory.masters.exists'), function exists(value) {
+          return !categoryExists(categories, value ?? '', this.parent.parentId || null);
+        })
+        .defined(),
       parentId: Yup.string().defined().default(''),
     });
 
@@ -247,11 +259,16 @@ export const useInventorySchemas = (units: readonly Unit[]): InventorySchemas =>
       code: Yup.string()
         .required(t('inventory.masters.unit.code.required'))
         .matches(/^[A-Za-z0-9]{1,8}$/, t('inventory.masters.unit.code.format'))
+        .test(
+          'exists',
+          t('inventory.masters.exists'),
+          (value) => !unitCodeExists(units, value ?? '')
+        )
         .defined(),
       name: v.requiredText(40, 'inventory.masters.unit.name.required').defined(),
       allowDecimal: Yup.boolean().defined(),
     });
 
     return { itemSchema, adjustmentSchema, categorySchema, unitSchema };
-  }, [v, t, units]);
+  }, [v, t, units, categories]);
 };

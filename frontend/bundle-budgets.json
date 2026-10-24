@@ -1050,6 +1050,7 @@
     "sharedApp": 114.7
   },
   "//routes": [
+    "24 Oct 2026, 09 \u00a78.5 categories and units: /items/masters gained a search per section, find-then-add, the standard/own unit groups and the small UbChipTabs (route +1.3 KB, first load +1.5 KB). The 0.0 KB rows (/items/[id], purchase routes) were already at their ceiling; most likely UbStatusBadge's new srLabel, which they render; not isolated. Each raised to measured + 0.3 KB.",
     "24 Oct 2026, 09 \u00a78.7 low stock and stock summary: /stock/low gained Order per row, the selection with Order selected, the low-stock words and the stock-off state (route +0.8 KB); the purchase editors gained the ?items= prefill, whose item fetch is a dynamic import (first load +0.1 to 0.2 KB); the remaining +0.1 KB first loads are chunk regrouping, most likely from the two new helpers in src/routes.ts (not isolated). Each raised to measured + 0.3 KB.",
     "24 Oct 2026, 09 \u00a78.4 stock adjustment: the snackbar learned one action button (shared app chunk, every first load by under 0.05 KB); /items/[id] and /stock/low gained the reason chips, the note fold and, on the list and low-stock pages, the adjustment detail dialog's dynamic() stub; the purchase bill and order editors moved +0.8 KB though they import none of the changed modules (checked) \u2014 chunk regrouping, cause not isolated. Raised to measured + 0.3.",
     "24 Oct 2026, 09 \u00a78.3 item form: /stock/low route chunk (73.6) and /reset-password first load (294.1) went over by less than 0.05 KB after the item form gained the leave-without-saving dialog, the barcode Open it link and one more fold; raised to measured + 0.3.",
@@ -1426,7 +1427,7 @@
     },
     "/purchases/debit-notes/[id]": {
       "route": 73.8,
-      "firstLoad": 315.4
+      "firstLoad": 315.7
     },
     "/purchases/debit-notes": {
       "route": 84.8,
@@ -1450,7 +1451,7 @@
     },
     "/purchases/orders/[id]": {
       "route": 73.8,
-      "firstLoad": 315.4
+      "firstLoad": 315.7
     },
     "/purchases/orders": {
       "route": 84.8,
@@ -1593,15 +1594,15 @@
       "firstLoad": 360
     },
     "/items/masters": {
-      "route": 57.3,
-      "firstLoad": 298.9
+      "route": 58.9,
+      "firstLoad": 300.7
     },
     "/items": {
       "route": 108,
       "firstLoad": 344
     },
     "/items/[id]": {
-      "route": 110.5,
+      "route": 110.8,
       "firstLoad": 352.6
     },
     "/stock/low": {
@@ -1662,7 +1663,7 @@
     },
     "/purchases/bills/[id]": {
       "route": 73.8,
-      "firstLoad": 315.4
+      "firstLoad": 315.7
     },
     "/purchases/bills/[id]/edit": {
       "route": 170.6,
@@ -1673,7 +1674,7 @@
       "firstLoad": 330
     },
     "/purchases/bills/new": {
-      "route": 170.3,
+      "route": 170.6,
       "firstLoad": 412.4
     },
     "/reports": {

@@ -1,9 +1,9 @@
 'use client';
 
-import { useCallback, useId, useMemo, useState } from 'react';
+import { useCallback, useEffect, useId, useMemo, useState } from 'react';
 
 import { yupResolver } from '@hookform/resolvers/yup';
-import { useForm } from 'react-hook-form';
+import { useForm, useWatch } from 'react-hook-form';
 
 import {
   UbButton,
@@ -25,6 +25,7 @@ import {
   type CategoryFormValues,
   type UnitFormValues,
 } from '../validation/inventorySchemas';
+import { unitSeed } from '../view-model/mastersView';
 
 // Loaded with dynamic(), so its own words come with its own chunk rather than
 // with the screen that opens it (src/i18n/catalogueRegistry.ts).
@@ -38,17 +39,27 @@ import 'src/i18n/catalogues/validation';
  * dialog, two small forms. A unit code outside the GST list is allowed with a
  * warning (FR-3): it prints as typed on invoices.
  */
-function CategoryForm({ onDone }: Readonly<{ onDone: () => void }>): React.JSX.Element {
+function CategoryForm({
+  onDone,
+  seed,
+}: Readonly<{ onDone: () => void; seed: string }>): React.JSX.Element {
   const { t } = useTranslation();
   const formId = useId();
   const masters = useInventoryMasters();
-  const { categorySchema } = useInventorySchemas(masters.units);
+  const { categorySchema } = useInventorySchemas(masters.units, masters.categories);
   const [errors, setErrors] = useState<readonly string[]>([]);
   const form = useForm<CategoryFormValues>({
     resolver: yupResolver(categorySchema),
     mode: 'onTouched',
-    defaultValues: { name: '', parentId: '' },
+    defaultValues: { name: seed, parentId: '' },
   });
+  /* "Already exists" depends on where the category goes, so moving it to
+     another parent re-checks a name the merchant has already typed. */
+  const { control, trigger, getFieldState } = form;
+  const parentId = useWatch({ control, name: 'parentId' });
+  useEffect(() => {
+    if (getFieldState('name').isTouched) void trigger('name');
+  }, [parentId, trigger, getFieldState]);
   const parents = useMemo(
     () => [
       { value: 'none', label: t('inventory.masters.category.topLevel') },
@@ -99,7 +110,10 @@ function CategoryForm({ onDone }: Readonly<{ onDone: () => void }>): React.JSX.E
   );
 }
 
-function UnitForm({ onDone }: Readonly<{ onDone: () => void }>): React.JSX.Element {
+function UnitForm({
+  onDone,
+  seed,
+}: Readonly<{ onDone: () => void; seed: string }>): React.JSX.Element {
   const { t } = useTranslation();
   const formId = useId();
   const masters = useInventoryMasters();
@@ -108,7 +122,7 @@ function UnitForm({ onDone }: Readonly<{ onDone: () => void }>): React.JSX.Eleme
   const form = useForm<UnitFormValues>({
     resolver: yupResolver(unitSchema),
     mode: 'onTouched',
-    defaultValues: { code: '', name: '', allowDecimal: false },
+    defaultValues: { ...unitSeed(seed), allowDecimal: false },
   });
   const submit = useCallback(
     async (values: UnitFormValues) => {
@@ -176,7 +190,13 @@ function UnitForm({ onDone }: Readonly<{ onDone: () => void }>): React.JSX.Eleme
 export function MasterFormDialog({
   kind,
   onClose,
-}: Readonly<{ kind: 'category' | 'unit' | null; onClose: () => void }>): React.JSX.Element {
+  seed = '',
+}: Readonly<{
+  kind: 'category' | 'unit' | null;
+  onClose: () => void;
+  /** 09 §8.5 find → add: what the merchant searched for and did not find. */
+  seed?: string;
+}>): React.JSX.Element {
   const { t } = useTranslation();
   return (
     <UbDialog
@@ -187,7 +207,11 @@ export function MasterFormDialog({
       }
       closeLabel={t('common.action.close')}
     >
-      {kind === 'unit' ? <UnitForm onDone={onClose} /> : <CategoryForm onDone={onClose} />}
+      {kind === 'unit' ? (
+        <UnitForm onDone={onClose} seed={seed} />
+      ) : (
+        <CategoryForm onDone={onClose} seed={seed} />
+      )}
     </UbDialog>
   );
 }

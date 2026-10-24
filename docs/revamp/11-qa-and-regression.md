@@ -219,3 +219,16 @@ Earlier mobile manual/arrow-pager matrix acceptance is superseded. Existing desk
 | No sideways scroll, no cut text, no button cut by the table frame, Order ≥ 44 px | e2e/stock-reports.mjs at 390/320/1280 × EN/HI | passed |
 | Speed vs dcaddbc | Low stock open, 4x CPU | 1,073 → 1,104 ms phone, 746 → 761 desktop; within noise |
 | Competitor comparison | none | unproven |
+
+### Categories and units · 24 Oct 2026 (09 §8.5, R-DEC-34)
+
+| Requirement | Evidence | Status |
+|---|---|---|
+| Find → add: no match offers to add, dialog opens with the text | InventoryMastersPageContent.test.tsx; e2e/masters.mjs read-back | passed (new) |
+| "Already exists" for a category (per parent) and a unit code, before sending | unit tests; e2e/masters.mjs (server still holds one) | passed (new) |
+| Double tap on Add makes one row | e2e/masters.mjs, two clicks in one task | passed |
+| Standard units first, locked, read as "Standard unit, can't be changed" | unit test; e2e/masters.mjs EN/HI | passed |
+| Phone chips 32 px face, 44 px target; desktop panels side by side | e2e/masters.mjs at 390/320/1280 | passed |
+| No sideways scroll or cut text, including a 60-character search at 320 | e2e/masters.mjs | passed |
+| Speed vs dcaddbc | page open 988 → 1,067 ms phone, 1,013 → 1,088 desktop, 4x CPU | slower (recorded) |
+| Competitor comparison | none | unproven |

@@ -16,8 +16,15 @@ import {
   skuPrefix,
   stockBadge,
 } from './itemDisplay';
+import {
+  categoryExists,
+  filterCategories,
+  filterUnits,
+  unitCodeExists,
+  unitSeed,
+} from './mastersView';
 
-import type { AdjustmentFormLine, LowStockRow } from '../types/item.types';
+import type { AdjustmentFormLine, Category, LowStockRow } from '../types/item.types';
 
 const line = (over: Partial<AdjustmentFormLine>): AdjustmentFormLine => ({
   itemId: 'i1',
@@ -167,5 +174,49 @@ describe('low stock in words', () => {
   it('orders the suggestion, or one when there is none', () => {
     expect(lowStockOrderLine(row({}))).toEqual({ itemId: 'i1', qty: '7.000' });
     expect(lowStockOrderLine(row({ suggestedQty: '0.000' }))).toEqual({ itemId: 'i1', qty: '1' });
+  });
+});
+
+/**
+ * 09 §8.5 — "Already exists" must agree with the server's notion of the same
+ * name (case and spacing do not count), and is decided among SIBLINGS: "Dal"
+ * under Grocery does not block a top-level "Dal".
+ */
+describe('masters: same name, and find → add', () => {
+  const cat = (id: string, name: string, children: Category[] = []): Category => ({
+    id,
+    name,
+    parentId: null,
+    itemCount: 0,
+    children,
+  });
+  const grocery = cat('g', 'Grocery', [{ ...cat('d', 'Dal'), parentId: 'g' }]);
+  const tree = [grocery, cat('s', 'Snacks')];
+
+  it('treats case and spacing as the same name, among siblings only', () => {
+    expect(categoryExists(tree, '  SNACKS ', null)).toBe(true);
+    expect(categoryExists(tree, 'dal', 'g')).toBe(true);
+    expect(categoryExists(tree, 'dal', null)).toBe(false);
+    expect(categoryExists(tree, '   ', null)).toBe(false);
+  });
+
+  it('matches unit codes whatever their case', () => {
+    const units = [
+      { id: 'n', code: 'NOS', name: 'Numbers', allowDecimal: false, isSystem: true, isUqc: true },
+    ];
+    expect(unitCodeExists(units, 'nos')).toBe(true);
+    expect(unitCodeExists(units, 'box')).toBe(false);
+    expect(filterUnits(units, 'numb')).toHaveLength(1);
+  });
+
+  it('seeds a short word as a code and anything else as a name', () => {
+    expect(unitSeed('box')).toEqual({ code: 'BOX', name: '' });
+    expect(unitSeed('Bundle of 12')).toEqual({ code: '', name: 'Bundle of 12' });
+  });
+
+  it('keeps a parent whose child matches, with only that child', () => {
+    expect(filterCategories(tree, 'da')).toEqual([grocery]);
+    expect(filterCategories(tree, 'groc')).toEqual([grocery]);
+    expect(filterCategories(tree, 'zzz')).toEqual([]);
   });
 });

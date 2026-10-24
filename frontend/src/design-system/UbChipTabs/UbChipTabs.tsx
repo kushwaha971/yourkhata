@@ -44,6 +44,12 @@ export interface UbChipTabsProps<T extends string> {
   readonly className?: string;
   readonly listClassName?: string;
   readonly panelClassName?: string;
+  /**
+   * `md` is the landing page's 40 px pill. `sm` is the app's chip: a 32 px
+   * face with a 44 px target on a phone (`.ub-hit`, R-DEC-32 gate 3), for a
+   * screen that switches between two short lists (09 §8.5).
+   */
+  readonly size?: 'sm' | 'md';
 }
 
 interface Indicator {
@@ -60,6 +66,7 @@ export function UbChipTabs<T extends string>({
   className,
   listClassName,
   panelClassName,
+  size = 'md',
 }: Readonly<UbChipTabsProps<T>>): React.JSX.Element {
   const prefix = useId();
   const listRef = useRef<HTMLDivElement | null>(null);
@@ -146,7 +153,10 @@ export function UbChipTabs<T extends string>({
               tabIndex={selected ? 0 : -1}
               onClick={() => onValueChange(tab.value)}
               className={cn(
-                'relative z-10 inline-flex h-10 items-center gap-2 whitespace-nowrap rounded-pill px-4 ds-body-base-medium',
+                'relative z-10 inline-flex items-center gap-2 whitespace-nowrap rounded-pill',
+                size === 'sm'
+                  ? 'ub-hit h-8 px-3 ds-body-sm-medium'
+                  : 'h-10 px-4 ds-body-base-medium',
                 'transition-colors duration-fast ease-standard',
                 'outline-none focus-visible:shadow-focus',
                 selected

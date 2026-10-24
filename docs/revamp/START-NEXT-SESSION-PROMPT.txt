@@ -339,8 +339,13 @@ Low stock open 1,073 -> 1,104 ms phone at 4x CPU, within noise). Low cards in wo
 editor now prefills (no new endpoint); desktop Order selected makes ONE order
 (items carry no supplier, so no split); summary has Adjust stock and no category
 line on cards; both pages say when stock tracking is off.
-1. Rest of Stock: masters §8.5 and price lists §8.6; then Payments, Expenses,
-   Reports; approved Home workflows LAST.
+DONE 24 Oct: Categories and units §8.5 (report docs/performance/2026-10-24-masters.md;
+e2e/masters.mjs 56/56). A search per section; no match offers to add the typed
+text; "Already exists" before sending; standard units first and locked; chips
+on a phone, two panels on a desktop (layout by CSS, not a JS media query).
+Opens about 75-80 ms slower at 4x CPU (both lists rendered); recorded.
+1. Rest of Stock: price lists §8.6; then Payments, Expenses, Reports; approved
+   Home workflows LAST.
 
 ## LATEST CHECKPOINT —23 October2026 (owner requested commit/push)
 
