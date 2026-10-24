@@ -82,7 +82,8 @@ it('stays open while the request runs: Escape and ✕ do nothing until it answer
 it('fills the reason from a suggestion', async () => {
   const onConfirm = jest.fn();
   renderWithProviders(<Harness onConfirm={onConfirm} suggestions={['Entered twice']} />);
-  await userEvent.click(screen.getByRole('button', { name: 'Entered twice' }));
+  await userEvent.click(screen.getByRole('radio', { name: 'Entered twice' }));
+  expect(screen.getByRole('radio', { name: 'Entered twice' })).toBeChecked();
   await userEvent.click(screen.getByTestId('void-confirm'));
   expect(onConfirm).toHaveBeenCalledWith('Entered twice');
 });

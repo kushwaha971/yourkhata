@@ -262,3 +262,19 @@ Earlier mobile manual/arrow-pager matrix acceptance is superseded. Existing desk
 | Speed vs dcaddbc | 4x CPU, n=24: phone 1,218 → 1,248 ms, desktop 918 → 1,028 | desktop slower (recorded) |
 | Stale, offline, no-permission states | unchanged, not re-run | not re-proven |
 | Competitor comparison | none | unproven |
+
+### Payment receipt · 24 Oct 2026 (08 §10, §10.1, §10.2, R-DEC-34)
+
+| Requirement | Evidence | Status |
+|---|---|---|
+| Amount, mode lines and settled bills with what is still due now equal the server's | PaymentReceiptPageContent.test.tsx; e2e/payment-receipt.mjs records a ₹2 split receipt against an open bill | passed |
+| Share · Print · ⋯ docked above the phone menu, 44 px, nothing on top of them | e2e at 390/320 EN/HI (asks what is under each button's centre) | passed (fixed: the dock was under the menu) |
+| Header actions and panel-left / print-right on a desktop | e2e at 1024/1280 | passed (side by side from 1280) |
+| Cancel receipt: consequences in Shop words, quick reasons, Keep receipt keeps it, cancel reaches the server and the bill's due returns | e2e (cancels the receipt it recorded) | passed |
+| Snackbar after a cancel clears the dock | e2e centre check | passed (fixed) |
+| Double tap on Share sends one request; message and print never name the product | e2e | passed |
+| Receipt and bill numbers never split; the preview keeps A5 width | e2e incl. `emulateMedia print` | passed (fixed) |
+| Offline: Share held back, Print works, Cancel not offered | page test; e2e with the browser offline | passed |
+| Speed vs dcaddbc | 4x CPU, n=24: phone 1,716 → 1,750 ms, desktop 1,657 → 1,780 | desktop slower (recorded) |
+| Loading, not found, no permission, `?print=1`, share-text failure | unchanged, not re-run | not re-proven |
+| Competitor comparison | none | unproven |

@@ -18,7 +18,7 @@ import 'src/i18n/catalogues/money';
 import 'src/i18n/catalogues/payments';
 
 /**
- * PAY-05 FR-2 — "Void RCT/26-27/0017?", with a reason, quick-reason chips, and
+ * PAY-05 FR-2, 08 §10.1 — "Cancel RCT/26-27/0017?", with a reason, quick-reason chips, and
  * what will change said BEFORE it happens: the khata line reversed today, each
  * bill reopened with its due, the advance dropped. Computed from the held
  * receipt; the server's answer is what the page then shows.
@@ -45,10 +45,16 @@ export function VoidPaymentDialog({
   const consequences = voidConsequences(payment).map((row) => {
     switch (row.kind) {
       case 'ledger':
+        /* DEC-019 — the Shop's money is the Shop's balance; "Khata" is the
+           Udhaar book's word and stays only on that book's receipts. */
         return t(
-          payment.direction === 'in'
-            ? 'payments.void.consequence.ledgerIn'
-            : 'payments.void.consequence.ledgerOut',
+          payment.bucket === 'shop'
+            ? payment.direction === 'in'
+              ? 'payments.void.consequence.shopIn'
+              : 'payments.void.consequence.shopOut'
+            : payment.direction === 'in'
+              ? 'payments.void.consequence.ledgerIn'
+              : 'payments.void.consequence.ledgerOut',
           { name: payment.party?.name ?? '', amount: formatAmount(row.amount) }
         );
       case 'document':
@@ -78,6 +84,7 @@ export function VoidPaymentDialog({
       description={t('payments.void.desc')}
       confirmLabel={t('payments.void.confirm')}
       workingLabel={t('payments.void.working')}
+      keepLabel={t('payments.void.keep')}
       reasonLabel={t('payments.void.reason')}
       reasonPlaceholder={t('payments.void.reason.placeholder')}
       requiredMessageId="payments.void.reason.required"
@@ -86,6 +93,7 @@ export function VoidPaymentDialog({
       onClose={onClose}
       formErrors={errors}
       suggestions={VOID_REASON_IDS.map((id) => t(id))}
+      suggestionsLabel={t('payments.void.quick')}
       footnote={t('payments.void.receiptNote')}
       confirmTestId="payment-void-confirm"
       returnFocusRef={returnFocusRef}

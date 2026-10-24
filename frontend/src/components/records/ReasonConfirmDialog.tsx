@@ -3,7 +3,7 @@
 import { useCallback, useId, useMemo, type ReactNode, type RefObject } from 'react';
 
 import { yupResolver } from '@hookform/resolvers/yup';
-import { useForm } from 'react-hook-form';
+import { useForm, useWatch } from 'react-hook-form';
 import * as Yup from 'yup';
 
 import {
@@ -11,9 +11,7 @@ import {
   UbDialog,
   UbField,
   UbForm,
-  UbPressable,
-  UbStack,
-  UbTag,
+  UbChoiceChips,
   UbText,
   UbTextArea,
 } from 'src/design-system';
@@ -62,8 +60,10 @@ export interface ReasonConfirmDialogProps {
   readonly onConfirm: (reason: string) => void | Promise<unknown>;
   readonly onClose: () => void;
   readonly confirmDisabled?: boolean;
-  /** One-tap reasons that fill the field (the payment void's chips). */
+  /** One-tap reasons that fill the field (the payment cancel's chips). */
   readonly suggestions?: readonly string[];
+  /** The chips' group name; defaults to `reasonLabel`. */
+  readonly suggestionsLabel?: string;
   /** Server field errors, shown on the form as every form shows them. */
   readonly formErrors?: readonly string[];
   /** The consequences and any refusal, above the reason. */
@@ -95,6 +95,7 @@ export function ReasonConfirmDialog({
   onClose,
   confirmDisabled = false,
   suggestions,
+  suggestionsLabel,
   formErrors,
   children,
   footnote,
@@ -114,6 +115,8 @@ export function ReasonConfirmDialog({
     mode: 'onTouched',
     defaultValues: { reason: '' },
   });
+
+  const reason = useWatch({ control: form.control, name: 'reason' });
 
   const submit = useCallback(
     async (values: ReasonValues) => {
@@ -156,18 +159,17 @@ export function ReasonConfirmDialog({
       <UbForm id={formId} form={form} onSubmit={submit} formErrors={formErrors}>
         {children}
         {suggestions && suggestions.length > 0 ? (
-          <UbStack direction="row" className="flex-wrap gap-2">
-            {suggestions.map((text) => (
-              <UbPressable
-                key={text}
-                onClick={() =>
-                  form.setValue('reason', text, { shouldDirty: true, shouldValidate: true })
-                }
-              >
-                <UbTag name={text} />
-              </UbPressable>
-            ))}
-          </UbStack>
+          /* 08 §10.1 — tappable chips: 32 px faces with 44 px targets that wrap
+             and never cut a word. The 20 px tags these were cut "Cheque
+             bounced" to "Cheque boun…" on a phone (LOOK, 24 Oct). */
+          <UbChoiceChips
+            ariaLabel={suggestionsLabel ?? reasonLabel}
+            options={suggestions.map((text) => ({ value: text, label: text }))}
+            value={suggestions.includes(reason.trim()) ? reason.trim() : null}
+            onChange={(text) =>
+              form.setValue('reason', text, { shouldDirty: true, shouldValidate: true })
+            }
+          />
         ) : null}
         <UbField
           name="reason"

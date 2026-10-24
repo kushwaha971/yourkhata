@@ -101,7 +101,7 @@ export const MLBadge = forwardRef<HTMLSpanElement, MLBadgeProps>(function MLBadg
   );
 });
 
-export type MLAlertVariant = 'info' | 'success' | 'warning' | 'error';
+export type MLAlertVariant = 'info' | 'success' | 'warning' | 'error' | 'neutral';
 
 export interface MLAlertProps extends HTMLAttributes<HTMLDivElement> {
   readonly variant?: MLAlertVariant;
@@ -114,6 +114,8 @@ const ALERT_VARIANT: Record<MLAlertVariant, string> = {
   warning: 'border-warning/40 bg-warning-dim text-text-primary',
   // §23.5: outlined block, never a filled red one.
   error: 'border-formError bg-formError-dim text-text-primary',
+  // A settled fact that needs no action (a cancelled receipt): grey, never red.
+  neutral: 'border-border-hairline bg-surface-sunken text-text-primary',
 };
 
 export const MLAlert = forwardRef<HTMLDivElement, MLAlertProps>(function MLAlert(

@@ -317,7 +317,7 @@ Consequence-first like `#billactions`: title "Cancel RCT/26-27/0233?"; "What wil
 | Feedback | "WhatsApp opened" (never "Sent", DEC-012); Copy → "Copied". |
 | Must keep | the private note is never copied in; the message and `/d/` page are signed with the business name only. |
 
-Tracking (§10): problems — "Void" wording; Share placement on phones · decisions — Share is the primary action on a receipt · dependencies — none · approval — pending · build — not started · tests — receipt print shot with `emulateMedia print`, share sheet text check for no product name · outcome — —
+Tracking (§10): problems — "Void" wording (now Cancel receipt); Share placement on phones (now docked) · decisions — Share is the primary action on a receipt · dependencies — none · approval — proceeded under R-DEC-34 (owner: continue without stopping) · build — delivered 24 Oct (summary with modes and still-due bills, docked Share · Print · ⋯, Cancel receipt dialog in Shop words, grey cancelled banner, share sheet heading and honest line, offline hold; deviations: server share text unchanged, no counter or default-text reset in the shared sheet, reason focused first, canceller named) · tests — `e2e/payment-receipt.mjs` 65/65 (print with `emulateMedia print`, no product name in message or print), `PaymentReceiptPageContent.test.tsx` · outcome — docs/performance/2026-10-24-payment-receipt.md
 
 ## 11. Cash book · `/cashbook`
 

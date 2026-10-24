@@ -175,8 +175,10 @@ export function PaymentReceiptPrint({
           <tbody>
             {payment.allocations.map((row) => (
               <tr key={row.documentId}>
-                <td className="break-all font-mono">
-                  {row.number ?? '—'}
+                <td className="font-mono">
+                  {/* One word on paper: `break-all` split "INV/25-26/5877" into
+                      three lines in a narrow column (08 §10, LOOK 24 Oct). */}
+                  <span className="whitespace-nowrap">{row.number ?? '—'}</span>
                   {/* R30 — a module document's own line under its number. */}
                   {row.label && <span className="block font-sans">{row.label}</span>}
                   {/* A4a (PLT-X03 §8) — applied after the receipt was recorded, and when. */}

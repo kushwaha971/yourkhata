@@ -225,8 +225,16 @@ All/Received/Paid out/Cancelled, "Void" is "Cancelled", Quick Sale for no
 name, money in green and out plain ink (it was red/green the wrong way round),
 date joined under the number below 1280. Desktop opens ~40-230 ms slower at
 4x CPU; recorded.
-1. Payments: receipt page §10 (with cancel §10.1 and share §10.2), then the
-   Receive payment drawer §6; then Expenses, Reports; approved Home LAST.
+Payment receipt §10 delivered 24 Oct (docs/performance/2026-10-24-payment-
+receipt.md, e2e/payment-receipt.mjs 65/65): a summary with modes and each
+settled bill's due now, Share · Print · ⋯ docked on a phone, "Void" is
+"Cancel receipt" in Shop words, grey cancelled banner, offline hold. LOOK found
+the dock under the phone menu, the toast covering Record again, cut reason chips
+and bill numbers split on the print; all fixed. Desktop ~120 ms slower at 4x
+CPU; recorded. Open: the server's share text (§10.2 wording, link) and the
+shared sheet's counter wait for approval.
+1. Payments: Receive payment drawer §6; then Expenses, Reports; approved Home
+   LAST.
 
 ## LATEST CHECKPOINT —23 October2026 (owner requested commit/push)
 

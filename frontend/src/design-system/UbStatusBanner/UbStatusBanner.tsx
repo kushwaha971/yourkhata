@@ -15,7 +15,12 @@ import { cn } from 'src/utils/cn';
  * The network strip of §19.10.3 is this component in its `offline` /
  * `degraded` tones, which is why `CloudOff` is one of the icons.
  */
-export type UbStatusBannerTone = 'info' | 'success' | 'warning' | 'error' | 'offline';
+/**
+ * `neutral` is a closed fact rather than a warning (08 §10: a cancelled
+ * receipt's "Cancelled on 17 Oct" banner is grey, because nothing is wrong
+ * any more and nothing needs doing).
+ */
+export type UbStatusBannerTone = 'info' | 'success' | 'warning' | 'error' | 'offline' | 'neutral';
 
 export interface UbStatusBannerProps {
   readonly tone?: UbStatusBannerTone;
@@ -32,15 +37,17 @@ const ICON: Record<UbStatusBannerTone, typeof Info> = {
   warning: TriangleAlert,
   error: AlertCircle,
   offline: CloudOff,
+  neutral: Info,
 };
 
-const VARIANT: Record<UbStatusBannerTone, 'info' | 'success' | 'warning' | 'error'> = {
+const VARIANT: Record<UbStatusBannerTone, 'info' | 'success' | 'warning' | 'error' | 'neutral'> = {
   info: 'info',
   success: 'success',
   warning: 'warning',
   error: 'error',
   // A queued/offline state is amber "waiting for signal", never red (§23.2.4).
   offline: 'warning',
+  neutral: 'neutral',
 };
 
 const ICON_TONE: Record<UbStatusBannerTone, string> = {
@@ -49,6 +56,7 @@ const ICON_TONE: Record<UbStatusBannerTone, string> = {
   warning: 'text-warning',
   error: 'text-formError',
   offline: 'text-warning',
+  neutral: 'text-text-secondary',
 };
 
 function UbStatusBannerBase({

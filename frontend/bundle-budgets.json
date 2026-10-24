@@ -1050,6 +1050,7 @@
     "sharedApp": 114.7
   },
   "//routes": [
+    "24 Oct 2026, 08 \u00a710 payment receipt: /payments/[id] gained the summary panel, the docked Share \u00b7 Print \u00b7 \u22ef (UbBottomBar, UbMoreActions and its action sheet) and the money catalogue for the mode names, 69.3 -> 74.4 KB route. The same commit gave UbStatusBanner a neutral tone and moved ReasonConfirmDialog's reason chips to UbChoiceChips, which every route that loads those shared modules (or whose chunks Turbopack regrouped around them) carries by 0.0-0.4 KB; /lending/loans moved 1.1 KB through that regrouping. A first build that gave the banner its own Ban icon cost 24 more routes; it uses Info instead. Shared app unchanged (114.6). Raised to measured + 0.3; recorded in docs/performance/2026-10-24-payment-receipt.md.",
     "24 Oct 2026, UbDataGrid renders an already-loaded table directly instead of through the lazy wrapper, which suspended and held the skeleton for React's 300 ms fallback minimum on every desktop register open (GridTable, preloadGridTable). Measured after it: /sales/challans and /sales/orders first load over by 0.0 KB (rounding), /admin/partners route 28.3 -> 28.9 and first load 270.0 -> 270.8; raised to measured + 0.3.",
     "24 Oct 2026, 09 \u00a78.6 price lists: both screens moved onto UbDataGrid (cards on a phone, a table on a desktop, as the spec names it), which brings the grid and TanStack Table into these routes: list route 57.0 -> 62.7 KB, detail 90.6 -> 97.1 KB. A first build was 3 KB heavier still because gridLabels.ts named two items-catalogue keys; the selection label ids are now passed in (view-model/itemGridIds.ts) so the price lists do not load the items catalogue. Raised to measured + 0.3 KB; the cost is recorded in docs/performance/2026-10-24-price-lists.md.",
     "24 Oct 2026, 09 \u00a78.5 categories and units: /items/masters gained a search per section, find-then-add, the standard/own unit groups and the small UbChipTabs (route +1.3 KB, first load +1.5 KB). The 0.0 KB rows (/items/[id], purchase routes) were already at their ceiling; most likely UbStatusBadge's new srLabel, which they render; not isolated. Each raised to measured + 0.3 KB.",
@@ -1428,20 +1429,20 @@
       "firstLoad": 317.7
     },
     "/purchases/debit-notes/[id]": {
-      "route": 73.8,
-      "firstLoad": 315.7
+      "route": 74.2,
+      "firstLoad": 316.0
     },
     "/purchases/debit-notes": {
-      "route": 84.8,
-      "firstLoad": 326.7
+      "route": 85.3,
+      "firstLoad": 327.1
     },
     "/sales/challans/[id]": {
-      "route": 85.1,
-      "firstLoad": 326.7
+      "route": 85.6,
+      "firstLoad": 327.4
     },
     "/sales/challans": {
-      "route": 87.2,
-      "firstLoad": 329.1
+      "route": 87.6,
+      "firstLoad": 329.4
     },
     "/sales/challans/new": {
       "route": 169.4,
@@ -1452,28 +1453,28 @@
       "firstLoad": 411.1
     },
     "/purchases/orders/[id]": {
-      "route": 73.8,
-      "firstLoad": 315.7
+      "route": 74.2,
+      "firstLoad": 316.0
     },
     "/purchases/orders": {
-      "route": 84.8,
-      "firstLoad": 326.7
+      "route": 85.3,
+      "firstLoad": 327.1
     },
     "/purchases/orders/new": {
-      "route": 170.6,
-      "firstLoad": 412.4
+      "route": 170.9,
+      "firstLoad": 412.7
     },
     "/purchases/orders/[id]/edit": {
-      "route": 170.4,
+      "route": 171.0,
       "firstLoad": 412.5
     },
     "/sales/orders/[id]": {
-      "route": 85.1,
-      "firstLoad": 326.7
+      "route": 85.6,
+      "firstLoad": 327.4
     },
     "/sales/orders": {
-      "route": 87.2,
-      "firstLoad": 329.1
+      "route": 87.6,
+      "firstLoad": 329.4
     },
     "/sales/orders/new": {
       "route": 169.4,
@@ -1504,8 +1505,8 @@
       "firstLoad": 333
     },
     "/sales/invoices/[id]": {
-      "route": 85.0,
-      "firstLoad": 326.7
+      "route": 85.6,
+      "firstLoad": 327.4
     },
     "/sales/estimates": {
       "route": 98,
@@ -1520,7 +1521,7 @@
       "firstLoad": 411.1
     },
     "/sales/estimates/[id]": {
-      "route": 85.1,
+      "route": 85.6,
       "firstLoad": 336
     },
     "/sales/credit-notes": {
@@ -1528,11 +1529,11 @@
       "firstLoad": 356
     },
     "/sales/credit-notes/new": {
-      "route": 150.3,
-      "firstLoad": 391.9
+      "route": 150.6,
+      "firstLoad": 392.5
     },
     "/sales/credit-notes/[id]": {
-      "route": 85.1,
+      "route": 85.6,
       "firstLoad": 336
     },
     "/onboarding/step/[n]": {
@@ -1545,7 +1546,7 @@
     },
     "/settings/team": {
       "route": 92.3,
-      "firstLoad": 333.9
+      "firstLoad": 334.2
     },
     "/parties/[id]": {
       "route": 114.3,
@@ -1553,7 +1554,7 @@
     },
     "/parties/tags": {
       "route": 71.1,
-      "firstLoad": 312.7
+      "firstLoad": 313.0
     },
     "/parties/[id]/statement": {
       "route": 93,
@@ -1604,12 +1605,12 @@
       "firstLoad": 344
     },
     "/items/[id]": {
-      "route": 110.8,
-      "firstLoad": 352.6
+      "route": 111.2,
+      "firstLoad": 353.0
     },
     "/stock/low": {
-      "route": 75.3,
-      "firstLoad": 317.1
+      "route": 75.9,
+      "firstLoad": 317.7
     },
     "/expenses": {
       "route": 107,
@@ -1624,12 +1625,12 @@
       "firstLoad": 339
     },
     "/payments/[id]": {
-      "route": 69.3,
-      "firstLoad": 310.9
+      "route": 74.7,
+      "firstLoad": 316.5
     },
     "/ledger/reminders": {
       "route": 78.9,
-      "firstLoad": 320.5
+      "firstLoad": 320.9
     },
     "/imports": {
       "route": 57.3,
@@ -1664,20 +1665,20 @@
       "firstLoad": 305.5
     },
     "/purchases/bills/[id]": {
-      "route": 73.8,
+      "route": 74.2,
       "firstLoad": 315.7
     },
     "/purchases/bills/[id]/edit": {
-      "route": 170.6,
-      "firstLoad": 412.4
+      "route": 170.9,
+      "firstLoad": 412.8
     },
     "/purchases/bills": {
       "route": 95,
       "firstLoad": 330
     },
     "/purchases/bills/new": {
-      "route": 170.6,
-      "firstLoad": 412.4
+      "route": 170.9,
+      "firstLoad": 412.7
     },
     "/reports": {
       "route": 72,
@@ -1689,15 +1690,15 @@
     },
     "/reports/gst-summary": {
       "route": 116.5,
-      "firstLoad": 358.1
+      "firstLoad": 358.5
     },
     "/reports/profit": {
       "route": 112.0,
-      "firstLoad": 353.7
+      "firstLoad": 354.0
     },
     "/reports/purchase-register": {
       "route": 116.2,
-      "firstLoad": 357.9
+      "firstLoad": 358.2
     },
     "/reports/sales-register": {
       "route": 116.2,
@@ -1708,8 +1709,8 @@
       "firstLoad": 298.1
     },
     "/": {
-      "route": 43.0,
-      "firstLoad": 284.8
+      "route": 43.6,
+      "firstLoad": 285.4
     },
     "/settings/business-days": {
       "route": 68.0,
@@ -1721,7 +1722,7 @@
     },
     "/library/copies": {
       "route": 83.6,
-      "firstLoad": 325.2
+      "firstLoad": 325.5
     },
     "/library/copies/[copyId]": {
       "route": 78.3,
@@ -1752,11 +1753,11 @@
       "firstLoad": 314.8
     },
     "/library/counter": {
-      "route": 83.3,
+      "route": 83.6,
       "firstLoad": 325.2
     },
     "/library/seats": {
-      "route": 81.4,
+      "route": 81.7,
       "firstLoad": 323.3
     },
     "/library/fees": {
@@ -1816,7 +1817,7 @@
       "firstLoad": 315.5
     },
     "/lending/loans/new": {
-      "route": 141.2,
+      "route": 141.5,
       "firstLoad": 383.1
     },
     "/lending": {
@@ -1828,8 +1829,8 @@
       "firstLoad": 313.7
     },
     "/lending/loans": {
-      "route": 77.0,
-      "firstLoad": 318.9
+      "route": 78.4,
+      "firstLoad": 320.2
     },
     "/customers": {
       "route": 110,
@@ -1840,8 +1841,8 @@
       "firstLoad": 344
     },
     "/items/price-lists/[id]": {
-      "route": 97.4,
-      "firstLoad": 339.3
+      "route": 97.8,
+      "firstLoad": 339.6
     },
     "/lending/messages": {
       "route": 67.1,
@@ -1856,8 +1857,8 @@
       "firstLoad": 321.4
     },
     "/items/price-lists": {
-      "route": 63.0,
-      "firstLoad": 304.8
+      "route": 63.4,
+      "firstLoad": 305.2
     },
     "/login/email": {
       "route": 58.6,
@@ -1872,7 +1873,7 @@
       "firstLoad": 296.8
     },
     "/reports/aging": {
-      "route": 100.8,
+      "route": 101.2,
       "firstLoad": 342.7
     },
     "/apps": {
