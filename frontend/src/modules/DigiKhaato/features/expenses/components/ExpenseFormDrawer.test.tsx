@@ -1,4 +1,4 @@
-import { screen } from '@testing-library/react';
+import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
 import { sessionLoaded } from 'src/redux/slice/sessionSlice';
@@ -92,7 +92,7 @@ it('opens clean, paid, with the payment chips', () => {
   expect(screen.queryByText('Enter an amount.')).not.toBeInTheDocument();
   expect(screen.getByRole('switch', { name: /Paid now/ })).toBeChecked();
   expect(screen.getByRole('radiogroup', { name: 'Paid by' })).toBeInTheDocument();
-  expect(screen.queryByText('Due on')).not.toBeInTheDocument();
+  expect(screen.queryByText('Pay by')).not.toBeInTheDocument();
 });
 
 it('asks who is owed and by when once Paid now is off, and hides Paid by', async () => {
@@ -100,8 +100,11 @@ it('asks who is owed and by when once Paid now is off, and hides Paid by', async
   renderWithProviders(<ExpenseFormDrawer form={form({ submit })} />);
   await userEvent.click(screen.getByRole('switch', { name: /Paid now/ }));
   expect(screen.queryByRole('radiogroup', { name: 'Paid by' })).not.toBeInTheDocument();
-  expect(screen.getByText('Pay to')).toBeInTheDocument();
-  expect(screen.getByText('Due on')).toBeInTheDocument();
+  expect(screen.getByText('Owed to')).toBeInTheDocument();
+  expect(screen.getByText('Pay by')).toBeInTheDocument();
+  // 08 §12.1, DEC-019 — the Shop's balance, never the Udhaar book's "khata".
+  expect(screen.getByText('This is added to what the Shop owes them.')).toBeInTheDocument();
+  expect(screen.queryByText(/khata/i)).not.toBeInTheDocument();
 
   await userEvent.type(screen.getByLabelText(/Amount/), '12000');
   await userEvent.click(screen.getByRole('button', { name: 'Save' }));
@@ -110,12 +113,68 @@ it('asks who is owed and by when once Paid now is off, and hides Paid by', async
   expect(submit).not.toHaveBeenCalled();
 });
 
-it('offers only live categories in the picker', async () => {
+it('offers only live categories, one tap each', async () => {
   // EXP-02 FR-6 — an archived category is gone from pickers, kept on old rows.
+  // 08 §12.1 — the category is ONE tap: a chip, not a list to open.
   renderWithProviders(<ExpenseFormDrawer form={form()} />);
-  await userEvent.click(screen.getByRole('combobox', { name: /Category/ }));
-  expect(await screen.findByRole('option', { name: 'Rent' })).toBeInTheDocument();
-  expect(screen.queryByRole('option', { name: 'Old' })).not.toBeInTheDocument();
+  const chips = screen.getByRole('radiogroup', { name: 'Common categories' });
+  expect(within(chips).queryByRole('radio', { name: 'Old' })).not.toBeInTheDocument();
+  await userEvent.click(within(chips).getByRole('radio', { name: 'Rent' }));
+  expect(within(chips).getByRole('radio', { name: 'Rent' })).toBeChecked();
+  // Two live categories need no search box.
+  expect(screen.queryByRole('combobox', { name: 'More categories' })).not.toBeInTheDocument();
+});
+
+it('keeps the six most used as chips and the rest in a search, showing the one picked', async () => {
+  const many = ['Tea', 'Rent', 'Salary', 'Transport', 'Electricity', 'Porter', 'Repairs'].map(
+    (name, i) => ({
+      id: `c-${i}`,
+      name,
+      systemCode: null,
+      color: 'viz-1',
+      isSystem: false,
+      status: 'active' as const,
+    })
+  );
+  renderWithProviders(<ExpenseFormDrawer form={form({ categories: many })} />);
+  const chips = screen.getByRole('radiogroup', { name: 'Common categories' });
+  expect(within(chips).getAllByRole('radio')).toHaveLength(6);
+  expect(within(chips).queryByRole('radio', { name: 'Repairs' })).not.toBeInTheDocument();
+  await userEvent.click(screen.getByRole('combobox', { name: 'More categories' }));
+  await userEvent.click(await screen.findByRole('option', { name: 'Repairs' }));
+  expect(within(chips).getByRole('radio', { name: 'Repairs' })).toBeChecked();
+});
+
+it('says nothing is wrong with the amount until Save is pressed', async () => {
+  /* 08 §12.1 — "Amount missing only after Save". With `onTouched`, moving on
+     from the empty amount to the category painted it red. */
+  renderWithProviders(<ExpenseFormDrawer form={form()} />);
+  await userEvent.click(screen.getByLabelText(/Amount/));
+  await userEvent.tab();
+  expect(screen.queryByText('Enter an amount.')).not.toBeInTheDocument();
+  await userEvent.click(screen.getByRole('button', { name: 'Save' }));
+  expect(await screen.findByText('Enter an amount.')).toBeInTheDocument();
+});
+
+it('saves once for a double tap on Save and add another', async () => {
+  let answer: (ok: boolean) => void = () => undefined;
+  const submit = jest.fn(
+    () =>
+      new Promise<boolean>((resolve) => {
+        answer = resolve;
+      })
+  );
+  renderWithProviders(<ExpenseFormDrawer form={form({ submit })} />);
+  await userEvent.type(screen.getByLabelText(/Amount/), '500');
+  await userEvent.click(screen.getByRole('radio', { name: 'Rent' }));
+  const again = screen.getByRole('button', { name: 'Save and add another' });
+  await userEvent.dblClick(again);
+  await waitFor(() => expect(submit).toHaveBeenCalledTimes(1));
+  answer(true);
+  await waitFor(() => expect(screen.getByLabelText(/Amount/)).toHaveValue(''));
+  expect(submit).toHaveBeenCalledTimes(1);
+  // …and the caret is back in Amount for the next one.
+  await waitFor(() => expect(screen.getByLabelText(/Amount/)).toHaveFocus());
 });
 
 it('does not offer a New category to a role that cannot record', () => {

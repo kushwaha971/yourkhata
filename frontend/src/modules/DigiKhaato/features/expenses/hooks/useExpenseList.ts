@@ -38,6 +38,7 @@ import {
 import type {
   Expense,
   ExpenseFilters,
+  ExpenseListArg,
   ExpensePreset,
   ExpenseTab,
   ExpenseTotals,
@@ -73,7 +74,13 @@ export interface UseExpenseListResult {
   readonly refetch: () => void;
 }
 
-export const useExpenseList = (): UseExpenseListResult => {
+/**
+ * `append` is a phone's card list (R-DEC-33): the next page joins the cards
+ * already shown instead of replacing them. A desktop table pages by replacement.
+ */
+export const useExpenseList = (
+  listMode: 'replace' | 'append' = 'replace'
+): UseExpenseListResult => {
   const dispatch = useAppDispatch();
   const router = useAppRouter();
   const search = useSearchParams();
@@ -108,18 +115,20 @@ export const useExpenseList = (): UseExpenseListResult => {
     [queryString, today, expenseApp]
   );
 
+  const query = useMemo<ExpenseListArg>(() => ({ ...filters, listMode }), [filters, listMode]);
+
   useEffect(() => {
     if (!canRead) return undefined;
-    dispatch(expenseFiltersChanged(filters));
-    const promise = dispatch(fetchExpenses(filters));
+    dispatch(expenseFiltersChanged(query));
+    const promise = dispatch(fetchExpenses(query));
     return () => promise.abort();
-  }, [dispatch, canRead, filters]);
+  }, [dispatch, canRead, query]);
 
   useEffect(() => {
     if (!stale || isImpaired || !canRead) return undefined;
-    const promise = dispatch(fetchExpenses(filters));
+    const promise = dispatch(fetchExpenses(query));
     return () => promise.abort();
-  }, [stale, isImpaired, canRead, dispatch, filters]);
+  }, [stale, isImpaired, canRead, dispatch, query]);
 
   const push = useCallback(
     (next: ExpenseFilters) => {
@@ -185,8 +194,8 @@ export const useExpenseList = (): UseExpenseListResult => {
     [push, filters]
   );
   const refetch = useCallback(() => {
-    void dispatch(fetchExpenses(filters));
-  }, [dispatch, filters]);
+    void dispatch(fetchExpenses(query));
+  }, [dispatch, query]);
 
   return useMemo(
     () => ({

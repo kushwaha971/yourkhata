@@ -142,7 +142,7 @@ export const useExpenseForm = (): UseExpenseFormResult => {
         ).unwrap();
         // The key now names the expense just written; the next save is a new one.
         rotate();
-        /* FR-8 — "Saved ₹500 — Food". `formatAmount`, not `formatInr`: the
+        /* 08 §12.1 — "Saved ₹500 · Tea and snacks · EXP/26-27/0031". `formatAmount`, not `formatInr`: the
            copy carries the ₹ (Hindi puts it elsewhere), and a formatter that
            carried its own would print "₹₹500.00" — the fifth time that pair
            has met in this codebase is not going to be this one. */
@@ -153,6 +153,7 @@ export const useExpenseForm = (): UseExpenseFormResult => {
             params: {
               amount: formatAmount(saved.expense.amount),
               category: saved.expense.category.name,
+              number: saved.expense.number,
             },
           })
         );

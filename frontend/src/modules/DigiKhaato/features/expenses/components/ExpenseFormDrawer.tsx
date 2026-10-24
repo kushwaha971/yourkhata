@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useId, useMemo } from 'react';
+import { useCallback, useEffect, useId, useMemo, useRef } from 'react';
 
 import { yupResolver } from '@hookform/resolvers/yup';
 import { useForm, useWatch } from 'react-hook-form';
@@ -46,7 +46,8 @@ import 'src/i18n/catalogues/validation';
  * (the mode this device used last). Everything else is optional and below.
  * "Paid now" is on by default; turning it off is "I still owe this", which
  * asks who to and by when, hides "Paid by" (money that has not moved has no
- * "how"), and posts a credit on that party's khata when saved.
+ * "how"), and adds it to that supplier's Shop balance when saved (the
+ * expense ledger source posts only in the Shop book, DEC-019).
  *
  * Lazily loaded (`dynamic()` by its openers): it carries React Hook Form's
  * resolver, the Yup schema and nine controls, and a merchant opening the list
@@ -100,9 +101,12 @@ export function ExpenseFormDrawer({
     [draft, today]
   );
 
+  /* 08 §12.1 — "Amount missing" only after Save. `onTouched` marked the
+     amount wrong the moment focus left it on the way to the category. */
   const form = useForm<ExpenseFormValues>({
     resolver: yupResolver(expenseSchema),
-    mode: 'onTouched',
+    mode: 'onSubmit',
+    reValidateMode: 'onChange',
     defaultValues: defaults,
   });
   const { reset, setError, setValue, formState } = form;
@@ -116,18 +120,30 @@ export function ExpenseFormDrawer({
   const upiApp = useWatch({ control: form.control, name: 'upiApp' });
   const partyName = useWatch({ control: form.control, name: 'partyName' });
 
+  /* One save at a time. `UbForm` ignores a second submit, but "Save and add
+     another" calls `handleSubmit` itself, so without this a double tap sent
+     a second request before the first answered (08 §12 asks for one). */
+  const inFlight = useRef(false);
+  const amountId = useRef('');
   const save = useCallback(
     async (values: ExpenseFormValues, keepOpen: boolean) => {
+      if (inFlight.current) return;
+      inFlight.current = true;
       if (values.paid && values.mode) rememberMode(values.mode, values.upiApp);
-      const saved = await submit(values, setError, { keepOpen });
+      const saved = await submit(values, setError, { keepOpen }).finally(() => {
+        inFlight.current = false;
+      });
       if (saved && keepOpen) {
-        /* FR-2 "Save & add another" — keeps category, date and mode, clears
+        /* FR-2 "Save and add another" — keeps category, date and mode, clears
            the amount and the note, and lands back on the amount. */
         reset({ ...values, amount: '', note: '', reference: '' });
-        form.setFocus('amount');
+        /* By id, not `form.setFocus`: `UbField` hands its input no ref, so
+           setFocus found nothing and the caret never came back (found by the
+           live run of 08 §12, not by any unit test). */
+        requestAnimationFrame(() => document.getElementById(amountId.current)?.focus());
       }
     },
-    [submit, setError, reset, form]
+    [submit, setError, reset]
   );
 
   const handleSubmit = useCallback((values: ExpenseFormValues) => save(values, false), [save]);
@@ -176,7 +192,10 @@ export function ExpenseFormDrawer({
           placeholder={t('expenses.amount.placeholder')}
           required
         >
-          {(field) => <UbMoneyInput {...field} autoFocus inputMode="decimal" />}
+          {(field) => {
+            amountId.current = field.id;
+            return <UbMoneyInput {...field} autoFocus inputMode="decimal" />;
+          }}
         </UbField>
 
         <UbField
@@ -261,7 +280,13 @@ export function ExpenseFormDrawer({
           name="partyId"
           label={paid ? t('expenses.paidTo') : t('expenses.owedTo')}
           placeholder={t('expenses.paidTo.placeholder')}
-          hint={paid ? t('expenses.paidToHint') : t('expenses.owedToHint')}
+          hint={
+            paid
+              ? t('expenses.paidToHint')
+              : partyName
+                ? t('expenses.owedToHintName', { name: partyName })
+                : t('expenses.owedToHint')
+          }
           required={!paid}
           optionalLabel={paid ? t('common.field.optional') : undefined}
         >

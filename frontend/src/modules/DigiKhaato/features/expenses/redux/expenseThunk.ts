@@ -5,8 +5,8 @@ import { toApiError } from 'src/utils/apiError';
 
 import type {
   ExpenseCategory,
-  ExpenseFilters,
   ExpenseFormValues,
+  ExpenseListArg,
   ExpensePage,
   ExpenseSaveResult,
 } from '../types/expense.types';
@@ -29,7 +29,7 @@ const service = () => import('../api/expenseService');
 /** QUERY. One page of the expense list with its filtered totals. */
 export const fetchExpenses = createAsyncThunk<
   ExpensePage,
-  ExpenseFilters,
+  ExpenseListArg,
   { rejectValue: ApiErrorShape }
 >('expenseList/fetchExpenses', async (filters, { signal, rejectWithValue }) => {
   try {

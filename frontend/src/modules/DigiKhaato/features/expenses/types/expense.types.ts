@@ -82,6 +82,14 @@ export interface ExpenseFilters {
   readonly app?: string;
 }
 
+/**
+ * What a list request carries: the filters, plus how a phone shows the next
+ * page (R-DEC-33) — `append` joins it to the cards already shown.
+ */
+export interface ExpenseListArg extends ExpenseFilters {
+  readonly listMode?: 'replace' | 'append';
+}
+
 export interface ExpensePage {
   readonly rows: readonly Expense[];
   readonly totals: ExpenseTotals;

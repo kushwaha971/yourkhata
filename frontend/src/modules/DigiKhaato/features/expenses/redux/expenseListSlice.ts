@@ -4,12 +4,13 @@ import { resetAllFeatureState } from 'src/redux/actions';
 import { acceptInvalidation } from 'src/redux/invalidation/listener';
 import { rootReducer, type RootState } from 'src/redux/store';
 import type { ApiErrorShape, RequestStatus } from 'src/types/api.types';
+import { mergePageRows } from 'src/utils/mergePageRows';
 
 import { EXPENSE_PAGE_SIZE } from '../constants/expensePeriod';
 
 import { fetchExpenses } from './expenseThunk';
 
-import type { Expense, ExpenseFilters, ExpenseTotals } from '../types/expense.types';
+import type { Expense, ExpenseListArg, ExpenseTotals } from '../types/expense.types';
 
 /**
  * Part 19 §19.3.2 Shape B — the expense list. Route-local, so it is injected
@@ -25,7 +26,9 @@ export interface ExpenseListState {
   status: RequestStatus;
   error: ApiErrorShape | null;
   /** The filters the rows on screen answer — the late-response guard's key. */
-  filters: ExpenseFilters | null;
+  filters: ExpenseListArg | null;
+  /** The latest request; an older reply for the same filters is not allowed to win. */
+  requestId: string | null;
   stale: boolean;
   staleUrgency: 'now' | 'next-mount' | null;
 }
@@ -40,11 +43,12 @@ const initialState: ExpenseListState = {
   status: 'idle',
   error: null,
   filters: null,
+  requestId: null,
   stale: false,
   staleUrgency: null,
 };
 
-const sameFilters = (a: ExpenseFilters | null, b: ExpenseFilters): boolean =>
+const sameFilters = (a: ExpenseListArg | null, b: ExpenseListArg, ignorePage = false): boolean =>
   !!a &&
   a.dateFrom === b.dateFrom &&
   a.dateTo === b.dateTo &&
@@ -52,7 +56,12 @@ const sameFilters = (a: ExpenseFilters | null, b: ExpenseFilters): boolean =>
   a.categoryId === b.categoryId &&
   a.mode === b.mode &&
   a.q === b.q &&
-  a.page === b.page;
+  (a.app ?? null) === (b.app ?? null) &&
+  (ignorePage || a.page === b.page) &&
+  (a.listMode ?? 'replace') === (b.listMode ?? 'replace');
+
+/** R-DEC-33 — a phone's next page of the same question, joined to the cards shown. */
+const isAppend = (arg: ExpenseListArg): boolean => arg.listMode === 'append' && arg.page > 1;
 
 const expenseListSlice = createSlice({
   name: 'expenseList',
@@ -63,26 +72,42 @@ const expenseListSlice = createSlice({
      * clear together: "Total ₹41,230" over last month's rows for the length of
      * a request is a figure that was never true of anything on screen.
      */
-    expenseFiltersChanged(state, action: PayloadAction<ExpenseFilters>) {
+    expenseFiltersChanged(state, action: PayloadAction<ExpenseListArg>) {
       if (sameFilters(state.filters, action.payload)) return;
-      state.filters = action.payload as Draft<ExpenseFilters>;
-      state.rows = [];
-      state.totals = null;
-      state.status = 'loading';
+      // A phone's next page keeps the cards above it and their totals.
+      const appending =
+        isAppend(action.payload) &&
+        sameFilters(state.filters, action.payload, true) &&
+        state.rows.length > 0;
+      state.filters = action.payload as Draft<ExpenseListArg>;
+      if (!appending) {
+        state.rows = [];
+        state.totals = null;
+      }
+      state.status = appending ? 'refreshing' : 'loading';
       state.error = null;
     },
   },
   extraReducers: (builder) => {
     acceptInvalidation<ExpenseListState>('expenseList')(builder);
     builder
-      .addCase(fetchExpenses.pending, (state) => {
+      .addCase(fetchExpenses.pending, (state, action) => {
+        state.requestId = action.meta.requestId;
         state.status = state.rows.length > 0 ? 'refreshing' : 'loading';
         state.error = null;
       })
       .addCase(fetchExpenses.fulfilled, (state, action) => {
         // A page for filters the merchant has already moved away from is dropped.
-        if (!sameFilters(state.filters, action.meta.arg)) return;
-        state.rows = action.payload.rows as Draft<Expense>[];
+        if (
+          state.requestId !== action.meta.requestId ||
+          !sameFilters(state.filters, action.meta.arg)
+        )
+          return;
+        state.rows = (
+          isAppend(action.meta.arg)
+            ? mergePageRows(state.rows, action.payload.rows)
+            : action.payload.rows
+        ) as Draft<Expense>[];
         state.totals = action.payload.totals as Draft<ExpenseTotals>;
         state.hasAny = action.payload.hasAny ?? null;
         state.page = action.payload.page;
@@ -93,7 +118,12 @@ const expenseListSlice = createSlice({
         state.staleUrgency = null;
       })
       .addCase(fetchExpenses.rejected, (state, action) => {
-        if (action.meta.aborted) return;
+        if (
+          action.meta.aborted ||
+          state.requestId !== action.meta.requestId ||
+          !sameFilters(state.filters, action.meta.arg)
+        )
+          return;
         state.status = 'failed';
         state.error = (action.payload ?? null) as Draft<ApiErrorShape> | null;
       })

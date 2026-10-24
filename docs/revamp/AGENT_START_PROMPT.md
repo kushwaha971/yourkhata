@@ -247,7 +247,13 @@ Receipt message wording (§10.2) delivered 24 Oct on the owner's "proceed":
 greeting, what was received and how, bills, receipt number, what is still due,
 shop's thanks, one per line, en/hi, "Rs" (payments/services/receipt.py,
 docs/performance/2026-10-24-payment-receipt.md deviation 1). No link yet.
-1. Payments done. Next Expenses (§12), then
+Expenses §12 delivered 24 Oct (docs/performance/2026-10-24-expenses.md,
+e2e/expenses-register.mjs): R-DEC-33 register, total + top 3, All · Unpaid ·
+Cancelled chips, category-first cards, six one-tap categories, nothing red
+until Save, Save and add another refocuses Amount, Cancel expense dialog in
+Shop words. Unpaid expenses post in the Shop book (verified). The Library
+shares the page; its requests are unchanged.
+1. Payments and Expenses done. Next Cash book (§11), then
    Reports; approved Home LAST; then Udhaar. Then stop.
 
 ## LATEST CHECKPOINT —23 October2026 (owner requested commit/push)

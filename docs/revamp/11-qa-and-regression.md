@@ -293,3 +293,19 @@ Earlier mobile manual/arrow-pager matrix acceptance is superseded. Existing desk
 | Speed vs dcaddbc | 4x CPU, n=24: phone 1,716 → 1,750 ms, desktop 1,657 → 1,780 | desktop slower (recorded) |
 | Loading, not found, no permission, `?print=1`, share-text failure | unchanged, not re-run | not re-proven |
 | Competitor comparison | none | unproven |
+
+### Expenses · 24 Oct 2026 (08 §12, §12.1, §12.2, R-DEC-34)
+
+| Requirement | Evidence | Status |
+|---|---|---|
+| The Shop's page lists the Shop's expenses | ExpensesPageContent.test.tsx; e2e/expenses-register.mjs asserts `app=shop` on every request | passed |
+| Total and count equal the server's; top 3 categories on one line | page test; e2e at 390/320/1024/1280 EN/HI | passed (fixed: wrapped to 2–3 lines on phones) |
+| Phone joins the next page; desktop pages; page itself never scrolls | page test; e2e | passed |
+| All · Unpaid · Cancelled chips, 32 px faces and 44 px targets | e2e measures faces and targets | passed |
+| Add: caret in Amount, nothing red until Save, one-tap category, "Saved ₹1.00 · cat · EXP/…" | ExpenseFormDrawer.test.tsx; e2e | passed (fixed) |
+| Save and add another: one expense per double tap, caret back in Amount | drawer test (fails without the guard); e2e counts requests and rows | passed (fixed: caret never came back) |
+| Unpaid expense moves the supplier's Shop balance by exactly the amount, and cancelling puts it back | e2e reads `shop_balance` before and after | passed |
+| Cancel expense: consequence in Shop words, quick reasons, Keep, caret in the reason, badge swaps in place | VoidExpenseDialog.test.tsx; e2e | passed |
+| Speed vs dcaddbc | 4x CPU, n=24: phone 1,336 → 1,357 ms, desktop 975 → 1,060 | desktop slower (recorded) |
+| Error, stale, offline queue | unchanged, not re-run | not re-proven |
+| Competitor comparison | none | unproven |
