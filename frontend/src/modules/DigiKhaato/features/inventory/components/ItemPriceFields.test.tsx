@@ -62,6 +62,8 @@ test('a new cost keeps a margin already held by repricing', async () => {
 test('the margin waits for a cost, and selling at a loss is said in words', async () => {
   const user = userEvent.setup();
   renderWithProviders(<Harness values={{ sellingPrice: '35.00' }} />);
+  // 09 §8.2 — a new item has no cost, so Cost and margin starts folded; open it.
+  await user.click(screen.getByRole('button', { name: /Cost and margin/i }));
   expect(box(/margin/i)).toBeDisabled();
   expect(screen.getByText('Add the purchase price to see margin')).toBeInTheDocument();
   await user.type(box(/purchase price/i), '40');
@@ -78,9 +80,15 @@ test('reads the margin without GST when the price includes it', async () => {
   expect(box(/margin/i)).toHaveValue('20.0');
 });
 
-test('a member who cannot see costs gets the selling price alone', () => {
+test('a member who cannot see costs gets the selling price alone, and no fold', () => {
   renderWithProviders(<Harness canSeeCost={false} />);
   expect(box(/selling price/i)).toBeInTheDocument();
   expect(screen.queryByRole('textbox', { name: /purchase price/i })).toBeNull();
   expect(screen.queryByRole('textbox', { name: /margin/i })).toBeNull();
+  expect(screen.queryByRole('button', { name: /Cost and margin/i })).toBeNull();
+});
+
+test('selling price carries the Includes GST switch in the fast path', () => {
+  renderWithProviders(<Harness canSeeCost={false} />);
+  expect(screen.getByRole('switch', { name: /includes GST/i })).toBeInTheDocument();
 });

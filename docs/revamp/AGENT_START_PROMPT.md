@@ -185,7 +185,12 @@ stock movement, so a row reads "Bought on PB-0012" and links to it) is built and
 tested on branch `bp-19-movement-sources` and is NOT on dev; without it the rows
 say their type and link nowhere. Deviations recorded: desktop Archive is a button
 not a ⋯; history chips use UbChoiceChips, not the landing page's UbChipTabs.
-1. Rest of Stock: item form §8.3, adjustment §8.4, low stock/summary §8.7
+DONE 24 Oct: Item form §8.3 (report docs/performance/2026-10-24-item-form.md;
+e2e/item-form.mjs 29/29). Fast path is name, type, unit, selling price with
+Includes GST, Save; Cost and margin and Category are folds; a used barcode links
+to its item; a dirty Cancel asks "Leave without saving?". No route change, so no
+navigation A/B. Competitor comparison not done (unproven).
+1. Rest of Stock: adjustment §8.4, low stock/summary §8.7
    (Order from a low row), masters and price lists; then Payments, Expenses,
    Reports; approved Home workflows LAST.
 

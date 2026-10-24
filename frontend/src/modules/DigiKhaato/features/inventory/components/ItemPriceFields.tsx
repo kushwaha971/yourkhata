@@ -4,7 +4,15 @@ import { useCallback, useEffect, useRef } from 'react';
 
 import { useFormContext, useWatch } from 'react-hook-form';
 
-import { UbField, UbGrid, UbMoneyInput, UbQuantityInput, UbText } from 'src/design-system';
+import {
+  UbDisclosure,
+  UbField,
+  UbGrid,
+  UbMoneyInput,
+  UbQuantityInput,
+  UbSwitch,
+  UbText,
+} from 'src/design-system';
 import { useTranslation } from 'src/hooks/useTranslation';
 
 import { isBelowCost, priceAfterEdit, type Gst } from '../view-model/itemPricing';
@@ -12,21 +20,23 @@ import { isBelowCost, priceAfterEdit, type Gst } from '../view-model/itemPricing
 import type { ItemFormValues } from '../types/item.types';
 
 /**
- * WP-07 — the item's selling price, and for a member who may see costs, its
- * purchase price and margin beside it, kept in step by `priceAfterEdit`
+ * WP-07 / 09 §8.2 — the fast path's one money question: the usual selling price
+ * and whether it already includes GST. For a member who may see costs, the
+ * purchase price and margin sit in a "Cost and margin" fold right below, kept
+ * in step with the selling price by `priceAfterEdit`
  * (docs/shop-ims-readiness/14-item-pricing-design-review.md).
  *
  * A member without `reports.financial.read` sees the selling price alone: the
  * cost is withheld from them everywhere else on an item, and the server now
- * refuses one from them, so a box they could type into would only be refused.
- * Margin is a form value that is never sent; it is read from the two prices.
+ * refuses one from them, so the fold is absent and nothing is sent. Margin is a
+ * form value that is never sent; it is read from the two prices.
  */
 export function ItemPriceFields({
   canSeeCost,
   gst,
 }: Readonly<{ canSeeCost: boolean; gst: Gst }>): React.JSX.Element {
   const { t } = useTranslation();
-  const { control, getValues, setValue } = useFormContext<ItemFormValues>();
+  const { control, getValues, setValue, formState } = useFormContext<ItemFormValues>();
   const cost = useWatch({ control, name: 'purchasePrice' }) ?? '';
   const margin = useWatch({ control, name: 'margin' });
   const hasCost = Number(cost) > 0;
@@ -91,64 +101,88 @@ export function ItemPriceFields({
         )}
       </UbField>
 
+      <UbField
+        name="taxInclusiveSelling"
+        label={t('items.form.taxInclusive.label')}
+        controlOwnsLabel
+      >
+        {(field) => (
+          <UbSwitch
+            id={field.id}
+            checked={Boolean(field.value)}
+            onCheckedChange={field.onChange}
+            label={t('items.form.taxInclusive.label')}
+          />
+        )}
+      </UbField>
+
       {canSeeCost && (
-        <UbGrid columns={{ base: 1, sm: 2 }} gap={3}>
-          <UbField
-            name="purchasePrice"
-            label={t('items.form.purchasePrice.label')}
-            placeholder={t('items.form.price.placeholder')}
-            hint={t('items.form.purchasePrice.hint')}
-          >
-            {(field) => (
-              <UbMoneyInput
-                {...field}
-                onFocus={() => {
-                  heldMargin.current = getValues('margin');
-                }}
-                onChange={(next) => {
-                  field.onChange(next);
-                  follow('cost');
-                }}
-                onBlur={() => {
-                  heldMargin.current = null;
-                  field.onBlur();
-                }}
-              />
-            )}
-          </UbField>
-          <UbField
-            name="margin"
-            label={t('items.form.margin.label')}
-            placeholder={t('items.form.margin.placeholder')}
-            hint={marginHint}
-          >
-            {(field) => (
-              <>
-                <UbQuantityInput
+        <UbDisclosure
+          label={t('items.form.section.cost')}
+          /* Starts open when the item already has a cost; forced open if a cost
+             or margin error lands inside it, since an error nobody can see is one
+             nobody can fix. Collapsible otherwise. */
+          defaultOpen={Boolean(getValues('purchasePrice'))}
+          open={Boolean(formState.errors.purchasePrice || formState.errors.margin) || undefined}
+        >
+          <UbGrid columns={{ base: 1, sm: 2 }} gap={3}>
+            <UbField
+              name="purchasePrice"
+              label={t('items.form.purchasePrice.label')}
+              placeholder={t('items.form.price.placeholder')}
+              hint={t('items.form.purchasePrice.hint')}
+            >
+              {(field) => (
+                <UbMoneyInput
                   {...field}
-                  value={field.value as string}
-                  decimals={1}
-                  signed
-                  unit="%"
-                  disabled={!hasCost}
+                  onFocus={() => {
+                    heldMargin.current = getValues('margin');
+                  }}
                   onChange={(next) => {
                     field.onChange(next);
-                    follow('margin');
+                    follow('cost');
                   }}
                   onBlur={() => {
-                    follow('marginDone');
+                    heldMargin.current = null;
                     field.onBlur();
                   }}
                 />
-                {hasCost && isBelowCost(margin || null) && (
-                  <UbText variant="caption" tone="warning">
-                    {t('items.form.margin.belowCost')}
-                  </UbText>
-                )}
-              </>
-            )}
-          </UbField>
-        </UbGrid>
+              )}
+            </UbField>
+            <UbField
+              name="margin"
+              label={t('items.form.margin.label')}
+              placeholder={t('items.form.margin.placeholder')}
+              hint={marginHint}
+            >
+              {(field) => (
+                <>
+                  <UbQuantityInput
+                    {...field}
+                    value={field.value as string}
+                    decimals={1}
+                    signed
+                    unit="%"
+                    disabled={!hasCost}
+                    onChange={(next) => {
+                      field.onChange(next);
+                      follow('margin');
+                    }}
+                    onBlur={() => {
+                      follow('marginDone');
+                      field.onBlur();
+                    }}
+                  />
+                  {hasCost && isBelowCost(margin || null) && (
+                    <UbText variant="caption" tone="warning">
+                      {t('items.form.margin.belowCost')}
+                    </UbText>
+                  )}
+                </>
+              )}
+            </UbField>
+          </UbGrid>
+        </UbDisclosure>
       )}
     </>
   );

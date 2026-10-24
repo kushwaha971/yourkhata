@@ -11,10 +11,12 @@ import {
   UbButton,
   UbChoiceChips,
   UbCombobox,
+  UbConfirmDialog,
   UbDateInput,
   UbDisclosure,
   UbField,
   UbForm,
+  UbLink,
   UbMoneyInput,
   UbQuantityInput,
   UbSelect,
@@ -27,6 +29,7 @@ import {
 } from 'src/design-system';
 import { usePagedSearch } from 'src/hooks/usePagedSearch';
 import { useTranslation } from 'src/hooks/useTranslation';
+import { itemPath } from 'src/routes';
 import { comboPaging } from 'src/utils/searchPaging';
 
 import { lookupItemByBarcode } from '../api/itemService';
@@ -189,19 +192,32 @@ export function ItemFormDrawer({
   );
 
   // ── Barcode duplicate check (FR-11) ───────────────────────────────────────
-  const [barcodeHint, setBarcodeHint] = useState<{ tone: 'ok' | 'taken'; text: string } | null>(
-    null
-  );
+  const [barcodeHint, setBarcodeHint] = useState<{
+    tone: 'ok' | 'taken';
+    text: string;
+    takenId?: string;
+  } | null>(null);
   const checkBarcode = useCallback(async () => {
     const code = getValues('barcode').trim();
     if (code.length < 4) return;
     const hit = await lookupItemByBarcode(code).catch(() => null);
     if (hit && hit.id !== editing?.id) {
-      setBarcodeHint({ tone: 'taken', text: t('items.form.barcode.taken', { name: hit.name }) });
+      setBarcodeHint({
+        tone: 'taken',
+        text: t('items.form.barcode.taken', { name: hit.name }),
+        takenId: hit.id,
+      });
     } else {
       setBarcodeHint({ tone: 'ok', text: t('items.form.barcode.available') });
     }
   }, [getValues, editing, t]);
+
+  // ── Leave without saving? (States) ────────────────────────────────────────
+  const [confirmLeave, setConfirmLeave] = useState(false);
+  const requestClose = useCallback(() => {
+    if (formState.isDirty) setConfirmLeave(true);
+    else close();
+  }, [formState.isDirty, close, setConfirmLeave]);
 
   const taxOptions = useMemo(
     () =>
@@ -258,13 +274,13 @@ export function ItemFormDrawer({
   return (
     <UbDrawer
       open={open}
-      onOpenChange={(next) => (next ? undefined : close())}
+      onOpenChange={(next) => (next ? undefined : requestClose())}
       title={isEdit ? t('items.form.title.edit') : t('items.form.title.new')}
       closeLabel={t('common.action.close')}
       dismissOnBackdrop={!formState.isDirty}
       footer={
         <>
-          <UbButton variant="secondary" onClick={close} disabled={isSaving}>
+          <UbButton variant="secondary" onClick={requestClose} disabled={isSaving}>
             {t('common.action.cancel')}
           </UbButton>
           <UbButton
@@ -353,24 +369,6 @@ export function ItemFormDrawer({
 
         <ItemPriceFields canSeeCost={canSeeCost} gst={gst} />
 
-        <UbField
-          name="categoryId"
-          label={t('items.form.category.label')}
-          placeholder={t('items.form.category.placeholder')}
-        >
-          {(field) => (
-            <UbCombobox
-              {...field}
-              value={field.value as string}
-              options={masters.categoryOptions}
-              searchPlaceholder={t('items.form.category.search')}
-              emptyLabel={t('items.form.category.empty')}
-              onCreate={masters.canWrite ? createCategoryInline : undefined}
-              createLabel={(text) => t('items.form.createInline', { text })}
-            />
-          )}
-        </UbField>
-
         <UbDisclosure
           label={t('items.form.section.tax')}
           open={Boolean(formState.errors.hsnSac || formState.errors.taxCode) || undefined}
@@ -421,20 +419,6 @@ export function ItemFormDrawer({
                   setHsnHint(null);
                 }}
                 options={taxOptions}
-              />
-            )}
-          </UbField>
-          <UbField
-            name="taxInclusiveSelling"
-            label={t('items.form.taxInclusive.label')}
-            controlOwnsLabel
-          >
-            {(field) => (
-              <UbSwitch
-                id={field.id}
-                checked={Boolean(field.value)}
-                onCheckedChange={field.onChange}
-                label={t('items.form.taxInclusive.label')}
               />
             )}
           </UbField>
@@ -587,6 +571,34 @@ export function ItemFormDrawer({
               )}
             </UbField>
           )}
+          {barcodeHint?.tone === 'taken' && barcodeHint.takenId && (
+            <UbLink href={itemPath(barcodeHint.takenId)} variant="caption">
+              {t('items.form.barcode.open')}
+            </UbLink>
+          )}
+        </UbDisclosure>
+
+        <UbDisclosure
+          label={t('items.form.section.category')}
+          open={Boolean(formState.errors.categoryId) || undefined}
+        >
+          <UbField
+            name="categoryId"
+            label={t('items.form.category.label')}
+            placeholder={t('items.form.category.placeholder')}
+          >
+            {(field) => (
+              <UbCombobox
+                {...field}
+                value={field.value as string}
+                options={masters.categoryOptions}
+                searchPlaceholder={t('items.form.category.search')}
+                emptyLabel={t('items.form.category.empty')}
+                onCreate={masters.canWrite ? createCategoryInline : undefined}
+                createLabel={(text) => t('items.form.createInline', { text })}
+              />
+            )}
+          </UbField>
         </UbDisclosure>
 
         <UbDisclosure label={t('items.form.section.more')}>
@@ -599,6 +611,20 @@ export function ItemFormDrawer({
           </UbField>
         </UbDisclosure>
       </UbForm>
+      <UbConfirmDialog
+        open={confirmLeave}
+        onOpenChange={setConfirmLeave}
+        title={t('items.form.leave.title')}
+        description={t('items.form.leave.body')}
+        confirmLabel={t('items.form.leave.confirm')}
+        cancelLabel={t('items.form.leave.stay')}
+        closeLabel={t('common.action.close')}
+        destructive
+        onConfirm={() => {
+          setConfirmLeave(false);
+          close();
+        }}
+      />
     </UbDrawer>
   );
 }

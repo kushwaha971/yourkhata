@@ -173,3 +173,17 @@ Earlier mobile manual/arrow-pager matrix acceptance is superseded. Existing desk
 | Offline state | code path only | unproven |
 | Speed vs 0dea7c1 | page open 933 → 904 ms at 4x CPU | unchanged |
 | Competitor comparison | none | unproven |
+
+### Item form · 24 Oct 2026 (09 §8.3, R-DEC-34)
+
+| Requirement | Evidence | Status |
+|---|---|---|
+| Fast path order; Includes GST beside the price | e2e/item-form.mjs; ItemPriceFields.test.tsx | passed |
+| Cost and margin, Category folded; no cost fold without permission | e2e/item-form.mjs; ItemPriceFields.test.tsx | passed |
+| Margin from cost; 100% refused in words | e2e/item-form.mjs | passed |
+| Used barcode links to its item | e2e/item-form.mjs | passed |
+| Leave without saving on a dirty Cancel | e2e/item-form.mjs | passed (new) |
+| Save creates the item on the server | e2e/item-form.mjs read-back | passed |
+| No sideways scroll or cut text, Save target ≥ 44 px, EN and HI | e2e/item-form.mjs at 390/320/1280 | passed |
+| Drawer-open speed | no harness | unproven |
+| Competitor comparison | none | unproven |

@@ -1050,6 +1050,7 @@
     "sharedApp": 114.4
   },
   "//routes": [
+    "24 Oct 2026, 09 \u00a78.3 item form: /stock/low route chunk (73.6) and /reset-password first load (294.1) went over by less than 0.05 KB after the item form gained the leave-without-saving dialog, the barcode Open it link and one more fold; raised to measured + 0.3.",
     "24 Oct 2026 (09 \u00a78.2 item detail): /items/[id] route 109.9 KB and first load 351.5 KB, +0.3 KB each \u2014 the movement words (movementView), the history chips (UbChoiceChips) and the failed-tab retry. /set-password first load measured 293.0x KB against 293 (over by less than 0.05 KB, the shell's rounding); its route chunk fell, cause of the shell drift not traced. Each raised to measured + 0.3.",
     "23 Oct 2026 (revamp \u00a76 purchase detail): /purchases/{bills,orders,debit-notes}/[id] +0.5 KB for the Something's-wrong chooser (UbActionSheet), the delete-draft confirm and the payment drawer launcher moving onto the page; /onboarding/step/[n] +0.5 KB with no source change of its own \u2014 shared-chunk regrouping, cause not isolated. Raised to measured + 0.3.",
     "23 Oct 2026, R-DEC-33 purchase registers on a phone: /purchases/orders, /purchases/debit-notes at most 0.1 KB over from the append slice and UbLoadMore under the cards. Raised to measured + 0.3.",
@@ -1602,7 +1603,7 @@
       "firstLoad": 351.8
     },
     "/stock/low": {
-      "route": 73.6,
+      "route": 73.9,
       "firstLoad": 315.3
     },
     "/expenses": {
@@ -1763,7 +1764,7 @@
     },
     "/reset-password": {
       "route": 52.6,
-      "firstLoad": 294.1
+      "firstLoad": 294.4
     },
     "/forgot-password": {
       "route": 52,
