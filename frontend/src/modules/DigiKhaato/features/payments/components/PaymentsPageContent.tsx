@@ -1,25 +1,26 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 
 import dynamic from 'next/dynamic';
 
-import { ArrowDownLeft, ArrowUpRight, Plus } from 'lucide-react';
+import { Plus } from 'lucide-react';
 
-import { SummaryStatGrid } from 'src/components/stats/SummaryStatGrid';
 import {
   UbButton,
-  UbDateRangePicker,
+  UbChoiceChips,
   UbEmptyState,
   UbFilterSelect,
   UbFilterSheet,
+  UbLoadMore,
   UbPageHeader,
   UbPageHeaderMobileActions,
   UbPageShell,
+  UbPeriodSelect,
   UbSearchInput,
   UbStack,
-  UbStatCard,
-  UbTabs,
+  UbViewportPageShell,
+  useMediaQuery,
 } from 'src/design-system';
 import type { UbFilterSpec, UbFilterValues } from 'src/design-system';
 import {
@@ -30,13 +31,12 @@ import {
   type UbGridState,
 } from 'src/design-system/UbDataGrid';
 import { useAppRouter } from 'src/hooks/useAppRouter';
-import { useDebounce } from 'src/hooks/useDebounce';
+import { useCommittedSearch } from 'src/hooks/useCommittedSearch';
 import { useOpenOnAddQuery } from 'src/hooks/useOpenOnAddQuery';
 import { usePermissions } from 'src/hooks/usePermissions';
 import { useTranslation } from 'src/hooks/useTranslation';
 import { ROUTES } from 'src/routes';
 import { PAYMENT_MODES, type PaymentMode } from 'src/types/domain.types';
-import { formatInr } from 'src/utils/money';
 
 import {
   DEFAULT_PAYMENT_PRESET,
@@ -47,6 +47,7 @@ import { usePaymentList } from '../hooks/usePaymentList';
 import { isNarrowed } from '../view-model/paymentDisplay';
 
 import { createPaymentColumns } from './PaymentColumns';
+import { PaymentListStats } from './PaymentListStats';
 
 import type { PaymentContext, PaymentRow, PaymentTab } from '../types/payment.types';
 
@@ -60,29 +61,37 @@ const SEARCH_DEBOUNCE_MS = 300;
 const ALL = 'all';
 
 /**
- * PAY-01 FR-10 — `/payments`: every receipt and voucher, filtered by period,
- * mode and search, with money in and money out totalled over the FILTERED set
- * (voids never counted — that money did not move). Tabs All · Received · Paid
- * out · Void (PAY-05 FR-8 keeps voids visible, struck through). A row opens
- * the receipt page, where it prints, shares and voids.
+ * 08 §9 / PAY-01 FR-10 — `/payments`: every Shop receipt and supplier payment,
+ * filtered by period, mode and search, with money in and money out totalled
+ * over the FILTERED set (cancelled ones never counted — that money did not
+ * move). Chips All · Received · Paid out · Cancelled (PAY-05 FR-8 keeps them
+ * visible, struck through). A row opens the receipt, where it prints, shares
+ * and is cancelled. The register fits the viewport (R-DEC-30): a phone scrolls
+ * one joined card list with the next page appended (R-DEC-33), a desktop table
+ * pages inside its own frame.
  */
 export function PaymentsPageContent(): React.JSX.Element {
   const { t } = useTranslation();
   const router = useAppRouter();
   const { can, hasModule } = usePermissions();
-  const list = usePaymentList();
   const tier = useGridTier();
+  const phone = tier === 'cards';
+  const list = usePaymentList(phone ? 'append' : 'replace');
   const [drawer, setDrawer] = useState<PaymentContext | null>(null);
   const canWrite = hasModule('payments') && can('payments.payment.write');
 
-  const [search, setSearch] = useState(list.filters.q);
-  const debounced = useDebounce(search, SEARCH_DEBOUNCE_MS);
   const { setQuery, filters } = list;
-  useEffect(() => {
-    if (debounced.trim() !== filters.q.trim()) setQuery(debounced);
-  }, [debounced, filters.q, setQuery]);
+  const [search, setSearch] = useCommittedSearch(filters.q, setQuery, SEARCH_DEBOUNCE_MS);
 
-  const columns = useMemo(() => createPaymentColumns({ t }), [t]);
+  /* Below 1280 px the table sits beside the sidebar: a full Date column cut
+     the date to "24/10/202" and split PAYOUT numbers across two lines at
+     1024, so the date joins the number under the name, as on the bills
+     register. */
+  const wide = useMediaQuery('(min-width: 1280px)');
+  const columns = useMemo(
+    () => createPaymentColumns({ t, isCards: phone, isCompact: !wide }),
+    [t, phone, wide]
+  );
   const openDrawer = useCallback(() => setDrawer({ direction: 'in', entry: 'list' }), []);
   useOpenOnAddQuery(openDrawer, canWrite);
 
@@ -112,14 +121,11 @@ export function PaymentsPageContent(): React.JSX.Element {
   const { refetch, clearFilters, error } = list;
   const emptyStates = useMemo<UbDataGridEmptyStates>(
     () => ({
+      /* The grid's "empty" is a quiet PERIOD: the business has payments (the
+         empty book is handled above the grid), just none in these dates. */
       firstUse: {
         title: t('payments.empty.first'),
         description: t('payments.empty.firstBody'),
-        action: canWrite ? (
-          <UbButton icon={<Plus className="h-4 w-4" aria-hidden />} onClick={openDrawer}>
-            {t('payments.record.title')}
-          </UbButton>
-        ) : undefined,
       },
       filtered: {
         title: t('payments.empty.filtered'),
@@ -142,7 +148,7 @@ export function PaymentsPageContent(): React.JSX.Element {
         ),
       },
     }),
-    [t, canWrite, openDrawer, clearFilters, error, refetch]
+    [t, clearFilters, error, refetch]
   );
 
   const gridState: UbGridState =
@@ -202,7 +208,6 @@ export function PaymentsPageContent(): React.JSX.Element {
      filter that found nothing keeps its controls; only a business with no
      payment at all is reduced to the empty card. */
   const emptyBook = list.status === 'succeeded' && list.rows.length === 0 && list.hasAny === false;
-  const phone = tier === 'cards';
   const modeSpec: UbFilterSpec = {
     kind: 'single',
     key: 'mode',
@@ -210,16 +215,9 @@ export function PaymentsPageContent(): React.JSX.Element {
     anyLabel: t('payments.filter.allModes'),
     options: modeOptions.filter((option) => option.value !== ALL),
   };
-  /* On a phone: the search and ONE Filters button holding the tabs, the
-     period and the mode; each default reads as "no filter". */
+  /* On a phone: the search and ONE Filters button holding the period and the
+     mode; the chips stay visible, as on the bills register (R-DEC-33). */
   const phoneSpecs: UbFilterSpec[] = [
-    {
-      kind: 'single',
-      key: 'tab',
-      label: t('payments.tab.label'),
-      anyLabel: t('payments.tab.all'),
-      options: tabs.filter((tab) => tab.value !== 'all'),
-    },
     {
       kind: 'single',
       key: 'preset',
@@ -241,7 +239,6 @@ export function PaymentsPageContent(): React.JSX.Element {
   ];
   const custom = filters.preset === 'custom';
   const phoneValues: UbFilterValues = {
-    tab: filters.tab === 'all' ? '' : filters.tab,
     preset: filters.preset === DEFAULT_PAYMENT_PRESET || custom ? '' : filters.preset,
     dateFrom: custom ? filters.dateFrom : '',
     dateTo: custom ? filters.dateTo : '',
@@ -251,7 +248,6 @@ export function PaymentsPageContent(): React.JSX.Element {
     const ranged = Boolean(next.dateFrom || next.dateTo);
     list.applyFilters({
       ...filters,
-      tab: (next.tab || 'all') as PaymentTab,
       preset: ranged ? 'custom' : ((next.preset || DEFAULT_PAYMENT_PRESET) as PaymentPreset),
       dateFrom: next.dateFrom || filters.dateFrom,
       dateTo: next.dateTo || filters.dateTo,
@@ -264,26 +260,9 @@ export function PaymentsPageContent(): React.JSX.Element {
       onChange={setSearch}
       placeholder={t('payments.search.placeholder')}
       aria-label={t('payments.search.label')}
-      className={phone ? 'min-w-0 flex-1' : 'w-56'}
+      className={phone ? 'min-w-0 flex-1' : 'w-72'}
     />
   );
-  const stats =
-    totals && list.rows.length > 0 ? (
-      <SummaryStatGrid storageKey="payments">
-        <UbStatCard
-          icon={<ArrowDownLeft className="h-4 w-4" aria-hidden />}
-          label={t('payments.total.in')}
-          value={formatInr(totals.amountIn)}
-          subtext={t('payments.total.count', { count: totals.countIn })}
-        />
-        <UbStatCard
-          icon={<ArrowUpRight className="h-4 w-4" aria-hidden />}
-          label={t('payments.total.out')}
-          value={formatInr(totals.amountOut)}
-          subtext={t('payments.total.count', { count: totals.countOut })}
-        />
-      </SummaryStatGrid>
-    ) : null;
   const grid = (
     <UbDataGrid
       rows={list.rows}
@@ -303,121 +282,167 @@ export function PaymentsPageContent(): React.JSX.Element {
       }}
       onPageChange={list.setPage}
       onRowOpen={openRow}
+      resetScrollOnPageChange={!phone}
+      scrollResetKey={JSON.stringify([
+        filters.q,
+        filters.tab,
+        filters.mode,
+        filters.dateFrom,
+        filters.dateTo,
+      ])}
+      busy={list.status === 'refreshing'}
+      footer={phone ? null : undefined}
+      afterRows={
+        phone && gridState === 'rows' && list.page * list.pageSize < list.total ? (
+          <UbLoadMore
+            loading={list.status === 'loading' || list.status === 'refreshing'}
+            automatic={list.status !== 'failed'}
+            repeatWhileVisible={false}
+            loadingLabel={t('common.search.loadingMore')}
+            moreLabel={t(
+              list.status === 'failed' ? 'common.action.retry' : 'common.search.showMore'
+            )}
+            className={list.status === 'failed' ? 'pb-20' : undefined}
+            onLoadMore={() => {
+              if (list.status === 'failed') list.refetch();
+              else if (list.status === 'succeeded') list.setPage(list.page + 1);
+            }}
+          />
+        ) : undefined
+      }
       cardAvatar={false}
+      cardLayout="stacked"
+      variant="register"
+      fillHeight
     />
   );
+  const receive = canWrite && !emptyBook;
   return (
-    <UbPageShell>
+    <UbViewportPageShell>
       <UbPageHeader
         title={t('payments.title')}
         primaryAction={
-          canWrite &&
-          !emptyBook && (
+          receive && (
             <UbButton
               icon={<Plus className="h-4 w-4" aria-hidden />}
               iconOnly="mobile"
               onClick={openDrawer}
               data-testid="payment-add"
             >
-              {t('payments.record.title')}
+              {t('payments.list.receive')}
             </UbButton>
           )
         }
-        /* docs/mobile-redesign (A3) — on a phone: a worded ⋯ sheet and the
-           primary action as the floating button. Desktop is unchanged. */
+        /* R-DEC-33: on a phone the main action stays in the compact title row,
+           never above the cards. */
         renderMobileActions={(actions) => (
           <UbPageHeaderMobileActions
             actions={actions}
             mobile={{
               menuLabel: t('common.action.moreActions'),
               closeLabel: t('common.action.close'),
-              // The empty book's one button is in the middle of the screen.
-              primary:
-                canWrite && !emptyBook
-                  ? {
-                      label: t('payments.record.title'),
-                      icon: <Plus className="h-6 w-6" aria-hidden />,
-                      onClick: openDrawer,
-                    }
-                  : undefined,
+              primaryPlacement: 'header',
+              primary: receive
+                ? {
+                    label: t('payments.list.receive'),
+                    icon: <Plus className="h-6 w-6" aria-hidden />,
+                    onClick: openDrawer,
+                  }
+                : undefined,
             }}
           />
         )}
       />
-      <UbStack gap={4} data-testid="payments-screen">
+      <UbStack
+        gap={3}
+        className="min-h-0 flex-1 !shrink max-md:gap-2 max-md:[@media(max-height:640px)]:gap-1"
+        data-testid="payments-screen"
+      >
         {emptyBook ? (
           /* Owner, 12 Oct 2026: an empty book is one sentence and one button —
-             no period, ₹0 totals, tabs or search over nothing. */
+             no period, ₹0 totals, chips or search over nothing. */
           <UbEmptyState
             variant="firstUse"
-            title={emptyStates.firstUse.title}
-            description={emptyStates.firstUse.description}
-            action={emptyStates.firstUse.action}
+            title={t('payments.empty.book')}
+            description={t('payments.empty.bookBody')}
+            action={
+              canWrite ? (
+                <UbButton icon={<Plus className="h-4 w-4" aria-hidden />} onClick={openDrawer}>
+                  {t('payments.list.receive')}
+                </UbButton>
+              ) : undefined
+            }
           />
-        ) : phone ? (
-          <>
-            <UbStack direction="row" gap={2} align="center">
-              {searchBox}
-              <UbFilterSheet
-                compact
-                specs={phoneSpecs}
-                values={phoneValues}
-                onApply={applyPhone}
-                labels={{
-                  title: t('common.filters.title'),
-                  apply: t('common.action.apply'),
-                  reset: t('common.action.reset'),
-                  close: t('common.action.close'),
-                }}
-              />
-            </UbStack>
-            {stats}
-            {grid}
-          </>
         ) : (
           <>
-            <UbDateRangePicker<PaymentPreset>
-              presets={presets}
-              preset={filters.preset as PaymentPreset}
-              onPresetChange={list.setPreset}
-              customPreset="custom"
-              from={filters.dateFrom}
-              to={filters.dateTo}
-              onRangeChange={list.setRange}
-              max={list.today}
-              name="payment-period"
-              labels={{
-                presets: t('expenses.period.label'),
-                from: t('expenses.period.from'),
-                to: t('expenses.period.to'),
-                apply: t('common.action.apply'),
-                close: t('common.action.close'),
-              }}
-              end={
-                <UbFilterSelect
-                  spec={modeSpec}
-                  value={filters.mode ?? ''}
-                  onChange={(value) => list.setMode(value ? (value as PaymentMode) : null)}
-                  closeLabel={t('common.action.close')}
-                />
-              }
-            />
-            {stats}
-            <UbTabs<PaymentTab>
-              value={filters.tab}
-              onValueChange={list.setTab}
-              tabs={tabs}
-              ariaLabel={t('payments.tab.label')}
-              layout="fit"
-              trailing={searchBox}
+            <UbStack
+              direction="row"
+              align="center"
+              className="flex-wrap gap-3"
+              data-testid="payment-register-toolbar"
             >
-              {grid}
-            </UbTabs>
+              {searchBox}
+              {phone ? (
+                <UbFilterSheet
+                  compact
+                  specs={phoneSpecs}
+                  values={phoneValues}
+                  onApply={applyPhone}
+                  labels={{
+                    title: t('common.filters.title'),
+                    apply: t('common.action.apply'),
+                    reset: t('common.action.reset'),
+                    close: t('common.action.close'),
+                  }}
+                />
+              ) : (
+                <>
+                  <UbPeriodSelect<PaymentPreset>
+                    presets={presets}
+                    value={filters.preset as PaymentPreset}
+                    customValue="custom"
+                    from={filters.dateFrom}
+                    to={filters.dateTo}
+                    max={list.today}
+                    onChange={(preset, from, to) => {
+                      if (preset === 'custom' && from && to) list.setRange(from, to);
+                      else list.setPreset(preset);
+                    }}
+                    labels={{
+                      period: t('expenses.period.label'),
+                      from: t('expenses.period.from'),
+                      to: t('expenses.period.to'),
+                      apply: t('common.action.apply'),
+                      close: t('common.action.close'),
+                    }}
+                  />
+                  <UbFilterSelect
+                    spec={modeSpec}
+                    value={filters.mode ?? ''}
+                    onChange={(value) => list.setMode(value ? (value as PaymentMode) : null)}
+                    closeLabel={t('common.action.close')}
+                  />
+                </>
+              )}
+            </UbStack>
+            <UbChoiceChips<PaymentTab>
+              value={filters.tab}
+              onChange={list.setTab}
+              options={tabs}
+              ariaLabel={t('payments.tab.label')}
+              className="flex-nowrap overflow-x-auto py-1.5 [&>button]:shrink-0"
+            />
+            {/* Cancelled payments are never counted, so their tab has no totals:
+                "Received · 0 payments ₹0.00" over a list of them read as a fault. */}
+            {totals && list.rows.length > 0 && filters.tab !== 'void' && (
+              <PaymentListStats totals={totals} />
+            )}
+            {grid}
           </>
         )}
       </UbStack>
 
       {drawer && <PaymentFormDrawerLazy context={drawer} onClose={() => setDrawer(null)} />}
-    </UbPageShell>
+    </UbViewportPageShell>
   );
 }

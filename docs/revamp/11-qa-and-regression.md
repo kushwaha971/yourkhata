@@ -247,3 +247,18 @@ Earlier mobile manual/arrow-pager matrix acceptance is superseded. Existing desk
 | Speed vs dcaddbc | 4x CPU: phone list 1,004 → 939 ms, phone detail 1,042 → 1,188, desktop list 978 → 975, desktop detail 1,175 → 1,131 | phone detail slower (recorded) |
 | Bill lines start from the list's rate | unchanged bill editor | kept, not re-run |
 | Competitor comparison | none | unproven |
+
+### Payments register · 24 Oct 2026 (08 §9, R-DEC-34)
+
+| Requirement | Evidence | Status |
+|---|---|---|
+| Shop money only (C-3: Library fees and Lending money were listed) | PaymentsPageContent.test.tsx; e2e/payments-register.mjs asserts `bucket=shop` on every request | passed (fixed) |
+| Received and Paid out figures equal the server's Shop totals | e2e/payments-register.mjs | passed |
+| Phone joins the next page; desktop pages; page itself never scrolls | page test; e2e at 390/320/1024/1280 | passed |
+| Cancelled chip asks for cancelled Shop payments; each card says Cancelled | e2e (records and cancels a ₹1 QA receipt) | passed |
+| Receipt number search finds it; card and row open the receipt | e2e | passed |
+| No clipped, split or cut text, chips 32/44 px, EN/HI | e2e (now measures text against its clipping box) | passed |
+| Money in green, money out plain ink | page test | passed (fixed) |
+| Speed vs dcaddbc | 4x CPU, n=24: phone 1,218 → 1,248 ms, desktop 918 → 1,028 | desktop slower (recorded) |
+| Stale, offline, no-permission states | unchanged, not re-run | not re-proven |
+| Competitor comparison | none | unproven |

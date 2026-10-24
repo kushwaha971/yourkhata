@@ -4,12 +4,13 @@ import { resetAllFeatureState } from 'src/redux/actions';
 import { acceptInvalidation } from 'src/redux/invalidation/listener';
 import { rootReducer, type RootState } from 'src/redux/store';
 import type { ApiErrorShape, RequestStatus } from 'src/types/api.types';
+import { mergePageRows } from 'src/utils/mergePageRows';
 
 import { PAYMENT_PAGE_SIZE } from '../constants/paymentConstants';
 
 import { fetchPayments } from './paymentThunk';
 
-import type { PaymentFilters, PaymentRow, PaymentTotals } from '../types/payment.types';
+import type { PaymentListArg, PaymentRow, PaymentTotals } from '../types/payment.types';
 
 /**
  * Part 19 §19.3.2 Shape B — the payments list. Route-local, so it is injected
@@ -25,7 +26,9 @@ export interface PaymentListState {
   status: RequestStatus;
   error: ApiErrorShape | null;
   /** The filters the rows on screen answer — the late-response guard's key. */
-  filters: PaymentFilters | null;
+  filters: PaymentListArg | null;
+  /** The latest request; an older reply for the same filters is not allowed to win. */
+  requestId: string | null;
   stale: boolean;
   staleUrgency: 'now' | 'next-mount' | null;
 }
@@ -40,43 +43,69 @@ const initialState: PaymentListState = {
   status: 'idle',
   error: null,
   filters: null,
+  requestId: null,
   stale: false,
   staleUrgency: null,
 };
 
-const sameFilters = (a: PaymentFilters | null, b: PaymentFilters): boolean =>
+const sameFilters = (
+  a: PaymentListArg | null,
+  b: PaymentListArg,
+  ignorePage = false
+): boolean =>
   !!a &&
   a.dateFrom === b.dateFrom &&
   a.dateTo === b.dateTo &&
   a.tab === b.tab &&
   a.mode === b.mode &&
   a.q === b.q &&
-  a.page === b.page;
+  (a.bucket ?? null) === (b.bucket ?? null) &&
+  (ignorePage || a.page === b.page) &&
+  (a.listMode ?? 'replace') === (b.listMode ?? 'replace');
+
+/** R-DEC-33 — a phone's next page of the same question, joined to the cards shown. */
+const isAppend = (arg: PaymentListArg): boolean => arg.listMode === 'append' && arg.page > 1;
 
 const paymentListSlice = createSlice({
   name: 'paymentList',
   initialState,
   reducers: {
     /** Rows AND totals clear together: a total over last month's rows is never true. */
-    paymentFiltersChanged(state, action: PayloadAction<PaymentFilters>) {
+    paymentFiltersChanged(state, action: PayloadAction<PaymentListArg>) {
       if (sameFilters(state.filters, action.payload)) return;
-      state.filters = action.payload as Draft<PaymentFilters>;
-      state.rows = [];
-      state.totals = null;
-      state.status = 'loading';
+      // A phone's next page keeps the cards above it and their totals.
+      const appending =
+        isAppend(action.payload) &&
+        sameFilters(state.filters, action.payload, true) &&
+        state.rows.length > 0;
+      state.filters = action.payload as Draft<PaymentListArg>;
+      if (!appending) {
+        state.rows = [];
+        state.totals = null;
+      }
+      state.status = appending ? 'refreshing' : 'loading';
       state.error = null;
     },
   },
   extraReducers: (builder) => {
     acceptInvalidation<PaymentListState>('paymentList')(builder);
     builder
-      .addCase(fetchPayments.pending, (state) => {
+      .addCase(fetchPayments.pending, (state, action) => {
+        state.requestId = action.meta.requestId;
         state.status = state.rows.length > 0 ? 'refreshing' : 'loading';
         state.error = null;
       })
       .addCase(fetchPayments.fulfilled, (state, action) => {
-        if (!sameFilters(state.filters, action.meta.arg)) return;
-        state.rows = action.payload.rows as Draft<PaymentRow>[];
+        if (
+          state.requestId !== action.meta.requestId ||
+          !sameFilters(state.filters, action.meta.arg)
+        )
+          return;
+        state.rows = (
+          isAppend(action.meta.arg)
+            ? mergePageRows(state.rows, action.payload.rows)
+            : action.payload.rows
+        ) as Draft<PaymentRow>[];
         state.totals = action.payload.totals as Draft<PaymentTotals>;
         state.hasAny = action.payload.hasAny ?? null;
         state.page = action.payload.page;
@@ -87,7 +116,12 @@ const paymentListSlice = createSlice({
         state.staleUrgency = null;
       })
       .addCase(fetchPayments.rejected, (state, action) => {
-        if (action.meta.aborted) return;
+        if (
+          action.meta.aborted ||
+          state.requestId !== action.meta.requestId ||
+          !sameFilters(state.filters, action.meta.arg)
+        )
+          return;
         state.status = 'failed';
         state.error = (action.payload ?? null) as Draft<ApiErrorShape> | null;
       })

@@ -243,6 +243,12 @@ export interface PaymentFilters {
   readonly page: number;
 }
 
+/** The list request: the filters, plus how a phone shows the next page. */
+export interface PaymentListArg extends PaymentFilters {
+  /** R-DEC-33 — `append` joins the next page to the cards shown; a table replaces. */
+  readonly listMode?: 'replace' | 'append';
+}
+
 export interface PaymentTotals {
   readonly count: number;
   /** Recorded payments of each direction — what each money card counts (QA P-D6). */

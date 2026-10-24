@@ -30,7 +30,13 @@ import { fetchPayments } from '../redux/paymentThunk';
 import { paymentFiltersFromQuery, paymentQueryFromFilters } from '../view-model/paymentDisplay';
 
 import type { PaymentPreset } from '../constants/paymentConstants';
-import type { PaymentFilters, PaymentRow, PaymentTab, PaymentTotals } from '../types/payment.types';
+import type {
+  PaymentFilters,
+  PaymentListArg,
+  PaymentRow,
+  PaymentTab,
+  PaymentTotals,
+} from '../types/payment.types';
 
 /**
  * Part 19 §19.4 — everything the payments list does, so the page only renders.
@@ -61,7 +67,21 @@ export interface UsePaymentListResult {
   readonly refetch: () => void;
 }
 
-export const usePaymentList = (): UsePaymentListResult => {
+/**
+ * 08 §9 C-3 / DEC-019 — `/payments` is the Shop's register, so it asks for the
+ * Shop's bucket. Without it the Library's fee receipts and Lending's
+ * disbursements were listed and totalled as Shop money (measured on the QA
+ * book: 10,492 payments shown, 7,515 of them the Shop's).
+ */
+const REGISTER_BUCKET = 'shop' as const;
+
+/**
+ * `append` is a phone's card list (R-DEC-33): the next page joins the cards
+ * already shown instead of replacing them. A desktop table pages by replacement.
+ */
+export const usePaymentList = (
+  listMode: 'replace' | 'append' = 'replace'
+): UsePaymentListResult => {
   const dispatch = useAppDispatch();
   const router = useAppRouter();
   const search = useSearchParams();
@@ -90,18 +110,23 @@ export const usePaymentList = (): UsePaymentListResult => {
     [queryString, today]
   );
 
+  const query = useMemo<PaymentListArg>(
+    () => ({ ...filters, bucket: REGISTER_BUCKET, listMode }),
+    [filters, listMode]
+  );
+
   useEffect(() => {
     if (!canRead) return undefined;
-    dispatch(paymentFiltersChanged(filters));
-    const promise = dispatch(fetchPayments(filters));
+    dispatch(paymentFiltersChanged(query));
+    const promise = dispatch(fetchPayments(query));
     return () => promise.abort();
-  }, [dispatch, canRead, filters]);
+  }, [dispatch, canRead, query]);
 
   useEffect(() => {
     if (!stale || isImpaired || !canRead) return undefined;
-    const promise = dispatch(fetchPayments(filters));
+    const promise = dispatch(fetchPayments(query));
     return () => promise.abort();
-  }, [stale, isImpaired, canRead, dispatch, filters]);
+  }, [stale, isImpaired, canRead, dispatch, query]);
 
   const push = useCallback(
     (next: PaymentFilters) => {
@@ -163,8 +188,8 @@ export const usePaymentList = (): UsePaymentListResult => {
     [push, filters]
   );
   const refetch = useCallback(() => {
-    void dispatch(fetchPayments(filters));
-  }, [dispatch, filters]);
+    void dispatch(fetchPayments(query));
+  }, [dispatch, query]);
 
   return useMemo(
     () => ({

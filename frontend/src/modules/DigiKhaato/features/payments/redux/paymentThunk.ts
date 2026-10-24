@@ -10,8 +10,8 @@ import type {
   Payment,
   PaymentBucket,
   PaymentDirection,
-  PaymentFilters,
   PaymentFormValues,
+  PaymentListArg,
   PaymentPage,
   PaymentSaveResult,
 } from '../types/payment.types';
@@ -30,7 +30,7 @@ const service = () => import('../api/paymentService');
 type Reject = { rejectValue: ApiErrorShape };
 
 /** QUERY. One page of the payments list with its filtered totals. */
-export const fetchPayments = createAsyncThunk<PaymentPage, PaymentFilters, Reject>(
+export const fetchPayments = createAsyncThunk<PaymentPage, PaymentListArg, Reject>(
   'paymentList/fetchPayments',
   async (filters, { signal, rejectWithValue }) => {
     try {

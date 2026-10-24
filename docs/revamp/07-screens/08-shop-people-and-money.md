@@ -288,7 +288,7 @@ Tracking: problems — duplicate success feedback; no "changed elsewhere" check;
 | Must keep | totals over the filtered set; voids visible and struck (PAY-05 FR-8); filters in the URL. |
 | Fewer taps | search by receipt number finds a receipt in one step. |
 
-Tracking: problems — C-3, jargon "Void" · dependencies — two-app seed check · risks — low · approval — pending · build — not started · tests — payments e2e (new harness or journey extension), `bucket=shop` network assertion · outcome — —
+Tracking: problems — C-3 (confirmed on the QA book and fixed), jargon "Void" (now Cancelled) · dependencies — two-app seed check (done: the QA book has Shop, Library and Lending payments) · risks — low · approval — proceeded under R-DEC-34 (owner: continue without stopping) · build — delivered 24 Oct (Shop bucket, R-DEC-33 mobile register, chips, words, money colours; chips visible instead of inside Filters, date instead of time on cards, recorded) · tests — `e2e/payments-register.mjs` 55/55, `PaymentsPageContent.test.tsx` · outcome — docs/performance/2026-10-24-payments-register.md
 
 ## 10. Payment receipt · `/payments/[id]`
 

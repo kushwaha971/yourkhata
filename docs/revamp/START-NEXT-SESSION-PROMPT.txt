@@ -351,7 +351,16 @@ rate; "usual price" wording everywhere. Found in the A/B: UbDataGrid held every
 desktop table behind its skeleton for React's 300 ms Suspense minimum; it now
 renders a loaded table directly (GridTable, preloadGridTable). Phone detail
 opens about 150 ms slower (bigger route chunk); recorded.
-1. Payments, then Expenses, then Reports; approved Home workflows LAST.
+DONE 24 Oct: Payments register §9 (report docs/performance/2026-10-24-payments-register.md;
+e2e/payments-register.mjs 55/55). The Shop's /payments listed Library fee
+receipts and Lending money as Shop payments (C-3, verified on the QA book); it
+now asks for bucket=shop. Mobile register (joined cards, scroll-next), chips
+All/Received/Paid out/Cancelled, "Void" is "Cancelled", Quick Sale for no
+name, money in green and out plain ink (it was red/green the wrong way round),
+date joined under the number below 1280. Desktop opens ~40-230 ms slower at
+4x CPU; recorded.
+1. Payments: receipt page §10 (with cancel §10.1 and share §10.2), then the
+   Receive payment drawer §6; then Expenses, Reports; approved Home LAST.
 
 ## LATEST CHECKPOINT —23 October2026 (owner requested commit/push)
 
