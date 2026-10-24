@@ -8,9 +8,9 @@ import { Archive, ArchiveRestore, PackageMinus, Pencil } from 'lucide-react';
 
 import {
   UbButton,
+  UbChoiceChips,
   UbConfirmDialog,
   UbEmptyState,
-  UbGrid,
   UbInfoRow,
   UbPageHeader,
   UbPageHeaderMobileActions,
@@ -21,8 +21,7 @@ import {
   UbSectionHeading,
   UbSelect,
   UbStack,
-  UbStatusBadge,
-  UbTabs,
+  UbStatusBanner,
   UbText,
 } from 'src/design-system';
 import { usePermissions } from 'src/hooks/usePermissions';
@@ -34,10 +33,10 @@ import { formatQuantity } from 'src/utils/quantity';
 import { useItemDetail } from '../hooks/useItemDetail';
 import { useItemForm } from '../hooks/useItemForm';
 import { useStockAdjustment } from '../hooks/useStockAdjustment';
+import { formatSignedQuantity } from '../view-model/itemDisplay';
 import { isBelowCost, itemMargin } from '../view-model/itemPricing';
 
 import { ItemMovementList } from './ItemMovementList';
-import { StockBadge } from './StockBadge';
 
 import type { MovementType } from '../types/item.types';
 
@@ -73,9 +72,15 @@ const TYPE_FILTERS: readonly (MovementType | 'all')[] = [
 
 /**
  * INV-03 — "how much do I have, what is it worth, and where did it go?" for
- * one item: the stock card (on hand, average, value = qty × average), the
- * pricing card, and the movement ledger with its source links, newest arrival
- * first. Actions: Edit, Adjust stock, Archive / Restore.
+ * one item, in 09 §8.2's order: stock now → price → what moved it.
+ *
+ * Phone: the stock in words, large ("318 NOS in stock", "Low below 20"), then
+ * Adjust stock · Edit ON the page (they were behind ⋯), the price panel with
+ * the margin (permission only, a below-cost margin said in words and warning
+ * tone), and the history as chips: Movements · Sales · Purchases, each loading
+ * on its own tap and failing on its own. The header's ⋯ keeps Edit and
+ * Archive / Restore. Desktop: header actions, stock and price on the left,
+ * the history on the right.
  */
 export function ItemDetailPageContent({ id }: Readonly<{ id: string }>): React.JSX.Element {
   const { t } = useTranslation();
@@ -84,7 +89,7 @@ export function ItemDetailPageContent({ id }: Readonly<{ id: string }>): React.J
   const adjustment = useStockAdjustment();
   const [confirm, setConfirm] = useState<'archive' | 'restore' | null>(null);
   const [busy, setBusy] = useState(false);
-  const { item, can } = detail;
+  const { item, can, impaired } = detail;
   const perms = usePermissions();
   const [tab, setTab] = useState<ItemTab | null>(null);
 
@@ -124,16 +129,19 @@ export function ItemDetailPageContent({ id }: Readonly<{ id: string }>): React.J
   const archived = item.status === 'archived';
   const tracked = item.trackStock && item.itemType === 'goods';
   const margin = itemMargin(item);
-  const stock = item.stock[0];
   const unit = item.unit.code;
+  const canAdjust = !archived && tracked && can.adjust;
+  const canEdit = !archived && can.write;
+  const canOpenModule = (module: 'sales' | 'purchases'): boolean =>
+    module === 'sales'
+      ? perms.hasModule('sales') && perms.can('sales.invoice.read')
+      : perms.hasModule('purchases') && perms.can('purchases.bill.read');
 
   const showMovements = tracked && can.stock;
   const tabs = [
-    ...(showMovements ? [{ value: 'movements' as const, label: t('items.detail.movements') }] : []),
-    ...(perms.hasModule('sales') && perms.can('sales.invoice.read')
-      ? [{ value: 'sales' as const, label: t('items.trade.tab.sales') }]
-      : []),
-    ...(perms.hasModule('purchases') && perms.can('purchases.bill.read')
+    ...(showMovements ? [{ value: 'movements' as const, label: t('items.detail.movementsTab') }] : []),
+    ...(canOpenModule('sales') ? [{ value: 'sales' as const, label: t('items.trade.tab.sales') }] : []),
+    ...(canOpenModule('purchases')
       ? [{ value: 'purchases' as const, label: t('items.trade.tab.purchases') }]
       : []),
   ];
@@ -155,13 +163,9 @@ export function ItemDetailPageContent({ id }: Readonly<{ id: string }>): React.J
   );
   const movementsSection = (
     <UbStack gap={3}>
-      {tabs.length > 1 ? (
-        <UbStack direction="row" justify="end">
-          {typeSelect}
-        </UbStack>
-      ) : (
-        <UbSectionHeading title={t('items.detail.movements')} aside={typeSelect} />
-      )}
+      <UbStack direction="row" justify="end">
+        {typeSelect}
+      </UbStack>
       <ItemMovementList
         movements={detail.movements}
         unitCode={unit}
@@ -169,8 +173,10 @@ export function ItemDetailPageContent({ id }: Readonly<{ id: string }>): React.J
         hasMore={detail.hasMore}
         onLoadMore={detail.loadMore}
         onOpenSource={(sourceId) => adjustment.view(sourceId)}
+        canOpenModule={canOpenModule}
+        onRetry={detail.retryMovements}
         emptyAction={
-          can.adjust && !archived ? (
+          canAdjust ? (
             <UbButton variant="secondary" onClick={() => adjustment.openFor([item])}>
               {t('items.detail.adjust')}
             </UbButton>
@@ -187,208 +193,154 @@ export function ItemDetailPageContent({ id }: Readonly<{ id: string }>): React.J
     if (ok) setConfirm(null);
   };
 
+  const editButton = canEdit && (
+    <UbButton
+      variant="secondary"
+      icon={<Pencil className="h-4 w-4" aria-hidden />}
+      onClick={() => itemForm.openEdit(item)}
+      disabled={impaired}
+    >
+      {t('items.detail.edit')}
+    </UbButton>
+  );
+  const archiveButton = can.archive && (
+    <UbButton
+      variant="secondary"
+      icon={
+        archived ? (
+          <ArchiveRestore className="h-4 w-4" aria-hidden />
+        ) : (
+          <Archive className="h-4 w-4" aria-hidden />
+        )
+      }
+      onClick={() => setConfirm(archived ? 'restore' : 'archive')}
+      disabled={impaired}
+    >
+      {archived ? t('items.detail.restore') : t('items.detail.archive')}
+    </UbButton>
+  );
+  const adjustButton = (className?: string) =>
+    canAdjust && (
+      <UbButton
+        icon={<PackageMinus className="h-4 w-4" aria-hidden />}
+        onClick={() => adjustment.openFor([item])}
+        disabled={impaired}
+        className={className}
+        data-testid="item-adjust"
+      >
+        {t('items.detail.adjust')}
+      </UbButton>
+    );
+
   return (
     <UbPageShell>
       <UbPageHeader
         title={item.name}
+        wrapTitle
         subtitle={[item.sku, item.category?.name].filter(Boolean).join(' · ')}
-        /* docs/mobile-redesign (A3) — on a phone these actions are a worded ⋯ sheet. */
-        renderMobileActions={(actions) => (
-          <UbPageHeaderMobileActions
-            actions={actions}
-            mobile={{
-              menuLabel: t('common.action.moreActions'),
-              closeLabel: t('common.action.close'),
-            }}
-          />
-        )}
+        /* 09 §8.2 — on a phone the ⋯ keeps Edit and Archive / Restore; Adjust stock
+           and Edit are on the page itself, under the stock they change. */
+        renderMobileActions={() =>
+          editButton || archiveButton ? (
+            <UbPageHeaderMobileActions
+              actions={
+                <>
+                  {editButton}
+                  {archiveButton}
+                </>
+              }
+              mobile={{
+                menuLabel: t('common.action.moreActions'),
+                closeLabel: t('common.action.close'),
+              }}
+            />
+          ) : null
+        }
         actions={
           <>
-            {!archived && can.write && (
-              <UbButton
-                variant="secondary"
-                icon={<Pencil className="h-4 w-4" aria-hidden />}
-                iconOnly="mobile"
-                onClick={() => itemForm.openEdit(item)}
-              >
-                {t('items.detail.edit')}
-              </UbButton>
-            )}
-            {!archived && tracked && can.adjust && (
-              <UbButton
-                icon={<PackageMinus className="h-4 w-4" aria-hidden />}
-                iconOnly="mobile"
-                onClick={() => adjustment.openFor([item])}
-                data-testid="item-adjust"
-              >
-                {t('items.detail.adjust')}
-              </UbButton>
-            )}
-            {can.archive && (
-              <UbButton
-                variant="secondary"
-                icon={
-                  archived ? (
-                    <ArchiveRestore className="h-4 w-4" aria-hidden />
-                  ) : (
-                    <Archive className="h-4 w-4" aria-hidden />
-                  )
-                }
-                iconOnly="mobile"
-                onClick={() => setConfirm(archived ? 'restore' : 'archive')}
-              >
-                {archived ? t('items.detail.restore') : t('items.detail.archive')}
-              </UbButton>
-            )}
+            {adjustButton()}
+            {editButton}
+            {archiveButton}
           </>
         }
       />
 
       <UbStack gap={4} data-testid="item-detail-screen">
-        <UbStack direction="row" gap={2} wrap>
-          {archived && <UbStatusBadge tone="neutral" label={t('items.status.archived')} />}
-          <UbStatusBadge tone="info" label={t(`items.form.type.${item.itemType}`)} />
-          <StockBadge status={item.stockStatus} onHand={item.onHand} unitCode={unit} />
-        </UbStack>
-
-        <UbGrid columns={{ base: 1, lg: 2 }} gap={4}>
-          <UbPanel>
-            <UbPanelSection title={t('items.detail.stock.title')}>
-              {tracked && stock ? (
-                <UbStack gap={2}>
-                  <UbText
-                    variant="metric-xl"
-                    className="ds-num"
-                    tone={stock.onHand.startsWith('-') ? 'error' : 'primary'}
-                  >
-                    {formatQuantity(stock.onHand, unit)}
-                  </UbText>
-                  {can.stock && can.valuation && stock.avgCost !== null && (
-                    <>
-                      <UbInfoRow
-                        label={t('items.detail.avgCost')}
-                        value={formatInr(stock.avgCost)}
-                      />
-                      <UbInfoRow
-                        variant="total"
-                        label={t('items.detail.value')}
-                        value={formatInr(stock.value)}
-                      />
-                      <UbText variant="caption" tone="tertiary" className="ds-num">
-                        {t('items.detail.valueHint', {
-                          qty: formatQuantity(stock.onHand, unit),
-                          cost: formatInr(stock.avgCost),
-                        })}
-                      </UbText>
-                    </>
-                  )}
-                  <UbInfoRow
-                    label={t('items.detail.reorderPoint')}
-                    value={item.reorderPoint ? formatQuantity(item.reorderPoint, unit) : '—'}
-                  />
-                  {item.opening && (
-                    <UbText variant="caption" tone="tertiary">
-                      {can.valuation
-                        ? t('items.detail.opening', {
-                            qty: formatQuantity(item.opening.qty, unit),
-                            cost: formatInr(item.opening.unitCost ?? '0'),
-                            date: formatBusinessDate(item.opening.movementDate),
-                          })
-                        : t('items.detail.openingQty', {
-                            qty: formatQuantity(item.opening.qty, unit),
-                            date: formatBusinessDate(item.opening.movementDate),
-                          })}
-                    </UbText>
-                  )}
-                </UbStack>
-              ) : (
-                <UbStack gap={2}>
-                  <UbText variant="body-sm" tone="muted">
-                    {t('items.detail.notTracked')}
-                  </UbText>
-                  {item.itemType === 'goods' && can.write && can.adjust && !archived && (
-                    <UbButton variant="secondary" size="sm" onClick={() => itemForm.openEdit(item)}>
-                      {t('items.detail.enableTracking')}
-                    </UbButton>
-                  )}
-                </UbStack>
-              )}
-            </UbPanelSection>
-          </UbPanel>
-
-          <UbPanel>
-            <UbPanelSection title={t('items.detail.pricing.title')}>
-              <UbStack gap={2}>
-                <UbInfoRow
-                  label={t('items.form.sellingPrice.label')}
-                  value={formatInr(item.sellingPrice)}
-                />
-                {can.valuation && item.purchasePrice !== null && (
-                  <UbInfoRow
-                    label={t('items.form.purchasePrice.label')}
-                    value={formatInr(item.purchasePrice)}
-                  />
-                )}
-                {can.valuation && margin !== null && (
-                  <UbInfoRow
-                    label={t('items.detail.margin')}
-                    value={t(
-                      isBelowCost(margin)
-                        ? 'items.detail.marginBelowCost'
-                        : 'items.detail.marginValue',
-                      { margin }
-                    )}
-                  />
-                )}
-                {item.mrp && (
-                  <UbInfoRow label={t('items.form.mrp.label')} value={formatInr(item.mrp)} />
-                )}
-                <UbInfoRow
-                  label={t('items.form.tax.label')}
-                  value={
-                    item.taxRate
-                      ? t('items.detail.taxLine', {
-                          name: item.taxRate.name,
-                          hsn: item.hsnSac ?? '—',
-                        })
-                      : item.taxCode
-                  }
-                />
-                {item.taxRate && !item.taxRate.isCurrent && (
-                  <UbText variant="caption" tone="warning">
-                    {t('items.form.tax.legacy', {
-                      date: formatBusinessDate(item.taxRate.effectiveTo ?? ''),
-                    })}
-                  </UbText>
-                )}
-                {item.barcode && (
-                  <UbInfoRow label={t('items.form.barcode.label')} value={item.barcode} />
-                )}
-                <UbInfoRow
-                  label={t('items.form.unit.label')}
-                  value={`${item.unit.code} — ${item.unit.name}`}
-                />
-              </UbStack>
-            </UbPanelSection>
-          </UbPanel>
-        </UbGrid>
-
-        {tabs.length > 1 ? (
-          <UbTabs<ItemTab>
-            value={active}
-            onValueChange={setTab}
-            tabs={tabs}
-            ariaLabel={t('items.trade.tabs')}
-            layout="fit"
-          >
-            {active === 'movements' && movementsSection}
-            {active !== 'movements' && (
-              <ItemTradePanel key={active} itemId={item.id} side={active} unitCode={unit} />
-            )}
-          </UbTabs>
-        ) : (
-          showMovements && movementsSection
+        {archived && (
+          <UbStatusBanner
+            tone="warning"
+            title={t('items.detail.archivedBanner')}
+            action={
+              can.archive ? (
+                <UbButton
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => setConfirm('restore')}
+                  disabled={impaired}
+                >
+                  {t('items.detail.restore')}
+                </UbButton>
+              ) : undefined
+            }
+          />
         )}
+        {impaired && (
+          <UbText variant="caption" tone="warning" data-testid="item-offline">
+            {t('items.detail.offline')}
+          </UbText>
+        )}
+
+        <UbStack className="gap-4 lg:grid lg:grid-cols-[minmax(0,380px)_minmax(0,1fr)] lg:items-start">
+          <UbStack gap={4}>
+            <ItemStockPanel
+              item={item}
+              can={can}
+              onEnableTracking={() => itemForm.openEdit(item)}
+            />
+
+            {(canAdjust || canEdit) && (
+              <UbStack
+                className="grid grid-cols-2 gap-2 lg:hidden"
+                data-testid="item-primary-actions"
+              >
+                {adjustButton(canEdit ? 'min-h-11' : 'col-span-2 min-h-11')}
+                {canEdit && (
+                  <UbButton
+                    variant="secondary"
+                    icon={<Pencil className="h-4 w-4" aria-hidden />}
+                    onClick={() => itemForm.openEdit(item)}
+                    disabled={impaired}
+                    className={canAdjust ? 'min-h-11' : 'col-span-2 min-h-11'}
+                  >
+                    {t('items.detail.edit')}
+                  </UbButton>
+                )}
+              </UbStack>
+            )}
+
+            <ItemPricePanel item={item} margin={margin} valuation={can.valuation} />
+          </UbStack>
+
+          {tabs.length > 0 && (
+            <UbStack gap={3} data-testid="item-history">
+              {tabs.length > 1 ? (
+                <UbChoiceChips<ItemTab>
+                  value={active}
+                  onChange={setTab}
+                  options={tabs}
+                  ariaLabel={t('items.trade.tabs')}
+                  className="shrink-0 flex-nowrap overflow-x-auto py-1.5 [&>button]:shrink-0"
+                />
+              ) : (
+                <UbSectionHeading title={t('items.detail.history')} />
+              )}
+              {active === 'movements' && movementsSection}
+              {active !== 'movements' && (
+                <ItemTradePanel key={active} itemId={item.id} side={active} unitCode={unit} />
+              )}
+            </UbStack>
+          )}
+        </UbStack>
       </UbStack>
 
       <UbConfirmDialog
@@ -407,5 +359,183 @@ export function ItemDetailPageContent({ id }: Readonly<{ id: string }>): React.J
       {adjustment.open && <StockAdjustmentDrawer adjustment={adjustment} />}
       {adjustment.viewingId && <AdjustmentDetailDialog canAdjust={can.adjust} />}
     </UbPageShell>
+  );
+}
+
+type Detail = ReturnType<typeof useItemDetail>;
+type DetailItem = NonNullable<Detail['item']>;
+
+/**
+ * The stock block: how many, in words and large, and when it counts as low.
+ * Several locations are listed one per line; a service says it has no stock;
+ * goods whose stock is not tracked offer to start tracking it. The valuation
+ * rows are `reports.financial.read` only (internal cost is never shown without it).
+ */
+function ItemStockPanel({
+  item,
+  can,
+  onEnableTracking,
+}: Readonly<{
+  item: DetailItem;
+  can: Detail['can'];
+  onEnableTracking: () => void;
+}>): React.JSX.Element {
+  const { t } = useTranslation();
+  const unit = item.unit.code;
+  const tracked = item.trackStock && item.itemType === 'goods';
+  const stock = item.stock[0];
+  const total = item.onHand ?? stock?.onHand ?? null;
+
+  if (!tracked || !total) {
+    return (
+      <UbPanel data-testid="item-stock">
+        <UbPanelSection title={t('items.detail.stock.title')}>
+          <UbStack gap={2}>
+            <UbText variant="body-sm" tone="muted">
+              {item.itemType === 'service' ? t('items.detail.service') : t('items.detail.notTracked')}
+            </UbText>
+            {item.itemType === 'goods' && can.write && can.adjust && item.status !== 'archived' && (
+              <UbButton variant="secondary" size="sm" onClick={onEnableTracking}>
+                {t('items.detail.enableTracking')}
+              </UbButton>
+            )}
+          </UbStack>
+        </UbPanelSection>
+      </UbPanel>
+    );
+  }
+
+  const negative = total.trim().startsWith('-');
+  const out = item.stockStatus === 'out';
+  const low = item.stockStatus === 'low';
+  const headline = negative
+    ? t('items.stock.outNegative', { qty: formatSignedQuantity(total, unit) })
+    : out
+      ? t('items.stock.out')
+      : t('items.detail.inStock', { qty: formatQuantity(total, unit) });
+
+  return (
+    <UbPanel data-testid="item-stock">
+      <UbPanelSection title={t('items.detail.stock.title')}>
+        <UbStack gap={2}>
+          <UbText
+            variant="metric-xl"
+            className="ds-num break-words"
+            tone={out || negative ? 'error' : 'primary'}
+            data-testid="item-stock-figure"
+          >
+            {headline}
+          </UbText>
+          {item.reorderPoint && (
+            <UbText variant="body-sm" tone={low ? 'warning' : 'tertiary'} className="ds-num">
+              {low ? `${t('items.stock.low')} · ` : ''}
+              {t('items.detail.lowBelow', { qty: formatQuantity(item.reorderPoint, unit) })}
+            </UbText>
+          )}
+          {item.stock.length > 1 &&
+            item.stock.map((row) => (
+              <UbInfoRow
+                key={row.location.id}
+                label={row.location.name}
+                value={formatQuantity(row.onHand, unit)}
+              />
+            ))}
+          {can.stock && can.valuation && stock && stock.avgCost !== null && (
+            <>
+              <UbInfoRow label={t('items.detail.avgCost')} value={formatInr(stock.avgCost)} />
+              <UbInfoRow
+                variant="total"
+                label={t('items.detail.value')}
+                value={formatInr(stock.value)}
+              />
+            </>
+          )}
+        </UbStack>
+      </UbPanelSection>
+    </UbPanel>
+  );
+}
+
+/**
+ * The price panel: the usual price with how GST applies to it, then — with
+ * `reports.financial.read` only — the purchase price and the margin, read from
+ * the two prices at the item's GST (`itemMargin`, never stored). A margin
+ * below cost is said in words AND warning tone. The tax and code facts follow.
+ */
+function ItemPricePanel({
+  item,
+  margin,
+  valuation,
+}: Readonly<{ item: DetailItem; margin: string | null; valuation: boolean }>): React.JSX.Element {
+  const { t } = useTranslation();
+  const rate = item.taxRate ? `${Number(item.taxRate.rate)}%` : null;
+  const below = isBelowCost(margin);
+  return (
+    <UbPanel data-testid="item-price">
+      <UbPanelSection title={t('items.detail.pricing.title')}>
+        <UbStack gap={2}>
+          <UbInfoRow
+            variant="total"
+            label={t('items.detail.usualPrice')}
+            value={formatInr(item.sellingPrice)}
+          />
+          {rate && (
+            <UbText variant="caption" tone="tertiary" className="-mt-1 text-right">
+              {t(item.taxInclusiveSelling ? 'items.detail.inclGst' : 'items.detail.plusGst', {
+                rate,
+              })}
+            </UbText>
+          )}
+          {valuation && item.purchasePrice !== null && (
+            <UbInfoRow
+              label={t('items.form.purchasePrice.label')}
+              value={formatInr(item.purchasePrice)}
+            />
+          )}
+          {valuation && margin !== null && (
+            <UbInfoRow
+              label={t('items.detail.margin')}
+              value={
+                <UbText
+                  as="span"
+                  variant="body-sm-medium"
+                  tone={below ? 'warning' : 'primary'}
+                  className="ds-num"
+                  data-testid="item-margin"
+                >
+                  {t(below ? 'items.detail.marginBelowCost' : 'items.detail.marginValue', {
+                    margin,
+                  })}
+                </UbText>
+              }
+            />
+          )}
+          {item.mrp && <UbInfoRow label={t('items.form.mrp.label')} value={formatInr(item.mrp)} />}
+          <UbInfoRow
+            label={t('items.form.tax.label')}
+            value={
+              item.taxRate
+                ? t('items.detail.taxLine', {
+                    name: item.taxRate.name,
+                    hsn: item.hsnSac ?? '—',
+                  })
+                : item.taxCode
+            }
+          />
+          {item.taxRate && !item.taxRate.isCurrent && (
+            <UbText variant="caption" tone="warning">
+              {t('items.form.tax.legacy', {
+                date: formatBusinessDate(item.taxRate.effectiveTo ?? ''),
+              })}
+            </UbText>
+          )}
+          {item.barcode && <UbInfoRow label={t('items.form.barcode.label')} value={item.barcode} />}
+          <UbInfoRow
+            label={t('items.form.unit.label')}
+            value={`${item.unit.code} — ${item.unit.name}`}
+          />
+        </UbStack>
+      </UbPanelSection>
+    </UbPanel>
   );
 }

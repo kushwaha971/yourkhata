@@ -297,3 +297,30 @@ remain stable through paging; distinguish same-day drafts and format long
 Hindi/phone labels. No new customer/supplier balance or cross-module identity.
 Rollback: omit the two new optional read fields and the timestamp caption.
 This does not block approved purchase detail and return work.
+
+## BP-19 · Name the document behind each stock movement
+
+Proposed 24 Oct 2026 for 09 §8.2; **built on branch `bp-19-movement-sources`,
+not merged to `dev`, awaiting owner approval.** The item page's history is meant
+to read "Sold on INV-0418", "Bought on PB-0012", "PB-0012 cancelled" and open
+that document. `GET /items/{id}/movements` names only stock adjustments
+(`source.number`); a sale or purchase row has `number: null` and no kind, so the
+client cannot say which bill moved the stock or where to link.
+
+- **Touches**: `GET /items/{id}` (recent rows) and `GET /items/{id}/movements`
+  only. Additive: a sale/purchase row's `source` gains `number` (was null),
+  `kind` and `status`; adjustment and opening rows keep exactly their three keys.
+- **How**: an inventory resolver registry (`apps/inventory/selectors/sources.py`)
+  in the same shape as the khata's (`apps/ledger/selectors/sources.py`);
+  `sales` and `purchases` register the SAME resolver functions they already
+  register for the khata. Inventory imports neither (the import matrix holds).
+  One query per source type per page; no money travels.
+- **Risk**: low. Tenant scope comes from the movement rows already filtered;
+  the resolvers look ids up by primary key only. A viewer without the module's
+  read permission still sees the number but the client does not link it.
+- **Tests**: `test_an_items_movements_name_and_link_the_bill_that_moved_them`
+  (fails before, passes after); inventory, purchases, sales and architecture
+  suites green; `e2e/item-detail.mjs` checks the named, linked rows when the
+  server has the fields and the plain fallback when it has not.
+- **Rollback**: do not merge, or revert the one commit; the client already
+  falls back to the movement type with no link.

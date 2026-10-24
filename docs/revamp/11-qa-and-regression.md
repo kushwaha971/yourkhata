@@ -158,3 +158,18 @@ Earlier mobile manual/arrow-pager matrix acceptance is superseded. Existing desk
 | Desktop pager in reach | contract 1280 | passed (regression fixed) |
 | Speed vs 925b2b3 | 4x CPU list open slower, round 1 heavy | open |
 | Competitor comparison | none | unproven |
+
+### Item detail · 24 Oct 2026 (09 §8.2, R-DEC-34)
+
+| Requirement | Evidence | Status |
+|---|---|---|
+| Phone order, no cut text, 44 px actions, EN and HI | e2e/item-detail.mjs at 390/320/1280 × goods/service/archived | passed |
+| Adjust stock from the page; server on-hand and the page agree | e2e/item-detail.mjs journey | passed |
+| ⋯ → Edit opens its drawer (17 Oct capture-phase defect) | e2e/item-detail.mjs journey | passed |
+| Margin permission-gated; below cost in words | ItemDetailPageContent.test.tsx | passed |
+| A tab failing alone offers Try again | ItemDetailPageContent.test.tsx | passed (was a defect) |
+| Rows name and link their bill | needs BP-19, not on dev | awaiting approval |
+| Several stock locations | QA tenant has one | unproven |
+| Offline state | code path only | unproven |
+| Speed vs 0dea7c1 | page open 933 → 904 ms at 4x CPU | unchanged |
+| Competitor comparison | none | unproven |

@@ -178,9 +178,16 @@ DONE 24 Oct: Items list on a phone §8.1 (report
 docs/performance/2026-10-24-items-phone-register.md; cards 69%). OPEN: list
 open at 4x CPU slower (round 1 heavy, both sizes). Deviations awaiting owner:
 no kind disc and no category on the phone card.
-1. Rest of Stock: item detail §8.2 (Adjust stock on the page), item form §8.3,
-   adjustment §8.4, low stock/summary §8.7 (Order from a low row), masters and
-   price lists; then Payments, Expenses, Reports; approved Home workflows LAST.
+DONE 24 Oct: Item detail §8.2 (report docs/performance/2026-10-24-item-detail.md;
+e2e/item-detail.mjs 94/94; opening the page unchanged: 933 -> 904 ms at 4x CPU).
+AWAITING OWNER: BP-19 (the server naming the sale/purchase document behind a
+stock movement, so a row reads "Bought on PB-0012" and links to it) is built and
+tested on branch `bp-19-movement-sources` and is NOT on dev; without it the rows
+say their type and link nowhere. Deviations recorded: desktop Archive is a button
+not a ⋯; history chips use UbChoiceChips, not the landing page's UbChipTabs.
+1. Rest of Stock: item form §8.3, adjustment §8.4, low stock/summary §8.7
+   (Order from a low row), masters and price lists; then Payments, Expenses,
+   Reports; approved Home workflows LAST.
 
 ## LATEST CHECKPOINT —23 October2026 (owner requested commit/push)
 

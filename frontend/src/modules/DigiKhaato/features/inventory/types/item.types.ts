@@ -111,6 +111,10 @@ export interface StockMovement {
     readonly type: string;
     readonly id: string | null;
     readonly number: string | null;
+    /** A sale or purchase document's kind (`invoice`, `purchase_bill`, …), when resolved. */
+    readonly kind?: string;
+    /** That document's status (`void` once cancelled), when resolved. */
+    readonly status?: string;
   };
   readonly reversesId: string | null;
   readonly isBackdated: boolean;
