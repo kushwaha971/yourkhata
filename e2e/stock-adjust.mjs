@@ -9,7 +9,7 @@
  *  * LOOKs at 390, 320 and 1280 in English and Hindi with Counted chosen and a
  *    count typed: no sideways scroll, every text node inside its box, reason
  *    chips 32 px visible with a ≥ 44 px target on a phone, Save ≥ 44 px on a
- *    phone, a 640 px drawer on a desktop;
+ *    phone, a 900 px drawer with the line table on a desktop;
  *  * Save with no reason is refused in words, nothing posted;
  *  * Counted → "Set to" 17: After reads 17, the consequence reads −₹1,140.00,
  *    Save; the server says 17, and the snackbar's View opens that adjustment;
@@ -124,6 +124,7 @@ try {
           chipTarget: target(chip),
           save: target(save),
           width: Math.round(panel.width),
+          layout: dialog.querySelector('[data-testid=line-items-editor]')?.dataset.layout ?? '',
           consequence: dialog.querySelector('[data-testid=adjust-consequence]')?.textContent ?? '',
         };
       });
@@ -135,7 +136,10 @@ try {
         check(`${tag}: reason chip target ≥ 44 px`, m.chipTarget >= 44, `${m.chipTarget}`);
         check(`${tag}: Save target ≥ 44 px`, m.save >= 44, `${m.save}`);
       } else {
-        check(`${tag}: the drawer is 640 px`, Math.abs(m.width - 640) <= 2, `${m.width}`);
+        /* Owner, 24 Oct: "do whatever is best" — the drawer is as wide as the
+           line table needs, so a desktop gets the table rather than phone cards. */
+        check(`${tag}: the drawer is 900 px`, Math.abs(m.width - 900) <= 2, `${m.width}`);
+        check(`${tag}: a desktop gets the line table`, m.layout === 'table', m.layout);
       }
       check(`${tag}: the consequence reads a loss of 3 at ₹380`, m.consequence.includes('1,140.00'), m.consequence);
       if (SHOTS) await page.screenshot({ path: `${SHOTS}/counted-${width}-${locale}.png`, fullPage: true });

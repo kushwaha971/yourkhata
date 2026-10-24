@@ -199,7 +199,7 @@ Earlier mobile manual/arrow-pager matrix acceptance is superseded. Existing desk
 | 409 short line says what is available, nothing posted | e2e/stock-adjust.mjs | passed |
 | Offline: Save disabled with a reason | e2e/stock-adjust.mjs | passed (new) |
 | No sideways scroll or cut text; chips 32 px with ≥ 44 px target | e2e/stock-adjust.mjs at 390/320/1280 × EN/HI | passed |
-| 640 px desktop drawer | e2e/stock-adjust.mjs | passed (cards, not table: recorded) |
+| Desktop drawer shows the line table | e2e/stock-adjust.mjs (900 px, table layout) | passed (decided 24 Oct: 900 px, not 640) |
 | After announced to a screen reader | aria-live only | unproven |
 | Speed vs dcaddbc | drawer open 738 → 680 ms phone, 715 → 665 desktop, 4x CPU | unchanged (within noise) |
 | Competitor comparison | none | unproven |

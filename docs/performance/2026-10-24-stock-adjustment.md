@@ -20,7 +20,7 @@ which is how a shopkeeper ends up adding three bags they meant to remove.
 | Per line: On hand · Add / Remove / Set to · Qty · After | 09 §8.4 | unit test "Remove takes an unsigned number…"; harness Set to 17, Add 3, Remove 25 | passed |
 | Consequence above the dock: "2 items · −₹312.00", or "−4 bags" without cost permission | 09 §8.4, §0.4 | unit tests with and without `reports.financial.read`; harness reads −₹1,140.00 | passed |
 | Dock: Save adjustment | 09 §8.4 | harness clicks it by that name | passed |
-| Desktop: 640 px drawer with the line table | 09 §8.4 Desktop | harness measures 640 px | passed for width; see deviation 2 |
+| Desktop: 640 px drawer with the line table | 09 §8.4 Desktop | harness measures 900 px and the table layout | passed; width decided as 900 px, see deviation 2 |
 | Saved → "Stock adjusted · View" → `AdjustmentDetailDialog` | 09 §8.4 Navigation | unit test (action on the snackbar); harness taps View and the saved adjustment opens | passed (new) |
 | 409: every short line marked with what is available | 09 §8.4 States, existing | harness Remove 25 of 20: "Only 20 NOS available", nothing posted | passed |
 | Offline: Save disabled | 09 §8.4 States | harness with the browser offline: caption shown, Save disabled | passed (new) |
@@ -65,15 +65,26 @@ which is how a shopkeeper ends up adding three bags they meant to remove.
    would be a backend change that needs approval. The chips are labelled in
    plain words for what the server stores: Counted, Damaged, Lost or stolen, Own
    use, Other. "Free sample" is not invented.
+   **Decided 24 Oct (owner: "do whatever is best"):** no new reason. A sample
+   given away is recorded as Own use, or Other with a note; adding a reason is a
+   backend change for a case the existing words already cover.
 2. **The desktop line table.** The spec asks for a 640 px drawer AND the line
    table. The adjustment table has seven columns, and their minimum widths come
    to about 728 px. At 640 px the editor shows its card layout instead, the same
-   one a phone uses, so no column is clipped. I kept the explicit 640 px and am
-   recording the conflict rather than choosing a width myself.
+   one a phone uses, so no column is clipped.
+   **Decided 24 Oct (owner: "do whatever is best"):** the table wins. The
+   columns need 848 px including the remove button, gaps and row padding, so
+   the drawer is 900 px on a desktop and shows the table there;
+   `e2e/stock-adjust.mjs` now asserts both (49 of 49). It still falls back to
+   cards wherever the columns do not fit.
 3. **Phone fold.** On a 390×780 phone the reason chips, the date and the note
    fold come before the line. The line's After figure needs a short scroll
    inside the sheet. Folding the note recovered about 80 px; going further would
    mean folding the date the spec lists, so it is left for the owner.
+   **Decided 24 Oct (owner: "do whatever is best"):** the date stays in view.
+   A backdated adjustment changes every figure after it, so the date must be
+   seen before Save, not hidden in a fold; the short scroll to After is the
+   smaller cost. The consequence line above Save already states the result.
 
 ## Found by looking
 
@@ -138,5 +149,5 @@ Not done for this piece; unproven.
 | Function | 8.7 | Live Set to, Add, Remove, the 409 and offline all read back from the server | Screen-reader announcement not checked | Medium-high |
 | Busy shop | 8.6 | One chip sets the mode of every line; no minus sign to type | After figure needs a short scroll on a phone | Medium |
 | UI/UX phone | 8.3 | Measured EN/HI at 320/390 | Line below the fold (deviation 3) | Medium |
-| UI/UX desktop | 8.2 | 640 px drawer | Cards, not the table (deviation 2) | Medium |
+| UI/UX desktop | 8.4 | 900 px drawer with the line table | Wider than the spec's 640 px (deviation 2) | Medium |
 | Performance | 8.2 | Drawer open unchanged to slightly faster at 4x CPU, n=12 a side | Purchase editors +0.8 KB, cause not isolated | Medium |
