@@ -132,6 +132,17 @@ def with_shop_facts(queryset: Any, *, tenant: Any) -> Any:
     return queryset
 
 
+def shop_invoice_ids(*, tenant: Any, party_id: Any) -> set[str]:
+    """BP-08 — the invoices `shop_customer_due` counts for this contact (Shop-origin only), so
+    a settlement allocates to exactly the bills behind the figure the merchant agreed to."""
+    from apps.sales.models import SalesDocument
+
+    rows = SalesDocument.objects.filter(
+        tenant=tenant, party_id=party_id, kind__in=("invoice", "bill_of_supply")
+    ).filter(shop_origin_q())
+    return {str(pk) for pk in rows.values_list("pk", flat=True)}
+
+
 def shop_party_facts(*, tenant: Any, party_id: Any) -> Any:
     from apps.parties.models import Party
 

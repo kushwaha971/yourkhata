@@ -38,7 +38,7 @@ from typing import Any
 from django.db.models import Count, DecimalField, Min, Q, Sum
 from django.db.models.functions import Coalesce
 
-from apps.common.constants import LedgerBucket
+from apps.common.constants import LedgerBucket, PaymentMode
 from apps.common.document_scope import shop_origin_q
 from apps.common.money import ZERO
 from apps.common.overdue import overdue_q
@@ -199,6 +199,12 @@ def _age(since: dt.date | None, today: dt.date, first: dt.date | None = None) ->
     }
 
 
+def _payment_kind(payment: Any) -> str:
+    """BP-08 — half of a Shop settlement is `settlement_in`/`_out` in the register: it is
+    no payment received or made, and "Payment received RCT/…" would say it was."""
+    return "settlement" if (payment.meta or {}).get("context") == "shop_settlement" else "payment"
+
+
 def money_received_today(*, tenant: Any, today: dt.date) -> dict[str, Any]:
     """WP-06 layout A — the Today row's "Money received": the Shop's receipts dated
     today. Not sales (a bill issued and not paid is no money), not a void receipt,
@@ -213,6 +219,8 @@ def money_received_today(*, tenant: Any, today: dt.date) -> dict[str, Any]:
             payment_date=today,
         )
         .exclude(status=VOID)
+        # A4b / BP-08 — an adjustment (a settlement, a deposit applied) moved no money.
+        .exclude(primary_mode=PaymentMode.ADJUSTMENT)
         .aggregate(amount=_sum("amount", Q()), count=Count("id"))
     )
     return {"amount": _money(row["amount"]), "count": row["count"]}
@@ -251,6 +259,7 @@ def period_figures(*, tenant: Any, today: dt.date) -> dict[str, Any]:
     paid_row = (
         Payment.objects.filter(tenant=tenant, bucket=LedgerBucket.SHOP, direction="in")
         .exclude(status=VOID)
+        .exclude(primary_mode=PaymentMode.ADJUSTMENT)
         .aggregate(**paid_aggs)
     )
     return {
@@ -582,7 +591,7 @@ def recent_activity(*, tenant: Any) -> list[dict[str, Any]]:
     for payment in payments.order_by("-created_at", "-id")[:limit]:
         events.append(
             _event(
-                type_=f"payment_{payment.direction}",
+                type_=f"{_payment_kind(payment)}_{payment.direction}",
                 at=payment.created_at,
                 on=payment.payment_date,
                 kind="payment",
@@ -599,7 +608,7 @@ def recent_activity(*, tenant: Any) -> list[dict[str, Any]]:
     ]:
         events.append(
             _event(
-                type_=f"payment_{payment.direction}_void",
+                type_=f"{_payment_kind(payment)}_{payment.direction}_void",
                 at=payment.voided_at,
                 kind="payment",
                 source_id=payment.id,

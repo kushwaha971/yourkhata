@@ -154,6 +154,20 @@ def _balance_line(balance: Decimal, direction: str, words: dict[str, str]) -> st
 def receipt_share_text(payment: Payment, *, locale: str | None = None) -> str:
     """08 §10.2 — the receipt's message; no link until the public page exists (module docstring)."""
     tenant = payment.tenant
+    if (payment.meta or {}).get("context") == "shop_settlement":
+        # BP-08 — half of a settlement: a "Received Rs 600 by adjustment" line and the
+        # contact's COMBINED balance would both mislead. Say what the settlement did.
+        from apps.payments.models import ShopSettlement
+        from apps.payments.services.shop_settlement import settlement_share_text
+
+        settlement = (
+            ShopSettlement.objects.filter(tenant_id=payment.tenant_id)
+            .filter(pk=(payment.meta or {}).get("shop_settlement_id"))
+            .select_related("party", "tenant", "in_payment", "out_payment")
+            .first()
+        )
+        if settlement is not None:
+            return settlement_share_text(settlement, locale=locale)
     locale = locale if locale in ("en", "hi") else message_locale(tenant)
     words = LINES[locale]
     numbers = [row["number"] for row in allocation_details(payment) if row.get("number")]

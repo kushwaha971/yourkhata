@@ -116,6 +116,7 @@ class PaymentDetailSerializer(serializers.ModelSerializer):
     context = serializers.SerializerMethodField()
     business = serializers.SerializerMethodField()
     deposit_pair = serializers.SerializerMethodField()
+    settlement_pair = serializers.SerializerMethodField()
 
     class Meta:
         model = Payment
@@ -145,6 +146,7 @@ class PaymentDetailSerializer(serializers.ModelSerializer):
             "bucket",
             # A4b — the other half of a deposit application, which a void takes with it.
             "deposit_pair",
+            "settlement_pair",
         )
 
     def get_party(self, payment: Payment) -> dict | None:
@@ -193,6 +195,38 @@ class PaymentDetailSerializer(serializers.ModelSerializer):
             "deposit_id": str(application.deposit_id),
             "partner": {"id": str(partner.id), "number": partner.number},
             "voided": application.voided_at is not None,
+        }
+
+    def get_settlement_pair(self, payment: Payment) -> dict | None:
+        """BP-08 — for half of a Shop settlement: the settlement and its other half, so
+        the page says "Settled against …" and the void dialog "This also reverses …".
+        `null` for every payment that is not half of one."""
+        settlement_id = (payment.meta or {}).get("shop_settlement_id")
+        if not settlement_id:
+            return None
+        from apps.payments.models import ShopSettlement
+
+        settlement = (
+            ShopSettlement.objects.filter(tenant_id=payment.tenant_id, pk=settlement_id)
+            .select_related("in_payment", "out_payment")
+            .first()
+        )
+        if settlement is None:
+            return None
+        partner = (
+            settlement.out_payment
+            if settlement.in_payment_id == payment.id
+            else settlement.in_payment
+        )
+        return {
+            "settlement_id": str(settlement.id),
+            "amount": f"{settlement.amount:.2f}",
+            "partner": {
+                "id": str(partner.id),
+                "number": partner.number,
+                "direction": partner.direction,
+            },
+            "voided": settlement.voided_at is not None,
         }
 
     def get_business(self, payment: Payment) -> dict:

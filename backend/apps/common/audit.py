@@ -294,6 +294,9 @@ class AuditAction:
     DEPOSIT_STATUS_CHANGED = "deposit.status_changed"
     #: BR-7 — both halves of an application voided together.
     DEPOSIT_APPLICATION_VOIDED = "deposit.application_voided"
+    # ── BP-08 ── an explicit settlement of a Shop contact's two roles, and its void.
+    SHOP_SETTLEMENT_RECORDED = "shop_settlement.recorded"
+    SHOP_SETTLEMENT_VOIDED = "shop_settlement.voided"
 
     # ── DUE-01 ── the dues engine (contracts §5); later dues tasks add theirs.
     DUES_PLAN_CREATED = "dues.plan.created"

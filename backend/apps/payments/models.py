@@ -332,3 +332,59 @@ class DepositApplication(TenantModel):
 
     def __str__(self) -> str:  # pragma: no cover
         return f"{self.amount} from {self.deposit_id}"
+
+
+class ShopSettlement(TenantModel):
+    """BP-08 (R-DEC-26) — one explicit settlement of a Shop contact's two roles.
+
+    The owner chose separate customer and supplier balances until the merchant
+    settles them (D-03); nothing nets them automatically. A settlement is two
+    `adjustment` payments in the Shop bucket — IN from the contact as a customer,
+    allocated to their open invoices, and OUT to them as a supplier, allocated to
+    their open purchase bills — so every role figure, aging band and document
+    status that reads `amount_due` reconciles with no new reader, and the cash
+    book never counts it (A4b R4). Voiding either half voids both and stamps
+    `voided_at` (`payments.services.void`); the row and both payments stay.
+
+    `before`/`after` keep the two role balances the merchant was shown and what
+    they became, as decimal text, because the audit trail must say what the
+    merchant agreed to, not what a later replay would compute.
+    """
+
+    party = models.ForeignKey(
+        "parties.Party", on_delete=models.RESTRICT, related_name="shop_settlements"
+    )
+    amount = MoneyField()
+    settled_on = models.DateField()
+    note = models.CharField(max_length=200, blank=True, default="")
+    in_payment = models.OneToOneField(
+        Payment, on_delete=models.RESTRICT, related_name="shop_settlement_in"
+    )
+    out_payment = models.OneToOneField(
+        Payment, on_delete=models.RESTRICT, related_name="shop_settlement_out"
+    )
+    before = models.JSONField(default=dict)
+    after = models.JSONField(default=dict)
+    voided_at = models.DateTimeField(null=True, blank=True)
+    voided_by = models.ForeignKey(
+        "platform.User", on_delete=models.SET_NULL, null=True, blank=True, related_name="+"
+    )
+    void_reason = models.CharField(max_length=160, null=True, blank=True)
+
+    class Meta:
+        db_table = "payments_shop_settlement"
+        verbose_name = "shop settlement"
+        verbose_name_plural = "shop settlements"
+        constraints = [
+            models.CheckConstraint(
+                condition=models.Q(amount__gt=0), name="ck_shop_settlement_positive"
+            ),
+        ]
+        indexes = [
+            models.Index(
+                fields=["tenant", "party", "-created_at"], name="ix_shop_settlement_party"
+            ),
+        ]
+
+    def __str__(self) -> str:  # pragma: no cover
+        return f"{self.amount} settled for {self.party_id}"

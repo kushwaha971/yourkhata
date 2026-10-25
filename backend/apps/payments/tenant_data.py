@@ -16,4 +16,6 @@ register(
     # deposit (RESTRICT), so the computed order drains applications first.
     TenantTable("payments.HeldDeposit", export_name="held_deposits.csv"),
     TenantTable("payments.DepositApplication", export_name="deposit_applications.csv"),
+    # ── BP-08 ── a settlement references both of its payments (RESTRICT).
+    TenantTable("payments.ShopSettlement", export_name="shop_settlements.csv"),
 )

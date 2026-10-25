@@ -82,6 +82,10 @@ _REGISTRY: dict[str, tuple[int, bool]] = {
     # BP-16 — one open Shop promise per contact and role; change that one.
     "promise_already_open": (409, False),
     "promise_closed": (409, False),
+    # BP-08 — an explicit customer–supplier settlement, judged at confirm.
+    "settlement_not_dual_role": (409, False),
+    "settlement_over_balance": (409, False),
+    "settlement_balances_changed": (409, False),
     # PTY-04 FR-3's write-off escape — beyond §22.1.1, carried in `CR-LOG`
     # (CR-2026-09-23-A). `nothing_to_write_off` is a client bug made visible (a
     # write-off sent for a party who owes nothing); `balance_changed` is the

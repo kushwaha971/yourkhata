@@ -40,7 +40,7 @@ from typing import Any
 from django.db.models import DateField, DecimalField, ExpressionWrapper, F, Min, Sum
 from django.db.models.functions import Coalesce, TruncDay, TruncMonth, TruncWeek, TruncYear
 
-from apps.common.constants import LedgerBucket
+from apps.common.constants import LedgerBucket, PaymentMode
 from apps.common.document_scope import shop_origin_q
 from apps.common.money import ZERO
 from apps.reports.constants import (
@@ -290,9 +290,13 @@ def money_series(span: _Span) -> tuple[list[Decimal], list[Decimal]]:
 
     # DEC-019 / R-DEC-18 — the Shop's own book, as the Received tile and the
     # cash book read it; expenses below are already `app="shop"`.
-    payments = Payment.objects.filter(
-        tenant=span.tenant, bucket=LedgerBucket.SHOP, **span.between("payment_date")
-    ).exclude(status="void")
+    payments = (
+        Payment.objects.filter(
+            tenant=span.tenant, bucket=LedgerBucket.SHOP, **span.between("payment_date")
+        )
+        .exclude(status="void")
+        .exclude(primary_mode=PaymentMode.ADJUSTMENT)
+    )  # moved no money
     money_in = _series(
         _grouped(payments.filter(direction="in"), "payment_date", "amount", span.group),
         span.starts,

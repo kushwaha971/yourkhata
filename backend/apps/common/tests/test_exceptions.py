@@ -61,7 +61,10 @@ def test_registry_is_closed_and_complete() -> None:
     # ── QA B5 ── +1: `library_plan_no_end` (Renew on a plan with no end date).
     # R-DEC-18 / BP-13 — +2 reload-only actor/business context preconditions (API §22.1.1).
     # BP-16 (R-DEC-26) — +2: `promise_already_open`, `promise_closed` (Shop promises).
-    assert len(REGISTRY) == 220
+    # BP-08 (R-DEC-26) — +3: `settlement_not_dual_role`, `settlement_over_balance`,
+    #           `settlement_balances_changed` (explicit customer–supplier settlement).
+    assert len(REGISTRY) == 223
+    assert REGISTRY["settlement_balances_changed"] == (409, False)
     assert REGISTRY["promise_already_open"] == (409, False)
     assert REGISTRY["promise_closed"] == (409, False)
     assert REGISTRY["session_context_changed"] == (409, False)

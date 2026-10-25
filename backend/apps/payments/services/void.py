@@ -40,6 +40,7 @@ from __future__ import annotations
 from decimal import Decimal
 from typing import Any
 
+from django.core.exceptions import ValidationError as DjangoValidationError
 from django.db import transaction
 from django.db.models import F, Q
 from django.utils import timezone
@@ -109,6 +110,9 @@ def void_payment(*, ctx: Ctx, payment_id: Any, reason: Any) -> dict:
     clean_reason = _validate_reason(reason)
     lock_party_of(tenant=ctx.tenant, rows=Payment.objects.for_tenant(ctx.tenant), pk=payment_id)
     application, partner_id = _deposit_pair(ctx, payment_id)
+    settlement = None
+    if partner_id is None:
+        settlement, partner_id = _settlement_pair(ctx, payment_id)
     locked = _lock_allocated_documents(
         ctx, [payment_id] + ([partner_id] if partner_id is not None else [])
     )
@@ -129,7 +133,39 @@ def void_payment(*, ctx: Ctx, payment_id: Any, reason: Any) -> dict:
         result["paired_payment"] = {"id": str(partner.id), "number": partner.number}
     if application is not None:
         _stamp_application_voided(ctx, application, payment, partner, clean_reason)
+    if settlement is not None:
+        from apps.payments.services.shop_settlement import stamp_settlement_voided
+
+        stamp_settlement_voided(
+            ctx, settlement, [payment] + ([partner] if partner else []), clean_reason
+        )
     return result
+
+
+def _settlement_pair(ctx: Ctx, payment_id: Any) -> tuple[Any, Any]:
+    """BP-08 — the Shop settlement this payment is half of, and its partner's id.
+
+    The same reasoning as `_deposit_pair`: both payments and the settlement belong
+    to one party, and the party lock is already held. A settlement is undone only
+    whole: half of one would leave a bill paid with money nobody moved."""
+    from apps.payments.models import ShopSettlement
+
+    try:
+        settlement = (
+            ShopSettlement.objects.filter(tenant=ctx.tenant)
+            .filter(Q(in_payment_id=payment_id) | Q(out_payment_id=payment_id))
+            .first()
+        )
+    except (ValueError, TypeError, DjangoValidationError):
+        return None, None
+    if settlement is None or settlement.voided_at is not None:
+        return None, None
+    partner = (
+        settlement.out_payment_id
+        if str(settlement.in_payment_id) == str(payment_id)
+        else settlement.in_payment_id
+    )
+    return settlement, partner
 
 
 def _deposit_pair(ctx: Ctx, payment_id: Any) -> tuple[Any, Any]:
