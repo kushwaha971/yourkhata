@@ -1,0 +1,33 @@
+START PROMPT · Shop fixes, then business types and scanning
+Repo: kushwaha971/yourkhata, branch dev (design made against ec188be, 25 Oct 2026)
+
+DESIGN TO FOLLOW (approved by the owner before you start; check the thread for any changes):
+https://claude.ai/artifact/RsYjPpq2t3zCTMu5iUSvNm  ("Shop fixes and business types")
+Use the Business type picker at the top of that page to see each business's version of a screen.
+
+RULES
+- This is NOT a revamp. Keep today's design (tokens, fonts, components). Change only what the design page draws.
+- Feature by feature (R-DEC-34): build, gates, phone 390/320 + desktop 1280 screenshots, light and dark, EN and HI, perf check, docs, commit, push. Then the next feature.
+- Fix shared components once (UbDisclosure, UbDrawer/UbSheet, UbField, UbRegister) so every screen gets the fix.
+- Simple English for rural shopkeepers. Generic words unless the business uses its own (Distributor, Retailer, Company).
+- Plans, not authorisation: revamp/13-business-types-and-scanning-plan.md and revamp/14-business-type-setup-data.md. Backend changes need a BP first; new libraries need an ADR (camera decoder = ADR-064).
+
+ORDER
+Part A, fixes (do first; one commit each):
+ A1 Header search: phone magnifier opens a full-screen search; desktop grouped list 640 px; shorter hint. Files: ShopGlobalSearch.tsx, CounterSearch.tsx, CounterSearchPanel.tsx, locales shopSearch.*
+ A2 Folding sections: no inner box, no grey header, overflow-clip on the root, trigger without its own rounded corners, focus ring on the root. Files: UbDisclosure.tsx; PartyDetailPageContent.tsx infoPanel drawn bare.
+ A3 Saved customer box: name + Change on line 1, mobile + balance (right-aligned column) on line 2; Quick sale / Saved customer as one two-part switch. File: InvoicePartySection.tsx
+ A4 Adding items: one search with scan button, no empty line card, short lines (qty stepper, rate, Edit opens line sheet); desktop table with search as first row; "Add an item to finish the bill" instead of "check the highlighted fields". Files: InvoiceLinesSection.tsx, ItemLineCell.tsx, ItemQuickAdd.tsx, editor dock.
+ A5 Drawer spacing standard: label to box 6, box to hint 4, field to field 16, group to group 24, switch rows 48/44, edge 16 phone / 24 desktop; footer Cancel + Save side by side. Apply to PartyFormDrawer, ItemFormDrawer, PaymentFormDrawer, StockAdjustmentDrawer and all others.
+ A6 Separate customer/supplier forms: bring in branch backlog/shop-ui-2026-10-25 (59a1eb9), finish phone check.
+ A7 Table frame round header + no double line (same branch); count line stays during search with a loading look (not started).
+ A8 Blank page on first tap: bring in the guard from the same branch.
+Part B, business types (plan 13 F0, plan 14): sign-up "What do you sell?" tiles + "I also sell"; features per type; sidebar/More rows and words per type; Settings › Shop features; one-time offer cards; starter categories, units, HSN.
+Part C, scanning (plan 13 S): camera sheet on phone (continuous on bill/purchase/stock count, single in search/barcode field), scanner beep/flash/not-found on desktop, camera blocked state, new Stock count screen.
+Part D, new fields per phase P1 to P6 as drawn: units, part numbers/rack, godowns/transfer, sizes/colours + labels, IMEI/warranty, batch/expiry/Schedule H, e-way bill file, café add-ons/kitchen ticket; dashboard follow-ups, estimates/challans, A4 PDF and 80 mm print columns per business.
+Part F screens (suppliers, categories, orders, stock, money, reports) get the A7 fixes and the per-business words and report rows.
+
+AFTER IMPLEMENTATION
+Write the user guide pages per business type from the same screens.
+
+Owner decisions still open (section E2 of the design page): words-only vs menu re-order per business; bottom bar order; starter categories create vs tick; which business first; line details under the row vs side drawer.

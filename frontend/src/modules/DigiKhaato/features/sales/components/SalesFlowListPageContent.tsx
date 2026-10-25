@@ -85,7 +85,13 @@ export function SalesFlowListPageContent({
   const [search, setSearch] = useCommittedSearch(filters.q, setQuery, INVOICE_SEARCH_DEBOUNCE_MS);
 
   const columns = useMemo(
-    () => createFlowColumns({ t, kind, isCards: tier === 'cards', isCompact: tier !== 'cards' && !wide }),
+    () =>
+      createFlowColumns({
+        t,
+        kind,
+        isCards: tier === 'cards',
+        isCompact: tier !== 'cards' && !wide,
+      }),
     [t, kind, tier, wide]
   );
   const newEstimate = canWrite && kind !== 'credit_note';
@@ -247,26 +253,37 @@ export function SalesFlowListPageContent({
       className="min-w-0 flex-1"
     />
   );
-  const stats = totals ? (
-    <RecordTotals
-      compactShort
-      countInMobileChips
-      label={t('sales.flow.filteredTotals')}
-      count={totals.count}
-      countLabel={t(`${ns}.count`)}
-      testId="sales-flow-summary"
-      figures={[
-        {
-          key: 'total',
-          label: t(kind === 'credit_note' && filters.tab === 'draft' ? 'sales.column.total' : stat),
-          amount: totals.grandTotal,
-        },
-        ...(kind === 'credit_note'
-          ? [{ key: 'open', label: t('sales.creditNote.openCredit'), amount: totals.amountDue }]
-          : []),
-      ]}
-    />
-  ) : null;
+  const totalsLoading = !totals && (list.status === 'loading' || list.status === 'idle');
+  const stats =
+    totals || totalsLoading ? (
+      <RecordTotals
+        loading={totalsLoading}
+        compactShort
+        countInMobileChips
+        label={t('sales.flow.filteredTotals')}
+        count={totals?.count ?? 0}
+        countLabel={t(`${ns}.count`)}
+        testId="sales-flow-summary"
+        figures={[
+          {
+            key: 'total',
+            label: t(
+              kind === 'credit_note' && filters.tab === 'draft' ? 'sales.column.total' : stat
+            ),
+            amount: totals?.grandTotal ?? '0.00',
+          },
+          ...(kind === 'credit_note'
+            ? [
+                {
+                  key: 'open',
+                  label: t('sales.creditNote.openCredit'),
+                  amount: totals?.amountDue ?? '0.00',
+                },
+              ]
+            : []),
+        ]}
+      />
+    ) : null;
   const grid = (
     <UbDataGrid
       rows={list.rows}

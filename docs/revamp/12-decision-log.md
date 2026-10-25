@@ -430,3 +430,10 @@ open-history cue. It remains one 44px+ tap target, with avatar and wrapping
 name beside the directional amount. The 320px long-name case is remeasured.
 
 Progress25Oct2026: Udhaar people/quick Add UI checkpoint implemented under R-DEC-35–40. Full frontend4,848tests and production gates green;38 measured EN/HI frames and matched navigation A/B recorded. Existing ledger54/54, statement24/24, credit19/19, tags13/13, people30/30, write-off11/11 pass; Old dues52/54 and reminder/expense omnibus remain red, explicitly retained in report. No whole-module >8.5 claim. Next approved piece is BP-21 after commit/push of this scoped checkpoint; then person history/entries and remaining Udhaar before Lending/Library.
+
+Integration25Oct2026: remote dev advanced to7a9de2c1e during verification.
+Committed Udhaar checkpoint4000c136d, then merged the remote shared-table/form/
+security/SW fixes and business-type planning docs. Resolved two conflicts by
+preserving both changes. Combined-code439suites/4,856tests, types/locales/lint,
+production/bundle/contrast and38frame EN/HI rerun pass. Original A/B predates
+the merge and is not recast as final runtime proof. BP-21 remains next.

@@ -36,10 +36,12 @@ import type { CounterData } from '../api/counterService';
 import type { ActivityItem, FirstUse, LowStockRow, TopDebtor } from '../types/reports.types';
 
 /* The sheet loads with the tap that opens it (CLAUDE.md, three times over). */
-const PartyReminderSheetLazy = /* @__PURE__ */ dynamic(() =>
-  import('modules/DigiKhaato/features/reminders/components/PartyReminderSheet').then(
-    (m) => m.PartyReminderSheet
-  )
+const PartyReminderSheetLazy = /* @__PURE__ */ dynamic(
+  () =>
+    import('modules/DigiKhaato/features/reminders/components/PartyReminderSheet').then(
+      (m) => m.PartyReminderSheet
+    ),
+  { ssr: false }
 );
 
 /**
@@ -73,8 +75,10 @@ export function RecentActivityList({
             if (counter) {
               const fact = documentFacts?.[`${item.source.kind}:${item.source.id}`];
               const status = item.type.endsWith('_void') ? null : counterDocumentStatus(fact, t);
-              const count = fact && Number.isInteger(fact.item_count) && fact.item_count >= 0
-                ? t('counterRegister.items', { count: fact.item_count }) : null;
+              const count =
+                fact && Number.isInteger(fact.item_count) && fact.item_count >= 0
+                  ? t('counterRegister.items', { count: fact.item_count })
+                  : null;
               const clock = new Intl.DateTimeFormat('en-IN', {
                 hour: '2-digit',
                 minute: '2-digit',
@@ -131,7 +135,11 @@ export function RecentActivityList({
                         .join(' · ')}
                     </UbText>
                   </UbStack>
-                  {status && <UbBox className="hidden shrink-0 xl:block"><UbStatusBadge tone={status.tone} label={status.label} /></UbBox>}
+                  {status && (
+                    <UbBox className="hidden shrink-0 xl:block">
+                      <UbStatusBadge tone={status.tone} label={status.label} />
+                    </UbBox>
+                  )}
                   {item.amount && (
                     <UbBox className="min-w-0 max-w-[42%] shrink-0">
                       <UbText

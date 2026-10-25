@@ -14,7 +14,7 @@ import dynamic from 'next/dynamic';
  * an empty box, and a client component the server did not return is never
  * shown (so no section of a switched-off module, ever).
  *
- * Every entry is `dynamic()` (10-architecture §6.8): a module's section — its
+ * Every entry is `dynamic(, { ssr: false })` (10-architecture §6.8): a module's section — its
  * copy, its components — loads in its own chunk, only on the dashboard of a
  * tenant whose server response named it. Registering costs the dashboard route
  * a loader function, nothing more.

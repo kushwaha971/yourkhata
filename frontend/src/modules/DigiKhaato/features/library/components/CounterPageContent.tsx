@@ -55,7 +55,7 @@ const PaymentFormDrawerLazy = dynamic(
  * types and presses Enter; Alt+I/R/N switch modes; Esc finishes with the
  * member. Focus returns to the box after every action and every dialog.
  *
- * Not `dynamic()` itself — its first paint is the scan box. The prompts are.
+ * Not `dynamic(, { ssr: false })` itself — its first paint is the scan box. The prompts are.
  */
 export function CounterPageContent(): React.JSX.Element {
   const { t } = useTranslation();

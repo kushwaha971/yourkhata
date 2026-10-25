@@ -9,17 +9,17 @@ features. Read04,10 §0 and12-shared-overlays before coding. No new plan.
 
 | Requirement/source | Implementation/reuse | Verification | Status |
 |---|---|---|---|
-| Shop composition;04+R-DEC-33/35 | Existing PartyListPageContent register,shared toolbar/grid,32px chips/44px targets |390/320/1024/1280 light/dark,Hindi320/1280;own-box/contrast/pagewidth |Pending|
-| Phone cards use most of screen | Compact header Add,one search+Filters,one quick-strip,concise directional totals | Normal390x844 card area≥60%;short/offline stress |Pending|
-| Append on scroll,manual retry | Existing append mode/UbLoadMore AFTER rows,inside region;no phone pager/FAB | Real page2,retain offset,500retry,no eager fetch-all/queryreset |Pending|
-| Due default accurate | ApprovedBP-20 balance=due at server BEFORE paging;active status;URL explicit | Both signs/paise/zero/other tenant/archived/Shop isolation |Pending|
-| Other chips and hidden records | Existing owes_me/i_owe/settled/unfiltered/status=archived | Actual API query,Back/reload,empty default→Show all |Pending|
-| No invented activity or chip counts | Existing last_activity_at and current-filter meta.total;no last entry amount from absent field | Source values,matching totals,missing facts honest |Pending|
-| Plain English/Hindi | Context-specific Udhaar labels;technical identifiers retained | Visible wording review,Hindi320;locale gates |Pending|
-| Notes optional | Existing create/edit note client+serializer reviewed;no finance change | Empty note save localQA if form used;next overlay separately |Pending|
-| Book/permission fences | Existing main-book API grants;page actions/rows are authorized | No-read/right combinations and scope tests |Pending|
-| Reuse/maintainability | Shared registertoolbar composition,existing filters/columns;no duplicate cache/engine | Changed-file lint/types/fulltests/build/bundle/contrast |Pending|
-| Performance | Same-machine old/new/old/new,quiet navigation | perf-app reps3 nav,matched routes/data,both numbers |Pending|
+| Shop composition;04+R-DEC-33/35 | Existing PartyListPageContent register,shared toolbar/grid,32px chips/44px targets |390/320/1024/1280 light/dark,Hindi320/1280;own-box/contrast/pagewidth |See dated evidence and limits below|
+| Phone cards use most of screen | Compact header Add,one search+Filters,one quick-strip,concise directional totals | Normal390x844 card area≥60%;short/offline stress |See dated evidence and limits below|
+| Append on scroll,manual retry | Existing append mode/UbLoadMore AFTER rows,inside region;no phone pager/FAB | Real page2,retain offset,500retry,no eager fetch-all/queryreset |See dated evidence and limits below|
+| Due default accurate | ApprovedBP-20 balance=due at server BEFORE paging;active status;URL explicit | Both signs/paise/zero/other tenant/archived/Shop isolation |See dated evidence and limits below|
+| Other chips and hidden records | Existing owes_me/i_owe/settled/unfiltered/status=archived | Actual API query,Back/reload,empty default→Show all |See dated evidence and limits below|
+| No invented activity or chip counts | Existing last_activity_at and current-filter meta.total;no last entry amount from absent field | Source values,matching totals,missing facts honest |See dated evidence and limits below|
+| Plain English/Hindi | Context-specific Udhaar labels;technical identifiers retained | Visible wording review,Hindi320;locale gates |See dated evidence and limits below|
+| Notes optional | Existing create/edit note client+serializer reviewed;no finance change | Empty note save localQA if form used;next overlay separately |See dated evidence and limits below|
+| Book/permission fences | Existing main-book API grants;page actions/rows are authorized | No-read/right combinations and scope tests |See dated evidence and limits below|
+| Reuse/maintainability | Shared registertoolbar composition,existing filters/columns;no duplicate cache/engine | Changed-file lint/types/fulltests/build/bundle/contrast |See dated evidence and limits below|
+| Performance | Same-machine old/new/old/new,quiet navigation | perf-app reps3 nav,matched routes/data,both numbers |See dated evidence and limits below|
 
 ## Product purpose and limits
 
@@ -179,3 +179,24 @@ A/B measurement; those numbers do not claim the final8px avatar/padding trim
 improves speed.
 
 Final write-off recheck:11/11 passed, including exact request amount/reason, zero server balance, archived state and a visible write-off timeline entry without reload. The previous timeout was the old “This party is archived” selector; current copy is “This contact is archived”.
+
+## Integration with remote dev7a9de2c1e
+
+Before push, origin/dev advanced from851ddc61c to7a9de2c1e. The Udhaar work
+was committed as4000c136d, then remote dev was merged without dropping its
+shared totals/skeleton/service-worker/security-header fixes or new business
+type planning docs. Conflicts were limited to budget audit entries (both kept)
+and the shared form mobile field (one reused field now keeps the supplier hint).
+Post-merge: lint/types/locales pass; full439suites/4,856tests pass in232.594s;
+production build, bundle and174contrast pairs pass. The combined tags first
+load measured313.1KB; limit313.4 is measured+0.3, with a written reason.
+Backend party and security-header groups pass. The A/B above predates this
+integration and is not a performance certificate for the merged build.
+
+Post-merge browser rerun: all38 measured EN/HI frames pass again, using
+`shots-merged-en` / `shots-merged-hi`. Native final phone, contact-prefilled
+quick Add and desktop frames were inspected. Their JSON replaces the prior
+frame measurements in the committed data folder. Phone rows stay about66% of
+the usable height with no page overflow, clipped text or low-contrast labels.
+The final merged runtime does not have a new performance A/B; prior numbers
+remain labelled as pre-integration evidence.

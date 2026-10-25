@@ -31,8 +31,9 @@ import { groupByMonth, moduleName, moduleOnly } from '../view-model/calendarDisp
 import { WeekdayChips } from './WeekdayChips';
 
 // A form belongs in the chunk that OPENS it (CLAUDE.md, the LED-03 lesson).
-const ClosedDayDialog = dynamic(() =>
-  import('./ClosedDayDialog').then((module) => module.ClosedDayDialog)
+const ClosedDayDialog = dynamic(
+  () => import('./ClosedDayDialog').then((module) => module.ClosedDayDialog),
+  { ssr: false }
 );
 
 /**

@@ -28,6 +28,12 @@ class ApiSecurityHeadersMiddleware:
     `SecurityMiddleware` already sends `nosniff`, the referrer policy and, in
     production, HSTS; `XFrameOptionsMiddleware` sends `DENY`. A view that set its
     own CSP (the public share route) keeps it.
+
+    It also marks every API answer `private, no-store` unless the view chose its
+    own caching. The answers are a business's live figures; without a header a
+    browser, a carrier proxy or a hosting edge is free to keep and replay one,
+    and a balance served from such a copy is false information that only a
+    refresh clears (owner, 25 Oct 2026).
     """
 
     def __init__(self, get_response: Callable) -> None:
@@ -42,6 +48,8 @@ class ApiSecurityHeadersMiddleware:
             response["Content-Security-Policy"] = API_CONTENT_SECURITY_POLICY
         if request.path.startswith(self.prefix):
             response["X-Robots-Tag"] = "noindex, nofollow, noarchive"
+            if "Cache-Control" not in response:
+                response["Cache-Control"] = "private, no-store"
         return response
 
 

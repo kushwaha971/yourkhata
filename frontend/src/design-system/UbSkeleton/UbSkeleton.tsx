@@ -17,7 +17,7 @@ import { cn } from 'src/utils/cn';
  * fixed width is kept only for the avatar disc, and capped at `max-w-full`.
  * `UbSkeleton.test.tsx` holds every variant to this.
  */
-export type UbSkeletonVariant = 'list' | 'card' | 'form' | 'app' | 'text' | 'heading';
+export type UbSkeletonVariant = 'list' | 'card' | 'form' | 'app' | 'text' | 'heading' | 'figure';
 
 export interface UbSkeletonProps {
   readonly variant?: UbSkeletonVariant;
@@ -48,7 +48,12 @@ function UbSkeletonBase({
 
   return (
     // R-A-6 — a loading state is announced, not merely drawn.
-    <div role="status" aria-busy aria-label={label} className={cn('w-full', className)}>
+    <div
+      role="status"
+      aria-busy
+      aria-label={label}
+      className={cn(variant === 'figure' ? 'inline-flex align-middle' : 'w-full', className)}
+    >
       {variant === 'list' && (
         <div className="overflow-hidden rounded-card border border-border-hairline bg-surface-card">
           {rows.map((row) => (
@@ -89,6 +94,10 @@ function UbSkeletonBase({
           <MLSkeleton className="h-4 w-3/4 max-w-72" />
         </div>
       )}
+      {/* One money figure in a line of text — a register's totals while they
+          load — at the height of the number it stands in for, so the line
+          keeps its place instead of collapsing and pushing the table up. */}
+      {variant === 'figure' && <MLSkeleton className="h-4 w-16 rounded-sm" />}
       {variant === 'text' && (
         <div className="flex flex-col gap-2">
           {rows.map((row) => (

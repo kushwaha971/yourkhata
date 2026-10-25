@@ -12,10 +12,12 @@ import type { SettlementCandidates } from '../../payments/settlement/types/shopS
 
 import 'src/i18n/catalogues/homeSettlement';
 
-const SettleDialog = dynamic(() =>
-  import('../../payments/settlement/components/SettleBalancesDialog').then(
-    (m) => m.SettleBalancesDialog
-  )
+const SettleDialog = dynamic(
+  () =>
+    import('../../payments/settlement/components/SettleBalancesDialog').then(
+      (m) => m.SettleBalancesDialog
+    ),
+  { ssr: false }
 );
 
 /**

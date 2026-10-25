@@ -483,8 +483,12 @@ export function ExpensesPageContent(): React.JSX.Element {
               ariaLabel={t('expenses.tab.label')}
               className="flex-nowrap overflow-x-auto py-1.5 [&>button]:shrink-0"
             />
-            {totals && list.rows.length > 0 && (
-              <ExpenseListStats totals={totals} cancelled={filters.tab === 'void'} />
+            {(totals || list.status === 'loading' || list.status === 'idle') && (
+              <ExpenseListStats
+                totals={totals}
+                cancelled={filters.tab === 'void'}
+                loading={list.status === 'loading' || list.status === 'idle'}
+              />
             )}
             {grid}
           </>

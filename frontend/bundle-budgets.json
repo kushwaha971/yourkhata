@@ -1,8 +1,10 @@
 {
   "//": [
+    "25 Oct 2026 integration with dev 7a9de2c1e: the combined shared skeleton/grid changes and Udhaar compact row measure /parties/tags first load 313.1 KB gz, over 313.0 by 0.1; set to measured + 0.3 KB (313.4). The shared baseline remains 241.8 KB.",
     "25 Oct 2026, Udhaar phone row: shared UbDataGrid compact card mode lets avatars, wrapping names and amounts share one row without clipping. The shared grid produces a rounding overage on /parties/tags: measured route 71.1 KB gz, limit 71.1; set route to measured + 0.3 KB (71.4). First load stays 313.0 KB.",
     "25 Oct 2026, Udhaar people register: the shared party URL codec and book-fenced list selector add 0.2 KB gz to /parties/[id] via the shared parties chunk; they prevent showing Shop balances under the Udhaar title during app switches. Measured /parties/[id] route 114.8 KB, first load 356.6 KB; limits set to measured + 0.3 KB (115.1 / 356.9). The person sheet remains lazy.",
 
+    "25 Oct 2026, owner feedback FB-005 to FB-007 and FB-009/010: the shared totals line keeps its place while a search loads (a shimmer per figure, UbSkeleton gained a one-figure variant), the register table clips its header to the rounded frame, and 32 dynamic() calls gained ssr:false. Five budgets were over by rounding only (each measured within 0.05 KB of its ceiling): /reports/purchase-register and /reports/sales-register first load 359.7, /set-password 293.3, /d/[token] 282.9, /admin route 11.0. Cause inferred, not traced: UbSkeleton and RecordTotals are shared. Raised by measured + 0.3.",
     "25 Oct 2026, settlement matched to Sage 200's contra entry (owner: compare with competitors): the settle dialog names the bills it reaches and the Customers/Suppliers rows offer Settle… with a lazy loader for the dialog. /parties/[id] first load measured 356.3, over its ceiling by rounding (cause inferred, not traced: shared parties code grew by the Settle row action); raised by measured + 0.3.",
     "25 Oct 2026, Customer–supplier settlement (BP-08): Home gained the settlement-candidates read and a lazy loader for its note (the note, its words, the settle dialog and its words are all dynamic()); the person page's ⋯ gained the Settle item and a lazy loader for the dialog. /dashboard route 95.2 → 95.8 (measured 95.5), first load 337.1 → 337.8 (337.5); /parties/[id] route 114.3 → 114.6 (measured 114.3, over the old ceiling by rounding); /reports/day-book has none of this code and moved by rounding only, 119.5 → 119.8. Raised by measured + 0.3.",
     "25 Oct 2026, Shop promises (BP-16): Home's Follow-ups gained the promises panel, its hook, the promise service and the lane caption; Home's words are their own homePromises catalogue. /dashboard route measured 94.9. The person page's promise card, its words and its form are all dynamic(): the card statically cost the route 5.3 KB (a build of 9bdb109 measured 114.1, this one 119.4), now 114.0 under its unchanged ceiling; its first load moved 0.1 for the loader. /forgot-password, /accept-invite/[token] and /admin/tenants carry no code of this piece and moved by 0.0-0.2 KB; 9bdb109's own build also exceeded /admin/tenants and /login/email by 0.1-0.2 KB, so this is build-to-build variance, inferred not traced. Raised by measured + 0.3: /parties/[id] firstLoad 355.9->356.3; /dashboard route 93.4->95.2; /dashboard firstLoad 336->337.1; /forgot-password firstLoad 292.7->293.0; /admin/tenants route 32.8->33.3; /admin/tenants firstLoad 274.7->275.2; /accept-invite/[token] firstLoad 253.1->253.4.",
@@ -1568,7 +1570,7 @@
     },
     "/parties/tags": {
       "route": 71.4,
-      "firstLoad": 313.0
+      "firstLoad": 313.4
     },
     "/parties/[id]/statement": {
       "route": 93,
@@ -1655,7 +1657,7 @@
       "firstLoad": 299.2
     },
     "/admin": {
-      "route": 11,
+      "route": 11.3,
       "firstLoad": 253.1
     },
     "/admin/partners": {
@@ -1712,11 +1714,11 @@
     },
     "/reports/purchase-register": {
       "route": 117.9,
-      "firstLoad": 359.7
+      "firstLoad": 360.0
     },
     "/reports/sales-register": {
       "route": 117.9,
-      "firstLoad": 359.7
+      "firstLoad": 360.0
     },
     "/login": {
       "route": 57,
@@ -1792,11 +1794,11 @@
     },
     "/set-password": {
       "route": 51.6,
-      "firstLoad": 293.3
+      "firstLoad": 293.6
     },
     "/d/[token]": {
       "route": 41.2,
-      "firstLoad": 282.9
+      "firstLoad": 283.2
     },
     "/accept-invite/[token]": {
       "route": 11.4,

@@ -9,10 +9,14 @@
  *  · Static files (`/_next/static/**`, fonts, icons, brand) — cache-first. Their
  *    names are content-hashed, so a cached copy is never wrong; the cache is
  *    trimmed to the newest STATIC_LIMIT entries so old builds age out.
- *  · Page loads — network-first with a 3 s timeout, then the last good copy of
- *    that page, then the last good copy of any app page. A repeat launch on a bad
- *    signal opens instead of showing the browser's dinosaur. Old chunks stay in
- *    the static cache, so a cached page never points at a deleted file.
+ *  · Page loads — network-first, and the last good copy of that page (then of
+ *    any app page) ONLY when the network fails. A launch with no signal opens
+ *    instead of showing the browser's dinosaur. Old chunks stay in the static
+ *    cache, so a cached page never points at a deleted file.
+ *    There used to be a 3 s timeout before the saved copy: on a slow but working
+ *    connection (a cold server, a busy 4G cell) the merchant was handed an old
+ *    copy, or another page's, while the real one was on its way — the owner's
+ *    "only the skeleton until I refresh" (25 Oct 2026). Slow is not offline.
  *  · A few API reads (the session, the dashboard, the party and item lists, a
  *    khata's first page) — NETWORK-FIRST, falling back to the last copy only when
  *    the network fails. §19.10.2 says stale-while-revalidate; that would hand the
@@ -26,12 +30,11 @@
  *    never replayed.
  */
 
-var VERSION = 'v1';
+var VERSION = 'v2';
 var STATIC_CACHE = 'ub-static-' + VERSION;
 var PAGE_CACHE = 'ub-pages-' + VERSION;
 var API_PREFIX = 'ub-api-';
 var STATIC_LIMIT = 400;
-var PAGE_TIMEOUT_MS = 3000;
 /** Where the open business is remembered: a browser stops an idle worker within
  *  seconds, and a worker that forgot the business would skip its cache exactly
  *  when the merchant reopens the app without signal. */
@@ -77,8 +80,26 @@ function strategyFor(request, origin) {
   return 'network';
 }
 
+/**
+ * A page load's answer: the network's, however long it takes; a saved copy only
+ * when the network FAILS, and the "No signal" page when there is none. Pure
+ * over its two inputs so the unit test can hold it to that without a browser.
+ */
+function pageFrom(network, saved) {
+  return network.catch(function () {
+    return saved().then(function (hit) {
+      return hit || new Response(
+        '<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width">' +
+          '<title>No signal</title><p style="font-family:sans-serif;padding:24px">No signal. ' +
+          'Open the app again when you are back online.</p>',
+        { status: 503, headers: { 'Content-Type': 'text/html; charset=utf-8' } }
+      );
+    });
+  });
+}
+
 if (typeof module !== 'undefined') {
-  module.exports = { strategyFor: strategyFor, API_READS: API_READS };
+  module.exports = { strategyFor: strategyFor, pageFrom: pageFrom, API_READS: API_READS };
 }
 
 if (typeof self !== 'undefined' && typeof self.addEventListener === 'function' && typeof module === 'undefined') {
@@ -185,10 +206,7 @@ if (typeof self !== 'undefined' && typeof self.addEventListener === 'function' &
       }
       return response;
     });
-    var timeout = new Promise(function (resolve) {
-      setTimeout(function () { resolve(null); }, PAGE_TIMEOUT_MS);
-    });
-    var fallback = function () {
+    var saved = function () {
       return caches.open(PAGE_CACHE).then(function (cache) {
         return cache.match(key).then(function (hit) {
           if (hit) return hit;
@@ -198,21 +216,7 @@ if (typeof self !== 'undefined' && typeof self.addEventListener === 'function' &
         });
       });
     };
-    return Promise.race([network, timeout])
-      .then(function (response) {
-        if (response) return response;
-        return fallback().then(function (hit) { return hit || network; });
-      })
-      .catch(function () {
-        return fallback().then(function (hit) {
-          return hit || new Response(
-            '<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width">' +
-              '<title>No signal</title><p style="font-family:sans-serif;padding:24px">No signal. ' +
-              'Open the app again when you are back online.</p>',
-            { status: 503, headers: { 'Content-Type': 'text/html; charset=utf-8' } }
-          );
-        });
-      });
+    return pageFrom(network, saved);
   };
 
   var api = function (request) {

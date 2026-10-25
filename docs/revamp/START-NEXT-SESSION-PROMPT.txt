@@ -18,7 +18,7 @@ You gave/You got wording rule. Notes stay optional; audit reasons required.
 
 BP-20 main-book balance=due read filter is approved and built. Cross-book Redux
 rows are fenced so stale Shop balances are not painted under Udhaar. Current
-full frontend437suites/4,848tests pass, plus lint/types/locales/build/bundle/
+merged frontend439suites/4,856tests pass, plus lint/types/locales/build/bundle/
 contrast; preserve the earlier full billing timeout in the report. Browser38
 frames pass English390/320/1024/1280 light/dark and Hindi320/1280. Quiet A/B:
 throttled opening Udhaar phone422→442ms, desktop685.5→699.5ms; no speed win

@@ -24,11 +24,12 @@ import { KIND_LABEL, relationLine } from '../view-model/partyRelationDisplay';
 
 import type { PartyRelation } from '../types/party.types';
 
-// Loaded with dynamic() from the khata: its words come with its own chunk.
+// Loaded with dynamic(, { ssr: false }) from the khata: its words come with its own chunk.
 import 'src/i18n/catalogues/partyLinks';
 
-const PartyRelationDialogLazy = /* @__PURE__ */ dynamic(() =>
-  import('./PartyRelationDialog').then((m) => m.PartyRelationDialog)
+const PartyRelationDialogLazy = /* @__PURE__ */ dynamic(
+  () => import('./PartyRelationDialog').then((m) => m.PartyRelationDialog),
+  { ssr: false }
 );
 
 interface Row {
