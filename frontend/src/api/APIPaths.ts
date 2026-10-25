@@ -113,9 +113,6 @@ export const API_PATHS = {
    * second party fetch; see eslint.config.mjs, PARTY_FETCH_MESSAGE).
    */
   PARTY_TAGS: '/parties/tags',
-  /** BP-16 — the Shop's open promises (Home); per contact under `/parties/{id}/shop-promises`. */
-  SHOP_PROMISES: '/parties/shop-promises',
-  PARTY_SHOP_PROMISES: (id: string) => `/parties/${seg(id)}/shop-promises`,
   PARTY_TAG: (id: string) => `/parties/tags/${seg(id)}`,
   PARTY_TAG_MERGE: (id: string) => `/parties/tags/${seg(id)}/merge`,
   // ── A6 ── PLT-X04: the roles modules give parties, and guardian/payer links.

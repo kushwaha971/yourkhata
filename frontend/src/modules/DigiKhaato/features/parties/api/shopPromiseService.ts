@@ -1,4 +1,3 @@
-import { API_PATHS } from 'src/api/APIPaths';
 import { api, ubConfig } from 'src/api/AxiosInstances';
 
 import type {
@@ -49,6 +48,13 @@ const toPromise = (wire: ShopPromiseWire): ShopPromise => ({
   ...(wire.days_overdue === undefined ? {} : { daysOverdue: wire.days_overdue }),
 });
 
+/* BP-16's paths live with their only caller rather than in API_PATHS: that
+   table ships in the shared app chunk to every route, /login included, and
+   these two are read by the Shop's Home and person page alone. */
+const SHOP_PROMISES = '/parties/shop-promises';
+const partyPromisesPath = (partyId: string) =>
+  `/parties/${encodeURIComponent(partyId)}/shop-promises`;
+
 const keyed = (idempotencyKey: string) => ubConfig({ headers: { 'Idempotency-Key': idempotencyKey } });
 /* The form's resolver turns a blank amount into null, so either spelling of
    "no figure promised" goes on the wire as null. */
@@ -64,7 +70,7 @@ export const listPartyPromises = async (
   signal?: AbortSignal
 ): Promise<readonly ShopPromise[]> => {
   const response = await api.get<{ data: ShopPromiseWire[] }>(
-    API_PATHS.PARTY_SHOP_PROMISES(partyId),
+    partyPromisesPath(partyId),
     ubConfig({ params: { role }, signal, suppressErrorSnackbar: true })
   );
   return response.data.data.map(toPromise);
@@ -77,7 +83,7 @@ export const createPromise = async (
   idempotencyKey: string
 ): Promise<ShopPromise> => {
   const response = await api.post<{ data: ShopPromiseWire }>(
-    API_PATHS.PARTY_SHOP_PROMISES(partyId),
+    partyPromisesPath(partyId),
     { role, ...body(values) },
     keyed(idempotencyKey)
   );
@@ -91,7 +97,7 @@ export const changePromise = async (
   idempotencyKey: string
 ): Promise<ShopPromise> => {
   const response = await api.patch<{ data: ShopPromiseWire }>(
-    `${API_PATHS.SHOP_PROMISES}/${promise.id}`,
+    `${SHOP_PROMISES}/${promise.id}`,
     { version: promise.version, ...body(values) },
     keyed(idempotencyKey)
   );
@@ -104,7 +110,7 @@ export const closePromise = async (
   idempotencyKey: string
 ): Promise<ShopPromise> => {
   const response = await api.post<{ data: ShopPromiseWire }>(
-    `${API_PATHS.SHOP_PROMISES}/${promise.id}/${how}`,
+    `${SHOP_PROMISES}/${promise.id}/${how}`,
     { version: promise.version },
     keyed(idempotencyKey)
   );
@@ -114,7 +120,7 @@ export const closePromise = async (
 /** Home's Follow-ups: open promises due within a week, most urgent first. */
 export const listOpenPromises = async (signal?: AbortSignal): Promise<readonly ShopPromise[]> => {
   const response = await api.get<{ data: ShopPromiseWire[] }>(
-    API_PATHS.SHOP_PROMISES,
+    SHOP_PROMISES,
     ubConfig({ signal, suppressErrorSnackbar: true })
   );
   return response.data.data.map(toPromise);
