@@ -270,7 +270,7 @@ function navigations(vp) {
       },
       tap: (page) => page.getByRole('menuitem', { name: 'Udhaar book' }),
     },
-    { id: 'khata.people→aging', start: '/khata', target: '^/ledger/aging$', tap: navLink('/ledger/aging'), kind: phone ? 'bottom tab' : 'sidebar row' },
+    { id: 'khata.person', start: '/khata', target: '^/parties/[0-9a-f-]{36}$', tap: customerRow(vp), kind: 'Udhaar person row' },
     { id: 'library.home→members', start: '/library', target: '^/library/members$', tap: navLink('/library/members'), kind: phone ? 'bottom tab' : 'sidebar row' },
     { id: 'library.members→seats', start: '/library/members', target: '^/library/seats$', tap: navLink('/library/seats'), kind: phone ? 'bottom tab' : 'sidebar row' },
     { id: 'lending.today→loans', start: '/lending', target: '^/lending/loans$', tap: navLink('/lending/loans'), kind: phone ? 'bottom tab' : 'sidebar row' },

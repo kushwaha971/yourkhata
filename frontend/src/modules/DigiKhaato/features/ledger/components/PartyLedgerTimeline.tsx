@@ -100,6 +100,8 @@ export function PartyLedgerTimeline({
   emptyBody,
   readOnly: archivedReadOnly = false,
   book = 'main',
+  fillHeight = false,
+  personal = false,
 }: Readonly<{
   partyId: string;
   title?: string;
@@ -112,6 +114,9 @@ export function PartyLedgerTimeline({
    * is not drawn.
    */
   book?: LedgerBook;
+  /** Opt-in bounded history for the Udhaar person workspace. */
+  fillHeight?: boolean;
+  personal?: boolean;
   /**
    * The party is archived (PTY-04 FR-14): the rows are read, never corrected.
    * The server refuses a correction or a reversal on an archived party with
@@ -148,8 +153,9 @@ export function PartyLedgerTimeline({
        separated by hairlines. It used to be a card holding its own title,
        switch, totals and rows, which put 16 px of padding around 16 px of
        padding around every line. */
-    <UbStack gap={3}>
+    <UbStack gap={3} className={fillHeight ? 'min-h-0 flex-1' : undefined}>
       <UbSectionHeading
+        className={fillHeight ? 'flex-wrap [&_h2]:whitespace-normal [&_h2]:overflow-visible [&_h2]:text-clip' : undefined}
         title={title ?? t('ledger.timeline.title')}
         meta={
           hasEntries
@@ -159,7 +165,7 @@ export function PartyLedgerTimeline({
         /* LED-03 FR-7: offered only to somebody who could correct, and only
            once there is something to reveal. A MODE, not a filter, so a switch. */
         aside={
-          correction.canCorrect && hasEntries && !shopBook ? (
+          correction.canCorrect && hasEntries && !shopBook && !personal ? (
             <UbSwitch
               checked={ledger.showCorrections}
               onCheckedChange={ledger.toggleCorrections}
@@ -170,10 +176,10 @@ export function PartyLedgerTimeline({
         }
       />
 
-      <UbPanel as="section">
+      <UbPanel as="section" aria-label={fillHeight ? title : undefined} tabIndex={fillHeight ? 0 : undefined} className={fillHeight ? 'relative min-h-0 flex-1 overflow-y-auto overscroll-contain focus-visible:shadow-focus [&_[data-testid=entry-source]]:flex-wrap [&_[data-testid=entry-source]_a]:whitespace-normal [&_[data-testid=entry-source]_a]:overflow-visible [&_[data-testid=entry-source]_a]:text-clip [&_.line-clamp-2]:line-clamp-none' : undefined}>
         {/* BrandHub PaymentsCard's two-cell total row: label 12/16 medium grey,
             figure 16/24 medium, a hairline between the cells. */}
-        {hasEntries && ledger.summary && !shopBook && (
+        {hasEntries && ledger.summary && !shopBook && !fillHeight && (
           <UbBox className="grid grid-cols-2 divide-x divide-border-hairline">
             <UbStack gap={1} className="px-4 py-3">
               <UbText as="span" variant="inherit" className="ds-body-s-medium text-text-tertiary">
@@ -285,6 +291,7 @@ export function PartyLedgerTimeline({
                 <EntryRow
                   entry={entry}
                   shop={shopBook}
+                  personal={personal}
                   t={t}
                   viewerId={viewerId}
                   wasCorrected={ledger.superseded.has(entry.id)}
@@ -342,6 +349,7 @@ export function PartyLedgerTimeline({
 function EntryRow({
   entry,
   shop,
+  personal = false,
   t,
   viewerId,
   wasCorrected,
@@ -349,6 +357,7 @@ function EntryRow({
 }: Readonly<{
   entry: LedgerEntry;
   shop?: boolean;
+  personal?: boolean;
   t: TranslateFn;
   viewerId: string | null;
   /** True when another loaded row supersedes this one — see the badge below. */
@@ -480,7 +489,7 @@ function EntryRow({
         <UbStack gap={0} align="end">
           <UbAmount
             value={entry.amount}
-            tone={reversed ? 'neutral' : view.tone}
+            tone={reversed ? 'neutral' : personal && entry.sourceType === 'manual' ? entry.direction === 'debit' ? 'payable' : 'receivable' : view.tone}
             sign="none"
             label={t(view.labelId)}
             /* Hidden when the title on the left is already those same two words —

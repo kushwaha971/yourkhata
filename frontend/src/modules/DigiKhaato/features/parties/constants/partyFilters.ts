@@ -94,6 +94,7 @@ export const SHOP_BOOK_WORDS: Readonly<Record<string, string>> = {
  */
 export const KHATA_BOOK_WORDS: Readonly<Record<string, string>> = {
   'parties.list.title': 'parties.list.khata.title',
+  'parties.list.filter.any': 'parties.khata.filter.all',
   'parties.list.add': 'parties.khata.add',
   'parties.list.column.name': 'parties.khata.person',
   'parties.list.balance.receivable': 'parties.khata.toGet',

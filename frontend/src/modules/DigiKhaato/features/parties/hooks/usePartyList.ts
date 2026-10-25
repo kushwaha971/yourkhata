@@ -109,7 +109,6 @@ export function usePartyList(
       ...(kind ? { type: kind } : {}),
       book: book ?? 'main',
       ...(book === 'shop' && Boolean(kind) ? { ordering: 'oldest_due_on' } : {}),
-      ...(book === 'main' ? { balance: 'due' as const } : {}),
     }),
     [kind, book]
   );
@@ -366,7 +365,7 @@ export function usePartyList(
     setSearchInput('');
     dispatch(filtersCleared());
     if (kind) dispatch(filtersChanged({ type: kind }));
-    if (book) dispatch(filtersChanged({ book, ...(book === 'main' ? { balance: 'due' } : {}) }));
+    if (book) dispatch(filtersChanged({ book }));
   }, [dispatch, kind, book]);
   const refetch = useCallback(() => {
     void dispatch(fetchPartyList(fetchArg));

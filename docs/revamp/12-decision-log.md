@@ -467,3 +467,78 @@ contracts remain frozen. The artifact's Shop business-type/scanning proposals
 do not authorise new Library/Lending features or change the current work order.
 BP-21 remains next, then Udhaar completion, Lending and Library; do not reopen
 Shop implementation from this reference-only instruction.
+
+## R-DEC-42 · Shop is outside this thread's implementation scope
+
+25October2026, owner: "DOn't do any things in shop modue" and "only follow
+that desigin for UDhar , Library and Lending". This supersedes the immediate
+BP-21 order: defer its cross-app membership/backend change because it would
+change Shop's contact behavior. No membership application code was changed
+before this instruction. Work only on Udhaar, Lending and Library presentation
+using the shared artifact reference. Shared components may be reused; avoid
+changing the Shop rendering/behavior. Next piece: Udhaar person overview,
+visible statement/reminder actions and entry history composition under the
+khata app guard, then its overlays and remaining Udhaar scope. Preserve L-01.
+
+## R-DEC-43 · No global search in Udhaar, Library or Lending
+
+25October2026, owner: "global search is not required for Udhaar, librayr and
+lending". Hide the shell search on phone and desktop in these three apps;
+keep each screen's own search. Library/Lending already omit shell search in
+their manifests; remove Udhaar's partySearch opt-in. Shop's manifest and search
+stay unchanged. Regression checks cover all three routes and existing Shop
+search assertions. This overrides the earlier Udhaar header-search reference.
+
+## R-DEC-44 · Udhaar person actions as a compact icon row
+
+25October2026, owner screenshot feedback: replace outlined Statement/Remind
+buttons with simple icons like the supplied KhataBook person reference, designed
+for busy users. Use Report, Remind and Call icon actions with short visible
+labels and44px+ targets. Report opens the existing statement, Remind opens the
+existing editable composer, Call uses tel:. Keep the reminder-history status
+with Details rather than spending a separate primary row on "Not reminded yet".
+Entry history follows the action row. No new financial or messaging workflow.
+
+## R-DEC-45 · Personal Udhaar with name/mobile only
+
+Owner clarified25October2026: this is money given to/from friends and other
+people; Add/Edit needs only name and mobile. Entry needs Gave/Got, amount and
+an optional note. Keep balance, history, WhatsApp/SMS reminders, Call and Report.
+Remove business Details, email/address/GST, credit limit/days, terms and opening
+amount from Udhaar's visible contact flow. The user asked for a fresh minimal
+implementation; preserve saved entries/balances and shared financial engines
+used by Shop/Library/Lending. No shared-table destructive deletion. R-DEC-42's
+no-Shop-work rule remains. The live artifact #d12 is inaccessible; committed
+#d12 is a Shop dashboard, so it is not claimed as inspected Udhaar parity.
+Official Khatabook help reviewed25October: contact name/optional phone/phonebook,
+then a separate Gave/Got amount entry. Source:
+https://khatabook.com/help/en-us/category/X1IofBAAACQAT1tS/ .
+
+R-DEC-45 implementation choice: personal list starts All active, not Due, so a
+name/mobile-only contact remains visible before the first entry. The existing
+To get/To give/Settled choices stay inside Filters; business credit/tag/type/
+collection axes are absent from personal filters. Existing BP-20 Due API is
+retained for compatible reads, not the personal default. This supersedes the
+older R-DEC-35 default for the owner's new personal-book scope.
+
+## R-DEC-46 · Personal action styling
+
+Owner clarified: Gave money keeps its red color; Got money uses the primary
+brand color. Report/WhatsApp/SMS/Call use one regular font, size and ink, with
+matching icon sizes. Use the actual WhatsApp mark, not a generic chat bubble.
+WhatsApp and SMS each open an editable composer focused on that selected
+channel; no extra Copy/More/Call choices in the personal composer. The shared
+sheet defaults remain unchanged for other modules. Personal inputs follow44px
+phone controls; Add/Edit footer uses Cancel and Save side by side.
+
+Progress25Oct2026: final personal-Udhaar core implemented under R-DEC-45/46 in
+a separate page, preserving other apps' shared renderer. Name/mobile-only wire,
+amount/optional-note entries, All-active list, minimal menu, matching secondary
+actions with proper WhatsApp mark; red Gave/primary Got. Final440suites/4,865
+frontendtests,443backend/contracts pass(4skipped), standard gates,70frames and
+21realQAchecks green. Three fast Save taps→onePOST,500given−200received=300.
+Quiet matched throttle phone633→426ms,desktop920.5→428ms,n=6. Canonical report:
+2026-10-25-personal-udhaar-core.md. Older prototype scores superseded. Next:
+personal report/print and correction/recovery overlays, then Lending/Library.
+Mainbook per-user privacy and BP-21 remain explicitly unresolved/deferred;
+no Shop implementation or shared-data deletion in this thread.

@@ -13,6 +13,7 @@ import type { PartyFormValues, PartyIdentityValues, PartySaveResult } from '../t
  */
 
 interface SavePartyFormArg {
+  readonly personal?: boolean;
   readonly values: PartyFormValues;
   /** Present on an edit; absent on a create. */
   readonly partyId?: string;
@@ -51,8 +52,8 @@ export const saveParty = createAsyncThunk<
 >('partyForm/save', async (arg, { rejectWithValue }) => {
   try {
     if ('identity' in arg) return await updatePartyIdentity(arg.partyId, arg.identity);
-    const { values, partyId, idempotencyKey } = arg;
-    return partyId ? await updateParty(partyId, values) : await createParty(values, idempotencyKey);
+    const { values, partyId, idempotencyKey, personal } = arg;
+    return partyId ? await updateParty(partyId, values) : personal ? await createParty(values, idempotencyKey, true) : await createParty(values, idempotencyKey);
   } catch (error) {
     return rejectWithValue(toApiError(error, 'parties.form.error.title'));
   }

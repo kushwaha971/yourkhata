@@ -483,3 +483,20 @@ people30/30, write-off11/11; Old dues52/54 and wave1 reminder/expense omnibus ar
 Do not call this a whole-Udhaar release. Details, ratings and unresolved
 ownership/legacy journey gaps: performance/2026-10-25-udhaar-people.md.
 BP-21 is approved next, after the current UI checkpoint is committed/pushed.
+
+Udhaar person25Oct2026 (R-DEC-42–44): no backend changes.32 measured final
+EN/HI frames cover overview, direct editable reminder, full long name and large
+money at390/320/1024/1280. All pass width/text/contrast/global-search absence/
+icon alignment. History internal scroll is computed. Full suite439/4,858 passed
+before final owner icon/search follow-up; final106focused tests and production
+checks green, final full rerun pending completion. Mixed quiet A/B: phone
+687→618ms throttled, desktop796→916ms; desktop score remains below8.5.
+
+Personal Udhaar core final25Oct2026, R-DEC-45/46: canonical evidence is
+../performance/2026-10-25-personal-udhaar-core.md.440suites/4,865frontendtests;
+443ledger/contracts tests pass,4skipped. All standard production gates green;
+70measured EN/HIframes,21real-local-QAchecks including3fast taps→1write and
+SMS/WhatsApp editable text pass. Quiet old/new/old/new final personal page
+phone633→426ms anddesktop920.5→428ms throttle,n=6each. Old business prototype
+ratings/results are superseded. No Shop feature changes; no physical-device,
+OS contact-permission or independently private per-user book certification.

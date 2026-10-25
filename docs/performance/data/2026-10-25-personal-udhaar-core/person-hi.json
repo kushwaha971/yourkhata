@@ -1,0 +1,333 @@
+{
+  "results": [
+    {
+      "tag": "320-light-hi",
+      "state": "ready",
+      "overflow": 0,
+      "cut": [],
+      "lowContrast": [],
+      "firstRowY": null,
+      "actionStyles": [
+        {
+          "size": "14px",
+          "weight": "400",
+          "color": "rgb(10, 92, 99)"
+        },
+        {
+          "size": "14px",
+          "weight": "400",
+          "color": "rgb(10, 92, 99)"
+        },
+        {
+          "size": "14px",
+          "weight": "400",
+          "color": "rgb(10, 92, 99)"
+        },
+        {
+          "size": "14px",
+          "weight": "400",
+          "color": "rgb(10, 92, 99)"
+        }
+      ],
+      "whatsappMark": true,
+      "globalSearchFields": 0,
+      "actionIcons": [
+        266,
+        266,
+        266,
+        266
+      ],
+      "pageY": 0,
+      "historyHeight": 383.4375,
+      "historyScroll": "auto"
+    },
+    {
+      "tag": "320-light-hi",
+      "state": "long-name-money",
+      "overflow": 0,
+      "cut": [],
+      "lowContrast": [],
+      "firstRowY": null,
+      "actionStyles": [
+        {
+          "size": "14px",
+          "weight": "400",
+          "color": "rgb(10, 92, 99)"
+        },
+        {
+          "size": "14px",
+          "weight": "400",
+          "color": "rgb(10, 92, 99)"
+        },
+        {
+          "size": "14px",
+          "weight": "400",
+          "color": "rgb(10, 92, 99)"
+        },
+        {
+          "size": "14px",
+          "weight": "400",
+          "color": "rgb(10, 92, 99)"
+        }
+      ],
+      "whatsappMark": true,
+      "globalSearchFields": 0,
+      "actionIcons": [
+        346,
+        346,
+        346,
+        346
+      ],
+      "pageY": 0,
+      "historyHeight": 303.4375,
+      "historyScroll": "auto"
+    },
+    {
+      "tag": "320-dark-hi",
+      "state": "ready",
+      "overflow": 0,
+      "cut": [],
+      "lowContrast": [],
+      "firstRowY": null,
+      "actionStyles": [
+        {
+          "size": "14px",
+          "weight": "400",
+          "color": "rgb(157, 212, 217)"
+        },
+        {
+          "size": "14px",
+          "weight": "400",
+          "color": "rgb(157, 212, 217)"
+        },
+        {
+          "size": "14px",
+          "weight": "400",
+          "color": "rgb(157, 212, 217)"
+        },
+        {
+          "size": "14px",
+          "weight": "400",
+          "color": "rgb(157, 212, 217)"
+        }
+      ],
+      "whatsappMark": true,
+      "globalSearchFields": 0,
+      "actionIcons": [
+        266,
+        266,
+        266,
+        266
+      ],
+      "pageY": 0,
+      "historyHeight": 383.4375,
+      "historyScroll": "auto"
+    },
+    {
+      "tag": "320-dark-hi",
+      "state": "long-name-money",
+      "overflow": 0,
+      "cut": [],
+      "lowContrast": [],
+      "firstRowY": null,
+      "actionStyles": [
+        {
+          "size": "14px",
+          "weight": "400",
+          "color": "rgb(157, 212, 217)"
+        },
+        {
+          "size": "14px",
+          "weight": "400",
+          "color": "rgb(157, 212, 217)"
+        },
+        {
+          "size": "14px",
+          "weight": "400",
+          "color": "rgb(157, 212, 217)"
+        },
+        {
+          "size": "14px",
+          "weight": "400",
+          "color": "rgb(157, 212, 217)"
+        }
+      ],
+      "whatsappMark": true,
+      "globalSearchFields": 0,
+      "actionIcons": [
+        346,
+        346,
+        346,
+        346
+      ],
+      "pageY": 0,
+      "historyHeight": 303.4375,
+      "historyScroll": "auto"
+    },
+    {
+      "tag": "1280-light-hi",
+      "state": "ready",
+      "overflow": 0,
+      "cut": [],
+      "lowContrast": [],
+      "firstRowY": null,
+      "actionStyles": [
+        {
+          "size": "14px",
+          "weight": "400",
+          "color": "rgb(10, 92, 99)"
+        },
+        {
+          "size": "14px",
+          "weight": "400",
+          "color": "rgb(10, 92, 99)"
+        },
+        {
+          "size": "14px",
+          "weight": "400",
+          "color": "rgb(10, 92, 99)"
+        },
+        {
+          "size": "14px",
+          "weight": "400",
+          "color": "rgb(10, 92, 99)"
+        }
+      ],
+      "whatsappMark": true,
+      "globalSearchFields": 0,
+      "actionIcons": [
+        270,
+        270,
+        270,
+        270
+      ],
+      "pageY": 0,
+      "historyHeight": 411,
+      "historyScroll": "auto"
+    },
+    {
+      "tag": "1280-light-hi",
+      "state": "long-name-money",
+      "overflow": 0,
+      "cut": [],
+      "lowContrast": [],
+      "firstRowY": null,
+      "actionStyles": [
+        {
+          "size": "14px",
+          "weight": "400",
+          "color": "rgb(10, 92, 99)"
+        },
+        {
+          "size": "14px",
+          "weight": "400",
+          "color": "rgb(10, 92, 99)"
+        },
+        {
+          "size": "14px",
+          "weight": "400",
+          "color": "rgb(10, 92, 99)"
+        },
+        {
+          "size": "14px",
+          "weight": "400",
+          "color": "rgb(10, 92, 99)"
+        }
+      ],
+      "whatsappMark": true,
+      "globalSearchFields": 0,
+      "actionIcons": [
+        302,
+        302,
+        302,
+        302
+      ],
+      "pageY": 0,
+      "historyHeight": 379,
+      "historyScroll": "auto"
+    },
+    {
+      "tag": "1280-dark-hi",
+      "state": "ready",
+      "overflow": 0,
+      "cut": [],
+      "lowContrast": [],
+      "firstRowY": null,
+      "actionStyles": [
+        {
+          "size": "14px",
+          "weight": "400",
+          "color": "rgb(157, 212, 217)"
+        },
+        {
+          "size": "14px",
+          "weight": "400",
+          "color": "rgb(157, 212, 217)"
+        },
+        {
+          "size": "14px",
+          "weight": "400",
+          "color": "rgb(157, 212, 217)"
+        },
+        {
+          "size": "14px",
+          "weight": "400",
+          "color": "rgb(157, 212, 217)"
+        }
+      ],
+      "whatsappMark": true,
+      "globalSearchFields": 0,
+      "actionIcons": [
+        270,
+        270,
+        270,
+        270
+      ],
+      "pageY": 0,
+      "historyHeight": 411,
+      "historyScroll": "auto"
+    },
+    {
+      "tag": "1280-dark-hi",
+      "state": "long-name-money",
+      "overflow": 0,
+      "cut": [],
+      "lowContrast": [],
+      "firstRowY": null,
+      "actionStyles": [
+        {
+          "size": "14px",
+          "weight": "400",
+          "color": "rgb(157, 212, 217)"
+        },
+        {
+          "size": "14px",
+          "weight": "400",
+          "color": "rgb(157, 212, 217)"
+        },
+        {
+          "size": "14px",
+          "weight": "400",
+          "color": "rgb(157, 212, 217)"
+        },
+        {
+          "size": "14px",
+          "weight": "400",
+          "color": "rgb(157, 212, 217)"
+        }
+      ],
+      "whatsappMark": true,
+      "globalSearchFields": 0,
+      "actionIcons": [
+        302,
+        302,
+        302,
+        302
+      ],
+      "pageY": 0,
+      "historyHeight": 379,
+      "historyScroll": "auto"
+    }
+  ],
+  "failures": []
+}

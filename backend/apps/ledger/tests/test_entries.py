@@ -279,6 +279,29 @@ def test_a_credit_must_say_how_the_money_arrived(tenant: Any, api_as: Any) -> No
     assert "payment_mode" in response.json()["error"]["details"]
 
 
+def test_personal_udhaar_accepts_amount_and_empty_note_without_inventing_cash(tenant: Any, api_as: Any) -> None:
+    """Personal Gave/Got needs no payment method; missing must stay unknown, not Cash."""
+    client, _ = api_as(tenant)
+    party = PartyFactory(tenant=tenant)
+    response = client.post(reverse(ENTRIES), body(party, direction=Direction.CREDIT, simple=True, note=""), format="json")
+    assert response.status_code == 201, response.json()
+    entry = LedgerEntry.objects.get(party=party)
+    assert entry.payment_mode is None
+    assert entry.note == ""
+    assert entry.bucket == "main"
+    party.refresh_from_db()
+    assert party.balance == -entry.amount
+
+
+def test_personal_udhaar_still_refuses_invalid_payment_methods(tenant: Any, api_as: Any) -> None:
+    """The simple entry option removes a question, not validation of supplied data."""
+    client, _ = api_as(tenant)
+    party = PartyFactory(tenant=tenant)
+    response = client.post(reverse(ENTRIES), body(party, direction=Direction.CREDIT, simple=True, payment_mode="adjustment"), format="json")
+    assert response.status_code == 400
+    assert not LedgerEntry.objects.filter(party=party).exists()
+
+
 def test_a_debit_that_carries_a_mode_has_it_dropped_rather_than_refused(
     tenant: Any, api_as: Any
 ) -> None:

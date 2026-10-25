@@ -1,6 +1,6 @@
 'use client';
 
-import { memo, useCallback, useEffect, useRef, type RefObject } from 'react';
+import { memo, useCallback, useEffect, useRef, type RefObject, type ReactNode } from 'react';
 
 import {
   UbButton,
@@ -57,6 +57,8 @@ export interface PartyReminderSheetProps {
   readonly description: string;
   readonly phone: string | null;
   readonly labels: UbShareSheetLabels;
+  readonly whatsappIcon?: ReactNode;
+  readonly onlyChannel?: 'whatsapp' | 'sms';
   readonly returnFocusRef?: RefObject<HTMLElement | null>;
 }
 
@@ -75,6 +77,8 @@ function PartyReminderSheetBase({
   description,
   phone,
   labels,
+  whatsappIcon,
+  onlyChannel,
   returnFocusRef,
 }: Readonly<PartyReminderSheetProps>) {
   const { t } = useTranslation();
@@ -159,12 +163,14 @@ function PartyReminderSheetBase({
 
   return (
     <UbShareSheet
+      whatsappIcon={whatsappIcon}
+      onlyChannel={onlyChannel}
       open={open}
       onOpenChange={onOpenChange}
       title={title}
       description={description}
-      message={ready ? preview.text : ''}
-      smsMessage={ready ? preview.smsText : undefined}
+      message={ready ? onlyChannel === 'sms' ? preview.smsText ?? preview.text : preview.text : ''}
+      smsMessage={ready && onlyChannel !== 'sms' ? preview.smsText : undefined}
       notice={notice}
       pending={pending}
       callHref={phone ? `tel:${toDialableNumber(phone)}` : null}

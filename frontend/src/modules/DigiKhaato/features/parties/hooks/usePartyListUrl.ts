@@ -164,7 +164,7 @@ const SHOP_LIST_CODEC: ListUrlCodec<PartyListFilters> = {
 const KHATA_LIST_CODEC: ListUrlCodec<PartyListFilters> = {
   keys: URL_KEYS,
   read: (params) => ({
-    ...readFilters(params),
+    ...Object.fromEntries(Object.entries(readFilters(params)).filter(([key]) => ['q', 'status', 'balance', 'ordering'].includes(key))),
     ...(params.get('balance') === 'all' ||
     (params.get('status') === 'archived' && !params.has('balance')) ||
     (params.get('status') === 'archived' && params.get('balance') === 'due')

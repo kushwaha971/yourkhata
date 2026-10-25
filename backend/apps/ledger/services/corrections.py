@@ -339,6 +339,7 @@ def correct_entry(*, ctx: Ctx, entry_id: Any, payload: dict) -> dict:
         # An opening has no payment mode to insist on; a corrected manual credit
         # does, for the same reason the original did.
         needs_mode=original.entry_type not in PRESERVED_ENTRY_TYPES,
+        allow_unspecified_mode=original.direction == Direction.CREDIT and original.payment_mode is None,
     )
 
     changed = {

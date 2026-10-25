@@ -122,6 +122,9 @@ export interface UbShareSheetProps {
   /** Any spelling; normalised by `toWhatsAppDigits`. Absent → pick the chat. */
   readonly phone?: string | null;
   readonly labels: UbShareSheetLabels;
+  readonly whatsappIcon?: ReactNode;
+  /** A focused personal reminder can open only the channel the user selected. */
+  readonly onlyChannel?: 'whatsapp' | 'sms';
   /**
    * A channel was opened (or the text copied). Never evidence of delivery.
    * `text` is the words that left with it, after any edit — what a caller
@@ -156,6 +159,8 @@ function UbShareSheetBase({
   pending,
   phone,
   labels,
+  whatsappIcon,
+  onlyChannel,
   onShared,
   onFailed,
   returnFocusRef,
@@ -254,26 +259,26 @@ function UbShareSheetBase({
 
           {blank ? (
             <div className="flex flex-col gap-1">
-              <UbButton
+              {onlyChannel !== 'sms' && <UbButton
                 variant="primary"
                 size="lg"
                 className="w-full"
                 disabled
-                icon={<MessageCircle aria-hidden className="h-4 w-4" />}
+                icon={whatsappIcon ?? <MessageCircle aria-hidden className="h-4 w-4" />}
               >
                 {labels.whatsapp}
-              </UbButton>
-              <UbButton
-                variant="ghost"
+              </UbButton>}
+              {onlyChannel !== 'whatsapp' && <UbButton
+                variant={onlyChannel === 'sms' ? 'primary' : 'ghost'}
                 size="lg"
-                className={ROW}
+                className={onlyChannel === 'sms' ? 'w-full' : ROW}
                 disabled
                 icon={<MessageSquare aria-hidden className="h-4 w-4" />}
               >
                 {labels.sms}
-              </UbButton>
-              {callRow}
-              <UbButton
+              </UbButton>}
+              {!onlyChannel && callRow}
+              {!onlyChannel && <UbButton
                 variant="ghost"
                 size="lg"
                 className={ROW}
@@ -281,11 +286,11 @@ function UbShareSheetBase({
                 icon={<Copy aria-hidden className="h-4 w-4" />}
               >
                 {labels.copy}
-              </UbButton>
+              </UbButton>}
             </div>
           ) : (
             <div className="flex flex-col gap-1">
-              <a
+              {onlyChannel !== 'sms' && <a
                 href={buildWhatsAppUrl(text, phone)}
                 target="_blank"
                 rel="noopener noreferrer"
@@ -296,23 +301,23 @@ function UbShareSheetBase({
                   'w-full outline-none focus-visible:shadow-focus'
                 )}
               >
-                <MessageCircle aria-hidden className="h-4 w-4" />
+                {whatsappIcon ?? <MessageCircle aria-hidden className="h-4 w-4" />}
                 <span>{labels.whatsapp}</span>
-              </a>
-              <a
+              </a>}
+              {onlyChannel !== 'whatsapp' && <a
                 href={buildSmsUrl(smsText, phone)}
                 onClick={openedVia('sms')}
                 className={mlButtonClasses(
-                  'ghost',
+                  onlyChannel === 'sms' ? 'primary' : 'ghost',
                   'lg',
-                  cn(ROW, 'outline-none focus-visible:shadow-focus')
+                  cn(onlyChannel === 'sms' ? 'w-full' : ROW, 'outline-none focus-visible:shadow-focus')
                 )}
               >
                 <MessageSquare aria-hidden className="h-4 w-4" />
                 <span>{labels.sms}</span>
-              </a>
-              {callRow}
-              <UbButton
+              </a>}
+              {!onlyChannel && callRow}
+              {!onlyChannel && <UbButton
                 variant="ghost"
                 size="lg"
                 className={ROW}
@@ -320,8 +325,8 @@ function UbShareSheetBase({
                 onClick={() => void handleCopy()}
               >
                 {labels.copy}
-              </UbButton>
-              {nativeShare && (
+              </UbButton>}
+              {!onlyChannel && nativeShare && (
                 <UbButton
                   variant="ghost"
                   size="lg"

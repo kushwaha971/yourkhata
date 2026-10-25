@@ -1,4 +1,4 @@
-import { BookUser, Hourglass, NotebookPen, Wallet } from 'lucide-react';
+import { BookUser, NotebookPen } from 'lucide-react';
 
 import { ROUTES } from 'src/routes';
 
@@ -13,10 +13,9 @@ import type { AppManifest } from '../navigation/appManifest';
  * the Shop's: no bills, no stock, no Shop customers' dues. A person can be in
  * both apps; their name and mobile are shared, their money is not.
  *
- * Its rows are the three things a paper khata is used for: the people and what
- * each owes, who has owed longest, and who to remind. Old dues and Reminders
- * moved here from the Shop's menu because both read the udhaar book's figure
- * since DEC-019 phase 1.
+ * The owner's personal-book scope keeps only people and their khatas here.
+ * Individual reminders live with the person. Legacy ledger routes remain
+ * resolvable for compatibility, without collection-round menu entries.
  */
 export const KHATA_APP: AppManifest = {
   code: 'khata',
@@ -39,33 +38,9 @@ export const KHATA_APP: AppManifest = {
       order: 1,
       bottomNav: true,
     },
-    // LED-09 — who has owed longest, the collection round's starting list.
-    {
-      key: 'aging',
-      icon: Hourglass,
-      labelId: 'nav.aging',
-      href: ROUTES.LEDGER_AGING,
-      module: 'khata',
-      permission: 'ledger.entry.read',
-      section: 'people',
-      order: 2,
-      bottomNav: true,
-    },
-    // LED-05/06/07 — the reminder buckets, manual and bulk reminders, the history.
-    {
-      key: 'reminders',
-      icon: Wallet,
-      labelId: 'nav.reminders',
-      href: ROUTES.LEDGER_REMINDERS,
-      module: 'khata',
-      permission: 'ledger.entry.read',
-      section: 'people',
-      order: 3,
-      bottomNav: true,
-      badge: 'overdueReminders',
-    },
   ],
   peopleHref: ROUTES.KHATA,
   book: 'main',
-  shell: { partySearch: true },
+  // Each Udhaar screen owns its search; no second search in the app header.
+  shell: {},
 };

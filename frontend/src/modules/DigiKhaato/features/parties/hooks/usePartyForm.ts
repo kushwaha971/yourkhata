@@ -72,7 +72,8 @@ export interface UsePartyFormResult {
   readonly dismissWarnings: () => void;
   readonly submit: (
     values: PartyFormValues,
-    setError: UseFormSetError<PartyFormValues>
+    setError: UseFormSetError<PartyFormValues>,
+    personal?: boolean
   ) => Promise<PartyDetail | null>;
 }
 
@@ -139,13 +140,17 @@ export const usePartyForm = (): UsePartyFormResult => {
   }, [dispatch]);
 
   const submit = useCallback(
-    async (values: PartyFormValues, setError: UseFormSetError<PartyFormValues>) => {
+    async (values: PartyFormValues, setError: UseFormSetError<PartyFormValues>, personal = false) => {
       setFormErrors([]);
       setDuplicate(null);
       try {
         const saved = await dispatch(
-          saveParty({
+          saveParty(personal && openFor && openFor !== 'new' ? {
+            partyId: openFor,
+            identity: { name: values.name, mobile: values.mobile || null },
+          } : {
             values,
+            ...(personal ? { personal: true } : {}),
             partyId: openFor && openFor !== 'new' ? openFor : undefined,
             idempotencyKey: key,
           })

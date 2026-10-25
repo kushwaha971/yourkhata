@@ -137,6 +137,25 @@ describe('one menu per app', () => {
     expect(listed().shell.partySearch).toBeUndefined();
   });
 
+  it.each(['/khata', '/library/members', '/lending/loans'])('keeps global search out of %s while its page search stays local', (path) => {
+    /** Owner: Udhaar, Library and Lending use their own screen search, not the shell search. */
+    load({ apps: [...SERVER_APPS, {code:'khata',labelId:'nav.workspace.khata',homePath:'/khata',order:95}], activeApp:path.startsWith('/khata')?'khata':path.startsWith('/library')?'library':'lending' });
+    mockPath = path;
+    expect(listed().shell.partySearch).not.toBe(true);
+    expect(listed().shell.commandSearch).not.toBe(true);
+  });
+
+  it('personal Udhaar shows people without a collection-round menu', () => {
+    load({ apps: [...SERVER_APPS, {code:'khata',labelId:'nav.workspace.khata',homePath:'/khata',order:95}], activeApp:'khata' });
+    mockPath = '/khata';
+    const nav = listed();
+    expect(nav.app).toBe('khata');
+    const keys = keysOf(nav);
+    expect(keys).toContain('people');
+    expect(keys).not.toContain('aging');
+    expect(keys).not.toContain('reminders');
+  });
+
   it('keeps the menu of the app the person is in on a page every app shares', () => {
     load({ activeApp: 'lending' });
     mockPath = '/settings';

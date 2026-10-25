@@ -1,3 +1,9 @@
+Current personal scope R-DEC-45/46: All active default, name/mobile-only Add/Edit
+with phone-contact selection; only balance/status/sort filters. The personal
+app menu contains People and account/app navigation, without collection rounds.
+Read docs/performance/2026-10-25-personal-udhaar-core.md for final evidence; old
+Due/quick-opening defaults below are superseded.
+
 # Udhaar book entry point · People · `/khata`
 
 | Field | |

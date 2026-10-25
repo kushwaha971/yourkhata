@@ -1,583 +1,121 @@
-ADDITIONAL MOBILE REFERENCE — R-DEC-41 (25 October2026)
-Owner supplied https://claude.ai/artifact/RsYjPpq2t3zCTMu5iUSvNm#gf for mobile
-patterns to reuse across Udhaar, Lending and Library, with Shop later. Exact
-committed copy: docs/revamp/design/shop-fixes-and-business-types.html, PartF
-#gf and A2/A5. Its identity is confirmed in shop-fixes-notes-for-prompt.txt.
-The live web reader could not open the URL; do not claim live inspection.
-Use the committed HTML, existing DS and shared components. Verify compact
-lists, one search/filter row, stable counts, clean frames and reachable actions;
-A5: label→field6px, hint4px, fields16px, groups24px, edges16phone/24desktop,
-fields44phone/40desktop, Cancel+Save together. Apply/measure per relevant piece.
-Keep the owner’s newer Udhaar list choices R-DEC-36–40 and module-specific
-wording/workflows. This adds a visual reference; it does not reopen Shop or
-approve Shop-only business-type/scanning features in the other apps.
-
-CURRENT CHECKPOINT — 25 October 2026, R-DEC-35 through R-DEC-40
-Continue the existing revamp on dev. Shop is complete for the owner’s requested
-scope. Current work is Udhaar, then Lending, then Library. Do not reopen Shop.
-Read the appended decisions in12 and docs/performance/2026-10-25-udhaar-people.md.
-
-Owner’s latest Udhaar phone reference: no page title; one Search+Filters row;
-To get/To give totals; avatar and full wrapping name beside the amount and >
-chevron; worded floating Add person above navigation, with clear space so it
-never covers visible amounts. Due/To get/To give/Settled/All choices are inside
-Filters. Desktop keeps heading and fill-height Person/Balance table with fixed
-pagination. The owner’s screenshots supersede04’s original FAB/stat-chip mock.
-
-Quick Add reuses PartyFormDrawer: name, amount, Gave money/Got money, optional
-mobile, visible Choose from phone contacts when supported. It opens the khata
-only after server success. Phone contacts fill name/mobile without saving.
-English Gave money/Got money and Hindi पैसे दिए/पैसे मिले supersede the older
-You gave/You got wording rule. Notes stay optional; audit reasons required.
-
-BP-20 main-book balance=due read filter is approved and built. Cross-book Redux
-rows are fenced so stale Shop balances are not painted under Udhaar. Current
-merged frontend439suites/4,856tests pass, plus lint/types/locales/build/bundle/
-contrast; preserve the earlier full billing timeout in the report. Browser38
-frames pass English390/320/1024/1280 light/dark and Hindi320/1280. Quiet A/B:
-throttled opening Udhaar phone422→442ms, desktop685.5→699.5ms; no speed win
-claimed. Function/performance aspects are below8.5; no inflated whole score.
-
-Existing local QA journeys: ledger54/54, statement24/24, credit19/19, tags13/13,
-people30/30, write-off11/11. Old dues52/54 and wave1 reminder/expense omnibus remain red; read
-exact failures in the report. This checkpoint is not whole-Udhaar completion.
-Physical phones/PWA/OS contact permissions and rural-user research unproved.
-
-NEXT APPROVED PIECE: BP-21 (owner: “Approve BP-21 after this screen
-(Recommended)”). New Udhaar contacts currently inherit is_customer=True and
-can appear in Shop. Build explicit server book membership, cautious legacy
-migration, list/count/search/export/write fences, and tests. Do not infer
-membership/linking from a phone number or net balances. The current main book
-is tenant-scoped, NOT independently private per staff member; BP-21 alone does
-not resolve per-user ownership. Then person khata/history and its overlays,
-Old dues/reminders, remaining Udhaar scope; next Lending and Library under L-01.
-
-All existing quality rules below remain. Preserve untracked ims-platform/.
-Commit/push verified pieces todev, remoteSHA check, Assisted-by: OpenAI Codex.
-
---- Previous checkpoint history (superseded by the current checkpoint above) ---
-
 Continue the existing YourKhata revamp on dev. Do not start a new plan.
 
-CURRENT HANDOFF — 21 October 2026, through R-DEC-32
-On this Mac the repository is /Users/akashkushwaha/Projects/ims-platform; the chat
-workspace is a different folder. Elsewhere locate the existing checkout. Inspect
-git status/branch/log first. Preserve unrelated work, including the untracked
-nested ims-platform/ checkout. Never reset or blindly stage it. Update dev with
-a safe fast-forward when appropriate; commit and push verified pieces to dev.
+CURRENT CHECKPOINT —25October2026, R-DEC-35 through R-DEC-46
+Owner scope: UDHAAR, then LENDING, then LIBRARY. Do not implement Shop work.
+The owner rejected the business-style Udhaar profile: this is a simple personal
+money book between friends/people. Latest decisions supersede older mockups.
+Repository on this Mac: /Users/akashkushwaha/Projects/ims-platform. Elsewhere
+locate the existing checkout. Inspect status/branch/log first; safely update dev.
+Preserve unrelated work, especially untracked nested ims-platform/. Never reset,
+force-push or blindly stage it. Commit verified pieces todev and verify remoteSHA.
 
-R-DEC-32: CLAUDE.md's mandatory revamp acceptance gates are strict. Verify explicit reference/component values before coding; final LOOK and measured evidence are required. Never make the owner catch documented deviations.
+READ FIRST
+AGENTS.md → CLAUDE.md → docs/revamp/README.md →12-decision-log.md →
+02-preserve-and-contracts.md → the relevant07-screens spec → real code.
+Also docs/DESIGN-SYSTEM.md and design/counter-mode.html before UI.
+Canonical latest evidence: docs/performance/2026-10-25-personal-udhaar-core.md.
+Older2026-10-25-udhaar-person.md is superseded prototype/failure history.
 
-R-DEC-34 (owner, 23 Oct): go FEATURE BY FEATURE. Finish one feature completely
-(build, gates, LOOK, phone+desktop acceptance, perf, docs, commit, push) before
-opening the next. Never leave several modules half-verified. Current feature:
-the sales-document lists under R-DEC-33; each other list group comes after it.
+DELIVERED PERSONAL CORE
+- People: All active default so a new zero-balance person stays visible. One
+  search+Filters, avatar/full name/directional amount/chevron joined phone rows,
+  append on scroll with retry and manual fallback, floating Add. Desktop has
+  fill-height table/internal row scroll and visible pagination.
+- Personal filters only balance/status/sort. No business role/tag/credit/date
+  axes. Existing compatible Due API remains available, not the default.
+- Add/Edit: NAME and OPTIONAL MOBILE ONLY; shared phone-contact picker fills
+  both when supported. Create wire has exactly name/mobile; edit uses existing
+  updatePartyIdentity. No opening amount, email/address/GST/credit/terms fields.
+- Person: separate lazy PersonalUdhaarPage selected only for app=khata; identity,
+  balance, dated history, Report/WhatsApp/SMS/Call. No Details/business profile,
+  credit meter, cumulative tiles or correction switch in personal toolbar.
+- Entry: Gave/Got + amount + OPTIONAL NOTE. Date automatic in existing timezone.
+  No payment method/date/reference controls. Explicit simple=true main manual
+  entry permits unknown receipt method stored NULL, never invented Cash.
+  Invalid supplied methods still fail. Other callers keep legacy validation.
+- Gave money stays RED; Got money uses PRIMARY MARIGOLD (owner corrected the
+  earlier both-primary proposal). Four secondary actions have20pxicons and the
+  same14px/400/accent ink; WhatsApp uses its actual phone-in-chat mark.
+- WhatsApp/SMS each open one focused editable composer. Sending requires user
+  action; no auto-send. Existing shared-sheet behavior is unchanged by default.
+- No global search in Udhaar/Library/Lending; each screen owns its search.
+  Personal app menu keeps People, not Old dues/bulk collection rounds. Legacy
+  routes remain for compatibility; shared engines/data are not deleted.
+- Existing shared person renderer and all its regression tests are preserved
+  for Shop/other apps. No Shop feature/API/model or live Library/Lending change.
 
-READ FIRST, IN ORDER
-AGENTS.md, CLAUDE.md, docs/revamp/README.md, docs/revamp/12-decision-log.md,
-docs/revamp/02-preserve-and-contracts.md, the screen spec in07-screens/, then the
-real code. Read docs/DESIGN-SYSTEM.md and design/counter-mode.html before UI.
-Use the owner's screenshots and committed HTML as the visual reference. The
-live Claude artifact may be unavailable; never claim to have inspected it then.
-Code is the truth. Record disagreements and superseded tracking in12.
+FINAL EVIDENCE
+Frontend440suites/4,865tests pass. Backend ledger+contracts443pass,4skipped.
+Changed-file lint,types,locale split/check,production build,bundle,174contrast
+pairs pass.70final measured EN/HIframes;21real localQAchecks pass: name/mobile
+only wire,500given−200received=300balance,empty note,3fast Save taps→1POST,
+exactly2entries,editable WhatsApp/SMS and edited SMSURI. No external sends/calls.
+Actual OS contacts are simulated in prefill browser check. Screenshots in task
+artifacts/personal-udhaar-core-2026-10-25/. Raw data in docs/performance/data/.
+Quiet9976dde58 old/new/old/new person nav,n=6: phone throttle633→426ms,
+desktop920.5→428ms; unthrottled107→75 and420.5→65.5. Lab-only,not PWA proof.
+Core provisional self-scores8.6–8.8; not a whole-module/privacy/competitor claim.
 
-OWNER'S CURRENT ORDER — R-DEC-27
-1. Complete billing/POS, purchases and returns.
-2. Complete inventory, payments/advances/refunds, expenses/cashbook and reports.
-3. Then finish remaining Home workflows using those verified source workflows.
-Do not return to Home first. The owner explicitly deferred it because it needs
-those modules' final data. Do not ask routine phase/next-screen permission again.
+NEXT
+Verify remaining personal report/print and correction/recovery overlays against
+this minimal scope; do not reintroduce business fields. Then remaining Udhaar
+work, then Lending/Library, one feature fully finished before the next. No
+routine next-screen permission question. BP-21 cross-app contact membership is
+DEFERRED by owner's no-Shop rule (R-DEC-42), despite earlier approval. Existing
+mainbook is tenant-scoped, not independently private per staff member. Do not
+claim these older architecture goals are solved by the new personal UI.
 
-OWNER RULE — R-DEC-29 (20 Oct): REVAMP, DO NOT PATCH THE OLD DESIGN
-"Do not rework on existing design for any module; follow the proper revamp
-instead of making changes in the existing." For every module, build the
-approved revamp composition in docs/revamp/07-screens/ (and design/
-counter-mode.html for editors) as the acceptance reference. Do not tweak old
-spacing/colours/layouts piecemeal or polish a screen the revamp replaces. Read
-the module's 07-screens section first, build THAT phone and desktop
-composition with src/design-system components, then measure it. If the spec
-and code disagree, record it in 12 and follow the spec unless it breaks a
-"Must keep working" contract in 02.
+REFERENCE
+Owner supplied https://claude.ai/artifact/RsYjPpq2t3zCTMu5iUSvNm#gf and#d12.
+Live artifact was inaccessible; browser use disabled. Exact committed copy is
+design/shop-fixes-and-business-types.html (identity confirmed by its notes).
+Committed#d12 is a SHOP dashboard,not evidence of a new personal Udhaar view.
+Use owner KhataBook screenshots + explicit minimal scope as acceptance, and
+reuse relevant A2/A5/PartF visual patterns. Official Khatabook help was reviewed
+for contact→separate entry and individual reminders; no live-app parity claim.
 
-IMMEDIATE NEXT — ALL-MODULE VIEWPORT ROLLOUT (R-DEC-31), THEN PURCHASE DETAIL
-Billing is finished for now (owner: Move on; phone performance8 remains openly
-reported). Purchase editor §7 and register §5 are DELIVERED. Read the final
-21Oct sections in 2026-10-20-p5-purchase-editor.md and the new
-2026-10-21-p5-purchase-register.md for exact scores, evidence and limits.
-Register:416 suites/4,647 frontend tests;80 purchase backend tests;240 final
-frames at390/320/1024/1280 light/dark plus Hindi320/1280. Actual paper-number
-search, paging, loaded detail→Back, filtered-month recovery and pager hit tests.
-No business writes/external sends in that register harness. No whole-Purchases
-or whole-Shop completion claim.
-Register design8.75, lowest aspect8.6; throttled pooled content538.5ms phone /837ms desktop (+9/+10ms vs baseline), feedback≤12/28ms. No speedup claim. Editor:498 frames,30-line picks36/38ms,8.80
-provisional design score; its first-load cost and no-device-copy limit remain.
+HARD RULES
+- Library/Lending L-01 live contracts frozen: presentation only; endpoint/body/
+  model/calculation/workflow ideas go to08 as proposals, await owner approval.
+- Separate app/book/tenant/role money; never net balances or infer access/linking
+  from phone numbers. No Railway/production data; local seededQA only.
+- Posted entries are not edited/deleted: corrections use reversal+new entry and
+  required audit reason. Main opening posts once; authorization, atomic balance
+  updates and Idempotency-Key behavior remain. Notes always optional.
+- Every default outgoing message editable; no product/domain on anything a
+  merchant's recipient receives. Say WhatsApp opened,not sent. No credentials.
+- Existing logo,teal#0E7C86,primary#F59E1B/dark ink,white page,dark-teal rail,
+  Jakarta/Mukta. Reuse src/design-system; no raw feature host JSX,new package
+  without ADR,duplicate engines or TanStackQuery. Redux Toolkit.
+- Forms/sheets/dialogs dynamic in their opener's chunk. Bundle ceilings only
+  measured+0.3 with reason. No ellipsis/word cuts;44pxtargets,32pxchipfaces.
+- Use simple English/spokenHindi. Udhaar Gave money/Got money; Lending Lent/
+  Collected,Running/Late; Library Fee/Paid/Student. Electrical examples and
+  Radhe Krishna Enterprises, with friend names where the personal flow needs it.
 
-OWNER R-DEC-30 — MOBILE-FIRST BOUNDED REGISTERS
-Around80% mobile. Redesign complete approved compositions, not old styling.
-Tables/mobile lists fit the available visual viewport; only rows scroll,
-pagination/actions stay accessible. Reuse UbViewportPageShell (measurement is
-its own opt-in module), UbDataGrid fillHeight, RecordTotals columns,
-useCommittedSearch and existing filter/clearance components. No copied fixed
-pixel offsets. Pinned paging uses UbBottomBar clearToBottom so the global toast
-cannot cover Next above navigation. Ordinary bars retain their default behavior.
-Measure page height, row scroll, actual button hit tests, widths, full words and
-contrast. Chip faces stay32px; reserve the existing44px mobile touch target without enlarging the face. Previously
-delivered lists are not all migrated; apply/verify through each approved module.
-
-NEXT: purchase checkpoint and Customers/Suppliers/Bills viewport group1 are verified. Group1:522 final measured frames and416 suites/4,648 frontend tests; read2026-10-21-viewport-shop-registers.md for A/B, actual scope and limits. Continue remaining sales-document lists, then each pending module group in11. Do not ask routine permission or claim all modules already fixed. This UI-layout rollout does not authorize new financial workflows.
-
-After that, review07-screens/09 §6 and real PurchaseBillDetailPageContent before any
-UI. Build the approved phone summary/actions/lines and desktop1280 two-column
-composition. Reuse the sales SomethingWrong chooser with supplier words rather
-than copy it. Verify Pay supplier allocation/advance, void refusal consequences,
-linked debit notes/payments, archived supplier and order billed once. Verify
-whether the existing payment engine supports Supplier gave money back before
-exposing it; never invent an unsupported action. Detail and full return forms
-must get their own LOOK/business/recovery/access/performance acceptance.
-Then order conversion, full returns/debit notes and remaining sales documents;
-inventory/money/expenses/reports afterward, approved remaining Home LAST.
-No routine phase permission question. New rules/contract boundaries still apply.
-
-SOURCE LIMITS TO KEEP HONEST
-BP-18 proposes optional purchase-list created_at/updated_at for indistinguishable
-unnumbered drafts; not approved/built. No made-up saved timestamps. Purchase
-editor keeps no device copy/crash guarantee; in-place re-auth is shell work.
-Custom counted-unit metadata UX and physical PWA/hardware remain unproved.
-Server tax/discount/last duplicate-line rules govern purchase cost defaults.
-Same-phone contacts across shops never grant access or combine balances.
-
-THE STANDARD EVERY MODULE IS SCORED AGAINST (learned on billing, 20 Oct)
-Owner's bar: above 8.5 in EVERY aspect — function, busy shop, UI/UX,
-performance — on phone AND desktop, "just like Customers". Score in this table
-(the Counter Mode artifact's format), from frames and measurements only:
-  Point of view | Score | Evidence | Still weak | Confidence
-for Function / Busy shop / UI-UX / Performance x phone / desktop. Never round
-a number up; an aspect below 8.5 is said plainly with its measurement.
-DESIGN (UI/UX): the 07-screens composition at 390/320/1024/1280, light and
-  dark, Hindi 320/1280; zero page overflow, zero text cut against its own box,
-  every label >= 4.5:1. No word cut by "…" anywhere (UbCombobox options now
-  wrap); chip rows that would wrap above the work scroll sideways instead;
-  identical-looking rows must be told apart (time, number); money via
-  formatInr; plain words (Customer/Supplier/Contact, Quick Sale).
-BUSY SHOP: keyboard-only entry on desktop (search, Enter, Qty, Ctrl+Enter);
-  scanner path (Enter while results answer an older term = barcode lookup;
-  caret stays in search after a scan); repeat item raises Qty; one-tap finish
-  for the common case; hold/park work for the next customer; find a line on
-  long documents; add the missing contact/item from a no-match search (write
-  permission only); nothing typed is lost on reload, offline or expired
-  session (sales: device copy + restore dialog, verified by harness flow
-  session-return). Test double taps and lost replies (Idempotency-Key reuse).
-PERFORMANCE: (a) navigation: e2e/perf-app.mjs --reps=3 --only=nav, with
-  nothing else running. Never compare against an old baseline from another
-  day/container alone: on 20 Oct that showed every screen slower, including
-  untouched Library/Lending. Do an A/B: build the commit before your work in a
-  git worktree (copy node_modules with cp -al; a symlink breaks Turbopack),
-  serve it with the worktree's e2e/serve.sh, then alternate old/new/old/new
-  and pool (billing: 684 vs 688 ms median, noise 8.5 ms = unchanged).
-  (b) editor speed: e2e/perf-billing.mjs (390 px CPU 4x and 1280): Enter->line,
-  Event Timing per phase, scanner lookups counted. Billing phone pick ~190 ms
-  FLAT from line 1 to 30 (laptop ~100 ms). Three trims (memo collapsed cards,
-  one write per pick, memo customer section + deferred focus) measured within
-  noise and were reverted; the cause is that useInvoiceEditor watches the
-  whole form, so any change re-renders the whole editor. Do not repeat those
-  trims; the redesign (sections subscribed to their own fields, preview once
-  per change, focus after paint, validate a new line on blur) is deferred by
-  the owner. Purchases use the same pattern (usePurchaseBillEditor): measure it
-  the same way and report, do not assume.
-  (c) bundle: a drawer/form/finder is its own dynamic() module; raise budgets
-  only to measured + 0.3 with a note saying what bought the bytes.
-Billing evidence: docs/performance/2026-10-20-p5-counter-billing.md (all
-steps, the rescore table, the profile and every attempt) and data/ files.
-Open owner question: should jit=off (3421283) go to production or stay local?
-
-LATEST DELIVERED WORK
-- Counter steps (20 Oct): see IMMEDIATE NEXT PIECE; 4,580 tests, 80 frames,
-  a real one-tap cash Quick Sale on local QA. Harness revamp-editor-compose.mjs.
-- Customers list JIT fix (20 Oct): 1.65 s -> 0.45-0.61 s; backend 4,673 passed,
-  16 skipped, 2 wall-clock failures recorded, not relabelled.
-- Bill editor composition (20 Oct): always-open item search, Shop customer
-  line, offline/slow Issue, draft recovery fixes; 4,564 tests, 80 frames, real
-  Quick Sale issued locally. Report: 2026-10-20-p5-editor-compose.md. Harness:
-  e2e/revamp-editor-compose.mjs (local QA only).
-- Home surface4a66b430; Bills register ed6d1a2b; bill detailb49df7f6.
-- Home bounded status/line-count facts and Shop source fencesfe6852ae.
-- Reordered delivery plan5ccbcbb0.
-- Compact billing line/totals component407d9caa. Reuses UbLineItemsEditor with
-  opt-in summaries, stable edits and invalid-row focus; full selected names;
-  narrow-phone fields/total dock stack; Rate column fits large numbers. Sales
-  opts in; default purchase/inventory cards remain.4,550 frontend tests and84
-  measured en/hi frames pass. Report:2026-10-20-p5-editor-lines.md. Its8.73
-  component self-review is NOT a whole-POS or merchant-research score.
-- R-DEC-28 terminology checkpoint: Quick Sale / Saved customer in billing,
-  Customer in sales, Supplier in purchases, Contact in neutral/shared UI. Hindi:
-  तुरंत बिक्री / सहेजा गया ग्राहक / ग्राहक / सप्लायर / संपर्क.100 English and94
-  Hindi visible strings updated across forms, reports, imports, activity and
-  messages, plus server presentation wording. Read the delivery report below
-  and git log for the pushed label commit before changing anything again.
-
-TERMINOLOGY CONTRACT — R-DEC-28
-Keep technical Party/party_id/walkIn identifiers, module/permission codes, API
-paths and payload keys, CSV import headers, user-entered names and historical
-records intact. Quick Sale still selects walkIn; Saved customer still selects
-party. No new financial behavior, contact model, permissions or schema migration.
-The shared Django model is still Party, including admin/audit model lookups;
-only its display label says Contact. Default customer nouns in new wholesale/
-trader/other presets say Customer. Do not overwrite existing business settings.
-The import sample uses Radhe Krishna Enterprises; an imported user's own name
-such as Walk-in Anil is preserved exactly. No global identifier replacement.
-
-LATEST VERIFICATION AND LIMITS
-Read docs/performance/2026-10-20-plain-contact-terms.md for exact final evidence.
-Frontend:408 suites/4,550 tests pass; changed-file lint, type check, locale split/
-check, standard production build, bundle and174 contrast pairs pass. No budget
-raise for this copy checkpoint.48 read-only browser frames check billing modes,
-Shop/customer picker and contact form at390/320/1024/1280 light/dark, with Hindi
-at320/1280. No business writes or external messages in that browser review.
-The body-wide diagnostic also sees the already-documented320px shell business
-name truncation; final picker checks target the actual popover surface. This
-copy piece does not claim to fix the omitted shell work.
-Backend full run:4,670 passed,16 skipped,3 failures:two old wording assertions
-and the existing5,000-schedule60-second wall-clock ceiling at63.3s. Copy assertions
-were updated without weakening business assertions. Corrected focused group:
-59 passed, including import-name preservation and isolated scale at40.37s.
-Final count-neutral notification wording recheck:11 passed.
-Do NOT relabel the original full run green. Earlier admin/audit lookup mistakes
-were caught and corrected before delivery;137 relevant tests pass. AST review
-confirms presentation-string-only changes, preserved dictionary keys and model
-lookup calls. makemigrations --check --dry-run reports no changes.
-Physical phones, installed PWA, OS text scaling, keyboards, scanner/printer
-hardware and TalkBack/merchant research are not proved by desktop Chromium.
-
-APPROVED HOME WORK — R-DEC-26/27 (all three BUILT 25 Oct: BP-17, BP-16, BP-08)
-The owner answered "Approve all three workflows" for BP-08/16/17:
-Shop-only role-scoped promises/follow-ups; append-only physical cash observations
-without adjustments; explicit audited customer/supplier settlement without auto
-netting. Build them AFTER the source-module groups above, one verified piece at
-a time. No repeat approval question. BP-10 historical role statements and omitted
-shell workflows retain their separate approval boundaries. Home's8.2 full-parity
-review is not whole-feature completion; its surface score never replaces that.
-
-BOUNDARIES THAT REMAIN
-- Library/Lending are live. Presentation only; their endpoints, body shapes,
-  models, calculations and workflows are frozen. Functional ideas go to08 as
-  proposals, never quietly into code.
-- Each user/business/app/book/role owns its data. Customers and Suppliers remain
-  separate; personal Udhaar remains separate. Matching phone numbers or a person
-  owning another shop do not grant access or net balances. Check real API rights
-  for reads/writes/bulk/export/share and context changes. The access coverage
-  matrix in02 section5.1 is not an all-API privacy certificate.
-- Weighted-average stock costing remains the supplier-return rule; supplier
-  credit still uses the original bill amount. Read the existing services/tests.
-- Default item pricing is distinct from actual bill pricing. Manual bill price/
-  discount changes do not edit item defaults or historical invoices. Internal
-  costs/margins never enter customer-facing documents. Never duplicate tax,
-  pricing, allocation, balance or stock engines in UI code.
-- Every default outgoing reminder/message remains editable. No automatic sends.
-  No product/domain on anything a merchant's customer receives. Never commit
-  Message Central credentials or touch Railway/production data as local QA.
-- Existing logo; teal#0E7C86, marigold#F59E1B with dark ink for the main action,
-  white page, dark teal sidebar, Jakarta/Mukta. Reuse src/design-system first;
-  no raw host JSX outside it. Redux Toolkit; no new package without an ADR.
-  A drawer/dialog/sheet belongs in the chunk that opens it, using dynamic().
-
-QUALITY LOOP — REVIEW, BUILD, LOOK, REPORT
-Use electrical/electronics examples and Radhe Krishna Enterprises. Redesign the
-complete approved composition, not isolated old spacing/colors. Review product
-purpose and business necessity as well as code. Preserve existing functionality.
-After each screen/form/card/drawer/sheet/dialog:
-1. Reproduce defects first and add meaningful failing regressions. Lint changed
-   files with npx eslint --fix --max-warnings=0; full cloud lint exceeds25min.
-   Run npm run type-check, full npx jest, then the production build, bundle and
-   contrast gates. Run i18n:split and i18n:check after locale changes. Jest and
-   build must be sequential: a test creates a temporary lint probe file.
-2. Build in frontend with:
-   NEXT_PUBLIC_API_BASE_URL=/api/v1 API_PROXY_TARGET=http://127.0.0.1:8000 \
+QUALITY LOOP —REVIEW,BUILD,LOOK,REPORT (R-DEC-07/32/34)
+Map spec/reference dimensions/states/interactions to actual code before edits.
+Add meaningful fail-before regressions. Finish each screen/overlay group:
+1. Changed-file npx eslint --fix --max-warnings=0; npm run type-check; full
+   npx jest; then build (never run jest/build concurrently: temporary probe).
+   NEXT_PUBLIC_API_BASE_URL=/api/v1 API_PROXY_TARGET=http://127.0.0.1:8000
    NEXT_PUBLIC_SW_ENABLED=false NEXT_PUBLIC_ANALYTICS_ENABLED=false npm run build
-   Restart the standalone frontend after every build, copying static/public as
-   e2e/serve.sh does. Restart API with e2e/serve-api.sh; use the console OTP
-   provider. On a shared host restart only processes owned by this task.
-3. Bring both tiers up and test like a merchant/tester. Use a local seeded QA
-   database only. Run appropriate backend suites; do timing tests without other
-   test/build/browser workloads competing. Never hide red runs or raise a timing
-   ceiling to obtain green. Do not invent missing source data for reference UI.
-4. Shoot390/320/1024/1280 light/dark plus Hindi320/1280 in every relevant state.
-   LOOK at contact sheets and native frames. Measure computed label contrast
-   >=4.5:1, text against its own box, numeric input value widths and page width.
-   Prove new defect checks fail before the fix. Include pending/error/empty/
-   offline/long names/large money/repeated taps/recovery/access-denied states.
-5. Measure navigation quietly with e2e/perf-app.mjs --reps=3 --only=nav; compare
-   the same cases and F4/baseline reports. No speed claim without both. A row
-   height reduction is not a loading or merchant task-time improvement.
-6. Update dated performance report,07 tracking,12 Progress/Next and this handoff.
-   Score only verified scope using09's weights; ratings are provisional self-
-   assessments, not independent merchant research or whole-app certification.
-7. Commit with a prose WHY and the attribution trailer your tool requires, push dev, verify the
-   remote SHA, then report final screenshots/numbers/limits before the next piece.
-   Continue approved work without routine permission questions.
-
-
-R-DEC-32 ADDITION — FUNCTION, USER VALUE AND COMPETITION ARE STRICT GATES
-For each piece, explain the user's task, why the feature/action is necessary
-and belongs there, and what benefit is measured versus assumed. Verify real
-UI/API/persisted business results, permissions/isolation and failure/recovery.
-Compare relevant competitors on the same task using dated verified evidence;
-state better/equal/worse honestly, never invent superiority. Map every necessary
-requirement/must-keep contract to implementation and test/journey evidence with
-passed/missing/deferred/unproven status in the existing report. A high design
-score cannot excuse critical financial/access/data-loss or essential-flow gaps.
-No claim that this research or all-module acceptance is already complete.
-
-
-## LATEST — 23 October 2026 afternoon (supersedes the checkpoint section below)
-
-The sales-document lists (Estimates, Sales orders, Delivery challans, Credit
-notes) are VERIFIED on the exact checkpoint: full gates (Jest 4,667), the
-four-kind sweep EN 390/320/1024/1280 light+dark and Hindi 320/1280, the mobile
-contract on all four kinds, LOOK, and an old/new/old/new A/B against 477916b.
-Report: docs/performance/2026-10-21-viewport-sales-documents.md §23 Oct
-afternoon. Scores there are scoped and provisional; overall NOT above 8.5.
-
-Before any sweep on a fresh container run
-  NODE_PATH=$(npm root -g) node e2e/seed-sales-flow.mjs
-because seed_scale writes invoices only and the four lists are otherwise empty
-(every "ready" frame becomes first-use and every width fails).
-
-Open on this feature (record, do not hide): phone 4x-CPU navigation to these
-lists is ~50 ms (+6%) slower than 477916b in both rounds, unprofiled; at 1024 px
-the header stacks on three lines and rows get 45% of the viewport; the desktop
-credit-note draft row says Draft in the caption and the badge.
-
-IMMEDIATE NEXT (R-DEC-34: one feature at a time, finished before the next)
-DONE 23 Oct evening: Bills register on a phone (report
-docs/performance/2026-10-23-bills-phone-register.md; known limit: 320 px with
-crore totals gives cards 58.5% because Billed/Due wrap).
-DONE 23 Oct night: Customers register on a phone (b6aa7af; report
-docs/performance/2026-10-23-customers-phone-register.md; the 320 px summary
-wrap and Hindi measurement were closed the same evening — contract takes
---locale=hi).
-DONE 23 Oct night: Suppliers register on a phone (report
-docs/performance/2026-10-23-suppliers-phone-register.md). OPEN: supplier card
--> person page is ~220 ms slower at 4x CPU in all four rounds, unexplained;
-take a profiled trace (old e0da36f vs new) before claiming anything.
-DONE 23 Oct night: Purchase registers on a phone — bills, orders, debit notes
-(report docs/performance/2026-10-23-purchase-registers-phone.md; cards 47% ->
-61-65%). OPEN: desktop at 4x CPU +75 ms register / +129 ms New bill in both
-rounds, unexplained; phone New-bill timing invalid (negative content times).
-DONE 23 Oct night: Purchase detail §6 incl. order -> bill and returns entry
-(report docs/performance/2026-10-23-purchase-detail.md; e2e/purchase-detail.mjs
-118/118). Defaults awaiting owner: "Supplier gave money back" hidden; Cancel
-order / Delete draft in the action row, not a ⋯ menu.
-DONE 24 Oct: Items list on a phone §8.1 (report
-docs/performance/2026-10-24-items-phone-register.md; cards 69%). OPEN: list
-open at 4x CPU slower (round 1 heavy, both sizes). Deviations awaiting owner:
-no kind disc and no category on the phone card.
-DONE 24 Oct: Item detail §8.2 (report docs/performance/2026-10-24-item-detail.md;
-e2e/item-detail.mjs 94/94; opening the page unchanged: 933 -> 904 ms at 4x CPU).
-AWAITING OWNER: BP-19 (the server naming the sale/purchase document behind a
-stock movement, so a row reads "Bought on PB-0012" and links to it) is built and
-tested on branch `bp-19-movement-sources` and is NOT on dev; without it the rows
-say their type and link nowhere. Deviations recorded: desktop Archive is a button
-not a ⋯; history chips use UbChoiceChips, not the landing page's UbChipTabs.
-DONE 24 Oct: Item form §8.3 (report docs/performance/2026-10-24-item-form.md;
-e2e/item-form.mjs 29/29). Fast path is name, type, unit, selling price with
-Includes GST, Save; Cost and margin and Category are folds; a used barcode links
-to its item; a dirty Cancel asks "Leave without saving?". No route change, so no
-navigation A/B. Competitor comparison not done (unproven).
-DONE 24 Oct: Stock adjustment §8.4 (report docs/performance/2026-10-24-stock-adjustment.md;
-e2e/stock-adjust.mjs 47/47; drawer open 738 -> 680 ms phone at 4x CPU, within
-noise). Reason chips, Add / Remove / Set to with no minus sign, value shown only
-with cost permission, "Stock adjusted · View" (the snackbar now carries one
-action). Owner said "do whatever is best" (24 Oct), so decided: no "Free
-sample" reason (Own use or Other covers it, no backend change); the desktop
-drawer is 900 px so the 7-column table shows; on a phone the date stays in view
-and After needs a short scroll.
-DONE 24 Oct: Low stock and Stock summary §8.7 (report
-docs/performance/2026-10-24-stock-reports.md; e2e/stock-reports.mjs 44/44;
-Low stock open 1,073 -> 1,104 ms phone at 4x CPU, within noise). Low cards in words with Order; Order opens
-/purchases/orders/new?items=id:qty with the suggested quantity, which the
-editor now prefills (no new endpoint); desktop Order selected makes ONE order
-(items carry no supplier, so no split); summary has Adjust stock and no category
-line on cards; both pages say when stock tracking is off.
-DONE 24 Oct: Categories and units §8.5 (report docs/performance/2026-10-24-masters.md;
-e2e/masters.mjs 56/56). A search per section; no match offers to add the typed
-text; "Already exists" before sending; standard units first and locked; chips
-on a phone, two panels on a desktop (layout by CSS, not a JS media query).
-Opens about 75-80 ms slower at 4x CPU (both lists rendered); recorded.
-DONE 24 Oct: Price lists §8.6 (report docs/performance/2026-10-24-price-lists.md;
-e2e/price-lists.mjs 49/49). List and detail on UbDataGrid; rule card with Edit,
-Pin a rate inline, tap a pinned row to change it, usual price beside the list
-rate; "usual price" wording everywhere. Found in the A/B: UbDataGrid held every
-desktop table behind its skeleton for React's 300 ms Suspense minimum; it now
-renders a loaded table directly (GridTable, preloadGridTable). Phone detail
-opens about 150 ms slower (bigger route chunk); recorded.
-DONE 24 Oct: Payments register §9 (report docs/performance/2026-10-24-payments-register.md;
-e2e/payments-register.mjs 55/55). The Shop's /payments listed Library fee
-receipts and Lending money as Shop payments (C-3, verified on the QA book); it
-now asks for bucket=shop. Mobile register (joined cards, scroll-next), chips
-All/Received/Paid out/Cancelled, "Void" is "Cancelled", Quick Sale for no
-name, money in green and out plain ink (it was red/green the wrong way round),
-date joined under the number below 1280. Desktop opens ~40-230 ms slower at
-4x CPU; recorded.
-Payment receipt §10 delivered 24 Oct (docs/performance/2026-10-24-payment-
-receipt.md, e2e/payment-receipt.mjs 65/65): a summary with modes and each
-settled bill's due now, Share · Print · ⋯ docked on a phone, "Void" is
-"Cancel receipt" in Shop words, grey cancelled banner, offline hold. LOOK found
-the dock under the phone menu, the toast covering Record again, cut reason chips
-and bill numbers split on the print; all fixed. Desktop ~120 ms slower at 4x
-CPU; recorded. Open: the server's share text (§10.2 wording, link) and the
-shared sheet's counter wait for approval.
-Receive payment drawer §6 delivered 24 Oct (docs/performance/2026-10-24-
-receive-payment.md, e2e/receive-payment.mjs): owes figure in the header, what
-the amount leaves due under it, each bill's share and the advance as rows,
-failure said in the drawer with Try again on the same key, dues re-read on
-focus and before Save (P-08-04), Save allowed with Auto when bills won't load,
-one saved panel with Share receipt first. Library path unchanged. Speed level.
-Owner, 24 Oct: old Udhaar-book bills on the QA data are discarded (fresh app);
-cancel dialogs keep the caret in the reason; "proceed" read as approval for
-the receipt message wording on the server (§10.2). After Udhaar, STOP: Library
-and Lending wait until the owner has tested Shop and Udhaar.
-Receipt message wording (§10.2) delivered 24 Oct on the owner's "proceed":
-greeting, what was received and how, bills, receipt number, what is still due,
-shop's thanks, one per line, en/hi, "Rs" (payments/services/receipt.py,
-docs/performance/2026-10-24-payment-receipt.md deviation 1). No link yet.
-Expenses §12 delivered 24 Oct (docs/performance/2026-10-24-expenses.md,
-e2e/expenses-register.mjs): R-DEC-33 register, total + top 3, All · Unpaid ·
-Cancelled chips, category-first cards, six one-tap categories, nothing red
-until Save, Save and add another refocuses Amount, Cancel expense dialog in
-Shop words. Unpaid expenses post in the Shop book (verified). The Library
-shares the page; its requests are unchanged.
-Cash book §11 delivered 24 Oct (docs/performance/2026-10-24-cashbook.md,
-e2e/cashbook.mjs): four figures always in view, Cash · Bank · Both chips,
-close the day offers the filled-in fix (expense when short, receive when
-extra) and re-reads after the payment, rows open receipt or expense.
-Reports hub §10.1 delivered 24 Oct (docs/performance/2026-10-24-reports-hub.md,
-e2e/reports-hub.mjs): rows titled by the question, report name under it.
-Day book §10.2 delivered 24 Oct (docs/performance/2026-10-24-day-book.md,
-e2e/day-book.mjs): figure line, date bands, three-thing cards, row sheet on
-phone and desktop; desktop table cut to six columns that fit at 1024.
-Sales and Purchase registers §10.3/10.4 delivered 24 Oct
-(docs/performance/2026-10-24-registers.md, e2e/registers.mjs): figure line,
-phone cards under date bands, By bill / By item, row sheet; the grid's opt-in
-sideways scroll now really scrolls (it was clipping Total and Due at 1024).
-Words (owner, 24 Oct): "Aging" is now "Old dues"; the hub says "Money to
-collect" / "Money to pay". Owner, 24 Oct: Old dues rows get a sheet with
-Remind + Receive (to collect) or Pay (to pay); notes come from the existing
-payment form's optional Note.
-GST summary §10.5 delivered 24 Oct (docs/performance/2026-10-24-gst-summary.md,
-e2e/gst-summary.mjs): net to pay first, phone section cards, labelled JSON
-disabled for an open month, official 3B grid on desktop.
-Profit §10.6 delivered 24 Oct (docs/performance/2026-10-24-profit.md,
-e2e/profit.mjs): figure line with loss in words, phone cards, row sheet.
-Old dues §10.7 delivered 24 Oct for the Shop (docs/performance/2026-10-24-old-dues.md,
-e2e/old-dues.mjs): side words with totals, age bars, phone cards, row sheet with
-Remind + Receive payment or Pay. The Udhaar book's aging is unchanged.
-Home 1/3 cash count (BP-17) delivered 25 Oct (docs/performance/2026-10-25-cash-count.md,
-e2e/cash-count.mjs): append-only counts against the server's figure at the save,
-"Not counted · Count cash" on Home's cash figure, a count drawer with history.
-Home 2/3 Shop promises (BP-16) delivered 25 Oct (docs/performance/2026-10-25-shop-promises.md,
-e2e/shop-promises.mjs): a per-role Shop promise on the person page, Home's
-Follow-ups list with today's balance, kept/cancel as history, no money moved.
-Home 3/3 Shop settlement (BP-08) delivered 25 Oct (docs/performance/2026-10-25-shop-settlement.md,
-e2e/settlement.mjs): "Settle two balances" from the person page ⋯ and Home's
-"in both lists" note; two linked no-cash payments, cancelled together.
-1. Payments, Expenses, Cash book, Reports hub, Day book, registers, GST,
-   Profit, Old dues done. Home COMPLETE: cash count, Shop promises and
-   settlement done. Owner, 24 Oct: after Home commit and push, STOP and wait
-   for the owner's next instruction; do not start Udhaar, Library or Lending.
-
-## LATEST CHECKPOINT —23 October2026 (owner requested commit/push)
-
-This section supersedes stale Next/current-handoff statements below/elsewhere.
-Continue the existing revamp on dev; do not start a new plan. Read AGENTS.md,
-CLAUDE.md, revamp README/12/02,09 §1, DESIGN-SYSTEM and counter-mode.html.
-Preserve untracked ims-platform/; never reset or blindly stage it.
-
-CURRENT WORK IS IN PROGRESS, NOT FINAL ACCEPTANCE. Parent delivered commit is
-477916b1. The owner explicitly requested committing this unfinished checkpoint.
-No final new rating, all-module completion or deployment claim is justified.
-
-R-DEC-33 is strict across previously verified screens too: desktop tables with
-bounded row scrolling and visible pagination; mobile joined cards with loading
-next batches on scroll and manual retry/fallback, no desktop page arrows.
-Sentinel belongs INSIDE the card scroll region, not pinned where it fetches
-all pages. Preserve position, deduplicate IDs, reset on filter/context changes,
-retain cards on failed append.32px chip face/44px mobile targets. Compact title
-and New in header, one list search+Filters row, useful chips, concise summary.
-No duplicate full-width search: global Shop search is a44px icon on lists.
-Home has no list search, so its approved prominent Find or start field remains.
-Dashboard/forms/settings follow their own approved composition, not a table.
-Owner supplied21Oct22:41 mobile Customers and Bills/printing screenshots as
-reference. Live Claude artifact has not been freshly inspected in this piece.
-
-IMPLEMENTED IN THIS CHECKPOINT
-- Estimates/Orders/Challans/Credit Notes share the approved compact register,
-  visible status chips and server totals. Mobile append Redux mode uses existing
-  paging APIs; latest request/kind/filter fences; render-time stale-source guard.
-- Shared grid afterRows slot keeps load-next inside scrolling cards; UbLoadMore
-  has optional automatic/repeatWhileVisible controls and44px manual fallback.
-  Identity merge helper reused in existing party reducer (behavior preserved).
-- Compact mobile global search; Home command field retained. Shared filter
-  button40px matches search, with44px mobile hit area; explicit small filters
-  remain32px. Active chip reveals horizontally without vertical page scrolling.
-- Challans no longer show Open credit. Credit-note All renamed Recorded because
-  server All intentionally excludes draft/void; empty recorded view offers Show
-  drafts when source counts say drafts exist. No generic New return.
-- Latest1024 fix: use existing min-width1280 media query, NOT grid full tier
-  (full begins1024), join date into identity below1280; wide date stays separate.
-  Wrap long document references and titles. This latest fix still needs LOOK.
-
-VERIFICATION — DO NOT OVERSTATE
-- Before latest compact-breakpoint changes,421 suites/4,663 frontend tests passed,
-  full build/types/lint/locales/contrast and corrected bundle gate passed.
--75 selected backend sales tests passed (6 deprecation warnings). No backend
-  source/schema/API/financial calculation changes.104 local draft API fixtures
-  (26/kind) were created for real paging, never issued/paid. Local QA only.
-- The full four-kind sweep had Orders green, other English runs red at1024:
-  Estimates/Credit Notes dates clipped; Challan first-use title clipped. Hindi
-  runs passed. These failures are not final green. Fixes are now implemented;
-  repeat the exact sweep after latest build/restart. The current focused test
-  group and latest production build pass; exact checkpoint gates in report.
-- Earlier phone probe:56px shell header,44px global icon, exactly one list
-  search, cards62% of usable844px viewport;25→26 source-backed append, manual
-  failure retry, no automatic retry loop, query reset. Recheck after final build.
-- Initial static-asset500/login failures were serving setup: rebuilding deletes
-  standalone copied static/public; always restart and recopy AFTER each build.
-- No final performance A/B for this piece, final all-frame LOOK or final rating.
-  Do not reuse477916b1 performance numbers as if they measured current code.
-
-IMMEDIATE NEXT
-1. Finish exact-current full gates sequentially (Jest before build), then restart
-   task frontend with copied static/public and verify a real JS asset200.
-2. e2e/revamp-bills.mjs now supports --kind=estimate|sales_order|delivery_challan|
-   credit_note, --locale, --widths, --themes. Use390/320/1024/1280 light/dark and
-   Hindi320/1280. Reused source-backed data with explicit synthetic UI states.
-   Credit-note draft fixture path uses tab=draft; server Recorded is unchanged.
-3. e2e/mobile-sales-contract.mjs: actual append failure/retry, query reset,
-   no eager page2, one search,40px toolbar match, active-chip visible, cards
-   >=60% usable normal phone viewport, desktop table/pager. --kinds/--widths
-   supported. Run all4 kinds/phone+desktop; fix real failures before rating.
-4. LOOK native frames/contact sheets, measure own-text bounds/contrast/hit tests.
-   Short600px with network banner is a separate stress case, not60% guarantee.
-5. Quiet same-machine old/new/old/new perf using e2e/perf-app.mjs --reps=3
-   --only=nav --cases=shop.bills→estimates,shop.bills→orders,
-   shop.bills→challans,shop.bills→credit-notes. Parent477916b1 build is in chat
-   artifacts/mobile-cards-2026-10-22/baseline if still available; otherwise
-   create a clean baseline and cp -al node_modules, not a symlink.
-6. Update dated report,07 tracking,11 matrix,12 Next and BOTH prompts; commit
-   verified result, pushdev, verify remote SHA, report final screenshots/numbers.
-7. R-DEC-33 mobile follow-up is still PENDING for Bills, Customers, Suppliers,
-   Purchases and other lists. Shared primitives existing does not migrate them.
-   Verify Home after shared shell changes against its approved reference.
-   Continue each list group, then purchase detail/order conversion/returns and
-   remaining source modules under R-DEC-27; approved remaining Home workflows LAST.
-
-Boundaries: separate user/business/app/book/role access, no phone-number-based
-access or automatic netting, internal costs never customer-facing, editable
-outgoing messages/no autosend, weighted-average supplier-return stock cost,
-original bill credit amount. Library/Lending financial contracts frozen.
-No package/new engine; DS reuse, no raw feature JSX, lazy overlays. Use electrical
-examples and Radhe Krishna Enterprises. Ratings provisional and scoped; no
-competitor superiority or physical/PWA/hardware/research claim without evidence.
-No production/Railway writes. Commit attribution: Assisted-by: OpenAI Codex.
-
-Exact23Oct checkpoint verification: changed-file lint0, type-check0,7 focused suites/84 tests pass (3.864s); latest production build passed. Full final browser/LOOK/A-B remains pending.
+   Run bundle:check,check:contrast; i18n:split/i18n:check for locale changes.
+   Full cloud lint exceeds25min; report changed-file lint. Never hide red runs.
+2. Restart task-owned frontend after every build; copy static/public as e2e/
+   serve.sh does. ConsoleOTP API; seeded localQA only. Don't kill others' jobs.
+3. Real merchant/browser journey and server results: empty/loading/error/offline/
+   permission,long name,large money,repeat taps,recovery and access contexts.
+4. Shoot390/320/1024/1280 light/dark +Hindi320/1280,relevant states; LOOK at every
+   contact sheet/native frame. Measure each label's computed contrast≥4.5,
+   own-box text fit/pagewidth,hit areas and actual scroll/pagination behavior.
+   Prove new defect checks fail before relying on them.
+5. Quiet matched old/new/old/new e2e/perf-app.mjs --reps=3 --only=nav with
+   relevant cases. Baseline worktree dependencies cp-al,not symlink. No tests/
+   builds/browser competition. No speed claim from row height or old container.
+6. Appropriate backend and existing modulee2e; frozen contract checks02/11.
+7. Dated report,07tracking,11matrix,12Progress/Next,both prompts. Scoped table:
+   Point of view|Score|Evidence|Still weak|Confidence for Function/Busy use/UIUX/
+   Performance on phone AND desktop. Owner target>8.5each; never round/inflate.
+8. Commit proseWHY + Assisted-by: OpenAI Codex, pushdev,verify remoteSHA and
+   report screenshots/numbers/limits before next. No routine permission pauses.

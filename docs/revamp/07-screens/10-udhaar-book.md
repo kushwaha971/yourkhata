@@ -1,6 +1,24 @@
+# Current personal Udhaar specification · R-DEC-45
+
+This section supersedes the older business-style specification below.
+- People: full name, avatar, directional balance; All active default; one search
+  and Filters; floating Add on phone; desktop bounded table/pagination.
+- Add/Edit: name, optional mobile, phone-contact selection. Nothing else.
+- Person: identity, current balance, dated entry list. No business Details.
+- Actions: Report, editable WhatsApp/SMS reminders, Call; Gave/Got dock.
+- Entry: Gave/Got, amount, optional note; date automatic. Unspecified receipt
+  method stays NULL. No false cash classification. Existing tenant, permission,
+  atomic balance, audit and idempotency rules remain.
+- Archived history readable; repeated taps cannot duplicate writes.
+- Shop remains unchanged; live Library/Lending contracts remain frozen.
+- Evidence: docs/performance/2026-10-25-udhaar-person.md.
+
+--- Superseded specification and audit history ---
+
+<!-- Owner updates R-DEC-42/43/44: implement only Udhaar/Library/Lending; no global search in those apps. Udhaar person uses compact Report/Remind/Call icon actions, bounded history and collapsed secondary reminder status. Newer Gave money/Got money wording supersedes older You gave/You got examples below. Shop unchanged; BP-21 deferred. -->
 # Udhaar book: person khata, entries, corrections, statement, old dues, reminders, archive, tags
 
-Status: **specified (wave 2), 17 Oct 2026 — not approved, not built.** Review rounds 1 and 2 are at the end of this file; round 2 passes provisionally (8.76).
+Status: **Udhaar approved under R-DEC-35; person overview/history checkpoint in verification25Oct2026.** Review rounds 1 and 2 are at the end of this file; round 2 passes provisionally (8.76).
 App: `khata` (`F/khata/app.ts`), book **`main`** (`party.balance`). Entry point `/khata` is specified in [04-udhaar-home.md](04-udhaar-home.md); the drawer, dialog and sheet rules every screen here uses are in [12-shared-overlays.md](12-shared-overlays.md).
 
 Paths are relative to `frontend/` unless they start with `backend/` or `docs/`. `F/` is `src/modules/DigiKhaato/features/`. Endpoints are under `/api/v1/` (`src/api/APIPaths.ts`). Everything below was read from the code on `dev` on 17 Oct 2026; where the code and an older doc disagree, the code is described and the gap is listed in §0.

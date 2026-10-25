@@ -35,7 +35,7 @@ try {
     const check = async (state) => {
       await page.evaluate(() => document.fonts.ready);
       await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))));
-      const measure = await measureCustomers(page, 'main');
+      const measure = await measureCustomers(page, ['filters', 'quick-add'].includes(state) ? undefined : 'main');
       const layout = await page.evaluate(() => {
         const grid = document.querySelector('[data-testid=ub-grid]');
         const region = grid?.querySelector('[data-testid=ub-grid-scroll-region]');
@@ -62,9 +62,9 @@ try {
     await page.goto(`${base}/khata`, { waitUntil: 'networkidle' });
     await page.locator('[data-testid=ub-grid-card],[data-testid=ub-grid-row]').first().waitFor();
     const qs = new URL(page.url()).searchParams;
-    if (qs.get('balance') !== 'due' || qs.get('status') !== 'active') failures.push(`${tag}: missing explicit Due URL ${page.url()}`);
+    if (qs.get('balance') !== 'all' || qs.get('status') !== 'active') failures.push(`${tag}: missing explicit All URL ${page.url()}`);
     await check('ready');
-    const body = await (await ctx.request.get(`${base}/api/v1/parties?balance=due&status=active&page=1`)).json();
+    const body = await (await ctx.request.get(`${base}/api/v1/parties?book=main&status=active&page=1`)).json();
     if (await page.locator('[data-testid=khata-people-summary]').count()) {
       const text = await page.getByTestId('khata-people-summary').innerText();
       if (!text.replace(/,/g, '').includes(String(body.meta.total))) failures.push(`${tag}: total does not match server`);
@@ -93,6 +93,11 @@ try {
     }
     if (locale === 'en') {
       await page.getByTestId('filters-button').click();
+      await page.getByRole('radiogroup', { name: 'Balance' }).getByRole('radio', { name: 'To get' }).click();
+      const directionResponse = page.waitForResponse((response) => { const url = new URL(response.url()); return url.pathname === '/api/v1/parties' && url.searchParams.get('balance') === 'owes_me'; });
+      await page.getByTestId('filters-apply').click();
+      await directionResponse;
+      await page.getByTestId('filters-button').click();
       await page.getByRole('radiogroup', { name: 'Balance' }).getByRole('radio', { name: 'All' }).click();
       const allResponse = page.waitForResponse((response) => { const url = new URL(response.url()); return url.pathname === '/api/v1/parties' && !url.searchParams.has('balance'); });
       await page.getByTestId('filters-apply').click();
@@ -101,10 +106,6 @@ try {
       if (new URL(page.url()).searchParams.get('balance') !== 'all') failures.push(`${tag}: All URL not explicit`);
       await check('all');
       await page.getByTestId('filters-button').click();
-      await page.getByRole('radiogroup', { name: 'Balance' }).getByRole('radio', { name: 'Due' }).click();
-      await page.getByTestId('filters-apply').click();
-      await page.waitForLoadState('networkidle');
-      await page.getByTestId('filters-button').click();
       await page.getByRole('dialog').waitFor();
       await check('filters');
       await page.keyboard.press('Escape');
@@ -112,12 +113,11 @@ try {
         await page.getByRole('button', { name: 'Add person' }).last().click();
         const drawer = page.getByRole('dialog', { name: 'Add person' });
         await drawer.waitFor();
-        if (!(await drawer.getByRole('radio', { name: 'Gave money' }).count()) || !(await drawer.getByRole('radio', { name: 'Got money' }).count())) failures.push(`${tag}: quick Add has no direction`);
+        if (await drawer.locator('input[inputmode=decimal]').count()) failures.push(`${tag}: Add person must not ask for money`);
         const pick = drawer.getByRole('button', { name: 'Choose from phone contacts' });
         await pick.waitFor();
         await pick.click();
         if (await drawer.getByLabel('Name').inputValue() !== 'Radhe Krishna Enterprises') failures.push(`${tag}: phone contact name did not fill`);
-        await drawer.getByRole('button', { name: 'Mobile number (optional)' }).click();
         if (!(await drawer.getByRole('textbox', { name: 'Mobile number', exact: true }).inputValue()).includes('9794620535')) failures.push(`${tag}: phone contact number did not fill`);
         await check('quick-add');
         await page.keyboard.press('Escape');

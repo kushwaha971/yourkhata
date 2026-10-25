@@ -146,7 +146,7 @@ def _parse_date(raw: Any, *, tenant: Any, details: dict) -> dt.date | None:
     return value
 
 
-def validate_entry_payload(payload: dict, *, tenant: Any, needs_mode: bool = True) -> dict:
+def validate_entry_payload(payload: dict, *, tenant: Any, needs_mode: bool = True, allow_unspecified_mode: bool = False) -> dict:
     """Every field rule that does not need the party row. Raises `ValidationFailed`.
 
     Returns the cleaned values. Collected into one `details` dict and raised
@@ -171,16 +171,17 @@ def validate_entry_payload(payload: dict, *, tenant: Any, needs_mode: bool = Tru
     amount = _parse_amount(payload.get("amount"), details)
     entry_date = _parse_date(payload.get("entry_date"), tenant=tenant, details=details)
 
-    # §10's cross-field rule, and the asymmetry is deliberate. A credit MUST say
+    # Legacy §10's cross-field rule: a credit must say
     # how the money arrived, because "I got ₹500" with no mode is a cashbook
     # entry nobody can reconcile. A debit's mode is dropped SILENTLY rather than
     # refused: EC-9 has the merchant type a reference, switch direction, and
     # save — the client keeps the value in form state so switching back does not
     # lose it, and erroring on a field the merchant cannot see would be a form
     # refusing to submit for a reason it cannot show.
-    mode = payload.get("payment_mode")
+    # Personal simple entries may leave the method unknown; never invent Cash.
+    mode = payload.get("payment_mode") or None
     if needs_mode and direction == Direction.CREDIT:
-        if not mode or mode not in MONEY_PAYMENT_MODES:  # A4b / R24: never `adjustment`
+        if (mode or not allow_unspecified_mode) and mode not in MONEY_PAYMENT_MODES:
             details["payment_mode"] = ["Choose how you received the money."]
     elif not needs_mode:
         # An opening balance is a statement about a date, not a transfer: there
@@ -277,7 +278,7 @@ def post_entry(*, ctx: Ctx, payload: dict) -> dict:
        with no justification, and an entry without its balance move is money
        the list does not show.
     """
-    cleaned = validate_entry_payload(payload, tenant=ctx.tenant)
+    cleaned = validate_entry_payload(payload, tenant=ctx.tenant, allow_unspecified_mode=payload.get("simple") is True)
 
     party = lock_party(tenant=ctx.tenant, party_id=payload.get("party_id"))
     if party is None:

@@ -27,6 +27,7 @@ import type { LedgerCorrectionFormValues, LedgerEntryFormValues } from '../types
  * questions to the server.
  */
 export interface LedgerSchemas {
+  readonly simpleLedgerEntrySchema: Yup.ObjectSchema<LedgerEntryFormValues>;
   readonly ledgerEntrySchema: Yup.ObjectSchema<LedgerEntryFormValues>;
   /**
    * LED-02 §10. Three fields, and every one of them is a rule an ordinary entry
@@ -113,6 +114,7 @@ export const useLedgerSchemas = (): LedgerSchemas => {
 
   return useMemo(
     () => ({
+      simpleLedgerEntrySchema: Yup.object(entryFields) as Yup.ObjectSchema<LedgerEntryFormValues>,
       ledgerEntrySchema: Yup.object(entryFields).test(
         'credit-needs-a-mode',
         t('ledger.entry.mode.required'),

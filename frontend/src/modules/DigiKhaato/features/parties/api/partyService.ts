@@ -391,11 +391,12 @@ const toWireBody = (values: PartyFormValues, { create }: { create: boolean }) =>
  */
 export const createParty = async (
   values: PartyFormValues,
-  idempotencyKey: string
+  idempotencyKey: string,
+  personal = false
 ): Promise<PartySaveResult> => {
   const response = await api.post<PartySaveApiResponse>(
     API_PATHS.PARTIES,
-    toWireBody(values, { create: true }),
+    personal ? { name: values.name.trim(), mobile: values.mobile?.trim() || null } : toWireBody(values, { create: true }),
     ubConfig({ headers: { 'Idempotency-Key': idempotencyKey } })
   );
   return toSaveResult(response.data);

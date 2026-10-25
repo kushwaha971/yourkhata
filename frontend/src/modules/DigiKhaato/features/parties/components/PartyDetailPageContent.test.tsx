@@ -15,7 +15,8 @@ import { resetPartyDetail } from '../redux/partyDetailSlice';
 import { resetPartyForm } from '../redux/partyFormSlice';
 import { resetPartyList } from '../redux/partyListSlice';
 
-import { PartyDetailPageContent } from './PartyDetailPageContent';
+// Preserve the existing shared-page contracts; personal Udhaar has its own replacement suite.
+import { ExistingPartyDetailPageContent as PartyDetailPageContent } from './PartyDetailPageContent';
 
 /**
  * PTY-03's khata page, end to end inside the client: content → hook → thunk →

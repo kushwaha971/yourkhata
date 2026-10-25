@@ -83,10 +83,10 @@ const signIn = (role: string, permissions: string[]): void => {
 };
 
 /** The page's job, reduced to the two lines that matter to the drawer. */
-function Harness(): React.JSX.Element | null {
+function Harness({ simple = false }: Readonly<{ simple?: boolean }>): React.JSX.Element | null {
   const form = useLedgerEntryForm();
   if (!form.open) return null;
-  return <LedgerEntryDrawer form={form} partyName="Ramesh Traders" />;
+  return <LedgerEntryDrawer form={form} partyName="Ramesh Traders" simple={simple} />;
 }
 
 const openDrawer = (direction: 'debit' | 'credit' = 'debit'): void => {
@@ -470,3 +470,16 @@ describe('the credit limit', () => {
     expect(screen.getByText(/Ask the owner to record this one/)).toBeInTheDocument();
   });
 });
+
+ it('personal Udhaar saves amount with an empty optional note and no payment method', async () => {
+  /** Personal money between friends must not require hidden business fields or invent Cash. */
+  const user = userEvent.setup();
+  openDrawer('credit'); renderWithProviders(<Harness simple />);
+  const amount = await screen.findByLabelText('Amount');
+  expect(screen.queryByLabelText('Date')).not.toBeInTheDocument();
+  expect(screen.queryByText('Payment mode')).not.toBeInTheDocument();
+  await user.type(amount, '500');
+  await user.click(screen.getByRole('button', {name:'Save'}));
+  await waitFor(() => expect(ledgerService.postLedgerEntry).toHaveBeenCalled());
+  expect(ledgerService.postLedgerEntry.mock.calls[0][1]).toMatchObject({simple:true,amount:'500.00',note:'',paymentMode:'',reference:''});
+ });

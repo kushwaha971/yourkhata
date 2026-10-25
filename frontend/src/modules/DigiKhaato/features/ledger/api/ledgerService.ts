@@ -150,6 +150,7 @@ const toWireBody = (values: LedgerEntryFormValues): Record<string, unknown> => {
   const isCredit = values.direction === 'credit';
   return {
     direction: values.direction,
+    ...(values.simple ? { simple: true } : {}),
     amount: values.amount,
     entry_date: values.entryDate,
     note: values.note.trim(),

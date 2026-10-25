@@ -1,0 +1,141 @@
+{
+  "results": [
+    {
+      "tag": "320-light-hi",
+      "state": "ready",
+      "overflow": 0,
+      "cut": [],
+      "lowContrast": [],
+      "firstRowY": null,
+      "globalSearchFields": 0,
+      "actionIcons": [
+        287,
+        287,
+        287
+      ],
+      "pageY": 0,
+      "historyHeight": 299.4375,
+      "historyScroll": "auto"
+    },
+    {
+      "tag": "320-light-hi",
+      "state": "long-name-money",
+      "overflow": 0,
+      "cut": [],
+      "lowContrast": [],
+      "firstRowY": null,
+      "globalSearchFields": 0,
+      "actionIcons": [
+        375,
+        375,
+        375
+      ],
+      "pageY": 0,
+      "historyHeight": 211.4375,
+      "historyScroll": "auto"
+    },
+    {
+      "tag": "320-dark-hi",
+      "state": "ready",
+      "overflow": 0,
+      "cut": [],
+      "lowContrast": [],
+      "firstRowY": null,
+      "globalSearchFields": 0,
+      "actionIcons": [
+        287,
+        287,
+        287
+      ],
+      "pageY": 0,
+      "historyHeight": 299.4375,
+      "historyScroll": "auto"
+    },
+    {
+      "tag": "320-dark-hi",
+      "state": "long-name-money",
+      "overflow": 0,
+      "cut": [],
+      "lowContrast": [],
+      "firstRowY": null,
+      "globalSearchFields": 0,
+      "actionIcons": [
+        375,
+        375,
+        375
+      ],
+      "pageY": 0,
+      "historyHeight": 211.4375,
+      "historyScroll": "auto"
+    },
+    {
+      "tag": "1280-light-hi",
+      "state": "ready",
+      "overflow": 0,
+      "cut": [],
+      "lowContrast": [],
+      "firstRowY": null,
+      "globalSearchFields": 0,
+      "actionIcons": [
+        299,
+        299,
+        299
+      ],
+      "pageY": 0,
+      "historyHeight": 382,
+      "historyScroll": "auto"
+    },
+    {
+      "tag": "1280-light-hi",
+      "state": "long-name-money",
+      "overflow": 0,
+      "cut": [],
+      "lowContrast": [],
+      "firstRowY": null,
+      "globalSearchFields": 0,
+      "actionIcons": [
+        331,
+        331,
+        331
+      ],
+      "pageY": 0,
+      "historyHeight": 350,
+      "historyScroll": "auto"
+    },
+    {
+      "tag": "1280-dark-hi",
+      "state": "ready",
+      "overflow": 0,
+      "cut": [],
+      "lowContrast": [],
+      "firstRowY": null,
+      "globalSearchFields": 0,
+      "actionIcons": [
+        299,
+        299,
+        299
+      ],
+      "pageY": 0,
+      "historyHeight": 382,
+      "historyScroll": "auto"
+    },
+    {
+      "tag": "1280-dark-hi",
+      "state": "long-name-money",
+      "overflow": 0,
+      "cut": [],
+      "lowContrast": [],
+      "firstRowY": null,
+      "globalSearchFields": 0,
+      "actionIcons": [
+        331,
+        331,
+        331
+      ],
+      "pageY": 0,
+      "historyHeight": 350,
+      "historyScroll": "auto"
+    }
+  ],
+  "failures": []
+}

@@ -368,7 +368,7 @@ const openKhata = async (page, party) => {
     waitUntil: 'domcontentloaded',
     timeout: 45000,
   });
-  await page.waitForSelector('text=Transactions', { timeout: 45000 });
+  await page.getByRole('heading', { name: /Entry history|Transactions/ }).waitFor({ timeout: 45000 });
   await settle(page, 1200);
 };
 
@@ -732,7 +732,7 @@ async function checks(browser, token, parties) {
     );
     record(
       'and the header agrees with it',
-      body.includes('You will get'),
+      body.includes('To get'),
       ''
     );
   }

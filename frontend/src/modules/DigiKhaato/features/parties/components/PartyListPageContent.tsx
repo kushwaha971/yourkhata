@@ -606,7 +606,7 @@ export function PartyListPageContent({
     (value: string) =>
       setFilters({
         status: value as PartyStatus,
-        ...(compactKhata ? { balance: value === 'archived' ? '' : 'due', collection: '' } : {}),
+        ...(compactKhata ? { balance: '', collection: '' } : {}),
       }),
     [setFilters, compactKhata]
   );
@@ -996,6 +996,7 @@ export function PartyListPageContent({
                     <PartyListFilters
                       t={t}
                       compact
+                      personal
                       showClear={false}
                       status={filters.status}
                       onStatusChange={handleStatus}
@@ -1003,7 +1004,6 @@ export function PartyListPageContent({
                       onOrderingChange={setOrdering}
                       type={filters.type}
                       balance={filters.balance}
-                      defaultBalance="due"
                       collection={filters.collection}
                       onTypeChange={handleType}
                       onBalanceChange={handleBalance}

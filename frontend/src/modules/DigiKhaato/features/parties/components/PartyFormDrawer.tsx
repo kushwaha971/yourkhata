@@ -92,7 +92,7 @@ export function PartyFormDrawer({
 }: Readonly<{
   form: UsePartyFormResult;
   shop?: boolean;
-  /** Udhaar's fast Add: name, opening amount and its direction, then history. */
+  /** Personal Udhaar: name/mobile only, then open the person's history. */
   quickKhata?: boolean;
   /** Opened from Suppliers: a new party is a supplier unless the merchant says otherwise. */
   kind?: PartyKind;
@@ -188,14 +188,10 @@ export function PartyFormDrawer({
 
   const handleSubmit = useCallback(
     async (values: PartyFormValues) => {
-      if (quickKhata && !isEdit && !values.openingAmount?.trim()) {
-        setError('openingAmount', { type: 'required', message: t('parties.khata.opening.required') });
-        return;
-      }
-      const saved = await submit(values, setError);
+      const saved = await submit(values, setError, quickKhata);
       if (quickKhata && !isEdit && saved) router.push(partyPath(saved.id));
     },
-    [submit, setError, quickKhata, isEdit, router, t]
+    [submit, setError, quickKhata, isEdit, router]
   );
 
   /**
@@ -293,7 +289,7 @@ export function PartyFormDrawer({
       name="mobile"
       label={t('parties.form.mobile.label')}
       placeholder={t('parties.form.mobile.placeholder')}
-      hint={t(fixedRole === 'supplier' ? 'parties.form.mobile.hintSupplier' : 'parties.form.mobile.hint')}
+      hint={t(quickKhata ? 'parties.khata.mobileHint' : fixedRole === 'supplier' ? 'parties.form.mobile.hintSupplier' : 'parties.form.mobile.hint')}
     >
       {(field) => <UbPhoneInput {...field} autoComplete="off" />}
     </UbField>
@@ -306,9 +302,10 @@ export function PartyFormDrawer({
 
   return (
     <UbDrawer
+      className={quickKhata ? 'max-lg:[&_input]:h-11 max-lg:[&>div:last-child]:grid max-lg:[&>div:last-child]:grid-cols-[1fr_1.5fr]' : undefined}
       open={open}
       onOpenChange={handleOpenChange}
-      title={quickKhata && !isEdit ? t('parties.khata.add') : isEdit ? t('parties.form.title.edit') : t(`parties.form.title.create${byKind}`)}
+      title={quickKhata ? t(isEdit ? 'parties.khata.edit' : 'parties.khata.add') : isEdit ? t('parties.form.title.edit') : t(`parties.form.title.create${byKind}`)}
       description={isEdit || quickKhata ? undefined : t('parties.form.subtitle')}
       closeLabel={t('common.action.close')}
       // A stray tap on the backdrop must not take a half-filled form with it.
@@ -366,16 +363,11 @@ export function PartyFormDrawer({
           />
         )}
 
-        {quickKhata && !isEdit ? (
+        {quickKhata ? (
           <>
             {contactPickButton}
             <PartyNameInput t={t} />
-            <OpeningAmountInput t={t} required />
-            {openingDirectionInput}
-            <UbText variant="caption" tone="secondary">{t('parties.khata.opening.hint')}</UbText>
-            <UbDisclosure label={t('parties.khata.moreDetails')}>
-              {mobileInput}
-            </UbDisclosure>
+            {mobileInput}
           </>
         ) : (
         <>

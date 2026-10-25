@@ -55,9 +55,10 @@ import 'src/i18n/catalogues/validation';
 export function LedgerEntryDrawer({
   form: entryForm,
   partyName,
-}: Readonly<{ form: UseLedgerEntryFormResult; partyName: string }>): React.JSX.Element {
+  simple = false,
+}: Readonly<{ form: UseLedgerEntryFormResult; partyName: string; simple?: boolean }>): React.JSX.Element {
   const { t } = useTranslation();
-  const { ledgerEntrySchema } = useLedgerSchemas();
+  const { ledgerEntrySchema, simpleLedgerEntrySchema } = useLedgerSchemas();
   const formId = useId();
   const timezone = useAppSelector(selectTenantTimezone);
 
@@ -96,15 +97,15 @@ export function LedgerEntryDrawer({
         amount: prefillAmount ?? '',
         entryDate: today,
         note: '',
-        paymentMode: lastPaymentMode(),
-        upiApp: lastUpiApp(),
+        paymentMode: simple ? '' : lastPaymentMode(),
+        upiApp: simple ? '' : lastUpiApp(),
         reference: '',
       },
-    [draft, direction, prefillAmount, today]
+    [draft, direction, prefillAmount, today, simple]
   );
 
   const form = useForm<LedgerEntryFormValues>({
-    resolver: yupResolver(ledgerEntrySchema),
+    resolver: yupResolver(simple ? simpleLedgerEntrySchema : ledgerEntrySchema),
     mode: 'onTouched',
     defaultValues: defaults,
   });
@@ -140,17 +141,17 @@ export function LedgerEntryDrawer({
      defaults, because a merchant who opened "You gave" and switched has not
      been offered the choice yet. */
   useEffect(() => {
-    if (isCredit && !watchedMode) setValue('paymentMode', lastPaymentMode() || 'cash');
-  }, [isCredit, watchedMode, setValue]);
+    if (!simple && isCredit && !watchedMode) setValue('paymentMode', lastPaymentMode() || 'cash');
+  }, [isCredit, watchedMode, setValue, simple]);
 
   const handleSubmit = useCallback(
     async (values: LedgerEntryFormValues) => {
       if (values.direction === 'credit' && values.paymentMode) {
         rememberPaymentMode(values.paymentMode, values.upiApp);
       }
-      await submit(values, setError);
+      await submit(simple ? { ...values, simple: true, paymentMode: '', upiApp: '', reference: '' } : values, setError);
     },
-    [submit, setError]
+    [submit, setError, simple]
   );
 
   /* "Save anyway" resubmits the SAME values with the override flag, and with
@@ -158,8 +159,9 @@ export function LedgerEntryDrawer({
      or a validation error, so the override is a second attempt at one intent
      rather than a second entry. */
   const handleOverride = useCallback(() => {
-    void submit(form.getValues(), setError, { override: true });
-  }, [submit, form, setError]);
+    const values = form.getValues();
+    void submit(simple ? { ...values, simple: true, paymentMode: '', upiApp: '', reference: '' } : values, setError, { override: true });
+  }, [submit, form, setError, simple]);
 
   const handleOpenChange = useCallback(
     (next: boolean) => {
@@ -272,7 +274,7 @@ export function LedgerEntryDrawer({
           )}
         </UbField>
 
-        <UbField
+        {!simple && <UbField
           name="entryDate"
           label={t('ledger.entry.date')}
           placeholder={t('ledger.entry.date.placeholder')}
@@ -289,7 +291,7 @@ export function LedgerEntryDrawer({
               ]}
             />
           )}
-        </UbField>
+        </UbField>}
 
         {/* Shown only for a credit. The field keeps its value when the merchant
             switches to "You gave" and back — the server drops it silently for a
@@ -299,7 +301,7 @@ export function LedgerEntryDrawer({
             Google Pay and Paytm are one tap each rather than "UPI" and then a
             second question. `lastPaymentMode` still pre-selects what this
             device used last, app included, so the common path is zero taps. */}
-        {isCredit && (
+        {isCredit && !simple && (
           <UbField name="paymentMode" label={t('ledger.entry.mode')} required>
             {(field) => (
               <PaymentMethodField
@@ -319,7 +321,7 @@ export function LedgerEntryDrawer({
           </UbField>
         )}
 
-        {isCredit && (
+        {isCredit && !simple && (
           <UbField
             name="reference"
             label={t('ledger.entry.reference')}
@@ -338,7 +340,7 @@ export function LedgerEntryDrawer({
           hint={t('ledger.entry.note.hint')}
           optionalLabel={t('common.field.optional')}
         >
-          {(field) => <UbTextInput {...field} autoComplete="off" />}
+          {(field) => <UbTextInput {...field} autoComplete="off" className={simple ? 'max-lg:h-11' : undefined} />}
         </UbField>
       </UbForm>
     </UbDrawer>

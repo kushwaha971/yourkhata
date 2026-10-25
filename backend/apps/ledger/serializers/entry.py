@@ -189,6 +189,7 @@ class LedgerEntryWriteSerializer(serializers.Serializer):
     # ever sees it, which EC-4 says must be refused rather than rounded.
     amount = serializers.CharField(max_length=20)
     entry_date = serializers.DateField()
+    simple = serializers.BooleanField(required=False, default=False, write_only=True)
     note = serializers.CharField(
         max_length=NOTE_MAX_LENGTH, required=False, allow_blank=True, default=""
     )

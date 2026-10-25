@@ -31,6 +31,8 @@ export interface UbPanelProps {
   /** Names the list, or the region, for a screen reader. */
   readonly 'aria-label'?: string;
   readonly 'data-testid'?: string;
+  /** Keyboard access when a caller makes this panel an internal scroll region. */
+  readonly tabIndex?: number;
 }
 
 const PANEL_CLASSNAME =
@@ -42,6 +44,7 @@ function UbPanelBase({
   className,
   'aria-label': ariaLabel,
   'data-testid': testId,
+  tabIndex,
 }: Readonly<UbPanelProps>) {
   const sections = Children.toArray(children).filter(Boolean);
   if (Element === 'ul') {
@@ -56,7 +59,7 @@ function UbPanelBase({
     );
   }
   return (
-    <Element className={cn(PANEL_CLASSNAME, className)} aria-label={ariaLabel} data-testid={testId}>
+    <Element className={cn(PANEL_CLASSNAME, className)} aria-label={ariaLabel} data-testid={testId} tabIndex={tabIndex}>
       {sections.map((section, index) => (
         <Fragment key={index}>
           {index > 0 && <div aria-hidden className="h-px w-full bg-border-hairline" />}

@@ -169,12 +169,13 @@ export interface LedgerEntrySource {
  * the body the day somebody spreads the form values.
  */
 export interface LedgerEntryFormValues {
+  readonly simple?: boolean;
   readonly direction: LedgerDirection;
   /** Decimal string. Never a number (R-TS-7). */
   readonly amount: string;
   readonly entryDate: string;
   readonly note: string;
-  /** Required when `direction` is `credit`; ignored by the server otherwise. */
+  /** Required for a legacy credit; personal `simple` entries may leave it unspecified. */
   readonly paymentMode: PaymentMode | '';
   /** Which UPI app, when the mode is `upi`; optional even then. */
   readonly upiApp: UpiApp | '';

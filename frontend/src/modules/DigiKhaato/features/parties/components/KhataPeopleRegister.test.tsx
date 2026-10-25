@@ -20,10 +20,10 @@ const result={rows:[person],meta:{page:1,pageSize:25,total:30,totalPages:2,hasAn
 beforeEach(()=>{jest.clearAllMocks();store.dispatch(resetAllFeatureState());mockSearch='';mockPath='/khata';tags.listTags.mockResolvedValue([]);service.listParties.mockResolvedValue(result);Object.defineProperty(window,'matchMedia',{writable:true,value:(query:string)=>({matches:query.includes('max-width'),media:query,onchange:null,addEventListener:jest.fn(),removeEventListener:jest.fn(),addListener:jest.fn(),removeListener:jest.fn(),dispatchEvent:()=>false})});store.dispatch(sessionLoaded({user:{id:'u1',name:'Owner',email:'qa@test.local',mobile:null,locale:'en',mustChangePassword:false,passwordExpiresAt:null},activeTenant:{id:'t1',name:'Radhe Krishna Enterprises',timezone:'Asia/Kolkata',role:'owner'},tenants:[{id:'t1',name:'Radhe Krishna Enterprises',timezone:'Asia/Kolkata'}],permissions:['parties.party.read','parties.party.write'],enabledModules:['parties','ledger'],version:1}));});
 const last=()=>service.listParties.mock.calls.at(-1)?.[0] as PartyListParams;
 
-it('starts in Due with avatar, name, amount and one floating Add action',async()=>{
+it('starts in All with avatar, name, amount and one floating Add action',async()=>{
  /** Defect: Udhaar inherited tall stats, extra row metadata, Remind buttons and page arrows. */
  renderWithProviders(<PartyListPageContent book="main"/>);await screen.findByText(person.name);
- await waitFor(()=>expect(last()).toMatchObject({book:'main',balance:'due',status:'active'}));
+ await waitFor(()=>expect(last()).toMatchObject({book:'main',balance:'',status:'active'}));
  expect(screen.getByTestId('khata-people-toolbar')).toBeInTheDocument();expect(screen.getByTestId('filters-button')).toHaveAccessibleName('Filters');expect(screen.getByRole('searchbox')).toBeInTheDocument();
  expect(screen.queryByText('7 days ago')).not.toBeInTheDocument();
  expect(screen.queryByText('9794620535')).not.toBeInTheDocument();
@@ -31,7 +31,7 @@ it('starts in Due with avatar, name, amount and one floating Add action',async()
  expect(screen.queryByRole('button',{name:'More actions'})).not.toBeInTheDocument();
  expect(screen.queryByTestId('ub-grid-pagination')).not.toBeInTheDocument();expect(document.querySelector('[data-ub-fab]')).not.toBeNull();
  expect(screen.getByTestId('ub-grid-scroll-region')).toContainElement(screen.getByRole('button',{name:'Load more'}));
- expect(replace.mock.calls.some(([url])=>url.includes('balance=due')&&url.includes('status=active'))).toBe(true);
+ expect(replace.mock.calls.some(([url])=>url.includes('balance=all')&&url.includes('status=active'))).toBe(true);
  fireEvent.click(screen.getByText(person.name));
  expect(push).toHaveBeenCalledWith('/parties/'+person.id);
 });
@@ -50,6 +50,7 @@ it('All clears only balance, and direction inside Filters asks the API',async()=
  await waitFor(()=>expect(last()).toMatchObject({balance:'i_owe',book:'main'}));
 });
 it('an empty Due view keeps filters and offers Show all people',async()=>{
+ mockSearch='balance=due';
  /** An existing settled book is not a first-use blank; the default needs a real way out. */
  service.listParties.mockResolvedValue({...result,rows:[],meta:{...result.meta,total:0,totalPages:0},totals:{receivable:'0.00',payable:'0.00'}});
  renderWithProviders(<PartyListPageContent book="main"/>);
@@ -86,7 +87,7 @@ it('does not send Udhaar Due to the Shop list from a shared link',async()=>{
  expect(service.listParties.mock.calls.filter(([params]:[PartyListParams])=>params.book==='shop').every(([params]:[PartyListParams])=>params.balance!== 'due')).toBe(true);
 });
 
-it('adds a person with name and opening amount, then opens that khata only after save',async()=>{
+it('adds a person with only name and mobile, then opens the khata after save',async()=>{
  /** A fast Udhaar add should not expose Shop roles and should never navigate before the API answers. */
  const user=userEvent.setup();let finish:(value:unknown)=>void=()=>undefined;
  service.createParty.mockReturnValue(new Promise((resolve)=>{finish=resolve;}));
@@ -96,17 +97,13 @@ it('adds a person with name and opening amount, then opens that khata only after
  await user.click(add);
  const drawer=await screen.findByRole('dialog',{name:'Add person'});
  expect(within(drawer).getByLabelText('Name')).toBeInTheDocument();
- expect(within(drawer).getByLabelText('Amount')).toBeInTheDocument();
- expect(within(drawer).getByRole('radio',{name:'Gave money'})).toBeInTheDocument();
+ expect(within(drawer).queryByLabelText('Amount')).not.toBeInTheDocument();
+ expect(within(drawer).getByRole('textbox',{name:'Mobile number'})).toBeInTheDocument();
  expect(within(drawer).queryByText('GSTIN')).not.toBeInTheDocument();
  await user.type(within(drawer).getByLabelText('Name'),'Radhe Krishna Enterprises');
  await user.click(within(drawer).getByRole('button',{name:'Save and open khata'}));
- expect(service.createParty).not.toHaveBeenCalled();
- expect(await within(drawer).findByText('Enter an amount.')).toBeInTheDocument();
- await user.type(within(drawer).getByLabelText('Amount'),'500');
- await user.click(within(drawer).getByRole('button',{name:'Save and open khata'}));
  await waitFor(()=>expect(service.createParty).toHaveBeenCalled());
- expect(service.createParty.mock.calls[0][0]).toMatchObject({name:'Radhe Krishna Enterprises',openingAmount:'500.00',openingDirection:'debit'});
+ expect(service.createParty.mock.calls[0][0]).toMatchObject({name:'Radhe Krishna Enterprises',openingAmount:null});
  expect(push).not.toHaveBeenCalled();
  finish({party:{...person,name:'Radhe Krishna Enterprises'},warnings:[]});
  await waitFor(()=>expect(push).toHaveBeenCalledWith('/parties/'+person.id));

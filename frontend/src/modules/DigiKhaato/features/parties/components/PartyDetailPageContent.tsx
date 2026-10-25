@@ -215,7 +215,7 @@ interface KhataPaymentPreset {
   readonly direction?: 'out';
 }
 
-export function PartyDetailPageContent({
+export function ExistingPartyDetailPageContent({
   id,
 }: Readonly<PartyDetailPageContentProps>): React.JSX.Element {
   const { t, d } = useTranslation();
@@ -956,4 +956,15 @@ export function PartyDetailPageContent({
       )}
     </UbPageShell>
   );
+}
+
+const PersonalUdhaarPage = dynamic(
+  () => import('./PersonalUdhaarPage').then((module) => module.PersonalUdhaarPage),
+  { loading: () => <UbPageShell><UbSkeleton variant="card" /></UbPageShell> }
+);
+
+/** Personal Udhaar has a minimal page; preserve the other apps' existing page. */
+export function PartyDetailPageContent(props: Readonly<PartyDetailPageContentProps>): React.JSX.Element {
+  const { app } = useAppWords();
+  return app === 'khata' ? <PersonalUdhaarPage {...props} /> : <ExistingPartyDetailPageContent {...props} />;
 }
