@@ -437,3 +437,33 @@ security/SW fixes and business-type planning docs. Resolved two conflicts by
 preserving both changes. Combined-code439suites/4,856tests, types/locales/lint,
 production/bundle/contrast and38frame EN/HI rerun pass. Original A/B predates
 the merge and is not recast as final runtime proof. BP-21 remains next.
+
+## R-DEC-41 · Additional shared mobile reference for all apps
+
+25 October2026, owner instruction recorded10:07UTC (15:37IST): use
+https://claude.ai/artifact/RsYjPpq2t3zCTMu5iUSvNm#gf as an additional mobile
+reference wherever needed; the owner intends to apply these patterns to Shop
+later and wants consistent patterns in Library and Lending. The exact artifact
+is already committed as `design/shop-fixes-and-business-types.html`, with its
+identity confirmed by `design/shop-fixes-notes-for-prompt.txt`. The live link
+could not be opened by the web reader; this decision is based on the committed
+HTML, not a claim to have viewed the live artifact.
+
+Read PartF (#gf) phone lists/detail/actions and A2/A5 shared disclosure/form/
+drawer guidance before the next mobile piece. Reuse the same existing design
+system rather than copying feature-specific code: one search/filter row,
+compact records, stable counts during refresh, clean frame/separators and
+reachable actions. A5 specifies6px label→field,4px field→hint,16px field gaps,
+24px group gaps,16px phone/24px desktop edges,44px phone/40px desktop fields,
+and Cancel/Save together with Save wider. These are reference acceptance
+criteria to verify when each relevant overlay is redesigned, not a statement
+that all current components already satisfy them.
+
+Udhaar's latest explicit R-DEC-36–40 decisions retain precedence for its list:
+no phone page title; avatar/full name/amount/chevron; choices in Filters;
+floating Add person; Gave money/Got money and To get/To give. Use Library/
+Lending's own nouns, money words and workflows. L-01 financial/API/model
+contracts remain frozen. The artifact's Shop business-type/scanning proposals
+do not authorise new Library/Lending features or change the current work order.
+BP-21 remains next, then Udhaar completion, Lending and Library; do not reopen
+Shop implementation from this reference-only instruction.

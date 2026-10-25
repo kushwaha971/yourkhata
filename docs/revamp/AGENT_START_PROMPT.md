@@ -1,3 +1,17 @@
+ADDITIONAL MOBILE REFERENCE — R-DEC-41 (25 October2026)
+Owner supplied https://claude.ai/artifact/RsYjPpq2t3zCTMu5iUSvNm#gf for mobile
+patterns to reuse across Udhaar, Lending and Library, with Shop later. Exact
+committed copy: docs/revamp/design/shop-fixes-and-business-types.html, PartF
+#gf and A2/A5. Its identity is confirmed in shop-fixes-notes-for-prompt.txt.
+The live web reader could not open the URL; do not claim live inspection.
+Use the committed HTML, existing DS and shared components. Verify compact
+lists, one search/filter row, stable counts, clean frames and reachable actions;
+A5: label→field6px, hint4px, fields16px, groups24px, edges16phone/24desktop,
+fields44phone/40desktop, Cancel+Save together. Apply/measure per relevant piece.
+Keep the owner’s newer Udhaar list choices R-DEC-36–40 and module-specific
+wording/workflows. This adds a visual reference; it does not reopen Shop or
+approve Shop-only business-type/scanning features in the other apps.
+
 CURRENT CHECKPOINT — 25 October 2026, R-DEC-35 through R-DEC-40
 Continue the existing revamp on dev. Shop is complete for the owner’s requested
 scope. Current work is Udhaar, then Lending, then Library. Do not reopen Shop.

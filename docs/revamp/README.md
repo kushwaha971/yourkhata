@@ -48,3 +48,10 @@ This folder extends, and does not replace: `docs/mobile-redesign/` (bottom nav a
 5. **The foundation design scores 8.74 provisionally**; whole-module scores wait until each module's screens are specified, and every score lists what still has to be measured or tested before it counts.
 
 Bill detail checkpoint: [20-Oct reading/payment/share/print report](../performance/2026-10-20-p5-bill-detail.md). Home metadata and new-workflow scope follow in08/12; no full-Home feature completion claim.
+
+Additional mobile reference (R-DEC-41,25Oct2026): the owner’s
+[Shop fixes and business types artifact](https://claude.ai/artifact/RsYjPpq2t3zCTMu5iUSvNm#gf)
+is preserved in [the committed HTML](design/shop-fixes-and-business-types.html).
+Use PartF phone compositions and A2/A5 shared controls when relevant to Udhaar,
+Lending and Library; preserve their module contracts and the owner’s newer
+Udhaar-specific decisions. Shop applies these patterns later under its own plan.
