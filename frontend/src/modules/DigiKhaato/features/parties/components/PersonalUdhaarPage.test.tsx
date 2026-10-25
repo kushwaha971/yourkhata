@@ -134,6 +134,16 @@ it('shows only identity, money, history and useful actions for personal Udhaar',
   expect(screen.getByRole('region', { name: 'Entry history' })).toHaveAttribute('tabindex', '0');
 });
 
+it('puts one accessible back arrow beside the name instead of a separate text row', async () => {
+  /** The local up-link must work for direct links and not consume a separate heading row. */
+  renderWithProviders(<PersonalUdhaarPage id="p1" />);
+  await screen.findByRole('heading', {name:'Ravi Kumar'});
+  const back = screen.getByRole('link', {name:'Back to people'});
+  expect(back).toHaveAttribute('href', '/khata');
+  expect(back).toHaveTextContent('');
+  expect(screen.queryByText('Back to people')).not.toBeInTheDocument();
+});
+
 it('opens an editable reminder without sending anything', async () => {
   const user = userEvent.setup();
   renderWithProviders(<PersonalUdhaarPage id="p1" />);
@@ -192,4 +202,12 @@ it('keeps writing and reminding absent without their permissions', async () => {
   expect(screen.queryByRole('button', { name: 'WhatsApp' })).not.toBeInTheDocument();
   expect(screen.queryByRole('button', { name: 'Edit person' })).not.toBeInTheDocument();
   expect(screen.getByRole('link', { name: 'Report' })).toBeInTheDocument();
+});
+
+it('uses the sidebar colour for Got money while Gave money stays red', async () => {
+  // Owner defect: Got money still used the yellow CTA instead of sidebar teal.
+  renderWithProviders(<PersonalUdhaarPage id="p1" />);
+  await screen.findByRole('heading', { name: 'Ravi Kumar' });
+  expect(screen.getByRole('button', { name: 'Got money' })).toHaveClass('bg-surface-nav');
+  expect(screen.getByRole('button', { name: 'Gave money' })).toHaveClass('bg-error');
 });

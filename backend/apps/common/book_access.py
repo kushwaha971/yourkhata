@@ -24,6 +24,8 @@ def allowed_books(request: Any, codename: str) -> frozenset[str]:
     member = getattr(tenant, "_ub_membership", None) if tenant else None
     if member is None or codename not in permissions_for(member):
         return frozenset()
+    if getattr(tenant, "_ub_personal_owner", None) is not None:
+        return frozenset({"main"})
     # Owners and legacy grant-less members retain their existing explicit
     # business-role permissions. Restricting legacy grants is a separate migration.
     if is_business_owner(member) or not uses_explicit_app_grants(member):

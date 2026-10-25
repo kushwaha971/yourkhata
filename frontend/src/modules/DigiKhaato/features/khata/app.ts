@@ -42,5 +42,5 @@ export const KHATA_APP: AppManifest = {
   peopleHref: ROUTES.KHATA,
   book: 'main',
   // Each Udhaar screen owns its search; no second search in the app header.
-  shell: {},
+  shell: { pageBackPattern: '^/parties/[^/]+/?$' },
 };

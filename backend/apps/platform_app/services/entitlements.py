@@ -107,6 +107,8 @@ def effective_modules(tenant: Any) -> frozenset[str]:
     this one answer — agree that it does not exist. It is deliberately not
     removed in `for_tenant`: see `hidden_modules`.
     """
+    if getattr(tenant, "_ub_personal_owner", None) is not None:
+        return frozenset({"platform", "parties", "ledger", "khata", "notifications"})
     enabled = set(tenant.enabled_modules or []) | {"platform"}
     return frozenset(for_tenant(tenant).modules & enabled - hidden_modules()) | {"platform"}
 

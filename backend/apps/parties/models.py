@@ -472,3 +472,17 @@ class ShopPromise(TenantModel):
 
     def __str__(self) -> str:  # pragma: no cover - admin convenience
         return f"{self.role} promise {self.promised_on}"
+
+
+class PersonalBook(models.Model):
+    """One private storage scope per user, independent of business membership.
+
+    Existing tenant-scoped money services operate unchanged inside this scope.
+    No business membership is created: business owners cannot switch into it.
+    """
+
+    owner = models.OneToOneField('platform.User', primary_key=True, on_delete=models.PROTECT, related_name='personal_book')
+    tenant = models.OneToOneField('platform.Tenant', on_delete=models.PROTECT, related_name='personal_book')
+
+    class Meta:
+        db_table = 'parties_personal_book'

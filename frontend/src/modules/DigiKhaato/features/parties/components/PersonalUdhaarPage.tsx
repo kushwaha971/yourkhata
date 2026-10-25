@@ -4,7 +4,7 @@ import { useCallback, useState } from 'react';
 
 import dynamic from 'next/dynamic';
 
-import { FileText, MessageSquare, Minus, Pencil, Phone, Plus } from 'lucide-react';
+import { ArrowLeft, FileText, MessageSquare, Minus, Pencil, Phone, Plus } from 'lucide-react';
 
 import {
   UbBottomBar,
@@ -128,6 +128,8 @@ export function PersonalUdhaarPage({ id }: Readonly<{ id: string }>): React.JSX.
       </UbButton>
       <UbButton
         variant="primary"
+        data-testid="personal-got-money"
+        className="bg-surface-nav text-white hover:bg-surface-navHover active:bg-surface-nav"
         icon={<Plus className="h-4 w-4" aria-hidden />}
         onClick={() => entryForm.openEntry(id, 'credit')}
       >
@@ -141,11 +143,12 @@ export function PersonalUdhaarPage({ id }: Readonly<{ id: string }>): React.JSX.
   return (
     <UbViewportPageShell
       header={
-        <UbStack gap={2}>
-          <UbLink href={ROUTES.KHATA} variant="caption" className="self-start">
-            {t('parties.khata.back')}
+        <UbStack direction="row" align="start" gap={2}>
+          <UbLink href={ROUTES.KHATA} aria-label={t('parties.khata.back')} title={t('parties.khata.back')} underline={false} tone="secondary" data-testid="personal-back" className="-mt-1 flex h-11 w-11 shrink-0 items-center justify-center rounded-control active:bg-surface-active">
+            <ArrowLeft className="h-5 w-5" aria-hidden />
           </UbLink>
           <UbPageHeader
+            className="min-w-0 flex-1"
             title={person.name}
             wrapTitle
             primaryActions={!mobileLayer && canRecord ? pair : undefined}

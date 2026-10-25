@@ -1115,7 +1115,7 @@ export function PartyListPageContent({
                       else if (status === 'succeeded') setPage(meta.page + 1);
                     }}
                   />
-                ) : (
+                ) : compactKhata ? <UbStack aria-hidden className="h-20 shrink-0" /> : (
                   <UbText variant="caption" tone="tertiary" className={compactKhata ? 'pt-3 pb-20 text-center' : 'py-3 text-center'}>
                     {t(compactKhata ? 'parties.khata.loaded' : supplier ? 'parties.list.supplier.loaded' : 'parties.list.shop.loaded', {
                       count: rows.length,

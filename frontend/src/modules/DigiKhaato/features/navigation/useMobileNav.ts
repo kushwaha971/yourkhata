@@ -12,6 +12,7 @@ export interface UseMobileNavResult extends MobileNavState {
   readonly tabs: readonly AppNavItem[];
   /** Where Back goes when there is no history to go back to (a deep link). */
   readonly upHref: string | null;
+  readonly pageOwnsBack: boolean;
 }
 
 /**
@@ -20,10 +21,11 @@ export interface UseMobileNavResult extends MobileNavState {
  */
 export function useMobileNav(): UseMobileNavResult {
   const pathname = usePathname();
-  const { sections, bottomNav } = useNavigation();
+  const { sections, bottomNav, shell } = useNavigation();
   const rows = sections.flatMap((section) => section.items);
   const state = mobileNavState(pathname, rows, bottomNav);
   const upHref =
     bottomNav.find((tab) => tab.key === state.active)?.href ?? bottomNav[0]?.href ?? null;
-  return { ...state, tabs: bottomNav, upHref };
+  const pageOwnsBack = Boolean(shell.pageBackPattern && new RegExp(shell.pageBackPattern).test(pathname ?? ''));
+  return { ...state, tabs: bottomNav, upHref, pageOwnsBack };
 }

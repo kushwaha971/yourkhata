@@ -1,6 +1,6 @@
 import { combineSlices, configureStore } from '@reduxjs/toolkit';
 
-import { registerTransportHost } from 'src/api/transportBridge';
+import { registerTransportHost, routeApp } from 'src/api/transportBridge';
 import { errorMessageId } from 'src/utils/apiError';
 
 // ── auth (PLT-01, PLT-02) ────────────────────────────────────────────────────
@@ -161,6 +161,7 @@ registerTransportHost({
   },
   // PLT-04 FR-4 — the stale-tab guard's two dependencies.
   getActiveTenantId: () => store.getState().session.activeTenant?.id ?? null,
+  getActiveApp: () => routeApp(typeof window === 'undefined' ? null : window.location.pathname) ?? store.getState().session.activeApp,
   onTenantMismatch: () => {
     // The message goes up before the reload, so the user sees WHY the page
     // jumped rather than watching it reload for no stated reason. The reload is

@@ -542,3 +542,50 @@ Quiet matched throttle phone633→426ms,desktop920.5→428ms,n=6. Canonical repo
 personal report/print and correction/recovery overlays, then Lending/Library.
 Mainbook per-user privacy and BP-21 remain explicitly unresolved/deferred;
 no Shop implementation or shared-data deletion in this thread.
+
+## R-DEC-47 · One local Back arrow on the personal person page
+
+25October2026 owner questioned the global-header arrow and the separate Back
+to People text row. Keep one44px local arrow beside the person's full name,
+returning directly to /khata (including deep links); no visible Back-to-people
+text row and no duplicate mobile-shell arrow. Other apps and nested statement
+pages keep their existing header Back. The manifest declares which page owns
+Back; the shared shell does not name an app. Fail-before shell regression was
+red; the updated shell/person/navigation group passes35checks. Color clarification:
+teal#0E7C86 is brand primary; marigold#F59E1B is the established main-action/CTA
+color used by the existing primary button style. No palette change was requested.
+
+## R-DEC-48 · Fix personal ownership before further Udhaar work
+
+25 October 2026, owner: "udhar app is speare module based on logged in user"
+and "proceed and fix them". The owner again reports business customer/supplier
+rows in Udhaar. This explicitly prioritises the missing ownership requirement
+over R-DEC-42's deferral; it does not authorise Shop redesign or deleting shared
+business records. Implement a server-owned personal book independent of active
+business, with real read/write/count/statement/reminder isolation, preserving
+shared financial services and live Library/Lending contracts. No inferred
+migration of ambiguous old shared entries. BP-21's book-membership-only proposal
+is superseded for personal Udhaar by unique user-owned private storage.
+
+Also: To get and To give are separate green/red cards, no people-count text or
+extra divider; one local back arrow beside the person's name. Acceptance and
+remaining checks: docs/performance/2026-10-25-private-udhaar-fix.md.
+
+## R-DEC-49 · Got money uses the sidebar colour
+
+25 October 2026 owner: "that get button should be same as sidebar color instead
+of yellow color". Got money uses the existing surface-nav token (dark teal) and
+white text, including its phone dock and desktop action. Gave money stays red.
+This supersedes R-DEC-46's marigold Got money choice; Add person is unchanged.
+Named regression fails on the yellow version, passes on the dark-teal version;
+browser acceptance compares computed Got money and sidebar background colours.
+
+Progress25October2026: R-DEC-48/49 verified: private user-owned Udhaar API,
+Shop-contact exclusion and owner/staff separation; green/red balance cards,
+no count strip/divider, one local Back arrow; Got money matches sidebar dark
+teal. Final4,872frontendtests,838backend/contracts+4skips, gates and44measured
+frames pass. Quiet old/new/old/new throttled phone422.5→418ms, desktop414→407.5ms;
+no speed-improvement claim. See2026-10-25-private-udhaar-fix.md and machine data.
+Next: remaining minimal personal report/correction/recovery verification, then
+Lending and Library; do not revert to business main-book reads. Existing shared
+records retained, no inferred ownership migration; production not touched.

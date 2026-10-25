@@ -24,6 +24,7 @@ import {
   type AppManifest,
   type AppNavItem,
 } from './appManifest';
+import { matchAppPath } from './appPath';
 import { rememberAppPlace } from './appPlace';
 import { rememberHistoryApp, useHistoryApp } from './historyApp';
 
@@ -56,17 +57,7 @@ export interface UseNavigationResult {
   readonly shell: NonNullable<AppManifest['shell']>;
 }
 
-const matches = (pathname: string, prefix: string): boolean =>
-  pathname === prefix || pathname.startsWith(`${prefix}/`);
-
-/** The app an open page belongs to, by its path, or null for a shared page. */
-export const appForPath = (
-  pathname: string | null,
-  manifests: readonly AppManifest[] = APP_MANIFESTS
-): string | null =>
-  (pathname &&
-    manifests.find((app) => app.routePrefixes.some((p) => matches(pathname, p)))?.code) ||
-  null;
+export const appForPath = (pathname: string | null, manifests: readonly AppManifest[] = APP_MANIFESTS): string | null => matchAppPath(pathname, manifests);
 
 const NO_SHELL: NonNullable<AppManifest['shell']> = {};
 

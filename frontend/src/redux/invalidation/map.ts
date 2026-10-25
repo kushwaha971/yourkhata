@@ -63,10 +63,9 @@ export const INVALIDATION: TInvalidationMap = {
   // ── platform & settings ───────────────────────────────────────────────────
   // A new tenant means a new token and a new dataset; nothing survives.
   switchTenant: { resetAll: true },
-  // Another app of the SAME business: same token, same data, same permissions
-  // (grants scope the business, not the app open). Only which app the person
-  // is in moves, and the session slice writes it from this action's payload.
-  switchApp: { patch: [['session', 'activeApp']] },
+  // Personal Udhaar is a different dataset, even inside the same login/business.
+  // Keep the new session app, but never retain another app's shared-book rows.
+  switchApp: { resetAll: true, patch: [['session', 'activeApp']] },
   // The business's apps (and with them its modules) or this person's grants
   // move. Same business and token, so nothing a feature cached belongs to
   // someone else; the session slice re-reads the whole body from the answer.

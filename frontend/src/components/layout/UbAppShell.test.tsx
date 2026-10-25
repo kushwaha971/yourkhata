@@ -47,10 +47,11 @@ jest.mock('modules/DigiKhaato/features/notifications/api/notificationService', (
 
 const mockReplace = jest.fn();
 const mockPush = jest.fn();
+let mockPath = '/parties';
 jest.mock('next/navigation', () => ({
   useRouter: () => ({ push: mockPush, replace: mockReplace, back: jest.fn(), prefetch: jest.fn() }),
   useSearchParams: () => new URLSearchParams(''),
-  usePathname: () => '/parties',
+  usePathname: () => mockPath,
 }));
 
 const authService = jest.requireMock('modules/DigiKhaato/features/auth/api/authService') as {
@@ -64,7 +65,8 @@ const partyService = jest.requireMock(
 };
 
 const signIn = (
-  permissions: readonly string[] = ['parties.party.read', 'ledger.entry.read']
+  permissions: readonly string[] = ['parties.party.read', 'ledger.entry.read'],
+  activeApp: 'shop' | 'khata' = 'shop'
 ): void => {
   store.dispatch(
     sessionLoaded({
@@ -85,7 +87,8 @@ const signIn = (
       },
       tenants: [{ id: 't1', name: 'Kumar Kirana Store', timezone: 'Asia/Kolkata', role: 'owner' }],
       permissions: [...permissions] as never,
-      enabledModules: ['parties', 'ledger'],
+      enabledModules: activeApp === 'khata' ? ['parties', 'ledger', 'khata'] : ['parties', 'ledger'],
+      activeApp,
       version: 1,
     })
   );
@@ -111,6 +114,7 @@ const mobileHeader = (): HTMLElement => {
 };
 
 beforeEach(() => {
+  mockPath = '/parties';
   jest.clearAllMocks();
   jest.spyOn(window, 'matchMedia').mockImplementation((query) => ({
     matches: query.includes('max-width: 1023'),
@@ -131,6 +135,22 @@ beforeEach(() => {
 });
 
 describe('UAT D2 — the phone and tablet chrome', () => {
+  it('does not duplicate Back in the header when the personal page owns it', () => {
+    /** A second Back arrow and Back-to-people row wasted the personal page header. */
+    mockPath = '/parties/p1';
+    window.history.replaceState(null, '', mockPath);
+    signIn(['parties.party.read', 'ledger.entry.read'], 'khata');
+    renderShell();
+    expect(within(mobileHeader()).queryByRole('button', { name: 'Back' })).not.toBeInTheDocument();
+  });
+
+  it('retains header Back on the personal statement which does not own an inline arrow', () => {
+    mockPath = '/parties/p1/statement';
+    window.history.replaceState(null, '', mockPath);
+    signIn(['parties.party.read', 'ledger.entry.read'], 'khata');
+    renderShell();
+    expect(within(mobileHeader()).getByRole('button', { name: 'Back' })).toBeInTheDocument();
+  });
   it('keeps the account off the phone header: it lives on the More tab now', () => {
     /* docs/mobile-redesign — the header held six controls in 390 px and cut
        the business name to "Sharm…". The ☰ drawer and the account avatar left

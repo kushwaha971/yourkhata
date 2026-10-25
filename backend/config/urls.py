@@ -12,6 +12,7 @@ from apps.common.views import HealthView, ReadinessView, VersionView
 from apps.platform_app.views.meta_webhook import meta_webhook
 
 api_v1 = [
+    path("personal/", include("apps.parties.urls_personal")),
     path("integrations/meta/whatsapp/webhook", meta_webhook, name="meta-whatsapp-webhook"),
     path("auth/", include("apps.platform_app.urls_auth")),
     path("", include("apps.platform_app.urls")),

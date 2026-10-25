@@ -1,7 +1,10 @@
+import { registerRouteAppResolver } from 'src/api/transportBridge';
+
 import { KHATA_APP } from 'modules/DigiKhaato/features/khata/app';
 import { LENDING_APP } from 'modules/DigiKhaato/features/lending/app';
 import { LIBRARY_APP } from 'modules/DigiKhaato/features/library/app';
 import type { AppManifest } from 'modules/DigiKhaato/features/navigation/appManifest';
+import { matchAppPath } from 'modules/DigiKhaato/features/navigation/appPath';
 import { SHOP_APP } from 'modules/DigiKhaato/features/shop/app';
 
 /**
@@ -23,6 +26,8 @@ export const APP_MANIFESTS: readonly AppManifest[] = [
   SHOP_APP,
   KHATA_APP,
 ];
+
+registerRouteAppResolver((pathname) => matchAppPath(pathname, APP_MANIFESTS));
 
 export const manifestFor = (code: string | null | undefined): AppManifest | undefined =>
   APP_MANIFESTS.find((app) => app.code === code);

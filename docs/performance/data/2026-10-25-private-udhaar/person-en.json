@@ -1,0 +1,1133 @@
+{
+  "results": [
+    {
+      "tag": "390-light-en",
+      "state": "ready",
+      "overflow": 0,
+      "cut": [],
+      "lowContrast": [],
+      "firstRowY": null,
+      "gotButtonBg": "rgb(11, 63, 69)",
+      "sidebarBg": "rgb(11, 63, 69)",
+      "headerBackArrows": 0,
+      "localBack": true,
+      "localBackText": "",
+      "localBackHref": "/khata",
+      "actionStyles": [
+        {
+          "size": "14px",
+          "weight": "400",
+          "color": "rgb(10, 92, 99)"
+        },
+        {
+          "size": "14px",
+          "weight": "400",
+          "color": "rgb(10, 92, 99)"
+        },
+        {
+          "size": "14px",
+          "weight": "400",
+          "color": "rgb(10, 92, 99)"
+        },
+        {
+          "size": "14px",
+          "weight": "400",
+          "color": "rgb(10, 92, 99)"
+        }
+      ],
+      "whatsappMark": true,
+      "globalSearchFields": 0,
+      "actionIcons": [
+        236,
+        236,
+        236,
+        236
+      ],
+      "pageY": 0,
+      "historyHeight": 414.84375,
+      "historyScroll": "auto"
+    },
+    {
+      "tag": "390-light-en",
+      "state": "reminder",
+      "overflow": 0,
+      "cut": [],
+      "lowContrast": [],
+      "firstRowY": null,
+      "gotButtonBg": "rgb(11, 63, 69)",
+      "sidebarBg": "rgb(11, 63, 69)",
+      "headerBackArrows": 0,
+      "localBack": true,
+      "localBackText": "",
+      "localBackHref": "/khata",
+      "actionStyles": [
+        {
+          "size": "14px",
+          "weight": "400",
+          "color": "rgb(10, 92, 99)"
+        },
+        {
+          "size": "14px",
+          "weight": "400",
+          "color": "rgb(10, 92, 99)"
+        },
+        {
+          "size": "14px",
+          "weight": "400",
+          "color": "rgb(10, 92, 99)"
+        },
+        {
+          "size": "14px",
+          "weight": "400",
+          "color": "rgb(10, 92, 99)"
+        }
+      ],
+      "whatsappMark": true,
+      "globalSearchFields": 0,
+      "actionIcons": [
+        236,
+        236,
+        236,
+        236
+      ],
+      "pageY": 0,
+      "historyHeight": 414.84375,
+      "historyScroll": "auto"
+    },
+    {
+      "tag": "390-light-en",
+      "state": "long-name-money",
+      "overflow": 0,
+      "cut": [],
+      "lowContrast": [],
+      "firstRowY": null,
+      "gotButtonBg": "rgb(11, 63, 69)",
+      "sidebarBg": "rgb(11, 63, 69)",
+      "headerBackArrows": 0,
+      "localBack": true,
+      "localBackText": "",
+      "localBackHref": "/khata",
+      "actionStyles": [
+        {
+          "size": "14px",
+          "weight": "400",
+          "color": "rgb(10, 92, 99)"
+        },
+        {
+          "size": "14px",
+          "weight": "400",
+          "color": "rgb(10, 92, 99)"
+        },
+        {
+          "size": "14px",
+          "weight": "400",
+          "color": "rgb(10, 92, 99)"
+        },
+        {
+          "size": "14px",
+          "weight": "400",
+          "color": "rgb(10, 92, 99)"
+        }
+      ],
+      "whatsappMark": true,
+      "globalSearchFields": 0,
+      "actionIcons": [
+        324,
+        324,
+        324,
+        324
+      ],
+      "pageY": 0,
+      "historyHeight": 326.84375,
+      "historyScroll": "auto"
+    },
+    {
+      "tag": "390-dark-en",
+      "state": "ready",
+      "overflow": 0,
+      "cut": [],
+      "lowContrast": [],
+      "firstRowY": null,
+      "gotButtonBg": "rgb(14, 36, 39)",
+      "sidebarBg": "rgb(14, 36, 39)",
+      "headerBackArrows": 0,
+      "localBack": true,
+      "localBackText": "",
+      "localBackHref": "/khata",
+      "actionStyles": [
+        {
+          "size": "14px",
+          "weight": "400",
+          "color": "rgb(157, 212, 217)"
+        },
+        {
+          "size": "14px",
+          "weight": "400",
+          "color": "rgb(157, 212, 217)"
+        },
+        {
+          "size": "14px",
+          "weight": "400",
+          "color": "rgb(157, 212, 217)"
+        },
+        {
+          "size": "14px",
+          "weight": "400",
+          "color": "rgb(157, 212, 217)"
+        }
+      ],
+      "whatsappMark": true,
+      "globalSearchFields": 0,
+      "actionIcons": [
+        236,
+        236,
+        236,
+        236
+      ],
+      "pageY": 0,
+      "historyHeight": 414.84375,
+      "historyScroll": "auto"
+    },
+    {
+      "tag": "390-dark-en",
+      "state": "reminder",
+      "overflow": 0,
+      "cut": [],
+      "lowContrast": [],
+      "firstRowY": null,
+      "gotButtonBg": "rgb(14, 36, 39)",
+      "sidebarBg": "rgb(14, 36, 39)",
+      "headerBackArrows": 0,
+      "localBack": true,
+      "localBackText": "",
+      "localBackHref": "/khata",
+      "actionStyles": [
+        {
+          "size": "14px",
+          "weight": "400",
+          "color": "rgb(157, 212, 217)"
+        },
+        {
+          "size": "14px",
+          "weight": "400",
+          "color": "rgb(157, 212, 217)"
+        },
+        {
+          "size": "14px",
+          "weight": "400",
+          "color": "rgb(157, 212, 217)"
+        },
+        {
+          "size": "14px",
+          "weight": "400",
+          "color": "rgb(157, 212, 217)"
+        }
+      ],
+      "whatsappMark": true,
+      "globalSearchFields": 0,
+      "actionIcons": [
+        236,
+        236,
+        236,
+        236
+      ],
+      "pageY": 0,
+      "historyHeight": 414.84375,
+      "historyScroll": "auto"
+    },
+    {
+      "tag": "390-dark-en",
+      "state": "long-name-money",
+      "overflow": 0,
+      "cut": [],
+      "lowContrast": [],
+      "firstRowY": null,
+      "gotButtonBg": "rgb(14, 36, 39)",
+      "sidebarBg": "rgb(14, 36, 39)",
+      "headerBackArrows": 0,
+      "localBack": true,
+      "localBackText": "",
+      "localBackHref": "/khata",
+      "actionStyles": [
+        {
+          "size": "14px",
+          "weight": "400",
+          "color": "rgb(157, 212, 217)"
+        },
+        {
+          "size": "14px",
+          "weight": "400",
+          "color": "rgb(157, 212, 217)"
+        },
+        {
+          "size": "14px",
+          "weight": "400",
+          "color": "rgb(157, 212, 217)"
+        },
+        {
+          "size": "14px",
+          "weight": "400",
+          "color": "rgb(157, 212, 217)"
+        }
+      ],
+      "whatsappMark": true,
+      "globalSearchFields": 0,
+      "actionIcons": [
+        324,
+        324,
+        324,
+        324
+      ],
+      "pageY": 0,
+      "historyHeight": 326.84375,
+      "historyScroll": "auto"
+    },
+    {
+      "tag": "320-light-en",
+      "state": "ready",
+      "overflow": 0,
+      "cut": [],
+      "lowContrast": [],
+      "firstRowY": null,
+      "gotButtonBg": "rgb(11, 63, 69)",
+      "sidebarBg": "rgb(11, 63, 69)",
+      "headerBackArrows": 0,
+      "localBack": true,
+      "localBackText": "",
+      "localBackHref": "/khata",
+      "actionStyles": [
+        {
+          "size": "14px",
+          "weight": "400",
+          "color": "rgb(10, 92, 99)"
+        },
+        {
+          "size": "14px",
+          "weight": "400",
+          "color": "rgb(10, 92, 99)"
+        },
+        {
+          "size": "14px",
+          "weight": "400",
+          "color": "rgb(10, 92, 99)"
+        },
+        {
+          "size": "14px",
+          "weight": "400",
+          "color": "rgb(10, 92, 99)"
+        }
+      ],
+      "whatsappMark": true,
+      "globalSearchFields": 0,
+      "actionIcons": [
+        236,
+        236,
+        236,
+        236
+      ],
+      "pageY": 0,
+      "historyHeight": 414.921875,
+      "historyScroll": "auto"
+    },
+    {
+      "tag": "320-light-en",
+      "state": "reminder",
+      "overflow": 0,
+      "cut": [],
+      "lowContrast": [],
+      "firstRowY": null,
+      "gotButtonBg": "rgb(11, 63, 69)",
+      "sidebarBg": "rgb(11, 63, 69)",
+      "headerBackArrows": 0,
+      "localBack": true,
+      "localBackText": "",
+      "localBackHref": "/khata",
+      "actionStyles": [
+        {
+          "size": "14px",
+          "weight": "400",
+          "color": "rgb(10, 92, 99)"
+        },
+        {
+          "size": "14px",
+          "weight": "400",
+          "color": "rgb(10, 92, 99)"
+        },
+        {
+          "size": "14px",
+          "weight": "400",
+          "color": "rgb(10, 92, 99)"
+        },
+        {
+          "size": "14px",
+          "weight": "400",
+          "color": "rgb(10, 92, 99)"
+        }
+      ],
+      "whatsappMark": true,
+      "globalSearchFields": 0,
+      "actionIcons": [
+        236,
+        236,
+        236,
+        236
+      ],
+      "pageY": 0,
+      "historyHeight": 414.921875,
+      "historyScroll": "auto"
+    },
+    {
+      "tag": "320-light-en",
+      "state": "long-name-money",
+      "overflow": 0,
+      "cut": [],
+      "lowContrast": [],
+      "firstRowY": null,
+      "gotButtonBg": "rgb(11, 63, 69)",
+      "sidebarBg": "rgb(11, 63, 69)",
+      "headerBackArrows": 0,
+      "localBack": true,
+      "localBackText": "",
+      "localBackHref": "/khata",
+      "actionStyles": [
+        {
+          "size": "14px",
+          "weight": "400",
+          "color": "rgb(10, 92, 99)"
+        },
+        {
+          "size": "14px",
+          "weight": "400",
+          "color": "rgb(10, 92, 99)"
+        },
+        {
+          "size": "14px",
+          "weight": "400",
+          "color": "rgb(10, 92, 99)"
+        },
+        {
+          "size": "14px",
+          "weight": "400",
+          "color": "rgb(10, 92, 99)"
+        }
+      ],
+      "whatsappMark": true,
+      "globalSearchFields": 0,
+      "actionIcons": [
+        356,
+        356,
+        356,
+        356
+      ],
+      "pageY": 0,
+      "historyHeight": 294.921875,
+      "historyScroll": "auto"
+    },
+    {
+      "tag": "320-dark-en",
+      "state": "ready",
+      "overflow": 0,
+      "cut": [],
+      "lowContrast": [],
+      "firstRowY": null,
+      "gotButtonBg": "rgb(14, 36, 39)",
+      "sidebarBg": "rgb(14, 36, 39)",
+      "headerBackArrows": 0,
+      "localBack": true,
+      "localBackText": "",
+      "localBackHref": "/khata",
+      "actionStyles": [
+        {
+          "size": "14px",
+          "weight": "400",
+          "color": "rgb(157, 212, 217)"
+        },
+        {
+          "size": "14px",
+          "weight": "400",
+          "color": "rgb(157, 212, 217)"
+        },
+        {
+          "size": "14px",
+          "weight": "400",
+          "color": "rgb(157, 212, 217)"
+        },
+        {
+          "size": "14px",
+          "weight": "400",
+          "color": "rgb(157, 212, 217)"
+        }
+      ],
+      "whatsappMark": true,
+      "globalSearchFields": 0,
+      "actionIcons": [
+        236,
+        236,
+        236,
+        236
+      ],
+      "pageY": 0,
+      "historyHeight": 414.921875,
+      "historyScroll": "auto"
+    },
+    {
+      "tag": "320-dark-en",
+      "state": "reminder",
+      "overflow": 0,
+      "cut": [],
+      "lowContrast": [],
+      "firstRowY": null,
+      "gotButtonBg": "rgb(14, 36, 39)",
+      "sidebarBg": "rgb(14, 36, 39)",
+      "headerBackArrows": 0,
+      "localBack": true,
+      "localBackText": "",
+      "localBackHref": "/khata",
+      "actionStyles": [
+        {
+          "size": "14px",
+          "weight": "400",
+          "color": "rgb(157, 212, 217)"
+        },
+        {
+          "size": "14px",
+          "weight": "400",
+          "color": "rgb(157, 212, 217)"
+        },
+        {
+          "size": "14px",
+          "weight": "400",
+          "color": "rgb(157, 212, 217)"
+        },
+        {
+          "size": "14px",
+          "weight": "400",
+          "color": "rgb(157, 212, 217)"
+        }
+      ],
+      "whatsappMark": true,
+      "globalSearchFields": 0,
+      "actionIcons": [
+        236,
+        236,
+        236,
+        236
+      ],
+      "pageY": 0,
+      "historyHeight": 414.921875,
+      "historyScroll": "auto"
+    },
+    {
+      "tag": "320-dark-en",
+      "state": "long-name-money",
+      "overflow": 0,
+      "cut": [],
+      "lowContrast": [],
+      "firstRowY": null,
+      "gotButtonBg": "rgb(14, 36, 39)",
+      "sidebarBg": "rgb(14, 36, 39)",
+      "headerBackArrows": 0,
+      "localBack": true,
+      "localBackText": "",
+      "localBackHref": "/khata",
+      "actionStyles": [
+        {
+          "size": "14px",
+          "weight": "400",
+          "color": "rgb(157, 212, 217)"
+        },
+        {
+          "size": "14px",
+          "weight": "400",
+          "color": "rgb(157, 212, 217)"
+        },
+        {
+          "size": "14px",
+          "weight": "400",
+          "color": "rgb(157, 212, 217)"
+        },
+        {
+          "size": "14px",
+          "weight": "400",
+          "color": "rgb(157, 212, 217)"
+        }
+      ],
+      "whatsappMark": true,
+      "globalSearchFields": 0,
+      "actionIcons": [
+        356,
+        356,
+        356,
+        356
+      ],
+      "pageY": 0,
+      "historyHeight": 294.921875,
+      "historyScroll": "auto"
+    },
+    {
+      "tag": "1024-light-en",
+      "state": "ready",
+      "overflow": 0,
+      "cut": [],
+      "lowContrast": [],
+      "firstRowY": null,
+      "gotButtonBg": "rgb(11, 63, 69)",
+      "sidebarBg": "rgb(11, 63, 69)",
+      "headerBackArrows": 0,
+      "localBack": true,
+      "localBackText": "",
+      "localBackHref": "/khata",
+      "actionStyles": [
+        {
+          "size": "14px",
+          "weight": "400",
+          "color": "rgb(10, 92, 99)"
+        },
+        {
+          "size": "14px",
+          "weight": "400",
+          "color": "rgb(10, 92, 99)"
+        },
+        {
+          "size": "14px",
+          "weight": "400",
+          "color": "rgb(10, 92, 99)"
+        },
+        {
+          "size": "14px",
+          "weight": "400",
+          "color": "rgb(10, 92, 99)"
+        }
+      ],
+      "whatsappMark": true,
+      "globalSearchFields": 0,
+      "actionIcons": [
+        240,
+        240,
+        240,
+        240
+      ],
+      "pageY": 0,
+      "historyHeight": 442.9375,
+      "historyScroll": "auto"
+    },
+    {
+      "tag": "1024-light-en",
+      "state": "reminder",
+      "overflow": 0,
+      "cut": [],
+      "lowContrast": [],
+      "firstRowY": null,
+      "gotButtonBg": "rgb(11, 63, 69)",
+      "sidebarBg": "rgb(11, 63, 69)",
+      "headerBackArrows": 0,
+      "localBack": true,
+      "localBackText": "",
+      "localBackHref": "/khata",
+      "actionStyles": [
+        {
+          "size": "14px",
+          "weight": "400",
+          "color": "rgb(10, 92, 99)"
+        },
+        {
+          "size": "14px",
+          "weight": "400",
+          "color": "rgb(10, 92, 99)"
+        },
+        {
+          "size": "14px",
+          "weight": "400",
+          "color": "rgb(10, 92, 99)"
+        },
+        {
+          "size": "14px",
+          "weight": "400",
+          "color": "rgb(10, 92, 99)"
+        }
+      ],
+      "whatsappMark": true,
+      "globalSearchFields": 0,
+      "actionIcons": [
+        240,
+        240,
+        240,
+        240
+      ],
+      "pageY": 0,
+      "historyHeight": 442.9375,
+      "historyScroll": "auto"
+    },
+    {
+      "tag": "1024-light-en",
+      "state": "long-name-money",
+      "overflow": 0,
+      "cut": [],
+      "lowContrast": [],
+      "firstRowY": null,
+      "gotButtonBg": "rgb(11, 63, 69)",
+      "sidebarBg": "rgb(11, 63, 69)",
+      "headerBackArrows": 0,
+      "localBack": true,
+      "localBackText": "",
+      "localBackHref": "/khata",
+      "actionStyles": [
+        {
+          "size": "14px",
+          "weight": "400",
+          "color": "rgb(10, 92, 99)"
+        },
+        {
+          "size": "14px",
+          "weight": "400",
+          "color": "rgb(10, 92, 99)"
+        },
+        {
+          "size": "14px",
+          "weight": "400",
+          "color": "rgb(10, 92, 99)"
+        },
+        {
+          "size": "14px",
+          "weight": "400",
+          "color": "rgb(10, 92, 99)"
+        }
+      ],
+      "whatsappMark": true,
+      "globalSearchFields": 0,
+      "actionIcons": [
+        328,
+        328,
+        328,
+        328
+      ],
+      "pageY": 0,
+      "historyHeight": 354.9375,
+      "historyScroll": "auto"
+    },
+    {
+      "tag": "1024-dark-en",
+      "state": "ready",
+      "overflow": 0,
+      "cut": [],
+      "lowContrast": [],
+      "firstRowY": null,
+      "gotButtonBg": "rgb(14, 36, 39)",
+      "sidebarBg": "rgb(14, 36, 39)",
+      "headerBackArrows": 0,
+      "localBack": true,
+      "localBackText": "",
+      "localBackHref": "/khata",
+      "actionStyles": [
+        {
+          "size": "14px",
+          "weight": "400",
+          "color": "rgb(157, 212, 217)"
+        },
+        {
+          "size": "14px",
+          "weight": "400",
+          "color": "rgb(157, 212, 217)"
+        },
+        {
+          "size": "14px",
+          "weight": "400",
+          "color": "rgb(157, 212, 217)"
+        },
+        {
+          "size": "14px",
+          "weight": "400",
+          "color": "rgb(157, 212, 217)"
+        }
+      ],
+      "whatsappMark": true,
+      "globalSearchFields": 0,
+      "actionIcons": [
+        240,
+        240,
+        240,
+        240
+      ],
+      "pageY": 0,
+      "historyHeight": 442.9375,
+      "historyScroll": "auto"
+    },
+    {
+      "tag": "1024-dark-en",
+      "state": "reminder",
+      "overflow": 0,
+      "cut": [],
+      "lowContrast": [],
+      "firstRowY": null,
+      "gotButtonBg": "rgb(14, 36, 39)",
+      "sidebarBg": "rgb(14, 36, 39)",
+      "headerBackArrows": 0,
+      "localBack": true,
+      "localBackText": "",
+      "localBackHref": "/khata",
+      "actionStyles": [
+        {
+          "size": "14px",
+          "weight": "400",
+          "color": "rgb(157, 212, 217)"
+        },
+        {
+          "size": "14px",
+          "weight": "400",
+          "color": "rgb(157, 212, 217)"
+        },
+        {
+          "size": "14px",
+          "weight": "400",
+          "color": "rgb(157, 212, 217)"
+        },
+        {
+          "size": "14px",
+          "weight": "400",
+          "color": "rgb(157, 212, 217)"
+        }
+      ],
+      "whatsappMark": true,
+      "globalSearchFields": 0,
+      "actionIcons": [
+        240,
+        240,
+        240,
+        240
+      ],
+      "pageY": 0,
+      "historyHeight": 442.9375,
+      "historyScroll": "auto"
+    },
+    {
+      "tag": "1024-dark-en",
+      "state": "long-name-money",
+      "overflow": 0,
+      "cut": [],
+      "lowContrast": [],
+      "firstRowY": null,
+      "gotButtonBg": "rgb(14, 36, 39)",
+      "sidebarBg": "rgb(14, 36, 39)",
+      "headerBackArrows": 0,
+      "localBack": true,
+      "localBackText": "",
+      "localBackHref": "/khata",
+      "actionStyles": [
+        {
+          "size": "14px",
+          "weight": "400",
+          "color": "rgb(157, 212, 217)"
+        },
+        {
+          "size": "14px",
+          "weight": "400",
+          "color": "rgb(157, 212, 217)"
+        },
+        {
+          "size": "14px",
+          "weight": "400",
+          "color": "rgb(157, 212, 217)"
+        },
+        {
+          "size": "14px",
+          "weight": "400",
+          "color": "rgb(157, 212, 217)"
+        }
+      ],
+      "whatsappMark": true,
+      "globalSearchFields": 0,
+      "actionIcons": [
+        328,
+        328,
+        328,
+        328
+      ],
+      "pageY": 0,
+      "historyHeight": 354.9375,
+      "historyScroll": "auto"
+    },
+    {
+      "tag": "1280-light-en",
+      "state": "ready",
+      "overflow": 0,
+      "cut": [],
+      "lowContrast": [],
+      "firstRowY": null,
+      "gotButtonBg": "rgb(11, 63, 69)",
+      "sidebarBg": "rgb(11, 63, 69)",
+      "headerBackArrows": 0,
+      "localBack": true,
+      "localBackText": "",
+      "localBackHref": "/khata",
+      "actionStyles": [
+        {
+          "size": "14px",
+          "weight": "400",
+          "color": "rgb(10, 92, 99)"
+        },
+        {
+          "size": "14px",
+          "weight": "400",
+          "color": "rgb(10, 92, 99)"
+        },
+        {
+          "size": "14px",
+          "weight": "400",
+          "color": "rgb(10, 92, 99)"
+        },
+        {
+          "size": "14px",
+          "weight": "400",
+          "color": "rgb(10, 92, 99)"
+        }
+      ],
+      "whatsappMark": true,
+      "globalSearchFields": 0,
+      "actionIcons": [
+        240,
+        240,
+        240,
+        240
+      ],
+      "pageY": 0,
+      "historyHeight": 442.59375,
+      "historyScroll": "auto"
+    },
+    {
+      "tag": "1280-light-en",
+      "state": "reminder",
+      "overflow": 0,
+      "cut": [],
+      "lowContrast": [],
+      "firstRowY": null,
+      "gotButtonBg": "rgb(11, 63, 69)",
+      "sidebarBg": "rgb(11, 63, 69)",
+      "headerBackArrows": 0,
+      "localBack": true,
+      "localBackText": "",
+      "localBackHref": "/khata",
+      "actionStyles": [
+        {
+          "size": "14px",
+          "weight": "400",
+          "color": "rgb(10, 92, 99)"
+        },
+        {
+          "size": "14px",
+          "weight": "400",
+          "color": "rgb(10, 92, 99)"
+        },
+        {
+          "size": "14px",
+          "weight": "400",
+          "color": "rgb(10, 92, 99)"
+        },
+        {
+          "size": "14px",
+          "weight": "400",
+          "color": "rgb(10, 92, 99)"
+        }
+      ],
+      "whatsappMark": true,
+      "globalSearchFields": 0,
+      "actionIcons": [
+        240,
+        240,
+        240,
+        240
+      ],
+      "pageY": 0,
+      "historyHeight": 442.59375,
+      "historyScroll": "auto"
+    },
+    {
+      "tag": "1280-light-en",
+      "state": "long-name-money",
+      "overflow": 0,
+      "cut": [],
+      "lowContrast": [],
+      "firstRowY": null,
+      "gotButtonBg": "rgb(11, 63, 69)",
+      "sidebarBg": "rgb(11, 63, 69)",
+      "headerBackArrows": 0,
+      "localBack": true,
+      "localBackText": "",
+      "localBackHref": "/khata",
+      "actionStyles": [
+        {
+          "size": "14px",
+          "weight": "400",
+          "color": "rgb(10, 92, 99)"
+        },
+        {
+          "size": "14px",
+          "weight": "400",
+          "color": "rgb(10, 92, 99)"
+        },
+        {
+          "size": "14px",
+          "weight": "400",
+          "color": "rgb(10, 92, 99)"
+        },
+        {
+          "size": "14px",
+          "weight": "400",
+          "color": "rgb(10, 92, 99)"
+        }
+      ],
+      "whatsappMark": true,
+      "globalSearchFields": 0,
+      "actionIcons": [
+        264,
+        264,
+        264,
+        264
+      ],
+      "pageY": 0,
+      "historyHeight": 418.59375,
+      "historyScroll": "auto"
+    },
+    {
+      "tag": "1280-dark-en",
+      "state": "ready",
+      "overflow": 0,
+      "cut": [],
+      "lowContrast": [],
+      "firstRowY": null,
+      "gotButtonBg": "rgb(14, 36, 39)",
+      "sidebarBg": "rgb(14, 36, 39)",
+      "headerBackArrows": 0,
+      "localBack": true,
+      "localBackText": "",
+      "localBackHref": "/khata",
+      "actionStyles": [
+        {
+          "size": "14px",
+          "weight": "400",
+          "color": "rgb(157, 212, 217)"
+        },
+        {
+          "size": "14px",
+          "weight": "400",
+          "color": "rgb(157, 212, 217)"
+        },
+        {
+          "size": "14px",
+          "weight": "400",
+          "color": "rgb(157, 212, 217)"
+        },
+        {
+          "size": "14px",
+          "weight": "400",
+          "color": "rgb(157, 212, 217)"
+        }
+      ],
+      "whatsappMark": true,
+      "globalSearchFields": 0,
+      "actionIcons": [
+        240,
+        240,
+        240,
+        240
+      ],
+      "pageY": 0,
+      "historyHeight": 442.59375,
+      "historyScroll": "auto"
+    },
+    {
+      "tag": "1280-dark-en",
+      "state": "reminder",
+      "overflow": 0,
+      "cut": [],
+      "lowContrast": [],
+      "firstRowY": null,
+      "gotButtonBg": "rgb(14, 36, 39)",
+      "sidebarBg": "rgb(14, 36, 39)",
+      "headerBackArrows": 0,
+      "localBack": true,
+      "localBackText": "",
+      "localBackHref": "/khata",
+      "actionStyles": [
+        {
+          "size": "14px",
+          "weight": "400",
+          "color": "rgb(157, 212, 217)"
+        },
+        {
+          "size": "14px",
+          "weight": "400",
+          "color": "rgb(157, 212, 217)"
+        },
+        {
+          "size": "14px",
+          "weight": "400",
+          "color": "rgb(157, 212, 217)"
+        },
+        {
+          "size": "14px",
+          "weight": "400",
+          "color": "rgb(157, 212, 217)"
+        }
+      ],
+      "whatsappMark": true,
+      "globalSearchFields": 0,
+      "actionIcons": [
+        240,
+        240,
+        240,
+        240
+      ],
+      "pageY": 0,
+      "historyHeight": 442.59375,
+      "historyScroll": "auto"
+    },
+    {
+      "tag": "1280-dark-en",
+      "state": "long-name-money",
+      "overflow": 0,
+      "cut": [],
+      "lowContrast": [],
+      "firstRowY": null,
+      "gotButtonBg": "rgb(14, 36, 39)",
+      "sidebarBg": "rgb(14, 36, 39)",
+      "headerBackArrows": 0,
+      "localBack": true,
+      "localBackText": "",
+      "localBackHref": "/khata",
+      "actionStyles": [
+        {
+          "size": "14px",
+          "weight": "400",
+          "color": "rgb(157, 212, 217)"
+        },
+        {
+          "size": "14px",
+          "weight": "400",
+          "color": "rgb(157, 212, 217)"
+        },
+        {
+          "size": "14px",
+          "weight": "400",
+          "color": "rgb(157, 212, 217)"
+        },
+        {
+          "size": "14px",
+          "weight": "400",
+          "color": "rgb(157, 212, 217)"
+        }
+      ],
+      "whatsappMark": true,
+      "globalSearchFields": 0,
+      "actionIcons": [
+        264,
+        264,
+        264,
+        264
+      ],
+      "pageY": 0,
+      "historyHeight": 418.59375,
+      "historyScroll": "auto"
+    }
+  ],
+  "failures": []
+}

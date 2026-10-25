@@ -98,7 +98,7 @@ export function UbAppShell({ children }: Readonly<{ children: ReactNode }>): Rea
           {/* A top-level screen shows the brand; a detail or task screen shows
               Back in its place. The bottom nav is there on most of them too (all but
               a form and a khata), so Back is the way UP and the tabs the way out. */}
-          {mobileNav.topLevel ? (
+          {mobileNav.topLevel || mobileNav.pageOwnsBack ? (
             <UbLink
               href={landing}
               tone="inherit"

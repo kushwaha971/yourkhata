@@ -1,3 +1,14 @@
+LATEST CORRECTION —25 October 2026, R-DEC-48/49
+Personal Udhaar now uses /personal/ APIs and one server-owned PersonalBook per
+logged-in user, independent of the selected business. No business memberships
+exist for its private storage scope. Do not revert to the legacy business-main
+contact list. Old shared records are preserved; never infer personal ownership
+from a phone number or who entered a business entry. Additive migration0013.
+Two green/red balance cards; no people-count strip or trailing count; one local
+Back arrow beside the person name. Verification/report:
+docs/performance/2026-10-25-private-udhaar-fix.md. Finish this checkpoint, then
+continue approved personal report/correction work, Lending and Library.
+
 Continue the existing YourKhata revamp on dev. Do not start a new plan.
 
 CURRENT CHECKPOINT —25October2026, R-DEC-35 through R-DEC-46
@@ -33,8 +44,8 @@ DELIVERED PERSONAL CORE
   No payment method/date/reference controls. Explicit simple=true main manual
   entry permits unknown receipt method stored NULL, never invented Cash.
   Invalid supplied methods still fail. Other callers keep legacy validation.
-- Gave money stays RED; Got money uses PRIMARY MARIGOLD (owner corrected the
-  earlier both-primary proposal). Four secondary actions have20pxicons and the
+- Gave money stays RED; Got money uses the SIDEBAR DARK TEAL with WHITE text
+  (R-DEC-49, latest owner instruction). Four secondary actions have20pxicons and the
   same14px/400/accent ink; WhatsApp uses its actual phone-in-chat mark.
 - WhatsApp/SMS each open one focused editable composer. Sending requires user
   action; no auto-send. Existing shared-sheet behavior is unchanged by default.
@@ -60,10 +71,10 @@ NEXT
 Verify remaining personal report/print and correction/recovery overlays against
 this minimal scope; do not reintroduce business fields. Then remaining Udhaar
 work, then Lending/Library, one feature fully finished before the next. No
-routine next-screen permission question. BP-21 cross-app contact membership is
-DEFERRED by owner's no-Shop rule (R-DEC-42), despite earlier approval. Existing
-mainbook is tenant-scoped, not independently private per staff member. Do not
-claim these older architecture goals are solved by the new personal UI.
+routine next-screen permission question. R-DEC-48 supersedes the BP-21 deferral for personal ownership: authenticated
+user-owned /personal/ APIs are implemented. Legacy business main-book records
+remain tenant-scoped and are retained without guessed ownership. Never route
+personal UI back to those business APIs or automatically migrate their money.
 
 REFERENCE
 Owner supplied https://claude.ai/artifact/RsYjPpq2t3zCTMu5iUSvNm#gf and#d12.

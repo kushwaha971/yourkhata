@@ -387,3 +387,9 @@ Example row arithmetic (Entry sheet, round 2): 0.20×9.0 + 0.15×9.0 + 0.15×8.7
 1. **Q1 — Undo after saving an entry.** Options: (a) no Undo; fix with ⋯ → Reverse (today); (b) 10-second Undo on the snackbar that writes a real reversal with the reason "Undone right after saving". Recommendation: **(b)** — it is the honest undo the ledger already allows, and it removes the most common reason to open the reverse dialog.
 2. **Q2 — Library and Lending reminder tabs inside the Udhaar app.** Options: (a) keep them (today); (b) show only Udhaar reminders here; module reminders live in their own apps' Messages screens. Recommendation: **(b)**, per DEC-019. Either way the first tab says "Udhaar book", not "Shop".
 3. **Q3 — "Archive".** Options: keep "Archive"; or "Close khata" / "Reopen khata". Recommendation: **"Close khata"** — a word the shopkeeper already uses for a settled paper account.
+
+Current ownership correction (R-DEC-48): personal Udhaar uses authenticated
+user-owned `/personal/` endpoints, not the legacy business main-book contact
+list. Preserve old shared records; never infer ownership from phone or actor.
+Two green/red balance cards replace the earlier count strip. Verification:
+`docs/performance/2026-10-25-private-udhaar-fix.md`.

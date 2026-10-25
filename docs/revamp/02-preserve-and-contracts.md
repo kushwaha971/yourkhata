@@ -118,3 +118,17 @@ No change in this table authorizes modifying Library/Lending calculations, paylo
 | Existing e2e harnesses | journey, parties, ledger, statement, credit, tags, security, credentials, onboarding-apps, library/lending looks |
 | Figure parity | for a seeded Library and Lending book, every figure on every old screen appears with the same value on the new screen |
 | Desktop-unchanged gate | `e2e/desktop-unchanged.mjs` for screens not in the current phase |
+
+
+### R-DEC-48: personal Udhaar storage boundary (25 October 2026)
+
+Personal UI uses /personal/ endpoints. PersonalBook maps a unique authenticated
+user to a private storage scope with no persisted business membership. The
+existing financial services operate unchanged inside that scope; the business
+main book remains legacy data. A phone number, selected business, business owner
+role or entry actor never grants another user's personal-book access. Preserve
+old shared records without guessing ownership. PersonalScope rejects support
+impersonation, resolves ownership from the verified user, and exposes no Shop,
+Library or Lending endpoints. Same-account business switches keep the personal
+book; app/account switches reject stale responses and clear feature caches.
+Regression: apps/parties/tests/test_personal_book.py.

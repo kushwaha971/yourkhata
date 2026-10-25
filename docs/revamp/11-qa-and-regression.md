@@ -500,3 +500,14 @@ SMS/WhatsApp editable text pass. Quiet old/new/old/new final personal page
 phone633→426ms anddesktop920.5→428ms throttle,n=6each. Old business prototype
 ratings/results are superseded. No Shop feature changes; no physical-device,
 OS contact-permission or independently private per-user book certification.
+
+## 25 October: R-DEC-48 personal book boundary
+
+`apps/parties/tests/test_personal_book.py` covers business-contact exclusion,
+owner/staff isolation with duplicate phones, direct record/history/statement/
+reminder access, business switching, book parameter refusal, non-switchable
+private storage, optional-note entries, retry idempotency and server balances.
+The legacy business API remains intact; this is not an all-API privacy
+certificate. Additive migration only; existing shared records remain unchanged.
+Browser harnesses: `personal-udhaar-journey.mjs`, `revamp-private-udhaar.mjs`,
+`revamp-udhaar-person.mjs`. Report: performance/2026-10-25-private-udhaar-fix.md.

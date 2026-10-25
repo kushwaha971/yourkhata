@@ -1,0 +1,302 @@
+[
+  {
+    "locale": "en",
+    "width": 390,
+    "theme": "light",
+    "overflow": 0,
+    "cut": [],
+    "lowContrast": [],
+    "firstRowY": 217,
+    "cards": {
+      "border": "0px",
+      "cards": [
+        {
+          "height": 96,
+          "text": "To get₹600.00To get, ₹600.00",
+          "color": "rgb(31, 122, 31)"
+        },
+        {
+          "height": 96,
+          "text": "To give₹0.00To give, ₹0.00",
+          "color": "rgb(179, 38, 30)"
+        }
+      ],
+      "searches": 1
+    }
+  },
+  {
+    "locale": "en",
+    "width": 390,
+    "theme": "dark",
+    "overflow": 0,
+    "cut": [],
+    "lowContrast": [],
+    "firstRowY": 217,
+    "cards": {
+      "border": "0px",
+      "cards": [
+        {
+          "height": 96,
+          "text": "To get₹600.00To get, ₹600.00",
+          "color": "rgb(76, 191, 76)"
+        },
+        {
+          "height": 96,
+          "text": "To give₹0.00To give, ₹0.00",
+          "color": "rgb(255, 130, 121)"
+        }
+      ],
+      "searches": 1
+    }
+  },
+  {
+    "locale": "en",
+    "width": 320,
+    "theme": "light",
+    "overflow": 0,
+    "cut": [],
+    "lowContrast": [],
+    "firstRowY": 217,
+    "cards": {
+      "border": "0px",
+      "cards": [
+        {
+          "height": 96,
+          "text": "To get₹600.00To get, ₹600.00",
+          "color": "rgb(31, 122, 31)"
+        },
+        {
+          "height": 96,
+          "text": "To give₹0.00To give, ₹0.00",
+          "color": "rgb(179, 38, 30)"
+        }
+      ],
+      "searches": 1
+    }
+  },
+  {
+    "locale": "en",
+    "width": 320,
+    "theme": "dark",
+    "overflow": 0,
+    "cut": [],
+    "lowContrast": [],
+    "firstRowY": 217,
+    "cards": {
+      "border": "0px",
+      "cards": [
+        {
+          "height": 96,
+          "text": "To get₹600.00To get, ₹600.00",
+          "color": "rgb(76, 191, 76)"
+        },
+        {
+          "height": 96,
+          "text": "To give₹0.00To give, ₹0.00",
+          "color": "rgb(255, 130, 121)"
+        }
+      ],
+      "searches": 1
+    }
+  },
+  {
+    "locale": "en",
+    "width": 1024,
+    "theme": "light",
+    "overflow": 0,
+    "cut": [],
+    "lowContrast": [],
+    "firstRowY": 328,
+    "cards": {
+      "border": "0px",
+      "cards": [
+        {
+          "height": 96,
+          "text": "To get₹600.00To get, ₹600.00",
+          "color": "rgb(31, 122, 31)"
+        },
+        {
+          "height": 96,
+          "text": "To give₹0.00To give, ₹0.00",
+          "color": "rgb(179, 38, 30)"
+        }
+      ],
+      "searches": 1
+    }
+  },
+  {
+    "locale": "en",
+    "width": 1024,
+    "theme": "dark",
+    "overflow": 0,
+    "cut": [],
+    "lowContrast": [],
+    "firstRowY": 328,
+    "cards": {
+      "border": "0px",
+      "cards": [
+        {
+          "height": 96,
+          "text": "To get₹600.00To get, ₹600.00",
+          "color": "rgb(76, 191, 76)"
+        },
+        {
+          "height": 96,
+          "text": "To give₹0.00To give, ₹0.00",
+          "color": "rgb(255, 130, 121)"
+        }
+      ],
+      "searches": 1
+    }
+  },
+  {
+    "locale": "en",
+    "width": 1280,
+    "theme": "light",
+    "overflow": 0,
+    "cut": [],
+    "lowContrast": [],
+    "firstRowY": 328,
+    "cards": {
+      "border": "0px",
+      "cards": [
+        {
+          "height": 96,
+          "text": "To get₹600.00To get, ₹600.00",
+          "color": "rgb(31, 122, 31)"
+        },
+        {
+          "height": 96,
+          "text": "To give₹0.00To give, ₹0.00",
+          "color": "rgb(179, 38, 30)"
+        }
+      ],
+      "searches": 1
+    }
+  },
+  {
+    "locale": "en",
+    "width": 1280,
+    "theme": "dark",
+    "overflow": 0,
+    "cut": [],
+    "lowContrast": [],
+    "firstRowY": 328,
+    "cards": {
+      "border": "0px",
+      "cards": [
+        {
+          "height": 96,
+          "text": "To get₹600.00To get, ₹600.00",
+          "color": "rgb(76, 191, 76)"
+        },
+        {
+          "height": 96,
+          "text": "To give₹0.00To give, ₹0.00",
+          "color": "rgb(255, 130, 121)"
+        }
+      ],
+      "searches": 1
+    }
+  },
+  {
+    "locale": "hi",
+    "width": 320,
+    "theme": "light",
+    "overflow": 0,
+    "cut": [],
+    "lowContrast": [],
+    "firstRowY": 217,
+    "cards": {
+      "border": "0px",
+      "cards": [
+        {
+          "height": 96,
+          "text": "मिलने हैं₹600.00मिलने हैं, ₹600.00",
+          "color": "rgb(31, 122, 31)"
+        },
+        {
+          "height": 96,
+          "text": "देने हैं₹0.00देने हैं, ₹0.00",
+          "color": "rgb(179, 38, 30)"
+        }
+      ],
+      "searches": 1
+    }
+  },
+  {
+    "locale": "hi",
+    "width": 320,
+    "theme": "dark",
+    "overflow": 0,
+    "cut": [],
+    "lowContrast": [],
+    "firstRowY": 217,
+    "cards": {
+      "border": "0px",
+      "cards": [
+        {
+          "height": 96,
+          "text": "मिलने हैं₹600.00मिलने हैं, ₹600.00",
+          "color": "rgb(76, 191, 76)"
+        },
+        {
+          "height": 96,
+          "text": "देने हैं₹0.00देने हैं, ₹0.00",
+          "color": "rgb(255, 130, 121)"
+        }
+      ],
+      "searches": 1
+    }
+  },
+  {
+    "locale": "hi",
+    "width": 1280,
+    "theme": "light",
+    "overflow": 0,
+    "cut": [],
+    "lowContrast": [],
+    "firstRowY": 336,
+    "cards": {
+      "border": "0px",
+      "cards": [
+        {
+          "height": 96,
+          "text": "मिलने हैं₹600.00मिलने हैं, ₹600.00",
+          "color": "rgb(31, 122, 31)"
+        },
+        {
+          "height": 96,
+          "text": "देने हैं₹0.00देने हैं, ₹0.00",
+          "color": "rgb(179, 38, 30)"
+        }
+      ],
+      "searches": 1
+    }
+  },
+  {
+    "locale": "hi",
+    "width": 1280,
+    "theme": "dark",
+    "overflow": 0,
+    "cut": [],
+    "lowContrast": [],
+    "firstRowY": 336,
+    "cards": {
+      "border": "0px",
+      "cards": [
+        {
+          "height": 96,
+          "text": "मिलने हैं₹600.00मिलने हैं, ₹600.00",
+          "color": "rgb(76, 191, 76)"
+        },
+        {
+          "height": 96,
+          "text": "देने हैं₹0.00देने हैं, ₹0.00",
+          "color": "rgb(255, 130, 121)"
+        }
+      ],
+      "searches": 1
+    }
+  }
+]

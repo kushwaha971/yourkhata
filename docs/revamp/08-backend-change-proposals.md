@@ -342,6 +342,12 @@ main book. Rollback: remove due choice/frontend default; existing filters stay.
 
 ## BP-21 · Separate Udhaar-only contacts from Shop roles
 
+25 October update, R-DEC-48: superseded for personal Udhaar by the owner
+reaffirming logged-in-user ownership. Implemented as one private PersonalBook
+per user with /personal/ API routes; existing business contact memberships and
+legacy main-book money remain unchanged. No inferred ownership migration.
+Report: performance/2026-10-25-private-udhaar-fix.md. Original proposal follows.
+
 Proposed 25 Oct 2026 after the quick Add review; **approved by the owner in
 this session, not built yet**. Owner reply: "Approve BP-21 after this screen
 (Recommended)". Build only after the current Udhaar screen passes its gates

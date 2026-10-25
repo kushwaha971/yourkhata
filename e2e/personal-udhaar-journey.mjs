@@ -14,7 +14,7 @@ try{
  const form=page.getByRole('dialog');await form.getByLabel('Name',{exact:true}).fill('Ravi Kumar');
  const mobile='9'+String(Date.now()).slice(-9);await form.getByRole('textbox',{name:'Mobile number',exact:true}).fill(mobile);
  check('Add person has no amount field',await form.locator('input[inputmode=decimal]').count()===0);
- const created=page.waitForResponse(r=>new URL(r.url()).pathname==='/api/v1/parties'&&r.request().method()==='POST');
+ const created=page.waitForResponse(r=>new URL(r.url()).pathname==='/api/v1/personal/parties'&&r.request().method()==='POST');
  await form.getByRole('button',{name:'Save and open khata'}).click();const response=await created;const sent=response.request().postDataJSON();
  check('Contact wire contains only name and mobile',JSON.stringify(Object.keys(sent).sort())===JSON.stringify(['mobile','name']));check('Contact saved',response.status()===201);
  const body=await response.json();const id=body.data.id;result.contact=id;await page.waitForURL(u=>u.pathname===`/parties/${id}`);await page.getByTestId('udhaar-person-overview').waitFor();
@@ -32,11 +32,11 @@ try{
   await page.waitForTimeout(250);release();const answer=await saved;await page.unroute('**/api/v1/**',hold);
   check(label+' three fast taps issue one write',writes===1);check(label+' saved',answer.status()===201);
   const payload=answer.request().postDataJSON();check(label+' note remains optional',payload.note===(note??''));check(label+' does not invent Cash',payload.payment_mode===undefined&&payload.simple===true);
-  await sheet.waitFor({state:'hidden'});const read=await(await ctx.request.get(`${base}/api/v1/parties/${id}`)).json();check(label+' has correct server balance',read.data.balance===expected);
+  await sheet.waitFor({state:'hidden'});const read=await(await ctx.request.get(`${base}/api/v1/personal/parties/${id}`)).json();check(label+' has correct server balance',read.data.balance===expected);
  };
  await entry('Gave money','500','', '500.00');await entry('Got money','200','Returned after dinner','300.00');
  await page.getByTestId('udhaar-person-overview').getByText('₹300.00',{exact:true}).waitFor();await page.screenshot({path:out+'/personal-history.png'});
- const history=await(await ctx.request.get(`${base}/api/v1/parties/${id}/ledger-entries`)).json();check('Exactly two entries remain in history',history.data.length===2);check('Received entry keeps unknown method',history.data.find(e=>e.direction==='credit').payment_mode===null);
+ const history=await(await ctx.request.get(`${base}/api/v1/personal/parties/${id}/ledger-entries`)).json();check('Exactly two entries remain in history',history.data.length===2);check('Received entry keeps unknown method',history.data.find(e=>e.direction==='credit').payment_mode===null);
  await page.getByRole('button',{name:'WhatsApp',exact:true}).click();const message=page.getByRole('dialog').getByRole('textbox',{name:'Message'});await message.waitFor();await message.fill('Ravi, please return the remaining ₹300.');check('Reminder is editable',await message.inputValue()==='Ravi, please return the remaining ₹300.');await page.screenshot({path:out+'/personal-reminder.png'});await page.keyboard.press('Escape');
  await page.getByRole('button',{name:'SMS',exact:true}).click();const smsDialog=page.getByRole('dialog');const smsBox=smsDialog.getByRole('textbox',{name:'Message'});await smsBox.waitFor();await smsBox.fill('Ravi, ₹300 remains.');
  check('SMS composer has only SMS action',await smsDialog.getByRole('link',{name:'SMS',exact:true}).count()===1&&await smsDialog.getByRole('link',{name:'WhatsApp',exact:true}).count()===0);

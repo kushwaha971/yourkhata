@@ -96,6 +96,8 @@ export interface AppManifest {
     readonly partySearch?: boolean;
     /** The app opts into the permission-scoped command search in both headers. */
     readonly commandSearch?: boolean;
+    /** Pages matching this trusted pattern provide their own Back control. */
+    readonly pageBackPattern?: string;
   };
 }
 
