@@ -18,7 +18,7 @@ export const homePromiseTitle = (
   today: string,
   formatDate: (iso: string) => string
 ): string =>
-  t(`reports.home.promise.${promise.role}.${variant(promise, today)}`, {
+  t(`homePromise.${promise.role}.${variant(promise, today)}`, {
     ...promiseValues(promise, formatDate),
     name: promise.party.name,
   });
@@ -29,7 +29,7 @@ export const lanePromiseCaption = (
   promise: ShopPromise,
   today: string,
   formatDate: (iso: string) => string
-): string => t(`reports.home.promise.lane.${variant(promise, today)}`, promiseValues(promise, formatDate));
+): string => t(`homePromise.lane.${variant(promise, today)}`, promiseValues(promise, formatDate));
 
 /**
  * Home's caption: "Owes ₹3,100 · 42 days late · Promise 2 days late".
@@ -42,14 +42,14 @@ export const homePromiseCaption = (t: TranslateFn, promise: ShopPromise): string
     parts.push(
       promiseStillDue(promise)
         ? t(
-            promise.role === 'customer' ? 'reports.home.promise.owes' : 'reports.home.promise.youOwe',
+            promise.role === 'customer' ? 'homePromise.owes' : 'homePromise.youOwe',
             { amount: formatInr(promise.balance) }
           )
-        : t('reports.home.promise.nothingDue')
+        : t('homePromise.nothingDue')
     );
   }
   if (promiseStillDue(promise) && promise.daysOverdue)
     parts.push(t('reports.home.daysLate', { count: promise.daysOverdue }));
-  if (promise.daysLate) parts.push(t('reports.home.promise.late', { count: promise.daysLate }));
+  if (promise.daysLate) parts.push(t('homePromise.late', { count: promise.daysLate }));
   return parts.join(' · ');
 };

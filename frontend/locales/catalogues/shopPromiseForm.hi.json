@@ -1,0 +1,21 @@
+{
+  "parties.shopPromise.form.amount": "कितना (ज़रूरी नहीं)",
+  "parties.shopPromise.form.changed": "वादा बदला गया",
+  "parties.shopPromise.form.datePast": "आज या बाद की तारीख चुनें।",
+  "parties.shopPromise.form.drawer.add": "वादा जोड़ें",
+  "parties.shopPromise.form.drawer.change": "वादा बदलें",
+  "parties.shopPromise.form.explain.customer": "वादा सिर्फ़ आपके याद रखने के लिए है। इससे कोई बिल या बाकी रकम नहीं बदलती।",
+  "parties.shopPromise.form.explain.supplier": "वादा सिर्फ़ आपके याद रखने के लिए है। इससे कोई बिल या आपकी बाकी रकम नहीं बदलती।",
+  "parties.shopPromise.form.nextWeek": "एक हफ़्ते में",
+  "parties.shopPromise.form.note": "नोट (ज़रूरी नहीं)",
+  "parties.shopPromise.form.noteHint": "यह नोट सिर्फ़ आपकी दुकान देखती है।",
+  "parties.shopPromise.form.offline": "वादा सेव करने के लिए इंटरनेट चालू करें।",
+  "parties.shopPromise.form.quick": "आम तारीखें",
+  "parties.shopPromise.form.save": "वादा सेव करें",
+  "parties.shopPromise.form.saved": "वादा सेव हुआ",
+  "parties.shopPromise.form.saving": "सेव हो रहा है…",
+  "parties.shopPromise.form.today": "आज",
+  "parties.shopPromise.form.tomorrow": "कल",
+  "parties.shopPromise.form.when.customer": "कब देंगे?",
+  "parties.shopPromise.form.when.supplier": "आप कब देंगे?"
+}

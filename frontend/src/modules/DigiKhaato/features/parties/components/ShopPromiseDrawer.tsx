@@ -32,7 +32,7 @@ import { useShopPromiseSchema, type ShopPromiseFormValues } from '../validation/
 import type { ShopPromise, ShopPromiseRole } from '../types/shopPromise.types';
 
 // Loaded with dynamic(), so its words come with its own chunk.
-import 'src/i18n/catalogues/parties';
+import 'src/i18n/catalogues/shopPromiseForm';
 import 'src/i18n/catalogues/validation';
 
 const FIELDS = ['promisedOn', 'amount', 'note'] as const;
@@ -104,7 +104,7 @@ export function ShopPromiseDrawer({
         dispatch(
           showSnackbar({
             severity: 'success',
-            id: editing ? 'parties.shopPromise.changed' : 'parties.shopPromise.saved',
+            id: editing ? 'parties.shopPromise.form.changed' : 'parties.shopPromise.form.saved',
           })
         );
         onSaved(promise);
@@ -154,7 +154,7 @@ export function ShopPromiseDrawer({
       onOpenChange={(next) => {
         if (!next) onClose();
       }}
-      title={t(editing ? 'parties.shopPromise.drawer.change' : 'parties.shopPromise.drawer.add')}
+      title={t(editing ? 'parties.shopPromise.form.drawer.change' : 'parties.shopPromise.form.drawer.add')}
       closeLabel={t('common.action.close')}
       dismissOnBackdrop={!formState.isDirty}
       footer={
@@ -162,44 +162,44 @@ export function ShopPromiseDrawer({
           type="submit"
           form={formId}
           busy={saving}
-          busyLabel={t('parties.shopPromise.saving')}
+          busyLabel={t('parties.shopPromise.form.saving')}
           disabled={!canWrite}
           data-testid="shop-promise-save"
         >
-          {t('parties.shopPromise.save')}
+          {t('parties.shopPromise.form.save')}
         </UbButton>
       }
     >
       <UbStack gap={4} data-testid="shop-promise-drawer">
-        {!canWrite && <UbStatusBanner tone="info" title={t('parties.shopPromise.offline')} />}
+        {!canWrite && <UbStatusBanner tone="info" title={t('parties.shopPromise.form.offline')} />}
         <UbForm id={formId} form={form} onSubmit={submit} formErrors={formErrors}>
-          <UbField name="promisedOn" label={t(`parties.shopPromise.when.${role}`)} required>
+          <UbField name="promisedOn" label={t(`parties.shopPromise.form.when.${role}`)} required>
             {(field) => (
               <UbDateInput
                 {...field}
                 min={today}
-                quickChoicesLabel={t('parties.shopPromise.quick')}
+                quickChoicesLabel={t('parties.shopPromise.form.quick')}
                 quickChoices={[
-                  { label: t('parties.shopPromise.today'), date: today },
-                  { label: t('parties.shopPromise.tomorrow'), date: addDaysIso(today, 1) },
-                  { label: t('parties.shopPromise.nextWeek'), date: addDaysIso(today, 7) },
+                  { label: t('parties.shopPromise.form.today'), date: today },
+                  { label: t('parties.shopPromise.form.tomorrow'), date: addDaysIso(today, 1) },
+                  { label: t('parties.shopPromise.form.nextWeek'), date: addDaysIso(today, 7) },
                 ]}
               />
             )}
           </UbField>
-          <UbField name="amount" label={t('parties.shopPromise.amount')}>
+          <UbField name="amount" label={t('parties.shopPromise.form.amount')}>
             {(field) => <UbMoneyInput {...field} value={field.value ?? ''} inputMode="decimal" />}
           </UbField>
           <UbField
             name="note"
-            label={t('parties.shopPromise.note')}
-            hint={t('parties.shopPromise.noteHint')}
+            label={t('parties.shopPromise.form.note')}
+            hint={t('parties.shopPromise.form.noteHint')}
           >
             {(field) => <UbTextInput {...field} maxLength={200} />}
           </UbField>
         </UbForm>
         <UbText variant="caption" tone="secondary">
-          {t(`parties.shopPromise.explain.${role}`)}
+          {t(`parties.shopPromise.form.explain.${role}`)}
         </UbText>
       </UbStack>
     </CompactDrawer>

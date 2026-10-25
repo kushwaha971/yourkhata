@@ -102,6 +102,8 @@
     "landing.pricing.": "landingPricing",
     "calendar.": "calendar",
     "parties.relations.": "partyLinks",
+    "parties.shopPromise.form.": "shopPromiseForm",
+    "homePromise.": "homePromises",
     "parties.list.customer.": "partyBooks",
     "parties.list.supplier.": "partyBooks",
     "payments.off.": "settings",

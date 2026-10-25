@@ -1,0 +1,22 @@
+{
+  "homePromise.basis": "Due in the next 7 days, late first",
+  "homePromise.customer.amountOn": "{name} promised {amount} for {date}",
+  "homePromise.customer.amountToday": "{name} promised {amount} today",
+  "homePromise.customer.on": "{name} promised to pay on {date}",
+  "homePromise.customer.today": "{name} promised to pay today",
+  "homePromise.lane.amountOn": "promised {amount} for {date}",
+  "homePromise.lane.amountToday": "promised {amount} today",
+  "homePromise.lane.on": "promised for {date}",
+  "homePromise.lane.today": "promised today",
+  "homePromise.late": "Promise {count, plural, one {# day} other {# days}} late",
+  "homePromise.nothingDue": "Nothing due now",
+  "homePromise.owes": "Owes {amount}",
+  "homePromise.pay": "Pay {name}",
+  "homePromise.remind": "Remind {name}",
+  "homePromise.supplier.amountOn": "You promised {name} {amount} for {date}",
+  "homePromise.supplier.amountToday": "You promised {name} {amount} today",
+  "homePromise.supplier.on": "You promised to pay {name} on {date}",
+  "homePromise.supplier.today": "You promised to pay {name} today",
+  "homePromise.title": "Promises",
+  "homePromise.youOwe": "You owe {amount}"
+}

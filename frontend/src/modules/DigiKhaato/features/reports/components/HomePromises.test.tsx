@@ -81,14 +81,14 @@ it('says a late promise in the caption', () => {
 
 it('offers no Remind to somebody who has paid since', () => {
   show([ROW({ balance: '0.00' })]);
-  expect(screen.getByText('reports.home.promise.nothingDue')).toBeInTheDocument();
+  expect(screen.getByText('homePromise.nothingDue')).toBeInTheDocument();
   expect(screen.queryByTestId('home-promise-act')).toBeNull();
 });
 
 it("a supplier promise is the shop's own and offers Pay", async () => {
   const handlers = show([ROW({ role: 'supplier', daysLate: 2, daysOverdue: null })]);
-  expect(screen.getByText(/reports\.home\.promise\.supplier\.amountToday/)).toBeInTheDocument();
-  expect(screen.getByText(/reports\.home\.promise\.youOwe.*reports\.home\.promise\.late/)).toBeInTheDocument();
+  expect(screen.getByText(/homePromise\.supplier\.amountToday/)).toBeInTheDocument();
+  expect(screen.getByText(/homePromise\.youOwe.*homePromise\.late/)).toBeInTheDocument();
   await userEvent.click(screen.getByTestId('home-promise-act'));
   expect(handlers.onPay).toHaveBeenCalledWith(expect.objectContaining({ role: 'supplier' }));
 });

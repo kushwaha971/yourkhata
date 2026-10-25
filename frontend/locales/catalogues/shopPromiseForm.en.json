@@ -1,0 +1,21 @@
+{
+  "parties.shopPromise.form.amount": "How much (optional)",
+  "parties.shopPromise.form.changed": "Promise changed",
+  "parties.shopPromise.form.datePast": "Choose today or a later date.",
+  "parties.shopPromise.form.drawer.add": "Add promise",
+  "parties.shopPromise.form.drawer.change": "Change promise",
+  "parties.shopPromise.form.explain.customer": "A promise is a reminder for you. It does not change any bill or what they owe.",
+  "parties.shopPromise.form.explain.supplier": "A promise is a reminder for you. It does not change any bill or what you owe.",
+  "parties.shopPromise.form.nextWeek": "In a week",
+  "parties.shopPromise.form.note": "Note (optional)",
+  "parties.shopPromise.form.noteHint": "Only your shop sees this note.",
+  "parties.shopPromise.form.offline": "Connect to the internet to save a promise.",
+  "parties.shopPromise.form.quick": "Common dates",
+  "parties.shopPromise.form.save": "Save promise",
+  "parties.shopPromise.form.saved": "Promise saved",
+  "parties.shopPromise.form.saving": "Saving…",
+  "parties.shopPromise.form.today": "Today",
+  "parties.shopPromise.form.tomorrow": "Tomorrow",
+  "parties.shopPromise.form.when.customer": "When will they pay?",
+  "parties.shopPromise.form.when.supplier": "When will you pay?"
+}

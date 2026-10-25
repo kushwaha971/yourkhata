@@ -28,7 +28,7 @@ export const useShopPromiseSchema = (
         // ISO dates compare as strings in calendar order.
         promisedOn: businessDateValidation({ allowFuture: true }).test(
           'notPast',
-          t('parties.shopPromise.datePast'),
+          t('parties.shopPromise.form.datePast'),
           (value) => !value || value >= today
         ),
         amount: optionalAmountValidation()

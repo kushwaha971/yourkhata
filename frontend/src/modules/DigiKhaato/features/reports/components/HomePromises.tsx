@@ -9,6 +9,8 @@ import { homePromiseCaption, homePromiseTitle } from '../view-model/homePromiseD
 
 import { PartUnavailable } from './DashboardPanels';
 
+import 'src/i18n/catalogues/homePromises';
+
 import type { ShopPromise } from '../../parties/types/shopPromise.types';
 import type { HomePromises as HomePromisesState } from '../hooks/useHomePromises';
 
@@ -46,20 +48,20 @@ export function HomePromises({
 }>): React.JSX.Element | null {
   if (state.status !== 'ready')
     return state.status === 'failed' ? (
-      <UbPanel as="section" aria-label={t('reports.home.promise.title')}>
+      <UbPanel as="section" aria-label={t('homePromise.title')}>
         <PartUnavailable onRetry={onRetry} t={t} className="p-4" />
       </UbPanel>
     ) : null;
   if (state.rows.length === 0) return null;
   return (
-    <UbPanel as="section" aria-label={t('reports.home.promise.title')} data-testid="home-promises">
+    <UbPanel as="section" aria-label={t('homePromise.title')} data-testid="home-promises">
       <UbStack gap={0}>
         <UbStack gap={0} className="px-4 pt-4">
           <UbText as="h2" variant="h3">
-            {t('reports.home.promise.title')}
+            {t('homePromise.title')}
           </UbText>
           <UbText variant="caption" tone="secondary">
-            {t('reports.home.promise.basis')}
+            {t('homePromise.basis')}
           </UbText>
         </UbStack>
         <UbStack as="ul" gap={0} className="py-1">
@@ -101,7 +103,7 @@ export function HomePromises({
                     size="sm"
                     className="shrink-0"
                     onClick={() => (supplier ? onPay(promise) : onRemind(promise))}
-                    aria-label={t(supplier ? 'reports.home.promise.pay' : 'reports.home.promise.remind', {
+                    aria-label={t(supplier ? 'homePromise.pay' : 'homePromise.remind', {
                       name: promise.party.name,
                     })}
                     data-testid="home-promise-act"
