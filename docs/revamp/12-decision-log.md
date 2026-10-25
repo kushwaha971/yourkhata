@@ -589,3 +589,17 @@ no speed-improvement claim. See2026-10-25-private-udhaar-fix.md and machine data
 Next: remaining minimal personal report/correction/recovery verification, then
 Lending and Library; do not revert to business main-book reads. Existing shared
 records retained, no inferred ownership migration; production not touched.
+
+
+Progress26October2026: owner requested senior exploratory browser QA, beyond
+happy paths, including phone taps, cards, three dots and refresh behaviour.
+Interactive local production-browser audit of5094e1d40 found UQA01–10; fiveP1s
+(CSV404, personal print business identity, draft reload loss, business-read-only
+personal Add blocked, personal Got correction requires payment method). Money
+correction/cancellation and lost-reply retry arithmetic passed. Card/menu/Back
+journeys worked in sampled mobile emulation; cached list money flashed old then
+updated without reload. Do not dismiss physical-phone report or claim full QA.
+Next: fix P1s with meaningful regressions, rerun affected real journeys, finish
+remaining coverage matrix before any whole-Udhaar sign-off or Lending/Library.
+Report: docs/performance/2026-10-25-udhaar-exploratory-qa.md. Audit-only; no
+application changes.

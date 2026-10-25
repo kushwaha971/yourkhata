@@ -1,3 +1,15 @@
+QA FOLLOW-UP —26 October 2026: DO NOT TREAT UDHAAR AS SIGNED OFF
+Interactive isolated-browser audit on5094e1d40 found five P1s: CSV anchor uses
+business endpoint→404; personal print uses business name/phone; draft lost on
+reload; business read-only member cannot Add in their own personal book; Got
+money correction wrongly requires a payment method. Full reproduction/coverage:
+docs/performance/2026-10-25-udhaar-exploratory-qa.md (UQA01–10). Fix these before
+Lending/Library, with fail-before regressions and real UI retests. Audit made
+no application fixes. Mobile Back briefly showed cached old money then refreshed
+automatically; permanent need-for-refresh was not reproduced. Physical phones,
+OS gestures/PWA and remaining QA matrix are unproved. Scoped old ratings do not
+override these essential gaps. No product completion or exhaustive-case claim.
+
 LATEST CORRECTION —25 October 2026, R-DEC-48/49
 Personal Udhaar now uses /personal/ APIs and one server-owned PersonalBook per
 logged-in user, independent of the selected business. No business memberships
