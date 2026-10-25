@@ -39,6 +39,10 @@ jest.mock('../api/cashCountService', () => ({
   ...jest.requireActual('../api/cashCountService'),
   listCashCounts: jest.fn().mockResolvedValue({ counts: [], expectedNow: '800.00' }),
 }));
+jest.mock('../../parties/api/shopPromiseService', () => ({
+  ...jest.requireActual('../../parties/api/shopPromiseService'),
+  listOpenPromises: jest.fn().mockResolvedValue([]),
+}));
 
 const mockPush = jest.fn();
 const mockReplace = jest.fn();

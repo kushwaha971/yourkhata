@@ -49,6 +49,7 @@ import { PartyInfoPanel } from './PartyInfoPanel';
 import { PartyModulePanels } from './PartyModulePanels';
 import { ShopPersonActions } from './ShopPersonActions';
 import { ShopPersonOverview } from './ShopPersonOverview';
+import { ShopPromiseControl } from './ShopPromiseControl';
 
 import type { PartyDetail } from '../types/party.types';
 
@@ -591,13 +592,15 @@ export function PartyDetailPageContent({
               {party && canReadLedger && !supplierView && (
                 <PartyReminderStripLazy partyId={id} book="shop" />
               )}
-              {!supplierView && collectionControl && (
-                <UbDisclosure
-                  className="w-full sm:max-w-sm"
-                  label={`${t('parties.detail.collection.label')}${party?.collectionDate ? ` · ${d(party.collectionDate)}` : ''}`}
-                >
-                  {collectionControl}
-                </UbDisclosure>
+              {/* BP-16 — the Shop's own promise, per role. The Udhaar book's
+                  collection date is that book's, and is not shown here (DEC-019). */}
+              {party && (
+                <ShopPromiseControl
+                  key={supplierView ? 'supplier' : 'customer'}
+                  partyId={id}
+                  role={supplierView ? 'supplier' : 'customer'}
+                  canWrite={!isArchived && can('parties.party.write')}
+                />
               )}
             </UbStack>
           </UbStack>

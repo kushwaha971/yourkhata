@@ -79,6 +79,9 @@ _REGISTRY: dict[str, tuple[int, bool]] = {
     "party_already_archived": (409, False),
     "party_not_archived": (409, False),
     "party_balance_nonzero": (409, False),
+    # BP-16 — one open Shop promise per contact and role; change that one.
+    "promise_already_open": (409, False),
+    "promise_closed": (409, False),
     # PTY-04 FR-3's write-off escape — beyond §22.1.1, carried in `CR-LOG`
     # (CR-2026-09-23-A). `nothing_to_write_off` is a client bug made visible (a
     # write-off sent for a party who owes nothing); `balance_changed` is the

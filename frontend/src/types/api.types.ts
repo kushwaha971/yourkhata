@@ -66,6 +66,8 @@ export type ApiErrorCode =
   | 'nothing_to_write_off'
   | 'balance_changed'
   | 'party_archived'
+  | 'promise_already_open'
+  | 'promise_closed'
   | 'insufficient_stock'
   | 'document_not_draft'
   | 'document_already_void'

@@ -74,3 +74,26 @@ class RelationKind(models.TextChoices):
 
     GUARDIAN = "guardian", _("Guardian")
     PAYER = "payer", _("Pays for")
+
+
+class ShopPromiseRole(models.TextChoices):
+    """BP-16 — which side of the Shop a promise is about (DEC-019).
+
+    A customer promises to pay the shop; the shop promises to pay a supplier.
+    The same person can hold both, and the two are never one promise.
+    """
+
+    CUSTOMER = "customer", _("Customer")
+    SUPPLIER = "supplier", _("Supplier")
+
+
+class ShopPromiseState(models.TextChoices):
+    """BP-16 — open until somebody says it was kept or is off.
+
+    "Late" is not a state: it is an open promise whose date has passed, and it
+    is computed on the business's clock when it is read.
+    """
+
+    OPEN = "open", _("Open")
+    KEPT = "kept", _("Kept")
+    CANCELLED = "cancelled", _("Cancelled")

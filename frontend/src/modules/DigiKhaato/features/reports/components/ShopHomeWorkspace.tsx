@@ -32,10 +32,13 @@ import { formatBusinessDate } from 'src/utils/dates';
 import { formatInr, isZeroAmount } from 'src/utils/money';
 import { formatInrUnbroken } from 'src/utils/moneyUnbroken';
 
+import { PROMISE_DATE_FORMAT } from '../../parties/view-model/shopPromiseFacts';
 import { useCounter } from '../hooks/useCounter';
 import { useHomeCharts } from '../hooks/useHomeCharts';
+import { useHomePromises } from '../hooks/useHomePromises';
 import { VARIANCE_TONE, countedWhen, varianceWords } from '../view-model/cashCountDisplay';
 import { advancesLine, tileHref, overdueHref, dueWeekHref } from '../view-model/dashboardDisplay';
+import { lanePromiseCaption } from '../view-model/homePromiseDisplay';
 
 import { LowStockCard, RecentActivityList } from './DashboardLists';
 import {
@@ -47,6 +50,7 @@ import {
 } from './DashboardPanels';
 import { HomeBalanceLane } from './HomeBalanceLane';
 import { HomeDaily } from './HomeDaily';
+import { HomePromises } from './HomePromises';
 import { HomeRepeats } from './HomeRepeats';
 
 import type { PaymentContext } from '../../payments/types/payment.types';
@@ -80,7 +84,7 @@ export function ShopHomeWorkspace({
   refresh,
   secondsAgo = 0,
 }: Readonly<{ data: DashboardData; refresh: () => void; secondsAgo?: number }>): React.JSX.Element {
-  const { t } = useTranslation();
+  const { t, d } = useTranslation();
   const mobile = useIsMobileLayer();
   const tenant = useAppSelector(selectActiveTenant);
   const { can, hasModule } = usePermissions();
@@ -96,6 +100,18 @@ export function ShopHomeWorkspace({
   const overview = useHomeCharts(true, data.generatedAt);
   const canPay = hasModule('payments') && can('payments.payment.write');
   const canRemind = hasModule('ledger') && can('ledger.entry.read') && can('ledger.reminder.write');
+  /* BP-16 — open Shop promises due this week, from the person page's source. */
+  const promises = useHomePromises(can('parties.party.read'), data.generatedAt);
+  const promiseDay = (iso: string) => d(iso, PROMISE_DATE_FORMAT);
+  /* The lane's "42 days late · promised ₹1,500 today", by contact and role. */
+  const promiseCaptions = (role: 'customer' | 'supplier'): ReadonlyMap<string, string> =>
+    new Map(
+      promises.status === 'ready'
+        ? promises.rows
+            .filter((row) => row.role === role)
+            .map((row) => [row.party.id, lanePromiseCaption(t, row, data.asOf, promiseDay)])
+        : []
+    );
   const paidOut =
     overview.status === 'ready' && overview.charts.group === 'day'
       ? overview.charts.money?.points.find((point) => point.date === data.asOf)?.out
@@ -176,6 +192,7 @@ export function ShopHomeWorkspace({
         details={supplier ? counter.data?.suppliers : counter.data?.customers}
         people={supplier ? data.topCreditors : data.topDebtors}
         canAct={supplier ? canPay : canRemind}
+        promises={promiseCaptions(supplier ? 'supplier' : 'customer')}
         onAct={(person) => (supplier ? openPayment('out', person) : setReminder(person))}
         failure={
           broken ? <PartUnavailable onRetry={refresh} t={t} className="flex-wrap" /> : undefined
@@ -493,6 +510,30 @@ export function ShopHomeWorkspace({
               )}
               {tab === 'followups' && (
                 <>
+                  <HomePromises
+                    state={promises}
+                    today={data.asOf}
+                    formatDate={promiseDay}
+                    canRemind={canRemind}
+                    canPay={canPay}
+                    onRemind={(promise) =>
+                      setReminder({
+                        id: promise.party.id,
+                        name: promise.party.name,
+                        balance: promise.balance ?? '0.00',
+                        mobile: promise.party.mobile ?? null,
+                      })
+                    }
+                    onPay={(promise) =>
+                      openPayment('out', {
+                        id: promise.party.id,
+                        name: promise.party.name,
+                        balance: promise.balance ?? '0.00',
+                      })
+                    }
+                    onRetry={refresh}
+                    t={t}
+                  />
                   <NeedsAttention data={data} onRetry={refresh} t={t} />
                   {data.tiles.lowStock && <LowStockCard items={data.lowStockItems} t={t} />}
                 </>

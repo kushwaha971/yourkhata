@@ -19,6 +19,8 @@ from apps.parties.constants import (
     OpeningDirection,
     PartyStatus,
     RelationKind,
+    ShopPromiseRole,
+    ShopPromiseState,
 )
 
 
@@ -388,3 +390,85 @@ class PartyRelation(TenantModel):
 
     def __str__(self) -> str:  # pragma: no cover - admin convenience
         return f"{self.related_party_id} {self.kind} of {self.party_id}"
+
+
+class ShopPromise(TenantModel):
+    """BP-16 (R-DEC-26) — a Shop follow-up: "Sharma will pay ₹1,500 on Friday".
+
+    Separate from `Party.collection_date`, which is the Udhaar book's personal
+    promise (DEC-019): a Shop promise belongs to the Shop and to ONE of its two
+    roles, so a person who is both a customer and a supplier can carry one of
+    each and neither reads the other's.
+
+    A promise moves no money. Keeping it is something a person says (Mark as
+    kept); a payment is not matched to it automatically, because a part payment
+    may or may not be what was promised and only the shopkeeper knows which.
+    Bills, due dates and balances are untouched by every write here.
+
+    One OPEN promise per contact and role, enforced by the database: two staff
+    adding a promise for the same customer at the same moment cannot leave two
+    open dates for one debt. Closed promises stay as the contact's history; the
+    audit log holds every change of date or amount with who made it.
+
+    `version` is the optimistic lock a change sends back: an edit made on a
+    screen loaded before somebody else's edit is refused rather than silently
+    undoing it.
+    """
+
+    party = models.ForeignKey(Party, on_delete=models.PROTECT, related_name="+")
+    role = models.CharField(max_length=8, choices=ShopPromiseRole.choices)
+    promised_on = models.DateField()
+    #: Optional: "will pay on Friday" is a promise without a figure.
+    amount = MoneyField(null=True, blank=True)
+    note = models.CharField(max_length=200, blank=True, default="")
+    state = models.CharField(
+        max_length=10, choices=ShopPromiseState.choices, default=ShopPromiseState.OPEN
+    )
+    closed_at = models.DateTimeField(null=True, blank=True)
+    closed_by = models.ForeignKey(
+        "platform.User", on_delete=models.SET_NULL, null=True, blank=True, related_name="+"
+    )
+    updated_by = models.ForeignKey(
+        "platform.User", on_delete=models.SET_NULL, null=True, blank=True, related_name="+"
+    )
+    version = models.PositiveIntegerField(default=1)
+
+    class Meta:
+        db_table = "parties_shop_promise"
+        constraints = [
+            models.UniqueConstraint(
+                fields=["tenant", "party", "role"],
+                condition=Q(state="open"),
+                name="uq_shop_promise_one_open",
+            ),
+            models.CheckConstraint(
+                condition=Q(role__in=["customer", "supplier"]), name="ck_shop_promise_role"
+            ),
+            models.CheckConstraint(
+                condition=Q(state__in=["open", "kept", "cancelled"]),
+                name="ck_shop_promise_state",
+            ),
+            models.CheckConstraint(
+                condition=Q(amount__isnull=True) | Q(amount__gt=0),
+                name="ck_shop_promise_amount_positive",
+            ),
+            models.CheckConstraint(
+                condition=Q(state="open", closed_at__isnull=True)
+                | (~Q(state="open") & Q(closed_at__isnull=False)),
+                name="ck_shop_promise_closed_at",
+            ),
+        ]
+        indexes = [
+            # Home's Follow-ups: the open promises by date.
+            models.Index(
+                fields=["tenant", "promised_on"],
+                condition=Q(state="open"),
+                name="ix_shop_promise_open_date",
+            ),
+            models.Index(
+                fields=["tenant", "party", "role", "-created_at"], name="ix_shop_promise_party"
+            ),
+        ]
+
+    def __str__(self) -> str:  # pragma: no cover - admin convenience
+        return f"{self.role} promise {self.promised_on}"

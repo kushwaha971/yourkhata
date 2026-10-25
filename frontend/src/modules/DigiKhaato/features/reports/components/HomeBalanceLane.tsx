@@ -26,6 +26,7 @@ export function HomeBalanceLane({
   onAct,
   children,
   failure,
+  promises,
 }: Readonly<{
   supplier: boolean;
   amount: string | null;
@@ -36,6 +37,8 @@ export function HomeBalanceLane({
   onAct: (person: HomeLanePerson) => void;
   children?: React.ReactNode;
   failure?: React.ReactNode;
+  /** BP-16 — "promised ₹1,500 today", by contact id, for the caption. */
+  promises?: ReadonlyMap<string, string>;
 }>): React.JSX.Element {
   const { t } = useTranslation();
   const displayAmount = details?.total ?? amount;
@@ -132,13 +135,20 @@ export function HomeBalanceLane({
               >
                 {person.name}
               </UbLink>
-              {person.daysLate !== undefined && (
-                <UbText variant="caption" tone="secondary">
-                  {person.daysLate > 0
-                    ? t('reports.home.daysLate', { count: person.daysLate })
-                    : person.dueOn
-                      ? t('reports.home.dueOn', { date: formatBusinessDate(person.dueOn) })
-                      : t('reports.home.notDue')}
+              {(person.daysLate !== undefined || promises?.has(person.id)) && (
+                <UbText variant="caption" tone="secondary" className="ds-num">
+                  {[
+                    person.daysLate === undefined
+                      ? ''
+                      : person.daysLate > 0
+                        ? t('reports.home.daysLate', { count: person.daysLate })
+                        : person.dueOn
+                          ? t('reports.home.dueOn', { date: formatBusinessDate(person.dueOn) })
+                          : t('reports.home.notDue'),
+                    promises?.get(person.id) ?? '',
+                  ]
+                    .filter(Boolean)
+                    .join(' · ')}
                 </UbText>
               )}
             </UbStack>

@@ -16,3 +16,6 @@ register(
 
 # ── A6 ── PLT-X04 relations
 register(TenantTable("parties.PartyRelation", export_name="party_relations.csv"))
+
+# ── BP-16 ── Shop promises (R-DEC-26): the business's follow-ups, exported.
+register(TenantTable("parties.ShopPromise", export_name="shop_promises.csv"))

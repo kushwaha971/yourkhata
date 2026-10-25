@@ -60,7 +60,10 @@ def test_registry_is_closed_and_complete() -> None:
     # ── 12 Oct 2026 ── +1: `borrower_blocked` (a blocked borrower gets no new loan).
     # ── QA B5 ── +1: `library_plan_no_end` (Renew on a plan with no end date).
     # R-DEC-18 / BP-13 — +2 reload-only actor/business context preconditions (API §22.1.1).
-    assert len(REGISTRY) == 218
+    # BP-16 (R-DEC-26) — +2: `promise_already_open`, `promise_closed` (Shop promises).
+    assert len(REGISTRY) == 220
+    assert REGISTRY["promise_already_open"] == (409, False)
+    assert REGISTRY["promise_closed"] == (409, False)
     assert REGISTRY["session_context_changed"] == (409, False)
     assert REGISTRY["tenant_context_changed"] == (409, False)
     assert REGISTRY["attendance_blocked"] == (409, False)  # ATT

@@ -274,6 +274,13 @@ class AuditAction:
     PARTY_RELATION_CREATED = "party.relation.created"
     PARTY_RELATION_DELETED = "party.relation.deleted"
 
+    # ── BP-16 ── Shop promises (R-DEC-26); `before`/`after` carry the date,
+    # amount, note and state, so the log is the change history.
+    SHOP_PROMISE_CREATED = "shop_promise.created"
+    SHOP_PROMISE_CHANGED = "shop_promise.changed"
+    SHOP_PROMISE_KEPT = "shop_promise.kept"
+    SHOP_PROMISE_CANCELLED = "shop_promise.cancelled"
+
     # ── A4b ── held deposits (ADR-044, contracts §1.4, FRD 00 PLT-X02) ──────
     DEPOSIT_OPENED = "deposit.opened"
     DEPOSIT_RECEIVED = "deposit.received"
