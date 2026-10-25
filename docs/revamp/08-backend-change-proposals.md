@@ -233,7 +233,7 @@ books. Add UI states to the Home matrix and rerun real payment→register refres
 
 ### BP-16 · Shop promises / follow-ups
 
-**Approved under R-DEC-26; implementation pending.** Separate Shop role-scoped promise
+**Approved under R-DEC-26; built 25 Oct 2026** (`parties_shop_promise`, `/parties/{id}/shop-promises`, `/parties/shop-promises[/{id}[/kept|/cancel]]`; evidence docs/performance/2026-10-25-shop-promises.md). Separate Shop role-scoped promise
 records (business, contact, customer/supplier role, date, optional amount, state,
 actor/history). Do not reuse Party.collection_date or personal Udhaar promises.
 Record/edit/complete a follow-up without altering invoices, due dates or balances.

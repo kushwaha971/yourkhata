@@ -1,5 +1,6 @@
 {
   "//": [
+    "25 Oct 2026, Shop promises (BP-16): Home's Follow-ups gained the promises panel, its hook, the promise service and the lane caption; Home's words are their own homePromises catalogue. /dashboard route measured 94.9. The person page's promise card, its words and its form are all dynamic(): the card statically cost the route 5.3 KB (a build of 9bdb109 measured 114.1, this one 119.4), now 114.0 under its unchanged ceiling; its first load moved 0.1 for the loader. /forgot-password, /accept-invite/[token] and /admin/tenants carry no code of this piece and moved by 0.0-0.2 KB; 9bdb109's own build also exceeded /admin/tenants and /login/email by 0.1-0.2 KB, so this is build-to-build variance, inferred not traced. Raised by measured + 0.3: /parties/[id] firstLoad 355.9->356.3; /dashboard route 93.4->95.2; /dashboard firstLoad 336->337.1; /forgot-password firstLoad 292.7->293.0; /admin/tenants route 32.8->33.3; /admin/tenants firstLoad 274.7->275.2; /accept-invite/[token] firstLoad 253.1->253.4.",
     "24 Oct 2026, Home cash count (BP-17): Home's cash figure gained the last-count line, the Count cash button and the lazy loader for the count drawer (the drawer, its form and schema are dynamic(), not in this figure). /dashboard route 92.6->93.4 (measured 93.1). /reports/day-book firstLoad 361.3->361.6 and /reset-password firstLoad 294.4->294.7 were over by under 0.1 KB with no code of this piece in them (checked: neither imports Home or any cash count module); the likely cause, inferred not traced, is the runtime chunk map gaining the drawer chunk. Raised by measured + 0.3.",
     "24 Oct 2026, Old dues (09 \u00a710.7): the Shop's aging gained phone cards, a pager and the lazy loaders for its age bars, row sheet and Remind/Receive/Pay flows (the bars and flows are dynamic(), so they are not in this figure). /reports/aging and /ledger/aging share the component: route 102.9, first load 344.7, raised by measured + 0.3.",
     "24 Oct 2026, Profit (09 §10.6): Sales · Cost · Profit · Margin in the figure box, the cost basis line, phone cards with Sold and Profit/Loss in words, a pager and a lazy row sheet. ReportCardRow and ReportPager now have a third report importing them, so the bundler regrouped the shared report chunk: the registers +0.2, day book +0.1 by rounding, and /imports first load by under 0.1 (runtime chunk map). Raised by measured + 0.3: profit route 112.0->113.3, firstLoad 354.0->355.2; registers route 117.4->117.9, firstLoad 359.2->359.7; day-book route 119.1->119.5, firstLoad 361.0->361.3; gst-summary route 118.2->118.5, firstLoad 360.1->360.4; /imports firstLoad 298.9->299.2.",
@@ -1497,8 +1498,8 @@
       "firstLoad": 344
     },
     "/dashboard": {
-      "route": 93.4,
-      "firstLoad": 336
+      "route": 95.2,
+      "firstLoad": 337.1
     },
     "/sales/invoices/new": {
       "route": 169.4,
@@ -1558,7 +1559,7 @@
     },
     "/parties/[id]": {
       "route": 114.3,
-      "firstLoad": 355.9
+      "firstLoad": 356.3
     },
     "/parties/tags": {
       "route": 71.1,
@@ -1665,8 +1666,8 @@
       "firstLoad": 267.1
     },
     "/admin/tenants": {
-      "route": 32.8,
-      "firstLoad": 274.7
+      "route": 33.3,
+      "firstLoad": 275.2
     },
     "/settings/data": {
       "route": 63.9,
@@ -1782,7 +1783,7 @@
     },
     "/forgot-password": {
       "route": 52,
-      "firstLoad": 292.7
+      "firstLoad": 293
     },
     "/set-password": {
       "route": 51.6,
@@ -1794,7 +1795,7 @@
     },
     "/accept-invite/[token]": {
       "route": 11.4,
-      "firstLoad": 253.1
+      "firstLoad": 253.4
     },
     "/legal/privacy": {
       "route": 8,

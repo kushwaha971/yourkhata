@@ -34,7 +34,7 @@ Use only these facts; anything in the visual reference without a source below is
 | To collect lane | `tiles.to_collect {amount, advances}`, `top_debtors`, Shop receivables aging from `charts.receivable_aging` | available; days-late per row not in `top_debtors` |
 | To pay lane | `tiles.to_pay {amount, advances}`, `top_creditors`, `tiles.supplier_bills` overdue / due this week | available |
 | Register | `recent_activity` (typed events with per-event permission) | available |
-| Follow-ups | overdue bills, supplier bills due, `low_stock_items`, `tiles.open_orders` | available; **promise dates are the Udhaar book's (DEC-019)** — not on the Shop Home |
+| Follow-ups | overdue bills, supplier bills due, `low_stock_items`, `tiles.open_orders` | available; **Shop promises (BP-16, 25 Oct)** due this week, from `GET /parties/shop-promises`; the Udhaar book's collection dates stay out (DEC-019) |
 | Dual-role "Settle…" | — | **withheld**: BP-08 unapproved; never net roles |
 | First day | `first_use` | available |
 | One part failed | `unavailable[]` per part | available |
@@ -83,7 +83,8 @@ BP-15 register follow-up reads bounded current source statuses and line counts,
 with source permissions and freshness guards. Unknown facts remain absent.
 Cash by records is not a physical count. R-DEC-26 approves Shop promises, cash
 observations and explicit settlement. Cash counts (BP-17) delivered 25 Oct:
-docs/performance/2026-10-25-cash-count.md. Promises and settlement are next.
+docs/performance/2026-10-25-cash-count.md. Shop promises (BP-16) delivered 25 Oct:
+docs/performance/2026-10-25-shop-promises.md. Settlement is next.
 Historical role statements and personal Udhaar ownership remain separate.
 Evidence and exact remaining parity limits: docs/performance/2026-10-19-p5-shop-home.md.
 

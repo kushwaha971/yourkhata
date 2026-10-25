@@ -336,6 +336,29 @@ Earlier mobile manual/arrow-pager matrix acceptance is superseded. Existing desk
 | Speed | no request; copy and columns only | not measured |
 | Competitor comparison | none | unproven |
 
+### Home 2 of 3 · Shop promises · 25 Oct 2026 (BP-16, R-DEC-26, R-DEC-34)
+
+| Requirement | Evidence | Status |
+|---|---|---|
+| Own Shop record per contact and role; not Party.collection_date, not Udhaar | test_shop_promises.py (Udhaar date untouched; both roles) | passed |
+| Record, change, keep, cancel; no bill, due date, payment or balance moves | test_shop_promises.py; e2e reads Home's figures before and after | passed |
+| One open promise per contact and role, also under a race | partial unique index; test (409 `promise_already_open`) | passed |
+| Concurrent edit from an old screen is refused, the screen reloads | test (stale_version); ShopPromiseControl.test.tsx | passed |
+| Retry or double tap records one promise / one close | idempotency replay test; control test (same key, one call); e2e double taps | passed |
+| Past date refused; late counted on the business's clock | tests (past date, late by tenant today); schema test | passed |
+| Home and the person page read the same source; Home shows today's balance | open_promises selector test (3100.00, 42 days); e2e against /parties/{id}?book=shop | passed |
+| No Remind or Pay once nothing is due (partial/full payment before reminder) | HomePromises.test.tsx | passed (unit; not reproduced live) |
+| Internal note on no customer-facing surface | e2e: not on Home, not in the reminder message | passed |
+| Counter staff write, accountant reads only, deny-override, other business | test_shop_promises.py | passed |
+| Archived contact takes no new promise | test | passed |
+| Data export and deletion | tenant_data registry (`shop_promises.csv`); registry test | passed |
+| Audit history with before and after | test | passed |
+| 44 px targets, no cut text, no broken figure, EN/HI 320–1280 | e2e/shop-promises.mjs 70/70 | passed (tap areas short at first; fixed) |
+| Automatic close on payment | — | not built (deviation) |
+| Shop form field and list filter still read the Udhaar date | PartyFormDrawer, ShopPartyFilterDrawer | open (deviation) |
+| Notification recipients | no notification is sent for a promise | not applicable |
+| Competitor comparison | none | unproven |
+
 ### Home 1 of 3 · cash count · 25 Oct 2026 (BP-17, R-DEC-26, R-DEC-34)
 
 | Requirement | Evidence | Status |
