@@ -15,8 +15,9 @@ import { CounterSearch } from './CounterSearch';
 
 import type { PaymentContext } from '../../payments/types/payment.types';
 
-const Payment = dynamic(() =>
-  import('../../payments/components/PaymentFormDrawer').then((m) => m.PaymentFormDrawer)
+const Payment = dynamic(
+  () => import('../../payments/components/PaymentFormDrawer').then((m) => m.PaymentFormDrawer),
+  { ssr: false }
 );
 function SearchSession({ expanded }: Readonly<{ expanded: boolean }>): React.JSX.Element {
   const [payment, setPayment] = useState<PaymentContext | null>(null);

@@ -13,7 +13,9 @@ import { formatInr } from 'src/utils/money';
 import { groupLabels } from '../view-model/chartDisplay';
 
 import type { RepeatSource } from '../api/counterService';
-const Expense = dynamic(() => import('./RepeatExpense').then((m) => m.RepeatExpense));
+const Expense = dynamic(() => import('./RepeatExpense').then((m) => m.RepeatExpense), {
+  ssr: false,
+});
 export function HomeRepeats({
   sources,
 }: Readonly<{ sources: readonly RepeatSource[] }>): React.JSX.Element | null {

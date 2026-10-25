@@ -31,8 +31,9 @@ import type { ModuleReminderRow } from '../types/reminder.types';
 
 import 'src/i18n/catalogues/reminders';
 
-const SourceReminderSheetLazy = /* @__PURE__ */ dynamic(() =>
-  import('./SourceReminderSheet').then((m) => m.SourceReminderSheet)
+const SourceReminderSheetLazy = /* @__PURE__ */ dynamic(
+  () => import('./SourceReminderSheet').then((m) => m.SourceReminderSheet),
+  { ssr: false }
 );
 
 /**

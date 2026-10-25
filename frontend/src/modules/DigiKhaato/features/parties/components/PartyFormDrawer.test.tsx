@@ -613,7 +613,9 @@ describe('a number held by an archived party (WP-07)', () => {
     await user.type(within(drawer).getByLabelText('Mobile number'), '9812345678');
     await user.click(within(drawer).getByRole('button', { name: 'Save contact' }));
 
-    expect(await screen.findByText('You archived the contact with this number')).toBeInTheDocument();
+    expect(
+      await screen.findByText('You archived the contact with this number')
+    ).toBeInTheDocument();
     expect(screen.queryByText('That number is already in your book')).not.toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Open it to restore' })).toHaveAttribute(
       'href',
@@ -644,5 +646,75 @@ describe('the Shop does not ask for the Udhaar book’s collection date (DEC-019
     store.dispatch(resetPartyForm());
     const drawer = await openForm(user);
     expect(within(drawer).getByText('Credit')).toBeInTheDocument();
+  });
+});
+
+describe('the Shop form does not ask which list the person belongs to (owner, 25 Oct 2026)', () => {
+  /**
+   * Add on Customers and Add on Suppliers opened the same drawer with "I sell
+   * to them" and "I buy from them" at the top, asking a question the list had
+   * already answered — and a merchant who turned the wrong one off saved a
+   * customer that never appeared on Customers. The role is fixed by the list;
+   * the person who is both is one switch under "More details". A supplier is
+   * paid, not reminded, so its form has no reminder or consent fields.
+   */
+  const openShopForm = async (
+    user: ReturnType<typeof userEvent.setup>,
+    kind: 'customer' | 'supplier'
+  ): Promise<HTMLElement> => {
+    const name = kind === 'customer' ? 'Add customer' : 'Add supplier';
+    renderWithProviders(<PartyListPageContent kind={kind} book="shop" />);
+    await screen.findByTestId('ub-grid');
+    const [add] = screen.getAllByRole('button', { name });
+    if (!add) throw new Error(`no ${name} button`);
+    await user.click(add);
+    const drawer = await screen.findByRole('dialog', { name });
+    await user.click(within(drawer).getByRole('button', { name: 'More details' }));
+    return drawer;
+  };
+
+  it('saves a customer as a customer, with no role switches and reminders kept', async () => {
+    const user = userEvent.setup();
+    const drawer = await openShopForm(user, 'customer');
+    expect(
+      within(drawer).queryByRole('switch', { name: 'I sell to them' })
+    ).not.toBeInTheDocument();
+    expect(
+      within(drawer).queryByRole('switch', { name: 'I buy from them' })
+    ).not.toBeInTheDocument();
+    expect(within(drawer).getByRole('switch', { name: /^Also a supplier/ })).not.toBeChecked();
+    expect(
+      within(drawer).getByRole('switch', { name: /^Send them reminders/ })
+    ).toBeInTheDocument();
+
+    await user.type(within(drawer).getByLabelText('Name'), 'Ramesh Traders');
+    await user.click(within(drawer).getByRole('button', { name: /^Save/ }));
+    await waitFor(() => expect(partyService.createParty).toHaveBeenCalledTimes(1));
+    const [values] = partyService.createParty.mock.calls[0] as [Record<string, unknown>];
+    expect(values.isCustomer).toBe(true);
+    expect(values.isSupplier).toBe(false);
+  });
+
+  it('saves a supplier who is also a customer as both, and asks nothing about reminders', async () => {
+    const user = userEvent.setup();
+    const drawer = await openShopForm(user, 'supplier');
+    expect(
+      within(drawer).queryByRole('switch', { name: 'I sell to them' })
+    ).not.toBeInTheDocument();
+    expect(
+      within(drawer).queryByRole('switch', { name: /^Send them reminders/ })
+    ).not.toBeInTheDocument();
+    expect(within(drawer).queryByText('How they agreed')).not.toBeInTheDocument();
+    expect(
+      within(drawer).getByText('So you can send them payment details later.')
+    ).toBeInTheDocument();
+
+    await user.type(within(drawer).getByLabelText('Name'), 'Gupta Wholesale');
+    await user.click(within(drawer).getByRole('switch', { name: /^Also a customer/ }));
+    await user.click(within(drawer).getByRole('button', { name: /^Save/ }));
+    await waitFor(() => expect(partyService.createParty).toHaveBeenCalledTimes(1));
+    const [values] = partyService.createParty.mock.calls[0] as [Record<string, unknown>];
+    expect(values.isSupplier).toBe(true);
+    expect(values.isCustomer).toBe(true);
   });
 });

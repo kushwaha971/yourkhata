@@ -52,18 +52,22 @@ import 'src/modules/registrations';
 /* Each of these opens from a tap, so each belongs in the chunk that opens it
    (the rule CLAUDE.md records three times): a merchant who opens the screen to
    see who is due today downloads none of them. */
-const PartyReminderSheetLazy = /* @__PURE__ */ dynamic(() =>
-  import('./PartyReminderSheet').then((m) => m.PartyReminderSheet)
+const PartyReminderSheetLazy = /* @__PURE__ */ dynamic(
+  () => import('./PartyReminderSheet').then((m) => m.PartyReminderSheet),
+  { ssr: false }
 );
-const BulkReminderDialogLazy = /* @__PURE__ */ dynamic(() =>
-  import('./BulkReminderDialog').then((m) => m.BulkReminderDialog)
+const BulkReminderDialogLazy = /* @__PURE__ */ dynamic(
+  () => import('./BulkReminderDialog').then((m) => m.BulkReminderDialog),
+  { ssr: false }
 );
-const ReminderSettingsDialogLazy = /* @__PURE__ */ dynamic(() =>
-  import('./ReminderSettingsDialog').then((m) => m.ReminderSettingsDialog)
+const ReminderSettingsDialogLazy = /* @__PURE__ */ dynamic(
+  () => import('./ReminderSettingsDialog').then((m) => m.ReminderSettingsDialog),
+  { ssr: false }
 );
 // A7 — a module's tab, in its own chunk: a shop never downloads it.
-const ModuleRemindersPanelLazy = /* @__PURE__ */ dynamic(() =>
-  import('./ModuleRemindersPanel').then((m) => m.ModuleRemindersPanel)
+const ModuleRemindersPanelLazy = /* @__PURE__ */ dynamic(
+  () => import('./ModuleRemindersPanel').then((m) => m.ModuleRemindersPanel),
+  { ssr: false }
 );
 
 const SHOP_SCOPE = 'shop';

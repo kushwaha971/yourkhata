@@ -60,19 +60,22 @@ import type { DashboardData } from '../types/reports.types';
 const Charts = dynamic(() => import('./DashboardCharts').then((m) => m.DashboardCharts), {
   ssr: false,
 });
-const Payment = dynamic(() =>
-  import('../../payments/components/PaymentFormDrawer').then((m) => m.PaymentFormDrawer)
+const Payment = dynamic(
+  () => import('../../payments/components/PaymentFormDrawer').then((m) => m.PaymentFormDrawer),
+  { ssr: false }
 );
-const CashCount = dynamic(() =>
-  import('./CashCountDrawer').then((m) => m.CashCountDrawer)
-);
+const CashCount = dynamic(() => import('./CashCountDrawer').then((m) => m.CashCountDrawer), {
+  ssr: false,
+});
 /* BP-08 — drawn only for a shop with someone in both lanes; its words and dialog
    load with it, so a shop without one pays nothing for it. */
-const HomeSettlementNote = dynamic(() =>
-  import('./HomeSettlementNote').then((m) => m.HomeSettlementNote)
+const HomeSettlementNote = dynamic(
+  () => import('./HomeSettlementNote').then((m) => m.HomeSettlementNote),
+  { ssr: false }
 );
-const Remind = dynamic(() =>
-  import('../../parties/components/ShopCustomerReminder').then((m) => m.ShopCustomerReminder)
+const Remind = dynamic(
+  () => import('../../parties/components/ShopCustomerReminder').then((m) => m.ShopCustomerReminder),
+  { ssr: false }
 );
 
 type HomeTab = 'register' | 'followups' | 'insights';
@@ -433,11 +436,7 @@ export function ShopHomeWorkspace({
             {figure.key === 'cash' && data.tiles.cashInHand?.lastCount !== undefined && (
               /* The reference's "Not counted · Count cash": the count's state and
                  the act share one caption line (Counter Mode, rev 3). */
-              <UbText
-                variant="caption"
-                className="ds-num"
-                data-testid="home-cash-count"
-              >
+              <UbText variant="caption" className="ds-num" data-testid="home-cash-count">
                 <UbText as="span" variant="inherit" data-testid="home-cash-count-last">
                   {data.tiles.cashInHand.lastCount ? (
                     <>
@@ -449,7 +448,11 @@ export function ShopHomeWorkspace({
                         as="span"
                         variant="inherit"
                         className="font-semibold"
-                        tone={VARIANCE_TONE[varianceWords(t, data.tiles.cashInHand.lastCount.variance).kind]}
+                        tone={
+                          VARIANCE_TONE[
+                            varianceWords(t, data.tiles.cashInHand.lastCount.variance).kind
+                          ]
+                        }
                       >
                         {varianceWords(t, data.tiles.cashInHand.lastCount.variance).text}
                       </UbText>
@@ -468,7 +471,7 @@ export function ShopHomeWorkspace({
                 <UbButton
                   variant="link"
                   size="sm"
-                  className="ub-hit inline h-auto px-0 align-baseline text-caption font-semibold [&>span]:underline [&>span]:underline-offset-2 max-sm:mb-1.5 max-sm:mt-1 max-sm:flex"
+                  className="ub-hit inline h-auto px-0 align-baseline text-caption font-semibold max-sm:mb-1.5 max-sm:mt-1 max-sm:flex [&>span]:underline [&>span]:underline-offset-2"
                   onClick={() => setCounting(true)}
                   data-testid="home-cash-count-open"
                 >
@@ -518,7 +521,12 @@ export function ShopHomeWorkspace({
                   {failed(data, ['recent_activity']) ? (
                     <PartUnavailable onRetry={refresh} t={t} />
                   ) : (
-                    <RecentActivityList counter items={data.recentActivity} documentFacts={counter.data?.documents} t={t} />
+                    <RecentActivityList
+                      counter
+                      items={data.recentActivity}
+                      documentFacts={counter.data?.documents}
+                      t={t}
+                    />
                   )}
                   <UbLink href={ROUTES.REPORT_DAY_BOOK}>{t('reports.home.daybook')}</UbLink>
                 </>
@@ -602,11 +610,7 @@ export function ShopHomeWorkspace({
           {lane(false)}
           {lane(true)}
           {settlements && settlements.count > 0 && (
-            <HomeSettlementNote
-              candidates={settlements}
-              canSettle={canPay}
-              onSettled={refresh}
-            />
+            <HomeSettlementNote candidates={settlements} canSettle={canPay} onSettled={refresh} />
           )}
         </UbBox>
       </UbBox>

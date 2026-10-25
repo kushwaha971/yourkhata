@@ -424,7 +424,12 @@ export function UbDataGrid<TRow>({
       footer
     ) : (
       <UbDataGridPagination
-        className={fillHeight ? 'shrink-0 bg-surface-card px-2 py-2' : undefined}
+        className={cn(
+          fillHeight && 'shrink-0 bg-surface-card px-2 py-2',
+          // A register's rows sit in their own rounded card, so the pager's
+          // hairline drew a second, full-width rule under that card's border.
+          variant === 'register' && 'border-t-0'
+        )}
         page={page}
         tier={tier}
         labels={labels}
@@ -569,7 +574,11 @@ export function UbDataGrid<TRow>({
                 className={cn(
                   variant === 'register' &&
                     'rounded-card border border-border-hairline bg-surface-card',
-                  fillHeight ? 'overflow-visible' : 'overflow-hidden'
+                  // `clip`, not `hidden`, when the region above scrolls: it
+                  // trims the grey header to the rounded corners without
+                  // becoming a scroll container, which would stop the sticky
+                  // header sticking. `visible` let it paint square corners.
+                  fillHeight ? 'overflow-clip' : 'overflow-hidden'
                 )}
                 rows={rows}
                 columns={shown}

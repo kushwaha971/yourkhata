@@ -143,16 +143,20 @@ export interface PartyDetailPageContentProps {
 /* The reminder sheet loads when it opens, like the archive dialog: carried
    statically, the sheet, its link builders, the clipboard path and now the
    reminders slice cost the khata route on every visit to read a balance. */
-const PartyReminderSheetLazy = /* @__PURE__ */ dynamic(() =>
-  import('modules/DigiKhaato/features/reminders/components/PartyReminderSheet').then(
-    (m) => m.PartyReminderSheet
-  )
+const PartyReminderSheetLazy = /* @__PURE__ */ dynamic(
+  () =>
+    import('modules/DigiKhaato/features/reminders/components/PartyReminderSheet').then(
+      (m) => m.PartyReminderSheet
+    ),
+  { ssr: false }
 );
 
-const PartyReminderStripLazy = /* @__PURE__ */ dynamic(() =>
-  import('modules/DigiKhaato/features/reminders/components/PartyReminderStrip').then(
-    (m) => m.PartyReminderStrip
-  )
+const PartyReminderStripLazy = /* @__PURE__ */ dynamic(
+  () =>
+    import('modules/DigiKhaato/features/reminders/components/PartyReminderStrip').then(
+      (m) => m.PartyReminderStrip
+    ),
+  { ssr: false }
 );
 
 /* BP-16 — the Shop promise card, in its own chunk with its words: it reads
@@ -164,35 +168,43 @@ const ShopPromiseControlLazy = /* @__PURE__ */ dynamic(
   { loading: () => <UbSkeleton className="h-28 w-full rounded-card sm:max-w-sm" /> }
 );
 
-const PartyArchiveDialogLazy = /* @__PURE__ */ dynamic(() =>
-  import('./PartyArchiveDialog').then((m) => m.PartyArchiveDialog)
+const PartyArchiveDialogLazy = /* @__PURE__ */ dynamic(
+  () => import('./PartyArchiveDialog').then((m) => m.PartyArchiveDialog),
+  { ssr: false }
 );
 
 /* PAY-01 / PAY-03 — the payments drawer and the Collect QR, each in its own
    chunk with the payments slices inside it: a khata opened to READ a balance
    downloads neither. */
-const PaymentFormDrawerLazy = /* @__PURE__ */ dynamic(() =>
-  import('modules/DigiKhaato/features/payments/components/PaymentFormDrawer').then(
-    (m) => m.PaymentFormDrawer
-  )
+const PaymentFormDrawerLazy = /* @__PURE__ */ dynamic(
+  () =>
+    import('modules/DigiKhaato/features/payments/components/PaymentFormDrawer').then(
+      (m) => m.PaymentFormDrawer
+    ),
+  { ssr: false }
 );
 // ── A6 ── PLT-X04: the guardian/payer section and module panels, in their own
 // chunk and only for a business with a module that has roles.
-const PartyRelationsSectionLazy = /* @__PURE__ */ dynamic(() =>
-  import('./PartyRelationsSection').then((m) => m.PartyRelationsSection)
+const PartyRelationsSectionLazy = /* @__PURE__ */ dynamic(
+  () => import('./PartyRelationsSection').then((m) => m.PartyRelationsSection),
+  { ssr: false }
 );
 
 // BP-08 — the settle dialog loads with its own words when a merchant opens it.
-const SettleBalancesDialogLazy = /* @__PURE__ */ dynamic(() =>
-  import('modules/DigiKhaato/features/payments/settlement/components/SettleBalancesDialog').then(
-    (m) => m.SettleBalancesDialog
-  )
+const SettleBalancesDialogLazy = /* @__PURE__ */ dynamic(
+  () =>
+    import('modules/DigiKhaato/features/payments/settlement/components/SettleBalancesDialog').then(
+      (m) => m.SettleBalancesDialog
+    ),
+  { ssr: false }
 );
 
-const CollectQrSheetLazy = /* @__PURE__ */ dynamic(() =>
-  import('modules/DigiKhaato/features/payments/components/CollectQrSheet').then(
-    (m) => m.CollectQrSheet
-  )
+const CollectQrSheetLazy = /* @__PURE__ */ dynamic(
+  () =>
+    import('modules/DigiKhaato/features/payments/components/CollectQrSheet').then(
+      (m) => m.CollectQrSheet
+    ),
+  { ssr: false }
 );
 
 /** PAY-01 FR-1 — the drawer's preset from the khata (a local mirror of `PaymentContext`). */
@@ -809,7 +821,7 @@ export function PartyDetailPageContent({
           save path were all fine; what was absent was six lines of JSX on the
           screen the FRD puts Edit on.
  
-          `dynamic()` for the same measured reason the list has it: the form
+          `dynamic(, { ssr: false })` for the same measured reason the list has it: the form
           carries React Hook Form's resolver, the Yup schema and the controls,
           and putting it in the route's own chunk charges every merchant who
           opened this page to READ it. */}
