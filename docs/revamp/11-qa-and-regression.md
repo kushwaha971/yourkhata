@@ -352,10 +352,13 @@ Earlier mobile manual/arrow-pager matrix acceptance is superseded. Existing desk
 | Cancel either half cancels both and restores both balances | void pairing tests; e2e through Cancel receipt, both voided, balances back | passed |
 | Receipt and lists say "Settled, no cash"; cancel dialog names the other half | paymentDisplay tests; e2e | passed |
 | Message signed only by the shop | backend test; e2e reads the message | passed |
-| 44 px, no cut text, no broken figure, EN/HI 320–1280 (Home note, dialog) | e2e/settlement.mjs 74/74 | passed |
-| Customers/Suppliers row "Settle…" and the bill "Something's wrong" entry | — | not built (deviation) |
+| 44 px, no cut text, no broken figure, EN/HI 320–1280 (Home note, dialog) | e2e/settlement.mjs 83/83 | passed |
+| Customers/Suppliers row "Settle…" | ShopCustomerRowActions.test.tsx; e2e | passed |
+| Dialog names the bills settled, in the server's order | backend test; dialog test; e2e | passed |
+| Shop form and filter no longer use the Udhaar collection date | PartyFormDrawer.test.tsx | passed |
+| Bill "Something's wrong" entry | — | not built (deviation) |
 | Day book still lists the two halves as payments with no cash | — | open (deviation) |
-| Competitor comparison | none | unproven |
+| Competitor comparison | documented behaviour of Sage 200, Zoho Books, ERPNext, Khatabook, Vyapar (report) | done from documentation; not hands-on |
 
 ### Home 2 of 3 · Shop promises · 25 Oct 2026 (BP-16, R-DEC-26, R-DEC-34)
 

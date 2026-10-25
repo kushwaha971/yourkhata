@@ -33,7 +33,9 @@ record that can be undone as one.
 | Reversal by the immutable correction rules | 08 BP-08 | cancelling either half voids both and stamps the settlement; e2e cancels through the receipt and reads both balances back | passed |
 | Merchant-readable record, message signed only by the business | 08 BP-08, CLAUDE.md | each half's receipt says "Settled, no cash"; share text test and e2e (no product name) | passed |
 | Data export and deletion | PLT-10 | `tenant_data` registers `shop_settlements.csv` | passed |
-| Offered from Customers/Suppliers rows and the bill "Something's wrong" sheet | 08 §3.3 | — | not built (deviation 1) |
+| Offered from Customers/Suppliers rows | 08 §3.3, Counter Mode `#customers` | `ShopCustomerRowActions.test.tsx`; e2e on /customers and /suppliers (44 px) | passed (added after the comparison) |
+| Dialog names the bills it settles, oldest first | Sage 200 contra entry | backend test (same rows and order as the settlement); dialog test; e2e against the server's documents | passed (added after the comparison) |
+| Offered from a bill's "Something's wrong" sheet | 08 §3.3 | — | not built (deviation 1) |
 | 44 px targets, no cut text, no broken figure, EN/HI 320–1280 | R-DEC-32 gates 3, 7 | e2e measuring checks | passed |
 
 ## Found by looking
@@ -57,10 +59,10 @@ record that can be undone as one.
 
 ## Deviations and decisions recorded
 
-1. **Not offered from the Customers/Suppliers rows or a bill's "Something's
-   wrong" sheet.** The person page ⋯ and Home's note reach every dual-role
-   contact; the other two are more doors to the same dialog, left for the
-   owner's word rather than added on spec.
+1. **Not offered from a bill's "Something's wrong" sheet.** The person page ⋯,
+   Home's note and now the Customers/Suppliers rows reach every dual-role
+   contact. On those rows "Settle…" takes the row's one action slot, as
+   Counter Mode drew it; Remind or Pay return once either side is zero.
 2. **The day book lists the two halves** as a payment in and a payment out of
    ₹0 cash and ₹0 bank. They are labelled, they move no cash total, and
    hiding them would hide a record from the book the accountant reads.
@@ -102,8 +104,34 @@ which this book does not exercise, so that case is unmeasured.
 
 ## Competitor comparison
 
-Not done for this piece; unproven. No competitor was observed doing this task,
-and nothing here claims an advantage.
+Owner, 25 Oct: "compare with KhataBook or Vypar or other competito and do like
+same". Read from each product's own help page or store listing on 25 Oct 2026;
+no hands-on use of any of them, so everything below is documented behaviour,
+not observed behaviour.
+
+| Product | How the same task is done | Source |
+|---|---|---|
+| Sage 200 | "Contra entry": choose the customer and the supplier, tick the invoices (or a date to select up to), save; receipts and payments referenced "Contra" are allocated to them | desktophelp.sage.co.uk, Sales Ledger › Contra entries (no date on page) |
+| Zoho Books | Link the customer and vendor; create an "Offset and Adjustment" clearing account; record a payment on the invoice and one on the bill through it | zoho.com/en-sg/books/kb/contacts/offset-amount-vendor-customer (no date) |
+| ERPNext | "Common party accounting": linked parties are netted AUTOMATICALLY on each invoice; the advance is then reconciled | docs.frappe.io, v13 common party accounting |
+| Khatabook | One page per customer and supplier; no settle step described | Play Store listing, updated 10 Oct 2026 |
+| Vyapar | A party can be a customer or a supplier; no set-off described | vyaparapp.in feature list, modified 9 Sep 2026 |
+
+Where we are, on this evidence:
+- **Better (proposed, not tested against users):** one confirmation instead of
+  Zoho's account set-up and two payments; both balances read fresh and the
+  after-figures shown before saving; a refusal with the new figures if another
+  device moved them; one cancel undoes both halves (Sage's page describes no
+  reversal).
+- **Equal, after this change:** naming the bills settled (Sage), and starting
+  from the customer/supplier list (Sage).
+- **Worse:** Sage lets the user pick WHICH invoices; ours always settles
+  oldest first. Kept deliberately — it is how every other payment here
+  allocates, and choosing bills is a step a counter does not need — but it is
+  a real difference.
+- **Not copied:** ERPNext's automatic netting, which D-03 forbids.
+- **Khatabook and Vyapar:** nothing documented to compare against; unproven
+  either way.
 
 ## Gates
 
@@ -113,8 +141,8 @@ and nothing here claims an advantage.
 | `apps/payments` + `apps/reports` | all pass except `test_shop_aging_does_not_expose_udhaar_promise_or_limit[csv]`, which predates this piece |
 | Backend suite (whole) | 2 known failures that predate this piece (that one and `test_five_thousand_schedules_run_under_a_minute`) |
 | Frontend unit tests (payments, reports, parties) | 72 suites, 688 tests passed |
-| `npx jest` (whole frontend) | 436 suites, 4,830 tests passed |
+| `npx jest` (whole frontend) | 436 suites, 4,839 tests passed (4,830 before the comparison changes) |
 | `npm run type-check`, `npx eslint` | clean |
 | `npm run i18n:split && npm run i18n:check` | pass |
 | `npm run build` + `npm run bundle:check` | pass (deviation 6) |
-| `node e2e/settlement.mjs` (live stack, fresh business) | 74/74 |
+| `node e2e/settlement.mjs` (live stack, fresh business) | 83/83 (74 before the comparison changes) |
