@@ -16,7 +16,7 @@ Paths: `F/` = `frontend/src/modules/DigiKhaato/features/`. Endpoints are under `
 |---|---|---|
 | Shop screens read only the Shop book (`shop_balance`, bucket `shop`) | every figure is labelled "To collect" / "To pay" (Shop words), never "You will get / give" (Udhaar words) | `PartyListPageContent` `book="shop"` → `SHOP_BOOK_WORDS` (`F/parties/constants/partyFilters.ts:78`); person page `useAppWords().book`; statement `?book=shop` (`statementService.ts:128`); ledger lines `ledgerService.ts:203`; Cash book is Shop-only on the server (`backend/apps/expenses/selectors/cashbook.py:120,182`) |
 | Customers and suppliers are never netted | a person who is both appears in both lists, each with only that side's figure, and a quiet "Also a supplier" badge | design `#customers`; `PartyListPageContent` `kind` |
-| Netting only by an explicit settlement | "Settle…" is a **proposal** (§3.3). Until the owner decides, it is not built and no screen offers it | R-DEC open (Q1 below) |
+| Netting only by an explicit settlement | "Settle two balances" (§3.3), built 25 Oct under R-DEC-26 (BP-08) | R-DEC-26 |
 | No Udhaar tool on a Shop screen | no You gave / You got, opening balance, credit limit, Udhaar reminder or write-off on the Shop person page | `PartyDetailPageContent.tsx:384,454,467,512` — **except two leaks found, §3.1 C-2** |
 
 ### 0.2 Feedback and duplicate protection (05 §3–4), applied to every write below
@@ -157,20 +157,20 @@ Tracking: problems — C-1, C-2 · decisions — R-DEC-10 approved person-page w
 | **Restore** · `POST /parties/{id}/restore` | Button in the archived banner, busy "Restoring…", snackbar "Anita Verma is back in Customers". |
 | **Remind** · `PartyReminderSheet` / `UbShareSheet` | BP-09 is implemented: Customer view with positive customer dues uses the existing editable Shop preview/send/log flow; Supplier view offers no customer reminder. Same honest wording as the receipt message: "WhatsApp opened", never "Reminder sent" (DEC-012). |
 | **Show UPI QR** · §8 | |
-| **Settle two balances** · §3.3 | proposal only. |
+| **Settle two balances** · §3.3 | built 25 Oct (BP-08): shown in the ⋯ for a contact who is both, in the Shop book, to a user who may record payments. |
 
-### 3.3 Settle a customer who is also a supplier — **proposal only, not built** (R-DEC open)
+### 3.3 Settle a customer who is also a supplier — **built 25 Oct 2026** (BP-08, R-DEC-26)
 
 | Field | |
 |---|---|
 | Purpose | The one explicit step that may net a customer balance against a supplier balance (02 §1.4). |
 | Layout | Dialog (desktop) / sheet (phone), exactly `#customers` "Settle Ramesh Traders' two balances · No cash changes hands": the two figures side by side; "Amount to settle" prefilled with the smaller (₹600), capped at it; "After this: He owes you ₹400 · You owe him ₹0"; plain description of what is recorded; buttons Keep separate (default focus) · Settle ₹600. |
-| What it would record | design proposal: one receipt of ₹600 from Ramesh (customer side) and one payment of ₹600 to Ramesh (supplier side), mode "Settled against each other", linked, dated today, cancellable only together. **Needs a backend proposal (new linkage and a mode)**: to be written in 08 as BP-08 by the coordinating session; nothing here assumes it. |
-| Where offered | Customers/Suppliers row action "Settle…" for dual-role people, the person page ⋯, the bill "Something's wrong" sheet (`#billactions`, disabled with its reason for others). |
+| What it records | built as specified, mode label "Settled, no cash". Original proposal: one receipt of ₹600 from Ramesh (customer side) and one payment of ₹600 to Ramesh (supplier side), mode "Settled against each other", linked, dated today, cancellable only together. **Needs a backend proposal (new linkage and a mode)**: to be written in 08 as BP-08 by the coordinating session; nothing here assumes it. |
+| Where offered | Built: the person page ⋯ and Home's "in both lists" note. **Not built**: the Customers/Suppliers row action and the bill "Something's wrong" sheet (`#billactions`) — recorded as deviations in docs/performance/2026-10-25-shop-settlement.md. |
 | States | the two figures changed meanwhile → refuse with the new figures (server check); either side zero → not offered; duplicate taps → keyed. |
-| Until decided | nothing is shown; the Ramesh row keeps "Remind" / "Pay" like any other. |
+| Message | after settling, an editable message signed by the shop (UbShareSheet). |
 
-Tracking: Q1 for the owner · BP-08 to be written · tests — figure check that neither list ever shows a netted figure (G7).
+Tracking: built; `test_shop_settlement.py` (23), `e2e/settlement.mjs` (74 live checks); docs/performance/2026-10-25-shop-settlement.md.
 
 ## 4. Statement in the Shop book · `/parties/[id]/statement?book=shop`
 
@@ -377,7 +377,7 @@ Tracking (§12): problems — "khata" copy for unpaid expenses (now Shop words);
 | P-08-04 | Re-read open bills before Save and on focus ("changed elsewhere") | frontend; server due-check later as a BP | — |
 | P-08-05 | Scope `/payments` to `bucket=shop` in the Shop (C-3), after verification | frontend | two-app seed check |
 | P-08-06 | Copy renames in §0.3 | copy | i18n split/check |
-| BP-08 (to write) | Settle a dual-role person (§3.3) | backend | owner decision first (Q1) |
+| BP-08 | Settle a dual-role person (§3.3) | backend | built 25 Oct |
 
 ## Review
 

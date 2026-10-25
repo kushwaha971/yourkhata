@@ -336,6 +336,27 @@ Earlier mobile manual/arrow-pager matrix acceptance is superseded. Existing desk
 | Speed | no request; copy and columns only | not measured |
 | Competitor comparison | none | unproven |
 
+### Home 3 of 3 · customer–supplier settlement · 25 Oct 2026 (BP-08, R-DEC-26, R-DEC-34)
+
+| Requirement | Evidence | Status |
+|---|---|---|
+| Lists are never netted; only an explicit step settles | role selectors unchanged; Home note and dialog only | passed |
+| Atomic, audited, idempotent non-cash settlement through existing allocation rules | test_shop_settlement.py (two adjustment payments, FIFO on invoices and bills, audit before/after, idempotent replay) | passed |
+| Smaller balance prefilled and capped; over, zero, negative refused | settlementFacts.test.ts; dialog test; server 409 `settlement_over_balance`; e2e | passed |
+| Balances moved on another device: refused with the new figures | server 409 `settlement_balances_changed` with details; dialog swaps figures; e2e | passed |
+| Two devices at once settle no more than the smaller | threaded concurrency test under row locks | passed |
+| Double tap / retry settles once | idempotency replay test; e2e double tap (one settlement) | passed |
+| Customer-only, archived, other business, module off, no permission | tests (`settlement_not_dual_role`, `party_archived`, 404, 403) ; e2e customer-only not offered | passed |
+| Both role balances move by the amount; lists and person page agree | e2e server read-back via `/parties/{id}?book=shop` and To collect / To pay | passed |
+| No cash: received today, period received and Shop cash unchanged | dashboard selectors exclude adjustment; e2e before/after | passed |
+| Cancel either half cancels both and restores both balances | void pairing tests; e2e through Cancel receipt, both voided, balances back | passed |
+| Receipt and lists say "Settled, no cash"; cancel dialog names the other half | paymentDisplay tests; e2e | passed |
+| Message signed only by the shop | backend test; e2e reads the message | passed |
+| 44 px, no cut text, no broken figure, EN/HI 320–1280 (Home note, dialog) | e2e/settlement.mjs 74/74 | passed |
+| Customers/Suppliers row "Settle…" and the bill "Something's wrong" entry | — | not built (deviation) |
+| Day book still lists the two halves as payments with no cash | — | open (deviation) |
+| Competitor comparison | none | unproven |
+
 ### Home 2 of 3 · Shop promises · 25 Oct 2026 (BP-16, R-DEC-26, R-DEC-34)
 
 | Requirement | Evidence | Status |

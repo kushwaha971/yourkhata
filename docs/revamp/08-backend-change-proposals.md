@@ -65,7 +65,7 @@ The client can and will lock buttons (05 §4). The server is the last guard. The
 
 ## BP-08 · Explicit customer–supplier settlement (completion of existing placeholder)
 
-**Approved under R-DEC-26; implementation pending.** 20 Oct 2026. Sections03/12 already
+**Approved under R-DEC-26; built 25 Oct 2026** (`payments_shop_settlement` linking two adjustment payments, `/payments/shop-settlements`, `…/candidates`, `…/{id}/share`; undone by cancelling either half through `/payments/{id}/void`, which takes both; evidence docs/performance/2026-10-25-shop-settlement.md). 20 Oct 2026. Sections03/12 already
 referenced BP-08 but this file had no concrete entry. The owner chose separate
 balances until an explicit settlement (D-03); this does not mean automatic netting.
 

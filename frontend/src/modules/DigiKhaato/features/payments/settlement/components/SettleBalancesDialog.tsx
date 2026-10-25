@@ -231,7 +231,6 @@ export function SettleBalancesDialog({
       description={name ? t('shopSettlement.subtitle', { name }) : t('shopSettlement.noCash')}
       closeLabel={t('common.action.close')}
       returnFocusRef={returnFocusRef}
-      data-testid="settle-dialog"
       footer={
         <>
           <UbButton variant="secondary" onClick={onClose} disabled={busy} autoFocus>
@@ -324,7 +323,8 @@ export function SettleBalancesDialog({
                 className="flex flex-wrap items-baseline gap-x-4 gap-y-1 rounded-card bg-surface-sunken px-3 py-2"
                 data-testid="settle-after"
               >
-                <UbText variant="caption" tone="tertiary">
+                {/* Its own line, so the two results line up under it on a phone. */}
+                <UbText variant="caption" tone="tertiary" className="basis-full">
                   {t('shopSettlement.after')}
                 </UbText>
                 <UbText variant="body-sm">

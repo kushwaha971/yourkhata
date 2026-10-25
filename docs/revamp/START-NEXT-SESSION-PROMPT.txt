@@ -189,7 +189,7 @@ lookup calls. makemigrations --check --dry-run reports no changes.
 Physical phones, installed PWA, OS text scaling, keyboards, scanner/printer
 hardware and TalkBack/merchant research are not proved by desktop Chromium.
 
-APPROVED BUT DEFERRED HOME WORK — R-DEC-26/27
+APPROVED HOME WORK — R-DEC-26/27 (all three BUILT 25 Oct: BP-17, BP-16, BP-08)
 The owner answered "Approve all three workflows" for BP-08/16/17:
 Shop-only role-scoped promises/follow-ups; append-only physical cash observations
 without adjustments; explicit audited customer/supplier settlement without auto
@@ -418,10 +418,13 @@ e2e/cash-count.mjs): append-only counts against the server's figure at the save,
 Home 2/3 Shop promises (BP-16) delivered 25 Oct (docs/performance/2026-10-25-shop-promises.md,
 e2e/shop-promises.mjs): a per-role Shop promise on the person page, Home's
 Follow-ups list with today's balance, kept/cancel as history, no money moved.
+Home 3/3 Shop settlement (BP-08) delivered 25 Oct (docs/performance/2026-10-25-shop-settlement.md,
+e2e/settlement.mjs): "Settle two balances" from the person page ⋯ and Home's
+"in both lists" note; two linked no-cash payments, cancelled together.
 1. Payments, Expenses, Cash book, Reports hub, Day book, registers, GST,
-   Profit, Old dues done. Home: cash count and Shop promises done; next
-   BP-08 settlement (R-DEC-26 workflows). Owner, 24 Oct:
-   after Home commit and push, then STOP and wait; do not start Udhaar.
+   Profit, Old dues done. Home COMPLETE: cash count, Shop promises and
+   settlement done. Owner, 24 Oct: after Home commit and push, STOP and wait
+   for the owner's next instruction; do not start Udhaar, Library or Lending.
 
 ## LATEST CHECKPOINT —23 October2026 (owner requested commit/push)
 

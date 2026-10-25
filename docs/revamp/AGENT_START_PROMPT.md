@@ -29,8 +29,8 @@ are proposed only; physical PWA/keyboard/text scaling remain unproved.
 Compact line/totals component407d9caa is delivered; it is not the whole editor.
 R-DEC-28 adds app-wide Quick Sale / Saved customer and role-appropriate Customer,
 Supplier, Contact copy. Read2026-10-20-plain-contact-terms.md for verification and
-the explicit backend full-run timing/copy-assertion caveat. BP-08/16/17 remain
-approved but deferred. Do not repeat approvals or inflate whole-app completion.
+the explicit backend full-run timing/copy-assertion caveat. BP-08/16/17 were
+built on 25 Oct (Home complete). Do not repeat approvals or inflate whole-app completion.
 
 ```text
 You are continuing the YourKhata revamp: a redesign of the whole app (Shop, Udhaar
@@ -284,10 +284,13 @@ e2e/cash-count.mjs): append-only counts against the server's figure at the save,
 Home 2/3 Shop promises (BP-16) delivered 25 Oct (docs/performance/2026-10-25-shop-promises.md,
 e2e/shop-promises.mjs): a per-role Shop promise on the person page, Home's
 Follow-ups list with today's balance, kept/cancel as history, no money moved.
+Home 3/3 Shop settlement (BP-08) delivered 25 Oct (docs/performance/2026-10-25-shop-settlement.md,
+e2e/settlement.mjs): "Settle two balances" from the person page ⋯ and Home's
+"in both lists" note; two linked no-cash payments, cancelled together.
 1. Payments, Expenses, Cash book, Reports hub, Day book, registers, GST,
-   Profit, Old dues done. Home: cash count and Shop promises done; next
-   BP-08 settlement (R-DEC-26 workflows). Owner, 24 Oct:
-   after Home commit and push, then STOP and wait; do not start Udhaar.
+   Profit, Old dues done. Home COMPLETE: cash count, Shop promises and
+   settlement done. Owner, 24 Oct: after Home commit and push, STOP and wait
+   for the owner's next instruction; do not start Udhaar, Library or Lending.
 
 ## LATEST CHECKPOINT —23 October2026 (owner requested commit/push)
 
