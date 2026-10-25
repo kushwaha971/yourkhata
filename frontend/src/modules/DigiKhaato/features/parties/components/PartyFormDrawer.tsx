@@ -106,6 +106,9 @@ export function PartyFormDrawer({
   /* Opened from Customers or Suppliers, the drawer says the word the button
      said ("Add customer" answered by "Add customer"); from the Udhaar book or
      the all-parties list it stays "party" (WP-07). */
+  /* The Shop's lists fix the role: Add on Customers makes a customer. The
+     Udhaar book and the plain /parties list still ask. */
+  const fixedRole: PartyKind | undefined = shop ? kind : undefined;
   const byKind = kind === 'customer' ? '.customer' : kind === 'supplier' ? '.supplier' : '';
 
   const defaults = useMemo<PartyFormValues>(
@@ -351,7 +354,11 @@ export function PartyFormDrawer({
           name="mobile"
           label={t('parties.form.mobile.label')}
           placeholder={t('parties.form.mobile.placeholder')}
-          hint={t('parties.form.mobile.hint')}
+          hint={t(
+            fixedRole === 'supplier'
+              ? 'parties.form.mobile.hintSupplier'
+              : 'parties.form.mobile.hint'
+          )}
         >
           {(field) => <UbPhoneInput {...field} autoComplete="off" />}
         </UbField>
@@ -359,27 +366,36 @@ export function PartyFormDrawer({
         {/* Two switches rather than a three-way "Customer / Supplier / Both".
             Both is not a third kind of party — it is both boxes ticked — and a
             segmented control that has to invent a word for the combination is
-            a control explaining its own implementation. */}
-        <UbField name="isCustomer" label={t('parties.form.isCustomer')} controlOwnsLabel>
-          {(field) => (
-            <UbSwitch
-              checked={Boolean(field.value)}
-              onCheckedChange={field.onChange}
-              label={t('parties.form.isCustomer')}
-              id={field.id}
-            />
-          )}
-        </UbField>
-        <UbField name="isSupplier" label={t('parties.form.isSupplier')} controlOwnsLabel>
-          {(field) => (
-            <UbSwitch
-              checked={Boolean(field.value)}
-              onCheckedChange={field.onChange}
-              label={t('parties.form.isSupplier')}
-              id={field.id}
-            />
-          )}
-        </UbField>
+            a control explaining its own implementation.
+
+            In the Shop the list the merchant came from has already answered
+            the question (owner, 25 Oct 2026): Add on Customers is a customer.
+            So the pair is not asked there, and the one case it existed for —
+            somebody who is both — is a single switch under "More details". */}
+        {!fixedRole && (
+          <>
+            <UbField name="isCustomer" label={t('parties.form.isCustomer')} controlOwnsLabel>
+              {(field) => (
+                <UbSwitch
+                  checked={Boolean(field.value)}
+                  onCheckedChange={field.onChange}
+                  label={t('parties.form.isCustomer')}
+                  id={field.id}
+                />
+              )}
+            </UbField>
+            <UbField name="isSupplier" label={t('parties.form.isSupplier')} controlOwnsLabel>
+              {(field) => (
+                <UbSwitch
+                  checked={Boolean(field.value)}
+                  onCheckedChange={field.onChange}
+                  label={t('parties.form.isSupplier')}
+                  id={field.id}
+                />
+              )}
+            </UbField>
+          </>
+        )}
 
         {/* PTY-05 FR-5 — visible, not folded, and that is a deliberate
             exception to this form's own rule.
@@ -570,26 +586,61 @@ export function PartyFormDrawer({
           >
             {(field) => <UbTextInput {...field} autoComplete="off" />}
           </UbField>
-          <UbField name="smsOptIn" label={t('parties.form.sms.label')} controlOwnsLabel>
-            {(field) => (
-              <UbSwitch
-                checked={Boolean(field.value)}
-                onCheckedChange={field.onChange}
-                label={t('parties.form.sms.label')}
-                description={t('parties.form.sms.hint')}
-                id={field.id}
-              />
-            )}
-          </UbField>
-          <UbField name="consentSource" label={t('parties.form.consent.label')}>
-            {(field) => (
-              <UbSelect
-                {...field}
-                options={consentOptions}
-                placeholder={t('parties.form.consent.placeholder')}
-              />
-            )}
-          </UbField>
+          {fixedRole && (
+            <UbField
+              name={fixedRole === 'customer' ? 'isSupplier' : 'isCustomer'}
+              label={t(
+                fixedRole === 'customer'
+                  ? 'parties.form.alsoSupplier.label'
+                  : 'parties.form.alsoCustomer.label'
+              )}
+              controlOwnsLabel
+            >
+              {(field) => (
+                <UbSwitch
+                  checked={Boolean(field.value)}
+                  onCheckedChange={field.onChange}
+                  label={t(
+                    fixedRole === 'customer'
+                      ? 'parties.form.alsoSupplier.label'
+                      : 'parties.form.alsoCustomer.label'
+                  )}
+                  description={t(
+                    fixedRole === 'customer'
+                      ? 'parties.form.alsoSupplier.hint'
+                      : 'parties.form.alsoCustomer.hint'
+                  )}
+                  id={field.id}
+                />
+              )}
+            </UbField>
+          )}
+          {/* Reminders and their consent are about money a CUSTOMER owes; a
+              supplier is paid, not reminded. */}
+          {fixedRole !== 'supplier' && (
+            <>
+              <UbField name="smsOptIn" label={t('parties.form.sms.label')} controlOwnsLabel>
+                {(field) => (
+                  <UbSwitch
+                    checked={Boolean(field.value)}
+                    onCheckedChange={field.onChange}
+                    label={t('parties.form.sms.label')}
+                    description={t('parties.form.sms.hint')}
+                    id={field.id}
+                  />
+                )}
+              </UbField>
+              <UbField name="consentSource" label={t('parties.form.consent.label')}>
+                {(field) => (
+                  <UbSelect
+                    {...field}
+                    options={consentOptions}
+                    placeholder={t('parties.form.consent.placeholder')}
+                  />
+                )}
+              </UbField>
+            </>
+          )}
         </UbDisclosure>
       </UbForm>
     </UbDrawer>

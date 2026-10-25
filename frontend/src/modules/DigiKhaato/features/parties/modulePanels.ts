@@ -14,7 +14,7 @@ import type { PartyDetail } from './types/party.types';
  * that module is in the tenant's `enabled_modules` — so a switched-off module's
  * panel never appears, and its code never loads.
  *
- * Every panel is `dynamic()` (10-architecture §6.8): it loads in its own chunk,
+ * Every panel is `dynamic(, { ssr: false })` (10-architecture §6.8): it loads in its own chunk,
  * and only on the khata of a business with that module on. Registering costs
  * the khata route a loader function.
  *

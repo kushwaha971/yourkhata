@@ -16,7 +16,7 @@ import { badgeText } from '../view-model/notificationDisplay';
 /**
  * NTF-01 FR-4 — the bell, on every app route, so it is kept to a button and
  * a count; the count is kept fresh by `useNotificationPoll`, mounted once by
- * the shell. The panel (rows, relative times, the read calls) is a `dynamic()`
+ * the shell. The panel (rows, relative times, the read calls) is a `dynamic(, { ssr: false })`
  * chunk loaded the first time the bell is pressed.
  */
 const NotificationPanel = dynamic(

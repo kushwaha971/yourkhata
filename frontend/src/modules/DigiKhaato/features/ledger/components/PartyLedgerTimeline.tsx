@@ -55,7 +55,7 @@ import type { LedgerEntry } from '../types/ledger.types';
  * **the** read screen of this product: the bundle gate refused the build at
  * +58.6 KB, paid by every merchant who ever opens a khata to look at a balance.
  * It is the same finding the party form drawer and LED-01's entry drawer are
- * already `dynamic()` for, and the page's own comments record both.
+ * already `dynamic(, { ssr: false })` for, and the page's own comments record both.
  *
  * `EntryActionsMenu` is NOT lazy. It is a `UbDialog` with two buttons, it has
  * no form machinery behind it, and it is the thing the merchant taps FIRST —
@@ -257,12 +257,14 @@ export function PartyLedgerTimeline({
           <UbBox className="p-4">
             <UbEmptyState
               variant="firstUse"
-              title={emptyTitle ?? t(
-                shopBook ? 'ledger.timeline.shop.empty.title' : 'ledger.timeline.empty.title'
-              )}
-              description={emptyBody ?? t(
-                shopBook ? 'ledger.timeline.shop.empty.body' : 'ledger.timeline.empty.body'
-              )}
+              title={
+                emptyTitle ??
+                t(shopBook ? 'ledger.timeline.shop.empty.title' : 'ledger.timeline.empty.title')
+              }
+              description={
+                emptyBody ??
+                t(shopBook ? 'ledger.timeline.shop.empty.body' : 'ledger.timeline.empty.body')
+              }
             />
           </UbBox>
         )}

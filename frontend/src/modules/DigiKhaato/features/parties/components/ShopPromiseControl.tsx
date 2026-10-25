@@ -24,7 +24,7 @@ import { PROMISE_DATE_FORMAT, PROMISE_HISTORY_DATE_FORMAT } from '../view-model/
 
 import type { ShopPromiseRole } from '../types/shopPromise.types';
 
-// Loaded with dynamic(), so its words come with its own chunk.
+// Loaded with dynamic(, { ssr: false }), so its words come with its own chunk.
 import 'src/i18n/catalogues/shopPromise';
 
 /* The form, its schema and the resolver load when the drawer opens: the
@@ -92,9 +92,7 @@ export function ShopPromiseControl({
           <UbText variant="body" className="ds-num font-semibold" data-testid="shop-promise-line">
             {promiseLine(t, open, today, day)}
           </UbText>
-          {late && (
-            <UbStatusBadge tone="warning" label={late} className="self-start" />
-          )}
+          {late && <UbStatusBadge tone="warning" label={late} className="self-start" />}
           {open.note && (
             <UbText variant="caption" tone="secondary" className="break-words">
               {open.note}
@@ -182,7 +180,10 @@ export function ShopPromiseControl({
                 </UbBox>
                 {(row.closedBy || row.note) && (
                   <UbText variant="caption" tone="secondary" className="break-words">
-                    {[row.closedBy ? t('parties.shopPromise.by', { name: row.closedBy }) : '', row.note]
+                    {[
+                      row.closedBy ? t('parties.shopPromise.by', { name: row.closedBy }) : '',
+                      row.note,
+                    ]
                       .filter(Boolean)
                       .join(' · ')}
                   </UbText>
