@@ -135,7 +135,7 @@ def _fifo(rows: list[Any], amount: Decimal, document_type: str) -> list[dict]:
     return picks
 
 
-def _invoice_allocations(*, tenant: Any, party_id: Any, amount: Decimal) -> list[dict]:
+def _open_invoices(*, tenant: Any, party_id: Any) -> tuple[Any, list[Any]]:
     """The customer's open Shop invoices — the set the customer balance counts — oldest first."""
     from apps.parties.selectors.shop import shop_invoice_ids
     from apps.payments.services.targets import target_for
@@ -147,16 +147,54 @@ def _invoice_allocations(*, tenant: Any, party_id: Any, amount: Decimal) -> list
         for doc in target.open_documents(tenant=tenant, party_id=party_id)
         if str(doc.id) in counted
     ]
-    return _fifo(rows, amount, target.document_type)
+    return target, rows
 
 
-def _bill_allocations(*, tenant: Any, party_id: Any, amount: Decimal) -> list[dict]:
+def _open_bills(*, tenant: Any, party_id: Any) -> tuple[Any, list[Any]]:
     """The supplier's open purchase bills, in the purchase target's own order (PUR-02 FR-3)."""
     from apps.payments.services.targets import target_for
 
     target = target_for("purchase_document")
-    rows = target.open_documents(tenant=tenant, party_id=party_id)
+    return target, target.open_documents(tenant=tenant, party_id=party_id)
+
+
+def _invoice_allocations(*, tenant: Any, party_id: Any, amount: Decimal) -> list[dict]:
+    target, rows = _open_invoices(tenant=tenant, party_id=party_id)
     return _fifo(rows, amount, target.document_type)
+
+
+def _bill_allocations(*, tenant: Any, party_id: Any, amount: Decimal) -> list[dict]:
+    target, rows = _open_bills(tenant=tenant, party_id=party_id)
+    return _fifo(rows, amount, target.document_type)
+
+
+def settlement_documents(*, tenant: Any, party_id: Any) -> dict[str, list[dict]]:
+    """The open invoices and bills a settlement would settle, in the order it settles them.
+
+    The dialog shows which ones a given amount reaches, as a contra entry names them
+    (Sage 200 "Contra entries"), using exactly the rows and order `settle_shop_roles` uses."""
+
+    def rows(found: tuple[Any, list[Any]]) -> list[dict]:
+        target, documents = found
+        out = []
+        for document in documents:
+            due = Decimal(target.outstanding(document))
+            if due <= ZERO:
+                continue
+            out.append(
+                {
+                    "document_id": str(document.id),
+                    "number": document.number,
+                    "document_date": document.document_date.isoformat(),
+                    "amount_due": f"{due:.2f}",
+                }
+            )
+        return out
+
+    return {
+        "invoices": rows(_open_invoices(tenant=tenant, party_id=party_id)),
+        "bills": rows(_open_bills(tenant=tenant, party_id=party_id)),
+    }
 
 
 def _refuse_changed(current: dict[str, Decimal]) -> BusinessRuleViolation:

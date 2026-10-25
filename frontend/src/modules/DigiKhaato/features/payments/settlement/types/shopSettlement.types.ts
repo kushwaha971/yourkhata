@@ -27,6 +27,14 @@ export interface ShopSettlement {
   readonly voidReason: string | null;
 }
 
+/** An open invoice or bill a settlement can reach, with what it still owes. */
+export interface SettlementDocument {
+  readonly documentId: string;
+  readonly number: string;
+  readonly documentDate: string;
+  readonly amountDue: string;
+}
+
 export interface SettlementFigures extends RoleBalances {
   readonly party: {
     readonly id: string;
@@ -37,6 +45,11 @@ export interface SettlementFigures extends RoleBalances {
   };
   /** The most that may be settled now: the smaller balance, never below zero. */
   readonly maxAmount: string;
+  /** Oldest first, in the order the server settles them. */
+  readonly documents: {
+    readonly invoices: readonly SettlementDocument[];
+    readonly bills: readonly SettlementDocument[];
+  };
   readonly settlements: readonly ShopSettlement[];
 }
 

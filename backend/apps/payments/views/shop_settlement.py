@@ -48,6 +48,7 @@ from apps.payments.services.shop_settlement import (
     role_balances,
     settle_shop_roles,
     settleable,
+    settlement_documents,
     settlement_share_text,
 )
 
@@ -109,6 +110,8 @@ class ShopSettlementView(_SettlementBase):
                 },
                 **money_text(balances),
                 "max_amount": f"{settleable(balances):.2f}",
+                # Which bills a settlement reaches, oldest first, for the dialog to name.
+                "documents": settlement_documents(tenant=tenant, party_id=party_id),
                 "settlements": party_settlements(tenant=tenant, party_id=party_id),
             }
         )

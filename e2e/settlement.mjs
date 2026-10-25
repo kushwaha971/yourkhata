@@ -191,6 +191,26 @@ try {
   const focused = await page.evaluate(() => document.activeElement?.textContent?.trim());
   check('focus opens on Keep separate, so Enter never settles', focused === 'Keep separate', focused);
   check('the honest line says no cash moves both ways', (await dialog.innerText()).includes(`Records ₹${inr(MAX)} received from Ramesh Traders in Customers and ₹${inr(MAX)} paid to Ramesh Traders in Suppliers`));
+  // Like a contra entry, the dialog names the bills it settles — oldest first, as the server will.
+  const picks = (docs, amount) => {
+    let left = Number(amount);
+    const out = [];
+    for (const d of docs) {
+      if (left <= 0) break;
+      const take = Math.min(Number(d.amount_due), left);
+      out.push(`${d.number} ₹${inr(take)}`);
+      left -= take;
+    }
+    return out;
+  };
+  const named = async (amount) => {
+    const inv = (await page.getByTestId('settle-invoices').innerText()).replace(/\s+/g, ' ');
+    const bil = (await page.getByTestId('settle-bills').innerText()).replace(/\s+/g, ' ');
+    const want = [...picks(before.documents.invoices, amount), ...picks(before.documents.bills, amount)];
+    return { ok: want.length > 0 && want.every((w) => inv.includes(w) || bil.includes(w)), text: `${inv} | ${bil} vs ${want.join(', ')}` };
+  };
+  let n = await named(MAX);
+  check('the dialog names the bills it settles, oldest first', n.ok, n.text);
   if (SHOTS) await page.screenshot({ path: `${SHOTS}/dialog-390.png` });
 
   await page.getByTestId('settle-amount').fill((Number(MAX) + 50).toFixed(2));
@@ -203,6 +223,8 @@ try {
   const SETTLE = (Number(MAX) - 100).toFixed(2);
   await page.getByTestId('settle-amount').fill(SETTLE);
   await page.waitForTimeout(200);
+  n = await named(SETTLE);
+  check('the bills named follow the amount typed', n.ok, n.text);
   const label = await page.getByTestId('settle-confirm').innerText();
   check('the button names the amount', label === `Settle ₹${inr(SETTLE)}`, label);
   let posts = 0;
@@ -256,6 +278,28 @@ try {
   await page.getByRole('button', { name: 'More actions', exact: true }).locator('visible=true').first().click();
   check('a customer-only contact is not offered it', lone.ok() && (await page.getByRole('button', { name: /Settle with the other balance/ }).count()) === 0);
   await page.keyboard.press('Escape');
+
+  // ── The Customers and Suppliers rows ────────────────────────────────────
+  for (const [list, path] of [['Customers', '/customers'], ['Suppliers', '/suppliers']]) {
+    await page.goto(`${base}${path}`, { waitUntil: 'networkidle' });
+    await page.getByText('Ramesh Traders').first().waitFor({ timeout: 20000 });
+    const settleRow = page.getByRole('button', { name: 'Settle two balances for Ramesh Traders' }).locator('visible=true');
+    check(`${list} offers Settle… on Ramesh's row`, (await settleRow.count()) > 0);
+    if (list === 'Customers') {
+      const meenaRow = page.getByRole('button', { name: /Settle two balances for Meena/ });
+      check('a customer-only row is not offered it', (await meenaRow.count()) === 0);
+    }
+    const rt = await page.evaluate(targets, 'main');
+    const rowTarget = rt.find((x) => x.label.startsWith('Settle two balances'));
+    check(`${list} 390: the row's Settle… is a 44 px target`, Boolean(rowTarget?.hits), JSON.stringify(rowTarget));
+    if (SHOTS) await page.screenshot({ path: `${SHOTS}/${path.slice(1)}-390.png` });
+    await settleRow.first().click();
+    await page.getByTestId('settle-body').waitFor({ timeout: 20000 });
+    const fromRow = await page.getByTestId('settle-amount').inputValue();
+    check(`${list}: the row opens the same dialog, with what is left`, Number(fromRow.replace(/,/g, '')) === Number(after.max_amount), fromRow);
+    await page.getByRole('button', { name: 'Keep separate' }).click();
+    await page.waitForTimeout(300);
+  }
 
   // ── Widths × languages: Home's note and the dialog ───────────────────────
   for (const locale of ['en', 'hi']) {

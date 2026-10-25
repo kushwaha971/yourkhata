@@ -140,6 +140,29 @@ def test_it_settles_the_oldest_invoice_first_and_the_purchase_bill(tenant, owner
     assert (purchase.amount_due, purchase.status) == (Decimal("0.00"), "paid")
 
 
+def test_the_dialog_is_told_which_bills_a_settlement_reaches_in_the_order_it_settles(
+    owner, ramesh
+):
+    """A contra entry names the invoices and bills it settles (Sage 200). The dialog shows
+    them before the merchant confirms, so the list must be exactly the rows and the order
+    the settlement then uses — an order that differed would name the wrong bill."""
+    documents = figures(owner, ramesh)["documents"]
+    assert [(d["number"], d["amount_due"]) for d in documents["invoices"]] == [
+        ("INV-1", "700.00"),
+        ("INV-2", "300.00"),
+    ]
+    assert [(d["number"], d["amount_due"]) for d in documents["bills"]] == [("PB-1", "600.00")]
+
+    settle(owner, ramesh, "600.00")
+    after = figures(owner, ramesh)["documents"]
+    # INV-1 took the 600 the list said it would, oldest first; PB-1 is paid and gone.
+    assert [(d["number"], d["amount_due"]) for d in after["invoices"]] == [
+        ("INV-1", "100.00"),
+        ("INV-2", "300.00"),
+    ]
+    assert after["bills"] == []
+
+
 def test_no_cash_moves_and_the_combined_shop_khata_does_not_change(tenant, owner, ramesh):
     shop_before = Party.objects.get(pk=ramesh.pk).shop_balance
     udhaar_before = Party.objects.get(pk=ramesh.pk).balance

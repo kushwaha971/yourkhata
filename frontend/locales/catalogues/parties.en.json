@@ -244,6 +244,8 @@
   "parties.list.shop.remind": "Remind",
   "parties.list.shop.remindTitle": "Remind {name}",
   "parties.list.shop.search": "Name or mobile",
+  "parties.list.shop.settle": "Settle…",
+  "parties.list.shop.settleLabel": "Settle two balances for {name}",
   "parties.list.shop.show": "Show customers",
   "parties.list.shop.showCount": "Show {count, plural, one {# customer} other {# customers}}",
   "parties.list.shop.showingAll": "Showing customers",

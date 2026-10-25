@@ -621,3 +621,28 @@ describe('a number held by an archived party (WP-07)', () => {
     );
   });
 });
+
+describe('the Shop does not ask for the Udhaar book’s collection date (DEC-019)', () => {
+  /**
+   * The Shop's form opened a "Collection date" section that wrote the Udhaar
+   * book's promise date from a Shop screen — another app's money question on
+   * the wrong page. The Shop keeps its own per-role promises (BP-16), so its
+   * form asks nothing about collection; the Udhaar book's form still does.
+   */
+  it('has no collection date on the Shop form, and keeps it on the Udhaar form', async () => {
+    const user = userEvent.setup();
+    const shop = renderWithProviders(<PartyListPageContent kind="customer" book="shop" />);
+    await screen.findByTestId('ub-grid');
+    const [addCustomer] = screen.getAllByRole('button', { name: 'Add customer' });
+    if (!addCustomer) throw new Error('Customers offered no way to add one');
+    await user.click(addCustomer);
+    const shopDrawer = await screen.findByRole('dialog', { name: 'Add customer' });
+    expect(within(shopDrawer).queryByText('Collection day')).not.toBeInTheDocument();
+    await user.click(within(shopDrawer).getByRole('button', { name: 'Cancel' }));
+    shop.unmount();
+
+    store.dispatch(resetPartyForm());
+    const drawer = await openForm(user);
+    expect(within(drawer).getByText('Credit')).toBeInTheDocument();
+  });
+});

@@ -93,6 +93,7 @@ export interface PartyColumnDeps {
   readonly hideBalanceLabel?: boolean;
   readonly onOpen?: (party: Party) => void;
   readonly onRemind?: (party: Party) => void;
+  readonly onSettle?: (party: Party) => void;
   readonly formatActivity?: (at: string) => string;
   readonly phoneCards?: boolean;
 }
@@ -110,6 +111,7 @@ export const createPartyColumns = ({
   hideBalanceLabel,
   onOpen,
   onRemind,
+  onSettle,
   formatActivity,
   phoneCards,
 }: PartyColumnDeps): readonly UbDataGridColumn<Party>[] => {
@@ -261,6 +263,7 @@ export const createPartyColumns = ({
         onOpen={onOpen}
         onRemind={onRemind}
         onPay={onPay}
+        onSettle={onSettle}
         supplier={supplier}
       />
     ),

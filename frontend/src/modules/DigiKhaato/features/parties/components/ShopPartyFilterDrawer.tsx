@@ -68,7 +68,8 @@ export function ShopPartyFilterDrawer({
                 status: draft.status,
                 balance: draft.balance,
                 late: draft.late,
-                collection: draft.collection,
+                // DEC-019 — the Udhaar book's collection date is not a Shop filter (owner, 25 Oct).
+                collection: '',
                 tag: draft.tag,
                 role: draft.role,
                 credit: draft.credit,
@@ -138,22 +139,6 @@ export function ShopPartyFilterDrawer({
             { value: 'archived', label: t('parties.list.status.archived') },
           ]}
         />
-        {!supplier && (
-          <UbStack gap={2}>
-            <UbText variant="body-sm-medium">{t('parties.list.shop.collectionDate')}</UbText>
-            <UbChoiceChips
-              ariaLabel={t('parties.list.shop.collectionDate')}
-              value={draft.collection}
-              onChange={(collection) => setDraft({ ...draft, collection })}
-              options={[
-                { value: '', label: t('parties.list.filter.any') },
-                { value: 'today', label: t('parties.list.filter.collection.today') },
-                { value: 'overdue', label: t('parties.list.filter.collection.overdue') },
-                { value: 'upcoming', label: t('parties.list.filter.collection.upcoming') },
-              ]}
-            />
-          </UbStack>
-        )}
         <UbStack gap={2}>
           <UbText variant="body-sm-medium">{t('parties.list.sort.label')}</UbText>
           <UbChoiceChips

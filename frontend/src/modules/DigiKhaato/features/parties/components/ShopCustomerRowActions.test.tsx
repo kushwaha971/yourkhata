@@ -80,3 +80,44 @@ it('pays only the supplier amount and never offers a customer reminder', async (
   expect(pay).toHaveBeenCalledWith(row);
   expect(remind).not.toHaveBeenCalled();
 });
+
+/** BP-08: a person owing both ways is offered Settle… in either list, once both sides owe. */
+it('offers Settle… for a person in both lists owing both ways, from either list', async () => {
+  const settle = jest.fn(),
+    remind = jest.fn();
+  const { unmount } = renderWithProviders(
+    <ShopPartyRowActions party={person} t={t} onRemind={remind} onSettle={settle} />
+  );
+  await userEvent.click(screen.getByTestId('party-row-settle'));
+  expect(settle).toHaveBeenCalledWith(person);
+  expect(remind).not.toHaveBeenCalled();
+  unmount();
+  renderWithProviders(<ShopPartyRowActions party={person} supplier t={t} onSettle={settle} />);
+  expect(screen.getByTestId('party-row-settle')).toBeInTheDocument();
+});
+
+it.each(['permission', 'archived', 'oneRole', 'customerZero', 'supplierZero'])(
+  'falls back to the usual action when %s rules settling out',
+  (reason) => {
+    const row: Party = {
+      ...person,
+      isSupplier: reason !== 'oneRole',
+      status: reason === 'archived' ? 'archived' : 'active',
+      shop: person.shop && {
+        ...person.shop,
+        customerBalance: reason === 'customerZero' ? '0' : '1000',
+        supplierBalance: reason === 'supplierZero' ? '0' : '600',
+      },
+    };
+    renderWithProviders(
+      <ShopPartyRowActions
+        party={row}
+        t={t}
+        onOpen={jest.fn()}
+        onRemind={jest.fn()}
+        onSettle={reason === 'permission' ? undefined : jest.fn()}
+      />
+    );
+    expect(screen.queryByTestId('party-row-settle')).not.toBeInTheDocument();
+  }
+);

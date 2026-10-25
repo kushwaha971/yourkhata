@@ -41,6 +41,13 @@ const FIGURES = (over: Partial<SettlementFigures> = {}): SettlementFigures => ({
   customerBalance: '1000.00',
   supplierBalance: '600.00',
   maxAmount: '600.00',
+  documents: {
+    invoices: [
+      { documentId: 'i1', number: 'INV-1', documentDate: '2026-09-15', amountDue: '700.00' },
+      { documentId: 'i2', number: 'INV-2', documentDate: '2026-10-15', amountDue: '300.00' },
+    ],
+    bills: [{ documentId: 'b1', number: 'PB-1', documentDate: '2026-10-05', amountDue: '600.00' }],
+  },
   settlements: [],
   ...over,
 });
@@ -170,4 +177,21 @@ it('says there is nothing to settle when one side is zero, and offers no Settle'
     await screen.findByText('Nothing to settle now: one of the two balances is zero.')
   ).toBeInTheDocument();
   expect(screen.queryByTestId('settle-confirm')).toBeNull();
+});
+
+it('names the bills the amount settles, oldest first, and follows the amount', async () => {
+  service.fetchSettlementFigures.mockResolvedValue(FIGURES());
+  renderWithProviders(<SettleBalancesDialog partyId="p1" onClose={jest.fn()} />);
+  await screen.findByTestId('settle-body');
+  expect(screen.getByTestId('settle-invoices')).toHaveTextContent('INV-1 ₹600.00');
+  expect(screen.getByTestId('settle-invoices')).not.toHaveTextContent('INV-2');
+  expect(screen.getByTestId('settle-bills')).toHaveTextContent('PB-1 ₹600.00');
+
+  const amount = screen.getByTestId('settle-amount');
+  await userEvent.clear(amount);
+  await userEvent.type(amount, '50');
+  await waitFor(() =>
+    expect(screen.getByTestId('settle-invoices')).toHaveTextContent('INV-1 ₹50.00')
+  );
+  expect(screen.getByTestId('settle-bills')).toHaveTextContent('PB-1 ₹50.00');
 });

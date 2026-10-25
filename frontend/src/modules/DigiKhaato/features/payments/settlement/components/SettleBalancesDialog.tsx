@@ -28,7 +28,13 @@ import {
   fetchSettlementMessage,
   settleBalances,
 } from '../api/shopSettlementService';
-import { balancesAfter, canSettle, checkAmount } from '../view-model/settlementFacts';
+import {
+  balancesAfter,
+  canSettle,
+  checkAmount,
+  settledDocuments,
+  type SettlementPick,
+} from '../view-model/settlementFacts';
 
 import type { SettlementFigures, ShopSettlement } from '../types/shopSettlement.types';
 
@@ -46,6 +52,8 @@ type Message =
   | { readonly status: 'ready'; readonly text: string; readonly mobile: string | null };
 
 const MONEY_BOX = 'grid gap-0.5 rounded-card border border-border-default px-3 py-2.5';
+/** A side shows this many bills by number; the rest are counted. */
+const SHOWN_PICKS = 3;
 
 /**
  * BP-08 — "Settle {name}'s two balances · No cash changes hands" (Counter Mode
@@ -117,6 +125,31 @@ export function SettleBalancesDialog({
   const settleable = !!figures && dual && !archived && canSettle(figures.maxAmount);
   const check = figures ? checkAmount(amount, figures.maxAmount) : 'empty';
   const after = figures ? balancesAfter(figures, amount, figures.maxAmount) : null;
+  const invoicePicks = figures
+    ? settledDocuments(figures.documents.invoices, amount, figures.maxAmount)
+    : [];
+  const billPicks = figures
+    ? settledDocuments(figures.documents.bills, amount, figures.maxAmount)
+    : [];
+  /* One line per side: "Bills  INV/26-27/0001 ₹500.00 · INV/26-27/0002 ₹30.00". */
+  const pickLine = (label: string, picks: readonly SettlementPick[], testId: string) =>
+    picks.length > 0 && (
+      <UbBox className="flex flex-wrap items-baseline gap-x-3 gap-y-0.5" data-testid={testId}>
+        <UbText variant="caption" tone="tertiary" className="basis-full">
+          {label}
+        </UbText>
+        {picks.slice(0, SHOWN_PICKS).map((pick) => (
+          <UbText key={pick.number} variant="body-sm" className="whitespace-nowrap tabular-nums">
+            {pick.number} {formatInr(pick.amount)}
+          </UbText>
+        ))}
+        {picks.length > SHOWN_PICKS && (
+          <UbText variant="body-sm" tone="secondary">
+            {t('shopSettlement.settlesMore', { count: picks.length - SHOWN_PICKS })}
+          </UbText>
+        )}
+      </UbBox>
+    );
 
   const refused = (error: ApiErrorShape) => {
     const details = (error.details ?? {}) as Record<string, unknown>;
@@ -338,6 +371,17 @@ export function SettleBalancesDialog({
                   })}
                 </UbText>
               </UbBox>
+              {(invoicePicks.length > 0 || billPicks.length > 0) && (
+                <UbStack
+                  gap={2}
+                  className="border-border-default rounded-card border px-3 py-2"
+                  data-testid="settle-documents"
+                >
+                  <UbText variant="label">{t('shopSettlement.settles')}</UbText>
+                  {pickLine(t('shopSettlement.settlesBills'), invoicePicks, 'settle-invoices')}
+                  {pickLine(t('shopSettlement.settlesPurchases'), billPicks, 'settle-bills')}
+                </UbStack>
+              )}
               <UbText variant="body-sm" tone="secondary">
                 {t('shopSettlement.honest', {
                   amount: formatInr(check === 'ok' ? amount.trim() : figures.maxAmount),

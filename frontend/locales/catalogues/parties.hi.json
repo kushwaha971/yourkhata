@@ -244,6 +244,8 @@
   "parties.list.shop.remind": "याद दिलाएँ",
   "parties.list.shop.remindTitle": "{name} को याद दिलाएँ",
   "parties.list.shop.search": "नाम या मोबाइल",
+  "parties.list.shop.settle": "बराबर करें…",
+  "parties.list.shop.settleLabel": "{name} के दोनों हिसाब बराबर करें",
   "parties.list.shop.show": "ग्राहक दिखाएँ",
   "parties.list.shop.showCount": "{count} ग्राहक दिखाएँ",
   "parties.list.shop.showingAll": "ग्राहक दिख रहे हैं",

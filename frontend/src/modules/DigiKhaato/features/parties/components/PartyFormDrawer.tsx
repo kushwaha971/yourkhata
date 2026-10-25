@@ -505,11 +505,12 @@ export function PartyFormDrawer({
           </UbField>
         </UbDisclosure>
 
-        <UbDisclosure
-          label={t(shop ? 'parties.form.collectionDate.label' : 'parties.form.section.credit')}
-          open={creditHasError || undefined}
-        >
-          {/* PTY-06 FR-13 — a NOTICE, not an error.
+        {/* DEC-019 — the collection date is the Udhaar book's promise; the Shop keeps its
+            own per-role promises on the person page (BP-16), so its form does not ask.
+            Removed from the Shop form at the owner's word, 25 Oct 2026. */}
+        {!shop && (
+          <UbDisclosure label={t('parties.form.section.credit')} open={creditHasError || undefined}>
+            {/* PTY-06 FR-13 — a NOTICE, not an error.
  
               Lowering a limit below what somebody already owes is allowed and
               is often the whole point: a merchant who has decided to stop
@@ -521,34 +522,31 @@ export function PartyFormDrawer({
               `hint` rather than a banner, because it belongs to this field and
               disappears with it. It is computed from the balance the form
               already has, so there is no request behind it. */}
-          {!shop && (
-            <>
-              <UbField
-                name="creditLimit"
-                label={t('parties.form.creditLimit.label')}
-                placeholder={t('parties.form.creditLimit.placeholder')}
-                hint={creditHint}
-              >
-                {(field) => <UbMoneyInput {...field} />}
-              </UbField>
-              <UbField
-                name="creditDays"
-                label={t('parties.form.creditDays.label')}
-                placeholder={t('parties.form.creditDays.placeholder')}
-                hint={t('parties.form.creditDays.hint')}
-              >
-                {(field) => <UbTextInput {...field} inputMode="numeric" autoComplete="off" />}
-              </UbField>
-            </>
-          )}
-          <UbField
-            name="collectionDate"
-            label={t('parties.form.collectionDate.label')}
-            placeholder={t('parties.form.collectionDate.placeholder')}
-          >
-            {(field) => <UbDateInput {...field} />}
-          </UbField>
-        </UbDisclosure>
+            <UbField
+              name="creditLimit"
+              label={t('parties.form.creditLimit.label')}
+              placeholder={t('parties.form.creditLimit.placeholder')}
+              hint={creditHint}
+            >
+              {(field) => <UbMoneyInput {...field} />}
+            </UbField>
+            <UbField
+              name="creditDays"
+              label={t('parties.form.creditDays.label')}
+              placeholder={t('parties.form.creditDays.placeholder')}
+              hint={t('parties.form.creditDays.hint')}
+            >
+              {(field) => <UbTextInput {...field} inputMode="numeric" autoComplete="off" />}
+            </UbField>
+            <UbField
+              name="collectionDate"
+              label={t('parties.form.collectionDate.label')}
+              placeholder={t('parties.form.collectionDate.placeholder')}
+            >
+              {(field) => <UbDateInput {...field} />}
+            </UbField>
+          </UbDisclosure>
+        )}
 
         <UbDisclosure label={t('parties.form.section.other')}>
           <UbField

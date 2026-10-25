@@ -180,6 +180,7 @@ export const ShopPartyRowActions = memo(function ShopPartyRowActions({
   onOpen,
   onRemind,
   onPay,
+  onSettle,
   supplier = false,
 }: Readonly<{
   party: Party;
@@ -187,8 +188,36 @@ export const ShopPartyRowActions = memo(function ShopPartyRowActions({
   onOpen?: (party: Party) => void;
   onRemind?: (party: Party) => void;
   onPay?: (party: Party) => void;
+  /** BP-08 — offered when this person owes AND is owed in the Shop. */
+  onSettle?: (party: Party) => void;
   supplier?: boolean;
 }>) {
+  /* Counter Mode `#customers`: a person in both lists, owing both ways, gets
+     "Settle…" as the row's action in either list (a contra entry starts from the
+     ledger list in Sage 200 too). Once one side is zero it is Remind or Pay again. */
+  const settleable = Boolean(
+    onSettle &&
+    party.isCustomer &&
+    party.isSupplier &&
+    party.status !== 'archived' &&
+    party.shop &&
+    compareMoney(party.shop.customerBalance, '0') > 0 &&
+    compareMoney(party.shop.supplierBalance, '0') > 0
+  );
+  if (settleable) {
+    const label = t('parties.list.shop.settle');
+    return (
+      <UbButton
+        variant="outlineNeutral"
+        size="sm"
+        aria-label={t('parties.list.shop.settleLabel', { name: party.name })}
+        onClick={() => onSettle?.(party)}
+        data-testid="party-row-settle"
+      >
+        {label}
+      </UbButton>
+    );
+  }
   const remindable = Boolean(
     !supplier &&
     onRemind &&

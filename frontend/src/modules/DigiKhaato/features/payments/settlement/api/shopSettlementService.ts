@@ -3,6 +3,7 @@ import { api, ubConfig } from 'src/api/AxiosInstances';
 import type {
   RoleBalances,
   SettlementCandidates,
+  SettlementDocument,
   SettlementFigures,
   ShopSettlement,
 } from '../types/shopSettlement.types';
@@ -35,6 +36,20 @@ interface SettlementWire {
   readonly voided_at: string | null;
   readonly void_reason: string | null;
 }
+
+interface DocumentWire {
+  readonly document_id: string;
+  readonly number: string;
+  readonly document_date: string;
+  readonly amount_due: string;
+}
+
+const toDocument = (wire: DocumentWire): SettlementDocument => ({
+  documentId: wire.document_id,
+  number: wire.number,
+  documentDate: wire.document_date,
+  amountDue: wire.amount_due,
+});
 
 const balances = (wire: BalancesWire): RoleBalances => ({
   customerBalance: wire.customer_balance,
@@ -71,6 +86,7 @@ export const fetchSettlementFigures = async (
         status: string;
       };
       max_amount: string;
+      documents?: { invoices: DocumentWire[]; bills: DocumentWire[] };
       settlements: SettlementWire[];
     };
   }>(BASE, ubConfig({ params: { party_id: partyId }, signal, suppressErrorSnackbar: true }));
@@ -85,6 +101,10 @@ export const fetchSettlementFigures = async (
       status: data.party.status,
     },
     maxAmount: data.max_amount,
+    documents: {
+      invoices: (data.documents?.invoices ?? []).map(toDocument),
+      bills: (data.documents?.bills ?? []).map(toDocument),
+    },
     settlements: data.settlements.map(toSettlement),
   };
 };

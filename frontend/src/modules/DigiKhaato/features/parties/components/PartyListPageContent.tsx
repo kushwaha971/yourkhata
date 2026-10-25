@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useMemo, useRef, useState } from 'react';
 
 import dynamic from 'next/dynamic';
 
@@ -82,6 +82,15 @@ import type { Party } from '../types/party.types';
  */
 const SupplierPaymentLazy = dynamic(
   () => import('../../payments/components/PaymentFormDrawer').then((m) => m.PaymentFormDrawer),
+  { ssr: false }
+);
+
+// BP-08 — the settle dialog loads with its own words when a merchant taps Settle….
+const SettleBalancesLazy = dynamic(
+  () =>
+    import('../../payments/settlement/components/SettleBalancesDialog').then(
+      (m) => m.SettleBalancesDialog
+    ),
   { ssr: false }
 );
 
@@ -198,8 +207,20 @@ export function PartyListPageContent({
   const [payingSupplier, setPayingSupplier] = useState<Party | null>(null);
   const openSupplierPayment = useCallback((party: Party) => setPayingSupplier(party), []);
   const tier = useGridTier();
-  const { can } = usePermissions();
+  const { can, hasModule } = usePermissions();
   const [reminding, setReminding] = useState<Party | null>(null);
+  const [settling, setSettling] = useState<Party | null>(null);
+  const settledNow = useRef(false);
+  /* BP-08 — the same gate as the person page's ⋯: Shop book, may record payments,
+     and sales and purchases both on (a settlement settles an invoice against a bill). */
+  const canSettle =
+    book === 'shop' &&
+    can('payments.payment.write') &&
+    can('parties.party.read') &&
+    hasModule('payments') &&
+    hasModule('sales') &&
+    hasModule('purchases');
+  const openSettle = useCallback((party: Party) => setSettling(party), []);
   const openReminder = useCallback((party: Party) => setReminding(party), []);
   const canRemind = can('ledger.entry.read') && can('ledger.reminder.write');
   const router = useAppRouter();
@@ -287,6 +308,7 @@ export function PartyListPageContent({
         onPay: can('payments.payment.write') ? openSupplierPayment : undefined,
         phoneCards: tier === 'cards',
         onRemind: !supplier && canRemind ? openReminder : undefined,
+        onSettle: compactShop && canSettle ? openSettle : undefined,
         formatActivity: (at) =>
           d(at, { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }),
         hideBalanceLabel: compactShop && filters.balance === (supplier ? 'i_owe' : 'owes_me'),
@@ -312,6 +334,8 @@ export function PartyListPageContent({
       tier,
       canRemind,
       openReminder,
+      canSettle,
+      openSettle,
       openParty,
       d,
     ]
@@ -605,9 +629,20 @@ export function PartyListPageContent({
         supplier={supplier}
         onPay={can('payments.payment.write') ? openSupplierPayment : undefined}
         onRemind={!supplier && canRemind ? openReminder : undefined}
+        onSettle={canSettle ? openSettle : undefined}
       />
     ),
-    [t, openParty, canRemind, openReminder, supplier, can, openSupplierPayment]
+    [
+      t,
+      openParty,
+      canRemind,
+      openReminder,
+      supplier,
+      can,
+      openSupplierPayment,
+      canSettle,
+      openSettle,
+    ]
   );
 
   const filterControls = emptyBook ? undefined : tier === 'cards' || compactShop ? (
@@ -1095,6 +1130,22 @@ export function PartyListPageContent({
             lives in the slice. */}
         {partyForm.open && (
           <PartyFormDrawerLazy form={partyForm} kind={kind} shop={book === 'shop'} />
+        )}
+        {compactShop && settling && (
+          <SettleBalancesLazy
+            partyId={settling.id}
+            onSettled={() => {
+              settledNow.current = true;
+            }}
+            onClose={() => {
+              setSettling(null);
+              /* Re-read once the message sheet closes, so both lists show the new figures. */
+              if (settledNow.current) {
+                settledNow.current = false;
+                refetch();
+              }
+            }}
+          />
         )}
         {compactShop && reminding && (
           <ShopCustomerReminderLazy party={reminding} onClose={() => setReminding(null)} />

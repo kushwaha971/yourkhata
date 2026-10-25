@@ -1,4 +1,4 @@
-import { balancesAfter, canSettle, checkAmount } from './settlementFacts';
+import { balancesAfter, canSettle, checkAmount, settledDocuments } from './settlementFacts';
 
 /** BP-08 — the preview must never show an after-figure the server would not produce. */
 describe('settlementFacts', () => {
@@ -29,5 +29,20 @@ describe('settlementFacts', () => {
   it('offers to settle only when both sides owe something', () => {
     expect(canSettle('600.00')).toBe(true);
     expect(canSettle('0.00')).toBe(false);
+  });
+  it('previews the documents an amount reaches, oldest first, each up to what it owes', () => {
+    const docs = [
+      { documentId: 'a', number: 'INV-1', documentDate: '2026-09-01', amountDue: '700.00' },
+      { documentId: 'b', number: 'INV-2', documentDate: '2026-10-01', amountDue: '300.00' },
+    ];
+    expect(settledDocuments(docs, '800', '1000.00')).toEqual([
+      { number: 'INV-1', amount: '700.00' },
+      { number: 'INV-2', amount: '100.00' },
+    ]);
+    expect(settledDocuments(docs, '700.00', '1000.00')).toEqual([
+      { number: 'INV-1', amount: '700.00' },
+    ]);
+    expect(settledDocuments(docs, '2000', '1000.00')).toEqual([]);
+    expect(settledDocuments(docs, '', '1000.00')).toEqual([]);
   });
 });
