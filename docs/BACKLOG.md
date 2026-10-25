@@ -11,6 +11,24 @@ until there is a second user.
 
 ---
 
+## Shop UI points held by the owner (25 Oct 2026)
+
+Raised by the owner while testing the Shop, then parked: "just keep all these in
+backlog, once my testing is done will confirm for that shop module". Nothing here
+is on `dev`. Items 1–3 are built and checked on branch `backlog/shop-ui-2026-10-25`
+(59a1eb9); item 4 is not started.
+
+| # | Point | Cause found | State |
+|---|---|---|---|
+| 1 | Add customer and Add supplier open the same form and ask "I sell to them" / "I buy from them", although the list already says which | `PartyFormDrawer` shows both role switches for every caller | Built on the branch: switches hidden in the Shop, one "Also a supplier / customer" switch under More details, supplier form without reminders and consent. Phone-width check not finished. |
+| 2 | First tap on some buttons (e.g. Home's Pay supplier) blanks the whole page | `next/dynamic` without `ssr: false` or `loading` has no Suspense boundary of its own; 32 calls suspended up to the route's `loading.tsx` | Built on the branch, with a guard test. Checked live on Home at 1280. |
+| 3 | Table header not rounded, extra line under the table | Register frame was `overflow-visible`; pager `border-t` drew a second rule | Built on the branch (`overflow-clip`, no pager rule). Checked live on Customers and Suppliers. |
+| 4 | While searching, the count and totals row between the chips and the table disappears and the table jumps | Not investigated yet | Keep the row in place with a loading look; show zeros when there is nothing. Not started. |
+
+Comes back when the owner confirms after their Shop testing.
+
+---
+
 ## Deferred by DEC-010 — mobile OTP and SMS
 
 | Item | State in the repo | Comes back when |
