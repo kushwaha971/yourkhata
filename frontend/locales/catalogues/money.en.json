@@ -21,6 +21,7 @@
   "ledger.mode.cash": "Cash",
   "ledger.mode.cheque": "Cheque",
   "ledger.mode.other": "Other",
+  "ledger.mode.settlement": "Settled, no cash",
   "ledger.mode.upi": "UPI",
   "ledger.mode.upiOther": "Other UPI",
   "ledger.statement.label.payable": "You will give",

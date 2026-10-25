@@ -36,6 +36,7 @@ import { PROMISE_DATE_FORMAT } from '../../parties/view-model/shopPromiseFacts';
 import { useCounter } from '../hooks/useCounter';
 import { useHomeCharts } from '../hooks/useHomeCharts';
 import { useHomePromises } from '../hooks/useHomePromises';
+import { useSettlementCandidates } from '../hooks/useSettlementCandidates';
 import { VARIANCE_TONE, countedWhen, varianceWords } from '../view-model/cashCountDisplay';
 import { advancesLine, tileHref, overdueHref, dueWeekHref } from '../view-model/dashboardDisplay';
 import { lanePromiseCaption } from '../view-model/homePromiseDisplay';
@@ -64,6 +65,11 @@ const Payment = dynamic(() =>
 );
 const CashCount = dynamic(() =>
   import('./CashCountDrawer').then((m) => m.CashCountDrawer)
+);
+/* BP-08 — drawn only for a shop with someone in both lanes; its words and dialog
+   load with it, so a shop without one pays nothing for it. */
+const HomeSettlementNote = dynamic(() =>
+  import('./HomeSettlementNote').then((m) => m.HomeSettlementNote)
 );
 const Remind = dynamic(() =>
   import('../../parties/components/ShopCustomerReminder').then((m) => m.ShopCustomerReminder)
@@ -103,6 +109,15 @@ export function ShopHomeWorkspace({
   /* BP-16 — open Shop promises due this week, from the person page's source. */
   const promises = useHomePromises(can('parties.party.read'), data.generatedAt);
   const promiseDay = (iso: string) => d(iso, PROMISE_DATE_FORMAT);
+  /* BP-08 — the same person in both lanes, said once under them; never netted. */
+  const settlements = useSettlementCandidates(
+    hasModule('payments') &&
+      hasModule('sales') &&
+      hasModule('purchases') &&
+      can('payments.payment.read') &&
+      can('parties.party.read'),
+    data.generatedAt
+  );
   /* The lane's "42 days late · promised ₹1,500 today", by contact and role. */
   const promiseCaptions = (role: 'customer' | 'supplier'): ReadonlyMap<string, string> =>
     new Map(
@@ -586,6 +601,13 @@ export function ShopHomeWorkspace({
         <UbBox className="order-1 grid min-w-0 grid-cols-2 gap-3 lg:order-2 lg:flex lg:flex-col lg:gap-4">
           {lane(false)}
           {lane(true)}
+          {settlements && settlements.count > 0 && (
+            <HomeSettlementNote
+              candidates={settlements}
+              canSettle={canPay}
+              onSettled={refresh}
+            />
+          )}
         </UbBox>
       </UbBox>
       {payment && <Payment context={payment} onClose={() => setPayment(null)} onSaved={refresh} />}

@@ -49,6 +49,7 @@ interface PaymentRowApi {
   readonly amount: string;
   readonly primary_mode: PaymentMode;
   readonly modes_count: number;
+  readonly context?: string | null;
   readonly reference: string;
   readonly status: PaymentStatus;
   readonly unallocated_amount: string;
@@ -81,6 +82,7 @@ interface PaymentApi {
   readonly bucket?: PaymentBucket;
   /** A4b — additive: the other half of a deposit adjustment, or null. */
   readonly deposit_pair?: Wire | null;
+  readonly settlement_pair?: Wire | null;
 }
 
 interface WriteResponse {
@@ -125,6 +127,7 @@ export const toPaymentRow = (row: PaymentRowApi): PaymentRow => ({
   amount: row.amount,
   primaryMode: row.primary_mode,
   modesCount: row.modes_count,
+  context: row.context ?? null,
   reference: row.reference ?? '',
   status: row.status,
   unallocatedAmount: row.unallocated_amount,
@@ -139,6 +142,18 @@ const toDepositPair = (pair: Wire | null | undefined): Payment['depositPair'] =>
     applicationId: s(pair.application_id),
     amount: s(pair.amount),
     depositId: s(pair.deposit_id),
+    partnerNumber: s(partner.number),
+    voided: pair.voided === true,
+  };
+};
+
+/** BP-08 — `settlement_pair`, or null for every payment that is not half of a settlement. */
+const toSettlementPair = (pair: Wire | null | undefined): Payment['settlementPair'] => {
+  if (!pair) return null;
+  const partner = (pair.partner ?? {}) as Wire;
+  return {
+    settlementId: s(pair.settlement_id),
+    amount: s(pair.amount),
     partnerNumber: s(partner.number),
     voided: pair.voided === true,
   };
@@ -175,6 +190,7 @@ export const toPayment = (row: PaymentApi): Payment => ({
   createdAt: row.created_at,
   bucket: row.bucket ?? 'shop',
   depositPair: toDepositPair(row.deposit_pair),
+  settlementPair: toSettlementPair(row.settlement_pair),
 });
 
 const toSaveResult = (body: WriteResponse): PaymentSaveResult => ({

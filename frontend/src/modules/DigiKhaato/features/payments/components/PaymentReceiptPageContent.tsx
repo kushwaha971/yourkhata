@@ -230,7 +230,7 @@ export function PaymentReceiptPageContent({ id }: Readonly<{ id: string }>): Rea
           })
       : null;
   const shareable = !isVoid && canShare;
-  const modeIds = modeLabelIds(payment.modeBreakup);
+  const modeIds = modeLabelIds(payment.modeBreakup, payment.context);
 
   /* The same acts on a phone (docked, `size="lg"`) and a desktop (header). */
   const acts = (docked: boolean) => (

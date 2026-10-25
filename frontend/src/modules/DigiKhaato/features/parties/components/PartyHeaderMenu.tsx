@@ -4,6 +4,7 @@ import { type Ref } from 'react';
 
 import {
   Archive,
+  ArrowLeftRight,
   BellRing,
   BookOpen,
   FileText,
@@ -83,6 +84,11 @@ export interface PartyHeaderMenuProps {
   /** PAY-03 FR-7 — show the shop's UPI QR for this party's amount. */
   readonly onCollect?: () => void;
   /**
+   * BP-08 — settle this person's customer balance against their supplier balance.
+   * Passed only for a Shop contact in both roles, to a member who may record both.
+   */
+  readonly onSettle?: () => void;
+  /**
    * The ⋯ button, for the page to hand to every dialog this menu opens as its
    * `returnFocusRef`. Each item closes this sheet as it opens the next one, so
    * the item a keyboard user pressed is gone by the time that dialog closes,
@@ -101,6 +107,7 @@ export function PartyHeaderMenu({
   onRecordPayment,
   onPaySupplier,
   onCollect,
+  onSettle,
   triggerRef,
 }: Readonly<PartyHeaderMenuProps>): React.JSX.Element | null {
   const router = useAppRouter();
@@ -150,6 +157,13 @@ export function PartyHeaderMenu({
       label: t('payments.upi.collect'),
       icon: <QrCode className="h-5 w-5" />,
       onSelect: onCollect,
+    },
+    /* BP-08 — beside the money it settles: the one explicit way the two balances meet. */
+    {
+      key: 'settle',
+      label: t('parties.detail.settle'),
+      icon: <ArrowLeftRight className="h-5 w-5" />,
+      onSelect: onSettle,
     },
     {
       key: 'edit',

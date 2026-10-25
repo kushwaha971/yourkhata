@@ -238,10 +238,22 @@ export const isNarrowed = (filters: PaymentFilters): boolean =>
 // ── The receipt and the void ────────────────────────────────────────────────
 
 /** "UPI + Cash" — the modes in the order the lines were typed (PAY-04 §17). */
-export const modeLabelIds = (lines: readonly PaymentModeLine[]): readonly string[] =>
+export const modeLabelIds = (
+  lines: readonly PaymentModeLine[],
+  context?: string | null
+): readonly string[] =>
   lines.map((line) =>
-    line.mode === 'upi' && line.upiApp ? `ledger.upiApp.${line.upiApp}` : `ledger.mode.${line.mode}`
+    line.mode === 'upi' && line.upiApp
+      ? `ledger.upiApp.${line.upiApp}`
+      : modeLabelId(line.mode, context)
   );
+
+/** BP-08 — half of a Shop settlement moved no money, and says so rather than "deposit". */
+export const SETTLEMENT_CONTEXT = 'shop_settlement';
+export const modeLabelId = (mode: string, context?: string | null): string =>
+  mode === 'adjustment' && context === SETTLEMENT_CONTEXT
+    ? 'ledger.mode.settlement'
+    : `ledger.mode.${mode}`;
 
 /** Is anything left as advance on this receipt? */
 export const hasAdvance = (payment: Pick<Payment, 'unallocatedAmount'>): boolean =>
@@ -253,7 +265,14 @@ export const hasAdvance = (payment: Pick<Payment, 'unallocatedAmount'>): boolean
  */
 export interface VoidConsequence {
   readonly kind:
-    'ledger' | 'document' | 'advance' | 'walkIn' | 'depositPair' | 'depositBack' | 'depositGone';
+    | 'ledger'
+    | 'document'
+    | 'advance'
+    | 'walkIn'
+    | 'depositPair'
+    | 'depositBack'
+    | 'depositGone'
+    | 'settlementPair';
   readonly number?: string;
   readonly amount: string;
 }
@@ -270,6 +289,9 @@ export const voidConsequences = (payment: Payment): readonly VoidConsequence[] =
       kind: payment.direction === 'out' ? 'depositBack' : 'depositGone',
       amount: payment.amount,
     });
+  } else if (payment.settlementPair && !payment.settlementPair.voided) {
+    /* BP-08 — the two halves' khata lines cancel out, so "the khata goes up by
+       ₹600" would be false; what changes is both role balances, said below. */
   } else if (payment.party) rows.push({ kind: 'ledger', amount: payment.amount });
   else rows.push({ kind: 'walkIn', amount: payment.amount });
   for (const allocation of payment.bucket === 'deposit' ? [] : payment.allocations) {
@@ -286,6 +308,13 @@ export const voidConsequences = (payment: Payment): readonly VoidConsequence[] =
       kind: 'depositPair',
       number: payment.depositPair.partnerNumber,
       amount: payment.depositPair.amount,
+    });
+  }
+  if (payment.settlementPair && !payment.settlementPair.voided) {
+    rows.push({
+      kind: 'settlementPair',
+      number: payment.settlementPair.partnerNumber,
+      amount: payment.settlementPair.amount,
     });
   }
   return rows;

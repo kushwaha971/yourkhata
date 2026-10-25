@@ -95,6 +95,8 @@ export interface PaymentRow {
   readonly amount: string;
   readonly primaryMode: PaymentMode;
   readonly modesCount: number;
+  /** BP-08 — `shop_settlement` on half of a settlement; absent from an older server. */
+  readonly context?: string | null;
   readonly reference: string;
   readonly status: PaymentStatus;
   readonly unallocatedAmount: string;
@@ -132,6 +134,19 @@ export interface Payment {
    * adjustment: voiding it voids its partner too. Absent from an older server.
    */
   readonly depositPair?: PaymentDepositPair | null;
+  /**
+   * BP-08 — set when this payment is one half of a Shop settlement: voiding it
+   * voids its partner too. Absent from an older server.
+   */
+  readonly settlementPair?: PaymentSettlementPair | null;
+}
+
+/** BP-08 — the other half of a Shop settlement. */
+export interface PaymentSettlementPair {
+  readonly settlementId: string;
+  readonly amount: string;
+  readonly partnerNumber: string;
+  readonly voided: boolean;
 }
 
 /** A4b — the other half of a deposit adjustment. */

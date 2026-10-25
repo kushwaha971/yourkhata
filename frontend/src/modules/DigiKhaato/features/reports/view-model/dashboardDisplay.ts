@@ -182,6 +182,9 @@ export const activityLabelId = (item: ActivityItem): string => {
     'purchase',
     'payment_in',
     'payment_out',
+    // BP-08 — half of a Shop settlement: no money was received or paid.
+    'settlement_in',
+    'settlement_out',
     'expense',
     'manual_gave',
     'manual_got',

@@ -1,0 +1,7 @@
+{
+  "homeSettlement.action": "Settle…",
+  "homeSettlement.actionLabel": "Settle two balances for {name}",
+  "homeSettlement.body": "They owe you {owed} as a customer and you owe them {owing} as a supplier. These stay separate until you settle them.",
+  "homeSettlement.more": "{count} more people are in both lists.",
+  "homeSettlement.title": "{name} is in both lists."
+}

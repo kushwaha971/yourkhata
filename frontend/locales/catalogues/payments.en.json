@@ -176,6 +176,7 @@
   "payments.void.consequence.document": "{number} will be due again: ₹{amount}",
   "payments.void.consequence.ledgerIn": "Khata: {name} owes ₹{amount} more (reversal dated today)",
   "payments.void.consequence.ledgerOut": "Khata: you owe {name} ₹{amount} more (reversal dated today)",
+  "payments.void.consequence.settlementPair": "This also cancels the matching {number}. Both balances of {name} go back up by ₹{amount}, as they were before the settlement.",
   "payments.void.consequence.shopIn": "{name} owes the Shop ₹{amount} more",
   "payments.void.consequence.shopOut": "The Shop owes {name} ₹{amount} more",
   "payments.void.consequences": "What will change",

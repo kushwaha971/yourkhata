@@ -73,6 +73,7 @@ class PaymentListSerializer(serializers.ModelSerializer):
     party = serializers.SerializerMethodField()
     allocated_amount = serializers.SerializerMethodField()
     modes_count = serializers.SerializerMethodField()
+    context = serializers.SerializerMethodField()
 
     class Meta:
         model = Payment
@@ -85,6 +86,9 @@ class PaymentListSerializer(serializers.ModelSerializer):
             "amount",
             "primary_mode",
             "modes_count",
+            # BP-08 — additive: a settlement's half is labelled "Settled, no cash", not
+            # "Adjustment · deposit"; `null` for an ordinary payment.
+            "context",
             "reference",
             "status",
             "unallocated_amount",
@@ -103,6 +107,9 @@ class PaymentListSerializer(serializers.ModelSerializer):
 
     def get_modes_count(self, payment: Payment) -> int:
         return len(payment.mode_breakup or [])
+
+    def get_context(self, payment: Payment) -> str | None:
+        return (payment.meta or {}).get("context")
 
 
 class PaymentDetailSerializer(serializers.ModelSerializer):

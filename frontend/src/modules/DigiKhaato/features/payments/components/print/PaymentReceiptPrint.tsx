@@ -91,7 +91,7 @@ export function PaymentReceiptPrint({
   const isIn = payment.direction === 'in';
   const isVoid = payment.status === 'void';
   const balance = payment.partyBalanceAfter;
-  const modeIds = modeLabelIds(payment.modeBreakup);
+  const modeIds = modeLabelIds(payment.modeBreakup, payment.context);
   /* QA P-D6 — a voided receipt settles nothing, so it states no balance after it. */
   const showBalance = !isVoid;
   const address = [business.address.line1, business.address.line2, business.address.city]

@@ -105,6 +105,8 @@
     "parties.shopPromise.": "shopPromise",
     "parties.shopPromise.form.": "shopPromiseForm",
     "homePromise.": "homePromises",
+    "shopSettlement.": "shopSettlement",
+    "homeSettlement.": "homeSettlement",
     "parties.list.customer.": "partyBooks",
     "parties.list.supplier.": "partyBooks",
     "payments.off.": "settings",

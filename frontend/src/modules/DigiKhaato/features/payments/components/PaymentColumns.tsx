@@ -4,6 +4,8 @@ import type { TranslateFn } from 'src/hooks/useTranslation';
 import { cn } from 'src/utils/cn';
 import { formatBusinessDate } from 'src/utils/dates';
 
+import { modeLabelId } from '../view-model/paymentDisplay';
+
 import type { PaymentRow } from '../types/payment.types';
 
 /**
@@ -38,10 +40,10 @@ export const createPaymentColumns = ({
   const mode = (row: PaymentRow) =>
     row.modesCount > 1
       ? t('payments.mode.plusMore', {
-          mode: t(`ledger.mode.${row.primaryMode}`),
+          mode: t(modeLabelId(row.primaryMode, row.context)),
           count: row.modesCount - 1,
         })
-      : t(`ledger.mode.${row.primaryMode}`);
+      : t(modeLabelId(row.primaryMode, row.context));
   const cancelled = (row: PaymentRow) => row.status === 'void';
   const date = (row: PaymentRow) => formatBusinessDate(row.paymentDate);
 

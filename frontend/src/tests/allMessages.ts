@@ -34,6 +34,8 @@ import exportsEn from 'locales/catalogues/exports.en.json';
 import exportsHi from 'locales/catalogues/exports.hi.json';
 import homePromisesEn from 'locales/catalogues/homePromises.en.json';
 import homePromisesHi from 'locales/catalogues/homePromises.hi.json';
+import homeSettlementEn from 'locales/catalogues/homeSettlement.en.json';
+import homeSettlementHi from 'locales/catalogues/homeSettlement.hi.json';
 import importsEn from 'locales/catalogues/imports.en.json';
 import importsHi from 'locales/catalogues/imports.hi.json';
 import inventoryEn from 'locales/catalogues/inventory.en.json';
@@ -112,6 +114,8 @@ import shopPromiseEn from 'locales/catalogues/shopPromise.en.json';
 import shopPromiseHi from 'locales/catalogues/shopPromise.hi.json';
 import shopPromiseFormEn from 'locales/catalogues/shopPromiseForm.en.json';
 import shopPromiseFormHi from 'locales/catalogues/shopPromiseForm.hi.json';
+import shopSettlementEn from 'locales/catalogues/shopSettlement.en.json';
+import shopSettlementHi from 'locales/catalogues/shopSettlement.hi.json';
 import stockEn from 'locales/catalogues/stock.en.json';
 import stockHi from 'locales/catalogues/stock.hi.json';
 import taxReportsEn from 'locales/catalogues/taxReports.en.json';
@@ -154,6 +158,7 @@ export const en: Readonly<Record<string, string>> = {
   ...expensesEn,
   ...exportsEn,
   ...homePromisesEn,
+  ...homeSettlementEn,
   ...importsEn,
   ...inventoryEn,
   ...itemPickerEn,
@@ -193,6 +198,7 @@ export const en: Readonly<Record<string, string>> = {
   ...shareEn,
   ...shopPromiseEn,
   ...shopPromiseFormEn,
+  ...shopSettlementEn,
   ...stockEn,
   ...taxReportsEn,
   ...teamEn,
@@ -218,6 +224,7 @@ export const hi: Readonly<Record<string, string>> = {
   ...expensesHi,
   ...exportsHi,
   ...homePromisesHi,
+  ...homeSettlementHi,
   ...importsHi,
   ...inventoryHi,
   ...itemPickerHi,
@@ -257,6 +264,7 @@ export const hi: Readonly<Record<string, string>> = {
   ...shareHi,
   ...shopPromiseHi,
   ...shopPromiseFormHi,
+  ...shopSettlementHi,
   ...stockHi,
   ...taxReportsHi,
   ...teamHi,

@@ -182,6 +182,13 @@ const PartyRelationsSectionLazy = /* @__PURE__ */ dynamic(() =>
   import('./PartyRelationsSection').then((m) => m.PartyRelationsSection)
 );
 
+// BP-08 — the settle dialog loads with its own words when a merchant opens it.
+const SettleBalancesDialogLazy = /* @__PURE__ */ dynamic(() =>
+  import('modules/DigiKhaato/features/payments/settlement/components/SettleBalancesDialog').then(
+    (m) => m.SettleBalancesDialog
+  )
+);
+
 const CollectQrSheetLazy = /* @__PURE__ */ dynamic(() =>
   import('modules/DigiKhaato/features/payments/components/CollectQrSheet').then(
     (m) => m.CollectQrSheet
@@ -264,6 +271,11 @@ export function PartyDetailPageContent({
 
   const [copied, setCopied] = useState(false);
   const [paying, setPaying] = useState<KhataPaymentPreset | null>(null);
+  const [settling, setSettling] = useState(false);
+  /* Bumped when a settlement's sheet closes: the bills and payments below are
+     re-read, because both of this person's roles just moved (BP-08). */
+  const [settleRound, setSettleRound] = useState(0);
+  const settledNow = useRef(false);
   const [collecting, setCollecting] = useState(false);
   const handleCopyMobile = useCallback(async (mobile: string) => {
     setCopied(await copyText(mobile));
@@ -548,6 +560,16 @@ export function PartyDetailPageContent({
                       : undefined
                   }
                   onCollect={canCollect && !supplierView ? () => setCollecting(true) : undefined}
+                  onSettle={
+                    canPay &&
+                    shopBook &&
+                    shown.isCustomer &&
+                    shown.isSupplier &&
+                    hasModule('sales') &&
+                    hasModule('purchases')
+                      ? () => setSettling(true)
+                      : undefined
+                  }
                   onEdit={partyForm.canEdit ? openEdit : undefined}
                   onAddOpening={opening.canAdd && !shopBook ? opening.openDrawer : undefined}
                   onArchive={archive.canArchive ? archive.open : undefined}
@@ -661,14 +683,14 @@ export function PartyDetailPageContent({
                 a `UbTimeline` could know. It renders nothing at all when the
                 tenant has not enabled the ledger module. */}
             {shopBook && !supplierView && hasModule('sales') && can('sales.invoice.read') && (
-              <ShopPersonRecordsLazy key={`${id}:customer`} partyId={id} />
+              <ShopPersonRecordsLazy key={`${id}:customer:${settleRound}`} partyId={id} />
             )}
             {shopBook && supplierView && hasModule('purchases') && can('purchases.bill.read') && (
-              <ShopPersonRecordsLazy key={`${id}:supplier`} partyId={id} supplier />
+              <ShopPersonRecordsLazy key={`${id}:supplier:${settleRound}`} partyId={id} supplier />
             )}
             {shopBook && hasModule('payments') && can('payments.payment.read') && (
               <ShopPersonRecordsLazy
-                key={`${id}:${supplierView}:payments`}
+                key={`${id}:${supplierView}:payments:${settleRound}`}
                 partyId={id}
                 supplier={supplierView}
                 payments
@@ -810,6 +832,23 @@ export function PartyDetailPageContent({
             presetAmount: paying.presetAmount,
           }}
           onClose={() => setPaying(null)}
+        />
+      )}
+      {settling && (
+        <SettleBalancesDialogLazy
+          partyId={id}
+          returnFocusRef={moreRef}
+          onSettled={() => {
+            settledNow.current = true;
+          }}
+          onClose={() => {
+            setSettling(false);
+            if (settledNow.current) {
+              settledNow.current = false;
+              refetch();
+              setSettleRound((n) => n + 1);
+            }
+          }}
         />
       )}
       {collecting && (

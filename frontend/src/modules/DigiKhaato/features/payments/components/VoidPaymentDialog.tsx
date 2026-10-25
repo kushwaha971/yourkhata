@@ -68,6 +68,12 @@ export function VoidPaymentDialog({
         return t('payments.void.consequence.depositBack', { amount: formatAmount(row.amount) });
       case 'depositGone':
         return t('payments.void.consequence.depositGone', { amount: formatAmount(row.amount) });
+      case 'settlementPair':
+        return t('payments.void.consequence.settlementPair', {
+          number: row.number ?? '',
+          amount: formatAmount(row.amount),
+          name: payment.party?.name ?? '',
+        });
       case 'depositPair':
         return t('payments.void.consequence.depositPair', {
           number: row.number ?? '',

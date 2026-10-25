@@ -21,6 +21,7 @@
   "ledger.mode.cash": "नकद",
   "ledger.mode.cheque": "चेक",
   "ledger.mode.other": "अन्य",
+  "ledger.mode.settlement": "बराबर किया, नकद नहीं",
   "ledger.mode.upi": "UPI",
   "ledger.mode.upiOther": "अन्य UPI",
   "ledger.statement.label.payable": "आपको देने हैं",

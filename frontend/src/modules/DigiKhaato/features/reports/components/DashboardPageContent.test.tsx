@@ -43,6 +43,10 @@ jest.mock('../../parties/api/shopPromiseService', () => ({
   ...jest.requireActual('../../parties/api/shopPromiseService'),
   listOpenPromises: jest.fn().mockResolvedValue([]),
 }));
+jest.mock('../../payments/settlement/api/shopSettlementService', () => ({
+  ...jest.requireActual('../../payments/settlement/api/shopSettlementService'),
+  listSettlementCandidates: jest.fn().mockResolvedValue({ count: 0, results: [] }),
+}));
 
 const mockPush = jest.fn();
 const mockReplace = jest.fn();
