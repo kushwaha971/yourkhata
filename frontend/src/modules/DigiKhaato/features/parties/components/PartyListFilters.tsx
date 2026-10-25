@@ -64,6 +64,7 @@ export interface PartyListFiltersProps {
   readonly t: TranslateFn;
   readonly type: PartyTypeFilter;
   readonly balance: PartyBalanceFilter;
+  readonly defaultBalance?: PartyBalanceFilter;
   readonly collection: PartyCollectionFilter;
   readonly onTypeChange: (value: PartyTypeFilter) => void;
   /** The page itself is Customers or Suppliers, so the type is not a choice. */
@@ -120,6 +121,7 @@ function PartyListFiltersBase({
   t,
   type,
   balance,
+  defaultBalance = '',
   collection,
   onTypeChange,
   typeFixed = false,
@@ -245,11 +247,14 @@ function PartyListFiltersBase({
     kind: 'single',
     key: 'balance',
     label: t('parties.list.filter.balance.label'),
-    anyLabel: t('parties.list.filter.any'),
-    options: BALANCE_FILTERS.map((value) => ({
+    anyLabel: defaultBalance === 'due' ? t('parties.khata.filter.due') : t('parties.list.filter.any'),
+    options: [
+      ...(defaultBalance === 'due' ? [{ value: 'all', label: t('parties.khata.filter.all') }] : []),
+      ...BALANCE_FILTERS.filter((value) => value !== defaultBalance).map((value) => ({
       value,
       label: t(`parties.list.filter.balance.${value}`),
     })),
+    ],
   };
   const defaultSort = PHONE_SORT_CHOICES.find((c) => c.ordering === DEFAULT_ORDERING);
   const compactSpecs: UbFilterSpec[] = compact
@@ -283,7 +288,7 @@ function PartyListFiltersBase({
     : [];
   const values: UbFilterValues = {
     status: status === 'archived' ? 'archived' : '',
-    balance,
+    balance: defaultBalance === 'due' ? (balance === 'due' ? '' : balance || 'all') : balance,
     ordering: ordering === DEFAULT_ORDERING ? '' : ordering,
     credit,
     role: appliedRoles.join(','),
@@ -295,8 +300,8 @@ function PartyListFiltersBase({
     if (compact) {
       const nextStatus = next.status === 'archived' ? 'archived' : 'active';
       if (onStatusChange && nextStatus !== status) onStatusChange(nextStatus);
-      if ((next.balance ?? '') !== balance)
-        onBalanceChange((next.balance ?? '') as PartyBalanceFilter);
+      const nextBalance = next.balance === 'all' ? '' : next.balance || defaultBalance;
+      if (nextBalance !== balance) onBalanceChange(nextBalance as PartyBalanceFilter);
       const nextOrdering = next.ordering || DEFAULT_ORDERING;
       if (onOrderingChange && nextOrdering !== ordering) onOrderingChange(nextOrdering);
     }

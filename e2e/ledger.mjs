@@ -38,7 +38,8 @@
  *
  * Exits non-zero on any failure.
  */
-import { chromium } from 'playwright';
+import { createRequire } from 'node:module';
+const { chromium } = createRequire(import.meta.url)('playwright');
 import { BACKEND_DIR as LOCAL_BACKEND_DIR, PYTHON } from './lib/local.mjs';
 import { mkdirSync, writeFileSync } from 'node:fs';
 
@@ -456,7 +457,7 @@ async function sweep(ctx, size, parties) {
   /* Nothing on this page is clipped mid-word.
  
      Measured rather than read: `innerText` returns the full string whatever the
-     pixels do, which is exactly how LED-01's duplicated "You gave" survived
+     pixels do, which is exactly how LED-01's duplicated "Gave money" survived
      every unit test and how the opening row came to read "Opening…" beside a
      badge that repeats the word it cut off.
  
@@ -502,14 +503,14 @@ async function sweep(ctx, size, parties) {
 
   await at('05-drawer-you-gave', async () => {
     await openKhata(page, parties.plain);
-    await openDrawer(page, /You gave/);
+    await openDrawer(page, /Gave money/);
     await capture(page, size, '05-drawer-you-gave');
   });
 
   await at('06-drawer-you-got', async () => {
     await page.keyboard.press('Escape');
     await settle(page, 600);
-    await openDrawer(page, /You got/);
+    await openDrawer(page, /Got money/);
     await capture(page, size, '06-drawer-you-got');
   });
 
@@ -523,7 +524,7 @@ async function sweep(ctx, size, parties) {
   await at('08-drawer-validation', async () => {
     await page.keyboard.press('Escape');
     await settle(page, 600);
-    await openDrawer(page, /You gave/);
+    await openDrawer(page, /Gave money/);
     await page.getByRole('button', { name: 'Save' }).click();
     await settle(page, 900);
     await capture(page, size, '08-drawer-validation');
@@ -533,7 +534,7 @@ async function sweep(ctx, size, parties) {
     await page.keyboard.press('Escape');
     await settle(page, 600);
     await openKhata(page, parties.near);
-    await openDrawer(page, /You gave/);
+    await openDrawer(page, /Gave money/);
     await fillAmount(page, '20000');
     await page.getByRole('button', { name: 'Save' }).click();
     /* Scroll the BANNER into view before photographing it, and fail the step if
@@ -586,7 +587,7 @@ async function sweep(ctx, size, parties) {
     await page.keyboard.press('Escape');
     await settle(page, 600);
     await openKhata(page, parties.plain);
-    await openDrawer(page, /You gave/);
+    await openDrawer(page, /Gave money/);
     await fillAmount(page, '450');
     await page.getByLabel(/^Note/).fill(`Swept at ${size.width}px`);
     await page.getByRole('button', { name: 'Save' }).click();
@@ -739,7 +740,7 @@ async function checks(browser, token, parties) {
   // 2. The write reaches the wire — the defect `tags.mjs` exists for.
   {
     const before = posts.length;
-    await openDrawer(page, /You gave/);
+    await openDrawer(page, /Gave money/);
     await fillAmount(page, '500');
     await page.getByLabel(/^Note/).fill('Rice 5 kg');
     await page.getByRole('button', { name: 'Save' }).click();
@@ -781,7 +782,7 @@ async function checks(browser, token, parties) {
 
   // 5. A credit reduces it, and carries how the money arrived.
   {
-    await openDrawer(page, /You got/);
+    await openDrawer(page, /Got money/);
     await fillAmount(page, '300');
     await page.getByRole('button', { name: 'Save' }).click();
     await settle(page, 2000);
@@ -838,7 +839,7 @@ async function checks(browser, token, parties) {
   // nobody chose should never cost somebody a sale.
   {
     await openKhata(page, parties.near);
-    await openDrawer(page, /You gave/);
+    await openDrawer(page, /Gave money/);
     await fillAmount(page, '15000');
     await page.getByRole('button', { name: 'Save' }).click();
     await settle(page, 2500);
@@ -859,7 +860,7 @@ async function checks(browser, token, parties) {
   {
     await setCreditMode('block', parties.near.id);
     await openKhata(page, parties.near);
-    await openDrawer(page, /You gave/);
+    await openDrawer(page, /Gave money/);
     await fillAmount(page, '20000');
     await page.getByRole('button', { name: 'Save' }).click();
     await settle(page, 2000);
@@ -1411,7 +1412,7 @@ async function checks(browser, token, parties) {
     record(
       'and the khata offers them no ⋯ at all',
       menus === 0,
-      `${menus} menus; entries visible: ${/You gave/.test(shown)}`
+      `${menus} menus; entries visible: ${/Gave money/.test(shown)}`
     );
     record(
       'nor the switch that reveals corrections',
@@ -1461,7 +1462,7 @@ async function checks(browser, token, parties) {
 async function run() {
   const { token, parties } = await seed();
 
-  const browser = await chromium.launch();
+  const browser = await chromium.launch({ executablePath: process.env.CHROME });
   await checks(browser, token, parties);
 
   if (wantShots) {

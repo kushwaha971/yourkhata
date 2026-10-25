@@ -73,7 +73,7 @@ export interface UsePartyFormResult {
   readonly submit: (
     values: PartyFormValues,
     setError: UseFormSetError<PartyFormValues>
-  ) => Promise<void>;
+  ) => Promise<PartyDetail | null>;
 }
 
 export const usePartyForm = (): UsePartyFormResult => {
@@ -181,6 +181,7 @@ export const usePartyForm = (): UsePartyFormResult => {
                 }
           )
         );
+        return saved.party;
       } catch (thrown) {
         const apiError = thrown as ApiErrorShape;
         if (apiError.code === 'validation_error') {
@@ -219,17 +220,18 @@ export const usePartyForm = (): UsePartyFormResult => {
             ),
           };
           setFormErrors(applyServerErrors(translated, setError, [...PARTY_FIELDS]));
-          return;
+          return null;
         }
         if (apiError.code === 'party_archived') {
           // Not a field error: the request was well formed and the record's
           // state said no. It belongs at form level, where the merchant can
           // read it beside a Restore they will need.
           setFormErrors([apiError.message]);
-          return;
+          return null;
         }
         // Anything else has already surfaced through the global snackbar.
         dispatch(showSnackbar({ severity: 'error', id: 'parties.form.error.title' }));
+        return null;
       }
     },
     [dispatch, key, openFor, rotate]

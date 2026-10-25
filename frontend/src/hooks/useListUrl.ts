@@ -28,6 +28,8 @@ export interface ListUrlCodec<F> {
   readonly keys: readonly (keyof F & string)[];
   /** The URL is untrusted input: return only values the list can use. */
   readonly read: (params: URLSearchParams) => Partial<F>;
+  /** Route-specific URL representation when a default must be explicit. */
+  readonly write?: (filters: F, defaults: F) => string;
 }
 
 /** The query string `filters` should be at, with defaults omitted. */
@@ -111,7 +113,7 @@ export function useListUrl<F>({ codec, filters, defaults, onSeed }: UseListUrlOp
       }
     }
 
-    const next = writeListQuery(codec.keys, filters, defaults);
+    const next = codec.write?.(filters, defaults) ?? writeListQuery(codec.keys, filters, defaults);
     if (next === current || requested.current.at(-1) === next) return;
     requested.current.push(next);
     /* `replace`, not `push`: a chip tap refines the screen, it is not a place;

@@ -36,7 +36,8 @@
  *
  * Exits non-zero on any failure.
  */
-import { chromium } from 'playwright';
+import { createRequire } from 'node:module';
+const { chromium } = createRequire(import.meta.url)('playwright');
 import { BACKEND_DIR as LOCAL_BACKEND_DIR, PYTHON } from './lib/local.mjs';
 import { mkdirSync, writeFileSync } from 'node:fs';
 
@@ -590,7 +591,7 @@ async function run() {
     { cwd: LOCAL_BACKEND_DIR, env: { ...process.env, DJANGO_SETTINGS_MODULE: 'config.settings.local' } }
   );
 
-  const browser = await chromium.launch();
+  const browser = await chromium.launch({ executablePath: process.env.CHROME });
   await checks(browser, token, parties);
 
   if (wantShots) {

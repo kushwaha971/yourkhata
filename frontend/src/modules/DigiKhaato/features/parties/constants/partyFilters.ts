@@ -26,12 +26,13 @@
 export type PartyTypeFilter = '' | 'customer' | 'supplier';
 /** A list with its type fixed: the Shop's Customers and Suppliers pages. */
 export type PartyKind = Exclude<PartyTypeFilter, ''>;
-export type PartyBalanceFilter = '' | 'owes_me' | 'i_owe' | 'settled';
+export type PartyBalanceFilter = '' | 'due' | 'owes_me' | 'i_owe' | 'settled';
 export type PartyCollectionFilter = '' | 'today' | 'overdue' | 'upcoming';
 
 export const TYPE_FILTERS: readonly Exclude<PartyTypeFilter, ''>[] = ['customer', 'supplier'];
 
 export const BALANCE_FILTERS: readonly Exclude<PartyBalanceFilter, ''>[] = [
+  'due',
   'owes_me',
   'i_owe',
   'settled',
@@ -93,5 +94,25 @@ export const SHOP_BOOK_WORDS: Readonly<Record<string, string>> = {
  */
 export const KHATA_BOOK_WORDS: Readonly<Record<string, string>> = {
   'parties.list.title': 'parties.list.khata.title',
+  'parties.list.add': 'parties.khata.add',
+  'parties.list.column.name': 'parties.khata.person',
+  'parties.list.balance.receivable': 'parties.khata.toGet',
+  'parties.list.balance.payable': 'parties.khata.toGive',
+  'parties.list.totals.receivable': 'parties.khata.toGet',
+  'parties.list.totals.payable': 'parties.khata.toGive',
+  'parties.list.filter.balance.owes_me': 'parties.khata.toGet',
+  'parties.list.filter.balance.i_owe': 'parties.khata.toGive',
+  'parties.list.empty.firstUse.title': 'parties.khata.emptyFirst.title',
+  'parties.list.empty.firstUse.body': 'parties.khata.emptyFirst.body',
+  'parties.list.empty.filtered.chipsTitle': 'parties.khata.emptyFilter.title',
+  'parties.list.empty.filtered.searchTitle': 'parties.khata.emptySearch.title',
+  'parties.list.empty.filtered.title': 'parties.khata.emptySearch.generic',
+  'parties.list.status.archived': 'parties.khata.hidden',
+  'parties.list.filter.status.label': 'parties.khata.people',
+  'parties.list.empty.archived.title': 'parties.khata.emptyHidden.title',
+  'parties.list.empty.archived.body': 'parties.khata.emptyHidden.body',
+  'parties.list.error.title': 'parties.khata.error',
+  'parties.list.loading': 'parties.khata.loading',
+  'parties.list.caption': 'parties.khata.caption',
   'parties.list.stats.customers': 'parties.list.khata.title',
 };

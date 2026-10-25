@@ -42,7 +42,8 @@
  *
  * Exits non-zero on any failure.
  */
-import { chromium } from 'playwright';
+import { createRequire } from 'node:module';
+const { chromium } = createRequire(import.meta.url)('playwright');
 import { mkdirSync, writeFileSync } from 'node:fs';
 
 const FRONTEND = process.env.E2E_FRONTEND ?? 'http://localhost:3000';
@@ -779,7 +780,7 @@ const staffSession = async (token) => {
 async function run() {
   const { token, parties } = await seed();
 
-  const browser = await chromium.launch();
+  const browser = await chromium.launch({ executablePath: process.env.CHROME });
   await checks(browser, token, parties);
 
   if (wantShots) {

@@ -56,7 +56,7 @@ export interface UbDataGridMobileListProps<TRow> {
    * actions sitting on one line and stacking on three.
    */
   readonly avatar?: boolean;
-  readonly layout?: 'inline' | 'stacked';
+  readonly layout?: 'inline' | 'stacked' | 'compact';
   readonly actions?: (row: TRow) => ReactNode;
   /**
    * A per-row icon drawn in the disc instead of initials, for a row with no
@@ -81,15 +81,16 @@ const cardBody = <TRow,>(
   model: UbCardModel<TRow>,
   avatar: boolean,
   avatarIcon?: (row: TRow) => ReactNode,
-  stacked = false
+  stacked = false,
+  compact = false
 ): ReactNode => (
   <>
-    {avatar && <UbAvatar name={name} icon={avatarIcon?.(row) ?? undefined} />}
+    {avatar && <UbAvatar name={name} size={compact ? 'sm' : 'md'} icon={avatarIcon?.(row) ?? undefined} />}
     <span className={cn('flex min-w-0 flex-1 flex-col', stacked && 'col-start-1 row-start-1')}>
       <span
         className={cn(
           'ds-body-sm-medium text-text-primary',
-          stacked ? 'whitespace-normal break-words' : 'truncate'
+          stacked || compact ? 'whitespace-normal break-words' : 'truncate'
         )}
       >
         {model.title ? model.title.cell(row) : name}
@@ -99,7 +100,7 @@ const cardBody = <TRow,>(
           {model.meta.map((column) => (
             <span
               key={column.id}
-              className={stacked ? 'whitespace-normal break-words' : 'truncate'}
+              className={stacked || compact ? 'whitespace-normal break-words' : 'truncate'}
             >
               {column.cell(row)}
             </span>
@@ -150,7 +151,8 @@ function UbDataGridMobileListBase<TRow>({
       {rows.map((row) => {
         const name = rowName(row);
         const stacked = layout === 'stacked';
-        const body = cardBody(row, name, model, avatar, avatarIcon, stacked);
+        const compact = layout === 'compact';
+        const body = cardBody(row, name, model, avatar, avatarIcon, stacked, compact);
 
         return (
           <li
@@ -185,6 +187,7 @@ function UbDataGridMobileListBase<TRow>({
                 onClick={handleOpen(row)}
                 className={cn(
                   CARD_BODY,
+                  compact && 'gap-2 px-3 py-2',
                   stacked &&
                     'grid grid-cols-[minmax(0,1fr)_auto] gap-y-2 min-[360px]:grid-cols-[minmax(0,1fr)_auto_auto]',
                   'outline-none transition-colors duration-fast ease-standard',
@@ -204,6 +207,7 @@ function UbDataGridMobileListBase<TRow>({
               <div
                 className={cn(
                   CARD_BODY,
+                  compact && 'gap-2 px-3 py-2',
                   stacked &&
                     'grid grid-cols-[minmax(0,1fr)_auto] gap-y-2 min-[360px]:grid-cols-[minmax(0,1fr)_auto_auto]'
                 )}

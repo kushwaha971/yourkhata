@@ -468,3 +468,18 @@ Earlier mobile manual/arrow-pager matrix acceptance is superseded. Existing desk
 | Speed | dbab.sh, n = 24 | phone level to slightly faster, desktop level |
 | Competitor comparison | none | unproven |
 
+
+## Udhaar people checkpoint ·25Oct2026
+
+R-DEC-35–40: avatar/full name/directional balance row with chevron; phone title
+hidden, choices inside Filters, worded floating Add; quick Add uses existing
+opening balance and shared phone contacts. Current full frontend437 suites /
+4,848tests green; earlier one billing timeout is retained in the dated report.
+Parties backend group green; no Library/Lending application or API contract
+change. Browser38frames pass own-box, contrast, page width, append and phone
+contact prefill (simulated OS picker). Quiet old/new/old/new navigation recorded.
+Mandatory journey results: ledger54/54, statement24/24, credit19/19, tags13/13,
+people30/30, write-off11/11; Old dues52/54 and wave1 reminder/expense omnibus are not green.
+Do not call this a whole-Udhaar release. Details, ratings and unresolved
+ownership/legacy journey gaps: performance/2026-10-25-udhaar-people.md.
+BP-21 is approved next, after the current UI checkpoint is committed/pushed.

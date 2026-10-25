@@ -1,3 +1,48 @@
+CURRENT CHECKPOINT — 25 October 2026, R-DEC-35 through R-DEC-40
+Continue the existing revamp on dev. Shop is complete for the owner’s requested
+scope. Current work is Udhaar, then Lending, then Library. Do not reopen Shop.
+Read the appended decisions in12 and docs/performance/2026-10-25-udhaar-people.md.
+
+Owner’s latest Udhaar phone reference: no page title; one Search+Filters row;
+To get/To give totals; avatar and full wrapping name beside the amount and >
+chevron; worded floating Add person above navigation, with clear space so it
+never covers visible amounts. Due/To get/To give/Settled/All choices are inside
+Filters. Desktop keeps heading and fill-height Person/Balance table with fixed
+pagination. The owner’s screenshots supersede04’s original FAB/stat-chip mock.
+
+Quick Add reuses PartyFormDrawer: name, amount, Gave money/Got money, optional
+mobile, visible Choose from phone contacts when supported. It opens the khata
+only after server success. Phone contacts fill name/mobile without saving.
+English Gave money/Got money and Hindi पैसे दिए/पैसे मिले supersede the older
+You gave/You got wording rule. Notes stay optional; audit reasons required.
+
+BP-20 main-book balance=due read filter is approved and built. Cross-book Redux
+rows are fenced so stale Shop balances are not painted under Udhaar. Current
+full frontend437suites/4,848tests pass, plus lint/types/locales/build/bundle/
+contrast; preserve the earlier full billing timeout in the report. Browser38
+frames pass English390/320/1024/1280 light/dark and Hindi320/1280. Quiet A/B:
+throttled opening Udhaar phone422→442ms, desktop685.5→699.5ms; no speed win
+claimed. Function/performance aspects are below8.5; no inflated whole score.
+
+Existing local QA journeys: ledger54/54, statement24/24, credit19/19, tags13/13,
+people30/30, write-off11/11. Old dues52/54 and wave1 reminder/expense omnibus remain red; read
+exact failures in the report. This checkpoint is not whole-Udhaar completion.
+Physical phones/PWA/OS contact permissions and rural-user research unproved.
+
+NEXT APPROVED PIECE: BP-21 (owner: “Approve BP-21 after this screen
+(Recommended)”). New Udhaar contacts currently inherit is_customer=True and
+can appear in Shop. Build explicit server book membership, cautious legacy
+migration, list/count/search/export/write fences, and tests. Do not infer
+membership/linking from a phone number or net balances. The current main book
+is tenant-scoped, NOT independently private per staff member; BP-21 alone does
+not resolve per-user ownership. Then person khata/history and its overlays,
+Old dues/reminders, remaining Udhaar scope; next Lending and Library under L-01.
+
+All existing quality rules below remain. Preserve untracked ims-platform/.
+Commit/push verified pieces todev, remoteSHA check, Assisted-by: OpenAI Codex.
+
+--- Previous checkpoint history (superseded by the current checkpoint above) ---
+
 # Portable start prompt for the YourKhata revamp
 
 Give the block below to any coding agent (Codex, Cursor, Claude Code, Copilot, Windsurf, or a person) with this repository checked out. It is written so every tool continues the work in the same way and to the same standard. Paths are relative to the repository root. Tools and permissions differ between agents; the rules, order of work, document formats and evidence standards do not.

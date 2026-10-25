@@ -25,7 +25,9 @@ import {
   isoFinancialYearStart,
   isoToday,
 } from 'src/design-system';
+import { useAppRouter } from 'src/hooks/useAppRouter';
 import { useTranslation } from 'src/hooks/useTranslation';
+import type { TranslateFn } from 'src/hooks/useTranslation';
 import { partyPath } from 'src/routes';
 import { compareMoney, formatAmount, parseAmountInput } from 'src/utils/money';
 
@@ -38,6 +40,22 @@ import { PartyTagField } from './PartyTagField';
 import type { PartyKind } from '../constants/partyFilters';
 import type { UsePartyFormResult } from '../hooks/usePartyForm';
 import type { PartyFormValues } from '../types/party.types';
+
+function PartyNameInput({ t }: Readonly<{ t: TranslateFn }>): React.JSX.Element {
+  return (
+    <UbField name="name" label={t('parties.form.name.label')} placeholder={t('parties.form.name.placeholder')} required>
+      {(field) => <UbTextInput {...field} autoFocus autoComplete="off" placeholder={t('parties.form.name.hint')} />}
+    </UbField>
+  );
+}
+
+function OpeningAmountInput({ t, required = false }: Readonly<{ t: TranslateFn; required?: boolean }>): React.JSX.Element {
+  return (
+    <UbField name="openingAmount" label={t('parties.form.opening.amount')} placeholder={t('parties.form.opening.amount.placeholder')} required={required}>
+      {(field) => <UbMoneyInput {...field} />}
+    </UbField>
+  );
+}
 
 // Loaded with dynamic(), so its own words come with its own chunk rather than
 // with the screen that opens it (src/i18n/catalogueRegistry.ts).
@@ -70,15 +88,19 @@ export function PartyFormDrawer({
   returnFocusRef,
   kind,
   shop = false,
+  quickKhata = false,
 }: Readonly<{
   form: UsePartyFormResult;
   shop?: boolean;
+  /** Udhaar's fast Add: name, opening amount and its direction, then history. */
+  quickKhata?: boolean;
   /** Opened from Suppliers: a new party is a supplier unless the merchant says otherwise. */
   kind?: PartyKind;
   /** Focus target on close when the opener is gone (QA D1) — the khata's ⋯. */
   returnFocusRef?: RefObject<HTMLElement | null>;
 }>): React.JSX.Element {
   const { t } = useTranslation();
+  const router = useAppRouter();
   const { partySchema } = usePartySchemas();
   const formId = useId();
   /* Unconditional: the thunk's own `condition` decides whether a request goes
@@ -162,8 +184,15 @@ export function PartyFormDrawer({
   }, [open, reset, defaults]);
 
   const handleSubmit = useCallback(
-    (values: PartyFormValues) => submit(values, setError),
-    [submit, setError]
+    async (values: PartyFormValues) => {
+      if (quickKhata && !isEdit && !values.openingAmount?.trim()) {
+        setError('openingAmount', { type: 'required', message: t('parties.khata.opening.required') });
+        return;
+      }
+      const saved = await submit(values, setError);
+      if (quickKhata && !isEdit && saved) router.push(partyPath(saved.id));
+    },
+    [submit, setError, quickKhata, isEdit, router, t]
   );
 
   /**
@@ -187,10 +216,10 @@ export function PartyFormDrawer({
 
   const directionOptions = useMemo(
     () => [
-      { value: 'debit', label: t('parties.form.opening.debit') },
-      { value: 'credit', label: t('parties.form.opening.credit') },
+      { value: 'debit', label: t(quickKhata ? 'parties.khata.opening.youGave' : 'parties.form.opening.debit') },
+      { value: 'credit', label: t(quickKhata ? 'parties.khata.opening.youGot' : 'parties.form.opening.credit') },
     ],
-    [t]
+    [t, quickKhata]
   );
 
   /**
@@ -245,12 +274,39 @@ export function PartyFormDrawer({
     [t]
   );
 
+  const contactPickButton = !isEdit && canWrite ? (
+    <PhoneContactButton
+      onPick={(contact) => {
+        form.setValue('name', contact.name, { shouldDirty: true, shouldValidate: true });
+        form.setValue('mobile', contact.mobile, { shouldDirty: true, shouldValidate: true });
+      }}
+      label={t('parties.form.phoneContact.choose')}
+      errorMessage={t('parties.form.phoneContact.error')}
+      disabled={isSaving}
+    />
+  ) : null;
+  const mobileInput = (
+    <UbField
+      name="mobile"
+      label={t('parties.form.mobile.label')}
+      placeholder={t('parties.form.mobile.placeholder')}
+      hint={t('parties.form.mobile.hint')}
+    >
+      {(field) => <UbPhoneInput {...field} autoComplete="off" />}
+    </UbField>
+  );
+  const openingDirectionInput = (
+    <UbField name="openingDirection" label={t('parties.form.opening.direction')}>
+      {(field) => <UbRadioGroup {...field} options={directionOptions} className={quickKhata && !isEdit ? 'grid grid-cols-2 gap-2' : undefined} />}
+    </UbField>
+  );
+
   return (
     <UbDrawer
       open={open}
       onOpenChange={handleOpenChange}
-      title={isEdit ? t('parties.form.title.edit') : t(`parties.form.title.create${byKind}`)}
-      description={isEdit ? undefined : t('parties.form.subtitle')}
+      title={quickKhata && !isEdit ? t('parties.khata.add') : isEdit ? t('parties.form.title.edit') : t(`parties.form.title.create${byKind}`)}
+      description={isEdit || quickKhata ? undefined : t('parties.form.subtitle')}
       closeLabel={t('common.action.close')}
       // A stray tap on the backdrop must not take a half-filled form with it.
       dismissOnBackdrop={!formState.isDirty}
@@ -267,7 +323,7 @@ export function PartyFormDrawer({
             busyLabel={t('parties.form.submitting')}
             disabled={!canWrite}
           >
-            {isEdit ? t('parties.form.submit.edit') : t(`parties.form.submit.create${byKind}`)}
+            {isEdit ? t('parties.form.submit.edit') : quickKhata ? t('parties.khata.saveAndOpen') : t(`parties.form.submit.create${byKind}`)}
           </UbButton>
         </>
       }
@@ -307,54 +363,33 @@ export function PartyFormDrawer({
           />
         )}
 
+        {quickKhata && !isEdit ? (
+          <>
+            {contactPickButton}
+            <PartyNameInput t={t} />
+            <OpeningAmountInput t={t} required />
+            {openingDirectionInput}
+            <UbText variant="caption" tone="secondary">{t('parties.khata.opening.hint')}</UbText>
+            <UbDisclosure label={t('parties.khata.moreDetails')}>
+              {mobileInput}
+            </UbDisclosure>
+          </>
+        ) : (
+        <>
         {/* ── The fifteen-second path ─────────────────────────────────────── */}
         {/* One contact from the phone fills Name and Mobile, and saves nothing:
             Save does, and the server's duplicate check still decides (PTY-07
             FR-10). A new party only, and nothing at all where the browser
             cannot pick contacts — no dead button on every desktop (FR-14). */}
-        {!isEdit && canWrite && (
-          <PhoneContactButton
-            onPick={(contact) => {
-              form.setValue('name', contact.name, { shouldDirty: true, shouldValidate: true });
-              form.setValue('mobile', contact.mobile, { shouldDirty: true, shouldValidate: true });
-            }}
-            label={t('parties.form.phoneContact.choose')}
-            errorMessage={t('parties.form.phoneContact.error')}
-            disabled={isSaving}
-          />
-        )}
-        <UbField
-          name="name"
-          label={t('parties.form.name.label')}
-          placeholder={t('parties.form.name.placeholder')}
-          required
-        >
-          {/* `autoFocus`: the drawer used to open with focus on ✕, so the
-              first keystroke went nowhere and a phone raised no keyboard
-              (UAT). `MLDialog` leaves focus where `autoFocus` put it. */}
-          {(field) => (
-            <UbTextInput
-              {...field}
-              autoFocus
-              autoComplete="off"
-              placeholder={t('parties.form.name.hint')}
-            />
-          )}
-        </UbField>
+        {contactPickButton}
+        <PartyNameInput t={t} />
 
         {/* `UbPhoneInput`, not a text field with `type="tel"`. The schema's
             rule is E.164 (`+91XXXXXXXXXX`), and a merchant types ten digits —
             so a plain field turns "9812345678" into a format error about a
             prefix nobody asked them for. This component shows the national
             digits and commits E.164. */}
-        <UbField
-          name="mobile"
-          label={t('parties.form.mobile.label')}
-          placeholder={t('parties.form.mobile.placeholder')}
-          hint={t('parties.form.mobile.hint')}
-        >
-          {(field) => <UbPhoneInput {...field} autoComplete="off" />}
-        </UbField>
+        {mobileInput}
 
         {/* Two switches rather than a three-way "Customer / Supplier / Both".
             Both is not a third kind of party — it is both boxes ticked — and a
@@ -422,16 +457,8 @@ export function PartyFormDrawer({
             hint={t('parties.form.section.opening.hint')}
             open={openingHasError || undefined}
           >
-            <UbField
-              name="openingAmount"
-              label={t('parties.form.opening.amount')}
-              placeholder={t('parties.form.opening.amount.placeholder')}
-            >
-              {(field) => <UbMoneyInput {...field} />}
-            </UbField>
-            <UbField name="openingDirection" label={t('parties.form.opening.direction')}>
-              {(field) => <UbRadioGroup {...field} options={directionOptions} />}
-            </UbField>
+            <OpeningAmountInput t={t} />
+            {openingDirectionInput}
             <UbField
               name="openingAsOf"
               label={t('parties.form.opening.asOf')}
@@ -591,6 +618,8 @@ export function PartyFormDrawer({
             )}
           </UbField>
         </UbDisclosure>
+        </>
+        )}
       </UbForm>
     </UbDrawer>
   );

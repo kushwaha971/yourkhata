@@ -319,3 +319,114 @@ Finish one feature completely before starting the next: build, full gates, LOOK,
 Progress 23 Oct 2026 (afternoon): sales-document lists verified on the exact checkpoint (gates, sweep EN/HI, mobile contract, LOOK, A/B). Phone 4x-CPU navigation is ~50 ms slower than 477916b and is recorded, not hidden. Next feature under R-DEC-34: Bills register mobile cards (R-DEC-33), then Customers, Suppliers, Purchases, one at a time.
 
 Progress 23 Oct 2026 (evening): Bills register phone composition verified (gates, EN/HI sweep, mobile contract, LOOK, A/B vs 7b27948). Known limit: at 320 px with crore totals the summary wraps and cards get 58.5%. Next feature under R-DEC-34: Customers register (R-DEC-33), then Suppliers, then Purchases.
+
+
+## R-DEC-35 · Udhaar → Lending → Library; plain words, optional notes, relevant defaults
+
+25 October 2026, owner handoff and decision replies recorded in this session
+by 05:46 UTC (11:16 IST). Continue this revamp on dev; Shop is the approved
+reference and is complete for the requested work. Order: Udhaar first, then
+Lending, then Library. Finish each screen/overlay group with gates, LOOK,
+phone/desktop acceptance, same-machine A/B, docs, commit/push and remote SHA
+before starting the next. No routine next-screen permission questions.
+
+Owner rules: short everyday English (roughly10words/idea) and simple spoken
+Hindi, each English change paired in Hindi. Udhaar You gave/You got; Lending
+Lent/Collected, Running/Late; Library Fee/Paid, Student. Technical identifiers
+stay intact. Avoid transaction/ledger/outstanding/receivable/payable/aging/
+archive/reverse/void/disburse/arrears/instalment/EMI/export CSV in user copy:
+entry/book/due/You will get/You will give/Old dues/Hide/Cancel entry/Give loan/
+Late/payment/Download (Excel). No queue/sync/payload exposed to users.
+
+Notes always optional: Note (optional), no empty-note save refusal, amount→Save
+fast path. Audit reasons stay required with one-tap reason suggestions. Check
+client and server; frozen Lending/Library server refusal requires a proposal,
+never an unapproved contract change.
+
+Relevant defaults use existing server filters, URL persistence and server
+counts when available. Udhaar people: Due (nonzero, active) /You will get/
+You will give/Settled/All; hidden only explicitly requested. Lending: Running,
+Late,Closed,All; borrowers with running loans. Library: Active/Fee due/On hold/
+Left/All, free seats and available books/copies first. Histories latest few,
+Show all(N). Never filter paged results in the browser. Missing server filters
+require08 approval; keep supported defaults until then.
+
+Owner replies (exact): "Keep Cancel entry with a reason (recommended)";
+"Udhaar only (recommended)"; "Hide person / Show again (recommended)";
+"Approve balance=due (recommended)". Q1/Q2/Q3 are resolved accordingly;
+Library Plan ended wording remains open for that feature. BP-20 is approved
+for the minimal Udhaar read filter only. No financial write/calculation change.
+
+Reference conflicts resolved by owner:04's Add-person FAB and stat cards are
+superseded by compact header action and shared register/summary (R-DEC-33).
+DESIGN-SYSTEM's historical warm page and archive wording are superseded by the
+owner's white page and plain words.04's optional split-view is not a new
+workflow: existing person navigation remains until that next piece. Personal
+Udhaar is still tenant-book-scoped in code (02 §5.1); this presentation work
+must not claim independent per-user ownership is implemented.
+
+Immediate next: Udhaar home/people register and its filter group (/khata).
+Keep Shop layouts/flows as reference; rerun Shop regressions if shared code
+changes. Person khata/entry overlays follow after this piece is fully verified.
+
+25Oct2026 code/doc disagreement: R-DEC-35 requested independently owned Udhaar use, while 02 §5.1 and `Party.balance` are tenant-main-book scoped. This presentation piece fixes wording to say "this book" and records the privacy gap in the Udhaar report; no ownership backend change is authorised by the presentation-only boundary. Whole-module privacy/function completion is not claimed.
+
+## R-DEC-36 · Simpler Udhaar list from the owner's KhataBook references
+
+25 October 2026, owner screenshots and replies received by 06:09 UTC (11:39
+IST). The owner said: "on fist keep avatate and amount only just like in that
+khata bookk baiscel replaict that but make wording and other things diffrenr
+and keep in my we have to beat khatabook for that feature"; "That chip can we
+add inside filter"; and "make it more simple lioke that in khatabook don't need
+to complcat that feature". These instructions supersede the five-chip strip
+and list-row reminder action drafted earlier today. The primary phone list is
+avatar, full person name and directional amount; tap opens the khata history.
+Balance choices move into Filters. The header holds Add person without an
+unexplained ⋯. Person-level reminder stays in the existing person page flow,
+with editable text before WhatsApp/SMS/Call handoff. Existing backend money,
+entries and permissions do not change. Preserve other management capabilities
+via their existing dedicated routes; their Udhaar entry points need a separate
+navigation review before claiming full access on mobile.
+
+## R-DEC-37 · Udhaar entry words
+
+25 October 2026, owner asked for words other than "You gave / You got" and
+replied "yes proceed" by 06:24 UTC (11:54 IST) to the recommended plain
+English. Use "Gave money" / "Got money" for Udhaar entry buttons, entry
+headings and statement columns; Hindi "पैसे दिए" / "पैसे मिले". Keep balances
+separate and label them "To get" / "To give" (or their existing full-sentence
+equivalents where the label needs to stand alone). This supersedes the older
+Udhaar wording examples in 02/04/10 without changing ledger direction,
+amounts, endpoints or historical records.
+
+## R-DEC-38 · Approve Udhaar-only contact membership (BP-21)
+
+25 October 2026, owner reply received by 06:36 UTC (12:06 IST): "Approve
+BP-21 after this screen (Recommended)". The current quick Add still uses the
+shared Party role model, so a new Udhaar person can appear in Shop Customers.
+BP-21 will add explicit book membership with server-side list/count/search/
+export/write fences and a cautious legacy migration. Build it as the next
+verified piece after this screen is committed and pushed. No phone-number
+linking, balance netting, or Library/Lending contract change is approved.
+
+## R-DEC-39 · Udhaar phone header and row density
+
+25 October 2026, owner screenshot feedback received by 06:48 UTC (12:18 IST):
+"there is too much size why not avater name same row" and "remove that title
+in case of mobile ... keep like floating button like in khata book". The owner
+also questioned the line directly under search/filter. This supersedes
+R-DEC-36's phone-header Add placement. Phone `/khata` now hides its page title,
+keeps Search + Filters, puts avatar and full wrapping name beside the amount
+in a compact shared card variant, removes the summary's top border, and places
+one floating Add person action above the bottom navigation. Desktop keeps its
+heading and ordinary Add action. The browser harness measures avatar/name
+alignment, card share, visible heading, FAB, text fit and contrast.
+
+## R-DEC-40 · Keep the person-row arrow
+
+25 October 2026, owner: "keep that > icon for shwoing direction" (received by
+06:58 UTC / 12:28 IST). The compact Udhaar row keeps a right chevron as a clear
+open-history cue. It remains one 44px+ tap target, with avatar and wrapping
+name beside the directional amount. The 320px long-name case is remeasured.
+
+Progress25Oct2026: Udhaar people/quick Add UI checkpoint implemented under R-DEC-35–40. Full frontend4,848tests and production gates green;38 measured EN/HI frames and matched navigation A/B recorded. Existing ledger54/54, statement24/24, credit19/19, tags13/13, people30/30, write-off11/11 pass; Old dues52/54 and reminder/expense omnibus remain red, explicitly retained in report. No whole-module >8.5 claim. Next approved piece is BP-21 after commit/push of this scoped checkpoint; then person history/entries and remaining Udhaar before Lending/Library.

@@ -27,6 +27,7 @@ import {
   selectPartyOverLimit,
   selectPartyRolesOn,
   selectPartyRows,
+  selectPartyRowsQuery,
   selectPartySelection,
   selectShopPartyCounts,
 } from '../redux/partyListSlice';
@@ -108,11 +109,13 @@ export function usePartyList(
       ...(kind ? { type: kind } : {}),
       book: book ?? 'main',
       ...(book === 'shop' && Boolean(kind) ? { ordering: 'oldest_due_on' } : {}),
+      ...(book === 'main' ? { balance: 'due' as const } : {}),
     }),
     [kind, book]
   );
 
-  const rows = useAppSelector(selectPartyRows);
+  const rawRows = useAppSelector(selectPartyRows);
+  const rowsQuery = useAppSelector(selectPartyRowsQuery);
   const meta = useAppSelector(selectPartyListMeta);
   const filters = useAppSelector(selectPartyFilters);
   const status = useAppSelector(selectPartyListStatus);
@@ -140,7 +143,15 @@ export function usePartyList(
    * merchant told "₹2,40,000 receivable" has to know whether that is their book
    * or the twenty-five rows in front of them.
    */
-  const totals = useMemo(() => serverTotals ?? partyTotals(rows), [serverTotals, rows]);
+  // The slice is shared by Shop and Udhaar. Never paint the last book's money
+  // under the new book's title while the URL seed and its request settle.
+  const expectedBook = book ?? 'main';
+  const bookMatches = filters.book === expectedBook && (
+    rowsQuery?.book === expectedBook || (rowsQuery === null && rawRows.length === 0)
+  );
+  const rows = useMemo(() => (bookMatches ? rawRows : []), [bookMatches, rawRows]);
+  const scopedTotals = bookMatches ? serverTotals : null;
+  const totals = useMemo(() => scopedTotals ?? partyTotals(rows), [scopedTotals, rows]);
   const selectedIds = useAppSelector(selectPartySelection);
   const isImpaired = useAppSelector(selectNetworkImpaired);
 
@@ -212,6 +223,7 @@ export function usePartyList(
   );
   useEffect(() => {
     const arg = fetchArg;
+    if (filters.book !== defaults.book) return undefined;
     // Claimed: the warm-up owns that request's lifetime, so there is nothing to
     // dispatch and nothing to abort here. Not claimed: this is something the
     // warm-up did not predict, so anything still speculating is superseded
@@ -220,7 +232,7 @@ export function usePartyList(
     abortWarmPartyList();
     const promise = dispatch(fetchPartyList(arg));
     return () => promise.abort();
-  }, [dispatch, fetchArg]);
+  }, [dispatch, fetchArg, filters.book, defaults.book]);
 
   // A mutation elsewhere marked us stale — refetch once, silently (§19.3.6).
   //
@@ -280,7 +292,7 @@ export function usePartyList(
         filters.q,
         filters.status !== defaults.status,
         filters.type !== defaults.type,
-        filters.balance,
+        filters.balance && filters.balance !== defaults.balance,
         filters.collection,
         filters.late,
         filters.tag,
@@ -354,19 +366,23 @@ export function usePartyList(
     setSearchInput('');
     dispatch(filtersCleared());
     if (kind) dispatch(filtersChanged({ type: kind }));
-    if (book) dispatch(filtersChanged({ book }));
+    if (book) dispatch(filtersChanged({ book, ...(book === 'main' ? { balance: 'due' } : {}) }));
   }, [dispatch, kind, book]);
   const refetch = useCallback(() => {
     void dispatch(fetchPartyList(fetchArg));
   }, [dispatch, fetchArg]);
 
+  const visibleStatus = bookMatches ? status : 'loading';
+  const visibleMeta = bookMatches
+    ? meta
+    : { page: 1, pageSize: filters.pageSize, total: 0, totalPages: 0 };
   return {
     rows,
-    shopCounts,
-    meta,
+    shopCounts: bookMatches ? shopCounts : null,
+    meta: visibleMeta,
     filters,
-    status,
-    error,
+    status: visibleStatus,
+    error: bookMatches ? error : null,
     totals,
     totalsScope,
     overLimit,
@@ -381,10 +397,10 @@ export function usePartyList(
     clearFilters,
     refetch,
     toggleBalance,
-    isLoading: status === 'loading',
-    isRefreshing: status === 'refreshing',
-    showingSaved,
-    appendFailed,
+    isLoading: visibleStatus === 'loading',
+    isRefreshing: visibleStatus === 'refreshing',
+    showingSaved: bookMatches && showingSaved,
+    appendFailed: bookMatches && appendFailed,
     isFiltered: activeFilterCount > 0,
     activeFilterCount,
   };

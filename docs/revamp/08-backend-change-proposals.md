@@ -324,3 +324,53 @@ client cannot say which bill moved the stock or where to link.
   server has the fields and the plain fallback when it has not.
 - **Rollback**: do not merge, or revert the one commit; the client already
   falls back to the movement type with no link.
+
+
+## BP-20 · Udhaar Due read filter
+
+APPROVED25Oct2026 by owner: "Approve balance=due (recommended)".
+GET /parties gains an accepted balance=due choice only for the main/Udhaar
+book. It selects balance!=0 over the same tenant/permission/status/query/tag
+scope BEFORE paging/totals. Both signs count;₹0.01 counts; zero does not.
+Shop's accepted filter behavior is preserved; Lending/Library endpoints and
+contracts are untouched. No schema, posting or financial calculation change.
+No new counts or unscoped cross-book query. Existing active default remains;
+archived people are requested explicitly through the existing status filter.
+Tests: both signs/zero/paise, archived and other-tenant exclusion, Shop money
+is not read as Udhaar, paging+totals coherent, Shop-only right cannot request
+main book. Rollback: remove due choice/frontend default; existing filters stay.
+
+## BP-21 · Separate Udhaar-only contacts from Shop roles
+
+Proposed 25 Oct 2026 after the quick Add review; **approved by the owner in
+this session, not built yet**. Owner reply: "Approve BP-21 after this screen
+(Recommended)". Build only after the current Udhaar screen passes its gates
+and is pushed, following R-DEC-34's one-finished-piece rule.
+The current shared `Party` requires `is_customer || is_supplier` in the client
+schema, and the server defaults `is_customer=True`. Shop Customers selects
+`is_customer=True` for its list and `has_any`. An Udhaar person created through
+the main-book quick Add therefore carries a Shop customer role even with no
+Shop bill. A matching phone number is not permission to merge roles. The UI
+cannot honestly fix this by hiding the row in the browser: server totals,
+paging, search and export would still include it.
+
+Before implementation, define explicit book membership on a party without
+changing the main or Shop balance engines. Main-book creation would mark main
+membership; Shop creation/import would mark Shop membership and its customer
+or supplier role. Existing records need a cautious migration/review path:
+Shop activity proves Shop membership, but a manually saved Shop contact with
+no activity cannot be inferred safely. Keep such ambiguous legacy records
+visible until an owner choice resolves them; do not silently hide or combine
+people. Shop list, counts, export and picker reads must all enforce the same
+membership and tenant/role permissions on the server. Same phone across books,
+two businesses, owner/staff and unrelated users must not grant visibility or
+merge balances. No Library/Lending contract change.
+
+Tests before rollout: a new Udhaar-only contact appears in its main book and
+never in Shop Customers/Suppliers or their counts/export; a Shop-only contact
+stays in Shop; an explicitly linked person can be in both with independent
+money; duplicate phones do not imply linking; staff without book rights get
+403 on list/detail/export/write; pagination and totals stay server-correct.
+Rollback requires retaining existing role columns and additive membership
+data until all callers are migrated. The Udhaar list redesign can ship as a
+scoped presentation piece, but whole-app data-isolation scoring remains open.

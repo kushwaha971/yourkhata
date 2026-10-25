@@ -88,6 +88,7 @@ export interface PartyColumnDeps {
   /** The first column's heading when the page is one book (Suppliers). */
   readonly nameHeader?: string;
   readonly compactShop?: boolean;
+  readonly compactKhata?: boolean;
   readonly supplier?: boolean;
   readonly onPay?: (party: Party) => void;
   readonly hideBalanceLabel?: boolean;
@@ -106,6 +107,7 @@ export const createPartyColumns = ({
   tagChipsPerRow,
   nameHeader,
   compactShop = false,
+  compactKhata = false,
   supplier = false,
   onPay,
   hideBalanceLabel,
@@ -122,11 +124,11 @@ export const createPartyColumns = ({
       priority: 1,
       sortField: PARTY_SORT_FIELDS.name,
       cardSlot: 'title',
-      widthShare: compactShop ? 26 : 34,
+      widthShare: compactKhata ? 68 : compactShop ? 26 : 34,
       cell: (party) => (
         <PartyNameCell
           name={party.name}
-          wrap={compactShop}
+          wrap={compactShop || compactKhata}
           roleLabel={
             compactShop && (supplier ? party.isCustomer : party.isSupplier)
               ? t(
@@ -146,8 +148,8 @@ export const createPartyColumns = ({
                 : contactLine(party)
               : undefined
           }
-          tags={party.tags}
-          reserveTagLane={!compactShop && hasTags}
+          tags={compactKhata ? [] : party.tags}
+          reserveTagLane={!compactShop && !compactKhata && hasTags}
           maxTags={tagChipsPerRow}
           /* Named after the party, because a row's chip list sits beside
            twenty-four other chip lists and "Tags" alone announces as one of
@@ -164,7 +166,7 @@ export const createPartyColumns = ({
       align: 'end',
       sortField: PARTY_SORT_FIELDS.balance,
       cardSlot: 'trailing',
-      widthShare: compactShop ? 22 : 20,
+      widthShare: compactKhata ? 32 : compactShop ? 22 : 20,
       cell: (party) => (
         <PartyBalanceCell
           balance={party.balance}
@@ -233,6 +235,7 @@ export const createPartyColumns = ({
       ),
     },
   ];
+  if (compactKhata) return columns.slice(0, 2);
   if (!compactShop) return columns;
   const late: UbDataGridColumn<Party> = {
     id: 'late',

@@ -1,5 +1,7 @@
 'use client';
 
+import { usePathname } from 'next/navigation';
+
 import { seedListPatch, useListUrl, writeListQuery, type ListUrlCodec } from 'src/hooks/useListUrl';
 
 import type { PartyListFilters } from '../types/party.types';
@@ -67,7 +69,7 @@ const URL_KEYS = [
 type UrlKey = (typeof URL_KEYS)[number];
 
 const TYPES: readonly string[] = ['customer', 'supplier'];
-const BALANCES: readonly string[] = ['owes_me', 'i_owe', 'settled'];
+const BALANCES: readonly string[] = ['due', 'owes_me', 'i_owe', 'settled'];
 const COLLECTIONS: readonly string[] = ['today', 'overdue', 'upcoming'];
 const CREDITS: readonly string[] = ['over', 'near', 'ok'];
 const STATUSES: readonly string[] = ['active', 'archived'];
@@ -149,6 +151,32 @@ export const seedPatch = (
 
 /** F01 — the mechanism is `src/hooks/useListUrl` (shared with the library's lists). */
 const PARTY_LIST_CODEC: ListUrlCodec<PartyListFilters> = { keys: URL_KEYS, read: readFilters };
+/** A hand-edited Shop URL cannot ask for the Udhaar-only Due filter. */
+const SHOP_LIST_CODEC: ListUrlCodec<PartyListFilters> = {
+  keys: URL_KEYS,
+  read: (params) => {
+    const patch = readFilters(params);
+    return patch.balance === 'due' ? { ...patch, balance: '' as const } : patch;
+  },
+};
+
+/** A direct /khata reload must tell Due from All without reading stale Redux state. */
+const KHATA_LIST_CODEC: ListUrlCodec<PartyListFilters> = {
+  keys: URL_KEYS,
+  read: (params) => ({
+    ...readFilters(params),
+    ...(params.get('balance') === 'all' ||
+    (params.get('status') === 'archived' && !params.has('balance')) ||
+    (params.get('status') === 'archived' && params.get('balance') === 'due')
+      ? { balance: '' as const } : {}),
+  }),
+  write: (filters, defaults) => {
+    const params = new URLSearchParams(writeListQuery(URL_KEYS, filters, defaults));
+    params.set('balance', filters.balance || 'all');
+    params.set('status', filters.status);
+    return params.toString();
+  },
+};
 
 export interface UsePartyListUrlOptions {
   readonly filters: PartyListFilters;
@@ -157,5 +185,6 @@ export interface UsePartyListUrlOptions {
 }
 
 export function usePartyListUrl({ filters, defaults, onSeed }: UsePartyListUrlOptions): void {
-  useListUrl({ codec: PARTY_LIST_CODEC, filters, defaults, onSeed });
+  const pathname = usePathname();
+  useListUrl({ codec: pathname === '/khata' ? KHATA_LIST_CODEC : defaults.book === 'shop' ? SHOP_LIST_CODEC : PARTY_LIST_CODEC, filters, defaults, onSeed });
 }

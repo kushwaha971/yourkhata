@@ -36,7 +36,8 @@
  *
  * Exits non-zero on any failure.
  */
-import { chromium } from 'playwright';
+import { createRequire } from 'node:module';
+const { chromium } = createRequire(import.meta.url)('playwright');
 import { BACKEND_DIR as LOCAL_BACKEND_DIR, PYTHON } from './lib/local.mjs';
 import { execFileSync } from 'node:child_process';
 import { mkdirSync, readFileSync } from 'node:fs';
@@ -262,7 +263,7 @@ const signIn = async (page) => {
 
 const isAgingRead = (request) => {
   const url = new URL(request.url());
-  return `${url.origin}${url.pathname}` === `${BACKEND}/ledger/aging` && url.searchParams.get('format') !== 'csv';
+  return url.pathname === `${new URL(BACKEND).pathname}/ledger/aging` && url.searchParams.get('format') !== 'csv';
 };
 const paramsOf = (request) => Object.fromEntries(new URL(request.url()).searchParams);
 
@@ -517,7 +518,7 @@ const main = async () => {
   }
 
   // ── 5. The browser ───────────────────────────────────────────────────────
-  const browser = await chromium.launch();
+  const browser = await chromium.launch({ executablePath: process.env.CHROME });
   const context = await browser.newContext({ viewport: { width: 1280, height: 800 }, acceptDownloads: true });
   // Any export the browser gets through to the API spends the same budget.
   context.on('response', (response) => {
@@ -526,7 +527,7 @@ const main = async () => {
     // (or payables-aging) instead. It is charged to the same "export" scope, so it
     // is counted here too, or the 429 check below lands one export late.
     const exportPaths = [`${BACKEND}/ledger/aging`, `${BACKEND}/reports/receivables-aging`, `${BACKEND}/reports/payables-aging`];
-    if (exportPaths.includes(`${url.origin}${url.pathname}`) && url.searchParams.get('format') === 'csv' &&
+    if (exportPaths.some((path) => new URL(path).pathname === url.pathname) && url.searchParams.get('format') === 'csv' &&
         response.status() === 200) exportsSpent += 1;
   });
   const page = await context.newPage();
@@ -572,7 +573,7 @@ const main = async () => {
       `got ${JSON.stringify(pickTiles)} want ${JSON.stringify(expectedTiles(pickTotals))}`);
 
     // Drill-down from the party cell (a link on a table).
-    const statementReq = page.waitForRequest((r) => r.url().startsWith(`${BACKEND}/parties/${ids.C}/statement`), { timeout: 60000 }).catch(() => null);
+    const statementReq = page.waitForRequest((r) => new URL(r.url()).pathname === `${new URL(BACKEND).pathname}/parties/${ids.C}/statement`, { timeout: 60000 }).catch(() => null);
     await page.getByRole('link', { name: nameOf.C, exact: true }).click();
     await page.waitForURL((url) => url.pathname === `/parties/${ids.C}/statement`, { timeout: 60000 }).catch(() => {});
     const landed = new URL(page.url());
@@ -634,7 +635,7 @@ const main = async () => {
     record('browser (phone): the tiles show the same figures', tilesMatch(tiles, HAND_RECEIVABLE_TOTALS), JSON.stringify(tiles));
     const cards = await page.getByTestId('ub-grid-card').count();
     record('browser (phone): one card per party', cards === 6, `${cards} cards`);
-    const statementReq = page.waitForRequest((r) => r.url().startsWith(`${BACKEND}/parties/${ids.G}/statement`), { timeout: 60000 }).catch(() => null);
+    const statementReq = page.waitForRequest((r) => new URL(r.url()).pathname === `${new URL(BACKEND).pathname}/parties/${ids.G}/statement`, { timeout: 60000 }).catch(() => null);
     await page.getByRole('button', { name: `Open the statement for ${nameOf.G}` }).click();
     await page.waitForURL((url) => url.pathname === `/parties/${ids.G}/statement`, { timeout: 60000 }).catch(() => {});
     const landed = new URL(page.url());

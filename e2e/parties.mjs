@@ -36,7 +36,8 @@
  *
  * Exits non-zero on any failure.
  */
-import { chromium } from 'playwright';
+import { createRequire } from 'node:module';
+const { chromium } = createRequire(import.meta.url)('playwright');
 import { mkdirSync, writeFileSync } from 'node:fs';
 
 const FRONTEND = process.env.E2E_FRONTEND ?? 'http://localhost:3000';
@@ -158,7 +159,7 @@ const shot = async (page, name) => {
 
 async function run() {
   await seed();
-  const browser = await chromium.launch();
+  const browser = await chromium.launch({ executablePath: process.env.CHROME });
   const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 } });
   const page = await ctx.newPage();
 
@@ -354,7 +355,7 @@ async function run() {
 
     record(
       'an unknown party is a not-found screen with a way back',
-      body.includes('This party was not found') && body.includes('Back to customers'),
+      body.includes('This contact was not found') && body.includes('Back to customers'),
       body.slice(0, 160).replace(/\n/g, ' | ')
     );
     record(
@@ -426,7 +427,7 @@ async function run() {
     const afterBody = await page.locator('body').innerText();
     record(
       'the party is archived and the page says so',
-      afterBody.includes('This party is archived'),
+      afterBody.includes('This contact is archived'),
       afterBody.slice(0, 120).replace(/\n/g, ' | ')
     );
     record(

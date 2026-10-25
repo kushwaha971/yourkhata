@@ -277,6 +277,7 @@ export default partyListSlice.reducer;
 // ── Selectors ────────────────────────────────────────────────────────────────
 
 export const selectPartyRows = (state: RootState): readonly Party[] => state.partyList.rows;
+export const selectPartyRowsQuery = (state: RootState): PartyListFilters | null => state.partyList.rowsQuery;
 export const selectPartyListMeta = (state: RootState): PageMeta => state.partyList.meta;
 export const selectPartyFilters = (state: RootState): PartyListFilters => state.partyList.filters;
 export const selectPartyListStatus = (state: RootState): RequestStatus => state.partyList.status;

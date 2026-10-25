@@ -111,9 +111,9 @@ export interface UbDataGridProps<TRow> {
    * see `UbDataGridMobileList`.
    */
   readonly cardAvatar?: boolean;
-  /** Full-width title and a separate amount row for long names and large money.
-   * Opt-in: existing module cards keep their current layout. */
-  readonly cardLayout?: 'inline' | 'stacked';
+  /** Stacked gives long names a separate amount row; compact keeps avatar,
+   * wrapping name and amount together without the extra chevron. */
+  readonly cardLayout?: 'inline' | 'stacked' | 'compact';
   /**
    * Cards only: an icon for the disc in place of initials, per row — for a row
    * with no name, such as an invitation (QA O3). `null` keeps the initials.

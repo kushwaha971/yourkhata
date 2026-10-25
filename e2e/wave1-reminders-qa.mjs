@@ -5,7 +5,8 @@
  *   node e2e/wave1-reminders-qa.mjs
  * Env: E2E_FRONTEND, E2E_BACKEND, E2E_SHOTS (default /tmp/e2e-shots/wave1/reminders-expenses)
  */
-import { chromium } from 'playwright';
+import { createRequire } from 'node:module';
+const { chromium } = createRequire(import.meta.url)('playwright');
 import { PYTHON, psql as localPsql } from './lib/local.mjs';
 import { mkdirSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
@@ -109,7 +110,7 @@ record('EXP-03', 'staff: today cashbook readable', rs.status === 200, rs.status)
 console.log('SEED', owner.email, owner.tenantId);
 
 // ───────────────────────── browser ─────────────────────────
-const browser = await chromium.launch();
+const browser = await chromium.launch({ executablePath: process.env.CHROME });
 const signIn = async (page, email, password = PASSWORD) => {
   await page.goto(`${FRONTEND}/login/email`, { waitUntil: 'networkidle', timeout: 180000 });
   await page.fill('input[type="email"], input[name="email"]', email);

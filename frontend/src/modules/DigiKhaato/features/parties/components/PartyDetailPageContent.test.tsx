@@ -165,7 +165,7 @@ const signIn = (
       // not enabled it sees no card at all, which is a different screen and is
       // asserted separately.
       enabledModules: ['parties', 'ledger', 'khata'],
-      // DEC-019 — this page is the Udhaar book's khata (You gave / You got); opened
+      // DEC-019 — this page is the Udhaar book's khata (Gave money / Got money); opened
       // from the Shop it is the person's bills instead, asserted separately.
       activeApp,
       version: 1,
@@ -366,10 +366,10 @@ describe('the khata page', () => {
      */
     renderWithProviders(<PartyDetailPageContent id={ID} />);
 
-    const gave = await screen.findByRole('button', { name: /You gave/ });
+    const gave = await screen.findByRole('button', { name: /Gave money/ });
     const more = screen.getByRole('button', { name: 'More actions' });
     expect(gave).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /You got/ })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Got money/ })).toBeInTheDocument();
     /* The two ledger actions are BUTTONS and everything else is behind the
        menu, which is the ordering that matters: a merchant at a counter is
        recording a sale far more often than editing an address, and the target
@@ -382,11 +382,11 @@ describe('the khata page', () => {
     const user = userEvent.setup();
     renderWithProviders(<PartyDetailPageContent id={ID} />);
 
-    await user.click(await screen.findByRole('button', { name: /You gave/ }));
+    await user.click(await screen.findByRole('button', { name: /Gave money/ }));
 
     // The party's name is in the drawer title, which is the only thing that
     // tells a merchant WHOSE khata they are about to write to.
-    expect(await screen.findByText('You gave · Ramesh Traders')).toBeInTheDocument();
+    expect(await screen.findByText('Gave money · Ramesh Traders')).toBeInTheDocument();
   });
 
   it('moves the header balance to the number the entry produced, before any refetch lands', async () => {
@@ -445,7 +445,7 @@ describe('the khata page', () => {
     renderWithProviders(<PartyDetailPageContent id={ID} />);
     await screen.findByText('₹2,300.00');
 
-    await user.click(screen.getByRole('button', { name: /You gave/ }));
+    await user.click(screen.getByRole('button', { name: /Gave money/ }));
     await user.type(await screen.findByLabelText('Amount'), '500');
     await user.click(screen.getByRole('button', { name: 'Save' }));
 
@@ -467,8 +467,8 @@ describe('the khata page', () => {
     renderWithProviders(<PartyDetailPageContent id={ID} />);
 
     await screen.findByText('Ramesh Traders');
-    expect(screen.queryByRole('button', { name: /You gave/ })).not.toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: /You got/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Gave money/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Got money/ })).not.toBeInTheDocument();
   });
 
   it('draws no transactions card at all for a tenant without the ledger module', async () => {
@@ -549,7 +549,7 @@ describe('opened from the Shop (DEC-019)', () => {
    * The owner, 12 Oct 2026: the Udhaar book and the Shop are separate apps that
    * share only the person. Opened from the Shop's Customers this page is the
    * person's BILLS — what is due on them and the lines behind it — and never
-   * their udhaar figure or the Udhaar book's You gave / You got.
+   * their udhaar figure or the Udhaar book's Gave money / Got money.
    */
   const shopSession = (): void =>
     signIn(
@@ -623,7 +623,7 @@ describe('opened from the Shop (DEC-019)', () => {
     await screen.findByTestId('shop-person-overview');
     const dock = screen.getByTestId('shop-person-dock');
     expect(within(dock).getByRole('button', { name: 'Receive payment' })).toBeInTheDocument();
-    expect(screen.queryByText('You gave in all')).not.toBeInTheDocument();
+    expect(screen.queryByText('Gave money in all')).not.toBeInTheDocument();
     expect(screen.queryByText('Credit limit')).not.toBeInTheDocument();
   });
 
@@ -644,13 +644,13 @@ describe('opened from the Shop (DEC-019)', () => {
       expect(screen.queryByRole('link', { name: 'Statement' })).not.toBeInTheDocument();
     });
 
-  it('offers no You gave / You got, and reads the Shop’s lines', async () => {
+  it('offers no Gave money / Got money, and reads the Shop’s lines', async () => {
     shopSession();
     renderWithProviders(<PartyDetailPageContent id={ID} />);
 
     expect(await screen.findByText('Ramesh Traders')).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: /You gave/ })).not.toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: /You got/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Gave money/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Got money/ })).not.toBeInTheDocument();
     expect(ledgerService.listPartyEntries).not.toHaveBeenCalled();
   });
 });
@@ -986,7 +986,7 @@ describe('archiving from the khata page', () => {
     expect(within(dialog).getByRole('button', { name: 'Cancel' })).toHaveFocus();
   });
 
-  it('opens You got with the outstanding amount already in it', async () => {
+  it('opens Got money with the outstanding amount already in it', async () => {
     /**
      * Prevents the UAT finding: Record payment opened the drawer in the right
      * direction but EMPTY, so the merchant had to read ₹2,300.00 off the
@@ -1001,7 +1001,7 @@ describe('archiving from the khata page', () => {
 
     const amount = await screen.findByLabelText('Amount');
     expect(amount).toHaveValue('2300.00');
-    expect(screen.getByRole('radio', { name: /You got/ })).toBeChecked();
+    expect(screen.getByRole('radio', { name: /Got money/ })).toBeChecked();
 
     await user.clear(amount);
     await user.type(amount, '500');
@@ -1682,7 +1682,7 @@ describe('an archived party’s timeline (QA O4)', () => {
   };
 
   it('offers no Correct / Reverse ⋯ on its rows, because the server refuses both', async () => {
-    /* Prevents QA O4: the khata page hid You gave / You got for an archived
+    /* Prevents QA O4: the khata page hid Gave money / Got money for an archived
        party but each timeline row's ⋯ still offered "Correct this entry /
        Reverse this entry", which the server answers with 409 party_archived.
        Hidden rather than disabled (§19.7.5). */
@@ -1731,7 +1731,7 @@ describe('after an entry, the credit block and the totals follow the balance (NE
    * NEW-2. After a save, only the header balance moved: `partyDetailSlice`
    * patched `balance` from `meta.party_balance` and nothing else, so the credit
    * block ("₹250.00 over the ₹1,000.00 limit", the bar) and the timeline's
-   * "You gave in all" / "You got in all" kept the figures of the page load
+   * "Gave money in all" / "Got money in all" kept the figures of the page load
    * until a reload. The credit bar is what a merchant reads before lending
    * more, and it was telling them about a balance that no longer existed.
    *
@@ -1800,7 +1800,7 @@ describe('after an entry, the credit block and the totals follow the balance (NE
     createdAt: '2026-09-17T10:00:00Z',
   });
 
-  it('over the limit → further over: the caption and "You gave in all" move with the entry', async () => {
+  it('over the limit → further over: the caption and "Gave money in all" move with the entry', async () => {
     partyService.getParty
       .mockResolvedValueOnce(detail('1250.00', credit('1250.00', '0.00', '250.00', 125, 'over')))
       .mockResolvedValue(detail('1450.00', credit('1450.00', '0.00', '450.00', 145, 'over')));
@@ -1815,7 +1815,7 @@ describe('after an entry, the credit block and the totals follow the balance (NE
 
     renderWithProviders(<PartyDetailPageContent id={ID} />);
     expect(await screen.findByText('₹250.00 over the ₹1,000.00 limit')).toBeInTheDocument();
-    expect(await screen.findByText('You gave in all, ₹1,250.00')).toBeInTheDocument();
+    expect(await screen.findByText('Gave money in all, ₹1,250.00')).toBeInTheDocument();
 
     await act(async () => {
       await store.dispatch(
@@ -1837,7 +1837,7 @@ describe('after an entry, the credit block and the totals follow the balance (NE
 
     expect(await screen.findByText('₹450.00 over the ₹1,000.00 limit')).toBeInTheDocument();
     expect(screen.queryByText('₹250.00 over the ₹1,000.00 limit')).not.toBeInTheDocument();
-    expect(await screen.findByText('You gave in all, ₹1,450.00')).toBeInTheDocument();
+    expect(await screen.findByText('Gave money in all, ₹1,450.00')).toBeInTheDocument();
   });
 
   it('under the limit → near it: the bar and the caption come from the server’s new block', async () => {
@@ -1883,10 +1883,10 @@ describe('after an entry, the credit block and the totals follow the balance (NE
     expect(
       screen.getByRole('progressbar', { name: /Credit used — ₹250.00 left of ₹1,000.00/ })
     ).toHaveAttribute('aria-valuenow', '75');
-    expect(await screen.findByText('You gave in all, ₹750.00')).toBeInTheDocument();
+    expect(await screen.findByText('Gave money in all, ₹750.00')).toBeInTheDocument();
   });
 
-  it('a reversal takes a party back under the limit, and "You gave in all" drops', async () => {
+  it('a reversal takes a party back under the limit, and "Gave money in all" drops', async () => {
     /* The typo case LED-03 exists for: ₹400 written twice at a busy counter.
        Undoing it takes the party from ₹200 over to ₹200 left — the difference
        between refusing the next sale and making it. */
@@ -1907,7 +1907,7 @@ describe('after an entry, the credit block and the totals follow the balance (NE
 
     renderWithProviders(<PartyDetailPageContent id={ID} />);
     expect(await screen.findByText('₹200.00 over the ₹1,000.00 limit')).toBeInTheDocument();
-    expect(await screen.findByText('You gave in all, ₹1,200.00')).toBeInTheDocument();
+    expect(await screen.findByText('Gave money in all, ₹1,200.00')).toBeInTheDocument();
 
     await act(async () => {
       await store.dispatch(
@@ -1921,7 +1921,7 @@ describe('after an entry, the credit block and the totals follow the balance (NE
 
     expect(await screen.findByText('₹200.00 left of ₹1,000.00')).toBeInTheDocument();
     expect(screen.queryByText('₹200.00 over the ₹1,000.00 limit')).not.toBeInTheDocument();
-    expect(await screen.findByText('You gave in all, ₹800.00')).toBeInTheDocument();
+    expect(await screen.findByText('Gave money in all, ₹800.00')).toBeInTheDocument();
     // The header's instant patch is still there, and still the 200's figure.
     expect(screen.getAllByText('₹800.00').length).toBeGreaterThan(0);
   });
@@ -2012,7 +2012,7 @@ describe('after an entry, the credit block and the totals follow the balance (NE
     });
 
     renderWithProviders(<PartyDetailPageContent id={ID} />);
-    expect(await screen.findByText('You gave in all, ₹600.00')).toBeInTheDocument();
+    expect(await screen.findByText('Gave money in all, ₹600.00')).toBeInTheDocument();
 
     await act(async () => {
       await store.dispatch(
@@ -2031,7 +2031,7 @@ describe('after an entry, the credit block and the totals follow the balance (NE
 });
 
 /**
- * PRODUCT (owner-compatible): on a phone the header's You gave / You got pair
+ * PRODUCT (owner-compatible): on a phone the header's Gave money / Got money pair
  * scrolls away with a long khata, and the merchant had to scroll back to the
  * top to record the next entry. The pair STAYS in the header — the owner's
  * tab-like pair under the title — and a docked copy appears at the bottom only
@@ -2041,7 +2041,7 @@ describe('after an entry, the credit block and the totals follow the balance (NE
  * `scrollPast(true)` reports the observed pair as having gone above the top
  * of the viewport, `scrollPast(false)` as back on screen.
  */
-describe('the docked You gave / You got pair on a phone', () => {
+describe('the docked Gave money / Got money pair on a phone', () => {
   let observed: { callback: IntersectionObserverCallback; target: Element | null }[] = [];
 
   const scrollPast = (past: boolean): void => {
@@ -2109,7 +2109,7 @@ describe('the docked You gave / You got pair on a phone', () => {
 
     // On screen: one pair, in the header, and no dock.
     expect(screen.queryByTestId('khata-dock')).not.toBeInTheDocument();
-    expect(screen.getAllByRole('button', { name: /You gave/ })).toHaveLength(1);
+    expect(screen.getAllByRole('button', { name: /Gave money/ })).toHaveLength(1);
 
     scrollPast(true);
     const dock = await screen.findByTestId('khata-dock');
@@ -2117,8 +2117,8 @@ describe('the docked You gave / You got pair on a phone', () => {
     // Below `lg` only (docs/mobile-redesign): the phone layer docks the pair;
     // a desktop keeps it beside the title.
     expect(dock).toHaveClass('lg:hidden');
-    expect(within(dock).getByRole('button', { name: /You gave/ })).toBeInTheDocument();
-    expect(within(dock).getByRole('button', { name: /You got/ })).toBeInTheDocument();
+    expect(within(dock).getByRole('button', { name: /Gave money/ })).toBeInTheDocument();
+    expect(within(dock).getByRole('button', { name: /Got money/ })).toBeInTheDocument();
 
     scrollPast(false);
     await waitFor(() => expect(screen.queryByTestId('khata-dock')).not.toBeInTheDocument());
@@ -2132,10 +2132,10 @@ describe('the docked You gave / You got pair on a phone', () => {
     scrollPast(true);
 
     const dock = await screen.findByTestId('khata-dock');
-    await user.click(within(dock).getByRole('button', { name: /You got/ }));
+    await user.click(within(dock).getByRole('button', { name: /Got money/ }));
 
     await screen.findByLabelText('Amount');
-    expect(screen.getByRole('radio', { name: /You got/ })).toBeChecked();
+    expect(screen.getByRole('radio', { name: /Got money/ })).toBeChecked();
   });
 
   it('is not offered for an archived party', async () => {

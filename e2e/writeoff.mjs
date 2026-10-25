@@ -10,7 +10,8 @@
  * dialog, the empty and the filled write-off form, and the khata after, at
  * four widths, into $E2E_SHOTS/writeoff.
  */
-import { chromium } from 'playwright';
+import { createRequire } from 'node:module';
+const { chromium } = createRequire(import.meta.url)('playwright');
 import { mkdirSync } from 'node:fs';
 
 const FRONTEND = process.env.E2E_FRONTEND ?? 'http://localhost:3000';
@@ -93,6 +94,8 @@ const SIZES = [
 
 /** Opens the khata, the ⋯ menu, Archive, and confirms — reaching the blocked state. */
 async function reachBlocked(page, partyId) {
+  // The shared person route uses the open app's book; enter Udhaar explicitly.
+  await page.goto(`${FRONTEND}/khata`, { waitUntil: 'networkidle' });
   await page.goto(`${FRONTEND}/parties/${partyId}`, { waitUntil: 'domcontentloaded', timeout: 180000 });
   await page.getByRole('heading', { name: /Naidu Agency/ }).first().waitFor({ timeout: 90000 });
   await page.waitForTimeout(1200);
@@ -100,7 +103,7 @@ async function reachBlocked(page, partyId) {
   await page.getByRole('button', { name: 'Archive' }).last().click();
   const dialog = page.getByRole('dialog').last();
   await dialog.getByRole('button', { name: 'Archive' }).click();
-  await dialog.getByText(/still owes you/).waitFor({ timeout: 30000 });
+  await dialog.getByText(/still has to give you money/).waitFor({ timeout: 30000 });
   return dialog;
 }
 
@@ -115,7 +118,7 @@ async function writeOff(page, dialog, sizeId) {
 
 const main = async () => {
   const { token, parties } = await seed(1 + (wantShots ? SIZES.length : 0));
-  const browser = await chromium.launch();
+  const browser = await chromium.launch({ executablePath: process.env.CHROME });
 
   // ── Assertions, at a laptop width ────────────────────────────────────────
   {
@@ -148,7 +151,7 @@ const main = async () => {
       JSON.stringify(body));
     record('the server writes it off and archives', answered.status() === 200, `status ${answered.status()}`);
 
-    await page.getByText('This party is archived').waitFor({ timeout: 30000 });
+    await page.getByText('This contact is archived').waitFor({ timeout: 30000 });
     record('the khata says archived', true);
     const detail = await must('GET', `/parties/${parties[0]}`, null, token);
     record('the balance is ₹0', detail.body.data.balance === '0.00' || detail.body.data.party?.balance === '0.00',
@@ -175,7 +178,7 @@ const main = async () => {
       await page.screenshot({ path: `${SHOT_DIR}/${size.id}/1-blocked.png` });
       await writeOff(page, dialog, size.id);
       await dialog.getByRole('button', { name: 'Write off and archive' }).click();
-      await page.getByText('This party is archived').waitFor({ timeout: 30000 });
+      await page.getByText('This contact is archived').waitFor({ timeout: 30000 });
       await page.waitForTimeout(1500);
       await page.screenshot({ path: `${SHOT_DIR}/${size.id}/4-after.png` });
       // Width check: nothing on the page may run past the viewport.

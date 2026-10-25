@@ -45,7 +45,8 @@
  *
  * Exits non-zero on any failure.
  */
-import { chromium } from 'playwright';
+import { createRequire } from 'node:module';
+const { chromium } = createRequire(import.meta.url)('playwright');
 import { mkdirSync, writeFileSync } from 'node:fs';
 
 const FRONTEND = process.env.E2E_FRONTEND ?? 'http://localhost:3000';
@@ -571,7 +572,7 @@ async function checks(browser, token) {
   {
     const beforeTags = (await get('/parties/tags', token)).data.length;
     await openList(page);
-    await page.getByRole('button', { name: /^Add (customer|party)/i }).first().click();
+    await page.getByRole('button', { name: /^Add (customer|party|contact)/i }).first().click();
     await settle(page, 900);
     await page.getByRole('textbox', { name: /^Name/i }).first().fill('Inline Tag Test');
     await page.getByRole('combobox', { name: 'Tags' }).first().click();
@@ -588,10 +589,10 @@ async function checks(browser, token) {
     await settle(page, 500);
     record(
       'Escape closes the tag picker without taking the half-filled form with it',
-      (await page.getByRole('button', { name: 'Save party' }).count()) > 0,
+      (await page.getByRole('button', { name: 'Save contact' }).count()) > 0,
       ''
     );
-    await page.getByRole('button', { name: 'Save party' }).first().click();
+    await page.getByRole('button', { name: 'Save contact' }).first().click();
     await settle(page, 2500);
 
     const after = (await get('/parties/tags', token)).data;
@@ -658,7 +659,7 @@ async function run() {
     );
   }
 
-  const browser = await chromium.launch();
+  const browser = await chromium.launch({ executablePath: process.env.CHROME });
 
   await checks(browser, token);
 

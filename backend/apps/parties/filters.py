@@ -68,7 +68,7 @@ class PartyFilterSet(BaseTenantFilterSet):
     )
     balance = django_filters.ChoiceFilter(
         method="filter_balance",
-        choices=(("owes_me", "They owe me"), ("i_owe", "I owe them"), ("settled", "Settled")),
+        choices=(("due", "Due"), ("owes_me", "They owe me"), ("i_owe", "I owe them"), ("settled", "Settled")),
     )
     status = django_filters.ChoiceFilter(choices=PartyStatus.choices)
     collection = django_filters.ChoiceFilter(
@@ -207,6 +207,14 @@ class PartyFilterSet(BaseTenantFilterSet):
         """
         # DEC-019 — the sign of the book the list reads (`?book=shop` → the Shop's bills).
         field = list_balance_field(self.request)
+        if value == "due":
+            # BP-20: only the main/Udhaar book. The queryset is already scoped to
+            # the signed-in tenant and status before this predicate is applied.
+            if getattr(self.request, "query_params", {}).get("book") == "shop":
+                from django.core.exceptions import ValidationError
+
+                raise ValidationError("Due is only for the Udhaar book")
+            return queryset.exclude(balance=0)
         if value == "owes_me":
             return queryset.filter(**{f"{field}__gt": 0})
         if value == "i_owe":
