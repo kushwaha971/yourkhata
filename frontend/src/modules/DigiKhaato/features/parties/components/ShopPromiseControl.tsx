@@ -24,6 +24,9 @@ import { PROMISE_DATE_FORMAT, PROMISE_HISTORY_DATE_FORMAT } from '../view-model/
 
 import type { ShopPromiseRole } from '../types/shopPromise.types';
 
+// Loaded with dynamic(), so its words come with its own chunk.
+import 'src/i18n/catalogues/shopPromise';
+
 /* The form, its schema and the resolver load when the drawer opens: the
    page is opened to read a balance far more often than to take a promise. */
 const ShopPromiseDrawerLazy = dynamic(
@@ -78,7 +81,7 @@ export function ShopPromiseControl({
           <UbText variant="body-sm" tone="secondary">
             {t('parties.shopPromise.loadFailed')}
           </UbText>
-          <UbButton size="sm" variant="outlineNeutral" onClick={reload}>
+          <UbButton className="ub-hit" size="sm" variant="outlineNeutral" onClick={reload}>
             {t('parties.shopPromise.retry')}
           </UbButton>
         </UbStack>
@@ -107,10 +110,11 @@ export function ShopPromiseControl({
       )}
 
       {load.status === 'ready' && canWrite && (
-        <UbStack direction="row" className="flex-wrap gap-2 pt-1">
+        <UbStack direction="row" className="flex-wrap gap-3 pt-1 sm:gap-2">
           {open ? (
             <>
               <UbButton
+                className="ub-hit"
                 size="sm"
                 variant="secondary"
                 onClick={() => void close('kept')}
@@ -121,6 +125,7 @@ export function ShopPromiseControl({
                 {t('parties.shopPromise.kept')}
               </UbButton>
               <UbButton
+                className="ub-hit"
                 size="sm"
                 variant="outlineNeutral"
                 onClick={() => setDrawer('change')}
@@ -130,6 +135,7 @@ export function ShopPromiseControl({
                 {t('parties.shopPromise.change')}
               </UbButton>
               <UbButton
+                className="ub-hit"
                 size="sm"
                 variant="ghost"
                 onClick={() => void close('cancel')}
@@ -142,6 +148,7 @@ export function ShopPromiseControl({
             </>
           ) : (
             <UbButton
+              className="ub-hit"
               size="sm"
               variant="secondary"
               onClick={() => setDrawer('add')}

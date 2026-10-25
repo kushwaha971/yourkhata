@@ -101,7 +101,16 @@ try {
   const customer = dash.data.top_debtors?.[0];
   const supplier = dash.data.top_creditors?.[0];
   check('the QA Shop has a customer who owes and a supplier it owes', Boolean(customer && supplier), `${customer?.name} / ${supplier?.name}`);
-  const figures = (d) => JSON.stringify([d.data.tiles.to_collect, d.data.tiles.to_pay, d.data.tiles.shop_cash_in_hand]);
+  // Key order is not part of the figure: a cached payload and a fresh one list
+  // the same object's keys differently, so compare the values, sorted.
+  const canon = (v) =>
+    v && typeof v === 'object'
+      ? Array.isArray(v)
+        ? v.map(canon)
+        : Object.fromEntries(Object.keys(v).sort().map((k) => [k, canon(v[k])]))
+      : v;
+  const figures = (d) =>
+    JSON.stringify(canon([d.data.tiles.to_collect, d.data.tiles.to_pay, d.data.tiles.shop_cash_in_hand]));
   const figuresBefore = figures(dash);
   const shopBalance = async (id) => (await api(`/parties/${id}?book=shop`)).data.shop.customer_balance;
 

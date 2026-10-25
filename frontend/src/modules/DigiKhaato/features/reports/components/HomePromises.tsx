@@ -101,7 +101,7 @@ export function HomePromises({
                   <UbButton
                     variant="outlineNeutral"
                     size="sm"
-                    className="shrink-0"
+                    className="ub-hit shrink-0"
                     onClick={() => (supplier ? onPay(promise) : onRemind(promise))}
                     aria-label={t(supplier ? 'homePromise.pay' : 'homePromise.remind', {
                       name: promise.party.name,

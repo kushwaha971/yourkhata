@@ -108,6 +108,8 @@ import settingsGateEn from 'locales/catalogues/settingsGate.en.json';
 import settingsGateHi from 'locales/catalogues/settingsGate.hi.json';
 import shareEn from 'locales/catalogues/share.en.json';
 import shareHi from 'locales/catalogues/share.hi.json';
+import shopPromiseEn from 'locales/catalogues/shopPromise.en.json';
+import shopPromiseHi from 'locales/catalogues/shopPromise.hi.json';
 import shopPromiseFormEn from 'locales/catalogues/shopPromiseForm.en.json';
 import shopPromiseFormHi from 'locales/catalogues/shopPromiseForm.hi.json';
 import stockEn from 'locales/catalogues/stock.en.json';
@@ -189,6 +191,7 @@ export const en: Readonly<Record<string, string>> = {
   ...settingsEn,
   ...settingsGateEn,
   ...shareEn,
+  ...shopPromiseEn,
   ...shopPromiseFormEn,
   ...stockEn,
   ...taxReportsEn,
@@ -252,6 +255,7 @@ export const hi: Readonly<Record<string, string>> = {
   ...settingsHi,
   ...settingsGateHi,
   ...shareHi,
+  ...shopPromiseHi,
   ...shopPromiseFormHi,
   ...stockHi,
   ...taxReportsHi,

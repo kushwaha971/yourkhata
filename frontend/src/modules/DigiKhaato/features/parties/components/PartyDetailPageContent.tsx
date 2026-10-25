@@ -49,7 +49,6 @@ import { PartyInfoPanel } from './PartyInfoPanel';
 import { PartyModulePanels } from './PartyModulePanels';
 import { ShopPersonActions } from './ShopPersonActions';
 import { ShopPersonOverview } from './ShopPersonOverview';
-import { ShopPromiseControl } from './ShopPromiseControl';
 
 import type { PartyDetail } from '../types/party.types';
 
@@ -154,6 +153,15 @@ const PartyReminderStripLazy = /* @__PURE__ */ dynamic(() =>
   import('modules/DigiKhaato/features/reminders/components/PartyReminderStrip').then(
     (m) => m.PartyReminderStrip
   )
+);
+
+/* BP-16 — the Shop promise card, in its own chunk with its words: it reads
+   its own record after the page has painted, and its 27 strings in two
+   languages cost the read screen 4 KB when carried statically. */
+const ShopPromiseControlLazy = /* @__PURE__ */ dynamic(
+  () => import('./ShopPromiseControl').then((m) => m.ShopPromiseControl),
+  // Holds the card's place so the page does not jump when it arrives.
+  { loading: () => <UbSkeleton className="h-28 w-full rounded-card sm:max-w-sm" /> }
 );
 
 const PartyArchiveDialogLazy = /* @__PURE__ */ dynamic(() =>
@@ -595,7 +603,7 @@ export function PartyDetailPageContent({
               {/* BP-16 — the Shop's own promise, per role. The Udhaar book's
                   collection date is that book's, and is not shown here (DEC-019). */}
               {party && (
-                <ShopPromiseControl
+                <ShopPromiseControlLazy
                   key={supplierView ? 'supplier' : 'customer'}
                   partyId={id}
                   role={supplierView ? 'supplier' : 'customer'}
