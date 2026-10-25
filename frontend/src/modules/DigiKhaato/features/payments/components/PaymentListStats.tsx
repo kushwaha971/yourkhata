@@ -10,10 +10,20 @@ import type { PaymentTotals } from '../types/payment.types';
  * payments are not counted; that money did not move. Money in is green, money
  * out plain ink, as in the rows.
  */
+const NONE: PaymentTotals = {
+  count: 0,
+  countIn: 0,
+  countOut: 0,
+  amountIn: '0.00',
+  amountOut: '0.00',
+};
+
 export function PaymentListStats({
-  totals,
-}: Readonly<{ totals: PaymentTotals }>): React.JSX.Element {
+  totals: given,
+  loading = false,
+}: Readonly<{ totals: PaymentTotals | null; loading?: boolean }>): React.JSX.Element {
   const { t } = useTranslation();
+  const totals = given ?? NONE;
   return (
     <RecordTotals
       compactShort
@@ -22,6 +32,7 @@ export function PaymentListStats({
       count={totals.countIn + totals.countOut}
       countLabel={t('payments.list.countWord')}
       testId="payment-register-summary"
+      loading={loading && !given}
       figures={[
         {
           key: 'in',

@@ -434,7 +434,12 @@ export function InvoicesListPageContent(): React.JSX.Element {
               ariaLabel={t('sales.tab.label')}
               className="flex-nowrap overflow-x-auto py-1.5 [&>button]:shrink-0"
             />
-            {totals && <InvoiceListStats totals={totals} />}
+            {(totals || list.status === 'loading' || list.status === 'idle') && (
+              <InvoiceListStats
+                totals={totals}
+                loading={list.status === 'loading' || list.status === 'idle'}
+              />
+            )}
             {grid}
           </>
         )}

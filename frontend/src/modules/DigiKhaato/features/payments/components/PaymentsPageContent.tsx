@@ -434,9 +434,13 @@ export function PaymentsPageContent(): React.JSX.Element {
             />
             {/* Cancelled payments are never counted, so their tab has no totals:
                 "Received · 0 payments ₹0.00" over a list of them read as a fault. */}
-            {totals && list.rows.length > 0 && filters.tab !== 'void' && (
-              <PaymentListStats totals={totals} />
-            )}
+            {(totals || list.status === 'loading' || list.status === 'idle') &&
+              filters.tab !== 'void' && (
+                <PaymentListStats
+                  totals={totals}
+                  loading={list.status === 'loading' || list.status === 'idle'}
+                />
+              )}
             {grid}
           </>
         )}

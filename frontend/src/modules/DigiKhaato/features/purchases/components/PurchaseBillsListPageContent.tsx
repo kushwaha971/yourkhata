@@ -310,9 +310,17 @@ export function PurchaseBillsListPageContent({
         className="self-start"
       />
     ) : null;
-  const stats = list.totals ? (
-    <PurchaseBillListStats totals={list.totals} order={order} kind={kind} />
-  ) : null;
+  // The line stays while a search runs (owner, 25 Oct 2026): a shimmer, not a gap.
+  const totalsLoading = list.status === 'loading' || list.status === 'idle';
+  const stats =
+    list.totals || totalsLoading ? (
+      <PurchaseBillListStats
+        totals={list.totals}
+        order={order}
+        kind={kind}
+        loading={totalsLoading}
+      />
+    ) : null;
   const grid = (
     <UbDataGrid
       rows={list.rows}

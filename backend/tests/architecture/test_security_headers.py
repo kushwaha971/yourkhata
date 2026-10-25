@@ -56,6 +56,17 @@ def test_an_error_response_carries_them_too(anonymous_client: Any) -> None:
     assert "Content-Security-Policy" in response
 
 
+@pytest.mark.django_db
+def test_an_api_answer_is_never_kept_by_a_browser_or_a_proxy(anonymous_client: Any) -> None:
+    """A business's figures carried no caching header, so a browser, a carrier
+    proxy or a hosting edge was free to replay an old copy — a balance that only
+    a refresh corrected (owner, 25 Oct 2026). Every API answer says no-store
+    unless its view chose otherwise."""
+    for name in ("v1:party-list", "health"):
+        response = anonymous_client.get(reverse(name))
+        assert "no-store" in response["Cache-Control"], name
+
+
 def _prod(code: str) -> subprocess.CompletedProcess:
     import tempfile
 

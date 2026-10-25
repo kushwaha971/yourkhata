@@ -6,8 +6,9 @@
  * rows answered from a cache, an export frozen in time. The worker itself is
  * plain script; its one decision is a pure function, tested without a browser.
  */
-const { strategyFor } = require('../../public/sw.js') as {
+const { strategyFor, pageFrom } = require('../../public/sw.js') as {
   strategyFor: (request: { method: string; url: string; mode?: string }, origin: string) => string;
+  pageFrom: (network: Promise<unknown>, saved: () => Promise<unknown>) => Promise<unknown>;
 };
 
 const ORIGIN = 'https://yourkhata.com';
@@ -47,5 +48,31 @@ describe('what the service worker does with each request', () => {
 
   it('leaves another site’s page loads and files alone', () => {
     expect(strategyFor(get('https://fonts.example.com/_next/static/x.js'), ORIGIN)).toBe('network');
+  });
+});
+
+describe('a page load on a slow connection', () => {
+  /**
+   * The worker raced the network against three seconds and, losing, answered
+   * with the saved copy of the page — or the last saved copy of ANY page. On a
+   * slow but working connection that put an old page on screen while the real
+   * one was arriving: the owner's "Home is only a skeleton until I refresh"
+   * (25 Oct 2026). A saved copy is for no signal, never for a slow one.
+   */
+  it('waits for the network however long it takes', async () => {
+    jest.useFakeTimers();
+    const fresh = { from: 'network' };
+    const network = new Promise((resolve) => setTimeout(() => resolve(fresh), 8000));
+    const saved = jest.fn(async () => ({ from: 'saved' }));
+    const answer = pageFrom(network, saved);
+    jest.advanceTimersByTime(8000);
+    await expect(answer).resolves.toBe(fresh);
+    expect(saved).not.toHaveBeenCalled();
+    jest.useRealTimers();
+  });
+
+  it('opens the saved copy only when the network fails', async () => {
+    const copy = { from: 'saved' };
+    await expect(pageFrom(Promise.reject(new TypeError('offline')), async () => copy)).resolves.toBe(copy);
   });
 });

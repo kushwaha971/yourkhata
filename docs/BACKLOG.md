@@ -25,7 +25,9 @@ is on `dev`. Items 1–3 are built and checked on branch `backlog/shop-ui-2026-1
 | 3 | Table header not rounded, extra line under the table | Register frame was `overflow-visible`; pager `border-t` drew a second rule | Built on the branch (`overflow-clip`, no pager rule). Checked live on Customers and Suppliers. |
 | 4 | While searching, the count and totals row between the chips and the table disappears and the table jumps | Not investigated yet | Keep the row in place with a loading look; show zeros when there is nothing. Not started. |
 
-Comes back when the owner confirms after their Shop testing.
+Comes back when the owner confirms after their Shop testing. **Brought back on
+25 Oct 2026** (the owner said go): all four are on `dev`, and their status is
+tracked in `docs/FEEDBACK.md` (FB-004 to FB-007) from now on.
 
 ---
 
