@@ -81,7 +81,24 @@ record that can be undone as one.
 
 ## Performance
 
-PERF_TABLE
+`data/2026-10-25-shop-settlement/ssab.sh` and `ssperf.mjs`: c4f37e1 (old,
+worktree, the commit before any settlement code) against this build, four
+alternating rounds, six opens per page per viewport per round, 4x CPU throttle,
+QA book (which has nobody in both lists, so Home makes the candidates request
+and draws no note). The person page is timed to its balance drawn, Home to its
+cash figure drawn. n = 24 per cell.
+
+| | old median (range) | new median (range) | |
+|---|---|---|---|
+| Person page, phone 390 | 1,323 ms (1,189–1,550) | 1,314 ms (1,189–1,599) | level (−0.6%, slower in 2 of 4 rounds) |
+| Person page, desktop 1280 | 1,499 ms (1,191–1,729) | 1,506 ms (1,254–1,904) | level (+0.5%, slower in 3 of 4) |
+| Home, phone 390 | 969 ms (865–2,155) | 986 ms (875–2,195) | level (+1.7%, slower in 2 of 4) |
+| Home, desktop 1280 | 1,048 ms (802–1,999) | 1,020 ms (874–2,112) | level (−2.7%, slower in 1 of 4) |
+
+Recorded as level: every difference is under 3% and changes direction between
+rounds. Home makes one more request (the candidates), off the path to the
+figure measured; a shop with someone in both lists also loads the note's chunk,
+which this book does not exercise, so that case is unmeasured.
 
 ## Competitor comparison
 
@@ -96,7 +113,7 @@ and nothing here claims an advantage.
 | `apps/payments` + `apps/reports` | all pass except `test_shop_aging_does_not_expose_udhaar_promise_or_limit[csv]`, which predates this piece |
 | Backend suite (whole) | 2 known failures that predate this piece (that one and `test_five_thousand_schedules_run_under_a_minute`) |
 | Frontend unit tests (payments, reports, parties) | 72 suites, 688 tests passed |
-| `npx jest` (whole frontend) | FULL_JEST |
+| `npx jest` (whole frontend) | 436 suites, 4,830 tests passed |
 | `npm run type-check`, `npx eslint` | clean |
 | `npm run i18n:split && npm run i18n:check` | pass |
 | `npm run build` + `npm run bundle:check` | pass (deviation 6) |
