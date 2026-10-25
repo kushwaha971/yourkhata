@@ -110,7 +110,7 @@ export function ShopPromiseControl({
       )}
 
       {load.status === 'ready' && canWrite && (
-        <UbStack direction="row" className="flex-wrap gap-3 pt-1 sm:gap-2">
+        <UbStack direction="row" className="flex-wrap gap-x-3 gap-y-4 pt-1 sm:gap-2">
           {open ? (
             <>
               <UbButton

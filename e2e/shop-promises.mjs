@@ -74,6 +74,8 @@ const measure = (scope) => {
 /** Every button in a scope: does the finger land on it at the centre and ±21 px? */
 const targets = (scope) =>
   [...(document.querySelector(scope)?.querySelectorAll('button') ?? [])].map((el) => {
+    // elementFromPoint sees only the viewport: bring the control into it first.
+    el.scrollIntoView({ block: 'center' });
     const r = el.getBoundingClientRect();
     const x = r.left + r.width / 2;
     const y = r.top + r.height / 2;
@@ -271,7 +273,8 @@ try {
   const toast = await page.getByText('Promise kept. Record any money received as a payment.').count();
   check('Promise kept says to record the payment separately', toast > 0);
   rows = (await api(`/parties/${customer.id}/shop-promises?role=customer`)).data;
-  check('a double tap closes it once, as kept', rows[0].state === 'kept' && rows.filter((r) => r.state === 'kept' && r.version === 3).length === 1, JSON.stringify(rows.slice(0, 2).map((r) => [r.state, r.version])));
+  // Earlier runs leave their own kept promises in the history; count only this one.
+  check('a double tap closes it once, as kept', rows[0].state === 'kept' && rows[0].version === 3 && rows.filter((r) => r.state === 'open').length === 0 && rows[0].id === open[0].id, JSON.stringify(rows.slice(0, 2).map((r) => [r.state, r.version, r.id.slice(0, 8)])));
   await page.getByRole('button', { name: 'Earlier promises' }).click();
   check('the page keeps it as history', (await page.getByTestId('shop-promise-history').innerText()).includes('Kept'));
   if (SHOTS) await page.screenshot({ path: `${SHOTS}/person-kept-390.png`, fullPage: true });
