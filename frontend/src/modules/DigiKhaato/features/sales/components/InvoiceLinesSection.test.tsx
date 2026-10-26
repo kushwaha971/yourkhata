@@ -1,4 +1,4 @@
-import { screen } from '@testing-library/react';
+import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { useForm } from 'react-hook-form';
 
@@ -61,9 +61,8 @@ describe('finding a line on a long bill', () => {
     await user.click(await screen.findByRole('combobox', { name: 'Find a line on this bill' }));
     await user.keyboard('syska');
     await user.click(await screen.findByRole('option', { name: /Syska bulb 9W/ }));
-    const cell = document.activeElement?.closest('[data-line-cell]');
-    expect(cell).toHaveAttribute('data-row', '8');
-    expect(cell).toHaveAttribute('data-col', '1');
+    // On a phone the found line opens in its sheet with the caret on Qty.
+    await waitFor(() => expect(document.activeElement?.id).toBe('lines.8.qty'));
   });
 
   it('names each line with its number and quantity, so two of one item are told apart', async () => {

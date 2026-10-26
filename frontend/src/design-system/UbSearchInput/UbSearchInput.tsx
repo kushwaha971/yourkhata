@@ -1,6 +1,6 @@
 'use client';
 
-import { forwardRef, memo, type InputHTMLAttributes } from 'react';
+import { forwardRef, memo, type InputHTMLAttributes, type ReactNode } from 'react';
 
 import { Search } from 'lucide-react';
 
@@ -19,10 +19,12 @@ export interface UbSearchInputProps extends Omit<
   readonly value: string;
   readonly onChange: (value: string) => void;
   readonly className?: string;
+  /** Shown at the end of the box, e.g. the bill search's "Scanner ready · F2". */
+  readonly trailing?: ReactNode;
 }
 
 const UbSearchInputInner = forwardRef<HTMLInputElement, UbSearchInputProps>(
-  function UbSearchInputInner({ value, onChange, className, ...rest }, ref) {
+  function UbSearchInputInner({ value, onChange, className, trailing, ...rest }, ref) {
     return (
       <div
         className={cn(
@@ -41,6 +43,7 @@ const UbSearchInputInner = forwardRef<HTMLInputElement, UbSearchInputProps>(
           className="ds-body-base-regular h-full min-w-0 flex-1 bg-transparent text-text-primary outline-none placeholder:text-text-muted [&::-webkit-search-cancel-button]:hidden"
           {...rest}
         />
+        {trailing}
       </div>
     );
   }

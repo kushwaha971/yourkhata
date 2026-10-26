@@ -47,3 +47,26 @@ describe('discountsInRange', () => {
     );
   });
 });
+
+/**
+ * FB-020 — a quantity and rate of 99999999 were autosaved and the server kept
+ * a ₹880-quadrillion draft; now the server refuses such a line, so the
+ * autosave must wait instead of sending a refused save every 3 s.
+ */
+describe('line limits in the autosave guard', () => {
+  const bill = () => emptyInvoiceForm('2026-10-26', 'walkIn', '27');
+  const withLine = (qty: string, unitPrice: string) => ({
+    ...bill(),
+    lines: [{ ...emptyLine(), itemId: 'i1', description: 'Atta', qty, unitPrice }],
+  });
+
+  it('waits on a quantity, rate or line amount over the limit', () => {
+    expect(discountsInRange(withLine('1000000', '1'), '0')).toBe(false);
+    expect(discountsInRange(withLine('1', '100000000'), '0')).toBe(false);
+    expect(discountsInRange(withLine('500000', '1000'), '0')).toBe(false);
+  });
+
+  it('lets an ordinary large line through', () => {
+    expect(discountsInRange(withLine('999999', '99'), '98999901')).toBe(true);
+  });
+});

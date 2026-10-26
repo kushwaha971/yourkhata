@@ -398,3 +398,16 @@ code-splitting only. Build order: words first (small, unblocks Shop wording),
 then features and menu with F0. Gates: preset table, all-off pixel and query
 parity, per-key drop/ignore tests, and an architecture test that no client
 file outside `useFeature`/`useAppWords`/`useNavigation` reads `business_type`.
+
+## BP-23 · Sanity limits on a bill line (FB-020)
+
+Requested by the owner with A4 on 26 Oct 2026 ("including FB-020's quantity
+limits"). A quantity and rate of 99999999 were accepted and a draft saved with a
+grand total of ₹8,79,99,99,99,99,99,99,900.00; the only ceiling was the
+column's. One owner, `apps/common/limits.py`, used by sales and purchase lines:
+quantity up to 9,99,999.999, rate up to ₹9,99,99,999.99, and quantity × rate up
+to ₹9,99,99,999.99, each refused with a message naming the field. The client
+holds the same numbers. Values are generous defaults for a small business,
+changeable in one place; the owner is asked to confirm them in the A4 report.
+Tests: `apps/sales/tests/test_line_limits.py`, `apps/purchases/tests/test_line_limits.py`
+(fail without the limits).

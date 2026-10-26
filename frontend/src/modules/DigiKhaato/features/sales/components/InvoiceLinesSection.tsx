@@ -1,34 +1,26 @@
 'use client';
 
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import dynamic from 'next/dynamic';
 
+import { ScanLine } from 'lucide-react';
 import { useFieldArray, type UseFormReturn } from 'react-hook-form';
 
-import {
-  UbBox,
-  UbCheckbox,
-  UbLineItemsEditor,
-  UbMoneyInput,
-  UbQuantityInput,
-  UbSelect,
-  UbStack,
-  UbText,
-  type UbLineItemsColumn,
-} from 'src/design-system';
+import { UbBox, UbStack, UbText, useIsMobileLayer } from 'src/design-system';
+import type { UbLineFocusRequest } from 'src/design-system';
 import { useTranslation } from 'src/hooks/useTranslation';
-import { formatAmount, formatInr } from 'src/utils/money';
+import { formatInr } from 'src/utils/money';
 import { exceedsQuantity, formatQuantity } from 'src/utils/quantity';
 
 import { getPartyRates } from '../../inventory/api/priceListService';
-import { CounterLineSummary } from '../../inventory/components/CounterLineSummary';
-import { ItemLineCell } from '../../inventory/components/ItemLineCell';
 import { ItemQuickAdd } from '../../inventory/components/ItemQuickAdd';
 import { LastRateNote } from '../../inventory/components/LastRateNote';
 import { LINE_FINDER_FROM, useLineQuickAdd } from '../../inventory/hooks/useLineQuickAdd';
-import { emptyLine, ratePlaces, type InvoiceFormValues } from '../view-model/invoiceForm';
+import { emptyLine, type InvoiceFormValues } from '../view-model/invoiceForm';
 import { itemLineDefaults } from '../view-model/itemLineDefaults';
+
+import { InvoiceLineList, InvoiceLineTable } from './InvoiceLineEditor';
 
 import type { ItemListRow } from '../../inventory/types/item.types';
 import type { EngineResult } from '../view-model/taxEngine';
@@ -57,14 +49,14 @@ export function InvoiceLinesSection({
   rateOptions,
   taxFree,
   disabled,
-  onSubmitShortcut,
 }: Readonly<{
   form: UseFormReturn<InvoiceFormValues>;
   preview: EngineResult;
   rateOptions: readonly { code: string; name: string }[];
   taxFree: boolean;
   disabled: boolean;
-  onSubmitShortcut: () => void;
+  /** Ctrl+Enter is handled page-wide (useDocumentEditorWindowEffects); kept for callers. */
+  onSubmitShortcut?: () => void;
 }>): React.JSX.Element {
   const { t } = useTranslation();
   const { control, watch, setValue, getValues, trigger } = form;
@@ -132,6 +124,10 @@ export function InvoiceLinesSection({
    * or a new one, through the same `pick` a line's own cell uses, then asks the
    * grid for that line's Qty: "Add item" first cost one tap per item.
    */
+  /* On a phone only a line FOUND opens its sheet; a pick from the search keeps
+     the list in view (design §A4 pBillItems). */
+  const findPending = useRef(false);
+  const [openRequest, setOpenRequest] = useState<UbLineFocusRequest | null>(null);
   const { quickAdd, focusRequest, lineOptions, findLine } = useLineQuickAdd({
     lines,
     readLines: () => getValues('lines') ?? [],
@@ -145,6 +141,11 @@ export function InvoiceLinesSection({
     lineLabel: (n) => t('sales.line.label', { n }),
     disabled,
   });
+  useEffect(() => {
+    if (!focusRequest || !findPending.current) return;
+    findPending.current = false;
+    setOpenRequest(focusRequest);
+  }, [focusRequest]);
 
   const quickAddLabels = useMemo(
     () => ({
@@ -162,148 +163,6 @@ export function InvoiceLinesSection({
   const taxOptions = useMemo(
     () => rateOptions.map((r) => ({ value: r.code, label: r.name })),
     [rateOptions]
-  );
-
-  const columns = useMemo<UbLineItemsColumn[]>(
-    () => [
-      {
-        id: 'item',
-        header: t('sales.line.item'),
-        field: 'itemId',
-        track: 'minmax(9rem,2.6fr)',
-        card: 'title',
-        render: ({ index, id, label, invalid, focusNext }) => (
-          <ItemLineCell
-            id={id}
-            label={label}
-            invalid={invalid}
-            wrapLabel
-            line={lines?.[index]}
-            disabled={disabled}
-            placeholder={t('sales.line.itemPlaceholder')}
-            emptyLabel={t('sales.line.itemEmpty')}
-            onPick={(row) => pick(index, row)}
-            focusNext={focusNext}
-          />
-        ),
-      },
-      {
-        id: 'qty',
-        header: t('sales.line.qty'),
-        field: 'qty',
-        track: 'minmax(9rem,1fr)',
-        align: 'end',
-        render: ({ field, id, label, invalid, index }) => (
-          <UbQuantityInput
-            id={id}
-            aria-label={label}
-            value={(field?.value as string) ?? ''}
-            onChange={(next) => field?.onChange(next)}
-            decimals={lines?.[index]?.allowDecimal === false ? 0 : 3}
-            unit={lines?.[index]?.unitCode || undefined}
-            invalid={invalid}
-          />
-        ),
-      },
-      {
-        id: 'rate',
-        header: t('sales.line.rate'),
-        field: 'unitPrice',
-        track: 'minmax(9.5rem,1.3fr)',
-        align: 'end',
-        render: ({ field, id, label, invalid, index }) => (
-          <UbStack gap={1}>
-            <UbMoneyInput
-              id={id}
-              aria-label={label}
-              value={(field?.value as string) ?? ''}
-              onChange={(next) => field?.onChange(next)}
-              decimalPlaces={ratePlaces((field?.value as string) ?? '')}
-              invalid={invalid}
-              placeholder={t('sales.line.ratePlaceholder')}
-            />
-            {!taxFree && (
-              <UbCheckbox
-                checked={lines?.[index]?.taxInclusive ?? false}
-                onChange={(checked) =>
-                  setValue(`lines.${index}.taxInclusive`, checked, { shouldDirty: true })
-                }
-                label={t('sales.line.inclusive')}
-              />
-            )}
-          </UbStack>
-        ),
-      },
-      {
-        id: 'discount',
-        header: t('sales.line.discountPct'),
-        field: 'discountValue',
-        track: 'minmax(4.5rem,0.9fr)',
-        align: 'end',
-        render: ({ field, id, label, index, invalid }) => (
-          <UbMoneyInput
-            id={id}
-            aria-label={label}
-            value={(field?.value as string) ?? ''}
-            currencySymbol="%"
-            decimalPlaces={2}
-            invalid={invalid}
-            onChange={(next) => {
-              field?.onChange(next);
-              setValue(`lines.${index}.discountType`, next ? 'percent' : '', { shouldDirty: true });
-              // QA B8 — "150 %" is refused under the cell as it is typed, not at Issue.
-              void trigger(`lines.${index}.discountValue`);
-            }}
-            placeholder="0"
-          />
-        ),
-      },
-      ...(taxFree
-        ? []
-        : [
-            {
-              id: 'tax',
-              header: t('sales.line.gst'),
-              field: 'taxCode',
-              track: 'minmax(6rem,1fr)',
-              render: ({ field, id, label }) => (
-                <UbSelect
-                  id={id}
-                  aria-label={label}
-                  value={(field?.value as string) ?? ''}
-                  options={taxOptions}
-                  onChange={(next) => field?.onChange(next)}
-                  disabled={disabled}
-                />
-              ),
-            } satisfies UbLineItemsColumn,
-          ]),
-      {
-        id: 'total',
-        header: t('sales.line.total'),
-        track: 'minmax(5.5rem,1fr)',
-        align: 'end',
-        // QA S-D8 — a phone card's total stands alone, so it carries its ₹; the
-        // table's column header already says what the figures are.
-        render: ({ index, layout }) => (
-          <UbStack gap={0} className="items-end">
-            <UbText as="span" variant="body-sm" className="ds-num leading-10">
-              {(layout === 'card' ? formatInr : formatAmount)(
-                preview.lines[index]?.lineTotal ?? '0'
-              )}
-            </UbText>
-            {!taxFree && (
-              <UbText as="span" variant="caption" tone="tertiary" className="ds-num">
-                {t('sales.line.taxable', {
-                  amount: formatAmount(preview.lines[index]?.taxableValue ?? '0'),
-                })}
-              </UbText>
-            )}
-          </UbStack>
-        ),
-      },
-    ],
-    [t, lines, disabled, pick, taxFree, taxOptions, preview, setValue, trigger]
   );
 
   const stockWarning = useCallback(
@@ -375,14 +234,58 @@ export function InvoiceLinesSection({
     [lines, partyId, partyName, setValue, listed, usual, stockWarning, t]
   );
 
+  const wide = !useIsMobileLayer();
+  // Design §A4: the phone's bar reads "Search item or scan"; the desktop's row
+  // one reads "Search or scan item" and says a USB scanner can type into it,
+  // with F2 to come back to it from anywhere on the bill.
+  const search = wide ? (
+    <ItemQuickAdd
+      labels={{ ...quickAddLabels, placeholder: t('sales.line.quickAdd.placeholderDesk') }}
+      onPick={quickAdd}
+      disabled={disabled}
+      hotkey="F2"
+      trailing={
+        <UbStack direction="row" gap={2} align="center" className="shrink-0" aria-hidden>
+          <ScanLine className="h-4 w-4 text-text-tertiary" />
+          <UbText as="span" className="ds-body-s-regular text-text-tertiary">
+            {t('sales.line.quickAdd.scannerReady')}
+          </UbText>
+          <UbText
+            as="span"
+            className="rounded-[5px] border border-border-hairline bg-surface-sunken px-1.5 text-[11px] font-semibold text-text-secondary"
+          >
+            F2
+          </UbText>
+        </UbStack>
+      }
+    />
+  ) : (
+    <ItemQuickAdd labels={quickAddLabels} onPick={quickAdd} disabled={disabled} />
+  );
+  const hasItems = (lines ?? []).some((line) => line.itemId || line.description);
+  const editor = {
+    form,
+    lines: lines ?? [],
+    preview,
+    taxOptions,
+    taxFree,
+    disabled,
+    remove: (index: number) => fieldArray.remove(index),
+    renderLineNote,
+    t,
+  };
+
   return (
     <UbStack gap={3}>
-      <ItemQuickAdd labels={quickAddLabels} onPick={quickAdd} disabled={disabled} />
+      {!wide && search}
       {lineOptions.length >= LINE_FINDER_FROM && (
         <UbBox data-testid="invoice-line-finder">
           <LineFinder
             options={lineOptions}
-            onFind={findLine}
+            onFind={(value) => {
+              findPending.current = true;
+              findLine(value);
+            }}
             labels={{
               label: t('sales.line.find'),
               search: t('sales.line.findSearch'),
@@ -391,43 +294,24 @@ export function InvoiceLinesSection({
           />
         </UbBox>
       )}
-      <UbLineItemsEditor<InvoiceFormValues, 'lines'>
-        focusRequest={focusRequest}
-        tableFrom={1536}
-        tableWhen="fits"
-        control={control}
-        name="lines"
-        fieldArray={fieldArray}
-        columns={columns}
-        newLine={emptyLine}
-        maxLines={MAX_LINES}
-        disabled={disabled}
-        onSubmitShortcut={onSubmitShortcut}
-        renderLineNote={renderLineNote}
-        renderCardSummary={(index, expanded) => {
-          const line = lines?.[index];
-          return (
-            <CounterLineSummary
-              name={line?.description || t('sales.line.itemPlaceholder')}
-              quantity={line?.qty || '0'}
-              unit={line?.unitCode || ''}
-              unitAmount={line?.unitPrice || '0'}
-              total={preview.lines[index]?.lineTotal ?? '0'}
-              discountType={line?.discountType}
-              discountValue={line?.discountValue}
-            >
-              {!expanded && stockWarning(index)}
-            </CounterLineSummary>
-          );
-        }}
-        labels={{
-          addLine: t('sales.line.add'),
-          removeLine: (n) => t('sales.line.remove', { n }),
-          lineLabel: (n) => t('sales.line.label', { n }),
-          empty: t('sales.line.empty'),
-          maxReached: t('sales.line.max'),
-        }}
-      />
+      {wide ? (
+        <InvoiceLineTable {...editor} search={search} focusRequest={focusRequest} />
+      ) : hasItems ? (
+        <InvoiceLineList {...editor} openRequest={openRequest} />
+      ) : (
+        // Design §A4 pBillEmpty: an empty bill says how to begin.
+        <UbStack
+          gap={2}
+          data-testid="invoice-lines-empty"
+          className="items-center rounded-card border border-border-hairline bg-surface-card px-5 py-7 text-center"
+        >
+          <ScanLine aria-hidden className="h-7 w-7 text-text-accent" />
+          <UbText className="ds-body-s-semibold">{t('sales.line.noneYet')}</UbText>
+          <UbText variant="caption" tone="tertiary" className="text-[0.8125rem]">
+            {t('sales.line.noneYetHint')}
+          </UbText>
+        </UbStack>
+      )}
     </UbStack>
   );
 }

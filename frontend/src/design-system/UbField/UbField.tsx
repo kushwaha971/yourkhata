@@ -80,6 +80,12 @@ export interface UbFieldProps {
   /** Hides the label visually; it stays in the accessible name. */
   readonly labelHidden?: boolean;
   /**
+   * `false` holds no space under the control until there is a message — for a
+   * field inside a table row (a bill line, A4), where the reserved line lifted
+   * the input above the row's text. A form keeps the default `true`.
+   */
+  readonly reserveError?: boolean;
+  /**
    * The control renders its OWN `<label>` — `UbSwitch` and `UbCheckbox` both
    * do, because their label is part of their layout rather than above them.
    *
@@ -104,6 +110,7 @@ export function UbField({
   required,
   optionalLabel,
   labelHidden,
+  reserveError = true,
   controlOwnsLabel,
   children,
   className,
@@ -166,10 +173,12 @@ export function UbField({
        * before there is anything in it and nothing moves when there is. A field
        * that never shows a message pays 20px of deliberate space; a form that
        * jumps on validation costs more than that. */}
-      <div className="min-h-5">
-        {hint && !error && <UbInputHint id={`${name}-hint`}>{hint}</UbInputHint>}
-        {error && <UbFieldError id={`${name}-error`}>{error}</UbFieldError>}
-      </div>
+      {(reserveError || error || hint) && (
+        <div className={cn(reserveError && 'min-h-5')}>
+          {hint && !error && <UbInputHint id={`${name}-hint`}>{hint}</UbInputHint>}
+          {error && <UbFieldError id={`${name}-error`}>{error}</UbFieldError>}
+        </div>
+      )}
     </div>
   );
 }

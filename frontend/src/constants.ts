@@ -113,6 +113,15 @@ export const LANDING_HIDDEN_MODULES: readonly string[] = (
 export const MAX_AMOUNT = '99999999.99';
 export const MAX_QTY = '9999999.999';
 
+/**
+ * FB-020 — sanity limits on one bill line, the same numbers as the server's
+ * `apps/common/limits.py`. The columns hold far more; these refuse only the
+ * absurd (a quantity and rate of 99999999 saved a ₹880-quadrillion draft).
+ */
+export const LINE_QTY_LIMIT = '999999.999';
+export const LINE_RATE_LIMIT = '99999999.99';
+export const LINE_AMOUNT_LIMIT = '99999999.99';
+
 export const SEARCH_DEBOUNCE_MS = 300;
 export const AUTOSAVE_DEBOUNCE_MS = 500;
 

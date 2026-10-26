@@ -43,6 +43,7 @@ it('keeps edits made during an in-flight save dirty and saves them next', async 
         values,
         save,
         kind: 'invoice',
+        preview: { subtotal: '0.00' },
         editor: { documentId: 'draft-id', version: 1, loadStatus: 'succeeded', saveState: 'idle' },
       } as unknown as UseInvoiceEditorResult,
       'draft-id'
@@ -82,6 +83,7 @@ it('requires review before restoring a device copy based on an older server vers
         values,
         save: jest.fn(),
         kind: 'invoice',
+        preview: { subtotal: '0.00' },
         editor: {
           documentId: 'draft-id',
           version: 2,

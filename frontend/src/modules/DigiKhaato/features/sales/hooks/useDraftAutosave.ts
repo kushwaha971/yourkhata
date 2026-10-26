@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { useSearchParams } from 'next/navigation';
 
+import { LINE_AMOUNT_LIMIT, LINE_QTY_LIMIT, LINE_RATE_LIMIT } from 'src/constants';
 import { useAppDispatch, useAppSelector } from 'src/hooks/useAppStore';
 import { selectNetworkImpaired } from 'src/redux/slice/networkSlice';
 import { selectActiveTenant, selectSessionUser } from 'src/redux/slice/sessionSlice';
@@ -57,7 +58,17 @@ const overLimit = (type: string, value: string, base: number): boolean => {
   return n < 0 || (type === 'percent' ? n > 100 : n > base);
 };
 
+/** FB-020 — a line over the quantity, rate or amount limit would only be refused (400). */
+const lineOverLimit = (qty: string, rate: string): boolean => {
+  const q = Number(qty || 0);
+  const r = Number(rate || 0);
+  return (
+    q > Number(LINE_QTY_LIMIT) || r > Number(LINE_RATE_LIMIT) || q * r > Number(LINE_AMOUNT_LIMIT)
+  );
+};
+
 export const discountsInRange = (values: InvoiceFormValues, subtotal?: string): boolean =>
+  (values.lines ?? []).every((line) => !lineOverLimit(line.qty ?? '', line.unitPrice ?? '')) &&
   (values.lines ?? []).every(
     (line) =>
       !overLimit(

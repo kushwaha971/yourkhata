@@ -1,5 +1,6 @@
 {
   "//": [
+    "26 Oct 2026, A4 adding items to a bill (FB-014) and line limits (FB-020): the phone line list, desktop edit table, quantity stepper and F2 search hint ship in the sales editor chunks, which stayed inside their limits. UbSearchInput gained a trailing slot and UbField an option not to hold an error row; both are shared, and eight limits were over by 0.0-0.1 KB, two on routes with no bill code (/reset-password, /d/[token]); cause inferred from the shared components, not traced. Those eight use measured + 0.3 KB: /sales/challans, /sales/orders and /sales/invoices/[id] first load 329.5, /sales/credit-notes/new route 152.2, /onboarding/step/[n] first load 336.1, /reset-password route 52.9, /d/[token] route 41.5, /items/price-lists/[id] first load 341.5.",
     "26 Oct 2026, A3 saved customer box (FB-013) and its defects: measured against a build of 878994475 (0 overruns). Shared app 115.0 -> 115.1 KB gz: the checkbox/switch click guard every route carries (fixes a React flushSync warning). Bill, order, estimate and challan editors +2.0-2.2 KB route chunk: the customer box, the segmented switch, discount limits and picker focus, all first paint by design. Other routes +0.5-0.8 KB first load from Turbopack regrouping shared chunks (an unrelated route, /items/masters, 174.6 -> 175.5 KB; inferred from the regroup, not traced to one module). 156 exceeded limits use measured + 0.3 KB.",
     "26 Oct 2026, A1 header search (FB-011): the open search (grouped full-screen / 640 px list, UbCommandSearch, its catalogue) is its own lazy chunk and is checked absent from a Library page's first load; shared app unchanged at 115.0 KB. Measured against a build of b03714233 (0 overruns): the header chunk that carries CounterSearch grew 11.8 -> 12.1 KB gz (idle preload of the panel, a loading field that keeps typed letters, outside-press close), and Turbopack regrouped two shared app-layout chunks (14.8 + 13.1 -> 19.9 + 8.4 KB, +0.4, cause inferred from the regroup, not traced to a module). 133 exceeded limits use measured + 0.3 KB (/library/seats route by rounding only).",
     "26 Oct 2026, A2 folding sections (FB-012): UbDisclosure clips at the root and owns the focus ring, and gains flush; UbPanel gains bare and hides dividers orphaned by a section that renders nothing. Both ship in the shell, so shared app moved 114.9 -> 115.0 KB gz and 31 first-load limits it pushed over by 0.1-0.2 KB use measured + 0.3 KB. /parties/[id] route measures 117.3 KB gz (bare info panel, empty-section rule); limit 117.6.",
@@ -1459,7 +1460,7 @@
     },
     "/sales/challans/[id]": {
       "route": 86.9,
-      "firstLoad": 329.2
+      "firstLoad": 329.5
     },
     "/sales/challans": {
       "route": 88.9,
@@ -1491,7 +1492,7 @@
     },
     "/sales/orders/[id]": {
       "route": 86.9,
-      "firstLoad": 329.2
+      "firstLoad": 329.5
     },
     "/sales/orders": {
       "route": 88.9,
@@ -1527,7 +1528,7 @@
     },
     "/sales/invoices/[id]": {
       "route": 86.9,
-      "firstLoad": 329.2
+      "firstLoad": 329.5
     },
     "/sales/estimates": {
       "route": 98,
@@ -1550,7 +1551,7 @@
       "firstLoad": 356
     },
     "/sales/credit-notes/new": {
-      "route": 151.9,
+      "route": 152.2,
       "firstLoad": 394.3
     },
     "/sales/credit-notes/[id]": {
@@ -1559,7 +1560,7 @@
     },
     "/onboarding/step/[n]": {
       "route": 94.1,
-      "firstLoad": 335.7
+      "firstLoad": 336.1
     },
     "/design-system": {
       "route": 112.8,
@@ -1790,7 +1791,7 @@
       "firstLoad": 298.1
     },
     "/reset-password": {
-      "route": 52.6,
+      "route": 52.9,
       "firstLoad": 295.0
     },
     "/forgot-password": {
@@ -1802,7 +1803,7 @@
       "firstLoad": 293.9
     },
     "/d/[token]": {
-      "route": 41.2,
+      "route": 41.5,
       "firstLoad": 283.6
     },
     "/accept-invite/[token]": {
@@ -1863,7 +1864,7 @@
     },
     "/items/price-lists/[id]": {
       "route": 98.9,
-      "firstLoad": 341.2
+      "firstLoad": 341.5
     },
     "/lending/messages": {
       "route": 68.4,

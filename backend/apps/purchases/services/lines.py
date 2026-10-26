@@ -21,6 +21,7 @@ from decimal import Decimal, InvalidOperation
 from typing import Any
 
 from apps.common.money import D, q2
+from apps.common.limits import line_limit_errors
 from apps.tax.services.tax_engine import EngineLine
 
 ZERO_RATE = Decimal("0.000")
@@ -108,6 +109,16 @@ def build_lines(
             errors[f"{prefix}.qty"] = [f"Quantity must be a whole number for {unit_code}."]
         if cost is None or cost < 0:
             errors[f"{prefix}.unit_cost"] = ["Cost cannot be negative (up to 4 decimals)."]
+        # FB-020: the same sanity limits as a sales line (apps.common.limits).
+        over = line_limit_errors(
+            qty if qty and qty > 0 else None, cost if cost and cost >= 0 else None
+        )
+        if "qty" in over and f"{prefix}.qty" not in errors:
+            errors[f"{prefix}.qty"] = [over["qty"]]
+        if "rate" in over:
+            errors[f"{prefix}.unit_cost"] = [over["rate"]]
+        if "amount" in over:
+            errors[f"{prefix}.qty"] = [over["amount"]]
         if d_type not in (None, "percent", "amount"):
             errors[f"{prefix}.discount_type"] = ["Choose percent or amount."]
         elif d_type and (d_value is None or d_value < 0):

@@ -215,3 +215,21 @@ describe('the return form (SAL-04 §10)', () => {
     );
   });
 });
+
+/**
+ * FB-020 — monkey testing saved a ₹880-quadrillion draft from a quantity and
+ * rate of 99999999. The field says why before the server refuses, with the
+ * server's own words.
+ */
+it('holds a line to the quantity, rate and amount limits', () => {
+  expect(
+    errorsOf(bill({ lines: [{ ...rice, qty: '1000000', unitPrice: '1' }] }))['lines[0].qty']
+  ).toBe('Quantity is too large: up to 9,99,999.999.');
+  expect(
+    errorsOf(bill({ lines: [{ ...rice, qty: '1', unitPrice: '100000000' }] }))['lines[0].unitPrice']
+  ).toBe('Rate is too large: up to ₹9,99,99,999.99.');
+  expect(
+    errorsOf(bill({ lines: [{ ...rice, qty: '500000', unitPrice: '1000' }] }))['lines[0].qty']
+  ).toBe('This line is more than ₹9,99,99,999.99. Check the quantity and rate.');
+  expect(errorsOf(bill({ lines: [{ ...rice, qty: '999999', unitPrice: '99' }] }))).toEqual({});
+});

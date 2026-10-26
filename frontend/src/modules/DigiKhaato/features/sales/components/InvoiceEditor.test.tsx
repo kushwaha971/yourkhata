@@ -205,10 +205,11 @@ describe('the bill editor', () => {
   });
 });
 
-describe('the line table at a 1536 desktop (QA S-D5 / B17)', () => {
-  it("fits every column's minimum in the editor column, so Total is never clipped", async () => {
-    // B17: wider quantity fields need cards at 1280; the table starts at
-    // 1536, where the editor beside its totals has at least 53.5rem.
+describe('the line table on a desktop (design §A4 dBill)', () => {
+  it('puts the search in row one and every column the design names in the header', async () => {
+    /* Prevents: the table losing a column (B17 clipped Total) or the search
+       moving out of the table, where the design keeps it. The table scrolls
+       sideways rather than clipping, so no column can be cut. */
     const original = window.matchMedia;
     window.matchMedia = ((query: string) => ({
       ...original(query),
@@ -216,20 +217,45 @@ describe('the line table at a 1536 desktop (QA S-D5 / B17)', () => {
         /min-width/.test(query) &&
         1536 >= Number(/min-width:\s*(\d+)/.exec(query)?.[1] ?? Infinity),
     })) as typeof window.matchMedia;
-    signIn(['sales.invoice.read', 'sales.invoice.write']);
-    renderWithProviders(<InvoiceEditorPageContent documentId={null} />);
-    await screen.findByTestId('invoice-issue');
-    window.matchMedia = original;
-    const header = screen.getAllByRole('columnheader')[0]?.parentElement as HTMLElement;
-    const tracks = header.style.gridTemplateColumns.match(/minmax\([^)]*\)|[\d.]+rem/g) ?? [];
-    const rem = (track: string): number => Number(/([\d.]+)rem/.exec(track)?.[1] ?? 0);
-    const gaps = (tracks.length - 1) * 0.5;
-    const padding = 1.5;
-    expect(header).toHaveClass('gap-2'); // the 0.5rem gap counted below
-    expect(tracks.length).toBe(7); // item, qty, rate, disc, GST, total, remove
-    expect(tracks.reduce((sum, track) => sum + rem(track), 0) + gaps + padding).toBeLessThanOrEqual(
-      53.5
-    );
+    try {
+      signIn(['sales.invoice.read', 'sales.invoice.write', 'inventory.item.read']);
+      renderWithProviders(<InvoiceEditorPageContent documentId={null} />);
+      const table = await screen.findByTestId('invoice-line-table');
+      expect(table).toHaveClass('overflow-x-auto');
+      expect(screen.getAllByRole('columnheader').map((th) => th.textContent?.trim())).toEqual(
+        expect.arrayContaining(['#', 'Item', 'Qty', 'Rate', 'Amount'])
+      );
+      expect(
+        await within(screen.getByTestId('ub-edit-table-leading')).findByRole('combobox', {
+          name: 'Search items to add',
+        })
+      ).toBeInTheDocument();
+    } finally {
+      window.matchMedia = original;
+    }
+  });
+
+  it('says the scanner is ready and brings the caret back to the search on F2', async () => {
+    /* Prevents: a cashier at a desktop who clicked into a Qty having to reach
+       for the mouse before the next scan (design §A4 billTable: F2). */
+    const original = window.matchMedia;
+    window.matchMedia = ((query: string) => ({
+      ...original(query),
+      matches: /min-width/.test(query),
+    })) as typeof window.matchMedia;
+    try {
+      signIn(['sales.invoice.read', 'sales.invoice.write', 'inventory.item.read']);
+      renderWithProviders(<InvoiceEditorPageContent documentId={null} />);
+      const search = await screen.findByRole('combobox', { name: 'Search items to add' });
+      expect(search).toHaveAttribute('placeholder', 'Search or scan item');
+      expect(screen.getByText('Scanner ready')).toBeInTheDocument();
+      search.blur();
+      expect(search).not.toHaveFocus();
+      fireEvent.keyDown(window, { key: 'F2' });
+      expect(search).toHaveFocus();
+    } finally {
+      window.matchMedia = original;
+    }
   });
 });
 
@@ -287,13 +313,26 @@ describe('the bill details on a 1280 laptop (WP-05 compact context)', () => {
   });
 });
 
-describe('the phone line card (QA S-D8)', () => {
-  it('shows the line total with its ₹, since the card has no column header', async () => {
-    signIn(['sales.invoice.read', 'sales.invoice.write']);
-    renderWithProviders(<InvoiceEditorPageContent documentId={null} />);
-    await screen.findByTestId('invoice-issue');
-    expect(screen.getByTestId('line-items-editor')).toHaveAttribute('data-layout', 'card');
-    expect(screen.getByTestId('line-items-editor')).toHaveTextContent('₹0.00');
+describe('a new bill on a phone (design §A4 pBillEmpty)', () => {
+  it('starts with no line and says how to begin, instead of an empty line card', async () => {
+    /* Prevents: a blank "Line 1" card the cashier has to fill or delete. */
+    const original = window.matchMedia;
+    // A 390 px phone: only max-width queries match.
+    window.matchMedia = ((query: string) => ({
+      ...original(query),
+      matches:
+        /max-width/.test(query) && 390 <= Number(/max-width:\s*([\d.]+)/.exec(query)?.[1] ?? 0),
+    })) as typeof window.matchMedia;
+    try {
+      signIn(['sales.invoice.read', 'sales.invoice.write', 'inventory.item.read']);
+      renderWithProviders(<InvoiceEditorPageContent documentId={null} />);
+      await screen.findByTestId('invoice-issue');
+      expect(screen.queryByTestId('invoice-lines')).not.toBeInTheDocument();
+      expect(await screen.findByText('No items yet')).toBeInTheDocument();
+      expect(screen.getByText('Type a name or code above to add an item.')).toBeInTheDocument();
+    } finally {
+      window.matchMedia = original;
+    }
   });
 });
 
@@ -653,9 +692,10 @@ it('seeds a new Home bill with default selling price without issuing it or chang
    every item cost a tap on "Add item" first; a picked customer stayed a search
    field that said nothing about what they already owe in the Shop; and Issue
    stayed live with the network gone, failing only after the tap. */
+// The focused control's id is its form path, `lines.<row>.<field>`.
 const lineCellOf = (element: Element | null): { row?: string; col?: string } => {
-  const cell = element?.closest<HTMLElement>('[data-line-cell]');
-  return { row: cell?.dataset.row, col: cell?.dataset.col };
+  const [, row, col] = /^lines\.(\d+)\.(\w+)$/.exec(element?.id ?? '') ?? [];
+  return { row, col };
 };
 
 const quickAdd = async (text: string): Promise<void> => {
@@ -683,7 +723,7 @@ describe('the always-visible item search (07-screens/09 §3)', () => {
     await quickAdd('led');
     await userEvent.click(await answeredOption());
     await waitFor(
-      () => expect(lineCellOf(document.activeElement)).toEqual({ row: '0', col: '1' }),
+      () => expect(lineCellOf(document.activeElement)).toEqual({ row: '0', col: 'qty' }),
       {
         timeout: 8000,
       }
@@ -708,7 +748,7 @@ describe('the always-visible item search (07-screens/09 §3)', () => {
     );
     await userEvent.keyboard('{Enter}');
     await waitFor(
-      () => expect(lineCellOf(document.activeElement)).toEqual({ row: '1', col: '1' }),
+      () => expect(lineCellOf(document.activeElement)).toEqual({ row: '1', col: 'qty' }),
       {
         timeout: 8000,
       }
@@ -738,7 +778,7 @@ describe('the always-visible item search (07-screens/09 §3)', () => {
     await quickAdd('0000000000000{Enter}');
     await waitFor(() => expect(store.getState().snackbar.id).toBe('items.scan.notFound'));
     expect(store.getState().snackbar.params).toEqual({ code: '0000000000000' });
-    expect(document.querySelectorAll('[data-line-cell][data-row="1"]')).toHaveLength(0);
+    expect(document.getElementById('lines.1.qty')).toBeNull();
   });
 
   it('tells a member who cannot add items to ask the owner when nothing matches', async () => {
@@ -847,14 +887,8 @@ describe('a busy counter (07-screens/09 §3)', () => {
     await waitFor(() => expect(screen.getAllByText('Syska LED bulb 9W').length).toBeGreaterThan(0));
     // The scanner fires again straight into the search, which kept the focus.
     await userEvent.type(search, '8901234567890{Enter}');
-    await waitFor(() =>
-      expect(
-        document.querySelector<HTMLInputElement>(
-          '[data-line-cell][data-row="0"][data-col="1"] input'
-        )
-      ).toHaveValue('2')
-    );
-    expect(document.querySelectorAll('[data-line-cell][data-row="1"]')).toHaveLength(0);
+    await waitFor(() => expect(document.getElementById('lines.0.qty')).toHaveValue('2'));
+    expect(document.getElementById('lines.1.qty')).toBeNull();
     expect(search).toHaveFocus();
   });
 
@@ -863,18 +897,16 @@ describe('a busy counter (07-screens/09 §3)', () => {
     renderWithProviders(<InvoiceEditorPageContent documentId={null} />);
     await quickAdd('led');
     await userEvent.click(await answeredOption());
-    await waitFor(() => expect(lineCellOf(document.activeElement)).toEqual({ row: '0', col: '1' }));
+    await waitFor(() =>
+      expect(lineCellOf(document.activeElement)).toEqual({ row: '0', col: 'qty' })
+    );
     await quickAdd('led');
     await userEvent.click(await answeredOption());
+    await waitFor(() => expect(document.getElementById('lines.0.qty')).toHaveValue('2'));
+    expect(document.getElementById('lines.1.qty')).toBeNull();
     await waitFor(() =>
-      expect(
-        document.querySelector<HTMLInputElement>(
-          '[data-line-cell][data-row="0"][data-col="1"] input'
-        )
-      ).toHaveValue('2')
+      expect(lineCellOf(document.activeElement)).toEqual({ row: '0', col: 'qty' })
     );
-    expect(document.querySelectorAll('[data-line-cell][data-row="1"]')).toHaveLength(0);
-    await waitFor(() => expect(lineCellOf(document.activeElement)).toEqual({ row: '0', col: '1' }));
   });
 
   it('keeps the list open for a name typed straight after a pick', async () => {
@@ -884,7 +916,9 @@ describe('a busy counter (07-screens/09 §3)', () => {
     renderWithProviders(<InvoiceEditorPageContent documentId={null} />);
     await quickAdd('led');
     await userEvent.click(await answeredOption());
-    await waitFor(() => expect(lineCellOf(document.activeElement)).toEqual({ row: '0', col: '1' }));
+    await waitFor(() =>
+      expect(lineCellOf(document.activeElement)).toEqual({ row: '0', col: 'qty' })
+    );
     const search = screen.getByRole('combobox', { name: 'Search items to add' });
     fireEvent.focus(search);
     fireEvent.blur(search);
@@ -1012,7 +1046,9 @@ describe('an item that is not in the list', () => {
         payload: { item: { id: 'i-new', sku: 'NEW-1', name: 'ragi' }, warnings: [] },
       });
     });
-    await waitFor(() => expect(lineCellOf(document.activeElement)).toEqual({ row: '0', col: '1' }));
+    await waitFor(() =>
+      expect(lineCellOf(document.activeElement)).toEqual({ row: '0', col: 'qty' })
+    );
   });
 
   it('does not offer Create or Restore to a member who cannot add items', async () => {
@@ -1033,10 +1069,10 @@ describe('a rate changed on the bill (Counter Mode step 9)', () => {
     renderWithProviders(<InvoiceEditorPageContent documentId={null} />);
     await quickAdd('led');
     await userEvent.click(await answeredOption());
+    // Rate is edited in the line's details, opened under the row (design §A4 dLine).
+    await userEvent.click(await screen.findByRole('button', { name: /^Edit / }));
     const rate = await waitFor(() => {
-      const input = document.querySelector<HTMLInputElement>(
-        '[data-line-cell][data-row="0"][data-col="2"] input'
-      );
+      const input = document.getElementById('lines.0.unitPrice') as HTMLInputElement | null;
       if (!input) throw new Error('no rate cell yet');
       return input;
     });

@@ -101,7 +101,8 @@ export const emptyInvoiceForm = (
   discountValue: '',
   notes: '',
   terms: '',
-  lines: [emptyLine()],
+  // A4: a new bill starts with no line; the search is the only way in.
+  lines: [],
   challanType: 'other',
   transporter: '',
   vehicleNumber: '',

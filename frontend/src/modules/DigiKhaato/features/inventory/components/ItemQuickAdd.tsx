@@ -1,6 +1,15 @@
 'use client';
 
-import { memo, useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
+import {
+  memo,
+  useCallback,
+  useEffect,
+  useId,
+  useMemo,
+  useRef,
+  useState,
+  type ReactNode,
+} from 'react';
 
 import dynamic from 'next/dynamic';
 
@@ -76,6 +85,10 @@ export interface ItemQuickAddProps {
   readonly onPick: (row: ItemListRow, via: ItemQuickAddVia) => void;
   readonly disabled?: boolean;
   readonly className?: string;
+  /** Shown at the end of the search box (design §A4 billTable). */
+  readonly trailing?: ReactNode;
+  /** A key that puts the caret in the search from anywhere on the page (F2). */
+  readonly hotkey?: string;
 }
 
 function ItemQuickAddBase({
@@ -83,7 +96,21 @@ function ItemQuickAddBase({
   onPick,
   disabled = false,
   className,
+  trailing,
+  hotkey,
 }: Readonly<ItemQuickAddProps>) {
+  const input = useRef<HTMLInputElement>(null);
+  useEffect(() => {
+    if (!hotkey) return undefined;
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key !== hotkey || event.altKey || event.ctrlKey || event.metaKey) return;
+      event.preventDefault();
+      input.current?.focus();
+      input.current?.select();
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [hotkey]);
   const { t } = useTranslation();
   const dispatch = useAppDispatch();
   const { can } = usePermissions();
@@ -240,6 +267,8 @@ function ItemQuickAddBase({
   return (
     <UbBox className={cn('relative w-full', className)} data-testid="item-quick-add">
       <UbSearchInput
+        ref={input}
+        trailing={trailing}
         value={search.query}
         onChange={(next) => {
           search.setQuery(next);

@@ -3,7 +3,7 @@ import { useMemo } from 'react';
 import dayjs from 'dayjs';
 import * as Yup from 'yup';
 
-import { MAX_AMOUNT } from 'src/constants';
+import { LINE_AMOUNT_LIMIT, LINE_QTY_LIMIT, LINE_RATE_LIMIT } from 'src/constants';
 import { useTranslation, type TranslateFn } from 'src/hooks/useTranslation';
 import { buildValidationSchemas } from 'src/hooks/useValidationSchemas';
 import { isValidMobile, readsAsIndian } from 'src/utils/phone';
@@ -126,6 +126,11 @@ export const buildInvoiceEditorSchema = (
           return error(allowDecimal ? 'validation.qty.format' : 'validation.qty.wholeOnly');
         }
         if (Number(text) <= 0) return error('validation.qty.positive');
+        // FB-020 — the server's limits, said under the field before it refuses.
+        if (Number(text) > Number(LINE_QTY_LIMIT)) return error('sales.validation.qtyTooLarge');
+        const rate = Number(String(this.parent.unitPrice ?? '').trim() || 0);
+        if (rate > 0 && Number(text) * rate > Number(LINE_AMOUNT_LIMIT))
+          return error('sales.validation.lineTooLarge');
         return true;
       }),
     unitCode: Yup.string().defined().default(''),
@@ -139,8 +144,8 @@ export const buildInvoiceEditorSchema = (
         if (!RATE_4DP.test(text)) {
           return this.createError({ message: t('sales.validation.rateFormat') });
         }
-        if (Number(text) > Number(MAX_AMOUNT)) {
-          return this.createError({ message: t('validation.amount.tooLarge') });
+        if (Number(text) > Number(LINE_RATE_LIMIT)) {
+          return this.createError({ message: t('sales.validation.rateTooLarge') });
         }
         return true;
       }),

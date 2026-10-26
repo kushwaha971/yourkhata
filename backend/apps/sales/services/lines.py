@@ -15,6 +15,7 @@ from dataclasses import dataclass, field
 from decimal import Decimal, InvalidOperation
 from typing import Any
 
+from apps.common.limits import line_limit_errors
 from apps.common.money import D, q2
 from apps.tax.services.tax_engine import EngineLine
 
@@ -110,6 +111,16 @@ def build_lines(
             errors[f"{prefix}.qty"] = [f"Quantity must be a whole number for {unit_code}."]
         if price is None or price < 0:
             errors[f"{prefix}.unit_price"] = ["Price cannot be negative (up to 4 decimals)."]
+        # FB-020: the absurd is refused here, not only by the column's limit.
+        over = line_limit_errors(
+            qty if qty and qty > 0 else None, price if price and price >= 0 else None
+        )
+        if "qty" in over and f"{prefix}.qty" not in errors:
+            errors[f"{prefix}.qty"] = [over["qty"]]
+        if "rate" in over:
+            errors[f"{prefix}.unit_price"] = [over["rate"]]
+        if "amount" in over:
+            errors[f"{prefix}.qty"] = [over["amount"]]
         if hsn is not None and not HSN_RE.match(str(hsn)):
             errors[f"{prefix}.hsn_sac"] = ["HSN must be 4, 6 or 8 digits."]
         if d_type not in (None, "percent", "amount"):

@@ -209,6 +209,10 @@ export { UbActionLink } from './UbActionLink';
 export type { UbActionLinkProps } from './UbActionLink';
 export { UbChoiceChips } from './UbChoiceChips';
 export type { UbChoiceChipOption, UbChoiceChipsProps } from './UbChoiceChips';
+export { UbEditTable } from './UbEditTable';
+export type { UbEditTableColumn, UbEditTableProps, UbEditTableRow } from './UbEditTable';
+export { UbQuantityStepper } from './UbQuantityStepper';
+export type { UbQuantityStepperProps } from './UbQuantityStepper';
 export { UbSegmentedControl } from './UbSegmentedControl';
 export type { UbSegmentedControlProps, UbSegmentedOption } from './UbSegmentedControl';
 
