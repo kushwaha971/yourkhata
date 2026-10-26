@@ -380,3 +380,21 @@ money; duplicate phones do not imply linking; staff without book rights get
 Rollback requires retaining existing role columns and additive membership
 data until all callers are migrated. The Udhaar list redesign can ship as a
 scoped presentation piece, but whole-app data-isolation scoring remains open.
+
+## BP-22 · Server decides, client draws: words, features and menu in the session
+
+Proposed 26 Oct 2026; **approved in direction by the owner** ("keep all thing
+on backend side… ok proceed"), detail awaiting review. Full design, tests and
+open questions: `docs/platform/17-business-model-map.md` §6–§7.
+
+The session already carries landing, apps, permissions and modules. Add:
+(1) `active_tenant.words`, the business's own words by message id in the
+person's locale, from `parties.labels` and the type presets; (2)
+`active_tenant.features` from one `features.on(tenant, key, category)`, with
+serializers dropping and writes ignoring a feature-off field; (3) `nav`, the
+menu row keys per app this person may see. Every change that alters them
+returns the new session part. The client keeps layout, routes and
+code-splitting only. Build order: words first (small, unblocks Shop wording),
+then features and menu with F0. Gates: preset table, all-off pixel and query
+parity, per-key drop/ignore tests, and an architecture test that no client
+file outside `useFeature`/`useAppWords`/`useNavigation` reads `business_type`.
