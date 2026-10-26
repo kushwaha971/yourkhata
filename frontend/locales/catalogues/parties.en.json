@@ -53,6 +53,7 @@
   "parties.detail.copy": "Copy",
   "parties.detail.depositHeld": "Deposit held",
   "parties.detail.details": "Details",
+  "parties.detail.detailsHint": "Address, GST, terms, notes, record",
   "parties.detail.edit": "Edit",
   "parties.detail.error.body": "Check your connection and try again.",
   "parties.detail.loanInAdvance": "Paid extra on loan",

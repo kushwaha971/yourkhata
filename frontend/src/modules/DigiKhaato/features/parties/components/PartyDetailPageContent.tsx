@@ -415,25 +415,35 @@ export function ExistingPartyDetailPageContent({
       formatted={party.collectionDate ? d(party.collectionDate) : null}
     />
   ) : null;
-  const infoPanel = party ? (
-    <PartyInfoPanel
-      t={t}
-      shop={shopBook}
-      party={party}
-      addedOn={party.createdAt ? d(party.createdAt) : null}
-      lastActivity={asOf}
-      collectionControl={shopBook ? undefined : collectionControl}
-      priceListControl={
-        showPriceList ? (
-          <PartyPriceListControl
-            partyId={party.id}
-            canWrite={!isArchived && can('inventory.item.write')}
-          />
-        ) : undefined
-      }
-    />
-  ) : (
-    <UbSkeleton variant="card" />
+  // Drawn bare inside the Details disclosure (FB-012): the disclosure is the
+  // card, so a second bordered panel inside it was a box within a box.
+  const renderInfoPanel = (bare: boolean) =>
+    party ? (
+      <PartyInfoPanel
+        bare={bare}
+        t={t}
+        shop={shopBook}
+        party={party}
+        addedOn={party.createdAt ? d(party.createdAt) : null}
+        lastActivity={asOf}
+        collectionControl={shopBook ? undefined : collectionControl}
+        priceListControl={
+          showPriceList ? (
+            <PartyPriceListControl
+              partyId={party.id}
+              canWrite={!isArchived && can('inventory.item.write')}
+            />
+          ) : undefined
+        }
+      />
+    ) : (
+      <UbSkeleton variant="card" />
+    );
+  const infoPanel = renderInfoPanel(false);
+  const detailsDisclosure = (
+    <UbDisclosure label={t('parties.detail.details')} hint={t('parties.detail.detailsHint')} flush>
+      {renderInfoPanel(true)}
+    </UbDisclosure>
   );
 
   /* The khata's everyday pair. Hidden rather than disabled when the role
@@ -687,7 +697,7 @@ export function ExistingPartyDetailPageContent({
             shopBook ? 'flex flex-col gap-4' : 'flex flex-col gap-4 lg:flex-row lg:items-start'
           }
         >
-          {shopBook && <UbDisclosure label={t('parties.detail.details')}>{infoPanel}</UbDisclosure>}
+          {shopBook && detailsDisclosure}
           <UbStack gap={4} className="min-w-0 flex-1">
             {/* The ledger feature's own component, and deliberately not a
                 generic one lifted into the design system: it knows what a debit
@@ -726,9 +736,7 @@ export function ExistingPartyDetailPageContent({
             {!shopBook && (
               <>
                 <UbBox className="hidden lg:block">{infoPanel}</UbBox>
-                <UbBox className="lg:hidden">
-                  <UbDisclosure label={t('parties.detail.details')}>{infoPanel}</UbDisclosure>
-                </UbBox>
+                <UbBox className="lg:hidden">{detailsDisclosure}</UbBox>
               </>
             )}
             {/* A6 — below the info panel at every width: the relations section
@@ -960,11 +968,23 @@ export function ExistingPartyDetailPageContent({
 
 const PersonalUdhaarPage = dynamic(
   () => import('./PersonalUdhaarPage').then((module) => module.PersonalUdhaarPage),
-  { loading: () => <UbPageShell><UbSkeleton variant="card" /></UbPageShell> }
+  {
+    loading: () => (
+      <UbPageShell>
+        <UbSkeleton variant="card" />
+      </UbPageShell>
+    ),
+  }
 );
 
 /** Personal Udhaar has a minimal page; preserve the other apps' existing page. */
-export function PartyDetailPageContent(props: Readonly<PartyDetailPageContentProps>): React.JSX.Element {
+export function PartyDetailPageContent(
+  props: Readonly<PartyDetailPageContentProps>
+): React.JSX.Element {
   const { app } = useAppWords();
-  return app === 'khata' ? <PersonalUdhaarPage {...props} /> : <ExistingPartyDetailPageContent {...props} />;
+  return app === 'khata' ? (
+    <PersonalUdhaarPage {...props} />
+  ) : (
+    <ExistingPartyDetailPageContent {...props} />
+  );
 }

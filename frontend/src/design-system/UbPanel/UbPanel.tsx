@@ -33,7 +33,26 @@ export interface UbPanelProps {
   readonly 'data-testid'?: string;
   /** Keyboard access when a caller makes this panel an internal scroll region. */
   readonly tabIndex?: number;
+  /**
+   * No border, corners or background: the panel is drawn inside something
+   * that already is a card (a `flush` UbDisclosure), and only its section
+   * rules remain. FB-012.
+   */
+  readonly bare?: boolean;
 }
+
+/**
+ * A section component that renders nothing (PartyInfoPanel's `Section` with no
+ * filled fact) is still a child here, so a divider is placed before it and
+ * draws on its own: under the panel's top edge, or against the next divider —
+ * a doubled rule (FB-012, found by measuring the khata's Details). Children
+ * cannot tell us what reaches the DOM; CSS can, so an orphaned divider is
+ * hidden rather than guessed at.
+ */
+const ORPHAN_DIVIDERS =
+  '[&>[data-ub-divider]:first-child]:hidden [&>[data-ub-divider]:last-child]:hidden [&>[data-ub-divider]+[data-ub-divider]]:hidden';
+
+const BARE_CLASSNAME = 'rounded-none border-0 bg-transparent';
 
 const PANEL_CLASSNAME =
   'flex w-full flex-col self-start overflow-hidden rounded-card border border-border-hairline bg-surface-card';
@@ -45,11 +64,14 @@ function UbPanelBase({
   'aria-label': ariaLabel,
   'data-testid': testId,
   tabIndex,
+  bare = false,
 }: Readonly<UbPanelProps>) {
+  const classes = cn(PANEL_CLASSNAME, bare && BARE_CLASSNAME, className);
+  const divided = cn(classes, ORPHAN_DIVIDERS);
   const sections = Children.toArray(children).filter(Boolean);
   if (Element === 'ul') {
     return (
-      <ul className={cn(PANEL_CLASSNAME, className)} aria-label={ariaLabel} data-testid={testId}>
+      <ul className={classes} aria-label={ariaLabel} data-testid={testId}>
         {sections.map((section, index) => (
           <li key={index} className={cn(index > 0 && 'border-t border-border-hairline')}>
             {section}
@@ -59,10 +81,12 @@ function UbPanelBase({
     );
   }
   return (
-    <Element className={cn(PANEL_CLASSNAME, className)} aria-label={ariaLabel} data-testid={testId} tabIndex={tabIndex}>
+    <Element className={divided} aria-label={ariaLabel} data-testid={testId} tabIndex={tabIndex}>
       {sections.map((section, index) => (
         <Fragment key={index}>
-          {index > 0 && <div aria-hidden className="h-px w-full bg-border-hairline" />}
+          {index > 0 && (
+            <div aria-hidden data-ub-divider className="h-px w-full bg-border-hairline" />
+          )}
           {section}
         </Fragment>
       ))}

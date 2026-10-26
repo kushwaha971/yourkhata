@@ -603,3 +603,14 @@ Next: fix P1s with meaningful regressions, rerun affected real journeys, finish
 remaining coverage matrix before any whole-Udhaar sign-off or Lending/Library.
 Report: docs/performance/2026-10-25-udhaar-exploratory-qa.md. Audit-only; no
 application changes.
+
+
+Progress26October2026, Shop A2 folding sections (FB-012): rebuilt from the
+handoff description (the patch file was not on disk). UbDisclosure root clips,
+owns card colour and focus ring; square 52px header; `flush`. UbPanel `bare`
+and orphaned-divider hiding; PartyInfoPanel `bare` rows 14/16/8. Looking found
+three defects tests missed: doubled rules from null sections, a non-existent
+semibold class (title rendered 400), and a heading over a still-loading row.
+50 measured frames, 0 failures/console errors; jest 4876; build/bundle OK.
+Next: A1 header search. Report: docs/performance/2026-10-26-shop-a2-folding-sections.md.
+

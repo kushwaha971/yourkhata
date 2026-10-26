@@ -34,4 +34,26 @@ describe('UbPanel as a list', () => {
     );
     expect(container.firstElementChild?.children).toHaveLength(3);
   });
+
+  /**
+   * FB-012 — the khata's Details drew a doubled rule under its header and
+   * between Business and Terms: a section that renders nothing still got a
+   * divider before it. The orphaned divider must not be displayed.
+   */
+  it('hides a divider left orphaned by a section that renders nothing', () => {
+    const Nothing = () => null;
+    const { container } = render(
+      <UbPanel>
+        <Nothing />
+        <span>Business</span>
+        <Nothing />
+        <span>Terms</span>
+      </UbPanel>
+    );
+    const panel = container.firstElementChild as HTMLElement;
+    const dividers = panel.querySelectorAll('[data-ub-divider]');
+    expect(dividers).toHaveLength(3);
+    expect(panel.className).toContain('[&>[data-ub-divider]:first-child]:hidden');
+    expect(panel.className).toContain('[&>[data-ub-divider]+[data-ub-divider]]:hidden');
+  });
 });

@@ -53,6 +53,7 @@
   "parties.detail.copy": "कॉपी",
   "parties.detail.depositHeld": "जमा राशि (लौटानी है)",
   "parties.detail.details": "विवरण",
+  "parties.detail.detailsHint": "पता, GST, शर्तें, नोट, रिकॉर्ड",
   "parties.detail.edit": "बदलें",
   "parties.detail.error.body": "अपना कनेक्शन देखकर फिर कोशिश करें।",
   "parties.detail.loanInAdvance": "कर्ज़ में ज़्यादा जमा",

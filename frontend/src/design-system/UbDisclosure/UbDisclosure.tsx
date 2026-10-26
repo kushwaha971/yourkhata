@@ -62,6 +62,13 @@ export interface UbDisclosureProps {
    * content (an FAQ answer), never for form fields — see the header.
    */
   readonly keepMounted?: boolean;
+  /**
+   * The open panel has no padding and no gap: its children are rows that
+   * draw their own (the khata's Details, where each fact group is a row
+   * divided by a rule). FB-012 — without it a bordered panel sat inside the
+   * disclosure's border, a box within a box with two sets of padding.
+   */
+  readonly flush?: boolean;
 }
 
 function UbDisclosureBase({
@@ -74,6 +81,7 @@ function UbDisclosureBase({
   className,
   size = 'md',
   keepMounted = false,
+  flush = false,
 }: Readonly<UbDisclosureProps>) {
   const large = size === 'lg';
   const id = useId();
@@ -101,30 +109,54 @@ function UbDisclosureBase({
   }, [keepMounted, isOpen, onOpenChange]);
 
   return (
-    <div className={cn('flex flex-col rounded-card border border-border-hairline', className)}>
+    // FB-012. The ROOT clips (`overflow-clip`, not `hidden`, so it creates no
+    // scroll container for a sticky child) and owns the card colour, so the
+    // header's hover and the panel's last row are cut by the same 12 px
+    // corner instead of each painting their own slightly different one. The
+    // focus ring is the root's for the same reason: a ring drawn on the
+    // header alone was clipped at the bottom by the panel's rule.
+    <div
+      className={cn(
+        'flex flex-col overflow-clip rounded-card border border-border-hairline bg-surface-card',
+        'has-[>button:focus-visible]:shadow-focus',
+        className
+      )}
+    >
       <button
         type="button"
         onClick={toggle}
         aria-expanded={isOpen}
         aria-controls={`${id}-panel`}
         id={`${id}-trigger`}
+        // Named by the label alone; the summary is its description. Without
+        // this the summary joined the name ("Details Address, GST, …"), so a
+        // screen reader read the whole line as the control's name.
+        aria-labelledby={`${id}-label`}
+        aria-describedby={hint ? `${id}-hint` : undefined}
         className={cn(
-          'flex min-h-11 w-full items-center justify-between gap-3 rounded-card px-4 py-3',
+          'flex min-h-[52px] w-full items-center justify-between gap-3 px-4 py-2.5',
           large && 'min-h-14 px-5 py-4',
-          'text-left transition-colors hover:bg-surface-hover',
-          'focus-visible:shadow-focus focus-visible:outline-none'
+          'text-left transition-colors hover:bg-surface-hover focus-visible:outline-none'
         )}
       >
         <span className="flex min-w-0 flex-col">
           <span
-            className={cn(
-              large ? 'ds-body-l-medium' : 'ds-body-sm-medium',
-              'text-text-primary'
-            )}
+            id={`${id}-label`}
+            className={cn(large ? 'ds-body-l-medium' : 'ds-body-s-semibold', 'text-text-primary')}
           >
             {label}
           </span>
-          {hint && <span className="ds-caption text-text-tertiary">{hint}</span>}
+          {hint && (
+            <span
+              id={`${id}-hint`}
+              className={cn(
+                'text-text-tertiary',
+                large ? 'ds-caption' : 'ds-caption text-[0.8125rem]'
+              )}
+            >
+              {hint}
+            </span>
+          )}
         </span>
         <ChevronDown
           aria-hidden
@@ -147,8 +179,9 @@ function UbDisclosureBase({
           // (QA B25): `hidden="until-found"` hides the CONTENT and keeps the
           // box, so a closed panel drew an empty bordered strip under its header.
           className={cn(
-            isOpen && 'flex flex-col gap-4 border-t border-border-hairline px-4 py-4',
-            isOpen && large && 'px-5 pb-5'
+            isOpen && 'flex flex-col border-t border-border-hairline',
+            isOpen && !flush && 'gap-4 px-4 py-4',
+            isOpen && !flush && large && 'px-5 pb-5'
           )}
         >
           {children}

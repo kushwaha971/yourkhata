@@ -1,5 +1,6 @@
 {
   "//": [
+    "26 Oct 2026, A2 folding sections (FB-012): UbDisclosure clips at the root and owns the focus ring, and gains flush; UbPanel gains bare and hides dividers orphaned by a section that renders nothing. Both ship in the shell, so shared app moved 114.9 -> 115.0 KB gz and 31 first-load limits it pushed over by 0.1-0.2 KB use measured + 0.3 KB. /parties/[id] route measures 117.3 KB gz (bare info panel, empty-section rule); limit 117.6.",
     "25 Oct 2026 private Udhaar: per-user API routing, stale app-response rejection and one local Back arrow. Removed an accidental manifest import from bootstrap (about 6 KB); the remaining transport privacy guard adds about 0.2 KB gz shared. Measured shared app 114.9 KB, total shared 242.1 KB. Only exceeded limits use measured + 0.3 KB; affected first-load limits: /reports/gst-summary firstLoad, /parties/[id] firstLoad, /reports/profit firstLoad, /payments/[id] firstLoad, /login/email firstLoad, /admin/partners firstLoad, /admin firstLoad, /legal/terms firstLoad, /legal/privacy firstLoad. Shop UI/financial engines unchanged. Final colour/build rounding also sets /reports/day-book361.9, /parties/tags313.7, /admin/tenants275.5 and /onboarding247.0 (all measured+0.3). Rounding-only first-load overruns also use measured + 0.3: /reset-password 295.0, /admin/health 263.3, /_not-found 242.4.",
     "25 Oct 2026, final personal Udhaar core: separate lazy personal page, bounded history, focused channel composers and name/mobile-only forms. Final /parties/[id] measures 116.9 KB gz / 358.8 KB first load; limits use measured + 0.3 (117.2 / 359.1). The earlier prototype measured 117.3 / 359.1. Shared baseline is 241.9 KB. Shop rendering/workflows remain unchanged.",
     "25 Oct 2026 integration with dev 7a9de2c1e: the combined shared skeleton/grid changes and Udhaar compact row measure /parties/tags first load 313.1 KB gz, over 313.0 by 0.1; set to measured + 0.3 KB (313.4). The shared baseline remains 241.8 KB.",
@@ -1452,7 +1453,7 @@
     },
     "/purchases/debit-notes": {
       "route": 85.3,
-      "firstLoad": 327.1
+      "firstLoad": 327.5
     },
     "/sales/challans/[id]": {
       "route": 85.6,
@@ -1460,7 +1461,7 @@
     },
     "/sales/challans": {
       "route": 87.6,
-      "firstLoad": 329.4
+      "firstLoad": 329.8
     },
     "/sales/challans/new": {
       "route": 169.4,
@@ -1476,7 +1477,7 @@
     },
     "/purchases/orders": {
       "route": 85.3,
-      "firstLoad": 327.1
+      "firstLoad": 327.5
     },
     "/purchases/orders/new": {
       "route": 170.9,
@@ -1492,7 +1493,7 @@
     },
     "/sales/orders": {
       "route": 87.6,
-      "firstLoad": 329.4
+      "firstLoad": 329.8
     },
     "/sales/orders/new": {
       "route": 169.4,
@@ -1508,7 +1509,7 @@
     },
     "/dashboard": {
       "route": 95.8,
-      "firstLoad": 337.8
+      "firstLoad": 338.2
     },
     "/sales/invoices/new": {
       "route": 169.4,
@@ -1567,8 +1568,8 @@
       "firstLoad": 334.2
     },
     "/parties/[id]": {
-      "route": 117.2,
-      "firstLoad": 359.5
+      "route": 117.6,
+      "firstLoad": 359.8
     },
     "/parties/tags": {
       "route": 71.4,
@@ -1580,15 +1581,15 @@
     },
     "/ledger/aging": {
       "route": 103.2,
-      "firstLoad": 345.0
+      "firstLoad": 345.4
     },
     "/switch": {
       "route": 56.0,
-      "firstLoad": 297.7
+      "firstLoad": 298.1
     },
     "/settings/plan": {
       "route": 55.0,
-      "firstLoad": 296.6
+      "firstLoad": 297
     },
     "/settings": {
       "route": 108.9,
@@ -1600,7 +1601,7 @@
     },
     "/settings/branding": {
       "route": 96.6,
-      "firstLoad": 338.3
+      "firstLoad": 338.8
     },
     "/settings/activity": {
       "route": 101,
@@ -1608,7 +1609,7 @@
     },
     "/settings/devices": {
       "route": 61.8,
-      "firstLoad": 303.5
+      "firstLoad": 303.9
     },
     "/stock/summary": {
       "route": 115,
@@ -1624,7 +1625,7 @@
     },
     "/items/[id]": {
       "route": 111.2,
-      "firstLoad": 353.0
+      "firstLoad": 353.3
     },
     "/stock/low": {
       "route": 75.9,
@@ -1648,7 +1649,7 @@
     },
     "/ledger/reminders": {
       "route": 78.9,
-      "firstLoad": 320.9
+      "firstLoad": 321.3
     },
     "/imports": {
       "route": 57.3,
@@ -1680,7 +1681,7 @@
     },
     "/settings/data": {
       "route": 63.9,
-      "firstLoad": 305.5
+      "firstLoad": 306
     },
     "/purchases/bills/[id]": {
       "route": 74.2,
@@ -1716,11 +1717,11 @@
     },
     "/reports/purchase-register": {
       "route": 117.9,
-      "firstLoad": 360.0
+      "firstLoad": 360.3
     },
     "/reports/sales-register": {
       "route": 117.9,
-      "firstLoad": 360.0
+      "firstLoad": 360.3
     },
     "/login": {
       "route": 57,
@@ -1752,7 +1753,7 @@
     },
     "/library/members": {
       "route": 87.1,
-      "firstLoad": 328.7
+      "firstLoad": 329.1
     },
     "/library/members/[membershipId]": {
       "route": 86.6,
@@ -1764,23 +1765,23 @@
     },
     "/library/catalogue/categories": {
       "route": 73.1,
-      "firstLoad": 314.8
+      "firstLoad": 315.2
     },
     "/library/catalogue/locations": {
       "route": 73.1,
-      "firstLoad": 314.8
+      "firstLoad": 315.2
     },
     "/library/counter": {
       "route": 83.6,
-      "firstLoad": 325.2
+      "firstLoad": 325.6
     },
     "/library/seats": {
       "route": 81.7,
-      "firstLoad": 323.3
+      "firstLoad": 323.7
     },
     "/library/fees": {
       "route": 79.8,
-      "firstLoad": 321.4
+      "firstLoad": 321.8
     },
     "/signup": {
       "route": 57,
@@ -1792,19 +1793,19 @@
     },
     "/forgot-password": {
       "route": 52,
-      "firstLoad": 293
+      "firstLoad": 293.4
     },
     "/set-password": {
       "route": 51.6,
-      "firstLoad": 293.6
+      "firstLoad": 293.9
     },
     "/d/[token]": {
       "route": 41.2,
-      "firstLoad": 283.2
+      "firstLoad": 283.6
     },
     "/accept-invite/[token]": {
       "route": 11.4,
-      "firstLoad": 253.4
+      "firstLoad": 253.8
     },
     "/legal/privacy": {
       "route": 8,
@@ -1824,15 +1825,15 @@
     },
     "/library": {
       "route": 79.7,
-      "firstLoad": 321.4
+      "firstLoad": 321.8
     },
     "/library/attendance": {
       "route": 76.1,
-      "firstLoad": 317.7
+      "firstLoad": 318.1
     },
     "/library/messages": {
       "route": 73.8,
-      "firstLoad": 315.5
+      "firstLoad": 315.9
     },
     "/lending/loans/new": {
       "route": 141.5,
@@ -1860,7 +1861,7 @@
     },
     "/items/price-lists/[id]": {
       "route": 97.8,
-      "firstLoad": 339.6
+      "firstLoad": 339.9
     },
     "/lending/messages": {
       "route": 67.1,
@@ -1892,7 +1893,7 @@
     },
     "/reports/aging": {
       "route": 103.2,
-      "firstLoad": 345.0
+      "firstLoad": 345.4
     },
     "/apps": {
       "route": 56,
