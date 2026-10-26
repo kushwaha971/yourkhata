@@ -244,14 +244,16 @@ export function InvoiceLinesSection({
       onPick={quickAdd}
       disabled={disabled}
       hotkey="F2"
+      className="[&_input]:text-sm"
       trailing={
         <UbStack direction="row" gap={2} align="center" className="shrink-0" aria-hidden>
           <ScanLine className="h-4 w-4 text-text-tertiary" />
-          <UbText as="span" className="ds-body-s-regular text-text-tertiary">
+          <UbText as="span" variant="inherit" className="text-[12.5px] text-text-tertiary">
             {t('sales.line.quickAdd.scannerReady')}
           </UbText>
           <UbText
             as="span"
+            variant="inherit"
             className="rounded-[5px] border border-border-hairline bg-surface-sunken px-1.5 text-[11px] font-semibold text-text-secondary"
           >
             F2

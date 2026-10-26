@@ -687,3 +687,32 @@ the picker, and sizing/height details. Filed: FB-019 UPI QR request, FB-020
 absurd quantity/rate accepted (A4), FB-021 box grows once for a five-figure
 balance at 390 px. Report: docs/performance/2026-10-26-shop-a3-saved-customer-box.md.
 Next: A4 adding items.
+
+R-DEC-53 (owner, 26 October 2026) — the bill editor at 1280, answering the
+conflict A4 raised between the design and WP-05: "Follow the artifact: at 1280
+put More details and totals in a 340 px right column beside the lines, as dBill
+shows." From 1280 px the lines take the width and a 340 px column holds More
+details (closed, as dBill draws it) above the totals; the customer card is the
+switch beside the customer, or "Walk-in customer. No name needed." for a quick
+sale. WP-05's docked total and two finishing buttons stay, since dBill draws
+the same dock. Below 1280 the WP-05 layout is unchanged (totals under the
+lines), because a 340 px column there leaves the table too narrow and dBill
+draws no narrower desktop. This supersedes WP-05's "totals under the lines
+below 1536" for 1280–1535 only. Two consequences recorded rather than chosen
+silently: A3's one-row card (switch · customer · More details 360) is now
+drawn only between 1024 and 1279; and the caption keeps the design's word
+"Walk-in", which the 20 Oct plain-labels rule had replaced elsewhere — the
+design is the later instruction (settled by R-DEC-54).
+
+R-DEC-54 (owner, 26 October 2026) — "use design naming convention everywhere".
+Every word a merchant reads is the approved design's word for that place
+(labels, titles, captions, placeholders, buttons, empty states): "New bill",
+"Walk-in customer. No name needed.", "Search or scan item", "Scanner ready",
+"No items yet". Where the design's word and an earlier plain-labels rule
+differ, the design wins (this settles the "Walk-in" caption in R-DEC-53). Hindi
+follows the English it translates. A screen the design does not draw keeps its
+current words until its design is approved. Code identifiers, API keys,
+permissions and saved data do not change. First applied in A4: the sales bill
+editor's header reads "New bill" with the kind of bill under it; estimates,
+orders and challans have no design yet and keep "New estimate", "New sales
+order", "New challan".

@@ -63,7 +63,12 @@ export function InvoicePartySection({
   locale,
   disabled,
   kind = 'invoice',
+  part = 'all',
 }: Readonly<{
+  /** Design §A4 dBill desktop: `who` (the switch and the customer) heads the
+   *  lines, `details` (More details) heads the 340 px column with the totals.
+   *  A phone keeps both in one card (`all`). */
+  part?: 'all' | 'who' | 'details';
   form: UseFormReturn<InvoiceFormValues>;
   today: string;
   tenantState: string;
@@ -105,12 +110,13 @@ export function InvoicePartySection({
   }, [mode]);
   const { can } = usePermissions();
   const mayAdd = can('parties.party.write');
-  const stopAdding = useCallback(() => setAdding(null), []);
+  const stopAdding = useCallback(() => setAdding(null), [setAdding]);
   const createLabel = useCallback((name: string) => t('sales.party.addNew', { name }), [t]);
   // Picker and person-page shortcuts share one defaulting path. A manual
   // invoice-specific state is never overwritten by a late contact response.
   useEffect(() => {
-    if (mode !== 'party' || !partyId) return;
+    // The details column renders this section a second time; one read is enough.
+    if (part === 'details' || mode !== 'party' || !partyId) return;
     const controller = new AbortController();
     void getParty(partyId, controller.signal, 'shop')
       .then(({ party }) => {
@@ -127,7 +133,7 @@ export function InvoicePartySection({
       })
       .catch(() => undefined);
     return () => controller.abort();
-  }, [mode, partyId, disabled, form, setValue, tenantState]);
+  }, [part, mode, partyId, disabled, form, setValue, tenantState]);
   const loaded = shopDue && shopDue.partyId === partyId ? shopDue : null;
   const interState = !!pos && pos !== tenantState;
 
@@ -147,13 +153,142 @@ export function InvoicePartySection({
 
   const box = mode === 'party' && partyId && partyName;
 
+  const renderDetails = (): React.ReactNode => {
+    const details = (
+      <>
+        {mode !== 'party' && (
+          <UbGrid columns={{ base: 1, sm: 2 }} gap={3}>
+            <UbField
+              name="walkInName"
+              label={t('sales.walkIn.name')}
+              placeholder={t('sales.walkIn.namePlaceholder')}
+            >
+              {(field) => <UbTextInput {...field} maxLength={120} disabled={disabled} />}
+            </UbField>
+            <UbField
+              name="walkInMobile"
+              label={t('sales.walkIn.mobile')}
+              placeholder={t('sales.walkIn.mobilePlaceholder')}
+            >
+              {(field) => <UbPhoneInput {...field} disabled={disabled} />}
+            </UbField>
+          </UbGrid>
+        )}
+        <UbGrid columns={{ base: 1, sm: 3 }} gap={3}>
+          <UbField name="documentDate" label={t('sales.editor.date')}>
+            {(field) => (
+              <UbDateInput
+                id={field.id}
+                value={field.value as string}
+                onChange={(next) => field.onChange(next ?? today)}
+                max={today}
+                disabled={disabled}
+              />
+            )}
+          </UbField>
+          {kind === 'estimate' && (
+            <UbField
+              name="validUntil"
+              label={t('sales.estimate.validUntil')}
+              placeholder={t('sales.estimate.validUntilPlaceholder')}
+            >
+              {(field) => (
+                <UbDateInput
+                  id={field.id}
+                  value={(field.value as string) || null}
+                  onChange={(next) => field.onChange(next ?? '')}
+                  min={documentDate}
+                  placeholder={field.placeholder}
+                  disabled={disabled}
+                />
+              )}
+            </UbField>
+          )}
+          {kind === 'invoice' && mode === 'party' && (
+            <UbField
+              name="dueOn"
+              label={t('sales.editor.dueOn')}
+              placeholder={t('sales.editor.dueOnPlaceholder')}
+            >
+              {(field) => (
+                <UbDateInput
+                  id={field.id}
+                  value={(field.value as string) || null}
+                  onChange={(next) => field.onChange(next ?? '')}
+                  min={documentDate}
+                  placeholder={field.placeholder}
+                  disabled={disabled}
+                />
+              )}
+            </UbField>
+          )}
+          <UbField name="placeOfSupplyState" label={t('sales.editor.pos')}>
+            {(field) => (
+              <UbSelect
+                id={field.id}
+                aria-label={t('sales.editor.pos')}
+                value={(field.value as string) || null}
+                placeholder={t('sales.editor.posFromParty')}
+                options={stateOptions}
+                onChange={field.onChange}
+                disabled={disabled}
+              />
+            )}
+          </UbField>
+        </UbGrid>
+        <UbText variant="caption" tone="tertiary">
+          {interState ? t('sales.editor.interState') : t('sales.editor.intraState')}
+        </UbText>
+      </>
+    );
+    /* WP-05 extends the phone's fold to every width below 1536 px. A walk-in
+       bill on a laptop opens it, because the name is still to type; an
+       error inside forces it open, since a hidden error cannot be fixed. */
+    if (!folds && part !== 'details') return details;
+    const posLabel = stateOptions.find((option) => option.value === pos)?.label;
+    const dueOn = kind === 'invoice' && mode === 'party' ? form.getValues('dueOn') : '';
+    const { errors } = form.formState;
+    const mustOpen = !!(
+      errors.documentDate ??
+      errors.dueOn ??
+      errors.validUntil ??
+      errors.placeOfSupplyState ??
+      errors.walkInName ??
+      errors.walkInMobile
+    );
+    return (
+      <UbDisclosure
+        label={t('sales.editor.moreDetails')}
+        hint={[
+          formatBusinessDate(documentDate),
+          dueOn && `${t('sales.editor.dueOn')} ${formatBusinessDate(dueOn)}`,
+          posLabel,
+        ]
+          .filter(Boolean)
+          .join(' · ')}
+        // The dBill column shows it closed: a walk-in needs no name.
+        defaultOpen={part !== 'details' && !isMobileLayer && mode !== 'party'}
+        open={mustOpen ? true : undefined}
+      >
+        <UbStack gap={3}>{details}</UbStack>
+      </UbDisclosure>
+    );
+  };
+  const showDetails = part !== 'who';
+  const detailsBlock = showDetails && renderDetails();
+  if (part === 'details') return <>{detailsBlock}</>;
   return (
     <UbStack
       gap={3}
       className={cn(
         'p-4',
-        // Design §A3 desktop: switch 300 px · the customer · More details 360 px, one row.
-        box && 'lg:grid lg:grid-cols-[300px_minmax(0,1fr)_360px] lg:items-center lg:gap-4'
+        // Design §A4 dBill: switch 300 px · the customer, one row; More details
+        // has moved to the column beside the lines.
+        part === 'who' && 'xl:grid xl:grid-cols-[300px_minmax(0,1fr)] xl:items-center xl:gap-4',
+        // Design §A3 (a phone-and-tablet card): switch · the customer · More details.
+        part === 'all' &&
+          box &&
+          'lg:grid lg:grid-cols-[300px_minmax(0,1fr)_360px] lg:items-center lg:gap-4'
       )}
     >
       {/* Shop item 4 — goods on a challan always go to a named party (SAL-09 §10). */}
@@ -175,6 +310,12 @@ export function InvoicePartySection({
             }
           }}
         />
+      )}
+      {part === 'who' && mode !== 'party' && kind !== 'delivery_challan' && (
+        // Design §A4 dBill: beside the switch, a quick sale says it needs no name.
+        <UbText variant="body-sm" tone="tertiary" data-testid="invoice-no-name">
+          {t('sales.walkIn.noNameNeeded')}
+        </UbText>
       )}
       {box ? (
         <InvoiceCustomerBox
@@ -231,126 +372,7 @@ export function InvoicePartySection({
           (walk-in name and mobile, the dates, the place of supply) fold under
           one line that says what they are, so the items come first. A desktop
           renders them exactly as before. */}
-      {(() => {
-        const details = (
-          <>
-            {mode !== 'party' && (
-              <UbGrid columns={{ base: 1, sm: 2 }} gap={3}>
-                <UbField
-                  name="walkInName"
-                  label={t('sales.walkIn.name')}
-                  placeholder={t('sales.walkIn.namePlaceholder')}
-                >
-                  {(field) => <UbTextInput {...field} maxLength={120} disabled={disabled} />}
-                </UbField>
-                <UbField
-                  name="walkInMobile"
-                  label={t('sales.walkIn.mobile')}
-                  placeholder={t('sales.walkIn.mobilePlaceholder')}
-                >
-                  {(field) => <UbPhoneInput {...field} disabled={disabled} />}
-                </UbField>
-              </UbGrid>
-            )}
-            <UbGrid columns={{ base: 1, sm: 3 }} gap={3}>
-              <UbField name="documentDate" label={t('sales.editor.date')}>
-                {(field) => (
-                  <UbDateInput
-                    id={field.id}
-                    value={field.value as string}
-                    onChange={(next) => field.onChange(next ?? today)}
-                    max={today}
-                    disabled={disabled}
-                  />
-                )}
-              </UbField>
-              {kind === 'estimate' && (
-                <UbField
-                  name="validUntil"
-                  label={t('sales.estimate.validUntil')}
-                  placeholder={t('sales.estimate.validUntilPlaceholder')}
-                >
-                  {(field) => (
-                    <UbDateInput
-                      id={field.id}
-                      value={(field.value as string) || null}
-                      onChange={(next) => field.onChange(next ?? '')}
-                      min={documentDate}
-                      placeholder={field.placeholder}
-                      disabled={disabled}
-                    />
-                  )}
-                </UbField>
-              )}
-              {kind === 'invoice' && mode === 'party' && (
-                <UbField
-                  name="dueOn"
-                  label={t('sales.editor.dueOn')}
-                  placeholder={t('sales.editor.dueOnPlaceholder')}
-                >
-                  {(field) => (
-                    <UbDateInput
-                      id={field.id}
-                      value={(field.value as string) || null}
-                      onChange={(next) => field.onChange(next ?? '')}
-                      min={documentDate}
-                      placeholder={field.placeholder}
-                      disabled={disabled}
-                    />
-                  )}
-                </UbField>
-              )}
-              <UbField name="placeOfSupplyState" label={t('sales.editor.pos')}>
-                {(field) => (
-                  <UbSelect
-                    id={field.id}
-                    aria-label={t('sales.editor.pos')}
-                    value={(field.value as string) || null}
-                    placeholder={t('sales.editor.posFromParty')}
-                    options={stateOptions}
-                    onChange={field.onChange}
-                    disabled={disabled}
-                  />
-                )}
-              </UbField>
-            </UbGrid>
-            <UbText variant="caption" tone="tertiary">
-              {interState ? t('sales.editor.interState') : t('sales.editor.intraState')}
-            </UbText>
-          </>
-        );
-        /* WP-05 extends the phone's fold to every width below 1536 px. A walk-in
-           bill on a laptop opens it, because the name is still to type; an
-           error inside forces it open, since a hidden error cannot be fixed. */
-        if (!folds) return details;
-        const posLabel = stateOptions.find((option) => option.value === pos)?.label;
-        const dueOn = kind === 'invoice' && mode === 'party' ? form.getValues('dueOn') : '';
-        const { errors } = form.formState;
-        const mustOpen = !!(
-          errors.documentDate ??
-          errors.dueOn ??
-          errors.validUntil ??
-          errors.placeOfSupplyState ??
-          errors.walkInName ??
-          errors.walkInMobile
-        );
-        return (
-          <UbDisclosure
-            label={t('sales.editor.moreDetails')}
-            hint={[
-              formatBusinessDate(documentDate),
-              dueOn && `${t('sales.editor.dueOn')} ${formatBusinessDate(dueOn)}`,
-              posLabel,
-            ]
-              .filter(Boolean)
-              .join(' · ')}
-            defaultOpen={!isMobileLayer && mode !== 'party'}
-            open={mustOpen ? true : undefined}
-          >
-            <UbStack gap={3}>{details}</UbStack>
-          </UbDisclosure>
-        );
-      })()}
+      {detailsBlock}
     </UbStack>
   );
 }

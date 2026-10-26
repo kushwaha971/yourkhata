@@ -20,6 +20,7 @@ import {
   UbStatusBanner,
   UbText,
   UbTotalDock,
+  useMediaQuery,
 } from 'src/design-system';
 import { useAppRouter } from 'src/hooks/useAppRouter';
 import { useAppDispatch, useAppSelector } from 'src/hooks/useAppStore';
@@ -110,6 +111,8 @@ export function InvoiceEditorPageContent({
   const taxFree = context ? context.gstType !== 'regular' : false;
   const walkIn = values.mode === 'walkIn';
   const docksTotals = useDocksEditorTotals();
+  // dBill's two columns start at 1280; below it the totals stay under the lines.
+  const desk = useMediaQuery('(min-width: 1280px)');
   const hasLines = preview.lines.length > 0 && values.lines.some((l) => l.itemId || l.description);
   const locked = server.issuing || !!server.issued;
   const creditBlocked = server.error?.code === 'credit_limit_exceeded';
@@ -283,6 +286,7 @@ export function InvoiceEditorPageContent({
     return <UbPageSkeleton variant="card" />;
   }
 
+  const bill = !order && !challan && !estimate;
   const title = t(
     documentTitleId(
       order
@@ -365,12 +369,18 @@ export function InvoiceEditorPageContent({
   return (
     <UbPageShell>
       <UbPageHeader
+        /* Design §A3/A4 (owner, 26 Oct 2026: the design's words everywhere): a
+           sales bill is "New bill", with what kind of bill it is underneath.
+           A draft has no number until it is issued, so none is shown. The
+           other documents have no design yet and keep their titles. */
         title={
-          documentId || server.documentId
-            ? t('sales.editor.editTitle', { title })
-            : t('sales.editor.newTitle', { title })
+          bill
+            ? t('sales.newBill')
+            : documentId || server.documentId
+              ? t('sales.editor.editTitle', { title })
+              : t('sales.editor.newTitle', { title })
         }
-        subtitle={undefined}
+        subtitle={bill ? title : undefined}
         controls={docksTotals ? undefined : saveIndicator}
         actions={
           <>
@@ -448,8 +458,11 @@ export function InvoiceEditorPageContent({
         onSubmit={() => startIssue()}
         formErrors={refused ? [t('sales.validation.fixHighlighted')] : undefined}
       >
-        <UbGrid columns={1} gap={4} className="2xl:grid-cols-3">
-          <UbStack gap={4} className="2xl:col-span-2">
+        {/* Design §A4 dBill (owner, 26 Oct 2026, over WP-05): from 1280 px
+            up the lines take the width and a 340 px column beside them holds
+            More details and the totals, so a laptop sees both at once. */}
+        <UbGrid columns={1} gap={4} className="xl:grid-cols-[minmax(0,1fr)_340px] xl:items-start">
+          <UbStack gap={4} className="min-w-0">
             <InvoiceHeldBills rows={held.rows} total={held.total} />
             {/* From 1536 px Issue is in the header, so its reason heads the form. */}
             {issueNote && !docksTotals && (
@@ -502,6 +515,7 @@ export function InvoiceEditorPageContent({
                 locale={locale}
                 disabled={locked}
                 kind={kind}
+                part={desk ? 'who' : 'all'}
               />
             </UbPanel>
             {challan && (
@@ -518,15 +532,28 @@ export function InvoiceEditorPageContent({
               onSubmitShortcut={requestIssue}
             />
           </UbStack>
-          <InvoiceTotalsPanel
-            form={form}
-            preview={preview}
-            taxFree={taxFree}
-            estimated={estimate}
-            rule46={estimate ? null : server.rule46}
-            warnings={server.warnings}
-            disabled={locked}
-          />
+          <UbStack gap={3} className="min-w-0">
+            {desk && (
+              <InvoicePartySection
+                form={form}
+                today={today}
+                tenantState={context.stateCode}
+                locale={locale}
+                disabled={locked}
+                kind={kind}
+                part="details"
+              />
+            )}
+            <InvoiceTotalsPanel
+              form={form}
+              preview={preview}
+              taxFree={taxFree}
+              estimated={estimate}
+              rule46={estimate ? null : server.rule46}
+              warnings={server.warnings}
+              disabled={locked}
+            />
+          </UbStack>
         </UbGrid>
       </UbForm>
 

@@ -533,5 +533,6 @@
   "sales.walkIn.mobile": "ग्राहक मोबाइल (वैकल्पिक)",
   "sales.walkIn.mobilePlaceholder": "मोबाइल नंबर लिखें",
   "sales.walkIn.name": "ग्राहक का नाम (वैकल्पिक)",
-  "sales.walkIn.namePlaceholder": "जैसे राधे कृष्णा एंटरप्राइजेज"
+  "sales.walkIn.namePlaceholder": "जैसे राधे कृष्णा एंटरप्राइजेज",
+  "sales.walkIn.noNameNeeded": "बिना नाम का ग्राहक। नाम ज़रूरी नहीं।"
 }

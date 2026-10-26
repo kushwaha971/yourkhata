@@ -22,6 +22,8 @@ export interface UbEditTableColumn {
   readonly align?: 'start' | 'end';
   /** A Tailwind width class for the column (e.g. `w-[7.5rem]`). */
   readonly width?: string;
+  /** The one column that takes the spare width and wraps (a bill's item name). */
+  readonly wrap?: boolean;
 }
 
 export interface UbEditTableRow {
@@ -98,7 +100,12 @@ export function UbEditTable({
                 {row.cells.map((cell, index) => (
                   <td
                     key={columns[index]?.id ?? index}
-                    className={cn(TD, columns[index]?.align === 'end' && 'text-right')}
+                    className={cn(
+                      TD,
+                      columns[index]?.align === 'end' && 'text-right',
+                      // Only a column without a width wraps (the item name); figures stay on one line.
+                      columns[index]?.wrap ? 'w-full' : 'whitespace-nowrap'
+                    )}
                   >
                     {cell}
                   </td>

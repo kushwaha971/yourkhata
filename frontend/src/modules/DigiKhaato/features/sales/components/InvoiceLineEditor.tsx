@@ -365,7 +365,7 @@ export function InvoiceLineTable({
   const indexes = shownIndexes(lines);
   const columns: UbEditTableColumn[] = [
     { id: 'n', header: '#', width: 'w-11' },
-    { id: 'item', header: t('sales.line.item') },
+    { id: 'item', header: t('sales.line.item'), wrap: true },
     { id: 'qty', header: t('sales.line.qty'), align: 'end' },
     { id: 'unit', header: t('sales.line.unit') },
     { id: 'rate', header: t('sales.line.rate'), align: 'end' },
@@ -387,7 +387,7 @@ export function InvoiceLineTable({
     const note = renderLineNote(index);
     const tax = taxOptions.find((o) => o.value === line?.taxCode)?.label ?? line?.taxCode ?? '';
     const cells: ReactNode[] = [
-      <UbText key="n" className="tabular-nums text-text-tertiary">
+      <UbText key="n" variant="inherit" className="tabular-nums text-text-tertiary">
         {n + 1}
       </UbText>,
       <UbStack key="item" gap={0} className="min-w-0">
@@ -398,7 +398,7 @@ export function InvoiceLineTable({
           disabled={disabled}
           className="rounded text-left hover:text-primary-700 focus-visible:shadow-focus focus-visible:outline-none"
         >
-          <UbText data-part="name" className="ds-body-s-semibold break-words">
+          <UbText data-part="name" variant="inherit" className="break-words font-semibold">
             {name}
           </UbText>
         </UbPressable>
@@ -413,7 +413,7 @@ export function InvoiceLineTable({
       >
         {(field) => (
           <UbQuantityInput
-            className="ml-auto w-[76px] [&_input]:h-[34px]"
+            className="ml-auto w-[76px] [&_input]:h-[34px] [&_input]:text-sm"
             id={field.id}
             aria-label={t('sales.line.qtyOf', { name })}
             value={(field.value as string) ?? ''}
@@ -426,23 +426,29 @@ export function InvoiceLineTable({
           />
         )}
       </UbField>,
-      <UbText key="unit" tone="secondary">
+      <UbText key="unit" variant="inherit" tone="secondary">
         {line?.unitCode}
       </UbText>,
-      <UbText key="rate" className="tabular-nums">
+      <UbText key="rate" variant="inherit" className="tabular-nums">
         {formatInr(line?.unitPrice || '0')}
       </UbText>,
-      <UbText key="discount" tone="secondary" className="tabular-nums">
+      <UbText key="discount" variant="inherit" tone="secondary" className="tabular-nums">
         {line?.discountType === 'percent' && line.discountValue ? Number(line.discountValue) : 0}
       </UbText>,
       ...(taxFree
         ? []
         : [
-            <UbText key="gst" tone="secondary" className="tabular-nums">
-              {tax}
+            // Design §A4 billTable: the column says GST, so the cell is the rate alone.
+            <UbText
+              key="gst"
+              variant="inherit"
+              tone="secondary"
+              className="whitespace-nowrap tabular-nums"
+            >
+              {preview.lines[index] ? `${Number(preview.lines[index].taxRate)}%` : tax}
             </UbText>,
           ]),
-      <UbText key="amount" data-part="amount" className="font-bold tabular-nums">
+      <UbText key="amount" variant="inherit" data-part="amount" className="font-bold tabular-nums">
         {formatInr(preview.lines[index]?.lineTotal ?? '0')}
       </UbText>,
       <UbButton

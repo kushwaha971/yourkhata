@@ -188,7 +188,9 @@ describe('the bill editor', () => {
     signIn(['sales.invoice.read', 'sales.invoice.write']);
     renderWithProviders(<InvoiceEditorPageContent documentId={null} />);
     expect(await screen.findByTestId('invoice-issue')).toBeDisabled();
-    expect(screen.getByRole('heading', { name: /Tax Invoice/ })).toBeInTheDocument();
+    // Design §A4: "New bill", with the kind of bill underneath.
+    expect(screen.getByRole('heading', { name: 'New bill' })).toBeInTheDocument();
+    expect(screen.getByText('Tax Invoice')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Quick sale', pressed: true })).toBeInTheDocument();
     expect(screen.getByTestId('invoice-grand-total')).toHaveTextContent('₹0.00');
     // Nothing typed, nothing saved: an untouched editor must not create a draft.
@@ -259,7 +261,7 @@ describe('the line table on a desktop (design §A4 dBill)', () => {
   });
 });
 
-describe('a 1280 laptop (WP-05 layout A)', () => {
+describe('a 1280 laptop (WP-05 dock, design §A4 dBill columns)', () => {
   it('docks the total and Issue under the lines, since the totals panel is no longer beside them', async () => {
     // The review measured a 290 px phone card per line at 1280: the totals
     // panel beside the lines left them 696 px. The owner chose to move the
@@ -284,6 +286,39 @@ describe('a 1280 laptop (WP-05 layout A)', () => {
       expect(screen.getByTestId('invoice-issue')).toHaveClass('max-2xl:hidden');
       await userEvent.click(screen.getByRole('button', { name: 'Saved customer' }));
       expect(within(dock).getByRole('button', { name: /Issue/ })).toBeInTheDocument();
+    } finally {
+      window.matchMedia = original;
+    }
+  });
+
+  it('puts More details and the totals in the column beside the lines, and says a quick sale needs no name', async () => {
+    /* Owner, 26 Oct 2026, over WP-05: at 1280 the design's 340 px column
+       holds More details and the totals, so the lines and the total are
+       seen together. Prevents: the totals dropping back under the lines, or
+       More details staying in the customer card as well (two of them). */
+    const width = 1280;
+    const original = window.matchMedia;
+    window.matchMedia = ((query: string) => {
+      const min = /min-width:\s*([\d.]+)/.exec(query)?.[1];
+      const max = /max-width:\s*([\d.]+)/.exec(query)?.[1];
+      return {
+        ...original(query),
+        matches: min ? width >= Number(min) : max ? width <= Number(max) : false,
+      };
+    }) as typeof window.matchMedia;
+    try {
+      signIn(['sales.invoice.read', 'sales.invoice.write']);
+      renderWithProviders(<InvoiceEditorPageContent documentId={null} />);
+      const totals = await screen.findByTestId('invoice-totals');
+      const column = totals.parentElement?.parentElement as HTMLElement;
+      const details = screen.getAllByRole('button', { name: /More details/ });
+      expect(details).toHaveLength(1);
+      expect(column).toContainElement(details[0] ?? null);
+      expect(column).not.toContainElement(screen.getByTestId('invoice-no-name'));
+      expect(screen.getByTestId('invoice-no-name')).toHaveTextContent(
+        'Walk-in customer. No name needed.'
+      );
+      expect(details[0]).toHaveAttribute('aria-expanded', 'false');
     } finally {
       window.matchMedia = original;
     }

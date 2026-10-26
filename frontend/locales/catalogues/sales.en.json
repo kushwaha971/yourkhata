@@ -533,5 +533,6 @@
   "sales.walkIn.mobile": "Customer mobile (optional)",
   "sales.walkIn.mobilePlaceholder": "Enter mobile number",
   "sales.walkIn.name": "Customer name (optional)",
-  "sales.walkIn.namePlaceholder": "e.g. Radhe Krishna Enterprises"
+  "sales.walkIn.namePlaceholder": "e.g. Radhe Krishna Enterprises",
+  "sales.walkIn.noNameNeeded": "Walk-in customer. No name needed."
 }
