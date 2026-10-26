@@ -209,6 +209,8 @@ export { UbActionLink } from './UbActionLink';
 export type { UbActionLinkProps } from './UbActionLink';
 export { UbChoiceChips } from './UbChoiceChips';
 export type { UbChoiceChipOption, UbChoiceChipsProps } from './UbChoiceChips';
+export { UbSegmentedControl } from './UbSegmentedControl';
+export type { UbSegmentedControlProps, UbSegmentedOption } from './UbSegmentedControl';
 
 export { UbCheckbox } from './UbCheckbox';
 export type { UbCheckboxProps } from './UbCheckbox';

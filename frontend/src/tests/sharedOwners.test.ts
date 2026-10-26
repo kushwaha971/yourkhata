@@ -41,6 +41,13 @@ const offenders = (pattern: RegExp, owner: string): string[] =>
   FILES.filter((file) => file.path !== owner && pattern.test(file.text)).map((file) => file.path);
 
 describe('one owner per shared rule', () => {
+  it('turns a discount into its wire pair in src/utils/discountWire.ts only', () => {
+    // A3 monkey run: both editors sent a discount TYPE with no value, which the
+    // server refuses, and every save of the bill failed. One owner decides
+    // "no number is no discount" for sales and purchases alike.
+    expect(offenders(/discount_type:\s*[\w.]+\.discountType/, 'utils/discountWire.ts')).toEqual([]);
+  });
+
   it('builds every wa.me link in src/utils/share.ts', () => {
     expect(offenders(/https:\/\/wa\.me\/\$\{/, 'utils/share.ts')).toEqual([]);
   });

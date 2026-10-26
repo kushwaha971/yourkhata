@@ -1,4 +1,5 @@
 import type { PaymentMode, UpiApp } from 'src/types/domain.types';
+import { discountWire } from 'src/utils/discountWire';
 import { draftSnapshot } from 'src/utils/draftCreation';
 import { compareMoney, toDecimal, toMoneyString } from 'src/utils/money';
 import { formQty } from 'src/utils/quantity';
@@ -156,9 +157,7 @@ export const toPurchaseWireBody = (values: PurchaseBillFormValues): Record<strin
   reverse_charge: values.reverseCharge,
   itc_eligible: values.itcEligible,
   round_off_enabled: values.roundOffEnabled,
-  discount_type: values.discountType || null,
-  discount_value:
-    values.discountType && isNumber(values.discountValue) ? values.discountValue : null,
+  ...discountWire(values.discountType, values.discountValue),
   notes: values.notes,
   lines: values.lines.filter(isCompletePurchaseLine).map((line) => ({
     item_id: line.itemId,
@@ -166,8 +165,7 @@ export const toPurchaseWireBody = (values: PurchaseBillFormValues): Record<strin
     qty: line.qty.trim(),
     unit_code: line.unitCode || null,
     unit_cost: line.unitCost.trim() || null,
-    discount_type: line.discountType || null,
-    discount_value: line.discountType && isNumber(line.discountValue) ? line.discountValue : null,
+    ...discountWire(line.discountType, line.discountValue),
     tax_code: line.taxCode || null,
   })),
 });

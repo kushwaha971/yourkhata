@@ -1,4 +1,5 @@
 import type { PaymentMode } from 'src/types/domain.types';
+import { discountWire } from 'src/utils/discountWire';
 import { formQty } from 'src/utils/quantity';
 
 import type { EngineDocumentInput, EngineGstType } from './taxEngine';
@@ -135,9 +136,7 @@ export const toWireBody = (values: InvoiceFormValues): Record<string, unknown> =
   place_of_supply_state: values.placeOfSupplyState || null,
   reverse_charge: values.reverseCharge,
   round_off_enabled: values.roundOffEnabled,
-  discount_type: values.discountType || null,
-  discount_value:
-    values.discountType && isNumber(values.discountValue) ? values.discountValue : null,
+  ...discountWire(values.discountType, values.discountValue),
   notes: values.notes,
   terms: values.terms,
   lines: values.lines.filter(isCompleteLine).map((line) => ({
@@ -148,8 +147,7 @@ export const toWireBody = (values: InvoiceFormValues): Record<string, unknown> =
     unit_code: line.unitCode || null,
     unit_price: line.unitPrice.trim() || null,
     tax_inclusive: line.taxInclusive,
-    discount_type: line.discountType || null,
-    discount_value: line.discountType && isNumber(line.discountValue) ? line.discountValue : null,
+    ...discountWire(line.discountType, line.discountValue),
     tax_code: line.taxCode || null,
   })),
 });

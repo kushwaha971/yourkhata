@@ -1,8 +1,9 @@
 'use client';
 
-import { forwardRef, memo, type InputHTMLAttributes, type ReactNode } from 'react';
+import { forwardRef, memo, useRef, type InputHTMLAttributes, type ReactNode } from 'react';
 
 import { MLCheckbox } from 'src/design-system/primitives';
+import { useHiddenInputClickGuard } from 'src/design-system/primitives/hiddenInputClick';
 
 /**
  * Part 23 §23.3 — one boolean with its own label. PLT-01's "Remember this
@@ -28,16 +29,21 @@ const UbCheckboxInner = forwardRef<HTMLButtonElement, UbCheckboxProps>(function 
   { checked, indeterminate, onChange, label, className, ...rest },
   ref
 ) {
+  const guard = useRef<HTMLSpanElement>(null);
+  useHiddenInputClickGuard(guard);
+  // `contents`: no box of its own; it only carries the click guard.
   return (
-    <MLCheckbox
-      ref={ref}
-      checked={checked}
-      indeterminate={indeterminate}
-      onCheckedChange={onChange}
-      label={label}
-      className={className}
-      {...rest}
-    />
+    <span ref={guard} className="contents">
+      <MLCheckbox
+        ref={ref}
+        checked={checked}
+        indeterminate={indeterminate}
+        onCheckedChange={onChange}
+        label={label}
+        className={className}
+        {...rest}
+      />
+    </span>
   );
 });
 

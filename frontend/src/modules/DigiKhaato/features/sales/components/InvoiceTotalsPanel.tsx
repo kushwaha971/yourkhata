@@ -101,6 +101,12 @@ export function InvoiceTotalsPanel({
                 if (!discountType) setValue('discountType', 'amount', { shouldDirty: true });
               }}
               placeholder={field.placeholder}
+              // Without the form's blur the field was never "touched", so its
+              // own rule never ran: 150 % showed no message, and the server's
+              // refusal surfaced as "check the highlighted fields" with nothing
+              // highlighted (owner's question, checked live, A3).
+              onBlur={field.onBlur}
+              invalid={!!form.formState.errors.discountValue}
             />
           )}
         </UbField>

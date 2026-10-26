@@ -54,6 +54,9 @@ export const saveDraftWithRecovery = async ({
   const current = getEditor();
   if (
     current.saveState === 'conflict' ||
+    // An autosave queued behind Issue's own save must not run beside the issue:
+    // it started in the same tick as `/issue` and raced it (409, A3 functional run).
+    current.issuing ||
     current.issued ||
     (documentId && current.loadStatus !== 'succeeded')
   )

@@ -1,9 +1,10 @@
 'use client';
 
-import { memo, useId, type ReactNode } from 'react';
+import { memo, useId, useRef, type ReactNode } from 'react';
 
 import * as SwitchPrimitive from '@radix-ui/react-switch';
 
+import { useHiddenInputClickGuard } from 'src/design-system/primitives/hiddenInputClick';
 import { cn } from 'src/utils/cn';
 
 /**
@@ -49,6 +50,8 @@ function UbSwitchBase({
   id,
   className,
 }: Readonly<UbSwitchProps>) {
+  const guard = useRef<HTMLLabelElement>(null);
+  useHiddenInputClickGuard(guard);
   const generated = useId();
   const switchId = id ?? generated;
   const descriptionId = description ? `${switchId}-description` : undefined;
@@ -56,6 +59,7 @@ function UbSwitchBase({
   return (
     <label
       htmlFor={switchId}
+      ref={guard}
       className={cn(
         'flex min-h-11 w-full cursor-pointer items-center justify-between gap-3',
         disabled && 'cursor-not-allowed opacity-60',

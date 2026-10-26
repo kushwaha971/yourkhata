@@ -673,3 +673,17 @@ is proved unused by search, build and full tests. A new dead-code tool needs an
 ADR first. Estimate given to the owner: about 9–10 months for one developer
 (plan 13's figures plus ~1–2 weeks for the sweep); jewellery (P7) and ERP (P8)
 are separate.
+
+Progress26October2026, Shop A3 saved customer box (FB-013): one two-part
+switch, the box in two lines/two columns (avatar · name · Change / mobile ·
+Shop balance), desktop one row 300·1fr·360, all measured equal to the design.
+Thirteen defects found by read-back, functional, monkey and manual testing,
+none by a unit test: wrong book's money on a Shop bill (P0, FB-018), autosave
+racing Issue (409), a deleted discount failing every save (sales and
+purchases, now one owner), 150 % off silent and autosaved, a React flushSync
+warning from Radix checkbox/switch (and a freeze in the first fix, caught by
+the monkey watchdog), lost typing after Saved customer, unformatted mobiles in
+the picker, and sizing/height details. Filed: FB-019 UPI QR request, FB-020
+absurd quantity/rate accepted (A4), FB-021 box grows once for a five-figure
+balance at 390 px. Report: docs/performance/2026-10-26-shop-a3-saved-customer-box.md.
+Next: A4 adding items.

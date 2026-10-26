@@ -189,7 +189,7 @@ describe('the bill editor', () => {
     renderWithProviders(<InvoiceEditorPageContent documentId={null} />);
     expect(await screen.findByTestId('invoice-issue')).toBeDisabled();
     expect(screen.getByRole('heading', { name: /Tax Invoice/ })).toBeInTheDocument();
-    expect(screen.getByRole('radio', { name: 'Quick Sale', checked: true })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Quick sale', pressed: true })).toBeInTheDocument();
     expect(screen.getByTestId('invoice-grand-total')).toHaveTextContent('₹0.00');
     // Nothing typed, nothing saved: an untouched editor must not create a draft.
     // Let the context thunks and the form seed settle before the last look.
@@ -256,7 +256,7 @@ describe('a 1280 laptop (WP-05 layout A)', () => {
       // customer's bill on Issue (below).
       expect(within(dock).getByRole('button', { name: /Paid cash/ })).toBeInTheDocument();
       expect(screen.getByTestId('invoice-issue')).toHaveClass('max-2xl:hidden');
-      await userEvent.click(screen.getByRole('radio', { name: 'Saved customer' }));
+      await userEvent.click(screen.getByRole('button', { name: 'Saved customer' }));
       expect(within(dock).getByRole('button', { name: /Issue/ })).toBeInTheDocument();
     } finally {
       window.matchMedia = original;
@@ -306,7 +306,7 @@ describe('the place of supply for a picked party (QA S-D1)', () => {
     renderWithProviders(<InvoiceEditorPageContent documentId={null} />);
     await screen.findByTestId('invoice-issue');
     expect(screen.getByText('Intra-state supply — CGST + SGST')).toBeInTheDocument();
-    await userEvent.click(screen.getByRole('radio', { name: 'Saved customer' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Saved customer' }));
     await userEvent.type(screen.getByLabelText('Saved customer'), 'Beng');
     const match = await screen.findByRole('option', { name: /Bengaluru Traders/ });
     await waitFor(() => expect(match).toHaveAttribute('aria-disabled', 'false'));
@@ -446,7 +446,7 @@ it('B38 explains the sale date and later opening stock date on the refusal', asy
 it('asks only for customers when choosing who a sales bill is for', async () => {
   signIn(['sales.invoice.read', 'sales.invoice.write', 'parties.party.read']);
   renderWithProviders(<InvoiceEditorPageContent documentId={null} />);
-  await userEvent.click(await screen.findByRole('radio', { name: 'Saved customer' }));
+  await userEvent.click(await screen.findByRole('button', { name: 'Saved customer' }));
   await userEvent.click(screen.getByRole('combobox', { name: 'Saved customer' }));
   const parties = jest.requireMock('../../parties/api/partyService') as { listParties: jest.Mock };
   await waitFor(() =>
@@ -760,13 +760,20 @@ describe('the picked customer (07-screens/09 §3)', () => {
   it('collapses to one line with what they owe in the Shop, and Change brings the search back', async () => {
     const parties = jest.requireMock('../../parties/api/partyService') as { getParty: jest.Mock };
     parties.getParty.mockResolvedValue({
-      party: { id: 'p-ka', name: 'Bengaluru Traders', stateCode: '29', billingAddress: {} },
-      summary: { balance: '3100.00' },
+      party: {
+        id: 'p-ka',
+        name: 'Bengaluru Traders',
+        stateCode: '29',
+        billingAddress: {},
+        shop: { customerBalance: '3100.00' },
+      },
+      // The main (Udhaar) book's balance: never what a Shop bill shows (A3).
+      summary: { balance: '-500.00' },
       credit: null,
     });
     signIn(['sales.invoice.read', 'sales.invoice.write', 'parties.party.read']);
     renderWithProviders(<InvoiceEditorPageContent documentId={null} />);
-    await userEvent.click(await screen.findByRole('radio', { name: 'Saved customer' }));
+    await userEvent.click(await screen.findByRole('button', { name: 'Saved customer' }));
     await userEvent.type(screen.getByLabelText('Saved customer'), 'Beng');
     // Pending choices intentionally refuse clicks; wait for this query's answer.
     await userEvent.click(
@@ -774,8 +781,8 @@ describe('the picked customer (07-screens/09 §3)', () => {
     );
     const line = await screen.findByTestId('invoice-customer-line');
     expect(within(line).getByText('Bengaluru Traders')).toBeInTheDocument();
-    await waitFor(() => expect(line).toHaveTextContent('₹3,100.00'));
-    expect(line).toHaveTextContent('Due in Shop');
+    await waitFor(() => expect(line).toHaveTextContent('₹3,100.00 to collect'));
+    expect(line).not.toHaveTextContent('500.00');
     // DEC-019: the Shop's book, never the Udhaar book's balance.
     expect(parties.getParty).toHaveBeenCalledWith('p-ka', expect.anything(), 'shop');
     await userEvent.click(within(line).getByRole('button', { name: 'Change' }));
@@ -957,7 +964,7 @@ describe('a busy counter (07-screens/09 §3)', () => {
   it('offers no Paid cash on a saved customer, whose bill may go on credit', async () => {
     signIn([...RIGHTS, 'parties.party.read']);
     renderWithProviders(<InvoiceEditorPageContent documentId={null} />);
-    await userEvent.click(await screen.findByRole('radio', { name: 'Saved customer' }));
+    await userEvent.click(await screen.findByRole('button', { name: 'Saved customer' }));
     expect(screen.queryByTestId('invoice-paid-cash')).not.toBeInTheDocument();
     expect(screen.getByTestId('invoice-issue')).toHaveTextContent('Issue');
   });
@@ -1162,7 +1169,7 @@ describe('a customer who is not saved yet', () => {
       'parties.party.write',
     ]);
     renderWithProviders(<InvoiceEditorPageContent documentId={null} />);
-    await userEvent.click(await screen.findByRole('radio', { name: 'Saved customer' }));
+    await userEvent.click(await screen.findByRole('button', { name: 'Saved customer' }));
     await userEvent.type(screen.getByLabelText('Saved customer'), 'Ramesh Electricals');
     const add = await screen.findByRole(
       'button',
@@ -1189,7 +1196,7 @@ describe('a customer who is not saved yet', () => {
     parties().listParties.mockImplementation(noneFor());
     signIn(['sales.invoice.read', 'sales.invoice.write', 'parties.party.read']);
     renderWithProviders(<InvoiceEditorPageContent documentId={null} />);
-    await userEvent.click(await screen.findByRole('radio', { name: 'Saved customer' }));
+    await userEvent.click(await screen.findByRole('button', { name: 'Saved customer' }));
     await userEvent.type(screen.getByLabelText('Saved customer'), 'Ramesh');
     await act(() => new Promise<void>((resolve) => setTimeout(resolve, 600)));
     expect(screen.queryByRole('button', { name: /as a new customer/ })).not.toBeInTheDocument();

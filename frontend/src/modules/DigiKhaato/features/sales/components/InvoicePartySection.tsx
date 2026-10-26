@@ -1,20 +1,19 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import dynamic from 'next/dynamic';
 
 import { type UseFormReturn } from 'react-hook-form';
 
 import {
-  UbAmount,
-  UbButton,
-  UbChoiceChips,
   UbDateInput,
   UbDisclosure,
   UbField,
   UbGrid,
   UbPhoneInput,
+  UbSegmentedControl,
+  UbBox,
   UbSelect,
   UbStack,
   UbText,
@@ -25,17 +24,20 @@ import { useDocksEditorTotals } from 'src/hooks/useDocksEditorTotals';
 import { usePermissions } from 'src/hooks/usePermissions';
 import { useTranslation } from 'src/hooks/useTranslation';
 import type { Locale } from 'src/types/domain.types';
+import { cn } from 'src/utils/cn';
 import { formatBusinessDate } from 'src/utils/dates';
 
 import { ExpensePartyField } from '../../expenses/components/ExpensePartyField';
+import { useAppWords } from '../../navigation/useAppWords';
 import { GST_STATES } from '../../onboarding/constants/gstStates';
 import { getParty } from '../../parties/api/partyService';
-import { balanceView } from '../../parties/view-model/partyDisplay';
 import {
   defaultPlaceOfSupply,
   type BillingMode,
   type InvoiceFormValues,
 } from '../view-model/invoiceForm';
+
+import { InvoiceCustomerBox } from './InvoiceCustomerBox';
 
 /* The contact form belongs to the chunk that OPENS it (Counter Mode "Add"). */
 const PartyQuickCreate = dynamic(
@@ -71,6 +73,7 @@ export function InvoicePartySection({
   kind?: 'invoice' | 'estimate' | 'sales_order' | 'delivery_challan';
 }>): React.JSX.Element {
   const { t } = useTranslation();
+  const { w } = useAppWords();
   const isMobileLayer = useIsMobileLayer();
   const folds = useDocksEditorTotals();
   const { watch, setValue } = form;
@@ -85,9 +88,21 @@ export function InvoicePartySection({
    * the Udhaar book's figure), with Change. One read serves both this and the
    * place of supply.
    */
-  const [shopDue, setShopDue] = useState<{ partyId: string; balance: string } | null>(null);
+  const [shopDue, setShopDue] = useState<{
+    partyId: string;
+    /** The SHOP balance (due − credit); null when the server has no Shop figures. */
+    balance: string | null;
+    mobile: string | null;
+  } | null>(null);
   /** The name being added as a new customer from the search, while its form is open. */
   const [adding, setAdding] = useState<string | null>(null);
+  // A ref, not state: focusing is a side effect of the switch, not a render.
+  const focusPicker = useRef(false);
+  useEffect(() => {
+    if (!focusPicker.current || mode !== 'party') return;
+    focusPicker.current = false;
+    document.querySelector<HTMLInputElement>('[data-testid=invoice-party-picker] input')?.focus();
+  }, [mode]);
   const { can } = usePermissions();
   const mayAdd = can('parties.party.write');
   const stopAdding = useCallback(() => setAdding(null), []);
@@ -98,42 +113,61 @@ export function InvoicePartySection({
     if (mode !== 'party' || !partyId) return;
     const controller = new AbortController();
     void getParty(partyId, controller.signal, 'shop')
-      .then(({ party, summary }) => {
+      .then(({ party }) => {
         if (controller.signal.aborted || form.getValues('partyId') !== partyId) return;
         if (!disabled && !form.getValues('placeOfSupplyState'))
           setValue('placeOfSupplyState', defaultPlaceOfSupply(party, tenantState));
-        setShopDue({ partyId, balance: summary.balance });
+        // A3: `party.shop`, never `summary.balance` — that is the main
+        // (Udhaar) book, and a Shop bill printed another book's money.
+        setShopDue({
+          partyId,
+          balance: party.shop?.customerBalance ?? null,
+          mobile: party.mobile,
+        });
       })
       .catch(() => undefined);
     return () => controller.abort();
   }, [mode, partyId, disabled, form, setValue, tenantState]);
-  const due = shopDue && shopDue.partyId === partyId ? shopDue.balance : null;
-  const dueView = due === null ? null : balanceView(due);
+  const loaded = shopDue && shopDue.partyId === partyId ? shopDue : null;
   const interState = !!pos && pos !== tenantState;
 
   const modeOptions = useMemo(
     () => [
       { value: 'walkIn' as BillingMode, label: t('sales.walkIn.label') },
-      { value: 'party' as BillingMode, label: t('sales.editor.party') },
+      // Through the word layer: a business that calls its customers
+      // "Retailers" says "Saved retailer" here once BP-22 sends its words.
+      { value: 'party' as BillingMode, label: w('sales.editor.party') },
     ],
-    [t]
+    [t, w]
   );
   const stateOptions = useMemo(
     () => GST_STATES.map((s) => ({ value: s.code, label: `${s[locale]} (${s.code})` })),
     [locale]
   );
 
+  const box = mode === 'party' && partyId && partyName;
+
   return (
-    <UbStack gap={3} className="p-4">
+    <UbStack
+      gap={3}
+      className={cn(
+        'p-4',
+        // Design §A3 desktop: switch 300 px · the customer · More details 360 px, one row.
+        box && 'lg:grid lg:grid-cols-[300px_minmax(0,1fr)_360px] lg:items-center lg:gap-4'
+      )}
+    >
       {/* Shop item 4 — goods on a challan always go to a named party (SAL-09 §10). */}
       {kind !== 'delivery_challan' && (
-        <UbChoiceChips<BillingMode>
+        <UbSegmentedControl<BillingMode>
           ariaLabel={t('sales.editor.billTo')}
           value={mode}
           options={modeOptions}
           disabled={disabled}
           onChange={(next) => {
             setValue('mode', next, { shouldDirty: true });
+            // Saved customer: the picker takes focus, so a merchant who taps
+            // and types does not lose the letters (found by hand, A3 manual).
+            if (next === 'party') focusPicker.current = true;
             if (next === 'walkIn') {
               setValue('partyId', null, { shouldDirty: true });
               setValue('partyName', '');
@@ -142,77 +176,44 @@ export function InvoicePartySection({
           }}
         />
       )}
-      {mode === 'party' && partyId && partyName ? (
-        <UbStack
-          direction="row"
-          align="center"
-          justify="between"
-          gap={3}
-          wrap
-          data-testid="invoice-customer-line"
-          className="rounded-control border border-border-hairline px-3 py-2"
-        >
-          {/* The name owns its line: below ~12rem the figure and Change wrap
-              under it rather than squeezing it to "Bose &…" (320 px sweep). */}
-          <UbStack gap={0} className="min-w-[12rem] flex-1">
-            <UbText variant="caption" tone="tertiary">
-              {t('sales.editor.party')}
-            </UbText>
-            <UbText variant="body-medium" className="line-clamp-2 break-words">
-              {partyName}
-            </UbText>
-          </UbStack>
-          {due !== null && dueView && (
-            <UbAmount
-              value={due}
-              tone={dueView.tone}
-              sign={dueView.sign}
-              label={t(
-                dueView.tone === 'receivable'
-                  ? 'sales.editor.customerDue'
-                  : dueView.tone === 'payable'
-                    ? 'sales.editor.customerAdvance'
-                    : 'sales.editor.customerSettled'
-              )}
-              size="sm"
-            />
-          )}
-          <UbButton
-            variant="ghost"
-            size="sm"
-            disabled={disabled}
-            onClick={() => {
-              setValue('partyId', null, { shouldDirty: true });
-              setValue('partyName', '');
-              setValue('placeOfSupplyState', '', { shouldDirty: true });
-            }}
-          >
-            {t('sales.editor.changeCustomer')}
-          </UbButton>
-        </UbStack>
+      {box ? (
+        <InvoiceCustomerBox
+          name={partyName}
+          mobile={loaded?.mobile}
+          balance={loaded ? loaded.balance : undefined}
+          disabled={disabled}
+          t={t}
+          onChange={() => {
+            setValue('partyId', null, { shouldDirty: true });
+            setValue('partyName', '');
+            setValue('placeOfSupplyState', '', { shouldDirty: true });
+          }}
+        />
       ) : mode === 'party' ? (
-        <UbField
-          name="partyId"
-          label={t('sales.editor.party')}
-          placeholder={t('sales.editor.partyPlaceholder')}
-        >
-          {(field) => (
-            <ExpensePartyField
-              type="customer"
-              disabled={disabled}
-              field={{ ...field, value: field.value ?? '' }}
-              partyName={partyName}
-              t={t}
-              onPick={(id, name) => {
-                field.onChange(id || null);
-                setValue('partyName', name);
-                setValue('placeOfSupplyState', '', { shouldDirty: true });
-              }}
-              onCreate={mayAdd ? setAdding : undefined}
-              createLabel={createLabel}
-            />
-          )}
-        </UbField>
+        <UbBox data-testid="invoice-party-picker">
+          <UbField
+            name="partyId"
+            label={t('sales.editor.party')}
+            placeholder={t('sales.editor.partyPlaceholder')}
+          >
+            {(field) => (
+              <ExpensePartyField
+                type="customer"
+                disabled={disabled}
+                field={{ ...field, value: field.value ?? '' }}
+                partyName={partyName}
+                t={t}
+                onPick={(id, name) => {
+                  field.onChange(id || null);
+                  setValue('partyName', name);
+                  setValue('placeOfSupplyState', '', { shouldDirty: true });
+                }}
+                onCreate={mayAdd ? setAdding : undefined}
+                createLabel={createLabel}
+              />
+            )}
+          </UbField>
+        </UbBox>
       ) : null}
       {adding !== null && (
         <PartyQuickCreate

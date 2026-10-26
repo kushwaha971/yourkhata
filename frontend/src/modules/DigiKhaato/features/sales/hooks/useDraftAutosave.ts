@@ -43,16 +43,31 @@ const meaningful = (values: InvoiceFormValues): boolean =>
   !!values.partyId || (values.lines ?? []).some(isCompleteLine);
 
 /**
- * QA B8 — a percentage discount outside 0–100 is refused by the server (400), so a
- * save of it can only fail; it waits until the cell is fixed. The cell says why.
+ * QA B8 — a discount outside its limits is refused by the server (400), so a
+ * save of it can only fail; it waits until the field is fixed, and the field
+ * says why. The limits are the server's: a percent is 0–100; a rupee discount
+ * is at most what it is taken from — the line's qty × rate, or the bill's
+ * subtotal. The bill's own discount was not checked here, so 150 % off, or
+ * more rupees than the subtotal, sent a refused draft every 3 s (A3, the
+ * owner's question, checked live).
  */
-export const discountsInRange = (values: InvoiceFormValues): boolean =>
+const overLimit = (type: string, value: string, base: number): boolean => {
+  const n = Number(value);
+  if (!type || !value.trim() || Number.isNaN(n)) return false;
+  return n < 0 || (type === 'percent' ? n > 100 : n > base);
+};
+
+export const discountsInRange = (values: InvoiceFormValues, subtotal?: string): boolean =>
   (values.lines ?? []).every(
     (line) =>
-      line.discountType !== 'percent' ||
-      !line.discountValue ||
-      (Number(line.discountValue) >= 0 && Number(line.discountValue) <= 100)
-  );
+      !overLimit(
+        line.discountType,
+        line.discountValue ?? '',
+        Number(line.qty || 0) * Number(line.unitPrice || 0)
+      )
+  ) &&
+  (subtotal === undefined ||
+    !overLimit(values.discountType, values.discountValue ?? '', Number(subtotal)));
 
 export interface UseDraftAutosaveResult {
   readonly indicator: AutosaveIndicator;
@@ -115,8 +130,9 @@ export const useDraftAutosave = (
 
   // FR-2 — the server copy, 3 s after the last change, while dirty and meaningful.
   const blocked = offline || server.saveState === 'conflict' || server.issuing || !!server.issued;
+  const subtotal = editor.preview.subtotal;
   useEffect(() => {
-    if (repeatId || !dirty || blocked || !meaningful(values) || !discountsInRange(values))
+    if (repeatId || !dirty || blocked || !meaningful(values) || !discountsInRange(values, subtotal))
       return undefined;
     const timer = window.setTimeout(() => {
       if (saving.current) return;
@@ -129,7 +145,7 @@ export const useDraftAutosave = (
       });
     }, SERVER_AUTOSAVE_MS);
     return () => window.clearTimeout(timer);
-  }, [values, dirty, blocked, save, form, saveRevision, repeatId]);
+  }, [values, dirty, blocked, save, form, saveRevision, repeatId, subtotal]);
 
   const acceptRestore = useCallback(() => {
     if (restore) {

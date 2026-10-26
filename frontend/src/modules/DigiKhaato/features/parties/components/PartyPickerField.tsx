@@ -17,6 +17,7 @@ import {
 import type { TranslateFn } from 'src/hooks/useTranslation';
 import type { LedgerBook } from 'src/types/domain.types';
 import { cn } from 'src/utils/cn';
+import { formatPhoneForDisplay } from 'src/utils/share';
 
 import { usePartySearch } from '../hooks/usePartySearch';
 
@@ -230,7 +231,8 @@ export function PartyPickerField({
               <UbListItemText
                 wrapPrimary="full"
                 primary={party.name}
-                secondary={party.mobile ?? undefined}
+                // Grouped the way the box and every list print it (A3 manual pass).
+                secondary={party.mobile ? formatPhoneForDisplay(party.mobile) : undefined}
               />
             </UbBox>
           ))}
