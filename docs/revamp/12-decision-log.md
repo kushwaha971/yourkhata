@@ -623,3 +623,53 @@ from the API (34 rows x 10 views, 0 mismatches; skewed self-test fails all).
 Scan button deferred to Part C. Words now layered app -> business in
 useAppWords (BP-22 seam). Next: A3 saved customer box.
 
+
+R-DEC-50 (owner, 26 October 2026) — P0 FOR EVERYTHING: every screen is
+pixel-exact and functionally identical to the approved design, in every case.
+Owner's words: "Want exact 100% pixel perfect and functional like in artifact
+… keep that in mind for each and everything … add that also in docs as P0 for
+everything." Method (CLAUDE.md acceptance gate 13): measured computed values
+against the design's CSS numbers, pixel-sampled colours, design mocks
+photographed side by side with the built screen per case (390/320/1280,
+light/dark, EN/HI, empty/loading/error/long/no-match), every shown figure read
+back from the API with a self-test that proves the read-back can fail,
+busy-counter behaviour, manual exploratory, seeded monkey and functional end-to-end testing (owner, same day), and conflicts with earlier owner rules listed for the
+owner rather than chosen silently. Multiple business types are designed in from
+the start (useAppWords, BP-22). Applies to Shop, Udhaar, Lending, Library and
+every later app.
+
+R-DEC-51 (owner, 26 October 2026) — business-model decisions, answered on the
+visual map (https://claude.ai/artifact/JQwhANuqjVAcxs4PFjBrcb), all as proposed:
+1. Per business type: words change and rows a business never uses are hidden;
+   the menu ORDER is the same for everyone.
+2. Phone bottom bar: Home · Bills · Customers · Items · More.
+3. Starter categories: the list for the business type, all ticked; the owner
+   unticks.
+4. First business type to build: Hardware & electrical (P1: box/piece units,
+   part numbers, rack).
+5. Bill line details: a bottom sheet on a phone, under the row on desktop.
+6. Owner-typed words: English required, Hindi optional; the built-in Hindi
+   word is used until one is added.
+7. Features are per business, never per staff member; people are limited by
+   roles and permissions.
+8. The server sends the menu rows (BP-22 #3).
+BP-22 is approved: words, features and menu rows go in the session, resolved
+on the server. Doc 17 §7 records the same answers. Parts B, C and D may start
+in the order of the ORDER section of START-BUSINESS-TYPES-PROMPT.txt, after
+Part A, Part F and BP-22's build.
+
+R-DEC-52 (owner, 26 October 2026) — Shop scope, in the owner's words: "update
+the entire UI of the Shop module along with the additional features as we
+mention in docs, pixel perfect as per that artifact, end-to-end working
+features, and also remove all unused, unnecessary and duplicate code."
+So the Shop work is: (1) every Shop page, modal and component redone to the
+approved artifact, phone and desktop (R-DEC-50); (2) Parts B, C and D per the
+design page and plan 13, in the order R-DEC-51 set; (3) every feature proved
+end to end through the UI with API read-back; (4) unused, unnecessary and
+duplicate code removed — the code a redone screen replaces is deleted in the
+same commit, plus one measured sweep (unused exports, locale keys, CSS,
+duplicated rules into one owner). Nothing is removed on a guess: each removal
+is proved unused by search, build and full tests. A new dead-code tool needs an
+ADR first. Estimate given to the owner: about 9–10 months for one developer
+(plan 13's figures plus ~1–2 weeks for the sweep); jewellery (P7) and ERP (P8)
+are separate.

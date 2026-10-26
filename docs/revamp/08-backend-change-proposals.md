@@ -383,8 +383,8 @@ scoped presentation piece, but whole-app data-isolation scoring remains open.
 
 ## BP-22 · Server decides, client draws: words, features and menu in the session
 
-Proposed 26 Oct 2026; **approved in direction by the owner** ("keep all thing
-on backend side… ok proceed"), detail awaiting review. Full design, tests and
+Proposed 26 Oct 2026; **approved by the owner 26 Oct 2026** (R-DEC-51: the
+server sends the menu rows; words English required, Hindi optional). Full design, tests and
 open questions: `docs/platform/17-business-model-map.md` §6–§7.
 
 The session already carries landing, apps, permissions and modules. Add:

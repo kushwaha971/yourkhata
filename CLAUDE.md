@@ -150,6 +150,59 @@ piece. Do not make the owner discover deviations already specified in the docs.
     No aggregate rating can compensate for incorrect money/stock, unauthorized
     access, lost work or an essential broken/unavailable workflow. New features
     and backend changes still respect their approval/frozen-contract boundaries.
+13. **P0 — pixel-exact and functionally identical to the approved design, for
+    every screen in every case (owner, 26 Oct 2026, R-DEC-50).** This applies to
+    everything, not only Shop. "Close" is a failure.
+    - **The design:** https://claude.ai/artifact/RsYjPpq2t3zCTMu5iUSvNm, copied
+      at `docs/revamp/design/shop-fixes-and-business-types.html`. The copy was
+      checked identical to the live page on 26 Oct 2026. Re-check before each
+      piece; if they differ, the live page wins and the copy is refreshed.
+      Every fix, build and redesign starts from its section. Section E1
+      ("Every Shop screen") is the checklist, so no page is skipped.
+    - **UI and behaviour, phone and desktop, for every feature, component,
+      modal and page** (owner: "same UI and behaviour as there … 100% pixel
+      perfect and functional"). Behaviour means what each tap opens, what moves
+      where, what each state says, and how phone and desktop differ, exactly as
+      the section's "What changes" list and mocks describe. Each item is checked
+      on the running app, not assumed from the code.
+    - **Scope: every screen, every module, everything** (owner, same day).
+      That covers Shop, Udhaar, Lending, Library and every later app, plus
+      drawers, sheets, dialogs, prints/PDFs, and the empty, loading and error
+      states. A screen with an approved design (this artifact, or the module's
+      own, such as `docs/revamp/design/counter-mode.html`) is matched exactly. A
+      screen with none is designed first and shown to the owner for approval
+      before it is built. Never invent a look and call it matched.
+    - **Pixels are measured, not eyeballed.** Each element's computed size,
+      padding, gap, radius, font size and weight, and colour (pixel-sampled) is
+      compared on the running app with the design's CSS numbers.
+    - **Side by side, per case.** The design's own mocks (`[data-mock=…]`,
+      `e2e/design-compare.mjs`) are photographed and paired with the built
+      screen. Cover phone 390 and 320, desktop 1280, light and dark, EN and HI,
+      and the empty, loading, error, long-text and no-match states. Every pair
+      is LOOKED at.
+    - **Data, not only pixels.** Every figure a screen shows is read back from
+      the API it uses, and the read-back is proved able to fail with a skewed
+      self-test.
+    - **Behaviour.** The busy-counter checks run on every piece: double taps,
+      fast switching, slow network, reload and typing during load. React
+      commits and requests are counted while typing.
+    - **Test like a user and a QA engineer, every piece.** Three kinds, each
+      required:
+      - *manual exploratory* — drive the app by hand in a browser, tap by tap,
+        on phone and desktop sizes;
+      - *monkey* — a seeded random run of taps, typing and keys, failing on a
+        crash, console error, overflow or lost data, with the seed reported
+        so a failure reproduces;
+      - *functional end to end* — complete the real business task (issue the
+        bill, take the payment), read the result back from the API, and check
+        every other screen showing that data updated without a refresh
+        (FB-010).
+    - **Conflicts are listed, never chosen silently.** Where the design
+      contradicts an earlier owner rule (unbuilt features hidden, today's
+      tokens, dd/mm/yyyy in rows), list the conflict for the owner.
+    - **Multiple business types from the start.** Words go through
+      `useAppWords().w`, and features and menu come from the server (BP-22,
+      `docs/platform/17-business-model-map.md`), never discovered afterwards.
 
 
 The owner asked for a specific loop, in these words: **review, build, look,

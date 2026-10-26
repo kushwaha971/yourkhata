@@ -179,19 +179,19 @@ session build (cached per request, like entitlements).
 **Order.** 1 (words) is small and unblocks every Shop fix's wording; 2 and 3
 come with F0. Each ships on its own with its gates.
 
-## 7. Decisions for the owner
+## 7. Decisions — answered by the owner, 26 Oct 2026 (R-DEC-51)
 
-These are the design page's E2 questions plus three this map raises.
+All eight were answered on the visual map
+(https://claude.ai/artifact/JQwhANuqjVAcxs4PFjBrcb), each as proposed. **BP-22
+is approved.**
 
-1. Per business type: words only, or also re-ordering the menu?
-2. The phone bottom bar's order.
-3. Starter categories: create them, or offer them as ticks?
-4. Which business type first?
-5. Line details: under the row, or in a side drawer?
-6. Should owner-typed words (a custom "Customer" label) be one language, or
-   entered in both English and Hindi?
-7. Can a business with two types (kirana + medical) have staff who see only
-   one type's features, or are features always per business?
-8. Should `nav` be sent by the server (BP-22 #3), or is server-sent
-   permissions + features enough with the client filtering its manifests?
-   Recommended: send it — one rule in one place.
+| # | Question | Decision |
+|---|---|---|
+| 1 | Per business type: words only, or re-order the menu? | Words, and hide rows that business never uses; same order for everyone |
+| 2 | Phone bottom bar order | Home · Bills · Customers · Items · More |
+| 3 | Starter categories | The list for their type, all ticked; the owner unticks |
+| 4 | Which business type first | Hardware & electrical (box/piece units, part numbers, rack) |
+| 5 | Line details: under the row or a drawer | Phone: a bottom sheet; desktop: under the row |
+| 6 | Language of owner-typed words | English required, Hindi optional; the built-in Hindi word until one is added |
+| 7 | Staff limited to one type's features? | No: features are per business; people are limited by roles and permissions |
+| 8 | Who decides the menu rows | The server sends the rows (BP-22 #3) |
