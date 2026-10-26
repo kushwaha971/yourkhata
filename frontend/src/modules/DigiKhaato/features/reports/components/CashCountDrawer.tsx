@@ -33,10 +33,14 @@ import { absMoney, formatInr, isZeroAmount } from 'src/utils/money';
 
 import { listCashCounts, recordCashCount } from '../api/cashCountService';
 import { useCashCountSchema, type CashCountFormValues } from '../validation/cashCountSchema';
-import { VARIANCE_TONE, countedWhen, typedVariance, varianceWords } from '../view-model/cashCountDisplay';
+import {
+  VARIANCE_TONE,
+  countedWhen,
+  typedVariance,
+  varianceWords,
+} from '../view-model/cashCountDisplay';
 
 import type { CashCount } from '../types/reports.types';
-
 
 // Loaded with dynamic(), so its words come with its own chunk.
 import 'src/i18n/catalogues/reports';
@@ -49,7 +53,11 @@ const WIRE_TO_FORM: Record<string, string> = { counted_amount: 'countedAmount' }
 type Load =
   | { readonly status: 'loading' }
   | { readonly status: 'failed' }
-  | { readonly status: 'ready'; readonly counts: readonly CashCount[]; readonly expectedNow: string };
+  | {
+      readonly status: 'ready';
+      readonly counts: readonly CashCount[];
+      readonly expectedNow: string;
+    };
 
 /**
  * BP-17 (R-DEC-26) — "count the drawer": the owner types what is physically
@@ -124,7 +132,11 @@ export function CashCountDrawer({
         setSaved(count);
         setLoad((prev) =>
           prev.status === 'ready'
-            ? { status: 'ready', counts: [count, ...prev.counts], expectedNow: count.expectedAmount }
+            ? {
+                status: 'ready',
+                counts: [count, ...prev.counts],
+                expectedNow: count.expectedAmount,
+              }
             : prev
         );
         dispatch(
@@ -224,10 +236,14 @@ export function CashCountDrawer({
             tone="error"
             title={t('reports.cashCount.loadFailed')}
             action={
-              <UbButton size="sm" variant="outlineNeutral" onClick={() => {
+              <UbButton
+                size="sm"
+                variant="outlineNeutral"
+                onClick={() => {
                   setLoad({ status: 'loading' });
                   setAttempt((n) => n + 1);
-                }}>
+                }}
+              >
                 {t('reports.cashCount.retry')}
               </UbButton>
             }
@@ -303,14 +319,23 @@ export function CashCountDrawer({
                       {words.text}
                     </UbText>
                     {count.movedSince && !isZeroAmount(count.movedSince) && (
-                      <UbText variant="caption" tone="secondary" className="ds-num" data-testid="cash-count-moved">
-                        {t('reports.cashCount.moved', { amount: formatInr(absMoney(count.movedSince)) })}
+                      <UbText
+                        variant="caption"
+                        tone="secondary"
+                        className="ds-num"
+                        data-testid="cash-count-moved"
+                      >
+                        {t('reports.cashCount.moved', {
+                          amount: formatInr(absMoney(count.movedSince)),
+                        })}
                       </UbText>
                     )}
                     {(count.countedBy || count.note) && (
                       <UbText variant="caption" tone="secondary" className="break-words">
                         {[
-                          count.countedBy ? t('reports.cashCount.by', { name: count.countedBy.name }) : '',
+                          count.countedBy
+                            ? t('reports.cashCount.by', { name: count.countedBy.name })
+                            : '',
                           count.note,
                         ]
                           .filter(Boolean)

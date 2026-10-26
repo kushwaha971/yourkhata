@@ -60,10 +60,7 @@ export function DayBookRowSheet({
             value={`${formatBusinessDate(row.date)} · ${row.time}`}
           />
           <UbInfoRow label={t('reports.daybook.column.number')} value={row.number ?? dash} />
-          <UbInfoRow
-            label={t('reports.daybook.column.party')}
-            value={rowPartyName(row) ?? dash}
-          />
+          <UbInfoRow label={t('reports.daybook.column.party')} value={rowPartyName(row) ?? dash} />
           <UbInfoRow
             label={t('reports.daybook.column.description')}
             value={describeRow(row, t) || dash}

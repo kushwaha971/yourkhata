@@ -248,7 +248,9 @@ it('puts the answer first: money in and out, and the drawer at close for the own
   signIn(OWNER);
   renderWithProviders(<DayBookPageContent />);
   const box = await screen.findByTestId('day-book-figures');
-  expect(within(box).getAllByText(/^(Money in|Money out|Cash at close|Bank at close)$/)).toHaveLength(4);
+  expect(
+    within(box).getAllByText(/^(Money in|Money out|Cash at close|Bank at close)$/)
+  ).toHaveLength(4);
   expect(screen.getByTestId('day-book-figure-in')).toHaveTextContent('₹1,772.00');
   expect(screen.getByTestId('day-book-figure-out')).toHaveTextContent('₹200.00');
   expect(screen.getByTestId('day-book-figure-cash')).toHaveTextContent('₹800.00');
@@ -353,9 +355,7 @@ it('says a band covers only this page when the day runs across pages', async () 
   mockSearch = 'period=thisMonth&page=2';
   signIn(OWNER);
   renderWithProviders(<DayBookPageContent />);
-  expect(
-    await screen.findByText('On this page: In ₹1,772.00 · Out ₹0.00')
-  ).toBeInTheDocument();
+  expect(await screen.findByText('On this page: In ₹1,772.00 · Out ₹0.00')).toBeInTheDocument();
 });
 
 it('names the quiet day it is showing (09 §10.2)', async () => {

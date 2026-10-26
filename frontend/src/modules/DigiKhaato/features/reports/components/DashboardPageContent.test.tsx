@@ -260,7 +260,9 @@ it('says the drawer is not counted and offers Count cash on the same line', asyn
   renderWithProviders(<DashboardPageContent />);
   const today = await screen.findByRole('region', { name: 'Today so far' });
   expect(within(today).getByTestId('home-cash-count-last')).toHaveTextContent('Not counted');
-  expect(within(today).getByTestId('home-cash-count')).toHaveTextContent('Not counted · Count cash');
+  expect(within(today).getByTestId('home-cash-count')).toHaveTextContent(
+    'Not counted · Count cash'
+  );
   await userEvent.click(within(today).getByRole('button', { name: 'Count cash' }));
   expect(await screen.findByTestId('cash-count-drawer')).toBeInTheDocument();
 });

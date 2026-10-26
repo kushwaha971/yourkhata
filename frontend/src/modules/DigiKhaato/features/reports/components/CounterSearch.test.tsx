@@ -1,6 +1,5 @@
 import { fireEvent, screen, waitFor } from '@testing-library/react';
 
-import type { UbAsyncComboboxProps } from 'src/design-system';
 import { renderWithProviders } from 'src/tests/renderWithProviders';
 
 import { CounterSearchPanel as CounterSearch } from './CounterSearchPanel';
@@ -25,12 +24,25 @@ jest.mock('../../parties/hooks/usePartySearch', () => ({
       activate: jest.fn(),
       pending: false,
       results: [
+        ...(query === 'Sharma'
+          ? [
+              {
+                id: 'p2',
+                name: 'Sharma Mart',
+                mobile: null,
+                isCustomer: true,
+                isSupplier: false,
+                shop: { customerDue: '500.00', supplierDue: '0.00' },
+              },
+            ]
+          : []),
         {
           id: 'p1',
           name: 'Radhe Krishna Enterprises',
           mobile: '+919876543210',
           isCustomer: true,
           isSupplier: true,
+          shop: { customerDue: '1240.00', supplierDue: '600.00' },
         },
       ],
     };
@@ -44,43 +56,32 @@ jest.mock('../../inventory/hooks/useItemSearch', () => ({
       setQuery,
       activate: jest.fn(),
       pending: false,
-      results: query === 'LED' ? [{ id: 'i1', name: 'LED driver', sellingPrice: '900.00' }] : [],
+      results:
+        query === 'LED'
+          ? [
+              {
+                id: 'i1',
+                name: 'LED driver',
+                sellingPrice: '900.00',
+                onHand: '14.000',
+                unit: { id: 'u1', code: 'PCS', allowDecimal: false },
+              },
+            ]
+          : [],
     };
   },
 }));
-jest.mock('src/design-system', () => ({
-  ...jest.requireActual('src/design-system'),
-  UbAsyncCombobox: (props: UbAsyncComboboxProps) => {
-    const { UbTextInput, UbButton } = jest.requireActual('src/design-system');
-    return (
-      <>
-        <UbTextInput
-          aria-label="Counter"
-          value={props.query}
-          onFocus={props.onOpen}
-          onChange={(value: string) => props.onQueryChange(value)}
-        />
-        {props.options.map((row) => (
-          <UbButton aria-label={row.label} key={row.value} onClick={() => props.onSelect(row)}>
-            {row.label}
-            {row.detail}
-          </UbButton>
-        ))}
-      </>
-    );
-  },
-}));
+const field = () => screen.getByRole('combobox', { name: 'Find or start' });
+const option = (name: string | RegExp) => screen.findByRole('option', { name });
 
 beforeEach(() => push.mockClear());
 it('opens a reviewed Shop payment for a name and amount, preserving separate dual-role actions', async () => {
   const onPayment = jest.fn();
   renderWithProviders(<CounterSearch onPayment={onPayment} />);
-  fireEvent.change(screen.getByLabelText('Counter'), { target: { value: 'Radhe 2000' } });
-  const receive = await screen.findByRole('button', {
-    name: 'Receive ₹2,000.00 from Radhe Krishna Enterprises',
-  });
+  fireEvent.change(field(), { target: { value: 'Radhe 2000' } });
+  const receive = await option(/^Receive ₹2,000\.00 from Radhe Krishna Enterprises/);
   expect(
-    screen.getByRole('button', { name: 'Pay ₹2,000.00 to Radhe Krishna Enterprises' })
+    screen.getByRole('option', { name: /^Pay ₹2,000\.00 to Radhe Krishna Enterprises/ })
   ).toBeInTheDocument();
   fireEvent.click(receive);
   expect(onPayment).toHaveBeenCalledWith(
@@ -95,8 +96,8 @@ it('opens a reviewed Shop payment for a name and amount, preserving separate dua
 });
 it('opens an item-seeded new bill without saving a document from the search', async () => {
   renderWithProviders(<CounterSearch onPayment={jest.fn()} />);
-  fireEvent.change(screen.getByLabelText('Counter'), { target: { value: 'LED' } });
-  fireEvent.click(await screen.findByRole('button', { name: 'New bill with LED driver' }));
+  fireEvent.change(field(), { target: { value: 'LED' } });
+  fireEvent.click(await option(/^LED driver Stock 14 PCS/));
   await waitFor(() => expect(push).toHaveBeenCalledWith('/sales/invoices/new?item=i1'));
 });
 
@@ -129,9 +130,8 @@ it('finds both sales and supplier bills through their existing Shop services', a
     total: 1,
   });
   renderWithProviders(<CounterSearch onPayment={jest.fn()} />);
-  fireEvent.focus(screen.getByLabelText('Counter'));
-  fireEvent.change(screen.getByLabelText('Counter'), { target: { value: '26/1' } });
-  fireEvent.click(await screen.findByRole('button', { name: 'Open PB/26/1' }));
+  fireEvent.change(field(), { target: { value: '26/1' } });
+  fireEvent.click(await option(/^PB\/26\/1 · Radhe Krishna Enterprises/));
   expect(push).toHaveBeenCalledWith('/purchases/bills/b1');
   expect(sales.listInvoices).toHaveBeenCalledWith(
     expect.objectContaining({ book: 'shop', q: '26/1' }),
@@ -142,5 +142,53 @@ it('finds both sales and supplier bills through their existing Shop services', a
 /** D-L2: command identity must show the same grouped mobile as the party list. */
 it('keeps a grouped mobile beside the contact role', async () => {
   renderWithProviders(<CounterSearch onPayment={jest.fn()} />);
-  expect(await screen.findByText(/Customer · Shop book · \+91 98765 43210/)).toBeInTheDocument();
+  fireEvent.change(field(), { target: { value: 'Radhe' } });
+  expect(await screen.findAllByText('Customer · +91 98765 43210')).toHaveLength(1);
+});
+
+/**
+ * A1 / FB-011 — the owner's complaint was one long list where every row
+ * wrapped onto two or three lines and "nothing is saved yet" was repeated on
+ * each. Results are grouped, the warning is said once in the Start heading,
+ * and a person's row carries what they owe — in neutral ink, as the design
+ * draws it (the list is for finding, not for reading balances).
+ */
+it('groups results under Start, People, Items and Bills with the warning said once', async () => {
+  renderWithProviders(<CounterSearch onPayment={jest.fn()} />);
+  fireEvent.change(field(), { target: { value: 'Radhe' } });
+  await option(/^New bill for Radhe Krishna Enterprises/);
+  expect(screen.getByText('Start · nothing is saved until you press Save')).toBeInTheDocument();
+  expect(screen.getByText('People')).toBeInTheDocument();
+  expect(screen.queryByText(/nothing is saved yet/)).not.toBeInTheDocument();
+  const owed = screen.getByText('₹1,240.00 to collect');
+  expect(owed.className).toContain('text-text-secondary');
+  expect(screen.getByText('₹600.00 to pay')).toBeInTheDocument();
+});
+
+/** A1 — the design's Start row: receive money from a customer who owes, no amount typed. */
+it('offers to receive money from a customer who owes, without a preset amount', async () => {
+  const onPayment = jest.fn();
+  renderWithProviders(<CounterSearch onPayment={onPayment} />);
+  fireEvent.change(field(), { target: { value: 'Radhe' } });
+  fireEvent.click(await option(/^Receive money from Radhe Krishna Enterprises Owes ₹1,240\.00/));
+  expect(onPayment).toHaveBeenCalledWith(
+    expect.objectContaining({ direction: 'in', partyId: 'p1', tradeRole: 'customer' })
+  );
+  expect(onPayment.mock.calls[0][0].presetAmount).toBeUndefined();
+});
+
+/**
+ * A1 — Start is the best match's actions. With two New bill and Receive rows
+ * per matching customer, "sharma" filled a phone with Start and pushed People,
+ * Items and Bills off the screen.
+ */
+it('offers Start actions for the best match only', async () => {
+  renderWithProviders(<CounterSearch onPayment={jest.fn()} />);
+  fireEvent.change(field(), { target: { value: 'Sharma' } });
+  await option(/^New bill for Sharma Mart/);
+  expect(screen.getAllByRole('option', { name: /^New bill for/ })).toHaveLength(1);
+  expect(screen.getAllByRole('option', { name: /^Receive money from/ })).toHaveLength(1);
+  expect(
+    screen.getByRole('option', { name: /^Radhe Krishna Enterprises Customer/ })
+  ).toBeInTheDocument();
 });

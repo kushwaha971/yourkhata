@@ -81,15 +81,19 @@ it("shows the records' figure and says the difference while the owner types", as
   await userEvent.clear(screen.getByLabelText(/Cash you counted/));
   await userEvent.type(screen.getByLabelText(/Cash you counted/), '1700');
   expect(screen.getByTestId('cash-count-preview')).toHaveTextContent('Matches');
-  expect(
-    screen.getByText(/does not change your cash, bills or payments/)
-  ).toBeInTheDocument();
+  expect(screen.getByText(/does not change your cash, bills or payments/)).toBeInTheDocument();
 });
 
 it("reports the server's comparison at the save, not the figure loaded at opening", async () => {
   // A ₹100 sale was rung up while counting: the server compared with ₹1,800.
   service.recordCashCount.mockResolvedValue(
-    COUNT({ id: 'c2', countedAmount: '1700.00', expectedAmount: '1800.00', variance: '-100.00', note: '' })
+    COUNT({
+      id: 'c2',
+      countedAmount: '1700.00',
+      expectedAmount: '1800.00',
+      variance: '-100.00',
+      note: '',
+    })
   );
   const onSaved = open();
   await screen.findByText('₹1,700.00');

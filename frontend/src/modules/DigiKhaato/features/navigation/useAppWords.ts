@@ -2,7 +2,9 @@
 
 import { useCallback, useMemo } from 'react';
 
+import { useAppSelector } from 'src/hooks/useAppStore';
 import { useTranslation, type TranslateFn } from 'src/hooks/useTranslation';
+import { selectActiveTenant } from 'src/redux/slice/sessionSlice';
 import type { LedgerBook } from 'src/types/domain.types';
 
 import { manifestFor } from 'modules/appManifests';
@@ -19,6 +21,14 @@ import { useNavigation } from './useNavigation';
  * shared page names the app's people the way the app does, and an app that
  * declares no word gets the shared one. `peopleHref` is the app's own list of
  * people, for "back to the list".
+ *
+ * ── Three layers, one function (plan 13 F0) ─────────────────────────────────
+ * shared word → the open app's word → the BUSINESS's own word. A distributor's
+ * Shop says "Retailer" where a kirana's says "Customer"; that is the business
+ * type's preset (`parties.labels` on the server), not a different app. The
+ * session's `tenant.words` carries those overrides by message id once F0 sends
+ * them; until then the layer is empty and nothing changes. Screens never read
+ * a business type to pick a word — they call `w(id)`.
  */
 export interface UseAppWordsResult {
   readonly w: TranslateFn;
@@ -34,6 +44,10 @@ export function useAppWords(): UseAppWordsResult {
   const { app } = useNavigation();
   const manifest = useMemo(() => (app ? manifestFor(app) : undefined), [app]);
   const words = manifest?.words;
-  const w = useCallback<TranslateFn>((id, values) => t(words?.[id] ?? id, values), [t, words]);
+  const business = useAppSelector(selectActiveTenant)?.words;
+  const w = useCallback<TranslateFn>(
+    (id, values) => business?.[id] ?? t(words?.[id] ?? id, values),
+    [t, words, business]
+  );
   return { w, peopleHref: manifest?.peopleHref, book: manifest?.book ?? 'main', app: app ?? null };
 }

@@ -614,3 +614,12 @@ semibold class (title rendered 400), and a heading over a still-loading row.
 50 measured frames, 0 failures/console errors; jest 4876; build/bundle OK.
 Next: A1 header search. Report: docs/performance/2026-10-26-shop-a2-folding-sections.md.
 
+Progress26October2026, Shop A1 header search (FB-011): full-screen phone
+search, 640px grouped desktop list (Start/People/Items/Bills), one-line rows,
+shorter hint. Found by using it: letters lost and no keyboard on a phone, grey
+not teal highlight (pixel-sampled), Start flooding the list, coloured amounts
+the design draws neutral, no paid state on bills. Every shown figure read back
+from the API (34 rows x 10 views, 0 mismatches; skewed self-test fails all).
+Scan button deferred to Part C. Words now layered app -> business in
+useAppWords (BP-22 seam). Next: A3 saved customer box.
+

@@ -189,7 +189,11 @@ export const createDayBookColumns = ({
             {name}
           </UbLink>
         ) : (
-          <UbText as="span" variant="body-sm" className="line-clamp-2 whitespace-normal break-words">
+          <UbText
+            as="span"
+            variant="body-sm"
+            className="line-clamp-2 whitespace-normal break-words"
+          >
             {name}
           </UbText>
         );

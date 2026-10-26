@@ -34,7 +34,10 @@ const ROW = (over: Partial<ShopPromise> = {}): ShopPromise => ({
   ...over,
 });
 
-const show = (rows: readonly ShopPromise[], handlers = { onRemind: jest.fn(), onPay: jest.fn() }) => {
+const show = (
+  rows: readonly ShopPromise[],
+  handlers = { onRemind: jest.fn(), onPay: jest.fn() }
+) => {
   renderWithProviders(
     <HomePromises
       state={{ status: 'ready', rows }}
@@ -69,14 +72,18 @@ function InEnglish({ rows }: Readonly<{ rows: readonly ShopPromise[] }>): React.
 
 it('titles the row by the promise and captions it by what is owed now', () => {
   renderWithProviders(<InEnglish rows={[ROW()]} />);
-  expect(screen.getByRole('link', { name: 'Sharma General Store promised ₹1,500.00 today' })).toBeInTheDocument();
+  expect(
+    screen.getByRole('link', { name: 'Sharma General Store promised ₹1,500.00 today' })
+  ).toBeInTheDocument();
   expect(screen.getByText('Owes ₹3,100.00 · 42 days late')).toBeInTheDocument();
   expect(screen.queryByText(/internal/)).toBeNull();
 });
 
 it('says a late promise in the caption', () => {
   renderWithProviders(<InEnglish rows={[ROW({ promisedOn: '2026-10-22', daysLate: 2 })]} />);
-  expect(screen.getByText('Owes ₹3,100.00 · 42 days late · Promise 2 days late')).toBeInTheDocument();
+  expect(
+    screen.getByText('Owes ₹3,100.00 · 42 days late · Promise 2 days late')
+  ).toBeInTheDocument();
 });
 
 it('offers no Remind to somebody who has paid since', () => {
