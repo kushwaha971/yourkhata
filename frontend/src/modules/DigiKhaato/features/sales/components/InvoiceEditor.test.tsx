@@ -361,7 +361,12 @@ describe('a new bill on a phone (design §A4 pBillEmpty)', () => {
     try {
       signIn(['sales.invoice.read', 'sales.invoice.write', 'inventory.item.read']);
       renderWithProviders(<InvoiceEditorPageContent documentId={null} />);
-      await screen.findByTestId('invoice-issue');
+      await screen.findByTestId('task-bar');
+      // Design §A4 phone bar: × · New bill / its kind · ⋯, not the app's own bar.
+      expect(
+        within(screen.getByTestId('task-bar')).getByRole('heading', { name: 'New bill' })
+      ).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'Close' })).toBeInTheDocument();
       expect(screen.queryByTestId('invoice-lines')).not.toBeInTheDocument();
       expect(await screen.findByText('No items yet')).toBeInTheDocument();
       expect(screen.getByText('Type a name or code above to add an item.')).toBeInTheDocument();
@@ -933,6 +938,24 @@ describe('a busy counter (07-screens/09 §3)', () => {
     'sales.invoice.write',
     'inventory.item.read',
   ];
+
+  it('sets the bill discount under More details and shows it read-only in the totals card', async () => {
+    /* R-DEC-55: the design's totals card only reads the discount back.
+       Prevents: the discount control vanishing with the old card, so a bill
+       discount could no longer be given at all. */
+    signIn(RIGHTS);
+    renderWithProviders(<InvoiceEditorPageContent documentId={null} />);
+    await quickAdd('8901234567890{Enter}');
+    const totals = await screen.findByTestId('invoice-totals');
+    expect(within(totals).queryByRole('textbox')).not.toBeInTheDocument();
+    // Folded on a phone and a laptop; laid open where the details are not folded.
+    const more = screen.queryByRole('button', { name: /More details/ });
+    if (more && more.getAttribute('aria-expanded') !== 'true') await userEvent.click(more);
+    const discount = await screen.findByRole('textbox', { name: 'Discount' });
+    await userEvent.type(discount, '10');
+    await waitFor(() => expect(within(totals).getByText('Discount')).toBeInTheDocument());
+    expect(within(totals).getByText(/— ₹10\.00/)).toBeInTheDocument();
+  });
 
   it('names the wrong field and puts the caret in it, instead of a general red banner', async () => {
     /* Design §A4, the owner's screenshot: "Please check the highlighted

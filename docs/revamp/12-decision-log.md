@@ -716,3 +716,20 @@ permissions and saved data do not change. First applied in A4: the sales bill
 editor's header reads "New bill" with the kind of bill under it; estimates,
 orders and challans have no design yet and keep "New estimate", "New sales
 order", "New challan".
+
+R-DEC-55 (owner, 26 October 2026) — four A4 conflicts between the design's text,
+its mocks and today's build, answered by the owner:
+1. Desktop bill table: Qty, Rate and Disc. % are all typed in the row, as the
+   A4 "What changes" text says (the dBill mock draws only Qty as a box).
+2. The totals card is the design's five read-only rows (Subtotal, Discount,
+   CGST + SGST, Round off, Total). The bill discount and the round-off switch
+   move into More details.
+3. Money keeps its paise (₹2,835.00); the mock's whole rupees are sample data.
+4. The phone bill's header, delegated ("do which is best, think like a senior
+   UI/UX designer and follow the artifact"): the design's bar, × to close and
+   "New bill" with its subtitle. Hold, Save draft and Delete draft go behind a ⋯
+   in that bar rather than as icons beside the title. The held-bills strip
+   (approved in counter-mode.html) shows only when a bill is held. Removing
+   Hold would take away a working, approved Counter Mode capability, which
+   gate 10 does not allow without the owner's word; a ⋯ keeps it one tap away
+   while the screen reads as the design draws it.

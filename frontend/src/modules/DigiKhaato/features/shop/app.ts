@@ -299,5 +299,10 @@ export const SHOP_APP: AppManifest = {
   // and the payments against them, never their Udhaar book figure.
   book: 'shop',
   peopleHref: ROUTES.CUSTOMERS,
-  shell: { partySearch: true, commandSearch: true },
+  shell: {
+    partySearch: true,
+    commandSearch: true,
+    // Design §A4 (R-DEC-55): the bill editor's phone bar is × · New bill · ⋯.
+    pageHeaderPattern: '^/sales/invoices/(new|[^/]+/edit)/?$',
+  },
 };

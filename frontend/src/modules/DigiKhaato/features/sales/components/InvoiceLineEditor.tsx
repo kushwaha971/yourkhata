@@ -83,6 +83,7 @@ export function InvoiceLineDetails({
   disabled,
   note,
   wide = false,
+  inRow = false,
   t,
 }: Readonly<{
   form: UseFormReturn<InvoiceFormValues>;
@@ -93,6 +94,9 @@ export function InvoiceLineDetails({
   disabled: boolean;
   note: ReactNode;
   wide?: boolean;
+  /** Desktop (R-DEC-55): Qty, Rate and Disc. % are typed in the row, so the
+   *  details under it hold only what the row does not, and no id twice. */
+  inRow?: boolean;
   t: TranslateFn;
 }>): React.JSX.Element {
   const { setValue, trigger } = form;
@@ -100,56 +104,60 @@ export function InvoiceLineDetails({
   return (
     <UbStack gap={4} data-testid="invoice-line-details">
       <UbBox className={cn('grid gap-4', wide ? 'grid-cols-4' : 'grid-cols-2')}>
-        <UbField name={`${base}.qty`} label={t('sales.line.qty')}>
-          {(field) => (
-            <UbQuantityInput
-              id={field.id}
-              aria-describedby={field['aria-describedby']}
-              value={(field.value as string) ?? ''}
-              onChange={(next) => {
-                field.onChange(next);
-                void trigger(`${base}.qty`);
-              }}
-              decimals={line?.allowDecimal === false ? 0 : 3}
-              unit={line?.unitCode || undefined}
-              invalid={field.invalid}
-            />
-          )}
-        </UbField>
-        <UbField name={`${base}.unitPrice`} label={t('sales.line.rate')}>
-          {(field) => (
-            <UbMoneyInput
-              id={field.id}
-              aria-describedby={field['aria-describedby']}
-              value={(field.value as string) ?? ''}
-              onChange={(next) => {
-                field.onChange(next);
-                void trigger([`${base}.unitPrice`, `${base}.qty`]);
-              }}
-              decimalPlaces={ratePlaces((field.value as string) ?? '')}
-              invalid={field.invalid}
-              placeholder={t('sales.line.ratePlaceholder')}
-            />
-          )}
-        </UbField>
-        <UbField name={`${base}.discountValue`} label={t('sales.line.discountPct')}>
-          {(field) => (
-            <UbMoneyInput
-              id={field.id}
-              aria-describedby={field['aria-describedby']}
-              value={(field.value as string) ?? ''}
-              currencySymbol="%"
-              decimalPlaces={2}
-              invalid={field.invalid}
-              onChange={(next) => {
-                field.onChange(next);
-                setValue(`${base}.discountType`, next ? 'percent' : '', { shouldDirty: true });
-                void trigger(`${base}.discountValue`);
-              }}
-              placeholder="0"
-            />
-          )}
-        </UbField>
+        {!inRow && (
+          <>
+            <UbField name={`${base}.qty`} label={t('sales.line.qty')}>
+              {(field) => (
+                <UbQuantityInput
+                  id={field.id}
+                  aria-describedby={field['aria-describedby']}
+                  value={(field.value as string) ?? ''}
+                  onChange={(next) => {
+                    field.onChange(next);
+                    void trigger(`${base}.qty`);
+                  }}
+                  decimals={line?.allowDecimal === false ? 0 : 3}
+                  unit={line?.unitCode || undefined}
+                  invalid={field.invalid}
+                />
+              )}
+            </UbField>
+            <UbField name={`${base}.unitPrice`} label={t('sales.line.rate')}>
+              {(field) => (
+                <UbMoneyInput
+                  id={field.id}
+                  aria-describedby={field['aria-describedby']}
+                  value={(field.value as string) ?? ''}
+                  onChange={(next) => {
+                    field.onChange(next);
+                    void trigger([`${base}.unitPrice`, `${base}.qty`]);
+                  }}
+                  decimalPlaces={ratePlaces((field.value as string) ?? '')}
+                  invalid={field.invalid}
+                  placeholder={t('sales.line.ratePlaceholder')}
+                />
+              )}
+            </UbField>
+            <UbField name={`${base}.discountValue`} label={t('sales.line.discountPct')}>
+              {(field) => (
+                <UbMoneyInput
+                  id={field.id}
+                  aria-describedby={field['aria-describedby']}
+                  value={(field.value as string) ?? ''}
+                  currencySymbol="%"
+                  decimalPlaces={2}
+                  invalid={field.invalid}
+                  onChange={(next) => {
+                    field.onChange(next);
+                    setValue(`${base}.discountType`, next ? 'percent' : '', { shouldDirty: true });
+                    void trigger(`${base}.discountValue`);
+                  }}
+                  placeholder="0"
+                />
+              )}
+            </UbField>
+          </>
+        )}
         {!taxFree && (
           <UbField name={`${base}.taxCode`} label={t('sales.line.gst')}>
             {(field) => (
@@ -367,10 +375,10 @@ export function InvoiceLineTable({
   const columns: UbEditTableColumn[] = [
     { id: 'n', header: '#', width: 'w-11' },
     { id: 'item', header: t('sales.line.item'), wrap: true },
-    { id: 'qty', header: t('sales.line.qty'), align: 'end' },
+    { id: 'qty', header: t('sales.line.qty'), align: 'end', tight: true },
     { id: 'unit', header: t('sales.line.unit') },
-    { id: 'rate', header: t('sales.line.rate'), align: 'end' },
-    { id: 'discount', header: t('sales.line.discountPct'), align: 'end' },
+    { id: 'rate', header: t('sales.line.rate'), align: 'end', tight: true },
+    { id: 'discount', header: t('sales.line.discountPct'), align: 'end', tight: true },
     ...(taxFree ? [] : [{ id: 'gst', header: t('sales.line.gst'), align: 'end' as const }]),
     { id: 'amount', header: t('sales.line.amount'), align: 'end' },
     {
@@ -379,6 +387,7 @@ export function InvoiceLineTable({
       srOnlyHeader: true,
       align: 'end',
       width: 'w-10',
+      tight: true,
     },
   ];
   const rows: UbEditTableRow[] = indexes.map((index, n) => {
@@ -430,12 +439,53 @@ export function InvoiceLineTable({
       <UbText key="unit" variant="inherit" tone="secondary">
         {line?.unitCode}
       </UbText>,
-      <UbText key="rate" variant="inherit" className="tabular-nums">
-        {formatInr(line?.unitPrice || '0')}
-      </UbText>,
-      <UbText key="discount" variant="inherit" tone="secondary" className="tabular-nums">
-        {line?.discountType === 'percent' && line.discountValue ? Number(line.discountValue) : 0}
-      </UbText>,
+      <UbField
+        key="rate"
+        name={`${base}.unitPrice`}
+        label={t('sales.line.rateOf', { name })}
+        labelHidden
+        reserveError={false}
+      >
+        {(field) => (
+          <UbMoneyInput
+            className="ml-auto w-[92px] [&_input]:h-[34px] [&_input]:text-sm"
+            id={field.id}
+            aria-label={t('sales.line.rateOf', { name })}
+            value={(field.value as string) ?? ''}
+            onChange={(next) => {
+              field.onChange(next);
+              void form.trigger([`${base}.unitPrice`, `${base}.qty`]);
+            }}
+            decimalPlaces={ratePlaces((field.value as string) ?? '')}
+            invalid={field.invalid}
+          />
+        )}
+      </UbField>,
+      <UbField
+        key="discount"
+        name={`${base}.discountValue`}
+        label={t('sales.line.discountOf', { name })}
+        labelHidden
+        reserveError={false}
+      >
+        {(field) => (
+          <UbMoneyInput
+            className="ml-auto w-[56px] [&_input]:h-[34px] [&_input]:text-sm"
+            id={field.id}
+            aria-label={t('sales.line.discountOf', { name })}
+            value={(field.value as string) ?? ''}
+            currencySymbol="%"
+            decimalPlaces={2}
+            invalid={field.invalid}
+            onChange={(next) => {
+              field.onChange(next);
+              form.setValue(`${base}.discountType`, next ? 'percent' : '', { shouldDirty: true });
+              void form.trigger(`${base}.discountValue`);
+            }}
+            placeholder="0"
+          />
+        )}
+      </UbField>,
       ...(taxFree
         ? []
         : [
@@ -484,6 +534,7 @@ export function InvoiceLineTable({
               disabled={disabled}
               note={null}
               wide
+              inRow
               t={t}
             />
             <UbBox className="flex gap-2">

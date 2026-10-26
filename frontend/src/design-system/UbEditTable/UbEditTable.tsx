@@ -24,6 +24,9 @@ export interface UbEditTableColumn {
   readonly width?: string;
   /** The one column that takes the spare width and wraps (a bill's item name). */
   readonly wrap?: boolean;
+  /** A cell holding a field or an icon button: 6 px sides, since the control
+   *  carries its own padding (so a 1280 bill's row fits its frame). */
+  readonly tight?: boolean;
 }
 
 export interface UbEditTableRow {
@@ -104,7 +107,8 @@ export function UbEditTable({
                       TD,
                       columns[index]?.align === 'end' && 'text-right',
                       // Only a column without a width wraps (the item name); figures stay on one line.
-                      columns[index]?.wrap ? 'w-full' : 'whitespace-nowrap'
+                      columns[index]?.wrap ? 'w-full' : 'whitespace-nowrap',
+                      columns[index]?.tight && 'px-1.5'
                     )}
                   >
                     {cell}

@@ -488,6 +488,7 @@
   "sales.totals.roundOff": "राउंड ऑफ़",
   "sales.totals.subtotal": "उप-योग",
   "sales.totals.taxable": "कर योग्य मूल्य",
+  "sales.totals.total": "कुल",
   "sales.validation.discountOverLine": "छूट लाइन की राशि से अधिक नहीं हो सकती।",
   "sales.validation.discountOverSubtotal": "छूट उप-योग से अधिक नहीं हो सकती।",
   "sales.validation.dueBeforeDate": "देय तिथि बिल की तिथि से पहले नहीं हो सकती।",

@@ -20,7 +20,10 @@ import {
   UbStatusBanner,
   UbText,
   UbTotalDock,
+  useIsMobileLayer,
   useMediaQuery,
+  UbMoreActions,
+  UbTaskBar,
 } from 'src/design-system';
 import { useAppRouter } from 'src/hooks/useAppRouter';
 import { useAppDispatch, useAppSelector } from 'src/hooks/useAppStore';
@@ -45,6 +48,7 @@ import { firstWrongField } from '../view-model/firstWrongField';
 import { documentTitleId, stockShortLines, stockShortMessage } from '../view-model/invoiceDisplay';
 import { fullCashPayment, type PaymentRowForm } from '../view-model/invoiceForm';
 
+import { InvoiceBillAdjustments } from './InvoiceBillAdjustments';
 import { InvoiceEditorDialogs } from './InvoiceEditorDialogs';
 import { InvoiceHeldBills } from './InvoiceHeldBills';
 import { InvoiceLinesSection } from './InvoiceLinesSection';
@@ -114,6 +118,7 @@ export function InvoiceEditorPageContent({
   const docksTotals = useDocksEditorTotals();
   // dBill's two columns start at 1280; below it the totals stay under the lines.
   const desk = useMediaQuery('(min-width: 1280px)');
+  const phoneBar = useIsMobileLayer() && !order && !challan && !estimate;
   const hasLines = preview.lines.length > 0 && values.lines.some((l) => l.itemId || l.description);
   const locked = server.issuing || !!server.issued;
   const creditBlocked = server.error?.code === 'credit_limit_exceeded';
@@ -400,91 +405,150 @@ export function InvoiceEditorPageContent({
 
   return (
     <UbPageShell>
-      <UbPageHeader
-        /* Design §A3/A4 (owner, 26 Oct 2026: the design's words everywhere): a
+      {phoneBar ? (
+        /* Design §A4 phone (R-DEC-55): × · New bill / its kind · ⋯. Hold, Save
+           draft and Discard draft are behind the ⋯, one tap away; the dock
+           keeps the two ways to finish. × leaves for the bills list, and the
+           bill is kept (it autosaves, and the device keeps a copy). */
+        <UbTaskBar
+          title={t('sales.newBill')}
+          subtitle={title}
+          onClose={() => router.push(home)}
+          closeLabel={t('common.action.close')}
+          // Full width, as the design's bar: out of the page's 16 px padding.
+          className="-mx-4 -mt-4 mb-1"
+          trailing={
+            <UbMoreActions
+              label={t('common.action.moreActions')}
+              title={t('common.action.moreActions')}
+              closeLabel={t('common.action.close')}
+              testId="invoice-more"
+              // The design's bar controls are plain 40 px squares (`.ib`).
+              className="h-10 w-10 border-transparent bg-transparent shadow-none"
+              rows={[
+                ...(kind === 'invoice' && hasLines && !locked
+                  ? [
+                      {
+                        key: 'hold',
+                        label: t('sales.hold.action'),
+                        icon: <PauseCircle className="h-5 w-5" aria-hidden />,
+                        onSelect: () => void hold(),
+                        testId: 'invoice-hold',
+                      },
+                    ]
+                  : []),
+                ...(!locked
+                  ? [
+                      {
+                        key: 'save',
+                        label: t('sales.editor.saveDraft'),
+                        icon: <Save className="h-5 w-5" aria-hidden />,
+                        onSelect: () => void save(false),
+                      },
+                    ]
+                  : []),
+                ...(server.documentId && !locked
+                  ? [
+                      {
+                        key: 'delete',
+                        label: t('sales.editor.delete'),
+                        icon: <Trash2 className="h-5 w-5" aria-hidden />,
+                        tone: 'danger' as const,
+                        onSelect: () => setConfirmDelete(true),
+                      },
+                    ]
+                  : []),
+              ]}
+            />
+          }
+        />
+      ) : (
+        <UbPageHeader
+          /* Design §A3/A4 (owner, 26 Oct 2026: the design's words everywhere): a
            sales bill is "New bill", with what kind of bill it is underneath.
            A draft has no number until it is issued, so none is shown. The
            other documents have no design yet and keep their titles. */
-        title={
-          bill
-            ? t('sales.newBill')
-            : documentId || server.documentId
-              ? t('sales.editor.editTitle', { title })
-              : t('sales.editor.newTitle', { title })
-        }
-        subtitle={bill ? title : undefined}
-        controls={docksTotals ? undefined : saveIndicator}
-        actions={
-          <>
-            {server.documentId && (
+          title={
+            bill
+              ? t('sales.newBill')
+              : documentId || server.documentId
+                ? t('sales.editor.editTitle', { title })
+                : t('sales.editor.newTitle', { title })
+          }
+          subtitle={bill ? title : undefined}
+          controls={docksTotals ? undefined : saveIndicator}
+          actions={
+            <>
+              {server.documentId && (
+                <UbButton
+                  variant="ghost"
+                  iconOnly="mobile"
+                  icon={<Trash2 className="h-4 w-4" aria-hidden />}
+                  onClick={() => setConfirmDelete(true)}
+                  disabled={locked}
+                >
+                  {t('sales.editor.delete')}
+                </UbButton>
+              )}
+              {kind === 'invoice' && (
+                <UbButton
+                  variant="ghost"
+                  iconOnly="mobile"
+                  icon={<PauseCircle className="h-4 w-4" aria-hidden />}
+                  onClick={() => void hold()}
+                  busy={holding}
+                  disabled={!hasLines || locked}
+                  data-testid="invoice-hold"
+                >
+                  {t('sales.hold.action')}
+                </UbButton>
+              )}
               <UbButton
-                variant="ghost"
+                variant="secondary"
                 iconOnly="mobile"
-                icon={<Trash2 className="h-4 w-4" aria-hidden />}
-                onClick={() => setConfirmDelete(true)}
+                icon={<Save className="h-4 w-4" aria-hidden />}
+                onClick={() => void save(false)}
+                busy={server.saveState === 'saving'}
                 disabled={locked}
-              >
-                {t('sales.editor.delete')}
-              </UbButton>
-            )}
-            {kind === 'invoice' && (
-              <UbButton
-                variant="ghost"
-                iconOnly="mobile"
-                icon={<PauseCircle className="h-4 w-4" aria-hidden />}
-                onClick={() => void hold()}
-                busy={holding}
-                disabled={!hasLines || locked}
-                data-testid="invoice-hold"
-              >
-                {t('sales.hold.action')}
-              </UbButton>
-            )}
-            <UbButton
-              variant="secondary"
-              iconOnly="mobile"
-              icon={<Save className="h-4 w-4" aria-hidden />}
-              onClick={() => void save(false)}
-              busy={server.saveState === 'saving'}
-              disabled={locked}
-              /* Below 1536 px Save and Issue are docked under the total (below);
+                /* Below 1536 px Save and Issue are docked under the total (below);
                  a cash Quick Sale's dock holds its two ways to be paid instead. */
-              className={cashSale ? undefined : 'max-2xl:hidden'}
-            >
-              {t('sales.editor.saveDraft')}
-            </UbButton>
-            <UbButton
-              variant={cashSale ? 'secondary' : 'primary'}
-              iconOnly="mobile"
-              icon={<Send className="h-4 w-4" aria-hidden />}
-              onClick={requestIssue}
-              busy={server.issuing && !cashBusy}
-              busyLabel={issueBusyLabel}
-              disabled={issueDisabled}
-              aria-label={issueName}
-              data-testid="invoice-issue"
-              className="max-2xl:hidden"
-            >
-              {issueLabel}
-            </UbButton>
-            {cashSale && (
+                className={cashSale ? undefined : 'max-2xl:hidden'}
+              >
+                {t('sales.editor.saveDraft')}
+              </UbButton>
               <UbButton
+                variant={cashSale ? 'secondary' : 'primary'}
                 iconOnly="mobile"
-                icon={<Banknote className="h-4 w-4" aria-hidden />}
-                onClick={requestCash}
-                busy={cashBusy}
+                icon={<Send className="h-4 w-4" aria-hidden />}
+                onClick={requestIssue}
+                busy={server.issuing && !cashBusy}
                 busyLabel={issueBusyLabel}
                 disabled={issueDisabled}
-                aria-label={cashName}
-                data-testid="invoice-paid-cash"
+                aria-label={issueName}
+                data-testid="invoice-issue"
                 className="max-2xl:hidden"
               >
-                {cashLabel}
+                {issueLabel}
               </UbButton>
-            )}
-          </>
-        }
-      />
+              {cashSale && (
+                <UbButton
+                  iconOnly="mobile"
+                  icon={<Banknote className="h-4 w-4" aria-hidden />}
+                  onClick={requestCash}
+                  busy={cashBusy}
+                  busyLabel={issueBusyLabel}
+                  disabled={issueDisabled}
+                  aria-label={cashName}
+                  data-testid="invoice-paid-cash"
+                  className="max-2xl:hidden"
+                >
+                  {cashLabel}
+                </UbButton>
+              )}
+            </>
+          }
+        />
+      )}
       <UbForm
         form={form}
         onSubmit={() => startIssue()}
@@ -550,6 +614,13 @@ export function InvoiceEditorPageContent({
                 disabled={locked}
                 kind={kind}
                 part={desk ? 'who' : 'all'}
+                adjustments={
+                  <InvoiceBillAdjustments
+                    form={form}
+                    roundOffAmount={preview.roundOff}
+                    disabled={locked}
+                  />
+                }
               />
             </UbPanel>
             {challan && (
@@ -577,6 +648,13 @@ export function InvoiceEditorPageContent({
                 disabled={locked}
                 kind={kind}
                 part="details"
+                adjustments={
+                  <InvoiceBillAdjustments
+                    form={form}
+                    roundOffAmount={preview.roundOff}
+                    disabled={locked}
+                  />
+                }
               />
             )}
             {/* Design §A4 pBillEmpty / dBillTop: a bill with no item has no
@@ -589,7 +667,6 @@ export function InvoiceEditorPageContent({
                 estimated={estimate}
                 rule46={estimate ? null : server.rule46}
                 warnings={server.warnings}
-                disabled={locked}
               />
             )}
           </UbStack>
@@ -604,6 +681,9 @@ export function InvoiceEditorPageContent({
       {docksTotals && (
         <UbTotalDock
           data-testid="invoice-dock"
+          // Design §A4: the dock sits at the bottom of the screen, also on a
+          // short bill (it followed the content and floated mid-screen).
+          className="mt-auto"
           totalLabel={t('sales.totals.grand')}
           total={formatInr(preview.grandTotal)}
           caption={dockCaption}

@@ -31,7 +31,6 @@ function InvoiceHarness({ warnings = [] }: Readonly<{ warnings?: readonly SalesW
         form={form}
         preview={preview}
         taxFree={false}
-        disabled={false}
         warnings={warnings}
         rule46={{
           passed: true,

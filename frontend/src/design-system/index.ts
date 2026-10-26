@@ -55,6 +55,8 @@ export type { UbBottomBarElement, UbBottomBarProps } from './UbBottomBar';
 export { UbBottomNav } from './UbBottomNav';
 export type { UbBottomNavItem, UbBottomNavProps } from './UbBottomNav';
 export { UbMenuList } from './UbMenuList';
+export { UbTaskBar } from './UbTaskBar';
+export type { UbTaskBarProps } from './UbTaskBar';
 export { UbTotalDock } from './UbTotalDock';
 export { UbAttentionList, UbHeroPair, UbMiniStatStrip, UbQuickActions } from './UbHomeBlocks';
 export type { UbAttentionItem, UbHeroFigure, UbMiniStat, UbQuickAction } from './UbHomeBlocks';

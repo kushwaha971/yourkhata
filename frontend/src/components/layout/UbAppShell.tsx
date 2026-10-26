@@ -87,6 +87,10 @@ export function UbAppShell({ children }: Readonly<{ children: ReactNode }>): Rea
             brand and the switcher, so neither is ever in the tab order twice. */}
         {/* UAT D3 — `data-print="hide"`: this header printed at the top of
             every statement a phone user printed. */}
+        {/* A task screen (the bill editor) draws its own bar instead: design
+            §A4's × · title · ⋯, so the switcher and bell are not one tap from
+            leaving a half-made bill. */}
+        {!mobileNav.pageOwnsHeader && (
         <UbStack
           as="header"
           direction="row"
@@ -125,6 +129,7 @@ export function UbAppShell({ children }: Readonly<{ children: ReactNode }>): Rea
           {/* NTF-01 FR-4 — the bell sits beside search. */}
           <NotificationBell />
         </UbStack>
+        )}
 
         <UbAppTopBar />
 

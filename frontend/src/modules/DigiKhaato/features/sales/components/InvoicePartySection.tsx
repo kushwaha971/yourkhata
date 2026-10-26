@@ -64,7 +64,10 @@ export function InvoicePartySection({
   disabled,
   kind = 'invoice',
   part = 'all',
+  adjustments,
 }: Readonly<{
+  /** The bill's discount and round-off (R-DEC-55), shown last in More details. */
+  adjustments?: React.ReactNode;
   /** Design §A4 dBill desktop: `who` (the switch and the customer) heads the
    *  lines, `details` (More details) heads the 340 px column with the totals.
    *  A phone keeps both in one card (`all`). */
@@ -239,6 +242,7 @@ export function InvoicePartySection({
         <UbText variant="caption" tone="tertiary">
           {interState ? t('sales.editor.interState') : t('sales.editor.intraState')}
         </UbText>
+        {adjustments}
       </>
     );
     /* WP-05 extends the phone's fold to every width below 1536 px. A walk-in

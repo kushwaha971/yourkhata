@@ -1,5 +1,6 @@
 {
   "//": [
+    "26 Oct 2026, A4 R-DEC-55 (rate and discount typed in the row, the design's five-row totals card with the bill discount and round-off moved into More details as InvoiceBillAdjustments, and the phone task bar UbTaskBar with Hold, Save draft and Discard draft behind UbMoreActions): the eight sales editor routes +1.1 KB route and first load, which is this piece's code on the screen that draws it. Raised to measured + 0.3: editor routes 173.3, first load 415.6 (new) and 415.7 (edit); /sales/credit-notes/new 152.7 / 395.0. /items/[id] moved +0.6 route and +0.7 first load and /items/price-lists/[id] by rounding with no bill code in them; cause not traced (shared-chunk regrouping inferred). Raised: /items/[id] 113.5 / 355.9, /items/price-lists/[id] route 99.2.",
     "26 Oct 2026, A4 empty bill and named wrong field: the dock's note moved above the total and the editor names the first wrong field (firstWrongField) and opens its line. The five sales detail routes share the dock chunk and moved by rounding only: route 87.2 each (/sales/challans, /sales/credit-notes, /sales/orders, /sales/estimates, /sales/invoices [id]); /sales/orders first load 331.7. Measured + 0.3 KB.",
     "26 Oct 2026, A4 adding items to a bill (FB-014) and line limits (FB-020): the phone line list, desktop edit table, quantity stepper and F2 search hint ship in the sales editor chunks, which stayed inside their limits. UbSearchInput gained a trailing slot and UbField an option not to hold an error row; both are shared, and eight limits were over by 0.0-0.1 KB, two on routes with no bill code (/reset-password, /d/[token]); cause inferred from the shared components, not traced. Those eight use measured + 0.3 KB: /sales/challans, /sales/orders and /sales/invoices/[id] first load 329.5, /sales/credit-notes/new route 152.2, /onboarding/step/[n] first load 336.1, /reset-password route 52.9, /d/[token] route 41.5, /items/price-lists/[id] first load 341.5. Then R-DEC-53 (the 1280 two-column bill: InvoicePartySection split into who/details, a 1280 media query, 14 px table text) put five more over by rounding only: /sales/challans route 89.2 and first load 331.6, /sales/orders route 89.2, /sales/credit-notes/new first load 394.6, /d/[token] first load 283.9 (no bill code there; inferred, not traced).",
     "26 Oct 2026, A3 saved customer box (FB-013) and its defects: measured against a build of 878994475 (0 overruns). Shared app 115.0 -> 115.1 KB gz: the checkbox/switch click guard every route carries (fixes a React flushSync warning). Bill, order, estimate and challan editors +2.0-2.2 KB route chunk: the customer box, the segmented switch, discount limits and picker focus, all first paint by design. Other routes +0.5-0.8 KB first load from Turbopack regrouping shared chunks (an unrelated route, /items/masters, 174.6 -> 175.5 KB; inferred from the regroup, not traced to one module). 156 exceeded limits use measured + 0.3 KB.",
@@ -1468,12 +1469,12 @@
       "firstLoad": 331.6
     },
     "/sales/challans/new": {
-      "route": 171.9,
-      "firstLoad": 414.2
+      "route": 173.3,
+      "firstLoad": 415.6
     },
     "/sales/challans/[id]/edit": {
-      "route": 171.9,
-      "firstLoad": 414.2
+      "route": 173.3,
+      "firstLoad": 415.7
     },
     "/purchases/orders/[id]": {
       "route": 75.5,
@@ -1500,12 +1501,12 @@
       "firstLoad": 331.7
     },
     "/sales/orders/new": {
-      "route": 171.9,
-      "firstLoad": 414.2
+      "route": 173.3,
+      "firstLoad": 415.6
     },
     "/sales/orders/[id]/edit": {
-      "route": 171.9,
-      "firstLoad": 414.2
+      "route": 173.3,
+      "firstLoad": 415.7
     },
     "/parties": {
       "route": 109,
@@ -1516,12 +1517,12 @@
       "firstLoad": 339.6
     },
     "/sales/invoices/new": {
-      "route": 171.9,
-      "firstLoad": 414.2
+      "route": 173.3,
+      "firstLoad": 415.6
     },
     "/sales/invoices/[id]/edit": {
-      "route": 171.9,
-      "firstLoad": 414.2
+      "route": 173.3,
+      "firstLoad": 415.7
     },
     "/sales/invoices": {
       "route": 98,
@@ -1536,12 +1537,12 @@
       "firstLoad": 356
     },
     "/sales/estimates/new": {
-      "route": 171.9,
-      "firstLoad": 414.2
+      "route": 173.3,
+      "firstLoad": 415.6
     },
     "/sales/estimates/[id]/edit": {
-      "route": 171.9,
-      "firstLoad": 414.2
+      "route": 173.3,
+      "firstLoad": 415.7
     },
     "/sales/estimates/[id]": {
       "route": 87.2,
@@ -1552,8 +1553,8 @@
       "firstLoad": 356
     },
     "/sales/credit-notes/new": {
-      "route": 152.2,
-      "firstLoad": 394.6
+      "route": 152.7,
+      "firstLoad": 395.0
     },
     "/sales/credit-notes/[id]": {
       "route": 87.2,
@@ -1628,8 +1629,8 @@
       "firstLoad": 344
     },
     "/items/[id]": {
-      "route": 112.6,
-      "firstLoad": 354.9
+      "route": 113.5,
+      "firstLoad": 355.9
     },
     "/stock/low": {
       "route": 77.1,
@@ -1864,7 +1865,7 @@
       "firstLoad": 344
     },
     "/items/price-lists/[id]": {
-      "route": 98.9,
+      "route": 99.2,
       "firstLoad": 341.5
     },
     "/lending/messages": {

@@ -98,6 +98,9 @@ export interface AppManifest {
     readonly commandSearch?: boolean;
     /** Pages matching this trusted pattern provide their own Back control. */
     readonly pageBackPattern?: string;
+    /** Pages matching this trusted pattern draw their own phone top bar (a
+     *  task screen: design §A4's bill, × and the title in the bar). */
+    readonly pageHeaderPattern?: string;
   };
 }
 

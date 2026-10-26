@@ -488,6 +488,7 @@
   "sales.totals.roundOff": "Round off",
   "sales.totals.subtotal": "Subtotal",
   "sales.totals.taxable": "Taxable value",
+  "sales.totals.total": "Total",
   "sales.validation.discountOverLine": "Discount cannot exceed the line amount.",
   "sales.validation.discountOverSubtotal": "Discount cannot exceed the subtotal.",
   "sales.validation.dueBeforeDate": "Due date cannot be before the bill date.",

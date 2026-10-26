@@ -13,6 +13,8 @@ export interface UseMobileNavResult extends MobileNavState {
   /** Where Back goes when there is no history to go back to (a deep link). */
   readonly upHref: string | null;
   readonly pageOwnsBack: boolean;
+  /** The page draws its own phone top bar, so the shell's is not drawn. */
+  readonly pageOwnsHeader: boolean;
 }
 
 /**
@@ -27,5 +29,8 @@ export function useMobileNav(): UseMobileNavResult {
   const upHref =
     bottomNav.find((tab) => tab.key === state.active)?.href ?? bottomNav[0]?.href ?? null;
   const pageOwnsBack = Boolean(shell.pageBackPattern && new RegExp(shell.pageBackPattern).test(pathname ?? ''));
-  return { ...state, tabs: bottomNav, upHref, pageOwnsBack };
+  const pageOwnsHeader = Boolean(
+    shell.pageHeaderPattern && new RegExp(shell.pageHeaderPattern).test(pathname ?? '')
+  );
+  return { ...state, tabs: bottomNav, upHref, pageOwnsBack, pageOwnsHeader };
 }
