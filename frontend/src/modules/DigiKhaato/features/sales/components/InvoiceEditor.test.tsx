@@ -192,7 +192,8 @@ describe('the bill editor', () => {
     expect(screen.getByRole('heading', { name: 'New bill' })).toBeInTheDocument();
     expect(screen.getByText('Tax Invoice')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Quick sale', pressed: true })).toBeInTheDocument();
-    expect(screen.getByTestId('invoice-grand-total')).toHaveTextContent('₹0.00');
+    // Design §A4: a bill with no item has no totals card yet.
+    expect(screen.queryByTestId('invoice-grand-total')).not.toBeInTheDocument();
     // Nothing typed, nothing saved: an untouched editor must not create a draft.
     // Let the context thunks and the form seed settle before the last look.
     await act(() => new Promise<void>((resolve) => setTimeout(resolve, 50)));
@@ -309,8 +310,7 @@ describe('a 1280 laptop (WP-05 dock, design §A4 dBill columns)', () => {
     try {
       signIn(['sales.invoice.read', 'sales.invoice.write']);
       renderWithProviders(<InvoiceEditorPageContent documentId={null} />);
-      const totals = await screen.findByTestId('invoice-totals');
-      const column = totals.parentElement?.parentElement as HTMLElement;
+      const column = await screen.findByTestId('invoice-side');
       const details = screen.getAllByRole('button', { name: /More details/ });
       expect(details).toHaveLength(1);
       expect(column).toContainElement(details[0] ?? null);
@@ -365,6 +365,26 @@ describe('a new bill on a phone (design §A4 pBillEmpty)', () => {
       expect(screen.queryByTestId('invoice-lines')).not.toBeInTheDocument();
       expect(await screen.findByText('No items yet')).toBeInTheDocument();
       expect(screen.getByText('Type a name or code above to add an item.')).toBeInTheDocument();
+    } finally {
+      window.matchMedia = original;
+    }
+  });
+
+  it('keeps the pay buttons off and says why in the line above them', async () => {
+    /* Design §A4: "Empty bill: pay buttons stay off, and the line above them
+       says why". Prevents: two grey buttons that say nothing at a counter. */
+    const original = window.matchMedia;
+    window.matchMedia = ((query: string) => ({
+      ...original(query),
+      matches:
+        /max-width/.test(query) && 390 <= Number(/max-width:\s*([\d.]+)/.exec(query)?.[1] ?? 0),
+    })) as typeof window.matchMedia;
+    try {
+      signIn(['sales.invoice.read', 'sales.invoice.write', 'inventory.item.read']);
+      renderWithProviders(<InvoiceEditorPageContent documentId={null} />);
+      const dock = await screen.findByTestId('invoice-dock');
+      expect(within(dock).getByText('Add an item to finish the bill')).toBeInTheDocument();
+      expect(within(dock).getByRole('button', { name: /Paid cash/ })).toBeDisabled();
     } finally {
       window.matchMedia = original;
     }
@@ -913,6 +933,25 @@ describe('a busy counter (07-screens/09 §3)', () => {
     'sales.invoice.write',
     'inventory.item.read',
   ];
+
+  it('names the wrong field and puts the caret in it, instead of a general red banner', async () => {
+    /* Design §A4, the owner's screenshot: "Please check the highlighted
+       fields" with nothing highlighted. Prevents the message going back to
+       saying "some fields" and leaving the cashier to hunt. */
+    signIn(RIGHTS);
+    renderWithProviders(<InvoiceEditorPageContent documentId={null} />);
+    await quickAdd('8901234567890{Enter}');
+    const qty = await waitFor(() => {
+      const input = document.getElementById('lines.0.qty');
+      if (!input) throw new Error('no line yet');
+      return input as HTMLInputElement;
+    });
+    await userEvent.clear(qty);
+    await userEvent.click(screen.getByTestId('invoice-paid-cash'));
+    expect(await screen.findByText('Check line 1: Qty')).toBeInTheDocument();
+    expect(qty).toHaveFocus();
+    expect(screen.queryByText(/Some fields need fixing/)).not.toBeInTheDocument();
+  });
 
   it('raises Qty when the same item is scanned again, instead of adding a line', async () => {
     signIn(RIGHTS);

@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import dynamic from 'next/dynamic';
 
@@ -41,6 +41,7 @@ import { useDraftAutosave } from '../hooks/useDraftAutosave';
 import { useInvoiceEditor, type EditorKind } from '../hooks/useInvoiceEditor';
 import { deleteEstimateDraft } from '../redux/salesFlowThunk';
 import { deleteInvoiceDraft } from '../redux/salesThunk';
+import { firstWrongField } from '../view-model/firstWrongField';
 import { documentTitleId, stockShortLines, stockShortMessage } from '../view-model/invoiceDisplay';
 import { fullCashPayment, type PaymentRowForm } from '../view-model/invoiceForm';
 
@@ -196,6 +197,37 @@ export function InvoiceEditorPageContent({
   );
   const { submitCount, errors } = form.formState;
   const refused = submitCount > 0 && Object.keys(errors).length > 0;
+  /* Design §A4: the line above the pay buttons says why they are off: no item
+     yet, or which field is wrong (and the page scrolls to it). */
+  const wrong = refused ? firstWrongField(errors, values.lines.length) : null;
+  const finishNote =
+    issueNote ??
+    (wrong
+      ? wrong.n
+        ? t('sales.dock.fixLineField', { n: wrong.n, field: t(wrong.label) })
+        : t('sales.dock.fixField', { field: t(wrong.label) })
+      : !hasLines && !locked
+        ? t('sales.dock.addItem')
+        : null);
+  const wrongPath = wrong?.path;
+  const wrongCol = wrong?.n
+    ? Math.max(1, ['', 'qty', 'unitPrice', 'discountValue'].indexOf(wrongPath?.split('.')[2] ?? ''))
+    : 0;
+  const wrongLine = wrong?.n ?? 0;
+  const openLine = useMemo(
+    () => (wrongLine ? { row: wrongLine - 1, col: wrongCol, seq: submitCount } : null),
+    [wrongLine, wrongCol, submitCount]
+  );
+  useEffect(() => {
+    if (!wrongPath) return;
+    // A line's rate or discount lives in its details, which may be closed:
+    // then the line's Qty takes the caret, on the row the message names.
+    const el =
+      document.getElementById(wrongPath) ??
+      document.getElementById(wrongPath.replace(/\.\w+$/, '.qty'));
+    el?.scrollIntoView({ block: 'center', behavior: 'smooth' });
+    if (el instanceof HTMLInputElement) el.focus({ preventScroll: true });
+  }, [wrongPath, submitCount]);
 
   /*
    * Counter Mode — hold a bill and start the next one ("Hold & create
@@ -456,7 +488,9 @@ export function InvoiceEditorPageContent({
       <UbForm
         form={form}
         onSubmit={() => startIssue()}
-        formErrors={refused ? [t('sales.validation.fixHighlighted')] : undefined}
+        // Design §A4: the dock names the wrong field; the old general banner
+        // stays only for an error no field can be named for.
+        formErrors={refused && !wrong ? [t('sales.validation.fixHighlighted')] : undefined}
       >
         {/* Design §A4 dBill (owner, 26 Oct 2026, over WP-05): from 1280 px
             up the lines take the width and a 340 px column beside them holds
@@ -465,14 +499,14 @@ export function InvoiceEditorPageContent({
           <UbStack gap={4} className="min-w-0">
             <InvoiceHeldBills rows={held.rows} total={held.total} />
             {/* From 1536 px Issue is in the header, so its reason heads the form. */}
-            {issueNote && !docksTotals && (
+            {finishNote && !docksTotals && (
               <UbText
                 variant="body-sm"
                 tone="secondary"
                 role="status"
                 data-testid="invoice-issue-note"
               >
-                {issueNote}
+                {finishNote}
               </UbText>
             )}
             {stockShort.length > 0 && (
@@ -530,9 +564,10 @@ export function InvoiceEditorPageContent({
               taxFree={taxFree}
               disabled={locked}
               onSubmitShortcut={requestIssue}
+              openLine={openLine}
             />
           </UbStack>
-          <UbStack gap={3} className="min-w-0">
+          <UbStack gap={3} className="min-w-0" data-testid="invoice-side">
             {desk && (
               <InvoicePartySection
                 form={form}
@@ -544,15 +579,19 @@ export function InvoiceEditorPageContent({
                 part="details"
               />
             )}
-            <InvoiceTotalsPanel
-              form={form}
-              preview={preview}
-              taxFree={taxFree}
-              estimated={estimate}
-              rule46={estimate ? null : server.rule46}
-              warnings={server.warnings}
-              disabled={locked}
-            />
+            {/* Design §A4 pBillEmpty / dBillTop: a bill with no item has no
+                totals card; the dock already says ₹0 and why it cannot finish. */}
+            {(hasLines || !bill) && (
+              <InvoiceTotalsPanel
+                form={form}
+                preview={preview}
+                taxFree={taxFree}
+                estimated={estimate}
+                rule46={estimate ? null : server.rule46}
+                warnings={server.warnings}
+                disabled={locked}
+              />
+            )}
           </UbStack>
         </UbGrid>
       </UbForm>
@@ -569,7 +608,7 @@ export function InvoiceEditorPageContent({
           total={formatInr(preview.grandTotal)}
           caption={dockCaption}
           meta={saveIndicator}
-          note={issueNote}
+          note={finishNote}
         >
           {/* A cash Quick Sale's two finishing buttons take the dock; its
               Save stays in the header (the device copy and autosave keep

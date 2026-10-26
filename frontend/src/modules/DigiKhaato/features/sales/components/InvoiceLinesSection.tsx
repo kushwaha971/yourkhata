@@ -49,6 +49,7 @@ export function InvoiceLinesSection({
   rateOptions,
   taxFree,
   disabled,
+  openLine = null,
 }: Readonly<{
   form: UseFormReturn<InvoiceFormValues>;
   preview: EngineResult;
@@ -57,6 +58,8 @@ export function InvoiceLinesSection({
   disabled: boolean;
   /** Ctrl+Enter is handled page-wide (useDocumentEditorWindowEffects); kept for callers. */
   onSubmitShortcut?: () => void;
+  /** A refused finish names a line's field (design §A4): on a phone its sheet opens on it. */
+  openLine?: UbLineFocusRequest | null;
 }>): React.JSX.Element {
   const { t } = useTranslation();
   const { control, watch, setValue, getValues, trigger } = form;
@@ -299,7 +302,7 @@ export function InvoiceLinesSection({
       {wide ? (
         <InvoiceLineTable {...editor} search={search} focusRequest={focusRequest} />
       ) : hasItems ? (
-        <InvoiceLineList {...editor} openRequest={openRequest} />
+        <InvoiceLineList {...editor} openRequest={openLine ?? openRequest} />
       ) : (
         // Design §A4 pBillEmpty: an empty bill says how to begin.
         <UbStack
@@ -308,7 +311,9 @@ export function InvoiceLinesSection({
           className="items-center rounded-card border border-border-hairline bg-surface-card px-5 py-7 text-center"
         >
           <ScanLine aria-hidden className="h-7 w-7 text-text-accent" />
-          <UbText className="ds-body-s-semibold">{t('sales.line.noneYet')}</UbText>
+          <UbText variant="inherit" className="text-[15px] font-semibold">
+            {t('sales.line.noneYet')}
+          </UbText>
           <UbText variant="caption" tone="tertiary" className="text-[0.8125rem]">
             {t('sales.line.noneYetHint')}
           </UbText>

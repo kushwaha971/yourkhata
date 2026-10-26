@@ -26,8 +26,9 @@ export interface UbTotalDockProps {
   readonly children: ReactNode;
   /**
    * Why the finishing action cannot run, or that it is still running ("No
-   * internet. Your bill is kept…", "Still issuing…"), on its own full-width line
-   * under the buttons — a disabled button with no reason reads as broken.
+   * internet. Your bill is kept…", "Add an item to finish the bill"), on its own
+   * full-width line ABOVE the total (design §A4 pdock: "the line above them
+   * says why") — a disabled button with no reason reads as broken.
    */
   readonly note?: ReactNode;
   /**
@@ -82,7 +83,7 @@ function UbTotalDockBase({
       {note ? (
         <p
           role="status"
-          className="ds-body-sm basis-full text-text-secondary"
+          className="order-first basis-full text-[13px] leading-5 text-text-secondary"
           data-testid="total-dock-note"
         >
           {note}

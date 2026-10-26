@@ -273,7 +273,8 @@ export function InvoiceLineList({
   useEffect(() => {
     if (!openRequest) return;
     const frame = requestAnimationFrame(() => {
-      const el = document.getElementById(`lines.${openRequest.row}.qty`);
+      const field = ['qty', 'qty', 'unitPrice', 'discountValue'][openRequest.col] ?? 'qty';
+      const el = document.getElementById(`lines.${openRequest.row}.${field}`);
       if (el instanceof HTMLInputElement) el.focus();
     });
     return () => cancelAnimationFrame(frame);
