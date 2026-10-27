@@ -1,6 +1,8 @@
 # A4 — Adding items to a bill (FB-014) and line limits (FB-020), 26–27 Oct 2026
 
-> **Status: IN TEST, not closed** (P0 testing standard, R-DEC-57). Commit
+> **Status: READY FOR THE OWNER'S CHECK — 9.0/10** (P0 testing standard,
+> R-DEC-57; §10 feature delivery). Not "done" until the owner has tried it.
+> Earlier status: in test. Commit
 > 1982c3560 called A4 closed, and that was wrong: the owner's questions and the
 > stronger tests that followed found eleven more defects the same day. They
 > are listed under "27 Oct, after the push" below. The score sheet at the end
@@ -246,6 +248,22 @@ the server at once, as #21.
 - with two removals, Undo brings back the last;
 - the page is no wider than the screen and the console is clean.
 
+## A hang not reproduced (recorded, not dismissed)
+
+On the final build, monkey seed 501 at 390 stopped at its 6-minute watchdog
+at step 193. The page sat on the editor's loading skeleton and never showed
+the bill. This happened once, while the A5 session (since stopped) had woken
+and was building on the same machine. The same seed replayed on a quiet
+machine passes: 298 actions, 31 reload and return checks with lines, no
+failure. Probes of the steps before it (a paid bill's `/edit`, then New bill;
+the bills list, then Items, then New bill) all show content in under 30 ms.
+
+What it still shows: **when loading stalls, a page can sit on its skeleton
+with no message and no way out.** That belongs to A8 (a page that goes blank
+or stays stuck on the first tap) and is recorded there to test on purpose with
+a stalled network. The monkey's watchdog now dumps the open requests and the
+last console errors, so a recurrence says what it was waiting for.
+
 ## Performance (measured on a quiet machine, final build)
 
 Baseline: the first distracted-user monkey runs this morning, on the build
@@ -272,9 +290,9 @@ today's changes added no cost.
 | Business 2 | 2 | Money, stock and book read back by the bill's own id with self-tests (`a4-functional`, `a4-money`); credit; overpay refused at the API and kept as advance on screen; a paid bill refused for any payment; print = API; locked bills (`a4-edges locked`) |
 | Design 1 | 1 | Side-by-side with pBillEmpty, pBill and dBill on the final build; measured stepper, bin, discount box, snackbar; the deviations listed; one conflict left for the owner (desktop Hold / Save draft) |
 | Functional 1 | 1 | Journeys end to end; the customer's and the item's pages updated with 0 page loads; the server's reasons shown; nothing refused is ever sent; Hold and Save refuse an incomplete line |
-| User 2 | 1.5 | Manual passes at 390 and 1280; 11 edge cases at both sizes; catalogue rows E1–E25. Missing: the six monkey runs on the FINAL build (seed 7713 at 1280 passed on it; the other five ran on the build before the Hold check and the Discount row) |
+| User 2 | 2 | Manual passes at 390 and 1280; 11 edge cases at both sizes; catalogue rows E1–E25; six monkey runs on the final build all pass (seeds 501, 4401 and 7713 × 390 and 1280, with 17–48 reload and return checks each; 501 at 390 passed on its quiet replay after one hang under load, recorded above) |
 | Data 1 | 1 | Reload, Back, leave, offline, lost reply, two tabs, Hold: nothing lost or duplicated; the pending change is sent on leave |
 | Performance 1 | 1 | The section above: baseline against final, no cost added |
 | Honesty 1 | 1 | This report, including the harness defects that weakened earlier evidence |
 | Owner found nothing 1 | 0 | The owner found the discount boxes and the snackbar today |
-| **Total** | **8.5 / 10** | **In test.** Reaches 9.0 when the six monkey runs pass on the final build; the last point is the owner's to give after trying it |
+| **Total** | **9.0 / 10** | **Ready for the owner's check.** The last point is the owner's to give after trying it. Open for the owner: the desktop header's Hold / Save draft against dBill |

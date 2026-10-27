@@ -71,6 +71,10 @@ const KEYS = [
 
 const failures = [];
 const log = [];
+// What the page is still waiting for, dumped by the watchdog: a hang is a
+// finding, and "stuck on a skeleton" says nothing without the open requests.
+const inflight = new Map();
+const lastErrors = [];
 const WANDER = ["/dashboard", "/sales/invoices", "/parties?type=customer", "/items", "/payments", "/sales/estimates", "/reports"];
 // API: every finished request, for counts, bursts and the slowest replies.
 const calls = [];
@@ -93,6 +97,8 @@ setTimeout(async () => {
       timeout: 5000,
     });
     console.log("hung at", page.url());
+    console.log("open requests:", JSON.stringify([...inflight.values()].slice(0, 12)));
+    console.log("last console errors:", JSON.stringify(lastErrors.slice(-6)));
   } catch {}
   writeFileSync(`${dir}/monkey-${seed}-${width}.log`, log.join("\n"));
   console.log(`seed ${seed} · ${width}px · ${log.length} actions · HUNG`);
@@ -132,6 +138,10 @@ page.on("console", (m) => {
   if (armed && (m.type() === "error" || /Warning:/.test(m.text())))
     failures.push(`console: ${m.text().slice(0, 200)}`);
 });
+page.on("request", (r) => inflight.set(r, `${r.method()} ${r.url().replace(base, "")}`));
+page.on("requestfinished", (r) => inflight.delete(r));
+page.on("requestfailed", (r) => inflight.delete(r));
+page.on("console", (m) => m.type() === "error" && lastErrors.push(m.text().slice(0, 200)));
 page.on("pageerror", (e) =>
   failures.push(`page error: ${e.message.slice(0, 200)}`),
 );

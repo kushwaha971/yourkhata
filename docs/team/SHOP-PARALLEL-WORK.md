@@ -81,12 +81,13 @@ its branch. A section that lags the code is a defect.
 - **Branch:** `shop/a2` (pushes to `dev`)
 - **Port:** 3000
 - **Report:** `docs/performance/2026-10-27-shop-a4-adding-items.md`
-- **Status:** in test, 8.5/10
+- **Status:** ready for the owner's check, 9.0/10 (27 Oct 2026)
 - **Last commit:** see `git log` on `shop/a2`; pushed to `dev`
 - **Next step:**
-  1. Run the six monkey runs on the final build (seeds 501, 4401 and 7713 ×
-     390 and 1280). If all pass, the score is 9.0, and the status becomes
-     "ready for the owner's check".
+  1. The owner tries A4. Anything found is fixed the same day and the
+     standard is changed to catch its class.
+  2. Meanwhile: A5 here (spec list written in
+     `docs/performance/2026-10-28-shop-a5-drawer-spacing.md`).
 - **Waiting on the owner:** the desktop header's Hold / Save draft (Counter
   Mode) against dBill.
 
@@ -146,6 +147,10 @@ limit. Their findings so far, to verify (not trust) when the piece is worked:
   `ssr: false` nor a `loading` view waits on its first download at the route's
   `loading.tsx`, which swaps the page for the skeleton. Next: reproduce on the
   live app to prove the fix holds, or find what is left.
+- **A8, from A4's monkey:** once, under load, the bill editor sat on its
+  skeleton for minutes (seed 501 at 390, step 193; not reproduced on a quiet
+  replay). A8 must test a stalled network on purpose: a skeleton must time out
+  into a message with a way to retry, never wait for ever.
 - **A7:** items 1 and 2 (the table frame clips the grey header to its rounded
   corners; the pager drops its own top line) are in the code from 59a1eb9, but
   not yet measured on the live app. **Item 3, the count line, is not built.**
