@@ -99,10 +99,11 @@ describe('UbDialog', () => {
   });
 
   it('stacks the footer in DOM order when asked, so Tab follows the screen (D-L6)', () => {
-    /* Prevents D-L6: the only footer on offer reversed its actions below `sm`,
-       so a three-action sheet was tabbed bottom-up. The default keeps the
-       convention; `as-written` is the opt-out, and it must actually drop the
-       reversal rather than add a class that loses to it. */
+    /* Prevents D-L6: a reversed stack was tabbed bottom-up. Since A5 (design
+       §A5 `.sfoot`) two actions sit side by side in DOM order — Cancel, then
+       the wider Save — so Tab follows the screen with no stacking at all;
+       only three or more stack, reversed by default and in DOM order with
+       `as-written`. The classes below are the ones that do it. */
     const footer = (
       <>
         <UbButton variant="secondary">Cancel</UbButton>
@@ -113,7 +114,8 @@ describe('UbDialog', () => {
       <UbDialog open onOpenChange={jest.fn()} title="Order" closeLabel="Dismiss" footer={footer} />
     );
     const row = () => screen.getByRole('button', { name: 'Cancel' }).parentElement as HTMLElement;
-    expect(row()).toHaveClass('flex-col-reverse');
+    expect(row()).toHaveClass('grid', 'grid-cols-[1fr_2fr]');
+    expect(row()).toHaveClass('[&:has(>button:nth-of-type(3))]:flex-col-reverse');
 
     rerender(
       <UbDialog
@@ -125,8 +127,8 @@ describe('UbDialog', () => {
         footerOrder="as-written"
       />
     );
-    expect(row()).toHaveClass('flex-col');
-    expect(row()).not.toHaveClass('flex-col-reverse');
+    expect(row()).toHaveClass('[&:has(>button:nth-of-type(3))]:flex-col');
+    expect(row()).not.toHaveClass('[&:has(>button:nth-of-type(3))]:flex-col-reverse');
   });
 });
 

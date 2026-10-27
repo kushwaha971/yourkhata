@@ -480,78 +480,99 @@ export function PaymentFormDrawer({
       closeLabel={t('common.action.close')}
       dismissOnBackdrop={!formState.isDirty}
       footer={
-        <UbStack gap={2} className="w-full">
-          {/* TV-03 — wraps: at 320 px in Hindi the figure sits above the
+        !counter ? (
+          // Design §A5 `.sfoot`: Cancel and the wider Save as the footer's own
+          // two actions. Counter mode keeps its "left to pay" row below
+          // (counter-mode.html, a separate approved design).
+          <>
+            <UbButton variant="secondary" onClick={requestClose} disabled={isSaving}>
+              {t('common.action.cancel')}
+            </UbButton>
+            <UbButton
+              type="submit"
+              form={formId}
+              busy={isSaving}
+              busyLabel={t('payments.saving')}
+              disabled={!canWrite}
+              data-testid="payment-save"
+            >
+              {t('payments.save', { amount: formatAmount(total) })}
+            </UbButton>
+          </>
+        ) : (
+          <UbStack gap={2} className="w-full">
+            {/* TV-03 — wraps: at 320 px in Hindi the figure sits above the
               buttons instead of squeezing its label onto three lines. */}
-          <UbStack direction="row" wrap align="center" justify="between" gap={3}>
-            {counter && due !== undefined && (
-              <UbStack gap={0} className="min-w-0" aria-live="polite" data-testid="payment-left">
-                <UbText variant="caption" tone="secondary" className="whitespace-nowrap">
-                  {t('payments.counter.left')}
-                </UbText>
-                <UbAmount
-                  value={leftShown}
-                  sign="none"
-                  size="sm"
-                  inline
-                  className="self-start whitespace-nowrap"
-                />
-              </UbStack>
-            )}
-            <UbStack direction="row" gap={3} className="ml-auto">
-              {counter && (
-                <UbButton variant="secondary" onClick={requestClose} disabled={isSaving}>
-                  {t('common.action.cancel')}
-                </UbButton>
+            <UbStack direction="row" wrap align="center" justify="between" gap={3}>
+              {counter && due !== undefined && (
+                <UbStack gap={0} className="min-w-0" aria-live="polite" data-testid="payment-left">
+                  <UbText variant="caption" tone="secondary" className="whitespace-nowrap">
+                    {t('payments.counter.left')}
+                  </UbText>
+                  <UbAmount
+                    value={leftShown}
+                    sign="none"
+                    size="sm"
+                    inline
+                    className="self-start whitespace-nowrap"
+                  />
+                </UbStack>
               )}
-              <UbButton
-                type="submit"
-                form={formId}
-                busy={isSaving}
-                busyLabel={t(
-                  counter
-                    ? out
-                      ? 'payments.counter.paying'
-                      : 'payments.counter.receiving'
-                    : 'payments.saving'
+              <UbStack direction="row" gap={3} className="ml-auto">
+                {counter && (
+                  <UbButton variant="secondary" onClick={requestClose} disabled={isSaving}>
+                    {t('common.action.cancel')}
+                  </UbButton>
                 )}
-                disabled={!canWrite || (counter && (docsBlock || overAllocated || !!dueChange))}
-                data-testid="payment-save"
-              >
-                {counter && failure
-                  ? t('payments.counter.tryAgain')
-                  : t(
-                      counter
-                        ? out
-                          ? 'payments.counter.pay'
-                          : 'payments.counter.receive'
-                        : 'payments.save',
-                      { amount: formatAmount(total) }
-                    )}
-              </UbButton>
+                <UbButton
+                  type="submit"
+                  form={formId}
+                  busy={isSaving}
+                  busyLabel={t(
+                    counter
+                      ? out
+                        ? 'payments.counter.paying'
+                        : 'payments.counter.receiving'
+                      : 'payments.saving'
+                  )}
+                  disabled={!canWrite || (counter && (docsBlock || overAllocated || !!dueChange))}
+                  data-testid="payment-save"
+                >
+                  {counter && failure
+                    ? t('payments.counter.tryAgain')
+                    : t(
+                        counter
+                          ? out
+                            ? 'payments.counter.pay'
+                            : 'payments.counter.receive'
+                          : 'payments.save',
+                        { amount: formatAmount(total) }
+                      )}
+                </UbButton>
+              </UbStack>
             </UbStack>
-          </UbStack>
-          {/* 08 §6 Allocation over — said beside the Save it holds, not at the
+            {/* 08 §6 Allocation over — said beside the Save it holds, not at the
               foot of a bill list the merchant may have scrolled away from. */}
-          {counter && overAllocated && (
-            <UbText variant="caption" tone="formError" role="alert" data-testid="alloc-over">
-              {t(out ? 'payments.counter.overOut' : 'payments.counter.over', {
-                allocated: formatAmount(manualTotals(total, allocations ?? []).allocated),
-                amount: formatAmount(total),
-              })}
-            </UbText>
-          )}
-          {counter && slow && (
-            <UbText variant="caption" tone="secondary" role="status">
-              {t('payments.counter.slow')}
-            </UbText>
-          )}
-          {counter && !slow && partyId && openStatus === 'failed' && blindAuto && (
-            <UbText variant="caption" tone="secondary">
-              {t('payments.counter.matchLater')}
-            </UbText>
-          )}
-        </UbStack>
+            {counter && overAllocated && (
+              <UbText variant="caption" tone="formError" role="alert" data-testid="alloc-over">
+                {t(out ? 'payments.counter.overOut' : 'payments.counter.over', {
+                  allocated: formatAmount(manualTotals(total, allocations ?? []).allocated),
+                  amount: formatAmount(total),
+                })}
+              </UbText>
+            )}
+            {counter && slow && (
+              <UbText variant="caption" tone="secondary" role="status">
+                {t('payments.counter.slow')}
+              </UbText>
+            )}
+            {counter && !slow && partyId && openStatus === 'failed' && blindAuto && (
+              <UbText variant="caption" tone="secondary">
+                {t('payments.counter.matchLater')}
+              </UbText>
+            )}
+          </UbStack>
+        )
       }
     >
       <UbForm

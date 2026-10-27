@@ -956,8 +956,9 @@ describe('archiving from the khata page', () => {
     const record = within(dialog).getByRole('button', { name: 'Record payment' });
     const footer = cancel.parentElement as HTMLElement;
     expect(footer).toContainElement(record);
-    expect(footer).toHaveClass('flex-col');
-    expect(footer).not.toHaveClass('flex-col-reverse');
+    // Three actions stack in DOM order (A5: the stack applies from three up).
+    expect(footer).toHaveClass('[&:has(>button:nth-of-type(3))]:flex-col');
+    expect(footer).not.toHaveClass('[&:has(>button:nth-of-type(3))]:flex-col-reverse');
 
     cancel.focus();
     await user.tab();

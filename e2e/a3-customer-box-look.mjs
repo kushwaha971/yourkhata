@@ -254,11 +254,15 @@ try {
             if (m.css[k] !== v)
               fail(tag, `${name}: ${k} is ${m.css[k]}, the design says ${v}`);
           if (!phone) {
+            // R-DEC-53 (A4): at 1280 More details moved to the bill's 340 px
+            // side column, and dBill draws this card as 300px · minmax(0,1fr).
+            // The A3-era rule (300 · 1fr · 360) failed every 1280 view after
+            // that, unnoticed until the §10 regression ran it again.
             const cols = m.css.cols.split(" ");
-            if (cols[0] !== "300px" || cols[2] !== "360px")
+            if (cols[0] !== "300px" || cols.length !== 2)
               fail(
                 tag,
-                `${name}: desktop row is ${m.css.cols}, the design says 300px · 1fr · 360px`,
+                `${name}: desktop row is ${m.css.cols}, dBill says 300px · 1fr`,
               );
           }
           // The design's composition.

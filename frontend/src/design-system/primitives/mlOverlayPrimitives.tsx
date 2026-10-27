@@ -373,11 +373,21 @@ export function MLDialog({
                  rather than behind it. `rounded-l-xl` only — the panel is
                  flush with three edges, which is what makes it read as
                  attached to the side rather than floating. */
-              'max-h-[92dvh] rounded-t-xl lg:h-full lg:max-h-none lg:w-[520px] lg:max-w-[calc(100vw-2rem)] lg:rounded-none lg:rounded-l-xl'
+              /* Design §A5: the phone sheet's 18 px top corners and a grab
+                 handle; the desktop drawer is 480 px (`.sheet`, `.drawer`). */
+              'max-h-[92dvh] rounded-t-[18px] lg:h-full lg:max-h-none lg:w-[480px] lg:max-w-[calc(100vw-2rem)] lg:rounded-none lg:rounded-l-xl'
             : 'max-h-[90dvh] rounded-t-xl sm:w-[420px] sm:max-w-[calc(100vw-2rem)] sm:rounded-xl',
           className
         )}
       >
+        {isDrawer && (
+          // `.grab`: 36 × 4, 8 px from the top, on the phone sheet only.
+          <div
+            aria-hidden
+            data-ub-grab=""
+            className="mx-auto mt-[8px] h-[4px] w-[36px] shrink-0 rounded-[2px] bg-border-strong lg:hidden"
+          />
+        )}
         {children}
       </div>
     </div>,
@@ -403,7 +413,17 @@ export function MLDialogHeader({
   className,
 }: Readonly<{ children: ReactNode; className?: string }>): React.JSX.Element {
   return (
-    <div className={cn('flex items-start gap-2 border-b border-border-hairline p-6', className)}>
+    /* Design §A5 `.shead`: a 56 px row padded 0 8 0 16 on a phone, 60 px
+       padded 0 12 0 24 on desktop (`.dk .shead`). A description makes it
+       taller, never shorter. */
+    <div
+      data-ub-dialog-header=""
+      className={cn(
+        'flex min-h-[56px] items-center gap-2 border-b border-border-hairline py-2 pl-4 pr-2',
+        'lg:min-h-[60px] lg:pl-6 lg:pr-3',
+        className
+      )}
+    >
       {children}
     </div>
   );
@@ -414,7 +434,15 @@ export function MLDialogBody({
   className,
 }: Readonly<{ children: ReactNode; className?: string }>): React.JSX.Element {
   return (
-    <div className={cn('flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto p-6', className)}>
+    /* `.sbody`: 16 px from the edge on a phone, 20 / 24 on desktop
+       (`.drawer .sbody`), 24 px between groups. */
+    <div
+      data-ub-dialog-body=""
+      className={cn(
+        'flex min-h-0 flex-1 flex-col gap-6 overflow-y-auto p-4 lg:px-6 lg:py-5',
+        className
+      )}
+    >
       {children}
     </div>
   );
@@ -432,7 +460,11 @@ export function MLDialogTitle({
   className,
 }: Readonly<MLDialogTitleProps>): React.JSX.Element {
   return (
-    <h2 id={id} className={cn('ds-title-sm text-text-primary', className)}>
+    // `.shead b`: 17 px, weight 600.
+    <h2
+      id={id}
+      className={cn('text-[17px] font-semibold leading-[1.25] text-text-primary', className)}
+    >
       {children}
     </h2>
   );
@@ -444,7 +476,8 @@ export function MLDialogDescription({
   className,
 }: Readonly<MLDialogTitleProps>): React.JSX.Element {
   return (
-    <p id={id} className={cn('ds-body-sm text-text-tertiary', className)}>
+    // `.shead small`: 12.5 px, ink-3.
+    <p id={id} className={cn('text-[12.5px] leading-[1.35] text-text-tertiary', className)}>
       {children}
     </p>
   );
@@ -484,9 +517,22 @@ export function MLDialogFooter({
       ref={footerRef}
       data-ub-overlay-footer=""
       className={cn(
-        'flex gap-3 border-t border-border-hairline p-6 pb-[max(1.5rem,env(safe-area-inset-bottom,0px))]',
-        order === 'as-written' ? 'flex-col' : 'flex-col-reverse',
-        'sm:flex-row sm:flex-wrap sm:justify-end sm:gap-3',
+        /* Design §A5 `.sfoot`: on a phone Cancel and Save side by side, Save
+           twice as wide (1fr 2fr), 8 px apart, padded 12 16 14, 46 px
+           buttons (`.btn.lg`). One action takes the row; three or more stack
+           as before, the primary first on screen. On desktop (`.dk .sfoot`)
+           they sit at the right, padded 14 24, at 40 px. */
+        'border-t border-border-hairline px-4 pb-[max(14px,env(safe-area-inset-bottom,0px))] pt-3',
+        // Buttons are counted, not children: a note beside them (the stock
+        // drawer's "1 item · ₹0") takes the whole row above them instead.
+        'grid grid-cols-[1fr_2fr] gap-2 [&:has(>button:only-of-type)]:grid-cols-1',
+        '[&>:not(button)]:col-span-full',
+        order === 'as-written'
+          ? '[&:has(>button:nth-of-type(3))]:flex [&:has(>button:nth-of-type(3))]:flex-col'
+          : '[&:has(>button:nth-of-type(3))]:flex [&:has(>button:nth-of-type(3))]:flex-col-reverse',
+        '[&>button]:h-[46px] [&>button]:text-[15px]',
+        'lg:flex lg:flex-row lg:flex-wrap lg:justify-end lg:px-6 lg:py-[14px]',
+        'lg:[&>button]:h-10 lg:[&>button]:text-sm',
         className
       )}
     >

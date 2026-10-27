@@ -124,3 +124,60 @@ it('keeps an opted-in drawer footer inside the visual viewport and restores it o
     else Reflect.deleteProperty(window, 'visualViewport');
   }
 });
+
+describe('design §A5: one spacing scale for drawers and sheets', () => {
+  const open = (footer: React.ReactNode) =>
+    render(
+      <UbDrawer
+        open
+        onOpenChange={() => undefined}
+        title="Edit customer"
+        closeLabel="Close"
+        footer={footer}
+      >
+        <p>Body</p>
+      </UbDrawer>
+    );
+
+  /** Prevents the drawer drifting back to its old 520 px / 12 px look (`.drawer`, `.sheet`). */
+  it('is a 480 px drawer on desktop and an 18 px-cornered sheet with a grab handle on a phone', () => {
+    open(<button type="button">Save</button>);
+    const panel = screen.getByRole('dialog');
+    expect(panel).toHaveClass('lg:w-[480px]', 'rounded-t-[18px]');
+    const grab = panel.querySelector('[data-ub-grab]');
+    expect(grab).toHaveClass('h-[4px]', 'w-[36px]', 'lg:hidden');
+  });
+
+  /** Prevents the stacked phone footer: Cancel and the wider Save side by side (`.sfoot`). */
+  it('puts two actions side by side, the second twice as wide, and a note on a row of its own', () => {
+    open(
+      <>
+        <span>1 item · ₹0</span>
+        <button type="button">Cancel</button>
+        <button type="button">Save</button>
+      </>
+    );
+    const footer = screen.getByRole('button', { name: 'Save' }).parentElement as HTMLElement;
+    expect(footer).toHaveClass('grid', 'grid-cols-[1fr_2fr]', '[&>:not(button)]:col-span-full');
+    expect(footer).toHaveClass('[&>button]:h-[46px]', 'lg:[&>button]:h-10', 'lg:justify-end');
+  });
+
+  /** Prevents a header that packs 24 px all round instead of the design's row (`.shead`). */
+  it('has a 56 px header on a phone and 60 px on desktop, and a 40 px close button', () => {
+    open(null);
+    const header = screen.getByRole('dialog').querySelector('[data-ub-dialog-header]');
+    expect(header).toHaveClass(
+      'min-h-[56px]',
+      'pl-4',
+      'pr-2',
+      'lg:min-h-[60px]',
+      'lg:pl-6',
+      'lg:pr-3'
+    );
+    expect(screen.getByRole('button', { name: 'Close' })).toHaveClass(
+      'h-10',
+      'w-10',
+      'rounded-[10px]'
+    );
+  });
+});

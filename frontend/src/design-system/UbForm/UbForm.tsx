@@ -81,6 +81,7 @@ function UbFormBase<T extends FieldValues>({
         onSubmit={submit}
         /* BrandHub: 24 px between fields = the 20 px reserved message row
            under each field + this 4 px. */
+        data-ub-form=""
         className={cn('flex w-full flex-col gap-1', className)}
       >
         {formErrors && formErrors.length > 0 && (

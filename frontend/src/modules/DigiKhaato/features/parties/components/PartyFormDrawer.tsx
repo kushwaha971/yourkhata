@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useId, useMemo, type RefObject } from 'react';
 
 import { yupResolver } from '@hookform/resolvers/yup';
-import { useForm, useWatch } from 'react-hook-form';
+import { useForm, useFormState, useWatch } from 'react-hook-form';
 
 import { PhoneContactButton } from 'src/components/contacts/PhoneContactButton';
 import { CompactDrawer as UbDrawer } from 'src/components/records/CompactOverlays';
@@ -29,6 +29,7 @@ import { useAppRouter } from 'src/hooks/useAppRouter';
 import { useTranslation } from 'src/hooks/useTranslation';
 import type { TranslateFn } from 'src/hooks/useTranslation';
 import { partyPath } from 'src/routes';
+import { blurIfTyped } from 'src/utils/autofocusBlur';
 import { compareMoney, formatAmount, parseAmountInput } from 'src/utils/money';
 
 import { MAX_TAGS_PER_PARTY } from '../constants/partyTags';
@@ -42,9 +43,18 @@ import type { UsePartyFormResult } from '../hooks/usePartyForm';
 import type { PartyFormValues } from '../types/party.types';
 
 function PartyNameInput({ t }: Readonly<{ t: TranslateFn }>): React.JSX.Element {
+  const { isSubmitted } = useFormState();
   return (
     <UbField name="name" label={t('parties.form.name.label')} placeholder={t('parties.form.name.placeholder')} required>
-      {(field) => <UbTextInput {...field} autoFocus autoComplete="off" placeholder={t('parties.form.name.hint')} />}
+      {(field) => (
+        <UbTextInput
+          {...field}
+          onBlur={blurIfTyped(field, isSubmitted)}
+          autoFocus
+          autoComplete="off"
+          placeholder={t('parties.form.name.hint')}
+        />
+      )}
     </UbField>
   );
 }

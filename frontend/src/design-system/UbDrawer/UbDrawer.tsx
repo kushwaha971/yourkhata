@@ -100,7 +100,12 @@ function UbDrawerBase({
             <MLDialogDescription id={descriptionId}>{description}</MLDialogDescription>
           )}
         </div>
-        <MLIconButton aria-label={closeLabel} onClick={() => onOpenChange(false)} className="-mr-2">
+        {/* `.ib`: 40 × 40, 10 px corners; `ub-hit` keeps 44 px to tap on a phone. */}
+        <MLIconButton
+          aria-label={closeLabel}
+          onClick={() => onOpenChange(false)}
+          className="ub-hit h-10 w-10 shrink-0 rounded-[10px]"
+        >
           <X aria-hidden className="h-4 w-4" />
         </MLIconButton>
       </MLDialogHeader>

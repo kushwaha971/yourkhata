@@ -97,8 +97,8 @@ its branch. A section that lags the code is a defect.
 - **Branch:** `claude/shop-a5-d647aa`
 - **Port:** 3001
 - **Report:** `docs/performance/2026-10-27-shop-a5-drawer-spacing.md`
-- **Status:** stopped by the owner on 27 Oct 2026, after one commit. Main
-  continues A5 here, one piece at a time.
+- **Status:** ready for the owner's check, 9.0/10 (27 Oct 2026), built here
+  in the main worktree; the A5 branch only gave its port commit.
 - **Last commit:** cf10ff099 — the harness port change: `E2E_BASE` in all 148
   harnesses, and `serve.sh` takes `PORT` without killing other servers.
   Known gap: `sprint3-qa` F3 still asserts host `localhost:3000`.

@@ -30,6 +30,7 @@ import {
 import { usePagedSearch } from 'src/hooks/usePagedSearch';
 import { useTranslation } from 'src/hooks/useTranslation';
 import { itemPath } from 'src/routes';
+import { blurIfTyped } from 'src/utils/autofocusBlur';
 import { comboPaging } from 'src/utils/searchPaging';
 
 import { lookupItemByBarcode } from '../api/itemService';
@@ -310,7 +311,15 @@ export function ItemFormDrawer({
           placeholder={t('items.form.name.placeholder')}
           required
         >
-          {(field) => <UbTextInput {...field} autoFocus autoComplete="off" maxLength={160} />}
+          {(field) => (
+            <UbTextInput
+              {...field}
+              onBlur={blurIfTyped(field, form.formState.isSubmitted)}
+              autoFocus
+              autoComplete="off"
+              maxLength={160}
+            />
+          )}
         </UbField>
         {looksLikeBarcode(name ?? '') && !isService && (
           <UbStatusBanner

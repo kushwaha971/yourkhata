@@ -60,6 +60,7 @@ function UbSwitchBase({
     <label
       htmlFor={switchId}
       ref={guard}
+      data-ub-switch-row=""
       className={cn(
         'flex min-h-11 w-full cursor-pointer items-center justify-between gap-3',
         disabled && 'cursor-not-allowed opacity-60',

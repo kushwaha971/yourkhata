@@ -57,6 +57,8 @@ such action.
 | E23 | Overpaying, or paying a finished bill (C3 payment mismatches) | API: more than due → 400, any amount on a paid bill → 409; on screen the excess is kept as advance and said so; the bill never shows paid above its total | pass (a4-money) | not run | not run | not run | n/a |
 | E24 | The printed bill differs from the screen or the server (C4 calculation errors) | print media: number, each line, each amount, total = API; a sign is the same on screen and print | pass after fix (withMinusSign on A4 and 80 mm) | not run | not run | not run | n/a |
 | E25 | A discount that makes a total negative (C8: 1500 for 150 stored a negative bill) | type past 100 % and past the subtotal; the box returns to the limit; API total ≥ 0 | fixed (R-DEC-59; a4-limits-look) | not run | n/a | n/a | n/a |
+| E26 | A drawer opens with fields already red, before any Save (the LED-01 class) | open each form drawer, tap a switch or chip first; no error until Save | n/a | fixed (A5: Add item, Add customer; blurIfTyped) | not run | not run | fixed (Add item) |
+| E27 | A restyle quietly breaks saving | every form drawer saves after the change, read back by record id | — | pass (A5: customer, item, stock; payment via A4) | n/a | pass | pass |
 | E18 | Slow, laggy lists (C5) | page time-to-content and API p95 under the monkey | pass (p95 < 1 s locally) | not run | not run | not run | not run |
 
 ## How the monkey uses this

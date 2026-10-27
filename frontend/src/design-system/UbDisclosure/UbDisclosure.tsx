@@ -116,6 +116,7 @@ function UbDisclosureBase({
     // focus ring is the root's for the same reason: a ring drawn on the
     // header alone was clipped at the bottom by the panel's rule.
     <div
+      data-ub-disclosure=""
       className={cn(
         'flex flex-col overflow-clip rounded-card border border-border-hairline bg-surface-card',
         'has-[>button:focus-visible]:shadow-focus',

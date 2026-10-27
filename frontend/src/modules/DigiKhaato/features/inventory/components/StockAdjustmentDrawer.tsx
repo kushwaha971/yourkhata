@@ -481,8 +481,9 @@ export function StockAdjustmentDrawer({
           <UbText
             variant="body-sm"
             tone="secondary"
-            /* Above the dock on a phone (the footer stacks reversed there). */
-            className="mr-auto self-center max-sm:order-last max-sm:self-start"
+            /* On a phone the footer gives a note the whole row above the two
+               buttons (A5); on desktop it sits at the left. */
+            className="mr-auto self-center"
             data-testid="adjust-consequence"
           >
             {t('stock.adjust.consequence', { count: filled })}{' '}

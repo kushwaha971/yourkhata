@@ -254,11 +254,9 @@ export function FilterSheetDrawer({
     <UbDrawer
       open={open}
       onOpenChange={onOpenChange}
-      className={
-        compact
-          ? '[&>div:last-child>button]:flex-1 [&>div:last-child]:flex-row [&>div:last-child]:gap-2 [&>div:last-child]:pb-[max(1rem,env(safe-area-inset-bottom,0px))] [&>div]:p-4'
-          : undefined
-      }
+      // Design §A5: the sheet's own spacing and footer come from the one
+      // standard in the dialog primitives; this compact copy padded every
+      // child of the panel (the grab handle too) and fought it.
       title={labels.title}
       closeLabel={labels.close}
       footer={

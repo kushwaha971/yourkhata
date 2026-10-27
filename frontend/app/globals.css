@@ -956,3 +956,68 @@ html:not([data-hydrated]) :is(button, [role='button'], a):active {
     animation: none;
   }
 }
+
+/* ── Design §A5: one spacing scale inside every drawer, sheet and dialog ──
+   (docs/performance/2026-10-28-shop-a5-drawer-spacing.md, S1–S14). Scoped to
+   [role=dialog] on purpose: the same UbField and inputs serve every page form,
+   and those pages keep their spacing until they have a design of their own.
+   Exact pixels, because this project's spacing tokens are not stock Tailwind. */
+@layer components {
+  [role='dialog'] [data-ub-form] {
+    row-gap: 16px; /* S3: one field and the next */
+  }
+  /* S4: a group (a fold-out) after a field sits 24 px away, 16 + 8. */
+  [role='dialog'] [data-ub-form] > [data-ub-disclosure] {
+    margin-top: 8px;
+  }
+  [role='dialog'] [data-ub-field] {
+    row-gap: 0;
+  }
+  /* S1 + S6: the label 6 px above its box, 13 px weight 600. */
+  [role='dialog'] [data-ub-field] > [data-part='label'] {
+    margin-bottom: 6px;
+    font-size: 13px;
+    font-weight: 600;
+    line-height: 1.35;
+  }
+  /* S2 + S14b: the hint or error 4 px under its box, 12.5 px; no empty row
+     reserved (the design's 16 px between fields leaves none — listed for the
+     owner as a conflict with the old no-jump rule). */
+  [role='dialog'] [data-ub-field] > [data-part='message'] {
+    margin-top: 4px;
+    min-height: 0;
+    font-size: 12.5px;
+    line-height: 1.35;
+  }
+  [role='dialog'] [data-ub-field] > [data-part='message']:empty {
+    display: none;
+  }
+  /* On the hint or error itself: it carries its own text style, which beat
+     the size set on its row (measured 14 px; design 12.5). */
+  [role='dialog'] [data-ub-field] > [data-part='message'] > * {
+    font-size: 12.5px;
+    line-height: 1.35;
+  }
+  [role='dialog'] [data-ub-field] > [data-part='message'] [id$='-error'] {
+    font-weight: 600;
+  }
+  /* S7: boxes 44 px on a phone, 40 on desktop. */
+  [role='dialog'] [data-ub-field] .h-10 {
+    height: 44px;
+  }
+  [role='dialog'] [data-ub-field] .min-h-10 {
+    min-height: 44px;
+  }
+  /* S10: a switch row is 48 px, with no extra margin. */
+  [role='dialog'] [data-ub-switch-row] {
+    min-height: 48px;
+  }
+  @media (min-width: 1024px) {
+    [role='dialog'] [data-ub-field] .h-10 {
+      height: 40px;
+    }
+    [role='dialog'] [data-ub-field] .min-h-10 {
+      min-height: 40px;
+    }
+  }
+}

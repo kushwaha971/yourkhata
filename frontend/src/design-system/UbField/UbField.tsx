@@ -131,10 +131,11 @@ export function UbField({
       .join(' ') || undefined;
 
   return (
-    <div className={cn('flex w-full flex-col gap-1', className)}>
+    <div data-ub-field="" className={cn('flex w-full flex-col gap-1', className)}>
       {!controlOwnsLabel && (
         <label
           htmlFor={name}
+          data-part="label"
           className={cn(
             'ds-body-base-medium flex items-baseline gap-2 text-text-primary',
             labelHidden && 'sr-only'
@@ -182,7 +183,7 @@ export function UbField({
        * that never shows a message pays 20px of deliberate space; a form that
        * jumps on validation costs more than that. */}
       {!messageElsewhere && (reserveError || error || hint) && (
-        <div className={cn(reserveError && 'min-h-5')}>
+        <div data-part="message" className={cn(reserveError && 'min-h-5')}>
           {hint && !error && <UbInputHint id={`${name}-hint`}>{hint}</UbInputHint>}
           {error && <UbFieldError id={`${name}-error`}>{error}</UbFieldError>}
         </div>

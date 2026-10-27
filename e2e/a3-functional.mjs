@@ -238,15 +238,29 @@ try {
       `next bill, no reload: box shows "${shown2}", the API says ${inr(after)}`,
     );
   await page.screenshot({ path: `${dir}/${width}-next-bill.png` });
-  await trigger.click();
-  await page.keyboard.type(party.name.replace(/\s*\d+$/, ""), { delay: 10 });
-  await page
-    .locator("[cmdk-group]", { hasText: "People" })
-    .locator("[cmdk-item]")
-    .filter({ has: page.getByText(party.name, { exact: true }) })
-    .first()
-    .click();
-  await page.waitForURL((u) => u.pathname === `/parties/${party.id}`);
+  if (width < 1024) {
+    // A4 (R-DEC-55) gave the phone bill its own bar, so the app header and
+    // its search are not on this screen: a merchant closes the bill and opens
+    // the customer from Customers. Still client-side, no reload.
+    await page.getByTestId("task-bar").getByRole("button", { name: "Close" }).click();
+    await page.waitForTimeout(800);
+    await page.getByRole("link", { name: "Customers", exact: true }).first().click();
+    await page.waitForURL((u) => /\/(customers|parties)/.test(u.pathname), { timeout: 8000 });
+    await page.getByRole("searchbox", { name: "Search customers" }).fill(party.name);
+    await page.waitForTimeout(1500);
+    await page.getByRole("button", { name: `Open ${party.name}` }).first().click();
+    await page.waitForURL((u) => u.pathname.endsWith(`/${party.id}`), { timeout: 8000 });
+  } else {
+    await trigger.click();
+    await page.keyboard.type(party.name.replace(/\s*\d+$/, ""), { delay: 10 });
+    await page
+      .locator("[cmdk-group]", { hasText: "People" })
+      .locator("[cmdk-item]")
+      .filter({ has: page.getByText(party.name, { exact: true }) })
+      .first()
+      .click();
+    await page.waitForURL((u) => u.pathname === `/parties/${party.id}`);
+  }
   await page.waitForTimeout(1500);
   const text = await page.locator("main").innerText();
   if (!text.includes(inr(after)))

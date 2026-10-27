@@ -205,12 +205,16 @@ export const plan = (root) => {
   const dir = join(root, CATALOGUE_DIR);
   if (existsSync(dir)) {
     for (const file of readdirSync(dir)) {
+      // A hidden entry is never a catalogue: the editor's own `.claude/` folder
+      // appeared here and failed the check as a "stale file to delete".
+      if (file.startsWith('.')) continue;
       if (!(`${CATALOGUE_DIR}/${file}` in files)) stale.push(`${CATALOGUE_DIR}/${file}`);
     }
   }
   const modDir = join(root, MODULE_DIR);
   if (existsSync(modDir)) {
     for (const file of readdirSync(modDir)) {
+      if (file.startsWith('.')) continue;
       if (!(`${MODULE_DIR}/${file}` in files)) stale.push(`${MODULE_DIR}/${file}`);
     }
   }
