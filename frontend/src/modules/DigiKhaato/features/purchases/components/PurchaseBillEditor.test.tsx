@@ -1211,7 +1211,7 @@ it('calls the long purchase-order finder an order, not a bill', async () => {
   ).toBeInTheDocument();
 });
 
-it.each(['1.5', '-5'])(
+it.each(['-5'])(
   'never turns invalid NOS quantity %s into a different positive whole number',
   async (quantity) => {
     // Defect: the quantity mask turned1.5 into15 and-5 into5, silently changing stock and money.
@@ -1227,6 +1227,16 @@ it.each(['1.5', '-5'])(
     expect(service.recordPurchaseBill).not.toHaveBeenCalled();
   }
 );
+
+/** R-DEC-56: a NOS box takes no point, so "1.5" can never become 15; what was typed before the point stays. */
+it('keeps 1 for a typed 1.5 on a NOS line, never 15', async () => {
+  const user = userEvent.setup();
+  renderWithProviders(<PurchaseBillEditorPageContent documentId="b1" />);
+  const input = await screen.findByLabelText('Qty, line 1');
+  await user.clear(input);
+  await user.type(input, '1.5');
+  expect(input).toHaveValue('1');
+});
 
 it.each(['purchase_bill', 'purchase_order'] as const)(
   'opens a posted %s read-only when Back or a saved edit URL reaches it',

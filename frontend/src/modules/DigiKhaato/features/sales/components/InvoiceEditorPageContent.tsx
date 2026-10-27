@@ -47,6 +47,7 @@ import { deleteInvoiceDraft } from '../redux/salesThunk';
 import { firstWrongField } from '../view-model/firstWrongField';
 import { documentTitleId, stockShortLines, stockShortMessage } from '../view-model/invoiceDisplay';
 import { fullCashPayment, type PaymentRowForm } from '../view-model/invoiceForm';
+import { serverReason } from '../view-model/serverReason';
 
 import { InvoiceBillAdjustments } from './InvoiceBillAdjustments';
 import { InvoiceEditorDialogs } from './InvoiceEditorDialogs';
@@ -384,7 +385,7 @@ export function InvoiceEditorPageContent({
     <InvoiceSaveIndicator
       indicator={autosave.indicator}
       savedAt={autosave.savedAt}
-      reason={server.error?.message}
+      reason={serverReason(server.error, t)}
     />
   );
   const itemCount = values.lines.filter((l) => l.itemId || l.description).length;
@@ -584,7 +585,7 @@ export function InvoiceEditorPageContent({
               <UbStatusBanner
                 tone="error"
                 title={t('sales.editor.error.issue')}
-                description={server.error?.message}
+                description={serverReason(server.error, t) ?? undefined}
               />
             )}
             {creditBlocked && (

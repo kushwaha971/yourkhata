@@ -793,6 +793,30 @@ describe('the always-visible item search (07-screens/09 §3)', () => {
     expect(screen.getByRole('combobox', { name: 'Search items to add' })).toHaveValue('');
   });
 
+  it("puts a line's message under the whole row, not squeezed under its 76 px box", async () => {
+    /* Prevents "This / unit / takes / whole / numbers / only." wrapped down a
+       Qty cell (owner's screenshot, 27 Oct 2026): the cell keeps the red box,
+       the sentence gets the row, and the box still names it to a screen reader. */
+    signIn(RIGHTS);
+    renderWithProviders(<InvoiceEditorPageContent documentId={null} />);
+    await quickAdd('led');
+    await userEvent.click(await answeredOption());
+    const qty = await waitFor(() => {
+      const el = document.getElementById('lines.0.qty');
+      if (!(el instanceof HTMLInputElement)) throw new Error('no qty');
+      return el;
+    });
+    await userEvent.clear(qty);
+    await userEvent.tab();
+    const row = await screen.findByTestId('invoice-line-errors');
+    expect(row).toHaveTextContent('Enter a quantity.');
+    expect(qty).toHaveAttribute('aria-invalid', 'true');
+    expect(qty.getAttribute('aria-describedby')).toBe('lines.0.qty-error');
+    expect(document.getElementById('lines.0.qty-error')).toBe(
+      within(row).getByText('Enter a quantity.')
+    );
+  });
+
   it('appends a second line instead of overwriting the first', async () => {
     signIn(RIGHTS);
     renderWithProviders(<InvoiceEditorPageContent documentId={null} />);

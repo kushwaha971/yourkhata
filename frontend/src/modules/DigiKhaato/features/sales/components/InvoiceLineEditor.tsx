@@ -12,6 +12,7 @@ import {
   UbDrawer,
   UbEditTable,
   UbField,
+  UbFieldError,
   UbMoneyInput,
   UbQuantityInput,
   UbPressable,
@@ -420,11 +421,13 @@ export function InvoiceLineTable({
         label={t('sales.line.qtyOf', { name })}
         labelHidden
         reserveError={false}
+        messageElsewhere
       >
         {(field) => (
           <UbQuantityInput
             className="ml-auto w-[76px] [&_input]:h-[34px] [&_input]:text-sm"
             id={field.id}
+            aria-describedby={field['aria-describedby']}
             aria-label={t('sales.line.qtyOf', { name })}
             value={(field.value as string) ?? ''}
             onChange={(next) => {
@@ -445,11 +448,13 @@ export function InvoiceLineTable({
         label={t('sales.line.rateOf', { name })}
         labelHidden
         reserveError={false}
+        messageElsewhere
       >
         {(field) => (
           <UbMoneyInput
             className="ml-auto w-[92px] [&_input]:h-[34px] [&_input]:text-sm"
             id={field.id}
+            aria-describedby={field['aria-describedby']}
             aria-label={t('sales.line.rateOf', { name })}
             value={(field.value as string) ?? ''}
             onChange={(next) => {
@@ -467,11 +472,13 @@ export function InvoiceLineTable({
         label={t('sales.line.discountOf', { name })}
         labelHidden
         reserveError={false}
+        messageElsewhere
       >
         {(field) => (
           <UbMoneyInput
             className="ml-auto w-[56px] [&_input]:h-[34px] [&_input]:text-sm"
             id={field.id}
+            aria-describedby={field['aria-describedby']}
             aria-label={t('sales.line.discountOf', { name })}
             value={(field.value as string) ?? ''}
             currencySymbol="%"
@@ -518,13 +525,31 @@ export function InvoiceLineTable({
         {t('sales.line.remove', { n: n + 1 })}
       </UbButton>,
     ];
+    // A wrong cell keeps only its red box; the sentence gets the row's full
+    // width underneath, with the id the cell's aria-describedby names.
+    const lineErrors = form.formState.errors.lines?.[index] as
+      Record<string, { message?: string } | undefined> | undefined;
+    const messages = (['qty', 'unitPrice', 'discountValue'] as const).flatMap((f) =>
+      lineErrors?.[f]?.message
+        ? [
+            <UbFieldError key={f} id={`${base}.${f}-error`}>
+              {lineErrors[f]?.message}
+            </UbFieldError>,
+          ]
+        : []
+    );
     return {
       key: String(index),
       'data-testid': 'invoice-line',
       cells,
       expanded:
-        open === index ? (
+        messages.length > 0 && open !== index ? (
+          <UbStack gap={1} data-testid="invoice-line-errors">
+            {messages}
+          </UbStack>
+        ) : open === index ? (
           <UbStack gap={3}>
+            {messages}
             <InvoiceLineDetails
               form={form}
               index={index}

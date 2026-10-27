@@ -58,12 +58,18 @@ try {
         await page.screenshot({ path: `${dir}/${tag}-empty.png` });
 
         // Add three items through the one search, then the first again.
-        const search = page.getByRole('combobox', { name: /Search items to add|Add item|Search item/i }).first();
+        const search = page.getByRole('combobox').first();
         for (const item of [items[0], items[1], items[2], items[0]]) {
           await search.click();
           await page.keyboard.type(item.name, { delay: 5 });
           await page.getByRole('option', { name: new RegExp(item.name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')) }).first().click();
           await page.waitForTimeout(500);
+          // A phone pick opens that line's sheet (design §A4); close it as a
+          // merchant would before the next search.
+          if (await page.getByRole('dialog').count()) {
+            await page.keyboard.press('Escape');
+            await page.waitForTimeout(400);
+          }
         }
         await page.mouse.move(1, 1);
         await page.waitForTimeout(800);

@@ -86,6 +86,13 @@ export interface UbFieldProps {
    */
   readonly reserveError?: boolean;
   /**
+   * The message is drawn by the caller, under the whole row, with the id
+   * `${name}-error` this field already points `aria-describedby` at — a bill
+   * line's cells are too narrow for a sentence, and one wrapped under a 76 px
+   * box read "This / unit / takes / whole / numbers" (owner, 27 Oct 2026).
+   */
+  readonly messageElsewhere?: boolean;
+  /**
    * The control renders its OWN `<label>` — `UbSwitch` and `UbCheckbox` both
    * do, because their label is part of their layout rather than above them.
    *
@@ -111,6 +118,7 @@ export function UbField({
   optionalLabel,
   labelHidden,
   reserveError = true,
+  messageElsewhere,
   controlOwnsLabel,
   children,
   className,
@@ -173,7 +181,7 @@ export function UbField({
        * before there is anything in it and nothing moves when there is. A field
        * that never shows a message pays 20px of deliberate space; a form that
        * jumps on validation costs more than that. */}
-      {(reserveError || error || hint) && (
+      {!messageElsewhere && (reserveError || error || hint) && (
         <div className={cn(reserveError && 'min-h-5')}>
           {hint && !error && <UbInputHint id={`${name}-hint`}>{hint}</UbInputHint>}
           {error && <UbFieldError id={`${name}-error`}>{error}</UbFieldError>}

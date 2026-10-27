@@ -6,7 +6,7 @@ import { UbButton, UbPopover, UbPanel, UbStack, UbText } from 'src/design-system
 import { EDITOR_TOTALS_PANEL_CLASS } from 'src/hooks/useDocksEditorTotals';
 import { useTranslation } from 'src/hooks/useTranslation';
 import { cn } from 'src/utils/cn';
-import { addMoney, formatInr } from 'src/utils/money';
+import { absMoney, addMoney, formatInr, isNegativeAmount } from 'src/utils/money';
 
 import { salesWarningMessage, sgstLabelId } from '../view-model/invoiceDisplay';
 
@@ -65,6 +65,11 @@ export function InvoiceTotalsPanel({
     </UbStack>
   );
 
+  // A rounding down reads like the discount row, "— ₹0.47", not Intl's
+  // hyphen ("-₹0.47") one line under it.
+  const signedRow = (value: string) =>
+    isNegativeAmount(value) ? `— ${formatInr(absMoney(value))}` : formatInr(value);
+
   return (
     <UbPanel as="aside" className={EDITOR_TOTALS_PANEL_CLASS}>
       <UbStack gap={2} className="p-4 text-sm" data-testid="invoice-totals">
@@ -88,7 +93,7 @@ export function InvoiceTotalsPanel({
             formatInr(addMoney(preview.cgstTotal, preview.sgstTotal))
           )}
         {preview.cessTotal !== '0.00' && row(t('sales.tax.cess'), formatInr(preview.cessTotal))}
-        {row(t('sales.totals.roundOff'), formatInr(roundOff ? preview.roundOff : '0.00'))}
+        {row(t('sales.totals.roundOff'), signedRow(roundOff ? preview.roundOff : '0.00'))}
         <UbStack
           direction="row"
           justify="between"

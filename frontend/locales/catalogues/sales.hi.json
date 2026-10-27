@@ -129,6 +129,7 @@
   "sales.dock.fixLineField": "लाइन {n}: {field} जाँचें",
   "sales.dock.includesGst": "GST {amount} शामिल",
   "sales.dock.items": "{count, plural, one {# सामान} other {# सामान}}",
+  "sales.dock.lineReason": "लाइन {n}: {reason}",
   "sales.draft.conflictBody": "यह ड्राफ्ट किसी दूसरे डिवाइस पर बदला गया है।",
   "sales.draft.conflictShort": "दूसरे डिवाइस पर बदला गया",
   "sales.draft.conflictTitle": "ड्राफ्ट कहीं और बदला गया",

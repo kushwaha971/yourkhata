@@ -70,3 +70,26 @@ describe('line limits in the autosave guard', () => {
     expect(discountsInRange(withLine('999999', '99'), '98999901')).toBe(true);
   });
 });
+
+/**
+ * A4 monkey run (seed 4401, 1280) — "3.141" on a NOS line was autosaved and
+ * refused (400) every 3 s, and the dock printed "Couldn't save" under the
+ * field's own "whole numbers only". The autosave waits until it is a whole number.
+ */
+describe('whole-number units in the autosave guard', () => {
+  const withQty = (qty: string, allowDecimal: boolean) => ({
+    ...emptyInvoiceForm('2026-10-27', 'walkIn', '27'),
+    lines: [
+      { ...emptyLine(), itemId: 'i1', description: 'Atta', qty, unitPrice: '10', allowDecimal },
+    ],
+  });
+
+  it('holds a fraction of a whole-number unit', () => {
+    expect(discountsInRange(withQty('3.141', false), '31.41')).toBe(false);
+    expect(discountsInRange(withQty('3', false), '30.00')).toBe(true);
+  });
+
+  it('lets a fraction through where the unit allows one', () => {
+    expect(discountsInRange(withQty('3.141', true), '31.41')).toBe(true);
+  });
+});

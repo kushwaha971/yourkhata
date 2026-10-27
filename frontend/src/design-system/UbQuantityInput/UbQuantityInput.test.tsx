@@ -39,9 +39,24 @@ function Harness({ decimals }: Readonly<{ decimals: number }>) {
 describe('UbQuantityInput', () => {
   it('keeps the typed value a string and shows the unit beside it', async () => {
     const user = userEvent.setup();
-    render(<Harness decimals={0} />);
+    render(<Harness decimals={3} />);
     await user.type(screen.getByLabelText('Qty'), '12.5');
     expect(screen.getByLabelText('Qty')).toHaveValue('12.5');
     expect(screen.getByText('NOS')).toBeInTheDocument();
+  });
+
+  /** Owner, 27 Oct 2026: a whole-number unit does not take a point, so "3.141 NOS" can never be typed or saved. */
+  it('refuses a point on a whole-number unit, typed or pasted', async () => {
+    const user = userEvent.setup();
+    render(<Harness decimals={0} />);
+    const box = screen.getByLabelText('Qty');
+    // Refusing only the point turned "3.141" into 3141 NOS.
+    await user.type(box, '3.141');
+    expect(box).toHaveValue('3');
+    await user.type(box, '{Backspace}7');
+    expect(box).toHaveValue('7');
+    await user.clear(box);
+    await user.paste('12.5');
+    expect(box).toHaveValue('12');
   });
 });

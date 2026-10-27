@@ -58,17 +58,26 @@ const overLimit = (type: string, value: string, base: number): boolean => {
   return n < 0 || (type === 'percent' ? n > 100 : n > base);
 };
 
-/** FB-020 — a line over the quantity, rate or amount limit would only be refused (400). */
-const lineOverLimit = (qty: string, rate: string): boolean => {
+/**
+ * FB-020 — a line over the quantity, rate or amount limit would only be refused
+ * (400), and so would a fraction of a whole-number unit ("3.141 NOS", found by
+ * the A4 monkey run: a refused save every 3 s under the field's own message).
+ */
+const lineOverLimit = (qty: string, rate: string, allowDecimal?: boolean): boolean => {
   const q = Number(qty || 0);
   const r = Number(rate || 0);
   return (
-    q > Number(LINE_QTY_LIMIT) || r > Number(LINE_RATE_LIMIT) || q * r > Number(LINE_AMOUNT_LIMIT)
+    (allowDecimal === false && !Number.isInteger(q)) ||
+    q > Number(LINE_QTY_LIMIT) ||
+    r > Number(LINE_RATE_LIMIT) ||
+    q * r > Number(LINE_AMOUNT_LIMIT)
   );
 };
 
 export const discountsInRange = (values: InvoiceFormValues, subtotal?: string): boolean =>
-  (values.lines ?? []).every((line) => !lineOverLimit(line.qty ?? '', line.unitPrice ?? '')) &&
+  (values.lines ?? []).every(
+    (line) => !lineOverLimit(line.qty ?? '', line.unitPrice ?? '', line.allowDecimal)
+  ) &&
   (values.lines ?? []).every(
     (line) =>
       !overLimit(

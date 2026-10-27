@@ -733,3 +733,15 @@ its mocks and today's build, answered by the owner:
    Hold would take away a working, approved Counter Mode capability, which
    gate 10 does not allow without the owner's word; a ⋯ keeps it one tap away
    while the screen reads as the design draws it.
+
+R-DEC-56 (owner, 27 October 2026) — three asks during A4's checks, binding on
+every quantity box, save message and table row from now on:
+1. A whole-number unit does not take a decimal point. Do not accept "3.141 NOS"
+   and then print an error: the box keeps what is before the point and drops
+   the digits typed straight after it (`UbQuantityInput decimals={0}`).
+2. A refused save or issue says the server's own reason from `details` ("Line
+   1: Quantity must be a whole number for NOS."), never "Please check the
+   highlighted fields" alone (`serverReason`).
+3. A message in a table row is not squeezed into its cell. The cell keeps the
+   red box, and the sentence takes the row's full width underneath
+   (`UbField messageElsewhere`, the row's `invoice-line-errors`).

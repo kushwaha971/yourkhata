@@ -129,6 +129,7 @@
   "sales.dock.fixLineField": "Check line {n}: {field}",
   "sales.dock.includesGst": "includes GST {amount}",
   "sales.dock.items": "{count, plural, one {# item} other {# items}}",
+  "sales.dock.lineReason": "Line {n}: {reason}",
   "sales.draft.conflictBody": "This draft was changed on another device.",
   "sales.draft.conflictShort": "Changed on another device",
   "sales.draft.conflictTitle": "Draft changed elsewhere",
