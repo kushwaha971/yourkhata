@@ -59,7 +59,10 @@ export function InvoiceCustomerBox({
       data-testid="invoice-customer-line"
       className="grid grid-cols-[36px_minmax(0,1fr)] items-center gap-x-3 gap-y-0.5 rounded-[10px] border border-border-hairline px-3.5 py-3"
     >
-      <UbAvatar name={name} className="row-span-2 h-9 w-9" />
+      {/* On a phone the box is three lines (R-DEC-60): the avatar sits beside
+          the name rather than floating mid-box (owner, 27 Oct 2026). Desktop
+          keeps the design's two lines with the avatar centred across them. */}
+      <UbAvatar name={name} className="row-span-2 h-9 w-9 self-start lg:self-center" />
       {/* Each line is its own row, so the name gives way only to Change. In
           the drawing's single grid the right column is as wide as the widest
           figure, and "₹7,203.70 to collect" on line 2 cut "Sharma Mart 45" on
@@ -82,11 +85,12 @@ export function InvoiceCustomerBox({
           {t('sales.editor.changeCustomer')}
         </UbButton>
       </UbBox>
-      {/* Line 2 wraps rather than cutting the mobile: a phone number with
-          digits missing ("+91 90000 000…" at 390 px beside a five-figure
-          balance) is no number at all. The balance then takes the right of
-          its own line; a short balance keeps the drawn two lines. */}
-      <UbBox className="flex min-w-0 flex-wrap items-center justify-between gap-x-3">
+      {/* R-DEC-60 (owner delegated, FB-022): on a phone the balance always has
+          its own line under the mobile, so the box is one height before and
+          after the figure arrives. Wrapping only when it did not fit made a
+          five-figure balance grow the box 20 px as it loaded. Desktop keeps the
+          design's single line. */}
+      <UbBox className="flex min-w-0 flex-col gap-x-3 lg:flex-row lg:flex-wrap lg:items-center lg:justify-between">
         {balance === undefined ? (
           // The mobile comes in the same reply as the balance: hold its place
           // too, or line 2 wraps one way while loading and another after.

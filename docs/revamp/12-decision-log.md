@@ -776,3 +776,17 @@ go below ₹0. Switching the bill discount from ₹ to % applies the new limit. 
 server's limits stay as the backstop. The owner also delegated the pending
 call: leaving a bill inside the app sends its waiting change to the server at
 once (a reload or closed tab keeps the device copy, offered back).
+
+R-DEC-60 (owner delegated, 27 October 2026: "fix them") — the open A5 and
+FB-022 calls, decided as follows:
+1. **FB-022:** on a phone (below `lg`) the saved-customer box always gives the
+   balance its own line under the mobile, right-aligned. The box is then one
+   height before and after the figure arrives, for any amount; wrapping only
+   when it did not fit made a five-figure balance grow the box 20 px as it
+   loaded. Desktop keeps the design's single line 2.
+2. **A5 message row:** the design's way, with no reserved empty row; an error
+   pushes the fields below it down.
+3. **Adjust stock** stays 900 px wide on desktop for its seven-column table.
+4. **Phone text fields** stay 16 px, because iOS zooms the page under 16; desktop
+   uses the design's 14.
+5. **The "BASIC" group title** belongs to A6's forms.
