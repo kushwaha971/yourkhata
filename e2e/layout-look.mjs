@@ -5,7 +5,7 @@ import { chromium } from 'playwright';
 import { inputFit } from './lib/input-fit.mjs';
 import { addParty, fixtureGstin, must, newUser, uniq, uniqMobile } from './lib/fixtures.mjs';
 
-const frontend = process.env.E2E_FRONTEND ?? 'http://localhost:3000';
+const frontend = process.env.E2E_FRONTEND ?? (process.env.E2E_BASE ?? 'http://localhost:3000');
 const out = process.argv[2] ?? '/tmp/layout-look';
 mkdirSync(out, { recursive: true });
 let failed = 0;

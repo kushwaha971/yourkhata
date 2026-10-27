@@ -12,7 +12,7 @@ import { mkdirSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
 import { newOwner, addParty, api, must, uniq, uniqMobile, PASSWORD } from './lib/fixtures.mjs';
 
-const FRONTEND = process.env.E2E_FRONTEND ?? 'http://localhost:3000';
+const FRONTEND = process.env.E2E_FRONTEND ?? (process.env.E2E_BASE ?? 'http://localhost:3000');
 const SHOTS = process.env.E2E_SHOTS ?? '/tmp/e2e-shots/wave1/reminders-expenses';
 const BACKEND_DIR = new URL('../backend', import.meta.url).pathname;
 for (const d of ['phone', 'desktop']) mkdirSync(`${SHOTS}/${d}`, { recursive: true });

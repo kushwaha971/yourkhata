@@ -14,7 +14,7 @@
 import { mkdirSync } from 'node:fs';
 import { chromium } from 'playwright';
 
-const base = 'http://localhost:3000';
+const base = (process.env.E2E_BASE ?? 'http://localhost:3000');
 const dir = process.env.E2E_SHOTS ?? '/tmp/e2e-shots/a4-remove-undo';
 mkdirSync(dir, { recursive: true });
 const failures = [];

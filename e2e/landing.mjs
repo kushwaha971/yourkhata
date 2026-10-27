@@ -45,7 +45,7 @@ import { mkdirSync } from "node:fs";
 
 import { newOwner, PASSWORD } from "./lib/fixtures.mjs";
 
-const FRONTEND = process.env.E2E_FRONTEND ?? "http://localhost:3000";
+const FRONTEND = process.env.E2E_FRONTEND ?? (process.env.E2E_BASE ?? "http://localhost:3000");
 const SHOT_DIR = `${process.env.E2E_SHOTS ?? "/tmp/e2e-shots"}/landing`;
 mkdirSync(SHOT_DIR, { recursive: true });
 const PERF = process.argv.includes("--perf");

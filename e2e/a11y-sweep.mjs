@@ -50,7 +50,7 @@ import { fileURLToPath } from 'node:url';
 import { api, must, uniq, newUser, PASSWORD } from './lib/fixtures.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
-const FE = process.env.E2E_FRONTEND ?? 'http://localhost:3000';
+const FE = process.env.E2E_FRONTEND ?? (process.env.E2E_BASE ?? 'http://localhost:3000');
 const OUT = process.env.E2E_SHOTS_DIR ?? '/tmp/e2e-shots/a11y';
 mkdirSync(OUT, { recursive: true });
 const argv = process.argv.slice(2);

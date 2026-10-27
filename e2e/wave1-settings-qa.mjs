@@ -2,7 +2,7 @@
 import { chromium } from 'playwright';
 import { writeFileSync, readFileSync, existsSync } from 'node:fs';
 import { newOwner, must, api, PASSWORD, uniq, addParty } from './lib/fixtures.mjs';
-const FE = 'http://localhost:3000';
+const FE = (process.env.E2E_BASE ?? 'http://localhost:3000');
 const OUT = '/tmp/e2e-shots/wave1/settings';
 const STATE = `${OUT}/state.json`;
 const phase = process.argv[2] ?? 'X';

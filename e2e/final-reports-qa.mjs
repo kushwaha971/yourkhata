@@ -6,7 +6,7 @@ import { chromium } from 'playwright';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { api, must, uniq, PASSWORD } from './lib/fixtures.mjs';
 
-const FE = process.env.FE ?? 'http://localhost:3000';
+const FE = process.env.FE ?? (process.env.E2E_BASE ?? 'http://localhost:3000');
 const ROOT = '/tmp/e2e-shots/qa-final/reports';
 for (const s of ['phone', 'desktop']) mkdirSync(`${ROOT}/${s}`, { recursive: true });
 const results = [];

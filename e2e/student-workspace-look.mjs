@@ -9,7 +9,7 @@ const before = process.argv.includes("--before");
 const identityBefore = process.argv.includes("--identity-before");
 const overviewBefore = process.argv.includes("--overview-before");
 const out = process.env.SHOTS ?? "/tmp/student-workspace-look";
-const frontend = process.env.E2E_FRONTEND ?? "http://localhost:3000";
+const frontend = process.env.E2E_FRONTEND ?? (process.env.E2E_BASE ?? "http://localhost:3000");
 const today = new Intl.DateTimeFormat("en-CA", {
   timeZone: "Asia/Kolkata",
 }).format(new Date());

@@ -39,7 +39,7 @@ const item = await must(
   owner.token,
 );
 
-const frontend = process.env.E2E_FRONTEND ?? "http://localhost:3000";
+const frontend = process.env.E2E_FRONTEND ?? (process.env.E2E_BASE ?? "http://localhost:3000");
 const out = process.argv[2] ?? "/tmp/payment-date-look";
 mkdirSync(out, { recursive: true });
 const browser = await chromium.launch({

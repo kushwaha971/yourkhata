@@ -18,7 +18,7 @@
 import { chromium } from 'playwright';
 import { addParty, must, newUser, uniq, uniqMobile } from './lib/fixtures.mjs';
 
-const FRONTEND = process.env.E2E_FRONTEND ?? 'http://localhost:3000';
+const FRONTEND = process.env.E2E_FRONTEND ?? (process.env.E2E_BASE ?? 'http://localhost:3000');
 const OUT = process.argv[2] ?? '/tmp/messages-look';
 let failed = 0;
 const record = (name, ok, detail = '') => {

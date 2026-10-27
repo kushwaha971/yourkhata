@@ -8,7 +8,7 @@ import {newOwner,must,api,fixtureGstin} from './lib/fixtures.mjs';
 import {measureCustomers} from './revamp-customers.mjs';
 import {coveredOverlayText} from './lib/measureOverlayText.mjs';
 const {chromium}=createRequire(import.meta.url)('playwright');
-const base=process.env.E2E_FRONTEND??'http://localhost:3000';
+const base=process.env.E2E_FRONTEND??(process.env.E2E_BASE ?? 'http://localhost:3000');
 for(const u of [base,process.env.E2E_BACKEND??'http://localhost:8000/api/v1'])if(!['localhost','127.0.0.1'].includes(new URL(u).hostname))throw Error('Local QA only');
 const out='/tmp/e2e-shots/revamp/purchase-money';mkdirSync(out,{recursive:true});
 const report={results:[],facts:[],failures:[]};const check=(ok,m)=>{if(!ok)report.failures.push(m);};

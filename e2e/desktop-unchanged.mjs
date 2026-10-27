@@ -21,7 +21,7 @@ import { join } from 'node:path';
 
 import { addParty, api, newOwner, uniqMobile } from './lib/fixtures.mjs';
 
-const FRONTEND = process.env.E2E_FRONTEND ?? 'http://localhost:3000';
+const FRONTEND = process.env.E2E_FRONTEND ?? (process.env.E2E_BASE ?? 'http://localhost:3000');
 const mode = process.argv.includes('--compare') ? 'compare' : 'capture';
 const dir = process.argv[process.argv.indexOf(`--${mode}`) + 1];
 if (!dir || dir.startsWith('--')) throw new Error('usage: --capture <dir> | --compare <dir>');

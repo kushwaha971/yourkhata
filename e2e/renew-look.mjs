@@ -11,7 +11,7 @@
 import { chromium } from 'playwright';
 import { addParty, must, newUser, uniq, uniqMobile } from './lib/fixtures.mjs';
 
-const FRONTEND = process.env.E2E_FRONTEND ?? 'http://localhost:3000';
+const FRONTEND = process.env.E2E_FRONTEND ?? (process.env.E2E_BASE ?? 'http://localhost:3000');
 const API = process.env.E2E_API ?? 'http://localhost:8000/api/v1';
 const OUT = process.argv[2] ?? '/tmp/renew-look';
 let failed = 0;

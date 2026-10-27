@@ -16,7 +16,7 @@
 import { chromium } from 'playwright';
 import { mkdirSync } from 'node:fs';
 
-const FE = process.env.E2E_FRONTEND ?? 'http://localhost:3000';
+const FE = process.env.E2E_FRONTEND ?? (process.env.E2E_BASE ?? 'http://localhost:3000');
 const BE = process.env.E2E_BACKEND ?? 'http://localhost:8000/api/v1';
 const SHOTS = process.env.E2E_SHOTS_DIR ?? '/tmp/e2e-shots/defects2';
 const arg = (n) => process.argv.find((a) => a.startsWith(`--${n}=`))?.split('=').slice(1).join('=');

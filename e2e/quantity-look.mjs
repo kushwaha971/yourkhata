@@ -7,7 +7,7 @@ import { addParty, must, newUser, uniq } from "./lib/fixtures.mjs";
 import { inputFit } from "./lib/input-fit.mjs";
 
 const before = process.argv.includes("--before");
-const frontend = process.env.E2E_FRONTEND ?? "http://localhost:3000";
+const frontend = process.env.E2E_FRONTEND ?? (process.env.E2E_BASE ?? "http://localhost:3000");
 const out = process.env.SHOTS ?? "/tmp/quantity-look";
 mkdirSync(out, { recursive: true });
 const owner = await newUser({ name: "Quantity Owner" });

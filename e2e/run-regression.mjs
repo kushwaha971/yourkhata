@@ -47,7 +47,7 @@ import { fileURLToPath } from 'node:url';
 import * as fx from './lib/fixtures.mjs';
 
 const E2E_DIR = dirname(fileURLToPath(import.meta.url));
-const FRONTEND = process.env.E2E_FRONTEND ?? 'http://localhost:3000';
+const FRONTEND = process.env.E2E_FRONTEND ?? (process.env.E2E_BASE ?? 'http://localhost:3000');
 const BACKEND = process.env.E2E_BACKEND ?? 'http://localhost:8000/api/v1';
 const SHOTS_ROOT = process.env.E2E_SHOTS_ROOT ?? '/tmp/e2e-shots';
 const DURATIONS_FILE = `${SHOTS_ROOT}/.regress-durations.json`;

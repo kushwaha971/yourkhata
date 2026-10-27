@@ -5,7 +5,7 @@ import { chromium } from 'playwright';
 import { mkdirSync } from 'node:fs';
 import { newOwner } from './lib/fixtures.mjs';
 
-const FE = process.env.E2E_FRONTEND ?? 'http://localhost:3000';
+const FE = process.env.E2E_FRONTEND ?? (process.env.E2E_BASE ?? 'http://localhost:3000');
 const OUT = '/tmp/e2e-shots/brand/live';
 mkdirSync(OUT, { recursive: true });
 

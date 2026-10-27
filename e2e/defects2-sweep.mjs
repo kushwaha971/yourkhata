@@ -8,7 +8,7 @@
  *   node e2e/defects2-sweep.mjs --owner=<email with parties> --wizard=<email whose 2nd business is unfinished> --wizardShop="<name>"
  */
 import { chromium } from 'playwright';
-const FE = 'http://localhost:3000', BE = 'http://localhost:8000/api/v1';
+const FE = (process.env.E2E_BASE ?? 'http://localhost:3000'), BE = 'http://localhost:8000/api/v1';
 const arg = (n) => process.argv.find((a) => a.startsWith(`--${n}=`))?.split('=').slice(1).join('=');
 const OWNER = arg('owner'), WIZ = arg('wizard'), WIZSHOP = arg('wizardShop'), PW = 'Dukaan2026x';
 const SHOTS = process.env.E2E_SHOTS_DIR ?? '/tmp/e2e-shots/defects2';

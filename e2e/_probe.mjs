@@ -1,5 +1,5 @@
 import { chromium } from 'playwright';
-const FE='http://localhost:3000', BE='http://localhost:8000/api/v1';
+const FE=(process.env.E2E_BASE ?? 'http://localhost:3000'), BE='http://localhost:8000/api/v1';
 const stamp=Date.now();
 const api=async(m,p,b,t,extra={})=>{const r=await fetch(BE+p,{method:m,headers:{'Content-Type':'application/json','X-Client':'api',...(t?{Authorization:`Bearer ${t}`}:{}),...extra},body:b?JSON.stringify(b):undefined});return {status:r.status, body:await r.json().catch(()=>null)};};
 const email=`probe-${stamp}@shop.test`, password='Dukaan2026x';

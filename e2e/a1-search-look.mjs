@@ -16,7 +16,7 @@ import { chromium } from "playwright";
 
 const base =
   process.argv.find((a) => a.startsWith("--base="))?.slice(7) ??
-  "http://localhost:3000";
+  (process.env.E2E_BASE ?? "http://localhost:3000");
 const dir = process.env.E2E_SHOTS ?? "/tmp/e2e-shots/a1";
 mkdirSync(dir, { recursive: true });
 const results = [];

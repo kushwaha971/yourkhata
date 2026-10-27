@@ -14,7 +14,7 @@ import { fileURLToPath } from 'node:url';
 
 import { must, uniq, PASSWORD } from './lib/fixtures.mjs';
 
-const FE = process.env.FE ?? 'http://localhost:3000';
+const FE = process.env.FE ?? (process.env.E2E_BASE ?? 'http://localhost:3000');
 const ROOT = '/tmp/e2e-shots/papers';
 const REPO = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 mkdirSync(ROOT, { recursive: true });

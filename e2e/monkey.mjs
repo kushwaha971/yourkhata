@@ -21,7 +21,7 @@ import { chromium } from "playwright";
 
 const arg = (n, d) =>
   process.argv.find((a) => a.startsWith(`--${n}=`))?.slice(n.length + 3) ?? d;
-const base = "http://localhost:3000";
+const base = (process.env.E2E_BASE ?? "http://localhost:3000");
 const path = arg("path", "/sales/invoices/new");
 const seed = Number(arg("seed", String(Date.now() % 100000)));
 const steps = Number(arg("steps", "300"));

@@ -6,7 +6,7 @@ import { measureCustomers } from './revamp-customers.mjs';
 const { chromium } = createRequire(import.meta.url)('playwright');
 const locale = process.argv.find((arg) => arg.startsWith('--locale='))?.slice(9) ?? 'en';
 const widths = locale === 'hi' ? [320, 1280] : [390, 320, 1024, 1280];
-const base = process.env.E2E_FRONTEND ?? 'http://localhost:3000';
+const base = process.env.E2E_FRONTEND ?? (process.env.E2E_BASE ?? 'http://localhost:3000');
 if (!['localhost', '127.0.0.1'].includes(new URL(base).hostname)) throw Error('Local QA only');
 const out = process.env.E2E_SHOTS ?? '/tmp/udhaar-people';
 mkdirSync(out, { recursive: true });

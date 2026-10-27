@@ -32,7 +32,7 @@ import { must, newOwner, PASSWORD } from './lib/fixtures.mjs';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const REPO = path.resolve(HERE, '..');
-const FE = process.env.E2E_FRONTEND ?? 'http://localhost:3000';
+const FE = process.env.E2E_FRONTEND ?? (process.env.E2E_BASE ?? 'http://localhost:3000');
 const SHOTS = `${process.env.E2E_SHOTS ?? '/tmp/e2e-shots'}/wave-a`;
 mkdirSync(SHOTS, { recursive: true });
 

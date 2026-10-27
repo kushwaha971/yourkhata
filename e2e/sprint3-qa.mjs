@@ -45,7 +45,7 @@ import { BACKEND_DIR as LOCAL_BACKEND_DIR, PYTHON, psql as localPsql } from './l
 import { execFileSync } from 'node:child_process';
 import { existsSync, mkdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
 
-const FRONTEND = process.env.E2E_FRONTEND ?? 'http://localhost:3000';
+const FRONTEND = process.env.E2E_FRONTEND ?? (process.env.E2E_BASE ?? 'http://localhost:3000');
 const BACKEND = process.env.E2E_BACKEND ?? 'http://localhost:8000/api/v1';
 const BACKEND_DIR = LOCAL_BACKEND_DIR;
 // Every path below can be pointed elsewhere, which is what lets

@@ -17,7 +17,7 @@ import { mkdirSync } from 'node:fs';
 
 import { api, must, uniq, PASSWORD } from './lib/fixtures.mjs';
 
-const FE = process.env.FE ?? 'http://localhost:3000';
+const FE = process.env.FE ?? (process.env.E2E_BASE ?? 'http://localhost:3000');
 const ROOT = '/tmp/e2e-shots/purchase-recovery';
 mkdirSync(ROOT, { recursive: true });
 let failed = 0;

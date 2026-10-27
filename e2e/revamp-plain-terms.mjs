@@ -4,7 +4,7 @@ import {mkdirSync,writeFileSync} from 'node:fs';
 import {measureCustomers} from './revamp-customers.mjs';
 const {chromium}=createRequire(import.meta.url)('playwright');
 const arg=(k,d)=>process.argv.find(x=>x.startsWith(`--${k}=`))?.slice(k.length+3)??d;
-const base=process.env.E2E_FRONTEND??'http://localhost:3000',out=process.env.E2E_SHOTS??'/tmp/plain-terms',locale=arg('locale','en');
+const base=process.env.E2E_FRONTEND??(process.env.E2E_BASE ?? 'http://localhost:3000'),out=process.env.E2E_SHOTS??'/tmp/plain-terms',locale=arg('locale','en');
 if(!['localhost','127.0.0.1'].includes(new URL(base).hostname))throw Error('Local QA only');
 mkdirSync(out,{recursive:true});const browser=await chromium.launch({executablePath:process.env.CHROME}),results=[],failures=[];
 try{

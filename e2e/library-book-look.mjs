@@ -5,7 +5,7 @@ import { mkdirSync } from 'node:fs';
 import { chromium } from 'playwright';
 import { addParty, must, newUser, uniq, uniqMobile } from './lib/fixtures.mjs';
 
-const frontend = process.env.E2E_FRONTEND ?? 'http://localhost:3000';
+const frontend = process.env.E2E_FRONTEND ?? (process.env.E2E_BASE ?? 'http://localhost:3000');
 const out = process.argv[2] ?? '/tmp/library-book-look';
 mkdirSync(out, { recursive: true });
 const owner = await newUser({ name: 'Book Owner' });

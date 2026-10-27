@@ -28,7 +28,7 @@ import { join } from 'node:path';
 import { api } from './lib/fixtures.mjs';
 import { assertE2eApi } from './lib/local.mjs';
 
-const FRONTEND = process.env.E2E_FRONTEND ?? 'http://localhost:3000';
+const FRONTEND = process.env.E2E_FRONTEND ?? (process.env.E2E_BASE ?? 'http://localhost:3000');
 const LOGS = process.env.UB_E2E_LOGS ?? '/tmp';
 const SHOTS = process.argv.includes('--shots');
 const SHOT_DIR = '/tmp/e2e-shots/otpsignin';

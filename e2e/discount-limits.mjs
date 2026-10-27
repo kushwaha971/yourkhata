@@ -8,7 +8,7 @@
 import { mkdirSync } from "node:fs";
 import { chromium } from "playwright";
 
-const base = "http://localhost:3000";
+const base = (process.env.E2E_BASE ?? "http://localhost:3000");
 const width = Number(
   process.argv.find((a) => a.startsWith("--width="))?.slice(8) ?? 390,
 );

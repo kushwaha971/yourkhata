@@ -4,7 +4,7 @@ import assert from "node:assert/strict";
 import { mkdirSync } from "node:fs";
 import { chromium } from "playwright";
 import { addParty, must, newUser, uniq } from "./lib/fixtures.mjs";
-const frontend = process.env.E2E_FRONTEND ?? "http://localhost:3000";
+const frontend = process.env.E2E_FRONTEND ?? (process.env.E2E_BASE ?? "http://localhost:3000");
 const out = process.argv[2] ?? "/tmp/opening-book-look";
 mkdirSync(out, { recursive: true });
 const browser = await chromium.launch({

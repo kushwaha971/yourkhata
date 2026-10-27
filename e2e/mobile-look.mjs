@@ -21,7 +21,7 @@ import { join } from 'node:path';
 
 import { addParty, api, newOwner, uniqMobile } from './lib/fixtures.mjs';
 
-const FRONTEND = process.env.E2E_FRONTEND ?? 'http://localhost:3000';
+const FRONTEND = process.env.E2E_FRONTEND ?? (process.env.E2E_BASE ?? 'http://localhost:3000');
 const arg = (name) => (process.argv.includes(name) ? process.argv[process.argv.indexOf(name) + 1] : null);
 const OUT = arg('--out') ?? '/tmp/e2e-shots/mobile';
 const only = arg('--only')?.split(',') ?? null;

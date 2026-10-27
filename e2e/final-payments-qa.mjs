@@ -7,7 +7,7 @@
 import { writeFileSync, readFileSync, mkdirSync } from 'node:fs';
 import { newOwner, must, api, uniq } from './lib/fixtures.mjs';
 
-export const FE = 'http://localhost:3000';
+export const FE = (process.env.E2E_BASE ?? 'http://localhost:3000');
 export const OUT = '/tmp/e2e-shots/qa-final/payments';
 const STATE = process.env.STATE ?? `${OUT}/state.json`;
 mkdirSync(`${OUT}/phone`, { recursive: true }); mkdirSync(`${OUT}/desktop`, { recursive: true });

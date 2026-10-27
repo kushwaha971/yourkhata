@@ -36,7 +36,7 @@
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { chromium } from 'playwright';
 
-const base = 'http://localhost:3000';
+const base = (process.env.E2E_BASE ?? 'http://localhost:3000');
 const arg = (n, d) => process.argv.find((a) => a.startsWith(`--${n}=`))?.slice(n.length + 3) ?? d;
 const width = Number(arg('width', '1280'));
 const only = arg('only', '')

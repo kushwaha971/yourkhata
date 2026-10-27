@@ -29,7 +29,7 @@ import { createRequire } from 'node:module';
 
 const { chromium } = createRequire(import.meta.url)('playwright');
 const arg = (k, d) => process.argv.find((x) => x.startsWith(`--${k}=`))?.slice(k.length + 3) ?? d;
-const base = process.env.E2E_FRONTEND ?? 'http://localhost:3000';
+const base = process.env.E2E_FRONTEND ?? (process.env.E2E_BASE ?? 'http://localhost:3000');
 if (!['localhost', '127.0.0.1'].includes(new URL(base).hostname)) throw Error('Local QA only');
 const SHOTS = arg('shots', '');
 if (SHOTS) mkdirSync(SHOTS, { recursive: true });

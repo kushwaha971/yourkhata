@@ -18,7 +18,7 @@ import { mkdirSync, writeFileSync } from 'node:fs';
 
 import { api, must, uniq, PASSWORD } from './lib/fixtures.mjs';
 
-const FE = process.env.E2E_FRONTEND ?? 'http://localhost:3000';
+const FE = process.env.E2E_FRONTEND ?? (process.env.E2E_BASE ?? 'http://localhost:3000');
 const ROOT = '/tmp/e2e-shots/counter-review';
 mkdirSync(ROOT, { recursive: true });
 const TODAY = new Date(Date.now() + 5.5 * 3600e3).toISOString().slice(0, 10);

@@ -4,7 +4,7 @@ import { chromium } from 'playwright';
 import { mkdirSync, writeFileSync, readFileSync, existsSync } from 'node:fs';
 import { newOwner, must, api, addParty, uniq } from './lib/fixtures.mjs';
 
-const FE = process.env.FE ?? 'http://localhost:3000';
+const FE = process.env.FE ?? (process.env.E2E_BASE ?? 'http://localhost:3000');
 const OUT = '/tmp/e2e-shots/qa-final/sales';
 const STATE = '/tmp/e2e-shots/qa-final/sales/state.json';
 for (const d of ['phone', 'desktop']) mkdirSync(`${OUT}/${d}`, { recursive: true });

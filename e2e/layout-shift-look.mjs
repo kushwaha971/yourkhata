@@ -10,7 +10,7 @@ const root = process.env.LIGHTHOUSE_ROOT ?? '/workspace/yourkhata-cloud/tools/no
 const toolRequire = createRequire(`${root}/package.json`);
 const { default: lighthouse, startTimespan } = await import(pathToFileURL(toolRequire.resolve('lighthouse')).href);
 const { default: puppeteer } = await import(pathToFileURL(toolRequire.resolve('puppeteer-core')).href);
-const frontend = process.env.E2E_FRONTEND ?? 'http://localhost:3000';
+const frontend = process.env.E2E_FRONTEND ?? (process.env.E2E_BASE ?? 'http://localhost:3000');
 const out = process.argv[2] ?? '/tmp/layout-shift-look';
 mkdirSync(out, { recursive: true });
 let failed = 0;

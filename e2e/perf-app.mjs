@@ -59,7 +59,7 @@ try {
   ({ chromium } = require('playwright'));
 }
 
-const FRONTEND = process.env.E2E_FRONTEND ?? 'http://localhost:3000';
+const FRONTEND = process.env.E2E_FRONTEND ?? (process.env.E2E_BASE ?? 'http://localhost:3000');
 const EMAIL = process.env.E2E_EMAIL ?? 'scale@digikhaato.test';
 const PASSWORD = process.env.E2E_PASSWORD ?? 'Scale-Run-2026!';
 const arg = (name, fallback) => {

@@ -6,7 +6,7 @@ import { chromium } from "playwright";
 import { must, newUser, uniq } from "./lib/fixtures.mjs";
 
 const before = process.argv.includes("--before");
-const frontend = process.env.E2E_FRONTEND ?? "http://localhost:3000";
+const frontend = process.env.E2E_FRONTEND ?? (process.env.E2E_BASE ?? "http://localhost:3000");
 const backend = process.env.E2E_BACKEND ?? "http://localhost:8000/api/v1";
 const out = process.env.SHOTS ?? "/tmp/import-app-look";
 mkdirSync(out, { recursive: true });

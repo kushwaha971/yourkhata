@@ -9,7 +9,7 @@ import { measureCustomers } from './revamp-customers.mjs';
 import { coveredOverlayText } from './lib/measureOverlayText.mjs';
 const {chromium}=createRequire(import.meta.url)('playwright');
 const arg=(k,d)=>process.argv.find(x=>x.startsWith(`--${k}=`))?.slice(k.length+3)??d;
-const base=process.env.E2E_FRONTEND??'http://localhost:3000';
+const base=process.env.E2E_FRONTEND??(process.env.E2E_BASE ?? 'http://localhost:3000');
 for(const u of [base,process.env.E2E_BACKEND??'http://localhost:8000/api/v1'])if(!['localhost','127.0.0.1'].includes(new URL(u).hostname))throw Error('Local QA only');
 const locale=arg('locale','en'),hi=locale==='hi';
 const words=JSON.parse(readFileSync(new URL(`../frontend/locales/catalogues/purchases.${locale}.json`,import.meta.url),'utf8'));

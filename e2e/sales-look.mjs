@@ -4,7 +4,7 @@
 import { chromium } from 'playwright';
 import { mkdirSync } from 'node:fs';
 
-const FE = process.env.FE ?? 'http://localhost:3000';
+const FE = process.env.FE ?? (process.env.E2E_BASE ?? 'http://localhost:3000');
 const BE = process.env.BE ?? 'http://localhost:8000/api/v1';
 const OUT = process.env.OUT ?? '/tmp/e2e-shots/sales';
 mkdirSync(OUT, { recursive: true });

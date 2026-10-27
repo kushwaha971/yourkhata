@@ -1,6 +1,6 @@
 /** Repeat must populate a new reviewed form without a silent POST or old payment. */
 import {createRequire} from 'node:module';import {mkdirSync,writeFileSync} from 'node:fs';
-const {chromium}=createRequire(import.meta.url)('playwright');const base=process.env.E2E_FRONTEND??'http://localhost:3000';
+const {chromium}=createRequire(import.meta.url)('playwright');const base=process.env.E2E_FRONTEND??(process.env.E2E_BASE ?? 'http://localhost:3000');
 if(!['localhost','127.0.0.1'].includes(new URL(base).hostname))throw Error('Local test only');
 const dir=process.env.E2E_SHOTS??'/tmp/home-repeat';mkdirSync(dir,{recursive:true});const results=[];
 const browser=await chromium.launch({executablePath:process.env.CHROME});
