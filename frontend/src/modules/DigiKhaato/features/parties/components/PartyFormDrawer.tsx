@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useId, useMemo, type RefObject } from 'react';
+import { useCallback, useEffect, useId, useMemo, useState, type RefObject } from 'react';
 
 import { yupResolver } from '@hookform/resolvers/yup';
 import { useForm, useFormState, useWatch } from 'react-hook-form';
@@ -8,6 +8,8 @@ import { useForm, useFormState, useWatch } from 'react-hook-form';
 import { PhoneContactButton } from 'src/components/contacts/PhoneContactButton';
 import { CompactDrawer as UbDrawer } from 'src/components/records/CompactOverlays';
 import {
+  UbAvatar,
+  UbBox,
   UbButton,
   UbDateInput,
   UbDisclosure,
@@ -18,6 +20,7 @@ import {
   UbPhoneInput,
   UbRadioGroup,
   UbSelect,
+  UbStack,
   UbStatusBanner,
   UbSwitch,
   UbText,
@@ -30,17 +33,21 @@ import { useTranslation } from 'src/hooks/useTranslation';
 import type { TranslateFn } from 'src/hooks/useTranslation';
 import { partyPath } from 'src/routes';
 import { blurIfTyped } from 'src/utils/autofocusBlur';
+import { cn } from 'src/utils/cn';
 import { compareMoney, formatAmount, parseAmountInput } from 'src/utils/money';
 
+import { getParty } from '../api/partyService';
 import { MAX_TAGS_PER_PARTY } from '../constants/partyTags';
+import { useCanSearchParties } from '../hooks/usePartySearch';
 import { usePartyTags } from '../hooks/usePartyTags';
 import { usePartySchemas } from '../validation/partySchemas';
 
+import { PartyPickerField } from './PartyPickerField';
 import { PartyTagField } from './PartyTagField';
 
 import type { PartyKind } from '../constants/partyFilters';
 import type { UsePartyFormResult } from '../hooks/usePartyForm';
-import type { PartyFormValues } from '../types/party.types';
+import type { PartyDetail, PartyFormValues } from '../types/party.types';
 
 function PartyNameInput({
   t,
@@ -132,6 +139,8 @@ export function PartyFormDrawer({
   /* Unconditional: the thunk's own `condition` decides whether a request goes
      out, so three screens asking at once still costs one (§19.3.5). */
   const { byUsage: tagOptions } = usePartyTags();
+  // Who cannot search contacts is not offered a search that says so.
+  const canSearchContacts = useCanSearchParties();
 
   const {
     open,
@@ -159,41 +168,45 @@ export function PartyFormDrawer({
   const fixedRole: PartyKind | undefined = shop ? kind : undefined;
   const byKind = kind === 'customer' ? '.customer' : kind === 'supplier' ? '.supplier' : '';
 
-  const defaults = useMemo<PartyFormValues>(
-    () => ({
-      /* `prefillName` is the search term the merchant had typed when the list
+  const valuesFor = useCallback(
+    (party: PartyDetail | null): PartyFormValues => {
+      const editing = party;
+      return {
+        /* `prefillName` is the search term the merchant had typed when the list
          came back empty and they pressed "Add 'ramesh'". It is only ever set
          for a create, so the edit branch cannot be shadowed by it. */
-      name: editing?.name ?? prefillName,
-      mobile: editing?.mobile ?? '',
-      isCustomer: editing?.isCustomer ?? kind !== 'supplier',
-      isSupplier: editing?.isSupplier ?? kind === 'supplier',
-      displayCode: editing?.displayCode ?? '',
-      altPhone: editing?.altPhone ?? '',
-      email: editing?.email ?? '',
-      gstin: editing?.gstin ?? '',
-      stateCode: editing?.stateCode ?? '',
-      billingLine1: editing?.billingAddress?.line1 ?? '',
-      billingCity: editing?.billingAddress?.city ?? '',
-      billingPincode: editing?.billingAddress?.pincode ?? '',
-      notes: editing?.notes ?? '',
-      creditLimit: editing?.creditLimit ?? '',
-      creditDays: editing?.creditDays != null ? String(editing.creditDays) : '',
-      collectionDate: editing?.collectionDate ?? '',
-      smsOptIn: editing?.smsOptIn ?? true,
-      consentSource: editing?.consentSource ?? '',
-      /* The names, not the ids: the picker creates inline and the server
+        name: editing?.name ?? prefillName,
+        mobile: editing?.mobile ?? '',
+        isCustomer: editing?.isCustomer ?? kind !== 'supplier',
+        isSupplier: editing?.isSupplier ?? kind === 'supplier',
+        displayCode: editing?.displayCode ?? '',
+        altPhone: editing?.altPhone ?? '',
+        email: editing?.email ?? '',
+        gstin: editing?.gstin ?? '',
+        stateCode: editing?.stateCode ?? '',
+        billingLine1: editing?.billingAddress?.line1 ?? '',
+        billingCity: editing?.billingAddress?.city ?? '',
+        billingPincode: editing?.billingAddress?.pincode ?? '',
+        notes: editing?.notes ?? '',
+        creditLimit: editing?.creditLimit ?? '',
+        creditDays: editing?.creditDays != null ? String(editing.creditDays) : '',
+        collectionDate: editing?.collectionDate ?? '',
+        smsOptIn: editing?.smsOptIn ?? true,
+        consentSource: editing?.consentSource ?? '',
+        /* The names, not the ids: the picker creates inline and the server
          resolves a name to a tag inside the party's own transaction. */
-      tags: editing?.tags.map((tag) => tag.name) ?? [],
-      openingAmount: '',
-      openingDirection: 'debit',
-      /* UAT D6 (CR-LOG): today, not the year start — a default the merchant
+        tags: editing?.tags.map((tag) => tag.name) ?? [],
+        openingAmount: '',
+        openingDirection: 'debit',
+        /* UAT D6 (CR-LOG): today, not the year start — a default the merchant
          did not choose must not claim an age (aging counts an opening from its
          date). The hint asks for the real date; "Year start" is a chip. */
-      openingAsOf: isoToday(),
-    }),
-    [editing, prefillName, kind]
+        openingAsOf: isoToday(),
+      };
+    },
+    [prefillName, kind]
   );
+  const defaults = useMemo(() => valuesFor(editing), [valuesFor, editing]);
 
   const form = useForm<PartyFormValues>({
     resolver: yupResolver(partySchema),
@@ -212,12 +225,56 @@ export function PartyFormDrawer({
     if (open) reset(defaults);
   }, [open, reset, defaults]);
 
+  /* A6, R-DEC-61 — the rare person who is already in the other list (a
+     supplier who also buys) is PICKED, like a phone contact, rather than
+     asked about with a switch on every add. Picking fills the form from their
+     saved record, so the save is a PATCH that adds the role and keeps every
+     saved field (a blank form would have wiped their tags and notes). */
+  const [linked, setLinked] = useState<{ id: string; name: string; already: boolean } | null>(null);
+  /* A typed search is typing too: a stray tap outside must not take it (the
+     A5 rule), and the picker keeps its query out of the form's dirty state. */
+  const [searchTyped, setSearchTyped] = useState(false);
+  // A pick belongs to one opening of the drawer: cleared when it opens again
+  // (React's adjust-state-on-prop-change pattern, not an effect).
+  const [seenOpen, setSeenOpen] = useState(open);
+  if (open !== seenOpen) {
+    setSeenOpen(open);
+    if (open) {
+      setLinked(null);
+      setSearchTyped(false);
+    }
+  }
+  const pickExisting = useCallback(
+    async (id: string) => {
+      if (!fixedRole) return;
+      const { party } = await getParty(id, undefined, 'shop');
+      const already = fixedRole === 'customer' ? party.isCustomer : party.isSupplier;
+      setLinked({ id, name: party.name, already });
+      if (already) return;
+      reset({
+        ...valuesFor(party),
+        isCustomer: party.isCustomer || fixedRole === 'customer',
+        isSupplier: party.isSupplier || fixedRole === 'supplier',
+      });
+    },
+    [fixedRole, reset, valuesFor]
+  );
+  const clearLinked = useCallback(() => {
+    setLinked(null);
+    reset(defaults);
+  }, [reset, defaults]);
+
   const handleSubmit = useCallback(
     async (values: PartyFormValues) => {
-      const saved = await submit(values, setError, quickKhata);
+      const saved = await submit(
+        values,
+        setError,
+        quickKhata,
+        linked && !linked.already ? linked.id : undefined
+      );
       if (quickKhata && !isEdit && saved) router.push(partyPath(saved.id));
     },
-    [submit, setError, quickKhata, isEdit, router]
+    [submit, setError, quickKhata, isEdit, router, linked]
   );
 
   /**
@@ -446,8 +503,7 @@ export function PartyFormDrawer({
       )}
     </UbField>
   );
-  /* A6 F4 — Credit days sits in the Shop customer's top group: it sets each
-     bill's due date, so it is asked where the merchant is looking. */
+  /* Credit days sets each Shop bill's due date; it is a customer's setting. */
   const creditDaysTop =
     fixedRole === 'customer' ? (
       <UbField
@@ -458,6 +514,99 @@ export function PartyFormDrawer({
       >
         {(field) => <UbTextInput {...field} inputMode="numeric" autoComplete="off" />}
       </UbField>
+    ) : null;
+
+  const otherRole = fixedRole === 'customer' ? 'supplier' : 'customer';
+  const existingPicker =
+    fixedRole && !isEdit && canWrite && canSearchContacts ? (
+      <>
+        {!linked && (
+          <UbBox
+            className="contents"
+            onInput={(event: React.FormEvent<HTMLElement>) =>
+              setSearchTyped(Boolean((event.target as HTMLInputElement).value))
+            }
+          >
+            <UbField
+              name="existingContact"
+              label={t(`parties.form.shop.link.label.${fixedRole}`)}
+              placeholder={t(`parties.form.shop.link.placeholder.${fixedRole}`)}
+              hint={t('parties.form.shop.link.hint')}
+            >
+              {(field) => (
+                <PartyPickerField
+                  field={field}
+                  pickedName=""
+                  onPick={(id) => void pickExisting(id)}
+                  labels={{
+                    clear: (name) => t('parties.form.shop.link.clear', { name }),
+                    noAccess: t('parties.form.shop.link.noAccess'),
+                    results: t('parties.form.shop.link.results'),
+                    noMatch: t('parties.form.shop.link.noMatch'),
+                    create: (name) => t(`parties.form.shop.link.useNew.${fixedRole}`, { name }),
+                  }}
+                  onCreate={(name) =>
+                    form.setValue('name', name, { shouldDirty: true, shouldValidate: true })
+                  }
+                  t={t}
+                  type={otherRole}
+                  book="shop"
+                  disabled={isSaving}
+                  testId="existing-contact"
+                />
+              )}
+            </UbField>
+          </UbBox>
+        )}
+        {/* The picked contact, drawn as A3's saved-customer box (the
+            artifact's own reference for "this person is chosen"): avatar, name
+            and Change, then what will happen, so a long name never squeezes
+            into a column beside the action. */}
+        {linked && (
+          <UbStack gap={1}>
+            <UbBox
+              data-testid="linked-contact"
+              className="grid grid-cols-[36px_minmax(0,1fr)] items-center gap-x-3 gap-y-0.5 rounded-[10px] border border-border-hairline px-3.5 py-3"
+            >
+              <UbAvatar name={linked.name} className="row-span-2 h-9 w-9 self-start" />
+              <UbBox className="flex min-w-0 items-center justify-between gap-3">
+                <UbText
+                  variant="body-medium"
+                  className="min-w-0 truncate text-[0.9375rem] font-semibold text-text-primary"
+                >
+                  {linked.name}
+                </UbText>
+                <UbButton
+                  variant="ghost"
+                  size="sm"
+                  onClick={clearLinked}
+                  className="ub-hit h-auto shrink-0 px-0 py-0 text-[0.875rem] font-semibold text-text-accent hover:bg-transparent"
+                >
+                  {t('parties.form.shop.linked.change')}
+                </UbButton>
+              </UbBox>
+              <UbText
+                variant="caption"
+                className={cn(
+                  'text-[0.8125rem] leading-5',
+                  linked.already ? 'text-warning' : 'text-text-tertiary'
+                )}
+              >
+                {t(
+                  linked.already
+                    ? `parties.form.shop.linked.already.${fixedRole}`
+                    : `parties.form.shop.linked.line.${fixedRole}`
+                )}
+              </UbText>
+            </UbBox>
+            {!linked.already && (
+              <UbText variant="caption" tone="tertiary" className="text-[12.5px]">
+                {t('parties.form.shop.linked.body')}
+              </UbText>
+            )}
+          </UbStack>
+        )}
+      </>
     ) : null;
 
   return (
@@ -473,7 +622,7 @@ export function PartyFormDrawer({
         quickKhata
           ? t(isEdit ? 'parties.khata.edit' : 'parties.khata.add')
           : isEdit
-            ? t('parties.form.title.edit')
+            ? t(fixedRole ? `parties.form.shop.title.edit.${fixedRole}` : 'parties.form.title.edit')
             : t(`parties.form.title.create${byKind}`)
       }
       description={
@@ -487,7 +636,7 @@ export function PartyFormDrawer({
       }
       closeLabel={t('common.action.close')}
       // A stray tap on the backdrop must not take a half-filled form with it.
-      dismissOnBackdrop={!formState.isDirty}
+      dismissOnBackdrop={!formState.isDirty && !searchTyped && !linked}
       returnFocusRef={returnFocusRef}
       footer={
         <>
@@ -561,6 +710,7 @@ export function PartyFormDrawer({
             FR-10). A new party only, and nothing at all where the browser
             cannot pick contacts — no dead button on every desktop (FR-14). */}
             {contactPickButton}
+            {existingPicker}
             <PartyNameInput
               t={t}
               hintKey={fixedRole ? `parties.form.shop.name.placeholder.${fixedRole}` : undefined}
@@ -621,7 +771,7 @@ export function PartyFormDrawer({
             It is last in the visible group, so the fifteen-second path is still
             name, number, which-kind, save, with tags sitting where the eye lands
             after the decision rather than before it. */}
-            {fixedRole ? creditDaysTop : tagsField}
+            {!fixedRole && tagsField}
 
             {/* ── Everything else, folded away ───────────────────────────────── */}
             {!isEdit && !shop && (
@@ -720,7 +870,6 @@ export function PartyFormDrawer({
             <UbDisclosure
               label={t('parties.form.section.other')}
               hint={fixedRole ? t(`parties.form.shop.more.hint.${fixedRole}`) : undefined}
-              defaultOpen={Boolean(fixedRole)}
               open={(fixedRole && gstHasError) || undefined}
             >
               {fixedRole === 'supplier' && gstinField}
@@ -732,7 +881,9 @@ export function PartyFormDrawer({
                 {(field) => <UbTextInput {...field} autoComplete="off" />}
               </UbField>
               {/* A6 F6 — the design's order: code, then reminders (customer) or
-                  the GSTIN (supplier); the kept fields follow. */}
+                  the GSTIN (supplier); the kept fields follow. Credit days is
+                  in here too (R-DEC-61): the counter asks a name and a number. */}
+              {creditDaysTop}
               {fixedRole === 'customer' && remindersFields}
               {fixedRole === 'customer' && gstinField}
               {fixedRole && gstRestFields}
@@ -751,35 +902,6 @@ export function PartyFormDrawer({
                 {(field) => <UbTextInput {...field} autoComplete="off" />}
               </UbField>
               {fixedRole && tagsField}
-              {fixedRole && (
-                <UbField
-                  name={fixedRole === 'customer' ? 'isSupplier' : 'isCustomer'}
-                  label={t(
-                    fixedRole === 'customer'
-                      ? 'parties.form.alsoSupplier.label'
-                      : 'parties.form.alsoCustomer.label'
-                  )}
-                  controlOwnsLabel
-                >
-                  {(field) => (
-                    <UbSwitch
-                      checked={Boolean(field.value)}
-                      onCheckedChange={field.onChange}
-                      label={t(
-                        fixedRole === 'customer'
-                          ? 'parties.form.alsoSupplier.label'
-                          : 'parties.form.alsoCustomer.label'
-                      )}
-                      description={t(
-                        fixedRole === 'customer'
-                          ? 'parties.form.alsoSupplier.hint'
-                          : 'parties.form.alsoCustomer.hint'
-                      )}
-                      id={field.id}
-                    />
-                  )}
-                </UbField>
-              )}
               {/* Reminders and their consent are about money a CUSTOMER owes; a
               supplier is paid, not reminded. */}
               {!fixedRole && remindersFields}

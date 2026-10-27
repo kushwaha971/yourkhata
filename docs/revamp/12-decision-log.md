@@ -790,3 +790,17 @@ FB-022 calls, decided as follows:
 4. **Phone text fields** stay 16 px, because iOS zooms the page under 16; desktop
    uses the design's 14.
 5. **The "BASIC" group title** belongs to A6's forms.
+
+R-DEC-61 (owner, 28 October 2026) — the Shop's customer and supplier forms (A6),
+overriding the A6 mock where they differ:
+1. **No "Also a supplier" / "Also a customer" switch**, and no role switches on
+   edit: adding someone must not ask whether they are both. The rare person who
+   is already in the other list is **picked** on Add, from an optional search
+   ("Already your supplier? (optional)"), like a phone contact. The pick fills the
+   form from their saved record and the save adds the role to that same contact.
+2. **A busy counter asks a name and a mobile number only.** Everything else,
+   GST and Credit days included, sits in "More details", which starts closed, on
+   both forms (the mock showed it open, with Credit days in the top group).
+3. **A screen with no mock is designed from the artifact's own references**
+   (owner: "take reference from the existing artifact"). Shop edit therefore uses
+   the A6 form ("Edit customer" / "Edit supplier", role fixed by the view).

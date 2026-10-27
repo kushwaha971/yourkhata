@@ -43,67 +43,91 @@ checked identical to the live page today. Mocks: `pAddSupplier` (phone sheet,
 
 ## What was built (28 Oct 2026, the Shop forms only; Udhaar and `/parties` unchanged)
 
-- **F1/F8:** title and footer "Add customer" / "Add supplier" (new `parties.form.shop.*` keys,
-  EN and HI; the generic "Save customer" keys stay for the other books).
-- **F2:** no subtitle on the customer form; "No reminders: they are for people who owe you" on the supplier form.
-- **F3:** no role switches (already so since 25 Oct).
-- **F4:** placeholders "Customer name" / "Supplier or company name" and "Mobile number"; **Credit days in
-  the customer's top group** (it sets each bill's due date). Tags moved into More details.
-- **F5:** one "More details", **open**, with the subtitle "Code, address, reminders" / "GSTIN, code, address".
-- **F6:** customer: code → reminders → How they agreed → GSTIN, state, email, address → another number,
-  note, tags → Also a supplier. Supplier: GSTIN → code → state, email, address → another number, note,
-  tags → Also a customer. The kept fields are listed, not dropped (R-DEC-29).
-- **F7 — a defect fixed:** the supplier form had no reminder switch, but its default was "on", so every
-  supplier was saved `sms_opt_in: true`. `toWireBody` now sends neither reminder key for a contact who is
-  not a customer (test fails before, passes after).
+Owner, 28 Oct (R-DEC-61), overriding the mock where they differ: no "Also a …"
+switch and no role switches; the rare person already in the other list is
+picked; a busy counter asks a name and a mobile only; a screen with no mock
+is designed from the artifact's own references.
+
+- **The counter path:** "Choose from phone contacts" (where the phone offers
+  it), "Already your supplier? (optional)" / "Already your customer?
+  (optional)", Name, Mobile number. Nothing else is open.
+- **F1/F8:** "Add customer" / "Add supplier" in the title and on the button.
+- **F2:** the supplier's subtitle "No reminders: they are for people who owe you".
+- **F4:** placeholders "Customer name" / "Supplier or company name", "Mobile number".
+- **F5:** one "More details" with the design's subtitle, **closed** (R-DEC-61).
+- **F6, inside it:** customer: code, Credit days, reminders, How they agreed,
+  GSTIN, state, email, address, another number, note, tags. Supplier: GSTIN,
+  code, state, email, address, another number, note, tags.
+- **F7, a defect fixed:** suppliers were saved opted in to reminders (a
+  default of "on" behind a hidden switch). A supplier-only contact now sends no
+  reminder keys.
+- **F9 → the pick (R-DEC-61):** picking fills the form from that contact's saved
+  record. The card is A3's saved-customer box: avatar, name, Change, "Your
+  supplier · will be your customer too". Add then PATCHes that same contact,
+  adding the role and keeping its note and tags. Picking someone already in this
+  list says "Already your customer: nothing to add".
+- **Edit in the Shop:** "Edit customer" / "Edit supplier", the same fields, no
+  role switches, roles kept.
+- **A defect found by A5's check:** typing a search and tapping outside closed
+  the drawer, because the search is not a form value. A typed search or a
+  picked contact now keeps the drawer.
 
 ## Not built, waiting on the owner
 
-1. **"They owe you now" / "You owe them now" (F4).** The server posts every opening balance to the Udhaar
-   book (`bucket main`), and one opening is allowed per contact across books. Showing it on the Shop form
-   would put Shop money in the Udhaar book (DEC-019). It needs a backend change: a Shop-book opening and a
-   change to the one-opening-per-contact index. Not started without approval.
-2. **Editing in the Shop.** Edit from a Shop person page opens the generic "Edit contact" (role
-   switches, separate "GST and address"). Roles are kept on save (read back). The design has no edit mock,
-   so the A6 edit form is not invented: should edit use the A6 form, with the role fixed by the list?
+1. **"They owe you now" / "You owe them now".** Every opening balance posts to
+   the Udhaar book (`bucket main`), and one is allowed per contact. On the Shop
+   form it would put Shop money in the Udhaar book (DEC-019). This needs an
+   approved backend change. It would sit in "More details" (R-DEC-61).
 
-## Results (`e2e/a6-forms.mjs`)
+## Results
 
-- **Look:** 24 views (390, 320, 1280 × light/dark × EN/HI) × both forms: F1–F9, no cut text, no
-  overflow; 0 failures, 0 console errors. Shots LOOKED at: 390 light EN customer, 390 dark HI supplier,
-  320 customer, 1280 customer page.
-- **Functional** (390 and 1280, read back by id): a customer is customer-only with `credit_days 7`; a
-  double tap on Add makes one record; a supplier's request body has no `sms_opt_in` / `consent_source`;
-  "Also a customer" saves both roles. `--skew` flips one expected role and the run fails (self-test).
-- **Edit:** roles kept after saving a note (probe, read back).
-- **Unit:** 1014 parties + design-system tests pass; type-check, lint, i18n check clean.
+- **`e2e/a6-forms.mjs`:** 24 views (390, 320, 1280 × light/dark × EN/HI), both
+  forms, 0 failures and 0 console errors. It checks:
+  - the counter fields are exactly the pick, Name and Mobile;
+  - "More details" starts closed, with its subtitle;
+  - no role or also switch; the order inside; no cut text or overflow.
+- **Functional, read back by id (390 and 1280):**
+  - a customer with Credit days 7, and a double tap makes one record;
+  - a supplier's body has no reminder keys;
+  - picking that supplier on Add customer makes no POST, leaves one contact
+    with both roles, and keeps the note;
+  - Shop edit is "Edit customer", with no role switch, and keeps the roles;
+  - `--skew` makes the run fail (self-test).
+- **Phone contacts:** with the picker simulated as Android Chrome gives it, the
+  button shows on both forms and fills Name and Mobile.
+- **Looked at:** the counter view, the picked card at 390 and 1280, edit, Hindi
+  dark supplier, and the phone-contacts fill.
+- **Unit:** 394 parties tests (the pick, the closed details, no switches);
+  type-check, lint, i18n, bundle.
+
+## Monkey (`e2e/monkey.mjs`, 250 steps)
+
+- `/customers` and `/suppliers`, seeds 81, 82, 83, at 390 and 1280: **12 of 12 PASS**.
+- **Still open (not A6):** `/suppliers` seed 64 @320 reproduces a ~7.9 s slow
+  "return" on the list after Back/Forward, with `GET /parties/roles` still
+  open. It is the A8 class. Replay:
+  `node e2e/monkey.mjs --path=/suppliers --seed=64 --steps=250 --width=320`.
 
 ## Regression (P0 §10)
 
-- `a5-measure` passes (its H19 check now compares label edges per container, since the open disclosure
-  insets its fields as the design does); `a3-customer-box-look` 40 views and `a3-functional` pass.
-- Bundle: three first loads over by 0.0–0.1 KB (rounding), raised with a note.
-
-## Monkey
-
-- `/customers` seed 61 @390, seed 63 @1280; `/suppliers` seed 62 @390: PASS.
-- **`/suppliers` seed 64 @320: FAIL, reproducible.** On a "return" after Back/Forward the list took
-  ~7.9 s to show, with `GET /parties/roles` still open and DOM-ready at 25 ms, and the slowest answered API
-  call 140 ms. Not reproduced by a direct Back/Forward/goto probe. It is on the list page, which A6 does not
-  touch; it is the A8 class (a page waiting with no time-out). Replay:
-  `node e2e/monkey.mjs --path=/suppliers --seed=64 --steps=250 --width=320`. The monkey now names what
-  kept a slow page busy and which requests were still open.
+- `a5-measure` PASS (after the tap-outside fix); `a3-customer-box-look` 40
+  views and `a3-functional` PASS; `a4-money`, `a4-remove-undo` and
+  `a4-functional` PASS.
+- **`a4-edges` 11/11 at 390 and 1280, after a harness fix.** It had failed 4/11
+  because it picked items by position. Other harnesses' items ("A5 item …",
+  0 in stock) now sort first, and the product correctly refused "Not enough
+  stock". The cases now pick priced, stocked, seeded items.
 
 ## Score sheet (P0 §8)
 
 | Points | Earned | Evidence |
 |---|---|---|
-| Business 2 | 1 | Roles, credit days and the no-reminder rule read back; the opening balance (F4) is not built |
-| Design 1 | 1 | F1–F9 in 24 views, looked at; order checked |
-| Functional 1 | 1 | Double tap, also-role, edit keeps roles |
-| User 2 | 1 | Monkey 3 of 4; the fourth fails (above, open); manual pass of the forms by probe and shots only |
-| Data 1 | 1 | The supplier default defect fixed and proved; nothing half-saved |
-| Performance 1 | 1 | Drawer open 385 ms (390) / 843 ms (1280), as A5; bundle within budget |
+| Business 2 | 1 | Roles, the pick (one contact, data kept), credit days and the no-reminder rule are read back; the opening balance is not built |
+| Design 1 | 1 | 24 views measured and looked at; the pick card reuses A3's box |
+| Functional 1 | 1 | Double tap, pick, already-in-list, edit, tap outside |
+| User 2 | 1 | Monkey 12/12 on A6's screens; no hand-driven browser pass yet |
+| Data 1 | 1 | The supplier-reminder default and the lost-search tap fixed and proved |
+| Performance 1 | 1 | Bundle within budget (+0.1 KB routes, noted); open time as A5 |
 | Honesty 1 | 1 | This report |
 | Owner found nothing 1 | 0 | The owner's |
-| **Total** | **7.0 / 10** | **In test.** Waiting on the two decisions above and the seed-64 finding |
+| **Total** | **7.0 / 10** | **In test**: the opening-balance decision and a hand-driven pass remain |

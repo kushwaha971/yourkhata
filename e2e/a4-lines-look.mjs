@@ -48,8 +48,9 @@ try {
         await page.keyboard.press('Enter');
         await page.waitForURL((u) => !u.pathname.startsWith('/login'));
         signedIn = true;
-        const items = (await (await ctx.request.get(`${base}/api/v1/items?page_size=50&ordering=name`)).json()).data.filter(
-          (i) => Number(i.selling_price) > 0
+        const items = (await (await ctx.request.get(`${base}/api/v1/items?page_size=200&ordering=name`)).json()).data.filter(
+          // Stocked and not harness-made (see a4-edges stockedItems).
+          (i) => Number(i.selling_price) > 0 && Number(i.on_hand ?? 0) > 20 && !/^(A\d+ item|Edge |A6 )/.test(i.name)
         );
 
         await page.goto(`${base}/sales/invoices/new`, { waitUntil: 'load' });

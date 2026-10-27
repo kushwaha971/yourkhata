@@ -834,7 +834,13 @@ export function ExistingPartyDetailPageContent({
           and putting it in the route's own chunk charges every merchant who
           opened this page to READ it. */}
       {partyForm.open && (
-        <PartyFormDrawerLazy form={partyForm} shop={shopBook} returnFocusRef={moreRef} />
+        <PartyFormDrawerLazy
+          form={partyForm}
+          shop={shopBook}
+          // A6: a Shop edit is the customer or supplier form, by the view.
+          kind={shopBook ? (supplierView ? 'supplier' : 'customer') : undefined}
+          returnFocusRef={moreRef}
+        />
       )}
 
       {entryForm.open && <LedgerEntryDrawerLazy form={entryForm} partyName={shown.name} />}

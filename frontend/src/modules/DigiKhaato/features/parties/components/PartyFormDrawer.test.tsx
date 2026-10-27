@@ -4,7 +4,7 @@ import userEvent from '@testing-library/user-event';
 import { sessionLoaded } from 'src/redux/slice/sessionSlice';
 import { store } from 'src/redux/store';
 import { renderWithProviders } from 'src/tests/renderWithProviders';
-import type { PermissionCode } from 'src/types/domain.types';
+import type { ModuleCode, PermissionCode } from 'src/types/domain.types';
 
 import { partyEditOpened, resetPartyForm } from '../redux/partyFormSlice';
 import { resetPartyList } from '../redux/partyListSlice';
@@ -36,6 +36,7 @@ const partyService = jest.requireMock('../api/partyService') as {
   listParties: jest.Mock;
   createParty: jest.Mock;
   updateParty: jest.Mock;
+  getParty: jest.Mock;
 };
 
 const EMPTY = {
@@ -77,7 +78,7 @@ const SAVED = {
   warnings: [],
 };
 
-const signIn = (permissions: readonly PermissionCode[]): void => {
+const signIn = (permissions: readonly PermissionCode[], modules: readonly ModuleCode[] = []): void => {
   store.dispatch(
     sessionLoaded({
       user: {
@@ -92,7 +93,7 @@ const signIn = (permissions: readonly PermissionCode[]): void => {
       activeTenant: { id: 't1', name: 'Kumar Stores', timezone: 'Asia/Kolkata', role: 'owner' },
       tenants: [{ id: 't1', name: 'Kumar Stores', timezone: 'Asia/Kolkata' }],
       permissions: [...permissions],
-      enabledModules: [],
+      enabledModules: [...modules],
       version: 1,
     })
   );
@@ -669,11 +670,12 @@ describe('the Shop form does not ask which list the person belongs to (owner, 25
     if (!add) throw new Error(`no ${name} button`);
     await user.click(add);
     const drawer = await screen.findByRole('dialog', { name });
-    // A6 F5: the Shop's "More details" opens already expanded, as in the mock.
-    expect(within(drawer).getByRole('button', { name: /^More details/ })).toHaveAttribute(
-      'aria-expanded',
-      'true'
-    );
+    // R-DEC-61: a busy counter asks a name and a number; everything else,
+    // Credit days and GST included, waits closed under "More details".
+    const more = within(drawer).getByRole('button', { name: /^More details/ });
+    expect(more).toHaveAttribute('aria-expanded', 'false');
+    expect(within(drawer).queryByLabelText('Credit days')).not.toBeInTheDocument();
+    await user.click(more);
     return drawer;
   };
 
@@ -686,7 +688,8 @@ describe('the Shop form does not ask which list the person belongs to (owner, 25
     expect(
       within(drawer).queryByRole('switch', { name: 'I buy from them' })
     ).not.toBeInTheDocument();
-    expect(within(drawer).getByRole('switch', { name: /^Also a supplier/ })).not.toBeChecked();
+    // R-DEC-61: no "Also a supplier" switch; the rare both-roles person is picked.
+    expect(within(drawer).queryByRole('switch', { name: /^Also a supplier/ })).not.toBeInTheDocument();
     expect(
       within(drawer).getByRole('switch', { name: /^Send them reminders/ })
     ).toBeInTheDocument();
@@ -704,7 +707,7 @@ describe('the Shop form does not ask which list the person belongs to (owner, 25
     expect(values.isSupplier).toBe(false);
   });
 
-  it('saves a supplier who is also a customer as both, and asks nothing about reminders', async () => {
+  it('saves a supplier as a supplier only, and asks nothing about reminders', async () => {
     const user = userEvent.setup();
     const drawer = await openShopForm(user, 'supplier');
     expect(
@@ -725,12 +728,65 @@ describe('the Shop form does not ask which list the person belongs to (owner, 25
     expect(within(drawer).getByText('GSTIN, code, address')).toBeInTheDocument();
     expect(within(drawer).queryByLabelText('Credit days')).not.toBeInTheDocument();
 
+    expect(within(drawer).queryByRole('switch', { name: /^Also a customer/ })).not.toBeInTheDocument();
+
     await user.type(within(drawer).getByLabelText('Name'), 'Gupta Wholesale');
-    await user.click(within(drawer).getByRole('switch', { name: /^Also a customer/ }));
     await user.click(within(drawer).getByRole('button', { name: 'Add supplier' }));
     await waitFor(() => expect(partyService.createParty).toHaveBeenCalledTimes(1));
     const [values] = partyService.createParty.mock.calls[0] as [Record<string, unknown>];
     expect(values.isSupplier).toBe(true);
+    expect(values.isCustomer).toBe(false);
+  });
+
+  it('adds an existing supplier as a customer by picking them, keeping their saved details', async () => {
+    /**
+     * R-DEC-61. The rare supplier who also buys is picked, like a phone
+     * contact, and the save must go to THAT record: a create would make a
+     * second "Gupta Wholesale" with the same number, and a PATCH from a blank
+     * form would wipe their tags and notes. So the pick fills the form from
+     * the saved record and Add sends an update to their id with both roles.
+     */
+    const supplier = {
+      ...SAVED.party,
+      id: 's-9',
+      name: 'Gupta Wholesale',
+      mobile: '+919800000009',
+      isCustomer: false,
+      isSupplier: true,
+      notes: 'Pays by cheque',
+      tags: [{ id: 'tg1', name: 'Route 2', color: 'viz-1' }],
+    };
+    partyService.listParties.mockImplementation((query: { type?: string }) =>
+      Promise.resolve(query?.type === 'supplier' ? { ...EMPTY, rows: [supplier] } : EMPTY)
+    );
+    partyService.getParty.mockResolvedValue({ party: supplier, summary: { balance: '0.00' } });
+    signIn(['parties.party.read', 'parties.party.write'], ['parties']);
+    const user = userEvent.setup();
+    renderWithProviders(<PartyListPageContent kind="customer" book="shop" />);
+    await screen.findByTestId('ub-grid');
+    const [add] = screen.getAllByRole('button', { name: 'Add customer' });
+    if (!add) throw new Error('no Add customer button');
+    await user.click(add);
+    const drawer = await screen.findByRole('dialog', { name: 'Add customer' });
+
+    await user.type(within(drawer).getByRole('combobox', { name: /Already your supplier/ }), 'Gup');
+    const option = await within(drawer).findByRole('option', { name: /Gupta Wholesale/ });
+    // A pick is refused while the search is still in flight (the picker's own
+    // rule), so wait for the typed search to settle, as the merchant sees it.
+    await waitFor(() => expect(partyService.listParties).toHaveBeenCalled());
+    await new Promise((resolve) => setTimeout(resolve, 400));
+    await user.click(option);
+    expect(await within(drawer).findByText('Your supplier · will be your customer too')).toBeInTheDocument();
+    expect(within(drawer).getByLabelText('Name')).toHaveValue('Gupta Wholesale');
+
+    await user.click(within(drawer).getByRole('button', { name: 'Add customer' }));
+    await waitFor(() => expect(partyService.updateParty).toHaveBeenCalledTimes(1));
+    expect(partyService.createParty).not.toHaveBeenCalled();
+    const [id, values] = partyService.updateParty.mock.calls[0] as [string, Record<string, unknown>];
+    expect(id).toBe('s-9');
     expect(values.isCustomer).toBe(true);
+    expect(values.isSupplier).toBe(true);
+    expect(values.notes).toBe('Pays by cheque');
+    expect(values.tags).toEqual(['Route 2']);
   });
 });

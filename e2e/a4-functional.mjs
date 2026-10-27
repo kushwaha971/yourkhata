@@ -78,7 +78,7 @@ try {
   await page.waitForURL((u) => !u.pathname.startsWith('/login'));
   signedIn = true;
 
-  const items = (await api('/items?page_size=100&ordering=name')).data.filter(
+  const items = (await api('/items?page_size=200&ordering=name')).data.filter(
     (i) => Number(i.selling_price) > 0 && Number(i.on_hand ?? i.stock?.on_hand ?? 0) > 5
   );
   const [a, b] = items;

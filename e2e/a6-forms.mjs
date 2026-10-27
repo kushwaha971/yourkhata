@@ -30,6 +30,8 @@ const W = {
     nameC: 'Customer name', nameS: 'Supplier or company name', mobile: 'Mobile number',
     more: 'More details', moreC: 'Code, address, reminders', moreS: 'GSTIN, code, address',
     credit: 'Credit days', remind: 'Send them reminders', alsoS: 'Also a supplier', alsoC: 'Also a customer',
+    linkC: 'Already your supplier? (optional)', linkS: 'Already your customer? (optional)',
+    editC: 'Edit customer', editS: 'Edit supplier',
     roles: ['I sell to them', 'I buy from them'],
   },
   hi: {
@@ -107,8 +109,10 @@ const checkLook = (key, kind, r, w, en) => {
   if (!r.placeholders.includes(c ? w.nameC : w.nameS)) fail(key, `F4 name placeholder: ${r.placeholders.join(' | ')}`);
   if (!r.placeholders.includes(w.mobile)) fail(key, 'F4 mobile placeholder');
   const more = r.disc.find((x) => x.text.includes(c ? w.moreC : w.moreS));
+  // R-DEC-61 (owner, 28 Oct): a busy counter asks a name and a number only, so
+  // "More details" starts CLOSED, on both forms (it overrides the mock's open).
   if (!more) fail(key, `F5 More details subtitle: ${JSON.stringify(r.disc)}`);
-  else if (more.open !== 'true') fail(key, 'F5 More details not open');
+  else if (more.open !== 'false') fail(key, 'F5 More details starts open');
   if (r.footer.at(-1) !== (c ? w.addC : w.addS)) fail(key, `F8 footer "${r.footer.join(' · ')}"`);
   if (r.cut.length) fail(key, `H18 cut text: ${r.cut.join(' | ')}`);
   if (r.wide) fail(key, 'page wider than the screen');
@@ -133,15 +137,25 @@ for (const width of widths) {
         const key = `${width}-${theme}-${locale}-${kind}`;
         try {
           const dlg = await openForm(page, kind, w);
+          const r0 = await page.evaluate(inspect);
+          checkLook(key, kind, r0, w, W.en);
+          if (locale === 'en') {
+            // The counter path: the optional pick, Name and Mobile, nothing else.
+            const want = [kind === 'customer' ? w.linkC : w.linkS, 'Name', w.mobile];
+            if (JSON.stringify(r0.labels) !== JSON.stringify(want)) fail(key, `counter fields: ${r0.labels.join(' > ')}`);
+            if (r0.switchNames.length) fail(key, `a switch before More details: ${r0.switchNames.join(' | ')}`);
+          }
+          await dlg.locator('button[aria-expanded]').filter({ hasText: kind === 'customer' ? w.moreC : w.moreS }).click();
+          await page.waitForTimeout(400);
           const r = await page.evaluate(inspect);
-          checkLook(key, kind, r, w, W.en);
           if (locale === 'en') {
             const hasCredit = r.labels.includes(w.credit);
             if (kind === 'customer' ? !hasCredit : hasCredit) fail(key, `F4 Credit days ${hasCredit ? 'shown' : 'missing'}`);
             const remind = r.switchNames.some((s) => s.includes(w.remind));
             if (kind === 'customer' ? !remind : remind) fail(key, `F7 reminders ${remind ? 'shown' : 'missing'}`);
+            // R-DEC-61: no "Also a …" switch; the rare both-roles person is picked.
             const also = r.switchNames.some((s) => s.includes(kind === 'customer' ? w.alsoS : w.alsoC));
-            if (!also) fail(key, 'F9 also-role switch missing');
+            if (also) fail(key, 'F9 also-role switch still shown');
             // F6 order, by DOM order of the visible labels: the design's first
             // fields come before the kept ones (found by looking: reminders sat
             // under "Another number" and "Note").
@@ -150,6 +164,7 @@ for (const width of widths) {
             if (at(first) < 0 || at(kept) < 0 || at(first) > at(kept)) fail(key, `F6 order: ${r.labels.join(' > ')}`);
           }
           await dlg.screenshot({ path: `${dir}/${key}.png` });
+          await dlg.evaluate((d) => d.querySelector('[data-ub-dialog-body]')?.scrollTo(0, 0));
           await page.screenshot({ path: `${dir}/${key}-page.png` });
         } catch (e) {
           fail(key, `error ${e.message.split('\n')[0]}`);
@@ -167,6 +182,7 @@ for (const width of widths) {
         const cName = `A6 Cust ${stamp}`;
         let dlg = await openForm(page, 'customer', w);
         await dlg.getByLabel('Name').fill(cName);
+        await dlg.locator('button[aria-expanded]').filter({ hasText: w.moreC }).click();
         await dlg.getByLabel(w.credit).fill('7');
         const add = dlg.getByRole('button', { name: w.addC });
         await add.dblclick();
@@ -186,6 +202,8 @@ for (const width of widths) {
         const sName = `A6 Supp ${stamp}`;
         dlg = await openForm(page, 'supplier', w);
         await dlg.getByLabel('Name').fill(sName);
+        await dlg.locator('button[aria-expanded]').filter({ hasText: w.moreS }).click();
+        await dlg.getByLabel('Note (optional)').fill('Pays by cheque');
         await dlg.getByRole('button', { name: w.addS }).click();
         await dlg.waitFor({ state: 'detached', timeout: 10000 }).catch(() => fail(`${width}-fn`, 'supplier drawer did not close'));
         await page.waitForTimeout(800);
@@ -198,22 +216,87 @@ for (const width of widths) {
           const p = (await api(ctx, `/parties/${sHit.id}`)).data;
           if (p.is_supplier !== true || p.is_customer !== false) fail(`${width}-fn`, `supplier roles c=${p.is_customer} s=${p.is_supplier}`);
         }
-        // A supplier who is also a customer: both.
-        const bName = `A6 Both ${stamp}`;
-        dlg = await openForm(page, 'supplier', w);
-        await dlg.getByLabel('Name').fill(bName);
-        await dlg.getByRole('switch', { name: new RegExp(`^${w.alsoC}`) }).click();
-        await dlg.getByRole('button', { name: w.addS }).click();
-        await dlg.waitFor({ state: 'detached', timeout: 10000 }).catch(() => fail(`${width}-fn`, 'both drawer did not close'));
+        // R-DEC-61: that supplier also buys. On Add customer the merchant
+        // PICKS them; the save must update the same record (one contact, both
+        // roles, the note kept), not make a second one.
+        dlg = await openForm(page, 'customer', w);
+        await dlg.getByRole('combobox', { name: w.linkC }).fill(sName);
+        await page.waitForTimeout(900); // the search settles; a pick waits for it
+        await dlg.getByRole('option', { name: new RegExp(sName) }).first().click();
+        await dlg.getByText('Your supplier · will be your customer too').waitFor({ timeout: 6000 }).catch(() => fail(`${width}-fn`, 'no picked-contact card'));
+        if ((await dlg.getByLabel('Name').inputValue()) !== sName) fail(`${width}-fn`, 'the pick did not fill the name');
+        await dlg.screenshot({ path: `${dir}/${width}-picked.png` });
+        const before = bodies.length;
+        await dlg.getByRole('button', { name: w.addC }).click();
+        await dlg.waitFor({ state: 'detached', timeout: 10000 }).catch(() => fail(`${width}-fn`, 'picked drawer did not close'));
         await page.waitForTimeout(800);
-        const bHit = (await api(ctx, `/parties?q=${encodeURIComponent(bName)}&book=shop&page_size=50`)).data.find((p) => p.name === bName);
-        const bp = bHit && (await api(ctx, `/parties/${bHit.id}`)).data;
-        if (!bp || bp.is_supplier !== true || bp.is_customer !== true) fail(`${width}-fn`, `both roles ${bp ? `c=${bp.is_customer} s=${bp.is_supplier}` : 'missing'}`);
+        if (bodies.length !== before) fail(`${width}-fn`, 'picking made a POST (a new record)');
+        const same = (await api(ctx, `/parties?q=${encodeURIComponent(sName)}&page_size=50`)).data.filter((p) => p.name === sName);
+        if (same.length !== 1) fail(`${width}-fn`, `${same.length} contacts named ${sName}`);
+        const bp = sHit && (await api(ctx, `/parties/${sHit.id}`)).data;
+        if (!bp || bp.is_supplier !== true || bp.is_customer !== true) fail(`${width}-fn`, `picked roles ${bp ? `c=${bp.is_customer} s=${bp.is_supplier}` : 'missing'}`);
+        if (bp && bp.notes !== 'Pays by cheque') fail(`${width}-fn`, `picked note became "${bp?.notes}"`);
+        const bName = sName;
+
+        // Edit in the Shop is the customer form: its own title, no role switch.
+        await page.goto(`${base}/customers?q=${encodeURIComponent(cName)}`, { waitUntil: 'load' });
+        await page.waitForTimeout(1200);
+        await page.getByRole('button', { name: `Open ${cName}` }).or(page.getByRole('link', { name: new RegExp(cName) })).first().click();
+        await page.waitForTimeout(1500);
+        // Edit is a header button on a desktop and behind "More" on a phone.
+        const editBtn = page.getByRole('button', { name: /^Edit/ }).first();
+        if (!(await editBtn.isVisible().catch(() => false))) {
+          await page.getByRole('button', { name: /^More( actions)?$/ }).first().click();
+          await page.waitForTimeout(400);
+        }
+        await page.getByRole('button', { name: /^Edit/ }).or(page.getByRole('menuitem', { name: /^Edit/ })).first().click();
+        const ed = page.getByRole('dialog').last();
+        await ed.waitFor();
+        await page.waitForTimeout(500);
+        const re = await page.evaluate(inspect);
+        if (re.title !== w.editC) fail(`${width}-fn`, `edit title "${re.title}"`);
+        if (re.switchNames.some((n) => W.en.roles.some((x) => n.includes(x)))) fail(`${width}-fn`, 'edit shows role switches');
+        await ed.screenshot({ path: `${dir}/${width}-edit.png` });
+        await ed.getByRole('button', { name: 'Save changes' }).click();
+        await ed.waitFor({ state: 'detached', timeout: 10000 }).catch(() => fail(`${width}-fn`, 'edit did not close'));
+        const ce = cHits[0] && (await api(ctx, `/parties/${cHits[0].id}`)).data;
+        if (ce && (ce.is_customer !== true || ce.is_supplier !== skew)) fail(`${width}-fn`, `edit changed roles c=${ce.is_customer} s=${ce.is_supplier}`);
         console.log(`${width} functional: customer ${cName}, supplier ${sName}, both ${bName}`);
       }
       await ctx.close();
     }
   }
+}
+// ── Choose from phone contacts (an Android phone's Contact Picker) ──────────
+// Headless Chrome has no picker, so the button is hidden there, as on every
+// desktop and on iOS Safari. Here the picker is simulated, as Chrome on Android
+// provides it, and both forms must show the button and fill Name and Mobile.
+{
+  const ctx = await browser.newContext({ viewport: { width: 390, height: 800 } });
+  await ctx.addInitScript(() => {
+    Object.defineProperty(navigator, 'contacts', {
+      value: { select: async () => [{ name: ['Asha Devi'], tel: ['098765 43210'] }] },
+    });
+  });
+  const page = await signIn(ctx);
+  for (const kind of ['customer', 'supplier']) {
+    const key = `390-contacts-${kind}`;
+    try {
+      const dlg = await openForm(page, kind, W.en);
+      const btn = dlg.getByRole('button', { name: 'Choose from phone contacts' });
+      if (!(await btn.isVisible())) { fail(key, 'no "Choose from phone contacts" button'); continue; }
+      await btn.click();
+      await page.waitForTimeout(500);
+      const name = await dlg.getByLabel('Name').inputValue();
+      const mobile = await dlg.getByLabel('Mobile number').inputValue();
+      if (name !== 'Asha Devi') fail(key, `contact name "${name}"`);
+      if (mobile.replace(/\D/g, '') !== '9876543210') fail(key, `contact mobile "${mobile}"`);
+      await dlg.screenshot({ path: `${dir}/${key}.png` });
+    } catch (e) {
+      fail(key, `error ${e.message.split('\n')[0]}`);
+    }
+  }
+  await ctx.close();
 }
 await browser.close();
 const views = widths.length * 2 * 2 * 2;

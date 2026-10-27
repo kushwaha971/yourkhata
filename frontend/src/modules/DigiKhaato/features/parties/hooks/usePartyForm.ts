@@ -73,7 +73,12 @@ export interface UsePartyFormResult {
   readonly submit: (
     values: PartyFormValues,
     setError: UseFormSetError<PartyFormValues>,
-    personal?: boolean
+    personal?: boolean,
+    /**
+     * A6 (R-DEC-61): the merchant picked an existing contact on Add, so the
+     * save goes to THAT record (a PATCH adding the role), not a new one.
+     */
+    existingId?: string
   ) => Promise<PartyDetail | null>;
 }
 
@@ -140,7 +145,12 @@ export const usePartyForm = (): UsePartyFormResult => {
   }, [dispatch]);
 
   const submit = useCallback(
-    async (values: PartyFormValues, setError: UseFormSetError<PartyFormValues>, personal = false) => {
+    async (
+      values: PartyFormValues,
+      setError: UseFormSetError<PartyFormValues>,
+      personal = false,
+      existingId?: string
+    ) => {
       setFormErrors([]);
       setDuplicate(null);
       try {
@@ -151,7 +161,7 @@ export const usePartyForm = (): UsePartyFormResult => {
           } : {
             values,
             ...(personal ? { personal: true } : {}),
-            partyId: openFor && openFor !== 'new' ? openFor : undefined,
+            partyId: existingId ?? (openFor && openFor !== 'new' ? openFor : undefined),
             idempotencyKey: key,
           })
         ).unwrap();

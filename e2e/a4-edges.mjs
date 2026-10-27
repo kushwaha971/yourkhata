@@ -108,6 +108,16 @@ const addItem = async (page, name) => {
     await page.waitForTimeout(300);
   }
 };
+// Items a case can sell: priced, with stock, and not made by a harness. The
+// shop is shared and other harnesses add items ("A5 item …", "Edge …") that
+// sort first by name with nothing on hand, so items[11] stopped being sellable
+// and four cases failed on a correct "Not enough stock" refusal (H17: pick by a
+// property that is proven, never by position).
+const HARNESS_MADE = /^(A\d+ item|Edge |A6 )/;
+const stockedItems = async (s) =>
+  (await s.api('/items?page_size=200&ordering=name')).filter(
+    (i) => Number(i.selling_price) > 0 && Number(i.on_hand ?? 0) > 20 && !HARNESS_MADE.test(i.name)
+  );
 const lines = (page) => page.locator('[data-testid=invoice-line] [data-part=name]').allInnerTexts();
 // Issued bills, drafts excluded: the list's `tabs.all` (the API filters by
 // `tab`; a `status=` it ignores counted every bill, drafts too, and a draft's
@@ -137,7 +147,7 @@ const overflow = (page) =>
 const cases = {
   async 'offline-pay'(s, f) {
     const { page, ctx } = s;
-    const items = await s.api('/items?page_size=50&ordering=name');
+    const items = await stockedItems(s);
     await openNew(page);
     await addItem(page, items[3].name);
     await page.waitForTimeout(4000);
@@ -166,7 +176,7 @@ const cases = {
 
   async 'offline-add'(s, f) {
     const { page, ctx } = s;
-    const items = await s.api('/items?page_size=50&ordering=name');
+    const items = await stockedItems(s);
     await openNew(page);
     await addItem(page, items[4].name);
     await page.waitForTimeout(4000);
@@ -193,7 +203,7 @@ const cases = {
 
   async 'slow-issue'(s, f) {
     const { page } = s;
-    const items = await s.api('/items?page_size=50&ordering=name');
+    const items = await stockedItems(s);
     await openNew(page);
     await addItem(page, items[6].name);
     await page.waitForTimeout(4000);
@@ -245,7 +255,7 @@ const cases = {
 
   async 'back-after-pay'(s, f) {
     const { page } = s;
-    const items = await s.api('/items?page_size=50&ordering=name');
+    const items = await stockedItems(s);
     await openNew(page);
     await addItem(page, items[7].name);
     await page.waitForTimeout(500);
@@ -272,7 +282,7 @@ const cases = {
 
   async 'two-tabs'(s, f) {
     const { page, ctx } = s;
-    const items = await s.api('/items?page_size=50&ordering=name');
+    const items = await stockedItems(s);
     await openNew(page);
     await addItem(page, items[8].name);
     await page.waitForTimeout(4000);
@@ -302,7 +312,7 @@ const cases = {
     const customers = await s.api('/parties?type=customer&status=active&book=shop&page_size=50');
     const party = customers[7];
     const before = Number((await s.api(`/parties/${party.id}?book=shop`)).shop.customer_balance);
-    const items = await s.api('/items?page_size=50&ordering=name');
+    const items = await stockedItems(s);
     await openNew(page);
     await page.getByRole('button', { name: 'Saved customer', exact: true }).click();
     await page.getByLabel('Saved customer').fill(party.name);
@@ -377,7 +387,7 @@ const cases = {
 
   async 'cleared-qty'(s, f) {
     const { page } = s;
-    const items = await s.api('/items?page_size=50&ordering=name');
+    const items = await stockedItems(s);
     await openNew(page);
     await addItem(page, items[13].name);
     if (phone) {
@@ -469,7 +479,7 @@ const cases = {
 
   async 'double-hold'(s, f) {
     const { page } = s;
-    const items = await s.api('/items?page_size=50&ordering=name');
+    const items = await stockedItems(s);
     await openNew(page);
     await addItem(page, items[12].name);
     await page.waitForTimeout(500);

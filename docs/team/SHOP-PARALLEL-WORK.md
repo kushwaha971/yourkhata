@@ -162,9 +162,9 @@ idle, so do not message sessions the owner has stopped.
 ## Waiting to start
 
 - **A6 · Separate customer and supplier forms — IN TEST, 7.0/10 (28 Oct
-  2026), main worktree.** Report: `docs/performance/2026-10-28-shop-a6-customer-supplier-forms.md`;
+  2026, after R-DEC-61: pick an existing contact, name + mobile only), main worktree.** Report: `docs/performance/2026-10-28-shop-a6-customer-supplier-forms.md`;
   harness `e2e/a6-forms.mjs`. Waiting on the owner: (1) a Shop-book opening
-  balance needs a backend change; (2) whether Shop edit uses the A6 form (no
-  edit mock). Open: monkey `/suppliers` seed 64 @320, a ~7.9 s return (A8 class).
+  balance needs a backend change; (2) decided by R-DEC-61 (edit uses the A6
+  form). Open: monkey `/suppliers` seed 64 @320, a ~7.9 s return (A8 class).
 - **Then,** in the owner's order: Part F, Parts B/C/D, and the module round
   for the whole Shop (P0 standard §9).
