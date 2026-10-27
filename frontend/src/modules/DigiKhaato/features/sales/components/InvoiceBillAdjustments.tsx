@@ -6,6 +6,8 @@ import { UbChoiceChips, UbField, UbMoneyInput, UbStack, UbSwitch } from 'src/des
 import { useTranslation } from 'src/hooks/useTranslation';
 import { formatInr } from 'src/utils/money';
 
+import { clampDiscount } from '../view-model/clampDiscount';
+
 import type { DiscountType } from '../types/sales.types';
 import type { InvoiceFormValues } from '../view-model/invoiceForm';
 
@@ -18,11 +20,14 @@ import type { InvoiceFormValues } from '../view-model/invoiceForm';
 export function InvoiceBillAdjustments({
   form,
   roundOffAmount,
+  subtotal,
   disabled,
 }: Readonly<{
   form: UseFormReturn<InvoiceFormValues>;
   /** What rounding adds or takes, shown under the switch. */
   roundOffAmount: string;
+  /** What a rupee discount comes off: it stops there, so the total never goes below ₹0. */
+  subtotal: string;
   disabled: boolean;
 }>): React.JSX.Element {
   const { t } = useTranslation();
@@ -39,7 +44,13 @@ export function InvoiceBillAdjustments({
           { value: 'percent', label: t('sales.totals.discountPercent') },
         ]}
         disabled={disabled}
-        onChange={(next) => setValue('discountType', next, { shouldDirty: true })}
+        onChange={(next) => {
+          setValue('discountType', next, { shouldDirty: true });
+          // ₹500 switched to % is 500 %: it goes back to the new limit too.
+          const value = form.getValues('discountValue') ?? '';
+          const fitted = clampDiscount(value, next, subtotal);
+          if (fitted !== value) setValue('discountValue', fitted, { shouldDirty: true });
+        }}
       />
       <UbField
         name="discountValue"
@@ -52,7 +63,9 @@ export function InvoiceBillAdjustments({
             value={field.value as string}
             currencySymbol={discountType === 'percent' ? '%' : '₹'}
             decimalPlaces={2}
-            onChange={(next) => {
+            onChange={(typed) => {
+              // R-DEC-59: a percent stops at 100, rupees at the subtotal.
+              const next = clampDiscount(typed, discountType || 'amount', subtotal);
               field.onChange(next);
               if (!discountType) setValue('discountType', 'amount', { shouldDirty: true });
             }}

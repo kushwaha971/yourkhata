@@ -153,6 +153,11 @@ export const useInvoiceEditor = (
       saves.invalidate();
       context.abort();
       draft?.abort();
+      // Leave nothing for the next editor: the reset above runs in the same
+      // commit as the address effect, which still read this bill's saved id —
+      // Bills → New bill showed a blank bill at the OLD draft's address, and a
+      // reload reopened it (A4 monkey run, seed 501).
+      dispatch(editorReset());
     };
   }, [dispatch, documentId, today, kind, tenantId, userId, saves]);
 

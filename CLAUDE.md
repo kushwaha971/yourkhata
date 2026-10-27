@@ -81,6 +81,23 @@ a repo move. The mark and its rules are `docs/DESIGN-SYSTEM.md` §7.
 
 ## How to work here
 
+**Testing is P0 (owner, 27 Oct 2026, R-DEC-57).** Every piece runs
+`docs/testing/P0-testing-standard.md` in full — business read-back by the
+document's own id with a self-test, design after errors too, functional
+states on purpose, a distracted-user monkey (`e2e/monkey.mjs`, 3 seeds × 2
+sizes) and the edge cases in `docs/testing/edge-case-catalogue.md` (researched
+from competitors' user complaints) — before anything is called closed. A3/A4
+were called done while six data and layout defects remained; the owner rated
+that testing 3/10. **The bar is 9/10 on the standard's §8 score sheet, with
+evidence for every point, §9 is the module round (every piece's harness again, a module-wide monkey,
+whole-day journeys, the full catalogue column and a manual pass once a module's
+last piece is in), and §10 is the go-live gate: nothing goes live until every
+module in scope has passed its round and scores 9 or more.** Read the standard at the start of
+every session that builds or fixes anything, **and `docs/testing/tester-learning-log.md`
+(P0): its habits apply to every piece, and after every feature a lesson is
+added there with the check that enforces it.**
+
+
 ### Mandatory revamp acceptance gates — owner, 21 October 2026 (R-DEC-32)
 
 These are hard requirements, not optional guidelines. Apply them to every future

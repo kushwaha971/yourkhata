@@ -4,7 +4,7 @@ import { UbQrCode } from 'src/design-system';
 import type { TranslateFn } from 'src/hooks/useTranslation';
 import type { PrintBranding } from 'src/print/brandingPrintService';
 import { formatBusinessDate } from 'src/utils/dates';
-import { formatAmount, formatInr } from 'src/utils/money';
+import { formatAmount, formatInr, withMinusSign } from 'src/utils/money';
 import { formatPhoneForDisplay } from 'src/utils/share';
 
 import {
@@ -107,7 +107,7 @@ export function InvoicePrintThermal80({
       {columns === 'intra' &&
         row(t(sgstLabelId(doc.placeOfSupplyState, doc.isInterState)), formatAmount(doc.sgstTotal))}
       {columns === 'inter' && row(t('sales.tax.igst'), formatAmount(doc.igstTotal))}
-      {row(t('sales.totals.roundOff'), formatAmount(doc.roundOff))}
+      {row(t('sales.totals.roundOff'), withMinusSign(doc.roundOff, formatAmount))}
       {row(t('sales.print.total'), formatInr(doc.grandTotal), true)}
       {doc.status !== 'draft' &&
         doc.kind !== 'sales_order' &&

@@ -248,3 +248,11 @@ describe('standard GST layout', () => {
     expect(document.body).not.toHaveTextContent(/YourKhata|yourkhata\.com/i);
   });
 });
+
+/** Prevents "-₹0.47" with Intl's hyphen on the bill a customer reads, beside a Discount written "−" (A4 print check, 27 Oct 2026). */
+it.each(['A4', '80 mm'] as const)('prints a rounding down with a true minus sign (%s)', (size) => {
+  const doc = makeDocument({ round_off: '-0.47' });
+  renderWithProviders(size === 'A4' ? <A4 doc={doc} /> : <Thermal doc={doc} />);
+  expect(screen.getByText(size === 'A4' ? '−₹0.47' : '−0.47')).toBeInTheDocument();
+  expect(screen.queryByText(/^-₹?0\.47$/)).toBeNull();
+});

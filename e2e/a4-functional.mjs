@@ -87,9 +87,12 @@ try {
     return d.on_hand ?? d.stock?.on_hand;
   };
   const stockBefore = { [a.id]: await onHand(a.id), [b.id]: await onHand(b.id) };
-  const issuedBefore = (await api('/sales/invoices?status=issued&page_size=1')).meta?.total;
+  // Issued bills without drafts: `tabs.all` (the API filters by `tab`, not `status`).
+  const issuedBefore = (await api('/sales/invoices?page_size=1')).meta?.tabs?.all;
+  const drafts = (await api('/sales/invoices?tab=draft&page_size=20')).data ?? [];
+  if (!drafts.length || drafts.some((r) => r.status !== 'draft')) fail('self-test: tab=draft does not filter');
   console.log(`items ${a.name} (${stockBefore[a.id]}), ${b.name} (${stockBefore[b.id]}); issued so far ${issuedBefore}`);
-  if (issuedBefore === undefined) fail('self-test: /sales/invoices meta.total missing, counts cannot be compared');
+  if (issuedBefore === undefined) fail('self-test: /sales/invoices meta.tabs.all missing, counts cannot be compared');
 
   // ---- Busy counter 1: typing while the search reply is slow ----------------
   await page.goto(`${base}/sales/invoices/new`, { waitUntil: 'load' });
@@ -170,9 +173,9 @@ try {
   if (issues.length !== 1) fail(`Paid cash tapped twice sent ${issues.length} issue requests`);
 
   // ---- Read back ------------------------------------------------------------
-  const issuedAfter = (await api('/sales/invoices?status=issued&page_size=1')).meta?.total;
+  const issuedAfter = (await api('/sales/invoices?page_size=1')).meta?.tabs?.all;
   if (issuedAfter !== issuedBefore + 1) fail(`issued bills ${issuedBefore} → ${issuedAfter}, expected +1`);
-  const newest = (await api('/sales/invoices?status=issued&page_size=1')).data?.[0];
+  const newest = (await api('/sales/invoices?tab=paid&page_size=1')).data?.[0];
   const inv = newest && (await api(`/sales/invoices/${newest.id}`)).data;
   if (!inv) throw new Error('no issued bill to read back');
   const stock = {

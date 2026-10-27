@@ -28,6 +28,7 @@ import type { TranslateFn } from 'src/hooks/useTranslation';
 import { cn } from 'src/utils/cn';
 import { formatInr } from 'src/utils/money';
 
+import { clampDiscount } from '../view-model/clampDiscount';
 import {
   ratePlaces,
   type InvoiceFormValues,
@@ -67,7 +68,7 @@ export interface InvoiceLineEditorProps {
   readonly t: TranslateFn;
 }
 
-const lineName = (line: InvoiceLineForm | undefined, t: TranslateFn) =>
+export const lineName = (line: InvoiceLineForm | undefined, t: TranslateFn): string =>
   line?.description || t('sales.line.itemPlaceholder');
 
 /** Only lines that hold an item are shown; an empty row is never drawn. */
@@ -148,7 +149,8 @@ export function InvoiceLineDetails({
                   currencySymbol="%"
                   decimalPlaces={2}
                   invalid={field.invalid}
-                  onChange={(next) => {
+                  onChange={(typed) => {
+                    const next = clampDiscount(typed, 'percent');
                     field.onChange(next);
                     setValue(`${base}.discountType`, next ? 'percent' : '', { shouldDirty: true });
                     void trigger(`${base}.discountValue`);
@@ -192,6 +194,7 @@ function LineRowPhone({
   preview,
   disabled,
   onEdit,
+  onRemove,
   note,
   t,
 }: Readonly<{
@@ -201,6 +204,8 @@ function LineRowPhone({
   preview: EngineResult;
   disabled: boolean;
   onEdit: () => void;
+  /** − at one becomes a bin that calls this (the caller offers Undo). */
+  onRemove: () => void;
   note: ReactNode;
   t: TranslateFn;
 }>) {
@@ -239,6 +244,8 @@ function LineRowPhone({
           label={t('sales.line.qtyOf', { name })}
           decreaseLabel={t('sales.line.decrease', { name })}
           increaseLabel={t('sales.line.increase', { name })}
+          removeLabel={t('sales.line.removeOf', { name })}
+          onRemove={onRemove}
           disabled={disabled}
           max={Number(LINE_QTY_LIMIT)}
         />
@@ -306,6 +313,7 @@ export function InvoiceLineList({
             preview={preview}
             disabled={disabled}
             onEdit={() => setEditing(index)}
+            onRemove={() => remove(index)}
             note={renderLineNote(index)}
             t={t}
           />
@@ -476,15 +484,20 @@ export function InvoiceLineTable({
       >
         {(field) => (
           <UbMoneyInput
-            className="ml-auto w-[56px] [&_input]:h-[34px] [&_input]:text-sm"
+            // Design §A4 billTable: the cell is the number alone; "Disc. %" in
+            // the header carries the unit. With a % inside, a 56 px box showed
+            // "150" as "15" and "5.00" as "5.(" (manual pass, 1280).
+            className="ml-auto w-[64px] [&_input]:h-[34px] [&_input]:px-2 [&_input]:text-sm"
             id={field.id}
             aria-describedby={field['aria-describedby']}
             aria-label={t('sales.line.discountOf', { name })}
             value={(field.value as string) ?? ''}
-            currencySymbol="%"
+            currencySymbol=""
             decimalPlaces={2}
             invalid={field.invalid}
-            onChange={(next) => {
+            onChange={(typed) => {
+              // R-DEC-59: past 100 it goes back to 100.
+              const next = clampDiscount(typed, 'percent');
               field.onChange(next);
               form.setValue(`${base}.discountType`, next ? 'percent' : '', { shouldDirty: true });
               void form.trigger(`${base}.discountValue`);

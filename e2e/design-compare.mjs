@@ -9,7 +9,7 @@
 //     --pairs='pSearch:390-light-en-open.png,dSearch:1280-light-en-open.png'
 //
 // Writes <shots>/compare-<piece>.png.
-import { mkdirSync } from "node:fs";
+import { mkdirSync, readFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { chromium } from "playwright";
@@ -31,6 +31,9 @@ const designPath = resolve(
   "../docs/revamp/design/shop-fixes-and-business-types.html",
 );
 mkdirSync(shots, { recursive: true });
+// Embedded, not file:// links: a page made with setContent is about:blank,
+// which may not load local files, and the sheet came out as empty frames.
+const dataUri = (file) => `data:image/png;base64,${readFileSync(file).toString("base64")}`;
 
 const browser = await chromium.launch(
   process.env.PW_CHROME ? { executablePath: process.env.PW_CHROME } : {},
@@ -58,8 +61,8 @@ try {
         ours,
         caption,
       }) => `<section><h2>${caption}</h2><div class="pair">
-      <figure><figcaption>Design · ${mock}</figcaption><img src="${pathToFileURL(designShots[mock]).href}"></figure>
-      <figure><figcaption>Built · ${ours}</figcaption><img src="${pathToFileURL(`${shots}/${ours}`).href}"></figure>
+      <figure><figcaption>Design · ${mock}</figcaption><img src="${dataUri(designShots[mock])}"></figure>
+      <figure><figcaption>Built · ${ours}</figcaption><img src="${dataUri(`${shots}/${ours}`)}"></figure>
     </div></section>`,
     )
     .join("");

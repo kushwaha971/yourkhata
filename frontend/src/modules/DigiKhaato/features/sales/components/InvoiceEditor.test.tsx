@@ -11,6 +11,7 @@ import { formatClock } from 'src/utils/dates';
 import { localDraftKey, readLocalDraft } from 'src/utils/localDrafts';
 
 import { useInvoiceEditor, type UseInvoiceEditorResult } from '../hooks/useInvoiceEditor';
+import { selectInvoiceEditor } from '../redux/invoiceEditorSlice';
 import { wireDocument } from '../testing/salesFixtures';
 
 import { InvoiceEditorPageContent } from './InvoiceEditorPageContent';
@@ -133,13 +134,20 @@ jest.mock('../../inventory/api/itemService', () => ({
   ),
   restoreItem: jest.fn(async () => ({})),
 }));
+const mockReplace = jest.fn();
 jest.mock('next/navigation', () => ({
-  useRouter: () => ({ push: jest.fn(), replace: jest.fn(), back: jest.fn(), prefetch: jest.fn() }),
+  useRouter: () => ({
+    push: jest.fn(),
+    replace: mockReplace,
+    back: jest.fn(),
+    prefetch: jest.fn(),
+  }),
   useSearchParams: () => new URLSearchParams(mockSearch),
   usePathname: () => '/sales/invoices/new',
 }));
 
 const sales = jest.requireMock('../api/salesService') as {
+  getInvoice: jest.Mock;
   createInvoice: jest.Mock;
   updateInvoice: jest.Mock;
   issueInvoice: jest.Mock;
@@ -573,6 +581,20 @@ describe('draft creation recovery', () => {
     await waitFor(() => expect(editor.editor.context).not.toBeNull());
     return view;
   };
+
+  it("leaves no saved id behind for the next New bill's address", async () => {
+    /* Prevents (A4 monkey run, seed 501): a draft saved, Bills, then New bill —
+       the next editor's first render still read the old id, and the blank bill
+       sat at /sales/invoices/<old>/edit, so a reload reopened the old draft. */
+    const view = await open();
+    sales.createInvoice.mockResolvedValueOnce(envelope());
+    await act(async () => {
+      await editor.save(false);
+    });
+    expect(editor.editor.documentId).toBe('d1');
+    view.unmount();
+    expect(selectInvoiceEditor(store.getState()).documentId).toBeNull();
+  });
 
   it('persists the same creation key before POST and reuses it after response loss/remount', async () => {
     const view = await open();
@@ -1358,4 +1380,138 @@ describe('a customer who is not saved yet', () => {
     await act(() => new Promise<void>((resolve) => setTimeout(resolve, 600)));
     expect(screen.queryByRole('button', { name: /as a new customer/ })).not.toBeInTheDocument();
   });
+});
+
+/* Prevents (a4-edges slow-issue): Paid cash reached the server and issued the
+   bill, the reply was lost, the merchant reloaded — and /edit showed the issued
+   bill as "New bill" with Paid cash live and the device copy offered back. */
+it('opens an already-issued bill on its own page, not as a draft to pay again', async () => {
+  signIn(['sales.invoice.read', 'sales.invoice.write', 'inventory.item.read']);
+  sales.getInvoice.mockResolvedValue(
+    jest.requireActual('../api/salesService').toEnvelope({
+      data: wireDocument({ id: 'd1', status: 'paid' }),
+      meta: {},
+    })
+  );
+  renderWithProviders(<InvoiceEditorPageContent documentId="d1" />);
+  await waitFor(() => expect(mockReplace).toHaveBeenCalledWith('/sales/invoices/d1'));
+  expect(screen.queryByRole('button', { name: /^Paid cash/ })).not.toBeInTheDocument();
+});
+
+/* Prevents the empty "Quick sale ₹0.00" drafts on hold (manual beginner pass,
+   27 Oct 2026): Save draft and Ctrl+S on a bill with nothing in it created one. */
+it('does not save a bill with nothing in it', async () => {
+  signIn(['sales.invoice.read', 'sales.invoice.write', 'inventory.item.read']);
+  renderWithProviders(<InvoiceEditorPageContent documentId={null} />);
+  const button = await screen.findByRole('button', { name: 'Save draft' });
+  expect(button).toBeDisabled();
+  await userEvent.keyboard('{Control>}s{/Control}');
+  expect(sales.createInvoice).not.toHaveBeenCalled();
+});
+
+/* Owner, 27 Oct 2026: at qty 1 on a phone, − is a bin that removes the line,
+   and Undo in the snackbar puts it back exactly as it was. */
+it('removes a line with the bin at one on a phone, and Undo puts it back', async () => {
+  const original = window.matchMedia;
+  window.matchMedia = ((query: string) => ({
+    ...original(query),
+    matches:
+      /max-width/.test(query) && 390 <= Number(/max-width:\s*([\d.]+)/.exec(query)?.[1] ?? 0),
+  })) as typeof window.matchMedia;
+  try {
+    signIn(['sales.invoice.read', 'sales.invoice.write', 'inventory.item.read']);
+    renderWithProviders(<InvoiceEditorPageContent documentId={null} />);
+    await quickAdd('led');
+    await userEvent.click(await answeredOption());
+    const dialog = screen.queryByRole('dialog');
+    if (dialog) await userEvent.keyboard('{Escape}');
+    await userEvent.click(await screen.findByRole('button', { name: 'Remove Syska LED bulb 9W' }));
+    await waitFor(() => expect(screen.queryByTestId('invoice-line')).not.toBeInTheDocument());
+    const snack = store.getState().snackbar;
+    expect(snack.id).toBe('sales.line.removed');
+    expect(snack.params).toEqual({ name: 'Syska LED bulb 9W' });
+    // What SnackbarHost dispatches when Undo is tapped.
+    act(() => {
+      if (snack.action) store.dispatch(snack.action.then);
+    });
+    const back = await screen.findByTestId('invoice-line');
+    expect(within(back).getByText('Syska LED bulb 9W')).toBeInTheDocument();
+    expect(
+      within(back).getByRole('button', { name: 'Remove Syska LED bulb 9W' })
+    ).toBeInTheDocument();
+  } finally {
+    window.matchMedia = original;
+  }
+});
+
+/* Prevents (a4-remove-undo, 390 px): a double tap on the bin took two lines
+   off — the next line moved up under the finger, also at one — and Undo
+   brought back only the second. */
+it('takes one line off for a double tap on the bin', async () => {
+  const original = window.matchMedia;
+  window.matchMedia = ((query: string) => ({
+    ...original(query),
+    matches:
+      /max-width/.test(query) && 390 <= Number(/max-width:\s*([\d.]+)/.exec(query)?.[1] ?? 0),
+  })) as typeof window.matchMedia;
+  try {
+    signIn(['sales.invoice.read', 'sales.invoice.write', 'inventory.item.read']);
+    renderWithProviders(<InvoiceEditorPageContent documentId={null} />);
+    for (const term of ['led', 'tube']) {
+      await quickAdd(term);
+      await userEvent.click(
+        await screen.findByRole(
+          'option',
+          { name: term === 'led' ? /Syska LED/ : /Philips tube/, selected: true },
+          { timeout: 8000 }
+        )
+      );
+      if (screen.queryByRole('dialog')) await userEvent.keyboard('{Escape}');
+    }
+    await waitFor(() => expect(screen.getAllByTestId('invoice-line')).toHaveLength(2));
+    await userEvent.dblClick(screen.getByRole('button', { name: 'Remove Syska LED bulb 9W' }));
+    await waitFor(() => expect(screen.getAllByTestId('invoice-line')).toHaveLength(1));
+    expect(screen.getByText('Philips tube light 20W')).toBeInTheDocument();
+  } finally {
+    window.matchMedia = original;
+  }
+});
+
+/* R-DEC-59 (owner, 27 Oct 2026): a discount typed past its limit goes back to
+   it, so a line can never be discounted below ₹0. */
+it('takes a line discount typed past 100 back to 100', async () => {
+  signIn(['sales.invoice.read', 'sales.invoice.write', 'inventory.item.read']);
+  renderWithProviders(<InvoiceEditorPageContent documentId={null} />);
+  await quickAdd('led');
+  await userEvent.click(await answeredOption());
+  const disc = await waitFor(() => {
+    const el = document.getElementById('lines.0.discountValue');
+    if (!(el instanceof HTMLInputElement)) throw new Error('no discount box');
+    return el;
+  });
+  await userEvent.click(disc);
+  await userEvent.keyboard('150');
+  expect(disc).toHaveValue('100');
+});
+
+/* Prevents (monkey seed 7713, 1280): a line whose Qty was cleared was left out
+   of every save, so Hold saved the held bill with no items and cleared the
+   device copy — the line was lost while the screen still showed it. */
+it('does not hold or save a bill whose line has no quantity, and says which field', async () => {
+  signIn(['sales.invoice.read', 'sales.invoice.write', 'inventory.item.read']);
+  renderWithProviders(<InvoiceEditorPageContent documentId={null} />);
+  await quickAdd('led');
+  await userEvent.click(await answeredOption());
+  const qty = await waitFor(() => {
+    const el = document.getElementById('lines.0.qty');
+    if (!(el instanceof HTMLInputElement)) throw new Error('no qty');
+    return el;
+  });
+  await userEvent.clear(qty);
+  await userEvent.click(screen.getByRole('button', { name: 'Hold' }));
+  await userEvent.click(screen.getByRole('button', { name: 'Save draft' }));
+  expect(await screen.findByText('Check line 1: Qty')).toBeInTheDocument();
+  expect(sales.createInvoice).not.toHaveBeenCalled();
+  expect(sales.updateInvoice).not.toHaveBeenCalled();
+  expect(screen.getByText('Syska LED bulb 9W')).toBeInTheDocument();
 });

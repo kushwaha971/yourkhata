@@ -745,3 +745,34 @@ every quantity box, save message and table row from now on:
 3. A message in a table row is not squeezed into its cell. The cell keeps the
    red box, and the sentence takes the row's full width underneath
    (`UbField messageElsewhere`, the row's `invoice-line-errors`).
+
+R-DEC-57 (owner, 27 October 2026) — testing is P0. The owner rated A4's testing
+3/10: after it was called closed, six defects were found by the owner's own
+questions. `docs/testing/P0-testing-standard.md` is now binding on every piece
+and module. It covers business (money, stock, book, locked finished documents,
+read-back by the document's own id with a self-test), design (including after
+an error), functional (the server's own reasons, nothing refused ever sent,
+every state on purpose), user (manual, a distracted-user monkey with 3 seeds ×
+2 sizes, and edge cases researched from competitors' user complaints), data
+recovery, performance and an honest report. Nothing is called closed until
+every section has run.
+
+R-DEC-58 (owner, 27 October 2026) — removing a line on a phone. The design
+draws "− 1 + · rate · Edit" and says nothing about removing a line. A beginner
+who added the wrong item tapped − at 1 and nothing happened, because Remove was
+inside the line sheet. The owner chose: at qty 1, − becomes a bin of the same
+size that removes the line, and the snackbar offers Undo, which puts the line
+back where it was, as it was. The same Undo follows every removal (the desktop
+trash and Edit → Remove). After a removal the bin ignores taps for 400 ms, so a
+double tap removes one line, not two (the next line moves up under the finger,
+also at 1). Two deliberate removals less than 0.4 s apart therefore count as
+one; that trade-off is recorded in the A4 report.
+
+R-DEC-59 (owner, 27 October 2026) — a discount box does not go past its limit.
+Typed past it, the value goes back to the limit at once, instead of being kept
+with an error: a percent stops at 100, a rupee discount at what it comes off
+(the bill's subtotal; a line's qty × rate), so a bill or line total can never
+go below ₹0. Switching the bill discount from ₹ to % applies the new limit. The
+server's limits stay as the backstop. The owner also delegated the pending
+call: leaving a bill inside the app sends its waiting change to the server at
+once (a reload or closed tab keeps the device copy, offered back).

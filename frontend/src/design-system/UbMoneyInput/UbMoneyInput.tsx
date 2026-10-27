@@ -158,12 +158,16 @@ const UbMoneyInputInner = forwardRef<HTMLInputElement, UbMoneyInputProps>(
 
     return (
       <div className={cn('relative flex w-full items-center', className)}>
-        <span
-          aria-hidden
-          className="ds-body pointer-events-none absolute left-3 text-text-tertiary"
-        >
-          {currencySymbol}
-        </span>
+        {/* An empty symbol draws nothing and reserves no space: a table cell
+            whose header names the unit ("Disc. %", design §A4 billTable). */}
+        {currencySymbol && (
+          <span
+            aria-hidden
+            className="ds-body pointer-events-none absolute left-3 text-text-tertiary"
+          >
+            {currencySymbol}
+          </span>
+        )}
         <MLInput
           ref={ref}
           // `inputMode="decimal"` rather than `type="number"`: a number input
@@ -214,7 +218,11 @@ const UbMoneyInputInner = forwardRef<HTMLInputElement, UbMoneyInputProps>(
             if (value) onChange(padDecimals(value, maxDecimalPlaces));
             onBlur?.(event);
           }}
-          className={cn('ds-num pl-7 text-right', invalid && 'border-formError')}
+          className={cn(
+            'ds-num text-right',
+            currencySymbol && 'pl-7',
+            invalid && 'border-formError'
+          )}
           {...rest}
         />
       </div>

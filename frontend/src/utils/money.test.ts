@@ -8,6 +8,7 @@ import {
   subtractMoney,
   sumMoney,
   toMoneyString,
+  withMinusSign,
 } from './money';
 
 /**
@@ -77,5 +78,13 @@ describe('moneyOrZero', () => {
     expect(moneyOrZero(null)).toBe('0.00');
     expect(moneyOrZero(undefined)).toBe('0.00');
     expect(moneyOrZero(7)).toBe('7.00');
+  });
+});
+
+describe('withMinusSign', () => {
+  /** Prevents Intl's hyphen ("-₹0.47") on the printed bill. */
+  it('writes a negative with a true minus and a positive as it is', () => {
+    expect(withMinusSign('-0.47')).toBe('−₹0.47');
+    expect(withMinusSign('0.53')).toBe('₹0.53');
   });
 });

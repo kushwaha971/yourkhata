@@ -20,7 +20,7 @@ import {
 
 import { LOCAL_AUTOSAVE_MS, SERVER_AUTOSAVE_MS } from '../constants/salesConstants';
 import { restoreConflict } from '../redux/invoiceEditorSlice';
-import { isCompleteLine, type InvoiceFormValues } from '../view-model/invoiceForm';
+import { isCompleteLine, toWireBody, type InvoiceFormValues } from '../view-model/invoiceForm';
 
 import type { UseInvoiceEditorResult } from './useInvoiceEditor';
 
@@ -138,10 +138,35 @@ export const useDraftAutosave = (
     return () => window.clearTimeout(timer);
   }, [slot, key, documentId, loadStatus, serverUpdatedAt, editorScope]);
 
+  // A change still waiting for its 500 ms is written at once when the bill
+  // closes or the page unloads: a merchant who keeps typing and then taps
+  // Bills, or reloads, never gave the timer its quiet half-second, and that
+  // change was on neither the device nor the server (A4 monkey runs, seeds
+  // 501 and 4401). One synchronous write; nothing waits on the network.
+  const pendingLocal = useRef<(() => void) | null>(null);
+  const leaveSave = useRef<(() => void) | null>(null);
+  const serverRef = useRef(server);
+  useEffect(() => {
+    serverRef.current = server;
+  }, [server]);
+  useEffect(() => {
+    const flush = () => {
+      pendingLocal.current?.();
+      pendingLocal.current = null;
+    };
+    window.addEventListener('pagehide', flush);
+    return () => {
+      window.removeEventListener('pagehide', flush);
+      flush();
+    };
+  }, []);
+
   // FR-1 — the local copy, 500 ms after the last change.
   useEffect(() => {
     if (!dirty) return undefined;
+    pendingLocal.current = () => writeLocalDraft(key, form.getValues(), server.version);
     const timer = window.setTimeout(() => {
+      pendingLocal.current = null;
       writeLocalDraft(key, form.getValues(), server.version);
       if (slot !== 'new') removeLocalDraft(localDraftKey(tenantId, kind, 'new', userId));
     }, LOCAL_AUTOSAVE_MS);
@@ -152,9 +177,28 @@ export const useDraftAutosave = (
   const blocked = offline || server.saveState === 'conflict' || server.issuing || !!server.issued;
   const subtotal = editor.preview.subtotal;
   useEffect(() => {
-    if (repeatId || !dirty || blocked || !meaningful(values) || !discountsInRange(values, subtotal))
+    // A bill already on the server is saved even once it is emptied: skipping
+    // it left the removed item on the server under "Draft saved" (manual
+    // beginner pass, 27 Oct 2026). A never-saved empty bill still waits.
+    const worth = meaningful(values) || !!server.documentId;
+    leaveSave.current = null;
+    if (repeatId || !dirty || blocked || !worth || !discountsInRange(values, subtotal))
       return undefined;
+    // Armed while this change waits for its 3 s: leaving the bill inside the
+    // app sends it at once (see the unmount effect below).
+    if (kind === 'invoice')
+      leaveSave.current = () => {
+        // The id and version as they are when the bill closes, not when armed.
+        const { documentId: savedId, version } = serverRef.current;
+        if (!savedId || version === null) return;
+        void import('../api/salesService')
+          .then(({ updateInvoice }) =>
+            updateInvoice(savedId, { ...toWireBody(form.getValues()), version }, { quiet: true })
+          )
+          .catch(() => undefined);
+      };
     const timer = window.setTimeout(() => {
+      leaveSave.current = null;
       if (saving.current) return;
       saving.current = true;
       const submitted = draftSnapshot(form.getValues());
@@ -165,7 +209,35 @@ export const useDraftAutosave = (
       });
     }, SERVER_AUTOSAVE_MS);
     return () => window.clearTimeout(timer);
-  }, [values, dirty, blocked, save, form, saveRevision, repeatId, subtotal]);
+  }, [
+    values,
+    dirty,
+    blocked,
+    save,
+    form,
+    saveRevision,
+    repeatId,
+    subtotal,
+    server.documentId,
+    kind,
+  ]);
+
+  // Leaving the bill inside the app (Bills, Back, another page) sends a change
+  // still inside its 3 s straight to the server, so the Bills list, the held
+  // strip and another device are never behind (owner delegated, 27 Oct 2026;
+  // the monkey's "kept on this device only" warning). The SERVICE is called,
+  // not the editor's thunk: a reply landing in the store after close is how
+  // the old draft's address came back (E3). A reload or a closed tab cannot
+  // finish a request reliably; the device copy, written at once on `pagehide`,
+  // covers those. A refusal (a newer version elsewhere) leaves the device copy
+  // to be offered back.
+  useEffect(
+    () => () => {
+      leaveSave.current?.();
+      leaveSave.current = null;
+    },
+    []
+  );
 
   const acceptRestore = useCallback(() => {
     if (restore) {
@@ -175,12 +247,16 @@ export const useDraftAutosave = (
     setRestore(null);
   }, [restore, form, documentId, server.version, dispatch]);
   const discardRestore = useCallback(() => {
+    pendingLocal.current = null;
+    leaveSave.current = null;
     removeLocalDraft(key);
     setRestore(null);
   }, [key]);
   const postponeRestore = useCallback(() => setRestore(null), []);
   /** FR-10 / §6 — issued or deleted: the device copy has done its job. */
   const clearLocal = useCallback(() => {
+    pendingLocal.current = null;
+    leaveSave.current = null;
     removeLocalDraft(key);
     removeLocalDraft(localDraftKey(tenantId, kind, 'new', userId));
   }, [key, tenantId, kind, userId]);

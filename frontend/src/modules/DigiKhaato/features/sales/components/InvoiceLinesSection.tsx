@@ -9,7 +9,9 @@ import { useFieldArray, type UseFormReturn } from 'react-hook-form';
 
 import { UbBox, UbStack, UbText, useIsMobileLayer } from 'src/design-system';
 import type { UbLineFocusRequest } from 'src/design-system';
+import { useAppDispatch, useAppSelector } from 'src/hooks/useAppStore';
 import { useTranslation } from 'src/hooks/useTranslation';
+import { showSnackbar } from 'src/redux/slice/snackbarSlice';
 import { formatInr } from 'src/utils/money';
 import { exceedsQuantity, formatQuantity } from 'src/utils/quantity';
 
@@ -17,10 +19,11 @@ import { getPartyRates } from '../../inventory/api/priceListService';
 import { ItemQuickAdd } from '../../inventory/components/ItemQuickAdd';
 import { LastRateNote } from '../../inventory/components/LastRateNote';
 import { LINE_FINDER_FROM, useLineQuickAdd } from '../../inventory/hooks/useLineQuickAdd';
-import { emptyLine, type InvoiceFormValues } from '../view-model/invoiceForm';
+import { lineRemovalUndone, lineRestored, selectInvoiceEditor } from '../redux/invoiceEditorSlice';
+import { emptyLine, type InvoiceFormValues, type InvoiceLineForm } from '../view-model/invoiceForm';
 import { itemLineDefaults } from '../view-model/itemLineDefaults';
 
-import { InvoiceLineList, InvoiceLineTable } from './InvoiceLineEditor';
+import { InvoiceLineList, InvoiceLineTable, lineName } from './InvoiceLineEditor';
 
 import type { ItemListRow } from '../../inventory/types/item.types';
 import type { EngineResult } from '../view-model/taxEngine';
@@ -64,6 +67,48 @@ export function InvoiceLinesSection({
   const { t } = useTranslation();
   const { control, watch, setValue, getValues, trigger } = form;
   const fieldArray = useFieldArray({ control, name: 'lines', keyName: 'key' });
+  const dispatch = useAppDispatch();
+  // Every removal (the phone's bin at one, Edit → Remove, the desktop's trash)
+  // offers Undo (owner, 27 Oct 2026). The removed line is kept here under a
+  // token until the snackbar's Undo dispatches it back; the snackbar can only
+  // dispatch a plain action, so the slice carries the token and this restores.
+  const removed = useRef(new Map<string, { index: number; line: InvoiceLineForm }>());
+  // A double tap must take one line off, not two: after a removal the next
+  // line moves up under the same finger, also at one, so the second tap of a
+  // double tap landed on ITS bin (a4-remove-undo, 390 px). A remove within
+  // 400 ms of the last is that second tap.
+  const lastRemoval = useRef(0);
+  const removeLine = useCallback(
+    (index: number) => {
+      const now = Date.now();
+      if (now - lastRemoval.current < 400) return;
+      lastRemoval.current = now;
+      const line = getValues(`lines.${index}`);
+      fieldArray.remove(index);
+      if (!line || !(line.itemId || line.description)) return;
+      const token = `${now}-${index}`;
+      removed.current.set(token, { index, line });
+      dispatch(
+        showSnackbar({
+          severity: 'info',
+          id: 'sales.line.removed',
+          params: { name: lineName(line, t) },
+          action: { labelId: 'sales.line.undo', then: lineRemovalUndone(token) },
+        })
+      );
+    },
+    [dispatch, fieldArray, getValues, t]
+  );
+  const undoToken = useAppSelector(selectInvoiceEditor).undoLine;
+  useEffect(() => {
+    if (!undoToken) return;
+    const kept = removed.current.get(undoToken);
+    removed.current.delete(undoToken);
+    dispatch(lineRestored());
+    if (!kept) return;
+    const count = getValues('lines').length;
+    fieldArray.insert(Math.min(kept.index, count), kept.line);
+  }, [undoToken, dispatch, fieldArray, getValues]);
   const lines = watch('lines');
   const partyId = watch('partyId');
   const partyName = watch('partyName');
@@ -275,7 +320,7 @@ export function InvoiceLinesSection({
     taxOptions,
     taxFree,
     disabled,
-    remove: (index: number) => fieldArray.remove(index),
+    remove: removeLine,
     renderLineNote,
     t,
   };

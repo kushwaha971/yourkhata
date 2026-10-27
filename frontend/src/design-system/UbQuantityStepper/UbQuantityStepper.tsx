@@ -2,7 +2,7 @@
 
 import { memo } from 'react';
 
-import { Minus, Plus } from 'lucide-react';
+import { Minus, Plus, Trash2 } from 'lucide-react';
 
 import { cn } from 'src/utils/cn';
 
@@ -11,9 +11,12 @@ import { cn } from 'src/utils/cn';
  * sunken buttons, the quantity between them bold with tabular digits. Each
  * button reaches 44 px on a phone through `.ub-hit` (R-DEC-32 3).
  *
- * It steps by one and stops at one: taking a line off the bill is the line
- * sheet's Remove, never a − tapped once too often at a busy counter. A
- * quantity that is not a whole number (2.5 kg) keeps its fraction.
+ * It steps by one and stops at one. At one, when the caller passes `onRemove`,
+ * − becomes a bin that takes the line off (owner, 27 Oct 2026: a beginner who
+ * added the wrong item tapped − and nothing happened; Remove was hidden in the
+ * line sheet). The caller offers Undo, so a − tapped once too often at a busy
+ * counter costs one tap to put back. A quantity that is not a whole number
+ * (2.5 kg) keeps its fraction.
  */
 export interface UbQuantityStepperProps {
   readonly value: string;
@@ -25,12 +28,18 @@ export interface UbQuantityStepperProps {
   readonly disabled?: boolean;
   /** The upper limit (FB-020); + stops there. */
   readonly max?: number;
+  /** At one, − becomes a bin that calls this ("Remove Atta 5 kg"). */
+  readonly onRemove?: () => void;
+  readonly removeLabel?: string;
   readonly className?: string;
 }
 
 const STEP_BUTTON =
   'ub-hit grid h-full w-[34px] place-items-center bg-surface-sunken text-text-secondary ' +
-  'transition-colors hover:text-text-primary focus-visible:shadow-focus focus-visible:outline-none ' +
+  // Hover colours only where there is a real hover: on a touch phone Tailwind 3's
+  // hover sticks to the last tap, and after a removal the next line's bin,
+  // moved up under the finger, sat red as if armed (a4-remove-undo, 390 px).
+  'transition-colors [@media(hover:hover)]:hover:text-text-primary focus-visible:shadow-focus focus-visible:outline-none ' +
   'disabled:cursor-not-allowed disabled:opacity-40';
 
 const shown = (value: string): string => {
@@ -47,6 +56,8 @@ function UbQuantityStepperBase({
   increaseLabel,
   disabled = false,
   max,
+  onRemove,
+  removeLabel,
   className,
 }: Readonly<UbQuantityStepperProps>) {
   const n = Number(value || 0);
@@ -62,22 +73,38 @@ function UbQuantityStepperBase({
       role="group"
       aria-label={label}
       className={cn(
-        'inline-flex h-9 items-stretch overflow-hidden rounded-lg border border-border-strong',
+        // No overflow-hidden: it clipped every button's 44 px tap area
+        // (.ub-hit's ::after; a4-remove-undo measured it). The end buttons
+        // carry the pill's inner radius instead, so the pill looks the same.
+        'inline-flex h-9 items-stretch rounded-[8px] border border-border-strong',
         className
       )}
     >
-      <button
-        type="button"
-        aria-label={decreaseLabel}
-        disabled={disabled || !valid || n - 1 < 1}
-        onClick={() => step(-1)}
-        className={STEP_BUTTON}
-      >
-        <Minus aria-hidden className="h-4 w-4" />
-      </button>
+      {onRemove && valid && n - 1 < 1 ? (
+        <button
+          type="button"
+          aria-label={removeLabel}
+          disabled={disabled}
+          onClick={onRemove}
+          data-part="remove"
+          className={cn(STEP_BUTTON, 'rounded-l-[7px] [@media(hover:hover)]:hover:text-error')}
+        >
+          <Trash2 aria-hidden className="h-4 w-4" />
+        </button>
+      ) : (
+        <button
+          type="button"
+          aria-label={decreaseLabel}
+          disabled={disabled || !valid || n - 1 < 1}
+          onClick={() => step(-1)}
+          className={cn(STEP_BUTTON, 'rounded-l-[7px]')}
+        >
+          <Minus aria-hidden className="h-4 w-4" />
+        </button>
+      )}
       <span
         aria-live="polite"
-        className="ds-body-s-semibold grid min-w-11 place-items-center px-1 tabular-nums text-text-primary"
+        className="ds-body-s-semibold grid min-w-11 place-items-center px-1 font-bold tabular-nums text-text-primary"
       >
         {shown(value)}
       </span>
@@ -86,7 +113,7 @@ function UbQuantityStepperBase({
         aria-label={increaseLabel}
         disabled={disabled || !valid || (max !== undefined && n + 1 > max)}
         onClick={() => step(1)}
-        className={STEP_BUTTON}
+        className={cn(STEP_BUTTON, 'rounded-r-[7px]')}
       >
         <Plus aria-hidden className="h-4 w-4" />
       </button>

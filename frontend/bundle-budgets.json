@@ -1,5 +1,6 @@
 {
   "//": [
+    "27 Oct 2026, A4 in test (R-DEC-57/58): the bin at qty 1 with Undo (lineRemovalUndone and its line store), the 400 ms double-tap guard, the device-copy flush on close and pagehide, opening a non-draft on its own page, and no Save draft on an empty bill. The eight sales editors grew 0.3-0.4 KB, which is this code on the screens that use it. Raised to measured + 0.3: /sales/challans/[id]/edit route 174.4; /sales/challans/[id]/edit firstLoad 416.8; /sales/orders/[id]/edit route 174.4; /sales/orders/[id]/edit firstLoad 416.8; /sales/estimates/[id]/edit route 174.4; /sales/estimates/[id]/edit firstLoad 416.8; /sales/invoices/[id]/edit route 174.4; /sales/invoices/[id]/edit firstLoad 416.8; /sales/challans/new route 174.4; /sales/challans/new firstLoad 416.8; /sales/orders/new route 174.4; /sales/orders/new firstLoad 416.8; /sales/estimates/new route 174.4; /sales/estimates/new firstLoad 416.8; /sales/invoices/new route 174.3; /sales/invoices/new firstLoad 416.8.",
     "27 Oct 2026, A4 owner's three asks: a whole-number unit refuses a typed or pasted point and the digits after it (UbQuantityInput), a line's message moves under the whole row (UbField messageElsewhere, UbFieldError in the row), and a refused save says the server's own reason (serverReason). UbField and UbQuantityInput ship in the shell, so every route moved 0.1 KB and the sales editors 0.2. Raised to measured + 0.3: /sales/challans/[id]/edit route 173.7; /sales/challans/[id]/edit firstLoad 416.1; /sales/orders/[id]/edit route 173.7; /sales/orders/[id]/edit firstLoad 416.1; /sales/estimates/[id]/edit route 173.7; /sales/estimates/[id]/edit firstLoad 416.1; /sales/invoices/[id]/edit route 173.7; /sales/invoices/[id]/edit firstLoad 416.1; /sales/challans/new route 173.7; /sales/challans/new firstLoad 416.1; /sales/orders/new route 173.6; /sales/orders/new firstLoad 416.1; /sales/estimates/new route 173.6; /sales/estimates/new firstLoad 416.1; /sales/invoices/new route 173.6; /sales/invoices/new firstLoad 416.1; /parties/[id] firstLoad 361.9; /settings/branding firstLoad 340.6; /settings/team firstLoad 336.3; /reset-password firstLoad 295.4; /admin/tenants firstLoad 275.8; /admin/health firstLoad 263.6; /onboarding firstLoad 247.3; /_not-found firstLoad 242.8.",
     "26 Oct 2026, A4 R-DEC-55 (rate and discount typed in the row, the design's five-row totals card with the bill discount and round-off moved into More details as InvoiceBillAdjustments, and the phone task bar UbTaskBar with Hold, Save draft and Discard draft behind UbMoreActions): the eight sales editor routes +1.1 KB route and first load, which is this piece's code on the screen that draws it. Raised to measured + 0.3: editor routes 173.3, first load 415.6 (new) and 415.7 (edit); /sales/credit-notes/new 152.7 / 395.0. /items/[id] moved +0.6 route and +0.7 first load and /items/price-lists/[id] by rounding with no bill code in them; cause not traced (shared-chunk regrouping inferred). Raised: /items/[id] 113.5 / 355.9, /items/price-lists/[id] route 99.2.",
     "26 Oct 2026, A4 empty bill and named wrong field: the dock's note moved above the total and the editor names the first wrong field (firstWrongField) and opens its line. The five sales detail routes share the dock chunk and moved by rounding only: route 87.2 each (/sales/challans, /sales/credit-notes, /sales/orders, /sales/estimates, /sales/invoices [id]); /sales/orders first load 331.7. Measured + 0.3 KB.",
@@ -1470,12 +1471,12 @@
       "firstLoad": 331.6
     },
     "/sales/challans/new": {
-      "route": 173.7,
-      "firstLoad": 416.1
+      "route": 174.4,
+      "firstLoad": 416.8
     },
     "/sales/challans/[id]/edit": {
-      "route": 173.7,
-      "firstLoad": 416.1
+      "route": 174.4,
+      "firstLoad": 416.8
     },
     "/purchases/orders/[id]": {
       "route": 75.5,
@@ -1502,12 +1503,12 @@
       "firstLoad": 331.7
     },
     "/sales/orders/new": {
-      "route": 173.6,
-      "firstLoad": 416.1
+      "route": 174.4,
+      "firstLoad": 416.8
     },
     "/sales/orders/[id]/edit": {
-      "route": 173.7,
-      "firstLoad": 416.1
+      "route": 174.4,
+      "firstLoad": 416.8
     },
     "/parties": {
       "route": 109,
@@ -1518,12 +1519,12 @@
       "firstLoad": 339.6
     },
     "/sales/invoices/new": {
-      "route": 173.6,
-      "firstLoad": 416.1
+      "route": 174.3,
+      "firstLoad": 416.8
     },
     "/sales/invoices/[id]/edit": {
-      "route": 173.7,
-      "firstLoad": 416.1
+      "route": 174.4,
+      "firstLoad": 416.8
     },
     "/sales/invoices": {
       "route": 98,
@@ -1538,12 +1539,12 @@
       "firstLoad": 356
     },
     "/sales/estimates/new": {
-      "route": 173.6,
-      "firstLoad": 416.1
+      "route": 174.4,
+      "firstLoad": 416.8
     },
     "/sales/estimates/[id]/edit": {
-      "route": 173.7,
-      "firstLoad": 416.1
+      "route": 174.4,
+      "firstLoad": 416.8
     },
     "/sales/estimates/[id]": {
       "route": 87.2,

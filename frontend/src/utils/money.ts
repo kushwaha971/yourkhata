@@ -69,6 +69,16 @@ export const formatInr = (value: MoneyString | null | undefined): string => {
   return INR_FORMAT.format(toDecimal(value).toNumber());
 };
 
+/**
+ * A signed figure with a true minus sign: `−₹0.47`, never Intl's hyphen
+ * `-₹0.47`. For the printed bill, which a customer reads: its Discount already
+ * wrote "−", and Round off beside it printed a hyphen (A4 print check).
+ */
+export const withMinusSign = (
+  value: MoneyString,
+  format: (v: MoneyString) => string = formatInr
+): string => (isNegativeAmount(value) ? `−${format(absMoney(value))}` : format(value));
+
 /** The same grouping without the currency symbol — table columns, inputs. */
 export const formatAmount = (value: MoneyString | null | undefined): string => {
   if (value === null || value === undefined || value === '') return '—';

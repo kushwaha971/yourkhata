@@ -1,5 +1,5 @@
 import type { TranslateFn } from 'src/hooks/useTranslation';
-import { formatInr, subtractMoney, sumMoney } from 'src/utils/money';
+import { formatInr, subtractMoney, sumMoney, withMinusSign } from 'src/utils/money';
 import { sumQuantities, trimQuantity } from 'src/utils/quantity';
 
 import { THERMAL_NAME_CHARS } from '../../constants/salesConstants';
@@ -163,7 +163,7 @@ export const documentTotalRows = (doc: SalesDocument, t: TranslateFn): [string, 
     ...(hasCess(doc)
       ? ([[t('sales.tax.cess'), formatInr(doc.cessTotal)]] as [string, string][])
       : []),
-    [t('sales.totals.roundOff'), formatInr(doc.roundOff)],
+    [t('sales.totals.roundOff'), withMinusSign(doc.roundOff)],
   ];
 };
 

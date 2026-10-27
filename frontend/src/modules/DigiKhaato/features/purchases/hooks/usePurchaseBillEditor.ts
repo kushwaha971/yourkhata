@@ -191,6 +191,9 @@ export const usePurchaseBillEditor = (
       saves.invalidate();
       context.abort();
       draft?.abort();
+      // As the sales editor: leave no saved id for the next editor's address
+      // effect (A4 monkey run, seed 501).
+      dispatch(purchaseEditorReset());
     };
   }, [dispatch, documentId, today, kind, tenantId, userId, saves]);
 

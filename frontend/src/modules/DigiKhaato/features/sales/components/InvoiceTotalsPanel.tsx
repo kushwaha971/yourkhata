@@ -38,6 +38,7 @@ export function InvoiceTotalsPanel({
   preview,
   taxFree,
   estimated = false,
+  alwaysDiscount = false,
   rule46,
   warnings,
 }: Readonly<{
@@ -46,6 +47,8 @@ export function InvoiceTotalsPanel({
   taxFree: boolean;
   /** SAL-01 §8 — an estimate's tax is labelled "Estimated GST (final on invoice)". */
   estimated?: boolean;
+  /** The desktop card shows Discount even at ₹0 (design dBill). */
+  alwaysDiscount?: boolean;
   rule46: Rule46Check | null;
   warnings: readonly SalesWarning[];
 }>): React.JSX.Element {
@@ -76,7 +79,9 @@ export function InvoiceTotalsPanel({
         {/* Design §A4 totalsCard (R-DEC-55): read-only rows; the bill's
             discount and round-off are set under More details. */}
         {row(t('sales.totals.subtotal'), formatInr(preview.subtotal), true)}
-        {preview.discountAmount !== '0.00' &&
+        {/* Design §A4: dBill's totals card always has its Discount row ("— ₹0"),
+            pBill's shows none at zero. */}
+        {(alwaysDiscount || preview.discountAmount !== '0.00') &&
           row(t('sales.totals.discount'), `— ${formatInr(preview.discountAmount)}`)}
         {estimated && !taxFree && (
           <UbText variant="caption" tone="tertiary" data-testid="estimated-gst">

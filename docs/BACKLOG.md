@@ -228,3 +228,15 @@ a visual check across the gallery before it lands.
   landing page's own name is a literal (`BRAND_NAME`) and is not affected; the rest of the
   app is. `.env` is untracked, so each machine's copy needs checking, the owner's Mac included.
 
+
+## Offline billing (raised 27 Oct 2026, owner: "for an offline application, not for now")
+
+Found by `e2e/a4-edges.mjs offline-add`: when the connection drops, the bill
+already open is kept and Paid cash is switched off with "No internet. Your bill
+is kept…", but **no new item can be added**, because the item search asks the
+server. A shop whose connection drops cannot keep billing. Merchants complain
+of exactly this in other apps (myBillBook reviews, docs/testing/edge-case-catalogue.md
+C4, E4). Doing it means keeping the item list and prices on the device, queueing
+the bill, and issuing it once on reconnect with the existing creation key. That
+is an offline-app design decision, which the owner will take up later. Until
+then the harness reports this case as backlog, not as a pass.

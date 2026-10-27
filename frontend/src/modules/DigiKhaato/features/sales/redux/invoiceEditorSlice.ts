@@ -37,6 +37,12 @@ import type {
 export type SaveState = 'idle' | 'saving' | 'saved' | 'error' | 'conflict';
 
 export interface InvoiceEditorState {
+  /**
+   * "Undo" was tapped on the "<item> removed" snackbar: the token of the line
+   * to put back. The snackbar can only dispatch a plain action, so the open
+   * bill watches this, restores the line it kept under that token, and clears it.
+   */
+  undoLine: string | null;
   documentId: string | null;
   version: number | null;
   serverUpdatedAt: string | null;
@@ -56,6 +62,7 @@ export interface InvoiceEditorState {
 }
 
 const initialState: InvoiceEditorState = {
+  undoLine: null,
   documentId: null,
   version: null,
   serverUpdatedAt: null,
@@ -103,6 +110,12 @@ const invoiceEditorSlice = createSlice({
     /** A fresh editor (new bill, or leaving one): everything but the loaded context goes. */
     editorReset(state) {
       return { ...initialState, context: state.context };
+    },
+    lineRemovalUndone(state, action: PayloadAction<string>) {
+      state.undoLine = action.payload;
+    },
+    lineRestored(state) {
+      state.undoLine = null;
     },
     saveUnavailable(state) {
       state.saveState = 'error';
@@ -201,8 +214,14 @@ const invoiceEditorSlice = createSlice({
   },
 });
 
-export const { editorReset, conflictResolved, restoreConflict, saveUnavailable } =
-  invoiceEditorSlice.actions;
+export const {
+  editorReset,
+  conflictResolved,
+  restoreConflict,
+  saveUnavailable,
+  lineRemovalUndone,
+  lineRestored,
+} = invoiceEditorSlice.actions;
 export const invoiceEditorReducer = invoiceEditorSlice.reducer;
 
 declare module 'src/redux/store' {

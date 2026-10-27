@@ -122,6 +122,27 @@ export function InvoiceEditorPageContent({
   const phoneBar = useIsMobileLayer() && !order && !challan && !estimate;
   const hasLines = preview.lines.length > 0 && values.lines.some((l) => l.itemId || l.description);
   const locked = server.issuing || !!server.issued;
+  // Nothing to keep: no item, no customer, never saved. Save draft on such a
+  // bill made an empty server draft, listed on hold as "Quick sale ₹0.00"
+  // (manual beginner pass, 27 Oct 2026) — the same reason Hold refuses it.
+  const worthSaving = hasLines || !!values.partyId || !!server.documentId;
+  // A bill that is no longer a draft opens on its own page, as the purchase
+  // editor already does. Its issue reply was lost and the merchant reloaded
+  // (a4-edges slow-issue): the server had issued it, yet /edit showed "New
+  // bill" with Paid cash live and offered the device copy back.
+  const loadedIssued = Boolean(
+    documentId &&
+    server.loadStatus === 'succeeded' &&
+    server.document?.id === documentId &&
+    server.document.status !== 'draft' &&
+    !server.issued
+  );
+  const { clearLocal } = autosave;
+  useEffect(() => {
+    if (!loadedIssued || !documentId) return;
+    clearLocal();
+    router.replace(`${home}/${documentId}`);
+  }, [loadedIssued, documentId, router, home, clearLocal]);
   const creditBlocked = server.error?.code === 'credit_limit_exceeded';
   /*
    * QA B1 — `insufficient_stock` is a locally presented code (it never toasts),
@@ -282,7 +303,15 @@ export function InvoiceEditorPageContent({
     window.history.replaceState(null, '', `${ROUTES.SALES_INVOICES}/new`);
   }, [hasLines, locked, save, autosave, dispatch, documentId, router, editor]);
 
-  const saveNow = useCallback(() => void save(false), [save]);
+  // Hold and Save draft are checked like Paid cash: a save leaves out a line
+  // that is not complete, so a line whose Qty was cleared (or typed over with
+  // letters) was saved away — and Hold, which then clears the device copy,
+  // lost it for good while the screen still showed it (monkey seed 7713).
+  // Refused, the wrong field is named and the caret goes to it.
+  const saveNow = useCallback(() => {
+    if (worthSaving) void form.handleSubmit(() => void save(false))();
+  }, [form, save, worthSaving]);
+  const checkedHold = useCallback(() => void form.handleSubmit(() => hold())(), [form, hold]);
   useDocumentEditorWindowEffects({
     basePath: home,
     documentId,
@@ -320,7 +349,7 @@ export function InvoiceEditorPageContent({
       </UbPageShell>
     );
   }
-  if (!context || (documentId && server.loadStatus !== 'succeeded')) {
+  if (!context || loadedIssued || (documentId && server.loadStatus !== 'succeeded')) {
     return <UbPageSkeleton variant="card" />;
   }
 
@@ -433,18 +462,18 @@ export function InvoiceEditorPageContent({
                         key: 'hold',
                         label: t('sales.hold.action'),
                         icon: <PauseCircle className="h-5 w-5" aria-hidden />,
-                        onSelect: () => void hold(),
+                        onSelect: checkedHold,
                         testId: 'invoice-hold',
                       },
                     ]
                   : []),
-                ...(!locked
+                ...(!locked && worthSaving
                   ? [
                       {
                         key: 'save',
                         label: t('sales.editor.saveDraft'),
                         icon: <Save className="h-5 w-5" aria-hidden />,
-                        onSelect: () => void save(false),
+                        onSelect: saveNow,
                       },
                     ]
                   : []),
@@ -496,7 +525,7 @@ export function InvoiceEditorPageContent({
                   variant="ghost"
                   iconOnly="mobile"
                   icon={<PauseCircle className="h-4 w-4" aria-hidden />}
-                  onClick={() => void hold()}
+                  onClick={checkedHold}
                   busy={holding}
                   disabled={!hasLines || locked}
                   data-testid="invoice-hold"
@@ -508,9 +537,9 @@ export function InvoiceEditorPageContent({
                 variant="secondary"
                 iconOnly="mobile"
                 icon={<Save className="h-4 w-4" aria-hidden />}
-                onClick={() => void save(false)}
+                onClick={saveNow}
                 busy={server.saveState === 'saving'}
-                disabled={locked}
+                disabled={locked || !worthSaving}
                 /* Below 1536 px Save and Issue are docked under the total (below);
                  a cash Quick Sale's dock holds its two ways to be paid instead. */
                 className={cashSale ? undefined : 'max-2xl:hidden'}
@@ -619,6 +648,7 @@ export function InvoiceEditorPageContent({
                   <InvoiceBillAdjustments
                     form={form}
                     roundOffAmount={preview.roundOff}
+                    subtotal={preview.subtotal}
                     disabled={locked}
                   />
                 }
@@ -653,6 +683,7 @@ export function InvoiceEditorPageContent({
                   <InvoiceBillAdjustments
                     form={form}
                     roundOffAmount={preview.roundOff}
+                    subtotal={preview.subtotal}
                     disabled={locked}
                   />
                 }
@@ -666,6 +697,7 @@ export function InvoiceEditorPageContent({
                 preview={preview}
                 taxFree={taxFree}
                 estimated={estimate}
+                alwaysDiscount={desk}
                 rule46={estimate ? null : server.rule46}
                 warnings={server.warnings}
               />
@@ -697,7 +729,7 @@ export function InvoiceEditorPageContent({
           {!cashSale && (
             <UbButton
               variant="secondary"
-              onClick={() => void save(false)}
+              onClick={saveNow}
               busy={server.saveState === 'saving'}
               disabled={locked}
             >
