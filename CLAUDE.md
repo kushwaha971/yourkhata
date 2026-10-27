@@ -98,8 +98,9 @@ were called done while six data and layout defects remained; the owner rated
 that testing 3/10. **The bar is 9/10 on the standard's §8 score sheet, with
 evidence for every point, §9 is the module round (every piece's harness again, a module-wide monkey,
 whole-day journeys, the full catalogue column and a manual pass once a module's
-last piece is in), and §10 is the go-live gate: nothing goes live until every
-module in scope has passed its round and scores 9 or more.** Read the standard at the start of
+last piece is in), §10 is feature-by-feature delivery (each feature at 9/10, the owner's check,
+a regression of every delivered feature, then it ships on its own, the same
+level as A4), and §11 is the go-live gate for a whole module.** Read the standard at the start of
 every session that builds or fixes anything, **and `docs/testing/tester-learning-log.md`
 (P0): its habits apply to every piece, and after every feature a lesson is
 added there with the check that enforces it.**

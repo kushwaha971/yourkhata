@@ -183,7 +183,28 @@ Shop A1–A8) is in, the whole module is tested again as one, on its final build
 
 Only a module that passes its round counts towards §10.
 
-## 10. Go-live gate
+## 10. Feature-by-feature delivery (owner, 27 Oct 2026)
+
+Work goes one piece at a time in one worktree, so each finished feature can
+reach users on its own, without waiting for the whole module. **Every feature
+is held to the A4 level:**
+1. Every section of this standard has run, and the feature scores **9/10 or
+   more** on §8, with evidence for each point.
+2. **The owner's check:** the owner tries it and finds nothing the standard
+   should have caught. Until then its status is "ready for the owner's
+   check", never "done".
+3. **A regression of everything already delivered:** every delivered
+   feature's harness runs again on the new build (its edge cases, money and
+   functional checks, look sweep and monkey), so the new feature has not
+   broken an older one. Hold meeting the item search was exactly this kind of
+   break.
+4. **Then it ships** as its own release on `dev`. The commit records what
+   changed for the merchant and the score.
+
+The module round (§9) still runs once the module's last feature is in, as the
+final check on the whole.
+
+## 11. Go-live gate
 
 The product goes live only when **every module in scope has passed its
 module round (§9) and scores 9 or more** on §8, on the live stack. Each module's report is linked from
