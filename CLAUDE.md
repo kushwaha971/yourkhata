@@ -81,6 +81,11 @@ a repo move. The mark and its rules are `docs/DESIGN-SYSTEM.md` §7.
 
 ## How to work here
 
+**Parallel Shop work (owner, 27 Oct 2026):** `docs/team/SHOP-PARALLEL-WORK.md`
+lists every task running at once: its worktree, branch, port, owner, status,
+last commit and next step. Anyone (another session, AI tool or person) resumes
+a task from there. Each task keeps its own section current after every step.
+
 **Testing is P0 (owner, 27 Oct 2026, R-DEC-57).** Every piece runs
 `docs/testing/P0-testing-standard.md` in full — business read-back by the
 document's own id with a self-test, design after errors too, functional
