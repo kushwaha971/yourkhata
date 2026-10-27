@@ -9,7 +9,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from django.db.models import DecimalField
+from django.db.models import DecimalField, F
 from django.db.models.functions import Least
 
 from apps.common.money import ZERO
@@ -68,10 +68,16 @@ def settlement_candidates(*, tenant: Any, limit: int = CANDIDATE_LIMIT) -> dict:
     )
     rows = (
         with_shop_facts(base, tenant=tenant)
-        .filter(shop_customer_balance__gt=ZERO, shop_supplier_balance__gt=ZERO)
         .annotate(
-            settleable=Least("shop_customer_balance", "shop_supplier_balance", output_field=money)
+            # A6 — bills against bills: an old balance from before the app has no
+            # bill to settle against (see `settleable`).
+            settleable=Least(
+                F("shop_customer_balance") - F("shop_customer_opening"),
+                F("shop_supplier_balance") - F("shop_supplier_opening"),
+                output_field=money,
+            )
         )
+        .filter(settleable__gt=ZERO)
         .order_by("-settleable", "name", "id")
     )
     people = list(rows[: limit + 1]) if limit else []

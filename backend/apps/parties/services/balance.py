@@ -123,9 +123,20 @@ def apply_entry(
     INCREASES what is held). Returns the cache this entry moved.
     Callers written before buckets pass none and get `main` (EC-4).
     """
+    delta = amount if direction == Direction.DEBIT else -amount
+    return move_bucket_balance(party=party, delta=delta, bucket=bucket)
+
+
+def move_bucket_balance(*, party: Party, delta: Decimal, bucket: str) -> Decimal:
+    """Move ONE bucket's cache by a signed `delta` on a LOCKED party (DEC-019).
+
+    `apply_entry`'s arithmetic, for callers that hold a delta rather than an
+    entry — a correction, whose net effect is `−signed(original) +
+    signed(replacement)`. A2: a Shop opening corrected through LED-03 must move
+    the Shop's cache and never the Udhaar book's.
+    """
     if bucket not in LedgerBucket.values:
         raise ValueError(f"unknown ledger bucket {bucket!r}")
-    delta = amount if direction == Direction.DEBIT else -amount
     other = None if bucket == LedgerBucket.MAIN else BUCKET_CACHE[bucket]
     if other is not None:
         moved = -delta if bucket == LedgerBucket.DEPOSIT else delta

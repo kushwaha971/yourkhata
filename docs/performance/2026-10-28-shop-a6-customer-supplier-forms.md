@@ -72,12 +72,39 @@ is designed from the artifact's own references.
   the drawer, because the search is not a form value. A typed search or a
   picked contact now keeps the drawer.
 
-## Not built, waiting on the owner
+## The Shop's own old balance (owner, 28 Oct: "Udhaar is independent … use simple English")
 
-1. **"They owe you now" / "You owe them now".** Every opening balance posts to
-   the Udhaar book (`bucket main`), and one is allowed per contact. On the Shop
-   form it would put Shop money in the Udhaar book (DEC-019). This needs an
-   approved backend change. It would sit in "More details" (R-DEC-61).
+- **Backend (no new dependency):**
+  - `opening_book: shop` on create posts the opening in the Shop's book
+    (`bucket=shop`). Without it, the opening still goes to the Udhaar book.
+  - Migration `ledger 0010` keeps one Udhaar opening per contact, and allows
+    one Shop opening per side: debit, still to collect; credit, still to pay.
+  - The Shop's figures count posted Shop openings, and send `customer_opening`
+    / `supplier_opening`.
+  - **A defect closed in passing:** LED-03 corrections always moved the Udhaar
+    book and wrote the undo in `main`. They now keep the original's book.
+  - Settling a contact's two sides nets bills against bills, so the old balance
+    is left out of the settle cap (it has no bill to settle against).
+  - `test_shop_opening.py`: 6 tests. Five fail on the old code; the sixth
+    guards the unchanged Udhaar path.
+- **Words (no "owe"):**
+  - the fields are "Old balance to collect (optional)" / "Old balance to pay
+    (optional)", with the hint "Money from before you started using the app.";
+  - the person page says "Started with ₹1,500.00 old balance";
+  - a payment with no bill says "goes against their old balance", not
+    "advance for the next bill";
+  - the supplier subtitle is "No reminders: they are for customers who have to
+    pay you".
+- **Read back:**
+  - an old balance of ₹1,500 shows ₹1,500 to collect in the Shop and ₹0 in
+    the Udhaar book;
+  - a ₹500 payment leaves ₹1,000;
+  - a supplier's ₹900 is to pay.
+- **Limit, listed:** an old balance is not a payment target. Money paid
+  against it is held like an advance against the whole balance, so totals are
+  always right. But if a later bill uses that advance, the person page cannot
+  say which part of the balance is "old". Making the old balance a real target
+  is a payments-engine change; it waits for the owner.
 
 ## Results
 
@@ -97,12 +124,33 @@ is designed from the artifact's own references.
   button shows on both forms and fills Name and Mobile.
 - **Looked at:** the counter view, the picked card at 390 and 1280, edit, Hindi
   dark supplier, and the phone-contacts fill.
-- **Unit:** 394 parties tests (the pick, the closed details, no switches);
-  type-check, lint, i18n, bundle.
+- **Unit:** 395 parties tests and 25 payment-sheet tests; type-check, lint,
+  i18n, bundle (three +0.0–0.2 KB first loads raised with a note).
+- **Backend:** `test_shop_opening.py` 6 pass, and the ledger, contacts and
+  payments suites pass. The full suite has 5 failures, none in A6's files:
+  - three architecture/export checks on the personal Udhaar files committed
+    25 Oct (5094e1d40);
+  - one from an empty `apps/.claude` tool folder, not in git;
+  - the Dues 5,000-schedule timing test (73 s against 60 under load).
+  They are listed for a fix of their own.
 
 ## Monkey (`e2e/monkey.mjs`, 250 steps)
 
 - `/customers` and `/suppliers`, seeds 81, 82, 83, at 390 and 1280: **12 of 12 PASS**.
+- After the old balance: `/customers`, `/suppliers` and `/payments`, seeds 91,
+  92, 93, at 390 and 1280: **15 of 18 pass**, and one more after a harness fix.
+  - **Payments 92 @1280, a harness defect, fixed.** It reported an
+    "/auth/me + /auth/refresh request loop". The monkey had switched the app to
+    Hindi and tapped "साइन आउट करें" (sign out), which its English-only skip
+    list allowed. It then reloaded the sign-in page and tapped "कोड भेजें" (send
+    code). The product makes one `/auth/me` and one `/auth/refresh` per load
+    (measured: 2 calls untouched in 6 s, 8 for 4 reloads). The skip list now
+    covers both languages and sending codes; a signed-out run now stops with
+    that reason. Seed 92 passes.
+  - **Customers 93 and Suppliers 93 @390: the A8 slow return, open.** About
+    10 s on a "return" after Back/Forward, to `/parties/{id}`, `/lending` and
+    `/library`. The same person page loads in 535 ms directly. This is seed 64's
+    pattern, seen before A6 changed that page, and it goes to A8.
 - **Still open (not A6):** `/suppliers` seed 64 @320 reproduces a ~7.9 s slow
   "return" on the list after Back/Forward, with `GET /parties/roles` still
   open. It is the A8 class. Replay:
@@ -122,12 +170,23 @@ is designed from the artifact's own references.
 
 | Points | Earned | Evidence |
 |---|---|---|
-| Business 2 | 1 | Roles, the pick (one contact, data kept), credit days and the no-reminder rule are read back; the opening balance is not built |
+| Business 2 | 2 | Roles, the pick (one contact, both roles, data kept), credit days, the Shop's own old balance (Shop ₹1,500, Udhaar ₹0, a ₹500 payment leaves ₹1,000) and the no-reminder rule, all read back by id with a self-test |
 | Design 1 | 1 | 24 views measured and looked at; the pick card reuses A3's box |
 | Functional 1 | 1 | Double tap, pick, already-in-list, edit, tap outside |
-| User 2 | 1 | Monkey 12/12 on A6's screens; no hand-driven browser pass yet |
+| User 2 | 2 | Hand-driven pass in the browser (phone and desktop): add with an old balance, the list updating live (+₹2,750.00), pick on Suppliers, one contact read back, tap-outside keeps a typed search. Monkey 12/12, then 16/18 (one harness defect fixed; two A8 slow returns, outside A6, open) |
 | Data 1 | 1 | The supplier-reminder default and the lost-search tap fixed and proved |
 | Performance 1 | 1 | Bundle within budget (+0.1 KB routes, noted); open time as A5 |
 | Honesty 1 | 1 | This report |
 | Owner found nothing 1 | 0 | The owner's |
-| **Total** | **7.0 / 10** | **In test**: the opening-balance decision and a hand-driven pass remain |
+| **Total** | **9.0 / 10** | **Ready for the owner's check.** The last point is the owner's to give |
+
+## Conflicts for the owner (listed, not chosen)
+
+1. **"Owe" outside A6.** The Customers chip says "Owe you", the Suppliers chip
+   "You owe", and the payment sheet's header "owes ₹1,500.00". These are older
+   words, partly the design's (R-DEC-54), against your simple-words rule. A6
+   did not change them; changing them belongs with A7 (lists) and the payment
+   sheet.
+2. **A first tap waits.** On a phone, the first "+" took 1–3 s to show the
+   form while the machine was busy, the first download of its code. It goes to
+   A8, together with the seed-64 slow return.

@@ -700,11 +700,16 @@ describe('the Shop form does not ask which list the person belongs to (owner, 25
     expect(within(drawer).getByText('Code, address, reminders')).toBeInTheDocument();
 
     await user.type(within(drawer).getByLabelText('Name'), 'Ramesh Traders');
+    // A6 — the Shop's own old balance: still to collect, in the Shop's book.
+    await user.type(within(drawer).getByLabelText('Old balance to collect (optional)'), '1500');
     await user.click(within(drawer).getByRole('button', { name: 'Add customer' }));
     await waitFor(() => expect(partyService.createParty).toHaveBeenCalledTimes(1));
     const [values] = partyService.createParty.mock.calls[0] as [Record<string, unknown>];
     expect(values.isCustomer).toBe(true);
     expect(values.isSupplier).toBe(false);
+    expect(values.openingAmount).toBe('1500.00');
+    expect(values.openingDirection).toBe('debit');
+    expect(values.openingBook).toBe('shop');
   });
 
   it('saves a supplier as a supplier only, and asks nothing about reminders', async () => {
@@ -722,7 +727,7 @@ describe('the Shop form does not ask which list the person belongs to (owner, 25
     ).toBeInTheDocument();
 
     expect(
-      within(drawer).getByText('No reminders: they are for people who owe you')
+      within(drawer).getByText('No reminders: they are for customers who have to pay you')
     ).toBeInTheDocument();
     expect(within(drawer).getByPlaceholderText('Supplier or company name')).toBeInTheDocument();
     expect(within(drawer).getByText('GSTIN, code, address')).toBeInTheDocument();
@@ -736,6 +741,9 @@ describe('the Shop form does not ask which list the person belongs to (owner, 25
     const [values] = partyService.createParty.mock.calls[0] as [Record<string, unknown>];
     expect(values.isSupplier).toBe(true);
     expect(values.isCustomer).toBe(false);
+    // A supplier's old balance is still to PAY.
+    expect(values.openingDirection).toBe('credit');
+    expect(values.openingBook).toBe('shop');
   });
 
   it('adds an existing supplier as a customer by picking them, keeping their saved details', async () => {

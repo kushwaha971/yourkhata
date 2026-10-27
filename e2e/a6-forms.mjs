@@ -26,7 +26,7 @@ mkdirSync(dir, { recursive: true });
 
 const W = {
   en: {
-    addC: 'Add customer', addS: 'Add supplier', subS: 'No reminders: they are for people who owe you',
+    addC: 'Add customer', addS: 'Add supplier', subS: 'No reminders: they are for customers who have to pay you',
     nameC: 'Customer name', nameS: 'Supplier or company name', mobile: 'Mobile number',
     more: 'More details', moreC: 'Code, address, reminders', moreS: 'GSTIN, code, address',
     credit: 'Credit days', remind: 'Send them reminders', alsoS: 'Also a supplier', alsoC: 'Also a customer',
@@ -35,7 +35,7 @@ const W = {
     roles: ['I sell to them', 'I buy from them'],
   },
   hi: {
-    addC: 'ग्राहक जोड़ें', addS: 'सप्लायर जोड़ें', subS: 'रिमाइंडर नहीं: वे उनके लिए हैं जिन पर आपका पैसा बाकी है',
+    addC: 'ग्राहक जोड़ें', addS: 'सप्लायर जोड़ें', subS: 'रिमाइंडर नहीं: वे उन ग्राहकों के लिए हैं जिन्हें आपको पैसे देने हैं',
     nameC: 'ग्राहक का नाम', nameS: 'सप्लायर या कंपनी का नाम', mobile: 'मोबाइल नंबर',
     moreC: 'कोड, पता, रिमाइंडर', moreS: 'GSTIN, कोड, पता',
   },
@@ -184,6 +184,7 @@ for (const width of widths) {
         await dlg.getByLabel('Name').fill(cName);
         await dlg.locator('button[aria-expanded]').filter({ hasText: w.moreC }).click();
         await dlg.getByLabel(w.credit).fill('7');
+        await dlg.getByLabel('Old balance to collect (optional)').fill('1500');
         const add = dlg.getByRole('button', { name: w.addC });
         await add.dblclick();
         await dlg.waitFor({ state: 'detached', timeout: 10000 }).catch(() => fail(`${width}-fn`, 'customer drawer did not close'));
@@ -195,6 +196,12 @@ for (const width of widths) {
           const wantSupplier = skew; // --skew: expect the wrong role, so the run must fail
           if (p.is_customer !== true || p.is_supplier !== wantSupplier) fail(`${width}-fn`, `customer roles read back c=${p.is_customer} s=${p.is_supplier}`);
           if (p.credit_days !== 7) fail(`${width}-fn`, `credit_days read back ${p.credit_days}`);
+          // A6 / DEC-019: the old balance is the SHOP's money, never the Udhaar book's.
+          const shop = (await api(ctx, `/parties/${cHits[0].id}?book=shop`)).data.shop;
+          const want = skew ? '0.00' : '1500.00';
+          if (shop.customer_balance !== want || shop.customer_opening !== '1500.00')
+            fail(`${width}-fn`, `Shop old balance read back ${shop.customer_balance} / opening ${shop.customer_opening}`);
+          if (Number(p.balance) !== 0) fail(`${width}-fn`, `the Udhaar book moved to ${p.balance}`);
           const cb = bodies.find((b) => b.name === cName);
           if (!cb || !('sms_opt_in' in cb)) fail(`${width}-fn`, 'customer body lacks sms_opt_in');
         }
@@ -204,6 +211,7 @@ for (const width of widths) {
         await dlg.getByLabel('Name').fill(sName);
         await dlg.locator('button[aria-expanded]').filter({ hasText: w.moreS }).click();
         await dlg.getByLabel('Note (optional)').fill('Pays by cheque');
+        await dlg.getByLabel('Old balance to pay (optional)').fill('900');
         await dlg.getByRole('button', { name: w.addS }).click();
         await dlg.waitFor({ state: 'detached', timeout: 10000 }).catch(() => fail(`${width}-fn`, 'supplier drawer did not close'));
         await page.waitForTimeout(800);
@@ -215,6 +223,8 @@ for (const width of widths) {
         else {
           const p = (await api(ctx, `/parties/${sHit.id}`)).data;
           if (p.is_supplier !== true || p.is_customer !== false) fail(`${width}-fn`, `supplier roles c=${p.is_customer} s=${p.is_supplier}`);
+          const sf = (await api(ctx, `/parties/${sHit.id}?book=shop`)).data.shop;
+          if (sf.supplier_balance !== '900.00' || sf.customer_balance !== '0.00') fail(`${width}-fn`, `supplier old balance ${sf.supplier_balance} / customer ${sf.customer_balance}`);
         }
         // R-DEC-61: that supplier also buys. On Add customer the merchant
         // PICKS them; the save must update the same record (one contact, both
@@ -243,6 +253,29 @@ for (const width of widths) {
         await page.waitForTimeout(1200);
         await page.getByRole('button', { name: `Open ${cName}` }).or(page.getByRole('link', { name: new RegExp(cName) })).first().click();
         await page.waitForTimeout(1500);
+        if (!(await page.getByText('Started with ₹1,500.00 old balance').count()))
+          fail(`${width}-fn`, 'the person page does not say where the figure came from');
+        await page.screenshot({ path: `${dir}/${width}-person-old-balance.png` });
+        // A payment with no bill goes against the old balance: the words say so
+        // (not "advance for the next bill"), the Shop figure drops, and the
+        // Udhaar book never moves (DEC-019).
+        await page.getByRole('button', { name: 'Receive payment' }).first().click();
+        const pay = page.getByRole('dialog').last();
+        await pay.waitFor();
+        await page.waitForTimeout(800);
+        await pay.getByLabel(/^Amount/).first().fill('500');
+        await page.waitForTimeout(400);
+        if (!(await pay.getByText('No unpaid bills. The ₹500.00 goes against their old balance.').count()))
+          fail(`${width}-fn`, 'the payment sheet does not say the money goes against the old balance');
+        await pay.locator('[data-ub-overlay-footer] button').last().click();
+        await pay.getByText('₹500.00 against the old balance').waitFor({ timeout: 8000 }).catch(() =>
+          fail(`${width}-fn`, 'the receipt does not say "against the old balance"'));
+        await pay.screenshot({ path: `${dir}/${width}-paid-old-balance.png` });
+        const afterPay = (await api(ctx, `/parties/${cHits[0].id}?book=shop`)).data;
+        if (afterPay.shop.customer_balance !== '1000.00') fail(`${width}-fn`, `after ₹500 the Shop figure is ${afterPay.shop.customer_balance}`);
+        if (Number((await api(ctx, `/parties/${cHits[0].id}`)).data.balance) !== 0) fail(`${width}-fn`, 'the payment moved the Udhaar book');
+        await pay.getByRole('button', { name: 'Done' }).click().catch(() => page.keyboard.press('Escape'));
+        await pay.waitFor({ state: 'detached', timeout: 5000 }).catch(() => {});
         // Edit is a header button on a desktop and behind "More" on a phone.
         const editBtn = page.getByRole('button', { name: /^Edit/ }).first();
         if (!(await editBtn.isVisible().catch(() => false))) {

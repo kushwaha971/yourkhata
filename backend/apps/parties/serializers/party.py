@@ -239,6 +239,9 @@ class PartyWriteSerializer(serializers.Serializer):
         choices=OpeningDirection.choices, required=False, allow_null=True
     )
     opening_balance_as_of = serializers.DateField(required=False, allow_null=True)
+    #: A6 — which book the opening is posted in. The Shop's forms send `shop`
+    #: (DEC-019: the Shop keeps its own money); anything else is the Udhaar book.
+    opening_book = serializers.ChoiceField(choices=("main", "shop"), required=False, default="main")
     tags = PartyTagNamesField()
 
 
@@ -259,6 +262,7 @@ class PartyUpdateSerializer(PartyWriteSerializer):
             "opening_balance_amount",
             "opening_balance_direction",
             "opening_balance_as_of",
+            "opening_book",
         ):
             self.fields.pop(field, None)
 

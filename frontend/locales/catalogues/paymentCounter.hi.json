@@ -2,6 +2,8 @@
   "payments.counter.advance": "इसके बाद अग्रिम",
   "payments.counter.advanceHint": "अगले बिल के लिए रखा",
   "payments.counter.advanceRow": "एडवांस",
+  "payments.counter.againstOld": "कोई बिल बाकी नहीं। ये ₹{amount} उनके पुराने बाकी में जाएँगे।",
+  "payments.counter.againstOldEmpty": "कोई बिल बाकी नहीं। जो लिखेंगे वह उनके पुराने बाकी में जाएगा।",
   "payments.counter.auto": "अपने आप, सबसे पुराना पहले",
   "payments.counter.autoHint": "रकम को सबसे पुराने बाकी बिलों से मिलाता है",
   "payments.counter.billDue": "{name} · {number} · ₹{amount} बाकी",

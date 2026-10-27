@@ -2,6 +2,8 @@
   "payments.counter.advance": "Advance after this",
   "payments.counter.advanceHint": "Kept for the next bill",
   "payments.counter.advanceRow": "Advance",
+  "payments.counter.againstOld": "No unpaid bills. The ₹{amount} goes against their old balance.",
+  "payments.counter.againstOldEmpty": "No unpaid bills. What you enter goes against their old balance.",
   "payments.counter.auto": "Auto, oldest first",
   "payments.counter.autoHint": "Matches the amount to unpaid bills, oldest first",
   "payments.counter.billDue": "{name} · {number} · ₹{amount} due",

@@ -207,10 +207,24 @@ class LedgerEntry(TenantModel, ImmutableModel):
             # reversal plus a replacement: both rows are `entry_type='opening'`
             # and both stay for ever, so a total unique index would make
             # correcting an opening impossible. Only one is ever standing.
+            # A6 (owner, 28 Oct 2026) — one opening per BOOK: the Udhaar book
+            # keeps one per contact, and the Shop one per side (still to collect
+            # as a customer, still to pay as a supplier), because DEC-019 keeps
+            # each app's money apart and a Shop contact can be both. Migration
+            # 0010 narrowed the first index to `main` and added the second.
             models.UniqueConstraint(
                 fields=["party"],
-                condition=models.Q(entry_type=EntryType.OPENING, status=EntryStatus.POSTED),
+                condition=models.Q(
+                    entry_type=EntryType.OPENING, status=EntryStatus.POSTED, bucket=LedgerBucket.MAIN
+                ),
                 name="uq_ledger_one_opening_per_party",
+            ),
+            models.UniqueConstraint(
+                fields=["party", "direction"],
+                condition=models.Q(
+                    entry_type=EntryType.OPENING, status=EntryStatus.POSTED, bucket=LedgerBucket.SHOP
+                ),
+                name="uq_ledger_one_shop_opening_per_side",
             ),
         ]
         indexes = [

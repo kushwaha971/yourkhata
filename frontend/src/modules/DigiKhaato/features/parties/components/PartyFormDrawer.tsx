@@ -197,14 +197,17 @@ export function PartyFormDrawer({
          resolves a name to a tag inside the party's own transaction. */
         tags: editing?.tags.map((tag) => tag.name) ?? [],
         openingAmount: '',
-        openingDirection: 'debit',
+        /* A6 — the Shop's old balance is still-to-collect on a customer and
+           still-to-pay on a supplier, in the Shop's own book (DEC-019). */
+        openingDirection: fixedRole === 'supplier' ? 'credit' : 'debit',
+        ...(fixedRole ? { openingBook: 'shop' as const } : {}),
         /* UAT D6 (CR-LOG): today, not the year start — a default the merchant
          did not choose must not claim an age (aging counts an opening from its
          date). The hint asks for the real date; "Year start" is a chip. */
         openingAsOf: isoToday(),
       };
     },
-    [prefillName, kind]
+    [prefillName, kind, fixedRole]
   );
   const defaults = useMemo(() => valuesFor(editing), [valuesFor, editing]);
 
@@ -883,6 +886,16 @@ export function PartyFormDrawer({
               {/* A6 F6 — the design's order: code, then reminders (customer) or
                   the GSTIN (supplier); the kept fields follow. Credit days is
                   in here too (R-DEC-61): the counter asks a name and a number. */}
+              {fixedRole && !isEdit && !linked && (
+                <UbField
+                  name="openingAmount"
+                  label={t(`parties.form.shop.old.label.${fixedRole}`)}
+                  placeholder={t('parties.form.shop.old.placeholder')}
+                  hint={t('parties.form.shop.old.hint')}
+                >
+                  {(field) => <UbMoneyInput {...field} />}
+                </UbField>
+              )}
               {creditDaysTop}
               {fixedRole === 'customer' && remindersFields}
               {fixedRole === 'customer' && gstinField}

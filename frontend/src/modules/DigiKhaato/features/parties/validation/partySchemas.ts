@@ -85,6 +85,7 @@ export const usePartySchemas = (): {
           .defined()
           .default('debit'),
         openingAsOf: Yup.string().defined().default(''),
+        openingBook: Yup.mixed<'main' | 'shop'>().oneOf(['main', 'shop']).optional(),
 
         // FR-4 — a party this business neither buys from nor sells to is a
         // contact, and this product does not have contacts. Checked here as

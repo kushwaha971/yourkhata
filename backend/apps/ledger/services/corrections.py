@@ -51,7 +51,7 @@ from apps.ledger.constants import (
 )
 from apps.ledger.models import LedgerEntry
 from apps.ledger.services.entries import _clean_text, validate_entry_payload
-from apps.parties.services.balance import lock_party, move_main_balance
+from apps.parties.services.balance import lock_party, move_bucket_balance
 
 REASON_MIN_LENGTH = 3
 
@@ -173,7 +173,7 @@ def _locked_open_party(*, tenant: Any, party_id: Any) -> Any:
     return party
 
 
-def _apply_delta(*, party: Any, delta: Decimal) -> Decimal:
+def _apply_delta(*, party: Any, delta: Decimal, bucket: str) -> Decimal:
     """Move the party's caches by a signed amount, in the caller's transaction.
 
     Not `apply_entry`, and the difference is the sign: that function takes a
@@ -183,10 +183,13 @@ def _apply_delta(*, party: Any, delta: Decimal) -> Decimal:
     is the arithmetic itself. The cache write is `move_main_balance`, the one
     `apply_entry` uses too, so the receivable/payable split, BR-4's
     `last_activity_at` and LED-05 BR-2's "a correction that takes the balance to
-    zero clears the date exactly as a payment would" cannot drift apart. Manual
-    entries — the only correctable ones — are always in the `main` book.
+    zero clears the date exactly as a payment would" cannot drift apart.
+
+    By the ORIGINAL's book (A6): manual entries are all `main`, but a Shop
+    opening is `shop`, and correcting it must move the Shop's cache, never the
+    Udhaar book's (DEC-019). `main` still goes through `move_main_balance`.
     """
-    return move_main_balance(party=party, delta=delta)
+    return move_bucket_balance(party=party, delta=delta, bucket=bucket)
 
 
 def _write_reversal(*, ctx: Ctx, original: LedgerEntry, reason: str) -> LedgerEntry:
@@ -223,6 +226,8 @@ def _write_reversal(*, ctx: Ctx, original: LedgerEntry, reason: str) -> LedgerEn
         source_type=SourceType.LEDGER_ENTRY,
         source_id=original.id,
         reverses=original,
+        # A6 — in the original's book, so a Shop opening's undo stays in the Shop.
+        bucket=original.bucket,
         # No `payment_mode` and no `upi_app`, deliberately — and not because
         # nobody thought of it. A reversal runs in the OPPOSITE direction, so
         # the reversal of a "You got" by PhonePe is a DEBIT, and
@@ -273,7 +278,9 @@ def reverse_entry(*, ctx: Ctx, entry_id: Any, reason: Any) -> dict:
     party = _locked_open_party(tenant=ctx.tenant, party_id=original.party_id)
     before = _snapshot(original)
     reversal = _write_reversal(ctx=ctx, original=original, reason=clean_reason)
-    balance = _apply_delta(party=party, delta=-signed(original.direction, original.amount))
+    balance = _apply_delta(
+        party=party, delta=-signed(original.direction, original.amount), bucket=original.bucket
+    )
 
     write_audit(
         ctx=ctx,
@@ -387,12 +394,14 @@ def correct_entry(*, ctx: Ctx, entry_id: Any, payload: dict) -> dict:
         upi_app=cleaned["upi_app"],
         reference=cleaned["reference"],
         supersedes=original,
+        bucket=original.bucket,
         reason=clean_reason,
         status=EntryStatus.POSTED,
     )
 
     balance = _apply_delta(
         party=party,
+        bucket=original.bucket,
         delta=(
             -signed(original.direction, original.amount)
             + signed(replacement.direction, replacement.amount)

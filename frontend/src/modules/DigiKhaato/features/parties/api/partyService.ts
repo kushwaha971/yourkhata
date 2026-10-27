@@ -92,6 +92,8 @@ export const toShopFacts = (row: ShopPartyFactsWire): ShopPartyFacts => ({
   supplierBalance: row.supplier_balance,
   supplierDue: row.supplier_due,
   supplierCredit: row.supplier_credit,
+  customerOpening: row.customer_opening ?? '0.00',
+  supplierOpening: row.supplier_opening ?? '0.00',
   oldestDueOn: row.oldest_due_on,
   daysOverdue: row.days_overdue,
   lastActivityAt: row.last_activity_at,
@@ -376,6 +378,7 @@ const toWireBody = (values: PartyFormValues, { create }: { create: boolean }) =>
           opening_balance_amount: values.openingAmount,
           opening_balance_direction: values.openingDirection,
           ...(text(values.openingAsOf) ? { opening_balance_as_of: values.openingAsOf } : {}),
+          ...(values.openingBook === 'shop' ? { opening_book: 'shop' } : {}),
         }
       : {}),
   };

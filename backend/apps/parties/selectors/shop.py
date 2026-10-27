@@ -61,6 +61,17 @@ def with_shop_facts(queryset: Any, *, tenant: Any) -> Any:
     entries = LedgerEntry.objects.filter(
         tenant=tenant, party_id=OuterRef("pk"), bucket=LedgerBucket.SHOP, status="posted"
     ).order_by("-created_at", "-id")
+    # A6 — the Shop's own opening balance (DEC-019), one per side: what a
+    # customer still had to pay, and what was still to be paid to a supplier,
+    # when the merchant started. POSTED only, so a corrected opening counts its
+    # replacement and not the reversed original.
+    openings = LedgerEntry.objects.filter(
+        tenant=tenant,
+        party_id=OuterRef("pk"),
+        bucket=LedgerBucket.SHOP,
+        entry_type="opening",
+        status="posted",
+    )
     sale_activity = (
         sales.exclude(status__in=("draft", "void", "cancelled"))
         .annotate(activity_at=Coalesce("issued_at", "created_at"))
@@ -73,12 +84,14 @@ def with_shop_facts(queryset: Any, *, tenant: Any) -> Any:
     )
     queryset = (
         queryset.annotate(
-            shop_customer_due=amount(invoices),
+            shop_customer_opening=amount(openings.filter(direction="debit"), "amount"),
+            shop_supplier_opening=amount(openings.filter(direction="credit"), "amount"),
+            shop_customer_due=amount(invoices) + amount(openings.filter(direction="debit"), "amount"),
             shop_customer_credit=amount(
                 sales.filter(kind="credit_note", status__in=("issued", "applied"))
             )
             + amount(incoming, "unallocated_amount"),
-            shop_supplier_due=amount(bills),
+            shop_supplier_due=amount(bills) + amount(openings.filter(direction="credit"), "amount"),
             shop_supplier_credit=amount(purchases.filter(kind="debit_note", status="issued"))
             + amount(outgoing, "unallocated_amount"),
             shop_customer_due_on=Subquery(
@@ -162,6 +175,11 @@ def serialize_shop_facts(party: Any, *, today: Any, kind: str = "customer") -> d
         "supplier_balance": f"{party.shop_supplier_balance:.2f}",
         "supplier_due": f"{party.shop_supplier_due:.2f}",
         "supplier_credit": f"{party.shop_supplier_credit:.2f}",
+        # A6 — the old balance carried in from before the app, per side; it is
+        # already inside `*_due` and `*_balance`, and is sent so the person page
+        # can say where that part of the figure came from.
+        "customer_opening": f"{party.shop_customer_opening:.2f}",
+        "supplier_opening": f"{party.shop_supplier_opening:.2f}",
         "oldest_due_on": due_on.isoformat() if due_on else None,
         "days_overdue": max((today - due_on).days, 0) if due_on and balance > ZERO else None,
         "last_activity_at": (

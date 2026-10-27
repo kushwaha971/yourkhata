@@ -41,8 +41,12 @@ const rand = () => {
 };
 const pick = (list) => list[Math.floor(rand() * list.length)];
 
+// In BOTH languages: a tap can switch the app to Hindi, and the English-only
+// list then let the monkey tap "साइन आउट करें" (sign out) and spend the rest of
+// the run on the sign-in page tapping "कोड भेजें" (send code), asking for real
+// OTPs — which read as a /auth/me + /auth/refresh "request loop" (A6, seed 92).
 const SKIP =
-  /issue|delete|void|record|remove|sign out|log out|archive|cancel bill|discard/i;
+  /issue|delete|void|record|remove|sign out|log out|archive|cancel bill|discard|send code|साइन आउट|लॉग आउट|कोड भेजें|जारी करें|हटाएँ|मिटाएँ/i;
 const TEXT = [
   "",
   "a",
@@ -322,6 +326,12 @@ try {
   armed = true;
 
   for (let i = 0; i < steps; i += 1) {
+    // A run that has signed itself out tests nothing but the sign-in page, so
+    // stop and say so plainly, with the last steps (see SKIP).
+    if (new URL(page.url()).pathname.startsWith("/login")) {
+      failures.push(`harness signed out before step ${i}; last: ${log.slice(-3).join(" | ")}`);
+      break;
+    }
     const kind = pick(["tap", "tap", "tap", "tap", "type", "type", "key", "scroll", "additem", "additem", "reload", "back", "wander"]);
     page.setDefaultTimeout(4000);
     const step = async () => {

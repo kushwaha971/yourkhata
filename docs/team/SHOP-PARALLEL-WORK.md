@@ -147,6 +147,11 @@ limit. Their findings so far, to verify (not trust) when the piece is worked:
   `ssr: false` nor a `loading` view waits on its first download at the route's
   `loading.tsx`, which swaps the page for the skeleton. Next: reproduce on the
   live app to prove the fix holds, or find what is left.
+- **A8, from A6 (28 Oct):** two cases to start from.
+  - `/suppliers` seed 64 @320 reproduces a ~7.9 s "return" every time:
+    DOM-ready at 25 ms, then main content late, with `GET /parties/roles` still
+    open. Replay: `node e2e/monkey.mjs --path=/suppliers --seed=64 --steps=250 --width=320`.
+  - The first "+" on a phone took 1–3 s to show the form under load.
 - **A8, from A4's monkey:** once, under load, the bill editor sat on its
   skeleton for minutes (seed 501 at 390, step 193; not reproduced on a quiet
   replay). A8 must test a stalled network on purpose: a skeleton must time out
@@ -161,10 +166,14 @@ idle, so do not message sessions the owner has stopped.
 
 ## Waiting to start
 
-- **A6 · Separate customer and supplier forms — IN TEST, 7.0/10 (28 Oct
-  2026, after R-DEC-61: pick an existing contact, name + mobile only), main worktree.** Report: `docs/performance/2026-10-28-shop-a6-customer-supplier-forms.md`;
-  harness `e2e/a6-forms.mjs`. Waiting on the owner: (1) a Shop-book opening
-  balance needs a backend change; (2) decided by R-DEC-61 (edit uses the A6
-  form). Open: monkey `/suppliers` seed 64 @320, a ~7.9 s return (A8 class).
+- **A6 · Separate customer and supplier forms — READY FOR THE OWNER'S CHECK,
+  9.0/10 (28 Oct 2026), main worktree.** Report:
+  `docs/performance/2026-10-28-shop-a6-customer-supplier-forms.md`; harness
+  `e2e/a6-forms.mjs`. Built to R-DEC-61:
+  - a name and a number at the counter;
+  - pick an existing contact instead of a role switch;
+  - the Shop's own old balance (backend `ledger 0010`).
+  Open, outside A6: the A8 slow returns (seeds 64, 93); "owe" words on the
+  lists and the payment header; 5 backend failures predating A6.
 - **Then,** in the owner's order: Part F, Parts B/C/D, and the module round
   for the whole Shop (P0 standard §9).

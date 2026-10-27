@@ -579,11 +579,29 @@ it('names an over-allocation with its figures and holds Save until it is fixed',
   expect(screen.getByTestId('payment-save')).toBeDisabled();
 });
 
-it('says a customer with no unpaid bills keeps the money as advance, in Shop words', async () => {
+it('says a customer with nothing due keeps the money as advance, in Shop words', async () => {
   jest.mocked(service.listOpenDocuments).mockResolvedValue([]);
-  renderWithProviders(<PaymentFormDrawer context={shop} onClose={jest.fn()} />);
+  renderWithProviders(
+    <PaymentFormDrawer context={{ ...shop, receivable: '0.00' }} onClose={jest.fn()} />
+  );
+  const amount = await screen.findByRole('textbox', { name: 'Amount' });
+  await userEvent.setup().type(amount, '1000');
   expect(await screen.findByTestId('alloc-none')).toHaveTextContent(
     'No unpaid bills. The full ₹1,000.00 is kept as advance for the next bill.'
   );
   expect(screen.queryByText(/khata/)).not.toBeInTheDocument();
+});
+
+it('says money with no bill to pay goes against the old balance, not the next bill', async () => {
+  /**
+   * A6. A Shop customer with an old balance from before the app and no unpaid
+   * bill still has money due. "Kept as advance for the next bill" told the
+   * merchant the ₹1,000 was waiting for a future bill while the customer still
+   * had ₹1,000 to pay; the balance was right and the sentence was not.
+   */
+  jest.mocked(service.listOpenDocuments).mockResolvedValue([]);
+  renderWithProviders(<PaymentFormDrawer context={shop} onClose={jest.fn()} />);
+  expect(await screen.findByTestId('alloc-none')).toHaveTextContent(
+    'No unpaid bills. The ₹1,000.00 goes against their old balance.'
+  );
 });

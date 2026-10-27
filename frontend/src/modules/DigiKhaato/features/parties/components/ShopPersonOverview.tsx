@@ -14,7 +14,7 @@ import {
   UbText,
 } from 'src/design-system';
 import type { TranslateFn } from 'src/hooks/useTranslation';
-import { compareMoney, subtractMoney } from 'src/utils/money';
+import { compareMoney, formatInr, subtractMoney } from 'src/utils/money';
 import { formatPhoneForDisplay, toDialableNumber } from 'src/utils/share';
 
 import { balanceView } from '../view-model/partyDisplay';
@@ -46,6 +46,8 @@ export function ShopPersonOverview({
     ? (party.shop?.supplierBalance ?? subtractMoney('0', fallbackBalance))
     : (party.shop?.customerBalance ?? fallbackBalance);
   const direction = compareMoney(value, '0');
+  const opening = supplier ? party.shop?.supplierOpening : party.shop?.customerOpening;
+  const oldBalance = opening && compareMoney(opening, '0') > 0 ? opening : null;
   const label =
     direction === 0
       ? 'settled'
@@ -125,6 +127,14 @@ export function ShopPersonOverview({
               tone={balanceView(supplier ? subtractMoney('0', value) : value).tone}
               className="self-start"
             />
+            {/* A6 — part of the figure came from before the app (an old
+                balance typed on Add); say so, or the merchant sees a number no
+                bill on this page explains. */}
+            {oldBalance && (
+              <UbText variant="caption" tone="tertiary">
+                {t('parties.person.shop.oldBalance', { amount: formatInr(oldBalance) })}
+              </UbText>
+            )}
           </UbStack>
         </UbStack>
       </UbCard>

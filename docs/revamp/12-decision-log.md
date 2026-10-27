@@ -804,3 +804,8 @@ overriding the A6 mock where they differ:
 3. **A screen with no mock is designed from the artifact's own references**
    (owner: "take reference from the existing artifact"). Shop edit therefore uses
    the A6 form ("Edit customer" / "Edit supplier", role fixed by the view).
+4. **The Shop keeps its own old balance** (owner, 28 Oct 2026: "Udhaar will be an
+   independent module like Shop … use simple English instead of owe"). An
+   opening typed on the Shop's forms is Shop money (`bucket=shop`), one per side,
+   never the Udhaar book's. The words are "Old balance to collect / to pay", and
+   no A6 copy says "owe".

@@ -73,16 +73,29 @@ def role_balances(*, tenant: Any, party_id: Any) -> dict[str, Decimal] | None:
     return {
         "customer_balance": Decimal(party.shop_customer_balance),
         "supplier_balance": Decimal(party.shop_supplier_balance),
+        # A6 — the old balances carried in from before the app. They are in the
+        # two figures above (that is what the lists show) but no bill carries
+        # them, so a settlement, which nets bills against bills, cannot use them.
+        "customer_opening": Decimal(party.shop_customer_opening),
+        "supplier_opening": Decimal(party.shop_supplier_opening),
     }
 
 
 def settleable(balances: dict[str, Decimal]) -> Decimal:
     """The most that may be settled: the smaller of what each side owes, never below zero."""
-    return max(min(balances["customer_balance"], balances["supplier_balance"]), ZERO)
+    return max(
+        min(
+            balances["customer_balance"] - balances.get("customer_opening", ZERO),
+            balances["supplier_balance"] - balances.get("supplier_opening", ZERO),
+        ),
+        ZERO,
+    )
 
 
 def money_text(balances: dict[str, Decimal]) -> dict[str, str]:
-    return {key: f"{value:.2f}" for key, value in balances.items()}
+    return {
+        key: f"{balances[key]:.2f}" for key in ("customer_balance", "supplier_balance") if key in balances
+    }
 
 
 def _amount(raw: Any) -> Decimal:

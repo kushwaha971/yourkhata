@@ -1,5 +1,6 @@
 {
   "payments.advance": "₹{amount} एडवांस के रूप में रखे गए",
+  "payments.againstOld": "₹{amount} पुराने बाकी में",
   "payments.alloc.allocated": "बिलों में ₹{amount}",
   "payments.alloc.auto": "अपने आप — सबसे पुराना पहले",
   "payments.alloc.autoHint": "सबसे पुराने बिल पहले चुकाए जाते हैं",

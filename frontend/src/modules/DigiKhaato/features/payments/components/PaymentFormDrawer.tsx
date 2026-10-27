@@ -129,6 +129,10 @@ export function PaymentFormDrawer({
   /* What the footer said was left when Save was pressed: the saved panel's
      "₹245 still due" is the figure the counter just read, not a new sum. */
   const [leftAtSave, setLeftAtSave] = useState<string | null>(null);
+  /* A6 — what the money went against, decided when it was saved (the bill
+     list refreshes after): with no unpaid bill and something still due, it is
+     the old balance from before the app, not "advance for the next bill". */
+  const [againstOldAtSave, setAgainstOldAtSave] = useState(false);
   const share = useReceiptShare(saved?.payment.id ?? null);
   const [sharing, setSharing] = useState(false);
   const [discardOpen, setDiscardOpen] = useState(false);
@@ -190,6 +194,12 @@ export function PaymentFormDrawer({
       : counter && partyId && docsReady
         ? dueTotal(openDocuments)
         : undefined;
+  const againstOld =
+    counter &&
+    docsReady &&
+    openDocuments.length === 0 &&
+    due !== undefined &&
+    compareMoney(due, '0') > 0;
   const amountLeft = subtractMoney(due ?? '0', total);
   const leftShown = compareMoney(amountLeft, '0') < 0 ? '0.00' : amountLeft;
   /* Auto with no bill list yet (loading, or the read failed): the server
@@ -299,6 +309,7 @@ export function PaymentFormDrawer({
       const result = await submit(values, setError);
       if (result) {
         setLeftAtSave(due === undefined ? null : left);
+        setAgainstOldAtSave(againstOld);
         setSaved(result);
         onSaved?.(result);
       }
@@ -308,6 +319,7 @@ export function PaymentFormDrawer({
       setError,
       onSaved,
       openDocuments,
+      againstOld,
       counter,
       partyId,
       docsReady,
@@ -409,7 +421,9 @@ export function PaymentFormDrawer({
                   ? t('payments.counter.savedClear', { number: paid.number })
                   : t('payments.counter.savedNumber', { number: paid.number }),
               compareMoney(paid.unallocatedAmount, '0') > 0
-                ? t('payments.advance', { amount: formatAmount(paid.unallocatedAmount) })
+                ? t(againstOldAtSave ? 'payments.againstOld' : 'payments.advance', {
+                    amount: formatAmount(paid.unallocatedAmount),
+                  })
                 : null,
             ]
               .filter(Boolean)
@@ -460,7 +474,9 @@ export function PaymentFormDrawer({
             })}
             description={
               saved.payment.unallocatedAmount !== '0.00'
-                ? t('payments.advance', { amount: formatAmount(saved.payment.unallocatedAmount) })
+                ? t(againstOldAtSave ? 'payments.againstOld' : 'payments.advance', {
+                    amount: formatAmount(saved.payment.unallocatedAmount),
+                  })
                 : undefined
             }
           />
@@ -752,6 +768,7 @@ export function PaymentFormDrawer({
               t={t}
               disabled={locked}
               counter={counter}
+              againstOld={againstOld}
               onEdit={() => {
                 allocationEdited.current = true;
               }}

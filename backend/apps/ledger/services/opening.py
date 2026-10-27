@@ -30,7 +30,7 @@ from typing import Any
 from django.db import IntegrityError, transaction
 
 from apps.common.audit import AuditAction, write_audit
-from apps.common.constants import Direction
+from apps.common.constants import Direction, LedgerBucket
 from apps.common.context import Ctx
 from apps.common.exceptions import BusinessRuleViolation, NotFound
 from apps.ledger.constants import EntryStatus, EntryType, SourceType
@@ -50,8 +50,15 @@ from apps.parties.services.balance import apply_entry, lock_party
 OPENING_NOTE = "Opening balance"
 
 
-def opening_entry(*, tenant: Any, party_id: Any) -> LedgerEntry | None:
-    """The party's posted opening entry, or None.
+def opening_entry(
+    *, tenant: Any, party_id: Any, bucket: str = LedgerBucket.MAIN, direction: str | None = None
+) -> LedgerEntry | None:
+    """The party's posted opening entry in one book, or None.
+
+    A6 (owner, 28 Oct 2026): the Shop keeps its OWN opening, separate from the
+    Udhaar book's (DEC-019), and one per side — what a customer still has to pay
+    (debit) and what is still to be paid to a supplier (credit) — because one
+    contact can be both. `direction` narrows to that side; the Udhaar book has one.
 
     `status='posted'` and not merely `entry_type='opening'`, which is BR-5: a
     reversal alone leaves the party with no opening, and the "Add opening
@@ -65,6 +72,8 @@ def opening_entry(*, tenant: Any, party_id: Any) -> LedgerEntry | None:
             party_id=party_id,
             entry_type=EntryType.OPENING,
             status=EntryStatus.POSTED,
+            bucket=bucket,
+            **({"direction": direction} if direction else {}),
         )
         .order_by("created_at")
         .first()
@@ -93,6 +102,7 @@ def post_opening_balance(
     direction: str,
     as_of: dt.date | str,
     via: str = "drawer",
+    bucket: str = LedgerBucket.MAIN,
 ) -> dict:
     """Post the opening entry. Returns `{entry, balance}`.
 
@@ -146,7 +156,14 @@ def post_opening_balance(
             details={"party_id": str(party.id), "name": party.name},
         )
 
-    existing = opening_entry(tenant=ctx.tenant, party_id=party.id)
+    if bucket not in (LedgerBucket.MAIN, LedgerBucket.SHOP):
+        raise ValueError(f"no opening balance in the {bucket!r} book")
+    existing = opening_entry(
+        tenant=ctx.tenant,
+        party_id=party.id,
+        bucket=bucket,
+        direction=direction if bucket == LedgerBucket.SHOP else None,
+    )
     if existing is not None:
         raise BusinessRuleViolation(
             "opening_balance_exists",
@@ -167,19 +184,20 @@ def post_opening_balance(
                 source_type=SourceType.MANUAL,
                 note=OPENING_NOTE,
                 status=EntryStatus.POSTED,
+                bucket=bucket,
             )
     except IntegrityError as exc:
         # The index caught a race the check above lost. Same answer either way —
         # see the docstring. The savepoint is what keeps the outer transaction
         # usable afterwards, the lesson `create_party` wrote down first.
-        if "uq_ledger_one_opening_per_party" in str(exc):
+        if "uq_ledger_one_opening_per_party" in str(exc) or "uq_ledger_one_shop_opening_per_side" in str(exc):
             raise BusinessRuleViolation(
                 "opening_balance_exists",
                 "This contact already has an opening balance. Correct it from the entry instead.",
             ) from exc
         raise
 
-    balance = apply_entry(party=party, direction=direction, amount=amount)
+    balance = apply_entry(party=party, direction=direction, amount=amount, bucket=bucket)
 
     write_audit(
         ctx=ctx,

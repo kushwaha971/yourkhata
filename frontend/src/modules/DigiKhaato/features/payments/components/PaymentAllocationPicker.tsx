@@ -51,6 +51,7 @@ export function PaymentAllocationPicker({
   disabled,
   onEdit,
   counter = false,
+  againstOld = false,
 }: Readonly<{
   form: UseFormReturn<PaymentFormValues>;
   documents: readonly OpenDocument[];
@@ -63,6 +64,8 @@ export function PaymentAllocationPicker({
    * saving, and the totals line speaks only when something is wrong.
    */
   counter?: boolean;
+  /** A6 — no unpaid bill, but an old balance from before the app is still due. */
+  againstOld?: boolean;
   /** Told when the merchant sets a row by hand (typing or Fill), so the drawer
    *  stops moving a preset bill's row with the amount (P-D2). */
   onEdit?: () => void;
@@ -86,6 +89,10 @@ export function PaymentAllocationPicker({
   if (documents.length === 0) {
     const noneId = !counter
       ? 'payments.alloc.none'
+      : againstOld
+        ? compareMoney(total, '0.00') > 0
+          ? 'payments.counter.againstOld'
+          : 'payments.counter.againstOldEmpty'
       : compareMoney(total, '0.00') > 0
         ? 'payments.counter.none'
         : 'payments.counter.noneEmpty';

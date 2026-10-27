@@ -26,6 +26,9 @@ export interface ShopPartyFactsWire {
   readonly supplier_balance: string;
   readonly supplier_due: string;
   readonly supplier_credit: string;
+  /** A6 — the old balance from before the app, already inside the balances. */
+  readonly customer_opening?: string;
+  readonly supplier_opening?: string;
   readonly oldest_due_on: string | null;
   readonly days_overdue: number | null;
   readonly last_activity_at: string | null;
@@ -39,6 +42,9 @@ export interface ShopPartyFacts {
   readonly supplierBalance: string;
   readonly supplierDue: string;
   readonly supplierCredit: string;
+  /** A6 — absent from a server older than this client: read as nothing carried in. */
+  readonly customerOpening?: string;
+  readonly supplierOpening?: string;
   readonly oldestDueOn: string | null;
   readonly daysOverdue: number | null;
   readonly lastActivityAt: string | null;
@@ -250,6 +256,8 @@ export interface PartyFormValues {
   readonly openingAmount: string | null;
   readonly openingDirection: 'debit' | 'credit';
   readonly openingAsOf: string;
+  /** A6 — `shop` posts the opening in the Shop's own book (DEC-019). */
+  readonly openingBook?: 'main' | 'shop';
   /**
    * PTY-05 — tag NAMES, not ids, and the set is REPLACED on save.
    *

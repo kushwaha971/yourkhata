@@ -1,5 +1,6 @@
 {
   "payments.advance": "₹{amount} kept as advance",
+  "payments.againstOld": "₹{amount} against the old balance",
   "payments.alloc.allocated": "Allocated ₹{amount}",
   "payments.alloc.auto": "Auto — oldest first",
   "payments.alloc.autoHint": "Settles the oldest bills first",
