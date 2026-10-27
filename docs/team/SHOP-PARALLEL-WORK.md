@@ -135,6 +135,25 @@ its branch. A section that lags the code is a defect.
   2. Reproduce the blank page (cold, slow network, every Shop menu tap).
   3. The spec-to-check mapping and `e2e/a8-edges.mjs`.
 
+## What the stopped sessions found (27 Oct 2026, before the owner stopped them)
+
+The owner stopped the parallel sessions to save usage. Three sessions working
+at once spend it three times as fast, and each would stop mid-task at the
+limit. Their findings so far, to verify (not trust) when the piece is worked:
+
+- **A8:** the cause may already be fixed in commit 59a1eb9f8 (25 Oct, from
+  the backlog branch, in this history). A `dynamic()` drawer with neither
+  `ssr: false` nor a `loading` view waits on its first download at the route's
+  `loading.tsx`, which swaps the page for the skeleton. Next: reproduce on the
+  live app to prove the fix holds, or find what is left.
+- **A7:** items 1 and 2 (the table frame clips the grey header to its rounded
+  corners; the pager drops its own top line) are in the code from 59a1eb9, but
+  not yet measured on the live app. **Item 3, the count line, is not built.**
+- **A5:** made only the harness port commit cf10ff099.
+
+**Lesson (main):** a message queued to a stopped session wakes it when it is
+idle, so do not message sessions the owner has stopped.
+
 ## Waiting to start
 
 - **A6 · Separate customer and supplier forms.** Starts after A5 is in,
