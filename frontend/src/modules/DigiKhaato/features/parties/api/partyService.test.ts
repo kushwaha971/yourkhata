@@ -239,6 +239,21 @@ describe('partyService write path', () => {
     expect(post.mock.calls[0]?.[1]).toEqual({name:FORM_VALUES.name.trim(),mobile:FORM_VALUES.mobile?.trim() || null});
   });
 
+  it('sends no reminder or consent keys for a supplier-only contact', async () => {
+    /**
+     * A6 F7. The form defaults "Send them reminders" to on and the supplier
+     * form has no such switch, so before this every supplier was saved opted
+     * in to reminders nobody asked about. A customer still sends both.
+     */
+    const post = jest.spyOn(api, 'post').mockResolvedValue({ data: { data: DETAIL_ROW, meta: {} } });
+    await createParty({ ...FORM_VALUES, isCustomer: false, isSupplier: true, smsOptIn: true }, 'k-s');
+    const body = post.mock.calls[0]?.[1] as Record<string, unknown>;
+    expect(body).not.toHaveProperty('sms_opt_in');
+    expect(body).not.toHaveProperty('consent_source');
+    await createParty({ ...FORM_VALUES, isCustomer: true, smsOptIn: true }, 'k-c');
+    expect(post.mock.calls[1]?.[1]).toHaveProperty('sms_opt_in', true);
+  });
+
   it('sends the tags the merchant put on the form', async () => {
     /**
      * The defect this test exists for, found by watching the network rather

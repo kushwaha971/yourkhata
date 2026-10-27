@@ -669,7 +669,11 @@ describe('the Shop form does not ask which list the person belongs to (owner, 25
     if (!add) throw new Error(`no ${name} button`);
     await user.click(add);
     const drawer = await screen.findByRole('dialog', { name });
-    await user.click(within(drawer).getByRole('button', { name: 'More details' }));
+    // A6 F5: the Shop's "More details" opens already expanded, as in the mock.
+    expect(within(drawer).getByRole('button', { name: /^More details/ })).toHaveAttribute(
+      'aria-expanded',
+      'true'
+    );
     return drawer;
   };
 
@@ -686,9 +690,14 @@ describe('the Shop form does not ask which list the person belongs to (owner, 25
     expect(
       within(drawer).getByRole('switch', { name: /^Send them reminders/ })
     ).toBeInTheDocument();
+    // A6 F1/F2/F4/F8 — the design's words, and Credit days in the top group.
+    expect(within(drawer).getByPlaceholderText('Customer name')).toBeInTheDocument();
+    expect(within(drawer).getByPlaceholderText('Mobile number')).toBeInTheDocument();
+    expect(within(drawer).getByLabelText('Credit days')).toBeInTheDocument();
+    expect(within(drawer).getByText('Code, address, reminders')).toBeInTheDocument();
 
     await user.type(within(drawer).getByLabelText('Name'), 'Ramesh Traders');
-    await user.click(within(drawer).getByRole('button', { name: /^Save/ }));
+    await user.click(within(drawer).getByRole('button', { name: 'Add customer' }));
     await waitFor(() => expect(partyService.createParty).toHaveBeenCalledTimes(1));
     const [values] = partyService.createParty.mock.calls[0] as [Record<string, unknown>];
     expect(values.isCustomer).toBe(true);
@@ -709,9 +718,16 @@ describe('the Shop form does not ask which list the person belongs to (owner, 25
       within(drawer).getByText('So you can send them payment details later.')
     ).toBeInTheDocument();
 
+    expect(
+      within(drawer).getByText('No reminders: they are for people who owe you')
+    ).toBeInTheDocument();
+    expect(within(drawer).getByPlaceholderText('Supplier or company name')).toBeInTheDocument();
+    expect(within(drawer).getByText('GSTIN, code, address')).toBeInTheDocument();
+    expect(within(drawer).queryByLabelText('Credit days')).not.toBeInTheDocument();
+
     await user.type(within(drawer).getByLabelText('Name'), 'Gupta Wholesale');
     await user.click(within(drawer).getByRole('switch', { name: /^Also a customer/ }));
-    await user.click(within(drawer).getByRole('button', { name: /^Save/ }));
+    await user.click(within(drawer).getByRole('button', { name: 'Add supplier' }));
     await waitFor(() => expect(partyService.createParty).toHaveBeenCalledTimes(1));
     const [values] = partyService.createParty.mock.calls[0] as [Record<string, unknown>];
     expect(values.isSupplier).toBe(true);

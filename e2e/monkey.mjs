@@ -191,8 +191,24 @@ const readyAfter = async (t0) => {
       { timeout: 10000 },
     )
     .catch(() => {});
-  return Date.now() - t0;
+  const ms = Date.now() - t0;
+  // A slow page says WHAT kept it busy, so the failure can be traced, not guessed.
+  if (ms > 5000) {
+    lastBusy = await page
+      .evaluate(() => {
+        const e = document.querySelector("main [aria-busy=true], main [data-skeleton], main .animate-pulse");
+        if (!e) return "nothing busy at the end (main missing until late?)";
+        const at = (x) => `${x.tagName.toLowerCase()}${x.id ? `#${x.id}` : ""}${x.getAttribute("data-testid") ? `[data-testid=${x.getAttribute("data-testid")}]` : ""}`;
+        const path = [];
+        for (let x = e; x && x.tagName !== "MAIN" && path.length < 5; x = x.parentElement) path.unshift(at(x));
+        return `${path.join(" > ")} ${e.outerHTML.slice(0, 160)}`;
+      })
+      .catch(() => "unreadable");
+    lastBusy += ` · still open: ${[...inflight.values()].slice(0, 6).join(", ") || "none"}`;
+  }
+  return ms;
 };
+let lastBusy = null;
 let lastT0 = Date.now();
 const pageSpeed = async (why) => {
   const ready = await readyAfter(lastT0);
@@ -202,7 +218,7 @@ const pageSpeed = async (why) => {
       return n ? { dcl: Math.round(n.domContentLoadedEventEnd), load: Math.round(n.loadEventEnd) } : null;
     })
     .catch(() => null);
-  loads.push({ why, url: page.url().replace(base, ""), ready, ...(m ?? {}) });
+  loads.push({ why, url: page.url().replace(base, ""), ready, busy: ready > 5000 ? lastBusy : undefined, ...(m ?? {}) });
 };
 const linesNow = async () =>
   (
@@ -533,7 +549,7 @@ const worst = loads.reduce((a, l) => (l.ready > (a?.ready ?? -1) ? l : a), null)
 console.log(`pages: ${loads.length} loads · content shown p50 ${q(readyMs, 0.5)} ms · p95 ${q(readyMs, 0.95)} ms · worst ${worst?.ready ?? 0} ms (${worst?.url ?? "-"}, ${worst?.why ?? ""})`);
 if (typeof heapStart !== "undefined" && heapStart)
   console.log(`heap: ${(heapStart / 1e6).toFixed(1)} → ${(heapEnd / 1e6).toFixed(1)} MB (last page) · long tasks since start ${Math.round(longMs)} ms`);
-for (const l of loads) if (l.ready > 5000) failures.push(`slow page: ${l.url} took ${l.ready} ms to show its content (${l.why})`);
+for (const l of loads) if (l.ready > 5000) failures.push(`slow page: ${l.url} took ${l.ready} ms to show its content (${l.why}); busy: ${l.busy ?? "-"}`);
 const slowApi = calls.filter((c) => (c.ms ?? 0) > 3000);
 for (const c of slowApi.slice(0, 5)) failures.push(`slow API: ${c.key} took ${c.ms} ms`);
 writeFileSync(`${dir}/monkey-${seed}-${width}.api.json`, JSON.stringify({ calls, loads }, null, 1));

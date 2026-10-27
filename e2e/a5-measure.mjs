@@ -72,7 +72,10 @@ const measure = () => {
     if (b.top > a.bottom - 1 && b.top - a.bottom < 80) fieldGaps.push(Math.round(b.top - a.bottom));
   }
   const switches = [...form.querySelectorAll('[role=switch]')].map((s) => Math.round(R(s.closest('label') ?? s.parentElement).height));
-  const leftEdges = [...new Set(fields.map(({ l }) => Math.round(R(l).left)))];
+  // One edge per container: the fields inside an open disclosure are inset by
+  // the design (A6 opens the Shop's "More details"), so they share their own.
+  const leftEdges = [...new Set(fields.filter(({ l }) => !l.closest('[data-ub-disclosure]')).map(({ l }) => Math.round(R(l).left)))];
+  const innerEdges = [...new Set(fields.filter(({ l }) => l.closest('[data-ub-disclosure]')).map(({ l }) => Math.round(R(l).left)))];
   const cut = fields.filter(({ ctl }) => ctl.tagName === 'INPUT' && ctl.value && ctl.scrollWidth > ctl.clientWidth + 1).length;
   const fb = footer ? [...footer.querySelectorAll('button')].filter((b) => R(b).width > 0) : [];
   const side = fb.length >= 2 && Math.abs(R(fb[0]).top - R(fb[1]).top) < 2;
@@ -94,6 +97,7 @@ const measure = () => {
     ctlH: [...new Set(ctlHeights)],
     switchRow: [...new Set(switches)],
     leftEdges,
+    innerEdges,
     cut,
     footerPad: footer ? ['paddingTop', 'paddingRight', 'paddingBottom', 'paddingLeft'].map((p) => px(footer, p)) : null,
     footerSide: side,
@@ -120,6 +124,7 @@ const verdict = (m, phone) => {
   if (m.hintFont.length && !m.hintFont.every((x) => x === '12.5px')) f.push(`S14b hint ${m.hintFont} (12.5px)`);
   if (!m.labelFont.every((x) => x === '13px/600')) f.push(`S6 label ${m.labelFont} (13px/600)`);
   if (m.leftEdges.length > 1) f.push(`H19 labels on ${m.leftEdges.length} left edges`);
+  if (m.innerEdges?.length > 1) f.push(`H19 inner labels on ${m.innerEdges.length} left edges`);
   if (m.cut) f.push(`H18 ${m.cut} box(es) cut`);
   return f;
 };

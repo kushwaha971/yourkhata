@@ -343,8 +343,12 @@ const toWireBody = (values: PartyFormValues, { create }: { create: boolean }) =>
     credit_limit: text(values.creditLimit),
     credit_days: text(values.creditDays) ? Number(values.creditDays) : undefined,
     collection_date: text(values.collectionDate),
-    sms_opt_in: values.smsOptIn,
-    consent_source: text(values.consentSource),
+    /* A6 F7: reminders are for people who owe you, so a supplier-only
+       contact sends neither key. The form's default is "on", and before this
+       every supplier was saved opted in to reminders it never asked about. */
+    ...(values.isCustomer
+      ? { sms_opt_in: values.smsOptIn, consent_source: text(values.consentSource) }
+      : {}),
     /* PTY-05. ALWAYS sent, including as an empty array, and the two halves of
        that are different rules.
  
