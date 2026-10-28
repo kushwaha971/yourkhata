@@ -291,7 +291,7 @@ describe('an empty book (owner, 12 Oct 2026)', () => {
     expect(await screen.findByText('Nobody to remind yet')).toBeInTheDocument();
     expect(
       screen.getByText(
-        'When a customer owes you, set a collection date on their khata and they appear here.'
+        'When a customer has money to pay you, set a collection date on their khata and they appear here.'
       )
     ).toBeInTheDocument();
     expect(screen.queryByRole('tablist', { name: 'Reminder lists' })).not.toBeInTheDocument();

@@ -317,7 +317,7 @@ try {
   const dialog = page.getByRole('dialog', { name: `Cancel ${made.number}?` });
   await dialog.waitFor({ timeout: 15000 });
   const said = await dialog.innerText();
-  check('the dialog says what changes, in Shop words', said.includes(`${customer.name} owes the Shop ₹2.00 more`) && !/khata|void/i.test(said), said.replace(/\s+/g, ' ').slice(0, 240));
+  check('the dialog says what changes, in Shop words', said.includes(`The Shop will collect ₹2.00 more from ${customer.name}`) && !/khata|void/i.test(said), said.replace(/\s+/g, ' ').slice(0, 240));
   check('the dialog says the bill will be due again', said.includes(`${allocation.number} will be due again: ${inr(due + 2)}`), said.replace(/\s+/g, ' ').slice(0, 240));
   check('Keep receipt is the safe choice', await dialog.getByRole('button', { name: 'Keep receipt' }).isVisible());
   const focused = await page.evaluate(() => document.activeElement?.tagName + ':' + (document.activeElement?.textContent ?? '').trim().slice(0, 20));

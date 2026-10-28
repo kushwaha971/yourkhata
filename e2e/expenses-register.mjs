@@ -299,7 +299,7 @@ try {
   await page.keyboard.type('1');
   await drawer.getByRole('radiogroup', { name: 'Common categories' }).getByRole('radio').first().click();
   await drawer.getByRole('switch', { name: /Paid now/ }).click();
-  const owedTo = drawer.getByRole('combobox', { name: /Owed to/ });
+  const owedTo = drawer.getByRole('combobox', { name: /To pay/ });
   await owedTo.fill(supplier.name);
   await page.getByRole('option', { name: new RegExp(supplier.name) }).first().click({ timeout: 15000 });
   const hint = await drawer.getByText(`This is added to what the Shop owes ${supplier.name}.`).count();
@@ -322,13 +322,13 @@ try {
   await open('?tab=unpaid');
   const card = page.getByTestId('ub-grid-card').filter({ hasText: owed?.number ?? 'none' });
   const cardText = (await card.innerText().catch(() => '')).replace(/\s+/g, ' ');
-  check('the Unpaid chip lists it with "Unpaid · owed to …"', cardText.includes('Unpaid') && cardText.includes(`owed to ${supplier.name}`), cardText);
+  check('the Unpaid chip lists it with "Unpaid · owed to …"', cardText.includes('Unpaid') && cardText.includes(`to pay ${supplier.name}`), cardText);
   if (SHOTS) await page.screenshot({ path: `${SHOTS}/unpaid-390.png` });
   await card.click();
   const sheet = page.getByRole('dialog');
   await sheet.waitFor({ timeout: 15000 });
   const sheetText = await sheet.innerText();
-  check('the detail says the Shop owes the supplier', sheetText.includes(`The Shop owes ${supplier.name} this money.`), sheetText.slice(0, 200));
+  check('the detail says the Shop owes the supplier', sheetText.includes(`The Shop has to pay ${supplier.name} this money.`), sheetText.slice(0, 200));
   check('the detail shows Unpaid and Pay by', sheetText.includes('Unpaid') && sheetText.includes('Pay by'));
   const ms = await page.evaluate(measure, '[role=dialog]');
   check('detail 390: no text cut', ms.cut.length === 0, ms.cut.join(' | '));

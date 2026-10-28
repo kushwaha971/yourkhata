@@ -5,7 +5,7 @@ import { en, hi } from 'src/tests/allMessages';
  *
  * The balance filter's "I will get" chip read "मुझे देना है" ("I have to pay"),
  * word for word the meaning of its neighbour "I will give"; and the opening
- * balance's "They owe me" read "उन्हें देना है" ("I have to give them") while
+ * balance's "I will get" read "उन्हें देना है" ("I have to give them") while
  * the khata header above it correctly said "आपको मिलने हैं". A merchant choosing
  * a direction in Hindi was choosing the opposite of what they meant, on a
  * screen where the direction IS the number.
@@ -35,7 +35,7 @@ const GOT = 'आपको मिले';
 const PHRASES: Readonly<Record<string, string>> = {
   'You will get': RECEIVABLE,
   'You will give': PAYABLE,
-  'They owe me': RECEIVABLE_ME,
+  'I will get': RECEIVABLE_ME,
   'You gave': GAVE,
   'You got': GOT,
 };

@@ -68,7 +68,7 @@ class PartyFilterSet(BaseTenantFilterSet):
     )
     balance = django_filters.ChoiceFilter(
         method="filter_balance",
-        choices=(("due", "Due"), ("owes_me", "They owe me"), ("i_owe", "I owe them"), ("settled", "Settled")),
+        choices=(("due", "Due"), ("owes_me", "I will get"), ("i_owe", "I will give"), ("settled", "Settled")),
     )
     status = django_filters.ChoiceFilter(choices=PartyStatus.choices)
     collection = django_filters.ChoiceFilter(

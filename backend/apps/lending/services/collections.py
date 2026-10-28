@@ -120,7 +120,7 @@ def _amount(raw: Any) -> Decimal:
 def _over(payoff: Decimal, value: Decimal) -> BusinessRuleViolation:
     return BusinessRuleViolation(
         "collection_over_payoff",
-        f"This is more than the ₹{payoff:,.2f} still owed on the loan.",
+        f"This is more than the ₹{payoff:,.2f} still left to collect on the loan.",
         details={"payoff": f"{payoff:.2f}", "amount": f"{value:.2f}"},
     )
 

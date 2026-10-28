@@ -185,7 +185,7 @@ describe('adding a party', () => {
     expect(within(drawer).getByText('When did they start owing this?')).toBeInTheDocument();
     expect(within(drawer).getByRole('button', { name: 'Year start' })).toBeInTheDocument();
 
-    await user.click(within(drawer).getByRole('radio', { name: 'I owe them' }));
+    await user.click(within(drawer).getByRole('radio', { name: 'I will give' }));
 
     expect(within(drawer).getByText('When did you start owing this?')).toBeInTheDocument();
   });
@@ -453,7 +453,7 @@ describe('PTY-06 — the credit limit on the form', () => {
     await user.type(limit, '10000');
 
     expect(
-      await screen.findByText('They already owe ₹47,500.00 — this limit is already crossed')
+      await screen.findByText('You already have to get ₹47,500.00 from them — this limit is already crossed')
     ).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Save changes' })).toBeEnabled();
   });

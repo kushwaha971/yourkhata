@@ -3,6 +3,6 @@
   "expenses.paidTo.noAccess": "You cannot look up contacts",
   "expenses.paidTo.noMatch": "No contact matches",
   "expenses.paidTo.placeholder": "Search a customer or supplier",
-  "expenses.paidTo.required": "Choose who you owe this to",
+  "expenses.paidTo.required": "Choose who you have to pay",
   "expenses.paidTo.results": "Matching contacts"
 }

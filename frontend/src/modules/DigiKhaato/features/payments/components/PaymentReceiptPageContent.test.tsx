@@ -159,7 +159,7 @@ it('calls the undo Cancel receipt, keeps the receipt by default, and says what c
   await userEvent.click(await screen.findByRole('button', { name: /Cancel receipt/ }));
   const dialog = await screen.findByRole('dialog', { name: 'Cancel RCT/26-27/0233?' });
   expect(within(dialog).getByRole('button', { name: 'Keep receipt' })).toBeInTheDocument();
-  expect(within(dialog).getByText('Anita Verma owes the Shop ₹200.00 more')).toBeInTheDocument();
+  expect(within(dialog).getByText('The Shop will collect ₹200.00 more from Anita Verma')).toBeInTheDocument();
   expect(within(dialog).getByText('INV-0412 will be due again: ₹445.00')).toBeInTheDocument();
   expect(screen.queryByText(/Void|Khata/)).not.toBeInTheDocument();
 });

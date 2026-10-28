@@ -386,7 +386,7 @@ def test_the_message_names_both_balances_and_only_the_business(tenant, owner, ra
     created = settle(owner, ramesh, "600.00").json()["data"]
     text = _post(owner, f"{URL}/{created['id']}/share", {"locale": "en"}).json()["data"]["text"]
     assert "Rs 600" in text and "No cash changed hands" in text
-    assert "You still owe us: Rs 400" in text and "Nothing due to you now" in text
+    assert "You still have to pay us: Rs 400" in text and "Nothing due to you now" in text
     assert "YourKhata" not in text and "yourkhata" not in text.lower()
     assert text.splitlines()[-1] == f"— {tenant.name}"
     # The receipt of either half says the same thing, not "Received by adjustment".

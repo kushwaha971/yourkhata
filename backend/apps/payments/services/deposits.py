@@ -567,7 +567,7 @@ def _clean_allocations(raw: Any) -> tuple[list[dict], Decimal]:
             or target.bucket in (LedgerBucket.DEPOSIT, LedgerBucket.LOAN)
         ):
             details[f"allocations.{index}.document_type"] = [
-                "A deposit is adjusted against what the contact owes."
+                "A deposit is adjusted against what the contact has to pay."
             ]
             continue
         errors: dict[str, list[str]] = {}

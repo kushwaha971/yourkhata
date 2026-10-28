@@ -67,7 +67,7 @@ COLUMNS = (
     ),
     ColumnSpec(
         "old_dues",
-        help="money they still owe from the old register, e.g. 300",
+        help="money they still have to pay from the old register, e.g. 300",
         aliases=("dues", "balance", "pending", "baaki", "बाक़ी"),
         kind="money",
     ),

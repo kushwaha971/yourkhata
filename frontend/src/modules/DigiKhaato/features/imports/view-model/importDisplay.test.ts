@@ -110,8 +110,8 @@ describe('previewCell (AC-3)', () => {
      not what the khata will say once the row is saved. */
   it('groups a mobile as the party list does, and words a coded choice', () => {
     expect(previewCell('+919820000001', 'mobile', YES_NO)).toBe('+91 98200 00001');
-    const choice = (value: string) => (value === 'to_receive' ? 'They owe me' : value);
-    expect(previewCell('to_receive', 'label', { ...YES_NO, choice })).toBe('They owe me');
+    const choice = (value: string) => (value === 'to_receive' ? 'I will get' : value);
+    expect(previewCell('to_receive', 'label', { ...YES_NO, choice })).toBe('I will get');
     expect(previewCell('to_receive', 'label', YES_NO)).toBe('to_receive');
   });
 });

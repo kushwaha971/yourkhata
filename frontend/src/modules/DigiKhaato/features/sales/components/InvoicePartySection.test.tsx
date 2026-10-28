@@ -112,7 +112,7 @@ it('reads to collect in green and you owe in red, with the mobile beside it', as
   unmount();
   get.mockResolvedValue(withShop({ customerBalance: '-600.00' }, '0.00'));
   renderWithProviders(<SeededForm />);
-  expect((await screen.findByText('₹600.00 you owe')).className).toContain('text-give');
+  expect((await screen.findByText('₹600.00 to pay')).className).toContain('text-give');
 });
 
 /**

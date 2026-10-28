@@ -438,7 +438,7 @@ it('says who owes what, how many bills are unpaid, and what the amount leaves du
    *  Ramesh Traders" and nothing under the amount until the footer. */
   const user = userEvent.setup();
   renderWithProviders(<PaymentFormDrawer context={shop} onClose={jest.fn()} />);
-  expect(screen.getByText('Ramesh Traders · owes ₹1,000.00')).toBeInTheDocument();
+  expect(screen.getByText('Ramesh Traders · to collect ₹1,000.00')).toBeInTheDocument();
   expect(await screen.findByText('2 unpaid bills')).toBeInTheDocument();
   expect(screen.getByTestId('payment-hint')).toHaveTextContent('This clears everything due.');
   const amount = screen.getByRole('textbox', { name: 'Amount' });
@@ -526,7 +526,7 @@ it('stops a save when the dues changed on another device, and offers the new fig
   expect(service.recordPayment).not.toHaveBeenCalled();
   expect(screen.getByTestId('payment-save')).toBeDisabled();
   await user.click(screen.getByRole('button', { name: 'Use the new figures' }));
-  expect(await screen.findByText('Ramesh Traders · now owes ₹102.00')).toBeInTheDocument();
+  expect(await screen.findByText('Ramesh Traders · now to collect ₹102.00')).toBeInTheDocument();
   // The amount was the old figure in full, so it follows.
   expect(screen.getByRole('textbox', { name: 'Amount' })).toHaveValue('102.00');
   await screen.findByTestId('alloc-picker');

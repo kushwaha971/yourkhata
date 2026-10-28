@@ -9,6 +9,7 @@ import { UbBottomBar } from 'src/design-system/UbBottomBar';
 import { cn } from 'src/utils/cn';
 
 import { visibleColumns } from './columnModel';
+import { REGISTER_FRAME } from './tableChrome';
 import { UbDataGridEmptyState, type UbDataGridEmptyStates } from './UbDataGridEmptyState';
 import { UbDataGridMobileList } from './UbDataGridMobileList';
 import { UbDataGridPagination } from './UbDataGridPagination';
@@ -419,6 +420,9 @@ export function UbDataGrid<TRow>({
   // which is a different model that this menu does not describe.
   const showColumnMenu = (columnMenu ?? Boolean(search || filters)) && needsTable;
 
+  /* A7 — on a table tier a register's rows and pager share ONE frame. */
+  const registerFrame = variant === 'register' && tier !== 'cards';
+
   const pagination =
     footer !== undefined ? (
       footer
@@ -428,7 +432,7 @@ export function UbDataGrid<TRow>({
           fillHeight && 'shrink-0 bg-surface-card px-2 py-2',
           // A register's rows sit in their own rounded card, so the pager's
           // hairline drew a second, full-width rule under that card's border.
-          variant === 'register' && 'border-t-0'
+          variant === 'register' && !registerFrame && 'border-t-0'
         )}
         page={page}
         tier={tier}
@@ -479,6 +483,7 @@ export function UbDataGrid<TRow>({
       )}
       {beforeRows}
 
+      <RegisterFrame on={registerFrame} fill={fillHeight}>
       <div
         ref={scrollRegion}
         data-testid="ub-grid-scroll-region"
@@ -508,7 +513,12 @@ export function UbDataGrid<TRow>({
             // navigating by table keys needs those more than the announcement
             // needs a tidy home.
             <div role="status" aria-busy aria-label={labels.loading}>
-              <UbDataGridStateTable columns={shown} caption={caption} selectable={canSelect}>
+              <UbDataGridStateTable
+                columns={shown}
+                caption={caption}
+                selectable={canSelect}
+                register={registerFrame}
+              >
                 <UbDataGridSkeletonRows
                   columnCount={shown.length}
                   rowCount={skeletonRows}
@@ -524,7 +534,12 @@ export function UbDataGrid<TRow>({
           (tier === 'cards' ? (
             <UbDataGridEmptyState state={state} copy={emptyStates} className="m-4" />
           ) : (
-            <UbDataGridStateTable columns={shown} caption={caption} selectable={canSelect}>
+            <UbDataGridStateTable
+              columns={shown}
+              caption={caption}
+              selectable={canSelect}
+              register={registerFrame}
+            >
               <UbDataGridStateRow colSpan={shown.length + (canSelect ? 1 : 0)}>
                 <UbDataGridEmptyState state={state} copy={emptyStates} className="m-4" />
               </UbDataGridStateRow>
@@ -534,7 +549,9 @@ export function UbDataGrid<TRow>({
         {/* Indeterminate on purpose: a list request has no progress to report,
           and a bar that crept to 90 % and waited would be a lie with a
           percentage on it. No `aria-valuenow` is how ARIA says "indeterminate". */}
-        {state === 'rows' && busy && (
+        {/* A7 — not on a register: its count line shows the loading look,
+            and a 2 px bar pushed every row down while a search ran. */}
+        {state === 'rows' && busy && variant !== 'register' && (
           <div
             role="progressbar"
             aria-label={labels.loading}
@@ -548,7 +565,11 @@ export function UbDataGrid<TRow>({
         {state === 'rows' && (
           <div
             aria-busy={busy || undefined}
-            className={cn('transition-opacity duration-base', busy && 'opacity-60')}
+            className={cn(
+              'transition-opacity duration-base',
+              // A7 — the design dims a register's rows to half while results load.
+              busy && (variant === 'register' ? 'opacity-50' : 'opacity-60')
+            )}
           >
             {tier === 'cards' ? (
               <UbDataGridMobileList
@@ -571,9 +592,8 @@ export function UbDataGrid<TRow>({
               />
             ) : (
               <GridTable
+                register={registerFrame}
                 className={cn(
-                  variant === 'register' &&
-                    'rounded-card border border-border-hairline bg-surface-card',
                   // `clip`, not `hidden`, when the region above scrolls: it
                   // trims the grey header to the rounded corners without
                   // becoming a scroll container, which would stop the sticky
@@ -610,8 +630,26 @@ export function UbDataGrid<TRow>({
         ) : (
           pagination
         ))}
+      </RegisterFrame>
     </div>
   );
 }
 
 UbDataGrid.displayName = 'UbDataGrid';
+
+/** A7 — the register's single frame (`REGISTER_FRAME`), or nothing at all. */
+function RegisterFrame({
+  on,
+  fill,
+  children,
+}: Readonly<{ on: boolean; fill: boolean; children: ReactNode }>): React.JSX.Element {
+  if (!on) return <>{children}</>;
+  return (
+    <div
+      data-ub-register-frame=""
+      className={cn(REGISTER_FRAME, fill && 'flex min-h-0 flex-1 flex-col')}
+    >
+      {children}
+    </div>
+  );
+}

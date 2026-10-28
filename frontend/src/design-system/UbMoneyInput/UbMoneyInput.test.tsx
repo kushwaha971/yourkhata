@@ -57,7 +57,7 @@ describe('the value never becomes a number', () => {
   });
 
   it('keeps a typed minus so the form can refuse it in words (QA B14)', () => {
-    // Direction is two buttons — "they owe me" and "I owe them" — so a minus is
+    // Direction is two buttons — "they owe me" and "I will give" — so a minus is
     // never right. Dropping it silently turned a typed "−50" into a saved ₹50
     // with a success toast; kept, it reaches the validators, which say so.
     expect(sanitiseAmount('-500')).toBe('-500');

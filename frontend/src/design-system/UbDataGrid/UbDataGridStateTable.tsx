@@ -16,6 +16,7 @@ import {
   GRID_TABLE,
   GRID_TH,
   GRID_THEAD,
+  REGISTER_TH,
 } from './tableChrome';
 
 import type { UbDataGridColumn } from './types';
@@ -63,6 +64,8 @@ export interface UbDataGridStateTableProps<TRow> {
   readonly selectable?: boolean;
   /** `<tbody>` content: skeleton rows, or one full-span state row. */
   readonly children: ReactNode;
+  /** A7 — the same header as the register's rows table, so loading never shifts it. */
+  readonly register?: boolean;
   readonly className?: string;
 }
 
@@ -71,6 +74,7 @@ function UbDataGridStateTableBase<TRow>({
   caption,
   selectable = false,
   children,
+  register = false,
   className,
 }: Readonly<UbDataGridStateTableProps<TRow>>): React.JSX.Element {
   // The same computed widths the real table uses. This is the whole point of
@@ -92,7 +96,7 @@ function UbDataGridStateTableBase<TRow>({
                 key={column.id}
                 scope="col"
                 style={widths[index] ? { width: widths[index] } : undefined}
-                className={cn(GRID_TH, ALIGN[column.align ?? 'start'])}
+                className={cn(register ? REGISTER_TH : GRID_TH, ALIGN[column.align ?? 'start'])}
               >
                 <span className={cn(column.headerHidden && 'sr-only')}>{column.header}</span>
               </th>

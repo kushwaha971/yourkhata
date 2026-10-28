@@ -42,7 +42,7 @@
   "settings.module.lending.description": "Loans, daily instalments and the collection round.",
   "settings.module.library.description": "Students, seats, fees and books for a reading room.",
   "settings.module.locked": "Not included in your plan",
-  "settings.module.notifications.description": "Reminders to customers who owe you.",
+  "settings.module.notifications.description": "Reminders to customers who have to pay you.",
   "settings.module.payments.description": "Payments received and made.",
   "settings.module.purchases.description": "Bills from your suppliers.",
   "settings.module.reports.description": "Summaries of sales, dues and stock.",

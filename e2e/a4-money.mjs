@@ -144,7 +144,11 @@ try {
   // ── a credit bill, then the other screens without a reload ────────────────
   const customers = (await api('/parties?type=customer&status=active&book=shop&page_size=40')).data;
   const party = customers[13];
-  const items = (await api('/items?page_size=40&ordering=name')).data.filter((i) => Number(i.selling_price) > 0 && Number(i.on_hand) > 3);
+  // Priced, stocked and seeded: other harnesses' zero-stock items ("A5 item …")
+  // now sort first by name, and items[17] of 40 stopped existing (H25).
+  const items = (await api('/items?page_size=200&ordering=name')).data.filter(
+    (i) => Number(i.selling_price) > 0 && Number(i.on_hand) > 20 && !/^(A\d+ item|Edge |A6 )/.test(i.name)
+  );
   const item = items[17];
   const bal0 = Number((await api(`/parties/${party.id}?book=shop`)).data.shop.customer_balance);
   const stock0 = Number((await api(`/items/${item.id}`)).data.on_hand);

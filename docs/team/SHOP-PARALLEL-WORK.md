@@ -110,17 +110,15 @@ its branch. A section that lags the code is a defect.
 
 ## A7 · Tables and the count line
 
-- **Worktree:** `/Users/akashkushwaha/Projects/ims-platform/ims-platform/shop-a7-e986b8`
-- **Branch:** `claude/shop-a7-e986b8`
-- **Port:** 3002
-- **Report:** `docs/performance/2026-10-27-shop-a7-tables-count.md`
-- **Status:** stopped by the owner on 27 Oct 2026 before any commit; main
-  continues it after A5.
-- **Last commit:** — (the branch is at 17e99ec88)
-- **Next step:**
-  1. Cherry-pick cf10ff099 (A5's port commit).
-  2. Measure what is built against the A7 design.
-  3. The spec-to-check mapping and `e2e/a7-edges.mjs`.
+- **Worktree:** main (`proceed-222204`), branch `shop/a2`.
+- **Report:** `docs/performance/2026-10-28-shop-a7-tables-count.md`; harness `e2e/a7-measure.mjs`.
+- **Status:** ready for the owner's check (28 Oct 2026); built in the main worktree.
+- **Built:**
+  - the register frame (`REGISTER_*`) on all seven Shop registers;
+  - `UbCountLine` and the Customers/Suppliers count line;
+  - "owe" replaced with simple words app-wide (R-DEC-62);
+  - fixes at 1024: the bill's customer box, the Hindi Pay button, phone numbers.
+- **Next:** Part F registers' count lines use `UbCountLine`; the mock-layout conflicts listed in the report.
 
 ## A8 · The page goes blank on the first tap
 

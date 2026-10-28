@@ -320,7 +320,7 @@ def waive(*, ctx: Any, charge_id: Any, data: Any) -> tuple[LibraryCharge, Librar
     if charge.reversed_at is not None or Decimal(charge.amount_due) <= ZERO:
         raise BusinessRuleViolation(
             "library_charge_not_open",
-            "Nothing is owed on this charge.",
+            "Nothing is left to pay on this charge.",
             details={"status": charge.status},
         )
     errors = Errors()
@@ -330,7 +330,7 @@ def waive(*, ctx: Any, charge_id: Any, data: Any) -> tuple[LibraryCharge, Librar
     elif amount is not None and amount <= ZERO:
         errors.add("amount", "Enter an amount above zero.")
     elif amount is not None and amount > Decimal(charge.amount_due):
-        errors.add("amount", f"At most ₹{charge.amount_due} is owed on this charge.")
+        errors.add("amount", f"At most ₹{charge.amount_due} is left to pay on this charge.")
     reason = text(errors, data, "reason", REASON_MAX, required=True)
     if reason is not None and len(reason) < WAIVER_REASON_MIN:
         errors.add("reason", "Say why in a few words.")
@@ -480,7 +480,7 @@ class LibraryChargeTarget:
         if amount > self.outstanding(document):
             raise BusinessRuleViolation(
                 "over_allocated",
-                "This is more than the charge still owes.",
+                "This is more than is left to pay on this charge.",
                 details={"outstanding": str(self.outstanding(document))},
             )
         before = document.status

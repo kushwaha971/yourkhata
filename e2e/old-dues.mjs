@@ -110,7 +110,7 @@ try {
         check(`${tag}: no text cut`, m.cut.length === 0, m.cut.join(' | '));
         check(`${tag}: no figure broken across lines`, m.broken.length === 0, m.broken.join(' | '));
         if (locale === 'en' && (width === 390 || width === 1280)) {
-          const word = kind === 'payable' ? 'You owe suppliers' : 'Customers owe you';
+          const word = kind === 'payable' ? 'To pay suppliers' : 'To collect from customers';
           check(`${tag}: the tab says "${word}" with the server's total`, m.tab.includes(word) && m.tab.includes(inr(served.meta.totals.total)), m.tab);
           const t = served.meta.totals;
           check(`${tag}: the bars carry the server's buckets`, ['0_30', '31_60', '61_90', '90_plus'].every((b) => m.bars?.includes(inr(t[b]))), m.bars?.slice(0, 120));
@@ -120,7 +120,7 @@ try {
           check(`${tag}: every card is a 44 px target`, m.cards.every((c) => c.h >= 44), JSON.stringify([...new Set(m.cards.map((c) => c.h))]));
           if (locale === 'en' && width === 390) {
             check(`${tag}: one card per server row`, m.cards.length === served.data.length, `${m.cards.length} vs ${served.data.length}`);
-            const dueWord = kind === 'payable' ? 'You owe' : 'Owes you';
+            const dueWord = kind === 'payable' ? 'You will give' : 'You will get';
             const wrong = served.data.filter((r, i) => !(m.cards[i]?.label ?? '').includes(`${dueWord} ₹${inr(r.total)}`) || !(m.cards[i]?.label ?? '').includes(r.party.name));
             check(`${tag}: every card's name and total are the server's`, wrong.length === 0, wrong.slice(0, 3).map((r) => r.party.name).join(', '));
           }

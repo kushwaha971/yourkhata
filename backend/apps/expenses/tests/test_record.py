@@ -188,7 +188,7 @@ def test_an_unpaid_expense_needs_a_party_and_a_due_date(owner: Any, categories: 
     response = record(owner, categories["rent"], paid=False)
     assert response.status_code == 400
     details = response.json()["error"]["details"]
-    assert details["party_id"] == ["Choose who you owe this to."]
+    assert details["party_id"] == ["Choose who you have to pay."]
     assert "due_on" in details
 
 

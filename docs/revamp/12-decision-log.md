@@ -809,3 +809,9 @@ overriding the A6 mock where they differ:
    opening typed on the Shop's forms is Shop money (`bucket=shop`), one per side,
    never the Udhaar book's. The words are "Old balance to collect / to pay", and
    no A6 copy says "owe".
+
+R-DEC-62 (owner, 28 October 2026: "update owe like get/give or something simple
+english") — no English text the merchant or their customer reads says "owe". The
+Shop says To collect / To pay; elsewhere You will get / You will give; an old
+balance is I will get / I will give; Library and Lending say still to pay / left
+to collect. This beats the design's own words where they differ (R-DEC-54).

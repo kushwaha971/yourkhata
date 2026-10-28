@@ -187,7 +187,7 @@ it('says who an unpaid expense is owed to, and a cancelled one in words', async 
   renderWithProviders(<ExpensesPageContent />);
   const [unpaid, cancelled] = (await screen.findAllByTestId('ub-grid-card')) as HTMLElement[];
   expect(within(unpaid as HTMLElement).getByText('Unpaid')).toBeInTheDocument();
-  expect(within(unpaid as HTMLElement).getByText(/owed to Gupta Oil Mills/)).toBeInTheDocument();
+  expect(within(unpaid as HTMLElement).getByText(/to pay Gupta Oil Mills/)).toBeInTheDocument();
   expect(within(cancelled as HTMLElement).getByText('Cancelled')).toBeInTheDocument();
 });
 

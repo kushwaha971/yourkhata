@@ -174,7 +174,7 @@ try {
       const text = await drawer.innerText();
       check(
         `${tag}: the header says who owes what`,
-        text.includes(customer.name) && /owes ₹|₹[\d,.]+ बाकी/.test(text),
+        text.includes(customer.name) && /to collect ₹|₹[\d,.]+ बाकी/.test(text),
         m.description
       );
       check(`${tag}: the unpaid bills are counted`, /unpaid bill|बिल बाकी/.test(text));
@@ -313,7 +313,7 @@ try {
     await shot(`changed-${width}-${locale}`);
     await drawer.getByRole('button', { name: /Use the new figures|नए आँकड़े लें/ }).click();
     await page.waitForTimeout(400);
-    check(`changed ${tag}: the header now says "now owes"`, /now owes|अब ₹/.test(await drawer.innerText()));
+    check(`changed ${tag}: the header now says "now owes"`, /now to collect|अब ₹/.test(await drawer.innerText()));
     check(`changed ${tag}: Save allowed again`, await drawer.getByTestId('payment-save').isEnabled());
     await close();
   }

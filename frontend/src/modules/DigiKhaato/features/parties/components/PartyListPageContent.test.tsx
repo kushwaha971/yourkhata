@@ -196,25 +196,26 @@ describe('PartyListPageContent', () => {
   it('uses a compact Shop summary with scoped totals and keeps the shared book unchanged', async () => {
     partyService.listParties.mockResolvedValue(loaded([RAMESH]));
     renderWithProviders(<PartyListPageContent kind="customer" book="shop" />);
-    expect(await screen.findByTestId('shop-customer-summary')).toBeInTheDocument();
-    expect(
-      within(screen.getByTestId('shop-customer-summary')).getByText(
-        /From the 1 customer on this page/
-      )
-    ).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Owe you', pressed: false })).toBeInTheDocument();
+    expect(await screen.findByTestId('count-line')).toBeInTheDocument();
+    // A7 — the design's count line. One row on one page IS the whole match, so
+    // its sum is the filtered total and needs no "on this page" note.
+    await waitFor(() =>
+      expect(screen.getByTestId('count-line')).toHaveTextContent('To collect ₹2,800.00')
+    );
+    expect(screen.getByTestId('count-line')).toHaveTextContent(/1 customer(?!s)/);
+    expect(screen.getByRole('button', { name: 'To collect', pressed: false })).toBeInTheDocument();
     expect(screen.getByRole('searchbox')).toBeInTheDocument();
     expect(screen.getByTestId('ub-grid-cards')).toHaveAttribute('data-card-layout', 'stacked');
     // The selected artifact puts controls first, then the scoped summary, then rows.
     expect(
       screen
         .getByTestId('shop-customer-toolbar')
-        .compareDocumentPosition(screen.getByTestId('shop-customer-summary')) &
+        .compareDocumentPosition(screen.getByTestId('count-line')) &
         Node.DOCUMENT_POSITION_FOLLOWING
     ).toBeTruthy();
     expect(
       screen
-        .getByTestId('shop-customer-summary')
+        .getByTestId('count-line')
         .compareDocumentPosition(screen.getByTestId('ub-grid-cards')) &
         Node.DOCUMENT_POSITION_FOLLOWING
     ).toBeTruthy();
@@ -2108,9 +2109,9 @@ describe('one book: Suppliers', () => {
     await screen.findByText('Ramesh Traders');
     expect(screen.getByRole('searchbox', { name: 'Search suppliers' })).toBeInTheDocument();
     expect(
-      screen.getByRole('list', { name: 'Suppliers, what you owe, and their latest activity' })
+      screen.getByRole('list', { name: 'Suppliers, what you will pay, and their latest activity' })
     ).toBeInTheDocument();
-    const summary = screen.getByTestId('shop-customer-summary');
+    const summary = screen.getByTestId('count-line');
     expect(summary).toHaveTextContent('To pay');
     expect(summary).toHaveTextContent('₹2,688.00');
     expect(summary).not.toHaveTextContent('customers');

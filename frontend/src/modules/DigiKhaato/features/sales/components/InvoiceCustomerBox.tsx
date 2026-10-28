@@ -102,7 +102,10 @@ export function InvoiceCustomerBox({
             tone="tertiary"
             className="whitespace-nowrap text-[0.8125rem] leading-5"
           >
-            {mobile ? formatPhoneForDisplay(mobile) : ''}
+            {/* A contact with no number keeps the line's shape (an empty slot let
+                the box shrink 20 px as the reply landed, A7 regression) and the
+                merchant learns why there is nothing to call. */}
+            {mobile ? formatPhoneForDisplay(mobile) : t('sales.editor.box.noMobile')}
           </UbText>
         )}
         {figure ? (

@@ -25,6 +25,9 @@ import {
   GRID_TABLE,
   GRID_TD,
   GRID_TH,
+  REGISTER_TD,
+  REGISTER_TH,
+  REGISTER_TH_BUTTON_HEIGHT,
   GRID_THEAD,
 } from './tableChrome';
 
@@ -100,6 +103,8 @@ export interface UbDataGridTableProps<TRow> {
   readonly maxHeight?: 'fill' | string;
   /** BrandHub's `rowHeight`. 52 px, and set as a height so every row matches. */
   readonly rowHeight?: number;
+  /** A7 — the Shop register's header and cell sizes (`REGISTER_TH`/`TD`). */
+  readonly register?: boolean;
   readonly className?: string;
 }
 
@@ -119,6 +124,7 @@ function UbDataGridTableBase<TRow>({
   allowHorizontalScroll = false,
   maxHeight = 'fill',
   rowHeight = GRID_ROW_HEIGHT,
+  register = false,
   className,
 }: Readonly<UbDataGridTableProps<TRow>>): React.JSX.Element {
   const selection = useMemo<RowSelectionState>(() => {
@@ -287,7 +293,7 @@ function UbDataGridTableBase<TRow>({
                   }
                   className={cn(
                     'group',
-                    GRID_TH,
+                    register ? REGISTER_TH : GRID_TH,
                     column.sortField && onSortChange && 'cursor-pointer transition-colors',
                     align
                   )}
@@ -297,7 +303,8 @@ function UbDataGridTableBase<TRow>({
                       type="button"
                       onClick={handleSort(column)}
                       className={cn(
-                        'inline-flex h-12 items-center gap-1 rounded-sm outline-none',
+                        'inline-flex items-center gap-1 rounded-sm outline-none',
+                        register ? REGISTER_TH_BUTTON_HEIGHT : 'h-12',
                         'hover:text-text-primary focus-visible:shadow-focus',
                         column.align === 'end' && 'flex-row-reverse'
                       )}
@@ -391,7 +398,10 @@ function UbDataGridTableBase<TRow>({
                   const column = columns.find((entry) => entry.id === cell.column.id);
                   const content = flexRender(cell.column.columnDef.cell, cell.getContext());
                   return (
-                    <td key={cell.id} className={cn(GRID_TD, ALIGN[column?.align ?? 'start'])}>
+                    <td
+                      key={cell.id}
+                      className={cn(register ? REGISTER_TD : GRID_TD, ALIGN[column?.align ?? 'start'])}
+                    >
                       {/* The first cell carries the open control, and only the
                           first: one named control per row. Wrapping every cell
                           would put eight identical "Open Ramesh Traders"

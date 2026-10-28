@@ -102,16 +102,16 @@ it('asks who is owed and by when once Paid now is off, and hides Paid by', async
   renderWithProviders(<ExpenseFormDrawer form={form({ submit })} />);
   await userEvent.click(screen.getByRole('switch', { name: /Paid now/ }));
   expect(screen.queryByRole('radiogroup', { name: 'Paid by' })).not.toBeInTheDocument();
-  expect(screen.getByText('Owed to')).toBeInTheDocument();
+  expect(screen.getByText('To pay')).toBeInTheDocument();
   expect(screen.getByText('Pay by')).toBeInTheDocument();
   // 08 §12.1, DEC-019 — the Shop's balance, never the Udhaar book's "khata".
-  expect(screen.getByText('This is added to what the Shop owes them.')).toBeInTheDocument();
+  expect(screen.getByText('This is added to what the Shop has to pay them.')).toBeInTheDocument();
   expect(screen.queryByText(/khata/i)).not.toBeInTheDocument();
 
   await userEvent.type(screen.getByLabelText(/Amount/), '12000');
   await userEvent.click(screen.getByRole('button', { name: 'Save' }));
   // The refusal is under the field the merchant can see, not a hidden one.
-  expect(await screen.findByText('Choose who you owe this to')).toBeInTheDocument();
+  expect(await screen.findByText('Choose who you have to pay')).toBeInTheDocument();
   expect(submit).not.toHaveBeenCalled();
 });
 

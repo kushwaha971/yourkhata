@@ -290,9 +290,13 @@ export function InvoicePartySection({
         // has moved to the column beside the lines.
         part === 'who' && 'xl:grid xl:grid-cols-[300px_minmax(0,1fr)] xl:items-center xl:gap-4',
         // Design §A3 (a phone-and-tablet card): switch · the customer · More details.
+        // Three columns only from 1280: at 1024 the card is about 740 px wide and
+        // 300 + 360 left the customer about 20 px, so the name, number and Change
+        // vanished (found by looking, A7). Below 1280, More details takes its own
+        // row under the switch and the customer.
         part === 'all' &&
           box &&
-          'lg:grid lg:grid-cols-[300px_minmax(0,1fr)_360px] lg:items-center lg:gap-4'
+          'lg:grid lg:grid-cols-[300px_minmax(0,1fr)] lg:items-center lg:gap-4 lg:[&>:last-child]:col-span-2 xl:grid-cols-[300px_minmax(0,1fr)_360px] xl:[&>:last-child]:col-span-1'
       )}
     >
       {/* Shop item 4 — goods on a challan always go to a named party (SAL-09 §10). */}

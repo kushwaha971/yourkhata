@@ -94,7 +94,7 @@ export async function shootCustomers({ signedInContext, widths, themes, locale, 
     await page.waitForLoadState('networkidle'); await page.waitForTimeout(350);
     state = 'stress'; await check('refreshed');
     // The tested new rule must fail on an old build, rather than pass by absence.
-    if (!(await page.getByTestId('shop-customer-summary').count())) failures.push(`${tag}: compact summary missing`);
+    if (!(await page.getByTestId('count-line').count())) failures.push(`${tag}: compact summary missing`);
     const search = page.getByRole('searchbox');
     const filter = page.getByTestId('filters-button');
     const heights = await Promise.all([search, filter].map((l) => l.evaluate((el) => Math.round((el.tagName === "INPUT" ? el.parentElement : el).getBoundingClientRect().height))));

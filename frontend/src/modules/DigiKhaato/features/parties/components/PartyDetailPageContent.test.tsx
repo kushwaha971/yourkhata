@@ -1103,7 +1103,7 @@ describe('archiving from the khata page', () => {
 
     expect(
       within(dialog).getByText(
-        'Your ledger gets a ₹500.00 write-off, and what you owe Ramesh Traders becomes ₹0.'
+        'Your ledger gets a ₹500.00 write-off, and what you pay Ramesh Traders becomes ₹0.'
       )
     ).toBeInTheDocument();
     await user.type(within(dialog).getByLabelText('Why are you writing this off?'), 'Shop closed');
@@ -1149,7 +1149,7 @@ describe('archiving from the khata page', () => {
 
     expect(
       await within(dialog).findByText(
-        'Your ledger gets a ₹750.00 write-off, and what you owe Ramesh Traders becomes ₹0.'
+        'Your ledger gets a ₹750.00 write-off, and what you pay Ramesh Traders becomes ₹0.'
       )
     ).toBeInTheDocument();
     expect(

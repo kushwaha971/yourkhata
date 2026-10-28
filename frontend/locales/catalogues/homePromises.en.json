@@ -10,7 +10,7 @@
   "homePromise.lane.today": "promised today",
   "homePromise.late": "Promise {count, plural, one {# day} other {# days}} late",
   "homePromise.nothingDue": "Nothing due now",
-  "homePromise.owes": "Owes {amount}",
+  "homePromise.owes": "To collect {amount}",
   "homePromise.pay": "Pay {name}",
   "homePromise.remind": "Remind {name}",
   "homePromise.supplier.amountOn": "You promised {name} {amount} for {date}",
@@ -18,5 +18,5 @@
   "homePromise.supplier.on": "You promised to pay {name} on {date}",
   "homePromise.supplier.today": "You promised to pay {name} today",
   "homePromise.title": "Promises",
-  "homePromise.youOwe": "You owe {amount}"
+  "homePromise.youOwe": "To pay {amount}"
 }

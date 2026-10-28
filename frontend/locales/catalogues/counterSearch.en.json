@@ -18,7 +18,7 @@
   "shopSearch.newBillDetail": "Opens a bill with this customer filled",
   "shopSearch.notPaid": "Not paid",
   "shopSearch.open": "Open {name}",
-  "shopSearch.owes": "Owes {amount}",
+  "shopSearch.owes": "To collect {amount}",
   "shopSearch.paid": "Paid",
   "shopSearch.partPaid": "Part paid",
   "shopSearch.pay": "Pay {amount} to {name}",

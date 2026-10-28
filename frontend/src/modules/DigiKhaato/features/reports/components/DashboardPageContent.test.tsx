@@ -732,7 +732,7 @@ it('says which panel could not load and keeps the rest of the page', async () =>
   renderWithProviders(<DashboardPageContent />);
   const customers = await screen.findByRole('region', { name: 'Customers' });
   expect(within(customers).getByText('This section could not load.')).toBeInTheDocument();
-  expect(within(customers).queryByText('No customer owes you.')).not.toBeInTheDocument();
+  expect(within(customers).queryByText('Nothing to collect from customers.')).not.toBeInTheDocument();
   expect(
     within(customers).getByRole('link', { name: /To collect.*₹7,000\.00/ })
   ).toBeInTheDocument();

@@ -387,11 +387,11 @@ SHARE_LINES = {
         "hello": "Namaste {name},",
         "hello_nobody": "Namaste,",
         "what": (
-            "On {date} we settled Rs {amount} of what you owe us against what we owe you."
+            "On {date} we settled Rs {amount} of what you have to pay us against what we have to pay you."
             " No cash changed hands."
         ),
-        "owe_us": "You still owe us: Rs {amount}.",
-        "owe_you": "We still owe you: Rs {amount}.",
+        "owe_us": "You still have to pay us: Rs {amount}.",
+        "owe_you": "We still have to pay you: Rs {amount}.",
         "clear_us": "Nothing due from you now.",
         "clear_you": "Nothing due to you now.",
         "refs": "Receipt {received} · Voucher {paid}.",

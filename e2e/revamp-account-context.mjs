@@ -16,7 +16,7 @@ export async function shootAccountContext({signedInContext,widths,themes,locale,
   if(me.data.user.id!==fixture.user)throw new Error('Expected the first local operator');
   if(me.data.active_tenant_id!==fixture.tenant){const switched=await post(ctx,'/auth/switch-tenant',{tenant_id:fixture.tenant});if(!switched.ok())throw new Error('Could not select local fixture firm');}
   await page.goto(`${frontend}/suppliers`,{waitUntil:'networkidle'});
-  await page.getByTestId('shop-customer-summary').waitFor();
+  await page.getByTestId('count-line').waitFor();
   // Freeze the passive badge poll until the explicit stale action; otherwise it
   // correctly detects the cookie swap first and pre-empts the write-intent case.
   let pausePoll=true;
@@ -59,7 +59,7 @@ export async function shootAccountContext({signedInContext,widths,themes,locale,
   await page.goto(`${frontend}/suppliers`,{waitUntil:'networkidle'});
   const ready=await refreshed;if(!ready.ok())throw new Error('Reload did not restore authorized context');
   if(mode==='business-write')await page.getByText(words['parties.list.supplier.empty.title'],{exact:true}).waitFor();
-  else await page.getByTestId('shop-customer-summary').waitFor();
+  else await page.getByTestId('count-line').waitFor();
   await check('reloaded');
   if(mode!=='business-write'){
    await page.locator('[data-testid="notification-bell"]:visible').click();

@@ -134,12 +134,12 @@ def write_off(*, ctx: Any, loan_id: Any, amount: Any, reason_code: Any, reason: 
     if pinned != figure:
         raise BusinessRuleViolation(
             "balance_changed",
-            "What is owed on this loan has changed. Check the new figure.",
+            "The amount left on this loan has changed. Check the new figure.",
             details={"balance": str(figure)},
         )
     if figure <= ZERO:
         raise BusinessRuleViolation(
-            "nothing_to_write_off", "Nothing is owed on this loan.", details={}
+            "nothing_to_write_off", "Nothing is left to collect on this loan.", details={}
         )
     entry, _balance = post_source_entry(
         ctx=ctx,

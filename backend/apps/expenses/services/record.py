@@ -135,7 +135,7 @@ def validate_expense_payload(payload: dict, *, tenant: Any) -> dict:
 
     party_id = payload.get("party_id") or None
     if not paid and not party_id:
-        details["party_id"] = ["Choose who you owe this to."]
+        details["party_id"] = ["Choose who you have to pay."]
 
     note = _clean_text(payload.get("note") or "")
     if len(note) > NOTE_MAX_LENGTH:

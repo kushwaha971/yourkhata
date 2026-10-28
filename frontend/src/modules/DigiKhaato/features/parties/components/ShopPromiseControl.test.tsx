@@ -158,7 +158,7 @@ it('adds a promise from a quick date, saving the amount and no note', async () =
   show();
   await userEvent.click(await screen.findByTestId('shop-promise-add'));
   const drawer = await screen.findByTestId('shop-promise-drawer');
-  expect(drawer).toHaveTextContent('It does not change any bill or what they owe.');
+  expect(drawer).toHaveTextContent('It does not change any bill or what they have to pay.');
   await userEvent.click(within(drawer).getByRole('button', { name: /Tomorrow/ }));
   await userEvent.type(within(drawer).getByLabelText(/How much/), '1500');
   await userEvent.click(screen.getByTestId('shop-promise-save'));

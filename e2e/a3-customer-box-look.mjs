@@ -131,7 +131,9 @@ const browser = await chromium.launch(
 );
 try {
   for (const locale of ["en", "hi"]) {
-    for (const width of locale === "hi" ? [320, 1280] : [390, 320, 1280]) {
+    // 1024 and 1152 too (A7): the bill's three-column row crushed the customer
+    // to 20 px between them, and nothing measured a laptop narrower than 1280.
+    for (const width of locale === "hi" ? [320, 1280] : [390, 320, 1024, 1152, 1280]) {
       for (const theme of ["light", "dark"]) {
         const tag = `${width}-${theme}-${locale}`;
         if (process.env.A3_ONLY && process.env.A3_ONLY !== tag) continue;
@@ -265,6 +267,8 @@ try {
                 `${name}: desktop row is ${m.css.cols}, dBill says 300px · 1fr`,
               );
           }
+          if (m.box?.w !== undefined && m.box.w < 220)
+            fail(tag, `${name}: the customer box is only ${m.box.w} px wide`);
           // The design's composition.
           if (m.caption)
             fail(

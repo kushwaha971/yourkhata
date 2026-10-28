@@ -145,6 +145,7 @@
   "sales.draft.saving": "सेव हो रहा है…",
   "sales.draft.useServer": "सर्वर वाला रखें",
   "sales.editor.billTo": "बिल किसके नाम",
+  "sales.editor.box.noMobile": "मोबाइल नंबर नहीं",
   "sales.editor.box.nothingDue": "कुछ बाकी नहीं",
   "sales.editor.box.toCollect": "{amount} लेने हैं",
   "sales.editor.box.youOwe": "{amount} देने हैं",

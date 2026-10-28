@@ -104,16 +104,16 @@ const show = (onSettled = jest.fn(), onClose = jest.fn()) => {
 it('shows both balances apart, prefills the smaller and previews both results', async () => {
   show();
   expect(await screen.findByTestId('settle-customer')).toHaveTextContent(
-    'As a customer, they owe you₹1,000.00'
+    'As a customer, you will get₹1,000.00'
   );
   expect(screen.getByTestId('settle-supplier')).toHaveTextContent(
-    'As a supplier, you owe them₹600.00'
+    'As a supplier, you will give₹600.00'
   );
   expect(screen.getByText('Settle two balances')).toBeInTheDocument();
   expect(screen.getByText('Ramesh Traders · No cash changes hands')).toBeInTheDocument();
   expect(screen.getByTestId('settle-amount')).toHaveValue('600.00');
   expect(screen.getByTestId('settle-after')).toHaveTextContent(
-    'After thisThey owe you ₹400.00You owe them ₹0.00'
+    'After thisYou will get ₹400.00You will give ₹0.00'
   );
   expect(screen.getByTestId('settle-confirm')).toHaveTextContent('Settle ₹600.00');
   expect(screen.getByRole('button', { name: 'Keep separate' })).toHaveFocus();
@@ -126,7 +126,7 @@ it('refuses an amount above the smaller balance before anything is sent', async 
   await userEvent.type(field, '700');
   expect(screen.getByText('You can settle up to ₹600.00, the smaller of the two.')).toBeVisible();
   expect(screen.getByTestId('settle-confirm')).toBeDisabled();
-  expect(screen.getByTestId('settle-after')).toHaveTextContent('They owe you ₹1,000.00');
+  expect(screen.getByTestId('settle-after')).toHaveTextContent('You will get ₹1,000.00');
 });
 
 it('one tap settles once, with the figures the merchant saw, then offers the message', async () => {

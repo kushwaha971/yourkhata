@@ -170,7 +170,7 @@ it('offers to receive money from a customer who owes, without a preset amount', 
   const onPayment = jest.fn();
   renderWithProviders(<CounterSearch onPayment={onPayment} />);
   fireEvent.change(field(), { target: { value: 'Radhe' } });
-  fireEvent.click(await option(/^Receive money from Radhe Krishna Enterprises Owes ₹1,240\.00/));
+  fireEvent.click(await option(/^Receive money from Radhe Krishna Enterprises To collect ₹1,240\.00/));
   expect(onPayment).toHaveBeenCalledWith(
     expect.objectContaining({ direction: 'in', partyId: 'p1', tradeRole: 'customer' })
   );

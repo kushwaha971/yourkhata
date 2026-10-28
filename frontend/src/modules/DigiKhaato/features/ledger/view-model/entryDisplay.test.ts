@@ -254,7 +254,7 @@ describe('what an opening row calls its own direction', () => {
     /**
      * "You gave" is the wrong tense and the wrong claim on an opening balance:
      * nothing was given, the party already owed it when the book started. The
-     * drawer asks "They owe me" / "I owe them", so the row answers in the same
+     * drawer asks "I will get" / "I will give", so the row answers in the same
      * words — a merchant checking a migration reads back exactly what they
      * were asked.
      */

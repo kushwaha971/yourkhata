@@ -300,12 +300,12 @@ describe('the drawer', () => {
     expect(screen.getByLabelText('Amount')).toBeInTheDocument();
   });
 
-  it('starts a supplier-only party on "I owe them"', async () => {
+  it('starts a supplier-only party on "I will give"', async () => {
     /** §8 / PTY-01 FR-9. A supplier is somebody this business buys FROM, so
      *  what is carried over is what the business owes them. */
     await open('credit');
 
-    expect(await screen.findByRole('radio', { name: 'I owe them' })).toBeChecked();
+    expect(await screen.findByRole('radio', { name: 'I will give' })).toBeChecked();
   });
 
   it('says the whole sentence back, with the amount in it', async () => {
@@ -323,7 +323,7 @@ describe('the drawer', () => {
 
     expect(await screen.findByText('You will get ₹2,300.00')).toBeInTheDocument();
 
-    await user.click(screen.getByRole('radio', { name: 'I owe them' }));
+    await user.click(screen.getByRole('radio', { name: 'I will give' }));
 
     expect(await screen.findByText('You will give ₹2,300.00')).toBeInTheDocument();
   });

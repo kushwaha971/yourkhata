@@ -119,4 +119,9 @@ export const partyTotals = (rows: readonly Party[]): PartyListTotals => {
  * ("+919876543210", "09812345678"), which is three spellings for one number.
  */
 export const contactLine = (party: Party): string =>
-  [party.displayCode, formatPhoneForDisplay(party.mobile)].filter(Boolean).join(' · ');
+  // The number's own spaces do not break (U+00A0): a narrow column wrapped
+  // "+91 90000 | 00074" mid-number (A7, 1280 at the Shop's 24 % share); the
+  // line may still wrap before "+91", which reads.
+  [party.displayCode, formatPhoneForDisplay(party.mobile)?.replace(/ /g, '\u00a0')]
+    .filter(Boolean)
+    .join(' · ');

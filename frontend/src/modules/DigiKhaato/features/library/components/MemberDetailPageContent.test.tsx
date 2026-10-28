@@ -188,7 +188,7 @@ describe('MemberDetailPageContent', () => {
     renderWithProviders(<MemberDetailPageContent id="m1" />);
     expect(await screen.findByTestId('library-member-number')).toHaveTextContent('M-0043');
     expect(
-      screen.getByText('Owes ₹1,200.00, above the ₹500.00 this type allows.')
+      screen.getByText('₹1,200.00 still to pay, above the ₹500.00 this type allows.')
     ).toBeInTheDocument();
     expect(screen.getByTestId('library-member-renew')).toBeInTheDocument();
     // QA-F04-2 — the label says "Valid until"; the value is the date, not the sentence again.

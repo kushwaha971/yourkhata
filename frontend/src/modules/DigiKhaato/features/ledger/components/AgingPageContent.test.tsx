@@ -492,7 +492,7 @@ describe('the states that are not a list', () => {
     agingService.getLedgerSummary.mockResolvedValue({ receivable: '0.00', payable: '0.00' });
     renderWithProviders(<AgingPageContent />);
 
-    expect(await screen.findByText('Nobody owes you yet')).toBeInTheDocument();
+    expect(await screen.findByText('Nothing to collect yet')).toBeInTheDocument();
     expect(screen.queryByText('All settled')).not.toBeInTheDocument();
     expect(screen.queryByRole('tablist')).not.toBeInTheDocument();
     expect(screen.queryByTestId('aging-export')).not.toBeInTheDocument();
@@ -513,7 +513,7 @@ describe('the states that are not a list', () => {
     expect(await screen.findByText('All settled')).toBeInTheDocument();
     expect(screen.getByRole('tablist')).toBeInTheDocument();
     expect(screen.getByTestId('aging-export')).toBeInTheDocument();
-    expect(screen.queryByText('Nobody owes you yet')).not.toBeInTheDocument();
+    expect(screen.queryByText('Nothing to collect yet')).not.toBeInTheDocument();
   });
 
   it('tells a merchant who narrowed to a tag that the TAG is empty, and clears it', async () => {
@@ -724,9 +724,9 @@ describe("the Shop's Old dues (09 §10.7)", () => {
        suppliers are separate and never netted, so each side says whose. */
     signIn(SHOP_PERMISSIONS, SHOP_MODULES);
     renderWithProviders(<AgingPageContent book="shop" />);
-    const tab = await screen.findByRole('tab', { name: /Customers owe you/ });
+    const tab = await screen.findByRole('tab', { name: /To collect from customers/ });
     await waitFor(() => expect(tab).toHaveTextContent('₹4,900.00'));
-    expect(screen.getByRole('tab', { name: /You owe suppliers/ })).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: /To pay suppliers/ })).toBeInTheDocument();
     const bars = screen.getByTestId('aging-bars');
     expect(await within(bars).findByText('How old the dues are')).toBeInTheDocument();
     // Every bar is labelled with its bucket and the server's amount.
@@ -743,7 +743,7 @@ describe("the Shop's Old dues (09 §10.7)", () => {
     expect(screen.queryByTestId('ub-grid-table')).not.toBeInTheDocument();
     const ramesh = cards[0] as HTMLElement;
     expect(ramesh).toHaveAccessibleName(
-      'Open Ramesh Traders · ₹1,200.00 · 90+ days · Owes you ₹1,600.00'
+      'Open Ramesh Traders · ₹1,200.00 · 90+ days · You will get ₹1,600.00'
     );
     // Past 90 days is the bucket a merchant rings about, so it is red.
     expect(within(ramesh).getByTestId('aging-card-bucket')).toHaveClass('text-error');
@@ -797,7 +797,7 @@ describe("the Shop's Old dues (09 §10.7)", () => {
       hasAny: true,
     }));
     renderWithProviders(<AgingPageContent book="shop" />);
-    expect(await screen.findByText('Nobody owes you anything in the Shop')).toBeInTheDocument();
+    expect(await screen.findByText('Nothing to collect in the Shop')).toBeInTheDocument();
     expect(screen.queryByTestId('aging-bars')).not.toBeInTheDocument();
   });
 

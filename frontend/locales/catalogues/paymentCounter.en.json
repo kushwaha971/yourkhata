@@ -23,7 +23,7 @@
   "payments.counter.hint.clears": "This clears everything due.",
   "payments.counter.hint.left": "₹{amount} will still be due after this.",
   "payments.counter.hint.more": "₹{amount} more than what is due. It stays with {name} as advance, not a refund.",
-  "payments.counter.hint.moreOut": "₹{amount} more than you owe. It stays with {name} as advance.",
+  "payments.counter.hint.moreOut": "₹{amount} more than you have to pay. It stays with {name} as advance.",
   "payments.counter.keepEditing": "Keep editing",
   "payments.counter.left": "Still due after this",
   "payments.counter.matchLater": "Bills will be matched oldest first when saved.",
@@ -32,10 +32,10 @@
   "payments.counter.none": "No unpaid bills. The full ₹{amount} is kept as advance for the next bill.",
   "payments.counter.noneEmpty": "No unpaid bills. Anything you enter is kept as advance for the next bill.",
   "payments.counter.noteHint": "Only you and your staff see this. It is never put in a receipt or message.",
-  "payments.counter.nowOwes": "{name} · now owes ₹{amount}",
+  "payments.counter.nowOwes": "{name} · now to collect ₹{amount}",
   "payments.counter.over": "You've put ₹{allocated} on bills but are receiving only ₹{amount}.",
   "payments.counter.overOut": "You've put ₹{allocated} on bills but are paying only ₹{amount}.",
-  "payments.counter.owes": "{name} · owes ₹{amount}",
+  "payments.counter.owes": "{name} · to collect ₹{amount}",
   "payments.counter.pay": "Pay ₹{amount}",
   "payments.counter.paying": "Paying…",
   "payments.counter.receive": "Receive ₹{amount}",
@@ -56,5 +56,5 @@
   "payments.counter.tryAgain": "Try again",
   "payments.counter.unpaid": "{count, plural, one {# unpaid bill} other {# unpaid bills}}",
   "payments.counter.useNew": "Use the new figures",
-  "payments.counter.youOwe": "{name} · you owe ₹{amount}"
+  "payments.counter.youOwe": "{name} · to pay ₹{amount}"
 }

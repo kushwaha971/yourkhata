@@ -75,14 +75,14 @@ it('titles the row by the promise and captions it by what is owed now', () => {
   expect(
     screen.getByRole('link', { name: 'Sharma General Store promised ₹1,500.00 today' })
   ).toBeInTheDocument();
-  expect(screen.getByText('Owes ₹3,100.00 · 42 days late')).toBeInTheDocument();
+  expect(screen.getByText('To collect ₹3,100.00 · 42 days late')).toBeInTheDocument();
   expect(screen.queryByText(/internal/)).toBeNull();
 });
 
 it('says a late promise in the caption', () => {
   renderWithProviders(<InEnglish rows={[ROW({ promisedOn: '2026-10-22', daysLate: 2 })]} />);
   expect(
-    screen.getByText('Owes ₹3,100.00 · 42 days late · Promise 2 days late')
+    screen.getByText('To collect ₹3,100.00 · 42 days late · Promise 2 days late')
   ).toBeInTheDocument();
 });
 

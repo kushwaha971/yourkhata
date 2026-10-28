@@ -2,7 +2,7 @@
   "admin.nav.console": "Admin console",
   "app.name": "YourKhata",
   "app.tagline": "Your shop's khata, bills and stock in one book.",
-  "auth.hero.description": "Track what you gave and what you got, see who owes you, and send reminders — without a single paper page.",
+  "auth.hero.description": "Track what you gave and what you got, see who has to pay you, and send reminders — without a single paper page.",
   "auth.hero.title": "Your khata, on your phone",
   "auth.language.label": "Language",
   "auth.login.error": "Could not log in. Try again.",

@@ -15,7 +15,7 @@ import type { ExpenseFormValues } from '../types/expense.types';
  *
  * The cross-field rules sit at the OBJECT level with `createError({ path })`,
  * so each message lands under the control the merchant can see: "Choose how
- * you paid" only when Paid now is on, "Choose who you owe this to" and the
+ * you paid" only when Paid now is on, "Choose who you have to pay" and the
  * due date only when it is off. A `.when()` on the field would put the same
  * refusal on a control that is hidden.
  *

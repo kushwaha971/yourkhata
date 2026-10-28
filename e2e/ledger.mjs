@@ -1041,8 +1041,8 @@ async function checks(browser, token, parties) {
     await page.waitForSelector('role=dialog', { timeout: 15000 });
     await settle(page, 700);
     record(
-      'a supplier-only party starts on "I owe them"',
-      await page.getByRole('radio', { name: 'I owe them' }).isChecked(),
+      'a supplier-only party starts on "I will give"',
+      await page.getByRole('radio', { name: 'I will give' }).isChecked(),
       ''
     );
     await page.keyboard.press('Escape');

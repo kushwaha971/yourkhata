@@ -416,6 +416,14 @@ export function PartyListPageContent({
   /** The committed term, trimmed once — the empty state quotes it and the Add
    *  action prefills the form with it, and they must be the same string. */
   const searchTerm = searchInput.trim();
+  /* A7 — the count line's "of 1,760" is everyone in this list, before the
+     search: the chips' counts follow the search ("All · 0" for no match), so
+     the total seen with no search typed is kept and shown while one is.
+     Opened straight onto a search, there is none yet, and the line says
+     "6 customers" rather than "6 of 6". */
+  const [bookAll, setBookAll] = useState<number | undefined>(undefined);
+  const unsearchedAll = shopCounts && !filters.q ? shopCounts.all : undefined;
+  if (unsearchedAll !== undefined && unsearchedAll !== bookAll) setBookAll(unsearchedAll);
   const dueIsEmpty = compactKhata && filters.balance === 'due' && !searchTerm;
   const addSearchedName = useCallback(
     () => partyForm.openCreate(searchTerm),
@@ -1075,15 +1083,11 @@ export function PartyListPageContent({
                   supplier={supplier}
                   t={t}
                   total={meta.total}
-                  rowCount={rows.length}
+                  all={filters.q ? bookAll : shopCounts?.all}
                   totals={totals}
                   scope={totalsScope}
-                  loading={statsLoading}
-                  balance={filters.balance}
-                  late={filters.late}
-                  page={meta.page}
-                  pageSize={meta.pageSize}
-                  countInChips={Boolean(shopCounts) && filters.balance !== 'settled'}
+                  rowCount={rows.length}
+                  loading={statsLoading || isRefreshing}
                 />
               ) : undefined
             }

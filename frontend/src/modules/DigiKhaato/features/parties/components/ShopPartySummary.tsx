@@ -1,130 +1,90 @@
 'use client';
 
-import { memo } from 'react';
+import { memo, useMemo } from 'react';
 
-import { UbAmount, UbSkeleton, UbStack, UbText } from 'src/design-system';
+import { UbCountLine, type UbCountLineItem } from 'src/design-system';
 import type { TranslateFn } from 'src/hooks/useTranslation';
-import { isZeroAmount } from 'src/utils/money';
+import { formatInr } from 'src/utils/money';
 
-import type { PartyBalanceFilter } from '../constants/partyFilters';
 import type { PartyListTotals } from '../view-model/partyDisplay';
 
-/** Counter Mode summary sits BELOW the toolbar. Its amount always names its
- * scope: the complete matching set or explicitly just this page's rows. */
+/**
+ * A7 — the Shop's Customers and Suppliers count line, in the design's words
+ * (`.countline`): on a desktop "To collect ₹18,450 · To pay ₹0 · Showing 6 of
+ * 1,760 customers", on a phone "₹18,450 to collect · Showing 5 of 1,760".
+ *
+ * It replaced a summary that swapped itself for a skeleton of another height
+ * while a search ran, which is how the table jumped under the merchant's
+ * thumb. Now the words stay and only the figures go grey (`UbCountLine`), and
+ * no match reads "0 of 1,760 customers" rather than a row of zeroes.
+ *
+ * `all` is everyone in this book's list, before the search and the chips — the
+ * "of 1,760". Missing (the counts have not arrived yet) is drawn as a bar.
+ */
 export const ShopPartySummary = memo(function ShopPartySummary({
   t,
   supplier = false,
   total,
-  rowCount,
+  all,
   totals,
-  scope,
+  scope = 'filtered',
+  rowCount = 0,
   loading,
-  balance,
-  late,
-  page,
-  pageSize,
-  countInChips = false,
 }: Readonly<{
   t: TranslateFn;
   supplier?: boolean;
+  /** Matches for the current search and chips. */
   total: number;
-  rowCount: number;
+  /** Everyone in the list ("of 1,760"); undefined until the counts arrive. */
+  all: number | undefined;
   totals: PartyListTotals;
-  scope: 'filtered' | 'page';
+  /** `page`: the server sent no totals for this filter, so they are this page's sum. */
+  scope?: 'filtered' | 'page';
+  rowCount?: number;
   loading: boolean;
-  balance: PartyBalanceFilter;
-  late?: string;
-  page: number;
-  pageSize: number;
-  /** The pressed chip already carries the count, so a phone shows it once. */
-  countInChips?: boolean;
 }>) {
+  const items = useMemo<readonly UbCountLineItem[]>(() => {
+    const mine = supplier ? totals.payable : totals.receivable;
+    const theirs = supplier ? totals.receivable : totals.payable;
+    const primary = { text: formatInr(mine), tone: supplier ? 'payable' : 'receivable' } as const;
+    const secondary = { text: formatInr(theirs) } as const;
+    const n = { text: total.toLocaleString('en-IN') };
+    const of = { text: (all ?? 0).toLocaleString('en-IN') };
+    // No overall count from the server: say how many match, not "of 0".
+    const count = all === undefined ? 'count' : 'showing';
+    const side = supplier ? 'supplier' : 'customer';
+    // The sentence with its `{slots}` kept, for `UbCountLine` to fill: each
+    // slot is given its own name, so react-intl reports no missing value.
+    // `count` and `all` are real numbers so plurals read "1 customer".
+    const tpl = (id: string) =>
+      t(id, { amount: '{amount}', n: '{n}', total: '{total}', count: total, all: all ?? 0 });
+    const list: UbCountLineItem[] = [
+      { id: 'primary', template: tpl(`parties.list.countLine.${side}.primary`), values: { amount: primary }, className: 'max-lg:hidden' },
+      { id: 'primaryPhone', template: tpl(`parties.list.countLine.${side}.primaryPhone`), values: { amount: primary }, className: 'lg:hidden' },
+      { id: 'secondary', template: tpl(`parties.list.countLine.${side}.secondary`), values: { amount: secondary }, className: 'max-lg:hidden' },
+      { id: 'showing', template: tpl(`parties.list.countLine.${side}.${count}`), values: { n, total: of }, className: 'max-lg:hidden' },
+      { id: 'showingPhone', template: tpl(all === undefined ? `parties.list.countLine.${side}.count` : 'parties.list.countLine.showingPhone'), values: { n, total: of }, className: 'lg:hidden' },
+    ];
+    // Not in the design, and kept on purpose: a total that is only THIS page's
+    // sum must say so, or it is a claim about the whole book that is false.
+    if (scope === 'page')
+      list.push({
+        id: 'scope',
+        template: t(supplier ? 'parties.list.supplier.pageScope' : 'parties.list.totals.scope.page', {
+          count: rowCount,
+        }),
+      });
+    return list;
+  }, [t, supplier, total, all, totals.payable, totals.receivable, scope, rowCount]);
+
   return (
-    <UbStack
-      gap={2}
-      role="status"
-      aria-label={t('parties.list.totals.region')}
-      data-testid="shop-customer-summary"
-      className="py-2 lg:flex-row lg:items-center lg:justify-between"
-    >
-      {loading ? (
-        <UbSkeleton className="h-5 w-full max-w-80" label={t('parties.list.totals.loading')} />
-      ) : (
-        <>
-          <UbText variant="body-sm" className="max-lg:hidden">
-            {t(
-              supplier
-                ? 'parties.list.supplier.showing'
-                : late
-                  ? 'parties.list.shop.showingLate'
-                  : balance === 'owes_me'
-                    ? 'parties.list.shop.showingOwes'
-                    : balance === 'i_owe'
-                      ? 'parties.list.shop.showingCredit'
-                      : balance === 'settled'
-                        ? 'parties.list.shop.showingSettled'
-                        : 'parties.list.shop.showingAll'
-            )}
-          </UbText>
-          {/* Tighter gaps below 360 px keep "₹2,06,31,292.55 To collect ₹900.00
-              To pay" on one line on a 320 px phone (measured: it ends at the
-              gutter); larger figures still wrap rather than cut. */}
-          <UbStack direction="row" align="baseline" gap={2} wrap className="max-[359px]:gap-x-1">
-            <UbText
-              variant="caption"
-              tone="tertiary"
-              className={
-                countInChips ? 'max-md:sr-only' : 'max-md:[@media(max-height:640px)]:sr-only'
-              }
-            >
-              {t(supplier ? 'parties.list.supplier.matches' : 'parties.list.shop.matches', {
-                count: total,
-              })}
-            </UbText>
-            <UbAmount
-              value={supplier ? totals.payable : totals.receivable}
-              tone={supplier ? 'payable' : 'receivable'}
-              label={t(supplier ? 'parties.list.shop.toPay' : 'parties.list.shop.toCollect')}
-              size="sm"
-              inline
-              className="flex-row items-baseline gap-1 max-[359px]:gap-0.5"
-            />
-            {!isZeroAmount(supplier ? totals.receivable : totals.payable) && (
-              <UbAmount
-                value={supplier ? totals.receivable : totals.payable}
-                tone={supplier ? 'receivable' : 'payable'}
-                label={t(supplier ? 'parties.list.supplier.advance' : 'parties.list.shop.toPay')}
-                size="sm"
-                inline
-                className="flex-row items-baseline gap-1 max-[359px]:gap-0.5"
-              />
-            )}
-            {/* On a phone the pressed chip already says the figures cover every
-                match, so "in total" stays for screen readers and the strip
-                keeps to one line; a page-only sum still says so out loud. */}
-            <UbText
-              variant="caption"
-              tone="tertiary"
-              className={scope === 'filtered' && countInChips ? 'max-md:sr-only' : undefined}
-            >
-              {t(
-                scope === 'filtered'
-                  ? 'parties.list.shop.inTotal'
-                  : supplier
-                    ? 'parties.list.supplier.pageScope'
-                    : 'parties.list.totals.scope.page',
-                { count: rowCount }
-              )}
-            </UbText>
-            <UbText variant="caption" tone="tertiary" className="max-lg:hidden">
-              {t('parties.list.shop.range', {
-                from: total ? (page - 1) * pageSize + 1 : 0,
-                to: Math.min(page * pageSize, total),
-              })}
-            </UbText>
-          </UbStack>
-        </>
-      )}
-    </UbStack>
+    <UbCountLine
+      items={items}
+      loading={loading}
+      loadingNote={t('parties.list.countLine.searching')}
+      label={t('parties.list.totals.region')}
+      className="py-2"
+      data-testid="count-line"
+    />
   );
 });

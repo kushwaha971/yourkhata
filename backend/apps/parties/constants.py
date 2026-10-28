@@ -39,8 +39,8 @@ class OpeningDirection(models.TextChoices):
     know. The sign is the database's problem, not the shopkeeper's.
     """
 
-    DEBIT = "debit", _("They owe me")
-    CREDIT = "credit", _("I owe them")
+    DEBIT = "debit", _("I will get")
+    CREDIT = "credit", _("I will give")
 
 
 #: Where a single-party archive came from, as `party.archived`'s audit row

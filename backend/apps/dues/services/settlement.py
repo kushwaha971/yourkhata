@@ -160,7 +160,7 @@ def settle(
     if amount > outstanding(due):
         raise BusinessRuleViolation(
             "over_allocated",
-            "This is more than the due still owes.",
+            "This is more than is still due.",
             details={"outstanding": str(outstanding(due))},
         )
     schedule = due.schedule

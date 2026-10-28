@@ -28,7 +28,7 @@ it('names the person with both figures, counts the others and offers Settle', ()
     <HomeSettlementNote candidates={CANDIDATES} canSettle onSettled={jest.fn()} />
   );
   expect(screen.getByTestId('home-settlement-note')).toHaveTextContent(
-    'Ramesh Traders is in both lists. They owe you ₹1,000.00 as a customer and you owe them ₹600.00 as a supplier. These stay separate until you settle them. 2 more people are in both lists.'
+    'Ramesh Traders is in both lists. As a customer you will get ₹1,000.00 from them, and as a supplier you will give them ₹600.00. These stay separate until you settle them. 2 more people are in both lists.'
   );
   expect(
     screen.getByRole('button', { name: 'Settle two balances for Ramesh Traders' })

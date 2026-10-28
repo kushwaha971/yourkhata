@@ -113,7 +113,7 @@ COLUMNS = (
     ),
     ColumnSpec(
         "opening_type",
-        help="to_receive (they owe you) or to_pay (you owe them)",
+        help="to_receive (you will get) or to_pay (you will give)",
         aliases=("opening_direction", "balance_type"),
     ),
     ColumnSpec(

@@ -79,7 +79,7 @@ it('asks to cancel, says a paid Shop expense leaves the cash book, and offers Ke
 it('says an unpaid one comes off what the Shop owes the supplier, never a khata', () => {
   renderWithProviders(<VoidExpenseDialog form={form({ ...RENT, paid: false, mode: null })} />);
   expect(
-    screen.getByText(/₹12,000.00 comes off what the Shop owes Gupta Oil Mills/)
+    screen.getByText(/₹12,000.00 comes off what the Shop has to pay Gupta Oil Mills/)
   ).toBeInTheDocument();
   expect(screen.queryByText(/khata|cash book/i)).not.toBeInTheDocument();
 });

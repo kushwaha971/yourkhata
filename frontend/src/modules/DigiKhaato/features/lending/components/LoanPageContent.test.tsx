@@ -452,7 +452,7 @@ describe('ending a loan', () => {
     );
     writeOff.click();
     const body = await screen.findByTestId('lending-end-body');
-    expect(body).toHaveTextContent('₹12,000.00 still owed by Geeta Devi');
+    expect(body).toHaveTextContent('₹12,000.00 still to collect from Geeta Devi');
     const confirm = screen.getByTestId('lending-end-confirm');
     await userEvent.click(screen.getByRole('combobox', { name: 'Reason' }));
     await userEvent.click(await screen.findByRole('option', { name: 'Cannot trace the borrower' }));

@@ -124,7 +124,9 @@ export const createPartyColumns = ({
       priority: 1,
       sortField: PARTY_SORT_FIELDS.name,
       cardSlot: 'title',
-      widthShare: compactKhata ? 68 : compactShop ? 26 : 34,
+      // A7: 24 / 20 in the Shop (was 26 / 22), the 4 % given to the actions
+      // column so Hindi's "भुगतान करें" and its ⋯ fit at 1024.
+      widthShare: compactKhata ? 68 : compactShop ? 24 : 34,
       cell: (party) => (
         <PartyNameCell
           name={party.name}
@@ -166,7 +168,7 @@ export const createPartyColumns = ({
       align: 'end',
       sortField: PARTY_SORT_FIELDS.balance,
       cardSlot: 'trailing',
-      widthShare: compactKhata ? 32 : compactShop ? 22 : 20,
+      widthShare: compactKhata ? 32 : compactShop ? 20 : 20,
       cell: (party) => (
         <PartyBalanceCell
           balance={party.balance}
@@ -181,6 +183,8 @@ export const createPartyColumns = ({
       priority: 2,
       sortField: PARTY_SORT_FIELDS.activity,
       cardSlot: compactShop ? 'none' : 'meta',
+      // 18 in the Shop: at 14 its header wrapped to three lines at 1024 and
+      // grew the header row past 46 px (A7, measured).
       widthShare: compactShop ? 18 : 16,
       cell: (party) => {
         if (compactShop) {
@@ -258,7 +262,7 @@ export const createPartyColumns = ({
     priority: 2,
     cardSlot: 'none',
     align: 'end',
-    widthShare: 16,
+    widthShare: 20,
     cell: (party) => (
       <ShopPartyRowActions
         party={party}
