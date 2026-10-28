@@ -9,6 +9,7 @@ import { Trash2 } from 'lucide-react';
 import {
   UbButton,
   UbConfirmDialog,
+  UbDialogLoading,
   UbPanel,
   UbPanelSection,
   UbStack,
@@ -24,7 +25,8 @@ import type { UseAccountDataResult } from '../hooks/useAccountData';
 
 const DeleteBusinessDialog = dynamic(
   () => import('./DeleteBusinessDialog').then((module) => module.DeleteBusinessDialog),
-  { ssr: false }
+  { ssr: false,
+  loading: () => <UbDialogLoading /> }
 );
 
 /**

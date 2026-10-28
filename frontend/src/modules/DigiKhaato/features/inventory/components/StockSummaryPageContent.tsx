@@ -8,10 +8,17 @@ import { SlidersHorizontal, TriangleAlert } from 'lucide-react';
 
 import { SummaryStatGrid } from 'src/components/stats/SummaryStatGrid';
 import {
+  isoToday,
   UbActionLink,
+  UbActiveFilters,
   UbButton,
   UbDateInput,
+  UbDialogLoading,
+  UbDrawerLoading,
   UbEmptyState,
+  UbFilterSheet,
+  type UbFilterSpec,
+  type UbFilterValues,
   UbLink,
   UbPageHeader,
   UbPageShell,
@@ -21,11 +28,6 @@ import {
   UbStatusBanner,
   UbSwitch,
   UbText,
-  isoToday,
-  UbActiveFilters,
-  UbFilterSheet,
-  type UbFilterSpec,
-  type UbFilterValues,
 } from 'src/design-system';
 import {
   UbDataGrid,
@@ -60,11 +62,13 @@ import type { StockSummaryFilters, StockSummaryRow } from '../types/item.types';
    saved adjustment's detail belong to the chunk that opens them. */
 const StockAdjustmentDrawer = dynamic(
   () => import('./StockAdjustmentDrawer').then((m) => m.StockAdjustmentDrawer),
-  { ssr: false }
+  { ssr: false,
+  loading: () => <UbDrawerLoading /> }
 );
 const AdjustmentDetailDialog = dynamic(
   () => import('./AdjustmentDetailDialog').then((m) => m.AdjustmentDetailDialog),
-  { ssr: false }
+  { ssr: false,
+  loading: () => <UbDialogLoading /> }
 );
 
 /** The summary's columns — a module-level factory, so no cell is a component

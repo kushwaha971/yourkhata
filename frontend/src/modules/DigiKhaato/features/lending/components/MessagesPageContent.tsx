@@ -10,6 +10,7 @@ import { CompactCard } from 'src/components/records/CompactCard';
 import {
   UbAmount,
   UbButton,
+  UbDialogLoading,
   UbEmptyState,
   UbListItemText,
   UbPageHeader,
@@ -35,6 +36,7 @@ import type { LendingReminderRow } from '../types/lending.types';
 /** The message loads with the tap that opens it (CLAUDE.md). */
 const MessageDialogLazy = dynamic(() => import('./MessageDialog').then((m) => m.MessageDialog), {
   ssr: false,
+  loading: () => <UbDialogLoading />,
 });
 
 const BUCKET_TONE = { overdue: 'error', due_today: 'warning', due_tomorrow: 'info' } as const;

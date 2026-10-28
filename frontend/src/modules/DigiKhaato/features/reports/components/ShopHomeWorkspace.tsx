@@ -9,17 +9,19 @@ import { RefreshCw } from 'lucide-react';
 
 import { DEFAULT_TENANT_TIMEZONE } from 'src/constants';
 import {
-  useIsMobileLayer,
   UbActionLink,
-  UbMoreActions,
   UbBox,
   UbButton,
-  UbLink,
-  UbStack,
-  UbSkeleton,
-  UbTabs,
+  UbDialogLoading,
   UbDisclosure,
+  UbDrawerLoading,
+  UbLink,
+  UbMoreActions,
+  UbSkeleton,
+  UbStack,
+  UbTabs,
   UbText,
+  useIsMobileLayer,
 } from 'src/design-system';
 import { UbRankedBars } from 'src/design-system/charts';
 import { useAppSelector } from 'src/hooks/useAppStore';
@@ -62,10 +64,12 @@ const Charts = dynamic(() => import('./DashboardCharts').then((m) => m.Dashboard
 });
 const Payment = dynamic(
   () => import('../../payments/components/PaymentFormDrawer').then((m) => m.PaymentFormDrawer),
-  { ssr: false }
+  { ssr: false,
+  loading: () => <UbDrawerLoading /> }
 );
 const CashCount = dynamic(() => import('./CashCountDrawer').then((m) => m.CashCountDrawer), {
   ssr: false,
+  loading: () => <UbDrawerLoading />,
 });
 /* BP-08 — drawn only for a shop with someone in both lanes; its words and dialog
    load with it, so a shop without one pays nothing for it. */
@@ -75,7 +79,7 @@ const HomeSettlementNote = dynamic(
 );
 const Remind = dynamic(
   () => import('../../parties/components/ShopCustomerReminder').then((m) => m.ShopCustomerReminder),
-  { ssr: false }
+  { ssr: false, loading: () => <UbDialogLoading /> }
 );
 
 type HomeTab = 'register' | 'followups' | 'insights';

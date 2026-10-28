@@ -12,7 +12,9 @@ import {
   UbActionLink,
   UbAmount,
   UbButton,
+  UbDialogLoading,
   UbEmptyState,
+  UbFilterSelect,
   UbListItemText,
   UbPageHeader,
   UbPageShell,
@@ -22,7 +24,6 @@ import {
   UbStatCard,
   UbStatusBadge,
   UbText,
-  UbFilterSelect,
 } from 'src/design-system';
 import { useAppRouter } from 'src/hooks/useAppRouter';
 import { useAppDispatch, useAppSelector } from 'src/hooks/useAppStore';
@@ -41,12 +42,15 @@ import type { TodayStop } from '../types/lending.types';
 /** The sheets load with the tap that opens them (CLAUDE.md). */
 const CollectDialogLazy = dynamic(() => import('./CollectDialog').then((m) => m.CollectDialog), {
   ssr: false,
+  loading: () => <UbDialogLoading />,
 });
 const NotPaidDialogLazy = dynamic(() => import('./NotPaidDialog').then((m) => m.NotPaidDialog), {
   ssr: false,
+  loading: () => <UbDialogLoading />,
 });
 const MessageDialogLazy = dynamic(() => import('./MessageDialog').then((m) => m.MessageDialog), {
   ssr: false,
+  loading: () => <UbDialogLoading />,
 });
 
 const ALL = '';

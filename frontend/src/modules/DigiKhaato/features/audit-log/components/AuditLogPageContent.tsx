@@ -11,6 +11,7 @@ import {
   UbButton,
   UbDataGrid,
   UbDateRangePicker,
+  UbDrawerLoading,
   UbFilterSelect,
   UbPageHeader,
   UbPageShell,
@@ -34,7 +35,8 @@ import { createAuditColumns } from './AuditColumns';
 
 const AuditDetailDrawer = dynamic(
   () => import('./AuditDetailDrawer').then((module) => module.AuditDetailDrawer),
-  { ssr: false }
+  { ssr: false,
+  loading: () => <UbDrawerLoading /> }
 );
 
 const PAGE_SIZE_OPTIONS: readonly number[] = [25, 50, 100];

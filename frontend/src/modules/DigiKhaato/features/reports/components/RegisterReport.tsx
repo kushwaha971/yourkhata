@@ -6,17 +6,18 @@ import dynamic from 'next/dynamic';
 
 import {
   UbActionLink,
+  UbActiveFilters,
   UbButton,
+  UbDialogLoading,
   UbEmptyState,
   UbFilterChip,
-  UbActiveFilters,
   UbFilterChipGroup,
   UbFilterSelect,
   UbFilterSheet,
-  UbPageShell,
-  UbSwitch,
   type UbFilterSpec,
   type UbFilterValues,
+  UbPageShell,
+  UbSwitch,
 } from 'src/design-system';
 import {
   UbDataGrid,
@@ -58,7 +59,8 @@ import type {
 // the register never downloads it.
 const RegisterRowSheetLazy = dynamic(
   () => import('./RegisterRowSheet').then((m) => m.RegisterRowSheet),
-  { ssr: false }
+  { ssr: false,
+  loading: () => <UbDialogLoading /> }
 );
 
 /** Where each book's documents are made — the empty book's one action. */

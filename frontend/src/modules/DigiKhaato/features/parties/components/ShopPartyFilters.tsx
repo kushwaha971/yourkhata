@@ -6,14 +6,18 @@ import dynamic from 'next/dynamic';
 
 import { SlidersHorizontal } from 'lucide-react';
 
-import { UbButton } from 'src/design-system';
+import {
+  UbButton,
+  UbDrawerLoading,
+} from 'src/design-system';
 import type { TranslateFn } from 'src/hooks/useTranslation';
 
 import type { PartyListParams, PartyTagWithCount } from '../types/party.types';
 
 const Drawer = dynamic(
   () => import('./ShopPartyFilterDrawer').then((m) => m.ShopPartyFilterDrawer),
-  { ssr: false }
+  { ssr: false,
+  loading: () => <UbDrawerLoading /> }
 );
 
 export function ShopPartyFilters({

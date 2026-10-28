@@ -10,6 +10,8 @@ import {
   UbButton,
   UbChoiceChips,
   UbConfirmDialog,
+  UbDialogLoading,
+  UbDrawerLoading,
   UbEmptyState,
   UbInfoRow,
   UbPageHeader,
@@ -42,10 +44,12 @@ import type { MovementType } from '../types/item.types';
 
 const ItemFormDrawer = dynamic(() => import('./ItemFormDrawer').then((m) => m.ItemFormDrawer), {
   ssr: false,
+  loading: () => <UbDrawerLoading />,
 });
 const StockAdjustmentDrawer = dynamic(
   () => import('./StockAdjustmentDrawer').then((m) => m.StockAdjustmentDrawer),
-  { ssr: false }
+  { ssr: false,
+  loading: () => <UbDrawerLoading /> }
 );
 /** The Sales and Purchases tabs load with the tap that opens them: +7.7 KB
  * on the route chunk otherwise, paid by everyone who opens an item to read
@@ -55,7 +59,8 @@ const ItemTradePanel = dynamic(() => import('./ItemTradePanel').then((m) => m.It
 });
 const AdjustmentDetailDialog = dynamic(
   () => import('./AdjustmentDetailDialog').then((m) => m.AdjustmentDetailDialog),
-  { ssr: false }
+  { ssr: false,
+  loading: () => <UbDialogLoading /> }
 );
 
 type ItemTab = 'movements' | 'sales' | 'purchases';

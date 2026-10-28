@@ -12,6 +12,8 @@ import {
   UbAmount,
   UbButton,
   UbConfirmDialog,
+  UbDialogLoading,
+  UbDrawerLoading,
   UbEmptyState,
   UbInfoRow,
   UbLink,
@@ -44,23 +46,25 @@ import type { PurchaseBill, PurchaseKind } from '../types/purchase.types';
 /* The void form (RHF, the resolver, the schema) loads with the tap that opens it. */
 const VoidDialogLazy = dynamic(
   () => import('./PurchaseBillVoidDialog').then((m) => m.PurchaseBillVoidDialog),
-  { ssr: false }
+  { ssr: false, loading: () => <UbDialogLoading /> }
 );
 
 const OrderCancelDialogLazy = dynamic(
   () => import('./PurchaseOrderCancelDialog').then((m) => m.PurchaseOrderCancelDialog),
-  { ssr: false }
+  { ssr: false, loading: () => <UbDialogLoading /> }
 );
 
 /* Shop P0 — "Return goods": the lines, the reason and the stock switch load with the tap. */
 const DebitNoteDrawerLazy = dynamic(
   () => import('./DebitNoteDrawer').then((m) => m.DebitNoteDrawer),
-  { ssr: false }
+  { ssr: false,
+  loading: () => <UbDrawerLoading /> }
 );
 
 const PaymentFormDrawerLazy = dynamic(
   () => import('../../payments/components/PaymentFormDrawer').then((m) => m.PaymentFormDrawer),
-  { ssr: false }
+  { ssr: false,
+  loading: () => <UbDrawerLoading /> }
 );
 
 const VOIDABLE = new Set(['recorded', 'partially_paid', 'paid', 'overdue']);

@@ -6,16 +6,17 @@ import dynamic from 'next/dynamic';
 
 import { FigureBox, type Figure } from 'src/components/stats/FigureBox';
 import {
+  UbActiveFilters,
   UbButton,
   UbCard,
-  UbActiveFilters,
+  UbDialogLoading,
   UbFilterSheet,
+  type UbFilterSpec,
   UbInfoRow,
   UbInputHint,
   UbStack,
   UbSwitch,
   UbText,
-  type UbFilterSpec,
 } from 'src/design-system';
 import {
   UbDataGrid,
@@ -43,7 +44,8 @@ import { ReportPageShell } from './ReportPageShell';
 // downloads it.
 const DayBookRowSheetLazy = dynamic(
   () => import('./DayBookRowSheet').then((m) => m.DayBookRowSheet),
-  { ssr: false }
+  { ssr: false,
+  loading: () => <UbDialogLoading /> }
 );
 
 /**

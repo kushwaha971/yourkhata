@@ -14,7 +14,10 @@ import {
   UbActionLink,
   UbAmount,
   UbButton,
+  UbDialogLoading,
+  UbDrawerLoading,
   UbEmptyState,
+  UbFilterSelect,
   UbListItemText,
   UbLoadMore,
   UbPageHeader,
@@ -26,7 +29,6 @@ import {
   UbStatCard,
   UbStatusBadge,
   UbText,
-  UbFilterSelect,
 } from 'src/design-system';
 import { useAppDispatch, useAppSelector } from 'src/hooks/useAppStore';
 import { useCommittedSearch } from 'src/hooks/useCommittedSearch';
@@ -52,7 +54,8 @@ import { BorrowerHeaderMenu } from './BorrowerHeaderMenu';
 /** The sheet loads with the tap that opens it (CLAUDE.md: a form belongs in its own chunk). */
 const CollectFromBorrowerDialogLazy = dynamic(
   () => import('./CollectFromBorrowerDialog').then((m) => m.CollectFromBorrowerDialog),
-  { ssr: false }
+  { ssr: false,
+  loading: () => <UbDialogLoading /> }
 );
 const LoanWorkspaceLazy = dynamic(
   () => import('./LoanPageContent').then((m) => m.LoanPageContent),
@@ -64,11 +67,13 @@ const LoanWorkspaceLazy = dynamic(
    of their form code. */
 const BorrowerEditDrawerLazy = dynamic(
   () => import('./BorrowerEditDrawer').then((m) => m.BorrowerEditDrawer),
-  { ssr: false }
+  { ssr: false,
+  loading: () => <UbDrawerLoading /> }
 );
 const BorrowerBlockDialogLazy = dynamic(
   () => import('./BorrowerBlockDialog').then((m) => m.BorrowerBlockDialog),
-  { ssr: false }
+  { ssr: false,
+  loading: () => <UbDialogLoading /> }
 );
 
 type BorrowerAct = 'edit' | 'block' | 'unblock';

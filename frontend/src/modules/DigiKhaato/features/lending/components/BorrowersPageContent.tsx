@@ -11,18 +11,19 @@ import { SummaryStatGrid } from 'src/components/stats/SummaryStatGrid';
 import {
   UbActionLink,
   UbAmount,
-  UbButton,
-  UbLoadMore,
   UbAvatar,
-  UbText,
+  UbButton,
+  UbDrawerLoading,
   UbEmptyState,
   UbFilterSelect,
+  UbLoadMore,
   UbPageHeader,
   UbPageShell,
   UbSearchInput,
   UbStack,
   UbStatCard,
   UbStatusBadge,
+  UbText,
   useGridTier,
 } from 'src/design-system';
 import type {
@@ -52,7 +53,8 @@ import { isNonZero } from '../view-model/lendingDisplay';
 
 const BorrowerDetailDrawerLazy = dynamic(
   () => import('./BorrowerDetailDrawer').then((m) => m.BorrowerDetailDrawer),
-  { ssr: false }
+  { ssr: false,
+  loading: () => <UbDrawerLoading /> }
 );
 
 type T = ReturnType<typeof useTranslation>['t'];

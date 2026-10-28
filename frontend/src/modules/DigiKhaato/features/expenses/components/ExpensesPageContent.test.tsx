@@ -278,7 +278,8 @@ it("opens the form when the dashboard's Add expense sends ?add=1 (WP-06)", async
   mockSearch = 'add=1';
   signIn(['expenses.expense.read', 'expenses.expense.write']);
   renderWithProviders(<ExpensesPageContent />);
-  expect(await screen.findByRole('dialog')).toBeInTheDocument();
+  // By name: since A8 a "Loading…" drawer answers first and is then replaced.
+  expect(await screen.findByRole('dialog', { name: 'Add expense' })).toBeInTheDocument();
 });
 
 it('ignores ?add=1 for a role that cannot record', async () => {

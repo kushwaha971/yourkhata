@@ -11,6 +11,7 @@ import {
   UbAvatar,
   UbButton,
   UbConfirmDialog,
+  UbDrawerLoading,
   UbLink,
   UbStack,
   UbStatusBadge,
@@ -34,7 +35,7 @@ import type { SeatMapRow, SeatOccupant } from '../types/seat.types';
 
 /** The message loads with the tap that opens it (CLAUDE.md). */
 const MessageDialogLazy = dynamic(() => import('./MessageDialog').then((m) => m.MessageDialog), {
-  ssr: false,
+  ssr: false, loading: () => <UbDrawerLoading />,
 });
 
 /**

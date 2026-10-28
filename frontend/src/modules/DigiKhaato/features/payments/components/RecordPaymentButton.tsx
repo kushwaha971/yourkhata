@@ -6,7 +6,10 @@ import dynamic from 'next/dynamic';
 
 import { Wallet } from 'lucide-react';
 
-import { UbButton } from 'src/design-system';
+import {
+  UbButton,
+  UbDrawerLoading,
+} from 'src/design-system';
 import { usePermissions } from 'src/hooks/usePermissions';
 import { useTranslation } from 'src/hooks/useTranslation';
 
@@ -16,7 +19,8 @@ import type { PaymentContext, PaymentSaveResult } from '../types/payment.types';
    screen the button sits on (CLAUDE.md: a form belongs in the chunk that OPENS it). */
 const PaymentFormDrawerLazy = dynamic(
   () => import('./PaymentFormDrawer').then((m) => m.PaymentFormDrawer),
-  { ssr: false }
+  { ssr: false,
+  loading: () => <UbDrawerLoading /> }
 );
 
 /**

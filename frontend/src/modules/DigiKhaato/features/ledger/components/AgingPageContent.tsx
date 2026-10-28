@@ -12,6 +12,7 @@ import {
   UbBox,
   UbButton,
   UbDateInput,
+  UbDialogLoading,
   UbDivider,
   UbEmptyState,
   UbPageHeader,
@@ -76,10 +77,11 @@ const AgingBarsCardLazy = dynamic(() => import('./AgingBarsCard').then((m) => m.
 /** 09 §10.7 — the Shop row's sheet and what it opens, loaded on the first tap. */
 const AgingRowSheetLazy = dynamic(() => import('./AgingRowSheet').then((m) => m.AgingRowSheet), {
   ssr: false,
+  loading: () => <UbDialogLoading />,
 });
 const AgingRowActionLazy = dynamic(
   () => import('./AgingRowAction').then((m) => m.AgingRowAction),
-  { ssr: false }
+  { ssr: false, loading: () => <UbDialogLoading /> }
 );
 
 /**

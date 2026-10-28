@@ -7,17 +7,18 @@ import dynamic from 'next/dynamic';
 import { BookCopy, FolderTree, MapPin, Plus } from 'lucide-react';
 
 import {
-  UbButton,
-  UbEmptyState,
-  UbPageHeader,
-  UbPageShell,
-  UbSearchInput,
-  UbStack,
   UbActiveFilters,
+  UbButton,
+  UbDrawerLoading,
+  UbEmptyState,
   UbFilterSelect,
   UbFilterSheet,
   type UbFilterSpec,
   type UbFilterValues,
+  UbPageHeader,
+  UbPageShell,
+  UbSearchInput,
+  UbStack,
 } from 'src/design-system';
 import { type UbDataGridEmptyStates } from 'src/design-system/UbDataGrid';
 import { useAppRouter } from 'src/hooks/useAppRouter';
@@ -44,7 +45,7 @@ import { LibraryRecordGrid } from './LibraryRecordGrid';
 /** The drawers load with the tap that opens them, not with the list (CLAUDE.md). */
 const CatalogueDrawersLazy = dynamic(
   () => import('./CatalogueDrawers').then((m) => m.CatalogueDrawers),
-  { ssr: false }
+  { ssr: false, loading: () => <UbDrawerLoading /> }
 );
 
 /**

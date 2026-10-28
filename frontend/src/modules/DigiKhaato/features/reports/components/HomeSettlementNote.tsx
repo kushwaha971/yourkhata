@@ -4,7 +4,12 @@ import { useRef, useState } from 'react';
 
 import dynamic from 'next/dynamic';
 
-import { UbBox, UbButton, UbText } from 'src/design-system';
+import {
+  UbBox,
+  UbButton,
+  UbDialogLoading,
+  UbText,
+} from 'src/design-system';
 import { useTranslation } from 'src/hooks/useTranslation';
 import { formatInr } from 'src/utils/money';
 
@@ -17,7 +22,8 @@ const SettleDialog = dynamic(
     import('../../payments/settlement/components/SettleBalancesDialog').then(
       (m) => m.SettleBalancesDialog
     ),
-  { ssr: false }
+  { ssr: false,
+  loading: () => <UbDialogLoading /> }
 );
 
 /**

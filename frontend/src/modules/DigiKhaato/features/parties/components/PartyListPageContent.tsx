@@ -9,18 +9,20 @@ import { Plus, Tags } from 'lucide-react';
 import {
   UbActionLink,
   UbButton,
-  UbFab,
+  UbDialogLoading,
+  UbDrawerLoading,
   UbEmptyState,
+  UbFab,
+  UbFilterSelect,
   UbLoadMore,
   UbPageHeader,
   UbPageHeaderMobileActions,
   UbPageShell,
-  UbViewportPageShell,
   UbStack,
   UbStatusBanner,
-  UbTextInput,
-  UbFilterSelect,
   UbText,
+  UbTextInput,
+  UbViewportPageShell,
 } from 'src/design-system';
 import {
   UbDataGrid,
@@ -85,7 +87,8 @@ import type { Party } from '../types/party.types';
  */
 const SupplierPaymentLazy = dynamic(
   () => import('../../payments/components/PaymentFormDrawer').then((m) => m.PaymentFormDrawer),
-  { ssr: false }
+  { ssr: false,
+  loading: () => <UbDrawerLoading /> }
 );
 
 // BP-08 — the settle dialog loads with its own words when a merchant taps Settle….
@@ -94,18 +97,20 @@ const SettleBalancesLazy = dynamic(
     import('../../payments/settlement/components/SettleBalancesDialog').then(
       (m) => m.SettleBalancesDialog
     ),
-  { ssr: false }
+  { ssr: false,
+  loading: () => <UbDialogLoading /> }
 );
 
 const ShopCustomerReminderLazy = dynamic(
   () => import('./ShopCustomerReminder').then((m) => m.ShopCustomerReminder),
-  { ssr: false }
+  { ssr: false, loading: () => <UbDialogLoading /> }
 );
 
 
 const PartyFormDrawerLazy = dynamic(
   () => import('./PartyFormDrawer').then((m) => m.PartyFormDrawer),
-  { ssr: false }
+  { ssr: false,
+  loading: () => <UbDrawerLoading /> }
 );
 
 /**
@@ -121,7 +126,8 @@ const PartyFormDrawerLazy = dynamic(
  */
 const PartyBulkTagDialogLazy = dynamic(
   () => import('./PartyBulkTagDialog').then((m) => m.PartyBulkTagDialog),
-  { ssr: false }
+  { ssr: false,
+  loading: () => <UbDialogLoading /> }
 );
 
 /**
@@ -134,7 +140,8 @@ const PartyBulkTagDialogLazy = dynamic(
  */
 const PartyBulkArchiveDialogLazy = dynamic(
   () => import('./PartyBulkArchiveDialog').then((m) => m.PartyBulkArchiveDialog),
-  { ssr: false }
+  { ssr: false,
+  loading: () => <UbDialogLoading /> }
 );
 
 /**
@@ -351,7 +358,8 @@ export function PartyListPageContent({
 
   const labels = useMemo<UbDataGridLabels>(
     () => ({
-      loading: t('parties.list.loading'),
+      // A8: a Suppliers list said "Loading customers" while it loaded.
+      loading: t(supplier ? 'parties.list.supplier.loading' : 'parties.list.loading'),
       /**
        * `{page}` and `{pages}` are passed through as literal text: the grid
        * substitutes them itself, because it is the only thing that knows the
@@ -398,7 +406,7 @@ export function PartyListPageContent({
     // here. It rebuilds this object while the merchant is ticking rows, which
     // is a handful of renders of a toolbar that is re-rendering anyway — the
     // alternative was a label that said NaN.
-    [t, selectedIds.length, kind]
+    [t, selectedIds.length, kind, supplier]
   );
 
   /* NOT `onClick={partyForm.openCreate}`. The moment `openCreate` took an

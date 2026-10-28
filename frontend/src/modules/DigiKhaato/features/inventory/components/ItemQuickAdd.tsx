@@ -13,7 +13,13 @@ import {
 
 import dynamic from 'next/dynamic';
 
-import { UbBox, UbLoadMore, UbSearchInput, UbText } from 'src/design-system';
+import {
+  UbBox,
+  UbDrawerLoading,
+  UbLoadMore,
+  UbSearchInput,
+  UbText,
+} from 'src/design-system';
 import { useAppDispatch } from 'src/hooks/useAppStore';
 import { usePermissions } from 'src/hooks/usePermissions';
 import { useTranslation } from 'src/hooks/useTranslation';
@@ -57,7 +63,7 @@ export interface ItemQuickAddLabels {
 
 /* The form belongs to the chunk that OPENS it, never to the bill's route. */
 const ItemQuickCreate = dynamic(() => import('./ItemQuickCreate').then((m) => m.ItemQuickCreate), {
-  ssr: false,
+  ssr: false, loading: () => <UbDrawerLoading />,
 });
 
 interface NoMatchAction {

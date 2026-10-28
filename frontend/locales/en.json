@@ -76,6 +76,7 @@
   "common.search.loading": "Loading…",
   "common.search.loadingMore": "Loading more…",
   "common.search.showMore": "Show more",
+  "common.slowLoading": "This is taking longer than usual. Check your internet, then try again.",
   "common.status.saving": "Saving…",
   "common.summary.hide": "Hide details",
   "common.summary.show": "Details",

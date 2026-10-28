@@ -9,6 +9,7 @@ import { Plus } from 'lucide-react';
 import {
   UbButton,
   UbChoiceChips,
+  UbDrawerLoading,
   UbEmptyState,
   UbFilterSelect,
   UbFilterSheet,
@@ -54,7 +55,8 @@ import type { PaymentContext, PaymentRow, PaymentTab } from '../types/payment.ty
 /** The drawer loads with the tap that opens it, not with the list (CLAUDE.md). */
 const PaymentFormDrawerLazy = dynamic(
   () => import('./PaymentFormDrawer').then((m) => m.PaymentFormDrawer),
-  { ssr: false }
+  { ssr: false,
+  loading: () => <UbDrawerLoading /> }
 );
 
 const SEARCH_DEBOUNCE_MS = 300;

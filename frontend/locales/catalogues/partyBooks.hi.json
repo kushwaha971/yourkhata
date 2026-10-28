@@ -15,6 +15,7 @@
   "parties.list.supplier.error": "आपके सप्लायर लोड नहीं हो सके",
   "parties.list.supplier.filters": "सप्लायर छाँटें",
   "parties.list.supplier.loaded": "{total} में से {count} सप्लायर दिख रहे हैं",
+  "parties.list.supplier.loading": "सप्लायर लोड हो रहे हैं",
   "parties.list.supplier.matches": "{count} सप्लायर",
   "parties.list.supplier.owes": "आपको देना है",
   "parties.list.supplier.pageScope": "इस पेज के {count} सप्लायर से",

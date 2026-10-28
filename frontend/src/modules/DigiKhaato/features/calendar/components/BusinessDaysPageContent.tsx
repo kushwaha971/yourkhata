@@ -9,6 +9,7 @@ import { CalendarPlus, Trash2 } from 'lucide-react';
 import {
   UbBox,
   UbButton,
+  UbDialogLoading,
   UbEmptyState,
   UbPageHeader,
   UbPageShell,
@@ -33,7 +34,8 @@ import { WeekdayChips } from './WeekdayChips';
 // A form belongs in the chunk that OPENS it (CLAUDE.md, the LED-03 lesson).
 const ClosedDayDialog = dynamic(
   () => import('./ClosedDayDialog').then((module) => module.ClosedDayDialog),
-  { ssr: false }
+  { ssr: false,
+  loading: () => <UbDialogLoading /> }
 );
 
 /**

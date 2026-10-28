@@ -9,6 +9,7 @@ import { UserPlus } from 'lucide-react';
 import {
   UbButton,
   UbConfirmDialog,
+  UbDialogLoading,
   UbPageHeader,
   UbPageShell,
   UbSectionHeading,
@@ -52,12 +53,14 @@ import type { Invitation } from '../types/invitation.types';
  */
 const InviteMemberDialog = dynamic(
   () => import('./InviteMemberDialog').then((module) => module.InviteMemberDialog),
-  { ssr: false }
+  { ssr: false,
+  loading: () => <UbDialogLoading /> }
 );
 
 const InviteLinkDialog = dynamic(
   () => import('./InviteLinkDialog').then((module) => module.InviteLinkDialog),
-  { ssr: false }
+  { ssr: false,
+  loading: () => <UbDialogLoading /> }
 );
 
 /**

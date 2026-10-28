@@ -6,7 +6,15 @@ import dynamic from 'next/dynamic';
 
 import { Plus } from 'lucide-react';
 
-import { UbButton, UbEmptyState, UbLink, UbPageHeader, UbPageShell, UbText } from 'src/design-system';
+import {
+  UbButton,
+  UbDialogLoading,
+  UbEmptyState,
+  UbLink,
+  UbPageHeader,
+  UbPageShell,
+  UbText,
+} from 'src/design-system';
 import {
   preloadGridTable,
   UbDataGrid,
@@ -29,7 +37,8 @@ preloadGridTable();
 
 const PriceListFormDialog = dynamic(
   () => import('./PriceListFormDialog').then((m) => m.PriceListFormDialog),
-  { ssr: false }
+  { ssr: false,
+  loading: () => <UbDialogLoading /> }
 );
 
 /**

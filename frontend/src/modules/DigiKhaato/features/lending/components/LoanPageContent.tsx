@@ -20,6 +20,7 @@ import {
   UbActionLink,
   UbAmount,
   UbButton,
+  UbDialogLoading,
   UbEmptyState,
   UbLink,
   UbPageHeader,
@@ -62,24 +63,29 @@ import 'src/i18n/catalogues/payLink';
 
 const CollectDialogLazy = dynamic(() => import('./CollectDialog').then((m) => m.CollectDialog), {
   ssr: false,
+  loading: () => <UbDialogLoading />,
 });
 const NotPaidDialogLazy = dynamic(() => import('./NotPaidDialog').then((m) => m.NotPaidDialog), {
   ssr: false,
+  loading: () => <UbDialogLoading />,
 });
 /* Shop P0 — the borrower's UPI QR for what is due, with Share and Copy link. */
 const UpiPayQrDialogLazy = dynamic(
   () => import('../../payments/pay-link/components/UpiPayQrDialog').then((m) => m.UpiPayQrDialog),
-  { ssr: false }
+  { ssr: false,
+  loading: () => <UbDialogLoading /> }
 );
 /* LEN-09 — the late-fee and waiver dialog loads with the tap. */
 const AdjustDueDialogLazy = dynamic(
   () => import('./AdjustDueDialog').then((m) => m.AdjustDueDialog),
-  { ssr: false }
+  { ssr: false,
+  loading: () => <UbDialogLoading /> }
 );
 const OPEN_DUE = new Set(['due', 'overdue']);
 /* LEN-10 — write-off and cancel load with the tap. */
 const EndLoanDialogLazy = dynamic(() => import('./EndLoanDialog').then((m) => m.EndLoanDialog), {
   ssr: false,
+  loading: () => <UbDialogLoading />,
 });
 
 /* Lending P0 — receipt, statement and closure letter: the sheet loads with the tap. */
@@ -89,6 +95,7 @@ const LoanPapersPrintLazy = dynamic(
 );
 const MessageDialogLazy = dynamic(() => import('./MessageDialog').then((m) => m.MessageDialog), {
   ssr: false,
+  loading: () => <UbDialogLoading />,
 });
 
 const DUE_TONE: Readonly<Record<string, 'success' | 'warning' | 'error' | 'neutral' | 'info'>> = {

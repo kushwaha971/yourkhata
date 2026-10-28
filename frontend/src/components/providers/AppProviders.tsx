@@ -6,6 +6,7 @@ import { Provider } from 'react-redux';
 
 import { SnackbarHost } from 'src/components/layout/SnackbarHost';
 import { IntlProviderShell } from 'src/components/providers/IntlProviderShell';
+import { LoadingLabelsBridge } from 'src/components/providers/LoadingLabelsBridge';
 import { NetworkProbe } from 'src/components/providers/NetworkProbe';
 import { PreferencesBootstrap } from 'src/components/providers/PreferencesBootstrap';
 import { ServiceWorkerRegistrar } from 'src/components/providers/ServiceWorkerRegistrar';
@@ -63,20 +64,22 @@ export function AppProviders({ children }: Readonly<{ children: ReactNode }>): R
     <Provider store={store}>
       <PreferencesBootstrap>
         <IntlProviderShell>
-          <ThemeProvider>
-            {children}
-            <SnackbarHost />
-            <NetworkProbe />
-            {/* B50 — the installed app's cache; after load, production only. */}
-            <ServiceWorkerRegistrar />
-            {/* WLB-01 FR-4 — the active tenant's brand ramp on <html>. */}
-            <WhiteLabelSync />
-            {ANALYTICS_ON && (
-              <Suspense fallback={null}>
-                <AnalyticsHost />
-              </Suspense>
-            )}
-          </ThemeProvider>
+          <LoadingLabelsBridge>
+            <ThemeProvider>
+              {children}
+              <SnackbarHost />
+              <NetworkProbe />
+              {/* B50 — the installed app's cache; after load, production only. */}
+              <ServiceWorkerRegistrar />
+              {/* WLB-01 FR-4 — the active tenant's brand ramp on <html>. */}
+              <WhiteLabelSync />
+              {ANALYTICS_ON && (
+                <Suspense fallback={null}>
+                  <AnalyticsHost />
+                </Suspense>
+              )}
+            </ThemeProvider>
+          </LoadingLabelsBridge>
         </IntlProviderShell>
       </PreferencesBootstrap>
     </Provider>

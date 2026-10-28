@@ -10,10 +10,12 @@ import {
   UbAmount,
   UbBox,
   UbButton,
+  UbDialogLoading,
+  UbDivider,
+  UbDrawerLoading,
+  UbEmptyState,
   UbPanel,
   UbSectionHeading,
-  UbDivider,
-  UbEmptyState,
   UbSkeleton,
   UbStack,
   UbStatusBadge,
@@ -66,11 +68,12 @@ import type { LedgerEntry } from '../types/ledger.types';
  */
 const LedgerCorrectionDrawerLazy = dynamic(
   () => import('./LedgerCorrectionDrawer').then((m) => m.LedgerCorrectionDrawer),
-  { ssr: false }
+  { ssr: false,
+  loading: () => <UbDrawerLoading /> }
 );
 const ReverseEntryDialogLazy = dynamic(
   () => import('./ReverseEntryDialog').then((m) => m.ReverseEntryDialog),
-  { ssr: false }
+  { ssr: false, loading: () => <UbDialogLoading /> }
 );
 
 /**

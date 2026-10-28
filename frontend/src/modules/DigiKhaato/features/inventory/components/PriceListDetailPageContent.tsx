@@ -10,6 +10,7 @@ import {
   UbAsyncCombobox,
   UbButton,
   UbConfirmDialog,
+  UbDialogLoading,
   UbEmptyState,
   UbMoneyInput,
   UbPageHeader,
@@ -54,7 +55,8 @@ preloadGridTable();
 
 const PriceListFormDialog = dynamic(
   () => import('./PriceListFormDialog').then((m) => m.PriceListFormDialog),
-  { ssr: false }
+  { ssr: false,
+  loading: () => <UbDialogLoading /> }
 );
 
 type Repin = {

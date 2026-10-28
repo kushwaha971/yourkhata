@@ -9,6 +9,7 @@ import { Lock, Plus } from 'lucide-react';
 import {
   UbButton,
   UbChipTabs,
+  UbDialogLoading,
   UbDivider,
   UbEmptyState,
   UbPageHeader,
@@ -32,6 +33,7 @@ const MasterFormDialog = dynamic(
   () => import('./MasterFormDialog').then((m) => m.MasterFormDialog),
   {
     ssr: false,
+  loading: () => <UbDialogLoading />,
   }
 );
 

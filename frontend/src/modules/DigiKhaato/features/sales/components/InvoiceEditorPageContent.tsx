@@ -9,21 +9,23 @@ import { useStore } from 'react-redux';
 
 import {
   UbButton,
+  UbDialogLoading,
+  UbDrawerLoading,
   UbEmptyState,
   UbForm,
   UbGrid,
+  UbMoreActions,
   UbPageHeader,
   UbPageShell,
   UbPageSkeleton,
   UbPanel,
   UbStack,
   UbStatusBanner,
+  UbTaskBar,
   UbText,
   UbTotalDock,
   useIsMobileLayer,
   useMediaQuery,
-  UbMoreActions,
-  UbTaskBar,
 } from 'src/design-system';
 import { useAppRouter } from 'src/hooks/useAppRouter';
 import { useAppDispatch, useAppSelector } from 'src/hooks/useAppStore';
@@ -62,7 +64,8 @@ import type { InvoiceListRow } from '../types/sales.types';
 /* The payment sheet and the success sheet load with the tap that opens them. */
 const PaymentDrawerLazy = dynamic(
   () => import('./InvoicePaymentDrawer').then((m) => m.InvoicePaymentDrawer),
-  { ssr: false }
+  { ssr: false,
+  loading: () => <UbDrawerLoading /> }
 );
 /* Shop item 4 — only a challan has these fields, so only a challan's editor loads them. */
 const ChallanDetailsSection = dynamic(
@@ -71,7 +74,8 @@ const ChallanDetailsSection = dynamic(
 );
 const IssuedDialogLazy = dynamic(
   () => import('./InvoiceIssuedDialog').then((m) => m.InvoiceIssuedDialog),
-  { ssr: false }
+  { ssr: false,
+  loading: () => <UbDialogLoading /> }
 );
 
 /**

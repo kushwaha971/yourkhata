@@ -18,10 +18,12 @@ import {
 import {
   UbActionLink,
   UbAmount,
-  UbDialog,
-  UbInfoRow,
   UbButton,
+  UbDialog,
+  UbDialogLoading,
+  UbDrawerLoading,
   UbEmptyState,
+  UbInfoRow,
   UbLink,
   UbPageHeader,
   UbPageShell,
@@ -61,7 +63,7 @@ const PrintSheetLazy = dynamic(
 /* MSG-02 — the editable share composer arrives only when somebody shares. */
 const InvoiceShareSheetLazy = dynamic(
   () => import('./InvoiceShareSheet').then((m) => m.InvoiceShareSheet),
-  { ssr: false }
+  { ssr: false, loading: () => <UbDialogLoading /> }
 );
 
 const InvoiceProfitCardLazy = dynamic(
@@ -71,7 +73,7 @@ const InvoiceProfitCardLazy = dynamic(
 
 const PaymentFormDrawerLazy = dynamic(
   () => import('../../payments/components/PaymentFormDrawer').then((m) => m.PaymentFormDrawer),
-  { ssr: false }
+  { ssr: false, loading: () => <UbDrawerLoading /> }
 );
 
 type DetailKind = 'invoice' | FlowKind;

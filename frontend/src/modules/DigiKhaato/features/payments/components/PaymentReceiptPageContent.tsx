@@ -11,9 +11,12 @@ import {
   UbAmount,
   UbBottomBar,
   UbButton,
+  UbDialogLoading,
+  UbDrawerLoading,
   UbEmptyState,
   UbInfoRow,
   UbLink,
+  type UbMenuListRow,
   UbMoreActions,
   UbPageHeader,
   UbPageShell,
@@ -23,7 +26,6 @@ import {
   UbStatusBadge,
   UbStatusBanner,
   UbText,
-  type UbMenuListRow,
 } from 'src/design-system';
 import { useAppDispatch, useAppSelector } from 'src/hooks/useAppStore';
 import { usePermissions } from 'src/hooks/usePermissions';
@@ -51,16 +53,18 @@ const ReceiptPrintLazy = dynamic(
 );
 const VoidDialogLazy = dynamic(
   () => import('./VoidPaymentDialog').then((m) => m.VoidPaymentDialog),
-  { ssr: false }
+  { ssr: false, loading: () => <UbDialogLoading /> }
 );
 const PaymentFormDrawerLazy = dynamic(
   () => import('./PaymentFormDrawer').then((m) => m.PaymentFormDrawer),
-  { ssr: false }
+  { ssr: false,
+  loading: () => <UbDrawerLoading /> }
 );
 /* A4a — Apply to bills loads with the tap, like the cancel dialog. */
 const ApplyAdvanceDialogLazy = dynamic(
   () => import('./ApplyAdvanceDialog').then((m) => m.ApplyAdvanceDialog),
-  { ssr: false }
+  { ssr: false,
+  loading: () => <UbDialogLoading /> }
 );
 
 /**

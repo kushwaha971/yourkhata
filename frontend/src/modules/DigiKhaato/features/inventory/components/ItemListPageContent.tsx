@@ -19,23 +19,25 @@ import {
 import { SummaryStatGrid } from 'src/components/stats/SummaryStatGrid';
 import {
   UbActionLink,
+  UbActiveFilters,
   UbButton,
   UbChoiceChips,
+  UbDialogLoading,
+  UbDrawerLoading,
   UbEmptyState,
+  UbFilterSheet,
+  type UbFilterSpec,
+  type UbFilterValues,
   UbLoadMore,
   UbPageHeader,
   UbPageHeaderMobileActions,
   UbPageShell,
-  UbViewportPageShell,
   UbSearchInput,
   UbStack,
   UbStatCard,
   UbStatusBanner,
   UbTabs,
-  UbActiveFilters,
-  UbFilterSheet,
-  type UbFilterSpec,
-  type UbFilterValues,
+  UbViewportPageShell,
 } from 'src/design-system';
 import {
   UbDataGrid,
@@ -74,16 +76,19 @@ import type { ItemListRow, StockTab } from '../types/item.types';
 /* The form and the adjustment drawer belong to the chunk that OPENS them. */
 const ItemFormDrawer = dynamic(() => import('./ItemFormDrawer').then((m) => m.ItemFormDrawer), {
   ssr: false,
+  loading: () => <UbDrawerLoading />,
 });
 const StockAdjustmentDrawer = dynamic(
   () => import('./StockAdjustmentDrawer').then((m) => m.StockAdjustmentDrawer),
-  { ssr: false }
+  { ssr: false,
+  loading: () => <UbDrawerLoading /> }
 );
 /* 09 §8.4 — the saved snackbar's View opens this, so every screen that
    mounts the drawer mounts it too. */
 const AdjustmentDetailDialog = dynamic(
   () => import('./AdjustmentDetailDialog').then((m) => m.AdjustmentDetailDialog),
-  { ssr: false }
+  { ssr: false,
+  loading: () => <UbDialogLoading /> }
 );
 
 /** The phone card's disc: what KIND of item this is, not initials — an item

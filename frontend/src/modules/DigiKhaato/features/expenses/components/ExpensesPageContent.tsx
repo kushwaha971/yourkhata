@@ -10,6 +10,7 @@ import {
   UbActionLink,
   UbButton,
   UbChoiceChips,
+  UbDrawerLoading,
   UbEmptyState,
   UbFilterSelect,
   UbFilterSheet,
@@ -55,11 +56,13 @@ import type { Expense, ExpensePreset, ExpenseTab } from '../types/expense.types'
 /** The form and the detail sheet load with the tap that opens them, not with the list. */
 const ExpenseFormDrawerLazy = dynamic(
   () => import('./ExpenseFormDrawer').then((m) => m.ExpenseFormDrawer),
-  { ssr: false }
+  { ssr: false,
+  loading: () => <UbDrawerLoading /> }
 );
 const ExpenseDetailDrawerLazy = dynamic(
   () => import('./ExpenseDetailDrawer').then((m) => m.ExpenseDetailDrawer),
-  { ssr: false }
+  { ssr: false,
+  loading: () => <UbDrawerLoading /> }
 );
 
 const SEARCH_DEBOUNCE_MS = 300;

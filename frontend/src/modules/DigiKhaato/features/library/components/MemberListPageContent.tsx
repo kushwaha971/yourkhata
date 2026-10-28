@@ -8,24 +8,25 @@ import { useSearchParams } from 'next/navigation';
 import { ChevronRight, UserPlus } from 'lucide-react';
 
 import {
-  UbLoadMore,
-  UbAvatar,
-  UbPressable,
-  UbStatusBadge,
-  UbStatCard,
-  UbButton,
-  UbEmptyState,
-  UbPageHeader,
-  UbPageShell,
-  UbSearchInput,
-  UbStack,
-  UbSkeleton,
-  UbText,
   UbActiveFilters,
+  UbAvatar,
+  UbButton,
+  UbDrawerLoading,
+  UbEmptyState,
   UbFilterSelect,
   UbFilterSheet,
   type UbFilterSpec,
   type UbFilterValues,
+  UbLoadMore,
+  UbPageHeader,
+  UbPageShell,
+  UbPressable,
+  UbSearchInput,
+  UbSkeleton,
+  UbStack,
+  UbStatCard,
+  UbStatusBadge,
+  UbText,
 } from 'src/design-system';
 import {
   UbDataGridEmptyState,
@@ -62,12 +63,12 @@ import type { UseFormSetError } from 'react-hook-form';
 /** The enrol form loads with the tap that opens it (CLAUDE.md). */
 const EnrolMemberDrawerLazy = dynamic(
   () => import('./EnrolMemberDrawer').then((m) => m.EnrolMemberDrawer),
-  { ssr: false }
+  { ssr: false, loading: () => <UbDrawerLoading /> }
 );
 
 const MemberDetailDrawerLazy = dynamic(
   () => import('./MemberDetailDrawer').then((m) => m.MemberDetailDrawer),
-  { ssr: false }
+  { ssr: false, loading: () => <UbDrawerLoading /> }
 );
 
 const ENROL_FIELDS = [

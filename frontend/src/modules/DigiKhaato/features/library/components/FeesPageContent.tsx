@@ -8,17 +8,18 @@ import { Plus } from 'lucide-react';
 
 import { SummaryStatGrid } from 'src/components/stats/SummaryStatGrid';
 import {
-  UbAvatar,
   UbAmount,
+  UbAvatar,
   UbButton,
+  UbDrawerLoading,
   UbEmptyState,
   UbListItemText,
   UbPageHeader,
   UbPageShell,
   UbPageSkeleton,
   UbPressable,
-  UbStatCard,
   UbStack,
+  UbStatCard,
   UbStatusBadge,
   UbText,
 } from 'src/design-system';
@@ -42,7 +43,7 @@ import type { MembershipType } from '../types/member.types';
 
 /** The plan form loads with the tap that opens it (CLAUDE.md). */
 const PlanDialogLazy = dynamic(() => import('./PlanDialog').then((m) => m.PlanDialog), {
-  ssr: false,
+  ssr: false, loading: () => <UbDrawerLoading />,
 });
 
 /** Take fee is the core payment drawer, loaded with the tap (CLAUDE.md). */
@@ -51,12 +52,13 @@ const PaymentFormDrawerLazy = dynamic(
     import('modules/DigiKhaato/features/payments/components/PaymentFormDrawer').then(
       (m) => m.PaymentFormDrawer
     ),
-  { ssr: false }
+  { ssr: false,
+  loading: () => <UbDrawerLoading /> }
 );
 
 const MemberDetailDrawerLazy = dynamic(
   () => import('./MemberDetailDrawer').then((m) => m.MemberDetailDrawer),
-  { ssr: false }
+  { ssr: false, loading: () => <UbDrawerLoading /> }
 );
 
 const MODES = new Set(['cash', 'upi', 'bank', 'cheque', 'card']);

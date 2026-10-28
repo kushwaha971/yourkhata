@@ -1,4 +1,4 @@
-import { UbPageShell, UbSkeleton } from 'src/design-system';
+import { UbPageShell, UbSkeleton, UbSlowLoadingNote } from 'src/design-system';
 import type { UbSkeletonVariant } from 'src/design-system';
 
 /**
@@ -19,7 +19,13 @@ import type { UbSkeletonVariant } from 'src/design-system';
  * one per kind of screen: a home, a list, a record, an editor.
  */
 function RouteLoading({ children }: Readonly<{ children: React.ReactNode }>): React.JSX.Element {
-  return <UbPageShell header={<UbSkeleton variant="heading" />}>{children}</UbPageShell>;
+  // A8 P4: a route whose code never arrives says so after 10 s, with Try again.
+  return (
+    <UbPageShell header={<UbSkeleton variant="heading" />}>
+      {children}
+      <UbSlowLoadingNote />
+    </UbPageShell>
+  );
 }
 
 function BodyLoading({ variant }: Readonly<{ variant: UbSkeletonVariant }>): React.JSX.Element {

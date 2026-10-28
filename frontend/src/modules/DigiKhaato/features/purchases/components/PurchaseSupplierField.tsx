@@ -5,6 +5,7 @@ import { useMemo, useState, useCallback } from 'react';
 import dynamic from 'next/dynamic';
 
 import type { UbFieldRenderProps } from 'src/design-system';
+import { UbDrawerLoading } from 'src/design-system';
 import { usePermissions } from 'src/hooks/usePermissions';
 import type { TranslateFn } from 'src/hooks/useTranslation';
 
@@ -12,7 +13,7 @@ import { PartyPickerField } from '../../parties/components/PartyPickerField';
 
 const PartyQuickCreate = dynamic(
   () => import('../../parties/components/PartyQuickCreate').then((m) => m.PartyQuickCreate),
-  { ssr: false }
+  { ssr: false, loading: () => <UbDrawerLoading /> }
 );
 
 /**

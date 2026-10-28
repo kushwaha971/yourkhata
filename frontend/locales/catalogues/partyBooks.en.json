@@ -15,6 +15,7 @@
   "parties.list.supplier.error": "We could not load your suppliers",
   "parties.list.supplier.filters": "Filter suppliers",
   "parties.list.supplier.loaded": "Showing {count} of {total} suppliers",
+  "parties.list.supplier.loading": "Loading suppliers",
   "parties.list.supplier.matches": "{count, plural, one {# supplier} other {# suppliers}}",
   "parties.list.supplier.owes": "To pay",
   "parties.list.supplier.pageScope": "From the {count, plural, one {# supplier} other {# suppliers}} on this page",

@@ -9,6 +9,8 @@ import { ArrowLeft, FileText, MessageSquare, Minus, Pencil, Phone, Plus } from '
 import {
   UbBottomBar,
   UbButton,
+  UbDialogLoading,
+  UbDrawerLoading,
   UbEmptyState,
   UbLink,
   UbPageHeader,
@@ -39,20 +41,22 @@ import { UdhaarPersonOverview } from './UdhaarPersonOverview';
 
 const PersonForm = dynamic(() => import('./PartyFormDrawer').then((m) => m.PartyFormDrawer), {
   ssr: false,
+  loading: () => <UbDrawerLoading />,
 });
 const EntryForm = dynamic(
   () =>
     import('modules/DigiKhaato/features/ledger/components/LedgerEntryDrawer').then(
       (m) => m.LedgerEntryDrawer
     ),
-  { ssr: false }
+  { ssr: false,
+  loading: () => <UbDrawerLoading /> }
 );
 const Reminder = dynamic(
   () =>
     import('modules/DigiKhaato/features/reminders/components/PartyReminderSheet').then(
       (m) => m.PartyReminderSheet
     ),
-  { ssr: false }
+  { ssr: false, loading: () => <UbDialogLoading /> }
 );
 
 /** Personal money between people: identity, balance, history and the next entry. */

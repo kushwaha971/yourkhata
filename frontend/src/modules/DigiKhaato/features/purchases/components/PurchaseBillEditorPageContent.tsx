@@ -9,6 +9,7 @@ import { Save, Send, Trash2, X } from 'lucide-react';
 import {
   UbButton,
   UbConfirmDialog,
+  UbDrawerLoading,
   UbEmptyState,
   UbForm,
   UbGrid,
@@ -52,7 +53,8 @@ import type { PurchaseBillEnvelope, PurchaseKind } from '../types/purchase.types
 /* The "Paid now" sheet loads with the tap on Record, never with the editor. */
 const PaidNowDrawerLazy = dynamic(
   () => import('./PurchasePaidNowDrawer').then((m) => m.PurchasePaidNowDrawer),
-  { ssr: false }
+  { ssr: false,
+  loading: () => <UbDrawerLoading /> }
 );
 
 /**

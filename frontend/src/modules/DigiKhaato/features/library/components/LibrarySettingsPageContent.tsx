@@ -12,6 +12,7 @@ import {
   UbBottomBar,
   UbButton,
   UbCard,
+  UbDrawerLoading,
   UbEmptyState,
   UbField,
   UbForm,
@@ -48,7 +49,7 @@ import { FIELD_TAB, fromSettingsForm, toSettingsForm } from '../view-model/setti
 /** The counter dialog loads with the tap that opens it (CLAUDE.md). */
 const RaiseNumberDialogLazy = dynamic(
   () => import('./RaiseNumberDialog').then((m) => m.RaiseNumberDialog),
-  { ssr: false }
+  { ssr: false, loading: () => <UbDrawerLoading /> }
 );
 
 const FIELDS = Object.keys(FIELD_TAB) as (keyof LibrarySettingsFormValues)[];

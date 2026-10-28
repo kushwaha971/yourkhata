@@ -9,6 +9,7 @@ import { Ban, Undo2, Wrench } from 'lucide-react';
 import {
   UbActionLink,
   UbButton,
+  UbDrawerLoading,
   UbEmptyState,
   UbLink,
   UbPageHeader,
@@ -39,7 +40,7 @@ import { LibraryCard, LibraryFacts } from './LibraryCard';
 /** The reason dialog loads with the tap that opens it (CLAUDE.md). */
 const WithdrawCopyDialogLazy = dynamic(
   () => import('./WithdrawCopyDialog').then((m) => m.WithdrawCopyDialog),
-  { ssr: false }
+  { ssr: false, loading: () => <UbDrawerLoading /> }
 );
 
 /**

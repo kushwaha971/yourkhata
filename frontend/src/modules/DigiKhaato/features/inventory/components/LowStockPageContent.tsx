@@ -9,6 +9,8 @@ import { SlidersHorizontal } from 'lucide-react';
 import { SummaryStatGrid } from 'src/components/stats/SummaryStatGrid';
 import {
   UbButton,
+  UbDialogLoading,
+  UbDrawerLoading,
   UbEmptyState,
   UbLink,
   UbPageHeader,
@@ -44,13 +46,15 @@ import type { LowStockRow } from '../types/item.types';
 
 const StockAdjustmentDrawer = dynamic(
   () => import('./StockAdjustmentDrawer').then((m) => m.StockAdjustmentDrawer),
-  { ssr: false }
+  { ssr: false,
+  loading: () => <UbDrawerLoading /> }
 );
 /* 09 §8.4 — the saved snackbar's View opens this, so every screen that
    mounts the drawer mounts it too. */
 const AdjustmentDetailDialog = dynamic(
   () => import('./AdjustmentDetailDialog').then((m) => m.AdjustmentDetailDialog),
-  { ssr: false }
+  { ssr: false,
+  loading: () => <UbDialogLoading /> }
 );
 
 /** Module-level, so no cell is a component defined during render. */

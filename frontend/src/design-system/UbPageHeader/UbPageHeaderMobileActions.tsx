@@ -8,13 +8,14 @@ import { MoreHorizontal } from 'lucide-react';
 
 import { useIsMobileLayer } from 'src/design-system/motion/useMediaQuery';
 import { UbButton } from 'src/design-system/UbButton';
+import { UbDialogLoading } from 'src/design-system/UbDialog';
 import { UbFab } from 'src/design-system/UbFab';
 import { useAppRouter } from 'src/hooks/useAppRouter';
 
 /** Fetched on the first ⋯ press: the sheet is a Radix dialog, not first paint. */
 const UbActionSheet = dynamic(
   () => import('src/design-system/UbActionSheet/UbActionSheet').then((m) => m.UbActionSheet),
-  { ssr: false }
+  { ssr: false, loading: () => <UbDialogLoading /> }
 );
 
 export interface UbPageHeaderMobile {

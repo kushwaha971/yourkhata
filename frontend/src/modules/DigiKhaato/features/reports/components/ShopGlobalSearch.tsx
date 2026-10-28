@@ -5,7 +5,11 @@ import { useState } from 'react';
 import dynamic from 'next/dynamic';
 import { usePathname } from 'next/navigation';
 
-import { UbBox, useIsMobileLayer } from 'src/design-system';
+import {
+  UbBox,
+  UbDrawerLoading,
+  useIsMobileLayer,
+} from 'src/design-system';
 import { useAppSelector } from 'src/hooks/useAppStore';
 import { usePermissions } from 'src/hooks/usePermissions';
 import { selectRequestScopeKey } from 'src/redux/slice/sessionSlice';
@@ -17,7 +21,8 @@ import type { PaymentContext } from '../../payments/types/payment.types';
 
 const Payment = dynamic(
   () => import('../../payments/components/PaymentFormDrawer').then((m) => m.PaymentFormDrawer),
-  { ssr: false }
+  { ssr: false,
+  loading: () => <UbDrawerLoading /> }
 );
 function SearchSession({ expanded }: Readonly<{ expanded: boolean }>): React.JSX.Element {
   const [payment, setPayment] = useState<PaymentContext | null>(null);

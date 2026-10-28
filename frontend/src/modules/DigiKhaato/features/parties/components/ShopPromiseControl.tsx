@@ -8,6 +8,7 @@ import {
   UbBox,
   UbButton,
   UbDisclosure,
+  UbDrawerLoading,
   UbSkeleton,
   UbStack,
   UbStatusBadge,
@@ -31,7 +32,8 @@ import 'src/i18n/catalogues/shopPromise';
    page is opened to read a balance far more often than to take a promise. */
 const ShopPromiseDrawerLazy = dynamic(
   () => import('./ShopPromiseDrawer').then((m) => m.ShopPromiseDrawer),
-  { ssr: false }
+  { ssr: false,
+  loading: () => <UbDrawerLoading /> }
 );
 
 /**

@@ -23,7 +23,9 @@ import {
   UbActionLink,
   UbAmount,
   UbButton,
+  UbDialogLoading,
   UbDisclosure,
+  UbDrawerLoading,
   UbEmptyState,
   UbPageHeader,
   UbPageShell,
@@ -71,11 +73,11 @@ import type { MessageKind } from '../types/message.types';
 /** Each act's dialog loads with the tap that opens it (CLAUDE.md). */
 const MemberActionDialogLazy = dynamic(
   () => import('./MemberActionDialog').then((m) => m.MemberActionDialog),
-  { ssr: false }
+  { ssr: false, loading: () => <UbDrawerLoading /> }
 );
 
 const MessageDialogLazy = dynamic(() => import('./MessageDialog').then((m) => m.MessageDialog), {
-  ssr: false,
+  ssr: false, loading: () => <UbDrawerLoading />,
 });
 const MemberPaymentHistoryLazy = dynamic(
   () => import('./MemberPaymentHistory').then((m) => m.MemberPaymentHistory),
@@ -84,10 +86,11 @@ const MemberPaymentHistoryLazy = dynamic(
 /* Shop P0 — the student's UPI QR for the fee, with Share and Copy link. */
 const UpiPayQrDialogLazy = dynamic(
   () => import('../../payments/pay-link/components/UpiPayQrDialog').then((m) => m.UpiPayQrDialog),
-  { ssr: false }
+  { ssr: false,
+  loading: () => <UbDialogLoading /> }
 );
 const SeatDialogLazy = dynamic(() => import('./SeatDialog').then((m) => m.SeatDialog), {
-  ssr: false,
+  ssr: false, loading: () => <UbDrawerLoading />,
 });
 /* A form belongs in the chunk that OPENS it (CLAUDE.md): RHF's resolver and the
    schema load with the tap on "Edit details", not with the page. */
@@ -95,15 +98,17 @@ const SUMMARY_AMOUNT_ALIGNMENT = 'items-start [&>span[aria-hidden]>span]:min-w-0
 
 const MemberEditDrawerLazy = dynamic(
   () => import('./MemberEditDrawer').then((m) => m.MemberEditDrawer),
-  { ssr: false }
+  { ssr: false, loading: () => <UbDrawerLoading /> }
 );
 const PartyIdentityDrawerLazy = dynamic(
   () => import('../../parties/components/PartyIdentityDrawer').then((m) => m.PartyIdentityDrawer),
-  { ssr: false }
+  { ssr: false,
+  loading: () => <UbDrawerLoading /> }
 );
 const PaymentFormDrawerLazy = dynamic(
   () => import('../../payments/components/PaymentFormDrawer').then((m) => m.PaymentFormDrawer),
-  { ssr: false }
+  { ssr: false,
+  loading: () => <UbDrawerLoading /> }
 );
 
 /**

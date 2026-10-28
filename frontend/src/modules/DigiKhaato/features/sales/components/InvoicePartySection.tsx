@@ -7,13 +7,14 @@ import dynamic from 'next/dynamic';
 import { type UseFormReturn } from 'react-hook-form';
 
 import {
+  UbBox,
   UbDateInput,
   UbDisclosure,
+  UbDrawerLoading,
   UbField,
   UbGrid,
   UbPhoneInput,
   UbSegmentedControl,
-  UbBox,
   UbSelect,
   UbStack,
   UbText,
@@ -42,7 +43,7 @@ import { InvoiceCustomerBox } from './InvoiceCustomerBox';
 /* The contact form belongs to the chunk that OPENS it (Counter Mode "Add"). */
 const PartyQuickCreate = dynamic(
   () => import('../../parties/components/PartyQuickCreate').then((m) => m.PartyQuickCreate),
-  { ssr: false }
+  { ssr: false, loading: () => <UbDrawerLoading /> }
 );
 
 /**

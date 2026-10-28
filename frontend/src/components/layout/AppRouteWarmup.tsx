@@ -6,10 +6,14 @@ import { usePathname } from 'next/navigation';
 
 import { useAppDispatch, useAppSelector } from 'src/hooks/useAppStore';
 import { selectNetworkState } from 'src/redux/slice/networkSlice';
+import { selectResetGeneration } from 'src/redux/slice/sessionSlice';
 import { ROUTES } from 'src/routes';
 
 import { selectPartyFilters } from 'modules/DigiKhaato/features/parties/redux/partyListSlice';
-import { warmPartyList } from 'modules/DigiKhaato/features/parties/redux/partyListWarmup';
+import {
+  abortWarmPartyList,
+  warmPartyList,
+} from 'modules/DigiKhaato/features/parties/redux/partyListWarmup';
 
 /**
  * Part 19 §19.9.1 — the one thing that is allowed to happen ABOVE
@@ -60,6 +64,15 @@ export function AppRouteWarmup(): null {
   const filters = useAppSelector(selectPartyFilters);
   const networkState = useAppSelector(selectNetworkState);
   const canSpeculate = networkState === 'online';
+  const resetGeneration = useAppSelector(selectResetGeneration);
+
+  /* A8 P5 — after every feature's state is wiped, the warm request (if any)
+     belongs to the world before it: its answer was thrown away. Forget it, so
+     the remounted page does not "claim" it and then wait on it for ever. This
+     component's effects run before the page's (it is the earlier sibling). */
+  useEffect(() => {
+    if (resetGeneration > 0) abortWarmPartyList();
+  }, [resetGeneration]);
 
   useEffect(() => {
     if (!canSpeculate) return;

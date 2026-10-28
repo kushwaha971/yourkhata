@@ -4,7 +4,14 @@ import { useCallback, useMemo, useState } from 'react';
 
 import dynamic from 'next/dynamic';
 
-import { UbActionLink, UbDivider, UbFilterSelect, UbSearchInput, UbStack } from 'src/design-system';
+import {
+  UbActionLink,
+  UbDialogLoading,
+  UbDivider,
+  UbFilterSelect,
+  UbSearchInput,
+  UbStack,
+} from 'src/design-system';
 import {
   UbDataGrid,
   useGridTier,
@@ -36,6 +43,7 @@ import type { TaxPeriodPreset } from '../types/taxReports.types';
 // The row sheet opens from a phone card; a visit that only reads never loads it.
 const ProfitRowSheetLazy = dynamic(() => import('./ProfitRowSheet').then((m) => m.ProfitRowSheet), {
   ssr: false,
+  loading: () => <UbDialogLoading />,
 });
 
 /** Where a bill is made — the empty book's one action. */

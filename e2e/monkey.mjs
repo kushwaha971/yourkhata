@@ -175,6 +175,13 @@ if (process.env.MONKEY_TRACE)
       console.log(`TRACE step ${log.length} ${r.method()} ${new URL(r.url()).pathname.replace("/api/v1", "")} lines=${JSON.stringify(lines)} at ${page.url().replace(base, "")} | last: ${log.slice(-2).join(" / ")}`);
     }
   });
+// Every request, for a slow page's report (A8): which one the screen waited on.
+const allReqs = [];
+page.on("requestfinished", (r) => {
+  const t = r.timing();
+  allReqs.push({ end: Date.now(), url: r.url().replace(base, "").replace("http://localhost:8000", "").slice(0, 70), wait: Math.round(t.requestStart), total: Math.round(t.responseEnd) });
+  if (allReqs.length > 400) allReqs.shift();
+});
 page.on("requestfinished", (r) => {
   if (!armed || !r.url().includes("/api/")) return;
   const t = r.timing();
@@ -185,16 +192,37 @@ page.on("requestfinished", (r) => {
   });
 });
 /** Time until the screen shows its content: no busy region and no skeleton left. */
+const busyNow = () =>
+  page
+    .evaluate(() => {
+      const e = document.querySelector("main [aria-busy=true], main [data-skeleton], main .animate-pulse");
+      if (!document.querySelector("main")) return "no <main> yet";
+      if (!e) return null;
+      const path = [];
+      for (let x = e; x && x.tagName !== "MAIN" && path.length < 6; x = x.parentElement)
+        path.unshift(`${x.tagName.toLowerCase()}${x.getAttribute("data-testid") ? `[${x.getAttribute("data-testid")}]` : ""}${x.getAttribute("role") ? `(${x.getAttribute("role")})` : ""}`);
+      return `${path.join(">")} "${(e.getAttribute("aria-label") || e.textContent || "").trim().slice(0, 40)}" ${e.className?.toString().slice(0, 60)}`;
+    })
+    .catch(() => "unreadable");
+let busyAt2s = null;
 const readyAfter = async (t0) => {
+  busyAt2s = null;
+  const probe = setTimeout(async () => {
+    busyAt2s = await busyNow();
+  }, 2000);
   await page
     .waitForFunction(
       () =>
         document.querySelector("main") &&
         !document.querySelector("main [aria-busy=true], main [data-skeleton], main .animate-pulse"),
       null,
-      { timeout: 10000 },
+      // Interval polling, not the default animation-frame polling: frames can
+      // pause after Back/Forward, and every "slow return" of ~7.9 s (seeds 64,
+      // 93) was the wait itself — the page had its content at 2 s (A8 P5).
+      { timeout: 10000, polling: 100 },
     )
     .catch(() => {});
+  clearTimeout(probe);
   const ms = Date.now() - t0;
   // A slow page says WHAT kept it busy, so the failure can be traced, not guessed.
   if (ms > 5000) {
@@ -208,7 +236,14 @@ const readyAfter = async (t0) => {
         return `${path.join(" > ")} ${e.outerHTML.slice(0, 160)}`;
       })
       .catch(() => "unreadable");
+    lastBusy += ` · busy at 2 s: ${busyAt2s ?? "—"}`;
     lastBusy += ` · still open: ${[...inflight.values()].slice(0, 6).join(", ") || "none"}`;
+    const slowest = allReqs
+      .filter((q) => q.end >= t0)
+      .sort((a, b) => b.total - a.total)
+      .slice(0, 5)
+      .map((q) => `${q.url} (wait ${q.wait} ms, total ${q.total} ms)`);
+    lastBusy += ` · slowest in the window: ${slowest.join(", ") || "none"}`;
   }
   return ms;
 };
@@ -402,7 +437,11 @@ try {
           const leftFrom = page.url();
           const dir = pick(["back", "forward"]);
           log.push(`${i} ${dir}`);
-          await (dir === "back" ? page.goBack({ timeout: 8000 }) : page.goForward({ timeout: 8000 })).catch(() => {});
+          const tNav = Date.now();
+          const navErr = await (dir === "back" ? page.goBack({ timeout: 8000 }) : page.goForward({ timeout: 8000 }))
+            .then(() => null)
+            .catch((e) => e.message.split("\n")[0].slice(0, 60));
+          log.push(`${i} ${dir} from ${leftFrom.replace(base, "")} to ${page.url().replace(base, "")} in ${Date.now() - tNav} ms${navErr ? ` (${navErr})` : ""}`);
           await page.waitForTimeout(300);
           if (!page.url().startsWith(`${base}/sales/invoices`)) {
             lastT0 = Date.now();

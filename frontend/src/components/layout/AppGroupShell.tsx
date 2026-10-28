@@ -1,10 +1,12 @@
 'use client';
 
-import { Suspense } from 'react';
+import { Fragment, Suspense } from 'react';
 
 import { AppRouteWarmup } from 'src/components/layout/AppRouteWarmup';
 import { RouteProgress } from 'src/components/layout/RouteProgress';
 import { UbAppShell } from 'src/components/layout/UbAppShell';
+import { useAppSelector } from 'src/hooks/useAppStore';
+import { selectResetGeneration } from 'src/redux/slice/sessionSlice';
 
 import { RequireSession } from 'modules/DigiKhaato/features/auth/components/RequireSession';
 
@@ -33,6 +35,12 @@ import 'src/i18n/catalogues/tenant';
 export function AppGroupShell({
   children,
 }: Readonly<{ children: React.ReactNode }>): React.JSX.Element {
+  /* A8 P5 — the page remounts after every feature's state is wiped (an app
+     switch, a tenant switch). A page of the Shop opened from the Library had
+     its fresh rows wiped by the switch it caused, and its fetch never ran
+     again: the list sat on its loading bars (measured: 8 of 8 trips). Only the
+     page remounts, not the shell around it. */
+  const resetGeneration = useAppSelector(selectResetGeneration);
   return (
     <>
       <AppRouteWarmup />
@@ -41,7 +49,9 @@ export function AppGroupShell({
         <RouteProgress />
       </Suspense>
       <RequireSession>
-        <UbAppShell>{children}</UbAppShell>
+        <UbAppShell>
+          <Fragment key={resetGeneration}>{children}</Fragment>
+        </UbAppShell>
       </RequireSession>
     </>
   );

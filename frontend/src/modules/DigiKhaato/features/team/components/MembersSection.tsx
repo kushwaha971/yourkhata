@@ -6,7 +6,13 @@ import dynamic from 'next/dynamic';
 
 import { UserPlus } from 'lucide-react';
 
-import { UbButton, UbConfirmDialog, UbSectionHeading, UbStack } from 'src/design-system';
+import {
+  UbButton,
+  UbConfirmDialog,
+  UbDialogLoading,
+  UbSectionHeading,
+  UbStack,
+} from 'src/design-system';
 import {
   UbDataGrid,
   type UbDataGridEmptyStates,
@@ -38,19 +44,22 @@ import type { Member } from '../types/member.types';
  */
 const AddMemberDialog = dynamic(
   () => import('./AddMemberDialog').then((module) => module.AddMemberDialog),
-  { ssr: false }
+  { ssr: false,
+  loading: () => <UbDialogLoading /> }
 );
 
 /* Owner, 12 Oct 2026 — the edit form carries the same form stack as the add
    dialog, so it is fetched when it opens, for the same reason. */
 const EditMemberDialog = dynamic(
   () => import('./EditMemberDialog').then((module) => module.EditMemberDialog),
-  { ssr: false }
+  { ssr: false,
+  loading: () => <UbDialogLoading /> }
 );
 
 const CredentialsDialog = dynamic(
   () => import('./CredentialsDialog').then((module) => module.CredentialsDialog),
-  { ssr: false }
+  { ssr: false,
+  loading: () => <UbDialogLoading /> }
 );
 
 /**

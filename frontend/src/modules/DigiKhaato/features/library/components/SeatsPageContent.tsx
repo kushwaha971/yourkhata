@@ -8,21 +8,22 @@ import { ChevronRight, Plus, Settings2 } from 'lucide-react';
 
 import {
   UbActionLink,
-  UbLink,
   UbAvatar,
   UbButton,
   UbDisclosure,
-  UbSearchInput,
-  UbStatCard,
-  UbStatusBadge,
+  UbDrawerLoading,
   UbEmptyState,
   UbFilterChip,
   UbFilterSelect,
+  UbLink,
   UbPageHeader,
   UbPageShell,
   UbPageSkeleton,
   UbPressable,
+  UbSearchInput,
   UbStack,
+  UbStatCard,
+  UbStatusBadge,
   UbText,
 } from 'src/design-system';
 import { usePermissions } from 'src/hooks/usePermissions';
@@ -56,7 +57,7 @@ import type { SeatMapRow } from '../types/seat.types';
 /** The setup drawer loads with the tap that opens it (CLAUDE.md). */
 const SeatSetupDrawerLazy = dynamic(
   () => import('./SeatSetupDrawer').then((m) => m.SeatSetupDrawer),
-  { ssr: false }
+  { ssr: false, loading: () => <UbDrawerLoading /> }
 );
 
 /** The seat panel loads with the first tap on a seat: it carries the free-seat
@@ -496,7 +497,7 @@ export function SeatsPageContent(): React.JSX.Element {
 
 const MemberDetailDrawerLazy = dynamic(
   () => import('./MemberDetailDrawer').then((m) => m.MemberDetailDrawer),
-  { ssr: false }
+  { ssr: false, loading: () => <UbDrawerLoading /> }
 );
 
 type T = TranslateFn;

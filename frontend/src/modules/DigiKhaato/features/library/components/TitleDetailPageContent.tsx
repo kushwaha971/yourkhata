@@ -10,6 +10,7 @@ import {
   UbActionLink,
   UbButton,
   UbConfirmDialog,
+  UbDrawerLoading,
   UbEmptyState,
   UbLink,
   UbPageHeader,
@@ -33,7 +34,7 @@ import { LibraryCard, LibraryFacts } from './LibraryCard';
 
 const CatalogueDrawersLazy = dynamic(
   () => import('./CatalogueDrawers').then((m) => m.CatalogueDrawers),
-  { ssr: false }
+  { ssr: false, loading: () => <UbDrawerLoading /> }
 );
 
 /**

@@ -76,6 +76,7 @@
   "common.search.loading": "लोड हो रहा है…",
   "common.search.loadingMore": "और लोड हो रहे हैं…",
   "common.search.showMore": "और दिखाएँ",
+  "common.slowLoading": "इसमें सामान्य से ज़्यादा समय लग रहा है। इंटरनेट देखें, फिर दोबारा कोशिश करें।",
   "common.status.saving": "सहेज रहे हैं…",
   "common.summary.hide": "विवरण छिपाएँ",
   "common.summary.show": "विवरण",

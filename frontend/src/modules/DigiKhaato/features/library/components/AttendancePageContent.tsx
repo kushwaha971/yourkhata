@@ -8,6 +8,7 @@ import { LogIn, LogOut, QrCode } from 'lucide-react';
 
 import {
   UbButton,
+  UbDrawerLoading,
   UbEmptyState,
   UbListItemText,
   UbPageHeader,
@@ -51,12 +52,12 @@ const UbDateInputLazy = dynamic(
 /* Library P0 — the door's QR for self check-in loads with the tap. */
 const CheckInPosterDialogLazy = dynamic(
   () => import('./CheckInPosterDialog').then((m) => m.CheckInPosterDialog),
-  { ssr: false }
+  { ssr: false, loading: () => <UbDrawerLoading /> }
 );
 
 const AttendanceOverrideDialogLazy = dynamic(
   () => import('./AttendanceOverrideDialog').then((m) => m.AttendanceOverrideDialog),
-  { ssr: false }
+  { ssr: false, loading: () => <UbDrawerLoading /> }
 );
 
 const matches = (row: AttendanceRow, q: string): boolean => {

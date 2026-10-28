@@ -12,6 +12,7 @@ import {
   UbCard,
   UbChoiceChips,
   UbDateRangePicker,
+  UbDrawerLoading,
   UbEmptyState,
   UbPageHeader,
   UbPageShell,
@@ -46,18 +47,21 @@ import type { ExpensePreset } from '../types/expense.types';
    in the chunk that OPENS it, not in the chunk that renders the screen). */
 const ExpenseFormDrawerLazy = dynamic(
   () => import('./ExpenseFormDrawer').then((m) => m.ExpenseFormDrawer),
-  { ssr: false }
+  { ssr: false,
+  loading: () => <UbDrawerLoading /> }
 );
 const ExpenseDetailDrawerLazy = dynamic(
   () => import('./ExpenseDetailDrawer').then((m) => m.ExpenseDetailDrawer),
-  { ssr: false }
+  { ssr: false,
+  loading: () => <UbDrawerLoading /> }
 );
 const PaymentFormDrawerLazy = dynamic(
   () =>
     import('modules/DigiKhaato/features/payments/components/PaymentFormDrawer').then(
       (m) => m.PaymentFormDrawer
     ),
-  { ssr: false }
+  { ssr: false,
+  loading: () => <UbDrawerLoading /> }
 );
 
 /** 08 §11 — Cash · Bank · Both, in that order. */

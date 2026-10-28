@@ -6,7 +6,14 @@ import dynamic from 'next/dynamic';
 
 import { Ban, Undo2 } from 'lucide-react';
 
-import { UbAmount, UbButton, UbStack, UbStatusBadge, UbText } from 'src/design-system';
+import {
+  UbAmount,
+  UbButton,
+  UbDrawerLoading,
+  UbStack,
+  UbStatusBadge,
+  UbText,
+} from 'src/design-system';
 import type { UbStatusBadgeTone } from 'src/design-system';
 import { useAppSelector } from 'src/hooks/useAppStore';
 import type { TranslateFn } from 'src/hooks/useTranslation';
@@ -38,7 +45,8 @@ const PaymentFormDrawerLazy = dynamic(
     import('modules/DigiKhaato/features/payments/components/PaymentFormDrawer').then(
       (m) => m.PaymentFormDrawer
     ),
-  { ssr: false }
+  { ssr: false,
+  loading: () => <UbDrawerLoading /> }
 );
 
 const TONE: Readonly<Record<string, UbStatusBadgeTone>> = {

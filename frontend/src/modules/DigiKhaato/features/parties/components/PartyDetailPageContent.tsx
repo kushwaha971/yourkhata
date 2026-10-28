@@ -8,13 +8,14 @@ import { useSearchParams } from 'next/navigation';
 import { Minus, Plus } from 'lucide-react';
 
 import {
-  UbLink,
   UbBottomBar,
   UbBox,
   UbButton,
   UbCard,
   UbDisclosure,
+  UbDrawerLoading,
   UbEmptyState,
+  UbLink,
   UbPageHeader,
   UbPageShell,
   UbSkeleton,
@@ -89,7 +90,8 @@ const ShopPersonRecordsLazy = dynamic(
 
 const PartyFormDrawerLazy = dynamic(
   () => import('./PartyFormDrawer').then((m) => m.PartyFormDrawer),
-  { ssr: false }
+  { ssr: false,
+  loading: () => <UbDrawerLoading /> }
 );
 
 /**
@@ -104,7 +106,8 @@ const LedgerEntryDrawerLazy = dynamic(
     import('modules/DigiKhaato/features/ledger/components/LedgerEntryDrawer').then(
       (m) => m.LedgerEntryDrawer
     ),
-  { ssr: false }
+  { ssr: false,
+  loading: () => <UbDrawerLoading /> }
 );
 
 /** Shop gap §1.6 — loaded only for a customer of a business with inventory. */
@@ -129,7 +132,8 @@ const OpeningBalanceDrawerLazy = dynamic(
     import('modules/DigiKhaato/features/ledger/components/OpeningBalanceDrawer').then(
       (m) => m.OpeningBalanceDrawer
     ),
-  { ssr: false }
+  { ssr: false,
+  loading: () => <UbDrawerLoading /> }
 );
 
 export interface PartyDetailPageContentProps {

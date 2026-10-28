@@ -122,17 +122,15 @@ its branch. A section that lags the code is a defect.
 
 ## A8 · The page goes blank on the first tap
 
-- **Worktree:** `/Users/akashkushwaha/Projects/ims-platform/ims-platform/shop-a8-26fdf0`
-- **Branch:** `claude/shop-a8-26fdf0`
-- **Port:** 3003
-- **Report:** `docs/performance/2026-10-27-shop-a8-first-tap.md`
-- **Status:** stopped by the owner on 27 Oct 2026 before any commit; main
-  continues it after A5.
-- **Last commit:** — (the branch is at 17e99ec88)
-- **Next step:**
-  1. Cherry-pick cf10ff099 (A5's port commit).
-  2. Reproduce the blank page (cold, slow network, every Shop menu tap).
-  3. The spec-to-check mapping and `e2e/a8-edges.mjs`.
+- **Worktree:** main (`proceed-222204`), branch `shop/a2`.
+- **Report:** `docs/performance/2026-10-28-shop-a8-first-tap.md`; harness `e2e/a8-first-tap.mjs`.
+- **Status:** ready for the owner's check (28 Oct 2026).
+- **Built:**
+  - loading shapes for 97 lazy overlays, with a guard test;
+  - the slow-load note with Try again;
+  - the page remounts after a feature reset, which fixes a list that never
+    loaded when opened from another app.
+- **Next:** Part B (B1 Pick what you sell).
 
 ## What the stopped sessions found (27 Oct 2026, before the owner stopped them)
 

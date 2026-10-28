@@ -7,6 +7,8 @@ import dynamic from 'next/dynamic';
 import {
   UbButton,
   UbChoiceChips,
+  UbDialogLoading,
+  UbDrawerLoading,
   UbEmptyState,
   UbListItemText,
   UbPageHeader,
@@ -39,14 +41,15 @@ const FinishDialogLazy = dynamic(() => loadPrompts().then((m) => m.FinishDialog)
   ssr: false,
 });
 const MarkLostDialogLazy = dynamic(() => import('./ChargeDialogs').then((m) => m.MarkLostDialog), {
-  ssr: false,
+  ssr: false, loading: () => <UbDialogLoading />,
 });
 const PaymentFormDrawerLazy = dynamic(
   () =>
     import('modules/DigiKhaato/features/payments/components/PaymentFormDrawer').then(
       (m) => m.PaymentFormDrawer
     ),
-  { ssr: false }
+  { ssr: false,
+  loading: () => <UbDrawerLoading /> }
 );
 
 /**

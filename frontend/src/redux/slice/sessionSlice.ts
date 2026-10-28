@@ -139,6 +139,14 @@ export interface SessionBranding {
 }
 
 export interface SessionState {
+  /**
+   * A8 P5 — how many times every feature's state has been wiped
+   * (`resetAllFeatureState`). The session slice keeps itself through a reset,
+   * so it can count them; the signed-in page is keyed by this count and
+   * remounts, because a page that was on screen when its state was wiped
+   * otherwise waits for ever on a fetch nothing repeats.
+   */
+  resetGeneration: number;
   status: SessionStatus;
   user: SessionUser | null;
   activeTenant: SessionTenant | null;
@@ -172,6 +180,7 @@ export interface SessionState {
 }
 
 const initialState: SessionState = {
+  resetGeneration: 0,
   status: 'idle',
   user: null,
   activeTenant: null,
@@ -368,6 +377,7 @@ const sessionSlice = createSlice({
       // session itself is refetched immediately afterwards (§19.6.5 step 2).
       .addCase(resetAllFeatureState, (state) => {
         state.error = null;
+        state.resetGeneration += 1;
       });
   },
 });
@@ -442,6 +452,8 @@ export const selectAppsAddable = (state: RootState): readonly SessionApp[] =>
 export const selectMustChangePassword = (state: RootState): boolean =>
   state.session.user?.mustChangePassword ?? false;
 export const selectSessionUser = (state: RootState): SessionUser | null => state.session.user;
+/** A8 P5 — see `SessionState.resetGeneration`. */
+export const selectResetGeneration = (state: RootState): number => state.session.resetGeneration;
 export const selectActiveTenant = (state: RootState): SessionTenant | null =>
   state.session.activeTenant;
 /** One identity key for transport and transient search sources; phone numbers never participate. */

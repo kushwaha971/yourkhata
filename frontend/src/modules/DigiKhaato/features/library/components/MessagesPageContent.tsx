@@ -9,6 +9,7 @@ import { MessageCircle, Users } from 'lucide-react';
 import {
   UbAmount,
   UbButton,
+  UbDrawerLoading,
   UbEmptyState,
   UbListItemText,
   UbPageHeader,
@@ -32,12 +33,12 @@ import type { FeeReminderRow } from '../types/message.types';
 
 /** The message loads with the tap that opens it (CLAUDE.md). */
 const MessageDialogLazy = dynamic(() => import('./MessageDialog').then((m) => m.MessageDialog), {
-  ssr: false,
+  ssr: false, loading: () => <UbDrawerLoading />,
 });
 /** QA F4 / B51 — a group message; a form, so it loads with the tap too. */
 const BulkMessageDrawerLazy = dynamic(
   () => import('./BulkMessageDrawer').then((m) => m.BulkMessageDrawer),
-  { ssr: false }
+  { ssr: false, loading: () => <UbDrawerLoading /> }
 );
 
 /**

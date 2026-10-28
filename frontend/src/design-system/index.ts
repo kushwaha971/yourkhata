@@ -131,6 +131,13 @@ export { UbViewportPageShell } from './UbPageShell/UbViewportPageShell';
 export type { UbPageShellProps, UbPageShellWidth } from './UbPageShell';
 
 export { UbPageSkeleton, UbSkeleton } from './UbSkeleton';
+export { SLOW_LOADING_MS, UbSlowLoadingNote } from './UbSlowLoadingNote';
+export {
+  UB_LOADING_LABELS_EN,
+  UbLoadingLabelsProvider,
+  useUbLoadingLabels,
+} from './UbLoadingLabels';
+export type { UbLoadingLabels } from './UbLoadingLabels';
 export type { UbSkeletonProps, UbSkeletonVariant } from './UbSkeleton';
 
 export { UB_SNACKBAR_AUTO_HIDE_MS, UbSnackbar } from './UbSnackbar';
@@ -256,7 +263,7 @@ export type { UbSelectOption, UbSelectProps } from './UbSelect';
 
 export { UbDisclosure } from './UbDisclosure';
 export type { UbDisclosureProps } from './UbDisclosure';
-export { UbDrawer } from './UbDrawer';
+export { UbDrawer, UbDrawerLoading } from './UbDrawer';
 export type { UbDrawerProps } from './UbDrawer';
 export { UbMoneyInput, groupIndian, padDecimals, sanitiseAmount } from './UbMoneyInput';
 export type { UbMoneyInputProps } from './UbMoneyInput';
@@ -316,7 +323,7 @@ export type { UbTokenInputOption, UbTokenInputProps } from './UbTokenInput';
 export { UbConfirmDialog } from './UbConfirmDialog';
 export type { UbConfirmDialogProps } from './UbConfirmDialog';
 
-export { UbDialog } from './UbDialog';
+export { UbDialog, UbDialogLoading } from './UbDialog';
 export type { UbDialogProps } from './UbDialog';
 
 // ── Wave 3 — Sprint 3 §32.6.4 ────────────────────────────────────────────────
