@@ -93,3 +93,23 @@ The onboarding tests pass (147), with the 88 → 96 px test updated.
 1. Read the mock source (`grep -n "^M.pPick\|^M.dPick\|tileHtml\|const TILES"`) and its CSS (`.tiles`, `.tile`), and the current onboarding step (`features/onboarding`, `GET /onboarding/apps`, `business_type`).
 2. Write `e2e/b1-pick.mjs` (look + API read-back of the saved business type(s), 390/320/1024/1280, light/dark, EN/HI) and measure the baseline.
 3. Then build, per `docs/team/CONTINUE-SHOP-REVAMP.md` §3.
+
+## Correction (28 Oct, later): the second type's storage IS decided
+
+`docs/platform/17-business-model-map.md` §5, approved as BP-22 (§7, R-DEC-51):
+- "**More than one type, one GSTIN: `shop.extra_types`**; features = union of
+  the presets";
+- defaults come from the business type(s) preset, and are "off for every
+  existing business";
+- one check: `features.on(tenant, key, category=None)`. No code compares a
+  business type.
+
+So "+ I also sell…" is stored as the Shop setting `shop.extra_types`, with no
+second column on the tenant and no owner question needed (it is approved).
+The earlier lines above that say "propose a storage shape" are superseded by
+this.
+
+Still to confirm in code: whether `shop.extra_types` already exists as a
+setting key, and how the design's ten kinds map onto today's nine stored
+`BusinessType` values (the map says the finer kinds "map to presets and to a
+default feature set"). R-DEC-51 #4 says build **Hardware & electrical first**.
