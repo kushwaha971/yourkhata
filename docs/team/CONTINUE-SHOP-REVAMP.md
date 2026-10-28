@@ -188,5 +188,8 @@ same honesty. Read this whole file before doing anything.
 - Never call something done before the owner checks it. Report what failed,
   what wasn't proven, and why.
 
-**Start:** read the files in §1, run `git status` and `git log`, then begin
-**Part B · B1 (Pick what you sell)** with its spec, harness and baseline.
+**Start:** read the files in §1, run `git status` and `git log`, then continue
+**Part B · B1 (Pick what you sell)**. Its spec table is already written in
+`docs/performance/2026-10-28-shop-b1-pick-what-you-sell.md`, so start at that
+report's "Next steps": read the mock source, write `e2e/b1-pick.mjs`, and
+measure the baseline. Nothing for B1 is built yet.
