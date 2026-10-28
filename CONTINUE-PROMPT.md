@@ -1,3 +1,5 @@
+> **Superseded for the Shop revamp (28 Oct 2026):** use `docs/team/CONTINUE-SHOP-REVAMP.md`. This file describes the earlier platform build (1 Oct).
+
 # Continuation prompt: give this to the next agent (or a colleague's Claude)
 
 Paste everything below the line into a fresh Claude session. It works from any Claude account. Before you paste it, connect the folder `~/Projects/ims-platform` on this Mac, and ideally `~/digikhaato` as well.
