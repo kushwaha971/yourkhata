@@ -37,6 +37,13 @@
   second type: check whether the server can store more than one
   `business_type` before building it. If it can't, that's a backend change for
   the owner to approve.
+- **Checked:** the server stores ONE business type,
+  `apps/platform_app/models/tenant.py:32` (`business_type = CharField(max_length=32,
+  choices=BusinessType.choices)`). So S4 ("+ I also sell…") needs a backend
+  change: a second field or a list, plus a migration. First look in R-DEC-51
+  (`docs/revamp/12-decision-log.md`, and the business-model memory) to see
+  whether the owner already decided it. If not, ask before building S4. S1–S3
+  and S5 need no backend change.
 
 ## Next steps (for whoever continues)
 1. Read the mock source (`grep -n "^M.pPick\|^M.dPick\|tileHtml\|const TILES"`) and its CSS (`.tiles`, `.tile`), and the current onboarding step (`features/onboarding`, `GET /onboarding/apps`, `business_type`).
