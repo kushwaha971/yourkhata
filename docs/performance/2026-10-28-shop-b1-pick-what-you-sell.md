@@ -44,6 +44,15 @@
   (`docs/revamp/12-decision-log.md`, and the business-model memory) to see
   whether the owner already decided it. If not, ask before building S4. S1–S3
   and S5 need no backend change.
+- **Checked R-DEC-51:**
+  - its answers cover words, rows, starter categories and Hardware first,
+    but not the second type;
+  - the business-model map (`docs/platform/17-business-model-map.md` §2.1,
+    around line 63, approved as BP-22 per R-DEC-51) proposes the tiles and
+    "+ I also sell…", and says old types stay valid;
+  - it does NOT say how the second type is stored. Propose a shape to the
+    owner and ask before migrating: for example a `business_types` list, or a
+    `secondary_business_type`.
 
 ## Next steps (for whoever continues)
 1. Read the mock source (`grep -n "^M.pPick\|^M.dPick\|tileHtml\|const TILES"`) and its CSS (`.tiles`, `.tile`), and the current onboarding step (`features/onboarding`, `GET /onboarding/apps`, `business_type`).
