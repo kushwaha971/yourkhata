@@ -1,6 +1,6 @@
 # B1 — Pick what you sell (sign-up step 2)
 
-> **Status: NOT STARTED — spec only** (28 Oct 2026). Design: §B1 of
+> **Status: STARTED, in test** (28 Oct 2026). The tile LOOK only (step 1 below) is in; nothing has been looked at or measured live yet. Design: §B1 of
 > `docs/revamp/design/shop-fixes-and-business-types.html`, mocks `pPick`
 > (phone, sign-up step 2) and its desktop twin; tiles from `const TILES` and
 > `tileHtml` in the same file.
@@ -69,6 +69,25 @@ business-model map says the finer types "map to presets and to a default
 feature set" and that "old types stay valid". So the new tiles need a mapping
 to presets, or new choices, which is a backend change. Confirm the mapping with
 the owner (or the map's §5) before changing stored values.
+
+## Step 1 done (28 Oct): the tile look, code only
+
+`BusinessTypeGrid.tsx` tiles are now drawn to the design's `.tile` / `.tile.on`:
+- centred, at least 96 px tall, radius 12, padding 12 × 8, 6 px gaps;
+- 34 px accent icon;
+- the name at 13 px / 600, the hint at 11.5 px / 500;
+- a 2 px accent border when picked;
+- 10 px between tiles.
+
+The onboarding tests pass (147), with the 88 → 96 px test updated.
+
+**Not done, on purpose:**
+- **Three columns on a phone:** they wait for the design's ten short kinds,
+  because today's nine longer labels wrap badly at 360 px (the wizard test
+  says why). It's listed as a conflict.
+- **Not yet checked on screen.** The next session must build, screenshot step 2
+  at 390, 320, 1024 and 1280 in light and dark, English and Hindi, and compare
+  with `pPick` / `dPick` using `e2e/design-compare.mjs`.
 
 ## Next steps (for whoever continues)
 1. Read the mock source (`grep -n "^M.pPick\|^M.dPick\|tileHtml\|const TILES"`) and its CSS (`.tiles`, `.tile`), and the current onboarding step (`features/onboarding`, `GET /onboarding/apps`, `business_type`).

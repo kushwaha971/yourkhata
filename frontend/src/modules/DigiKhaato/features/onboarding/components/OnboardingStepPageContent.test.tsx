@@ -636,7 +636,8 @@ describe('the wizard — step 1 no longer belongs to its tiles', () => {
   it('keeps every tile at the 44 px target', () => {
     renderWithProviders(<OnboardingStepPageContent step={1} />);
     for (const tile of screen.getAllByRole('radio')) {
-      expect(tile.className).toContain('min-h-[88px]');
+      // B1: the design's tile is at least 96 px (`.tile`), above the 44 px target.
+      expect(tile.className).toContain('min-h-[96px]');
     }
   });
 });

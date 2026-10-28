@@ -89,9 +89,12 @@ function BusinessTypeGridBase({
       aria-describedby={describedBy}
       aria-invalid={invalid || undefined}
       onKeyDown={onKeyDown}
+      // B1: the design's three columns (`.tiles`) arrive with its ten short
+      // shop kinds; today's nine longer labels and hints wrap to four lines in
+      // a third of a 360 px phone (see the wizard test), so 1 → 2 → 3 stays.
       columns={{ base: 1, sm: 2, lg: 3 }}
-      gap={2}
-      className={className}
+      gap={0}
+      className={cn('gap-[10px]', className)}
     >
       {BUSINESS_TYPES.map((type) => {
         const config = BUSINESS_TYPE_CONFIG[type];
@@ -105,20 +108,22 @@ function BusinessTypeGridBase({
             tabIndex={selected || (!value && type === BUSINESS_TYPES[0]) ? 0 : -1}
             onClick={() => onChange(type)}
             className={cn(
-              'flex min-h-[88px] flex-col items-start gap-1 rounded-card border p-3',
+              // B1 (design .tile / .tile.on): centred, at least 96 px, radius 12,
+              // 12 x 8 padding, 6 px gaps; the picked one has a 2 px accent line.
+              'grid min-h-[96px] content-center justify-items-center gap-[6px] rounded-[12px] px-2 py-3 text-center',
               selected
-                ? 'border-action bg-accent-quiet'
-                : 'border-border-subtle bg-surface-card hover:bg-surface-hover'
+                ? 'border-2 border-action bg-accent-quiet'
+                : 'border border-border-subtle bg-surface-card hover:bg-surface-hover'
             )}
           >
             <Icon
               aria-hidden
-              className={cn('h-5 w-5', selected ? 'text-text-accent' : 'text-text-tertiary')}
+              className="h-[34px] w-[34px] text-text-accent"
             />
-            <UbText as="span" variant="body-sm-medium">
+            <UbText as="span" variant="body-sm-medium" className="text-[13px] font-semibold leading-[1.2]">
               {t(config.labelId)}
             </UbText>
-            <UbText as="span" variant="caption" tone="tertiary">
+            <UbText as="span" variant="caption" tone="tertiary" className="text-[11.5px] font-medium">
               {t(config.hintId)}
             </UbText>
           </UbPressable>
