@@ -54,6 +54,22 @@
     owner and ask before migrating: for example a `business_types` list, or a
     `secondary_business_type`.
 
+## The existing grid against the design (read from the code, not yet measured live)
+
+| | Today (`BusinessTypeGrid.tsx`, `constants/businessTypes.ts`) | Design |
+|---|---|---|
+| Types | 9 broad ones: retail, wholesale, distribution, services, trader, manufacturer, professional, food, other | 10 shop kinds: Kirana, Medical, Mobile, Clothes, Hardware, Auto parts, Wholesale, Sweets, Jewellery (later), Other |
+| Tile | `min-h-[88px]`, items-start (left-aligned), gap-1, rounded-card, p-3 | min-height 96, centred, gap 6, radius 12, padding 12 8 |
+| Icon | 20 px (`h-5 w-5`), tertiary / accent | 34 px, teal |
+| Columns | to measure | 3 on a phone |
+
+**This is a conflict to list for the owner.** The 9 stored values are
+the server's `BusinessType` choices, and the design's 10 are finer kinds. The
+business-model map says the finer types "map to presets and to a default
+feature set" and that "old types stay valid". So the new tiles need a mapping
+to presets, or new choices, which is a backend change. Confirm the mapping with
+the owner (or the map's §5) before changing stored values.
+
 ## Next steps (for whoever continues)
 1. Read the mock source (`grep -n "^M.pPick\|^M.dPick\|tileHtml\|const TILES"`) and its CSS (`.tiles`, `.tile`), and the current onboarding step (`features/onboarding`, `GET /onboarding/apps`, `business_type`).
 2. Write `e2e/b1-pick.mjs` (look + API read-back of the saved business type(s), 390/320/1024/1280, light/dark, EN/HI) and measure the baseline.
