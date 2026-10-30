@@ -108,6 +108,17 @@ class TenantCreateSerializer(serializers.Serializer):
     # R-DEC-64 "Wholesale of what?": `business_type` is the kind and this says
     # it is sold wholesale (the Shop setting `shop.wholesale`). Shop only.
     sells_wholesale = serializers.BooleanField(required=False)
+    # R-DEC-66 / G12 "Anything your shop needs?": `{key: on}` for the sign-up
+    # switches, stored as `shop.features.<key>`.
+    features = serializers.DictField(child=serializers.BooleanField(), required=False)
+
+    def validate_features(self, value: dict) -> dict:
+        from apps.platform_app.services.presets import SIGNUP_FEATURES
+
+        unknown = sorted(set(value) - set(SIGNUP_FEATURES))
+        if unknown:
+            raise serializers.ValidationError(f"Unknown feature {unknown[0]!r}.")
+        return value
     locale = serializers.ChoiceField(choices=["en", "hi"], required=False, default="en")
     owner_name = serializers.CharField(max_length=120, required=False, allow_blank=True)
     # What the business will run: app codes from `GET /onboarding/apps`. Absent
@@ -149,6 +160,17 @@ class TenantUpdateSerializer(serializers.Serializer):
     # R-DEC-64 "Wholesale of what?": `business_type` is the kind and this says
     # it is sold wholesale (the Shop setting `shop.wholesale`). Shop only.
     sells_wholesale = serializers.BooleanField(required=False)
+    # R-DEC-66 / G12 "Anything your shop needs?": `{key: on}` for the sign-up
+    # switches, stored as `shop.features.<key>`.
+    features = serializers.DictField(child=serializers.BooleanField(), required=False)
+
+    def validate_features(self, value: dict) -> dict:
+        from apps.platform_app.services.presets import SIGNUP_FEATURES
+
+        unknown = sorted(set(value) - set(SIGNUP_FEATURES))
+        if unknown:
+            raise serializers.ValidationError(f"Unknown feature {unknown[0]!r}.")
+        return value
     gst_type = serializers.ChoiceField(choices=GstType.choices, required=False)
     gstin = serializers.CharField(max_length=15, required=False, allow_blank=True, allow_null=True)
     pan = serializers.CharField(max_length=10, required=False, allow_blank=True, allow_null=True)

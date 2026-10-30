@@ -666,6 +666,12 @@ def apply_preset(*, tenant: Any, actor: Any = None, ctx: Any = None) -> dict:
         "ledger.reminder_templates": dict(presets.REMINDER_TEMPLATES),
         "documents.show_upi_qr": {"value": True},
         "shop.wholesale": {"value": wholesale},
+        # R-DEC-66: a switch the owner set at sign-up exists already and
+        # `get_or_create` keeps it; the rest start from the kind's preset.
+        **{
+            f"shop.features.{key}": {"value": key in preset.features}
+            for key in presets.SIGNUP_FEATURES
+        },
         "parties.labels": {
             "customer": preset.party_labels[0],
             "supplier": preset.party_labels[1],

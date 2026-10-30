@@ -161,10 +161,11 @@ class TenantCreateView(APIView):
             user_agent=meta["user_agent"],
             apps=data.get("apps"),
         )
-        if "sells_wholesale" in data:
-            settings_service.set_wholesale(
+        shop_values = _shop_choice_values(data)
+        if shop_values:
+            settings_service.set_shop_choices(
                 tenant=membership.tenant,
-                on=data["sells_wholesale"],
+                values=shop_values,
                 ctx=Ctx(
                     tenant=membership.tenant,
                     actor=request.user,
@@ -292,7 +293,9 @@ class TenantCurrentView(APIView):
         changes = dict(serializer.validated_data)
         modules = changes.pop("enabled_modules", None)
         apps = changes.pop("apps", None)
-        sells_wholesale = changes.pop("sells_wholesale", None)
+        shop_values = _shop_choice_values(
+            {k: changes.pop(k) for k in ("sells_wholesale", "features") if k in changes}
+        )
 
         warnings: list = []
         if apps is not None:
@@ -316,13 +319,23 @@ class TenantCurrentView(APIView):
                 ip=meta["ip"],
                 user_agent=meta["user_agent"],
             )
-        if sells_wholesale is not None:
-            settings_service.set_wholesale(
-                tenant=tenant, on=sells_wholesale, ctx=Ctx.from_request(request)
+        if shop_values:
+            settings_service.set_shop_choices(
+                tenant=tenant, values=shop_values, ctx=Ctx.from_request(request)
             )
         return StandardResponse.ok(
             tenant_read_payload(tenant, unmasked=_sees_pii(tenant)), meta={"warnings": warnings}
         )
+
+
+def _shop_choice_values(data: Any) -> dict[str, Any]:
+    """Step 1's Shop answers as setting values (R-DEC-64, R-DEC-66)."""
+    values: dict[str, Any] = {}
+    if "sells_wholesale" in data:
+        values["shop.wholesale"] = {"value": data["sells_wholesale"]}
+    for key, on in (data.get("features") or {}).items():
+        values[f"shop.features.{key}"] = {"value": on}
+    return values
 
 
 class MembershipDetailView(APIView):

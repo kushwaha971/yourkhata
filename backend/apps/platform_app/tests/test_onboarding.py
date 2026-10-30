@@ -107,6 +107,9 @@ def test_every_business_type_has_a_preset() -> None:
         ("garments", True, ("Customer", "Supplier"), 7),
         ("auto_parts", True, ("Customer", "Supplier"), 15),
         ("jewellery", True, ("Customer", "Supplier"), 7),
+        ("stationery", True, ("Customer", "Supplier"), 7),
+        ("agri", True, ("Customer", "Supplier"), 30),
+        ("furniture", True, ("Customer", "Supplier"), 15),
     ],
 )
 def test_the_preset_table_matches_the_frd(
@@ -452,6 +455,10 @@ def test_completing_the_wizard_seeds_every_default(
         "ledger.reminder_templates",
         "documents.show_upi_qr",
         "shop.wholesale",
+        "shop.features.service_items",
+        "shop.features.alt_units",
+        "shop.features.batches",
+        "shop.features.variants",
         "parties.labels",
     }
     labels = TenantSetting.objects.get(tenant=new_tenant, key="parties.labels").value
@@ -1270,3 +1277,28 @@ def test_shop_wholesale_defaults_on_only_for_the_wholesale_types() -> None:
     assert spec.default("distribution") == {"value": True}
     assert spec.default("kirana") == {"value": False}
     assert "shop.extra_types" not in SETTINGS
+
+
+@pytest.mark.parametrize(
+    ("kind", "on"),
+    [
+        ("stationery", {"service_items"}),
+        ("agri", {"batches"}),
+        ("services", {"service_items"}),
+        ("furniture", {"variants"}),
+        ("other", set()),
+        ("kirana", set()),
+    ],
+)
+def test_other_kinds_start_with_their_switches(kind: str, on: set) -> None:
+    """R-DEC-66 / G12: "Anything your shop needs?" starts from the kind.
+
+    Prevents a stationery shop starting with no service items (photocopy has
+    no stock) or a seed shop without batch and expiry; "Something else" and
+    the named kinds start with all four off.
+    """
+    from apps.platform_app.services.presets import SIGNUP_FEATURES
+    from apps.platform_app.settings_schema import SETTINGS
+
+    got = {k for k in SIGNUP_FEATURES if SETTINGS[f"shop.features.{k}"].default(kind)["value"]}
+    assert got == on

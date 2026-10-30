@@ -321,3 +321,34 @@ def test_extra_types_is_no_longer_accepted(
         _create(client, apps=["shop"], business_type="hardware", extra_types=["medical"])
     )
     assert not TenantSetting.objects.filter(tenant=created, key="shop.extra_types").exists()
+
+
+def test_anything_your_shop_needs_is_saved_with_the_business(
+    api_as: Any, tenant: Any, onboarding_ready: Any
+) -> None:
+    """R-DEC-66 / G12: an Other shop's switches are saved in the same request,
+    and an unknown switch is refused before anything is created."""
+    from apps.platform_app.models import Tenant, TenantSetting
+
+    client, member = api_as(tenant)
+    created = _tenant_of(
+        _create(
+            client,
+            apps=["shop"],
+            business_type="stationery",
+            features={"service_items": True, "batches": False, "variants": True},
+        )
+    )
+    stored = {
+        r.key: r.value["value"]
+        for r in TenantSetting.objects.filter(tenant=created, key__startswith="shop.features.")
+    }
+    assert stored == {
+        "shop.features.service_items": True,
+        "shop.features.batches": False,
+        "shop.features.variants": True,
+    }
+    before = Tenant.objects.count()
+    refused = _create(client, apps=["shop"], business_type="other", features={"teleport": True})
+    assert refused.status_code == 400
+    assert Tenant.objects.count() == before

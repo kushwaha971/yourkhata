@@ -303,6 +303,15 @@ SETTINGS: dict[str, SettingSpec] = {
             lambda bt: {"value": bt in presets.WHOLESALE_TYPES},
             _bool_value,
         ),
+        *(
+            SettingSpec(
+                f"shop.features.{key}",
+                SECTION_GENERAL,
+                (lambda k: lambda bt: {"value": k in _preset(bt).features})(key),
+                _bool_value,
+            )
+            for key in presets.SIGNUP_FEATURES
+        ),
         SettingSpec(
             "parties.labels",
             SECTION_PARTIES,

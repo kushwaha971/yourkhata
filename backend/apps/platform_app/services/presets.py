@@ -25,6 +25,9 @@ class Preset:
     extra_expense_categories: tuple[str, ...]
     default_due_days: int
     items_track_stock_default: bool = True
+    #: BP-22 §5 feature keys this kind starts with on (`shop.features.<key>`).
+    #: Every one is an editable setting afterwards; none gates by type.
+    features: frozenset[str] = frozenset()
     default_kinds: dict[str, str] = field(
         default_factory=lambda: {
             "unregistered": "estimate",
@@ -86,6 +89,31 @@ PRESETS: dict[str, Preset] = {
         extra_expense_categories=("Making charges", "Shop maintenance"),
         default_due_days=7,
     ),
+    # R-DEC-66 / G12 — Other's kinds. "Something else" stays `other`.
+    BusinessType.STATIONERY.value: Preset(
+        inventory_enabled=True,
+        party_labels=("Customer", "Supplier"),
+        favourite_units=("NOS", "PCS", "PAC", "BOX", "SET", "DOZ"),
+        extra_expense_categories=("Packaging", "Shop maintenance"),
+        default_due_days=7,
+        features=frozenset({"service_items"}),
+    ),
+    BusinessType.AGRI.value: Preset(
+        inventory_enabled=True,
+        party_labels=("Customer", "Supplier"),
+        favourite_units=("KGS", "BAG", "LTR", "NOS", "PAC"),
+        extra_expense_categories=("Loading & unloading", "Transport"),
+        default_due_days=30,
+        features=frozenset({"batches"}),
+    ),
+    BusinessType.FURNITURE.value: Preset(
+        inventory_enabled=True,
+        party_labels=("Customer", "Supplier"),
+        favourite_units=("NOS", "PCS", "SET", "SQF"),
+        extra_expense_categories=("Transport", "Shop maintenance"),
+        default_due_days=15,
+        features=frozenset({"variants"}),
+    ),
     BusinessType.RETAIL.value: Preset(
         inventory_enabled=True,
         party_labels=("Customer", "Supplier"),
@@ -113,6 +141,7 @@ PRESETS: dict[str, Preset] = {
         favourite_units=("NOS",),
         extra_expense_categories=("Tools & equipment", "Travel"),
         default_due_days=30,
+        features=frozenset({"service_items"}),
     ),
     BusinessType.TRADER.value: Preset(
         inventory_enabled=True,
@@ -240,7 +269,13 @@ def combined(business_type: str, *, wholesale: bool) -> Preset:
         default_due_days=max(preset.default_due_days, bulk.default_due_days),
         items_track_stock_default=preset.items_track_stock_default,
         default_kinds=dict(preset.default_kinds),
+        features=preset.features | bulk.features,
     )
+
+
+#: R-DEC-66 / G12 "Anything your shop needs?" — the four switches asked at
+#: sign-up for "Other" kinds, stored as `shop.features.<key>`.
+SIGNUP_FEATURES: tuple[str, ...] = ("service_items", "alt_units", "batches", "variants")
 
 
 def preset_for(business_type: str) -> Preset:

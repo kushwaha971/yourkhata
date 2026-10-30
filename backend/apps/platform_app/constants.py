@@ -41,6 +41,10 @@ class BusinessType(models.TextChoices):
     GARMENTS = "garments", _("Clothes & shoes")
     AUTO_PARTS = "auto_parts", _("Auto parts")
     JEWELLERY = "jewellery", _("Jewellery")
+    # R-DEC-66 / design G12 — "Other" asks "What kind of shop?".
+    STATIONERY = "stationery", _("Stationery, books, xerox")
+    AGRI = "agri", _("Agri inputs")
+    FURNITURE = "furniture", _("Furniture, home")
     RETAIL = "retail", _("Retail")
     WHOLESALE = "wholesale", _("Wholesale")
     DISTRIBUTION = "distribution", _("Distribution")

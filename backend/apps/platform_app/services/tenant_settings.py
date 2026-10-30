@@ -471,37 +471,49 @@ def save_settings(*, tenant: Any, body: Any, if_match: str | None, ctx: Ctx) -> 
     return settings_payload(tenant)
 
 
-def set_wholesale(*, tenant: Any, on: bool, ctx: Ctx) -> None:
-    """R-DEC-64 — writes `shop.wholesale` ("Wholesale of what?").
+def set_shop_choices(*, tenant: Any, values: dict[str, Any], ctx: Ctx) -> None:
+    """Sign-up step 1's Shop answers, written with the business (R-DEC-64/66).
 
-    Called by sign-up's step 1 so it is saved with the business, not by a
-    second request that can fail after the first succeeded. Audited like any
-    settings write; a no-op when nothing changes.
+    `shop.wholesale` ("Wholesale of what?") and `shop.features.*` ("Anything
+    your shop needs?"). Written in the same request that creates or edits the
+    business, so a failure cannot leave it half set up. Each value goes
+    through its own spec; audited like any settings write; a no-op when
+    nothing changes.
     """
     from apps.platform_app.models import TenantSetting
 
-    key = "shop.wholesale"
-    spec = schema.spec_for(tenant, key)
-    value = spec.validate({"value": bool(on)}, tenant)
     with transaction.atomic():
-        row = TenantSetting.objects.filter(tenant=tenant, key=key).first()
-        before = row.value if row else spec.default(tenant.business_type)
-        if row is not None and row.value == value:
-            return
-        TenantSetting.objects.update_or_create(
-            tenant=tenant,
-            key=key,
-            defaults={"value": value, "schema_version": spec.schema_version},
-        )
-        if before != value:
+        before: dict[str, Any] = {}
+        after: dict[str, Any] = {}
+        for key, raw in values.items():
+            spec = schema.spec_for(tenant, key)
+            if spec is None:
+                raise ValidationFailed({key: ["This is not a setting."]})
+            try:
+                value = spec.validate(raw, tenant)
+            except schema.SettingError as exc:
+                raise ValidationFailed({key: exc.messages}) from exc
+            row = TenantSetting.objects.filter(tenant=tenant, key=key).first()
+            old = row.value if row else spec.default(tenant.business_type)
+            if row is not None and row.value == value:
+                continue
+            TenantSetting.objects.update_or_create(
+                tenant=tenant,
+                key=key,
+                defaults={"value": value, "schema_version": spec.schema_version},
+            )
+            if old != value:
+                before[key] = old
+                after[key] = value
+        if after:
             write_audit(
                 ctx=ctx,
                 action=AuditAction.SETTINGS_UPDATED,
                 entity_type="platform_tenant",
                 entity_id=tenant.id,
-                before={key: before},
-                after={key: value},
-                metadata={"keys": [key]},
+                before=before,
+                after=after,
+                metadata={"keys": sorted(after)},
             )
 
 
