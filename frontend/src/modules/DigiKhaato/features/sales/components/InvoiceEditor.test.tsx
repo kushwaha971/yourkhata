@@ -878,13 +878,19 @@ describe('the always-visible item search (07-screens/09 §3)', () => {
     expect(search).toHaveValue('');
   });
 
-  it('says a scanned code matched nothing, and adds no line', async () => {
+  it('says a scanned code matched nothing under the search, keeps the caret, adds no line', async () => {
+    /* C1 (design dScan): "Not found: <code>. The bill is not affected." as a
+       note that never takes the caret, so the next code scans straight in. */
     signIn(RIGHTS);
     renderWithProviders(<InvoiceEditorPageContent documentId={null} />);
     await quickAdd('0000000000000{Enter}');
-    await waitFor(() => expect(store.getState().snackbar.id).toBe('items.scan.notFound'));
-    expect(store.getState().snackbar.params).toEqual({ code: '0000000000000' });
+    const note = await screen.findByTestId('scan-not-found');
+    expect(note).toHaveTextContent('Not found: 0000000000000. The bill is not affected.');
+    expect(screen.getByRole('combobox', { name: 'Search items to add' })).toHaveFocus();
     expect(document.getElementById('lines.1.qty')).toBeNull();
+    // The next good scan clears it.
+    await userEvent.type(screen.getByRole('combobox', { name: 'Search items to add' }), '8901234567890{Enter}');
+    await waitFor(() => expect(screen.queryByTestId('scan-not-found')).toBeNull());
   });
 
   it('tells a member who cannot add items to ask the owner when nothing matches', async () => {
@@ -1033,6 +1039,8 @@ describe('a busy counter (07-screens/09 §3)', () => {
     await waitFor(() => expect(document.getElementById('lines.0.qty')).toHaveValue('2'));
     expect(document.getElementById('lines.1.qty')).toBeNull();
     expect(search).toHaveFocus();
+    // C1: the raised line flashes green for a moment.
+    await waitFor(() => expect(document.querySelector('[data-scan-flash]')).not.toBeNull());
   });
 
   it('raises Qty of an item picked again from the list, with the caret on that Qty', async () => {

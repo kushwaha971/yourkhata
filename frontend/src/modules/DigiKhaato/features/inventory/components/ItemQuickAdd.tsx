@@ -13,8 +13,11 @@ import {
 
 import dynamic from 'next/dynamic';
 
+import { AlertTriangle, X } from 'lucide-react';
+
 import {
   UbBox,
+  UbButton,
   UbDrawerLoading,
   UbLoadMore,
   UbSearchInput,
@@ -25,6 +28,7 @@ import { usePermissions } from 'src/hooks/usePermissions';
 import { useTranslation } from 'src/hooks/useTranslation';
 import { showSnackbar } from 'src/redux/slice/snackbarSlice';
 import { cn } from 'src/utils/cn';
+import { scanFeedback } from 'src/utils/scanFeedback';
 
 import { lookupItemByBarcode, restoreItem, searchItems } from '../api/itemService';
 import { useItemSearch } from '../hooks/useItemSearch';
@@ -59,6 +63,12 @@ export interface ItemQuickAddLabels {
   readonly create?: (query: string) => string;
   /** "Restore Ragi flour 1 kg" — the archived look-alike, offered first. */
   readonly restore?: (name: string) => string;
+  /** C1 — "Not found: <code>. The bill is not affected." Absent: a snackbar. */
+  readonly notFound?: (code: string) => string;
+  /** C1 — "+ Add item" on that note. */
+  readonly addScanned?: string;
+  /** C1 — the note's close button name. */
+  readonly dismiss?: string;
 }
 
 /* The form belongs to the chunk that OPENS it, never to the bill's route. */
@@ -205,17 +215,32 @@ function ItemQuickAddBase({
     [noMatch, offerAdd, archived, labels, query, choose]
   );
 
+  /*
+   * C1 (design dScan) — an unknown code is a note under the search, not a
+   * snackbar: "Not found: <code>. The bill is not affected.", with "+ Add item"
+   * for a member who may, and a close. It never takes the caret, so the next
+   * code can be scanned at once; the next scan replaces it.
+   */
+  const [missed, setMissed] = useState<string | null>(null);
   const scan = useCallback(
     (code: string) => {
       void search.lookup(code).then((row) => {
-        if (row) choose(row, 'scan');
+        if (row) {
+          setMissed(null);
+          scanFeedback('added');
+          choose(row, 'scan');
+          return;
+        }
+        scanFeedback('notFound');
+        search.clear();
+        if (labels.notFound) setMissed(code);
         else
           dispatch(
             showSnackbar({ severity: 'warning', id: 'items.scan.notFound', params: { code } })
           );
       });
     },
-    [search, choose, dispatch]
+    [search, choose, dispatch, labels]
   );
 
   const handleKey = useCallback(
@@ -409,6 +434,41 @@ function ItemQuickAddBase({
               moreLabel={t('common.search.showMore')}
             />
           )}
+        </UbBox>
+      )}
+      {missed !== null && labels.notFound && (
+        <UbBox
+          role="status"
+          data-testid="scan-not-found"
+          className="mt-2 flex items-center gap-2.5 rounded-md bg-warning-dim px-3 py-2 text-text-primary"
+        >
+          <AlertTriangle aria-hidden className="h-4 w-4 shrink-0 text-warning" />
+          <UbText as="span" variant="caption" className="min-w-0 flex-1 text-[13px]">
+            {labels.notFound(missed)}
+          </UbText>
+          {offerAdd && labels.addScanned && (
+            <UbButton
+              variant="link"
+              size="sm"
+              onMouseDown={(event) => event.preventDefault()}
+              onClick={() => {
+                setCreating(missed);
+                setMissed(null);
+              }}
+            >
+              {labels.addScanned}
+            </UbButton>
+          )}
+          <UbButton
+            variant="ghost"
+            size="sm"
+            iconOnly
+            icon={<X aria-hidden className="h-4 w-4" />}
+            onMouseDown={(event) => event.preventDefault()}
+            onClick={() => setMissed(null)}
+          >
+            {labels.dismiss ?? 'Close'}
+          </UbButton>
         </UbBox>
       )}
       {creating !== null && (

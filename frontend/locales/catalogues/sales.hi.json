@@ -438,6 +438,8 @@
   "sales.profit.uncosted": "{count, plural, one {# लाइन की} other {# लाइनों की}} लागत दर्ज नहीं है, इसलिए वे शामिल नहीं हैं।",
   "sales.profit.withMargin": "{amount} · {pct}%",
   "sales.rule46.status": "बिल की जानकारी: {satisfied}/{total} पूरी",
+  "sales.scan.addItem": "+ आइटम जोड़ें",
+  "sales.scan.notFound": "नहीं मिला: {code}। बिल पर कोई असर नहीं।",
   "sales.search.label": "बिल खोजें",
   "sales.search.placeholder": "नंबर, नाम या मोबाइल",
   "sales.share.copyLink": "लिंक कॉपी करें",

@@ -438,6 +438,8 @@
   "sales.profit.uncosted": "{count, plural, one {# line has} other {# lines have}} no cost recorded and {count, plural, one {is} other {are}} left out.",
   "sales.profit.withMargin": "{amount} · {pct}%",
   "sales.rule46.status": "Invoice details: {satisfied}/{total} complete",
+  "sales.scan.addItem": "+ Add item",
+  "sales.scan.notFound": "Not found: {code}. The bill is not affected.",
   "sales.search.label": "Search bills",
   "sales.search.placeholder": "Number, name or mobile",
   "sales.share.copyLink": "Copy link",

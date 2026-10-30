@@ -1021,3 +1021,15 @@ html:not([data-hydrated]) :is(button, [role='button'], a):active {
     }
   }
 }
+
+/* C1 (design dScan `.ln.flash`, `tr.flash td`) — the bill line a scan just
+   added or raised, green for a moment. Set by src/utils/scanFeedback.ts. */
+[data-scan-flash] {
+  background-color: hsl(var(--success-dim)) !important;
+  transition: background-color 0.2s ease-out;
+}
+@media (prefers-reduced-motion: reduce) {
+  [data-scan-flash] {
+    transition: none;
+  }
+}

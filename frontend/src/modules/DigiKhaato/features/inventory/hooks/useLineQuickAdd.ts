@@ -4,6 +4,7 @@ import { useCallback, useMemo, useState } from 'react';
 
 import type { UbLineFocusRequest } from 'src/design-system';
 import { stepQuantity } from 'src/utils/quantity';
+import { flashLine } from 'src/utils/scanFeedback';
 
 import type { ItemQuickAddVia } from '../components/ItemQuickAdd';
 import type { ItemListRow } from '../types/item.types';
@@ -55,6 +56,8 @@ export function useLineQuickAdd({
       if (same >= 0 && counted !== null && counted !== current[same]?.qty) {
         setQuantity(same, counted);
         if (via === 'list') focusQuantity(same);
+        // C1: the same item scanned again raises Qty and the line flashes.
+        if (via === 'scan') flashLine(same);
         return;
       }
       const last = current.length - 1;
@@ -65,6 +68,7 @@ export function useLineQuickAdd({
       pick(index, item);
       // The search owns its scanner caret. A list choice moves to this line's Qty.
       if (via === 'list') focusQuantity(index);
+      if (via === 'scan') flashLine(index);
     },
     [disabled, readLines, setQuantity, focusQuantity, maxLines, appendEmpty, pick]
   );

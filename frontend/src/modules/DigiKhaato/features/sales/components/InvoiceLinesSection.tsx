@@ -204,6 +204,10 @@ export function InvoiceLinesSection({
       askOwner: t('sales.line.quickAdd.askOwner'),
       create: (query: string) => t('sales.line.quickAdd.create', { query }),
       restore: (name: string) => t('sales.line.quickAdd.restore', { name }),
+      // C1 (design dScan): an unknown code is a note under the search.
+      notFound: (code: string) => t('sales.scan.notFound', { code }),
+      addScanned: t('sales.scan.addItem'),
+      dismiss: t('common.action.close'),
     }),
     [t]
   );
