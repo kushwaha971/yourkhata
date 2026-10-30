@@ -70,10 +70,15 @@ function AppChoiceGridBase({
             aria-checked={selected}
             onClick={() => toggle(app.code)}
             className={cn(
-              'relative flex min-h-[104px] flex-col items-start gap-1 rounded-card border p-3 pr-9 text-left',
+              // A phone draws each app as a row — picture beside the words —
+              // because four 104 px cards stacked above the shop tiles made
+              // step 1 the longest screen in sign-up (B, 30 Oct 2026). From
+              // sm the cards sit three across and keep their column shape.
+              'relative grid min-h-[64px] grid-cols-[20px_1fr] items-start gap-x-3 gap-y-0.5 rounded-card border p-3 pr-9 text-left',
+              'sm:flex sm:min-h-[104px] sm:flex-col sm:gap-1',
               selected
                 ? 'border-action bg-accent-quiet'
-                : 'border-border-subtle bg-surface-card hover:bg-surface-hover'
+                : 'border-border-subtle bg-surface-card [@media(hover:hover)]:hover:bg-surface-hover'
             )}
           >
             {/* The tick is the state, drawn: a tinted border alone does not
@@ -91,7 +96,7 @@ function AppChoiceGridBase({
             </UbBox>
             <Icon
               aria-hidden
-              className={cn('h-5 w-5', selected ? 'text-text-accent' : 'text-text-tertiary')}
+              className={cn('row-span-2 mt-px h-5 w-5', selected ? 'text-text-accent' : 'text-text-tertiary')}
             />
             <UbText as="span" variant="body-sm-medium">
               {t(app.labelId)}

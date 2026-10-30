@@ -334,3 +334,8 @@ Hardware, Wholesale → Kirana, Other → Agri, Continue with nothing) × 390/32
   sell?" step (withdrawn by the owner on 30 Oct). Needs a mock first.
 - Desktop: the design puts "One kind per business…" beside Back/Continue; it
   sits under the tiles here, because step 1 also holds the name and apps.
+- **Owner, 30 Oct 2026 ("do whatever is best for the user"):** on a phone the
+  app choices are rows (picture beside the words, ≥ 64 px) instead of 104 px
+  stacked cards; step 1 at 390 with the Shop ticked is about 1,620 px instead
+  of 1,900. `b1-pick` 93/93 at 390/320/1280; sheets clean. The Settings side
+  menu (dFeatures) moves to Part F.
