@@ -837,3 +837,15 @@ one GSTIN") is withdrawn. The one exception is Wholesale: picking it asks
 `shop.wholesale` = on; features and defaults are the kind's preset joined with
 wholesale's. This supersedes BP-22 §5's `shop.extra_types` row and the design's
 "+ I also sell…" button on pPick / dPick.
+
+R-DEC-65 (owner, 30 October 2026, P0) — each business kind feels like its own
+app: only that kind's features, fields, menu rows, dashboard, reports, words,
+GST defaults, payment options and settings; nothing from another kind; data
+never crosses businesses (GST, bank/UPI and every setting are per business).
+One shared design system and shared components. All backend, frontend and
+schema work is modular and scalable: kind-specific fields in their own
+extension tables keyed to the item (never extra columns on the item table), one
+`shop.features.*` key per capability set by the kind's preset and read by
+serializers, menus, forms and reports, every row tenant-scoped, and no code
+compares `business_type`. Before B2 is built, a kind × features / fields / menu /
+words / GST / payment / settings / tables matrix goes to the owner for approval.
