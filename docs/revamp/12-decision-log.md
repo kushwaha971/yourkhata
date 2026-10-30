@@ -849,3 +849,12 @@ extension tables keyed to the item (never extra columns on the item table), one
 serializers, menus, forms and reports, every row tenant-scoped, and no code
 compares `business_type`. Before B2 is built, a kind × features / fields / menu /
 words / GST / payment / settings / tables matrix goes to the owner for approval.
+
+R-DEC-66 (owner, 30 October 2026: "go on with what you recommend") —
+1. "What do you sell?" is its own wizard step, as design v7 draws it (pPick,
+   dPick, "Step 2 of 4"), not a section of step 1.
+2. "Other" asks "What kind of shop?" (design G12: Stationery/books/xerox, Agri
+   inputs, Services, Furniture/home, Something else) and then "Anything your
+   shop needs?" (four switches, all off), built in B1.
+3. Phone bottom bar: the later-approved design E2 #2 wins over R-DEC-51 #2 —
+   Home · Customers · Suppliers · Bills · More.
