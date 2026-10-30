@@ -815,3 +815,13 @@ english") — no English text the merchant or their customer reads says "owe". T
 Shop says To collect / To pay; elsewhere You will get / You will give; an old
 balance is I will get / I will give; Library and Lending say still to pay / left
 to collect. This beats the design's own words where they differ (R-DEC-54).
+
+R-DEC-63 (owner, 30 October 2026, B1: "we don't have any old data of production
+okay then proceed with A also include Jewellery; Electric/Electronic/Mobile shop
+all in one; and Hardware/paint are one") — the design's shop kinds become STORED
+business types, each with its own preset (option A, not a separate "kind"
+field). There is no production data, so no back-fill is needed. Jewellery is a
+normal, tappable kind (not "own app, later"). Electrical, electronics and
+mobile are ONE kind; hardware and paint are ONE kind. `shop.extra_types` holds
+the same values. Still open: Wholesale vs Distribution behind one tile, the four
+old types with no tile, and whether "What do you sell?" is its own wizard step.
