@@ -238,3 +238,19 @@ same values, so it waits on this too.
 - **Still open:** the competitor comparison for this screen (being researched
   in the design thread); "What do you sell?" as its own step (the design) —
   the owner kept it in step 1 for now.
+
+## Competitor comparison (gate 11), 30 Oct 2026
+
+Full table: `docs/research/b1-pick-what-you-sell-competitors.md` (from the
+design thread; primary sources only, no hands-on use; unproven cells marked).
+- **Better (proposed, not hands-on tested):** Vyapar, myBillBook and BUSY do
+  not change features by business type; Vyapar's own guide turns on batch
+  tracking in about 9 steps on a paid plan. B1 turns a medical shop's batch and
+  expiry on from one picture tap.
+- **Equal:** Square POS does the same pattern (a mode that sets features,
+  changeable later).
+- **Worse / at risk:** Square suggests a mode instead of asking; Square allows
+  several modes per business while R-DEC-64 allows one kind; changing the kind
+  later must be easy to find (B3).
+- **Unproven:** no hands-on sign-up recordings of Vyapar, myBillBook,
+  Khatabook or OkCredit yet.
