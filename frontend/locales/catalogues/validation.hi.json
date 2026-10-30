@@ -51,6 +51,7 @@
   "validation.qty.wholeOnly": "इस यूनिट में पूरी संख्या ही चलेगी।",
   "validation.required": "यह भरें।",
   "validation.role.required": "भूमिका चुनें",
+  "validation.shopKind.required": "आप क्या बेचते हैं, उस पर टैप करें।",
   "validation.stateCode.format": "सूची में से राज्य चुनें",
   "validation.stateCode.required": "अपना राज्य चुनें"
 }

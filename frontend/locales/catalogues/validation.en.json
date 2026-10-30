@@ -51,6 +51,7 @@
   "validation.qty.wholeOnly": "This unit takes whole numbers only.",
   "validation.required": "Fill this in.",
   "validation.role.required": "Choose a role",
+  "validation.shopKind.required": "Tap what you sell.",
   "validation.stateCode.format": "Choose a state from the list",
   "validation.stateCode.required": "Choose your state"
 }

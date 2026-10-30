@@ -735,6 +735,17 @@ describe('the wizard — a reload mid-way (NEW-1)', () => {
     expect(push).toHaveBeenCalledWith('/onboarding/step/2');
   });
 
+  it('moves focus with the choice when arrows pick a kind', async () => {
+    /** Prevents: arrows change the picked tile while focus stays behind, so
+     * the ring and the screen reader point at a tile that is not chosen. */
+    const user = userEvent.setup();
+    renderWithProviders(<OnboardingStepPageContent step={1} />);
+    screen.getByRole('radio', { name: /Kirana/ }).focus();
+    await user.keyboard('{ArrowRight}{ArrowRight}');
+    await waitFor(() => expect(screen.getByRole('radio', { name: /Medical/ })).toHaveFocus());
+    expect(screen.getByRole('radio', { name: /Medical/ })).toBeChecked();
+  });
+
   it('re-lights Wholesale and its kind after a reload (R-DEC-64)', async () => {
     /** Prevents: a wholesaler who reloads mid-setup sees a plain Kirana, and
      * Continue then saves wholesale off without them touching it. */

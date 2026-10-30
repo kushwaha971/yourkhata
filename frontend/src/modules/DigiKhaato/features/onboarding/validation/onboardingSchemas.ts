@@ -101,8 +101,8 @@ export const useOnboardingSchemas = (): OnboardingSchemas => {
             is: (apps: readonly string[] | undefined) => (apps ?? []).includes(SHOP_APP),
             then: (schema) =>
               schema
-                .oneOf([...BUSINESS_TYPES], t('validation.businessType.required'))
-                .required(t('validation.businessType.required')),
+                .oneOf([...BUSINESS_TYPES], t('validation.shopKind.required'))
+                .required(t('validation.shopKind.required')),
             otherwise: (schema) => schema.oneOf([...BUSINESS_TYPES, '']),
           })
           .defined(),

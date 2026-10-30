@@ -62,7 +62,15 @@ function BusinessTypeGridBase({
       }
       event.preventDefault();
       const target = kinds[next];
-      if (target) onChange(target);
+      if (!target) return;
+      onChange(target);
+      // WAI-ARIA radio group: focus moves WITH the choice. Selecting without
+      // moving focus left the ring on the first tile and the next arrow press
+      // counted from the wrong place for a screen reader.
+      const group = event.currentTarget;
+      requestAnimationFrame(() =>
+        group.querySelector<HTMLElement>(`[data-kind="${target}"]`)?.focus()
+      );
     },
     [tiles, value, onChange]
   );
