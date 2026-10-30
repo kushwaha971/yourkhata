@@ -149,6 +149,14 @@ its branch. A section that lags the code is a defect.
 - **Next:** B2, after the owner approves the matrix and the design thread's
   additions.
 
+## B2 · Menus and words per business — main session
+
+- **Report:** `docs/performance/2026-10-30-shop-b2-menus-and-words.md`;
+  harnesses `e2e/b2-menus.mjs` (61), `e2e/b2-edges.mjs` (9); fixture
+  `e2e/fixtures/b2_kind_owners.py` (one test owner per kind).
+- **Status:** ready for the owner's check (30 Oct 2026).
+- **Next:** B3 Shop features in Settings.
+
 ## What the stopped sessions found (27 Oct 2026, before the owner stopped them)
 
 The owner stopped the parallel sessions to save usage. Three sessions working

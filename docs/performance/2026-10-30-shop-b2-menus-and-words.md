@@ -1,6 +1,6 @@
 # B2 — Menus and words per business
 
-> **Status: STARTED, in test** (30 Oct 2026). Design: §B2 of
+> **Status: ready for the owner's check** (30 Oct 2026). Design: §B2 of
 > `docs/revamp/design/shop-fixes-and-business-types.html` (v7), mocks `dShell`
 > (desktop sidebar + Home), `pMore` (phone More + bottom bar), `wordTable`,
 > `nav(t)`; owner decisions R-DEC-51, R-DEC-63–66, design E2 (all
@@ -66,3 +66,31 @@
   switch through the UI's business switcher instead and re-run.
 - Not done: monkey, edge cases, A3–A8 + B1 regression; Home per-kind strip
   (needs unbuilt features — expiry, IMEI — comes with those pieces).
+
+## Round 2 — ready for the owner's check (30 Oct 2026, afternoon)
+
+| # | Check | Result |
+|---|---|---|
+| S1–S4, S7, S8 | `b2-menus` live: 5 kinds × EN/HI × 1280/390 — session words + features, sidebar, More, tab bar, orders rows, kind caption, overflow/cut | **61/61**; `--skew` fails every read-back |
+| people lists | medical Suppliers page "Distributors", "Add distributor" | pass (in b2-menus) |
+| S9 | switch medical → hardware: words and features swap in the session | pass (the earlier 403 was the harness missing the CSRF header) |
+| E17/E16/E3 | `b2-edges`: owner-typed long word at 1280/390/320, survives reload; typed address of a hidden row | **9/9** |
+| monkey | `/dashboard` as a medical store and a wholesaler, seeds 1–3 × 390/1280 | **12/12 PASS** |
+| regression | a3-customer-box-look 70/0, a3-functional 0, a4-money/remove-undo/functional PASS, a4-edges 11/11, a5-measure PASS (harness item pick widened, H25), a6-forms 24/0, a7-measure 32/0, a8-first-tap 38/0, b1-pick 124/124, b1-signup 16/16, b1-edges 8/8 | all pass |
+| gates | tsc, eslint, i18n clean; jest onboarding/navigation/tenant-switcher/auth 454, parties/components/design-system/redux 1093; platform + performance pytest pass except the pre-existing tenant-export check | pass |
+| bundle | sign-up +3.8 KB (the onboarding words; Other's section now lazy), profile +0.9, design-system +0.7 | budgets raised to measured + 0.3 with a note |
+
+**Defects found and fixed this piece:** Hindi screens showed English business
+words (H33); B1's `sells_wholesale` added an uncounted query (budget updated);
+six formatting files committed by mistake and taken back out (H34); two
+harness mistakes (missing CSRF header; writing to the wrong open business —
+H35).
+
+**Not in B2, listed:** Home's per-kind strip (needs expiry/IMEI/sizes, which
+come with their D pieces); the server-sent row list (BP-22 #3) — the server
+sends features and the rows name them; app renames come with the start-flow
+piece. Competitor comparison for this screen: from the design thread's Part R
+(not hands-on).
+
+**Self-rating (owner's to give):** function 9, testing 9, UI 9 for the menu
+and lists; Home unchanged.
