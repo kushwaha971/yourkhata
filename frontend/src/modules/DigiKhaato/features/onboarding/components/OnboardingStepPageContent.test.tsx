@@ -60,7 +60,7 @@ jest.mock('next/navigation', () => ({
 const tenant = (over: Record<string, unknown> = {}) => ({
   id: 't1',
   name: 'Sharma General Store',
-  businessType: 'retail',
+  businessType: 'kirana',
   stateCode: '27',
   gstType: 'unregistered',
   gstin: null,
@@ -129,15 +129,20 @@ describe('a member the owner blocked (owner, 12 Oct 2026)', () => {
 });
 
 describe('the wizard — step 1 (FR-2)', () => {
-  it('renders the four-step progress and the nine business-type tiles', () => {
+  it('renders the four-step progress and the design\'s ten shop-kind tiles', () => {
     renderWithProviders(<OnboardingStepPageContent step={1} />);
 
     expect(screen.getByText('Step 1 of 4')).toBeInTheDocument();
-    const grid = screen.getByRole('radiogroup', { name: 'What does your shop mostly sell or do?' });
+    const grid = screen.getByRole('radiogroup', { name: 'What do you sell?' });
     expect(grid).toBeInTheDocument();
-    // The nine types of FR-7's table, each with its one-line hint (§8).
-    expect(screen.getAllByRole('radio')).toHaveLength(9);
-    expect(screen.getByText('Customers without saved details, udhaar')).toBeInTheDocument();
+    // B1 / R-DEC-63: the design's ten kinds, in its order, each with its hint.
+    const radios = screen.getAllByRole('radio');
+    expect(radios).toHaveLength(10);
+    expect(radios.map((r) => r.getAttribute('data-kind'))).toEqual([
+      'kirana', 'medical', 'electronics', 'garments', 'hardware',
+      'auto_parts', 'wholesale', 'food', 'jewellery', 'other',
+    ]);
+    expect(screen.getByText('paint, sanitary')).toBeInTheDocument();
   });
 
   it('creates the tenant and advances to step 2', async () => {
@@ -146,7 +151,7 @@ describe('the wizard — step 1 (FR-2)', () => {
 
     renderWithProviders(<OnboardingStepPageContent step={1} />);
     await user.type(screen.getByLabelText(/Business name/), 'Sharma General Store');
-    await user.click(screen.getByRole('radio', { name: /Retail shop/ }));
+    await user.click(screen.getByRole('radio', { name: /Kirana/ }));
     await chooseOption(user, /^State/, /Maharashtra/);
     await user.click(screen.getByRole('button', { name: 'Continue' }));
 
@@ -154,7 +159,7 @@ describe('the wizard — step 1 (FR-2)', () => {
     expect(onboardingService.createTenant).toHaveBeenCalledWith(
       expect.objectContaining({
         name: 'Sharma General Store',
-        businessType: 'retail',
+        businessType: 'kirana',
         stateCode: '27',
       }),
       // EC-7 — the caller's idempotency key, reused on every retry.
@@ -164,12 +169,35 @@ describe('the wizard — step 1 (FR-2)', () => {
     expect(store.getState().onboarding.completedStep).toBe(1);
   });
 
+  it('sends the extra kinds with the business, dashed, never the business\'s own', async () => {
+    /** Prevents: a mixed shop saved as one kind, or its own kind listed as an extra. */
+    const user = userEvent.setup();
+    onboardingService.createTenant.mockResolvedValue({ tenant: tenant(), warnings: [] });
+    renderWithProviders(<OnboardingStepPageContent step={1} />);
+
+    await user.type(screen.getByLabelText(/Business name/), 'Patil Hardware');
+    await user.click(screen.getByRole('radio', { name: /Hardware/ }));
+    await user.click(screen.getByRole('button', { name: /I also sell/ }));
+    await user.click(screen.getByRole('checkbox', { name: /Medical/ }));
+    // The business's own kind cannot be an extra.
+    await user.click(screen.getByRole('checkbox', { name: /Hardware/ }));
+    expect(screen.getByRole('checkbox', { name: /Medical/ }).className).toContain('border-dashed');
+
+    await chooseOption(user, /^State/, /Maharashtra/);
+    await user.click(screen.getByRole('button', { name: 'Continue' }));
+
+    await waitFor(() => expect(onboardingService.createTenant).toHaveBeenCalled());
+    expect(onboardingService.createTenant.mock.calls[0][0]).toMatchObject({
+      businessType: 'hardware',
+      extraTypes: ['medical'],
+    });
+  });
   it('refuses a one-character business name before it reaches the wire', async () => {
     const user = userEvent.setup();
     renderWithProviders(<OnboardingStepPageContent step={1} />);
 
     await user.type(screen.getByLabelText(/Business name/), 'S');
-    await user.click(screen.getByRole('radio', { name: /Retail shop/ }));
+    await user.click(screen.getByRole('radio', { name: /Kirana/ }));
     await chooseOption(user, /^State/, /Maharashtra/);
     await user.click(screen.getByRole('button', { name: 'Continue' }));
 
@@ -202,7 +230,7 @@ describe('the wizard — step 1 EDITED (FR-9)', () => {
     await store.dispatch(
       createTenant({
         name: 'Sharma General Stor',
-        businessType: 'retail',
+        businessType: 'kirana',
         stateCode: '27',
         ownerName: null,
         idempotencyKey: 'k',
@@ -232,7 +260,7 @@ describe('the wizard — step 1 EDITED (FR-9)', () => {
     expect(onboardingService.updateBusinessStep).toHaveBeenCalledWith(
       expect.objectContaining({
         name: 'Sharma General Store',
-        businessType: 'retail',
+        businessType: 'kirana',
         stateCode: '27',
       })
     );
@@ -267,7 +295,7 @@ describe('the wizard — step 1 EDITED (FR-9)', () => {
 
     const first = renderWithProviders(<OnboardingStepPageContent step={1} />);
     await user.type(screen.getByLabelText(/Business name/), 'Sharma General Store');
-    await user.click(screen.getByRole('radio', { name: /Retail shop/ }));
+    await user.click(screen.getByRole('radio', { name: /Kirana/ }));
     await chooseOption(user, /^State/, /Maharashtra/);
     await user.click(screen.getByRole('button', { name: 'Continue' }));
     await waitFor(() => expect(onboardingService.createTenant).toHaveBeenCalledTimes(1));
@@ -278,7 +306,7 @@ describe('the wizard — step 1 EDITED (FR-9)', () => {
     onboardingService.createTenant.mockResolvedValue({ tenant: tenant(), warnings: [] });
     renderWithProviders(<OnboardingStepPageContent step={1} />);
     await user.type(screen.getByLabelText(/Business name/), 'Sharma General Store');
-    await user.click(screen.getByRole('radio', { name: /Retail shop/ }));
+    await user.click(screen.getByRole('radio', { name: /Kirana/ }));
     await chooseOption(user, /^State/, /Maharashtra/);
     await user.click(screen.getByRole('button', { name: 'Continue' }));
     await waitFor(() => expect(onboardingService.createTenant).toHaveBeenCalledTimes(2));
@@ -293,7 +321,7 @@ describe('the wizard — step 2 (FR-3)', () => {
     await store.dispatch(
       createTenant({
         name: 'Sharma',
-        businessType: 'retail',
+        businessType: 'kirana',
         stateCode: '27',
         ownerName: null,
         idempotencyKey: 'k',
@@ -382,7 +410,7 @@ describe('the wizard — step 4 (FR-5) and §9 Failed', () => {
     await store.dispatch(
       createTenant({
         name: 'Sharma',
-        businessType: 'retail',
+        businessType: 'kirana',
         stateCode: '27',
         ownerName: null,
         idempotencyKey: 'k',
@@ -395,7 +423,7 @@ describe('the wizard — step 4 (FR-5) and §9 Failed', () => {
     renderWithProviders(<OnboardingStepPageContent step={4} />);
 
     expect(screen.getByText('What we will set up')).toBeInTheDocument();
-    expect(screen.getByText('Retail shop')).toBeInTheDocument();
+    expect(screen.getByText('Kirana')).toBeInTheDocument();
     // D-L5 — no defaults for unbuilt screens: bills (due days), items (units)
     // and expenses (categories) were all unbuilt when this was written.
     expect(screen.queryByText('Bill due in')).not.toBeInTheDocument();
@@ -487,7 +515,7 @@ describe('the wizard — Hindi', () => {
 
     // Twice: once as the stepper's label for step 1, once as the card title.
     expect(screen.getAllByText('अपने व्यापार के बारे में बताएँ').length).toBeGreaterThan(0);
-    expect(screen.getByRole('radio', { name: /खुदरा दुकान/ })).toBeInTheDocument();
+    expect(screen.getByRole('radio', { name: /किराना/ })).toBeInTheDocument();
     // The state list is a constant, not a locale file, and is Hindi too. It has
     // to be opened to be asserted now: `UbCombobox` renders its options into a
     // popover on demand, where a native `<select>` kept all 38 in the document
@@ -607,7 +635,7 @@ describe('the wizard — step 1 no longer belongs to its tiles', () => {
     const name = screen.getByLabelText(/Business name/);
     const state = screen.getByLabelText(/^State/);
     const tiles = screen.getByRole('radiogroup', {
-      name: 'What does your shop mostly sell or do?',
+      name: 'What do you sell?',
     });
 
     // The state used to be stranded BELOW the nine tiles. It is a select, not a
@@ -618,19 +646,16 @@ describe('the wizard — step 1 no longer belongs to its tiles', () => {
     expect(name.closest('.rounded-card')).toBe(state.closest('.rounded-card'));
   });
 
-  it('lets the tile grid follow the width it has: 1, then 2, then 3', () => {
+  it('draws the design\'s three columns on a phone and five from md', () => {
     renderWithProviders(<OnboardingStepPageContent step={1} />);
     const tiles = screen.getByRole('radiogroup', {
-      name: 'What does your shop mostly sell or do?',
+      name: 'What do you sell?',
     });
 
-    // One column at 360 px — two 160 px tiles wrap a label and a hint to four
-    // ragged lines each, nine times over.
-    expect(tiles.className).toContain('grid-cols-1');
-    expect(tiles.className).toContain('sm:grid-cols-2');
-    // The third column arrives with the rail, because from there it is the
-    // form's measure and not the viewport that decides how many fit.
-    expect(tiles.className).toContain('lg:grid-cols-3');
+    // B1 (pPick / dPick): the design's ten short kinds fit three across at
+    // 320 px — the live harness measures that nothing is cut (e2e/b1-pick.mjs).
+    expect(tiles.className).toContain('grid-cols-3');
+    expect(tiles.className).toContain('md:grid-cols-5');
   });
 
   it('keeps every tile at the 44 px target', () => {
@@ -695,7 +720,7 @@ describe('the wizard — a reload mid-way (NEW-1)', () => {
     await waitFor(() =>
       expect(screen.getByLabelText(/Business name/)).toHaveValue('Sharma General Store')
     );
-    expect(screen.getByRole('radio', { name: /Retail shop/ })).toBeChecked();
+    expect(screen.getByRole('radio', { name: /Kirana/ })).toBeChecked();
 
     await user.click(screen.getByRole('button', { name: 'Continue' }));
 
@@ -777,7 +802,7 @@ describe('the wizard — a reload mid-way (NEW-1)', () => {
 
   const fillStepOne = async (user: ReturnType<typeof userEvent.setup>) => {
     await user.type(screen.getByLabelText(/Business name/), 'Sharma General Store');
-    await user.click(screen.getByRole('radio', { name: /Retail shop/ }));
+    await user.click(screen.getByRole('radio', { name: /Kirana/ }));
     await chooseOption(user, /^State/, /Maharashtra/);
     await user.click(screen.getByRole('button', { name: 'Continue' }));
   };
@@ -909,7 +934,7 @@ describe('the wizard — "Add a business" with an unfinished business (M2)', () 
       screen.getByText('Its details are filled in below. Continuing will finish setting it up.')
     ).toBeInTheDocument();
     expect(screen.getByLabelText(/Business name/)).toHaveValue('Race 4');
-    expect(screen.getByRole('radio', { name: /Retail shop/ })).toBeChecked();
+    expect(screen.getByRole('radio', { name: /Kirana/ })).toBeChecked();
   });
 
   it('continues it through POST /tenants, never a PATCH of the business it was opened from', async () => {
@@ -1014,7 +1039,7 @@ describe('the wizard — "Add a business" from an unfinished active business (M2
     expect(screen.queryByText(/unfinished business/)).not.toBeInTheDocument();
 
     await user.type(screen.getByLabelText(/Business name/), 'New Branch');
-    await user.click(screen.getByRole('radio', { name: /Retail shop/ }));
+    await user.click(screen.getByRole('radio', { name: /Kirana/ }));
     await chooseOption(user, /^State/, /Maharashtra/);
     await user.click(screen.getByRole('button', { name: 'Continue' }));
 
@@ -1182,7 +1207,7 @@ describe('the wizard — step 1 submitted in two tabs at once (L8)', () => {
     const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
     renderWithProviders(<OnboardingStepPageContent step={1} />);
     await user.type(screen.getByLabelText(/Business name/), 'Sharma General Store');
-    await user.click(screen.getByRole('radio', { name: /Retail shop/ }));
+    await user.click(screen.getByRole('radio', { name: /Kirana/ }));
     await chooseOption(user, /^State/, /Maharashtra/);
     await user.click(screen.getByRole('button', { name: 'Continue' }));
   };
@@ -1296,14 +1321,14 @@ describe('the wizard — choosing what to use (step 1)', () => {
     await fillNameAndState(user);
     await user.click(screen.getByRole('checkbox', { name: /Shop/ }));
     await user.click(screen.getByRole('checkbox', { name: /Lending/ }));
-    await user.click(await screen.findByRole('radio', { name: /Retail shop/ }));
+    await user.click(await screen.findByRole('radio', { name: /Kirana/ }));
     await user.click(screen.getByRole('button', { name: 'Continue' }));
 
     await waitFor(() => expect(onboardingService.createTenant).toHaveBeenCalledTimes(1));
     // The server's order, whatever order they were ticked in.
     expect(onboardingService.createTenant.mock.calls[0][0]).toMatchObject({
       apps: ['lending', 'shop'],
-      businessType: 'retail',
+      businessType: 'kirana',
     });
   });
 
@@ -1400,3 +1425,4 @@ describe('the wizard — choosing what to use (step 1)', () => {
     expect(screen.queryByText('Business type')).not.toBeInTheDocument();
   });
 });
+

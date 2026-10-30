@@ -1,11 +1,21 @@
 'use client';
 
-import { useCallback, useMemo } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 
 import { yupResolver } from '@hookform/resolvers/yup';
+import { Plus } from 'lucide-react';
 import { useForm, useWatch } from 'react-hook-form';
 
-import { UbCombobox, UbDivider, UbField, UbForm, UbStack, UbTextInput } from 'src/design-system';
+
+import {
+  UbButton,
+  UbCombobox,
+  UbDivider,
+  UbField,
+  UbForm,
+  UbStack,
+  UbTextInput,
+} from 'src/design-system';
 import { useAppSelector } from 'src/hooks/useAppStore';
 import { useTranslation } from 'src/hooks/useTranslation';
 import { selectLocale } from 'src/redux/slice/localeSlice';
@@ -50,6 +60,7 @@ export function OnboardingBusinessStep({
     defaultValues: {
       name: onboarding.draft.name,
       businessType: onboarding.draft.businessType ?? '',
+      extraTypes: [],
       apps: initialApps(onboarding),
       stateCode: onboarding.draft.stateCode ?? '',
       ownerName: onboarding.draft.ownerName,
@@ -64,6 +75,14 @@ export function OnboardingBusinessStep({
   const { setError } = form;
   const chosenApps = useWatch({ control: form.control, name: 'apps' });
   const runsShop = chosenApps.includes(SHOP_APP);
+  const extraTypes = useWatch({ control: form.control, name: 'extraTypes' });
+  const pickedType = useWatch({ control: form.control, name: 'businessType' });
+  // B1 — "+ I also sell…" turns the same tiles into a pick of MORE kinds.
+  const [addingExtras, setAddingExtras] = useState(false);
+  const setExtras = useCallback(
+    (next: BusinessType[]) => form.setValue('extraTypes', next, { shouldDirty: true }),
+    [form]
+  );
   const submit = useCallback(
     (values: BusinessStepFormValues) => onboarding.submitBusinessStep(values, setError),
     [onboarding, setError]
@@ -168,21 +187,39 @@ export function OnboardingBusinessStep({
         {runsShop && (
           <UbField
             name="businessType"
-            label={t('onboarding.type.label')}
-            placeholder={t('onboarding.type.placeholder')}
-            hint={t('onboarding.type.hint')}
+            label={t(addingExtras ? 'onboarding.pick.alsoTitle' : 'onboarding.pick.title')}
+            hint={t(addingExtras ? 'onboarding.pick.alsoBody' : 'onboarding.pick.body')}
             required
           >
             {(field) => (
               <BusinessTypeGrid
                 value={(field.value as BusinessType | '') || ''}
-                onChange={field.onChange}
+                onChange={(kind) => {
+                  field.onChange(kind);
+                  if (extraTypes.includes(kind)) setExtras(extraTypes.filter((k) => k !== kind));
+                }}
+                extras={extraTypes}
+                onExtrasChange={setExtras}
+                addingExtras={addingExtras}
                 invalid={field.invalid}
                 describedBy={field['aria-describedby']}
-                ariaLabel={t('onboarding.type.label')}
+                ariaLabel={t('onboarding.pick.title')}
               />
             )}
           </UbField>
+        )}
+        {runsShop && (
+          <UbButton
+            type="button"
+            variant="secondary"
+            icon={<Plus aria-hidden className="h-4 w-4" />}
+            aria-pressed={addingExtras}
+            disabled={!pickedType}
+            onClick={() => setAddingExtras((on) => !on)}
+            className="justify-self-start"
+          >
+            {addingExtras ? t('onboarding.pick.alsoDone') : t('onboarding.pick.alsoSell')}
+          </UbButton>
         )}
 
         <OnboardingStepActions

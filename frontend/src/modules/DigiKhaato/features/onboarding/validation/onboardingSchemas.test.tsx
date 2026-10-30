@@ -24,7 +24,7 @@ const VALID_GSTIN = '27AAPFU0939F1ZV';
 describe('businessStepSchema — step 1', () => {
   const ok = {
     name: 'Sharma General Store',
-    businessType: 'retail' as const,
+    businessType: 'kirana' as const,
     apps: ['shop'],
     stateCode: '27',
     ownerName: null,

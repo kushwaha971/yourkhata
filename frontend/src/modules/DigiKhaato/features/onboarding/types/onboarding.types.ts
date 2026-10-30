@@ -31,6 +31,8 @@ export interface OnboardingBusinessStep {
    * failed): nothing is sent and the server gives the Shop, as it always did.
    */
   readonly apps?: readonly string[] | null;
+  /** B1 "+ I also sell…" — `shop.extra_types` (BP-22 §5, R-DEC-63). Shop only. */
+  readonly extraTypes?: readonly BusinessType[];
 }
 
 /** One app a new business may choose, as the server's registry describes it. */

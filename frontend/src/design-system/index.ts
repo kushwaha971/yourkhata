@@ -499,3 +499,5 @@ export {
   usePrefersReducedMotion,
 } from './motion';
 export type { UseInViewOptions } from './motion';
+export { UbShopKindIcon } from './UbShopKindIcon';
+export type { UbShopKind, UbShopKindIconProps } from './UbShopKindIcon';
