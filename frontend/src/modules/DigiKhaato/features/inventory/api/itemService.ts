@@ -317,7 +317,12 @@ export const lookupItemByBarcode = async (
     );
     return toItemRow(response.data.data);
   } catch (error) {
-    const status = (error as { response?: { status?: number } }).response?.status;
+    // The transport rejects with the normalised ApiErrorShape (`status` on
+    // the error itself), not axios's `response.status`. Reading only the
+    // latter turned every "no such barcode" into a throw, so a scanned
+    // unknown code did nothing at all on the live app (found by c1-scan).
+    const shaped = error as { status?: number | null; response?: { status?: number } };
+    const status = shaped.status ?? shaped.response?.status;
     if (status === 404 || status === 400) return null;
     throw error;
   }

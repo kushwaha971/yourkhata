@@ -105,10 +105,14 @@ const csrfOf = async (ctx) => ({ 'X-CSRF-Token': (await ctx.cookies()).find((c) 
   const qty = await page.locator('[id="lines.0.qty"]').inputValue().catch(() => '');
   check('desktop: the same code raises Qty to 2', qty === (skew ? 'XX' : '2'), qty);
   check('desktop: the caret stays in the search', await search.evaluate((el) => el === document.activeElement));
-  await burst('8900000000000');
+  // A code no item carries, checked first (8900000000000 is the seed's Ghee).
+  const UNKNOWN = '8906999999994';
+  const miss = await ctx.request.get(`${base}/api/v1/items/lookup?barcode=${UNKNOWN}`);
+  check('the unknown code really is unknown (404)', miss.status() === 404, String(miss.status()));
+  await burst(UNKNOWN);
   await sleep(1200);
   const note = await page.getByTestId('scan-not-found').innerText().catch(() => '');
-  check('desktop: unknown code → "Not found: …" note', note.includes(skew ? 'XX' : 'Not found: 8900000000000. The bill is not affected.'), note);
+  check('desktop: unknown code → "Not found: …" note', note.includes(skew ? 'XX' : `Not found: ${UNKNOWN}. The bill is not affected.`), note);
   check('desktop: the caret is still in the search', await search.evaluate((el) => el === document.activeElement));
   await page.screenshot({ path: `${dir}/1280-not-found.png` });
   // Read back: the draft the editor saved holds the line at qty 2.
@@ -158,7 +162,7 @@ for (const camera of [true, false]) {
     await page.getByRole('button', { name: 'Add' }).click();
     await sleep(1200);
     await page.screenshot({ path: `${dir}/390-blocked.png` });
-    await page.getByRole('button', { name: 'Close' }).first().click();
+    await page.getByTestId('scan-sheet').getByRole('button', { name: 'Close' }).click();
     await sleep(600);
     check('phone, no camera: the typed code adds the line', (await page.locator('main').innerText()).includes(skew ? 'XX' : NAME));
   }

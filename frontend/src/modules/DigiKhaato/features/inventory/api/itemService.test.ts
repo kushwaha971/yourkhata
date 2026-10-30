@@ -166,6 +166,16 @@ describe('lookupItemByBarcode', () => {
     await expect(lookupItemByBarcode('0000')).resolves.toBeNull();
   });
 
+  it('answers null for the 404 the transport actually rejects with (ApiErrorShape)', async () => {
+    /* C1 (found by e2e/c1-scan): the interceptor rejects with the normalised
+       shape, `status` on the error itself; the test above mocked axios's raw
+       shape, which the live app never sees, so an unknown scan did nothing. */
+    jest
+      .spyOn(api, 'get')
+      .mockRejectedValue({ code: 'not_found', message: 'No item', status: 404, details: {} });
+    await expect(lookupItemByBarcode('8906999999994')).resolves.toBeNull();
+  });
+
   it('still throws a real failure', async () => {
     jest.spyOn(api, 'get').mockRejectedValue({ response: { status: 500 } });
     await expect(lookupItemByBarcode('0000')).rejects.toBeTruthy();
