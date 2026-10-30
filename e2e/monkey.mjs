@@ -325,8 +325,11 @@ const checkKept = async (i, before, how, leftFrom) => {
 };
 try {
   await page.goto(`${base}/login/email`);
-  await page.fill("input[type=email]", "scale@digikhaato.test");
-  await page.fill("input[type=password]", "Scale-Run-2026!");
+  // B2: `--login=email:password` signs in as another local test owner (one
+  // per shop kind, e2e/fixtures/b2_kind_owners.py); default the QA shop.
+  const login = (process.argv.find((a) => a.startsWith("--login="))?.slice(8) ?? "scale@digikhaato.test:Scale-Run-2026!").split(":");
+  await page.fill("input[type=email]", login[0]);
+  await page.fill("input[type=password]", login.slice(1).join(":"));
   await page.keyboard.press("Enter");
   await page.waitForURL((u) => !u.pathname.startsWith("/login"));
   // Real item names, so "add item" types what a merchant would.
