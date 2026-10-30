@@ -314,9 +314,19 @@ const checkAgrees = async (i, how) => {
   if (nav && features && me.active_app === "shop") {
     agreeChecks += 1;
     const supplierWord = words["nav.suppliers"];
+    const shot = async () => {
+      await page.screenshot({ path: `/tmp/claude/monkey-agree-step${i}.png` }).catch(() => {});
+      console.log(`agree-fail step ${i}: url ${page.url().replace(base, "")} app ${me.active_app} tenant ${me.active_tenant?.name} nav ${JSON.stringify(nav.slice(0, 160))}`);
+    };
+    if (supplierWord && !nav.includes(supplierWord)) await shot();
     if (supplierWord && !nav.includes(supplierWord))
       failures.push(`step ${i}: after ${how} the menu does not say "${supplierWord}" (the business's word)`);
-    const hasOrders = nav.includes("Sales orders") || nav.includes("सेल्स ऑर्डर");
+    // By the row's address, not its words: the monkey switches language, and
+    // the Hindi row is "बिक्री ऑर्डर" (a text check here was a false failure).
+    const hasOrders = await page
+      .evaluate(() => Boolean(document.querySelector('nav[aria-label] a[href="/sales/orders"]')))
+      .catch(() => false);
+    if (hasOrders !== features.includes("orders")) await shot();
     if (hasOrders !== features.includes("orders"))
       failures.push(`step ${i}: after ${how} the menu ${hasOrders ? "shows" : "hides"} Sales orders but the session says orders ${features.includes("orders") ? "on" : "off"}`);
   }
