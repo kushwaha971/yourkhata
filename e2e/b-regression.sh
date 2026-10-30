@@ -21,3 +21,11 @@ run a6-forms a6-forms.mjs
 run a7-measure a7-measure.mjs
 run a8-first-tap a8-first-tap.mjs
 run c1-scan c1-scan.mjs
+run c2-find c2-find.mjs
+run c3-count c3-count.mjs
+# B's own (sign-up harnesses b1-signup / b1-edges spend the DB-backed
+# register_ip budget, so they run on their own, not in every regression).
+run b1-pick b1-pick.mjs
+run b2-menus b2-menus.mjs
+run b2-edges b2-edges.mjs
+run b3-features b3-features.mjs

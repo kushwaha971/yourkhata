@@ -40,7 +40,7 @@ def save(client: Any, count_id: str) -> Any:
 
 
 def sell(ctx: Any, item: Any, qty: str) -> None:
-    import datetime as dt
+    from apps.common.dates import tenant_today
 
     post_movements(
         ctx=ctx,
@@ -49,7 +49,9 @@ def sell(ctx: Any, item: Any, qty: str) -> None:
                 item=item,
                 qty=-Decimal(qty),
                 movement_type=MovementType.SALE_OUT,
-                movement_date=dt.date.today(),
+                # The shop's today, not the machine's: after midnight in India a UTC
+                # date is yesterday, and a sale dated before the opening is refused.
+                movement_date=tenant_today(ctx.tenant),
                 source_type=MovementSource.SALES_DOCUMENT,
             )
         ],
