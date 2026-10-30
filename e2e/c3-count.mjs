@@ -122,6 +122,7 @@ await page.getByRole('option', { name: new RegExp(`C3 count B ${tag}`) }).first(
 await page.getByTestId('count-sheet-input').fill('4');
 await page.getByRole('dialog').getByRole('button', { name: 'Save' }).click();
 await sleep(1200);
+check('phone: the search list stays shut after a count is saved', (await page.getByRole('listbox').count()) === 0);
 await page.screenshot({ path: `${dir}/390-counted.png` });
 
 // read back the server's summary

@@ -390,6 +390,7 @@ export function StockCountPageContent(): React.JSX.Element {
           onPick={pick}
           disabled={!summary || summary.status !== 'open'}
           hotkey={phone ? undefined : 'F2'}
+          openOnFocus={false}
         />
         <UbDataGrid
           rows={rows}

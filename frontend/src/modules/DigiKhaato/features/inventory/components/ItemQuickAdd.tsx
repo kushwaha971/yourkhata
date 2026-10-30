@@ -134,6 +134,13 @@ export interface ItemQuickAddProps {
   readonly trailing?: ReactNode;
   /** A key that puts the caret in the search from anywhere on the page (F2). */
   readonly hotkey?: string;
+  /**
+   * Whether focusing the empty box opens the list. Right for a bill, where the
+   * next name follows; wrong for the stock count, whose sheet hands focus back
+   * here on close and reopened the list over the rows (C3 LOOK). Typing always
+   * opens it.
+   */
+  readonly openOnFocus?: boolean;
 }
 
 function ItemQuickAddBase({
@@ -143,6 +150,7 @@ function ItemQuickAddBase({
   className,
   trailing,
   hotkey,
+  openOnFocus = true,
 }: Readonly<ItemQuickAddProps>) {
   const input = useRef<HTMLInputElement>(null);
   useEffect(() => {
@@ -361,7 +369,7 @@ function ItemQuickAddBase({
           onFocus={() => {
             window.clearTimeout(closing.current);
             search.activate();
-            setOpen(true);
+            if (openOnFocus || search.query !== '') setOpen(true);
           }}
           onBlur={() => {
             closing.current = window.setTimeout(() => setOpen(false), 150);
