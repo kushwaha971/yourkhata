@@ -49,33 +49,26 @@ export const createFlowColumns = ({
           <UbText as="span" variant="body-sm" className="whitespace-normal break-words">
             {name}
           </UbText>
-          <UbText
-            as="span"
-            variant="caption"
-            tone="tertiary"
-            className="ds-num whitespace-normal break-words"
-          >
+          <UbText as="span" variant="caption" tone="tertiary" className="ds-num whitespace-normal break-words">
             {isCompact ? `${number} · ${formatBusinessDate(row.documentDate)}` : number}
           </UbText>
         </UbStack>
       );
     },
   },
-  ...(isCompact
-    ? []
-    : ([
-        {
-          id: 'date',
-          header: t('sales.column.date'),
-          priority: 1,
-          cardSlot: 'meta',
-          widthShare: 12,
-          cell: (row) =>
-            isCards
-              ? [row.number, formatBusinessDate(row.documentDate)].filter(Boolean).join(' · ')
-              : formatBusinessDate(row.documentDate),
-        },
-      ] satisfies UbDataGridColumn<InvoiceListRow>[])),
+  ...(isCompact ? [] : ([
+  {
+    id: 'date',
+    header: t('sales.column.date'),
+    priority: 1,
+    cardSlot: 'meta',
+    widthShare: 12,
+    cell: (row) =>
+      isCards
+        ? [row.number, formatBusinessDate(row.documentDate)].filter(Boolean).join(' · ')
+        : formatBusinessDate(row.documentDate),
+  }
+  ] satisfies UbDataGridColumn<InvoiceListRow>[])),
   {
     id: 'status',
     header: t('sales.column.status'),
