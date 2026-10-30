@@ -66,6 +66,8 @@ export function SettingsPageContent(): React.JSX.Element {
   const settings = useTenantSettings(access.canView);
   const { data, status, error, refetch } = settings;
 
+  const runsShop = data?.modules.enabled.includes('sales') ?? false;
+  const calendarReaders = data?.calendarReaders;
   const links = useMemo<readonly HubLink[]>(
     () => [
       { key: 'profile', href: ROUTES.SETTINGS_PROFILE, icon: Building2, show: access.canView },
@@ -79,7 +81,7 @@ export function SettingsPageContent(): React.JSX.Element {
         key: 'shopFeatures',
         href: ROUTES.SETTINGS_SHOP_FEATURES,
         icon: Store,
-        show: access.canView && (data?.modules.enabled.includes('sales') ?? false),
+        show: access.canView && runsShop,
       },
       { key: 'data', href: ROUTES.SETTINGS_DATA, icon: DatabaseBackup, show: access.isOwner },
       // A9b (PLT-X08 §7) — only while an enabled feature reads the calendar:
@@ -89,10 +91,10 @@ export function SettingsPageContent(): React.JSX.Element {
         key: 'businessDays',
         href: ROUTES.SETTINGS_BUSINESS_DAYS,
         icon: CalendarDays,
-        show: access.canView && (data?.calendarReaders.length ?? 0) > 0,
+        show: access.canView && (calendarReaders?.length ?? 0) > 0,
       },
     ],
-    [access, data?.calendarReaders, data?.modules.enabled]
+    [access, calendarReaders, runsShop]
   );
 
   const handleConflictOpenChange = useCallback(
