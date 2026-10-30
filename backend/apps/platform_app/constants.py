@@ -24,8 +24,23 @@ class TenantStatus(models.TextChoices):
 
 
 class BusinessType(models.TextChoices):
-    """Part 21 §21.3.1 `platform_tenant.business_type`."""
+    """Part 21 §21.3.1 `platform_tenant.business_type`.
 
+    R-DEC-63 (owner, 30 Oct 2026): the sign-up tiles' shop kinds are stored
+    types of their own, each with its own preset, so a feature is switched on
+    by one preset rather than by a second field that could disagree with this
+    one. Electrical, electronics and mobile are one kind; hardware and paint
+    are one kind. Sweets/bakery/café is the existing `food`, and the Wholesale
+    tile is `wholesale`. The older broad types stay valid.
+    """
+
+    HARDWARE = "hardware", _("Hardware & paint")
+    KIRANA = "kirana", _("Kirana")
+    MEDICAL = "medical", _("Medical")
+    ELECTRONICS = "electronics", _("Electrical, electronics & mobile")
+    GARMENTS = "garments", _("Clothes & shoes")
+    AUTO_PARTS = "auto_parts", _("Auto parts")
+    JEWELLERY = "jewellery", _("Jewellery")
     RETAIL = "retail", _("Retail")
     WHOLESALE = "wholesale", _("Wholesale")
     DISTRIBUTION = "distribution", _("Distribution")

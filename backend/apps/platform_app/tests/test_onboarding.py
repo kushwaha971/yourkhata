@@ -81,7 +81,7 @@ def test_state_code_99_is_refused_and_97_is_accepted() -> None:
 
 
 def test_every_business_type_has_a_preset() -> None:
-    """T-PLT-03-2 / FR-7: nine types, nine rows."""
+    """T-PLT-03-2 / FR-7, R-DEC-63: one preset row per stored type, the shop kinds included."""
     from apps.platform_app.constants import BusinessType
     from apps.platform_app.services.presets import PRESETS
 
@@ -100,6 +100,13 @@ def test_every_business_type_has_a_preset() -> None:
         ("professional", False, ("Client", "Vendor"), 30),
         ("food", True, ("Customer", "Supplier"), 7),
         ("other", True, ("Customer", "Supplier"), 30),
+        ("hardware", True, ("Customer", "Supplier"), 15),
+        ("kirana", True, ("Customer", "Supplier"), 7),
+        ("medical", True, ("Customer", "Supplier"), 7),
+        ("electronics", True, ("Customer", "Supplier"), 7),
+        ("garments", True, ("Customer", "Supplier"), 7),
+        ("auto_parts", True, ("Customer", "Supplier"), 15),
+        ("jewellery", True, ("Customer", "Supplier"), 7),
     ],
 )
 def test_the_preset_table_matches_the_frd(
@@ -1215,3 +1222,51 @@ def test_resumable_reports_the_business_step_one_would_resume(
 def test_resumable_needs_authentication(client: Any) -> None:
     """M2: the read describes the caller's own memberships; anonymous is 401."""
     assert client.get(reverse(RESUMABLE_URL)).status_code == 401
+
+
+def test_every_preset_unit_is_a_seeded_unit() -> None:
+    """R-DEC-63: a shop kind's favourite units must exist in the unit list.
+
+    A preset naming a code the reference data never seeds (TBS was the first
+    draft for medical) would put a favourite on the item form that no item can
+    be given.
+    """
+    from apps.common.management.commands.seed_reference_data import UNITS
+    from apps.platform_app.services.presets import PRESETS
+
+    seeded = {row[0] for row in UNITS}
+    for business_type, preset in PRESETS.items():
+        assert set(preset.favourite_units) <= seeded, business_type
+
+
+@pytest.mark.parametrize(
+    ("value", "ok", "stored"),
+    [
+        ({"types": ["medical"]}, True, ["medical"]),
+        ({"types": ["medical", "medical", "kirana"]}, True, ["medical", "kirana"]),
+        ({"types": ["hardware", "medical"]}, True, ["medical"]),
+        ({"types": []}, True, []),
+        ({"types": ["pharmacy"]}, False, None),
+        ({"types": "medical"}, False, None),
+        ({"types": ["kirana", "medical", "garments", "electronics"]}, False, None),
+    ],
+)
+def test_shop_extra_types_is_a_list_of_known_types(value, ok, stored) -> None:
+    """BP-22 §5 / R-DEC-63: "+ I also sell…" stores known types only.
+
+    The business's own type is dropped (a hardware shop "also selling" hardware
+    changes nothing), duplicates fold, an unknown value is refused because a
+    type with no preset would turn on nothing, and four extras is refused.
+    """
+    from types import SimpleNamespace
+
+    from apps.platform_app.settings_schema import SETTINGS, SettingError
+
+    spec = SETTINGS["shop.extra_types"]
+    tenant = SimpleNamespace(business_type="hardware")
+    if ok:
+        assert spec.validate(value, tenant) == {"types": stored}
+    else:
+        with pytest.raises(SettingError):
+            spec.validate(value, tenant)
+    assert spec.default("hardware") == {"types": []}

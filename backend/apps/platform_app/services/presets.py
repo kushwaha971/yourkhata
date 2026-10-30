@@ -35,6 +35,57 @@ class Preset:
 
 
 PRESETS: dict[str, Preset] = {
+    # R-DEC-63 — the shop kinds. Hardware first (R-DEC-51 #4). Every value is
+    # a starting default the owner can change in Settings (FR-8).
+    BusinessType.HARDWARE.value: Preset(
+        inventory_enabled=True,
+        party_labels=("Customer", "Supplier"),
+        favourite_units=("NOS", "PCS", "BOX", "KGS", "MTR", "LTR"),
+        extra_expense_categories=("Loading & unloading", "Transport"),
+        default_due_days=15,
+    ),
+    BusinessType.KIRANA.value: Preset(
+        inventory_enabled=True,
+        party_labels=("Customer", "Supplier"),
+        favourite_units=("NOS", "KGS", "GMS", "LTR", "PAC"),
+        extra_expense_categories=("Packaging", "Shop maintenance"),
+        default_due_days=7,
+    ),
+    BusinessType.MEDICAL.value: Preset(
+        inventory_enabled=True,
+        party_labels=("Customer", "Supplier"),
+        favourite_units=("NOS", "BOX", "BTL", "PAC", "MLT"),
+        extra_expense_categories=("Packaging", "Shop maintenance"),
+        default_due_days=7,
+    ),
+    BusinessType.ELECTRONICS.value: Preset(
+        inventory_enabled=True,
+        party_labels=("Customer", "Supplier"),
+        favourite_units=("NOS", "PCS", "SET", "BOX", "MTR"),
+        extra_expense_categories=("Repairs & service", "Shop maintenance"),
+        default_due_days=7,
+    ),
+    BusinessType.GARMENTS.value: Preset(
+        inventory_enabled=True,
+        party_labels=("Customer", "Supplier"),
+        favourite_units=("NOS", "PCS", "PRS", "SET", "MTR"),
+        extra_expense_categories=("Packaging", "Shop maintenance"),
+        default_due_days=7,
+    ),
+    BusinessType.AUTO_PARTS.value: Preset(
+        inventory_enabled=True,
+        party_labels=("Customer", "Supplier"),
+        favourite_units=("NOS", "PCS", "SET", "LTR", "BOX"),
+        extra_expense_categories=("Transport", "Shop maintenance"),
+        default_due_days=15,
+    ),
+    BusinessType.JEWELLERY.value: Preset(
+        inventory_enabled=True,
+        party_labels=("Customer", "Supplier"),
+        favourite_units=("GMS", "NOS", "PCS"),
+        extra_expense_categories=("Making charges", "Shop maintenance"),
+        default_due_days=7,
+    ),
     BusinessType.RETAIL.value: Preset(
         inventory_enabled=True,
         party_labels=("Customer", "Supplier"),
