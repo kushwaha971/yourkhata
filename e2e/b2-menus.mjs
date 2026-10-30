@@ -25,17 +25,17 @@ const check = (name, ok, detail = '') => {
 };
 
 const OWNERS = [
-  { id: 'hardware', email: 'b2-hardware@yourkhata.test', kind: 'Hardware', suppliers: 'Suppliers', customers: 'Customers', orders: true },
-  { id: 'medical', email: 'b2-medical@yourkhata.test', kind: 'Medical', suppliers: 'Distributors', customers: 'Customers', orders: false, hiSuppliers: 'वितरक' },
-  { id: 'kirana', email: 'b2-kirana@yourkhata.test', kind: 'Kirana', suppliers: 'Suppliers', customers: 'Customers', orders: false },
-  { id: 'wholesale', email: 'b2-kirana-wholesale@yourkhata.test', kind: 'Kirana', suppliers: 'Companies', customers: 'Retailers', orders: true },
-  { id: 'jewellery', email: 'b2-jewellery@yourkhata.test', kind: 'Jewellery', suppliers: 'Suppliers', customers: 'Customers', orders: false },
-  { id: 'electronics', email: 'b2-electronics@yourkhata.test', kind: 'Mobile', suppliers: 'Suppliers', customers: 'Customers', orders: true },
-  { id: 'garments', email: 'b2-garments@yourkhata.test', kind: 'Clothes', suppliers: 'Suppliers', customers: 'Customers', orders: false },
-  { id: 'auto_parts', email: 'b2-auto_parts@yourkhata.test', kind: 'Auto parts', suppliers: 'Suppliers', customers: 'Customers', orders: true },
-  { id: 'food', email: 'b2-food@yourkhata.test', kind: 'Sweets', suppliers: 'Suppliers', customers: 'Customers', orders: false },
+  { id: 'hardware', business: 'Balaji Hardware & Paints', email: 'b2-hardware@yourkhata.test', kind: 'Hardware', suppliers: 'Suppliers', customers: 'Customers', orders: true },
+  { id: 'medical', business: 'Sai Medical Store', email: 'b2-medical@yourkhata.test', kind: 'Medical', suppliers: 'Distributors', customers: 'Customers', orders: false, hiSuppliers: 'वितरक' },
+  { id: 'kirana', business: 'Shree Ganesh Kirana', email: 'b2-kirana@yourkhata.test', kind: 'Kirana', suppliers: 'Suppliers', customers: 'Customers', orders: false },
+  { id: 'wholesale', business: 'Gupta Traders', email: 'b2-kirana-wholesale@yourkhata.test', kind: 'Kirana', suppliers: 'Companies', customers: 'Retailers', orders: true },
+  { id: 'jewellery', business: 'Laxmi Jewellers', email: 'b2-jewellery@yourkhata.test', kind: 'Jewellery', suppliers: 'Suppliers', customers: 'Customers', orders: false },
+  { id: 'electronics', business: 'Shiv Mobile Point', email: 'b2-electronics@yourkhata.test', kind: 'Mobile', suppliers: 'Suppliers', customers: 'Customers', orders: true },
+  { id: 'garments', business: 'Laxmi Garments', email: 'b2-garments@yourkhata.test', kind: 'Clothes', suppliers: 'Suppliers', customers: 'Customers', orders: false },
+  { id: 'auto_parts', business: 'Mahadev Auto Parts', email: 'b2-auto_parts@yourkhata.test', kind: 'Auto parts', suppliers: 'Suppliers', customers: 'Customers', orders: true },
+  { id: 'food', business: 'Anand Sweets & Bakery', email: 'b2-food@yourkhata.test', kind: 'Sweets', suppliers: 'Suppliers', customers: 'Customers', orders: false },
   // "Other" has no named kind: the caption is just the app's name.
-  { id: 'other', email: 'b2-other@yourkhata.test', kind: null, suppliers: 'Suppliers', customers: 'Customers', orders: false },
+  { id: 'other', business: 'Om Stores', email: 'b2-other@yourkhata.test', kind: null, suppliers: 'Suppliers', customers: 'Customers', orders: false },
 ];
 const ORDER_ROWS = ['Sales orders', 'Delivery challans', 'Purchase orders'];
 
@@ -53,8 +53,17 @@ for (const o of OWNERS) {
     await page.fill('input[type=password]', PASSWORD);
     await page.keyboard.press('Enter');
     await page.waitForURL((u) => !u.pathname.startsWith('/login'), { timeout: 30000 });
+    // H35: an owner with two businesses signs in to the last one used. Open
+    // THIS owner's kind business and prove it before reading anything.
+    let me = (await (await ctx.request.get(`${base}/api/v1/auth/me`)).json()).data;
+    const mine = (me.tenants ?? []).find((t) => t.name === o.business);
+    if (mine && me.active_tenant_id !== mine.id) {
+      const csrf = (await ctx.cookies()).find((c) => c.name === 'ub_csrf')?.value ?? '';
+      await ctx.request.post(`${base}/api/v1/auth/switch-tenant`, { data: { tenant_id: mine.id }, headers: { 'X-CSRF-Token': csrf } });
+      me = (await (await ctx.request.get(`${base}/api/v1/auth/me`)).json()).data;
+    }
     await page.goto(`${base}/dashboard`, { waitUntil: 'networkidle' });
-    const me = (await (await ctx.request.get(`${base}/api/v1/auth/me`)).json()).data;
+    if (locale === 'en') check(`${o.id}: the open business is ${o.business}`, me.active_tenant?.name === o.business, me.active_tenant?.name);
     const nav = await page.evaluate(() => (document.querySelector('nav[aria-label]')?.innerText ?? ''));
     const tag = `${o.id}-${locale}`;
     if (locale === 'en') {

@@ -35,6 +35,12 @@ const csrf = async () => ({ 'X-CSRF-Token': (await ctx.cookies()).find((c) => c.
 const open = (await me()).active_tenant;
 check('the open business is the kirana test shop before any write', open?.name === 'Shree Ganesh Kirana', open?.name);
 if (open?.name !== 'Shree Ganesh Kirana') process.exit(1);
+// A known start: wholesale off, orders off (an interrupted run may have left
+// them on). The page is then driven from that state.
+await ctx.request.put(`${base}/api/v1/tenants/current/settings`, {
+  data: { values: { 'shop.wholesale': { value: false }, 'shop.features.orders': { value: false } } },
+  headers: await csrf(),
+});
 const sidebar = () => page.evaluate(() => document.querySelector('nav[aria-label]')?.innerText ?? '');
 const sw = (name) => page.getByRole('switch', { name });
 const settle = async () => {
