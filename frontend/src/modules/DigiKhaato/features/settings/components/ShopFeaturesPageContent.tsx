@@ -3,16 +3,18 @@
 import { useCallback } from 'react';
 
 import {
+  UbBox,
   UbButton,
   UbEmptyState,
   UbPageHeader,
   UbPageShell,
   UbPanel,
+  UbShopKindIcon,
   UbSkeleton,
   UbStack,
   UbSwitch,
-  UbStatusBadge,
   UbText,
+  type UbShopKind,
 } from 'src/design-system';
 import { useTranslation } from 'src/hooks/useTranslation';
 
@@ -43,7 +45,7 @@ const isOn = (value: unknown): boolean =>
 
 export function ShopFeaturesPageContent(): React.JSX.Element {
   const { t } = useTranslation();
-  const { kindLabel } = useAppWords();
+  const { kindLabel, kindPicture } = useAppWords();
   const access = useSettingsAccess();
   const settings = useTenantSettings(access.canView);
   const { data, status, error, refetch } = settings;
@@ -95,9 +97,15 @@ export function ShopFeaturesPageContent(): React.JSX.Element {
               {t('settings.shop.whatYouSell')}
             </UbText>
             {kindLabel && (
-              <UbStack direction="row" gap={2} wrap>
-                <UbStatusBadge tone="info" label={kindLabel} />
-              </UbStack>
+              // Design `.chp.on`: a 34 px teal pill with the kind's picture.
+              <UbBox className="inline-flex h-[34px] items-center gap-1.5 self-start rounded-full border border-action bg-accent-quiet px-3.5 text-text-accent">
+                {kindPicture && (
+                  <UbShopKindIcon kind={kindPicture as UbShopKind} className="h-4 w-4" />
+                )}
+                <UbText as="span" variant="body-sm-medium">
+                  {kindLabel}
+                </UbText>
+              </UbBox>
             )}
             <UbSwitch
               checked={isOn(values['shop.wholesale'])}

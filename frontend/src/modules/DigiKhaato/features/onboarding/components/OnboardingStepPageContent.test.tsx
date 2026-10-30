@@ -218,6 +218,18 @@ describe('the wizard — step 1 (FR-2)', () => {
     });
   });
 
+  it('explains the question under its title, before the tiles (design pPick)', () => {
+    /** Prevents: "Tap one. This sets your menus…" read last, under ten tiles. */
+    renderWithProviders(<OnboardingStepPageContent step={1} />);
+    const body = screen.getByText(/Tap one\. This sets your menus/);
+    const firstTile = screen.getByRole('radio', { name: /Kirana/ });
+    expect(body.compareDocumentPosition(firstTile) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(screen.getByRole('radiogroup', { name: 'What do you sell?' })).toHaveAttribute(
+      'aria-describedby',
+      expect.stringContaining('-description')
+    );
+  });
+
   it('has no "+ I also sell…": one business is one kind (R-DEC-64)', () => {
     renderWithProviders(<OnboardingStepPageContent step={1} />);
     expect(screen.queryByRole('button', { name: /I also sell/ })).toBeNull();
@@ -618,6 +630,8 @@ describe('the wizard — the page is a rail and a form half (layout A)', () => {
     const main = screen.getByRole('main');
 
     expect(main.className).toContain('max-w-[560px]');
+    // B1 (dPick): the design's 820 px card from lg, so five tiles fit a row.
+    expect(main.className).toContain('lg:max-w-[820px]');
     expect(main.className).toContain('mx-auto');
     // NOT `lg:mx-0`. That pinned a 560px form to the left edge of a column over
     // 1100px wide on a 1440 screen, leaving ~560px of empty page to its right —

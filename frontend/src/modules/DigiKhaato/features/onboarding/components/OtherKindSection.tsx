@@ -32,7 +32,7 @@ export function OtherKindSection({
     <UbField
       name="businessType"
       label={t('onboarding.other.kindTitle')}
-      hint={t('onboarding.other.kindBody')}
+      description={t('onboarding.other.kindBody')}
     >
       {(field) => (
         <UbRadioGroup<OtherKind>

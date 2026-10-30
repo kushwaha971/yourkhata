@@ -88,6 +88,8 @@ interface ActiveTenantApiRow {
   readonly words?: Record<string, Record<string, string>> | null;
   /** B2 / BP-22 #2 — the feature keys that are on for this business. */
   readonly features?: string[] | null;
+  /** B3 — the design's picture for this business's kind. */
+  readonly kind_picture?: string | null;
 }
 
 interface BrandingApiBlock {
@@ -388,6 +390,7 @@ export const getSession = async (signal?: AbortSignal): Promise<SessionPayload> 
         deletionScheduledFor: activeRow.deletion_scheduled_for ?? null,
         words: activeRow.words ?? null,
         features: activeRow.features ?? null,
+        kindPicture: activeRow.kind_picture ?? null,
       }
     : null;
   const support = data.impersonation;

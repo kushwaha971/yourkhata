@@ -105,6 +105,13 @@ export interface UbFieldProps {
    * association and for anything that needs to say which field failed.
    */
   readonly controlOwnsLabel?: boolean;
+  /**
+   * B1 (design pPick / dPick / pOtherKind) — the line that explains a QUESTION,
+   * shown under the label and before the control ("Tap one. This sets your
+   * menus…"), where a hint below a grid of ten tiles is read last or not at
+   * all. Part of the control's description for a screen reader.
+   */
+  readonly description?: string;
   readonly children: (field: UbFieldRenderProps) => ReactNode;
   readonly className?: string;
 }
@@ -120,13 +127,18 @@ export function UbField({
   reserveError = true,
   messageElsewhere,
   controlOwnsLabel,
+  description,
   children,
   className,
 }: Readonly<UbFieldProps>): React.JSX.Element {
   const { control, formState } = useFormContext();
   const error = getFieldError(formState.errors, name);
   const describedBy =
-    [hint && !error ? `${name}-hint` : null, error ? `${name}-error` : null]
+    [
+      description ? `${name}-description` : null,
+      hint && !error ? `${name}-hint` : null,
+      error ? `${name}-error` : null,
+    ]
       .filter(Boolean)
       .join(' ') || undefined;
 
@@ -149,6 +161,11 @@ export function UbField({
             <span className="ds-caption font-normal text-text-muted">{optionalLabel}</span>
           )}
         </label>
+      )}
+      {description && (
+        <UbInputHint id={`${name}-description`} className="-mt-0.5 mb-1">
+          {description}
+        </UbInputHint>
       )}
       <Controller
         control={control}

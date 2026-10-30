@@ -59,6 +59,19 @@ _KIND: dict[str, tuple[str, str]] = {
     "services": ("Services", "सेवाएँ"),
 }
 
+#: B3 — which of the design's kind pictures (`b-*` symbols) the kind uses.
+_PICTURE: dict[str, str] = {
+    "kirana": "kirana",
+    "medical": "medical",
+    "electronics": "mobile",
+    "garments": "garments",
+    "hardware": "hardware",
+    "auto_parts": "auto",
+    "wholesale": "wholesale",
+    "food": "cafe",
+    "jewellery": "jewel",
+}
+
 #: Every feature key the session may carry.
 FEATURE_KEYS: tuple[str, ...] = (*presets.SIGNUP_FEATURES, "orders")
 
@@ -164,6 +177,9 @@ def business_block(tenant: Any) -> dict[str, Any]:
     """The session's `active_tenant.features` and `.words` (per language), one query."""
     rows = _rows(tenant)
     return {
+        # B3: the design draws the kind as a chip with its picture; Other's
+        # kinds and the older broad types use the "other" picture.
+        "kind_picture": _PICTURE.get(tenant.business_type, "other"),
         "features": features_of(tenant, rows),
         "words": {locale: words_of(tenant, locale, rows) for locale in LOCALES},
     }

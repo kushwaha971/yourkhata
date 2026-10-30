@@ -44,6 +44,8 @@ export interface UseAppWordsResult {
    * named kind or an older server. Only the Shop shows it.
    */
   readonly kindLabel: string | undefined;
+  /** B3 — the design's picture for the kind, from the session. */
+  readonly kindPicture: string | undefined;
 }
 
 export function useAppWords(): UseAppWordsResult {
@@ -54,7 +56,8 @@ export function useAppWords(): UseAppWordsResult {
   // B2: the server sends the business's words in every language; the one on
   // screen is the person's switch, which may differ from their saved locale.
   const locale = useAppSelector(selectLocale);
-  const business = useAppSelector(selectActiveTenant)?.words?.[locale];
+  const activeTenant = useAppSelector(selectActiveTenant);
+  const business = activeTenant?.words?.[locale];
   const w = useCallback<TranslateFn>(
     (id, values) => business?.[id] ?? t(words?.[id] ?? id, values),
     [t, words, business]
@@ -65,5 +68,6 @@ export function useAppWords(): UseAppWordsResult {
     book: manifest?.book ?? 'main',
     app: app ?? null,
     kindLabel: business?.['business.kind'],
+    kindPicture: activeTenant?.kindPicture ?? undefined,
   };
 }

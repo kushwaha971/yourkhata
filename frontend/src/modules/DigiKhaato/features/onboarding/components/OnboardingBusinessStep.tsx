@@ -210,7 +210,7 @@ export function OnboardingBusinessStep({
             // error belongs there and not under these tiles.
             name={sellsWholesale ? 'sellsWholesale' : 'businessType'}
             label={t('onboarding.pick.title')}
-            hint={t('onboarding.pick.body')}
+            description={t('onboarding.pick.body')}
             required
           >
             {(field) => (
@@ -269,7 +269,7 @@ export function OnboardingBusinessStep({
           <UbField
             name="businessType"
             label={t('onboarding.pick.wholesaleTitle')}
-            hint={t('onboarding.pick.wholesaleBody')}
+            description={t('onboarding.pick.wholesaleBody')}
             required
           >
             {(field) => (

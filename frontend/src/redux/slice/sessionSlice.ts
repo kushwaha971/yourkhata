@@ -130,6 +130,8 @@ export interface SessionTenant {
    * only through `useFeature`; no screen reads a business type (R-DEC-65).
    */
   readonly features?: string[] | null;
+  /** B3 — the kind's picture (`UbShopKind`), drawn on Settings › Shop features. */
+  readonly kindPicture?: string | null;
 }
 
 /** The branding the shell renders; `primarySource` says whose colour it is. */
