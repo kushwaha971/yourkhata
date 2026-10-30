@@ -31,6 +31,23 @@ _KNOWN: dict[str, tuple[str, str]] = {
 }
 _SHARED = ("Customer", "Supplier")
 
+#: Design `rail()`: the kind under the business name ("Hardware · Shop").
+_KIND: dict[str, tuple[str, str]] = {
+    "kirana": ("Kirana", "किराना"),
+    "medical": ("Medical", "मेडिकल"),
+    "electronics": ("Mobile", "मोबाइल"),
+    "garments": ("Clothes", "कपड़े"),
+    "hardware": ("Hardware", "हार्डवेयर"),
+    "auto_parts": ("Auto parts", "ऑटो पार्ट्स"),
+    "wholesale": ("Wholesale", "थोक"),
+    "food": ("Sweets", "मिठाई"),
+    "jewellery": ("Jewellery", "ज्वेलरी"),
+    "stationery": ("Stationery", "स्टेशनरी"),
+    "agri": ("Agri inputs", "खेती का सामान"),
+    "furniture": ("Furniture", "फर्नीचर"),
+    "services": ("Services", "सेवाएँ"),
+}
+
 #: Every feature key the session may carry.
 FEATURE_KEYS: tuple[str, ...] = (*presets.SIGNUP_FEATURES, "orders")
 
@@ -80,13 +97,16 @@ def words_of(tenant: Any, locale: str = "en", rows: dict[str, Any] | None = None
     customer = (labels.get("customer") or "Customer").strip()
     supplier = (labels.get("supplier") or "Supplier").strip()
     words: dict[str, str] = {}
+    kind = _KIND.get(tenant.business_type)
+    if kind:
+        words["business.kind"] = kind[1] if locale == "hi" else kind[0]
     if customer != _SHARED[0]:
         many = _plural(customer, locale)
         words["nav.parties"] = many
         words["nav.tab.parties"] = many
     if supplier != _SHARED[1]:
         words["nav.suppliers"] = _plural(supplier, locale)
-    if words:
+    if "nav.parties" in words or "nav.suppliers" in words:
         joiner = " और " if locale == "hi" else " & "
         left = words.get("nav.parties") or _plural(customer, locale)
         right = words.get("nav.suppliers") or _plural(supplier, locale)

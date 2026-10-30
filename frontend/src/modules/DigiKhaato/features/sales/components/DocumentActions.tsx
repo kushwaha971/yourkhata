@@ -48,7 +48,8 @@ import type { SalesDocument } from '../types/sales.types';
 /* Each dialog loads with the tap that opens it (a form in the chunk that opens it). */
 const VoidDialogLazy = dynamic(
   () => import('./VoidDocumentDialog').then((m) => m.VoidDocumentDialog),
-  { ssr: false, loading: () => <UbDialogLoading /> }
+  { ssr: false,
+  loading: () => <UbDialogLoading /> }
 );
 const CancelOrderDialogLazy = dynamic(
   () => import('./CancelOrderDialog').then((m) => m.CancelOrderDialog),
@@ -56,7 +57,8 @@ const CancelOrderDialogLazy = dynamic(
 );
 const ApplyDialogLazy = dynamic(
   () => import('./ApplyCreditDialog').then((m) => m.ApplyCreditDialog),
-  { ssr: false, loading: () => <UbDialogLoading /> }
+  { ssr: false,
+  loading: () => <UbDialogLoading /> }
 );
 
 type Open = 'void' | 'apply' | 'convert' | 'reject' | 'cancelOrder' | 'voidChallan' | null;
@@ -356,9 +358,7 @@ export function DocumentActions({
                   {t('billDetail.refund')}
                 </UbText>
                 <UbText variant="body-sm" tone="secondary">
-                  {t(
-                    doc.amountPaid === '0.00' ? 'billDetail.noRefund' : 'billDetail.refundHint'
-                  )}
+                  {t(doc.amountPaid === '0.00' ? 'billDetail.noRefund' : 'billDetail.refundHint')}
                 </UbText>
               </UbStack>
             ) : (

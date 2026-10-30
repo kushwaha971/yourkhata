@@ -24,6 +24,7 @@ import { roleLabel } from 'src/utils/roleLabel';
 
 import { leaveApp, setAppRunning } from 'modules/DigiKhaato/features/auth/redux/sessionThunk';
 import { useAddApp } from 'modules/DigiKhaato/features/navigation/useAddApp';
+import { useAppWords } from 'modules/DigiKhaato/features/navigation/useAppWords';
 import { useNavigation } from 'modules/DigiKhaato/features/navigation/useNavigation';
 import { useOpenApp } from 'modules/DigiKhaato/features/navigation/useOpenApp';
 
@@ -82,6 +83,7 @@ export function TenantSwitcherMenu({
   const switcher = useTenantSwitcher();
   const dispatch = useAppDispatch();
   const { apps, app } = useNavigation();
+  const { kindLabel } = useAppWords();
   const addable = useAppSelector(selectAppsAddable);
   const [appAction, setAppAction] = useState<'off' | 'leave' | null>(null);
   const [appBusy, setAppBusy] = useState(false);
@@ -130,7 +132,10 @@ export function TenantSwitcherMenu({
   const overflow = switcher.groups.active.length > MENU_TENANT_LIMIT;
   const activeName = tenantNameView(active.name);
   const openAppLabel = apps.find((a) => a.code === app)?.labelId;
-  const railCaption = openAppLabel ? t(openAppLabel) : caption;
+  // B2 (design `rail()`): "Hardware · Shop" — the kind under the business name,
+  // in the Shop only; Library and Lending have no kind.
+  const appCaption = openAppLabel ? t(openAppLabel) : caption;
+  const railCaption = kindLabel && app === 'shop' ? `${kindLabel} · ${appCaption}` : appCaption;
   const isOwner = active.role === 'owner';
   const openAppName = openAppLabel ? t(openAppLabel) : '';
   const showApps = apps.length > 1 || (isOwner && addable.length > 0);

@@ -18,10 +18,10 @@ def _tenant(kind: str) -> SimpleNamespace:
     return SimpleNamespace(business_type=kind, pk=None, id=None)
 
 
-def test_a_kirana_sends_no_words_and_no_orders() -> None:
-    """A kirana uses the shared words, so nothing is sent; no orders rows."""
+def test_a_kirana_sends_only_its_kind_and_no_orders() -> None:
+    """A kirana uses the shared people words, so only its kind is sent; no orders rows."""
     rows: dict = {}
-    assert words_of(_tenant("kirana"), "en", rows) == {}
+    assert words_of(_tenant("kirana"), "en", rows) == {"business.kind": "Kirana"}
     assert "orders" not in features_of(_tenant("kirana"), rows)
 
 
@@ -30,7 +30,11 @@ def test_a_medical_store_says_distributors_in_both_languages() -> None:
     rows: dict = {}
     en = words_of(_tenant("medical"), "en", rows)
     hi = words_of(_tenant("medical"), "hi", rows)
-    assert en == {"nav.suppliers": "Distributors", "nav.section.parties": "Customers & distributors"}
+    assert en == {
+        "business.kind": "Medical",
+        "nav.suppliers": "Distributors",
+        "nav.section.parties": "Customers & distributors",
+    }
     assert hi["nav.suppliers"] == "वितरक"
 
 

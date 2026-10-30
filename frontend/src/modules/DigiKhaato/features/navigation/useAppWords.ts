@@ -37,6 +37,12 @@ export interface UseAppWordsResult {
   readonly book: LedgerBook;
   /** The open app's code, or null before the session says which. */
   readonly app: string | null;
+  /**
+   * B2 (design `rail()`) — the business's kind in the person's language
+   * ("Hardware"), as the server names it; undefined for a business with no
+   * named kind or an older server. Only the Shop shows it.
+   */
+  readonly kindLabel: string | undefined;
 }
 
 export function useAppWords(): UseAppWordsResult {
@@ -49,5 +55,11 @@ export function useAppWords(): UseAppWordsResult {
     (id, values) => business?.[id] ?? t(words?.[id] ?? id, values),
     [t, words, business]
   );
-  return { w, peopleHref: manifest?.peopleHref, book: manifest?.book ?? 'main', app: app ?? null };
+  return {
+    w,
+    peopleHref: manifest?.peopleHref,
+    book: manifest?.book ?? 'main',
+    app: app ?? null,
+    kindLabel: business?.['business.kind'],
+  };
 }

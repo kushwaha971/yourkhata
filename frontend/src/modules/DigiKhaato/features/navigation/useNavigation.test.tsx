@@ -48,7 +48,9 @@ const load = ({
   activeApp = 'library',
   modules = MODULE_CODES,
   permissions = ALL_PERMISSIONS,
+  features,
 }: {
+  features?: string[] | null;
   apps?: SessionApp[] | null;
   activeApp?: string | null;
   modules?: readonly ModuleCode[];
@@ -65,7 +67,13 @@ const load = ({
         mustChangePassword: false,
         passwordExpiresAt: null,
       },
-      activeTenant: { id: 't1', name: 'Kumar Kirana', timezone: 'Asia/Kolkata', role: 'owner' },
+      activeTenant: {
+        id: 't1',
+        name: 'Kumar Kirana',
+        timezone: 'Asia/Kolkata',
+        role: 'owner',
+        ...(features === undefined ? {} : { features }),
+      },
       tenants: [{ id: 't1', name: 'Kumar Kirana', timezone: 'Asia/Kolkata', role: 'owner' }],
       permissions,
       enabledModules: [...modules],
@@ -265,5 +273,29 @@ describe('a body without apps (an old fixture)', () => {
     load({ apps: null, activeApp: null, modules: MODULE_CODES.filter((m) => m !== 'library') });
     // DEC-019 — the Udhaar book is an app of its own, after the Shop.
     expect(listed().apps.map((a) => a.code)).toEqual(['lending', 'shop', 'khata']);
+  });
+});
+
+
+describe('B2 — rows follow the business (design E2 #6)', () => {
+  /** Prevents: a kirana, medical store or jeweller seeing Sales orders,
+   * Delivery challans and Purchase orders it never uses; or an older server
+   * (no feature list) losing them. */
+  it('hides the orders rows for a business without the orders feature', () => {
+    mockPath = '/dashboard';
+    load({ activeApp: 'shop', features: [] });
+    const keys = keysOf(listed());
+    expect(keys).toContain('invoices');
+    expect(keys).not.toContain('salesOrders');
+    expect(keys).not.toContain('challans');
+    expect(keys).not.toContain('purchaseOrders');
+  });
+
+  it('shows them to a business that has it, and to an older server', () => {
+    mockPath = '/dashboard';
+    load({ activeApp: 'shop', features: ['orders'] });
+    expect(keysOf(listed())).toEqual(expect.arrayContaining(['salesOrders', 'challans', 'purchaseOrders']));
+    load({ activeApp: 'shop', features: null });
+    expect(keysOf(listed())).toEqual(expect.arrayContaining(['salesOrders', 'challans', 'purchaseOrders']));
   });
 });

@@ -29,7 +29,7 @@ const APPS: SessionApp[] = [
   { code: 'khata', labelId: 'nav.workspace.khata', homePath: '/khata', order: 95 },
 ];
 
-const load = (activeApp: string) =>
+const load = (activeApp: string, businessWords?: Record<string, string>) =>
   store.dispatch(
     sessionLoaded({
       user: {
@@ -41,7 +41,13 @@ const load = (activeApp: string) =>
         mustChangePassword: false,
         passwordExpiresAt: null,
       },
-      activeTenant: { id: 't1', name: 'Verma', timezone: 'Asia/Kolkata', role: 'owner' },
+      activeTenant: {
+        id: 't1',
+        name: 'Verma',
+        timezone: 'Asia/Kolkata',
+        role: 'owner',
+        ...(businessWords ? { words: businessWords } : {}),
+      },
       tenants: [{ id: 't1', name: 'Verma', timezone: 'Asia/Kolkata', role: 'owner' }],
       permissions: [] as PermissionCode[],
       enabledModules: [],
@@ -79,4 +85,15 @@ it.each([
 it('falls back to the shared word where the app declares none', () => {
   load('library');
   expect(words().w('parties.detail.badge.supplier')).toBe('Supplier');
+});
+
+
+it("B2: the business's own words win, and its kind is offered for the rail", () => {
+  /** Prevents: a medical store's menu saying "Suppliers" when the server sent
+   * "Distributors", or the kind missing under the business name. */
+  load('shop', { 'nav.suppliers': 'Distributors', 'business.kind': 'Medical' });
+  const { w, kindLabel } = words();
+  expect(w('nav.suppliers')).toBe('Distributors');
+  expect(w('nav.parties')).toBe('Customers');
+  expect(kindLabel).toBe('Medical');
 });

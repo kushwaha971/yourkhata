@@ -3,10 +3,10 @@
 import { usePathname } from 'next/navigation';
 
 import { UbLink, UbStack, UbText } from 'src/design-system';
-import { useTranslation } from 'src/hooks/useTranslation';
 import { cn } from 'src/utils/cn';
 
 import { activeNavHref } from 'modules/DigiKhaato/features/navigation/activeNav';
+import { useAppWords } from 'modules/DigiKhaato/features/navigation/useAppWords';
 import { useNavigation } from 'modules/DigiKhaato/features/navigation/useNavigation';
 
 /**
@@ -35,7 +35,8 @@ export function NavSections({
   onNavigate?: () => void;
 }>): React.JSX.Element {
   const pathname = usePathname();
-  const { t } = useTranslation();
+  // B2: menu words are the business's own (a medical store's Distributors).
+  const { w } = useAppWords();
   const { sections } = useNavigation();
   const currentHref = activeNavHref(
     pathname,
@@ -52,7 +53,7 @@ export function NavSections({
             variant="inherit"
             className="ds-nav-caption-medium px-2 pb-0.5 text-text-onNavMuted opacity-80"
           >
-            {t(section.labelId)}
+            {w(section.labelId)}
           </UbText>
           {section.items.map((item) => {
             const Icon = item.icon;
@@ -79,7 +80,7 @@ export function NavSections({
                     active ? 'ds-nav-label-medium' : 'ds-nav-label-regular'
                   )}
                 >
-                  {t(item.labelId)}
+                  {w(item.labelId)}
                 </UbText>
               </>
             );

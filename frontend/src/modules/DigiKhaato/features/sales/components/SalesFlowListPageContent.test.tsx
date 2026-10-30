@@ -129,15 +129,22 @@ it('does not render cached records when read permission is absent', () => {
 
 it('uses the joined identity/date at1024 even though the grid tier is full', async () => {
   /** The shared grid becomes full at1024, before a 232px sidebar leaves room for all date columns. */
-  const media = jest.spyOn(window, 'matchMedia').mockImplementation(query => ({
+  const media = jest.spyOn(window, 'matchMedia').mockImplementation((query) => ({
     matches: query === '(min-width: 768px)' || query === '(min-width: 1024px)',
-    media: query, onchange: null, addListener: jest.fn(), removeListener: jest.fn(),
-    addEventListener: jest.fn(), removeEventListener: jest.fn(), dispatchEvent: () => true,
+    media: query,
+    onchange: null,
+    addListener: jest.fn(),
+    removeListener: jest.fn(),
+    addEventListener: jest.fn(),
+    removeEventListener: jest.fn(),
+    dispatchEvent: () => true,
   }));
   try {
     hooks.useSalesFlowList.mockReturnValue(source());
     renderWithProviders(<SalesFlowListPageContent kind="estimate" />);
     await screen.findByRole('columnheader', { name: 'Customer' });
     expect(screen.queryByRole('columnheader', { name: 'Date' })).not.toBeInTheDocument();
-  } finally { media.mockRestore(); }
+  } finally {
+    media.mockRestore();
+  }
 });

@@ -90,14 +90,19 @@ export function useNavigation(): UseNavigationResult {
   const permissions = useAppSelector(selectPermissions);
   const sessionApps = useAppSelector(selectSessionApps);
   const activeApp = useAppSelector(selectActiveApp);
-  const tenantId = useAppSelector(selectActiveTenant)?.id ?? null;
+  const activeTenant = useAppSelector(selectActiveTenant);
+  const tenantId = activeTenant?.id ?? null;
+  // An older server sends no features: every row stays, as before B2.
+  const features = activeTenant?.features ?? null;
   const pathname = usePathname();
   const historyApp = useHistoryApp(pathname, tenantId);
   const fromPath = appForPath(pathname) ?? historyApp;
 
   const result = useMemo(() => {
     const visible = (item: AppNavItem): boolean =>
-      enabledModules.includes(item.module) && permissions.includes(item.permission);
+      enabledModules.includes(item.module) &&
+      permissions.includes(item.permission) &&
+      (!item.feature || features === null || features.includes(item.feature));
 
     const accessible = sessionApps
       ? sessionApps.flatMap((server) => {
@@ -141,7 +146,7 @@ export function useNavigation(): UseNavigationResult {
       href: home,
     }));
     return { sections, bottomNav, apps, app: code, book: current?.book, shell: current?.shell ?? NO_SHELL };
-  }, [enabledModules, permissions, sessionApps, activeApp, fromPath]);
+  }, [enabledModules, permissions, features, sessionApps, activeApp, fromPath]);
 
   useEffect(() => {
     rememberHistoryApp(pathname, tenantId, result.app);

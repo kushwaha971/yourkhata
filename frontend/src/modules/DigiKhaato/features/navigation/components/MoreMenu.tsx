@@ -27,6 +27,7 @@ import { ROUTES } from 'src/routes';
 import { accountContact, accountDisplayName } from 'src/utils/accountIdentity';
 import { cn } from 'src/utils/cn';
 
+import { useAppWords } from '../useAppWords';
 import { useNavigation } from '../useNavigation';
 
 /**
@@ -54,6 +55,8 @@ export function MoreMenu({
   searchClassName?: string;
 }>): React.JSX.Element {
   const { t } = useTranslation();
+  // B2: the business's own words for its rows and sections.
+  const { w } = useAppWords();
   const { sections, bottomNav } = useNavigation();
   const tenant = useAppSelector(selectActiveTenant);
   const feedback = useFeedback();
@@ -69,14 +72,14 @@ export function MoreMenu({
       sections
         .map((section) => ({
           key: section.key,
-          title: t(section.labelId),
+          title: w(section.labelId),
           rows: section.items
             .filter((item) => !tabKeys.has(item.key))
             .map<UbMenuListRow>((item) => {
               const Icon = item.icon;
               return {
                 key: item.key,
-                label: t(item.labelId),
+                label: w(item.labelId),
                 href: item.href,
                 icon: <Icon aria-hidden className="h-5 w-5" />,
               };
@@ -84,7 +87,7 @@ export function MoreMenu({
             .filter((row) => !needle || row.label.toLocaleLowerCase().includes(needle)),
         }))
         .filter((group) => group.rows.length > 0),
-    [sections, tabKeys, needle, t]
+    [sections, tabKeys, needle, w]
   );
 
   const businessRows: UbMenuListRow[] = [

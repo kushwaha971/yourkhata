@@ -84,6 +84,10 @@ interface ActiveTenantApiRow {
   readonly branding?: BrandingApiBlock | null;
   readonly partner_suspended?: boolean;
   readonly deletion_scheduled_for?: string | null;
+  /** B2 / BP-22 #1 — the business's own words, in the person's language. */
+  readonly words?: Record<string, string> | null;
+  /** B2 / BP-22 #2 — the feature keys that are on for this business. */
+  readonly features?: string[] | null;
 }
 
 interface BrandingApiBlock {
@@ -382,6 +386,8 @@ export const getSession = async (signal?: AbortSignal): Promise<SessionPayload> 
         branding: toSessionBranding(activeRow.branding),
         partnerSuspended: activeRow.partner_suspended ?? false,
         deletionScheduledFor: activeRow.deletion_scheduled_for ?? null,
+        words: activeRow.words ?? null,
+        features: activeRow.features ?? null,
       }
     : null;
   const support = data.impersonation;

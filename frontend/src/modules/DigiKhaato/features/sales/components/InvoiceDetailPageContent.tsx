@@ -73,7 +73,8 @@ const InvoiceProfitCardLazy = dynamic(
 
 const PaymentFormDrawerLazy = dynamic(
   () => import('../../payments/components/PaymentFormDrawer').then((m) => m.PaymentFormDrawer),
-  { ssr: false, loading: () => <UbDrawerLoading /> }
+  { ssr: false,
+  loading: () => <UbDrawerLoading /> }
 );
 
 type DetailKind = 'invoice' | FlowKind;
@@ -399,6 +400,9 @@ function InvoiceDetailScreen({
 import 'src/i18n/catalogues/salesDetail';
 
 /** A different document must never retain the previous payment/share/print state. */
-export function InvoiceDetailPageContent({ id, kind = 'invoice' }: Readonly<{ id: string; kind?: DetailKind }>): React.JSX.Element {
+export function InvoiceDetailPageContent({
+  id,
+  kind = 'invoice',
+}: Readonly<{ id: string; kind?: DetailKind }>): React.JSX.Element {
   return <InvoiceDetailScreen key={`${kind}:${id}`} id={id} kind={kind} />;
 }

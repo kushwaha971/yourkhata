@@ -119,12 +119,16 @@ export interface SessionTenant {
   /** PLT-10 BR-1 — when a `pending_deletion` business is deleted (ISO), else null. */
   readonly deletionScheduledFor?: string | null;
   /**
-   * Plan 13 F0 — the business's own words, by message id (a distributor's
-   * `business.word.customer` is "Retailer"). The server keeps them as
-   * `parties.labels`, defaulted from the business type's preset, and does not
-   * send them here yet; F0 adds them. Read only through `useAppWords().w`.
+   * B2 / BP-22 #1 — the business's own words, by message id (a medical store's
+   * `nav.suppliers` is "Distributors"), resolved by the server in the person's
+   * language from `parties.labels`. Read only through `useAppWords().w`.
    */
   readonly words?: Readonly<Record<string, string>> | null;
+  /**
+   * B2 / BP-22 #2 — the features that are on (`orders`, `batches`, …). Read
+   * only through `useFeature`; no screen reads a business type (R-DEC-65).
+   */
+  readonly features?: string[] | null;
 }
 
 /** The branding the shell renders; `primarySource` says whose colour it is. */

@@ -142,6 +142,8 @@ export const SHOP_APP: AppManifest = {
       href: ROUTES.SALES_ORDERS,
       module: 'sales',
       permission: 'sales.estimate.read',
+      // Design E2 #6 (owner, 30 Oct 2026): only the kinds that use them.
+      feature: 'orders',
       section: 'sales',
       order: 3,
       tab: 'invoices',
@@ -154,6 +156,8 @@ export const SHOP_APP: AppManifest = {
       href: ROUTES.SALES_CHALLANS,
       module: 'sales',
       permission: 'sales.invoice.read',
+      // Design E2 #6 (owner, 30 Oct 2026): only the kinds that use them.
+      feature: 'orders',
       section: 'sales',
       order: 4,
       tab: 'invoices',
@@ -188,6 +192,8 @@ export const SHOP_APP: AppManifest = {
       href: ROUTES.PURCHASE_ORDERS,
       module: 'purchases',
       permission: 'purchases.bill.read',
+      // Design E2 #6 (owner, 30 Oct 2026): only the kinds that use them.
+      feature: 'orders',
       section: 'purchases',
       order: 2,
     },

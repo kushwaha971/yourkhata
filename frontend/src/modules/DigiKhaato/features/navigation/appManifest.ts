@@ -28,6 +28,12 @@ export interface AppNavItem {
   readonly module: ModuleCode;
   /** Gated by the session's permissions. */
   readonly permission: PermissionCode;
+  /**
+   * B2 / BP-22 #2 — gated by a business feature the server says is on: Sales
+   * orders, challans and purchase orders are `orders` (design E2 #6), shown
+   * only to the kinds that use them. Absent: every business has the row.
+   */
+  readonly feature?: string;
   /** One of the manifest's own `sections`. */
   readonly section: string;
   readonly order: number;

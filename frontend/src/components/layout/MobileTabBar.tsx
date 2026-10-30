@@ -11,6 +11,7 @@ import { useTranslation } from 'src/hooks/useTranslation';
 import { ROUTES } from 'src/routes';
 
 import { MORE_TAB } from 'modules/DigiKhaato/features/navigation/mobileNav';
+import { useAppWords } from 'modules/DigiKhaato/features/navigation/useAppWords';
 import { useMobileNav } from 'modules/DigiKhaato/features/navigation/useMobileNav';
 import { useNavigation } from 'modules/DigiKhaato/features/navigation/useNavigation';
 
@@ -42,6 +43,8 @@ const AppSwitcherSheet = dynamic(loadSheet, { ssr: false });
  */
 export function MobileTabBar(): React.JSX.Element | null {
   const { t } = useTranslation();
+  // B2: the tab words are the business's own (Retailers, Distributors).
+  const { w } = useAppWords();
   const { visible, active, tabs: bottomNav } = useMobileNav();
   const { apps, app } = useNavigation();
   const [sheetOpen, setSheetOpen] = useState(false);
@@ -71,7 +74,7 @@ export function MobileTabBar(): React.JSX.Element | null {
       return {
         key: tab.key,
         href: tab.href,
-        label: t(tab.tabLabelId ?? tab.labelId),
+        label: w(tab.tabLabelId ?? tab.labelId),
         icon: <Icon aria-hidden strokeWidth={active === tab.key ? 2 : 1.75} className="h-6 w-6" />,
         active: active === tab.key,
       };
