@@ -29,3 +29,4 @@ run b1-pick b1-pick.mjs
 run b2-menus b2-menus.mjs
 run b2-edges b2-edges.mjs
 run b3-features b3-features.mjs
+run c-journey c-journey.mjs
