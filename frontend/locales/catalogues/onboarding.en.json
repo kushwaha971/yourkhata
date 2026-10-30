@@ -71,6 +71,8 @@
   "onboarding.phone.label": "Shop phone",
   "onboarding.phone.placeholder": "Enter your mobile number",
   "onboarding.pick.body": "Tap one. This sets your menus and item fields. You can change it later.",
+  "onboarding.pick.oneKindDesktop": "One kind per business. Wholesale asks \"Wholesale of what?\" next.",
+  "onboarding.pick.oneKindPhone": "One kind per business. Sell something very different? Add it later as a second business.",
   "onboarding.pick.title": "What do you sell?",
   "onboarding.pick.wholesaleBody": "Tap one. You get its item fields and the wholesale ones.",
   "onboarding.pick.wholesaleTitle": "Wholesale of what?",

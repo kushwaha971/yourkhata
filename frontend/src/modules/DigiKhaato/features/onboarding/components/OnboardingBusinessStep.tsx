@@ -12,6 +12,7 @@ import {
   UbField,
   UbForm,
   UbStack,
+  UbText,
   UbTextInput,
 } from 'src/design-system';
 import { useAppSelector } from 'src/hooks/useAppStore';
@@ -206,6 +207,19 @@ export function OnboardingBusinessStep({
               />
             )}
           </UbField>
+        )}
+        {/* Design v7 (pPick / dPick): the line under the tiles. The phone
+            says where a second, different shop goes; the desktop says what
+            Wholesale does next. */}
+        {runsShop && (
+          <>
+            <UbText as="p" variant="caption" tone="tertiary" className="text-[12.5px] md:hidden">
+              {t('onboarding.pick.oneKindPhone')}
+            </UbText>
+            <UbText as="p" variant="caption" tone="tertiary" className="hidden text-[12.5px] md:block">
+              {t('onboarding.pick.oneKindDesktop')}
+            </UbText>
+          </>
         )}
         {/* R-DEC-64 — "Wholesale of what?": one kind, sold wholesale. Its
             features are that kind's and wholesale's together. */}
