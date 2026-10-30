@@ -893,6 +893,32 @@ describe('the always-visible item search (07-screens/09 §3)', () => {
     await waitFor(() => expect(screen.queryByTestId('scan-not-found')).toBeNull());
   });
 
+  it('treats an unknown barcode as a scan even when the list has loosely matched it', async () => {
+    /* C1 (found by e2e/c1-scan): the list answered "8900000000000" with a
+       loose match and Enter picked it, putting a wrong item on the bill. A
+       barcode-shaped entry is an exact lookup unless the person arrowed. */
+    const items = jest.requireMock('../../inventory/api/itemService') as {
+      searchItems: jest.Mock;
+      lookupItemByBarcode: jest.Mock;
+    };
+    // The server's loose search answers the digits with an unrelated item.
+    const usual = items.searchItems.getMockImplementation();
+    items.searchItems.mockImplementation(async (q: string) => ({
+      rows: q.startsWith('890') ? [mockTubeLight] : [],
+      hasMore: false,
+    }));
+    signIn(RIGHTS);
+    renderWithProviders(<InvoiceEditorPageContent documentId={null} />);
+    await quickAdd('8900000000000');
+    // Let the list answer first, as a slow Bluetooth scanner allows.
+    await act(() => new Promise<void>((resolve) => setTimeout(resolve, 400)));
+    await userEvent.keyboard('{Enter}');
+    await waitFor(() => expect(items.lookupItemByBarcode).toHaveBeenCalledWith('8900000000000'));
+    expect(await screen.findByTestId('scan-not-found')).toBeInTheDocument();
+    expect(screen.queryByText('Philips tube light 20W')).toBeNull();
+    if (usual) items.searchItems.mockImplementation(usual);
+  });
+
   it('tells a member who cannot add items to ask the owner when nothing matches', async () => {
     signIn(RIGHTS);
     renderWithProviders(<InvoiceEditorPageContent documentId={null} />);

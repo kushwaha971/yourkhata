@@ -86,6 +86,9 @@ export interface ItemQuickAddLabels {
 }
 
 /* The form belongs to the chunk that OPENS it, never to the bill's route. */
+/** EAN-8 … EAN-14 / UPC: what a scanner types. */
+const BARCODE_SHAPE = /^\d{8,14}$/;
+
 /* C1: the camera sheet loads when the scan button is first tapped. */
 const UbScanSheet = dynamic(() => import('src/design-system').then((m) => m.UbScanSheet), {
   ssr: false,
@@ -241,6 +244,8 @@ function ItemQuickAddBase({
    * code can be scanned at once; the next scan replaces it.
    */
   const [missed, setMissed] = useState<string | null>(null);
+  /** The person moved through the list with the arrows since typing. */
+  const arrowed = useRef(false);
   const [cameraOpen, setCameraOpen] = useState(false);
   /** C1 tray: the names scanned while the camera is open, newest first. */
   const [scanned, setScanned] = useState<readonly string[]>([]);
@@ -275,6 +280,15 @@ function ItemQuickAddBase({
       const code = search.query.trim();
       if (event.key === 'Enter') {
         event.preventDefault();
+        // C1 (found by c1-scan): a barcode-shaped entry is a SCAN unless the
+        // person arrowed to a row. The list matches numbers loosely (890… is
+        // most Indian barcodes), and Enter used to pick its first row: an
+        // unknown code put "Ghee 0 1kg" on the bill. Now it is an exact lookup
+        // and, if it misses, the "Not found" note.
+        if (BARCODE_SHAPE.test(code) && !arrowed.current) {
+          scan(code);
+          return;
+        }
         const chosen = search.pending ? undefined : search.results[active];
         const action = open ? actions[extra] : undefined;
         if (chosen && open) choose(chosen);
@@ -305,9 +319,11 @@ function ItemQuickAddBase({
           search.loadMore();
           return;
         }
+        arrowed.current = true;
         setActive((index) => (index + 1) % search.results.length);
       } else if (event.key === 'ArrowUp') {
         event.preventDefault();
+        arrowed.current = true;
         setActive((index) => (index - 1 + search.results.length) % search.results.length);
       }
     },
@@ -326,6 +342,7 @@ function ItemQuickAddBase({
           trailing={trailing}
           value={search.query}
           onChange={(next) => {
+            arrowed.current = false;
             search.setQuery(next);
             setActive(0);
             setExtra(-1);
