@@ -39,6 +39,10 @@ import { ItemQuickAdd, type ItemQuickAddVia } from './ItemQuickAdd';
 import type { ItemListRow } from '../types/item.types';
 import type { StockCountRow } from '../types/stockCount.types';
 
+/** "4.000" → "4" for a box the merchant edits (the server sends three places). */
+const plainQty = (value: string | null): string =>
+  value === null ? '' : value.includes('.') ? value.replace(/\.?0+$/, '') : value;
+
 /** "−3" red, "+2" green, "Same" grey — design `.amt.give / .get / .mute`. */
 const differenceView = (
   difference: string | null,
@@ -111,7 +115,7 @@ const createCountColumns = ({
       cell: (row) => (
         <UbQuantityInput
           aria-label={t('stock.count.countedFor', { name: row.name })}
-          value={typed[row.itemId] ?? row.countedQty ?? ''}
+          value={typed[row.itemId] ?? plainQty(row.countedQty)}
           onChange={(value) => setTyped(row.itemId, value)}
           onBlur={() => commit(row)}
           onKeyDown={(event) => {
@@ -224,7 +228,7 @@ export function StockCountPageContent(): React.JSX.Element {
   const [sheetQty, setSheetQty] = useState('');
   const openCount = useCallback((row: StockCountRow) => {
     setCounting(row);
-    setSheetQty(row.countedQty ?? '');
+    setSheetQty(plainQty(row.countedQty));
   }, []);
   const [confirming, setConfirming] = useState(false);
 
@@ -349,7 +353,6 @@ export function StockCountPageContent(): React.JSX.Element {
         }
       />
       <UbStack gap={3} data-testid="stock-count-screen" className="pb-24 lg:pb-0">
-        {countLine}
         <ItemQuickAdd
           labels={{
             label: t('stock.count.search'),
@@ -392,6 +395,7 @@ export function StockCountPageContent(): React.JSX.Element {
           hotkey={phone ? undefined : 'F2'}
           openOnFocus={false}
         />
+        {countLine}
         <UbDataGrid
           rows={rows}
           columns={columns}
