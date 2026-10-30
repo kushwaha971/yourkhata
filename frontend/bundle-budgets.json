@@ -1,5 +1,6 @@
 {
   "//": [
+    "31 Oct 2026, D P1a (box and piece): the bill and purchase editors and the item form moved 0.3-0.6 KB for the line's unit chips and caption (lineUnits, UbChoiceChips in the line note) and the item form's Also sold as group (ItemExtraUnitsFields). Raised by the measured + 0.3 rule.",
     "31 Oct 2026, Part C (scanning): /stock/count is a new route (C3 stock count) and starts from its measured size + 0.3, 84.8 -> 85.1 route and 327.8 -> 328.1 first load. It carries the data grid, the shared item search (ItemQuickAdd, with the C1 camera sheet behind its dynamic() import) and two dialogs: what /stock/low (78.9) carries plus the search, so the size is that screen's and not a stray import. The other routes moved 0.1-0.8 KB through shared code C added: UbScanButton (the teal camera button, one design-system component for the bill and Items), ItemQuickAdd's openOnFocus, the stock-count entries in the invalidation registry and formatShopTime in utils/dates. Raised by the measured + 0.3 rule.",
     "30 Oct 2026, B3 Settings \u203a Shop features: a new route, /settings/shop-features, measured 65.9 route / 308.8 first load \u2014 the settings slice, its hooks and the page, the same family as /settings/devices (64.3 / 307). Its own budget at measured + 0.3, instead of the 56 / 288 default for new routes. The shared app chunk reached its 115.6 limit by rounding (useAppWords/useFeature in the menu, B2); raised to 115.9.",
     "30 Oct 2026, R-DEC-69 rename (Shop to Business, Udhaar book to Money book, Lending to Ledger): the onboarding catalogue words grew by a few bytes in two languages (\"Business\" for \"Shop\" on every tile, hint and question), and /onboarding/step/[n] first load measured 342.0 against 342, over by rounding only. Raised to measured + 0.3.",
@@ -1481,12 +1482,12 @@
       "firstLoad": 334.0
     },
     "/sales/challans/new": {
-      "route": 178.1,
-      "firstLoad": 421.1
+      "route": 178.8,
+      "firstLoad": 421.7
     },
     "/sales/challans/[id]/edit": {
-      "route": 178.2,
-      "firstLoad": 421.1
+      "route": 178.8,
+      "firstLoad": 421.7
     },
     "/purchases/orders/[id]": {
       "route": 77.9,
@@ -1513,12 +1514,12 @@
       "firstLoad": 334.0
     },
     "/sales/orders/new": {
-      "route": 178.1,
-      "firstLoad": 421.1
+      "route": 178.8,
+      "firstLoad": 421.7
     },
     "/sales/orders/[id]/edit": {
-      "route": 178.2,
-      "firstLoad": 421.1
+      "route": 178.8,
+      "firstLoad": 421.7
     },
     "/parties": {
       "route": 109,
@@ -1529,12 +1530,12 @@
       "firstLoad": 341.7
     },
     "/sales/invoices/new": {
-      "route": 178.1,
-      "firstLoad": 421.1
+      "route": 178.7,
+      "firstLoad": 421.7
     },
     "/sales/invoices/[id]/edit": {
-      "route": 178.1,
-      "firstLoad": 421.1
+      "route": 178.8,
+      "firstLoad": 421.7
     },
     "/sales/invoices": {
       "route": 98,
@@ -1549,12 +1550,12 @@
       "firstLoad": 356
     },
     "/sales/estimates/new": {
-      "route": 178.1,
-      "firstLoad": 421.1
+      "route": 178.8,
+      "firstLoad": 421.7
     },
     "/sales/estimates/[id]/edit": {
-      "route": 178.2,
-      "firstLoad": 421.1
+      "route": 178.8,
+      "firstLoad": 421.7
     },
     "/sales/estimates/[id]": {
       "route": 89.2,
@@ -1566,7 +1567,7 @@
     },
     "/sales/credit-notes/new": {
       "route": 154.7,
-      "firstLoad": 397.5
+      "firstLoad": 397.9
     },
     "/sales/credit-notes/[id]": {
       "route": 89.2,
@@ -1614,7 +1615,7 @@
     },
     "/settings/profile": {
       "route": 149.2,
-      "firstLoad": 392.1
+      "firstLoad": 392.4
     },
     "/settings/branding": {
       "route": 99.7,
@@ -1633,8 +1634,8 @@
       "firstLoad": 307.5
     },
     "/stock/summary": {
-      "route": 116.9,
-      "firstLoad": 360
+      "route": 117.8,
+      "firstLoad": 360.7
     },
     "/items/masters": {
       "route": 62.0,
