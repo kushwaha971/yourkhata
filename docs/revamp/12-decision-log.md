@@ -825,3 +825,15 @@ normal, tappable kind (not "own app, later"). Electrical, electronics and
 mobile are ONE kind; hardware and paint are ONE kind. `shop.extra_types` holds
 the same values. Still open: Wholesale vs Distribution behind one tile, the four
 old types with no tile, and whether "What do you sell?" is its own wizard step.
+
+R-DEC-64 (owner, 30 October 2026, B1: "at a time select only one … later if they
+want they can add another"; "kirana + medical … both are different business";
+"in case of wholesale + kind, features should come from both") — ONE BUSINESS IS
+ONE KIND. A kirana and a medical shop are two businesses, moved between with the
+business switcher, each with its own menu; "+ I also sell…" is removed from
+sign-up and Settings, and `shop.extra_types` (BP-22 §5's "more than one type,
+one GSTIN") is withdrawn. The one exception is Wholesale: picking it asks
+"Wholesale of what?" (one kind) and is stored as that kind plus the Shop setting
+`shop.wholesale` = on; features and defaults are the kind's preset joined with
+wholesale's. This supersedes BP-22 §5's `shop.extra_types` row and the design's
+"+ I also sell…" button on pPick / dPick.

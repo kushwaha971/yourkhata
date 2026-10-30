@@ -161,10 +161,10 @@ class TenantCreateView(APIView):
             user_agent=meta["user_agent"],
             apps=data.get("apps"),
         )
-        if "extra_types" in data:
-            settings_service.set_extra_types(
+        if "sells_wholesale" in data:
+            settings_service.set_wholesale(
                 tenant=membership.tenant,
-                types=data["extra_types"],
+                on=data["sells_wholesale"],
                 ctx=Ctx(
                     tenant=membership.tenant,
                     actor=request.user,
@@ -292,7 +292,7 @@ class TenantCurrentView(APIView):
         changes = dict(serializer.validated_data)
         modules = changes.pop("enabled_modules", None)
         apps = changes.pop("apps", None)
-        extra_types = changes.pop("extra_types", None)
+        sells_wholesale = changes.pop("sells_wholesale", None)
 
         warnings: list = []
         if apps is not None:
@@ -316,9 +316,9 @@ class TenantCurrentView(APIView):
                 ip=meta["ip"],
                 user_agent=meta["user_agent"],
             )
-        if extra_types is not None:
-            settings_service.set_extra_types(
-                tenant=tenant, types=extra_types, ctx=Ctx.from_request(request)
+        if sells_wholesale is not None:
+            settings_service.set_wholesale(
+                tenant=tenant, on=sells_wholesale, ctx=Ctx.from_request(request)
             )
         return StandardResponse.ok(
             tenant_read_payload(tenant, unmasked=_sees_pii(tenant)), meta={"warnings": warnings}

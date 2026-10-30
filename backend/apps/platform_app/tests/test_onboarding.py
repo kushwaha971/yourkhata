@@ -451,6 +451,7 @@ def test_completing_the_wizard_seeds_every_default(
         "ledger.credit_limit_mode",
         "ledger.reminder_templates",
         "documents.show_upi_qr",
+        "shop.wholesale",
         "parties.labels",
     }
     labels = TenantSetting.objects.get(tenant=new_tenant, key="parties.labels").value
@@ -1239,34 +1240,33 @@ def test_every_preset_unit_is_a_seeded_unit() -> None:
         assert set(preset.favourite_units) <= seeded, business_type
 
 
-@pytest.mark.parametrize(
-    ("value", "ok", "stored"),
-    [
-        ({"types": ["medical"]}, True, ["medical"]),
-        ({"types": ["medical", "medical", "kirana"]}, True, ["medical", "kirana"]),
-        ({"types": ["hardware", "medical"]}, True, ["medical"]),
-        ({"types": []}, True, []),
-        ({"types": ["pharmacy"]}, False, None),
-        ({"types": "medical"}, False, None),
-        ({"types": ["kirana", "medical", "garments", "electronics"]}, False, None),
-    ],
-)
-def test_shop_extra_types_is_a_list_of_known_types(value, ok, stored) -> None:
-    """BP-22 §5 / R-DEC-63: "+ I also sell…" stores known types only.
+def test_wholesale_of_a_kind_gets_both_presets() -> None:
+    """R-DEC-64: "Wholesale of kirana" is kirana's preset joined to wholesale's.
 
-    The business's own type is dropped (a hardware shop "also selling" hardware
-    changes nothing), duplicates fold, an unknown value is refused because a
-    type with no preset would turn on nothing, and four extras is refused.
+    Prevents a wholesaler losing either half: kirana's words and units come
+    first, wholesale's bulk units and expense heads are added, and the credit
+    period is the longer of the two. A kind not sold wholesale is unchanged.
     """
-    from types import SimpleNamespace
+    from apps.platform_app.services.presets import PRESETS, combined
 
-    from apps.platform_app.settings_schema import SETTINGS, SettingError
+    kirana, bulk = PRESETS["kirana"], PRESETS["wholesale"]
+    both = combined("kirana", wholesale=True)
+    assert both.party_labels == kirana.party_labels
+    assert both.favourite_units[: len(kirana.favourite_units)] == kirana.favourite_units
+    assert {"BOX", "BAG", "QTL"} <= set(both.favourite_units)
+    assert len(both.favourite_units) <= 8
+    assert set(bulk.extra_expense_categories) <= set(both.extra_expense_categories)
+    assert both.default_due_days == 15
+    assert combined("kirana", wholesale=False) == kirana
+    assert combined("wholesale", wholesale=True) == bulk
 
-    spec = SETTINGS["shop.extra_types"]
-    tenant = SimpleNamespace(business_type="hardware")
-    if ok:
-        assert spec.validate(value, tenant) == {"types": stored}
-    else:
-        with pytest.raises(SettingError):
-            spec.validate(value, tenant)
-    assert spec.default("hardware") == {"types": []}
+
+def test_shop_wholesale_defaults_on_only_for_the_wholesale_types() -> None:
+    """R-DEC-64: an old wholesale/distribution business reads as wholesale."""
+    from apps.platform_app.settings_schema import SETTINGS
+
+    spec = SETTINGS["shop.wholesale"]
+    assert spec.default("wholesale") == {"value": True}
+    assert spec.default("distribution") == {"value": True}
+    assert spec.default("kirana") == {"value": False}
+    assert "shop.extra_types" not in SETTINGS

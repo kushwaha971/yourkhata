@@ -105,11 +105,9 @@ class TenantCreateSerializer(serializers.Serializer):
     # only when the business runs that app (`apps` absent means it does).
     business_type = serializers.ChoiceField(choices=BusinessType.choices, required=False)
     state_code = StateCodeField(max_length=2)
-    # B1 "+ I also sell…" (R-DEC-63): more kinds under the same GSTIN, stored
-    # as the Shop setting `shop.extra_types`. Shop only.
-    extra_types = serializers.ListField(
-        child=serializers.ChoiceField(choices=BusinessType.choices), required=False, max_length=4
-    )
+    # R-DEC-64 "Wholesale of what?": `business_type` is the kind and this says
+    # it is sold wholesale (the Shop setting `shop.wholesale`). Shop only.
+    sells_wholesale = serializers.BooleanField(required=False)
     locale = serializers.ChoiceField(choices=["en", "hi"], required=False, default="en")
     owner_name = serializers.CharField(max_length=120, required=False, allow_blank=True)
     # What the business will run: app codes from `GET /onboarding/apps`. Absent
@@ -148,11 +146,9 @@ class TenantUpdateSerializer(serializers.Serializer):
         max_length=200, required=False, allow_blank=True, allow_null=True
     )
     business_type = serializers.ChoiceField(choices=BusinessType.choices, required=False)
-    # B1 "+ I also sell…" (R-DEC-63): more kinds under the same GSTIN, stored
-    # as the Shop setting `shop.extra_types`. Shop only.
-    extra_types = serializers.ListField(
-        child=serializers.ChoiceField(choices=BusinessType.choices), required=False, max_length=4
-    )
+    # R-DEC-64 "Wholesale of what?": `business_type` is the kind and this says
+    # it is sold wholesale (the Shop setting `shop.wholesale`). Shop only.
+    sells_wholesale = serializers.BooleanField(required=False)
     gst_type = serializers.ChoiceField(choices=GstType.choices, required=False)
     gstin = serializers.CharField(max_length=15, required=False, allow_blank=True, allow_null=True)
     pan = serializers.CharField(max_length=10, required=False, allow_blank=True, allow_null=True)

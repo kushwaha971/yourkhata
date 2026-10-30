@@ -280,44 +280,42 @@ def test_staff_cannot_change_what_the_business_runs(
     assert _running(created) == {"library"}
 
 
-def test_i_also_sell_is_saved_with_the_business(
+def test_wholesale_of_what_is_saved_with_the_business(
     api_as: Any, tenant: Any, onboarding_ready: Any
 ) -> None:
-    """B1 / R-DEC-63: a hardware shop that also sells medicines is one request.
+    """R-DEC-64: "Wholesale of kirana" is one request: kind + `shop.wholesale`.
 
-    The second kind is the Shop setting `shop.extra_types`, written with the
-    business so that a failure cannot leave a business without the kind its
-    owner picked. Read back through the settings API, as the Settings screen
-    will, rather than from the row.
+    Written with the business so a failure cannot leave a wholesaler recorded
+    as a plain kirana. Read back through the settings API, as Settings will.
     """
+    from apps.platform_app.models import TenantSetting
+
+    client, member = api_as(tenant)
+    created = _tenant_of(
+        _create(client, apps=["shop"], business_type="kirana", sells_wholesale=True)
+    )
+    assert created.business_type == "kirana"
+    row = TenantSetting.objects.get(tenant=created, key="shop.wholesale")
+    assert row.value == {"value": True}
+
+    owner = _scoped(member.user, created)
+    values = owner.get(reverse("v1:tenant-settings")).json()["data"]["values"]
+    assert values["shop.wholesale"] == {"value": True}
+
+    changed = owner.patch(reverse(CURRENT_URL), {"sells_wholesale": False}, format="json")
+    assert changed.status_code == 200, changed.json()
+    row.refresh_from_db()
+    assert row.value == {"value": False}
+
+
+def test_extra_types_is_no_longer_accepted(
+    api_as: Any, tenant: Any, onboarding_ready: Any
+) -> None:
+    """R-DEC-64 withdrew "+ I also sell…": the key is ignored, nothing is stored."""
     from apps.platform_app.models import TenantSetting
 
     client, _member = api_as(tenant)
     created = _tenant_of(
         _create(client, apps=["shop"], business_type="hardware", extra_types=["medical"])
     )
-    assert created.business_type == "hardware"
-    row = TenantSetting.objects.get(tenant=created, key="shop.extra_types")
-    assert row.value == {"types": ["medical"]}
-
-    owner = _scoped(_member.user, created)
-    values = owner.get(reverse("v1:tenant-settings")).json()["data"]["values"]
-    assert values["shop.extra_types"] == {"types": ["medical"]}
-
-    changed = owner.patch(reverse(CURRENT_URL), {"extra_types": ["kirana"]}, format="json")
-    assert changed.status_code == 200, changed.json()
-    row.refresh_from_db()
-    assert row.value == {"types": ["kirana"]}
-
-
-def test_an_unknown_kind_is_refused_and_nothing_is_created(
-    api_as: Any, tenant: Any, onboarding_ready: Any
-) -> None:
-    """A kind with no preset would turn on nothing, so it is refused up front."""
-    from apps.platform_app.models import Tenant
-
-    client, _member = api_as(tenant)
-    before = Tenant.objects.count()
-    refused = _create(client, apps=["shop"], business_type="hardware", extra_types=["pharmacy"])
-    assert refused.status_code == 400
-    assert Tenant.objects.count() == before
+    assert not TenantSetting.objects.filter(tenant=created, key="shop.extra_types").exists()

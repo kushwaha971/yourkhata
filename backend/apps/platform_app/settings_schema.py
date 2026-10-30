@@ -225,34 +225,6 @@ def _number_format(value: Any, _tenant: Any) -> dict:
     return {"value": fmt}
 
 
-#: R-DEC-63 / BP-22 §5 — a mixed shop under one GSTIN sells up to this many
-#: kinds besides its own.
-MAX_EXTRA_TYPES = 3
-
-
-def _extra_types(value: Any, tenant: Any) -> dict:
-    """`shop.extra_types`: `{"types": [business_type, …]}` (BP-22 §5).
-
-    "+ I also sell…" at sign-up and in Settings. The business's own type is
-    dropped rather than refused, because adding what you already are changes
-    nothing; an unknown value is refused, because features are the union of
-    these presets and a type with no preset would silently turn on nothing.
-    """
-    from apps.platform_app.constants import BusinessType
-
-    types = _object(value).get("types")
-    if not isinstance(types, list) or not all(isinstance(t, str) for t in types):
-        raise SettingError(["Choose from the list."])
-    allowed = {choice.value for choice in BusinessType}
-    if any(t not in allowed for t in types):
-        raise SettingError(["Choose from the list."])
-    own = getattr(tenant, "business_type", None)
-    cleaned = [t for t in dict.fromkeys(types) if t != own]
-    if len(cleaned) > MAX_EXTRA_TYPES:
-        raise SettingError([f"Choose up to {MAX_EXTRA_TYPES} more."])
-    return {"types": cleaned}
-
-
 # ── The catalogue ────────────────────────────────────────────────────────────
 
 
@@ -322,7 +294,15 @@ SETTINGS: dict[str, SettingSpec] = {
             lambda bt: {"value": False},
             _bool_value,
         ),
-        SettingSpec("shop.extra_types", SECTION_GENERAL, lambda bt: {"types": []}, _extra_types),
+        # R-DEC-64 — "Wholesale of what?": the business is ONE kind, and this
+        # says it sells that kind wholesale. Its defaults join wholesale's
+        # preset to the kind's (`presets.combined`).
+        SettingSpec(
+            "shop.wholesale",
+            SECTION_GENERAL,
+            lambda bt: {"value": bt in presets.WHOLESALE_TYPES},
+            _bool_value,
+        ),
         SettingSpec(
             "parties.labels",
             SECTION_PARTIES,

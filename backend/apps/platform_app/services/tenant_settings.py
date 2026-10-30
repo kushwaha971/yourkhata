@@ -471,21 +471,18 @@ def save_settings(*, tenant: Any, body: Any, if_match: str | None, ctx: Ctx) -> 
     return settings_payload(tenant)
 
 
-def set_extra_types(*, tenant: Any, types: list[str], ctx: Ctx) -> None:
-    """B1 "+ I also sell…" — writes `shop.extra_types` (BP-22 §5, R-DEC-63).
+def set_wholesale(*, tenant: Any, on: bool, ctx: Ctx) -> None:
+    """R-DEC-64 — writes `shop.wholesale` ("Wholesale of what?").
 
-    Called by sign-up's step 1 so the second kind is saved with the business,
-    not by a second request that can fail after the first succeeded. Validated
-    by the setting's own spec, audited like any settings write.
+    Called by sign-up's step 1 so it is saved with the business, not by a
+    second request that can fail after the first succeeded. Audited like any
+    settings write; a no-op when nothing changes.
     """
     from apps.platform_app.models import TenantSetting
 
-    key = "shop.extra_types"
+    key = "shop.wholesale"
     spec = schema.spec_for(tenant, key)
-    try:
-        value = spec.validate({"types": list(types)}, tenant)
-    except schema.SettingError as exc:
-        raise ValidationFailed({"extra_types": exc.messages}) from exc
+    value = spec.validate({"value": bool(on)}, tenant)
     with transaction.atomic():
         row = TenantSetting.objects.filter(tenant=tenant, key=key).first()
         before = row.value if row else spec.default(tenant.business_type)

@@ -625,7 +625,15 @@ def apply_preset(*, tenant: Any, actor: Any = None, ctx: Any = None) -> dict:
     from apps.common.management.commands.seed_reference_data import seed_expense_categories
     from apps.platform_app.models import DocumentSequence, TenantSetting
 
-    preset = presets.preset_for(tenant.business_type)
+    # R-DEC-64 — "Wholesale of kirana" seeds kirana's defaults joined to
+    # wholesale's. Read before the seed below writes the setting's default.
+    wholesale_row = TenantSetting.objects.filter(tenant=tenant, key="shop.wholesale").first()
+    wholesale = (
+        bool(wholesale_row.value.get("value"))
+        if wholesale_row
+        else tenant.business_type in presets.WHOLESALE_TYPES
+    )
+    preset = presets.combined(tenant.business_type, wholesale=wholesale)
     preset_modules = _seed_modules(
         partner=tenant.partner, plan=tenant.plan, business_type=tenant.business_type
     )
@@ -657,6 +665,7 @@ def apply_preset(*, tenant: Any, actor: Any = None, ctx: Any = None) -> dict:
         "ledger.credit_limit_mode": {"mode": "warn"},
         "ledger.reminder_templates": dict(presets.REMINDER_TEMPLATES),
         "documents.show_upi_qr": {"value": True},
+        "shop.wholesale": {"value": wholesale},
         "parties.labels": {
             "customer": preset.party_labels[0],
             "supplier": preset.party_labels[1],

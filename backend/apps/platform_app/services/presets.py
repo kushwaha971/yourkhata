@@ -206,6 +206,43 @@ REMINDER_TEMPLATES: dict[str, str] = {
 }
 
 
+#: R-DEC-64 — the older types that ARE wholesale, so `shop.wholesale` defaults on.
+WHOLESALE_TYPES: frozenset[str] = frozenset(
+    {BusinessType.WHOLESALE.value, BusinessType.DISTRIBUTION.value}
+)
+
+#: Settings → favourite units holds at most this many (settings_schema).
+_MAX_UNITS = 8
+
+
+def combined(business_type: str, *, wholesale: bool) -> Preset:
+    """R-DEC-64 — a kind sold wholesale gets BOTH presets' defaults.
+
+    "Wholesale of kirana" is the kirana preset (its words, its units first)
+    with wholesale's added: its bulk units after the kind's, its expense
+    categories, and the longer of the two credit periods, because a shop
+    selling to other shops gives them time to pay. Without `wholesale`, or for
+    a type that already is wholesale, it is simply that type's preset.
+    """
+    preset = preset_for(business_type)
+    if not wholesale or business_type in WHOLESALE_TYPES:
+        return preset
+    bulk = PRESETS[BusinessType.WHOLESALE.value]
+    return Preset(
+        inventory_enabled=preset.inventory_enabled or bulk.inventory_enabled,
+        party_labels=preset.party_labels,
+        favourite_units=tuple(dict.fromkeys(preset.favourite_units + bulk.favourite_units))[
+            :_MAX_UNITS
+        ],
+        extra_expense_categories=tuple(
+            dict.fromkeys(preset.extra_expense_categories + bulk.extra_expense_categories)
+        ),
+        default_due_days=max(preset.default_due_days, bulk.default_due_days),
+        items_track_stock_default=preset.items_track_stock_default,
+        default_kinds=dict(preset.default_kinds),
+    )
+
+
 def preset_for(business_type: str) -> Preset:
     """Never raises: an unknown type falls back to `other`, which enables everything.
 
