@@ -11,6 +11,7 @@ import {
   History,
   MonitorSmartphone,
   Palette,
+  Store,
   Users,
   type LucideIcon,
 } from 'lucide-react';
@@ -73,6 +74,13 @@ export function SettingsPageContent(): React.JSX.Element {
       { key: 'plan', href: ROUTES.SETTINGS_PLAN, icon: CreditCard, show: access.canView },
       { key: 'activity', href: ROUTES.SETTINGS_ACTIVITY, icon: History, show: access.canReadAudit },
       { key: 'devices', href: ROUTES.SETTINGS_DEVICES, icon: MonitorSmartphone, show: true },
+      // B3 — the Shop's own features, for a business that runs the Shop.
+      {
+        key: 'shopFeatures',
+        href: ROUTES.SETTINGS_SHOP_FEATURES,
+        icon: Store,
+        show: access.canView && (data?.modules.enabled.includes('sales') ?? false),
+      },
       { key: 'data', href: ROUTES.SETTINGS_DATA, icon: DatabaseBackup, show: access.isOwner },
       // A9b (PLT-X08 §7) — only while an enabled feature reads the calendar:
       // business days for a shop with nothing that counts days would be a
@@ -84,7 +92,7 @@ export function SettingsPageContent(): React.JSX.Element {
         show: access.canView && (data?.calendarReaders.length ?? 0) > 0,
       },
     ],
-    [access, data?.calendarReaders]
+    [access, data?.calendarReaders, data?.modules.enabled]
   );
 
   const handleConflictOpenChange = useCallback(

@@ -109,6 +109,8 @@ export const ROUTES = {
   SETTINGS_BRANDING: '/settings/branding',
   SETTINGS_ACTIVITY: '/settings/activity',
   SETTINGS_DEVICES: '/settings/devices',
+  /** B3 — Settings › Shop features (design dFeatures / pFeatures). */
+  SETTINGS_SHOP_FEATURES: '/settings/shop-features',
   /** PLT-10 — "Your data": export, deletion, support consent. Owner only. */
   SETTINGS_DATA: '/settings/data',
   // ── A9b ── PLT-X08: the business-days calendar (closed weekdays, holidays).

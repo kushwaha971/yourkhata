@@ -64,7 +64,7 @@ export interface SettingsDefaults {
 }
 
 /** The sections this client renders (PLT-06 FR-1). */
-export type SettingsSection = 'ledger' | 'modules';
+export type SettingsSection = 'ledger' | 'modules' | 'shop';
 
 /**
  * A12 (PLT-X10, R14) — what a refused "switch off" says is still open, read

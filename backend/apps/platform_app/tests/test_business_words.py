@@ -73,3 +73,16 @@ def test_the_session_carries_both_languages(tenant) -> None:
     assert words["en"]["nav.suppliers"] == "Distributors"
     assert words["hi"]["nav.suppliers"] == "वितरक"
     assert words["hi"]["business.kind"] == "मेडिकल"
+
+
+
+def test_the_wholesale_switch_moves_the_starting_words_only() -> None:
+    """B3: a kirana that turns on "I also sell wholesale" in Settings says
+    Retailers and Companies; turning it off goes back; an owner-typed word
+    stays whatever the switch."""
+    plain = {"parties.labels": {"customer": "Customer", "supplier": "Supplier"}}
+    on = {**plain, "shop.wholesale": {"value": True}}
+    assert words_of(_tenant("kirana"), "en", on)["nav.parties"] == "Retailers"
+    assert "nav.parties" not in words_of(_tenant("kirana"), "en", {**on, "shop.wholesale": {"value": False}})
+    typed = {"parties.labels": {"customer": "Patient", "supplier": "Supplier"}, "shop.wholesale": {"value": True}}
+    assert words_of(_tenant("medical"), "en", typed)["nav.parties"] == "Patients"

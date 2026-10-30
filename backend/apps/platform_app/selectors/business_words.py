@@ -107,6 +107,14 @@ def words_of(tenant: Any, locale: str = "en", rows: dict[str, Any] | None = None
     labels = _setting(tenant, rows, "parties.labels") or {}
     customer = (labels.get("customer") or "Customer").strip()
     supplier = (labels.get("supplier") or "Supplier").strip()
+    # B3: "I also sell wholesale" switched in Settings after setup. Labels that
+    # are still one of the two STARTING pairs (the kind's own, or the kind's
+    # sold wholesale) follow the switch; words the owner typed are kept.
+    wholesale = bool((_setting(tenant, rows, "shop.wholesale") or {}).get("value"))
+    plain = presets.preset_for(tenant.business_type).party_labels
+    bulk = presets.combined(tenant.business_type, wholesale=True).party_labels
+    if (customer, supplier) in (plain, bulk):
+        customer, supplier = bulk if wholesale else plain
     words: dict[str, str] = {}
     kind = _KIND.get(tenant.business_type)
     if kind:
