@@ -44,6 +44,7 @@ from apps.inventory.constants import (
     ItemType,
     MovementSource,
     MovementType,
+    StockCountStatus,
 )
 
 
@@ -464,3 +465,62 @@ class PriceListParty(TenantModel):
     class Meta:
         db_table = "inventory_price_list_party"
         indexes = [models.Index(fields=["price_list"], name="ix_price_list_party_list")]
+
+
+class StockCount(TenantModel):
+    """C3 — a shelf count (R-DEC-67).
+
+    Kept on the server while it is open, so an hour's counting survives a dead
+    phone and continues on the laptop; two people counting at once count into
+    the same open count (one per location). Saving posts every difference as
+    `stocktake_in` / `stocktake_out` movements with this `source_id`, all or
+    nothing, and the count becomes read-only.
+    """
+
+    location = models.ForeignKey(Location, on_delete=models.RESTRICT, related_name="+")
+    status = models.CharField(
+        max_length=8, choices=StockCountStatus.choices, default=StockCountStatus.OPEN
+    )
+    saved_at = models.DateTimeField(null=True, blank=True)
+    saved_by = models.ForeignKey(
+        "platform.User", on_delete=models.SET_NULL, null=True, blank=True, related_name="+"
+    )
+
+    class Meta:
+        db_table = "inventory_stock_count"
+        verbose_name = "stock count"
+        verbose_name_plural = "stock counts"
+        constraints = [
+            # One open count per shop location: a second phone joins it.
+            models.UniqueConstraint(
+                fields=["tenant", "location"],
+                condition=models.Q(status="open"),
+                name="uq_stock_count_one_open",
+            ),
+        ]
+
+    def __str__(self) -> str:  # pragma: no cover - admin convenience
+        return f"count {self.id} ({self.status})"
+
+
+class StockCountLine(TenantModel):
+    """One counted item. `books_qty` is the book stock AT THE MOMENT it was
+    counted (R-DEC-67 #2): the correction is `counted − books_qty`, so a sale
+    made after the shelf was counted never shows as a shortage."""
+
+    count = models.ForeignKey(StockCount, on_delete=models.CASCADE, related_name="lines")
+    item = models.ForeignKey(Item, on_delete=models.RESTRICT, related_name="+")
+    counted_qty = QuantityField()
+    books_qty = QuantityField()
+    counted_at = models.DateTimeField()
+    counted_by = models.ForeignKey(
+        "platform.User", on_delete=models.SET_NULL, null=True, blank=True, related_name="+"
+    )
+
+    class Meta:
+        db_table = "inventory_stock_count_line"
+        verbose_name = "stock count line"
+        verbose_name_plural = "stock count lines"
+        constraints = [
+            models.UniqueConstraint(fields=["count", "item"], name="uq_stock_count_line_item"),
+        ]

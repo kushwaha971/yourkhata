@@ -115,6 +115,9 @@ _REGISTRY: dict[str, tuple[int, bool]] = {
     "item_has_movements": (409, False),
     "item_type_locked": (409, False),
     "track_stock_not_allowed": (400, False),
+    # C3 stock count (R-DEC-67): a saved count is final; an empty one saves nothing.
+    "count_saved": (409, False),
+    "count_empty": (409, False),
     "opening_stock_required": (409, False),
     "opening_exists": (409, False),
     "duplicate_sku": (400, False),

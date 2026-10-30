@@ -56,6 +56,7 @@ class MovementSource(models.TextChoices):
     PURCHASE_DOCUMENT = "purchase_document", _("Purchase document")
     SALES_DOCUMENT = "sales_document", _("Sales document")
     STOCK_TRANSFER = "stock_transfer", _("Stock transfer")
+    STOCK_COUNT = "stock_count", _("Stock count")
 
 
 class AdjustmentReason(models.TextChoices):
@@ -154,3 +155,10 @@ SUMMARY_ORDERINGS = ("name", "-name", "on_hand", "-on_hand", "value", "-value")
 MOVEMENTS_PAGE_DEFAULT = 50
 MOVEMENTS_RECENT = 10
 HSN_RESULTS_MAX = 20
+
+
+class StockCountStatus(models.TextChoices):
+    """C3 (R-DEC-67) — a count is open until it is saved; saved is final."""
+
+    OPEN = "open", _("Open")
+    SAVED = "saved", _("Saved")
