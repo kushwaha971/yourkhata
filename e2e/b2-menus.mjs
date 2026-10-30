@@ -102,13 +102,17 @@ for (const o of OWNERS) {
     check('S9 switching business: the owner has a second business', false, 'run the fixture');
   } else {
     const before = me.active_tenant.words?.en?.['nav.suppliers'];
-    const sw = await ctx.request.post(`${base}/api/v1/auth/switch-tenant`, { data: { tenant_id: other.id } });
+    // Every write carries the CSRF double-submit header the app's axios sends
+    // (ub_csrf cookie → X-CSRF-Token); without it the server answers 403.
+    const csrf = (await ctx.cookies()).find((c) => c.name === 'ub_csrf')?.value ?? '';
+    const headers = { 'X-CSRF-Token': csrf };
+    const sw = await ctx.request.post(`${base}/api/v1/auth/switch-tenant`, { data: { tenant_id: other.id }, headers });
     const after = (await (await ctx.request.get(`${base}/api/v1/auth/me`)).json()).data;
     check('S9 switch answered', sw.ok(), String(sw.status()));
     check('S9 words swap with the business (Distributors → Suppliers)', before === (skew ? 'XX' : 'Distributors') && after.active_tenant.words?.en?.['nav.suppliers'] === undefined, `${before} → ${after.active_tenant.words?.en?.['nav.suppliers']}`);
     check('S9 features swap (no orders → orders)', (after.active_tenant.features ?? []).includes('orders') !== skew, JSON.stringify(after.active_tenant.features));
     // and back, so the next run starts from the medical store
-    await ctx.request.post(`${base}/api/v1/auth/switch-tenant`, { data: { tenant_id: me.active_tenant_id } });
+    await ctx.request.post(`${base}/api/v1/auth/switch-tenant`, { data: { tenant_id: me.active_tenant_id }, headers });
   }
   await ctx.close();
 }
