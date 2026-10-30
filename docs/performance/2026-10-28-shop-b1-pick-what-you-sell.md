@@ -269,3 +269,23 @@ design thread; primary sources only, no hands-on use; unproven cells marked).
   step now ignores its own Continue/Skip for 450 ms; the component test fails
   without it.
 - After the fix: `b1-pick` 124/124, `b1-signup` 10/10, onboarding jest 159/159.
+
+## Other → "What kind of shop?" (R-DEC-66 / G12), 30 Oct 2026
+
+- The separate "What do you sell?" step was withdrawn by the owner; the tiles
+  stay in step 1. Tapping Other opens, below the tiles, "What kind of shop?"
+  (Stationery, Agri inputs, Services, Furniture, Something else) and "Anything
+  your shop needs?" (four switches starting from the kind).
+- Server: kinds `stationery`, `agri`, `furniture` (migration 0021), preset
+  `features`, `shop.features.{service_items,alt_units,batches,variants}`
+  saved with the business (8f9aa294e). Client: 8ec95af44.
+- `b1-signup` **16/16** (Hardware; Other → Agri with batch on and sizes added,
+  read back exactly; Wholesale → Kirana); `--skew` fails every check.
+- `b1-pick` 124/124; screens at 390, 320 (Hindi, dark) and 1280: no overflow,
+  nothing cut.
+- **Not re-run after this change:** `b1-edges` — the sign-up budget per IP
+  (`register_ip`, 20 per window, kept in the database) answered 429 after the
+  day's sign-ups; it passed 8/8 at both sizes on the build just before this
+  change. To re-run when the window clears.
+- Design difference: the "What kind of shop?" hint sits under the list (the
+  field's hint slot), the mock puts it under the title.

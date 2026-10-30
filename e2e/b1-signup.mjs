@@ -39,6 +39,9 @@ const SCENARIOS = [
   // Hardware first (R-DEC-51 #4): its own preset.
   { id: 'hardware', name: 'Patil Hardware', tap: ['hardware'], type: 'hardware', wholesale: false, unitsStart: ['NOS', 'PCS', 'BOX', 'KGS', 'MTR', 'LTR'], due: 15 },
   // Wholesale + Kirana: kirana's units first, then wholesale's bulk ones; 15 days.
+  // Other → Agri inputs (R-DEC-66 / G12): batch and expiry on from the kind,
+  // the owner adds sizes; the server keeps exactly that.
+  { id: 'other-agri', name: 'Patil Krishi Kendra', tap: ['other'], radio: /Agri inputs/, toggle: [/Sizes and colours/], type: 'agri', wholesale: false, unitsStart: ['KGS', 'BAG', 'LTR', 'NOS', 'PAC'], due: 30, features: { service_items: false, alt_units: false, batches: true, variants: true } },
   { id: 'wholesale-kirana', name: 'Patil Traders', tap: ['wholesale', 'kirana'], type: 'kirana', wholesale: true, unitsStart: ['NOS', 'KGS', 'GMS', 'LTR', 'PAC', 'BOX', 'BAG', 'QTL'], due: 15 },
 ];
 
@@ -72,6 +75,8 @@ for (const sc of SCENARIOS) {
     // The first tap is in "What do you sell?"; after Wholesale the kind is in
     // the "Wholesale of what?" list below it, which is the LAST grid.
     for (const kind of sc.tap) await page.locator(`[data-kind=${kind}]`).last().click();
+    if (sc.radio) await page.getByRole('radio', { name: sc.radio }).click();
+    for (const sw of sc.toggle ?? []) await page.getByRole('switch', { name: sw }).click();
     await page.getByRole('button', { name: 'Continue' }).click();
     await page.waitForURL(/\/onboarding\/step\/2/, { timeout: 30000 });
     await page.getByRole('button', { name: /Skip/ }).click();
@@ -92,6 +97,11 @@ for (const sc of SCENARIOS) {
     const units = values['inventory.favourite_units']?.codes ?? [];
     check(`${sc.id}: favourite units are ${want.units.join(',')}`, JSON.stringify(units.slice(0, want.units.length)) === JSON.stringify(want.units), units.join(','));
     check(`${sc.id}: credit days ${want.due}`, values['sales.default_due_days']?.days === want.due, JSON.stringify(values['sales.default_due_days']));
+    if (sc.features) {
+      const got = Object.fromEntries(Object.keys(sc.features).map((k) => [k, values[`shop.features.${k}`]?.value]));
+      const want2 = skew ? Object.fromEntries(Object.entries(sc.features).map(([k, v]) => [k, !v])) : sc.features;
+      check(`${sc.id}: features ${JSON.stringify(want2)}`, JSON.stringify(got) === JSON.stringify(want2), JSON.stringify(got));
+    }
     check(`${sc.id}: no shop.extra_types (R-DEC-64)`, !skew ? !('shop.extra_types' in values) : 'shop.extra_types' in values);
   } catch (e) {
     check(`${sc.id}: sign-up ran`, false, e.message.slice(0, 200));
