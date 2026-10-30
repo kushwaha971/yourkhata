@@ -468,7 +468,7 @@ class PriceListParty(TenantModel):
 
 
 class StockCount(TenantModel):
-    """C3 — a shelf count (R-DEC-67).
+    """C3 — a shelf count (R-DEC-68).
 
     Kept on the server while it is open, so an hour's counting survives a dead
     phone and continues on the laptop; two people counting at once count into
@@ -505,7 +505,7 @@ class StockCount(TenantModel):
 
 class StockCountLine(TenantModel):
     """One counted item. `books_qty` is the book stock AT THE MOMENT it was
-    counted (R-DEC-67 #2): the correction is `counted − books_qty`, so a sale
+    counted (R-DEC-68 #2): the correction is `counted − books_qty`, so a sale
     made after the shelf was counted never shows as a shortage."""
 
     count = models.ForeignKey(StockCount, on_delete=models.CASCADE, related_name="lines")

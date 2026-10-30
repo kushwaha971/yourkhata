@@ -184,7 +184,7 @@ const createCountColumns = ({
 };
 
 /**
- * C3 — Stock count (design `pCount` / `dCount`, R-DEC-67).
+ * C3 — Stock count (design `pCount` / `dCount`, R-DEC-68).
  *
  * Walk the shelves and scan or type each item: a scan adds one, a typed number
  * sets what is there. Every item shows what the books say against what was

@@ -1,4 +1,4 @@
-/** C3 — stock count (R-DEC-67). Figures are decimal strings, as the server sends them. */
+/** C3 — stock count (R-DEC-68). Figures are decimal strings, as the server sends them. */
 export interface StockCountSummary {
   readonly id: string;
   readonly status: 'open' | 'saved';

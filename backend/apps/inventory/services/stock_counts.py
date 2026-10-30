@@ -1,4 +1,4 @@
-"""C3 — stock count (R-DEC-67): count the shelves, then save every difference.
+"""C3 — stock count (R-DEC-68): count the shelves, then save every difference.
 
 The four owner decisions this module carries:
 
@@ -203,7 +203,7 @@ def uncount(*, ctx: Ctx, count: StockCount, item_id: object) -> None:
 
 @transaction.atomic
 def save_count(*, ctx: Ctx, count: StockCount) -> StockCount:
-    """Post every difference, all or nothing, and close the count (R-DEC-67 #3).
+    """Post every difference, all or nothing, and close the count (R-DEC-68 #3).
 
     A double tap is safe: the count row is locked, and the second save finds it
     saved and is refused with `count_saved`, posting nothing.

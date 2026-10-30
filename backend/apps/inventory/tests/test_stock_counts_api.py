@@ -1,4 +1,4 @@
-"""C3 — stock count over HTTP (R-DEC-67): what each owner decision prevents."""
+"""C3 — stock count over HTTP (R-DEC-68): what each owner decision prevents."""
 
 from __future__ import annotations
 
@@ -76,7 +76,7 @@ def test_a_count_posts_only_the_differences_as_stock_take(owner: Any, make_item:
 
 
 def test_a_sale_after_counting_is_not_a_shortage(owner: Any, ctx: Any, make_item: Any) -> None:
-    """R-DEC-67 #2 — counted 10 at 4:15 (books 10), sold 1 at 4:20: the count
+    """R-DEC-68 #2 — counted 10 at 4:15 (books 10), sold 1 at 4:20: the count
     must save NO difference and leave the books at 9, not report a missing soap."""
     soap = make_item("Soap", opening=("10", "20"))
     count = start(owner)
@@ -103,7 +103,7 @@ def test_stock_found_comes_in_at_the_average_cost(owner: Any, make_item: Any) ->
 def test_scans_add_and_a_second_phone_joins_the_same_count(
     owner: Any, api_as: Any, tenant: Any, make_item: Any
 ) -> None:
-    """R-DEC-67 #1 — one open count per shop; a scan is +1 and two phones'
+    """R-DEC-68 #1 — one open count per shop; a scan is +1 and two phones'
     scans both land. Prevents two counts of one shop or a lost scan."""
     soap = make_item("Soap", opening=("10", "20"))
     first = start(owner)
@@ -129,7 +129,7 @@ def test_saving_twice_posts_once(owner: Any, make_item: Any) -> None:
 
 
 def test_more_than_a_hundred_differences_save_in_one_go(owner: Any, make_item: Any) -> None:
-    """R-DEC-67 #3 — the stock adjustment's 100-line cap does not apply."""
+    """R-DEC-68 #3 — the stock adjustment's 100-line cap does not apply."""
     items = [make_item(f"Item {n}", opening=("5", "1")) for n in range(105)]
     count = start(owner)
     for item in items:
@@ -141,7 +141,7 @@ def test_more_than_a_hundred_differences_save_in_one_go(owner: Any, make_item: A
 def test_staff_count_but_cannot_save_or_see_value(
     owner: Any, api_as: Any, tenant: Any, make_item: Any
 ) -> None:
-    """R-DEC-67 #4 — staff may count; saving needs inventory.stock.adjust; the
+    """R-DEC-68 #4 — staff may count; saving needs inventory.stock.adjust; the
     ₹ value change is left out (not zeroed) without the cost right."""
     soap = make_item("Soap", opening=("10", "20"))
     staff, member = api_as(tenant, RoleCode.STAFF.value)

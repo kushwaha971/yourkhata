@@ -20,7 +20,7 @@ import {
 } from '../redux/stockCountThunk';
 
 /**
- * C3 — the open count and its page of items (R-DEC-67). Opening the screen
+ * C3 — the open count and its page of items (R-DEC-68). Opening the screen
  * starts a count or joins the one already open, so a second phone counts into
  * the same record. Every count or scan refetches the page, newest first, so
  * the item just counted is the top row.

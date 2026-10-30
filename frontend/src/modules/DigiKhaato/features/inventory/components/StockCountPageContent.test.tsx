@@ -11,7 +11,7 @@ import * as service from '../api/stockCountService';
 import { StockCountPageContent } from './StockCountPageContent';
 
 /**
- * C3 — stock count (design pCount / dCount, R-DEC-67). The jsdom default is
+ * C3 — stock count (design pCount / dCount, R-DEC-68). The jsdom default is
  * the phone layer. Prevents: a scan that does not count, a typed count that
  * does not save, Save count reachable by staff without the adjust right, and
  * the ₹ value change shown to someone who may not see costs.

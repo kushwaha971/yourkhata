@@ -1,4 +1,4 @@
-// C3 — Stock count on the live stack (design pCount / dCount, R-DEC-67).
+// C3 — Stock count on the live stack (design pCount / dCount, R-DEC-68).
 //
 // Makes two test items of its own with a known opening stock (10 and 5, via
 // the API), then, as the QA owner:

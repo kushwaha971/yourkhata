@@ -4,7 +4,7 @@ import { toQueryString } from 'src/utils/queryString';
 
 import type { StockCountPage, StockCountRow, StockCountSummary } from '../types/stockCount.types';
 
-/** C3 — `/stock-counts` (R-DEC-67). */
+/** C3 — `/stock-counts` (R-DEC-68). */
 
 interface SummaryWire {
   readonly id: string;

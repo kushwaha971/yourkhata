@@ -158,7 +158,7 @@ HSN_RESULTS_MAX = 20
 
 
 class StockCountStatus(models.TextChoices):
-    """C3 (R-DEC-67) — a count is open until it is saved; saved is final."""
+    """C3 (R-DEC-68) — a count is open until it is saved; saved is final."""
 
     OPEN = "open", _("Open")
     SAVED = "saved", _("Saved")

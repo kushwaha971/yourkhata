@@ -12,7 +12,7 @@ const service = () => import('../api/stockCountService');
 
 type Reject = { rejectValue: ApiErrorShape };
 
-/** Start a count, or join the open one (R-DEC-67 #1). */
+/** Start a count, or join the open one (R-DEC-68 #1). */
 export const openStockCount = createAsyncThunk<StockCountSummary, void, Reject>(
   'stockCount/open',
   async (_arg, { rejectWithValue }) => {
@@ -54,7 +54,7 @@ export const countStockItem = createAsyncThunk<
   }
 });
 
-/** MUTATION. Post every difference, all or nothing (R-DEC-67 #3). */
+/** MUTATION. Post every difference, all or nothing (R-DEC-68 #3). */
 export const saveStockCount = createAsyncThunk<StockCountSummary, string, Reject>(
   'stockCount/save',
   async (id, { rejectWithValue }) => {

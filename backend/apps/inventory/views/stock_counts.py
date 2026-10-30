@@ -1,4 +1,4 @@
-"""`/stock-counts` — C3 stock count (R-DEC-67).
+"""`/stock-counts` — C3 stock count (R-DEC-68).
 
 Counting is `inventory.stock.read`; saving is `inventory.stock.adjust`, the
 same right a stock adjustment needs, because saving moves stock. Value figures
