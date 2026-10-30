@@ -13,7 +13,7 @@ import {
 
 import dynamic from 'next/dynamic';
 
-import { AlertTriangle, X } from 'lucide-react';
+import { AlertTriangle, ScanLine, X } from 'lucide-react';
 
 import {
   UbBox,
@@ -23,6 +23,7 @@ import {
   UbSearchInput,
   UbText,
 } from 'src/design-system';
+import type { UbScanSheetProps } from 'src/design-system';
 import { useAppDispatch } from 'src/hooks/useAppStore';
 import { usePermissions } from 'src/hooks/usePermissions';
 import { useTranslation } from 'src/hooks/useTranslation';
@@ -69,9 +70,27 @@ export interface ItemQuickAddLabels {
   readonly addScanned?: string;
   /** C1 — the note's close button name. */
   readonly dismiss?: string;
+  /**
+   * C1 (design pScan) — the phone's camera: a teal scan button beside the
+   * search that opens the full-screen camera. Absent: no camera button.
+   */
+  readonly camera?: {
+    readonly open: string;
+    readonly title: string;
+    readonly hint: string;
+    readonly lastScanned: string;
+    /** "3 items · ₹448" — the bill so far, from the caller. */
+    readonly summary: string;
+    readonly labels: UbScanSheetProps['labels'];
+  };
 }
 
 /* The form belongs to the chunk that OPENS it, never to the bill's route. */
+/* C1: the camera sheet loads when the scan button is first tapped. */
+const UbScanSheet = dynamic(() => import('src/design-system').then((m) => m.UbScanSheet), {
+  ssr: false,
+});
+
 const ItemQuickCreate = dynamic(() => import('./ItemQuickCreate').then((m) => m.ItemQuickCreate), {
   ssr: false, loading: () => <UbDrawerLoading />,
 });
@@ -222,12 +241,16 @@ function ItemQuickAddBase({
    * code can be scanned at once; the next scan replaces it.
    */
   const [missed, setMissed] = useState<string | null>(null);
+  const [cameraOpen, setCameraOpen] = useState(false);
+  /** C1 tray: the names scanned while the camera is open, newest first. */
+  const [scanned, setScanned] = useState<readonly string[]>([]);
   const scan = useCallback(
     (code: string) => {
       void search.lookup(code).then((row) => {
         if (row) {
           setMissed(null);
           scanFeedback('added');
+          setScanned((list) => [row.name, ...list].slice(0, 3));
           choose(row, 'scan');
           return;
         }
@@ -297,40 +320,58 @@ function ItemQuickAddBase({
 
   return (
     <UbBox className={cn('relative w-full', className)} data-testid="item-quick-add">
-      <UbSearchInput
-        ref={input}
-        trailing={trailing}
-        value={search.query}
-        onChange={(next) => {
-          search.setQuery(next);
-          setActive(0);
-          setExtra(-1);
-          setOpen(true);
-        }}
-        onFocus={() => {
-          window.clearTimeout(closing.current);
-          search.activate();
-          setOpen(true);
-        }}
-        onBlur={() => {
-          closing.current = window.setTimeout(() => setOpen(false), 150);
-        }}
-        onKeyDown={handleKey}
-        disabled={disabled}
-        placeholder={labels.placeholder}
-        aria-label={labels.label}
-        role="combobox"
-        aria-expanded={showList}
-        aria-controls={listId}
-        aria-autocomplete="list"
-        aria-activedescendant={
-          showList && search.results[active]
-            ? `${listId}-${active}`
-            : showList && actions[extra]
-              ? `${listId}-${actions[extra].id}`
-              : undefined
-        }
-      />
+      <UbBox className={cn(labels.camera && 'flex items-center gap-2')}>
+        <UbSearchInput
+          ref={input}
+          trailing={trailing}
+          value={search.query}
+          onChange={(next) => {
+            search.setQuery(next);
+            setActive(0);
+            setExtra(-1);
+            setOpen(true);
+          }}
+          onFocus={() => {
+            window.clearTimeout(closing.current);
+            search.activate();
+            setOpen(true);
+          }}
+          onBlur={() => {
+            closing.current = window.setTimeout(() => setOpen(false), 150);
+          }}
+          onKeyDown={handleKey}
+          disabled={disabled}
+          placeholder={labels.placeholder}
+          aria-label={labels.label}
+          role="combobox"
+          aria-expanded={showList}
+          aria-controls={listId}
+          aria-autocomplete="list"
+          aria-activedescendant={
+            showList && search.results[active]
+              ? `${listId}-${active}`
+              : showList && actions[extra]
+                ? `${listId}-${actions[extra].id}`
+                : undefined
+          }
+        />
+        {labels.camera && (
+          <UbButton
+            variant="primary"
+            iconOnly
+            icon={<ScanLine aria-hidden className="h-5 w-5" />}
+            className="h-11 w-11 shrink-0 !bg-action !text-white"
+            onClick={() => {
+              setScanned([]);
+              setCameraOpen(true);
+            }}
+            disabled={disabled}
+            data-testid="open-camera-scan"
+          >
+            {labels.camera.open}
+          </UbButton>
+        )}
+      </UbBox>
       {showList && (
         <UbBox
           as="ul"
@@ -470,6 +511,38 @@ function ItemQuickAddBase({
             {labels.dismiss ?? 'Close'}
           </UbButton>
         </UbBox>
+      )}
+      {labels.camera && cameraOpen && (
+        <UbScanSheet
+          open
+          onClose={() => setCameraOpen(false)}
+          onCode={scan}
+          title={labels.camera.title}
+          hint={labels.camera.hint}
+          labels={labels.camera.labels}
+          tray={
+            <UbBox className="grid gap-2">
+              <UbBox className="flex justify-between text-[13px] text-[#A3A9B2]">
+                <UbText as="span" variant="inherit">
+                  {labels.camera.lastScanned}
+                </UbText>
+                <UbText as="span" variant="inherit">
+                  {labels.camera.summary}
+                </UbText>
+              </UbBox>
+              {scanned.map((name, index) => (
+                <UbText
+                  key={`${name}-${index}`}
+                  as="span"
+                  variant="inherit"
+                  className={cn('truncate text-sm', index === 0 && 'font-bold text-[#6FCF7C]')}
+                >
+                  {index === 0 ? `+ ${name}` : name}
+                </UbText>
+              ))}
+            </UbBox>
+          }
+        />
       )}
       {creating !== null && (
         <ItemQuickCreate name={creating} onCreated={choose} onClosed={stopCreating} />

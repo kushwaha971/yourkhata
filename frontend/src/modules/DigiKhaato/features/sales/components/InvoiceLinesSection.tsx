@@ -314,7 +314,35 @@ export function InvoiceLinesSection({
       }
     />
   ) : (
-    <ItemQuickAdd labels={quickAddLabels} onPick={quickAdd} disabled={disabled} />
+    <ItemQuickAdd
+      labels={{
+        ...quickAddLabels,
+        // C1 (design pScan): the phone's camera, continuous, with the bill so
+        // far in its tray from the same engine the totals use.
+        camera: {
+          open: t('sales.scan.camera.open'),
+          title: t('sales.scan.camera.title'),
+          hint: t('sales.scan.camera.hint'),
+          lastScanned: t('sales.scan.camera.lastScanned'),
+          summary: t('sales.scan.camera.summary', {
+            count: (lines ?? []).filter((line) => line.itemId).length,
+            total: formatInr(preview.grandTotal),
+          }),
+          labels: {
+            close: t('common.action.close'),
+            torch: t('sales.scan.camera.torch'),
+            done: t('sales.scan.camera.done'),
+            blockedTitle: t('sales.scan.camera.blockedTitle'),
+            blockedBody: t('sales.scan.camera.blockedBody'),
+            barcode: t('sales.scan.camera.barcode'),
+            add: t('sales.scan.camera.add'),
+            keepsWorking: t('sales.scan.camera.keepsWorking'),
+          },
+        },
+      }}
+      onPick={quickAdd}
+      disabled={disabled}
+    />
   );
   const hasItems = (lines ?? []).some((line) => line.itemId || line.description);
   const editor = {
