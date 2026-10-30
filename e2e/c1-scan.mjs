@@ -151,6 +151,18 @@ for (const camera of [true, false]) {
     const buzz = await page.evaluate(() => window.__buzz);
     check('phone: the phone buzzed once for the scan', buzz.length === (skew ? 9 : 1), JSON.stringify(buzz));
     await page.screenshot({ path: `${dir}/390-camera-scanned.png` });
+    // Nothing of the bill may paint over the camera's tray and Done (the first
+    // build drew the bill's dock over them, dimmed).
+    const onTop = await page.evaluate(() => {
+      const done = [...document.querySelectorAll('[data-testid=scan-sheet] button')].find((b) => b.textContent.trim() === 'Done');
+      const r = done.getBoundingClientRect();
+      const hit = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
+      const last = [...document.querySelectorAll('[data-testid=scan-sheet] span')].find((e) => e.textContent.includes('Last scanned'));
+      const lr = last?.getBoundingClientRect();
+      const lhit = lr ? document.elementFromPoint(lr.left + 4, lr.top + lr.height / 2) : null;
+      return { done: done.contains(hit), last: Boolean(last && last.contains(lhit)) };
+    });
+    check('phone: Done and "Last scanned" are on top (nothing over the camera)', onTop.done && onTop.last, JSON.stringify(onTop));
     await page.getByRole('button', { name: 'Done' }).click();
     await sleep(800);
     check('phone: Done closes the camera', (await page.getByTestId('scan-sheet').count()) === 0);

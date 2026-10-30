@@ -3,6 +3,8 @@
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
 
 import { Camera, Flashlight, X } from 'lucide-react';
+import { createPortal } from 'react-dom';
+
 
 import { cn } from 'src/utils/cn';
 
@@ -165,15 +167,18 @@ export function UbScanSheet({
     setTyped('');
   }, [typed]);
 
-  if (!open) return null;
+  if (!open || typeof document === 'undefined') return null;
 
-  return (
+  // Portalled to <body>: the bill's line list and its sticky dock create their
+  // own stacking contexts, and inside them the camera's tray and Done were
+  // drawn under the dock (seen in the c1-scan phone shot, dimmed).
+  return createPortal(
     <div
       role="dialog"
       aria-modal="true"
       aria-label={title}
       data-testid="scan-sheet"
-      className="fixed inset-0 z-[60] flex flex-col bg-[#0d0f10] text-white"
+      className="fixed inset-0 z-[1500] flex flex-col bg-[#0d0f10] text-white"
     >
       <div className="relative flex flex-1 flex-col">
         {!blocked && (
@@ -267,6 +272,7 @@ export function UbScanSheet({
           <span className="text-[12.5px] text-text-tertiary">{labels.keepsWorking}</span>
         </div>
       )}
-    </div>
+    </div>,
+    document.body
   );
 }
