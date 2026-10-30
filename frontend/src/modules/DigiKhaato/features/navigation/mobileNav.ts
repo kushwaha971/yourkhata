@@ -45,8 +45,14 @@ const KHATA = new RegExp(`^${ROUTES.PARTIES}/[^/]+$`);
  * A screen with one job and its own actions docked at the bottom. The ONLY
  * screens without the nav bar; add to this list deliberately, with the reason.
  */
+/** A menu row that is still a focused task: the stock count docks "Scan with
+ *  camera" and "Save count" where the bar would be (design pCount). */
+const FOCUSED_ROWS: readonly string[] = [ROUTES.STOCK_COUNT];
+
 export const isFocusedTask = (pathname: string): boolean =>
-  /\/(new|edit)$/.test(pathname) || (KHATA.test(pathname) && pathname !== `${ROUTES.PARTIES}/tags`);
+  /\/(new|edit)$/.test(pathname) ||
+  FOCUSED_ROWS.includes(pathname) ||
+  (KHATA.test(pathname) && pathname !== `${ROUTES.PARTIES}/tags`);
 
 export function mobileNavState(
   pathname: string | null,
@@ -57,7 +63,7 @@ export function mobileNavState(
   if (pathname === ROUTES.MORE || pathname === ROUTES.APPS) return { visible: true, topLevel: true, active: MORE_TAB };
 
   const topLevel = rows.some((row) => row.href === pathname);
-  const visible = topLevel || !isFocusedTask(pathname);
+  const visible = (topLevel && !FOCUSED_ROWS.includes(pathname)) || !isFocusedTask(pathname);
   const most = (items: readonly AppNavItem[]): AppNavItem | undefined => {
     const href = activeNavHref(
       pathname,

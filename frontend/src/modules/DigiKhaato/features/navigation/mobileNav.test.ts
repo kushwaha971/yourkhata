@@ -64,6 +64,8 @@ describe('mobileNavState', () => {
     });
     expect(mobileNavState('/sales/invoices/7/edit', shopRows, shopTabs).visible).toBe(false);
     expect(mobileNavState('/lending/loans/new', shopRows, shopTabs).visible).toBe(false);
+    // C3 — a menu row, but a focused task: its dock takes the bar's place.
+    expect(mobileNavState('/stock/count', shopRows, shopTabs).visible).toBe(false);
   });
 
   it.each([
