@@ -157,3 +157,38 @@ choices with their own presets, old values staying valid (reads closest to
 the map §2.1, but is a backend change); (B) keep the 9 and store the kind
 separately. Not chosen; waiting for the owner. `shop.extra_types` holds the
 same values, so it waits on this too.
+
+## Built (30 Oct 2026) — R-DEC-63 and R-DEC-64
+
+- **Server:** seven stored kinds (hardware, kirana, medical, electronics,
+  garments, auto_parts, jewellery), each with a preset whose units are checked
+  against the seeded unit list; migration 0020. One business is ONE kind
+  (R-DEC-64): `shop.extra_types` withdrawn. Wholesale is stored as the kind plus
+  `shop.wholesale` = on, saved in the same `POST /tenants`; defaults are
+  `presets.combined(kind, wholesale=True)`.
+- **Client:** the design's ten tiles in its order with its own pictures
+  (`UbShopKindIcon`, copied path for path), 3 columns on a phone and 5 from md.
+  Wholesale lights its tile and opens "Wholesale of what?" (the same grid
+  without it). No "+ I also sell…".
+- **`e2e/b1-pick.mjs --tag=after`: 124/124** over 390/320/1024/1280 × light/dark
+  × EN/HI: 10 tiles, 3/5 columns, gap 10, ≥ 96 high, radius 12, icon 34, type
+  13/600 and 11.5/500, 2 px picked border, centred, no text cut, no overflow,
+  targets ≥ 44, Wholesale opens 9 kinds, the last tile clears the Continue bar.
+- **Not a defect after all:** the "Continue drawn over the tiles" in the
+  before shots is how a full-page screenshot paints a sticky bar; at the end of
+  the page the last tile sits above it (now measured, not eyeballed).
+
+## Conflicts / still open (listed, not chosen)
+
+1. The design draws "What do you sell?" as its own step ("Step 2 of 4"); it is
+   still a section of wizard step 1. Waiting for the owner.
+2. The design's "+ I also sell…" button is removed by R-DEC-64.
+3. Jewellery: design says "own app, later" at 60 %; the owner made it a normal
+   kind, hint "gold, silver".
+4. The electronics tile reads "Mobile · and electronics" (design words) for the
+   owner's "electrical/electronic/mobile" kind.
+5. A resumed wizard does not read `shop.wholesale` back: the Wholesale tile is
+   not re-lit after a reload mid-setup (the kind is). Not yet fixed.
+6. Not yet run for B1: monkey (3 seeds × 2 sizes), the §10 regression of A3–A8
+   harnesses, bundle:check, a live sign-up read-back through the real API, and
+   the hand-driven pass. Score not given; the piece is in test.

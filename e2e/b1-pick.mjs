@@ -110,13 +110,52 @@ for (const width of widths) {
           if (await shop.count()) await shop.click();
         }
         await page.locator('[role=radiogroup]').waitFor({ timeout: 15000 });
-        await page.locator('[role=radiogroup] [role=radio]').first().click();
+        // Hardware first (R-DEC-51 #4); the old build has no such tile.
+        const hw = page.locator('[role=radiogroup] [data-kind=hardware]');
+        await ((await hw.count()) ? hw : page.locator('[role=radiogroup] [role=radio]').first()).click();
         await page.waitForTimeout(300);
         const m = await page.evaluate(measure);
         out[key] = m;
+        // The Continue bar is sticky: at the END of the page (where a merchant
+        // can always scroll) the last tile must sit fully above it. Scrolling
+        // the tile to the viewport's bottom is NOT the test — a sticky bar
+        // covers it there by design and one more swipe uncovers it.
+        const dockCover = await page.evaluate(() => {
+          const grid = document.querySelector('[role=radiogroup]');
+          const btn = [...document.querySelectorAll('button')].find((b) => /Continue|आगे/.test(b.textContent));
+          if (!grid || !btn) return null;
+          const last = [...grid.querySelectorAll('[role=radio]')].pop();
+          window.scrollTo(0, document.documentElement.scrollHeight);
+          const d = btn.getBoundingClientRect();
+          const t = last.getBoundingClientRect();
+          return Math.max(0, Math.round(t.bottom - d.top));
+        });
+        if (dockCover !== null) check(`${key} last tile reachable above the Continue dock`, dockCover === 0, `${dockCover}px under`);
         await page.locator('[role=radiogroup]').scrollIntoViewIfNeeded();
         await page.screenshot({ path: `${dir}/${tag}-${key}.png`, fullPage: true });
+        // What the eye sees at this scroll, with the sticky dock where it really is.
+        await page.screenshot({ path: `${dir}/${tag}-${key}-view.png` });
         await page.locator('[role=radiogroup]').screenshot({ path: `${dir}/${tag}-${key}-tiles.png` });
+        // R-DEC-64: Wholesale opens "Wholesale of what?" (the grid without it).
+        const ws = page.locator('[role=radiogroup] [data-kind=wholesale]').first();
+        if (await ws.count()) {
+          await ws.click();
+          await page.waitForTimeout(250);
+          const groups = await page.locator('[role=radiogroup]').count();
+          const second = page.locator('[role=radiogroup]').nth(1);
+          const secondCount = groups > 1 ? await second.locator('[role=radio]').count() : 0;
+          const hasWs = groups > 1 ? await second.locator('[data-kind=wholesale]').count() : -1;
+          if (theme === 'light' && locale === 'en') {
+            check(`${key} wholesale opens "of what?" with 9 kinds`, groups === 2 && secondCount === 9 && hasWs === 0, `${groups}/${secondCount}/${hasWs}`);
+          }
+          if (groups > 1) {
+            await second.locator('[data-kind=kirana]').click();
+            await second.scrollIntoViewIfNeeded();
+            await page.screenshot({ path: `${dir}/${tag}-${key}-wholesale.png`, fullPage: true });
+            const m2 = await page.evaluate(() => ({ overflow: document.documentElement.scrollWidth - window.innerWidth }));
+            check(`${key} wholesale: no page overflow`, m2.overflow <= 0, String(m2.overflow));
+          }
+        }
         if (theme === 'light' && locale === 'en') {
           const phone = width < 1024;
           check(`${key} tile count (design 10)`, m.count === 10, String(m.count));
