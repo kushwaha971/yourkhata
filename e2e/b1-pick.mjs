@@ -111,7 +111,7 @@ for (const width of widths) {
         await page.goto(`${base}/onboarding/step/1`, { waitUntil: 'networkidle' });
         // The type tiles show only once the Shop is ticked.
         if (!(await page.locator('[role=radiogroup]').count())) {
-          const shop = page.getByRole('checkbox', { name: /Shop|दुकान/ }).first();
+          const shop = page.getByRole('checkbox', { name: /^(Business|व्यापार)/ }).first();
           if (await shop.count()) await shop.click();
         }
         await page.locator('[role=radiogroup]').waitFor({ timeout: 15000 });

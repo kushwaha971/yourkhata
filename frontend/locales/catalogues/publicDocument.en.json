@@ -18,7 +18,7 @@
   "publicDocument.note.creditNote": "This credit note is for your records.",
   "publicDocument.note.estimate": "This is an estimate, not a bill. Nothing is due yet.",
   "publicDocument.note.order": "This is an order, not a bill. Nothing is due yet.",
-  "publicDocument.note.void": "The shop has cancelled this bill. Nothing is due on it.",
+  "publicDocument.note.void": "The business has cancelled this bill. Nothing is due on it.",
   "publicDocument.ofTotal": "of {total}",
   "publicDocument.pay": "Pay {amount}",
   "publicDocument.payHint": "Opens any UPI app on this phone",
@@ -44,7 +44,7 @@
   "publicDocument.status.partlyPaid": "Partly paid",
   "publicDocument.status.valid": "Valid",
   "publicDocument.status.void": "Cancelled",
-  "publicDocument.unavailable.description": "It may have expired. Ask the shop to share the bill again.",
+  "publicDocument.unavailable.description": "It may have expired. Ask the business to share the bill again.",
   "publicDocument.unavailable.title": "This link is not available",
   "publicDocument.validUntil": "Valid until {date}"
 }

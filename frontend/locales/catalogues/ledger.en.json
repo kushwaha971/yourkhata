@@ -45,7 +45,7 @@
   "ledger.aging.shop.empty.payable.body": "Every supplier is paid up.",
   "ledger.aging.shop.empty.payable.title": "Nothing to pay any supplier",
   "ledger.aging.shop.empty.receivable.body": "Every customer has paid everything.",
-  "ledger.aging.shop.empty.receivable.title": "Nothing to collect in the Shop",
+  "ledger.aging.shop.empty.receivable.title": "Nothing to collect in the Business",
   "ledger.aging.shop.payable": "To pay suppliers",
   "ledger.aging.shop.receivable": "To collect from customers",
   "ledger.aging.side": "Money to get or to give",

@@ -10,7 +10,7 @@
   "billDetail.payments": "भुगतान",
   "billDetail.receive": "पैसे लें",
   "billDetail.refund": "पैसे वापस दें",
-  "billDetail.refundHint": "रद्द करने से पैसे वापस नहीं जाते। पहले सहेजा भुगतान और दुकान एडवांस जाँचें।",
+  "billDetail.refundHint": "रद्द करने से पैसे वापस नहीं जाते। पहले सहेजा भुगतान और व्यापार एडवांस जाँचें।",
   "billDetail.seePrinted": "छपने वाला बिल देखें",
   "billDetail.share": "शेयर करें",
   "billDetail.wrongTitle": "बिल {number}: क्या हुआ?"

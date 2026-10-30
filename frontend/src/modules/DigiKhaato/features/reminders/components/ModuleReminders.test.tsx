@@ -139,7 +139,7 @@ describe('Module reminder tabs', () => {
     renderWithProviders(<RemindersPageContent />, { messages: MESSAGES });
 
     expect(await screen.findByTestId('reminders-screen')).toBeInTheDocument();
-    expect(screen.queryByRole('tab', { name: 'Shop' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('tab', { name: 'Business' })).not.toBeInTheDocument();
     expect(moduleService.listModuleReminders).not.toHaveBeenCalled();
   });
 
@@ -302,7 +302,7 @@ describe('Module reminder tabs', () => {
     });
     // No lending catalogue in Hindi here: the tab is the module's own name,
     // which the shell carries in both languages.
-    await user.click(await screen.findByRole('tab', { name: 'कर्ज़ और वसूली' }));
+    await user.click(await screen.findByRole('tab', { name: 'लेजर' }));
     expect(await screen.findByRole('heading', { name: 'आज देय' })).toBeInTheDocument();
     expect(screen.queryByText('lending.reminders.tab')).not.toBeInTheDocument();
   });

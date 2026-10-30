@@ -25,7 +25,7 @@
   "settings.profile.field.ifsc.placeholder": "Enter the IFSC code",
   "settings.profile.field.legalName": "Legal name (as on GST)",
   "settings.profile.field.legalName.placeholder": "Enter the legal name",
-  "settings.profile.field.name": "Shop / trade name",
+  "settings.profile.field.name": "Business name",
   "settings.profile.field.name.placeholder": "Enter your business name",
   "settings.profile.field.pan": "PAN",
   "settings.profile.field.pan.placeholder": "Enter your PAN",

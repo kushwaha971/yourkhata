@@ -23,7 +23,7 @@
   "branding.error.body": "कनेक्शन जाँचें और फिर कोशिश करें।",
   "branding.error.title": "आपकी ब्रांडिंग लोड नहीं हो सकी",
   "branding.locked": "{partner} द्वारा तय",
-  "branding.logo.alt": "आपकी दुकान का लोगो",
+  "branding.logo.alt": "आपके व्यापार का लोगो",
   "branding.logo.hint": "PNG, JPG या WebP, 2 MB से कम, कम से कम 64 पिक्सेल।",
   "branding.logo.label": "लोगो",
   "branding.logo.none": "कोई लोगो नहीं",

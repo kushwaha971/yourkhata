@@ -797,7 +797,7 @@ describe("the Shop's Old dues (09 §10.7)", () => {
       hasAny: true,
     }));
     renderWithProviders(<AgingPageContent book="shop" />);
-    expect(await screen.findByText('Nothing to collect in the Shop')).toBeInTheDocument();
+    expect(await screen.findByText('Nothing to collect in the Business')).toBeInTheDocument();
     expect(screen.queryByTestId('aging-bars')).not.toBeInTheDocument();
   });
 

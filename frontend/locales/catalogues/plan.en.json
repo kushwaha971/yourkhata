@@ -5,7 +5,7 @@
   "plan.card.noLimits": "No limits on this business.",
   "plan.card.title": "Your plan",
   "plan.card.unlimited": "Unlimited",
-  "plan.ledgerNote": "Udhaar entries are never limited.",
+  "plan.ledgerNote": "Money book entries are never limited.",
   "plan.limit.body": "You have used {used} of {limit} {noun} on the {plan} plan.",
   "plan.limit.contact": "Contact {partner}",
   "plan.limit.contactText": "I need a higher limit for {noun} on the {plan} plan.",

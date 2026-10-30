@@ -153,7 +153,7 @@ it('a void bill is marked Cancelled, watermarked VOID, and never invites a payme
   render();
   expect(await screen.findByTestId('public-status')).toHaveTextContent('Cancelled');
   expect(
-    screen.getByText('The shop has cancelled this bill. Nothing is due on it.')
+    screen.getByText('The business has cancelled this bill. Nothing is due on it.')
   ).toBeInTheDocument();
   expect(screen.queryByTestId('public-pay')).not.toBeInTheDocument();
   expect(screen.getByTestId('print-watermark')).toHaveTextContent('VOID');
@@ -219,7 +219,7 @@ it('an unknown, expired or revoked link is one neutral screen with no retry', as
   const { token } = render();
   expect(await screen.findByText('This link is not available')).toBeInTheDocument();
   expect(
-    screen.getByText('It may have expired. Ask the shop to share the bill again.')
+    screen.getByText('It may have expired. Ask the business to share the bill again.')
   ).toBeInTheDocument();
   expect(screen.queryByTestId('public-retry')).not.toBeInTheDocument();
   expect(document.body.textContent).not.toContain(token.slice(0, 6));

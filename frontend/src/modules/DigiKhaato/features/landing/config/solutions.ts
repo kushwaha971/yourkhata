@@ -15,8 +15,8 @@ export interface Solution {
 export const SOLUTIONS: readonly Solution[] = [
   {
     slug: 'shop-billing',
-    name: 'Shop billing and inventory',
-    title: 'Shop Billing & Inventory Software | YourKhata',
+    name: 'Business billing and inventory',
+    title: 'Business Billing & Inventory Software | YourKhata',
     description:
       'Create GST bills, track stock, record purchases and follow customer dues with YourKhata. Business records in one place, on phone or computer.',
     audience:
@@ -38,7 +38,7 @@ export const SOLUTIONS: readonly Solution[] = [
       {
         question: 'Can I track billing and inventory together?',
         answer:
-          'Yes. The Shop module includes sales, purchases and inventory records, alongside customer and supplier accounts.',
+          'Yes. The Business module includes sales, purchases and inventory records, alongside customer and supplier accounts.',
       },
       {
         question: 'Does YourKhata replace tax filing advice?',
@@ -83,7 +83,7 @@ export const SOLUTIONS: readonly Solution[] = [
   },
   {
     slug: 'lending-collections',
-    name: 'Lending records and collections',
+    name: 'Ledger for loans and collections',
     title: 'Loan Records & Collection Software | YourKhata',
     description:
       'Keep borrower records, loans, repayments and daily collections organized with YourKhata. Review outstanding balances and record collections in one place.',

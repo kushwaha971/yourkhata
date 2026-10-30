@@ -99,7 +99,7 @@ if (!sheetsOnly) {
     try {
       await page.goto(`${base}/onboarding/step/1`, { waitUntil: 'networkidle' });
       if (!(await page.locator('[data-kind=other]').count())) {
-        await page.getByRole('checkbox', { name: /Shop|दुकान/ }).first().click();
+        await page.getByRole('checkbox', { name: /^(Business|व्यापार)/ }).first().click();
       }
       await page.locator('[data-kind=kirana]').first().waitFor({ timeout: 15000 });
       const d = (at) => ({ full: phone, at: phone ? undefined : at });

@@ -106,7 +106,7 @@ def trade_balance(party: Party, book: str = "main") -> Decimal:
 def _book(raw: Any, ctx: Ctx) -> str:
     book = "main" if raw is None or raw == "" else raw
     if book not in ("main", "shop"):
-        raise ValidationFailed({"book": ["Choose the Shop or Udhaar book."]})
+        raise ValidationFailed({"book": ["Choose the Business or Money book."]})
     if book == "shop":
         from apps.common.exceptions import ModuleDisabled
         from apps.platform_app.services.entitlements import effective_modules

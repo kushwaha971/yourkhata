@@ -42,7 +42,7 @@ def send_manual_sms(*, reminder_id: Any, tenant: Any, final_attempt: bool) -> di
         from apps.platform_app.services.entitlements import effective_modules
 
         if "sales" not in effective_modules(tenant):
-            _finish(ctx, reminder, status=ReminderStatus.CANCELLED, note="Shop is switched off.")
+            _finish(ctx, reminder, status=ReminderStatus.CANCELLED, note="Business is switched off.")
             return {"cancelled": "module_disabled"}
     party = lock_party(tenant=tenant, party_id=reminder.party_id)
     from apps.ledger.services.reminders import trade_balance

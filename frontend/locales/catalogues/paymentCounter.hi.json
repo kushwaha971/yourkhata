@@ -47,7 +47,7 @@
   "payments.counter.savedLeft": "₹{amount} बाकी · {number}",
   "payments.counter.savedNumber": "रसीद {number}",
   "payments.counter.savedOut": "{name} को ₹{amount} दिए।",
-  "payments.counter.shopBook": "दुकान की बही",
+  "payments.counter.shopBook": "व्यापार की बही",
   "payments.counter.showAll": "सभी {count} दिखाएँ",
   "payments.counter.slow": "अभी हो रहा है… दो बार सेव नहीं होगा।",
   "payments.counter.split": "दो तरीकों में बाँटें",

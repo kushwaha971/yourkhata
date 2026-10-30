@@ -25,7 +25,7 @@
   "settings.profile.field.ifsc.placeholder": "IFSC कोड लिखें",
   "settings.profile.field.legalName": "कानूनी नाम (जीएसटी के अनुसार)",
   "settings.profile.field.legalName.placeholder": "कानूनी नाम लिखें",
-  "settings.profile.field.name": "दुकान / व्यापार का नाम",
+  "settings.profile.field.name": "व्यापार का नाम",
   "settings.profile.field.name.placeholder": "अपने व्यापार का नाम लिखें",
   "settings.profile.field.pan": "पैन",
   "settings.profile.field.pan.placeholder": "अपना PAN लिखें",

@@ -213,7 +213,7 @@ class PartyFilterSet(BaseTenantFilterSet):
             if getattr(self.request, "query_params", {}).get("book") == "shop":
                 from django.core.exceptions import ValidationError
 
-                raise ValidationError("Due is only for the Udhaar book")
+                raise ValidationError("Due is only for the Money book")
             return queryset.exclude(balance=0)
         if value == "owes_me":
             return queryset.filter(**{f"{field}__gt": 0})

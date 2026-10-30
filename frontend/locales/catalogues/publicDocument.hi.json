@@ -18,7 +18,7 @@
   "publicDocument.note.creditNote": "यह क्रेडिट नोट आपके रिकॉर्ड के लिए है।",
   "publicDocument.note.estimate": "यह अनुमान है, बिल नहीं। अभी कोई भुगतान देय नहीं है।",
   "publicDocument.note.order": "यह ऑर्डर है, बिल नहीं। अभी कोई भुगतान देय नहीं है।",
-  "publicDocument.note.void": "दुकान ने यह बिल रद्द कर दिया है। इस पर कोई भुगतान देय नहीं है।",
+  "publicDocument.note.void": "व्यापार ने यह बिल रद्द कर दिया है। इस पर कोई भुगतान देय नहीं है।",
   "publicDocument.ofTotal": "{total} में से",
   "publicDocument.pay": "{amount} का भुगतान करें",
   "publicDocument.payHint": "इस फ़ोन पर कोई भी UPI ऐप खुलेगा",
@@ -44,7 +44,7 @@
   "publicDocument.status.partlyPaid": "आंशिक भुगतान",
   "publicDocument.status.valid": "मान्य",
   "publicDocument.status.void": "रद्द",
-  "publicDocument.unavailable.description": "हो सकता है इसकी अवधि समाप्त हो गई हो। दुकान से बिल फिर से भेजने को कहें।",
+  "publicDocument.unavailable.description": "हो सकता है इसकी अवधि समाप्त हो गई हो। व्यापार से बिल फिर से भेजने को कहें।",
   "publicDocument.unavailable.title": "यह लिंक उपलब्ध नहीं है",
   "publicDocument.validUntil": "{date} तक मान्य"
 }

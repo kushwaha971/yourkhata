@@ -880,3 +880,19 @@ R-DEC-68 (owner, 30 October 2026: "yes", to the four C3 stock-count picks) —
 4. Anyone who can read stock may count; saving needs `inventory.stock.adjust`;
    the ₹ value change shows only to people who can see costs
    (`reports.financial.read`).
+R-DEC-69 (owner, 30 October 2026: "Instead of shop use word of business and
+instead of udharbook use money book and instead of lending use ledger") —
+the three app names change on every user-visible surface, English and Hindi:
+Shop → **Business** (हिंदी व्यापार), Udhaar book → **Money book** (मनी बुक),
+Lending → **Ledger** (लेजर). The same holds for every sentence that names the
+app or the merchant's own business ("Business features", "Business book",
+"your business's logo"). Kept as they are, deliberately: a shop as a physical
+place or a kind of business ("Shop number, street", "Retail shop", "Retail and
+wholesale shops"), "udhaar" as the word for credit, Lending's own words (Lent,
+Borrower, Amount lent), the seeded expense category "Shop maintenance" (saved
+user data), the demo film's narration (a recording; its words cannot change
+without re-recording it), and every code name, route (`/khata`, `/lending`),
+permission, setting key (`shop.extra_types`, `shop.features.*`), API key and
+TextChoices label. "Ledger" was already used twice for the Money book
+("Customer ledger", a landing tab, "Your ledger gets a write-off"); those now
+say "Customer khata", "Money book" and "Your books", so the word means one app.

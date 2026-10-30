@@ -369,7 +369,7 @@ ENTITY_TYPE_LABELS: dict[str, str] = {
     "inventory_unit": "Unit",
     "invitation": "Invitation",
     "ledger_aging": "Aging report",
-    "ledger_entry": "Udhaar entry",
+    "ledger_entry": "Money book entry",
     "ledger_reminder": "Reminder",
     "parties_party": "Contact",
     "parties_tag": "Tag",

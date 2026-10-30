@@ -79,7 +79,7 @@
   "reminders.module.partyAndRecipient": "{party} · to {recipient}",
   "reminders.module.remind": "Remind",
   "reminders.module.sentNow": "Reminded",
-  "reminders.module.shopTab": "Shop",
+  "reminders.module.shopTab": "Business",
   "reminders.module.tabFallback": "Feature",
   "reminders.module.tabs": "Reminders by feature",
   "reminders.module.toRecipient": "To {name}",

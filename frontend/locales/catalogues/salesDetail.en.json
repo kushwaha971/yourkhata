@@ -10,7 +10,7 @@
   "billDetail.payments": "Payments",
   "billDetail.receive": "Receive money",
   "billDetail.refund": "Give money back",
-  "billDetail.refundHint": "Cancelling does not give money back. Check the saved payment and available Shop advance before recording a refund.",
+  "billDetail.refundHint": "Cancelling does not give money back. Check the saved payment and available Business advance before recording a refund.",
   "billDetail.seePrinted": "See as printed",
   "billDetail.share": "Share",
   "billDetail.wrongTitle": "What happened with {number}?"

@@ -44,7 +44,7 @@ const WORDS = {
       'GST bills, stock and customer dues for shops; students, seats, fees and books for libraries; loans and daily collections for lenders. In Hindi or English.',
     shareTitle: 'YourKhata — one place for all your business records',
     shareDescription:
-      'Shop bills and stock, library students, fees and books, and loan collections, on one shared core. Hindi or English.',
+      'Business bills and stock, library students, fees and books, and loan collections, on one shared core. Hindi or English.',
   },
   all: {
     title: 'YourKhata | Modular Business Management Software',
@@ -52,7 +52,7 @@ const WORDS = {
       'GST bills and stock, loan collections, library and gym members and their fees, and room bookings: all your records in one place, in Hindi or English.',
     shareTitle: 'YourKhata — one place for all your business records',
     shareDescription:
-      'Shop bills and stock, loan collections, library and gym members, and room bookings, on one shared core. Hindi or English.',
+      'Business bills and stock, loan collections, library and gym members, and room bookings, on one shared core. Hindi or English.',
   },
 } as const;
 

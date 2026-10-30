@@ -294,7 +294,7 @@
   "lending.mode.cheque": "चेक",
   "lending.mode.upi": "UPI",
   "lending.noAccess.body": "मालिक से अनुमति माँगें।",
-  "lending.noAccess.title": "उधार-वसूली आपके लिए नहीं खुली",
+  "lending.noAccess.title": "लेजर आपके लिए नहीं खुला",
   "lending.papers.borrower": "उधारकर्ता",
   "lending.papers.borrowerNumber": "उधारकर्ता नं.",
   "lending.papers.closure.body": "प्रमाणित किया जाता है कि {name} ने {givenOn} को दिया गया {lent} का कर्ज़ {number} पूरा चुका दिया है। कुल चुकाया: {repaid}।",

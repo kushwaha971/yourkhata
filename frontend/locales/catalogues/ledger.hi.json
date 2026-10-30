@@ -45,7 +45,7 @@
   "ledger.aging.shop.empty.payable.body": "हर सप्लायर का पैसा चुका दिया है।",
   "ledger.aging.shop.empty.payable.title": "किसी सप्लायर का कुछ बाकी नहीं",
   "ledger.aging.shop.empty.receivable.body": "हर ग्राहक ने अपना बाकी चुका दिया है।",
-  "ledger.aging.shop.empty.receivable.title": "दुकान में किसी पर कुछ बाकी नहीं",
+  "ledger.aging.shop.empty.receivable.title": "व्यापार में किसी पर कुछ बाकी नहीं",
   "ledger.aging.shop.payable": "सप्लायर को देने हैं",
   "ledger.aging.shop.receivable": "ग्राहकों से लेने हैं",
   "ledger.aging.side": "मिलने या देने वाला",

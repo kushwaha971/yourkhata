@@ -133,8 +133,8 @@ describe('step 4 — the owner adds and turns off apps', () => {
     );
     renderWithProviders(<TenantSwitcherMenu rail caption="YourKhata" />);
     await userEvent.click(screen.getByRole('button', { name: /Verma Finance/ }));
-    await userEvent.dblClick(screen.getByRole('menuitem', { name: 'Add Lending' }));
-    const adding = screen.getByRole('menuitem', { name: 'Adding Lending…' });
+    await userEvent.dblClick(screen.getByRole('menuitem', { name: 'Add Ledger' }));
+    const adding = screen.getByRole('menuitem', { name: 'Adding Ledger…' });
     expect(adding).toBeVisible();
     expect(adding).toBeDisabled();
     expect(adding).toHaveAttribute('aria-busy', 'true');
@@ -144,7 +144,7 @@ describe('step 4 — the owner adds and turns off apps', () => {
     expect(screen.queryByRole('menu')).toBeNull();
     expect(store.getState().snackbar).toMatchObject({
       id: 'tenant.switcher.apps.added',
-      params: { app: 'Lending' },
+      params: { app: 'Ledger' },
     });
   });
   it('offers an app the plan has, runs it and opens its home', async () => {
@@ -152,7 +152,7 @@ describe('step 4 — the owner adds and turns off apps', () => {
     authService.setAppRunning.mockResolvedValue(after([LIBRARY, LENDING], 'library'));
     renderWithProviders(<TenantSwitcherMenu rail caption="YourKhata" />);
     await userEvent.click(screen.getByRole('button', { name: /Verma Finance/ }));
-    await userEvent.click(await screen.findByRole('menuitem', { name: 'Add Lending' }));
+    await userEvent.click(await screen.findByRole('menuitem', { name: 'Add Ledger' }));
     await waitFor(() => expect(authService.setAppRunning).toHaveBeenCalledWith('lending', true));
     await waitFor(() => expect(push).toHaveBeenCalledWith('/lending'));
   });
@@ -176,7 +176,7 @@ describe('step 4 — the owner adds and turns off apps', () => {
     await userEvent.click(screen.getByRole('button', { name: /Verma Finance/ }));
     await screen.findByRole('menuitem', { name: 'Leave Library' });
     expect(
-      screen.queryByRole('menuitem', { name: /Turn off|^Add (Library|Lending|Shop)/ })
+      screen.queryByRole('menuitem', { name: /Turn off|^Add (Library|Ledger|Business)/ })
     ).toBeNull();
   });
 });
@@ -209,7 +209,7 @@ describe('choosing an app', () => {
     const { rerender } = renderWithProviders(<TenantSwitcherMenu rail caption="YourKhata" />);
     await userEvent.click(screen.getByRole('button', { name: /Verma Finance/ }));
     expect(await screen.findByText('Apps')).toBeInTheDocument();
-    await userEvent.click(screen.getByRole('menuitem', { name: 'Lending' }));
+    await userEvent.click(screen.getByRole('menuitem', { name: 'Ledger' }));
     expect(authService.switchApp).not.toHaveBeenCalled();
     expect(push).toHaveBeenCalledWith('/lending');
     mockPath = '/lending';
@@ -232,6 +232,6 @@ describe('the sidebar', () => {
     load(APPS);
     renderWithProviders(<NavSections />);
     expect(screen.queryByTestId('nav-workspaces')).toBeNull();
-    expect(screen.queryByRole('link', { name: 'Lending' })).toBeNull();
+    expect(screen.queryByRole('link', { name: 'Ledger' })).toBeNull();
   });
 });

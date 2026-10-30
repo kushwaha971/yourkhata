@@ -117,7 +117,7 @@ describe('LandingPage', () => {
       within(tablist)
         .getAllByRole('tab')
         .map((tab) => tab.textContent)
-    ).toEqual(['Ledger', 'Reminders', 'GST bill', 'Stock', 'Purchases', 'Reports']);
+    ).toEqual(['Money book', 'Reminders', 'GST bill', 'Stock', 'Purchases', 'Reports']);
     fireEvent.click(within(tablist).getByRole('tab', { name: 'Stock' }));
     expect(screen.getByRole('tabpanel', { name: 'Stock' })).toHaveTextContent(
       'Adjust stock with a reason'
@@ -136,9 +136,9 @@ describe('LandingPage', () => {
     fireEvent.click(within(faq).getByRole('button', { name: 'Does it support e-invoicing?' }));
     expect(within(faq).getByText(/^Not today\./)).toBeInTheDocument();
     fireEvent.click(
-      within(faq).getByRole('button', { name: 'Does the lending module lend money?' })
+      within(faq).getByRole('button', { name: 'Does the Ledger module lend money?' })
     );
-    expect(within(faq).getByText(/^No\. Lending & collections keeps a record/)).toBeInTheDocument();
+    expect(within(faq).getByText(/^No\. Ledger keeps a record/)).toBeInTheDocument();
   });
 
   /**
@@ -308,7 +308,7 @@ describe('the module story', () => {
       within(map)
         .getAllByRole('link')
         .map((link) => link.textContent)
-    ).toEqual(['Shop & billing', 'Lending & collections', 'Library']);
+    ).toEqual(['Business & billing', 'Ledger', 'Library']);
     expect(
       container.querySelector(
         '#module-gym, #module-hotel, [data-module-id="gym"], [data-module-id="hotel"]'
@@ -395,7 +395,7 @@ describe('the module story', () => {
   });
 
   /** A module with `media` gets its real recording, in a browser frame, on the same card. */
-  it('renders the framed recording for a module with media — Shop & billing today', () => {
+  it('renders the framed recording for a module with media — Business & billing today', () => {
     const { container } = renderPage();
     const shop = container.querySelector('#module-shop') as HTMLElement;
 
@@ -514,7 +514,7 @@ describe('the module story', () => {
     renderWithProviders(<PricingSection />);
 
     expect(screen.getByTestId('landing-pricing-modules')).toHaveTextContent(
-      'These plans cover Shop & billing. Plans for the other modules will be added here.'
+      'These plans cover Business & billing. Plans for the other modules will be added here.'
     );
   });
 });
@@ -677,7 +677,7 @@ describe('PricingSection', () => {
   it('calls Business "good for growing shops", never "most popular"', () => {
     renderWithProviders(<PricingSection />);
 
-    expect(screen.getByTestId('landing-plan-business')).toHaveTextContent('Good for growing shops');
+    expect(screen.getByTestId('landing-plan-business')).toHaveTextContent('Good for growing businesses');
     expect(document.body.textContent).not.toMatch(/popular/i);
   });
 });

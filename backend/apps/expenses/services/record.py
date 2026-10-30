@@ -144,7 +144,7 @@ def validate_expense_payload(payload: dict, *, tenant: Any) -> dict:
     app = _expense_app(payload.get("app"), tenant=tenant, details=details)
     if app is not None and app not in CREDIT_EXPENSE_APPS and not paid:
         # An expense on credit is owed to a supplier in the Shop's book (DEC-019).
-        details["paid"] = ["Record this expense when you pay it. Only the Shop keeps bills to pay."]
+        details["paid"] = ["Record this expense when you pay it. Only the Business keeps bills to pay."]
 
     if details:
         raise ValidationFailed(details)

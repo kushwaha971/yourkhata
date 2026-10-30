@@ -23,7 +23,7 @@
   "branding.error.body": "Check your connection and try again.",
   "branding.error.title": "We could not load your branding",
   "branding.locked": "Set by {partner}",
-  "branding.logo.alt": "Your shop's logo",
+  "branding.logo.alt": "Your business's logo",
   "branding.logo.hint": "PNG, JPG or WebP, under 2 MB, at least 64 pixels.",
   "branding.logo.label": "Logo",
   "branding.logo.none": "No logo",

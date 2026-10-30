@@ -185,6 +185,14 @@ its branch. A section that lags the code is a defect.
   camera title (a draft has no number; see the report). Monkey next.
 - **Next:** C1 monkey (3 seeds × 390/1280 × 300 steps), then C2, then C3.
 
+## Rename: Shop → Business, Udhaar book → Money book, Lending → Ledger (R-DEC-69) — own thread, 31 Oct 2026
+
+- **Worktree / branch:** `ims-platform/rename-s4a44c`, `claude/project-thread-s4a44c`, pushed to `dev`; served on **3007**.
+- **What changed:** 77 catalogue strings (EN + HI), the landing SEO/solution names, five server messages, the decision log, four harness selectors (b1-pick, b1-signup, b1-edges, b-sheets now look for "Business").
+- **Kept, deliberately:** code names, routes, permissions, setting keys, API keys, TextChoices labels (they would need migrations), "Shop number" in addresses, "Retail shop", "udhaar" as the word for credit, Lending's own words (Lent, Borrower), the seeded "Shop maintenance" category, the demo film's narration.
+- **Harness:** `e2e/rename-look.mjs` (7 screens × 390/1280 × light/dark × EN/HI; fails on any old app name).
+- **New strings from now on:** use Business / Money book / Ledger (व्यापार / मनी बुक / लेजर).
+
 ## What the stopped sessions found (27 Oct 2026, before the owner stopped them)
 
 The owner stopped the parallel sessions to save usage. Three sessions working

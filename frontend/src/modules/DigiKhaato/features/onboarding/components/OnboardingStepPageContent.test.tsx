@@ -508,7 +508,7 @@ describe('the wizard — step 4 (FR-5) and §9 Failed', () => {
 
     expect(screen.getByText('Ready to use')).toBeInTheDocument();
     expect(screen.getByText('Customers & suppliers')).toBeInTheDocument();
-    expect(screen.getByText('Udhaar khata')).toBeInTheDocument();
+    expect(screen.getByText('Money book')).toBeInTheDocument();
     expect(screen.queryByText('What you get')).not.toBeInTheDocument();
     expect(screen.queryByText('Stock')).not.toBeInTheDocument();
     expect(screen.queryByText('Bills & estimates')).not.toBeInTheDocument();
@@ -1376,8 +1376,8 @@ describe('the wizard — choosing what to use (step 1)', () => {
     const boxes = within(group).getAllByRole('checkbox');
     expect(boxes.map((box) => box.textContent)).toEqual([
       expect.stringContaining('Library'),
-      expect.stringContaining('Lending'),
-      expect.stringContaining('Shop'),
+      expect.stringContaining('Ledger'),
+      expect.stringContaining('Business'),
     ]);
     expect(within(group).getByText(/Members, seats, monthly fees/)).toBeInTheDocument();
     expect(within(group).getByText(/Loans given, instalments due/)).toBeInTheDocument();
@@ -1419,8 +1419,8 @@ describe('the wizard — choosing what to use (step 1)', () => {
     renderWithProviders(<OnboardingStepPageContent step={1} />);
 
     await fillNameAndState(user);
-    await user.click(screen.getByRole('checkbox', { name: /Shop/ }));
-    await user.click(screen.getByRole('checkbox', { name: /Lending/ }));
+    await user.click(screen.getByRole('checkbox', { name: /Business/ }));
+    await user.click(screen.getByRole('checkbox', { name: /Ledger/ }));
     await user.click(await screen.findByRole('radio', { name: /Kirana/ }));
     await user.click(screen.getByRole('button', { name: 'Continue' }));
 
@@ -1454,10 +1454,10 @@ describe('the wizard — choosing what to use (step 1)', () => {
     renderWithProviders(<OnboardingStepPageContent step={1} />);
 
     await fillNameAndState(user);
-    await user.click(screen.getByRole('checkbox', { name: /Shop/ }));
+    await user.click(screen.getByRole('checkbox', { name: /Business/ }));
     await user.click(await screen.findByRole('radio', { name: /Wholesale/ }));
-    await user.click(screen.getByRole('checkbox', { name: /Shop/ }));
-    await user.click(screen.getByRole('checkbox', { name: /Lending/ }));
+    await user.click(screen.getByRole('checkbox', { name: /Business/ }));
+    await user.click(screen.getByRole('checkbox', { name: /Ledger/ }));
     await user.click(screen.getByRole('button', { name: 'Continue' }));
 
     await waitFor(() => expect(onboardingService.createTenant).toHaveBeenCalledTimes(1));
@@ -1473,7 +1473,7 @@ describe('the wizard — choosing what to use (step 1)', () => {
     offer([{ code: 'shop', labelId: 'nav.workspace.shop' }]);
     renderWithProviders(<OnboardingStepPageContent step={1} />);
 
-    expect(await screen.findByRole('checkbox', { name: /Shop/ })).toHaveAttribute(
+    expect(await screen.findByRole('checkbox', { name: /Business/ })).toHaveAttribute(
       'aria-checked',
       'true'
     );

@@ -57,7 +57,7 @@ const freshStep1 = async (name) => {
   await page.getByRole('combobox', { name: /State/ }).click();
   await page.getByPlaceholder(/Search/).fill('Maha');
   await page.getByRole('option', { name: /Maharashtra/ }).click();
-  const shop = page.getByRole('checkbox', { name: /^Shop/ });
+  const shop = page.getByRole('checkbox', { name: /^Business/ });
   if ((await shop.count()) && (await shop.getAttribute('aria-checked')) !== 'true') await shop.click();
   await page.locator('[data-kind=hardware]').first().click();
   return { ctx, page };

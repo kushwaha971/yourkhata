@@ -468,7 +468,7 @@ it("shows each bill's share and the advance as a row before saving", async () =>
   const advance = screen.getByTestId('alloc-advance-row');
   expect(advance).toHaveTextContent('Advance');
   expect(advance).toHaveTextContent('₹155.00');
-  expect(advance).toHaveTextContent('Shop book');
+  expect(advance).toHaveTextContent('Business book');
   expect(screen.getByTestId('payment-hint')).toHaveTextContent(
     '₹155.00 more than what is due. It stays with Ramesh Traders as advance, not a refund.'
   );

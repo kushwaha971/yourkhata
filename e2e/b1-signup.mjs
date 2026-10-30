@@ -70,7 +70,7 @@ for (const sc of SCENARIOS) {
     await page.getByRole('combobox', { name: /State/ }).click();
     await page.getByPlaceholder(/Search/).fill('Maha');
     await page.getByRole('option', { name: /Maharashtra/ }).click();
-    const shop = page.getByRole('checkbox', { name: /^Shop/ });
+    const shop = page.getByRole('checkbox', { name: /^Business/ });
     if ((await shop.count()) && (await shop.getAttribute('aria-checked')) !== 'true') await shop.click();
     // The first tap is in "What do you sell?"; after Wholesale the kind is in
     // the "Wholesale of what?" list below it, which is the LAST grid.

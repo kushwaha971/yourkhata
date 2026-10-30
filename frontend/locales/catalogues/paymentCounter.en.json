@@ -47,7 +47,7 @@
   "payments.counter.savedLeft": "₹{amount} still due · {number}",
   "payments.counter.savedNumber": "Receipt {number}",
   "payments.counter.savedOut": "Paid ₹{amount} to {name}.",
-  "payments.counter.shopBook": "Shop book",
+  "payments.counter.shopBook": "Business book",
   "payments.counter.showAll": "Show all {count}",
   "payments.counter.slow": "Still working… it won't be saved twice.",
   "payments.counter.split": "Split into two ways",

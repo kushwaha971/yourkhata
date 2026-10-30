@@ -349,7 +349,7 @@
   "sales.origin.module.dues": "Dues",
   "sales.origin.module.gym": "Gym",
   "sales.origin.module.hospitality": "Hotel",
-  "sales.origin.module.lending": "Lending",
+  "sales.origin.module.lending": "Ledger",
   "sales.origin.module.library": "Library",
   "sales.party.addNew": "Add “{name}” as a new customer",
   "sales.payment.amount": "Amount",

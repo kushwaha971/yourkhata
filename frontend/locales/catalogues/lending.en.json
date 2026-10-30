@@ -294,7 +294,7 @@
   "lending.mode.cheque": "Cheque",
   "lending.mode.upi": "UPI",
   "lending.noAccess.body": "Ask the owner to give you access.",
-  "lending.noAccess.title": "Lending is not open to you",
+  "lending.noAccess.title": "Ledger is not open to you",
   "lending.papers.borrower": "Borrower",
   "lending.papers.borrowerNumber": "Borrower no.",
   "lending.papers.closure.body": "This is to certify that {name} has repaid loan {number} of {lent}, given on {givenOn}, in full. Total repaid: {repaid}.",

@@ -105,7 +105,7 @@ it('asks who is owed and by when once Paid now is off, and hides Paid by', async
   expect(screen.getByText('To pay')).toBeInTheDocument();
   expect(screen.getByText('Pay by')).toBeInTheDocument();
   // 08 §12.1, DEC-019 — the Shop's balance, never the Udhaar book's "khata".
-  expect(screen.getByText('This is added to what the Shop has to pay them.')).toBeInTheDocument();
+  expect(screen.getByText('This is added to what the Business has to pay them.')).toBeInTheDocument();
   expect(screen.queryByText(/khata/i)).not.toBeInTheDocument();
 
   await userEvent.type(screen.getByLabelText(/Amount/), '12000');

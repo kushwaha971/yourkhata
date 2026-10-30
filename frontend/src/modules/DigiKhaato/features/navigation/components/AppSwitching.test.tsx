@@ -98,7 +98,7 @@ describe('phone App button', () => {
     fireEvent.click(button);
     const sheet = await screen.findByRole('dialog', { name: 'Apps and more' });
     const tiles = within(within(sheet).getByTestId('app-sheet-tiles')).getAllByRole('button');
-    expect(tiles.map((tile) => tile.textContent)).toEqual(['Library', 'Shop', 'Udhaar book']);
+    expect(tiles.map((tile) => tile.textContent)).toEqual(['Library', 'Business', 'Money book']);
     expect(tiles[0]).toHaveAttribute('aria-current', 'true');
     // Everything the More page held is in the same sheet.
     expect(within(sheet).getByRole('searchbox', { name: 'Find a feature' })).toBeInTheDocument();
@@ -109,7 +109,7 @@ describe('phone App button', () => {
     rememberAppPlace('t1', 'shop', '/sales/invoices');
     renderWithProviders(<MobileTabBar />);
     fireEvent.click(screen.getByRole('button', { name: 'Apps and more, now in Library' }));
-    fireEvent.click(screen.getByRole('button', { name: 'Shop' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Business' }));
     expect(push).toHaveBeenCalledWith('/sales/invoices');
   });
 
@@ -132,7 +132,7 @@ describe('desktop rail and the Apps page (R-DEC-09)', () => {
     renderWithProviders(<UbSidebar />);
     const rail = screen.getByRole('navigation');
     expect(within(rail).getByRole('link', { name: 'Apps' })).toHaveAttribute('href', '/apps');
-    for (const other of ['Shop', 'Udhaar book', 'Lending']) {
+    for (const other of ['Business', 'Money book', 'Ledger']) {
       expect(within(rail).queryByRole('link', { name: other })).not.toBeInTheDocument();
     }
     expect(within(rail).getByRole('link', { name: /Members|Students/ })).toHaveAttribute(
@@ -159,11 +159,11 @@ describe('desktop rail and the Apps page (R-DEC-09)', () => {
     rememberAppPlace('t1', 'khata', '/khata/aging');
     renderWithProviders(<AppsPageContent />);
     const tiles = within(screen.getByTestId('app-sheet-tiles')).getAllByRole('button');
-    expect(tiles.map((tile) => tile.textContent)).toEqual(['Library', 'Shop', 'Udhaar book']);
+    expect(tiles.map((tile) => tile.textContent)).toEqual(['Library', 'Business', 'Money book']);
     expect(within(screen.getByTestId('app-add-tiles')).getByRole('button')).toHaveTextContent(
-      'Add Lending'
+      'Add Ledger'
     );
-    fireEvent.click(screen.getByRole('button', { name: 'Udhaar book' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Money book' }));
     expect(push).toHaveBeenCalledWith('/khata/aging');
   });
 
