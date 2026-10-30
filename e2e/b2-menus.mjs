@@ -64,6 +64,13 @@ for (const o of OWNERS) {
       overflow: document.documentElement.scrollWidth - window.innerWidth,
       cut: [...document.querySelectorAll('nav a span, nav button span')].filter((e) => e.scrollWidth > e.clientWidth + 1 && getComputedStyle(e).overflow !== 'visible').map((e) => e.textContent.trim()),
     }));
+    if (locale === 'en' && o.id === 'medical') {
+      await page.goto(`${base}/suppliers`, { waitUntil: 'networkidle' });
+      const main = await page.evaluate(() => document.querySelector('main')?.innerText ?? '');
+      check(`${tag}: Suppliers page is titled ${want.suppliers}`, main.includes(skew ? 'XX' : 'Distributors'), main.slice(0, 80).replace(/\n/g, ' / '));
+      check(`${tag}: its button says Add distributor`, main.includes(skew ? 'XX' : 'Add distributor'));
+      await page.goto(`${base}/dashboard`, { waitUntil: 'networkidle' });
+    }
     check(`${tag}: desktop no overflow, nothing cut`, m.overflow <= 0 && m.cut.length === 0, JSON.stringify(m));
     await page.screenshot({ path: `${dir}/${tag}-1280.png` });
     // Phone: tab bar and More.
@@ -78,6 +85,32 @@ for (const o of OWNERS) {
     await page.screenshot({ path: `${dir}/${tag}-390-more.png`, fullPage: true });
     await ctx.close();
   }
+}
+// S9 / R-DEC-65: switching business swaps the words and rows. One person who
+// owns two businesses of different kinds (the fixture adds the membership).
+{
+  const ctx = await browser.newContext({ viewport: { width: 1280, height: 900 } });
+  const page = await ctx.newPage();
+  await page.goto(`${base}/login/email`);
+  await page.fill('input[type=email]', 'b2-medical@yourkhata.test');
+  await page.fill('input[type=password]', PASSWORD);
+  await page.keyboard.press('Enter');
+  await page.waitForURL((u) => !u.pathname.startsWith('/login'), { timeout: 30000 });
+  const me = (await (await ctx.request.get(`${base}/api/v1/auth/me`)).json()).data;
+  const other = (me.tenants ?? []).find((t) => t.id !== me.active_tenant_id);
+  if (!other) {
+    check('S9 switching business: the owner has a second business', false, 'run the fixture');
+  } else {
+    const before = me.active_tenant.words?.en?.['nav.suppliers'];
+    const sw = await ctx.request.post(`${base}/api/v1/auth/switch-tenant`, { data: { tenant_id: other.id } });
+    const after = (await (await ctx.request.get(`${base}/api/v1/auth/me`)).json()).data;
+    check('S9 switch answered', sw.ok(), String(sw.status()));
+    check('S9 words swap with the business (Distributors → Suppliers)', before === (skew ? 'XX' : 'Distributors') && after.active_tenant.words?.en?.['nav.suppliers'] === undefined, `${before} → ${after.active_tenant.words?.en?.['nav.suppliers']}`);
+    check('S9 features swap (no orders → orders)', (after.active_tenant.features ?? []).includes('orders') !== skew, JSON.stringify(after.active_tenant.features));
+    // and back, so the next run starts from the medical store
+    await ctx.request.post(`${base}/api/v1/auth/switch-tenant`, { data: { tenant_id: me.active_tenant_id } });
+  }
+  await ctx.close();
 }
 await browser.close();
 const failed = results.filter((ok) => !ok).length;

@@ -49,3 +49,14 @@ for kind, name, wholesale in KINDS:
         onboarding.apply_preset(tenant=tenant, actor=user)
         Tenant.objects.filter(pk=tenant.pk).update(onboarding_step=4)
     print("made", email, tenant.business_type, Tenant.objects.get(pk=tenant.pk).onboarding_step)
+
+# S9: the medical owner also owns a hardware business, to test switching.
+from apps.platform_app.models import Role  # noqa: E402
+
+med = User.objects.get(email="b2-medical@yourkhata.test")
+hw_owner = User.objects.get(email="b2-hardware@yourkhata.test")
+hw = Membership.objects.get(user=hw_owner).tenant
+if not Membership.objects.filter(user=med, tenant=hw).exists():
+    owner_role = Role.objects.filter(tenant__isnull=True, code="owner").first()
+    Membership.objects.create(user=med, tenant=hw, role=owner_role, status="active", is_default=False)
+    print("medical owner also owns", hw.name)
