@@ -169,29 +169,35 @@ describe('the wizard — step 1 (FR-2)', () => {
     expect(store.getState().onboarding.completedStep).toBe(1);
   });
 
-  it('sends the extra kinds with the business, dashed, never the business\'s own', async () => {
-    /** Prevents: a mixed shop saved as one kind, or its own kind listed as an extra. */
+  it('asks "Wholesale of what?" and sends the kind with sells_wholesale', async () => {
+    /** Prevents (R-DEC-64): a wholesaler saved as a kind with no wholesale, or
+     * as the bare 'wholesale' type that says nothing about what they sell. */
     const user = userEvent.setup();
     onboardingService.createTenant.mockResolvedValue({ tenant: tenant(), warnings: [] });
     renderWithProviders(<OnboardingStepPageContent step={1} />);
 
-    await user.type(screen.getByLabelText(/Business name/), 'Patil Hardware');
-    await user.click(screen.getByRole('radio', { name: /Hardware/ }));
-    await user.click(screen.getByRole('button', { name: /I also sell/ }));
-    await user.click(screen.getByRole('checkbox', { name: /Medical/ }));
-    // The business's own kind cannot be an extra.
-    await user.click(screen.getByRole('checkbox', { name: /Hardware/ }));
-    expect(screen.getByRole('checkbox', { name: /Medical/ }).className).toContain('border-dashed');
-
+    await user.type(screen.getByLabelText(/Business name/), 'Patil Traders');
+    await user.click(screen.getByRole('radio', { name: /Wholesale/ }));
+    const what = screen.getByRole('radiogroup', { name: 'Wholesale of what?' });
+    // The same kinds, without Wholesale itself.
+    expect(within(what).getAllByRole('radio')).toHaveLength(9);
+    expect(within(what).queryByRole('radio', { name: /Wholesale/ })).toBeNull();
+    await user.click(within(what).getByRole('radio', { name: /Kirana/ }));
     await chooseOption(user, /^State/, /Maharashtra/);
     await user.click(screen.getByRole('button', { name: 'Continue' }));
 
     await waitFor(() => expect(onboardingService.createTenant).toHaveBeenCalled());
     expect(onboardingService.createTenant.mock.calls[0][0]).toMatchObject({
-      businessType: 'hardware',
-      extraTypes: ['medical'],
+      businessType: 'kirana',
+      sellsWholesale: true,
     });
   });
+
+  it('has no "+ I also sell…": one business is one kind (R-DEC-64)', () => {
+    renderWithProviders(<OnboardingStepPageContent step={1} />);
+    expect(screen.queryByRole('button', { name: /I also sell/ })).toBeNull();
+  });
+
   it('refuses a one-character business name before it reaches the wire', async () => {
     const user = userEvent.setup();
     renderWithProviders(<OnboardingStepPageContent step={1} />);

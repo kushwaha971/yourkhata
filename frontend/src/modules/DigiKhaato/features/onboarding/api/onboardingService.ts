@@ -105,7 +105,9 @@ const toResult = (body: TenantApiResponse): OnboardingResult => ({
 const businessChoice = (input: OnboardingBusinessStep): Record<string, unknown> => ({
   ...(input.apps ? { apps: [...input.apps] } : {}),
   ...(input.businessType ? { business_type: input.businessType } : {}),
-  ...(input.businessType && input.extraTypes ? { extra_types: [...input.extraTypes] } : {}),
+  ...(input.businessType && input.sellsWholesale !== undefined
+    ? { sells_wholesale: input.sellsWholesale }
+    : {}),
 });
 
 /**

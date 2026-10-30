@@ -1,14 +1,12 @@
 'use client';
 
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useMemo } from 'react';
 
 import { yupResolver } from '@hookform/resolvers/yup';
-import { Plus } from 'lucide-react';
 import { useForm, useWatch } from 'react-hook-form';
 
 
 import {
-  UbButton,
   UbCombobox,
   UbDivider,
   UbField,
@@ -21,6 +19,7 @@ import { useTranslation } from 'src/hooks/useTranslation';
 import { selectLocale } from 'src/redux/slice/localeSlice';
 
 import { SHOP_APP } from '../constants/appChoices';
+import { WHOLESALE_TILE, type BusinessType } from '../constants/businessTypes';
 import { GST_STATES } from '../constants/gstStates';
 import { useOnboardingSchemas } from '../validation/onboardingSchemas';
 
@@ -29,7 +28,6 @@ import { BusinessTypeGrid } from './BusinessTypeGrid';
 import { OnboardingStepActions } from './OnboardingStepActions';
 import { OnboardingStepCard } from './OnboardingStepCard';
 
-import type { BusinessType } from '../constants/businessTypes';
 import type { UseOnboardingResult } from '../hooks/useOnboarding';
 import type { BusinessStepFormValues } from '../validation/onboardingSchemas';
 
@@ -60,7 +58,7 @@ export function OnboardingBusinessStep({
     defaultValues: {
       name: onboarding.draft.name,
       businessType: onboarding.draft.businessType ?? '',
-      extraTypes: [],
+      sellsWholesale: false,
       apps: initialApps(onboarding),
       stateCode: onboarding.draft.stateCode ?? '',
       ownerName: onboarding.draft.ownerName,
@@ -75,14 +73,9 @@ export function OnboardingBusinessStep({
   const { setError } = form;
   const chosenApps = useWatch({ control: form.control, name: 'apps' });
   const runsShop = chosenApps.includes(SHOP_APP);
-  const extraTypes = useWatch({ control: form.control, name: 'extraTypes' });
+  const sellsWholesale = useWatch({ control: form.control, name: 'sellsWholesale' });
   const pickedType = useWatch({ control: form.control, name: 'businessType' });
-  // B1 — "+ I also sell…" turns the same tiles into a pick of MORE kinds.
-  const [addingExtras, setAddingExtras] = useState(false);
-  const setExtras = useCallback(
-    (next: BusinessType[]) => form.setValue('extraTypes', next, { shouldDirty: true }),
-    [form]
-  );
+
   const submit = useCallback(
     (values: BusinessStepFormValues) => onboarding.submitBusinessStep(values, setError),
     [onboarding, setError]
@@ -186,21 +179,27 @@ export function OnboardingBusinessStep({
             else, so it is asked only of a business that ticked the Shop. */}
         {runsShop && (
           <UbField
-            name="businessType"
-            label={t(addingExtras ? 'onboarding.pick.alsoTitle' : 'onboarding.pick.title')}
-            hint={t(addingExtras ? 'onboarding.pick.alsoBody' : 'onboarding.pick.body')}
+            // While "Wholesale of what?" is open the kind is asked below, so its
+            // error belongs there and not under these tiles.
+            name={sellsWholesale ? 'sellsWholesale' : 'businessType'}
+            label={t('onboarding.pick.title')}
+            hint={t('onboarding.pick.body')}
             required
           >
             {(field) => (
               <BusinessTypeGrid
-                value={(field.value as BusinessType | '') || ''}
+                // R-DEC-64: the Wholesale tile is lit while its question is open;
+                // the kind itself is answered underneath.
+                value={sellsWholesale ? WHOLESALE_TILE : (field.value as BusinessType | '') || ''}
                 onChange={(kind) => {
-                  field.onChange(kind);
-                  if (extraTypes.includes(kind)) setExtras(extraTypes.filter((k) => k !== kind));
+                  if (kind === WHOLESALE_TILE) {
+                    form.setValue('sellsWholesale', true, { shouldDirty: true });
+                    form.setValue('businessType', '');
+                    return;
+                  }
+                  form.setValue('sellsWholesale', false, { shouldDirty: true });
+                  form.setValue('businessType', kind, { shouldValidate: true });
                 }}
-                extras={extraTypes}
-                onExtrasChange={setExtras}
-                addingExtras={addingExtras}
                 invalid={field.invalid}
                 describedBy={field['aria-describedby']}
                 ariaLabel={t('onboarding.pick.title')}
@@ -208,18 +207,26 @@ export function OnboardingBusinessStep({
             )}
           </UbField>
         )}
-        {runsShop && (
-          <UbButton
-            type="button"
-            variant="secondary"
-            icon={<Plus aria-hidden className="h-4 w-4" />}
-            aria-pressed={addingExtras}
-            disabled={!pickedType}
-            onClick={() => setAddingExtras((on) => !on)}
-            className="justify-self-start"
+        {/* R-DEC-64 — "Wholesale of what?": one kind, sold wholesale. Its
+            features are that kind's and wholesale's together. */}
+        {runsShop && sellsWholesale && (
+          <UbField
+            name="businessType"
+            label={t('onboarding.pick.wholesaleTitle')}
+            hint={t('onboarding.pick.wholesaleBody')}
+            required
           >
-            {addingExtras ? t('onboarding.pick.alsoDone') : t('onboarding.pick.alsoSell')}
-          </UbButton>
+            {(field) => (
+              <BusinessTypeGrid
+                value={(pickedType as BusinessType | '') || ''}
+                onChange={field.onChange}
+                exclude={[WHOLESALE_TILE]}
+                invalid={field.invalid}
+                describedBy={field['aria-describedby']}
+                ariaLabel={t('onboarding.pick.wholesaleTitle')}
+              />
+            )}
+          </UbField>
         )}
 
         <OnboardingStepActions

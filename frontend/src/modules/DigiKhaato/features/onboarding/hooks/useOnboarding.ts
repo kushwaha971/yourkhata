@@ -93,7 +93,7 @@ import type { UseFormSetError } from 'react-hook-form';
  *    disabled — not hidden — in confirmed `offline`.
  */
 /** The RHF paths each step owns, so `applyServerErrors()` knows what to anchor. */
-const BUSINESS_FIELDS = ['name', 'businessType', 'extraTypes', 'apps', 'stateCode', 'ownerName'];
+const BUSINESS_FIELDS = ['name', 'businessType', 'sellsWholesale', 'apps', 'stateCode', 'ownerName'];
 const GST_FIELDS = ['gstType', 'gstin', 'legalName', 'pan'];
 const ADDRESS_FIELDS = ['line1', 'line2', 'city', 'district', 'pincode', 'phone', 'email'];
 
@@ -372,7 +372,7 @@ export const useOnboarding = (routeStep: number): UseOnboardingResult => {
       const runsShop = apps === null || apps.includes(SHOP_APP);
       const businessType = runsShop ? values.businessType || null : null;
       if (runsShop && !businessType) return;
-      const extraTypes = businessType ? values.extraTypes.filter((k) => k !== businessType) : undefined;
+      const sellsWholesale = businessType ? values.sellsWholesale : undefined;
       const isEdit = tenantId !== null;
       try {
         if (isEdit) {
@@ -380,7 +380,7 @@ export const useOnboarding = (routeStep: number): UseOnboardingResult => {
             saveBusinessStep({
               name: values.name,
               businessType,
-              extraTypes,
+              sellsWholesale,
               apps,
               stateCode: values.stateCode,
               ownerName: values.ownerName,
@@ -399,7 +399,7 @@ export const useOnboarding = (routeStep: number): UseOnboardingResult => {
             createTenant({
               name: values.name,
               businessType,
-              extraTypes,
+              sellsWholesale,
               apps,
               stateCode: values.stateCode,
               ownerName: values.ownerName,

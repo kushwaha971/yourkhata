@@ -254,7 +254,9 @@ export const BUSINESS_TYPE_CONFIG: Readonly<Record<BusinessType, BusinessTypeCon
 /**
  * B1 — the ten tiles of "What do you sell?", in the design's order (`TILES`),
  * each with the design's picture and its stored type (R-DEC-63). Sweets,
- * bakery and café is the existing `food`; the Wholesale tile is `wholesale`.
+ * bakery and café is the existing `food`. The Wholesale tile is never STORED
+ * as a kind (R-DEC-64): it asks "Wholesale of what?" and saves that kind with
+ * `sells_wholesale` (the Shop setting `shop.wholesale`).
  * The four older broad types stay valid for a business that has one, and are
  * not offered at sign-up.
  */
@@ -276,8 +278,8 @@ export const SHOP_KIND_TILES: readonly {
   { value: 'other', picture: 'other', labelId: 'onboarding.tile.other', hintId: 'onboarding.tile.other.hint' },
 ];
 
-/** BP-22 §5 — up to this many more kinds under one GSTIN (server: MAX_EXTRA_TYPES). */
-export const MAX_EXTRA_TYPES = 3;
+/** R-DEC-64 — the tile that asks "Wholesale of what?" instead of being a kind. */
+export const WHOLESALE_TILE: BusinessType = 'wholesale';
 
 /**
  * FR-7 — the modules every business gets, before `inventory` and before the

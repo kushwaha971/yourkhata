@@ -10,7 +10,6 @@ import { useValidationSchemas } from 'src/hooks/useValidationSchemas';
 import { SHOP_APP } from '../constants/appChoices';
 import {
   BUSINESS_TYPES,
-  MAX_EXTRA_TYPES,
   GST_TYPES,
   type BusinessType,
   type GstType,
@@ -29,8 +28,8 @@ import { GST_STATE_CODES } from '../constants/gstStates';
 export interface BusinessStepFormValues {
   name: string;
   businessType: BusinessType | '';
-  /** B1 "+ I also sell…" — more kinds under the same GSTIN. */
-  extraTypes: BusinessType[];
+  /** R-DEC-64 — the Wholesale tile: the kind below is sold wholesale. */
+  sellsWholesale: boolean;
   /** The apps ticked on step 1. `['shop']` when the server offered no choice. */
   apps: string[];
   stateCode: string;
@@ -57,7 +56,7 @@ export interface AddressStepFormValues {
 export const BUSINESS_STEP_FIELDS = [
   'name',
   'businessType',
-  'extraTypes',
+  'sellsWholesale',
   'apps',
   'stateCode',
   'ownerName',
@@ -107,9 +106,7 @@ export const useOnboardingSchemas = (): OnboardingSchemas => {
             otherwise: (schema) => schema.oneOf([...BUSINESS_TYPES, '']),
           })
           .defined(),
-        extraTypes: Yup.array(Yup.mixed<BusinessType>().oneOf([...BUSINESS_TYPES]).defined())
-          .max(MAX_EXTRA_TYPES)
-          .default([]),
+        sellsWholesale: Yup.boolean().default(false),
         // EC-4 — `97` is in `GST_STATE_CODES` and `99` is not, so "in the list"
         // is the whole rule and there is no second place to keep it true.
         stateCode: v
