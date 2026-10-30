@@ -132,6 +132,23 @@ its branch. A section that lags the code is a defect.
     loaded when opened from another app.
 - **Next:** Part B (B1 Pick what you sell).
 
+## B1 · Pick what you sell — main session
+
+- **Worktree:** main (`proceed-222204`), branch `shop/a2`.
+- **Report:** `docs/performance/2026-10-28-shop-b1-pick-what-you-sell.md`;
+  harnesses `e2e/b1-pick.mjs` (look, 124 checks) and `e2e/b1-signup.mjs`
+  (real sign-up read back, 10 checks, `--skew` fails all 10).
+- **Status:** ready for the owner's check (30 Oct 2026). Owner decisions
+  R-DEC-63 (kinds are stored types), R-DEC-64 (one business = one kind;
+  Wholesale = kind + `shop.wholesale`, "Wholesale of what?" below), R-DEC-65
+  (P0: each kind its own app, modular schema).
+- **Open:** "What do you sell?" is still a section of wizard step 1 (the design
+  has its own step; owner not asked to change it); a resumed wizard does not
+  re-light the Wholesale tile; the B2/B3 matrix
+  (https://claude.ai/artifact/XnDfhJoNkDUXZoNSKmfFLb) waits for approval.
+- **Next:** B2, after the owner approves the matrix and the design thread's
+  additions.
+
 ## What the stopped sessions found (27 Oct 2026, before the owner stopped them)
 
 The owner stopped the parallel sessions to save usage. Three sessions working

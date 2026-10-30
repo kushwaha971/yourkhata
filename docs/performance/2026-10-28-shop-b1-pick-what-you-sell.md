@@ -192,3 +192,28 @@ same values, so it waits on this too.
 6. Not yet run for B1: monkey (3 seeds × 2 sizes), the §10 regression of A3–A8
    harnesses, bundle:check, a live sign-up read-back through the real API, and
    the hand-driven pass. Score not given; the piece is in test.
+
+## Final round (30 Oct 2026, later) — ready for the owner's check
+
+- **Wholesale (owner, twice):** first a card lit beside the kind, then, at the
+  owner's word, back to one choice with a separate "Wholesale of what?" list
+  below (f96e561cf). Stored as kind + `shop.wholesale` = on.
+- **`e2e/b1-pick.mjs --tag=after3`: 124/124.**
+- **`e2e/b1-signup.mjs`: 10/10** on a real sign-up through the live API:
+  Hardware → `hardware`, wholesale off, units NOS/PCS/BOX/KGS/MTR/LTR, 15 days;
+  Wholesale → Kirana → `kirana`, wholesale on, units NOS/KGS/GMS/LTR/PAC/BOX/
+  BAG/QTL, 15 days; no `shop.extra_types`. `--skew`: 0/10 (every check fails).
+- **Monkey** `/onboarding/step/1`, seeds 1–3 × 390/1280: 3 passed; 3 failed
+  on 5–9 s API calls while other work ran on the machine; all 3 PASS when
+  replayed alone.
+- **§10 regression:** a3-customer-box-look 70/0, a3-functional 0 failures,
+  a4-money/remove-undo/functional PASS, a4-edges 11/11 at 390 and 1280,
+  a5-measure PASS, a6-forms 24/0, a8-first-tap 38/0. **a7-measure 31/32:**
+  `/sales/estimates` shows "No estimates yet" — the QA shop has 0 estimates
+  now (API total 0), so the grid never appears. A data state, not B1 code;
+  not investigated further.
+- **Gates:** onboarding jest 156/156; platform backend tests pass except the
+  4 failures that predate this work (personal Udhaar, `apps/.claude`);
+  tsc, eslint, i18n clean; bundle +0.7 KB on sign-up, budgets raised with a note.
+- **Not done:** the hand-driven pass in the browser pane; competitor
+  comparison for this screen (moved to the design thread); score — the owner's.

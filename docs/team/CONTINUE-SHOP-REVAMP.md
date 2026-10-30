@@ -80,6 +80,19 @@ same honesty. Read this whole file before doing anything.
   registers' count lines with `UbCountLine`.
 - **Part E:** review.
 - **Then:** the §9 module round and the §11 go-live gate.
+- **After the Shop (owner, 30 Oct 2026; P0, same piece-by-piece standard,
+  design https://claude.ai/artifact/RsYjPpq2t3zCTMu5iUSvNm#gi):**
+  1. **Start flow and primary app.** A first sign-up opens the Udhaar book by
+     default; from More the person can make Lending, Library or the Shop their
+     primary app, and that app opens on login. With several shops, the one
+     marked default/primary opens.
+  2. **Rename "Shop" to "Business"** on every user-visible surface (EN and HI),
+     code namespace unchanged.
+  3. **Udhaar book, Library and Lending (Part I)** revamps, each to the same
+     12 steps.
+  The design work for every shop kind runs in its own thread ("Research and
+  design every shop kind"), adding to the same artifact; nothing is built until
+  the owner approves it (R-DEC-65).
 
 **Open, listed in the reports:**
 - the React #418 mismatch, seen once (Suppliers seed 123 @390 during a
