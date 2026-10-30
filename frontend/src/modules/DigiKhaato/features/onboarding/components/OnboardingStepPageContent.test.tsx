@@ -136,12 +136,14 @@ describe('the wizard — step 1 (FR-2)', () => {
     const grid = screen.getByRole('radiogroup', { name: 'What do you sell?' });
     expect(grid).toBeInTheDocument();
     // B1 / R-DEC-63: the design's ten kinds, in its order, each with its hint.
-    const radios = screen.getAllByRole('radio');
-    expect(radios).toHaveLength(10);
-    expect(radios.map((r) => r.getAttribute('data-kind'))).toEqual([
+    // Wholesale is a card like the rest but an on/off beside the kind.
+    const cards = [...grid.querySelectorAll('[data-kind]')];
+    expect(cards).toHaveLength(10);
+    expect(cards.map((r) => r.getAttribute('data-kind'))).toEqual([
       'kirana', 'medical', 'electronics', 'garments', 'hardware',
       'auto_parts', 'wholesale', 'food', 'jewellery', 'other',
     ]);
+    expect(screen.getAllByRole('radio')).toHaveLength(9);
     expect(screen.getByText('paint, sanitary')).toBeInTheDocument();
   });
 
@@ -169,20 +171,20 @@ describe('the wizard — step 1 (FR-2)', () => {
     expect(store.getState().onboarding.completedStep).toBe(1);
   });
 
-  it('asks "Wholesale of what?" and sends the kind with sells_wholesale', async () => {
-    /** Prevents (R-DEC-64): a wholesaler saved as a kind with no wholesale, or
-     * as the bare 'wholesale' type that says nothing about what they sell. */
+  it('lights Wholesale beside one kind in the same grid and sends both', async () => {
+    /** Prevents (R-DEC-64, owner 30 Oct): a wholesaler saved without the kind
+     * they sell, or Wholesale drawn as a separate, different question. */
     const user = userEvent.setup();
     onboardingService.createTenant.mockResolvedValue({ tenant: tenant(), warnings: [] });
     renderWithProviders(<OnboardingStepPageContent step={1} />);
 
     await user.type(screen.getByLabelText(/Business name/), 'Patil Traders');
-    await user.click(screen.getByRole('radio', { name: /Wholesale/ }));
-    const what = screen.getByRole('radiogroup', { name: 'Wholesale of what?' });
-    // The same kinds, without Wholesale itself.
-    expect(within(what).getAllByRole('radio')).toHaveLength(9);
-    expect(within(what).queryByRole('radio', { name: /Wholesale/ })).toBeNull();
-    await user.click(within(what).getByRole('radio', { name: /Kirana/ }));
+    await user.click(screen.getByRole('checkbox', { name: /Wholesale/ }));
+    await user.click(screen.getByRole('radio', { name: /Kirana/ }));
+    // One grid, both lit.
+    expect(screen.getAllByRole('radiogroup')).toHaveLength(1);
+    expect(screen.getByRole('checkbox', { name: /Wholesale/ })).toHaveAttribute('aria-checked', 'true');
+    expect(screen.getByRole('radio', { name: /Kirana/ })).toHaveAttribute('aria-checked', 'true');
     await chooseOption(user, /^State/, /Maharashtra/);
     await user.click(screen.getByRole('button', { name: 'Continue' }));
 
@@ -1361,7 +1363,7 @@ describe('the wizard — choosing what to use (step 1)', () => {
 
     await fillNameAndState(user);
     await user.click(screen.getByRole('checkbox', { name: /Shop/ }));
-    await user.click(await screen.findByRole('radio', { name: /Wholesale/ }));
+    await user.click(await screen.findByRole('radio', { name: /Kirana/ }));
     await user.click(screen.getByRole('checkbox', { name: /Shop/ }));
     await user.click(screen.getByRole('checkbox', { name: /Lending/ }));
     await user.click(screen.getByRole('button', { name: 'Continue' }));
