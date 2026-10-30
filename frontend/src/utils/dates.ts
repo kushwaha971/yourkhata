@@ -56,6 +56,13 @@ export const formatClock = (value: string | null | undefined): string => {
   return parsed.isValid() ? parsed.format('HH:mm') : '';
 };
 
+/** RFC 3339 instant → `4:10 pm`, the shop's own way of saying a time (C3 "Started 4:10 pm"). */
+export const formatShopTime = (value: string | null | undefined): string => {
+  if (!value) return '';
+  const parsed = dayjs(value);
+  return parsed.isValid() ? parsed.format('h:mm a') : '';
+};
+
 /**
  * Milliseconds from now until an RFC 3339 instant, never negative — the cool-off
  * countdown (PLT-10) and a support session's end (PLT-14) both read it. Lives

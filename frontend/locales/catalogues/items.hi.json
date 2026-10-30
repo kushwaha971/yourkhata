@@ -159,6 +159,7 @@
   "items.list.masters": "श्रेणियाँ और इकाइयाँ",
   "items.list.open": "{name} खोलें",
   "items.list.priceLists": "रेट लिस्ट",
+  "items.list.search.items": "नाम, कोड या बारकोड",
   "items.list.selectAll": "सभी आइटम चुनें",
   "items.list.selectRow": "{name} चुनें",
   "items.list.stat.items": "आइटम",

@@ -3,7 +3,6 @@
   "items.lastRate.inclusive": "(incl. GST)",
   "items.lastRate.sold": "Last sold to {party} at {rate} on {date}",
   "items.lastRate.use": "Use this rate",
-  "items.list.search.items": "Name, code or barcode",
   "items.list.searchPlaceholder": "Search name, SKU or scan barcode",
   "items.picker.cost": "Cost {amount}",
   "items.picker.gstExtra": "plus GST {rate}%",

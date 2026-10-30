@@ -159,6 +159,7 @@
   "items.list.masters": "Categories & units",
   "items.list.open": "Open {name}",
   "items.list.priceLists": "Price lists",
+  "items.list.search.items": "Name, code or barcode",
   "items.list.selectAll": "Select all items",
   "items.list.selectRow": "Select {name}",
   "items.list.stat.items": "Items",

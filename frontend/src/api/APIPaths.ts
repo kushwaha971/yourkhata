@@ -153,6 +153,12 @@ export const API_PATHS = {
   STOCK_ADJUSTMENT: (id: string) => `/stock-adjustments/${seg(id)}`,
   STOCK_SUMMARY: '/stock/summary',
   STOCK_LOW: '/stock/low',
+  /** C3 — stock count (R-DEC-67). */
+  STOCK_COUNT_OPEN: '/stock-counts/open',
+  STOCK_COUNT: (id: string) => `/stock-counts/${seg(id)}`,
+  STOCK_COUNT_LINES: (id: string) => `/stock-counts/${seg(id)}/lines`,
+  STOCK_COUNT_LINE: (id: string, itemId: string) => `/stock-counts/${seg(id)}/lines/${seg(itemId)}`,
+  STOCK_COUNT_SAVE: (id: string) => `/stock-counts/${seg(id)}/save`,
 
   // ── sales ─────────────────────────────────────────────────────────────────
   SALES_INVOICES: '/sales/invoices',

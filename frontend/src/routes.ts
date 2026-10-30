@@ -74,6 +74,8 @@ export const ROUTES = {
   /** INV-08 / INV-07. */
   STOCK_SUMMARY: '/stock/summary',
   STOCK_LOW: '/stock/low',
+  /** C3 — walk the shelves, scan, save the differences. */
+  STOCK_COUNT: '/stock/count',
   SALES_INVOICES: '/sales/invoices',
   /** SAL-01 — quotations (kachha bill); SAL-04 — returns against a bill. */
   SALES_ESTIMATES: '/sales/estimates',

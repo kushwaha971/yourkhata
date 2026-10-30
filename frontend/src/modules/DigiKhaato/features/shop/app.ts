@@ -13,6 +13,7 @@ import {
   PackageCheck,
   PackageSearch,
   Receipt,
+  ScanLine,
   ShoppingCart,
   Tags,
   Truck,
@@ -265,6 +266,18 @@ export const SHOP_APP: AppManifest = {
       permission: 'inventory.item.read',
       section: 'stock',
       order: 4,
+      tab: 'items',
+    },
+    // C3 (design dCount, R-DEC-67) — walk the shelves, scan, save the differences.
+    {
+      key: 'stockCount',
+      icon: ScanLine,
+      labelId: 'nav.stockCount',
+      href: ROUTES.STOCK_COUNT,
+      module: 'inventory',
+      permission: 'inventory.stock.read',
+      section: 'stock',
+      order: 5,
       tab: 'items',
     },
     // PAY-01 … PAY-05 — payments in and out, receipts, void.
