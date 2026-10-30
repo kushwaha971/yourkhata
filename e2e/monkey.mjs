@@ -285,6 +285,7 @@ const serverLines = async (id) =>
  *    orders rows are there exactly when the session says `orders`.
  */
 let agreeChecks = 0;
+const otherAppSkips = [];
 const checkAgrees = async (i, how) => {
   const url = page.url();
   if (!url.startsWith(base) || url.includes("/login") || url.includes("/onboarding")) return;
@@ -307,7 +308,10 @@ const checkAgrees = async (i, how) => {
     }
   }
   const nav = await page.evaluate(() => document.querySelector("nav[aria-label]")?.innerText ?? "").catch(() => "");
-  if (nav && features) {
+  // The words and orders rows are the SHOP's: when the monkey has wandered
+  // into another app (the Udhaar book, from Apps) its menu has neither.
+  if (nav && features && me.active_app !== "shop") otherAppSkips.push(`step ${i}: ${me.active_app}`);
+  if (nav && features && me.active_app === "shop") {
     agreeChecks += 1;
     const supplierWord = words["nav.suppliers"];
     if (supplierWord && !nav.includes(supplierWord))
@@ -631,7 +635,7 @@ console.log(
 // API and speed summary.
 for (const w of onDeviceOnly) console.log(`WARN ${w}`);
 console.log(`data: ${keptChecks} reload/return checks ran on a bill with lines (${keptOnServer} came back to a fresh bill; the one left was found on the server)`);
-console.log(`data: ${agreeChecks} screen-agrees-with-server checks ran (switches, menu words, orders rows)`);
+console.log(`data: ${agreeChecks} screen-agrees-with-server checks ran (switches, menu words, orders rows)${otherAppSkips.length ? `; skipped in another app at ${otherAppSkips.slice(0, 4).join(", ")}` : ""}`);
 if (steps >= 100 && !path.startsWith('/sales/invoices') && !path.startsWith('/onboarding') && agreeChecks === 0)
   failures.push('no reload/return ever checked the screen against the server: the data check proved nothing');
 if (steps >= 100 && path.startsWith('/sales/invoices') && keptChecks === 0) failures.push('no reload/return ever happened with lines on the bill: the data check proved nothing');
