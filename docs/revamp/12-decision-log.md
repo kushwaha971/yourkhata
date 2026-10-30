@@ -868,3 +868,15 @@ D") — Settings › Shop features keeps only the switches whose screens exist
 (today: Sales orders and challans, plus "I also sell wholesale"). The design's
 nine switches are not raised again; the page is tested again after Part D adds
 the fields those switches would control.
+
+R-DEC-68 (owner, 30 October 2026: "yes", to the four C3 stock-count picks) —
+1. An unfinished count is saved on the server (its own count record and
+   lines), so it survives closing the app and continues on another device.
+2. Each counted line keeps the book figure at the moment it was counted; the
+   correction posted is `counted − books at that moment`, so sales during the
+   count never show as a shortage.
+3. A count saves as one record with all its corrections, all or nothing, with
+   no 100-line limit (the stock adjustment's limit does not apply).
+4. Anyone who can read stock may count; saving needs `inventory.stock.adjust`;
+   the ₹ value change shows only to people who can see costs
+   (`reports.financial.read`).
