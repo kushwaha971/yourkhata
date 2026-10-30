@@ -79,6 +79,10 @@ export const QUERIES = {
   fetchStockAdjustment: 'stockAdjustment/fetchStockAdjustment',
   fetchStockSummary: 'stockSummary/fetchStockSummary',
   fetchLowStock: 'stockSummary/fetchLowStock',
+  // C3 — the stock count. Opening starts or joins a count on the server, but
+  // nothing another screen shows changes until it is saved.
+  openStockCount: 'stockCount/open',
+  fetchStockCountLines: 'stockCount/lines',
   // EXP-01 / EXP-02 — the expense list and the category picker
   fetchExpenses: 'expenseList/fetchExpenses',
   fetchExpense: 'expenseForm/fetchExpense',
@@ -253,6 +257,9 @@ export const MUTATIONS = {
   createCategory: 'inventoryMasters/createCategory',
   // INV-06 — the write every stock screen is downstream of
   postStockAdjustment: 'stockAdjustment/postStockAdjustment',
+  // C3 — counting one item, and saving the count
+  countStockItem: 'stockCount/count',
+  saveStockCount: 'stockCount/save',
   // EXP-01 / EXP-02 — record, void, and the inline category create
   createExpense: 'expenseForm/createExpense',
   voidExpense: 'expenseForm/voidExpense',

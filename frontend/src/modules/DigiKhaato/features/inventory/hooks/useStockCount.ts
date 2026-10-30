@@ -55,17 +55,19 @@ export function useStockCount(): UseStockCount {
     refetch();
   }, [refetch]);
 
+  useEffect(() => {
+    if (state.stale) refetch();
+  }, [state.stale, refetch]);
+
   const count = useCallback(
     async (itemId: string, body: { readonly qty: string } | { readonly add: number }) => {
       if (!id) return false;
       const result = await dispatch(countStockItem({ id, itemId, body }));
-      if (countStockItem.fulfilled.match(result)) {
-        refetch();
-        return true;
-      }
+      // The page is re-read through the invalidation map (stale → effect below).
+      return countStockItem.fulfilled.match(result);
       return false;
     },
-    [dispatch, id, refetch]
+    [dispatch, id]
   );
 
   const save = useCallback(async () => {

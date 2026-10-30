@@ -18,6 +18,7 @@ import 'modules/DigiKhaato/features/inventory/redux/itemFormSlice';
 import 'modules/DigiKhaato/features/inventory/redux/itemListSlice';
 import 'modules/DigiKhaato/features/inventory/redux/stockAdjustmentSlice';
 import 'modules/DigiKhaato/features/inventory/redux/stockSummarySlice';
+import 'modules/DigiKhaato/features/inventory/redux/stockCountSlice';
 import 'modules/DigiKhaato/features/expenses/redux/cashbookSlice';
 import 'modules/DigiKhaato/features/expenses/redux/expenseFormSlice';
 import 'modules/DigiKhaato/features/expenses/redux/expenseListSlice';

@@ -1,6 +1,7 @@
 import { createSlice, type Draft, type PayloadAction, type WithSlice } from '@reduxjs/toolkit';
 
 import { resetAllFeatureState } from 'src/redux/actions';
+import { acceptInvalidation } from 'src/redux/invalidation/listener';
 import { rootReducer, type RootState } from 'src/redux/store';
 import type { ApiErrorShape, RequestStatus } from 'src/types/api.types';
 
@@ -27,6 +28,9 @@ export interface StockCountState {
   page: number;
   saving: boolean;
   saveError: ApiErrorShape | null;
+  /** Set by the invalidation listener; the count screen re-reads its page. */
+  stale: boolean;
+  staleUrgency: 'now' | 'next-mount' | null;
 }
 
 const initialState: StockCountState = {
@@ -41,6 +45,8 @@ const initialState: StockCountState = {
   page: 1,
   saving: false,
   saveError: null,
+  stale: false,
+  staleUrgency: null,
 };
 
 const stockCountSlice = createSlice({
@@ -56,6 +62,7 @@ const stockCountSlice = createSlice({
     },
   },
   extraReducers: (builder) => {
+    acceptInvalidation<StockCountState>('stockCount')(builder);
     builder
       .addCase(openStockCount.pending, (state) => {
         state.status = state.summary ? 'refreshing' : 'loading';
@@ -78,6 +85,8 @@ const stockCountSlice = createSlice({
         if (state.linesRequestId !== action.meta.requestId) return;
         state.lines = action.payload as Draft<StockCountPage>;
         state.linesStatus = 'succeeded';
+        state.stale = false;
+        state.staleUrgency = null;
       })
       .addCase(fetchStockCountLines.rejected, (state, action) => {
         if (action.meta.aborted || state.linesRequestId !== action.meta.requestId) return;

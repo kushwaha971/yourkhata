@@ -476,6 +476,10 @@ export const INVALIDATION: TInvalidationMap = {
   // INV-06 — on-hand, average, badges and the movement list all move, on
   // whichever of the three screens the merchant posted from.
   postStockAdjustment: { refetch: ['itemDetail', 'itemList', 'stockSummary'] },
+  // C3 — counting changes only the open count's page, which no other screen
+  // shows. Saving posts stock corrections, so it moves what an adjustment moves.
+  countStockItem: { refetch: ['stockCount'] },
+  saveStockCount: { refetch: ['itemDetail', 'itemList', 'stockSummary'] },
   // ── EXP-01 / EXP-02 / EXP-03 — expenses and the cashbook ──────────────────
   //
   // Recording and voiding change the list the merchant is looking at and the
