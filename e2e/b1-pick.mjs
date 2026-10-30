@@ -29,12 +29,12 @@ const check = (name, ok, detail = '') => {
 const measure = () => {
   const group = document.querySelector('[role=radiogroup]');
   if (!group) return null;
-  const tiles = [...group.querySelectorAll('[data-kind]')];
+  const tiles = [...group.querySelectorAll('[role=radio]')];
   const R = (e) => e.getBoundingClientRect();
   const cs = (e) => getComputedStyle(e);
   const tops = [...new Set(tiles.map((t) => Math.round(R(t).top)))];
   const firstRow = tiles.filter((t) => Math.round(R(t).top) === tops[0]).length;
-  const on = tiles.find((t) => t.getAttribute('aria-checked') === 'true' && t.getAttribute('role') === 'radio');
+  const on = tiles.find((t) => t.getAttribute('aria-checked') === 'true');
   const off = tiles.find((t) => t.getAttribute('aria-checked') !== 'true');
   const tileInfo = (t) => {
     if (!t) return null;
@@ -136,25 +136,25 @@ for (const width of widths) {
         // What the eye sees at this scroll, with the sticky dock where it really is.
         await page.screenshot({ path: `${dir}/${tag}-${key}-view.png` });
         await page.locator('[role=radiogroup]').screenshot({ path: `${dir}/${tag}-${key}-tiles.png` });
-        // R-DEC-64 (owner, 30 Oct): Wholesale is a card like the rest, lit
-        // BESIDE the one kind, in the same grid.
-        const ws = page.locator('[data-kind=wholesale]').first();
+        // R-DEC-64: Wholesale opens "Wholesale of what?" (the grid without it).
+        const ws = page.locator('[role=radiogroup] [data-kind=wholesale]').first();
         if (await ws.count()) {
           await ws.click();
-          await page.locator('[role=radiogroup] [data-kind=kirana]').click();
           await page.waitForTimeout(250);
-          const st = await page.evaluate(() => ({
-            groups: document.querySelectorAll('[role=radiogroup]').length,
-            ws: document.querySelector('[data-kind=wholesale]')?.getAttribute('aria-checked'),
-            k: document.querySelector('[data-kind=kirana]')?.getAttribute('aria-checked'),
-            wsBorder: getComputedStyle(document.querySelector('[data-kind=wholesale]')).borderTopWidth,
-            overflow: document.documentElement.scrollWidth - window.innerWidth,
-          }));
+          const groups = await page.locator('[role=radiogroup]').count();
+          const second = page.locator('[role=radiogroup]').nth(1);
+          const secondCount = groups > 1 ? await second.locator('[role=radio]').count() : 0;
+          const hasWs = groups > 1 ? await second.locator('[data-kind=wholesale]').count() : -1;
           if (theme === 'light' && locale === 'en') {
-            check(`${key} wholesale + kirana lit in one grid`, st.groups === 1 && st.ws === 'true' && st.k === 'true' && st.wsBorder === '2px', JSON.stringify(st));
+            check(`${key} wholesale opens "of what?" with 9 kinds`, groups === 2 && secondCount === 9 && hasWs === 0, `${groups}/${secondCount}/${hasWs}`);
           }
-          check(`${key} wholesale: no page overflow`, st.overflow <= 0, String(st.overflow));
-          await page.locator('[role=radiogroup]').screenshot({ path: `${dir}/${tag}-${key}-wholesale.png` });
+          if (groups > 1) {
+            await second.locator('[data-kind=kirana]').click();
+            await second.scrollIntoViewIfNeeded();
+            await page.screenshot({ path: `${dir}/${tag}-${key}-wholesale.png`, fullPage: true });
+            const m2 = await page.evaluate(() => ({ overflow: document.documentElement.scrollWidth - window.innerWidth }));
+            check(`${key} wholesale: no page overflow`, m2.overflow <= 0, String(m2.overflow));
+          }
         }
         if (theme === 'light' && locale === 'en') {
           const phone = width < 1024;

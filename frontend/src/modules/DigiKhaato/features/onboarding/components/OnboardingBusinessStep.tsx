@@ -19,6 +19,7 @@ import { useTranslation } from 'src/hooks/useTranslation';
 import { selectLocale } from 'src/redux/slice/localeSlice';
 
 import { SHOP_APP } from '../constants/appChoices';
+import { WHOLESALE_TILE, type BusinessType } from '../constants/businessTypes';
 import { GST_STATES } from '../constants/gstStates';
 import { useOnboardingSchemas } from '../validation/onboardingSchemas';
 
@@ -27,7 +28,6 @@ import { BusinessTypeGrid } from './BusinessTypeGrid';
 import { OnboardingStepActions } from './OnboardingStepActions';
 import { OnboardingStepCard } from './OnboardingStepCard';
 
-import type { BusinessType } from '../constants/businessTypes';
 import type { UseOnboardingResult } from '../hooks/useOnboarding';
 import type { BusinessStepFormValues } from '../validation/onboardingSchemas';
 
@@ -179,25 +179,51 @@ export function OnboardingBusinessStep({
             else, so it is asked only of a business that ticked the Shop. */}
         {runsShop && (
           <UbField
-            name="businessType"
+            // While "Wholesale of what?" is open the kind is asked below, so its
+            // error belongs there and not under these tiles.
+            name={sellsWholesale ? 'sellsWholesale' : 'businessType'}
             label={t('onboarding.pick.title')}
-            // R-DEC-64: Wholesale lit with no kind yet — say what is missing.
-            hint={t(
-              sellsWholesale && !pickedType ? 'onboarding.pick.wholesaleBody' : 'onboarding.pick.body'
-            )}
+            hint={t('onboarding.pick.body')}
             required
           >
             {(field) => (
               <BusinessTypeGrid
-                value={(field.value as BusinessType | '') || ''}
-                onChange={field.onChange}
-                wholesale={sellsWholesale}
-                onWholesaleChange={(on) =>
-                  form.setValue('sellsWholesale', on, { shouldDirty: true })
-                }
+                // R-DEC-64: the Wholesale tile is lit while its question is open;
+                // the kind itself is answered underneath.
+                value={sellsWholesale ? WHOLESALE_TILE : (field.value as BusinessType | '') || ''}
+                onChange={(kind) => {
+                  if (kind === WHOLESALE_TILE) {
+                    form.setValue('sellsWholesale', true, { shouldDirty: true });
+                    form.setValue('businessType', '');
+                    return;
+                  }
+                  form.setValue('sellsWholesale', false, { shouldDirty: true });
+                  form.setValue('businessType', kind, { shouldValidate: true });
+                }}
                 invalid={field.invalid}
                 describedBy={field['aria-describedby']}
                 ariaLabel={t('onboarding.pick.title')}
+              />
+            )}
+          </UbField>
+        )}
+        {/* R-DEC-64 — "Wholesale of what?": one kind, sold wholesale. Its
+            features are that kind's and wholesale's together. */}
+        {runsShop && sellsWholesale && (
+          <UbField
+            name="businessType"
+            label={t('onboarding.pick.wholesaleTitle')}
+            hint={t('onboarding.pick.wholesaleBody')}
+            required
+          >
+            {(field) => (
+              <BusinessTypeGrid
+                value={(pickedType as BusinessType | '') || ''}
+                onChange={field.onChange}
+                exclude={[WHOLESALE_TILE]}
+                invalid={field.invalid}
+                describedBy={field['aria-describedby']}
+                ariaLabel={t('onboarding.pick.wholesaleTitle')}
               />
             )}
           </UbField>

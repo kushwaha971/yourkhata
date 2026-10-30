@@ -6,26 +6,22 @@ import { UbGrid, UbPressable, UbShopKindIcon, UbText } from 'src/design-system';
 import { useTranslation } from 'src/hooks/useTranslation';
 import { cn } from 'src/utils/cn';
 
-import { SHOP_KIND_TILES, WHOLESALE_TILE, type BusinessType } from '../constants/businessTypes';
+import { SHOP_KIND_TILES, type BusinessType } from '../constants/businessTypes';
 
 /**
  * B1 — "What do you sell?": the design's shop-kind tiles (`.tiles`, `.tile`,
  * `.tile.on`), three columns on a phone and five from `md`, as `pPick` and
  * `dPick` draw them.
  *
- * A `radiogroup` of kinds: exactly one (R-DEC-64, one business is one kind),
- * arrows move AND select (T-PLT-03-8), only the chosen tile is in the tab
- * order. The Wholesale card looks like every other card (owner, 30 Oct: "don't
- * make it different") but is a switch, not a kind: with `onWholesaleChange` it
- * is a checkbox that stays lit beside the one kind it is "wholesale of".
+ * A `radiogroup`: exactly one (R-DEC-64, one business is one kind), arrows
+ * move AND select (T-PLT-03-8), only the chosen tile is in the tab order.
+ * `exclude` drops tiles — "Wholesale of what?" is the same grid without the
+ * Wholesale tile.
  */
 export interface BusinessTypeGridProps {
   readonly value: BusinessType | '';
   readonly onChange: (value: BusinessType) => void;
   readonly exclude?: readonly BusinessType[];
-  /** R-DEC-64 — the Wholesale card as an on/off beside the kind. */
-  readonly wholesale?: boolean;
-  readonly onWholesaleChange?: (on: boolean) => void;
   readonly invalid?: boolean;
   readonly describedBy?: string;
   readonly ariaLabel: string;
@@ -36,8 +32,6 @@ function BusinessTypeGridBase({
   value,
   onChange,
   exclude,
-  wholesale = false,
-  onWholesaleChange,
   invalid,
   describedBy,
   ariaLabel,
@@ -51,9 +45,7 @@ function BusinessTypeGridBase({
 
   const onKeyDown = useCallback(
     (event: KeyboardEvent<HTMLDivElement>) => {
-      const kinds = tiles
-        .map((tile) => tile.value)
-        .filter((kind) => !(onWholesaleChange && kind === WHOLESALE_TILE));
+      const kinds = tiles.map((tile) => tile.value);
       const index = kinds.indexOf(value as BusinessType);
       const last = kinds.length - 1;
       let next = index < 0 ? 0 : index;
@@ -72,7 +64,7 @@ function BusinessTypeGridBase({
       const target = kinds[next];
       if (target) onChange(target);
     },
-    [tiles, value, onChange, onWholesaleChange]
+    [tiles, value, onChange]
   );
 
   return (
@@ -87,15 +79,14 @@ function BusinessTypeGridBase({
       className={cn('gap-[10px] md:grid-cols-5', className)}
     >
       {tiles.map((tile, index) => {
-        const isSwitch = Boolean(onWholesaleChange) && tile.value === WHOLESALE_TILE;
-        const selected = isSwitch ? wholesale : value === tile.value;
+        const selected = value === tile.value;
         return (
           <UbPressable
             key={tile.value}
-            role={isSwitch ? 'checkbox' : 'radio'}
+            role="radio"
             aria-checked={selected}
-            tabIndex={isSwitch || selected || (!value && index === 0) ? 0 : -1}
-            onClick={() => (isSwitch ? onWholesaleChange?.(!wholesale) : onChange(tile.value))}
+            tabIndex={selected || (!value && index === 0) ? 0 : -1}
+            onClick={() => onChange(tile.value)}
             data-kind={tile.value}
             className={cn(
               // design .tile: centred grid, min-height 96, radius 12, padding
