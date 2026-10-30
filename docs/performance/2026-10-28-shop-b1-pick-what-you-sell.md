@@ -217,3 +217,24 @@ same values, so it waits on this too.
   tsc, eslint, i18n clean; bundle +0.7 KB on sign-up, budgets raised with a note.
 - **Not done:** the hand-driven pass in the browser pane; competitor
   comparison for this screen (moved to the design thread); score — the owner's.
+
+## Gaps closed before the owner's rating (30 Oct 2026, evening)
+
+- **Reload mid-setup** re-lights Wholesale and its kind: the tenant read sends
+  `sells_wholesale`, the draft and the form keep it (151a5c859; test fails on
+  the old form default).
+- **Hand-driven pass** (browser pane, phone 375 and desktop): Shop tick shows
+  the tiles; Hardware picks; Wholesale lights and opens "Wholesale of what?";
+  Kirana there; tapping Hardware again closes the list and clears wholesale;
+  Wholesale with no kind and Continue shows the error under "Wholesale of
+  what?"; no page overflow; no red error on open. Found and fixed two
+  (a45a56006): arrow keys changed the choice but left focus on the first tile
+  (test fails before); the empty-kind error said "Choose a business type" —
+  now "Tap what you sell." (EN/HI, onboarding only).
+- **Estimates check (A7):** the QA shop has never had an estimate (0 of 30 in
+  the whole database; it has 1,612 bills), so `/sales/estimates` shows its
+  empty state and the grid check cannot pass there. Not B1; A7's harness needs
+  to create one first.
+- **Still open:** the competitor comparison for this screen (being researched
+  in the design thread); "What do you sell?" as its own step (the design) —
+  the owner kept it in step 1 for now.
