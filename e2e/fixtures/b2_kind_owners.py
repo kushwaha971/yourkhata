@@ -19,6 +19,12 @@ KINDS = [
     ("kirana", "Shree Ganesh Kirana", False),
     ("kirana", "Gupta Traders", True),
     ("jewellery", "Laxmi Jewellers", False),
+    # Toward 9.5: every kind is looked at, not five.
+    ("electronics", "Shiv Mobile Point", False),
+    ("garments", "Laxmi Garments", False),
+    ("auto_parts", "Mahadev Auto Parts", False),
+    ("food", "Anand Sweets & Bakery", False),
+    ("other", "Om Stores", False),
 ]
 
 for kind, name, wholesale in KINDS:

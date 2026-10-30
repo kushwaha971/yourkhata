@@ -30,6 +30,12 @@ const OWNERS = [
   { id: 'kirana', email: 'b2-kirana@yourkhata.test', kind: 'Kirana', suppliers: 'Suppliers', customers: 'Customers', orders: false },
   { id: 'wholesale', email: 'b2-kirana-wholesale@yourkhata.test', kind: 'Kirana', suppliers: 'Companies', customers: 'Retailers', orders: true },
   { id: 'jewellery', email: 'b2-jewellery@yourkhata.test', kind: 'Jewellery', suppliers: 'Suppliers', customers: 'Customers', orders: false },
+  { id: 'electronics', email: 'b2-electronics@yourkhata.test', kind: 'Mobile', suppliers: 'Suppliers', customers: 'Customers', orders: true },
+  { id: 'garments', email: 'b2-garments@yourkhata.test', kind: 'Clothes', suppliers: 'Suppliers', customers: 'Customers', orders: false },
+  { id: 'auto_parts', email: 'b2-auto_parts@yourkhata.test', kind: 'Auto parts', suppliers: 'Suppliers', customers: 'Customers', orders: true },
+  { id: 'food', email: 'b2-food@yourkhata.test', kind: 'Sweets', suppliers: 'Suppliers', customers: 'Customers', orders: false },
+  // "Other" has no named kind: the caption is just the app's name.
+  { id: 'other', email: 'b2-other@yourkhata.test', kind: null, suppliers: 'Suppliers', customers: 'Customers', orders: false },
 ];
 const ORDER_ROWS = ['Sales orders', 'Delivery challans', 'Purchase orders'];
 
@@ -56,7 +62,11 @@ for (const o of OWNERS) {
       check(`${tag}: sidebar says ${want.suppliers}`, nav.includes(want.suppliers), '');
       check(`${tag}: sidebar says ${want.customers}`, nav.includes(want.customers), '');
       check(`${tag}: orders rows ${want.orders ? 'shown' : 'hidden'}`, ORDER_ROWS.every((r) => nav.includes(r) === want.orders), ORDER_ROWS.filter((r) => nav.includes(r)).join(','));
-      check(`${tag}: kind under the name ("${want.kind} · …")`, nav.includes(`${want.kind} · `), nav.split('\n').slice(0, 3).join(' / '));
+      if (o.kind) {
+        check(`${tag}: kind under the name ("${want.kind} · …")`, nav.includes(`${want.kind} · `), nav.split('\n').slice(0, 3).join(' / '));
+      } else {
+        check(`${tag}: no kind under the name for Other`, !nav.split('\n').slice(0, 3).join(' ').includes(' · ') !== skew, nav.split('\n').slice(0, 3).join(' / '));
+      }
     } else if (o.hiSuppliers) {
       check(`${tag}: Hindi sidebar says ${o.hiSuppliers}`, nav.includes(skew ? 'XX' : o.hiSuppliers));
     }

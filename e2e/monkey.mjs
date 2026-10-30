@@ -277,6 +277,46 @@ const serverLines = async (id) =>
   ((await (await ctx.request.get(`${base}/api/v1/sales/invoices/${id}`)).json().catch(() => ({}))).data?.lines ?? []).map(
     (l) => l.description,
   );
+/**
+ * B1–B3 — the screen agrees with the server after every reload and return,
+ * with data on screen (P0 §4: the data check must have run):
+ *  - Settings › Shop features: each switch shows the stored setting;
+ *  - any Shop page: the sidebar's words are the session's words, and the
+ *    orders rows are there exactly when the session says `orders`.
+ */
+let agreeChecks = 0;
+const checkAgrees = async (i, how) => {
+  const url = page.url();
+  if (!url.startsWith(base) || url.includes("/login") || url.includes("/onboarding")) return;
+  await page.waitForTimeout(1200);
+  const me = (await (await ctx.request.get(`${base}/api/v1/auth/me`)).json().catch(() => ({}))).data;
+  if (!me?.active_tenant) return;
+  const locale = (await ctx.cookies()).find((c) => c.name === "ub_locale")?.value ?? "en";
+  const words = me.active_tenant.words?.[locale] ?? {};
+  const features = me.active_tenant.features ?? null;
+  if (url.includes("/settings/shop-features")) {
+    const values = (await (await ctx.request.get(`${base}/api/v1/tenants/current/settings`)).json().catch(() => ({}))).data?.values ?? {};
+    const shown = await page.evaluate(() =>
+      [...document.querySelectorAll("main [role=switch]")].map((e) => e.getAttribute("aria-checked") === "true"),
+    );
+    if (shown.length === 2) {
+      agreeChecks += 1;
+      const want = [Boolean(values["shop.wholesale"]?.value), Boolean(values["shop.features.orders"]?.value)];
+      if (shown[0] !== want[0] || shown[1] !== want[1])
+        failures.push(`step ${i}: after ${how} the switches show ${shown} but the server has ${want}`);
+    }
+  }
+  const nav = await page.evaluate(() => document.querySelector("nav[aria-label]")?.innerText ?? "").catch(() => "");
+  if (nav && features) {
+    agreeChecks += 1;
+    const supplierWord = words["nav.suppliers"];
+    if (supplierWord && !nav.includes(supplierWord))
+      failures.push(`step ${i}: after ${how} the menu does not say "${supplierWord}" (the business's word)`);
+    const hasOrders = nav.includes("Sales orders") || nav.includes("सेल्स ऑर्डर");
+    if (hasOrders !== features.includes("orders"))
+      failures.push(`step ${i}: after ${how} the menu ${hasOrders ? "shows" : "hides"} Sales orders but the session says orders ${features.includes("orders") ? "on" : "off"}`);
+  }
+};
 const checkKept = async (i, before, how, leftFrom) => {
   if (!before.length || !page.url().startsWith(`${base}/sales/invoices`)) return;
   await page.waitForTimeout(2500);
@@ -435,6 +475,7 @@ try {
           await page.reload({ waitUntil: "load", timeout: 20000 });
           await pageSpeed("reload");
           await checkKept(i, before, "a reload", leftFrom);
+          await checkAgrees(i, "a reload");
         } else if (kind === "back") {
           const before = await linesNow();
           const leftFrom = page.url();
@@ -452,6 +493,7 @@ try {
             await pageSpeed("return");
           }
           await checkKept(i, before, `${dir} and return`, leftFrom);
+          await checkAgrees(i, `${dir} and return`);
         } else if (kind === "wander") {
           const before = await linesNow();
           const leftFrom = page.url();
@@ -490,6 +532,7 @@ try {
             await pageSpeed("return");
           }
           await checkKept(i, before, `leaving for ${to} and coming back`, leftFrom);
+          await checkAgrees(i, `leaving for ${to} and coming back`);
         } else {
           log.push(`${i} scroll`);
           await page.mouse.wheel(0, pick([-600, -200, 200, 600]));
@@ -588,6 +631,9 @@ console.log(
 // API and speed summary.
 for (const w of onDeviceOnly) console.log(`WARN ${w}`);
 console.log(`data: ${keptChecks} reload/return checks ran on a bill with lines (${keptOnServer} came back to a fresh bill; the one left was found on the server)`);
+console.log(`data: ${agreeChecks} screen-agrees-with-server checks ran (switches, menu words, orders rows)`);
+if (steps >= 100 && !path.startsWith('/sales/invoices') && !path.startsWith('/onboarding') && agreeChecks === 0)
+  failures.push('no reload/return ever checked the screen against the server: the data check proved nothing');
 if (steps >= 100 && path.startsWith('/sales/invoices') && keptChecks === 0) failures.push('no reload/return ever happened with lines on the bill: the data check proved nothing');
 const byKey = {};
 for (const c of calls) (byKey[c.key] ??= []).push(c.ms ?? 0);
