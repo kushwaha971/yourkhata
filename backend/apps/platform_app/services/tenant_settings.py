@@ -471,6 +471,43 @@ def save_settings(*, tenant: Any, body: Any, if_match: str | None, ctx: Ctx) -> 
     return settings_payload(tenant)
 
 
+def set_extra_types(*, tenant: Any, types: list[str], ctx: Ctx) -> None:
+    """B1 "+ I also sell…" — writes `shop.extra_types` (BP-22 §5, R-DEC-63).
+
+    Called by sign-up's step 1 so the second kind is saved with the business,
+    not by a second request that can fail after the first succeeded. Validated
+    by the setting's own spec, audited like any settings write.
+    """
+    from apps.platform_app.models import TenantSetting
+
+    key = "shop.extra_types"
+    spec = schema.spec_for(tenant, key)
+    try:
+        value = spec.validate({"types": list(types)}, tenant)
+    except schema.SettingError as exc:
+        raise ValidationFailed({"extra_types": exc.messages}) from exc
+    with transaction.atomic():
+        row = TenantSetting.objects.filter(tenant=tenant, key=key).first()
+        before = row.value if row else spec.default(tenant.business_type)
+        if row is not None and row.value == value:
+            return
+        TenantSetting.objects.update_or_create(
+            tenant=tenant,
+            key=key,
+            defaults={"value": value, "schema_version": spec.schema_version},
+        )
+        if before != value:
+            write_audit(
+                ctx=ctx,
+                action=AuditAction.SETTINGS_UPDATED,
+                entity_type="platform_tenant",
+                entity_id=tenant.id,
+                before={key: before},
+                after={key: value},
+                metadata={"keys": [key]},
+            )
+
+
 def update_enabled_modules(*, tenant: Any, modules: Any, ctx: Ctx) -> Any:
     """FR-4 — `PATCH /tenants/current {enabled_modules}`.
 
