@@ -380,14 +380,17 @@ export function MLDialog({
           className
         )}
       >
-        {isDrawer && (
-          // `.grab`: 36 × 4, 8 px from the top, on the phone sheet only.
-          <div
-            aria-hidden
-            data-ub-grab=""
-            className="mx-auto mt-[8px] h-[4px] w-[36px] shrink-0 rounded-[2px] bg-border-strong lg:hidden"
-          />
-        )}
+        {/* `.grab`: 36 × 4, 8 px from the top, on the phone sheet only. The
+            design's `sheet()` draws it on every phone sheet, the short ones
+            too (C2 pScanNF), so a dialog has it while it is a bottom sheet. */}
+        <div
+          aria-hidden
+          data-ub-grab=""
+          className={cn(
+            'mx-auto mt-[8px] h-[4px] w-[36px] shrink-0 rounded-[2px] bg-border-strong',
+            isDrawer ? 'lg:hidden' : 'sm:hidden'
+          )}
+        />
         {children}
       </div>
     </div>,

@@ -11,6 +11,7 @@ import {
   Package,
   PackageMinus,
   Plus,
+  ScanLine,
   Tags,
   TriangleAlert,
   Wrench,
@@ -22,6 +23,7 @@ import {
   UbActiveFilters,
   UbButton,
   UbChoiceChips,
+  UbDialog,
   UbDialogLoading,
   UbDrawerLoading,
   UbEmptyState,
@@ -32,11 +34,13 @@ import {
   UbPageHeader,
   UbPageHeaderMobileActions,
   UbPageShell,
+  UbScanButton,
   UbSearchInput,
   UbStack,
   UbStatCard,
   UbStatusBanner,
   UbTabs,
+  UbText,
   UbViewportPageShell,
 } from 'src/design-system';
 import {
@@ -55,6 +59,7 @@ import { useTranslation } from 'src/hooks/useTranslation';
 import { showSnackbar } from 'src/redux/slice/snackbarSlice';
 import { ROUTES, itemPath } from 'src/routes';
 import { formatInr } from 'src/utils/money';
+import { scanFeedback } from 'src/utils/scanFeedback';
 
 import {
   ImportActionLink,
@@ -74,6 +79,11 @@ import { createItemColumns } from './ItemListColumns';
 import type { ItemListRow, StockTab } from '../types/item.types';
 
 /* The form and the adjustment drawer belong to the chunk that OPENS them. */
+/* C2: the camera loads when its button is first tapped. */
+const UbScanSheet = dynamic(() => import('src/design-system').then((m) => m.UbScanSheet), {
+  ssr: false,
+});
+
 const ItemFormDrawer = dynamic(() => import('./ItemFormDrawer').then((m) => m.ItemFormDrawer), {
   ssr: false,
   loading: () => <UbDrawerLoading />,
@@ -116,6 +126,9 @@ export function ItemListPageContent(): React.JSX.Element {
   const { can } = usePermissions();
   const masters = useInventoryMasters();
   const [unknownCode, setUnknownCode] = useState<string | null>(null);
+  /** C2: how the unknown code arrived — the phone's sheet says which. */
+  const [unknownBy, setUnknownBy] = useState<'camera' | 'scanner'>('scanner');
+  const [cameraOpen, setCameraOpen] = useState(false);
 
   const { filters, update } = list;
   const phone = tier === 'cards';
@@ -180,22 +193,36 @@ export function ItemListPageContent(): React.JSX.Element {
   }
 
   const openScan = useCallback(
-    async (code: string) => {
+    async (code: string, by: 'camera' | 'scanner' = 'scanner') => {
       const hit = await lookupItemByBarcode(code).catch(() => null);
       if (hit) {
+        scanFeedback('added');
         router.push(itemPath(hit.id));
         return true;
       }
+      scanFeedback('notFound');
       setUnknownCode(code);
-      dispatch(showSnackbar({ severity: 'warning', id: 'items.scan.notFound', params: { code } }));
+      setUnknownBy(by);
+      // C2 (design pScanNF): a phone answers with its own sheet; the snackbar
+      // would only repeat it underneath.
+      if (!phone)
+        dispatch(showSnackbar({ severity: 'warning', id: 'items.scan.notFound', params: { code } }));
       return false;
     },
-    [router, dispatch]
+    [router, dispatch, phone]
+  );
+  /* C2: a single read — the first code closes the camera and is looked up. */
+  const cameraCode = useCallback(
+    (code: string) => {
+      setCameraOpen(false);
+      void openScan(code, 'camera');
+    },
+    [openScan]
   );
 
   /* FR-6 — a scan anywhere on the page (focus outside a text field) opens the item. */
   useScannerListener((code) => void openScan(code), {
-    enabled: !itemForm.open && !adjustment.open,
+    enabled: !itemForm.open && !adjustment.open && !cameraOpen,
   });
 
   const columns = useMemo(
@@ -340,8 +367,9 @@ export function ItemListPageContent(): React.JSX.Element {
     <UbSearchInput
       value={draft}
       onChange={setDraft}
-      placeholder={t('items.list.searchPlaceholder')}
-      aria-label={t('items.list.searchPlaceholder')}
+      // C2 design pScanNF: "Name, code or barcode" (the longer one was cut at 390 px).
+      placeholder={t('items.list.search.items')}
+      aria-label={t('items.list.search.items')}
       className={phone ? 'min-w-0 flex-1' : undefined}
       onKeyDown={(event) => {
         /* FR-7 — a code typed or scanned into the search box plus
@@ -552,7 +580,7 @@ export function ItemListPageContent(): React.JSX.Element {
         className="min-h-0 flex-1 !shrink max-md:gap-2"
         data-testid="item-list-screen"
       >
-        {unknownCode && (
+        {unknownCode && !phone && (
           <UbStatusBanner
             tone="warning"
             title={t('items.scan.notFound', { code: unknownCode })}
@@ -624,6 +652,7 @@ export function ItemListPageContent(): React.JSX.Element {
               data-testid="item-list-toolbar"
             >
               {searchBox}
+              <UbScanButton label={t('items.scan.camera')} onClick={() => setCameraOpen(true)} />
               {filterControls}
             </UbStack>
             <UbChoiceChips<StockTab>
@@ -654,6 +683,78 @@ export function ItemListPageContent(): React.JSX.Element {
       {itemForm.open && <ItemFormDrawer form={itemForm} />}
       {adjustment.open && <StockAdjustmentDrawer adjustment={adjustment} />}
       {adjustment.viewingId && <AdjustmentDetailDialog canAdjust={adjustment.canAdjust} />}
+      {cameraOpen && (
+        <UbScanSheet
+          open
+          onClose={() => setCameraOpen(false)}
+          onCode={cameraCode}
+          title={t('items.scan.camera.title')}
+          hint={t('items.scan.camera.hint')}
+          labels={{
+            close: t('common.action.close'),
+            torch: t('items.scan.camera.torch'),
+            done: t('common.action.close'),
+            blockedTitle: t('items.scan.camera.blockedTitle'),
+            blockedBody: t('items.scan.camera.blockedBody'),
+            barcode: t('items.scan.camera.barcode'),
+            add: t('items.scan.camera.find'),
+            keepsWorking: t('items.scan.camera.keepsWorking'),
+          }}
+        />
+      )}
+      {/* C2 (design pScanNF): a phone's unknown code is a sheet, the code big
+          enough to check against the pack, then add it or scan again. */}
+      {phone && (
+        <UbDialog
+          open={unknownCode !== null}
+          onOpenChange={(next) => {
+            if (!next) setUnknownCode(null);
+          }}
+          title={t('items.scan.nf.title')}
+          closeLabel={t('common.action.close')}
+        >
+          <UbStack gap={4} data-testid="scan-not-in-items">
+            <UbStack gap={1.5} align="center" className="text-center">
+              <UbText
+                as="span"
+                variant="inherit"
+                className="text-xl font-bold tabular-nums tracking-[0.04em] text-text-primary"
+              >
+                {unknownCode}
+              </UbText>
+              <UbText as="span" variant="body-sm" tone="tertiary">
+                {t(unknownBy === 'camera' ? 'items.scan.nf.byCamera' : 'items.scan.nf.byScanner')}
+              </UbText>
+            </UbStack>
+            {canWrite && (
+              <UbButton
+                variant="primary"
+                size="lg"
+                fullWidth
+                icon={<Plus className="h-4 w-4" aria-hidden />}
+                onClick={() => {
+                  itemForm.openCreate({ barcode: unknownCode ?? '' });
+                  setUnknownCode(null);
+                }}
+              >
+                {t('items.scan.nf.add')}
+              </UbButton>
+            )}
+            <UbButton
+              variant="outlineNeutral"
+              size="lg"
+              fullWidth
+              icon={<ScanLine className="h-4 w-4" aria-hidden />}
+              onClick={() => {
+                setUnknownCode(null);
+                setCameraOpen(true);
+              }}
+            >
+              {t('items.scan.nf.again')}
+            </UbButton>
+          </UbStack>
+        </UbDialog>
+      )}
     </UbViewportPageShell>
   );
 }

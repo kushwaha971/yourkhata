@@ -90,11 +90,22 @@ const onDeviceOnly = [];
 const stuck = [];
 // Watchdog: a run that stops moving is a finding (a dialog, a print sheet, a
 // navigation that never settles), not a silent hang. Record what it was doing.
-const WATCHDOG_MS = Number(process.env.MONKEY_WATCHDOG_MS ?? 360000);
-setTimeout(async () => {
-  failures.push(
-    `watchdog: no finish after ${WATCHDOG_MS / 1000}s; last actions: ${log.slice(-5).join(" | ")}`,
-  );
+// C1 (seed 301 at 390): a run that was still moving — 297 of 300 steps, each
+// answered — was called HUNG by a fixed 360 s total, after the scan action
+// made a step longer. A hang is a page that STOPS: no step finished for
+// STALL_MS. The total cap stays, wider, for a run that crawls.
+const WATCHDOG_MS = Number(process.env.MONKEY_WATCHDOG_MS ?? 900000);
+const STALL_MS = Number(process.env.MONKEY_STALL_MS ?? 60000);
+let lastStepAt = Date.now();
+const stall = setInterval(() => {
+  if (Date.now() - lastStepAt > STALL_MS) {
+    clearInterval(stall);
+    hung(`stalled: no step finished for ${STALL_MS / 1000}s`);
+  }
+}, 5000);
+stall.unref();
+const hung = async (why) => {
+  failures.push(`watchdog: ${why}; last actions: ${log.slice(-5).join(" | ")}`);
   try {
     await page.screenshot({
       path: `${dir}/monkey-${seed}-${width}-hung.png`,
@@ -108,7 +119,8 @@ setTimeout(async () => {
   console.log(`seed ${seed} · ${width}px · ${log.length} actions · HUNG`);
   for (const f of failures) console.log("FAIL", f);
   process.exit(1);
-}, WATCHDOG_MS).unref();
+};
+setTimeout(() => hung(`no finish after ${WATCHDOG_MS / 1000}s`), WATCHDOG_MS).unref();
 const browser = await chromium.launch(
   process.env.PW_CHROME ? { executablePath: process.env.PW_CHROME } : {},
 );
@@ -418,13 +430,14 @@ try {
   armed = true;
 
   for (let i = 0; i < steps; i += 1) {
+    lastStepAt = Date.now();
     // A run that has signed itself out tests nothing but the sign-in page, so
     // stop and say so plainly, with the last steps (see SKIP).
     if (new URL(page.url()).pathname.startsWith("/login")) {
       failures.push(`harness signed out before step ${i}; last: ${log.slice(-3).join(" | ")}`);
       break;
     }
-    const kind = pick(["tap", "tap", "tap", "tap", "type", "type", "key", "scroll", "additem", "additem", "reload", "back", "wander"]);
+    const kind = pick(["tap", "tap", "tap", "tap", "type", "type", "key", "scroll", "additem", "additem", "scan", "reload", "back", "wander"]);
     page.setDefaultTimeout(4000);
     const step = async () => {
       try {
@@ -481,6 +494,18 @@ try {
             await page.waitForTimeout(300);
             if (rand() < 0.7) await page.keyboard.press("Escape").catch(() => {});
           }
+        } else if (kind === "scan") {
+          // C1: a USB scanner's burst into the search — a known code (the C1
+          // fixture's item), a code no item has, or a random EAN-13 — then
+          // Enter, as fast as a scanner types. The bill must keep its lines.
+          const box = page.getByRole("combobox").first();
+          if (!(await box.count())) return;
+          if (!(await box.click({ timeout: 1500 }).then(() => true).catch(() => false))) return;
+          const code = pick(["8906000000017", "8906000000017", "8906999999994", String(8900000000000 + Math.floor(rand() * 99999999))]);
+          log.push(`${i} scan ${code}`);
+          await page.keyboard.type(code, { delay: 0 });
+          await page.keyboard.press("Enter");
+          await page.waitForTimeout(400);
         } else if (kind === "reload") {
           const before = await linesNow();
           const leftFrom = page.url();

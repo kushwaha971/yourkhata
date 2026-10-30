@@ -22,6 +22,7 @@ import type { ItemListResult } from '../types/item.types';
 jest.mock('../api/itemService', () => ({
   ...jest.requireActual('../api/itemService'),
   listItems: jest.fn(),
+  lookupItemByBarcode: jest.fn(),
 }));
 let mockSearch = '';
 const mockReplace = jest.fn();
@@ -152,4 +153,57 @@ it('on a phone, a card reads price, stock in words and code — never the cost (
   expect(within(card).queryByText(/₹40\.00/)).not.toBeInTheDocument();
   expect(screen.getByText('Low: 3 NOS left')).toBeInTheDocument();
   expect(screen.getAllByText('Out of stock').length).toBeGreaterThan(0);
+});
+
+it('on a phone, a camera scan of an unknown code opens "Not in your items" with Add and Scan again (C2)', async () => {
+  /**
+   * Design pScanNF. Prevents: an unknown code answered only by a snackbar and
+   * a banner a phone has to scroll for, and "Add item" losing the scanned
+   * barcode. The camera reads once and closes; the sheet says it was the
+   * camera, shows the code big, and Add opens the form with that barcode.
+   */
+  jest.mocked(service.listItems).mockResolvedValue({ ...PAGE, rows: [ROW], total: 1, hasAny: true });
+  const lookup = jest.mocked(service.lookupItemByBarcode).mockResolvedValue(null);
+  let seen: string | null = '8901030875021';
+  (globalThis as unknown as { BarcodeDetector: unknown }).BarcodeDetector = class {
+    detect = async () => {
+      const code = seen;
+      seen = null;
+      return code ? [{ rawValue: code }] : [];
+    };
+  };
+  Object.defineProperty(navigator, 'mediaDevices', {
+    configurable: true,
+    value: { getUserMedia: async () => ({ getTracks: () => [], getVideoTracks: () => [] }) },
+  });
+  Object.defineProperty(HTMLMediaElement.prototype, 'play', {
+    configurable: true,
+    value: () => Promise.resolve(),
+  });
+  try {
+    signIn(['inventory.item.read', 'inventory.item.write']);
+    const user = userEvent.setup();
+    renderWithProviders(<ItemListPageContent />);
+    await user.click(await screen.findByRole('button', { name: 'Scan with camera' }));
+    const sheet = await screen.findByTestId('scan-not-in-items', {}, { timeout: 3000 });
+    expect(lookup).toHaveBeenCalledWith('8901030875021');
+    expect(screen.queryByTestId('scan-sheet')).toBeNull();
+    expect(within(sheet).getByText('8901030875021')).toBeInTheDocument();
+    expect(within(sheet).getByText('Scanned just now with the camera')).toBeInTheDocument();
+    expect(within(sheet).getByRole('button', { name: /Scan again/ })).toBeInTheDocument();
+    await user.click(within(sheet).getByRole('button', { name: /Add item with this barcode/ }));
+    // The item form opens for a new item with the scanned barcode filled in.
+    await waitFor(() =>
+      expect((store.getState() as unknown as { itemForm?: { openFor: string; prefillBarcode: string } }).itemForm).toMatchObject({
+        openFor: 'new',
+        prefillBarcode: '8901030875021',
+      })
+    );
+    // …and in sight: the Codes section opens on it (it was filled, closed).
+    expect(await screen.findByDisplayValue('8901030875021', {}, { timeout: 5000 })).toBeVisible();
+  } finally {
+    lookup.mockReset();
+    delete (globalThis as unknown as { BarcodeDetector?: unknown }).BarcodeDetector;
+    Object.defineProperty(navigator, 'mediaDevices', { configurable: true, value: undefined });
+  }
 });

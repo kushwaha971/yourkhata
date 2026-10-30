@@ -273,7 +273,7 @@ export function UbScanSheet({
               onKeyDown={(event) => {
                 if (event.key === 'Enter') addTyped();
               }}
-              className="h-11 min-w-0 flex-1 rounded-lg border border-border-strong bg-surface-card px-3 text-[15px]"
+              className="h-11 min-w-0 flex-1 rounded-lg border border-border-strong bg-surface-card px-3 text-[15px] outline-none focus:border-action focus:shadow-[0_0_0_3px_var(--accent-quiet)]"
             />
             <button
               type="button"

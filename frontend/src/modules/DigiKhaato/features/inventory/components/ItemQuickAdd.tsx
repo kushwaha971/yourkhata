@@ -13,13 +13,14 @@ import {
 
 import dynamic from 'next/dynamic';
 
-import { AlertTriangle, ScanLine, X } from 'lucide-react';
+import { AlertTriangle, X } from 'lucide-react';
 
 import {
   UbBox,
   UbButton,
   UbDrawerLoading,
   UbLoadMore,
+  UbScanButton,
   UbSearchInput,
   UbText,
 } from 'src/design-system';
@@ -382,20 +383,14 @@ function ItemQuickAddBase({
           }
         />
         {labels.camera && (
-          <UbButton
-            variant="primary"
-            iconOnly
-            icon={<ScanLine aria-hidden className="h-5 w-5" />}
-            className="h-11 w-11 shrink-0 !bg-action !text-white"
+          <UbScanButton
+            label={labels.camera.open}
             onClick={() => {
               setScanned([]);
               setCameraOpen(true);
             }}
             disabled={disabled}
-            data-testid="open-camera-scan"
-          >
-            {labels.camera.open}
-          </UbButton>
+          />
         )}
       </UbBox>
       {showList && (

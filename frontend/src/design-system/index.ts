@@ -501,5 +501,5 @@ export {
 export type { UseInViewOptions } from './motion';
 export { UbShopKindIcon } from './UbShopKindIcon';
 export type { UbShopKind, UbShopKindIconProps } from './UbShopKindIcon';
-export { UbScanSheet, REPEAT_MS } from './UbScanSheet';
+export { UbScanSheet, REPEAT_MS, UbScanButton } from './UbScanSheet';
 export type { UbScanSheetProps } from './UbScanSheet';

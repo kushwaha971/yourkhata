@@ -541,6 +541,10 @@ export function ItemFormDrawer({
         <UbDisclosure
           label={t('items.form.section.identifiers')}
           open={Boolean(formState.errors.sku || formState.errors.barcode) || undefined}
+          /* C2 (found by c2-find): "Add item with this barcode" filled the
+             barcode into a closed section, so the merchant could not see the
+             code they had just scanned. A scanned barcode opens it. */
+          defaultOpen={Boolean(!editing && prefillBarcode)}
         >
           <UbField
             name="sku"
