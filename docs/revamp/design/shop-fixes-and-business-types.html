@@ -1,4 +1,4 @@
-<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1"></head><body>
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
 <title>Shop Fixes and Business Types</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -231,6 +231,7 @@ body.only-p .col.d,body.only-d .col.p{display:none}
 .swr small{font-size:12.5px;color:var(--ink-3)}
 .sw{width:40px;height:24px;border-radius:12px;background:var(--line-strong);position:relative;flex:0 0 auto}
 .sw::after{content:"";position:absolute;top:3px;left:3px;width:18px;height:18px;border-radius:50%;background:#fff}
+.swr>span.sw{flex:0 0 auto;display:block}
 .sw.on{background:var(--teal)}.sw.on::after{left:19px}
 .cbx{width:20px;height:20px;border-radius:5px;border:1.5px solid var(--line-strong);display:grid;place-items:center;flex:0 0 auto;font-size:12px;color:#fff}
 .cbx.on{background:var(--teal);border-color:var(--teal)}
@@ -417,6 +418,7 @@ body.only-p .col.d,body.only-d .col.p{display:none}
 .expanded td{background:var(--sunken)}
 .inline{display:flex;gap:16px;align-items:flex-end;flex-wrap:wrap}
 .stickybar{display:flex;gap:8px;align-items:center}
+@media (max-width:600px){#research th:nth-child(3),#research td:nth-child(3){display:none}#research th:nth-child(2){width:100px!important}}
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 </style>
 
@@ -471,7 +473,7 @@ body.only-p .col.d,body.only-d .col.p{display:none}
 </svg>
 
 <div class="bar"><div class="bar-in">
-  <div class="bar-t"><b>Shop fixes and business types</b><span>Design for review · dev ec188be · 25 Oct 2026 · no code changed</span></div>
+  <div class="bar-t"><b>Shop fixes and business types</b><span>Design for review · v2 30 Oct 2026: research, Jewellery and Other, new modules per kind · no code changed</span></div>
   <label class="ctl" for="bt">Business type
     <select id="bt">
       <option value="kirana">Kirana / general store</option>
@@ -482,8 +484,11 @@ body.only-p .col.d,body.only-d .col.p{display:none}
       <option value="auto">Auto parts</option>
       <option value="wholesale">Wholesale / distributor</option>
       <option value="cafe">Sweets, bakery and café</option>
+      <option value="jewel">Jewellery</option>
+      <option value="other">Other (stationery, services…)</option>
     </select>
   </label>
+  <a href="#gg" class="ctl" style="text-decoration:none;color:var(--teal-ink)">This kind's modules ↓</a><a href="#gi" class="ctl" style="text-decoration:none;color:var(--teal-ink)">Money Book, Members & Fees, Loans ↓</a>
   <div class="ctl"><span>Show</span><div class="seg" id="viewseg"><button type="button" aria-pressed="true" data-v="both">Both</button><button type="button" aria-pressed="false" data-v="p">Phone</button><button type="button" aria-pressed="false" data-v="d">Desktop</button></div></div>
   <div class="seg" id="themeseg"><button type="button" aria-pressed="true" data-t="">Auto</button><button type="button" aria-pressed="false" data-t="light">Light</button><button type="button" aria-pressed="false" data-t="dark">Dark</button></div>
 </div></div>
@@ -492,6 +497,10 @@ body.only-p .col.d,body.only-d .col.p{display:none}
 <nav class="toc" aria-label="On this page">
   <b>Start</b>
   <a href="#intro">What this page is</a>
+  <a href="#v2">New in v2</a>
+  <b>R · Research</b>
+  <a href="#gr">Competitors per shop kind</a>
+  <a href="#r-sum">Patterns across kinds</a>
   <b>A · Fixes</b>
   <a href="#a1">Header search</a>
   <a href="#a2">Folding sections</a>
@@ -506,6 +515,7 @@ body.only-p .col.d,body.only-d .col.p{display:none}
   <a href="#b2">Menus and words per business</a>
   <a href="#b3">Shop features in Settings</a>
   <a href="#b4">Ask once, when needed</a>
+  <a href="#b5">Each business is its own app</a>
   <b>C · Scanning</b>
   <a href="#c1">Scan on a bill</a>
   <a href="#c2">Scan to find, not found, no camera</a>
@@ -525,6 +535,37 @@ body.only-p .col.d,body.only-d .col.p{display:none}
   <a href="#d12">Dashboard</a>
   <a href="#d13">Estimates and challans</a>
   <a href="#d14">Bill PDF and print</a>
+  <a href="#d15">Reminders and messages</a>
+  <b>G · New modules per kind</b>
+  <a href="#g1">Jewellery: today's rate</a>
+  <a href="#g2">Jewellery: old gold, PAN</a>
+  <a href="#g3">Jewellery: orders, karigars</a>
+  <a href="#g4">Medical: short book</a>
+  <a href="#g5">Mobile: repairs</a>
+  <a href="#g6">Clothes: exchange</a>
+  <a href="#g7">Hardware: sites</a>
+  <a href="#g8">Auto parts: vehicles</a>
+  <a href="#g9">Wholesale: schemes</a>
+  <a href="#g10">Café: open, advance orders</a>
+  <a href="#g11">Kirana: loose, phone orders</a>
+  <a href="#g12">Other: what kind</a>
+  <b>I · Money Book, Members & Fees, Loans & Collections</b>
+  <a href="#i0">Competitors and status</a>
+  <a href="#i1">Money Book: people</a>
+  <a href="#i2">Money Book: a person and an entry</a>
+  <a href="#i3">Money Book: reminder and report</a>
+  <a href="#i4">Members & Fees: home</a>
+  <a href="#i5">Members & Fees: seats</a>
+  <a href="#i6">Members & Fees: student and collect fee</a>
+  <a href="#i7">Members & Fees: fees and reminders</a>
+  <a href="#i8">Loans & Collections: today</a>
+  <a href="#i9">Loans & Collections: collect and the loan page</a>
+  <a href="#i10">Loans & Collections: new loan</a>
+  <a href="#i11">Loans & Collections: reminders</a>
+  <a href="#i12">Start: Money Book first</a>
+  <a href="#i13">Primary app and business</a>
+  <b>H · Per-kind setup</b>
+  <a href="#h1">Each kind as its own app</a>
   <b>F · Every other screen</b>
   <a href="#gf">Suppliers, categories, orders, stock, money, reports</a>
   <b>E · Review</b>
@@ -541,10 +582,52 @@ body.only-p .col.d,body.only-d .col.p{display:none}
   <div class="tags"><span class="tag bug">Bug</span><span class="tag fb">Your feedback</span><span class="tag new">New feature</span><span class="tag dec">Needs your decision</span></div>
   <div class="keys">
     <div class="key"><b>8</b><span>fixes: 5 from your screenshots, 3 from the backlog, all phone and desktop</span></div>
-    <div class="key"><b>8</b><span>business types, each with its own menus, words and fields</span></div>
+    <div class="key"><b>10</b><span>shop kinds, each with its own menus, words, fields and dashboard strip</span></div>
     <div class="key"><b>15</b><span>new or changed screens for scanning and the new fields</span></div>
     <div class="key"><b>0</b><span>changes for a kirana that turns nothing on, apart from the fixes</span></div>
   </div>
+</section>
+
+<section id="v2" style="gap:12px">
+  <header><div class="tags"><span class="tag dec">New in v2 · 30 Oct</span></div><h2>What this version adds</h2>
+  <p class="lede">Nothing above was redrawn without a reason. This version adds research, two shop kinds and the screens each kind was missing, in the same components.</p></header>
+  <div class="spec"><ul>
+    <li><b>Part R, research:</b> for each of the 10 shop kinds, who the competitors are, what a shop of that kind must have, how competitors do it, where they fall short, and where YourKhata does better. Every must-have is marked <i>In the app</i>, <i>Designed</i>, <i>New here</i> or <i>Later</i>.</li>
+    <li><b>Jewellery and Other</b> are now in the Business type picker (R-DEC-63), so every D and F screen redraws for them: weight-priced bill lines, tag form, tag list, karigar receipt, prints.</li>
+    <li><b>"+ I also sell…" is gone</b> from B1 and B3 (R-DEC-64): one business is one kind; Wholesale is a switch on a kind.</li>
+    <li><b>Part G, twelve new modules</b> the research found missing, phone and desktop each.</li>
+    <li><b>Dashboard:</b> each kind gets one strip of its own figures on Home (D12), outlined in dashed orange.</li>
+    <li><b>Part H, per-kind setup:</b> words, menu rows, dashboard, GST, payments, settings and tables per kind, matching the matrix doc awaiting approval, with three GST defaults corrected.</li>
+  </ul></div>
+</section>
+
+<!-- ================= R ================= -->
+<div class="group-h" id="gr"><span class="eyebrow">Part R</span><h2>Competitor research per shop kind</h2><p>Indian and global products each kind of shop uses today, read from their own pages, buyer guides and reviews (sources at the end of this part; vendor-written guides are marked as such in our notes and were not taken at their word). "In the app" means it works on dev today.</p></div>
+<div class="offer kindbar" style="padding:10px 14px;display:flex;flex-wrap:wrap;gap:8px 14px;align-items:center"><span class="small" data-kindnote="r"></span><button type="button" class="btn sm allk" style="margin-left:auto;cursor:pointer"></button></div>
+<section id="r-kinds" style="gap:14px"><div id="research"></div></section>
+<section id="r-sum">
+  <header><h2>R2 · Patterns across every kind</h2></header>
+  <div class="spec" style="max-width:none"><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr));gap:16px">
+   <div><h4>What every competitor trains shops to expect</h4><ul><li>GST bill with a thermal or A4 print and a WhatsApp share</li><li>Barcode scan at the counter</li><li>Udhaar with reminders, and UPI on the bill</li><li>A free or cheap mobile app, with the desktop sold apart</li></ul></div>
+   <div><h4>Where they all fall short</h4><ul><li>Every kind sees every feature, so the screen is crowded (Vyapar, myBillBook)</li><li>Specialist tools (Marg, GoFrugal, jewellery ERPs) need dealers, AMC and weeks of setup, and are weak on the phone</li><li>Ledger apps and billing apps are separate, so shops run two</li><li>Quote-only or rising renewal prices</li></ul></div>
+   <div><h4>How YourKhata wins, kind by kind</h4><ul><li>One kind per business: only that kind's menu, words and fields (R-DEC-65)</li><li>Specialist depth inside the simple counter bill: batch picked by itself, IMEI scanned, weight priced</li><li>Bill and udhaar in one app, phone first, desktop the same</li><li>No paid feeds or providers (ADR-021): rates typed, messages shared, not sent</li></ul></div>
+  </div></div>
+  <div class="spec" style="max-width:none"><h4>Sources</h4><ul class="src" style="columns:2;column-gap:28px">
+   <li><a href="https://accountune.com/best-billing-software-medical-store-india">Medical store software compared (Accountune, vendor guide)</a></li>
+   <li><a href="https://www.capterra.in/software/1019543/evitalrx">eVitalRx on Capterra (reviews)</a></li>
+   <li><a href="https://mybillbook.in/blog/?p=10066">Choosing jewellery billing software (myBillBook)</a></li>
+   <li><a href="https://codingclave.com/guides/best-jewelry-shop-software-india-2026">Jewellery shop software India 2026 (Codingclave, vendor guide)</a></li>
+   <li><a href="https://accountune.com/best-billing-software-for-mobile-shop">Mobile shop billing: IMEI, warranty (Accountune)</a></li>
+   <li><a href="https://www.accountune.com/best-billing-software-for-garment-shop">Garment shop software buyer's guide (Accountune)</a></li>
+   <li><a href="https://busy.in/accounting-software/auto-parts">Busy for auto parts</a></li>
+   <li><a href="https://busy.in/accounting-software/paint-shop/">Busy for paint shops</a></li>
+   <li><a href="https://cdn-origin.gofrugal.com/restaurant/bakery-software/sweet-shop-pos.html">GoFrugal sweet shop POS</a></li>
+   <li><a href="https://blog.petpooja.com/industry-business-guides/best-cafe-pos-system-india-top-compared/">Café POS compared (Petpooja, vendor guide)</a></li>
+   <li><a href="https://beatroute.io/distributor-management-system">BeatRoute distributor management</a></li>
+   <li><a href="https://getswipe.in/blog/billing-software/billing-software-for-electrical-shop">Swipe for electrical shops</a></li>
+   <li><a href="https://vyaparapp.in/guides/how-to-add-and-manage-loyalty-points-in-vyapar">Vyapar loyalty points</a></li>
+   <li>Earlier research in the repo: docs/04, docs/research/01–03, revamp/13 and 14, and the "Who the Shop Fits" page</li>
+  </ul></div>
 </section>
 
 <!-- ================= A ================= -->
@@ -682,7 +765,7 @@ body.only-p .col.d,body.only-d .col.p{display:none}
 
 <section id="b1">
   <header><div class="tags"><span class="tag new">New</span></div><h2>B1 · Pick what you sell</h2>
-  <p class="lede">Replaces today's business type dropdown at sign-up. One tap on a picture. "+ I also sell…" adds a second one for a mixed shop (for example kirana and medical under one GST number).</p></header>
+  <p class="lede">Replaces today's business type dropdown at sign-up. One tap on a picture. One business is one kind (R-DEC-64): a kirana and a medical shop are two businesses, moved between with the business switcher. Picking Wholesale asks "Wholesale of what?" next. Jewellery is a normal tile now (R-DEC-63).</p></header>
   <div class="stage">
     <div class="col p"><span class="cap">Phone · sign-up step 2</span><div class="fit" data-w="410" data-mock="pPick"></div></div>
     <div class="col d"><span class="cap">Desktop · same step</span><div class="fit" data-w="1280" data-mock="dPick"></div></div>
@@ -698,7 +781,7 @@ body.only-p .col.d,body.only-d .col.p{display:none}
   </div>
   <h3 class="sub">Words and extras for every business</h3>
   <div class="tblwrap" id="wordtable"></div>
-  <p class="hint" style="font-size:.82rem;color:var(--ink-2)">Kept generic for everyone: Items, Bills, Purchases, Expenses, Payments, Cash book, Reports, Settings. "Godown" appears only after a second location is added. Jewellery gets its own app later (plan 13, P7), so it is not drawn here.</p>
+  <p class="hint" style="font-size:.82rem;color:var(--ink-2)">Kept generic for everyone: Items, Bills, Purchases, Expenses, Payments, Cash book, Reports, Settings. "Godown" appears only after a second location is added. Jewellery and Other are drawn too (v2). Rows marked New come from Part G.</p>
 </section>
 
 <section id="b3">
@@ -726,6 +809,26 @@ body.only-p .col.d,body.only-d .col.p{display:none}
   </tbody></table></div>
 </section>
 
+<section id="b5">
+  <header><div class="tags"><span class="tag new">New</span><span class="tag">v2</span></div><h2>B5 · Each business is its own app</h2>
+  <p class="lede">Owner, 30 Oct: picking another business should feel like opening a new app. The business switcher at the top left lists each business with its kind. Picking one reloads everything for it: name and initial, menu, words, dashboard, fields, settings and data. The colours, fonts and components stay the same, so it is clearly the same product.</p></header>
+  <div class="stage">
+    <div class="col p"><span class="cap">Phone · tap the business name</span><div class="fit" data-w="410" data-mock="pSwitch"></div></div>
+    <div class="col d"><span class="cap">Desktop · the switcher in the sidebar</span><div class="fit" data-w="1280" data-mock="dSwitch"></div></div>
+  </div>
+  <div class="spec"><h4>What keeps each business separate (integrity)</h4><ul>
+   <li><b>Data never crosses.</b> Customers, suppliers, items, stock, bills, payments, udhaar, GSTIN, bank and UPI, bill numbers, staff and every setting belong to one business. Search, reports and exports only ever see the business that is open.</li>
+   <li><b>One kind per business</b> (R-DEC-64). The kind's preset sets the feature switches; screens check a switch, never the kind (R-DEC-65). Wholesale is a switch on a kind.</li>
+   <li><b>Switching is a clean start.</b> Open drafts stay with their business. The page reloads into the new business's Home, with a note "You're now in Sai Medical Store". The address and the tab title carry the business, so two tabs can never mix.</li>
+   <li><b>Staff see only the businesses they were added to</b>, with that business's role.</li>
+   <li><b>The server checks too.</b> Every request carries the business and every row is filtered by it. A link from another business opens "Not in this business", never its data.</li>
+  </ul></div>
+  <div class="spec"><h4>What stays the same in every business (consistency)</h4><ul>
+   <li>Same design system: teal and marigold, Plus Jakarta Sans, the same buttons, sheets, drawers, tables and count line.</li>
+   <li>The menu keeps the same order everywhere. A kind only adds or leaves out rows (decisions 1 and 6), so moving between businesses never means hunting for Bills.</li>
+   <li>The same bottom bar on phone: Home, Customers, Suppliers, Bills, More. Only the words change (decision 2).</li>
+  </ul></div>
+</section>
 <!-- ================= C ================= -->
 <div class="group-h" id="gc"><span class="eyebrow">Part C</span><h2>Scanning</h2><p>For every business. On desktop the barcode scanner keeps working as it does today and gets a beep, a flash on the line, and a "not found" note. On phone the scan button opens the camera. On a bill it keeps scanning until Done; in a search or a barcode field it fills the field and closes.</p></div>
 
@@ -815,7 +918,8 @@ body.only-p .col.d,body.only-d .col.p{display:none}
   </div>
 </section>
 
-<section id="d7">
+<div class="offer kindbar" style="padding:10px 14px;display:flex;flex-wrap:wrap;gap:8px 14px;align-items:center"><span class="small" data-kindnote="d"></span><button type="button" class="btn sm allk" style="margin-left:auto;cursor:pointer"></button></div>
+<section id="d7" data-kind="medical">
   <header><div class="tags"><span class="tag new">Medical store</span></div><h2>D7 · Expiry list</h2>
   <p class="lede">New row under Items &amp; stock for shops with batch and expiry. Home's follow-ups gain "6 batches expire this month".</p></header>
   <div class="stage">
@@ -824,7 +928,7 @@ body.only-p .col.d,body.only-d .col.p{display:none}
   </div>
 </section>
 
-<section id="d8">
+<section id="d8" data-kind="mobile">
   <header><div class="tags"><span class="tag new">Mobile and electronics</span></div><h2>D8 · Find by IMEI</h2>
   <p class="lede">Scan or type an IMEI: who bought it, when, on which bill, and how much warranty is left. The header search also accepts an IMEI.</p></header>
   <div class="stage">
@@ -833,7 +937,7 @@ body.only-p .col.d,body.only-d .col.p{display:none}
   </div>
 </section>
 
-<section id="d9">
+<section id="d9" data-kind="garments">
   <header><div class="tags"><span class="tag new">Clothes and shoes</span></div><h2>D9 · Print barcode labels</h2>
   <p class="lede">From an item, or straight after a purchase: one label per piece received, on a 50 × 25 mm label printer or an A4 sheet.</p></header>
   <div class="stage">
@@ -842,7 +946,7 @@ body.only-p .col.d,body.only-d .col.p{display:none}
   </div>
 </section>
 
-<section id="d10">
+<section id="d10" data-kind="wholesale">
   <header><div class="tags"><span class="tag new">Wholesale / distributor</span></div><h2>D10 · Godown transfer and e-way bill</h2>
   <p class="lede">Godown choice shows on bills and purchases only once a second godown exists. E-way bill is offered on a bill over ₹50,000 going to another state; the first version makes the file to upload on the GST portal.</p></header>
   <div class="stage">
@@ -851,7 +955,7 @@ body.only-p .col.d,body.only-d .col.p{display:none}
   </div>
 </section>
 
-<section id="d11">
+<section id="d11" data-kind="cafe">
   <header><div class="tags"><span class="tag new">Sweets, bakery and café</span></div><h2>D11 · Add-ons and kitchen ticket</h2>
   <p class="lede">The add-on sheet opens only for items that have add-ons, so a plain item keeps today's taps. The kitchen ticket is a second small print without prices.</p></header>
   <div class="stage">
@@ -863,7 +967,7 @@ body.only-p .col.d,body.only-d .col.p{display:none}
 
 <section id="d12">
   <header><div class="tags"><span class="tag new">New</span></div><h2>D12 · Dashboard for <span data-tname>Kirana</span></h2>
-  <p class="lede">Today's dashboard stays. Only one thing changes per business: the follow-ups list gains that business's own reminder (expiry, sold-out size, e-way bill, open kitchen tickets). The Pay button uses the business's word.</p></header>
+  <p class="lede">Today's dashboard stays. Two things change per business: one strip of that business's own figures under the day line (v2), and the follow-ups list gains that business's own reminder (expiry, sold-out size, e-way bill, open kitchen tickets). The Pay button uses the business's word.</p></header>
   <div class="stage">
     <div class="col p"><span class="cap">Phone</span><div class="fit" data-w="410" data-mock="pHome"></div></div>
     <div class="col d"><span class="cap">Desktop</span><div class="fit" data-w="1280" data-mock="dShell"></div></div>
@@ -871,7 +975,7 @@ body.only-p .col.d,body.only-d .col.p{display:none}
 </section>
 <section id="d13">
   <header><div class="tags"><span class="tag new">New</span></div><h2>D13 · Estimates, sales orders and delivery challans for <span data-tname>Kirana</span></h2>
-  <p class="lede">These use the same editor as the bill, so they get all the A fixes (customer box, one search, short lines) and the business's line details. An estimate never takes stock, batch or IMEI. A challan takes stock out and adds the transport fields.</p></header>
+  <p class="lede">Sales orders and delivery challans exist only for wholesale, hardware, auto parts and mobile (decision 6); estimates are for every kind. These use the same editor as the bill, so they get all the A fixes (customer box, one search, short lines) and the business's line details. An estimate never takes stock, batch or IMEI. A challan takes stock out and adds the transport fields.</p></header>
   <div class="stage">
     <div class="col p"><span class="cap">Phone · new estimate</span><div class="fit" data-w="410" data-mock="pEstimate"></div></div>
     <div class="col d"><span class="cap">Desktop · new delivery challan</span><div class="fit" data-w="1280" data-mock="dChallan"></div></div>
@@ -886,6 +990,158 @@ body.only-p .col.d,body.only-d .col.p{display:none}
   </div>
   <div class="stage"><div class="col d"><span class="cap">A4 PDF · estimate</span><div class="fit" data-w="794" data-mock="dPrintEst"></div></div></div>
 </section>
+<section id="d15">
+  <header><div class="tags"><span class="tag new">New</span><span class="tag">v2</span></div><h2>D15 · Reminders and messages for <span data-tname>Kirana</span></h2>
+  <p class="lede">Every reminder, receipt and bill message speaks for the business that is open: its name, its own words, and only the messages its features need. A medical store gets a refill message; a jeweller gets "your order is ready" with the balance; a mobile shop gets "your repair is ready". Nothing is sent by itself (DEC-012): the shop taps Share and WhatsApp opens with the message filled in. The bill PDF and print (D14) carry the same business's name, columns and terms line.</p></header>
+  <div class="stage">
+    <div class="col p"><span class="cap">Phone · Remind on a customer</span><div class="fit" data-w="410" data-mock="pRemind"></div></div>
+    <div class="col d"><span class="cap">Desktop · Settings › Messages</span><div class="fit" data-w="1280" data-mock="dMessages"></div></div>
+  </div>
+</section>
+<!-- ================= G ================= -->
+<div class="group-h" id="gg"><span class="eyebrow">Part G</span><h2>New modules each kind was missing</h2><p>What Part R found missing, drawn with the same components (phone sheet, desktop drawer and table, count line, chips, the dashed orange outline for anything new to that kind). Each one is behind its own feature switch (Part H), so no other kind ever sees it.</p></div>
+<div class="offer kindbar" style="padding:10px 14px;display:flex;flex-wrap:wrap;gap:8px 14px;align-items:center"><span class="small" data-kindnote="g"></span><button type="button" class="btn sm allk" style="margin-left:auto;cursor:pointer"></button></div>
+<section id="g1" data-kind="jewel">
+  <header><div class="tags"><span class="tag new">Jewellery</span><span class="tag">v2</span></div><h2>G1 · Today's rate</h2>
+  <p class="lede">Typed once each morning; every bill that day uses it and keeps it. There is no paid rate feed (ADR-021): the owner copies the association board, or taps Same as yesterday. Sharing the rate board on WhatsApp is how jewellers advertise it already.</p></header>
+  <div class="stage"><div class="col p"><span class="cap">Phone · morning rate</span><div class="fit" data-w="410" data-mock="pRate"></div></div><div class="col d"><span class="cap">Desktop · rate and history</span><div class="fit" data-w="1280" data-mock="dRate"></div></div></div>
+</section>
+<section id="g2" data-kind="jewel">
+  <header><div class="tags"><span class="tag new">Jewellery</span><span class="tag">v2</span></div><h2>G2 · Bill by weight, old gold and PAN</h2>
+  <p class="lede">Lines are scanned by tag. Old gold taken in comes off the bill and goes to its own old-gold stock. PAN appears by itself at ₹2 lakh, and the bill refuses cash of ₹2 lakh or more on one bill. D1, D2, D3 and D14 above show the tag form, line sheet and print for Jewellery.</p></header>
+  <div class="stage"><div class="col p"><span class="cap">Phone · old gold sheet</span><div class="fit" data-w="410" data-mock="pOldGold"></div></div><div class="col d"><span class="cap">Desktop · the full bill</span><div class="fit" data-w="1280" data-mock="dJewelBill"></div></div></div>
+</section>
+<section id="g3" data-kind="jewel">
+  <header><div class="tags"><span class="tag new">Jewellery</span><span class="tag">v2</span></div><h2>G3 · Custom orders and karigars</h2>
+  <p class="lede">An order takes an advance (and can fix the rate against it), a delivery date and a design photo. Gold issued to a karigar and pieces received back are weighed, with wastage checked against the limit set for that karigar. Receiving makes tags (D6).</p></header>
+  <div class="stage"><div class="col p"><span class="cap">Phone · new order</span><div class="fit" data-w="410" data-mock="pJOrder"></div></div><div class="col d"><span class="cap">Desktop · orders and karigars</span><div class="fit" data-w="1280" data-mock="dJOrders"></div></div></div>
+</section>
+<section id="g4" data-kind="medical">
+  <header><div class="tags"><span class="tag new">Medical store</span><span class="tag">v2</span></div><h2>G4 · Same-salt substitutes and short book</h2>
+  <p class="lede">When a medicine is out, the bill offers the ones with the same salt, by stock and price, and one tap puts it in the short book. The short book becomes one purchase order per distributor, each opened as a WhatsApp list.</p></header>
+  <div class="stage"><div class="col p"><span class="cap">Phone · out of stock on a bill</span><div class="fit" data-w="410" data-mock="pSubst"></div></div><div class="col d"><span class="cap">Desktop · short book</span><div class="fit" data-w="1280" data-mock="dShortBook"></div></div></div>
+</section>
+<section id="g5" data-kind="mobile">
+  <header><div class="tags"><span class="tag new">Mobile and electronics</span><span class="tag">v2</span></div><h2>G5 · Repairs</h2>
+  <p class="lede">A job card records the phone, IMEI, fault, what came with it, the estimate, ready date and advance. Parts used come out of stock; on delivery the job card becomes a bill. "Ready" is a WhatsApp share, so there is no SMS cost.</p></header>
+  <div class="stage"><div class="col p"><span class="cap">Phone · new repair</span><div class="fit" data-w="410" data-mock="pRepair"></div></div><div class="col d"><span class="cap">Desktop · repairs by stage</span><div class="fit" data-w="1280" data-mock="dRepairs"></div></div></div>
+</section>
+<section id="g6" data-kind="garments">
+  <header><div class="tags"><span class="tag new">Clothes and shoes</span><span class="tag">v2</span></div><h2>G6 · Exchange at the counter</h2>
+  <p class="lede">Described in D2 and now drawn. Pick what comes back from the old bill, scan what goes out, pay only the difference. It makes the credit note and the bill together; a smaller new item leaves a credit note to use later, never cash.</p></header>
+  <div class="stage"><div class="col p"><span class="cap">Phone</span><div class="fit" data-w="410" data-mock="pExchange"></div></div><div class="col d"><span class="cap">Desktop</span><div class="fit" data-w="1280" data-mock="dExchange"></div></div></div>
+</section>
+<section id="g7" data-kind="hardware">
+  <header><div class="tags"><span class="tag new">Hardware and paint</span><span class="tag">v2</span></div><h2>G7 · Sites for contractors</h2>
+  <p class="lede">A contractor buys for many sites. Each site keeps its own bills and dues; the contractor page totals them, and a payment can be split across sites. A bill asks "Which site?" only for a contractor with more than one.</p></header>
+  <div class="stage"><div class="col p"><span class="cap">Phone · one site</span><div class="fit" data-w="410" data-mock="pSite"></div></div><div class="col d"><span class="cap">Desktop · sites list</span><div class="fit" data-w="1280" data-mock="dSite"></div></div></div>
+</section>
+<section id="g8" data-kind="auto">
+  <header><div class="tags"><span class="tag new">Auto parts</span><span class="tag">v2</span></div><h2>G8 · Parts for a vehicle, vehicle history</h2>
+  <p class="lede">Fits are typed once on an item. Search by make and model lists what fits, with rack and stock. A vehicle number keeps every bill and the mechanic it came with, kept apart from the mechanic's own dues.</p></header>
+  <div class="stage"><div class="col p"><span class="cap">Phone · parts that fit</span><div class="fit" data-w="410" data-mock="pVehicle"></div></div><div class="col d"><span class="cap">Desktop · vehicle page</span><div class="fit" data-w="1280" data-mock="dVehicle"></div></div></div>
+</section>
+<section id="g9" data-kind="wholesale">
+  <header><div class="tags"><span class="tag new">Wholesale / distributor</span><span class="tag">v2</span></div><h2>G9 · Schemes, free goods and claims</h2>
+  <p class="lede">A scheme applies on the bill by itself. A free case is a ₹0 line, so stock and the retailer's bill both show it. The claims list shows what to ask each company back for.</p></header>
+  <div class="stage"><div class="col p"><span class="cap">Phone · bill with a free case</span><div class="fit" data-w="410" data-mock="pScheme"></div></div><div class="col d"><span class="cap">Desktop · schemes</span><div class="fit" data-w="1280" data-mock="dSchemes"></div></div></div>
+</section>
+<section id="g10" data-kind="cafe">
+  <header><div class="tags"><span class="tag new">Sweets, bakery and café</span><span class="tag">v2</span></div><h2>G10 · Open orders and advance orders</h2>
+  <p class="lede">Tokens and tables still being served, on one board. Festival boxes and cakes are taken with an advance and a ready time, and show on Home the day before. Swiggy and Zomato stay "Later": that needs their partner programmes.</p></header>
+  <div class="stage"><div class="col d"><span class="cap">Desktop · open orders</span><div class="fit" data-w="1280" data-mock="dOpenOrders"></div></div><div class="col p"><span class="cap">Phone · advance order</span><div class="fit" data-w="410" data-mock="pAdvance"></div></div></div>
+</section>
+<section id="g11" data-kind="kirana">
+  <header><div class="tags"><span class="tag new">Kirana</span><span class="tag">v2</span></div><h2>G11 · Loose by amount, phone orders</h2>
+  <p class="lede">At the counter a customer asks for "₹50 of sugar": the sheet works out the weight. Lists that come by phone or WhatsApp become orders to pack, then bills, with udhaar on delivery. Nothing is sent automatically.</p></header>
+  <div class="stage"><div class="col p"><span class="cap">Phone · loose by amount</span><div class="fit" data-w="410" data-mock="pLoose"></div></div><div class="col d"><span class="cap">Desktop · phone orders</span><div class="fit" data-w="1280" data-mock="dPhoneOrders"></div></div></div>
+</section>
+<section id="g12" data-kind="other">
+  <header><div class="tags"><span class="tag new">Other</span><span class="tag">v2</span></div><h2>G12 · What kind of shop, and what it needs</h2>
+  <p class="lede">Other asks one more question to start the right categories and units, then offers four switches, all off by default. It replaces a crowded screen with an empty one that grows.</p></header>
+  <div class="stage"><div class="col p"><span class="cap">Phone · what kind</span><div class="fit" data-w="410" data-mock="pOtherKind"></div></div><div class="col d"><span class="cap">Desktop · pick features</span><div class="fit" data-w="1280" data-mock="dOtherKind"></div></div></div>
+</section>
+<!-- ================= I ================= -->
+<div class="group-h" id="gi"><span class="eyebrow">Part I</span><h2>The other apps: Money Book, Members & Fees, Loans & Collections</h2><p>Each app is its own app (DEC-019): its own menu, its own people and its own money. Nothing here shows a Shop figure. Same design system as the Shop: the same rail, sheets, drawers, lists, tables and buttons. Library and Lending contracts are frozen, so these are screens over what the server already has; anything that would need a server change is marked "Later · needs your OK". The Business type picker at the top does not change this part.</p></div>
+<section id="i0"><header><div class="tags"><span class="tag new">Research</span><span class="tag">v7</span></div><h2>I0 · Competitors and status for each app</h2><p class="lede">Same method as Part R. What exists on dev today, what these screens improve (UI only), and what is left for later.</p></header><div id="iresearch"></div></section>
+<section id="i1">
+  <header><div class="tags"><span class="tag new">Money Book</span><span class="tag">v7</span></div><h2>I1 · People</h2>
+  <p class="lede">The personal book (R-DEC-45). Two figures, To get and To give, then everyone you keep udhaar with. One search, one Filters link, and Add person floats on the phone. No shop words: no bills, items or GST.</p></header>
+  <div class="stage"><div class="col p"><span class="cap">Phone · people</span><div class="fit" data-w="410" data-mock="pUPeople"></div></div><div class="col d"><span class="cap">Desktop · people</span><div class="fit" data-w="1280" data-mock="dUPeople"></div></div></div>
+</section>
+<section id="i2">
+  <header><div class="tags"><span class="tag new">Money Book</span><span class="tag">v7</span></div><h2>I2 · A person and an entry</h2>
+  <p class="lede">The balance in words, the dated entries with the balance after each, and the two big buttons at the bottom: Gave money (red) and Got money (green). The entry asks only the amount and an optional note; today is the date unless changed. It shows what the balance will be before Save.</p></header>
+  <div class="stage"><div class="col p"><span class="cap">Phone · gave money sheet</span><div class="fit" data-w="410" data-mock="pUEntry"></div></div><div class="col d"><span class="cap">Desktop · list and person side by side</span><div class="fit" data-w="1280" data-mock="dUPerson"></div></div></div>
+</section>
+<section id="i3">
+  <header><div class="tags"><span class="tag new">Money Book</span><span class="tag">v7</span></div><h2>I3 · Reminder and report</h2>
+  <p class="lede">A reminder is your own words in your own WhatsApp or SMS, with the report PDF attached if you want. Nothing is sent by the app (DEC-012). The report covers everyone or one person for any dates.</p></header>
+  <div class="stage"><div class="col p"><span class="cap">Phone · remind</span><div class="fit" data-w="410" data-mock="pURemind"></div></div><div class="col d"><span class="cap">Desktop · report</span><div class="fit" data-w="1280" data-mock="dUReport"></div></div></div>
+</section>
+<section id="i4">
+  <header><div class="tags"><span class="tag new">Members &amp; Fees · Library</span><span class="tag">v7</span></div><h2>I4 · Home</h2>
+  <p class="lede">Seats and fees on one screen: how full each shift is, what came in, what is due this week and what is overdue, with Counter and Enrol student. The Today list shows the students who need something.</p></header>
+  <div class="stage"><div class="col p"><span class="cap">Phone · home</span><div class="fit" data-w="410" data-mock="pLHome"></div></div><div class="col d"><span class="cap">Desktop · home with seat map</span><div class="fit" data-w="1280" data-mock="dLHome"></div></div></div>
+</section>
+<section id="i5">
+  <header><div class="tags"><span class="tag new">Members &amp; Fees · Library</span><span class="tag">v7</span></div><h2>I5 · Seats</h2>
+  <p class="lede">The seat map is coloured by fee, so an unpaid or empty seat shows at a glance. Tap a seat to see who sits there, collect, remind or move them. Shift chips switch the map.</p></header>
+  <div class="stage"><div class="col p"><span class="cap">Phone · seat map and seat sheet</span><div class="fit" data-w="410" data-mock="pLSeats"></div></div><div class="col d"><span class="cap">Desktop · seat map and seat panel</span><div class="fit" data-w="1280" data-mock="dLSeats"></div></div></div>
+</section>
+<section id="i6">
+  <header><div class="tags"><span class="tag new">Members &amp; Fees · Library</span><span class="tag">v7</span></div><h2>I6 · Student and collect fee</h2>
+  <p class="lede">The student page carries the fee due, payments and the attendance strip. Collect offers 1 month, 3 months or part, and shows the new "paid to" date before Save. The receipt goes on WhatsApp with the library name, which settles "I already paid".</p></header>
+  <div class="stage"><div class="col p"><span class="cap">Phone · collect fee</span><div class="fit" data-w="410" data-mock="pLStudent"></div></div><div class="col d"><span class="cap">Desktop · student page</span><div class="fit" data-w="1280" data-mock="dLStudent"></div></div></div>
+</section>
+<section id="i7">
+  <header><div class="tags"><span class="tag new">Members &amp; Fees · Library</span><span class="tag">v7</span></div><h2>I7 · Fees and reminders</h2>
+  <p class="lede">Overdue, Due soon and Part paid as chips. Pick students and remind them one after another on WhatsApp, or print the fee poster with the UPI QR for the wall.</p></header>
+  <div class="stage"><div class="col p"><span class="cap">Phone · overdue, pick and remind</span><div class="fit" data-w="410" data-mock="pLFees"></div></div><div class="col d"><span class="cap">Desktop · fees with message preview</span><div class="fit" data-w="1280" data-mock="dLFees"></div></div></div>
+</section>
+<section id="i8">
+  <header><div class="tags"><span class="tag new">Loans &amp; Collections</span><span class="tag">v7</span></div><h2>I8 · Today</h2>
+  <p class="lede">The collector's round. One card says what is collected, what is still due and how much is short. Each stop shows today's amount and anything late, with Not paid and Collect right on the row.</p></header>
+  <div class="stage"><div class="col p"><span class="cap">Phone · today's round</span><div class="fit" data-w="410" data-mock="pNToday"></div></div><div class="col d"><span class="cap">Desktop · today</span><div class="fit" data-w="1280" data-mock="dNToday"></div></div></div>
+</section>
+<section id="i9">
+  <header><div class="tags"><span class="tag new">Loans &amp; Collections</span><span class="tag">v7</span></div><h2>I9 · Collect and the loan page</h2>
+  <p class="lede">Collect offers today's amount or today plus late, cash or UPI, and says what is left before Save. The loan page shows Lent, Collected, Late and Left, the schedule around today and every collection.</p></header>
+  <div class="stage"><div class="col p"><span class="cap">Phone · collect sheet</span><div class="fit" data-w="410" data-mock="pNCollect"></div></div><div class="col d"><span class="cap">Desktop · loan page</span><div class="fit" data-w="1280" data-mock="dNLoan"></div></div></div>
+</section>
+<section id="i10">
+  <header><div class="tags"><span class="tag new">Loans &amp; Collections</span><span class="tag">v7</span></div><h2>I10 · New loan</h2>
+  <p class="lede">Amount lent, plan, each day's amount, start date and route. The whole schedule is shown before Save, so the borrower can see it too.</p></header>
+  <div class="stage"><div class="col p"><span class="cap">Phone · new loan</span><div class="fit" data-w="410" data-mock="pNNew"></div></div><div class="col d"><span class="cap">Desktop · new loan with schedule</span><div class="fit" data-w="1280" data-mock="dNNew"></div></div></div>
+</section>
+<section id="i11">
+  <header><div class="tags"><span class="tag new">Loans &amp; Collections</span><span class="tag">v7</span></div><h2>I11 · Reminders</h2>
+  <p class="lede">Late, Due today and Due tomorrow. The message is plain and signed by the lender's business; WhatsApp opens one borrower at a time.</p></header>
+  <div class="stage"><div class="col p"><span class="cap">Phone · late reminders</span><div class="fit" data-w="410" data-mock="pNMsg"></div></div></div>
+</section>
+<section id="i12">
+  <header><div class="tags"><span class="tag new">Start flow</span><span class="tag">v7 · your call 30 Oct</span></div><h2>I12 · First sign-up opens the Money Book</h2>
+  <p class="lede">After the mobile and code, a new user lands straight in an empty Money Book, ready for the first entry. No questions first. Billing & Stock, Members & Fees and Loans & Collections are added later from More (I13). This replaces DEC-016's "What do you want to use?" step at sign-up; the server's list of apps (registered, released, plan) still decides what Apps can offer.</p></header>
+  <div class="stage"><div class="col p"><span class="cap">Phone · first screen after sign-up</span><div class="fit" data-w="410" data-mock="pStart"></div></div><div class="col d"><span class="cap">Desktop · first screen after sign-up</span><div class="fit" data-w="1280" data-mock="dStart"></div></div></div>
+</section>
+<section id="i13">
+  <header><div class="tags"><span class="tag new">Start flow</span><span class="tag">v7 · your call 30 Oct</span></div><h2>I13 · Primary app, primary business, and the new app names</h2>
+  <p class="lede">Login opens the primary app; inside Business it opens the primary business. Rules: (1) until a primary is set, the Money Book opens; (2) adding the first app other than Udhaar asks once "Open this when you log in?"; (3) if the primary app or business is removed or switched off, login falls back to the Money Book; (4) primary is kept per person, so a staff member opens the business they were added to; (5) app names, owner's call 30 Oct: Money Book (उधार खाता), Billing & Stock (बिल और स्टॉक), Members & Fees (सदस्य और फ़ीस), Loans & Collections (लोन और वसूली), in menus, Apps, titles and Hindi; code names, routes, the <code>shop</code> book and API keys stay unchanged.</p></header>
+  <div class="stage"><div class="col p"><span class="cap">Phone · Apps from More</span><div class="fit" data-w="410" data-mock="pApps"></div></div><div class="col d"><span class="cap">Desktop · Apps</span><div class="fit" data-w="1280" data-mock="dApps"></div></div></div>
+</section>
+<!-- ================= H ================= -->
+<div class="group-h" id="gh"><span class="eyebrow">Part H</span><h2>Each kind as its own app</h2><p>R-DEC-65 in one table. It matches the matrix doc awaiting approval and adds the rows for Part G. Everything here is a starting default from the kind's preset; screens only ask whether a feature key is on, never which kind the business is.</p></div>
+<section id="h1">
+  <header><h2>H1 · Words, menu, dashboard, GST, payments, settings and tables per kind</h2></header>
+  <div class="tblwrap" id="kindmatrix"></div>
+  <div class="spec"><h4>Corrected in this version</h4><ul>
+   <li><b>Medical:</b> the matrix doc says 12% by default. Most medicines moved to 5% on 22 Sep 2025; 5% is the better default.</li>
+   <li><b>Auto parts:</b> most parts moved from 28% to 18% on 22 Sep 2025, so "28% some parts" should go.</li>
+   <li><b>Jewellery:</b> making charges on a sale are part of the sale value and take the same 3%; 5% applies only when the shop does job work on the customer's own gold.</li>
+   <li>All are suggestions the owner confirms per item and must be checked against the current notification before they ship.</li>
+  </ul></div>
+  <div class="spec"><h4>New feature keys this version proposes</h4><p><code>phone_orders</code> <code>loose_amount</code> <code>short_book</code> <code>substitutes</code> <code>repairs</code> <code>exchange</code> <code>sites</code> <code>vehicles</code> <code>schemes</code> <code>open_orders</code> <code>advance_orders</code> <code>rates</code> <code>custom_orders</code> <code>karigar</code> <code>services</code>. Each is one row in Settings › Shop features (B3) and one check on the server and the screen.</p></div>
+</section>
 <div class="group-h" id="gf"><span class="eyebrow">Part F</span><h2>Every other Shop screen for <span data-tname>Kirana</span></h2><p>Suppliers, categories, every sales and purchase list, stock, money and reports, in today's design with the A fixes (round table header, count line that stays, one line under the table) and the business's words and new report rows. Switch the business type at the top to redraw them all.</p></div>
 <div id="allscreens" style="display:grid;gap:56px"></div>
 <!-- ================= E ================= -->
@@ -898,13 +1154,19 @@ body.only-p .col.d,body.only-d .col.p{display:none}
 </section>
 
 <section id="e2">
-  <header><h2>E2 · Decisions for you</h2></header>
+  <header><h2>E2 · Decisions</h2><p class="lede">Owner, 30 Oct 2026: "go with recommend" for all nine. Decision 4 follows the plan order. Decision 6 is now drawn: Sales orders, Delivery challans and Purchase orders show only for wholesale, hardware, auto parts and mobile.</p></header>
   <div class="decisions">
-    <div class="dq"><span class="n">1</span><b>Change only words that differ, or also re-order menus per business?</b><span>This page changes words (Distributor, Retailer, Company) and adds rows, but keeps today's order. Re-ordering per business (for example Bills first for a café) is possible later. Recommended: words and new rows only.</span></div>
-    <div class="dq"><span class="n">2</span><b>Phone bottom bar order</b><span>Kept as today: Home, Customers, Suppliers, Bills, More. The revamp notes had Bills second (R-DEC-04). Recommended: keep today's order.</span></div>
-    <div class="dq"><span class="n">3</span><b>Starter categories at sign-up: create them, or ask "tick the ones you sell"?</b><span>Plan 14 §4. Recommended: create them and offer "Remove ones you don't use" on the empty items list.</span></div>
-    <div class="dq"><span class="n">4</span><b>Which business comes first after the fixes?</b><span>Plan order is business types, then scanning, then box/pieces, sizes, IMEI, batch and expiry. If medical stores are the first market, batch and expiry moves up.</span></div>
-    <div class="dq"><span class="n">5</span><b>Line details on desktop: under the row (drawn here) or a side drawer?</b><span>Under the row keeps the bill in view. Recommended: under the row.</span></div>
+    <div class="dq"><span class="n">1</span><b><span class="badge" style="margin-right:8px">Decided: recommended</span>Change only words that differ, or also re-order menus per business?</b><span>This page changes words (Distributor, Retailer, Company) and adds rows, but keeps today's order. Re-ordering per business (for example Bills first for a café) is possible later. Recommended: words and new rows only.</span></div>
+    <div class="dq"><span class="n">2</span><b><span class="badge" style="margin-right:8px">Decided: recommended</span>Phone bottom bar order</b><span>Kept as today: Home, Customers, Suppliers, Bills, More. The revamp notes had Bills second (R-DEC-04). Recommended: keep today's order.</span></div>
+    <div class="dq"><span class="n">3</span><b><span class="badge" style="margin-right:8px">Decided: recommended</span>Starter categories at sign-up: create them, or ask "tick the ones you sell"?</b><span>Plan 14 §4. Recommended: create them and offer "Remove ones you don't use" on the empty items list.</span></div>
+    <div class="dq"><span class="n">4</span><b><span class="badge" style="margin-right:8px">Decided: recommended</span>Which business comes first after the fixes?</b><span>Plan order is business types, then scanning, then box/pieces, sizes, IMEI, batch and expiry. If medical stores are the first market, batch and expiry moves up.</span></div>
+    <div class="dq"><span class="n">5</span><b><span class="badge" style="margin-right:8px">Decided: recommended</span>Line details on desktop: under the row (drawn here) or a side drawer?</b><span>Under the row keeps the bill in view. Recommended: under the row.</span></div>
+  </div>
+  <div class="decisions">
+    <div class="dq"><span class="n">6</span><b><span class="badge" style="margin-right:8px">Decided: recommended</span>Hide generic rows a kind doesn't use?</b><span>R-DEC-51 #1 keeps today's rows for everyone and only adds; R-DEC-65 says nothing unrelated. Sales orders, delivery challans and purchase orders mean little to a kirana, medical store, café or jeweller. Recommended: put them behind one switch, on for wholesale, hardware, auto parts and mobile, off for the rest.</span></div>
+    <div class="dq"><span class="n">7</span><b><span class="badge" style="margin-right:8px">Decided: recommended</span>Jewellery's first version</b><span>Recommended: today's rate, tags, weight bill, old gold, PAN and cash rule, custom orders and karigars (G1–G3). Gold saving schemes later; girvi through the Lending app.</span></div>
+    <div class="dq"><span class="n">8</span><b><span class="badge" style="margin-right:8px">Decided: recommended</span>Gold rate: typed, not fetched</b><span>A live rate feed is a paid outside service (ADR-021). Recommended: typed each morning with "Same as yesterday".</span></div>
+    <div class="dq"><span class="n">9</span><b><span class="badge" style="margin-right:8px">Decided: recommended</span>Which kinds' modules come first?</b><span>Recommended after B2/B3: Hardware (units, sites), Medical (batch, short book), Mobile (IMEI, repairs), then Jewellery. Swiggy/Zomato, salesman routes, e-invoice and loyalty stay Later.</span></div>
   </div>
   <p class="lede">After you approve, the next steps are: fix the existing screens in this order (A first), then write the user guide pages per business type from these same screens.</p>
 </section>
@@ -1014,7 +1276,7 @@ function nav(t){
 
 const K=BT.kirana;
 function rail(t,active){
-  let h=`<aside class="rail"><div class="biz"><span class="logo"><i>K</i></span><span><b>${t.shop}</b><small>Shop</small></span>${I('ud','s')}</div><div class="apps">${I('apps','s')}<span>Apps</span>${I('cr','s')}</div>`;
+  let h=`<aside class="rail"><div class="biz"><span class="logo"><i>${t.shop[0]}</i></span><span><b>${t.shop}</b><small>${t.short} · Billing & Stock</small></span>${I('ud','s')}</div><div class="apps">${I('apps','s')}<span>Apps</span>${I('cr','s')}</div>`;
   for(const g of nav(t)){
     h+=`<div class="gh">${g.h}</div>`;
     for(const r of g.rows)h+=`<div class="ri${r.k===active?' on':''}${r.word?' word':''}">${I(r.i,'s')}<span>${r.l}</span>${r.nw?'<span class="nw">New</span>':''}</div>`;
@@ -1037,7 +1299,7 @@ function phead(t,o){
   if(o.head==='none')return '';
   if(o.head==='custom')return o.headHtml;
   if(o.head==='back')return `<div class="phead"><span class="ib">${I(o.close?'close':'back')}</span><span class="bn" style="display:grid;gap:0;line-height:1.25"><b style="font-weight:600;font-size:16px">${o.title}</b>${o.sub?`<small class="mute" style="font-size:12px">${o.sub}</small>`:''}</span>${o.right||''}</div>`;
-  return `<div class="phead"><span class="logo"><i>K</i></span><span class="bn"><span class="av">${t.ini}</span><b>${t.shop}</b>${I('ud','s')}</span><span class="ib${o.markSearch?' mark':''}">${I('search')}</span><span class="ib">${I('bell')}</span></div>`;
+  return `<div class="phead"><span class="logo"><i>${t.shop[0]}</i></span><span class="bn"><span class="av">${t.ini}</span><b>${t.shop}</b>${I('ud','s')}</span><span class="ib${o.markSearch?' mark':''}">${I('search')}</span><span class="ib">${I('bell')}</span></div>`;
 }
 function phone(t,o){
   return `<div class="ui pf"><div class="pscr" style="height:${o.h||800}px"><div class="pstat"><span>13:38</span><span>5G · 80%</span></div>${phead(t,o)}${o.raw!==undefined?o.raw:`<div class="pbody" style="${o.bs||''}">${o.body}</div>`}${o.dock||''}${o.nav?pnav(t,o.nav):''}${o.overlay||''}</div></div>`;
@@ -1069,7 +1331,7 @@ function totalsCard(tot,o={}){
   return `<div class="card pad totals"><div class="kv"><span>Subtotal</span><b class="num">${rs(tot)}</b></div>${o.disc?`<div class="kv"><span>Discount</span><span class="num">— ₹0</span></div>`:''}<div class="kv"><span>CGST + SGST</span><span class="num">incl.</span></div><div class="kv"><span>Round off</span><span class="num">₹0</span></div><div class="kv grand"><b>Total</b><b class="num">${rs(tot)}</b></div></div>`;
 }
 function billTable(t,items,o={}){
-  const rows=items.map((i,n)=>`<tr class="${o.flash===n?'flash':''}${o.exp===n?' expanded':''}"><td class="mute">${n+1}</td><td><b style="font-weight:600">${i.n}</b>${i.cap?`<small style="color:var(--teal-ink);font-weight:600">${i.cap}</small>`:''}</td><td class="r"><span class="inp num" style="height:34px;width:76px;display:inline-flex">${i.q}</span>${o.flash===n?' <span class="badge" style="margin-left:4px">+1 scanned</span>':''}</td><td>${i.u}</td><td class="r num">${rs(i.r)}</td><td class="r num">0</td><td class="r num">${o.gst||'5%'}</td><td class="r amt">${rs(i.q*i.r)}</td><td class="mute">${I('trash','s')}</td></tr>${o.exp===n?`<tr class="expanded"><td></td><td colspan="8" style="padding:4px 14px 16px">${o.expHtml}</td></tr>`:''}`).join('');
+  const rows=items.map((i,n)=>`<tr class="${o.flash===n?'flash':''}${o.exp===n?' expanded':''}"><td class="mute">${n+1}</td><td><b style="font-weight:600">${i.n}</b>${i.cap?`<small style="color:var(--teal-ink);font-weight:600">${i.cap}</small>`:''}</td><td class="r"><span class="inp num" style="height:34px;width:76px;display:inline-flex">${i.q}</span>${o.flash===n?' <span class="badge" style="margin-left:4px">+1 scanned</span>':''}</td><td>${i.u}</td><td class="r num">${rs(i.r)}</td><td class="r num">0</td><td class="r num">${o.gst||gstOf(t)}</td><td class="r amt">${rs(i.q*i.r)}</td><td class="mute">${I('trash','s')}</td></tr>${o.exp===n?`<tr class="expanded"><td></td><td colspan="8" style="padding:4px 14px 16px">${o.expHtml}</td></tr>`:''}`).join('');
   return `<div class="tf"><table><thead><tr><th style="width:44px">#</th><th>Item</th><th class="r">Qty</th><th>Unit</th><th class="r">Rate</th><th class="r">Disc. %</th><th class="r">GST</th><th class="r">Amount</th><th style="width:40px"></th></tr></thead><tbody>
   <tr><td colspan="9" style="padding:10px 12px;background:var(--card)"><div class="addbar"><div class="inp ${o.focus?'focus':'ph'}" style="flex:1">${I('search','s')}<span style="flex:1">${o.typed||'Search or scan item'}</span><span class="small mute">${I('scan','s')} Scanner ready</span><kbd style="font:600 11px var(--f);border:1px solid var(--line);border-radius:5px;padding:1px 6px;background:var(--sunken);margin-left:8px">F2</kbd></div></div>${o.below||''}</td></tr>
   ${rows}</tbody></table></div>`;
@@ -1222,12 +1484,12 @@ M.dCustomers=()=>desk(K,{active:'cust',body:custPage(K,{loading:1,typed:'sha',ma
 M.pCustomers=()=>phone(K,{head:'main',body:custPhoneList(K,{loading:1,typed:'sha',mark:1}),nav:'cust'});
 
 /* B1 */
-const TILES=[['kirana','Kirana','General store'],['medical','Medical','Pharmacy'],['mobile','Mobile','and electronics'],['garments','Clothes','and shoes'],['hardware','Hardware','paint, sanitary'],['auto','Auto parts','and spares'],['wholesale','Wholesale','distributor'],['cafe','Sweets','bakery, café'],['jewel','Jewellery','own app, later'],['other','Other','anything else']];
-const tileHtml=(t,cols)=>`<div class="tiles" style="grid-template-columns:repeat(${cols},minmax(0,1fr))">${TILES.map(([k,a,b])=>`<div class="tile${k===t.tile?' on':''}" style="${k==='jewel'?'opacity:.6':''}"><svg><use href="#b-${k}"/></svg>${a}<small>${b}</small></div>`).join('')}</div>`;
+const TILES=[['kirana','Kirana','General store'],['medical','Medical','Pharmacy'],['mobile','Mobile','and electronics'],['garments','Clothes','and shoes'],['hardware','Hardware','paint, sanitary'],['auto','Auto parts','and spares'],['wholesale','Wholesale','distributor'],['cafe','Sweets','bakery, café'],['jewel','Jewellery','gold, silver'],['other','Other','anything else']];
+const tileHtml=(t,cols)=>`<div class="tiles" style="grid-template-columns:repeat(${cols},minmax(0,1fr))">${TILES.map(([k,a,b])=>`<div class="tile${k===t.tile?' on':''}" ><svg><use href="#b-${k}"/></svg>${a}<small>${b}</small></div>`).join('')}</div>`;
 M.pPick=t=>phone(t,{head:'back',title:'Set up your shop',sub:'Step 2 of 4',bs:'gap:14px',
-  body:`<div style="display:grid;gap:4px"><span class="ptitle">What do you sell?</span><span class="sec small">Tap one. This sets your menus and item fields. You can change it later.</span></div>${tileHtml(t,3)}<span class="btn" style="justify-self:start">${I('plus','s')}I also sell…</span>`,
+  body:`<div style="display:grid;gap:4px"><span class="ptitle">What do you sell?</span><span class="sec small">Tap one. This sets your menus and item fields. You can change it later.</span></div>${tileHtml(t,3)}<span class="small mute">One kind per business. Sell something very different? Add it later as a second business.</span>`,
   dock:`<div class="pdock"><span class="btn cta lg w">Continue</span></div>`});
-M.dPick=t=>deskPlain(`<div style="display:grid;place-items:center;padding:40px"><div class="card" style="width:820px;padding:32px;display:grid;gap:20px"><span class="small mute">Step 2 of 4</span><div style="display:grid;gap:4px"><h1 style="font-size:26px;font-weight:700">What do you sell?</h1><p class="sec">Tap one. This sets your menus and item fields. You can change it later in Settings.</p></div>${tileHtml(t,5)}<div style="display:flex;justify-content:space-between;align-items:center"><span class="btn">${I('plus','s')}I also sell…</span><span style="display:flex;gap:8px"><span class="btn soft lg">Back</span><span class="btn cta lg">Continue</span></span></div></div></div>`,640);
+M.dPick=t=>deskPlain(`<div style="display:grid;place-items:center;padding:40px"><div class="card" style="width:820px;padding:32px;display:grid;gap:20px"><span class="small mute">Step 2 of 4</span><div style="display:grid;gap:4px"><h1 style="font-size:26px;font-weight:700">What do you sell?</h1><p class="sec">Tap one. This sets your menus and item fields. You can change it later in Settings.</p></div>${tileHtml(t,5)}<div style="display:flex;justify-content:space-between;align-items:center"><span class="small mute">One kind per business. Wholesale asks "Wholesale of what?" next.</span><span style="display:flex;gap:8px"><span class="btn soft lg">Back</span><span class="btn cta lg">Continue</span></span></div></div></div>`,640);
 
 /* B2 */
 const FOLLOW={
@@ -1245,7 +1507,7 @@ M.dShell=t=>{
   const list=[...f,['Sharma General Store promised ₹1,500 today','Owes ₹3,100 · 42 days late','Remind'],['PO-042 not received','Sent 12 Oct','Open']];
   return desk(t,{active:'home',h:1000,search:'Find or start: name, item, bill no.',body:`<div class="phd"><div><h1>Dashboard</h1><p>${t.shop} · Sunday 25 Oct</p></div><div class="acts"><span class="btn">Receive money</span><span class="btn">Pay ${t.supp.toLowerCase()}</span><span class="btn cta">${I('plus','s')}New bill</span></div></div>
   <div class="dayl"><div><small>Billed today</small><b>₹14,280</b><span>23 bills</span></div><div><small>Received</small><b class="get">₹9,640</b><span>Cash ₹6,140 · UPI ₹3,500</span></div><div><small>Paid out</small><b class="give">₹2,150</b><span>${t.supps} ₹1,800</span></div><div><small>To collect</small><b>₹18,450</b><span>12 ${t.custs.toLowerCase()}</span></div></div>
-  <div style="display:grid;grid-template-columns:1.2fr 1fr;gap:16px;align-items:start"><div class="panel"><div class="ph2"><b>Follow-ups</b><span class="small mute">Most urgent first</span></div><div class="lst" style="border:0;border-radius:0">${list.map(r=>`<div class="li" style="${r[3]?'outline:1.5px dashed var(--cta);outline-offset:-3px':''}"><span class="t"><b>${r[0]}</b><small>${r[1]}</small></span><span class="btn sm">${r[2]}</span></div>`).join('')}</div></div>
+  ${kpiStrip(t)}<div style="display:grid;grid-template-columns:1.2fr 1fr;gap:16px;align-items:start"><div class="panel"><div class="ph2"><b>Follow-ups</b><span class="small mute">Most urgent first</span></div><div class="lst" style="border:0;border-radius:0">${list.map(r=>`<div class="li" style="${r[3]?'outline:1.5px dashed var(--cta);outline-offset:-3px':''}"><span class="t"><b>${r[0]}</b><small>${r[1]}</small></span><span class="btn sm">${r[2]}</span></div>`).join('')}</div></div>
   <div class="panel"><div class="ph2"><b>To collect · ${t.custs.toLowerCase()}</b><span class="amt get">₹18,450</span></div><div class="lst" style="border:0;border-radius:0">${CUSTS.slice(0,4).filter(c=>c[2]).map(c=>`<div class="li"><span class="t"><b>${t.tile==='wholesale'?c[0].replace('Ramesh Patil','Patil Kirana'):c[0]}</b><small>${c[3]}</small></span><b class="amt">${rs(c[2])}</b></div>`).join('')}</div></div></div>`});
 };
 M.pMore=t=>{
@@ -1262,9 +1524,9 @@ function wordTable(){
 const FEAT=[['units','Box and pieces','Buy in boxes, sell in pieces. 1 Box = 20 Pieces.'],['parts','Part numbers and rack','Find a part by any of its numbers; show the rack.'],['godowns','Godowns','Keep stock in more than one place and move it.'],['variants','Sizes and colours','One shirt in S, M, L and two colours.'],['serial','IMEI / serial number','Each phone has its own number and warranty.'],['batch','Batch and expiry','Sell the batch that expires first.'],['schedule','Schedule H medicines','Ask for doctor and patient name when needed.'],['eway','E-way bill','For goods over ₹50,000 going to another state.'],['addons','Add-ons and kitchen ticket','Extra cheese ₹20. Print a ticket for the kitchen.']];
 const featList=t=>`<div class="lst">${FEAT.map(([k,b,s])=>`<div class="li" style="min-height:64px"><span class="t"><b style="white-space:normal">${b}</b><small style="white-space:normal">${s}</small></span><span class="sw${has(t,k)?' on':''}"></span></div>`).join('')}</div>`;
 M.dFeatures=t=>desk(t,{active:'set',h:900,body:`<div class="phd"><div><h1>Settings</h1><p>${t.shop}</p></div></div><div style="display:flex;gap:24px;align-items:start"><div class="setnav"><span>Business details</span><span class="on">Shop features</span><span>Bills and print</span><span>Tax and GST</span><span>Team</span><span>Devices</span><span>Plan</span></div>
- <div style="flex:1;display:grid;gap:16px;max-width:720px"><div class="card pad" style="display:grid;gap:10px"><b style="font-weight:600">What you sell</b><div class="pills"><span class="chp on"><svg class="ico s"><use href="#b-${t.tile}"/></svg>${t.name}</span><span class="chp">${I('plus','s')}I also sell…</span></div><span class="small mute">Changing this turns on that business's features below. Nothing is deleted.</span></div>
+ <div style="flex:1;display:grid;gap:16px;max-width:720px"><div class="card pad" style="display:grid;gap:10px"><b style="font-weight:600">What you sell</b><div class="pills"><span class="chp on"><svg class="ico s"><use href="#b-${t.tile}"/></svg>${t.name}</span></div>${swr('I also sell wholesale','Adds cases, godowns, e-way bill and the words Retailer and Company',t.tile==='wholesale')}<span class="small mute">Changing this turns on that business's features below. Nothing is deleted.</span></div>
  <div style="display:grid;gap:6px"><b style="font-weight:600">Features</b><span class="small mute">Turning one off hides its fields. The data stays.</span></div>${featList(t)}</div></div>`});
-M.pFeatures=t=>phone(t,{head:'back',title:'Shop features',h:1000,bs:'gap:12px',body:`<div class="card pad" style="display:grid;gap:8px"><b style="font-weight:600">What you sell</b><div class="pills"><span class="chp on sm">${t.name}</span><span class="chp sm">${I('plus','s')}I also sell…</span></div></div><span class="small mute">Turning one off hides its fields. The data stays.</span>${featList(t)}`});
+M.pFeatures=t=>phone(t,{head:'back',title:'Shop features',h:1000,bs:'gap:12px',body:`<div class="card pad" style="display:grid;gap:8px"><b style="font-weight:600">What you sell</b><div class="pills"><span class="chp on sm">${t.name}</span></div></div><span class="small mute">Turning one off hides its fields. The data stays.</span>${featList(t)}`});
 
 /* B4 */
 M.pOffer=t=>phone(t,{head:'back',close:1,title:'New bill',body:`<div class="faded" style="display:grid;gap:12px">${addbar('Search item or scan')}<div class="lines">${line({n:'Tata Salt 1 kg',cap:'',q:2,u:'PAC',r:28})}</div></div>`,
@@ -1340,7 +1602,7 @@ const sampleParty=t=>t.tile==='wholesale'?['Patil Kirana Stores','+91 98765 4321
 M.pBillType=t=>phone(t,{head:'back',close:1,title:'New bill',sub:'INV/26-27/0419',h:940,bs:'gap:12px',
   body:`<div class="card pad" style="display:grid;gap:12px">${segc('Quick sale',custWord(t),1)}${cbox(...sampleParty(t),'Nothing due')}${billExtras(t)}</div>${addbar('Search item or scan')}<div class="lines">${t.items.map(i=>line(i,{tag:1})).join('')}</div>`,dock:docks.saved(sumLines(t),{items:t.items.length+' items'})});
 M.dBillType=t=>desk(t,{active:'bills',h:840,body:`<div class="phd"><div><h1>New bill</h1><p>INV/26-27/0419 · Tax invoice</p></div></div>
- <div style="display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:16px;align-items:start"><div style="display:grid;gap:16px"><div class="card pad" style="display:grid;grid-template-columns:300px minmax(0,1fr);gap:16px;align-items:center">${segc('Quick sale',custWord(t),1)}${cbox(...sampleParty(t),'Nothing due')}</div>${billTable(t,t.items,{gst:t.tile==='mobile'?'18%':'5%'})}</div>
+ <div style="display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:16px;align-items:start"><div style="display:grid;gap:16px"><div class="card pad" style="display:grid;grid-template-columns:300px minmax(0,1fr);gap:16px;align-items:center">${segc('Quick sale',custWord(t),1)}${cbox(...sampleParty(t),'Nothing due')}</div>${billTable(t,t.items,{gst:gstOf(t)})}</div>
  <div style="display:grid;gap:12px">${billExtras(t)}${totalsCard(sumLines(t))}</div></div>`,dock:docks.desk(sumLines(t))});
 
 /* D2 line sheet content per type */
@@ -1379,7 +1641,7 @@ function itemTypeGroup(t){
    default:return acc('More details','HSN, low stock alert, description, photo',false,'');
   }
 }
-const itemBase=(t,wide)=>{const i=t.items[0];return `<div class="grp">${fld('Name',i.n)}<div class="${wide?'row2':'grp'}" style="${wide?'':'gap:16px'}">${fld('Barcode','8901725133917',{end:`<span class="mute" title="Scan">${I('scan','s')}</span>`})}${sel('Category',CAT[t.tile])}</div><div class="row2">${fld('Selling price',rs(i.r).slice(1),{pre:'₹',right:1})}${sel('GST',t.tile==='mobile'||t.tile==='hardware'||t.tile==='auto'?'18%':'5%')}</div>${t.tile==='wholesale'||t.tile==='garments'?'':`<div class="row2">${sel('Unit',i.u)}${fld('Opening stock','0',{right:1})}</div>`}</div>`};
+const itemBase=(t,wide)=>{const i=t.items[0];return `<div class="grp">${fld('Name',i.n)}<div class="${wide?'row2':'grp'}" style="${wide?'':'gap:16px'}">${fld('Barcode','8901725133917',{end:`<span class="mute" title="Scan">${I('scan','s')}</span>`})}${sel('Category',CAT[t.tile])}</div><div class="row2">${fld('Selling price',rs(i.r).slice(1),{pre:'₹',right:1})}${sel('GST',gstOf(t))}</div>${t.tile==='wholesale'||t.tile==='garments'?'':`<div class="row2">${sel('Unit',i.u)}${fld('Opening stock','0',{right:1})}</div>`}</div>`};
 M.pItemForm=t=>phone(t,{head:'main',h:960,nav:'more',body:'<div class="faded"><div class="ptitle">Items</div></div>',overlay:sheet('Add item',itemBase(t)+itemTypeGroup(t),`<span class="btn soft lg">Cancel</span><span class="btn cta lg">Save item</span>`,{h:'93%'})});
 M.dItemForm=t=>desk(t,{active:'items',h:860,body:itemsDesk(t),overlay:drawer('Add item',itemBase(t,1)+itemTypeGroup(t),`<span class="btn soft">Cancel</span><span class="btn cta">Save item</span>`,{cls:'w560'})});
 
@@ -1475,14 +1737,14 @@ const COV=[
  ['New: Stock transfer, e-way bills','—','Wholesale (D10)'],
  ['Payments, cash book','A7','—'],
  ['Reports','A7','Near expiry, batch-wise stock, Schedule H register, e-way register'],
- ['Settings','A5','Shop features (B3), drug licence no., label printer'],
+ ['Settings','A5','Shop features (B3), Messages per kind (D15), drug licence no., label printer'],
  ['More page / sidebar','—','Rows and words per business (B2)']
 ];
 /* D12 dashboard phone */
 M.pHome=t=>{const f=(FOLLOW[t.tile]||FOLLOW.kirana)[0];
  return phone(t,{head:'main',nav:'home',bs:'gap:12px',body:`<span class="ptitle">Dashboard</span><div class="inp ph">${I('search','s')}<span>Find or start: name, item, bill no.</span></div>
  <div class="dayl" style="grid-template-columns:1fr 1fr"><div><small>Billed today</small><b>₹14,280</b><span>23 bills</span></div><div><small>Received</small><b class="get">₹9,640</b><span>Cash · UPI</span></div></div>
- <div class="two" style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><span class="btn lg">Receive money</span><span class="btn cta lg">${I('plus','s')}New bill</span></div>
+ ${kpiStrip(t,2)}<div class="two" style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><span class="btn lg">Receive money</span><span class="btn cta lg">${I('plus','s')}New bill</span></div>
  <div class="panel"><div class="ph2"><b>Follow-ups</b><span class="small mute">3</span></div><div class="lst" style="border:0;border-radius:0"><div class="li" style="${f[3]?'outline:1.5px dashed var(--cta);outline-offset:-3px':''}"><span class="t"><b>${f[0]}</b><small>${f[1]}</small></span><span class="btn sm">${f[2]}</span></div><div class="li"><span class="t"><b>Sharma General Store promised ₹1,500</b><small>42 days late</small></span><span class="btn sm">Remind</span></div></div></div>
  <div class="panel"><div class="ph2"><b>To collect · ${t.custs.toLowerCase()}</b><span class="amt get">₹18,450</span></div></div>`})};
 /* D13 estimate / challan */
@@ -1492,15 +1754,15 @@ M.dChallan=t=>desk(t,{active:'dc',h:840,body:`<div class="phd"><div><h1>New deli
  <div style="display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:16px;align-items:start"><div style="display:grid;gap:16px"><div class="card pad">${cbox(...sampleParty(t),'Nothing due')}</div>${billTable(t,t.items,{gst:'—'})}</div>
  <div style="display:grid;gap:12px">${acc('Transport','Vehicle, driver, delivery address',true,`${fld('Vehicle no.',t.tile==='wholesale'?'MH 14 GU 2290':'MH 12 AB 1020')}${fld('Driver / person','Santosh')}${fld('Deliver to',t.tile==='hardware'?'Patil Bungalow, Sector 4':'Shop address')}${has(t,'godowns')?sel('Goods leave from','Godown'):''}`)}<div class="card pad small sec">Stock goes out now${has(t,'batch')?' from the batch that expires first':''}${has(t,'serial')?' with the IMEIs picked':''}. Turn it into a bill later in one tap.</div></div></div>`,dock:docks.desk(sumLines(t),'Save draft','Issue challan')});
 /* D14 print */
-function a4(t,doc){const tot=sumLines(t);const extraCol=has(t,'batch')?['Batch · Exp','b']:has(t,'serial')&&doc==='TAX INVOICE'?['IMEI','s']:has(t,'variants')?['Size','v']:has(t,'parts')?['Part no.','p']:null;
+function a4(t,doc){const tot=sumLines(t);const extraCol=has(t,'jewellery')?['Net wt · Purity','v']:has(t,'batch')?['Batch · Exp','b']:has(t,'serial')&&doc==='TAX INVOICE'?['IMEI','s']:has(t,'variants')?['Size','v']:has(t,'parts')?['Part no.','p']:null;
  const xv=i=>{const c=i.cap||'';if(!extraCol)return'';const m={b:c.split(' · ').slice(0,2).join(' · ').replace('Batch ',''),s:(c.match(/IMEI ([\d ]+)/)||['','—'])[1],v:c.split(' · ').slice(0,2).join(' · ').replace('Size ',''),p:(c.match(/Part ([\w-]+)/)||['','—'])[1]};return `<td>${m[extraCol[1]]}</td>`};
  return `<div class="ui" style="width:794px;background:#fff;color:#111;padding:36px 40px;font-size:12px;display:grid;gap:14px;border:1px solid var(--line);box-shadow:var(--shadow)">
  <div style="display:flex;justify-content:space-between;border-bottom:2px solid #0E7C86;padding-bottom:12px"><div style="display:grid;gap:2px"><b style="font-size:18px">${t.shop}</b><span>Main Road, Nashik · +91 98220 00000</span><span>GSTIN 27ABCDE1234F1Z5${has(t,'batch')?' · Drug licence 20B/21B: MH-NSK-41207':''}</span></div><div style="display:grid;justify-items:end;gap:2px"><b style="font-size:16px;color:#0E7C86">${doc}</b><span>No. ${doc==='TAX INVOICE'?'INV/26-27/0419':doc==='ESTIMATE'?'EST/26-27/0031':'DC/26-27/0012'}</span><span>Date 25/10/2026</span></div></div>
  <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px"><div><b>Bill to</b><br>${sampleParty(t)[0]}<br>+91 98765 43210</div><div style="display:grid;gap:2px">${t.billX.map(x=>`<span><b>${x.l}:</b> ${x.v}</span>`).join('')}</div></div>
- <table style="width:100%;border-collapse:collapse"><thead><tr style="background:#EEF6F7">${['#','Item',...(extraCol?[extraCol[0]]:[]),'Qty','Rate','GST','Amount'].map(h=>`<th style="text-align:left;padding:6px;border-bottom:1px solid #ccc">${h}</th>`).join('')}</tr></thead><tbody>${t.items.map((i,n)=>`<tr style="border-bottom:1px solid #eee"><td style="padding:6px">${n+1}</td><td>${i.n}</td>${xv(i)}<td>${i.q} ${i.u}</td><td>${rs(i.r)}</td><td>${t.tile==='mobile'?'18%':'5%'}</td><td>${rs(i.q*i.r)}</td></tr>`).join('')}</tbody></table>
- <div style="display:flex;justify-content:space-between;align-items:end"><div style="display:grid;gap:3px;max-width:400px">${has(t,'serial')&&doc==='TAX INVOICE'?'<span>Warranty: 12 months from bill date. Keep this bill.</span>':''}${has(t,'batch')?'<span>Schedule H drug: sold on prescription of Dr. S. Kulkarni.</span>':''}${doc==='ESTIMATE'?'<span>Valid till 09/11/2026. Prices may change after that.</span>':''}${doc==='DELIVERY CHALLAN'?'<span>Goods sent on approval. Not a bill. Receiver signature: __________</span>':''}<span>UPI: gupta@upi · Thank you</span></div><div style="display:grid;gap:3px;min-width:200px"><div class="kv"><span>Taxable</span><span>${rs(Math.round(tot/1.05))}</span></div><div class="kv"><span>CGST + SGST</span><span>${rs(tot-Math.round(tot/1.05))}</span></div><div class="kv" style="font-size:15px;border-top:1px solid #111;padding-top:4px"><b>Total</b><b>${rs(tot)}</b></div></div></div></div>`}
+ <table style="width:100%;border-collapse:collapse"><thead><tr style="background:#EEF6F7">${['#','Item',...(extraCol?[extraCol[0]]:[]),'Qty','Rate','GST','Amount'].map(h=>`<th style="text-align:left;padding:6px;border-bottom:1px solid #ccc">${h}</th>`).join('')}</tr></thead><tbody>${t.items.map((i,n)=>`<tr style="border-bottom:1px solid #eee"><td style="padding:6px">${n+1}</td><td>${i.n}</td>${xv(i)}<td>${i.q} ${i.u}</td><td>${rs(i.r)}</td><td>${gstOf(t)}</td><td>${rs(i.q*i.r)}</td></tr>`).join('')}</tbody></table>
+ <div style="display:flex;justify-content:space-between;align-items:end"><div style="display:grid;gap:3px;max-width:400px">${has(t,'serial')&&doc==='TAX INVOICE'?'<span>Warranty: 12 months from bill date. Keep this bill.</span>':''}${has(t,'batch')?'<span>Schedule H drug: sold on prescription of Dr. S. Kulkarni.</span>':''}${has(t,'jewellery')?'<span>Rates used: 22K ₹11,650/g · Silver ₹150/g. Every gold piece is BIS hallmarked; HUID printed per line. Old gold taken in: ₹93,619 (8.200 g).</span>':''}${doc==='ESTIMATE'?'<span>Valid till 09/11/2026. Prices may change after that.</span>':''}${doc==='DELIVERY CHALLAN'?'<span>Goods sent on approval. Not a bill. Receiver signature: __________</span>':''}<span>${TERMS[t.tile]||TERMS.kirana}</span><span>UPI: ${t.shop.split(" ")[0].toLowerCase()}@upi · Thank you</span></div><div style="display:grid;gap:3px;min-width:200px"><div class="kv"><span>Taxable</span><span>${rs(Math.round(tot/1.05))}</span></div><div class="kv"><span>CGST + SGST</span><span>${rs(tot-Math.round(tot/1.05))}</span></div><div class="kv" style="font-size:15px;border-top:1px solid #111;padding-top:4px"><b>Total</b><b>${rs(tot)}</b></div></div></div></div>`}
 M.dPrint=t=>a4(t,'TAX INVOICE');
-M.pPrint=t=>`<div class="ui" style="width:410px;padding:10px;border:1px solid var(--line);border-radius:16px;background:var(--sunken)"><div class="ticket" style="width:300px"><b>${t.shop}</b><span>GSTIN 27ABCDE1234F1Z5</span><span>INV/26-27/0419 · 25/10/26 4:42 pm</span><hr>${t.items.map(i=>`<span>${i.n}</span>${i.cap?`<span style="font-size:11px">&nbsp;&nbsp;${i.cap}</span>`:''}<span style="display:flex;justify-content:space-between"><span>&nbsp;&nbsp;${i.q} × ${rs(i.r)}</span><span>${rs(i.q*i.r)}</span></span>`).join('')}<hr>${t.billX.map(x=>`<span>${x.l}: ${x.v}</span>`).join('')}<span style="display:flex;justify-content:space-between"><b>TOTAL</b><b>${rs(sumLines(t))}</b></span><span>Thank you · visit again</span></div></div>`;
+M.pPrint=t=>`<div class="ui" style="width:410px;padding:10px;border:1px solid var(--line);border-radius:16px;background:var(--sunken)"><div class="ticket" style="width:300px"><b>${t.shop}</b><span>GSTIN 27ABCDE1234F1Z5</span><span>INV/26-27/0419 · 25/10/26 4:42 pm</span><hr>${t.items.map(i=>`<span>${i.n}</span>${i.cap?`<span style="font-size:11px">&nbsp;&nbsp;${i.cap}</span>`:''}<span style="display:flex;justify-content:space-between"><span>&nbsp;&nbsp;${i.q} × ${rs(i.r)}</span><span>${rs(i.q*i.r)}</span></span>`).join('')}<hr>${t.billX.map(x=>`<span>${x.l}: ${x.v}</span>`).join('')}<span style="display:flex;justify-content:space-between"><b>TOTAL</b><b>${rs(sumLines(t))}</b></span><span style="font-size:11px">${TERMS[t.tile]||TERMS.kirana}</span><span>Thank you · visit again</span></div></div>`;
 M.dPrintEst=t=>a4(t,'ESTIMATE');
 /* Part F: every list screen, one generic register, per business */
 const STARTCAT={kirana:['Atta, rice and grains','Dal and pulses','Oil and ghee','Masala and spices','Biscuits and snacks','Soap and detergent'],medical:['Tablets and capsules','Syrups','Injections','Ointments and creams','Surgical and dressings','Ayurvedic'],mobile:['Smartphones','Feature phones','Chargers and cables','Covers and screen guards','TVs','Repair service'],garments:['Men','Women','Kids','Sarees','Footwear men','Accessories'],hardware:['Wires and cables','Switches and sockets','Pipes and fittings','Paint','Hand tools','Cement and building material'],auto:['Engine parts','Brake parts','Filters','Lubricants and oils','Tyres and tubes','Batteries'],wholesale:['HUL','ITC','Parle','Dabur','Grains and pulses','Schemes and free goods'],cafe:['Tea and coffee','Cold drinks and shakes','Snacks','Cakes and pastries','Indian sweets','Combos']};
@@ -1508,7 +1770,7 @@ function SCR(t){const S=t.supps,s=t.supp,C=t.custs,c=t.cust;const sp=t.tile==='m
  const st=(x,k)=>`<span class="badge ${k||''}">${x}</span>`;
  return [
  {k:'supp',title:S,sub:`Everyone you buy from.`,add:'Add '+s.toLowerCase(),count:`To pay <b class="give">₹9,800</b> · ${S} <b>42</b>`,cols:[s,'Balance','Due','Mobile','Status'],rows:[[sp,'<b class="give">₹4,200</b>','Due Mon','+91 96325 43280',st('Active')],['Mahalaxmi Wholesale','<b class="give">₹5,000</b>','Due 30 Oct','+91 98901 22110',st('Active')],['Ramesh Traders','<b class="give">₹600</b>','3 days late','+91 97654 10022',st('Active')]]},
- {k:'cat',title:'Categories',sub:'Started for you from what you sell. Rename or remove any.',add:'Add category',count:`Categories <b>${STARTCAT[t.tile].length+12}</b>`,cols:['Category','Items','Stock value','GST usually'],rows:STARTCAT[t.tile].map((n,i)=>[n,String(12+i*7),rs(18000+i*6400),t.tile==='mobile'||t.tile==='hardware'||t.tile==='auto'?'18%':'5%']),note:`<div class="offer" style="padding:10px 14px"><span class="small">These ${STARTCAT[t.tile].length+12} categories were made for a ${t.name.toLowerCase()} at sign-up. <span class="lnk">Remove ones you don't use</span></span></div>`},
+ {k:'cat',title:'Categories',sub:'Started for you from what you sell. Rename or remove any.',add:'Add category',count:`Categories <b>${STARTCAT[t.tile].length+12}</b>`,cols:['Category','Items','Stock value','GST usually'],rows:STARTCAT[t.tile].map((n,i)=>[n,String(12+i*7),rs(18000+i*6400),gstOf(t)]),note:`<div class="offer" style="padding:10px 14px"><span class="small">These ${STARTCAT[t.tile].length+12} categories were made for a ${t.name.toLowerCase()} at sign-up. <span class="lnk">Remove ones you don't use</span></span></div>`},
  {k:'bills',title:'Bills',sub:'Every bill you made.',add:'New bill',count:'This month <b>₹3,42,800</b> · Not paid <b class="get">₹18,450</b> · Bills <b>412</b>',cols:['Bill','Date',c,'Amount','Status'],rows:[['INV/26-27/0419','25 Oct',cp,rs(sumLines(t)),st('Paid')],['INV/26-27/0418','25 Oct','Sharma General Store','₹1,240',st('Not paid','warn')],['INV/26-27/0417','24 Oct','Walk-in','₹386',st('Paid')]]},
  {k:'est',title:'Estimates',sub:'Prices you gave before a sale.',add:'New estimate',count:'Open <b>6</b> · Worth <b>₹48,200</b>',cols:['Estimate','Date',c,'Amount','Status'],rows:[['EST/26-27/0031','25 Oct',cp,rs(sumLines(t)),st('Sent','teal')],['EST/26-27/0030','21 Oct','Sunita Yadav','₹6,400',st('Became bill')],['EST/26-27/0029','12 Oct','Anil Kumbhar','₹2,150',st('Expired','grey')]]},
  {k:'so',title:'Sales orders',sub:`What ${C.toLowerCase()} asked for, before the bill.`,add:'New sales order',count:'To deliver <b>4</b> · Worth <b>₹31,900</b>',cols:['Order','Deliver by',c,'Amount','Status'],rows:[['SO-118','Today','Kavya Tiffin Centre','₹4,820',st('To deliver','warn')],['SO-117','28 Oct',cp,'₹12,300',st('Part delivered','teal')]]},
@@ -1517,7 +1779,7 @@ function SCR(t){const S=t.supps,s=t.supp,C=t.custs,c=t.cust;const sp=t.tile==='m
  {k:'pur',title:'Purchases',sub:`Bills from your ${S.toLowerCase()}.`,add:'New purchase',count:`This month <b>₹2,18,400</b> · To pay <b class="give">₹9,800</b>`,cols:['Purchase','Date',s,'Amount','Status'],rows:[['PB-0212','25 Oct',sp,'₹24,600',st('Not paid','warn')],['PB-0211','18 Oct','Mahalaxmi Wholesale','₹5,000',st('Part paid','teal')]]},
  {k:'po',title:'Purchase orders',sub:`What you asked ${S.toLowerCase()} to send.`,add:'New purchase order',count:'Not received <b>2</b>',cols:['Order','Date',s,'Amount','Status'],rows:[['PO-043','24 Oct',sp,'₹18,000',st('Sent','teal')],['PO-042','12 Oct','Mahalaxmi Wholesale','₹9,400',st('Not received','warn')]]},
  {k:'dn',title:'Debit notes',sub:`Goods you sent back to ${S.toLowerCase()}.`,add:'New debit note',count:'This month <b>₹1,246</b>',cols:['Debit note','Date',s,'Amount','Reason'],rows:[['DN-0009','23 Oct',sp,'₹1,246',has(t,'batch')?'Expired batches AZ221, BN07':'Damaged']]},
- {k:'exp',title:'Expenses',sub:'Money spent to run the shop.',add:'Add expense',count:'This month <b class="give">₹14,350</b>',cols:['Date','Type','Paid by','Amount'],rows:[['25 Oct','Tea and snacks','Cash','₹60'],['24 Oct',{medical:'Cold storage power',hardware:'Loading and unloading',wholesale:'Fuel',cafe:'Gas and fuel',garments:'Alteration',mobile:'Repair parts',auto:'Courier',kirana:'Packaging'}[t.tile],'UPI','₹1,200'],['01 Oct','Rent','Bank','₹12,000']]},
+ {k:'exp',title:'Expenses',sub:'Money spent to run the shop.',add:'Add expense',count:'This month <b class="give">₹14,350</b>',cols:['Date','Type','Paid by','Amount'],rows:[['25 Oct','Tea and snacks','Cash','₹60'],['24 Oct',{medical:'Cold storage power',hardware:'Loading and unloading',wholesale:'Fuel',cafe:'Gas and fuel',garments:'Alteration',mobile:'Repair parts',auto:'Courier',kirana:'Packaging',jewel:'Hallmarking (BIS) charges',other:'Toner and paper'}[t.tile],'UPI','₹1,200'],['01 Oct','Rent','Bank','₹12,000']]},
  {k:'stock',title:'Stock summary',sub:'What you have and what it is worth.',add:'Export',count:`Stock value <b>₹2,84,600</b>${has(t,'godowns')?' · Godown: All':''}`,cols:['Item','In stock','Average cost','Value'],rows:itemRows(t).map((r,i)=>[r.n,r.st,rs(Math.round(r.r*.8)),rs(Math.round(r.r*.8)*(20+i*5))])},
  {k:'low',title:'Low stock',sub:'Below the level where you reorder.',add:'Make purchase order',count:'Low <b>6</b> · Out <b>2</b>',cols:['Item','In stock','Reorder at',s],rows:itemRows(t).slice(0,3).map((r,i)=>[r.n,String(i+1),'10',sp])},
  {k:'pl',title:'Price lists',sub:`Special prices for some ${C.toLowerCase()}.`,add:'New price list',count:'Price lists <b>3</b>',cols:['Price list','For','Items','Rule'],rows:[[t.tile==='wholesale'?'Retailer rate':'Wholesale rate','8 '+C.toLowerCase(),'All','5% below selling price'],['Regulars','14 '+C.toLowerCase(),'42','Fixed prices']]},
@@ -1529,6 +1791,458 @@ function regDesk(t,x){return desk(t,{active:x.k,body:`<div class="phd"><div><h1>
 function regPhone(t,x){const navk={supp:'supp',bills:'bills'}[x.k]||'more';return phone(t,{head:'main',nav:navk,body:`<span class="ptitle">${x.title}</span>${x.note||''}<div class="inp ph">${I('search','s')}<span>Search</span></div>${x.count?`<div class="countline"><span>${x.count}</span></div>`:''}<div class="lst">${x.rows.map(r=>`<div class="li"><span class="t"><b>${r[0]}</b><small>${r.slice(1,-1).join(' · ').replace(/<[^>]+>/g,'')}</small></span><span class="e">${r[r.length-1]}</span></div>`).join('')}</div>${x.add?`<span class="btn cta lg w">${x.add}</span>`:''}`})}
 function renderAll(t){const el=document.getElementById('allscreens');if(!el)return;el.innerHTML=SCR(t).map(x=>`<section id="f-${x.k}"><header><h2>${x.title}</h2></header><div class="stage"><div class="col p"><span class="cap">Phone</span><div class="fit" data-w="410" data-mock="F-${x.k}-p"></div></div><div class="col d"><span class="cap">Desktop</span><div class="fit" data-w="1280" data-mock="F-${x.k}-d"></div></div></div></section>`).join('');
  for(const x of SCR(t)){M['F-'+x.k+'-p']=tt=>regPhone(tt,SCR(tt).find(y=>y.k===x.k));M['F-'+x.k+'-d']=tt=>regDesk(tt,SCR(tt).find(y=>y.k===x.k));}}
+/* ================= v2 (30 Oct 2026): Jewellery and Other, research, new modules, per-kind setup ================= */
+BT.jewel={name:'Jewellery',short:'Jewellery',tile:'jewel',shop:'Shree Om Jewellers',ini:'OJ',gst:'3%',
+  cust:'Customer',custs:'Customers',supp:'Supplier',supps:'Suppliers',f:['jewellery','old_gold','rates','custom_orders','karigar','labels'],due:7,units:'GMS, + MGS (shown with tola beside)',
+  items:[{n:'Gold chain 22K',cap:'Net 12.340 g · 22K 916 · Making 12% · HUID 7K2P9X',q:1,u:'NOS',r:161012},{n:'Ladies ring 22K with stone',cap:'Net 3.850 g · 22K 916 · Making ₹850/g · Stone ₹4,500',q:1,u:'NOS',r:52625},{n:'Silver payal (pair)',cap:'Net 45.500 g · Silver 925 · Making ₹40/g',q:1,u:'PRS',r:8645}],
+  col:{h:'Tag · Net wt · Purity',v:['GC-1042 · 12.340 g · 22K','RG-0318 · 3.850 g · 22K','SP-0077 · 45.500 g · 925','BG-0210 · 18.720 g · 22K']},
+  billX:[{l:'PAN',v:'ABCPK1234L',why:'Asked by itself when the bill is ₹2 lakh or more'},{l:'Rate used',v:'22K ₹11,650/g · Silver ₹150/g',why:"Today's rate, locked when the bill is issued"}],
+  extraWords:'—',itemFields:'Tag no. · metal and purity · gross, stone and net weight · making (% or ₹/g) · wastage · HUID',
+  d1:"Each line is priced from its weight: net weight × today's rate + making + stone. The rate is locked when the bill is issued. PAN shows only because this bill is above ₹2 lakh.",
+  d2:'Edit shows the weight breakdown: gross, stone and net weight, the rate, making as % or ₹ per gram, wastage, stone charge and the HUID.',
+  d6:'Buying from a bullion dealer or getting pieces back from a karigar is entered by weight. Each piece gets its own tag no. and label.'};
+BT.other={name:'Other (stationery, services, agri…)',short:'Other',tile:'other',shop:'Sharma Stationery & Xerox',ini:'SS',
+  cust:'Customer',custs:'Customers',supp:'Supplier',supps:'Suppliers',f:['services'],due:30,units:'NOS, PCS, + any unit',
+  items:[{n:'Classmate notebook 172 pg',cap:'',q:4,u:'PCS',r:60},{n:'Photocopy A4',cap:'Service · no stock · SAC 998912',q:40,u:'NOS',r:2},{n:'Reynolds pen (pack of 10)',cap:'',q:1,u:'PAC',r:100}],
+  col:null,billX:[],extraWords:'—',itemFields:'Service items with no stock · GST picked per item',
+  d1:'An "Other" shop gets no new fields. A service line (photocopy) has no stock.',
+  d2:'Edit has unit, rate and discount. A service has no stock line.',
+  d6:'Purchases stay as today.'};
+ORDER.push('jewel','other');
+/* proposed new feature keys per kind (R-DEC-65: one shop.features.* key per capability) */
+BT.kirana.f.push('phone_orders','loose_amount');BT.medical.f.push('short_book','substitutes');BT.mobile.f.push('repairs');
+BT.garments.f.push('exchange');BT.hardware.f.push('sites');BT.auto.f.push('vehicles');BT.wholesale.f.push('schemes');BT.cafe.f.push('open_orders','advance_orders');
+const gstOf=t=>t.gst||({mobile:'18%',hardware:'18%',auto:'18%'}[t.tile])||'5%';
+Object.assign(X4,{jewel:['Gold bangle 22K (pair)',228600],other:['A4 paper ream 75 gsm',290]});
+Object.assign(CAT,{jewel:'Gold · chains',other:'Notebooks and paper'});
+Object.assign(STARTCAT,{jewel:['Gold · chains','Gold · rings','Gold · bangles','Silver · payal and anklets','Silver · utensils and coins','Diamond and stone'],other:['Notebooks and paper','Pens and office','Photocopy and print (service)','Lamination (service)','Gifts','School items']});
+Object.assign(FOLLOW,{jewel:[["Custom order: Meena's mangalsutra due Friday",'With Raju karigar · 18.2 g issued','Open',1]],other:[['A4 ream: 3 left','You reorder at 10','Order']]});
+FOLLOW.kirana=[['Phone order from Sunita: 9 items to pack','WhatsApp · deliver by 6 pm','Pack',1]].concat(FOLLOW.kirana);
+
+/* menu rows the new features add (same order for everyone; a kind only adds rows) */
+const _nav=nav;
+nav=function(t){const g=_nav(t);const add=(h,rows)=>{const x=g.find(y=>y.h===h)||g[1];x.rows=x.rows.concat(rows)};
+  const r=[];if(has(t,'sites'))r.push({k:'sites',l:'Sites',i:'list',nw:1});if(has(t,'vehicles'))r.push({k:'veh',l:'Vehicles',i:'supp',nw:1});if(has(t,'karigar'))r.push({k:'karigar',l:'Karigars',i:'team',nw:1});
+  if(r.length){g[1].rows=g[1].rows.concat(r)}
+  const s=[];if(has(t,'phone_orders'))s.push({k:'pord',l:'Phone orders',i:'phone',nw:1});if(has(t,'open_orders'))s.push({k:'open',l:'Open orders',i:'clock',nw:1});if(has(t,'advance_orders'))s.push({k:'adv',l:'Advance orders',i:'cal',nw:1});if(has(t,'custom_orders'))s.push({k:'jord',l:'Custom orders',i:'list',nw:1});if(has(t,'repairs'))s.push({k:'rep2',l:'Repairs',i:'gear',nw:1});if(has(t,'old_gold'))s.push({k:'oldg',l:'Old gold',i:'swap',nw:1});if(has(t,'schemes'))s.push({k:'sch',l:'Schemes',i:'tag',nw:1});
+  add('Sales',s);
+  const it=[];if(has(t,'rates'))it.unshift({k:'rate',l:"Today's rate",i:'chart',nw:1});if(has(t,'short_book'))it.push({k:'short',l:'Short book',i:'list',nw:1});
+  add('Items & stock',it);return g;};
+function wordTable(){
+  const fr={batch:'Expiry',serial:'Find by IMEI',labels:'Print labels',godowns:'Stock transfer',eway:'E-way bills',phone_orders:'Phone orders',short_book:'Short book',repairs:'Repairs',sites:'Sites',vehicles:'Vehicles',schemes:'Schemes',open_orders:'Open orders',advance_orders:'Advance orders',rates:"Today's rate",custom_orders:'Custom orders',old_gold:'Old gold',karigar:'Karigars'};
+  return `<table><thead><tr><th>Business</th><th>Customers are</th><th>Suppliers are</th><th>New menu rows</th><th>Extra item fields</th><th>Extra on the bill</th><th>Credit days</th><th>Units added</th></tr></thead><tbody>${ORDER.map(k=>{const t=BT[k];const rows=['Stock count'].concat(t.f.filter(f=>fr[f]).map(f=>fr[f]));return `<tr><th>${t.name}</th><td class="${t.cust!=='Customer'?'yes':''}">${t.custs}</td><td class="${t.supp!=='Supplier'?'yes':''}">${t.supps}</td><td>${rows.join(', ')}</td><td>${t.itemFields}</td><td>${t.billX.map(x=>x.l).join(', ')||'—'}</td><td>${t.due}</td><td>${t.units}</td></tr>`}).join('')}</tbody></table>`;
+}
+FEAT.push(['jewellery','Weight, purity and making','Price = net weight × today\'s rate + making. Tag, HUID.'],['old_gold','Old gold exchange','Take old gold against a new bill.'],['rates',"Today's gold and silver rate",'Typed once each morning; bills use it.'],['custom_orders','Custom orders and karigar','Advance, delivery date, gold issued to the karigar.'],
+ ['short_book','Short book','Note what ran out; send the list to your distributor.'],['substitutes','Same-salt medicines','Show medicines with the same salt when one is out.'],['repairs','Repairs','Job card: what came in, the fault, when it is ready.'],['exchange','Exchange at the counter','Return and new sale in one bill.'],
+ ['sites','Sites','Keep a site\'s bills and dues together for a contractor.'],['vehicles','Vehicles','Find parts that fit a bike or car; see its history.'],['schemes','Schemes and free goods','10 + 1 free, cash discount, applied on the bill.'],['open_orders','Open orders','Tokens and tables still being served.'],['advance_orders','Advance orders','Cakes and festival boxes with an advance.'],
+ ['phone_orders','Phone and WhatsApp orders','Orders to pack and deliver, made into bills.'],['loose_amount','Sell loose by amount','Type ₹50 of sugar; the weight is worked out.'],['services','Service items','Photocopy, repair, fitting: billed with no stock.']);
+
+/* item list chip, line sheet, item form group, item tab, purchase line for the two new kinds */
+const _tc=typeChip;typeChip=t=>t.tile==='jewel'?'<span class="chp sm" style="outline:1.5px dashed var(--cta);outline-offset:1px">Tags in stock · 412</span>':t.tile==='other'?'<span class="chp sm" style="outline:1.5px dashed var(--cta);outline-offset:1px">Services · 6</span>':_tc(t);
+const wb=(rows)=>`<div class="lst">${rows.map(([a,b,c])=>`<div class="li" style="min-height:44px;padding:8px 14px"><span class="t"><b style="${c?'font-weight:700':''}">${a}</b></span><span class="${c?'amt':'num'}">${b}</span></div>`).join('')}</div>`;
+const _lb=lineBody;lineBody=function(t,o={}){
+  if(t.tile==='jewel')return {title:'Gold chain 22K · Tag GC-1042',body:`<div class="${o.wide?'row3':'grp'}" style="${o.wide?'':'gap:16px'}"><div class="row3" style="${o.wide?'grid-column:1/-1':''}">${fld('Gross wt','12.900',{end:'<span class="mute">g</span>',right:1})}${fld('Stone wt','0.560',{end:'<span class="mute">g</span>',right:1})}${fld('Net wt','12.340',{end:'<span class="mute">g</span>',right:1,cls:'focus'})}</div></div>
+   <div class="row2">${fld("Rate · 22K 916",'11,650 / g',{pre:'₹',right:1,hint:"Today's rate · locked on issue"})}<div class="fld"><span class="lbl">Making</span>${segc('12 %','₹ per g',0)}</div></div>
+   ${wb([['Metal 12.340 g × ₹11,650','₹1,43,761'],['Making 12%','₹17,251'],['Wastage','₹0'],['Line total (GST 3% on the bill)','₹1,61,012',1]])}<span class="small mute">HUID 7K2P9X · BIS hallmark. Scanning the tag label fills all of this.</span>`};
+  if(t.tile==='other')return {title:'Photocopy A4',body:`<div class="row2">${fld('Quantity','40',{right:1,end:'<span class="mute">NOS</span>'})}${fld('Rate','2.00',{pre:'₹',right:1})}</div><div class="row2">${sel('GST','18% · SAC 998912')}${fld('Disc. %','0',{right:1})}</div><span class="small mute">A service: no stock goes out.</span>`};
+  return _lb(t,o);};
+const _itg=itemTypeGroup;itemTypeGroup=function(t){
+  const W='outline:1.5px dashed var(--cta);outline-offset:6px;border-radius:8px';const g=(title,h)=>`<div class="grp" style="${W}"><span class="gt">${title}</span>${h}</div>`;
+  if(t.tile==='jewel')return g('Tag details',`<div class="row2">${fld('Tag no.','GC-1042',{end:`<span class="mute">${I('print','s')}</span>`})}${sel('Metal · purity','Gold 22K (916)')}</div><div class="row3">${fld('Gross','12.900',{right:1,end:'<span class="mute">g</span>'})}${fld('Stone','0.560',{right:1,end:'<span class="mute">g</span>'})}${fld('Net','12.340',{right:1,end:'<span class="mute">g</span>'})}</div><div class="row2"><div class="fld"><span class="lbl">Making</span>${segc('12 %','₹ per g',0)}</div>${fld('Wastage','0',{right:1,end:'<span class="mute">%</span>'})}</div>${fld('HUID','7K2P9X',{hint:'6 characters from the hallmark. Printed on the bill.'})}`);
+  if(t.tile==='other')return g('Kind of item',`${segc('Goods (has stock)','Service (no stock)',1)}${sel('GST','18% · SAC 998912')}`);
+  return _itg(t);};
+const _itab=itemTab;itemTab=function(t){
+  if(t.tile==='jewel')return ['Weight and rate',['Tag','Net wt','Purity','HUID','Status'],[['GC-1042','12.340 g','22K 916','7K2P9X','<span class="badge">In stock</span>'],['GC-1038','10.020 g','22K 916','6P1QW3','<span class="badge grey">Sold 21 Oct</span>']]];
+  if(t.tile==='other')return null;return _itab(t);};
+const _pl=purLines;purLines=function(t,wide){
+  if(t.tile==='jewel')return `<div class="card pad" style="display:grid;gap:12px;outline:1.5px dashed var(--cta);outline-offset:3px"><div class="kv"><b>From karigar · Raju · 3 pieces</b><b class="amt">36.880 g</b></div><div class="${wide?'row3':'row2'}">${fld('Gold issued','37.400',{right:1,end:'<span class="mute">g</span>'})}${fld('Received','36.880',{right:1,end:'<span class="mute">g</span>'})}${wide?fld('Labour','₹350 / g',{right:1}):''}</div><div class="kv"><span>Wastage allowed 1.5%</span><span class="amt">0.520 g · within limit</span></div><span class="btn sm" style="justify-self:start">${I('print','s')}Make 3 tags and print labels</span></div>`;
+  return _pl(t,wide);};
+
+/* per-kind dashboard strip (D12 gets one row for the kind; nothing else on Home changes) */
+const KPI={kirana:[['Phone orders to pack','4','2 for home delivery'],['Udhaar due this week','₹6,240','9 customers'],['Low stock','6','Rice 25 kg, sugar…']],
+ medical:[['Expiring in 30 days','6 batches','Worth ₹4,818'],['Short book','14 items','Send to distributor'],['Schedule H today','3 bills','Register up to date']],
+ mobile:[['Repairs ready','3','2 waiting for parts'],['Phones in stock','10','Worth ₹1,24,600'],['Warranty claims','1','Redmi 12 at service centre']],
+ garments:[['Sold-out sizes','3','Cotton shirt M…'],['Exchanges today','2','₹0 refunded'],['Slow stock 90+ days','₹38,400','Winter jackets']],
+ hardware:[['Site dues','₹42,600','5 sites'],['Biggest site due','₹18,400','Patil Bungalow · 15 days'],['Shades to reorder','4','Apex Ivory 4 L…']],
+ auto:[['Mechanic dues','₹22,300','6 garages'],['Fast movers low','5','Brake shoe, spark plug'],['No rack set','4 items','Set it once']],
+ wholesale:[['Orders to deliver','4','Worth ₹31,900'],['Scheme ends Sunday','Parle 10 + 1','12 cases left'],['E-way bills today','2','1 still to make']],
+ cafe:[['Open orders','3','Token 12, 13, 14'],['Advance orders','5','2 cakes for tomorrow'],['Sweets left today','1.2 kg','Kaju katli']],
+ jewel:[["Today's 22K rate",'₹11,650 / g','Set 10:05 am · silver ₹150'],['Custom orders due','4','2 with karigar'],['Old gold taken','42.6 g','This month']],
+ other:[['Services today','62','Photocopy, lamination'],['Low stock','3','A4 ream…'],['School orders','₹4,100','To collect']]};
+const kpiStrip=(t,n)=>{const k=(KPI[t.tile]||KPI.kirana).slice(0,n||3);return `<div style="display:grid;grid-template-columns:repeat(${k.length},minmax(0,1fr));gap:${n?8:12}px;outline:1.5px dashed var(--cta);outline-offset:4px;border-radius:12px">${k.map(([a,b,c])=>`<div class="card" style="padding:${n?'10px 12px':'12px 16px'};display:grid;gap:2px;min-width:0"><small class="mute" style="font-size:12px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${a}</small><b style="font-size:${n?17:20}px;font-weight:800" class="num">${b}</b><span class="small mute" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${c}</span></div>`).join('')}</div>`};
+
+/* ---------- Part G mocks: modules each kind is missing ---------- */
+const J=BT.jewel,KI=BT.kirana,HW=BT.hardware,AU=BT.auto,OT=BT.other;
+const rowsL=rows=>`<div class="lst">${rows.map(r=>`<div class="li"><span class="t"><b>${r[0]}</b><small>${r[1]}</small></span><span class="e">${r[2]}${r[3]?`<small>${r[3]}</small>`:''}</span></div>`).join('')}</div>`;
+const tbl=(cols,rows,o={})=>`<div class="tf">${o.tools?`<div class="tools">${o.tools}</div>`:''}<table><thead><tr>${cols.map(c=>`<th class="${/Amount|Due|Advance|Value|Weight|Rate|Balance/.test(c)?'r':''}">${c}</th>`).join('')}</tr></thead><tbody>${rows.map((r,n)=>`<tr class="${o.hl===n?'flash':''}">${r.map((v,i)=>`<td class="${/Amount|Due|Advance|Value|Weight|Rate|Balance/.test(cols[i])?'r amt':''}">${v}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`;
+const tools=(ph,...b)=>`<div class="inp ph" style="flex:1">${I('search','s')}<span>${ph}</span></div>${b.map(x=>`<span class="btn">${x} ${I('cd','s')}</span>`).join('')}`;
+const B=(x,k)=>`<span class="badge ${k||''}">${x}</span>`;
+
+/* G1 jewellery rate */
+const RATES=[['Gold 24K (999)','12,710','+60'],['Gold 22K (916)','11,650','+55'],['Gold 18K (750)','9,530','+45'],['Silver (999)','150','−1']];
+M.pRate=()=>phone(J,{head:'back',title:"Today's rate",sub:'Thu 30 Oct · used by every bill today',bs:'gap:12px',body:`<div class="lst">${RATES.map((r,n)=>`<div class="li"><span class="t"><b>${r[0]}</b><small>Yesterday ₹${(+r[1].replace(',','')-+r[2].replace('−','-')).toLocaleString('en-IN')}</small></span><div class="inp num${n===1?' focus':''}" style="width:130px;height:40px">₹ ${r[1]}</div></div>`).join('')}</div>
+ <span class="small mute">Per gram. Type it each morning from your association's board or your bullion dealer. No rate feed is used.</span><div class="card pad" style="display:grid;gap:6px"><b style="font-weight:600">Share today's rate</b><span class="small mute">Sends a picture of the rate board to WhatsApp.</span><span class="btn sm" style="justify-self:start">Share on WhatsApp</span></div>`,
+ dock:`<div class="pdock"><div class="two"><span class="btn soft lg">Same as yesterday</span><span class="btn cta lg">Save rates</span></div></div>`});
+M.dRate=()=>desk(J,{active:'rate',body:`<div class="phd"><div><h1>Today's rate</h1><p>Thursday 30 Oct · bills issued today use these rates</p></div><div class="acts"><span class="btn">Share on WhatsApp</span><span class="btn soft">Same as yesterday</span><span class="btn cta">Save rates</span></div></div>
+ <div style="display:grid;grid-template-columns:420px minmax(0,1fr);gap:16px;align-items:start"><div class="card pad" style="display:grid;gap:14px">${RATES.map((r,n)=>`<div style="display:grid;grid-template-columns:1fr 150px;gap:12px;align-items:center"><span><b style="font-weight:600">${r[0]}</b><br><small class="mute">${r[2].startsWith('−')?'Down':'Up'} ₹${r[2].replace(/[+−]/,'')} from yesterday</small></span><div class="inp num${n===1?' focus':''}">₹ ${r[1]} / g</div></div>`).join('')}<span class="small mute">Set at 10:05 am by Owner. A bill keeps the rate it was issued at, even if you change it later today.</span></div>
+ ${tbl(['Date','22K','24K','Silver','Set by'],[['30 Oct','₹11,650','₹12,710','₹150','Owner, 10:05 am'],['29 Oct','₹11,595','₹12,650','₹151','Owner, 10:12 am'],['28 Oct','₹11,610','₹12,665','₹151','Manoj, 9:58 am'],['27 Oct','₹11,540','₹12,590','₹149','Owner, 10:20 am']],{tools:tools('Rate history','Month: October')})}</div>`});
+
+/* G2 jewellery bill with old gold */
+M.pOldGold=()=>phone(J,{head:'back',close:1,title:'New bill',sub:'INV/26-27/0188',body:`<div class="faded" style="display:grid;gap:12px">${addbar('Scan tag or search')}<div class="lines">${J.items.slice(0,2).map(i=>line(i,{tag:1})).join('')}</div></div>`,
+ overlay:sheet('Old gold taken in',`<div class="row2">${fld('Weight','8.200',{right:1,end:'<span class="mute">g</span>',cls:'focus'})}${sel('Purity (tested)','22K · 91.6%')}</div><div class="row2">${fld('Rate','11,650',{pre:'₹',right:1})}${fld('Less (melting)','2',{right:1,end:'<span class="mute">%</span>'})}</div>${wb([['8.200 g × ₹11,650','₹95,530'],['Less 2%','− ₹1,911'],['Old gold value','₹93,619',1]])}<span class="small mute">Comes off this bill. It is a purchase from the customer, kept in its own old-gold stock, never mixed with tags.</span>`,`<span class="btn soft lg">Cancel</span><span class="btn cta lg">Take ₹93,619 off</span>`,{h:'80%',bs:'gap:16px'})});
+M.dJewelBill=()=>desk(J,{active:'bills',h:860,body:`<div class="phd"><div><h1>New bill</h1><p>INV/26-27/0188 · Tax invoice · rate 22K ₹11,650/g locked</p></div></div>
+ <div style="display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:16px;align-items:start"><div style="display:grid;gap:16px"><div class="card pad" style="display:grid;grid-template-columns:300px minmax(0,1fr);gap:16px;align-items:center">${segc('Quick sale','Saved customer',1)}${cbox('Meena Jadhav','+91 98220 44120','Nothing due')}</div>
+ ${tbl(['#','Tag · item','Net wt','Rate','Making','Amount'],[['1','<b>GC-1042</b> Gold chain 22K<small>HUID 7K2P9X</small>','12.340 g','₹11,650','12%','₹1,61,012'],['2','<b>RG-0318</b> Ladies ring 22K<small>Stone ₹4,500 · HUID 3M8D1T</small>','3.850 g','₹11,650','₹850/g','₹52,625'],['3','<b>SP-0077</b> Silver payal<small>925</small>','45.500 g','₹150','₹40/g','₹8,645']],{tools:`<div class="inp ph" style="flex:1">${I('scan','s')}<span>Scan tag or search</span></div>`})}
+ <div class="card pad" style="display:grid;gap:8px;outline:1.5px dashed var(--cta);outline-offset:3px"><div class="kv"><b>Old gold taken in</b><span class="lnk">Edit</span></div><div class="kv"><span>8.200 g · 22K tested 91.6% · less 2%</span><b class="amt give">− ₹93,619</b></div></div></div>
+ <div style="display:grid;gap:12px">${fld('PAN','ABCPK1234L',{hint:'Needed because the bill is ₹2 lakh or more.',cls:'focus'})}<div class="card pad totals"><div class="kv"><span>Items</span><b class="num">₹2,22,282</b></div><div class="kv"><span>GST 3%</span><span class="num">₹6,668</span></div><div class="kv"><span>Old gold</span><span class="num give">− ₹93,619</span></div><div class="kv grand"><b>To pay</b><b class="num">₹1,35,331</b></div></div><div class="notfound">${I('alert','s')}<span>Cash over ₹1,99,999 can't be taken on one bill. Take the rest by UPI, card or bank.</span></div></div></div>`,dock:docks.desk(135331,'Save draft','Issue')});
+
+/* G3 jewellery custom orders and karigar */
+M.pJOrder=()=>phone(J,{head:'back',close:1,title:'New custom order',sub:'ORD-0042',h:880,bs:'gap:14px',body:`${cbox('Meena Jadhav','+91 98220 44120','Nothing due')}${fld('What to make','Mangalsutra, 2 lines, black beads')}<div class="row2">${fld('Approx. weight','18.0',{right:1,end:'<span class="mute">g</span>'})}${sel('Purity','22K (916)')}</div><div class="row2">${fld('Deliver on','07 Nov 2026',{pre:I('cal','s')})}${fld('Advance','50,000',{pre:'₹',right:1})}</div>${swr('Fix the rate now','Locks ₹11,650/g for this order against the advance',true)}${sel('Karigar','Raju Soni')}${fld('Design photo','Add photo',{ph:1,pre:I('cam','s')})}`,dock:`<div class="pdock"><div class="two"><span class="btn soft lg">Save</span><span class="btn cta lg">Save and give receipt</span></div></div>`});
+M.dJOrders=()=>desk(J,{active:'jord',body:`<div class="phd"><div><h1>Custom orders</h1><p>Orders to make, the advance taken, and gold with each karigar.</p></div><div class="acts"><span class="btn">Issue gold to karigar</span><span class="btn cta">${I('plus','s')}New order</span></div></div>
+ <div class="countline"><span>Open <b>9</b></span><span>Advance held <b>₹3,40,000</b></span><span>Gold with karigars <b>64.300 g</b></span></div>
+ ${tbl(['Order','Customer','What','Due','Advance','Status'],[['ORD-0042','Meena Jadhav','Mangalsutra · 18 g · 22K','07 Nov','₹50,000',B('With Raju · 18.2 g issued','teal')],['ORD-0041','Kavita Shinde','Bangles pair · 30 g','02 Nov','₹1,20,000',B('Ready · call customer')],['ORD-0039','Suresh More','Ring resize','31 Oct','₹0',B('Due tomorrow','warn')],['ORD-0036','Anita Pawar','Earrings · 8 g','28 Oct','₹30,000',B('2 days late','bad')]],{tools:tools('Order, customer or karigar','Status: Open','Karigar: All')})}
+ <div class="panel"><div class="ph2"><b>Karigars</b><span class="small mute">Gold given and received back</span></div>${tbl(['Karigar','Issued','Received','Weight','Wastage'],[['Raju Soni','37.400 g','36.880 g','18.200 g with him','1.4% · within 1.5%'],['Imran Ali','46.100 g','0 g','46.100 g with him','—']])}</div>`});
+
+/* G4 medical short book and substitutes */
+const MDT=BT.medical;
+M.pSubst=()=>phone(MDT,{head:'back',close:1,title:'New bill',body:`<div class="faded" style="display:grid;gap:12px">${addbar('Search medicine or salt')}<div class="lines">${line(MDT.items[0],{tag:1})}</div></div>`,overlay:sheet('Crocin 650 · out of stock',`<span class="small mute">Same salt: Paracetamol 650 mg. Sorted by stock, then price.</span><div class="lst">${[['Dolo 650','Micro Labs · 40 strips · Exp 03/27','₹32',1],['Calpol 650','GSK · 12 strips · Exp 06/27','₹30'],['Pacimol 650','Ipca · 8 strips · Exp 01/27','₹28']].map(r=>`<div class="opt${r[3]?' sel':''}"><span class="radio${r[3]?' on':''}"></span><span class="t"><b>${r[0]}</b><small>${r[1]}</small></span><b class="amt">${r[2]}</b></div>`).join('')}</div><span class="btn lg w">${I('plus','s')}Add Crocin 650 to the short book</span>`,`<span class="btn soft lg">Cancel</span><span class="btn cta lg">Use Dolo 650</span>`,{h:'72%'})});
+M.dShortBook=()=>desk(MDT,{active:'short',body:`<div class="phd"><div><h1>Short book</h1><p>Medicines that ran out or were asked for. Send each distributor their list.</p></div><div class="acts"><span class="btn">${I('plus','s')}Add</span><span class="btn cta">Make purchase orders</span></div></div>
+ <div class="countline"><span>Items <b>14</b></span><span>Distributors <b>3</b></span><span>Asked by customers today <b>5</b></span></div>
+ ${tbl(['Medicine','Why','Stock','Order','Distributor','Last rate'],[['Crocin 650','Asked at counter · 2 times','0','10 strips','Sai Pharma Distributors','₹24.00'],['Azithral 500','Below reorder level','2 strips','20 strips','Sai Pharma Distributors','₹88.00'],['Shelcal 500','Expiring batch removed','0','15 strips','Mahalaxmi Agencies','₹96.00'],['Benadryl syrup 100 ml','Below reorder level','3','12 bottles','Om Medical Agency','₹72.00']],{tools:tools('Medicine','Distributor: All'),hl:0})}
+ <div class="card pad small sec">Make purchase orders makes one order per distributor and opens WhatsApp with the list for each. Nothing is sent by itself.</div>`});
+
+/* G5 mobile repairs */
+const MOB=BT.mobile;
+M.pRepair=()=>phone(MOB,{head:'back',close:1,title:'New repair',sub:'JOB-0318',h:900,bs:'gap:14px',body:`${cbox('Ramesh Patil','+91 98765 43210','Nothing due')}<div class="row2">${fld('Phone','Redmi Note 12')}${fld('IMEI','8642 1190 2231 905',{end:`<span class="mute">${I('scan','s')}</span>`})}</div>${fld('Fault','Screen cracked, touch not working')}<div class="fld"><span class="lbl">Came with</span><div class="pills"><span class="chp sm on">Phone</span><span class="chp sm on">Back cover</span><span class="chp sm">Charger</span><span class="chp sm">SIM</span><span class="chp sm">Memory card</span></div></div><div class="row2">${fld('Estimate','2,400',{pre:'₹',right:1})}${fld('Ready by','31 Oct, 6 pm',{pre:I('cal','s')})}</div><div class="row2">${fld('Advance','500',{pre:'₹',right:1})}${fld('Lock / pattern','Given',{opt:1})}</div>`,dock:`<div class="pdock"><div class="two"><span class="btn soft lg">Save</span><span class="btn cta lg">Save and send slip</span></div></div>`});
+M.dRepairs=()=>desk(MOB,{active:'rep2',body:`<div class="phd"><div><h1>Repairs</h1><p>Phones in for repair, by stage. Parts used come out of stock; the bill is made on delivery.</p></div><div class="acts"><span class="btn cta">${I('plus','s')}New repair</span></div></div>
+ <div class="pills"><span class="chp on">Open · 11</span><span class="chp">Waiting for parts · 2</span><span class="chp">Ready · 3</span><span class="chp">Delivered</span></div>
+ ${tbl(['Job','Customer','Phone · fault','Ready by','Estimate','Stage'],[['JOB-0318','Ramesh Patil','Redmi Note 12 · screen','31 Oct','₹2,400',B('In repair','teal')],['JOB-0317','Sunita Yadav','iPhone 11 · battery','Today','₹3,200',B('Ready · send WhatsApp')],['JOB-0315','Anil Kumbhar','Vivo Y21 · charging port','29 Oct','₹650',B('Waiting for part','warn')],['JOB-0311','Walk-in · 99230 18764','Samsung M31 · water','25 Oct','₹1,800',B('5 days late','bad')]],{tools:tools('Job, customer, mobile or IMEI','Technician: All')})}`});
+
+/* G6 clothes exchange */
+const GAR=BT.garments;
+M.pExchange=()=>phone(GAR,{head:'back',close:1,title:'Exchange',sub:'Against INV/26-27/0391 · 22 Oct',h:860,bs:'gap:12px',body:`<span class="sechd">Coming back</span><div class="lines"><div class="ln"><span class="nm"><b>Cotton shirt</b><small class="tagline">Size M · Blue</small></span><span class="lam give">− ₹599</span></div></div><span class="sechd">Going out</span>${addbar('Scan or search')}<div class="lines"><div class="ln flash"><span class="nm"><b>Cotton shirt</b><small class="tagline">Size L · Blue · scanned</small></span><span class="lam">₹599</span></div></div><div class="card pad totals"><div class="kv"><span>Goes out</span><b class="num">₹599</b></div><div class="kv"><span>Comes back</span><span class="num give">− ₹599</span></div><div class="kv grand"><b>Nothing to pay</b><b class="num">₹0</b></div></div><span class="small mute">Size M goes back into stock. One credit note and one bill are made together.</span>`,dock:`<div class="pdock"><span class="btn cta lg w">Done</span></div>`});
+M.dExchange=()=>desk(GAR,{active:'bills',body:`<div class="phd"><div><h1>Exchange</h1><p>Against INV/26-27/0391 · 22 Oct · Ramesh Patil</p></div></div><div style="display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:16px;align-items:start"><div style="display:grid;gap:16px"><span class="sechd">Coming back · tick from the old bill</span>${tbl(['','Item','Size','Amount'],[['<span class="cbx on">✓</span>','Cotton shirt','M · Blue','₹599'],['<span class="cbx"></span>','Denim jeans','32 · Dark blue','₹999']])}<span class="sechd">Going out</span>${tbl(['#','Item','Size','Amount'],[['1','Cotton shirt','L · Blue','₹599'],['2','Cotton shirt','L · White','₹599']],{tools:`<div class="inp focus" style="flex:1">${I('scan','s')}<span>Scan or search</span></div>`,hl:1})}</div><div class="card pad totals"><div class="kv"><span>Goes out</span><b class="num">₹1,198</b></div><div class="kv"><span>Comes back</span><span class="num give">− ₹599</span></div><div class="kv grand"><b>To pay</b><b class="num">₹599</b></div><span class="small mute">If they take less than they return, the rest becomes a credit note to use later, not cash.</span></div></div>`,dock:docks.desk(599,'Cancel','Done')});
+
+/* G7 hardware sites */
+M.pSite=()=>phone(HW,{head:'back',title:'Patil Bungalow, Sector 4',sub:'Site · contractor Suresh Patil',bs:'gap:12px',body:`<div class="card pad" style="display:grid;gap:6px"><span class="small mute">To collect from this site</span><b class="amt get" style="font-size:26px">₹18,400</b><span class="small mute">15 days · limit ₹50,000 · 6 bills</span></div><div class="two" style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><span class="btn lg">Remind</span><span class="btn cta lg">${I('plus','s')}New bill</span></div><span class="sechd">Bills for this site</span>${rowsL([['INV-0412 · wire, switches','24 Oct · taken by Raju (electrician)','<b class="amt get">₹6,240</b>','Not paid'],['INV-0398 · paint Apex Ivory 20 L','18 Oct · delivered','<b class="amt get">₹12,160</b>','Not paid'],['INV-0371 · cement 40 bags','09 Oct','<b class="amt">₹16,400</b>','Paid']])}`});
+M.dSite=()=>desk(HW,{active:'sites',body:`<div class="phd"><div><h1>Sites</h1><p>One contractor, many sites. Each site keeps its own bills and dues; the contractor sees one total.</p></div><div class="acts"><span class="btn cta">${I('plus','s')}New site</span></div></div>
+ <div class="countline"><span>To collect <b class="get">₹42,600</b></span><span>Sites <b>5</b> open</span></div>
+ ${tbl(['Site','Contractor','Bills','Last bill','Balance','Status'],[['Patil Bungalow, Sector 4','Suresh Patil','6','24 Oct','₹18,400',B('15 days','warn')],['Shinde Row House','Suresh Patil','3','21 Oct','₹9,800',B('Not due')],['Gurukul School, Block B','Mohan Builders','11','25 Oct','₹14,400',B('Not due')],['Kale Shop renovation','Self (owner)','2','02 Oct','₹0',B('Settled','grey')]],{tools:tools('Site or contractor','Contractor: All')})}
+ <div class="card pad small sec">A bill asks "Which site?" only for a contractor who has more than one. The contractor's page shows each site as a line, so one payment can be split across them.</div>`});
+
+/* G8 auto parts vehicles */
+M.pVehicle=()=>phone(AU,{head:'back',title:'Parts for a vehicle',bs:'gap:12px',body:`<div class="row2">${sel('Make · model','Hero Splendor+')}${sel('Year','2019–2024')}</div><div class="pills"><span class="chp sm on">Brakes</span><span class="chp sm">Filters</span><span class="chp sm">Engine</span><span class="chp sm">Electrical</span></div>${rowsL([['Brake shoe Splendor','06430-KTE-305 · Rack B-4','<b class="amt">₹320</b>','2 left'],['Brake cable rear','43450-KTE-900 · Rack B-6','<b class="amt">₹140</b>','9 in stock'],['Brake shoe (aftermarket)','Minda BS-SPL-01 · Rack B-4','<b class="amt">₹210</b>','14 in stock']])}<span class="small mute">Fits are typed once on each item ("Fits vehicles"). Any part number, the company's or yours, finds it.</span>`});
+M.dVehicle=()=>desk(AU,{active:'veh',body:`<div class="small mute">Vehicles › MH 12 KT 4471</div><div class="phd"><div><h1>MH 12 KT 4471</h1><p>Hero Splendor+ 2021 · owner Ramesh Patil · comes with Raju Garage</p></div><div class="acts"><span class="btn">Parts that fit</span><span class="btn cta">${I('plus','s')}New bill</span></div></div>
+ <div class="dayl"><div><small>Bills</small><b>7</b><span>Since Mar 2025</span></div><div><small>Spent</small><b>₹6,480</b><span>Parts and oil</span></div><div><small>Last oil change</small><b>12 Aug</b><span>Castrol 20W-40 1 L</span></div><div><small>Mechanic dues</small><b class="get">₹1,240</b><span>Raju Garage</span></div></div>
+ ${tbl(['Date','Bill','Parts','Mechanic','Amount'],[['24 Oct','INV-0419','Brake shoe, spark plug × 2','Raju Garage','₹540'],['12 Aug','INV-0301','Castrol Activ 20W-40 1 L, oil filter','Raju Garage','₹520'],['02 May','INV-0188','Clutch plate set','Self','₹1,150']],{tools:tools('Search this vehicle\'s bills')})}`});
+
+/* G9 wholesale schemes */
+const WHO=BT.wholesale;
+M.pScheme=()=>phone(WHO,{head:'back',close:1,title:'New bill',sub:'INV/26-27/0421',bs:'gap:12px',body:`${cbox('Patil Kirana Stores','+91 98765 43210','₹12,400 to collect','get')}${addbar('Search item or scan')}<div class="lines"><div class="ln"><span class="nm"><b>Parle-G 50 g</b><small class="tagline">Case of 144 · Scheme 10 + 1 free</small></span><span class="lam">₹6,200</span><span class="ctrl"><span class="step"><i>−</i><span>10</span><i>+</i></span><span class="rate">Case × ₹620</span><span class="edit">Edit</span></span></div><div class="ln flash"><span class="nm"><b>Parle-G 50 g · free</b><small class="tagline">1 case · from scheme PARLE-OCT</small></span><span class="lam get">₹0</span></div>${line(WHO.items[1],{tag:1})}</div><div class="offer" style="padding:10px 14px"><span class="small">Add 2 more cases of Surf Excel for 2% cash discount (scheme ends Sunday).</span></div>`,dock:docks.saved(9320,{items:'3 lines · 1 free'})});
+M.dSchemes=()=>desk(WHO,{active:'sch',body:`<div class="phd"><div><h1>Schemes</h1><p>Offers from companies, applied on the bill by themselves. Claims show what to ask the company back for.</p></div><div class="acts"><span class="btn">Claims</span><span class="btn cta">${I('plus','s')}New scheme</span></div></div>
+ ${tbl(['Scheme','Company','Rule','Valid till','Given so far','Claim'],[['PARLE-OCT','Parle Products','Buy 10 cases, get 1 free','02 Nov','18 cases free','₹11,160 to claim'],['SURF-CD2','HUL','2% cash discount over ₹10,000','31 Oct','₹4,820 off','₹4,820 to claim'],['TATA-T48','Tata Consumer','₹40 off per case of 48','15 Nov','22 cases','₹880 to claim']],{tools:tools('Scheme or company','Status: Running')})}
+ <div class="card pad small sec">A free case is a bill line at ₹0, so stock and the retailer's bill both show it. GST on free goods follows the scheme's setting.</div>`});
+
+/* G10 café open orders, advance orders */
+const CFE=BT.cafe;
+M.dOpenOrders=()=>desk(CFE,{active:'open',body:`<div class="phd"><div><h1>Open orders</h1><p>Tokens and tables still being served. Tap one to add items or take payment.</p></div><div class="acts"><span class="btn cta">${I('plus','s')}New order</span></div></div>
+ <div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px">${[['Token 12','Cold coffee × 2, sandwich','₹350','8 min','Preparing','warn'],['Token 13','Masala tea × 4','₹80','3 min','Preparing','warn'],['Token 14','Kaju katli 500 g','₹480','1 min','Ready','get'],['Table 2','Pav bhaji × 2, lassi','₹310','14 min','Served','teal'],['Table 4','Samosa × 6','₹120','2 min','Preparing','warn'],['Swiggy','Not connected','','','Later','grey']].map(o=>`<div class="card pad" style="display:grid;gap:6px;${o[0]==='Swiggy'?'opacity:.55':''}"><div class="kv"><b>${o[0]}</b>${B(o[4],o[5]==='get'?'':o[5])}</div><span class="small mute">${o[1]}</span><div class="kv"><b class="amt">${o[2]}</b><span class="small mute">${o[3]}</span></div></div>`).join('')}</div>`});
+M.pAdvance=()=>phone(CFE,{head:'back',close:1,title:'Advance order',sub:'Diwali boxes and cakes',h:860,bs:'gap:14px',body:`${cbox('Sunita Yadav','+91 90110 22345','Nothing due')}<div class="lines"><div class="ln"><span class="nm"><b>Mixed sweets box 1 kg</b><small class="tagline">Kaju katli, motichoor, peda</small></span><span class="lam">₹14,400</span><span class="ctrl"><span class="step"><i>−</i><span>20</span><i>+</i></span><span class="rate">Box × ₹720</span></span></div><div class="ln"><span class="nm"><b>Black forest cake 1 kg</b><small class="tagline">Write: "Happy Diwali"</small></span><span class="lam">₹700</span></div></div><div class="row2">${fld('Ready on','31 Oct, 11 am',{pre:I('cal','s')})}${fld('Advance','5,000',{pre:'₹',right:1})}</div>${segc('Pick up','Deliver',0)}<span class="small mute">Shows on Home the day before. Kitchen gets a ticket in the morning.</span>`,dock:`<div class="pdock"><div style="display:flex;justify-content:space-between"><span class="tot"><small>Balance on delivery</small><b class="num">₹10,100</b></span></div><span class="btn cta lg w">Save and give receipt</span></div>`});
+
+/* G11 kirana loose by amount, phone orders */
+M.pLoose=()=>phone(KI,{head:'back',close:1,title:'New bill',body:`<div class="faded" style="display:grid;gap:12px">${addbar('Search item or scan')}<div class="lines">${line(KI.items[0])}</div></div>`,overlay:sheet('Sugar (loose)',`${segc('By weight','By amount',1)}${fld('Amount','50',{pre:'₹',right:1,cls:'focus'})}${wb([['Rate','₹44 / kg'],['Weight','1.136 kg',1]])}<div class="pills">${['₹20','₹50','₹100','₹200'].map((a,n)=>`<span class="chp${n===1?' on':''}">${a}</span>`).join('')}</div><span class="small mute">Stock goes down by the weight. The bill shows "Sugar 1.136 kg × ₹44 = ₹50".</span>`,`<span class="btn soft lg">Cancel</span><span class="btn cta lg">Add ₹50</span>`,{h:'66%'})});
+M.dPhoneOrders=()=>desk(KI,{active:'pord',body:`<div class="phd"><div><h1>Phone orders</h1><p>Lists that came by phone or WhatsApp. Pack, make the bill, deliver.</p></div><div class="acts"><span class="btn">Paste a WhatsApp list</span><span class="btn cta">${I('plus','s')}New order</span></div></div>
+ <div class="pills"><span class="chp on">To pack · 4</span><span class="chp">Out for delivery · 2</span><span class="chp">Delivered today · 9</span></div>
+ ${tbl(['Order','Customer','Items','Deliver','Amount','Pay'],[['ORD-118','Sunita Yadav','9 items · atta, oil, dal…','By 6 pm · home','₹1,840',B('Udhaar','warn')],['ORD-117','Kavya Tiffin Centre','14 items','By 5 pm · shop','₹3,260',B('UPI on delivery','teal')],['ORD-116','Ramesh Patil','3 items','Picks up','₹386',B('Cash')]],{tools:tools('Order or customer','Deliver: Today')})}
+ <div class="card pad small sec">"Paste a WhatsApp list" reads lines like "atta 5kg, tel 1 litre" against your items and asks about the ones it can't match. No WhatsApp account is connected; replies go out with the share button.</div>`});
+
+/* G12 Other: what kind, then features */
+M.pOtherKind=()=>phone(OT,{head:'back',title:'Set up your shop',sub:'Step 2 of 4 · Other',bs:'gap:14px',body:`<div style="display:grid;gap:4px"><span class="ptitle">What kind of shop?</span><span class="sec small">We'll start your categories and units from this. Skip if none fits.</span></div><div class="lst">${[['Stationery, books, xerox','Notebooks, pens, photocopy as a service',1],['Agri inputs','Seeds, fertiliser, pesticides · batch and expiry'],['Services','Salon, tailor, repairs, printing · no stock'],['Furniture, home','Sizes and finishes'],['Something else','Start empty']].map(r=>`<div class="opt${r[2]?' sel':''}"><span class="radio${r[2]?' on':''}"></span><span class="t"><b>${r[0]}</b><small>${r[1]}</small></span></div>`).join('')}</div>`,dock:`<div class="pdock"><span class="btn cta lg w">Continue</span></div>`});
+M.dOtherKind=()=>deskPlain(`<div style="display:grid;place-items:center;padding:40px"><div class="card" style="width:820px;padding:32px;display:grid;gap:18px"><span class="small mute">Step 3 of 4 · Other</span><div style="display:grid;gap:4px"><h1 style="font-size:26px;font-weight:700">Anything your shop needs?</h1><p class="sec">All off is fine. Each one can be turned on later, at the moment you need it.</p></div><div class="lst">${[['Service items','Photocopy, fitting, repair: billed with no stock',1],['Box and pieces','Buy in boxes, sell in pieces',0],['Batch and expiry','For things that expire, like seeds or medicines',0],['Sizes and colours','One item in several sizes',0]].map(r=>`<div class="li" style="min-height:60px"><span class="t"><b>${r[0]}</b><small>${r[1]}</small></span><span class="sw${r[2]?' on':''}"></span></div>`).join('')}</div><div style="display:flex;justify-content:flex-end;gap:8px"><span class="btn soft lg">Back</span><span class="btn cta lg">Continue</span></div></div></div>`,620);
+
+/* ---------- Part R: research per kind ---------- */
+/* status: have = in the app on dev today · designed = drawn in this design earlier · new = drawn in this version · later = needs an outside service or a later decision */
+const RES=[
+ {k:'kirana',who:'Khatabook, OkCredit, Vyapar, myBillBook, Swipe; GoFrugal for bigger stores. Global: Square, Loyverse.',
+  must:[['Fast counter bill, barcode scan, thermal print','have','C1'],['Udhaar with reminders and UPI QR','have',''],['Loose items by weight','have',''],['Sell loose by amount ("₹50 of sugar")','new','G11'],['Phone / WhatsApp orders to pack and deliver','new','G11'],['Box and pieces','designed','B4'],['Weighing-scale barcodes','designed','C1'],['Loyalty points','later','']],
+  how:'Khatabook and OkCredit win on the udhaar book and reminders but have thin stock. Vyapar and myBillBook add GST billing, stock and an online store link; Vyapar also has loyalty points set per rupee.',
+  gap:'Billing apps and ledger apps are separate worlds, so a kirana runs two apps. Online-store links rarely turn into packed, billed orders. Nobody sells loose by amount, which is how a kirana counter actually talks.',
+  edge:['One app for bill and udhaar, which we already have','Phone orders become bills in one tap, with udhaar on delivery','Loose-by-amount on the counter']},
+ {k:'medical',who:'Marg ERP (pharma), GoFrugal Pharmacy, eVitalRx, Medeil, RetailGraph; Vyapar is generic. Ordering apps: Pharmarack, Retailio.',
+  must:[['Batch and expiry on every line, earliest expiry first','designed','D1, D7'],['Near-expiry list and return to distributor','designed','D7'],['Schedule H / H1 register with doctor and patient','designed','D1'],['Strip and tablet units','designed','D2'],['Same-salt substitutes when one is out','new','G4'],['Short book sent to the distributor','new','G4'],['Drug licence no. on the bill','designed','D14'],['Refill reminders','later','']],
+  how:'Marg is the deepest (schemes, sub-stockists, salesman) but desktop-first with a steep learning curve and extra AMC. eVitalRx is cloud and mobile with refills and a distributor marketplace, but reviewers mention ledger errors, no half-free deals in purchase entry and thin stock-value reports.',
+  gap:'Expired stock is a direct money loss when the software does not push the earliest batch. Cloud apps are weak on the money side; desktop ERPs are weak on the phone. Substitute search is often a paid drug database.',
+  edge:['Earliest batch picked by itself, so no extra tap at the counter','Short book from the counter, sent as a WhatsApp list (no marketplace needed)','The udhaar book and bill in one place, which pharmacy tools lack']},
+ {k:'mobile',who:'Vyapar, myBillBook, Busy, Marg; GoFrugal electronics. Repair-led: Phoneo; global RepairDesk, RepairShopr.',
+  must:[['IMEI / serial captured on purchase, picked on sale','designed','D2, D6'],['Find by IMEI with warranty left','designed','D8'],['Repair job card: fault, accessories, ready date, advance','new','G5'],['Finance / EMI note on the bill','designed','D1'],['Exchange of an old phone','later',''],['Dual IMEI','later','']],
+  how:'Billing apps have serial tracking but stop there. Repair is a separate product (RepairDesk abroad, a few small Indian apps), so a shop that sells and repairs runs two tools. Busy adds warranty and IMEI-wise stock.',
+  gap:'No one joins the repair slip, the parts used and the final bill. Warranty lookup needs the IMEI and the bill together, which most apps keep apart.',
+  edge:['Repairs use the same customer, stock and bill: parts used come out of stock','A "ready" message is a WhatsApp share, with no SMS cost','IMEI search in the header search']},
+ {k:'garments',who:'GoFrugal Apparel, Ginesys, LOGIC ERP (chains); Vyapar, myBillBook, Busy, GimBooks (small shops). Global: Lightspeed, Shopify POS.',
+  must:[['Size and colour under one item, stock per size','designed','D2, D4'],['Barcode label per size','designed','D9'],['GST 5% up to ₹2,500 a piece, 18% above, by itself','designed','D1'],['Exchange in one step at the counter','new','G6'],['Purchase entry as a size grid','designed','D6'],['Season and slow-stock view','new','dashboard'],['Alterations','later','']],
+  how:'Chain products (GoFrugal, Ginesys, LOGIC) do variants and labels well but need dealers and weeks of setup. Small-shop apps list variants, but the comparisons we read rate their reports thin and their exchanges as a plain return entry.',
+  gap:'Exchange is usually a credit note plus a new bill done by hand. Sizes on a phone screen are cramped. Not every app applies the ₹2,500 GST split on its own.',
+  edge:['Exchange as one screen that makes both documents','Sizes as tappable chips with stock, phone first','Labels printed straight from the purchase']},
+ {k:'hardware',who:'Busy, Marg (hardware and paint), myBillBook, Vyapar, Swipe, LOGIC ERP. Global: Epicor BisTrack.',
+  must:[['Box and pieces, coil and metre','designed','D2'],['Shade, size and rating as variants','designed','D3'],['Contractor rates through price lists','have',''],['Site-wise bills and dues for a contractor','new','G7'],['Estimates, challans, credit limits','have',''],['Painter / contractor points','later',''],['Tinting formulas','later','']],
+  how:'Busy and Marg lead: shade codes, pack sizes, tinting formulas, contractor ledgers and dealer schemes. App-first tools offer units and price tiers but no site view.',
+  gap:"A contractor buys for many sites, and the shop can't tell which site owes what. Paint brands run their own painter loyalty apps, so a shop app rarely needs to.",
+  edge:['Sites under a contractor, each with its own dues','Unit choice on the line with stock in the smallest unit','No tinting module until the owner asks; the brand machines do it']},
+ {k:'auto',who:'Busy (auto parts), Marg, Vyapar, VasyERP. Global: PartsTech, Epicor.',
+  must:[['Search by any part number (OEM, aftermarket, ours)','designed','D3'],['Rack / bin location','designed','D1'],['Fits which vehicle','new','G8'],['Vehicle history by number plate','new','G8'],['Mechanic credit and commission','designed','D1'],['Battery and tyre serials with warranty','later','']],
+  how:'Busy lists part numbers, vehicle-model mapping, serials for batteries and mechanic commission. Global tools have fitment catalogues that are not sold for Indian two-wheelers.',
+  gap:'Fitment data for Indian bikes is not available to buy, so shops keep it in their head. Mechanic dues mix with the vehicle owner\'s dues.',
+  edge:['Fits typed once per item, then searchable by make and model','Vehicle page with every bill and the mechanic it came with','Mechanic and vehicle owner kept apart']},
+ {k:'wholesale',who:'Busy, Marg, Tally, Vyapar; distribution: BeatRoute, Bizom, FieldAssist. Retailer ordering: Udaan.',
+  must:[['Case and pieces','designed','D2'],['Godowns and transfers','designed','D10'],['E-way bill','designed','D10'],['Schemes and free goods on the bill','new','G9'],['Claims back from the company','new','G9'],['Credit limits and ageing','have',''],['Salesman routes and orders','later',''],['E-invoice (IRN)','later','']],
+  how:'BeatRoute and Bizom apply schemes on the bill, track claims from raised to settled, and check credit limits before an order. Marg and Busy do schemes and batches on the desktop.',
+  gap:'Small wholesalers do not need field-force software but do need schemes and claims, which app-first tools skip. A free case is often typed as a discount, so stock goes wrong.',
+  edge:['A free case is a ₹0 line, so stock stays right','A claims list per company','Wholesale is a switch on a kind (R-DEC-64), so a medicine wholesaler gets batches too']},
+ {k:'cafe',who:'Petpooja, Restroworks (POSist), GoFrugal sweet shop, DotPe, SlickPOS. Global: Loyverse, Square for Restaurants.',
+  must:[['Add-ons and kitchen ticket','designed','D11'],['Sweets by weight on the counter','have',''],['Open orders by token or table','new','G10'],['Advance orders for cakes and festival boxes','new','G10'],['Production and recipe stock','later',''],['Swiggy / Zomato orders','later','']],
+  how:'Petpooja and Restroworks do add-ons, station-wise kitchen tickets, aggregator orders and per-recipe stock, priced by quote. GoFrugal adds weighing scales, production and expiry for sweet shops.',
+  gap:'Restaurant systems are heavy for a counter sweet shop. Festival advance orders live on paper. Quote-only pricing puts off small shops.',
+  edge:['Counter-first: weight, add-ons and token on one bill','Advance orders with the balance due shown on Home','Aggregator orders left for later rather than half-built']},
+ {k:'jewel',who:'Omunim, Jewel Book, Jwelly, SwarnApp, GoFrugal Sapphire, Marg jewellery, Busy jewellery, Tally; myBillBook jewellery format.',
+  must:[["Today's gold and silver rate",'new','G1'],['Tag with gross, stone, net weight, purity, HUID','new','D3'],['Bill priced by weight, making, wastage and stone','new','D1, D2'],['Old gold exchange on the bill','new','G2'],['PAN at ₹2 lakh and the cash limit','new','G2'],['Custom orders with advance and karigar issue / receive','new','G3'],['Gold saving schemes','later',''],['Girvi (gold loans)','later','Lending app']],
+  how:'Specialist tools cover rates, HUID, karigar and old gold; the bigger ones add saving schemes, girvi and RFID. They cost ₹10,000 to ₹1,20,000 a year, need weeks of setup, and reviews name dated screens and weak phone apps. Vyapar has no karat pricing or HUID.',
+  gap:'A small jeweller pays for an ERP or uses a generic app that cannot price by weight. Live rate feeds are paid services.',
+  edge:['Weight pricing inside the same simple bill','Rate typed once a morning and shared as a picture, with no paid feed (ADR-021)','Old gold and PAN handled on the bill, so the counter never has to remember the rule']},
+ {k:'other',who:'Vyapar, myBillBook, Swipe, Zoho Invoice; service apps vary.',
+  must:[['Service items with no stock','new','G12'],['GST picked per item','have',''],['A second question to start the right categories','new','G12'],['Features offered when needed','designed','B4']],
+  how:'Generic apps show every feature to everyone, which is why they feel crowded.',
+  gap:'An "Other" shop gets the most cluttered screen of all.',
+  edge:['Starts empty and grows by offers, not by a settings page']}
+];
+const STL={have:['In the app','teal'],designed:['Designed','grey'],new:['New here',''],later:['Later','warn']};
+function researchHtml(){
+  const all=RES.flatMap(r=>r.must);const c=s=>all.filter(m=>m[1]===s).length;
+  const strip=`<div class="keys">${['have','designed','new','later'].map(s=>`<div class="key"><b>${c(s)}</b><span>${{have:'must-haves already in the app on dev',designed:'designed earlier on this page, not built',new:'drawn new in this version (G and D)',later:'need an outside service or a later call'}[s]}</span></div>`).join('')}</div>`;
+  const cards=RES.map(r=>{const t=BT[r.k];return `<article class="spec" style="max-width:none;gap:12px" id="r-${r.k}" data-kind="${r.k}"><div style="display:flex;gap:12px;align-items:center"><svg style="width:34px;height:34px;color:var(--teal);flex:0 0 auto"><use href="#b-${r.k}"/></svg><div style="display:grid;min-width:0"><h4 style="font-size:1.05rem">${t.name}</h4><span class="small" style="font-size:.8rem">${r.who}</span></div></div>
+   <div class="tblwrap" style="border-radius:10px"><table style="min-width:0"><thead><tr><th>What this shop needs</th><th style="width:120px">Status</th><th style="width:90px">See</th></tr></thead><tbody>${r.must.map(m=>`<tr><td>${m[0]}</td><td><span class="tag ${STL[m[1]][1]==='teal'?'new':STL[m[1]][1]==='warn'?'fb':STL[m[1]][1]===''?'dec':''}">${STL[m[1]][0]}</span></td><td class="small">${m[2]?(/^[A-Z]\d|^[A-Z]$|^D|^G|^B|^C/.test(m[2])?`<a href="#${m[2].split(',')[0].trim().toLowerCase()}">${m[2]}</a>`:m[2]):'—'}</td></tr>`).join('')}</tbody></table></div>
+   <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,260px),1fr));gap:12px"><div><b>How competitors do it</b><p>${r.how}</p></div><div><b>Where they fall short</b><p>${r.gap}</p></div><div><b>Where we do better</b><ul>${r.edge.map(e=>`<li>${e}</li>`).join('')}</ul></div></div></article>`}).join('');
+  return strip+`<div style="display:grid;gap:14px">${cards}</div>`;
+}
+/* ---------- Part H: per-kind setup ---------- */
+const KM=[
+ ['kirana','—','Phone orders','Phone orders to pack · udhaar due · low stock','5% packed; 0% loose staples','UPI, cash, udhaar','—','—'],
+ ['medical','Supplier → Distributor','Expiry · Short book','Expiring 30 days · short book · Schedule H today','5% for most medicines (Sept 2025 cut)','UPI, cash, card','Sell expired batch (off) · expiry alert days · drug licence no.','stock_batch · item_medicine'],
+ ['mobile','—','Find by IMEI · Repairs','Repairs ready · phones in stock · warranty claims','18%','UPI, card, finance / EMI','Default warranty months','stock_serial · repair_job'],
+ ['garments','—','Print labels','Sold-out sizes · exchanges · slow stock','5% up to ₹2,500 a piece, 18% above','UPI, cash, credit note','Label printer · exchange days','item_variant'],
+ ['hardware','—','Sites','Site dues · biggest site due · shades to reorder','18%','Cash, UPI, credit, cheque','—','item_unit_pack · item_variant · party_site'],
+ ['auto','—','Vehicles','Mechanic dues · fast movers low · no rack set','18% (most parts after Sept 2025)','Cash, UPI, mechanic credit','—','item_part_number · vehicle'],
+ ['wholesale','Customer → Retailer · Supplier → Company','Stock transfer · E-way bills · Schemes','Orders to deliver · scheme ending · e-way bills','as the kind','Credit, cheque, bank transfer','Godowns · e-way bill limit','stock_location · scheme · scheme_claim'],
+ ['cafe','—','Open orders · Advance orders','Open orders · advance orders · sweets left','5%','UPI, cash','Kitchen ticket printer','item_addon · sale_order (token)'],
+ ['jewel','—',"Today's rate · Custom orders · Old gold · Karigars",'22K rate · custom orders due · old gold taken','3% on the whole value, making included (5% only for job work)','UPI, card, bank; cash under ₹2 lakh; old gold','Rates · making default · wastage limit · PAN limit','item_jewellery · metal_rate · bill_old_gold · custom_order · karigar_issue'],
+ ['other','—','—','Services · low stock · to collect','asked per item','UPI, cash','—','—']];
+function kindMatrixHtml(){return `<table><thead><tr><th>Kind</th><th>Words that change</th><th>Menu rows it adds</th><th>Dashboard strip</th><th>GST default (owner confirms)</th><th>Payments shown first</th><th>Settings only this kind sees</th><th>Own tables (R-DEC-65)</th></tr></thead><tbody>${KM.map(r=>`<tr><th>${BT[r[0]].name}</th>${r.slice(1).map((v,i)=>`<td>${i===6&&v!=='—'?v.split(' · ').map(x=>`<code>${x}</code>`).join(' '):v}</td>`).join('')}</tr>`).join('')}</tbody></table>`}
+
+COV.push(['New: Phone orders, loose by amount','—','Kirana (G11)'],['New: Short book, same-salt substitutes','—','Medical (G4)'],['New: Repairs','—','Mobile (G5)'],['New: Exchange','—','Clothes (G6)'],['New: Sites','—','Hardware (G7)'],['New: Vehicles','—','Auto parts (G8)'],['New: Schemes and claims','—','Wholesale (G9)'],['New: Open and advance orders','—','Café (G10)'],["New: Today's rate, old gold, custom orders, karigars",'—','Jewellery (G1–G3)'],['New: What kind of shop, pick features','—','Other (G12)']);
+
+
+
+/* decision 6: order documents only where the kind uses them */
+const ORDERDOCS=['wholesale','hardware','auto','mobile'];
+ORDERDOCS.forEach(k=>BT[k].f.push('order_docs'));
+const _nav2=nav;nav=function(t){const g=_nav2(t);if(!has(t,'order_docs'))g.forEach(x=>x.rows=x.rows.filter(r=>!['so','dc','po'].includes(r.k)));return g};
+const _SCR=SCR;SCR=function(t){const a=_SCR(t);return has(t,'order_docs')?a:a.filter(x=>!['so','dc','po'].includes(x.k))};
+FEAT.push(['order_docs','Sales orders, challans, purchase orders','For shops that take orders and send goods before the bill.']);
+/* B5 switcher */
+const BIZ=[['kirana','Shree Ganesh Kirana','Kirana · GSTIN 27ABCDE1234F1Z5'],['medical','Sai Medical Store','Medical · GSTIN 27FGHIJ5678K1Z2'],['jewel','Shree Om Jewellers','Jewellery · GSTIN 27KLMNO9012P1Z8']];
+const bizList=t=>`<div class="lst">${BIZ.map(([k,n,s])=>`<div class="opt${k===t.tile?' sel':''}"><span style="width:40px;height:40px;border-radius:10px;background:var(--teal-wash);display:grid;place-items:center;flex:0 0 auto"><svg style="width:26px;height:26px;color:var(--teal)"><use href="#b-${k}"/></svg></span><span class="t"><b>${n}</b><small>${s}</small></span>${k===t.tile?`<span class="badge teal">Open</span>`:I('cr','s')}</div>`).join('')}</div>`;
+M.pSwitch=t=>phone(t,{head:'main',nav:'home',body:`<div class="faded"><span class="ptitle">Dashboard</span></div>`,overlay:sheet('Your businesses',`${bizList(t)}<span class="small mute">Each business has its own customers, items, bills, GST and settings. Nothing is shared between them.</span><span class="btn lg w">${I('plus','s')}Add another business</span>`,'',{h:'62%'})});
+M.dSwitch=t=>desk(t,{active:'home',body:`<div class="faded">${'<div class="phd"><div><h1>Dashboard</h1><p>'+t.shop+'</p></div></div>'}${kpiStrip(t)}</div>`,overlay:`<div class="pop" style="left:-220px;top:8px;width:400px"><div class="sgh">Your businesses</div><div style="padding:6px 10px 10px;display:grid;gap:10px">${bizList(t)}<span class="small mute">Switching opens that business's own Home, menu and data.</span><span class="btn w">${I('plus','s')}Add another business</span></div></div>`});
+
+/* D14 terms line and D15 messages, per kind */
+const TERMS={kirana:'Goods once sold are taken back only if unopened, within 3 days.',medical:'Medicines are not taken back once the strip is cut. Check the expiry date before use.',mobile:'Warranty is from the company, from the bill date. Keep this bill and the box.',garments:'Exchange within 7 days with this bill and the tags on. No cash refund.',hardware:'Goods once sold are taken back only unused, within 7 days. Site goods on contractor credit.',auto:'Electrical parts are not taken back once fitted. Warranty as per the company.',wholesale:'Interest at 18% a year after the credit days. Subject to local jurisdiction.',cafe:'Prices include GST. Advance orders: balance on delivery.',jewel:'Rates as on the bill date. BIS hallmarked; HUID per piece. Buy-back as per shop policy.',other:'Thank you for your business.'};
+const MSG={
+ kirana:[['Payment reminder','When udhaar is due','Namaste {name}, your khata at {shop} shows ₹1,240 to pay. Pay by UPI: {upi}. Thank you.'],['Order ready','Phone order packed','{name}, your order of 9 items (₹1,840) is packed. Delivering by 6 pm.'],['Bill','After a bill','Thank you for shopping at {shop}. Your bill INV-0419 for ₹576 is attached.']],
+ medical:[['Payment reminder','When dues are pending','Namaste {name}, ₹860 is pending at {shop} for your medicines. Pay by UPI: {upi}.'],['Refill reminder','A few days before a regular medicine runs out','{name}, your Shelcal 500 from {shop} may run out by Sunday. Shall we keep it ready?'],['Medicine arrived','Short book item comes in','{name}, Crocin 650 you asked for is now in stock at {shop}.']],
+ mobile:[['Repair ready','Job card marked ready','{name}, your Redmi Note 12 (JOB-0318) is ready at {shop}. Balance ₹1,900. Open till 9 pm.'],['Payment reminder','When dues are pending','Namaste {name}, ₹1,240 is pending at {shop}. Pay by UPI: {upi}.'],['Warranty reminder','A month before warranty ends','{name}, the warranty on your phone (IMEI …438) ends on 25 Oct 2027.']],
+ garments:[['Payment reminder','When dues are pending','Namaste {name}, ₹1,240 is pending at {shop}. Pay by UPI: {upi}.'],['Alteration ready','Alteration done','{name}, your trousers are altered and ready at {shop}.'],['Exchange note','After an exchange','{name}, your credit of ₹400 at {shop} can be used within 90 days.']],
+ hardware:[['Site dues reminder','Site dues past credit days','Namaste {name}, ₹18,400 is due at {shop} for Patil Bungalow site (6 bills). Pay by UPI: {upi}.'],['Estimate','After an estimate','{name}, here is the estimate for your site from {shop}. Valid 15 days.'],['Goods dispatched','Challan issued','{name}, your goods left {shop} at 4 pm. Vehicle MH 12 AB 1020.']],
+ auto:[['Mechanic dues','Garage dues past credit days','Namaste {name}, ₹1,240 is due at {shop} for parts taken this month. Pay by UPI: {upi}.'],['Service due','From the vehicle history','{name}, MH 12 KT 4471 last had an oil change on 12 Aug. Time for the next one.'],['Part arrived','Ordered part comes in','{name}, the clutch plate for Splendor+ is now at {shop}.']],
+ wholesale:[['Payment reminder','Past credit days','Dear {name}, ₹12,400 is due to {shop} for 3 bills, oldest 21 days. Pay by UPI or bank: {upi}.'],['Scheme alert','New scheme from a company','{name}, Parle-G 10 + 1 free till 2 Nov at {shop}. Reply to order.'],['Dispatch','Bill with e-way bill','{name}, INV-0421 is dispatched. E-way bill 1812 3344 5566.']],
+ cafe:[['Advance order ready','Order ready time','{name}, your Diwali boxes are ready at {shop}. Balance ₹10,100.'],['Payment reminder','When dues are pending','Namaste {name}, ₹860 is pending at {shop}. Pay by UPI: {upi}.'],['Order confirmed','After an advance order','{name}, 20 sweet boxes booked for 31 Oct, 11 am. Advance ₹5,000 received.']],
+ jewel:[['Custom order ready','Order marked ready','{name}, your mangalsutra (ORD-0042) is ready at {shop}. Final weight 18.240 g. Balance as per today\'s rate.'],['Payment reminder','When dues are pending','Namaste {name}, ₹25,000 is pending at {shop}. Pay by UPI or bank: {upi}.'],["Today's rate",'Each morning, to customers who asked',"{shop} today: 22K ₹11,650/g · 24K ₹12,710/g · Silver ₹150/g."]],
+ other:[['Payment reminder','When dues are pending','Namaste {name}, ₹4,100 is pending at {shop}. Pay by UPI: {upi}.'],['Bill','After a bill','Thank you for visiting {shop}. Your bill for ₹324 is attached.']]};
+const fillMsg=(m,t)=>m.replace(/\{name\}/g,t.tile==='wholesale'?'Patil Kirana Stores':t.tile==='hardware'?'Suresh Patil':t.tile==='auto'?'Raju Garage':'Ramesh').replace(/\{shop\}/g,t.shop).replace(/\{upi\}/g,t.shop.split(' ')[0].toLowerCase()+'@upi');
+const bubble=(txt,t)=>`<div style="background:#DCF8C6;color:#111;border-radius:10px 10px 2px 10px;padding:10px 12px;font-size:14px;line-height:1.45;justify-self:end;max-width:92%">${fillMsg(txt,t)}<div style="font-size:11px;color:#667;text-align:right;margin-top:4px">4:42 pm</div></div>`;
+M.pRemind=t=>{const ms=MSG[t.tile]||MSG.kirana;return phone(t,{head:'back',title:'Ramesh Patil',sub:t.cust,body:`<div class="faded"><div class="card pad"><span class="small mute">To collect</span><br><b class="amt get" style="font-size:24px">₹1,240</b></div></div>`,
+ overlay:sheet('Send a message',`<div class="pills">${ms.map((m,i)=>`<span class="chp sm${i===0?' on':''}">${m[0]}</span>`).join('')}</div><div style="background:#ECE5DD;border-radius:12px;padding:12px;display:grid">${bubble(ms[0][2],t)}</div>${swr('Attach statement PDF',t.shop+' · last 30 days',true)}<span class="small mute">Opens WhatsApp with this filled in. Nothing is sent until you press send there.</span>`,`<span class="btn soft lg">Edit text</span><span class="btn cta lg">Share on WhatsApp</span>`,{h:'78%'})})};
+M.dMessages=t=>{const ms=MSG[t.tile]||MSG.kirana;return desk(t,{active:'set',h:820,body:`<div class="phd"><div><h1>Settings</h1><p>${t.shop}</p></div></div><div style="display:flex;gap:24px;align-items:start"><div class="setnav"><span>Business details</span><span>Shop features</span><span>Bills and print</span><span class="on">Messages</span><span>Tax and GST</span><span>Team</span></div>
+ <div style="flex:1;display:grid;grid-template-columns:minmax(0,1fr) 380px;gap:16px;align-items:start"><div style="display:grid;gap:10px"><b style="font-weight:600">Messages for a ${t.short.toLowerCase()} shop</b><span class="small mute">Only the messages this business's features need. Edit the words; the {name}, {amount} and UPI parts fill themselves.</span><div class="lst">${ms.map((m,i)=>`<div class="li" style="${i===0?'background:var(--teal-wash)':''};${i>0&&!['Payment reminder','Bill'].includes(m[0])?'outline:1.5px dashed var(--cta);outline-offset:-3px':''}"><span class="t"><b>${m[0]}</b><small>${m[1]}</small></span><span class="lnk small">Edit</span></div>`).join('')}</div>
+ <div class="card pad" style="display:grid;gap:8px"><b style="font-weight:600">Bill PDF and print</b><div class="kv"><span>Name on the bill</span><span>${t.shop}</span></div><div class="kv"><span>Terms line</span><span style="max-width:60%;text-align:right">${TERMS[t.tile]}</span></div><div class="kv"><span>Extra column</span><span>${has(t,'jewellery')?'Net wt · Purity':has(t,'batch')?'Batch · Exp':has(t,'serial')?'IMEI':has(t,'variants')?'Size':has(t,'parts')?'Part no.':'None'}</span></div></div></div>
+ <div style="display:grid;gap:8px"><span class="small mute">Preview · ${ms[0][0]}</span><div style="background:#ECE5DD;border-radius:12px;padding:14px;display:grid;gap:8px">${bubble(ms[0][2],t)}<div style="background:#fff;color:#111;border-radius:8px;padding:8px 10px;font-size:12.5px;justify-self:end;max-width:92%">📄 ${t.shop.replace(/ /g,'-')}-statement.pdf</div></div></div></div></div>`})};
+/* ---------- Part I: the other apps (Money Book, Library, Lending) ---------- */
+const APP={
+ khata:{shop:'My Money Book',ini:'RK',short:'Money Book',tile:'khata',
+  groups:[{h:'Money Book',rows:[{k:'people',l:'People',i:'cust'},{k:'remind',l:'Reminders',i:'bell'},{k:'report',l:'Report',i:'chart'},{k:'old',l:'Old dues',i:'clock'}]}],
+  pn:[['people','People','cust'],['remind','Reminders','bell'],['report','Report','chart'],['more','More','apps']]},
+ library:{shop:'Gyan Study Library',ini:'GS',short:'Members & Fees',tile:'library',
+  groups:[{h:'Today',rows:[{k:'counter',l:'Counter',i:'scan'},{k:'home',l:'Home',i:'home'}]},{h:'Students',rows:[{k:'students',l:'Students',i:'cust'},{k:'seats',l:'Seats',i:'apps'},{k:'fees',l:'Fees',i:'cash'},{k:'att',l:'Attendance',i:'check'},{k:'msg',l:'Messages',i:'bell'}]},{h:'Money',rows:[{k:'money',l:'Income & expenses',i:'chart'},{k:'exp',l:'Expenses',i:'cash'}]},{h:'Books',rows:[{k:'books',l:'Books',i:'box'}]}],
+  pn:[['home','Home','home'],['students','Students','cust'],['seats','Seats','apps'],['fees','Fees','cash'],['more','More','list']]},
+ lending:{shop:'Shiv Finance',ini:'SF',short:'Loans & Collections',tile:'lending',
+  groups:[{h:'Today',rows:[{k:'today',l:'Today',i:'home'}]},{h:'Lending',rows:[{k:'loans',l:'Loans',i:'list'},{k:'borrowers',l:'Borrowers',i:'cust'},{k:'routes',l:'Routes',i:'swap'},{k:'msg',l:'Messages',i:'bell'}]}],
+  pn:[['today','Today','home'],['loans','Loans','list'],['borrowers','Borrowers','cust'],['msg','Messages','bell'],['more','More','apps']]}
+};
+function appRail(A,active){
+  let h=`<aside class="rail"><div class="biz"><span class="logo"><i>${A.shop[0]}</i></span><span><b>${A.shop}</b><small>${A.short}</small></span>${I('ud','s')}</div><div class="apps">${I('apps','s')}<span>Apps</span>${I('cr','s')}</div>`;
+  for(const g of A.groups){h+=`<div class="gh">${g.h}</div>`;for(const r of g.rows)h+=`<div class="ri${r.k===active?' on':''}">${I(r.i,'s')}<span>${r.l}</span></div>`}
+  return h+`<div class="gh"></div><div class="ri${active==='set'?' on':''}">${I('gear','s')}<span>Settings</span></div></aside>`;
+}
+function adesk(A,o){
+  return `<div class="ui dk" style="height:${o.h||800}px">${appRail(A,o.active)}<div class="dmain">
+  <div class="dtop"><div class="dsearch">${I('search','s')}<span>${o.search||'Search name or mobile'}</span><kbd>Ctrl K</kbd></div>
+  <div class="me">${I('bell')}<div class="av">${A.ini}</div><span><b style="font-weight:500">Owner</b><small>Owner · ${A.short}</small></span>${I('cd','s')}</div></div>
+  <div class="dbody">${o.body}</div>${o.dock||''}${o.overlay||''}</div></div>`;
+}
+const anav=(A,on)=>`<nav class="pnav" style="grid-template-columns:repeat(${A.pn.length},minmax(0,1fr))">${A.pn.map(([k,l,i])=>`<span class="${k===on?'on':''}"><span class="pill">${I(i)}</span>${l}</span>`).join('')}</nav>`;
+const aphone=(A,o)=>phone(A,Object.assign({},o,{nav:undefined,dock:(o.dock||'')+(o.nav?anav(A,o.nav):'')}));
+const fab=l=>`<span class="btn cta lg" style="position:absolute;right:16px;bottom:80px;border-radius:999px;box-shadow:var(--shadow);z-index:3">${I('plus','s')}${l}</span>`;
+const fig=(a,b,c,cls)=>`<div class="card" style="padding:10px 14px;display:grid;gap:2px;min-width:0"><small class="mute" style="font-size:12px;font-weight:600">${a}</small><b class="num ${cls||''}" style="font-size:20px;font-weight:800">${b}</b>${c?`<span class="small mute" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${c}</span>`:''}</div>`;
+const figs=(...f)=>`<div style="display:grid;grid-template-columns:repeat(${f.length},minmax(0,1fr));gap:10px">${f.join('')}</div>`;
+const avl=n=>`<span class="av">${n.replace(/[^A-Za-z ]/g,'').trim().split(' ').map(w=>w[0]).join('').slice(0,2)}</span>`;
+const prow=(n,s,a,cls,cap)=>`<div class="li">${avl(n)}<span class="t"><b>${n}</b><small>${s}</small></span><span class="e" style="display:grid;justify-items:end;line-height:1.2"><b class="num ${cls}" style="font-weight:700">${a}</b>${cap?`<small class="${cls}" style="font-size:12px">${cap}</small>`:''}</span></div>`;
+const NEWO='outline:1.5px dashed var(--cta);outline-offset:3px;border-radius:12px';
+
+/* Udhaar data (personal book, R-DEC-45 words: Gave money / Got money, To get / To give) */
+const UP=[['Suresh Jadhav','Today · Rent share',4500,'get'],['Priya (sister)','Yesterday · Mobile recharge',1200,'get'],['Mahesh Kale','3 days ago · Bike repair',2000,'give'],['Anita Pawar','12 Oct · Hand loan',8000,'get'],['Vijay Shinde','2 Oct · Wedding gift return',1500,'give'],['Raju (milkman)','28 Sep',0,'']];
+const upRows=rows=>`<div class="lst">${rows.map(([n,s,a,d])=>prow(n,s,a?rs(a):'Settled',d||'mute',a?(d==='get'?'To get':'To give'):'')).join('')}</div>`;
+const UE=[['Today, 9:10 am','Got money','Paid by UPI',2000,'get','₹4,500 to get'],['22 Oct','Gave money','Rent share for October',3500,'give','₹6,500 to get'],['5 Oct','Gave money','Hand loan',3000,'give','₹3,000 to get']];
+const ueRows=()=>`<div class="lst">${UE.map(([d,k,n,a,c,run])=>`<div class="li"><span class="t"><b>${k}${n?` · <span class="mute" style="font-weight:400">${n}</span>`:''}</b><small>${d} · ${run}</small></span><b class="num ${c}" style="font-weight:700">${rs(a)}</b></div>`).join('')}</div>`;
+const udock=`<div class="pdock"><div class="two"><span class="btn lg" style="background:var(--give);color:#fff;border-color:var(--give)">Gave money</span><span class="btn lg" style="background:var(--get);color:#fff;border-color:var(--get)">Got money</span></div></div>`;
+const KH=APP.khata;
+M.pUPeople=()=>aphone(KH,{head:'main',nav:'people',bs:'gap:12px',body:`<span class="ptitle">People</span>${figs(fig('To get',rs(14900),'4 people','get'),fig('To give',rs(3500),'2 people','give'))}${addbar('Search name or mobile',{end:`<span class="small lnk">Filters</span>`})}${upRows(UP)}`,overlay:fab('Add person')});
+M.dUPeople=()=>adesk(KH,{active:'people',body:`<div class="phd"><div><h1>People</h1><p>Your own book: money you gave and got, person by person</p></div><div class="acts"><span class="btn">${I('print','s')}Report</span><span class="btn cta">${I('plus','s')}Add person</span></div></div>
+ ${figs(fig('To get',rs(14900),'4 people','get'),fig('To give',rs(3500),'2 people','give'),fig('Net',rs(11400)+' to get','Across 6 people'))}
+ ${tbl(['Name','Mobile','Last entry','Balance',''],UP.map(([n,s,a,d])=>[`<span style="display:flex;gap:10px;align-items:center">${avl(n)}<b style="font-weight:600">${n}</b></span>`,'+91 98··· ··'+(n.length*7%90+10),s,a?`<span class="${d}">${rs(a)}</span><small class="${d}">${d==='get'?'To get':'To give'}</small>`:'<span class="mute">Settled</span>',`<span class="lnk small">Open</span>`]),{tools:tools('Search name or mobile','All active','Sort: last entry')})}`});
+M.pUEntry=()=>aphone(KH,{head:'back',title:'Suresh Jadhav',sub:'+91 98220 41178',right:`<span class="ib">${I('phone')}</span>`,body:`<div class="faded" style="display:grid;gap:12px"><div class="card pad" style="display:grid;gap:4px"><span class="small mute">To get from Suresh</span><b class="amt get" style="font-size:26px">₹4,500</b></div>${ueRows()}</div>`,
+ overlay:sheet('Gave money',`${segc('Gave money','Got money',0)}${fld('Amount','3,500',{pre:'₹',right:1,cls:'focus'})}${fld('Note','Rent share for November',{opt:1})}<span class="small mute">Today, 30 Oct · change date</span><div class="card pad" style="background:var(--sunken);border:0"><span class="small">After this: <b class="get">₹8,000 to get</b> from Suresh</span></div>`,`<span class="btn cta lg w">Save</span>`,{h:'66%',bs:'gap:14px'})});
+M.dUPerson=()=>adesk(KH,{active:'people',h:820,body:`<div style="display:grid;grid-template-columns:340px minmax(0,1fr);gap:16px;align-items:start;height:100%"><div style="display:grid;gap:10px">${addbar('Search people')}${upRows(UP.slice(0,5)).replace('<div class="li">','<div class="li" style="background:var(--teal-wash)">')}</div>
+ <div style="display:grid;gap:14px"><div class="phd"><div><h1>Suresh Jadhav</h1><p>+91 98220 41178 · since 5 Oct</p></div><div class="acts"><span class="btn">${I('print','s')}Report</span><span class="btn">${I('bell','s')}Remind</span><span class="btn">${I('phone','s')}Call</span></div></div>
+ <div class="card pad" style="display:flex;align-items:center;gap:16px"><span style="display:grid"><span class="small mute">To get from Suresh</span><b class="amt get" style="font-size:28px">₹4,500</b></span><span class="btn lg" style="margin-left:auto;background:var(--give);color:#fff;border-color:var(--give)">Gave money</span><span class="btn lg" style="background:var(--get);color:#fff;border-color:var(--get)">Got money</span></div>
+ ${tbl(['Date','Entry','Note','Amount','Balance'],UE.map(([d,k,n,a,c,run])=>[d,`<b class="${c}" style="font-weight:600">${k}</b>`,n,`<span class="${c}">${rs(a)}</span>`,run]))}</div></div>`});
+M.pURemind=()=>aphone(KH,{head:'back',title:'Suresh Jadhav',sub:'To get ₹4,500',body:`<div class="faded">${ueRows()}</div>`,
+ overlay:sheet('Remind Suresh',`<div class="pills"><span class="chp sm on">Polite</span><span class="chp sm">Due date</span><span class="chp sm">Thank you</span></div><div style="background:#ECE5DD;border-radius:12px;padding:12px;display:grid"><div style="background:#DCF8C6;color:#111;border-radius:10px 10px 2px 10px;padding:10px 12px;font-size:14px;line-height:1.45;justify-self:end;max-width:92%">Hi Suresh, a gentle reminder: ₹4,500 is pending from our account (last entry 22 Oct). You can pay by UPI to rk@upi. Thanks!<div style="font-size:11px;color:#667;text-align:right;margin-top:4px">4:42 pm</div></div></div>${swr('Attach report PDF','Entries since 5 Oct',true)}<span class="small mute">Opens WhatsApp or SMS with this text. Nothing is sent by the app itself. Your name is used, not ours.</span>`,`<span class="btn soft lg">SMS</span><span class="btn cta lg">WhatsApp</span>`,{h:'76%'})});
+M.dUReport=()=>adesk(KH,{active:'report',body:`<div class="phd"><div><h1>Report</h1><p>All people · 1 Oct to 30 Oct</p></div><div class="acts"><span class="btn">Share PDF</span><span class="btn cta">${I('print','s')}Print</span></div></div>
+ <div class="pills"><span class="chp on">This month</span><span class="chp">Last month</span><span class="chp">This year</span><span class="chp">Pick dates</span></div>
+ ${figs(fig('You gave',rs(18500),'9 entries','give'),fig('You got',rs(11300),'7 entries','get'),fig('To get now',rs(14900),'4 people','get'),fig('To give now',rs(3500),'2 people','give'))}
+ ${tbl(['Date','Name','Entry','Amount','Note'],[['30 Oct','Suresh Jadhav','<b class="get">Got money</b>','₹2,000','Paid by UPI'],['29 Oct','Priya (sister)','<b class="give">Gave money</b>','₹1,200','Mobile recharge'],['27 Oct','Mahesh Kale','<b class="get">Got money</b>','₹2,000','Bike repair'],['22 Oct','Suresh Jadhav','<b class="give">Gave money</b>','₹3,500','Rent share']])}`});
+
+/* Library (contract frozen: UI over today's endpoints and fee_state) */
+const LB=APP.library;
+const FS={paid:['Paid','get','var(--get-wash)'],soon:['Due soon','warn','var(--warn-wash)'],unpaid:['Fee unpaid','bad','var(--give-wash)'],part:['Part paid','warn','var(--warn-wash)'],over:['Overdue','bad','var(--give-wash)'],hold:['On hold','grey','var(--sunken)']};
+const fsb=k=>B(FS[k][0],FS[k][1]==='get'?'teal':FS[k][1]);
+const SEATS=Array.from({length:60},(_,i)=>{const p=(i*37)%11;return i>=42?'':p<6?'paid':p<8?'soon':p<9?'over':p<10?'part':'hold'});
+const seatGrid=(n,cols,sz)=>`<div style="display:grid;grid-template-columns:repeat(${cols},minmax(0,1fr));gap:6px">${SEATS.slice(0,n).map((s,i)=>`<span style="height:${sz}px;border-radius:8px;display:grid;place-items:center;font:700 12px var(--f);${s?`background:${FS[s][2]};color:var(--ink)`:'border:1.5px dashed var(--line-strong);color:var(--ink-3)'}${i===7?';outline:2px solid var(--teal);outline-offset:1px':''}">${i+1}</span>`).join('')}</div>`;
+const seatKey=`<div class="pills" style="gap:6px 12px">${['paid','soon','over','hold'].map(k=>`<span class="small" style="display:flex;gap:6px;align-items:center"><span style="width:12px;height:12px;border-radius:3px;background:${FS[k][2]}"></span>${FS[k][0]}</span>`).join('')}<span class="small" style="display:flex;gap:6px;align-items:center"><span style="width:12px;height:12px;border-radius:3px;border:1.5px dashed var(--line-strong)"></span>Empty</span></div>`;
+const LST=[['Pooja Shinde','Seat 8 · Morning · ends 2 Nov','soon','₹800'],['Rahul Gaikwad','Seat 14 · Full day · ended 25 Oct','over','₹1,200'],['Sneha More','Seat 3 · Evening · paid to 30 Nov','paid',''],['Akash Pawar','Seat 21 · Morning · ₹400 left','part','₹400'],['Kiran Jagtap','Seat 30 · Full day · on hold till 10 Nov','hold','']];
+M.pLHome=()=>aphone(LB,{head:'main',nav:'home',bs:'gap:12px',body:`<span class="ptitle">Home</span><div class="card pad" style="display:grid;gap:8px"><span style="display:flex;justify-content:space-between"><b style="font-weight:600">42 of 60 seats filled</b><span class="lnk small">Seats</span></span><div style="height:8px;border-radius:99px;background:var(--sunken)"><div style="width:70%;height:100%;border-radius:99px;background:var(--teal)"></div></div><div class="pills"><span class="chp sm">Morning 30/60</span><span class="chp sm">Evening 12/60</span><span class="chp sm">Full day 18</span></div></div>
+ <div class="card pad" style="display:grid;gap:8px"><b style="font-weight:600">Fees</b><div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px"><span style="display:grid"><small class="mute">Collected</small><b class="num get">₹38,400</b></span><span style="display:grid"><small class="mute">Due this week</small><b class="num warn" style="color:var(--warn)">₹6,400</b></span><span style="display:grid"><small class="mute">Overdue</small><b class="num give">₹3,600</b></span></div><span class="btn sm" style="justify-self:start">${I('bell','s')}Remind 5 overdue</span></div>
+ <div class="two" style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><span class="btn lg">${I('scan','s')}Counter</span><span class="btn cta lg">${I('plus','s')}Enrol student</span></div><b style="font-weight:600">Today</b><div class="lst">${LST.slice(0,3).map(([n,s,k,a])=>`<div class="li">${avl(n)}<span class="t"><b>${n}</b><small>${s}</small></span>${fsb(k)}</div>`).join('')}</div>`});
+M.dLHome=()=>adesk(LB,{active:'home',body:`<div class="phd"><div><h1>Home</h1><p>Thursday 30 Oct · ${LB.shop}</p></div><div class="acts"><span class="btn">${I('scan','s')}Counter</span><span class="btn cta">${I('plus','s')}Enrol student</span></div></div>
+ ${figs(fig('Seats filled','42 / 60','Morning 30 · Evening 12'),fig('Collected this month',rs(38400),'48 payments','get'),fig('Due this week',rs(6400),'8 students'),fig('Overdue',rs(3600),'5 students','give'))}
+ <div style="display:grid;grid-template-columns:minmax(0,1fr) 420px;gap:16px;align-items:start">${tbl(['Student','Seat · shift','Fee','Due',''],LST.map(([n,s,k,a])=>[`<span style="display:flex;gap:10px;align-items:center">${avl(n)}<b style="font-weight:600">${n}</b></span>`,s,fsb(k),a||'—',k==='paid'||k==='hold'?'':`<span class="lnk small">Collect</span>`]),{tools:tools('Search student','Fee: all')})}
+ <div class="card pad" style="display:grid;gap:10px"><span style="display:flex;justify-content:space-between"><b style="font-weight:600">Seats · Morning</b><span class="lnk small">Open seats</span></span>${seatGrid(60,10,30)}${seatKey}</div></div>`});
+M.pLSeats=()=>aphone(LB,{head:'back',title:'Seats',sub:'42 of 60 filled · 18 empty',nav:'seats',bs:'gap:12px',body:`<div class="pills"><span class="chp sm on">Morning</span><span class="chp sm">Evening</span><span class="chp sm">Full day</span></div>${seatGrid(60,6,40)}${seatKey}`,
+ overlay:sheet('Seat 8 · Morning',`<div class="li" style="display:flex;gap:12px;align-items:center">${avl('Pooja Shinde')}<span class="t" style="display:grid;flex:1"><b>Pooja Shinde</b><small class="mute">Paid to 2 Nov · ₹800 a month</small></span>${fsb('soon')}</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><span class="btn">Move seat</span><span class="btn">Open student</span></div>`,`<span class="btn soft lg">Remind</span><span class="btn cta lg">Collect ₹800</span>`,{h:'40%'})});
+M.dLSeats=()=>adesk(LB,{active:'seats',body:`<div class="phd"><div><h1>Seats</h1><p>Colour shows the fee. Dashed seats are empty for this shift.</p></div><div class="acts"><span class="btn">Edit seats</span></div></div>
+ <div class="pills"><span class="chp on">Morning · 30/60</span><span class="chp">Evening · 12/60</span><span class="chp">Full day · 18</span></div>
+ <div style="display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:16px;align-items:start"><div class="card pad" style="display:grid;gap:12px">${seatGrid(60,12,44)}${seatKey}</div>
+ <div class="card pad" style="display:grid;gap:10px"><b style="font-weight:600">Seat 8 · Morning</b><div style="display:flex;gap:10px;align-items:center">${avl('Pooja Shinde')}<span style="display:grid;flex:1"><b style="font-weight:600">Pooja Shinde</b><small class="mute">+91 98901 22311</small></span>${fsb('soon')}</div><div class="kv"><span>Paid to</span><b>2 Nov</b></div><div class="kv"><span>Monthly fee</span><b class="num">₹800</b></div><div class="kv"><span>Joined</span><span>4 Jun</span></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><span class="btn">Move seat</span><span class="btn cta">Collect ₹800</span></div></div></div>`});
+M.pLStudent=()=>aphone(LB,{head:'back',title:'Rahul Gaikwad',sub:'Seat 14 · Full day',body:`<div class="faded" style="display:grid;gap:12px"><div class="card pad" style="display:grid;gap:4px"><span style="display:flex;justify-content:space-between"><span class="small mute">Fee due</span>${fsb('over')}</span><b class="amt give" style="font-size:24px">₹1,200</b><small class="mute">Ended 25 Oct · 5 days late</small></div></div>`,
+ overlay:sheet('Collect fee',`${fld('Amount','1,200',{pre:'₹',right:1,cls:'focus'})}<div class="pills"><span class="chp sm on">1 month · ₹1,200</span><span class="chp sm">3 months · ₹3,400</span><span class="chp sm">Part</span></div>${segc('Cash','UPI',1)}<div class="card pad" style="background:var(--sunken);border:0;display:grid;gap:4px"><span class="small">Paid to <b>25 Nov</b> after this. Seat 14 stays Rahul's.</span></div>${swr('Share receipt on WhatsApp','With the library name only',true)}`,`<span class="btn cta lg w">Save ₹1,200 paid</span>`,{h:'74%',bs:'gap:14px'})});
+M.dLStudent=()=>adesk(LB,{active:'students',h:820,body:`<div class="phd"><div><h1>Rahul Gaikwad</h1><p>+91 97640 11820 · Seat 14 · Full day · since 2 Jan</p></div><div class="acts"><span class="btn">Hold</span><span class="btn">Move seat</span><span class="btn">${I('bell','s')}Remind</span><span class="btn cta">Collect fee</span></div></div>
+ <div style="display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:16px;align-items:start"><div style="display:grid;gap:14px">${figs(fig('Fee due',rs(1200),'Ended 25 Oct','give'),fig('Monthly fee',rs(1200),'Full day'),fig('Paid this year',rs(10800),'9 payments','get'))}
+ ${tbl(['Date','For','Mode','Amount'],[['26 Sep','26 Sep – 25 Oct','UPI','₹1,200'],['25 Aug','26 Aug – 25 Sep','Cash','₹1,200'],['27 Jul','26 Jul – 25 Aug','UPI','₹1,200']])}</div>
+ <div class="card pad" style="display:grid;gap:10px"><b style="font-weight:600">Attendance · October</b><div style="display:grid;grid-template-columns:repeat(10,1fr);gap:4px">${Array.from({length:30},(_,i)=>`<span style="height:18px;border-radius:4px;background:${i>24?'var(--sunken)':i%7===6?'var(--give-wash)':'var(--get-wash)'}"></span>`).join('')}</div><span class="small mute">22 days present · last in 24 Oct</span><div class="kv"><span>Messages sent</span><span>2 reminders</span></div></div></div>`});
+M.pLFees=()=>aphone(LB,{head:'back',title:'Fees',sub:'October',nav:'fees',bs:'gap:12px',body:`<div class="pills"><span class="chp sm">All</span><span class="chp sm on">Overdue · 5</span><span class="chp sm">Due soon · 8</span><span class="chp sm">Part paid · 2</span></div><div class="lst">${[['Rahul Gaikwad','Seat 14 · 5 days late','₹1,200'],['Nikhil Raut','Seat 22 · 3 days late','₹800'],['Swati Kale','Seat 5 · 2 days late','₹800'],['Omkar Patil','Seat 40 · 1 day late','₹400']].map(([n,s,a])=>`<div class="li"><span class="cbx on"></span><span class="t"><b>${n}</b><small>${s}</small></span><b class="num give">${a}</b></div>`).join('')}</div>`,
+ dock:`<div class="pdock"><span class="small mute">4 selected · ₹3,200</span><div class="two"><span class="btn soft lg">Collect</span><span class="btn cta lg">Remind 4</span></div></div>`});
+M.dLFees=()=>adesk(LB,{active:'fees',body:`<div class="phd"><div><h1>Fees</h1><p>October · ₹38,400 collected · ₹10,000 still to come</p></div><div class="acts"><span class="btn">${I('print','s')}Fee poster with QR</span><span class="btn cta">${I('bell','s')}Remind 5 overdue</span></div></div>
+ <div class="pills"><span class="chp">All · 42</span><span class="chp on">Overdue · 5</span><span class="chp">Due soon · 8</span><span class="chp">Part paid · 2</span><span class="chp">Paid · 27</span></div>
+ <div style="display:grid;grid-template-columns:minmax(0,1fr) 380px;gap:16px;align-items:start">${tbl(['Student','Seat','Late by','Due',''],[['Rahul Gaikwad','14 · Full day','5 days','₹1,200','<span class="lnk small">Collect</span>'],['Nikhil Raut','22 · Morning','3 days','₹800','<span class="lnk small">Collect</span>'],['Swati Kale','5 · Evening','2 days','₹800','<span class="lnk small">Collect</span>'],['Omkar Patil','40 · Morning','1 day','₹400','<span class="lnk small">Collect</span>'],['Akash Pawar','21 · Morning','Part paid','₹400','<span class="lnk small">Collect</span>']])}
+ <div style="display:grid;gap:8px"><span class="small mute">Preview · fee reminder</span><div style="background:#ECE5DD;border-radius:12px;padding:14px;display:grid"><div style="background:#DCF8C6;color:#111;border-radius:10px 10px 2px 10px;padding:10px 12px;font-size:14px;line-height:1.45;justify-self:end;max-width:92%">Hi Rahul, your fee of ₹1,200 for seat 14 at Gyan Study Library was due on 25 Oct. Pay by UPI: gyan@upi. Seat is kept for you till 2 Nov.<div style="font-size:11px;color:#667;text-align:right;margin-top:4px">9:12 am</div></div></div><span class="small mute">Opens WhatsApp one student at a time. Nothing is sent by the app.</span></div></div>`});
+
+/* Lending (contract frozen: Lent / Collected, "late", no EMI unless the plan says so) */
+const LN=APP.lending;
+const STOPS=[['Sunil Mane','Tea stall · Loan L-0112',500,1000,'late'],['Kavita Gaikwad','Vegetables · L-0108',300,0,'due'],['Imran Shaikh','Tailor · L-0121',500,0,'done'],['Rekha Jadhav','Flowers · L-0097',200,400,'late'],['Ganesh Pawar','Pan shop · L-0130',400,0,'not']];
+const stopRow=([n,s,a,l,st])=>`<div class="li" style="align-items:flex-start;flex-wrap:wrap;gap:10px">${avl(n)}<span class="t"><b>${n}</b><small>${s}</small><small class="num">${rs(a)} today${l?` · <span class="give">${rs(l)} late</span>`:''}</small></span>${st==='done'?B('Collected '+rs(a),'teal'):st==='not'?B('Not paid','bad'):`<span style="display:flex;gap:6px;flex:0 0 100%;padding-left:44px"><span class="btn sm" style="flex:1">Not paid</span><span class="btn cta sm" style="flex:1">Collect</span></span>`}</div>`;
+const roundCard=`<div class="card pad" style="display:grid;gap:8px"><span style="display:flex;justify-content:space-between;align-items:center"><b style="font-weight:600">Route · Market road</b><span class="btn sm">Change ${I('cd','s')}</span></span><b class="num" style="font-size:20px;font-weight:800">₹8,400 <span class="mute" style="font-weight:500;font-size:14px">collected of ₹12,000 due</span></b><div style="height:8px;border-radius:99px;background:var(--sunken)"><div style="width:70%;height:100%;border-radius:99px;background:var(--get)"></div></div><span class="small mute">14 of 22 stops done · <span class="give">₹3,600 short</span></span></div>`;
+M.pNToday=()=>aphone(LN,{head:'main',nav:'today',bs:'gap:12px',body:`<span class="ptitle">Today</span>${roundCard}<div class="pills"><span class="chp sm on">To visit · 8</span><span class="chp sm">Done · 14</span><span class="chp sm">Not paid · 2</span></div><div class="lst">${STOPS.map(stopRow).join('')}</div>`});
+M.dNToday=()=>adesk(LN,{active:'today',body:`<div class="phd"><div><h1>Today</h1><p>Thursday 30 Oct · collector: Owner</p></div><div class="acts"><span class="btn">Route: Market road ${I('cd','s')}</span><span class="btn cta">${I('plus','s')}New loan</span></div></div>
+ ${figs(fig('Collected',rs(8400),'14 of 22 stops','get'),fig('Still due today',rs(3600),'8 stops'),fig('Late',rs(6200),'6 borrowers','give'),fig('Lent this month',rs(150000),'5 loans'))}
+ ${tbl(['Borrower','Loan','Today','Late','Status',''],STOPS.map(([n,s,a,l,st])=>[`<span style="display:flex;gap:10px;align-items:center">${avl(n)}<span style="display:grid"><b style="font-weight:600">${n}</b><small class="mute">${s.split(' · ')[0]}</small></span></span>`,s.split(' · ')[1].replace('Loan ',''),rs(a),l?`<span class="give">${rs(l)}</span>`:'—',st==='done'?B('Collected','teal'):st==='not'?B('Not paid','bad'):st==='late'?B('Late','bad'):B('Due today'),st==='done'||st==='not'?'':`<span style="display:flex;gap:6px;justify-content:end"><span class="btn sm">Not paid</span><span class="btn cta sm">Collect</span></span>`]),{tools:tools('Search borrower','Status: to visit')})}`});
+M.pNCollect=()=>aphone(LN,{head:'main',nav:'today',body:`<div class="faded" style="display:grid;gap:12px">${roundCard}</div>`,
+ overlay:sheet('Collect from Sunil Mane',`${fld('Amount','1,500',{pre:'₹',right:1,cls:'focus'})}<div class="pills"><span class="chp sm">Today ₹500</span><span class="chp sm on">Today + late ₹1,500</span><span class="chp sm">Other</span></div>${segc('Cash','UPI',0)}<div class="card pad" style="background:var(--sunken);border:0;display:grid;gap:4px"><span class="small">After this: <b>nothing late</b> · ₹14,500 left on L-0112 · 29 days to go</span></div>${swr('Share receipt on WhatsApp','From Shiv Finance',true)}`,`<span class="btn cta lg w">Save ₹1,500 collected</span>`,{h:'72%',bs:'gap:14px'})});
+const SCHED=[['26 Oct','₹500','Collected','teal'],['27 Oct','₹500','Late','bad'],['28 Oct','₹500','Late','bad'],['29 Oct','₹500','Collected','teal'],['30 Oct','₹500','Due today',''],['31 Oct','₹500','Upcoming','grey']];
+M.dNLoan=()=>adesk(LN,{active:'loans',h:820,body:`<div class="phd"><div><h1>L-0112 · Sunil Mane</h1><p>Tea stall · Market road · lent 1 Oct</p></div><div class="acts"><span class="btn">Papers</span><span class="btn">${I('bell','s')}Remind</span><span class="btn">Not paid</span><span class="btn cta">Collect</span></div></div>
+ ${figs(fig('Lent',rs(20000),'1 Oct · daily plan'),fig('Collected',rs(4500),'9 of 40 days','get'),fig('Late',rs(1000),'2 days','give'),fig('Left to collect',rs(15500),'Ends 9 Nov'))}
+ <div style="display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:16px;align-items:start">${tbl(['Date','Due','Status'],SCHED.map(([d,a,s,k])=>[d,a,B(s,k)]),{tools:'<b style="font-weight:600;flex:1">Schedule</b><span class="pills"><span class="chp sm on">Around today</span><span class="chp sm">All 40 days</span></span>'})}
+ <div class="card pad" style="display:grid;gap:8px"><b style="font-weight:600">Collections</b>${[['29 Oct','₹500','Cash · Owner'],['26 Oct','₹500','Cash · Owner'],['25 Oct','₹1,000','UPI']].map(([d,a,m])=>`<div class="kv"><span>${d} · <span class="mute">${m}</span></span><b class="num get">${a}</b></div>`).join('')}<span class="lnk small">All collections</span></div></div>`});
+M.pNNew=()=>aphone(LN,{head:'back',close:1,title:'New loan',sub:'Kavita Gaikwad',bs:'gap:14px',body:`${fld('Amount lent','20,000',{pre:'₹',right:1})}${sel('Plan','Daily · 40 days')}<div class="row2">${fld('Each day','500',{pre:'₹',right:1})}${fld('Starts','1 Nov')}</div>${sel('Route','Market road')}<div class="card pad" style="display:grid;gap:6px"><b style="font-weight:600">Preview</b><div class="kv"><span>To collect</span><b class="num">₹20,000</b></div><div class="kv"><span>Charges taken at start</span><span class="num">₹0</span></div><div class="kv"><span>Last day</span><span>10 Dec</span></div><span class="small mute">40 collections of ₹500. Sundays skipped.</span></div>`,
+ dock:`<div class="pdock"><span class="btn cta lg w">Save loan</span></div>`});
+M.dNNew=()=>adesk(LN,{active:'loans',body:`<div class="phd"><div><h1>New loan</h1><p>The schedule is shown before you save</p></div></div>
+ <div style="display:grid;grid-template-columns:420px minmax(0,1fr);gap:16px;align-items:start"><div class="card pad" style="display:grid;gap:14px">${cbox('Kavita Gaikwad','+91 90224 71830','No loan running')}${fld('Amount lent','20,000',{pre:'₹',right:1})}${sel('Plan','Daily · 40 days')}<div class="row2">${fld('Each day','500',{pre:'₹',right:1})}${fld('Starts','1 Nov')}</div>${sel('Route','Market road')}</div>
+ <div style="display:grid;gap:10px">${figs(fig('To collect',rs(20000),'40 collections'),fig('Each day',rs(500),'Sundays skipped'),fig('Last day','10 Dec','Thursday'))}${tbl(['#','Date','Due'],[['1','1 Nov','₹500'],['2','3 Nov','₹500'],['3','4 Nov','₹500'],['…','…','…'],['40','10 Dec','₹500']])}</div></div>`,dock:`<div class="ddock"><span class="tot"><small>Lent</small><b class="num">₹20,000</b></span><span class="btn soft lg">Cancel</span><span class="btn cta lg">Save loan</span></div>`});
+M.pNMsg=()=>aphone(LN,{head:'back',title:'Messages',sub:'Reminders to borrowers',nav:'msg',bs:'gap:12px',body:`<div class="pills"><span class="chp sm on">Late · 6</span><span class="chp sm">Due today · 8</span><span class="chp sm">Due tomorrow · 22</span></div><div class="lst">${[['Sunil Mane','2 days late','₹1,000'],['Rekha Jadhav','2 days late','₹400'],['Prakash Kamble','4 days late','₹1,600']].map(([n,s,a])=>prow(n,s,a,'give','Late')).join('')}</div><div style="background:#ECE5DD;border-radius:12px;padding:12px;display:grid"><div style="background:#DCF8C6;color:#111;border-radius:10px 10px 2px 10px;padding:10px 12px;font-size:14px;line-height:1.45;justify-self:end;max-width:92%">Namaste Sunil ji, ₹1,000 from 27–28 Oct is still to be paid on loan L-0112. I will come by tomorrow morning. – Shiv Finance<div style="font-size:11px;color:#667;text-align:right;margin-top:4px">7:05 pm</div></div></div>`,
+ dock:`<div class="pdock"><div class="two"><span class="btn soft lg">Edit text</span><span class="btn cta lg">WhatsApp 1 of 6</span></div></div>`});
+
+const IRES=[
+ {k:'khata',n:'Money Book',who:'A person keeping their own udhaar: friends, family, the milkman. Not a shop.',
+  comp:'Khatabook, OkCredit, paper diary',
+  how:'Khatabook and OkCredit start from the same two buttons (You gave / You got), a running balance per person and an SMS or WhatsApp reminder. Both are built for shops first, with bills, staff and loans layered on top.',
+  gap:'For a personal book they are crowded: GST, invoices, inventory and loan offers sit next to a ₹200 entry for a sister. Reminders read like a business sent them. Reviews ask for a simple, private book.',
+  edge:['Only people, two buttons and a report. No shop words anywhere.','The reminder is in your own name and opens your WhatsApp; the app sends nothing.','"To get / To give" in words beside every figure, never colour alone.']},
+ {k:'library',n:'Library',who:'Study libraries and reading halls renting seats by shift to students preparing for exams.',
+  comp:'LibVertex, Libron, TrackMyLibrary, Go Library, 24library, WhatsApp groups and a register',
+  how:'Seat map by shift, monthly fee per student, fee due list and WhatsApp reminders are common. Some add QR attendance and a student app.',
+  gap:'Many run on WhatsApp and a register: forgotten renewals, "I already paid" disputes and empty seats nobody notices. Apps often need a student app or paid SMS, and seat and fee views are separate screens.',
+  edge:['The seat map is coloured by fee, so an empty or unpaid seat shows at a glance.','Collect fee from the seat, the student or the Fees list, with "paid to" shown before saving.','Receipt shared on WhatsApp with the library name, which settles "already paid".']},
+ {k:'lending',n:'Lending',who:'Small daily and weekly lenders who go door to door on a route.',
+  comp:'Daily-collection apps (Daily Finance, DailyKhata), pigmy and loan collection software, collection-agent apps',
+  how:'Collector apps list the day\'s stops with amounts, mark paid and print or share a receipt. Bigger LOS tools add KYC, credit checks and agent tracking.',
+  gap:'LOS tools are heavy and priced for NBFCs. Small apps are generic: they show "EMI" and "arrears", and the day\'s progress (how much is still short) is not on the first screen.',
+  edge:['Today is the round: collected, still due and short, in one card.','Collect or Not paid in one tap per stop, with today + late offered as an amount.','Plain words: Lent, Collected, Late. The schedule is shown before a loan is saved.']}];
+const IST=[['khata','Money Book',[['People list with To get / To give','have'],['Gave money / Got money entry','have'],['Person page and report','have'],['WhatsApp / SMS reminder in your name','improve'],['Report as PDF and print','improve'],['Old dues view','have']]],
+ ['library','Library',[['Home: seats and fees','have'],['Seat map coloured by fee','improve'],['Student page, collect, hold, move seat','have'],['Fees board with bulk remind','improve'],['Receipt on WhatsApp','improve'],['Waitlist for full shifts','later']]],
+ ['lending','Lending',[['Today: round, Collect, Not paid','have'],['Loan page with schedule','have'],['New loan with preview schedule','have'],['Reminders: late, due today, due tomorrow','have'],['Receipt on WhatsApp','improve'],['Collector location trail','later']]]];
+const ISTL={have:['Exists on dev','new'],improve:['Improve (UI only)','fb'],later:['Later · needs your OK','dec']};
+function iresHtml(){
+  return `<div style="display:grid;gap:14px">${IRES.map(r=>{const st=IST.find(x=>x[0]===r.k)[2];return `<article class="spec" style="max-width:none;gap:12px"><div style="display:grid"><h4 style="font-size:1.05rem">${r.n}</h4><span class="small" style="font-size:.8rem">${r.who} Compared with: ${r.comp}.</span></div>
+  <div class="tblwrap" style="border-radius:10px"><table style="min-width:0"><thead><tr><th>What it needs</th><th style="width:170px">Status</th></tr></thead><tbody>${st.map(([a,s])=>`<tr><td>${a}</td><td><span class="tag ${ISTL[s][1]}">${ISTL[s][0]}</span></td></tr>`).join('')}</tbody></table></div>
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,260px),1fr));gap:12px"><div><b>How competitors do it</b><p>${r.how}</p></div><div><b>Where they fall short</b><p>${r.gap}</p></div><div><b>Where we do better</b><ul>${r.edge.map(e=>`<li>${e}</li>`).join('')}</ul></div></div></article>`}).join('')}</div>`;
+}
+
+/* I12–I13 start flow: Udhaar first, primary app, primary business; Shop is called Business */
+const APPS4=[['khata','Money Book','Money you gave and got, person by person','cust',1],['biz','Billing & Stock','Bills, stock, customers, suppliers, GST','bill',0],['library','Members & Fees','Seats, students and fees','apps',0],['lending','Loans & Collections','Loans and daily collection','cash',0]];
+const appTile=([k,n,s,i,on],o={})=>`<div class="li"${o.sel===k?' style="background:var(--teal-wash)"':''}><span style="width:40px;height:40px;border-radius:10px;background:var(--teal-wash);display:grid;place-items:center;flex:0 0 auto;color:var(--teal)">${I(i)}</span><span class="t"><b>${n}</b><small>${s}</small></span>${o.mode==='primary'?(o.prim===k?B('Primary','teal'):`<span class="lnk small">Set primary</span>`):on||o.added?.includes(k)?`<span class="badge teal">On</span>`:`<span class="btn sm">Add</span>`}</div>`;
+M.pStart=()=>aphone(KH,{head:'main',nav:'people',bs:'gap:14px',body:`<span class="ptitle">People</span><div class="card pad" style="display:grid;gap:10px;justify-items:center;text-align:center;padding:28px 18px"><span style="width:56px;height:56px;border-radius:16px;background:var(--teal-wash);display:grid;place-items:center;color:var(--teal)">${I('cust')}</span><b style="font-size:18px">Your Money Book is ready</b><span class="small mute">Add the first person you gave money to, or got money from. It takes 10 seconds.</span><span class="btn cta lg w">${I('plus','s')}Add person</span></div>
+ <div class="card pad" style="display:grid;gap:8px;${NEWO}"><b style="font-weight:600">Run a shop, library or lending?</b><span class="small mute">Add Billing & Stock, Members & Fees or Loans & Collections from More. Each one opens as its own app.</span><span class="btn sm" style="justify-self:start">${I('apps','s')}See apps</span></div>`});
+M.dStart=()=>adesk(KH,{active:'people',body:`<div class="phd"><div><h1>People</h1><p>Signed up just now · +91 98220 41178</p></div><div class="acts"><span class="btn cta">${I('plus','s')}Add person</span></div></div>
+ <div style="display:grid;grid-template-columns:minmax(0,1fr) 380px;gap:16px;align-items:start"><div class="card pad" style="display:grid;gap:10px;justify-items:center;text-align:center;padding:48px 24px"><span style="width:64px;height:64px;border-radius:18px;background:var(--teal-wash);display:grid;place-items:center;color:var(--teal)">${I('cust')}</span><b style="font-size:20px">Your Money Book is ready</b><span class="small mute" style="max-width:380px">Add the first person you gave money to, or got money from. Name is enough; mobile is optional.</span><span class="btn cta lg">${I('plus','s')}Add person</span></div>
+ <div class="card pad" style="display:grid;gap:10px;${NEWO}"><b style="font-weight:600">More apps</b><span class="small mute">Add one when you need it. The one you mark primary opens when you log in.</span><div class="lst">${APPS4.map(a=>appTile(a)).join('')}</div></div></div>`});
+M.pApps=()=>aphone(KH,{head:'back',title:'Apps',sub:'Pick what opens when you log in',bs:'gap:12px',body:`<b style="font-weight:600">Your apps</b><div class="lst">${APPS4.map(a=>appTile(a,{mode:'primary',prim:'biz'})).join('')}</div>
+ <b style="font-weight:600">Your businesses</b><div class="lst">${[['Shree Ganesh Kirana','Kirana',1],['Sai Medical Store','Medical',0]].map(([n,k,p])=>`<div class="li"><span class="t"><b>${n}</b><small>${k}</small></span>${p?B('Primary','teal'):'<span class="lnk small">Set primary</span>'}</div>`).join('')}</div>
+ <div class="card pad" style="background:var(--sunken);border:0"><span class="small">On login: <b>Billing & Stock → Shree Ganesh Kirana</b> opens. Money Book, Members & Fees and Loans & Collections stay one tap away in Apps.</span></div>`});
+M.dApps=()=>adesk(KH,{active:'set',body:`<div class="phd"><div><h1>Apps</h1><p>Each app keeps its own people and money. Nothing is shared between them except a person's name and mobile.</p></div></div>
+ <div style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px;align-items:start"><div style="display:grid;gap:10px"><b style="font-weight:600">Your apps · primary opens on login</b><div class="lst">${APPS4.map(a=>appTile(a,{mode:'primary',prim:'biz'})).join('')}</div><span class="btn" style="justify-self:start">${I('plus','s')}Add Library or Lending</span></div>
+ <div style="display:grid;gap:10px"><b style="font-weight:600">Your businesses · primary opens in Business</b><div class="lst">${[['Shree Ganesh Kirana','Kirana · GSTIN 27ABCDE1234F1Z5',1],['Sai Medical Store','Medical · GSTIN 27FGHIJ5678K1Z2',0],['Shree Om Jewellers','Jewellery · no GSTIN yet',0]].map(([n,k,p])=>`<div class="li"><span class="t"><b>${n}</b><small>${k}</small></span>${p?B('Primary','teal'):'<span class="lnk small">Set primary</span>'}</div>`).join('')}</div><span class="btn" style="justify-self:start">${I('plus','s')}Add another business</span>
+ <div class="card pad" style="display:grid;gap:6px"><b style="font-weight:600">What opens on login</b><div class="kv"><span>App</span><b>Billing & Stock</b></div><div class="kv"><span>Business</span><b>Shree Ganesh Kirana</b></div><div class="kv"><span>If the primary is removed</span><span>Money Book</span></div></div></div></div>`});
+
+let allKinds=false;
+const KMOD={};
+function applyKind(t){
+  document.querySelectorAll('[data-kind]').forEach(e=>{e.hidden=!allKinds&&e.dataset.kind!==t.tile});
+  const ids=k=>[...document.querySelectorAll('section[data-kind="'+k+'"]')].map(e=>e.id.toUpperCase());
+  const g=ids(t.tile).filter(x=>x[0]==='G'),d=ids(t.tile).filter(x=>x[0]==='D');
+  document.querySelectorAll('[data-kindnote]').forEach(e=>{const w=e.dataset.kindnote;
+    e.innerHTML=allKinds?'Showing every shop kind.':w==='r'?`Showing the research for <b>${t.name}</b>. Pick another kind in Business type at the top.`:w==='g'?(g.length?`Showing <b>${t.name}</b>'s new modules: ${g.join(', ')}.`:`<b>${t.name}</b> has no module of its own here.`)+' Pick another kind at the top.':(d.length?`Showing the screen only <b>${t.name}</b> has: ${d.join(', ')}.`:`<b>${t.name}</b> has no screen of its own in D7–D11; its fields are in D1–D6 above, and its new modules are in Part G.`)});
+  document.querySelectorAll('.allk').forEach(b=>b.textContent=allKinds?'Show only '+t.short:'Show all kinds');
+  document.querySelectorAll('.toc a').forEach(a=>{const el=document.querySelector(a.getAttribute('href'));if(el)a.hidden=!!el.hidden});
+  fitAll();
+}
+document.addEventListener('click',e=>{if(e.target.closest('.allk')){allKinds=!allKinds;applyKind(cur)}});
 let cur=BT.kirana;
 function fitAll(){
   document.querySelectorAll('.fit').forEach(f=>{
@@ -1545,11 +2259,14 @@ function render(){
     f.innerHTML=`<div class="scale">${fn?fn(t):'<div class="ui" style="padding:20px">Missing: '+f.dataset.mock+'</div>'}</div>`;
   });
   document.querySelectorAll('[data-tname]').forEach(e=>e.textContent=t.name);
+  applyKind(t);
   document.querySelectorAll('[data-note]').forEach(e=>e.textContent=t[e.dataset.note]);
   fitAll();
 }
 document.querySelectorAll('img[data-shot]').forEach(i=>i.src=SHOT[i.dataset.shot]);
 document.getElementById('wordtable').innerHTML=wordTable();
+document.getElementById('research').innerHTML=researchHtml();document.getElementById('iresearch').innerHTML=iresHtml();
+document.getElementById('kindmatrix').innerHTML=kindMatrixHtml();
 document.getElementById('covtable').innerHTML=`<table><thead><tr><th>Screen</th><th>Fixes</th><th>New for business types and scanning</th></tr></thead><tbody>${COV.map(r=>`<tr><th>${r[0]}</th><td>${r[1]}</td><td>${r[2]}</td></tr>`).join('')}</tbody></table>`;
 const bt=document.getElementById('bt');
 try{const v=localStorage.getItem('yk-bt');if(v&&BT[v]){bt.value=v;cur=BT[v]}}catch(e){}
@@ -1566,4 +2283,5 @@ render();
 if(window.ResizeObserver){new ResizeObserver(()=>fitAll()).observe(document.querySelector('main'))}else{addEventListener('resize',fitAll)}
 document.fonts&&document.fonts.ready.then(fitAll);
 </script>
+
 </body></html>
