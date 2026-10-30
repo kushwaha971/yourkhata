@@ -16,11 +16,13 @@ import { cn } from 'src/utils/cn';
  * lens is one item, not ten); a second of the same item after that raises its
  * quantity, as the bill does for the USB scanner.
  *
- * The reader is the browser's own `BarcodeDetector` (ADR-025). Where there is
- * none (iPhones today), or the camera is refused or missing, the sheet shows
- * the design's "Camera is blocked" view with a Barcode field and Add: the bill
- * keeps working without the camera. A library for iPhones is the owner's call
- * (ADR-064, proposed).
+ * The reader is the browser's own `BarcodeDetector` (ADR-025) where there is
+ * one (Chrome on Android); elsewhere (iPhones) it is the `barcode-detector`
+ * ponyfill over zxing-wasm, approved by the owner on 30 Oct 2026 (ADR-064),
+ * imported only when that phone opens the camera and its .wasm served from our
+ * own `/vendor` (scripts/copy-zxing-wasm.mjs), never a CDN. If the camera is
+ * refused or missing, the sheet shows the design's "Camera is blocked" view
+ * with a Barcode field and Add: the bill keeps working without the camera.
  */
 export interface UbScanSheetProps {
   readonly open: boolean;
@@ -53,6 +55,20 @@ interface Detector {
 }
 type DetectorCtor = new (options: { formats: string[] }) => Detector;
 
+/** ADR-064: the version the .wasm in /vendor carries (scripts/copy-zxing-wasm.mjs). */
+const loadDetector = async (): Promise<DetectorCtor> => {
+  const native = (globalThis as unknown as { BarcodeDetector?: DetectorCtor }).BarcodeDetector;
+  if (native) return native;
+  const ponyfill = await import('barcode-detector/ponyfill');
+  ponyfill.prepareZXingModule({
+    overrides: {
+      locateFile: (path: string, prefix: string) =>
+        path.endsWith('.wasm') ? `/vendor/zxing_reader-${ponyfill.ZXING_WASM_VERSION}.wasm` : prefix + path,
+    },
+  });
+  return ponyfill.BarcodeDetector as unknown as DetectorCtor;
+};
+
 export function UbScanSheet({
   open,
   onClose,
@@ -67,10 +83,7 @@ export function UbScanSheet({
   const last = useRef<{ code: string; at: number }>({ code: '', at: 0 });
   const [denied, setDenied] = useState(false);
   // No reader in this browser (iPhones today) or no camera API: the typed path.
-  const supported =
-    typeof window !== 'undefined' &&
-    Boolean((globalThis as unknown as { BarcodeDetector?: DetectorCtor }).BarcodeDetector) &&
-    Boolean(navigator.mediaDevices?.getUserMedia);
+  const supported = typeof window !== 'undefined' && Boolean(navigator.mediaDevices?.getUserMedia);
   const blocked = !supported || denied;
   const [torchOn, setTorchOn] = useState(false);
   const [typed, setTyped] = useState('');
@@ -83,9 +96,13 @@ export function UbScanSheet({
     if (!open) return undefined;
     let stopped = false;
     let timer: number | undefined;
-    const Ctor = (globalThis as unknown as { BarcodeDetector?: DetectorCtor }).BarcodeDetector;
-    if (!supported || !Ctor) return undefined;
-    const detector = new Ctor({ formats: FORMATS });
+    if (!supported) return undefined;
+    let detector: Detector | null = null;
+    void loadDetector()
+      .then((Ctor) => {
+        detector = new Ctor({ formats: FORMATS });
+      })
+      .catch(() => setDenied(true));
     navigator.mediaDevices
       .getUserMedia({ video: { facingMode: 'environment' }, audio: false })
       .then((media) => {
@@ -100,6 +117,10 @@ export function UbScanSheet({
         }
         const tick = () => {
           if (stopped || !video.current) return;
+          if (!detector) {
+            timer = window.setTimeout(tick, 150);
+            return;
+          }
           void detector
             .detect(video.current)
             .then((found) => {

@@ -3,6 +3,17 @@ import userEvent from '@testing-library/user-event';
 
 import { REPEAT_MS, UbScanSheet } from './UbScanSheet';
 
+// ADR-064: phones without a built-in reader use the ponyfill; its .wasm is
+// ours, under /vendor, never a CDN.
+const prepare = jest.fn();
+jest.mock('barcode-detector/ponyfill', () => ({
+  ZXING_WASM_VERSION: '3.1.3',
+  prepareZXingModule: (options: unknown) => prepare(options),
+  BarcodeDetector: class {
+    detect = jest.fn(async () => [{ rawValue: '8901030875021' }]);
+  },
+}));
+
 /**
  * C1 / C2 — the phone camera that reads barcodes. Prevents: one code held in
  * front of the lens adding ten lines; a refused or missing camera leaving the
@@ -67,8 +78,23 @@ it('reads a code once while it is held, again after the repeat window, and stops
   expect(stop).toHaveBeenCalled();
 });
 
-it('without a reader, shows the blocked view and adds a typed code', async () => {
+it('without a built-in reader, reads with the ponyfill and serves its .wasm from /vendor', async () => {
   delete (globalThis as unknown as { BarcodeDetector?: unknown }).BarcodeDetector;
+  const onCode = jest.fn();
+  render(<UbScanSheet open onClose={jest.fn()} onCode={onCode} title="t" hint="h" labels={labels} />);
+  for (let i = 0; i < 4; i += 1) {
+    // eslint-disable-next-line no-await-in-loop
+    await act(async () => {
+      jest.advanceTimersByTime(160);
+    });
+  }
+  expect(onCode).toHaveBeenCalledWith('8901030875021');
+  const { overrides } = prepare.mock.calls[0][0] as { overrides: { locateFile: (p: string, x: string) => string } };
+  expect(overrides.locateFile('zxing_reader.wasm', 'https://cdn.example/')).toBe('/vendor/zxing_reader-3.1.3.wasm');
+});
+
+it('without a camera, shows the blocked view and adds a typed code', async () => {
+  Object.defineProperty(navigator, 'mediaDevices', { configurable: true, value: undefined });
   jest.useRealTimers();
   const onCode = jest.fn();
   render(<UbScanSheet open onClose={jest.fn()} onCode={onCode} title="t" hint="h" labels={labels} />);

@@ -1406,3 +1406,16 @@ Any ADR change that contradicts canon §0.4 must amend canon §0.4 in the same c
 **Consequences.** One small additive table/migration; no new dependency or infrastructure. Claims retain no form or financial snapshot. Tombstones grow with discarded keyed drafts and require an explicit future retention policy, not the short-lived posting-cache purge. Unowned legacy device copies are not attributed to another user. The full contract and documented limits are in `docs/shop-ims-readiness/09-draft-recovery-contract.md`.
 
 **Addendum, 16 October 2026 — purchases join, one owner per mechanism.** Purchase bills and purchase orders now use the same protocol. The claim/recover/tombstone mechanics moved to one owner, `apps.common.draft_creation` (plus the abstract `apps.common.models.DraftCreationBase`); sales and purchases each keep their own claim table with a foreign key to their own document (`sales_draft_creation`, new `purchases_draft_creation`, migration `purchases.0005_durable_draft_creation`), so the tombstone invariant stays enforced by the database. The purchase family is the document kind, so a bill key never recovers an order. On the client, `src/hooks/useDraftSaveQueue.ts` (one save lane, scope/teardown) and `src/utils/draftCreation.ts` (the saved/adopt/conflict/posted decision, the submitted-snapshot autosave rule) are shared; each editor supplies a typed adapter (`salesDraftReply`, `purchaseDraftReply`). No purchase financial, payable, stock-receipt, duplicate-supplier-invoice or recording rule changed. Unlike sales, the purchase editor keeps no device copy, so its key lives in memory only: a stored "new" key could let a second tab adopt the first tab's draft. A reload after a lost reply therefore starts a fresh bill and the first draft stays visible under Drafts.
+
+
+## ADR-064 — Camera barcode reading falls back to zxing-wasm, self-hosted (amends ADR-025, ADR-021)
+
+**Date:** 30 October 2026. **Status:** approved by the owner the same day ("Add that library"); implemented in C1.
+
+**Context.** ADR-025 chose the browser's own `BarcodeDetector` for camera scanning. Chrome on Android has it; iOS Safari does not, so an iPhone could not scan with its camera at all (design §C1 `pScan`, plan 13 §2.2).
+
+**Decision.** Use `barcode-detector@3.2.2` (its ponyfill, MIT) over `zxing-wasm@3.1.3` only where the native reader is missing. It is imported dynamically when the camera sheet opens, so no route's initial bundle grows. Its `.wasm` (≈1.1 MB) is copied from `node_modules` into `public/vendor/zxing_reader-<version>.wasm` by `scripts/copy-zxing-wasm.mjs` (the `prebuild` step) and located there with `prepareZXingModule`; it is never fetched from a CDN. Versions are pinned exactly.
+
+**Alternatives.** `@zxing/browser` (pure JS, larger, maintenance mode); typing the code on iPhones (the design's blocked path, kept as the fallback when the camera is refused).
+
+**Consequences.** One runtime dependency pair, loaded only on phones without a native reader at the moment they scan. Upgrading changes the wasm file name, so caches cannot serve a stale binary. `UbScanSheet.test.tsx` asserts the native path, the ponyfill path and the `/vendor` location.
