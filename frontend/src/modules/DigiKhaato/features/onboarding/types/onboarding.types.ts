@@ -83,6 +83,8 @@ export interface TenantApiPayload {
   readonly id: string;
   readonly name: string;
   readonly business_type: BusinessType;
+  /** R-DEC-64 — `shop.wholesale`; absent from an older server. */
+  readonly sells_wholesale?: boolean;
   readonly state_code: string;
   readonly gst_type: GstType;
   readonly gstin: string | null;
@@ -109,6 +111,8 @@ export interface OnboardingTenant {
   readonly id: string;
   readonly name: string;
   readonly businessType: BusinessType;
+  /** R-DEC-64 — the kind is sold wholesale (`shop.wholesale`). */
+  readonly sellsWholesale: boolean;
   readonly stateCode: string;
   readonly gstType: GstType;
   readonly gstin: string | null;

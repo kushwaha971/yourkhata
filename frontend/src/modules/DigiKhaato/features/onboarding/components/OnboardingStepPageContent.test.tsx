@@ -735,6 +735,32 @@ describe('the wizard — a reload mid-way (NEW-1)', () => {
     expect(push).toHaveBeenCalledWith('/onboarding/step/2');
   });
 
+  it('re-lights Wholesale and its kind after a reload (R-DEC-64)', async () => {
+    /** Prevents: a wholesaler who reloads mid-setup sees a plain Kirana, and
+     * Continue then saves wholesale off without them touching it. */
+    const user = userEvent.setup();
+    await reloadWithSession(ownerTenant(1));
+    const saved = tenant({ sellsWholesale: true });
+    onboardingService.fetchCurrentTenant.mockResolvedValue(saved);
+    onboardingService.updateBusinessStep.mockResolvedValue({ tenant: saved, warnings: [] });
+
+    renderWithProviders(<OnboardingStepPageContent step={1} />);
+
+    await waitFor(() =>
+      expect(screen.getByRole('radiogroup', { name: 'Wholesale of what?' })).toBeInTheDocument()
+    );
+    expect(screen.getAllByRole('radio', { name: /Wholesale/ })[0]).toBeChecked();
+    const what = screen.getByRole('radiogroup', { name: 'Wholesale of what?' });
+    expect(within(what).getByRole('radio', { name: /Kirana/ })).toBeChecked();
+
+    await user.click(screen.getByRole('button', { name: 'Continue' }));
+    await waitFor(() => expect(onboardingService.updateBusinessStep).toHaveBeenCalledTimes(1));
+    expect(onboardingService.updateBusinessStep.mock.calls[0][0]).toMatchObject({
+      businessType: 'kirana',
+      sellsWholesale: true,
+    });
+  });
+
   it('keeps a reload on step 3 on step 3, instead of throwing the merchant back to step 1', async () => {
     await reloadWithSession(ownerTenant(2));
     onboardingService.fetchCurrentTenant.mockResolvedValue(tenant({ onboardingStep: 2 }));

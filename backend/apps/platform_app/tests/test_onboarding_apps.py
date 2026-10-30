@@ -301,6 +301,8 @@ def test_wholesale_of_what_is_saved_with_the_business(
     owner = _scoped(member.user, created)
     values = owner.get(reverse("v1:tenant-settings")).json()["data"]["values"]
     assert values["shop.wholesale"] == {"value": True}
+    # The wizard reads it back from the tenant to re-light Wholesale on a reload.
+    assert owner.get(reverse(CURRENT_URL)).json()["data"]["sells_wholesale"] is True
 
     changed = owner.patch(reverse(CURRENT_URL), {"sells_wholesale": False}, format="json")
     assert changed.status_code == 200, changed.json()

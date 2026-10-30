@@ -63,6 +63,7 @@ const toTenant = (row: TenantApiPayload): OnboardingTenant => ({
   id: row.id,
   name: row.name,
   businessType: row.business_type,
+  sellsWholesale: row.sells_wholesale ?? false,
   stateCode: row.state_code,
   gstType: row.gst_type,
   gstin: row.gstin,

@@ -23,6 +23,7 @@ const tenant = (over: Partial<OnboardingTenant> = {}): OnboardingTenant => ({
   id: 't1',
   name: 'Sharma General Store',
   businessType: 'retail',
+  sellsWholesale: false,
   stateCode: '27',
   gstType: 'unregistered',
   gstin: null,

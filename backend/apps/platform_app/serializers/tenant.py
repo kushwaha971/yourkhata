@@ -283,6 +283,17 @@ def masked_bank_details(bank: dict | None) -> dict:
     return bank
 
 
+def sells_wholesale(tenant: Any) -> bool:
+    """`shop.wholesale`, or the type's default before setup seeds the row."""
+    from apps.platform_app.models import TenantSetting
+    from apps.platform_app.services.presets import WHOLESALE_TYPES
+
+    row = TenantSetting.objects.filter(tenant=tenant, key="shop.wholesale").first()
+    if row is not None:
+        return bool((row.value or {}).get("value"))
+    return tenant.business_type in WHOLESALE_TYPES
+
+
 def tenant_read_payload(tenant: Any, *, unmasked: bool) -> dict:
     """`GET /tenants/current` with PLT-07 §12's masking applied.
 
@@ -296,6 +307,8 @@ def tenant_read_payload(tenant: Any, *, unmasked: bool) -> dict:
     data = dict(TenantReadSerializer(tenant).data)
     data["branding"] = branding_rules.resolve(tenant)
     data["bank_details_masked"] = not unmasked
+    # R-DEC-64: the wizard re-lights the Wholesale tile after a reload from this.
+    data["sells_wholesale"] = sells_wholesale(tenant)
     if not unmasked:
         data["bank_details"] = masked_bank_details(tenant.bank_details)
         if data.get("pan"):

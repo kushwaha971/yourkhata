@@ -58,7 +58,7 @@ export function OnboardingBusinessStep({
     defaultValues: {
       name: onboarding.draft.name,
       businessType: onboarding.draft.businessType ?? '',
-      sellsWholesale: false,
+      sellsWholesale: onboarding.draft.sellsWholesale ?? false,
       apps: initialApps(onboarding),
       stateCode: onboarding.draft.stateCode ?? '',
       ownerName: onboarding.draft.ownerName,

@@ -41,6 +41,7 @@ import type {
 export interface OnboardingDraft {
   name: string;
   businessType: BusinessType | null;
+  sellsWholesale: boolean;
   stateCode: string | null;
   ownerName: string | null;
   /** The apps chosen on step 1; `null` until chosen or read back. */
@@ -127,6 +128,7 @@ const emptyAddress: OnboardingAddress = {
 const initialDraft: OnboardingDraft = {
   name: '',
   businessType: null,
+  sellsWholesale: false,
   stateCode: null,
   ownerName: null,
   apps: null,
@@ -165,6 +167,7 @@ const applyTenant = (state: Draft<OnboardingState>, tenant: OnboardingTenant): v
   state.completedStep = Math.min(ONBOARDING_STEP_COUNT, tenant.onboardingStep);
   state.draft.name = tenant.name;
   state.draft.businessType = tenant.businessType;
+  state.draft.sellsWholesale = tenant.sellsWholesale;
   if (tenant.apps && tenant.apps.length > 0) state.draft.apps = [...tenant.apps];
   state.draft.stateCode = tenant.stateCode;
   state.draft.gstType = tenant.gstType;
@@ -268,6 +271,7 @@ const onboardingSlice = createSlice({
         state.resumable = { id: found.id, name: found.name, onboardingStep: found.onboardingStep };
         state.draft.name = found.name;
         state.draft.businessType = found.businessType;
+        state.draft.sellsWholesale = found.sellsWholesale;
         if (found.apps && found.apps.length > 0) state.draft.apps = [...found.apps];
         state.draft.stateCode = found.stateCode;
       })
