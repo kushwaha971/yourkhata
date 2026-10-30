@@ -539,11 +539,13 @@ function ItemQuickAddBase({
           labels={labels.camera.labels}
           tray={
             <UbBox className="grid gap-2">
-              <UbBox className="flex justify-between text-[13px] text-[#A3A9B2]">
-                <UbText as="span" variant="inherit">
+              {/* Colours on the spans themselves: UbText paints its own ink,
+                  which on this dark tray was invisible (seen in c1-scan). */}
+              <UbBox className="flex justify-between text-[13px]">
+                <UbText as="span" variant="inherit" className="text-[#A3A9B2]">
                   {labels.camera.lastScanned}
                 </UbText>
-                <UbText as="span" variant="inherit">
+                <UbText as="span" variant="inherit" className="text-[#A3A9B2]">
                   {labels.camera.summary}
                 </UbText>
               </UbBox>
@@ -552,7 +554,10 @@ function ItemQuickAddBase({
                   key={`${name}-${index}`}
                   as="span"
                   variant="inherit"
-                  className={cn('truncate text-sm', index === 0 && 'font-bold text-[#6FCF7C]')}
+                  className={cn(
+                    'truncate text-sm',
+                    index === 0 ? 'font-bold text-[#6FCF7C]' : 'text-[#ECEEF0]'
+                  )}
                 >
                   {index === 0 ? `+ ${name}` : name}
                 </UbText>

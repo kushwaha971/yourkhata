@@ -160,9 +160,11 @@ for (const camera of [true, false]) {
       const last = [...document.querySelectorAll('[data-testid=scan-sheet] span')].find((e) => e.textContent.includes('Last scanned'));
       const lr = last?.getBoundingClientRect();
       const lhit = lr ? document.elementFromPoint(lr.left + 4, lr.top + lr.height / 2) : null;
-      return { done: done.contains(hit), last: Boolean(last && last.contains(lhit)) };
+      // Readable, not only present: the label's ink must differ from the tray.
+      const ink = last ? getComputedStyle(last).color : '';
+      return { done: done.contains(hit), last: Boolean(last && last.contains(lhit)), ink, readable: ink !== 'rgb(27, 30, 36)' && ink !== '' };
     });
-    check('phone: Done and "Last scanned" are on top (nothing over the camera)', onTop.done && onTop.last, JSON.stringify(onTop));
+    check('phone: Done and "Last scanned" are on top and readable', onTop.done && onTop.last && onTop.readable, JSON.stringify(onTop));
     await page.getByRole('button', { name: 'Done' }).click();
     await sleep(800);
     check('phone: Done closes the camera', (await page.getByTestId('scan-sheet').count()) === 0);
