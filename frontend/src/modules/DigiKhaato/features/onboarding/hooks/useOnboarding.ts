@@ -373,6 +373,7 @@ export const useOnboarding = (routeStep: number): UseOnboardingResult => {
       const businessType = runsShop ? values.businessType || null : null;
       if (runsShop && !businessType) return;
       const sellsWholesale = businessType ? values.sellsWholesale : undefined;
+      const features = businessType ? values.features : undefined;
       const isEdit = tenantId !== null;
       try {
         if (isEdit) {
@@ -381,6 +382,7 @@ export const useOnboarding = (routeStep: number): UseOnboardingResult => {
               name: values.name,
               businessType,
               sellsWholesale,
+              features,
               apps,
               stateCode: values.stateCode,
               ownerName: values.ownerName,
@@ -400,6 +402,7 @@ export const useOnboarding = (routeStep: number): UseOnboardingResult => {
               name: values.name,
               businessType,
               sellsWholesale,
+              features,
               apps,
               stateCode: values.stateCode,
               ownerName: values.ownerName,

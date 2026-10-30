@@ -11,7 +11,9 @@ import {
   UbDivider,
   UbField,
   UbForm,
+  UbRadioGroup,
   UbStack,
+  UbSwitch,
   UbText,
   UbTextInput,
 } from 'src/design-system';
@@ -20,7 +22,15 @@ import { useTranslation } from 'src/hooks/useTranslation';
 import { selectLocale } from 'src/redux/slice/localeSlice';
 
 import { SHOP_APP } from '../constants/appChoices';
-import { WHOLESALE_TILE, type BusinessType } from '../constants/businessTypes';
+import {
+  OTHER_KINDS,
+  OTHER_KIND_FEATURES,
+  SIGNUP_FEATURES,
+  WHOLESALE_TILE,
+  type BusinessType,
+  type OtherKind,
+  type SignupFeature,
+} from '../constants/businessTypes';
 import { GST_STATES } from '../constants/gstStates';
 import { useOnboardingSchemas } from '../validation/onboardingSchemas';
 
@@ -76,6 +86,9 @@ export function OnboardingBusinessStep({
   const runsShop = chosenApps.includes(SHOP_APP);
   const sellsWholesale = useWatch({ control: form.control, name: 'sellsWholesale' });
   const pickedType = useWatch({ control: form.control, name: 'businessType' });
+  const features = useWatch({ control: form.control, name: 'features' });
+  // R-DEC-66: Other and its kinds (Stationery, Agri, Services, Furniture).
+  const isOtherFamily = (OTHER_KINDS as readonly string[]).includes(pickedType || '');
 
   const submit = useCallback(
     (values: BusinessStepFormValues) => onboarding.submitBusinessStep(values, setError),
@@ -191,7 +204,13 @@ export function OnboardingBusinessStep({
               <BusinessTypeGrid
                 // R-DEC-64: the Wholesale tile is lit while its question is open;
                 // the kind itself is answered underneath.
-                value={sellsWholesale ? WHOLESALE_TILE : (field.value as BusinessType | '') || ''}
+                value={
+                  sellsWholesale
+                    ? WHOLESALE_TILE
+                    : isOtherFamily
+                      ? 'other'
+                      : (field.value as BusinessType | '') || ''
+                }
                 onChange={(kind) => {
                   if (kind === WHOLESALE_TILE) {
                     form.setValue('sellsWholesale', true, { shouldDirty: true });
@@ -199,7 +218,10 @@ export function OnboardingBusinessStep({
                     return;
                   }
                   form.setValue('sellsWholesale', false, { shouldDirty: true });
+                  // Tapping Other again keeps the kind already picked below it.
+                  if (kind === 'other' && isOtherFamily) return;
                   form.setValue('businessType', kind, { shouldValidate: true });
+                  form.setValue('features', kind === 'other' ? featuresFor('other') : undefined);
                 }}
                 invalid={field.invalid}
                 describedBy={field['aria-describedby']}
@@ -220,6 +242,57 @@ export function OnboardingBusinessStep({
               {t('onboarding.pick.oneKindDesktop')}
             </UbText>
           </>
+        )}
+        {/* R-DEC-66 / design G12 — Other: "What kind of shop?" and "Anything
+            your shop needs?", below the tiles like "Wholesale of what?", with
+            no new screen (owner, 30 Oct). Picking a kind starts the switches
+            from that kind; the owner can change any of them. */}
+        {runsShop && !sellsWholesale && isOtherFamily && (
+          <UbStack gap={4}>
+            <UbField
+              name="businessType"
+              label={t('onboarding.other.kindTitle')}
+              hint={t('onboarding.other.kindBody')}
+            >
+              {(field) => (
+                <UbRadioGroup<OtherKind>
+                  name="otherKind"
+                  variant="card"
+                  value={(field.value as OtherKind) || 'other'}
+                  onChange={(kind) => {
+                    field.onChange(kind);
+                    form.setValue('features', featuresFor(kind), { shouldDirty: true });
+                  }}
+                  ariaLabel={t('onboarding.other.kindTitle')}
+                  describedBy={field['aria-describedby']}
+                  options={OTHER_KINDS.map((kind) => ({
+                    value: kind,
+                    label: t(`onboarding.other.kind.${kind}`),
+                    hint: t(`onboarding.other.kind.${kind}.hint`),
+                  }))}
+                />
+              )}
+            </UbField>
+            <UbStack gap={2}>
+              <UbText as="h3" variant="body-sm-medium">
+                {t('onboarding.other.needsTitle')}
+              </UbText>
+              <UbText as="p" variant="caption" tone="tertiary">
+                {t('onboarding.other.needsBody')}
+              </UbText>
+              {SIGNUP_FEATURES.map((key) => (
+                <UbSwitch
+                  key={key}
+                  checked={Boolean(features?.[key])}
+                  onCheckedChange={(on) =>
+                    form.setValue('features', { ...(features ?? {}), [key]: on }, { shouldDirty: true })
+                  }
+                  label={t(`onboarding.other.feature.${key}`)}
+                  description={t(`onboarding.other.feature.${key}.hint`)}
+                />
+              ))}
+            </UbStack>
+          </UbStack>
         )}
         {/* R-DEC-64 — "Wholesale of what?": one kind, sold wholesale. Its
             features are that kind's and wholesale's together. */}
@@ -256,6 +329,12 @@ export function OnboardingBusinessStep({
     </OnboardingStepCard>
   );
 }
+
+/** G12: the four switches as one kind starts them. */
+const featuresFor = (kind: OtherKind): Record<SignupFeature, boolean> =>
+  Object.fromEntries(
+    SIGNUP_FEATURES.map((key) => [key, OTHER_KIND_FEATURES[kind].includes(key)])
+  ) as Record<SignupFeature, boolean>;
 
 /**
  * What step 1 opens with ticked.

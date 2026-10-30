@@ -193,6 +193,31 @@ describe('the wizard — step 1 (FR-2)', () => {
     });
   });
 
+  it('asks Other what kind of shop and what it needs, then sends both', async () => {
+    /** Prevents (R-DEC-66 / G12): an agri shop saved as a bare "other" with no
+     * batch and expiry, or the owner's switches thrown away. */
+    const user = userEvent.setup();
+    onboardingService.createTenant.mockResolvedValue({ tenant: tenant(), warnings: [] });
+    renderWithProviders(<OnboardingStepPageContent step={1} />);
+
+    await user.type(screen.getByLabelText(/Business name/), 'Patil Krishi Kendra');
+    await user.click(screen.getByRole('radio', { name: /^Other/ }));
+    await user.click(screen.getByRole('radio', { name: /Agri inputs/ }));
+    // Agri starts with batch and expiry on; the owner adds sizes too.
+    expect(screen.getByRole('switch', { name: /Batch and expiry/ })).toBeChecked();
+    await user.click(screen.getByRole('switch', { name: /Sizes and colours/ }));
+    // The Other tile stays lit while a kind is picked under it.
+    expect(screen.getByRole('radio', { name: /^Other/ })).toBeChecked();
+    await chooseOption(user, /^State/, /Maharashtra/);
+    await user.click(screen.getByRole('button', { name: 'Continue' }));
+
+    await waitFor(() => expect(onboardingService.createTenant).toHaveBeenCalled());
+    expect(onboardingService.createTenant.mock.calls[0][0]).toMatchObject({
+      businessType: 'agri',
+      features: { service_items: false, alt_units: false, batches: true, variants: true },
+    });
+  });
+
   it('has no "+ I also sell…": one business is one kind (R-DEC-64)', () => {
     renderWithProviders(<OnboardingStepPageContent step={1} />);
     expect(screen.queryByRole('button', { name: /I also sell/ })).toBeNull();

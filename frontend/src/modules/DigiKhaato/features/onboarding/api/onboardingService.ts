@@ -109,6 +109,7 @@ const businessChoice = (input: OnboardingBusinessStep): Record<string, unknown> 
   ...(input.businessType && input.sellsWholesale !== undefined
     ? { sells_wholesale: input.sellsWholesale }
     : {}),
+  ...(input.businessType && input.features ? { features: { ...input.features } } : {}),
 });
 
 /**

@@ -43,6 +43,9 @@ export const BUSINESS_TYPES = [
   'garments',
   'auto_parts',
   'jewellery',
+  'stationery',
+  'agri',
+  'furniture',
   'retail',
   'wholesale',
   'distribution',
@@ -142,6 +145,36 @@ export const BUSINESS_TYPE_CONFIG: Readonly<Record<BusinessType, BusinessTypeCon
     defaultDueDays: 7,
     favouriteUnits: ['GMS', 'NOS', 'PCS'],
     extraExpenseCategoryIds: ['onboarding.expense.makingCharges', 'onboarding.expense.shopMaintenance'],
+  },
+  stationery: {
+    value: 'stationery',
+    icon: Grid2x2,
+    labelId: 'onboarding.type.stationery',
+    hintId: 'onboarding.type.stationery.hint',
+    inventoryEnabled: true,
+    defaultDueDays: 7,
+    favouriteUnits: ['NOS', 'PCS', 'PAC', 'BOX', 'SET', 'DOZ'],
+    extraExpenseCategoryIds: ['onboarding.expense.packaging', 'onboarding.expense.shopMaintenance'],
+  },
+  agri: {
+    value: 'agri',
+    icon: Grid2x2,
+    labelId: 'onboarding.type.agri',
+    hintId: 'onboarding.type.agri.hint',
+    inventoryEnabled: true,
+    defaultDueDays: 30,
+    favouriteUnits: ['KGS', 'BAG', 'LTR', 'NOS', 'PAC'],
+    extraExpenseCategoryIds: ['onboarding.expense.loading', 'onboarding.expense.transport'],
+  },
+  furniture: {
+    value: 'furniture',
+    icon: Grid2x2,
+    labelId: 'onboarding.type.furniture',
+    hintId: 'onboarding.type.furniture.hint',
+    inventoryEnabled: true,
+    defaultDueDays: 15,
+    favouriteUnits: ['NOS', 'PCS', 'SET', 'SQF'],
+    extraExpenseCategoryIds: ['onboarding.expense.transport', 'onboarding.expense.shopMaintenance'],
   },
   retail: {
     value: 'retail',
@@ -277,6 +310,27 @@ export const SHOP_KIND_TILES: readonly {
   { value: 'jewellery', picture: 'jewel', labelId: 'onboarding.tile.jewellery', hintId: 'onboarding.tile.jewellery.hint' },
   { value: 'other', picture: 'other', labelId: 'onboarding.tile.other', hintId: 'onboarding.tile.other.hint' },
 ];
+
+/**
+ * R-DEC-66 / design G12 — "Other" asks "What kind of shop?". "Something else"
+ * is `other` itself. Display data; the server's presets decide what each one
+ * turns on.
+ */
+export const OTHER_KINDS = ['stationery', 'agri', 'services', 'furniture', 'other'] as const;
+export type OtherKind = (typeof OTHER_KINDS)[number];
+
+/** G12 "Anything your shop needs?" — the four switches, `shop.features.<key>`. */
+export const SIGNUP_FEATURES = ['service_items', 'alt_units', 'batches', 'variants'] as const;
+export type SignupFeature = (typeof SIGNUP_FEATURES)[number];
+
+/** The switches each Other kind starts with on (server: `Preset.features`). */
+export const OTHER_KIND_FEATURES: Readonly<Record<OtherKind, readonly SignupFeature[]>> = {
+  stationery: ['service_items'],
+  agri: ['batches'],
+  services: ['service_items'],
+  furniture: ['variants'],
+  other: [],
+};
 
 /** R-DEC-64 — the tile that asks "Wholesale of what?" instead of being a kind. */
 export const WHOLESALE_TILE: BusinessType = 'wholesale';

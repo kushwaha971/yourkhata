@@ -12,6 +12,7 @@ import {
   BUSINESS_TYPES,
   GST_TYPES,
   type BusinessType,
+  type SignupFeature,
   type GstType,
 } from '../constants/businessTypes';
 import { GST_STATE_CODES } from '../constants/gstStates';
@@ -30,6 +31,8 @@ export interface BusinessStepFormValues {
   businessType: BusinessType | '';
   /** R-DEC-64 — the Wholesale tile: the kind below is sold wholesale. */
   sellsWholesale: boolean;
+  /** R-DEC-66 / G12 — set only on an Other shop's last screen. */
+  features?: Partial<Record<SignupFeature, boolean>>;
   /** The apps ticked on step 1. `['shop']` when the server offered no choice. */
   apps: string[];
   stateCode: string;
@@ -107,6 +110,7 @@ export const useOnboardingSchemas = (): OnboardingSchemas => {
           })
           .defined(),
         sellsWholesale: Yup.boolean().default(false),
+        features: Yup.mixed<Partial<Record<SignupFeature, boolean>>>().optional(),
         // EC-4 — `97` is in `GST_STATE_CODES` and `99` is not, so "in the list"
         // is the whole rule and there is no second place to keep it true.
         stateCode: v

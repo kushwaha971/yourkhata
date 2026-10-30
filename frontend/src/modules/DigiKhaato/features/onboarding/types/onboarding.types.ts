@@ -1,6 +1,6 @@
 import type { Locale, ModuleCode } from 'src/types/domain.types';
 
-import type { BusinessType, GstType } from '../constants/businessTypes';
+import type { BusinessType, GstType, SignupFeature } from '../constants/businessTypes';
 
 /**
  * Part 19 §19.2.3 — the onboarding feature's own types.
@@ -33,6 +33,8 @@ export interface OnboardingBusinessStep {
   readonly apps?: readonly string[] | null;
   /** R-DEC-64 "Wholesale of what?" — `shop.wholesale`. Shop only. */
   readonly sellsWholesale?: boolean;
+  /** R-DEC-66 / G12 — "Anything your shop needs?", `shop.features.<key>`. */
+  readonly features?: Readonly<Partial<Record<SignupFeature, boolean>>>;
 }
 
 /** One app a new business may choose, as the server's registry describes it. */
