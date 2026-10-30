@@ -33,3 +33,25 @@
   the new kinds).
 - The rename of the app labels ("Billing & Stock" etc.) belongs to the
   post-Shop start-flow piece; B2 keeps today's app names.
+
+## First build, 30 Oct 2026
+
+- Server: `active_tenant.features` and `active_tenant.words` (per language)
+  from `selectors/business_words.py`; `orders` feature per kind (E2 #6); medical
+  Distributor, wholesale Retailer/Company labels (b9aef86ab, 164091e44).
+- Client: menu labels via `useAppWords().w` (sidebar, tab bar, More);
+  `feature: 'orders'` on Sales orders / Delivery challans / Purchase orders;
+  `useFeature`; "<kind> · Shop" under the business name (eb4095fa5).
+- **`e2e/b2-menus.mjs` 56/56** over hardware, medical, kirana, kirana +
+  wholesale, jewellery × EN/HI × 1280/390 (session read back, sidebar and More
+  read, orders rows, words, kind caption, overflow, cut text). `--skew`: every
+  read-back check fails (the 20 that pass are the overflow checks).
+- **Found and fixed by looking:** the Hindi sidebar said "Distributors" and
+  "Medical" — words were resolved in the account's saved locale, not the one
+  on screen (H33).
+- Phone tab bar reads Home · Customers/Retailers · Suppliers/Companies/
+  Distributors · Bills · More (R-DEC-66 #3).
+- **Not yet done:** dashboard (Home) words and follow-ups per kind (design
+  dShell's kpi strip); list page titles ("Customers" page header) still say
+  the shared word; the server-sent row list (BP-22 #3, see conflicts);
+  monkey, edge cases, A3–A8 + B1 regression; S9 switching businesses.
