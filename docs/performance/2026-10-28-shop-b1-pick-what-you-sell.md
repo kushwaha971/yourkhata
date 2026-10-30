@@ -113,3 +113,47 @@ Still to confirm in code: whether `shop.extra_types` already exists as a
 setting key, and how the design's ten kinds map onto today's nine stored
 `BusinessType` values (the map says the finer kinds "map to presets and to a
 default feature set"). R-DEC-51 #4 says build **Hardware & electrical first**.
+
+## Step 1 checked on screen (30 Oct 2026) — `e2e/b1-pick.mjs --tag=before`
+
+Built and served on :3005; 16 cases (390/320/1024/1280 × light/dark × EN/HI),
+80/88 checks pass. Shots and the side-by-side sheet: `/tmp/e2e-shots/b1/`.
+
+**Passes:** tile radius 12, icon 34, name 13/600, hint 11.5/500, picked border
+2 px, centred, gap 10, min-height ≥ 96, no text cut, no page overflow, targets ≥ 44,
+in every case.
+
+**Fails / differs from pPick and dPick (looked at, not only measured):**
+1. 9 tiles, design 10 (the stored types, not the shop kinds).
+2. Columns: 1 on a phone (design 3), 3 on desktop (design 5).
+3. Composition: the design gives the type its own screen ("Step 2 of 4",
+   "What do you sell?", "+ I also sell…", Continue in the dock). Today the tiles
+   sit at the bottom of wizard step 1 under name, state and the apps choice,
+   with no "I also sell".
+4. **Defect:** on a phone the sticky Continue bar is drawn over the tile list
+   (between "Professional" and "Food") in every phone shot.
+5. Step 1 opens with "Enter a name" in red before anything is touched (seen
+   in the 390/320 shots; not yet reproduced by a check).
+
+## The 10 shop kinds against the 9 stored types — conflicts for the owner
+
+| Design tile | Nearest stored type | Conflict |
+|---|---|---|
+| Hardware · paint, sanitary | retail | R-DEC-51 #4 says "Hardware & electrical"; the tile says "paint, sanitary". No hardware type or preset exists. |
+| Kirana · General store | retail | — |
+| Medical · Pharmacy | retail | Needs batches/Schedule H later; collapses into retail. |
+| Mobile · and electronics | retail | Needs serials/IMEI later; collapses into retail. |
+| Clothes · and shoes | retail | Needs variants later; collapses into retail. |
+| Auto parts · and spares | retail | Needs part numbers later; collapses into retail. |
+| Wholesale · distributor | wholesale **or** distribution | Two stored types (different words: Retailer/Company) behind one tile. |
+| Sweets · bakery, café | food | — |
+| Jewellery · own app, later | none | Shown at 60 %: tappable or not? |
+| Other | other | — |
+| (none) | services, trader, manufacturer, professional | Four stored types have no tile: no way to pick them at sign-up. |
+
+Six tiles land on `retail`, so the server could not tell them apart for B2/B3
+(words, features). Options: (A) add the finer kinds as new `BusinessType`
+choices with their own presets, old values staying valid (reads closest to
+the map §2.1, but is a backend change); (B) keep the 9 and store the kind
+separately. Not chosen; waiting for the owner. `shop.extra_types` holds the
+same values, so it waits on this too.
