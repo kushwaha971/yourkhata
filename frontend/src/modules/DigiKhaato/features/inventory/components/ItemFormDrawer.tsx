@@ -27,8 +27,10 @@ import {
   isoFinancialYearStart,
   isoToday,
 } from 'src/design-system';
+import { useAppSelector } from 'src/hooks/useAppStore';
 import { usePagedSearch } from 'src/hooks/usePagedSearch';
 import { useTranslation } from 'src/hooks/useTranslation';
+import { selectActiveTenant } from 'src/redux/slice/sessionSlice';
 import { itemPath } from 'src/routes';
 import { blurIfTyped } from 'src/utils/autofocusBlur';
 import { comboPaging } from 'src/utils/searchPaging';
@@ -41,6 +43,7 @@ import { useInventorySchemas } from '../validation/inventorySchemas';
 import { looksLikeBarcode, skuPrefix } from '../view-model/itemDisplay';
 import { gstFor, marginOf } from '../view-model/itemPricing';
 
+import { ItemExtraUnitsFields } from './ItemExtraUnitsFields';
 import { ItemPriceFields } from './ItemPriceFields';
 
 import type { UseItemFormResult } from '../hooks/useItemForm';
@@ -123,8 +126,15 @@ export function ItemFormDrawer({
       openingQty: '',
       openingCost: '',
       openingAsOf: isoToday(),
+      // D P1a — the item's own extra units, so a save sends them back as they were.
+      extraUnits: (editing?.units ?? []).map((row) => ({
+        unitId: masters.units.find((unit) => unit.code === row.code)?.id ?? '',
+        factor: row.factor.replace(/\.?0+$/, ''),
+        price: row.sellingPrice,
+        barcode: row.barcode ?? '',
+      })),
     }),
-    [editing, prefillBarcode, prefillName, defaultUnitId]
+    [editing, prefillBarcode, prefillName, defaultUnitId, masters.units]
   );
 
   const form = useForm<ItemFormValues>({
@@ -141,6 +151,9 @@ export function ItemFormDrawer({
   const itemType = useWatch({ control, name: 'itemType' });
   const trackStock = useWatch({ control, name: 'trackStock' });
   const unitId = useWatch({ control, name: 'unitId' });
+  const sellsInBoxes = Boolean(
+    useAppSelector(selectActiveTenant)?.features?.includes('alt_units')
+  );
   const name = useWatch({ control, name: 'name' });
   const taxCode = useWatch({ control, name: 'taxCode' });
   const inclusive = useWatch({ control, name: 'taxInclusiveSelling' });
@@ -377,6 +390,11 @@ export function ItemFormDrawer({
         </UbField>
 
         <ItemPriceFields canSeeCost={canSeeCost} gst={gst} />
+
+        {/* D P1a — only for a business that sells in boxes, or an item that already does. */}
+        {!isService && (sellsInBoxes || (editing?.units?.length ?? 0) > 0) && (
+          <ItemExtraUnitsFields units={masters.units} baseUnitId={unitId} />
+        )}
 
         <UbDisclosure
           label={t('items.form.section.tax')}

@@ -7,7 +7,7 @@ import dynamic from 'next/dynamic';
 import { ScanLine } from 'lucide-react';
 import { useFieldArray, type UseFormReturn } from 'react-hook-form';
 
-import { UbBox, UbStack, UbText, useIsMobileLayer } from 'src/design-system';
+import { UbBox, UbChoiceChips, UbStack, UbText, useIsMobileLayer } from 'src/design-system';
 import type { UbLineFocusRequest } from 'src/design-system';
 import { useAppDispatch, useAppSelector } from 'src/hooks/useAppStore';
 import { useTranslation } from 'src/hooks/useTranslation';
@@ -22,6 +22,7 @@ import { LINE_FINDER_FROM, useLineQuickAdd } from '../../inventory/hooks/useLine
 import { lineRemovalUndone, lineRestored, selectInvoiceEditor } from '../redux/invoiceEditorSlice';
 import { emptyLine, type InvoiceFormValues, type InvoiceLineForm } from '../view-model/invoiceForm';
 import { itemLineDefaults } from '../view-model/itemLineDefaults';
+import { lineUnitCaption, lineUnitChoices, type LineUnitChoice } from '../view-model/lineUnits';
 
 import { InvoiceLineList, InvoiceLineTable, lineName } from './InvoiceLineEditor';
 
@@ -125,6 +126,8 @@ export function InvoiceLinesSection({
   const [stock, setStock] = useState<Record<string, { onHand: string; unit: string }>>({});
   /** Counter Mode step 9 — each picked item's usual price, to say a change is this bill's only. */
   const [usual, setUsual] = useState<Record<string, { price: string; inclusive: boolean }>>({});
+  /** D P1a — each picked item's units (box and piece), for the line's unit chips. */
+  const [unitChoices, setUnitChoices] = useState<Record<string, readonly LineUnitChoice[]>>({});
 
   // FR-15 — item defaults fill a line when the item is PICKED, never later.
   const pick = useCallback(
@@ -139,6 +142,18 @@ export function InvoiceLinesSection({
       setValue(`${base}.taxCode`, defaults.taxCode);
       setValue(`${base}.hsnSac`, defaults.hsnSac);
       setValue(`${base}.taxInclusive`, defaults.taxInclusive);
+      const choices = lineUnitChoices(row);
+      if (choices.length > 0) {
+        setUnitChoices((current) => ({ ...current, [row.id]: choices }));
+        // A box's own barcode adds one box, at the box price.
+        const scanned = choices.find((choice) => choice.code === row.scannedUnit);
+        if (scanned && scanned.factor !== 1) {
+          setValue(`${base}.unitCode`, scanned.code);
+          setValue(`${base}.allowDecimal`, scanned.allowDecimal);
+          setValue(`${base}.unitPrice`, scanned.price);
+          defaults.unitPrice = scanned.price;
+        }
+      }
       const price = defaults.unitPrice;
       if (price)
         setUsual((current) => ({
@@ -262,6 +277,36 @@ export function InvoiceLinesSection({
       const line = lines?.[index];
       if (!line?.itemId) return null;
       const stockNote = stockWarning(index);
+      // D P1a — "Sold in PCS · BOX of 20" and the chips to switch the line's unit.
+      const choices = unitChoices[line.itemId] ?? [];
+      const unitCaption = lineUnitCaption(choices, line.unitCode, {
+        sold: (b, box, n) => t('sales.line.unitSold', { base: b, box, n }),
+        one: (box, n, b) => t('sales.line.unitOne', { box, n, base: b }),
+      });
+      const unitNote = unitCaption ? (
+        <UbStack gap={1} data-testid="line-unit">
+          <UbText variant="caption" tone="accent">
+            {unitCaption}
+          </UbText>
+          <UbChoiceChips<string>
+            value={line.unitCode}
+            onChange={(code) => {
+              const picked = choices.find((choice) => choice.code === code);
+              if (!picked) return;
+              const base = `lines.${index}` as const;
+              setValue(`${base}.unitCode`, picked.code, { shouldDirty: true });
+              setValue(`${base}.allowDecimal`, picked.allowDecimal);
+              setValue(`${base}.unitPrice`, picked.price, { shouldDirty: true });
+              setUsual((current) => ({
+                ...current,
+                [line.itemId as string]: { price: picked.price, inclusive: line.taxInclusive },
+              }));
+            }}
+            options={choices.map((choice) => ({ value: choice.code, label: choice.code }))}
+            ariaLabel={t('sales.line.unitOf', { name: line.description })}
+          />
+        </UbStack>
+      ) : null;
       const fromList = listed[line.itemId];
       const onList = !!fromList && Number(fromList.rate) === Number(line.unitPrice || 0);
       const known = usual[line.itemId];
@@ -276,14 +321,16 @@ export function InvoiceLinesSection({
         </UbText>
       ) : null;
       if (!partyId)
-        return stockNote || changedNote ? (
+        return unitNote || stockNote || changedNote ? (
           <UbStack gap={0}>
+            {unitNote}
             {stockNote}
             {changedNote}
           </UbStack>
         ) : null;
       return (
         <UbStack gap={0}>
+          {unitNote}
           {stockNote}
           {changedNote}
           {onList && (
@@ -306,7 +353,7 @@ export function InvoiceLinesSection({
         </UbStack>
       );
     },
-    [lines, partyId, partyName, setValue, listed, usual, stockWarning, t]
+    [lines, partyId, partyName, setValue, listed, usual, unitChoices, stockWarning, t]
   );
 
   const wide = !useIsMobileLayer();

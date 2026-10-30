@@ -47,6 +47,14 @@ export interface ItemRowWire {
   readonly stock_value?: string | null;
   readonly status: 'active' | 'archived';
   readonly match_field?: 'name' | 'sku' | 'barcode' | null;
+  readonly units?: readonly {
+    readonly code: string;
+    readonly factor: string;
+    readonly barcode: string | null;
+    readonly selling_price: string | null;
+    readonly allow_decimal: boolean;
+  }[];
+  readonly scanned_unit?: string | null;
   readonly updated_at: string;
 }
 
@@ -142,6 +150,14 @@ export const toItemRow = (row: ItemRowWire): ItemListRow => ({
   stockValue: row.stock_value ?? null,
   status: row.status,
   matchField: row.match_field ?? null,
+  units: (row.units ?? []).map((unit) => ({
+    code: unit.code,
+    factor: unit.factor,
+    barcode: unit.barcode,
+    sellingPrice: unit.selling_price,
+    allowDecimal: unit.allow_decimal,
+  })),
+  scannedUnit: row.scanned_unit ?? null,
   updatedAt: row.updated_at,
 });
 
@@ -358,6 +374,12 @@ export interface ItemBody {
     readonly unit_cost: string | null;
     readonly as_of: string | undefined;
   };
+  readonly units?: readonly {
+    readonly unit_id: string;
+    readonly factor: string;
+    readonly selling_price: string | null;
+    readonly barcode: string | null;
+  }[];
 }
 
 /**
@@ -368,7 +390,11 @@ export interface ItemBody {
  */
 export const toItemBody = (
   values: ItemFormValues,
-  { withOpening, omitPurchasePrice = false }: { withOpening: boolean; omitPurchasePrice?: boolean }
+  {
+    withOpening,
+    omitPurchasePrice = false,
+    withUnits = true,
+  }: { withOpening: boolean; omitPurchasePrice?: boolean; withUnits?: boolean }
 ): ItemBody => {
   const isService = values.itemType === 'service';
   const track = !isService && values.trackStock;
@@ -395,6 +421,21 @@ export const toItemBody = (
             unit_cost: values.openingCost || null,
             as_of: values.openingAsOf || undefined,
           },
+        }
+      : {}),
+    // D P1a — the whole list, so a row removed in the form is removed on the
+    // server. The form starts from the item's own units, so a business whose
+    // form does not show the group sends back exactly what it had.
+    ...(withUnits && !isService
+      ? {
+          units: values.extraUnits
+            .filter((row) => row.unitId && row.factor)
+            .map((row) => ({
+              unit_id: row.unitId,
+              factor: row.factor,
+              selling_price: row.price || null,
+              barcode: row.barcode.trim() || null,
+            })),
         }
       : {}),
   };

@@ -64,6 +64,7 @@ const FORM: ItemFormValues = {
   openingQty: '5',
   openingCost: '44',
   openingAsOf: '2026-04-01',
+  extraUnits: [],
 };
 
 describe('listItems', () => {

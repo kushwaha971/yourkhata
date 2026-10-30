@@ -159,6 +159,26 @@ export const useInventorySchemas = (
           (value) => !value || COST.test(value)
         ),
       openingAsOf: Yup.string().defined().default(''),
+      // D P1a — "Also sold as": a picked unit needs a count above 1; the
+      // server checks the rest (own unit, twice, barcode taken).
+      extraUnits: Yup.array()
+        .of(
+          Yup.object({
+            unitId: Yup.string().defined().default(''),
+            factor: Yup.string()
+              .defined()
+              .default('')
+              .test('factor', t('items.form.units.factor'), function check(value) {
+                const unitId = (this.parent as { unitId: string }).unitId;
+                if (!unitId) return true;
+                return Boolean(value) && Number(value) > 1;
+              }),
+            price: Yup.string().nullable().defined().default(null),
+            barcode: Yup.string().defined().default(''),
+          })
+        )
+        .defined()
+        .default([]),
     });
 
     const adjustmentSchema: Yup.ObjectSchema<AdjustmentFormValues> = Yup.object({

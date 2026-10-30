@@ -93,7 +93,20 @@ export interface ItemListRow {
   readonly stockValue: string | null;
   readonly status: ItemStatus;
   readonly matchField: MatchField;
+  /** D P1a — the other units it is sold in (1 Box = 20 PCS); empty for most items. */
+  readonly units?: readonly ItemUnitOption[];
+  /** D P1a — the unit a box's own barcode named, on a lookup that matched one. */
+  readonly scannedUnit?: string | null;
   readonly updatedAt: string;
+}
+
+/** D P1a — "Also sold as": one box is `factor` of the item's own unit. */
+export interface ItemUnitOption {
+  readonly code: string;
+  readonly factor: string;
+  readonly barcode: string | null;
+  readonly sellingPrice: string | null;
+  readonly allowDecimal: boolean;
 }
 
 export interface StockMovement {
@@ -226,6 +239,15 @@ export interface ItemFormValues {
   openingQty: string;
   openingCost: string;
   openingAsOf: string;
+  /** D P1a — "Also sold as" rows; sent only when the business sells in boxes. */
+  extraUnits: ExtraUnitValues[];
+}
+
+export interface ExtraUnitValues {
+  unitId: string;
+  factor: string;
+  price: string | null;
+  barcode: string;
 }
 
 export interface AdjustmentLine {
