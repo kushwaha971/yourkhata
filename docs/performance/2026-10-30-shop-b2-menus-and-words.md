@@ -55,3 +55,14 @@
   dShell's kpi strip); list page titles ("Customers" page header) still say
   the shared word; the server-sent row list (BP-22 #3, see conflicts);
   monkey, edge cases, A3–A8 + B1 regression; S9 switching businesses.
+
+## State when the usage limit was reached (30 Oct 2026)
+
+- People lists in the business's words (89539b4f8): medical Suppliers page is
+  "Distributors" / "Add distributor" — passes live.
+- `b2-menus` 58/61. The 3 failures are S9 (switch business): the harness's
+  raw `POST /auth/switch-tenant` answered **403** — most likely the harness
+  missing the app's CSRF/request headers, NOT yet proven either way. Next:
+  switch through the UI's business switcher instead and re-run.
+- Not done: monkey, edge cases, A3–A8 + B1 regression; Home per-kind strip
+  (needs unbuilt features — expiry, IMEI — comes with those pieces).
