@@ -92,7 +92,8 @@ def test_every_business_type_has_a_preset() -> None:
     ("business_type", "inventory", "labels", "due_days"),
     [
         ("retail", True, ("Customer", "Supplier"), 7),
-        ("wholesale", True, ("Customer", "Supplier"), 15),
+        # Design B2 (30 Oct 2026): a wholesaler's people are Retailers and Companies.
+        ("wholesale", True, ("Retailer", "Company"), 15),
         ("distribution", True, ("Retailer", "Company"), 15),
         ("services", False, ("Client", "Vendor"), 30),
         ("trader", True, ("Customer", "Supplier"), 15),
@@ -102,7 +103,7 @@ def test_every_business_type_has_a_preset() -> None:
         ("other", True, ("Customer", "Supplier"), 30),
         ("hardware", True, ("Customer", "Supplier"), 15),
         ("kirana", True, ("Customer", "Supplier"), 7),
-        ("medical", True, ("Customer", "Supplier"), 7),
+        ("medical", True, ("Customer", "Distributor"), 7),
         ("electronics", True, ("Customer", "Supplier"), 7),
         ("garments", True, ("Customer", "Supplier"), 7),
         ("auto_parts", True, ("Customer", "Supplier"), 15),
@@ -459,6 +460,7 @@ def test_completing_the_wizard_seeds_every_default(
         "shop.features.alt_units",
         "shop.features.batches",
         "shop.features.variants",
+        "shop.features.orders",
         "parties.labels",
     }
     labels = TenantSetting.objects.get(tenant=new_tenant, key="parties.labels").value
@@ -1258,7 +1260,7 @@ def test_wholesale_of_a_kind_gets_both_presets() -> None:
 
     kirana, bulk = PRESETS["kirana"], PRESETS["wholesale"]
     both = combined("kirana", wholesale=True)
-    assert both.party_labels == kirana.party_labels
+    assert both.party_labels == bulk.party_labels  # Retailers and Companies
     assert both.favourite_units[: len(kirana.favourite_units)] == kirana.favourite_units
     assert {"BOX", "BAG", "QTL"} <= set(both.favourite_units)
     assert len(both.favourite_units) <= 8
@@ -1302,3 +1304,29 @@ def test_other_kinds_start_with_their_switches(kind: str, on: set) -> None:
 
     got = {k for k in SIGNUP_FEATURES if SETTINGS[f"shop.features.{k}"].default(kind)["value"]}
     assert got == on
+
+
+@pytest.mark.parametrize(
+    ("kind", "wholesale", "orders"),
+    [
+        ("hardware", False, True),
+        ("auto_parts", False, True),
+        ("electronics", False, True),
+        ("wholesale", False, True),
+        ("kirana", False, False),
+        ("medical", False, False),
+        ("garments", False, False),
+        ("food", False, False),
+        ("jewellery", False, False),
+        ("other", False, False),
+        ("kirana", True, True),
+        ("retail", False, True),
+    ],
+)
+def test_orders_rows_belong_to_the_kinds_that_use_them(kind, wholesale, orders) -> None:
+    """E2 #6 (owner, 30 Oct 2026): Sales orders, challans and purchase orders
+    only for wholesale, hardware, auto parts and mobile; a kirana that sells
+    wholesale gets them through wholesale; older broad types keep them."""
+    from apps.platform_app.services.presets import combined
+
+    assert ("orders" in combined(kind, wholesale=wholesale).features) is orders

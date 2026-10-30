@@ -46,6 +46,7 @@ PRESETS: dict[str, Preset] = {
         favourite_units=("NOS", "PCS", "BOX", "KGS", "MTR", "LTR"),
         extra_expense_categories=("Loading & unloading", "Transport"),
         default_due_days=15,
+        features=frozenset({"orders"}),
     ),
     BusinessType.KIRANA.value: Preset(
         inventory_enabled=True,
@@ -56,7 +57,7 @@ PRESETS: dict[str, Preset] = {
     ),
     BusinessType.MEDICAL.value: Preset(
         inventory_enabled=True,
-        party_labels=("Customer", "Supplier"),
+        party_labels=("Customer", "Distributor"),
         favourite_units=("NOS", "BOX", "BTL", "PAC", "MLT"),
         extra_expense_categories=("Packaging", "Shop maintenance"),
         default_due_days=7,
@@ -67,6 +68,7 @@ PRESETS: dict[str, Preset] = {
         favourite_units=("NOS", "PCS", "SET", "BOX", "MTR"),
         extra_expense_categories=("Repairs & service", "Shop maintenance"),
         default_due_days=7,
+        features=frozenset({"orders"}),
     ),
     BusinessType.GARMENTS.value: Preset(
         inventory_enabled=True,
@@ -81,6 +83,7 @@ PRESETS: dict[str, Preset] = {
         favourite_units=("NOS", "PCS", "SET", "LTR", "BOX"),
         extra_expense_categories=("Transport", "Shop maintenance"),
         default_due_days=15,
+        features=frozenset({"orders"}),
     ),
     BusinessType.JEWELLERY.value: Preset(
         inventory_enabled=True,
@@ -120,13 +123,15 @@ PRESETS: dict[str, Preset] = {
         favourite_units=("NOS", "KGS", "GMS", "LTR", "PAC"),
         extra_expense_categories=("Packaging", "Shop maintenance"),
         default_due_days=7,
+        features=frozenset({"orders"}),
     ),
     BusinessType.WHOLESALE.value: Preset(
         inventory_enabled=True,
-        party_labels=("Customer", "Supplier"),
+        party_labels=("Retailer", "Company"),
         favourite_units=("NOS", "BOX", "BAG", "KGS", "QTL", "DOZ"),
         extra_expense_categories=("Loading & unloading", "Godown rent"),
         default_due_days=15,
+        features=frozenset({"orders"}),
     ),
     BusinessType.DISTRIBUTION.value: Preset(
         inventory_enabled=True,
@@ -134,6 +139,7 @@ PRESETS: dict[str, Preset] = {
         favourite_units=("BOX", "PAC", "NOS", "BAG", "DOZ"),
         extra_expense_categories=("Fuel", "Vehicle maintenance", "Scheme discounts"),
         default_due_days=15,
+        features=frozenset({"orders"}),
     ),
     BusinessType.SERVICES.value: Preset(
         inventory_enabled=False,
@@ -141,7 +147,7 @@ PRESETS: dict[str, Preset] = {
         favourite_units=("NOS",),
         extra_expense_categories=("Tools & equipment", "Travel"),
         default_due_days=30,
-        features=frozenset({"service_items"}),
+        features=frozenset({"service_items", "orders"}),
     ),
     BusinessType.TRADER.value: Preset(
         inventory_enabled=True,
@@ -149,6 +155,7 @@ PRESETS: dict[str, Preset] = {
         favourite_units=("KGS", "QTL", "TON", "BAG", "NOS"),
         extra_expense_categories=("Commission", "Mandi charges"),
         default_due_days=15,
+        features=frozenset({"orders"}),
     ),
     BusinessType.MANUFACTURER.value: Preset(
         inventory_enabled=True,
@@ -156,6 +163,7 @@ PRESETS: dict[str, Preset] = {
         favourite_units=("KGS", "NOS", "MTR", "SET", "LTR"),
         extra_expense_categories=("Raw material", "Job work", "Machine maintenance"),
         default_due_days=15,
+        features=frozenset({"orders"}),
     ),
     BusinessType.PROFESSIONAL.value: Preset(
         inventory_enabled=False,
@@ -167,6 +175,7 @@ PRESETS: dict[str, Preset] = {
             "Travel",
         ),
         default_due_days=30,
+        features=frozenset({"orders"}),
     ),
     BusinessType.FOOD.value: Preset(
         inventory_enabled=True,
@@ -259,7 +268,8 @@ def combined(business_type: str, *, wholesale: bool) -> Preset:
     bulk = PRESETS[BusinessType.WHOLESALE.value]
     return Preset(
         inventory_enabled=preset.inventory_enabled or bulk.inventory_enabled,
-        party_labels=preset.party_labels,
+        # Design B2: a wholesaler's people are Retailers and Companies.
+        party_labels=bulk.party_labels,
         favourite_units=tuple(dict.fromkeys(preset.favourite_units + bulk.favourite_units))[
             :_MAX_UNITS
         ],
@@ -273,6 +283,11 @@ def combined(business_type: str, *, wholesale: bool) -> Preset:
     )
 
 
+#: E2 #6 (owner, 30 Oct 2026): Sales orders, Delivery challans and Purchase
+#: orders are the `orders` feature, on for wholesale, hardware, auto parts and
+#: mobile & electronics (and the older broad types, so no existing business
+#: loses a menu row), off for kirana, medical, clothes, café, jewellery and
+#: Other's kinds.
 #: R-DEC-66 / G12 "Anything your shop needs?" — the four switches asked at
 #: sign-up for "Other" kinds, stored as `shop.features.<key>`.
 SIGNUP_FEATURES: tuple[str, ...] = ("service_items", "alt_units", "batches", "variants")

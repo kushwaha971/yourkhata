@@ -1,0 +1,102 @@
+"""B2 / BP-22 #1–#2 — what a business calls its people, and which features it has.
+
+The server decides and the session carries both, so no screen ever reads a
+business type to choose a word or a menu row (R-DEC-51 #6/#8, R-DEC-65).
+
+* ``features_of`` — the `shop.features.*` keys that are on (each a stored
+  setting, else its kind's preset default), plus ``wholesale`` when
+  `shop.wholesale` is on.
+* ``words_of`` — message id → text in the person's language, ONLY for the ids
+  whose word differs from the shared one: a medical store's "Distributors", a
+  wholesaler's "Retailers" and "Companies". Owner-typed English labels are sent
+  as typed (R-DEC-51 #6: English required, Hindi optional).
+"""
+
+from __future__ import annotations
+
+from typing import Any
+
+from apps.platform_app.services import presets
+
+#: singular → (English plural, Hindi plural). The shared pair is Customer /
+#: Supplier, whose words the client already has, so it is never sent.
+_KNOWN: dict[str, tuple[str, str]] = {
+    "Customer": ("Customers", "ग्राहक"),
+    "Supplier": ("Suppliers", "सप्लायर"),
+    "Distributor": ("Distributors", "वितरक"),
+    "Retailer": ("Retailers", "रिटेलर"),
+    "Company": ("Companies", "कंपनियाँ"),
+    "Client": ("Clients", "क्लाइंट"),
+    "Vendor": ("Vendors", "वेंडर"),
+}
+_SHARED = ("Customer", "Supplier")
+
+#: Every feature key the session may carry.
+FEATURE_KEYS: tuple[str, ...] = (*presets.SIGNUP_FEATURES, "orders")
+
+
+def _setting(tenant: Any, rows: dict[str, Any], key: str) -> Any:
+    from apps.platform_app.settings_schema import SETTINGS
+
+    if key in rows:
+        return rows[key]
+    spec = SETTINGS.get(key)
+    return spec.default(tenant.business_type) if spec else None
+
+
+def _rows(tenant: Any) -> dict[str, Any]:
+    from apps.platform_app.models import TenantSetting
+
+    return dict(
+        TenantSetting.objects.filter(
+            tenant=tenant, key__in=["shop.wholesale", "parties.labels"]
+            + [f"shop.features.{k}" for k in FEATURE_KEYS]
+        ).values_list("key", "value")
+    )
+
+
+def features_of(tenant: Any, rows: dict[str, Any] | None = None) -> list[str]:
+    rows = _rows(tenant) if rows is None else rows
+    on = [
+        key
+        for key in FEATURE_KEYS
+        if bool((_setting(tenant, rows, f"shop.features.{key}") or {}).get("value"))
+    ]
+    if bool((_setting(tenant, rows, "shop.wholesale") or {}).get("value")):
+        on.append("wholesale")
+    return sorted(on)
+
+
+def _plural(label: str, locale: str) -> str:
+    known = _KNOWN.get(label)
+    if known:
+        return known[1] if locale == "hi" else known[0]
+    return label if label.endswith("s") else f"{label}s"
+
+
+def words_of(tenant: Any, locale: str = "en", rows: dict[str, Any] | None = None) -> dict[str, str]:
+    rows = _rows(tenant) if rows is None else rows
+    labels = _setting(tenant, rows, "parties.labels") or {}
+    customer = (labels.get("customer") or "Customer").strip()
+    supplier = (labels.get("supplier") or "Supplier").strip()
+    words: dict[str, str] = {}
+    if customer != _SHARED[0]:
+        many = _plural(customer, locale)
+        words["nav.parties"] = many
+        words["nav.tab.parties"] = many
+    if supplier != _SHARED[1]:
+        words["nav.suppliers"] = _plural(supplier, locale)
+    if words:
+        joiner = " और " if locale == "hi" else " & "
+        left = words.get("nav.parties") or _plural(customer, locale)
+        right = words.get("nav.suppliers") or _plural(supplier, locale)
+        words["nav.section.parties"] = (
+            f"{left}{joiner}{right}" if locale == "hi" else f"{left}{joiner}{right.lower()}"
+        )
+    return words
+
+
+def business_block(tenant: Any, locale: str = "en") -> dict[str, Any]:
+    """The session's `active_tenant.features` and `.words`, one query."""
+    rows = _rows(tenant)
+    return {"features": features_of(tenant, rows), "words": words_of(tenant, locale, rows)}
