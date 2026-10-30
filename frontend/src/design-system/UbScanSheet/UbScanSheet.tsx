@@ -180,7 +180,10 @@ export function UbScanSheet({
       data-testid="scan-sheet"
       className="fixed inset-0 z-[1500] flex flex-col bg-[#0d0f10] text-white"
     >
-      <div className="relative flex flex-1 flex-col">
+      {/* overflow-hidden: the framing box darkens the feed with a 999 px
+          shadow, which must stop at the camera's edge. Unclipped, it painted
+          over the tray, so Done looked disabled and "Last scanned" vanished. */}
+      <div className="relative flex flex-1 flex-col overflow-hidden">
         {!blocked && (
            
           <video ref={video} playsInline muted className="absolute inset-0 h-full w-full object-cover" />
@@ -234,7 +237,7 @@ export function UbScanSheet({
         )}
       </div>
       {!blocked ? (
-        <div className="grid gap-2 rounded-t-2xl bg-[#1b1e23] px-4 pb-3.5 pt-3 text-[#ECEEF0]">
+        <div className="relative z-[2] grid gap-2 rounded-t-2xl bg-[#1b1e23] px-4 pb-3.5 pt-3 text-[#ECEEF0]">
           {tray}
           <button
             type="button"
