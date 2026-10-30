@@ -230,6 +230,24 @@ describe('the wizard — step 1 (FR-2)', () => {
     );
   });
 
+  it('does not turn the name red when a tile is tapped before it is typed', async () => {
+    /** Prevents (B-thread, 30 Oct 2026, seen on the live app at 390): the name
+     * field opens focused, a merchant taps "Kirana" first, the blur marked the
+     * empty name touched and "Enter a name." came up in red before they had
+     * done anything wrong. The message waits for Continue. */
+    const user = userEvent.setup();
+    renderWithProviders(<OnboardingStepPageContent step={1} />);
+    await user.click(screen.getByLabelText(/Business name/));
+    await user.click(screen.getByRole('radio', { name: /Kirana/ }));
+    expect(screen.queryByText('Enter a name.')).toBeNull();
+    expect(screen.getByLabelText(/Business name/)).toHaveAttribute('aria-invalid', 'false');
+    // Continue still says it, and it clears as soon as a name is typed.
+    await user.click(screen.getByRole('button', { name: 'Continue' }));
+    expect(await screen.findByText('Enter a name.')).toBeInTheDocument();
+    await user.type(screen.getByLabelText(/Business name/), 'Sharma Store');
+    await waitFor(() => expect(screen.queryByText('Enter a name.')).toBeNull());
+  });
+
   it('has no "+ I also sell…": one business is one kind (R-DEC-64)', () => {
     renderWithProviders(<OnboardingStepPageContent step={1} />);
     expect(screen.queryByRole('button', { name: /I also sell/ })).toBeNull();

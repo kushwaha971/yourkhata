@@ -102,7 +102,9 @@ function BusinessTypeGridBase({
               'grid min-h-[96px] min-w-0 content-center justify-items-center gap-[6px] rounded-[12px] px-2 py-3 text-center',
               selected
                 ? 'border-2 border-action bg-accent-quiet'
-                : 'border border-border-subtle bg-surface-card hover:bg-surface-hover'
+                : // Hover only where there is a pointer that hovers: on a phone a
+                  // tapped tile kept the grey after the tap and read as half-picked.
+                  'border border-border-subtle bg-surface-card [@media(hover:hover)]:hover:bg-surface-hover'
             )}
           >
             <UbShopKindIcon kind={tile.picture} className="text-text-accent" />

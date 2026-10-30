@@ -42,8 +42,13 @@ export interface MLRadioGroupProps<T extends string> {
    * lot of furniture for a binary. The card earns its space when each option
    * carries a hint (the GST-type branch is the case it was built for); `plain`
    * is the default because most radio groups are not that.
+   *
+   * `list` is the design's `.lst` of `.opt` rows (G12 "What kind of shop?"):
+   * ONE bordered box, rows divided by a line, the chosen row tinted, a 20 px
+   * circle and a 14 px / 600 label. Five separate cards with gaps between them
+   * made that question about 120 px taller on a phone than the mock.
    */
-  readonly variant?: 'plain' | 'card';
+  readonly variant?: 'plain' | 'card' | 'list';
   readonly ariaLabel?: string;
   readonly ariaDescribedBy?: string;
   readonly invalid?: boolean;
@@ -62,6 +67,7 @@ export function MLRadioGroup<T extends string>({
   className,
 }: Readonly<MLRadioGroupProps<T>>): React.JSX.Element {
   const card = variant === 'card';
+  const list = variant === 'list';
 
   return (
     <RadioGroupPrimitive.Root
@@ -71,7 +77,11 @@ export function MLRadioGroup<T extends string>({
       aria-label={ariaLabel}
       aria-describedby={ariaDescribedBy}
       aria-invalid={invalid || undefined}
-      className={cn('flex flex-col gap-2', className)}
+      className={cn(
+        'flex flex-col',
+        list ? 'overflow-clip rounded-[12px] border border-border-subtle bg-surface-card' : 'gap-2',
+        className
+      )}
     >
       {options.map((option) => (
         <label
@@ -80,6 +90,10 @@ export function MLRadioGroup<T extends string>({
             'flex min-h-11 cursor-pointer items-start gap-3',
             'transition-colors duration-fast ease-standard',
             card && 'rounded-control border px-3 py-2.5',
+            // design .opt: padding 12 x 14, gap 12, centred, a line between rows;
+            // .opt.sel: the wash.
+            list && 'items-center border-b border-border-subtle px-[14px] py-3 last:border-b-0',
+            list && value === option.value && 'bg-accent-quiet',
             card &&
               (value === option.value
                 ? 'border-action bg-accent-quiet'
@@ -94,7 +108,9 @@ export function MLRadioGroup<T extends string>({
             value={option.value}
             disabled={option.disabled}
             className={cn(
-              'ub-hit relative mt-1 flex h-4 w-4 shrink-0 items-center justify-center rounded-pill border',
+              'ub-hit relative flex shrink-0 items-center justify-center rounded-pill',
+              // design .radio: 20 px, a 1.5 px ring, a 10 px dot.
+              list ? 'h-5 w-5 border-[1.5px]' : 'mt-1 h-4 w-4 border',
               'border-border-subtle bg-surface-card text-text-accent',
               'transition-colors duration-fast ease-standard',
               'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-action focus-visible:ring-offset-2',
@@ -102,17 +118,28 @@ export function MLRadioGroup<T extends string>({
               'data-[state=checked]:border-action'
             )}
           >
-            <RadioGroupPrimitive.Indicator className="h-2.5 w-2.5 rounded-pill bg-current" />
+            <RadioGroupPrimitive.Indicator
+              className={cn('rounded-pill bg-current', list ? 'h-[10px] w-[10px]' : 'h-2.5 w-2.5')}
+            />
           </RadioGroupPrimitive.Item>
-          <span className="flex min-w-0 flex-col gap-0.5">
-            <span className="ds-body-sm-medium text-text-primary">{option.label}</span>
+          <span className={cn('flex min-w-0 flex-col', list ? 'leading-[1.3]' : 'gap-0.5')}>
+            <span
+              className={cn(
+                'text-text-primary',
+                list ? 'text-[14px] font-semibold leading-[1.3]' : 'ds-body-sm-medium'
+              )}
+            >
+              {option.label}
+            </span>
             {option.hint && (
               // On the selected card's accent tint the tertiary grey is 4.46:1
               // — under 4.5 (axe, Sprint 12). Text on a tint is secondary.
               <span
                 className={cn(
-                  'ds-caption',
-                  card && value === option.value ? 'text-text-secondary' : 'text-text-tertiary'
+                  list ? 'text-[12.5px] leading-[1.3]' : 'ds-caption',
+                  (card || list) && value === option.value
+                    ? 'text-text-secondary'
+                    : 'text-text-tertiary'
                 )}
               >
                 {option.hint}

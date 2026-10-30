@@ -37,7 +37,11 @@ import { useTenantSettings } from '../hooks/useTenantSettings';
  * broken. Each later feature adds its row the day its fields ship.
  */
 const FEATURE_ROWS = [
-  { key: 'orders', labelId: 'settings.shop.feature.orders', hintId: 'settings.shop.feature.orders.hint' },
+  {
+    key: 'orders',
+    labelId: 'settings.shop.feature.orders',
+    hintId: 'settings.shop.feature.orders.hint',
+  },
 ] as const;
 
 const isOn = (value: unknown): boolean =>
@@ -93,16 +97,29 @@ export function ShopFeaturesPageContent(): React.JSX.Element {
       <UbStack gap={4}>
         <UbPanel>
           <UbStack gap={3} className="p-4">
-            <UbText as="h2" variant="body-medium">
+            <UbText as="h2" variant="body-medium" className="font-semibold">
               {t('settings.shop.whatYouSell')}
             </UbText>
             {kindLabel && (
-              // Design `.chp.on`: a 34 px teal pill with the kind's picture.
-              <UbBox className="inline-flex h-[34px] items-center gap-1.5 self-start rounded-full border border-action bg-accent-quiet px-3.5 text-text-accent">
+              // Design `.chp.on`: a 34 px teal pill with the kind's 16 px picture,
+              // 14 px regular (dFeatures); on a phone `.chp.on.sm`, 28 px, 12.5 px
+              // and no picture (pFeatures).
+              <UbBox
+                data-kind-chip=""
+                className="inline-flex h-7 items-center gap-1.5 self-start rounded-full border border-action bg-accent-quiet px-2.5 text-text-accent md:h-[34px] md:px-3.5"
+              >
                 {kindPicture && (
-                  <UbShopKindIcon kind={kindPicture as UbShopKind} className="h-4 w-4" />
+                  <UbShopKindIcon
+                    kind={kindPicture as UbShopKind}
+                    className="hidden h-4 w-4 md:block"
+                  />
                 )}
-                <UbText as="span" variant="body-sm-medium">
+                <UbText
+                  as="span"
+                  variant="body-sm"
+                  tone="accent"
+                  className="text-[12.5px] md:text-[14px]"
+                >
                   {kindLabel}
                 </UbText>
               </UbBox>
@@ -120,7 +137,7 @@ export function ShopFeaturesPageContent(): React.JSX.Element {
           </UbStack>
         </UbPanel>
         <UbStack gap={1}>
-          <UbText as="h2" variant="body-medium">
+          <UbText as="h2" variant="body-medium" className="font-semibold">
             {t('settings.shop.features')}
           </UbText>
           <UbText as="p" variant="caption" tone="tertiary">

@@ -73,7 +73,11 @@ export function OnboardingBusinessStep({
 
   const form = useForm<BusinessStepFormValues>({
     resolver: yupResolver(schemas.businessStepSchema),
-    mode: 'onTouched',
+    // Errors wait for Continue, then follow each keystroke. `onTouched` turned
+    // the (autofocused) name red the moment a merchant tapped a tile first,
+    // before they had done anything wrong.
+    mode: 'onSubmit',
+    reValidateMode: 'onChange',
     defaultValues: {
       name: onboarding.draft.name,
       businessType: onboarding.draft.businessType ?? '',
