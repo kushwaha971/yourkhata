@@ -62,7 +62,6 @@ it('reads a code once while it is held, again after the repeat window, and stops
   );
   codes.push('8901234567890');
   for (let i = 0; i < 6; i += 1) {
-     
     await act(async () => {
       jest.advanceTimersByTime(160);
     });
@@ -83,7 +82,6 @@ it('without a built-in reader, reads with the ponyfill and serves its .wasm from
   const onCode = jest.fn();
   render(<UbScanSheet open onClose={jest.fn()} onCode={onCode} title="t" hint="h" labels={labels} />);
   for (let i = 0; i < 4; i += 1) {
-    // eslint-disable-next-line no-await-in-loop
     await act(async () => {
       jest.advanceTimersByTime(160);
     });
