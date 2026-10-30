@@ -851,10 +851,14 @@ compares `business_type`. Before B2 is built, a kind × features / fields / menu
 words / GST / payment / settings / tables matrix goes to the owner for approval.
 
 R-DEC-66 (owner, 30 October 2026: "go on with what you recommend") —
-1. "What do you sell?" is its own wizard step, as design v7 draws it (pPick,
-   dPick, "Step 2 of 4"), not a section of step 1.
+1. ~~"What do you sell?" is its own wizard step~~ — WITHDRAWN by the owner the
+   same morning ("I don't think there is any use for that"): it would add a
+   screen and a tap and no information. The tiles stay in step 1. Conflict
+   with design v7's "Step 2 of 4" recorded; the owner's word wins.
 2. "Other" asks "What kind of shop?" (design G12: Stationery/books/xerox, Agri
    inputs, Services, Furniture/home, Something else) and then "Anything your
-   shop needs?" (four switches, all off), built in B1.
+   shop needs?" (four switches, starting from the kind), built in B1 — shown
+   below the tiles when Other is tapped, like "Wholesale of what?", not as a
+   separate screen.
 3. Phone bottom bar: the later-approved design E2 #2 wins over R-DEC-51 #2 —
    Home · Customers · Suppliers · Bills · More.
