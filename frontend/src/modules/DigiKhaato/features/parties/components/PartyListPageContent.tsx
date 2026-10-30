@@ -43,6 +43,7 @@ import {
   ImportActionLink,
   ListExportButton,
 } from 'modules/DigiKhaato/features/imports/components/ListHeaderActions';
+import { useAppWords } from 'modules/DigiKhaato/features/navigation/useAppWords';
 
 import { partyExportPath } from '../api/partyService';
 import { KHATA_BOOK_WORDS, SHOP_BOOK_WORDS } from '../constants/partyFilters';
@@ -194,7 +195,11 @@ export function PartyListPageContent({
    */
   book?: LedgerBook;
 }> = {}): React.JSX.Element {
-  const { t: baseT, n, d } = useTranslation();
+  const { t: plainT, n, d } = useTranslation();
+  // B2: on the Shop's lists the people are the business's own (a medical
+  // store's Distributors, a wholesaler's Retailers and Companies).
+  const { w } = useAppWords();
+  const baseT = book === 'shop' ? w : plainT;
   /* DEC-019 — on the Shop's lists the money words are the Shop's ("To collect",
      "To pay"); the Udhaar book's own list (`book="main"`, `/khata`) is "People";
      `/parties`, which passes no book, is untouched. */

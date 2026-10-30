@@ -18,6 +18,17 @@ from typing import Any
 
 from apps.platform_app.services import presets
 
+#: singular → Hindi singular, for "Add <one>".
+_ONE_HI: dict[str, str] = {
+    "Customer": "ग्राहक",
+    "Supplier": "सप्लायर",
+    "Distributor": "वितरक",
+    "Retailer": "रिटेलर",
+    "Company": "कंपनी",
+    "Client": "क्लाइंट",
+    "Vendor": "वेंडर",
+}
+
 #: singular → (English plural, Hindi plural). The shared pair is Customer /
 #: Supplier, whose words the client already has, so it is never sent.
 _KNOWN: dict[str, tuple[str, str]] = {
@@ -100,12 +111,31 @@ def words_of(tenant: Any, locale: str = "en", rows: dict[str, Any] | None = None
     kind = _KIND.get(tenant.business_type)
     if kind:
         words["business.kind"] = kind[1] if locale == "hi" else kind[0]
+    hi = locale == "hi"
+
+    def add(one: str) -> str:
+        return f"{_ONE_HI.get(one, one)} जोड़ें" if hi else f"Add {one.lower()}"
+
     if customer != _SHARED[0]:
         many = _plural(customer, locale)
         words["nav.parties"] = many
         words["nav.tab.parties"] = many
+        # The Shop's people list (partyBooks catalogue).
+        words["parties.list.customer.title"] = many
+        words["parties.list.customer.add"] = add(customer)
     if supplier != _SHARED[1]:
-        words["nav.suppliers"] = _plural(supplier, locale)
+        many = _plural(supplier, locale)
+        one = _ONE_HI.get(supplier, supplier) if hi else supplier
+        words["nav.suppliers"] = many
+        words["parties.list.supplier.title"] = many
+        words["parties.list.supplier.add"] = add(supplier)
+        words["parties.list.supplier.column.name"] = one
+        words["parties.list.supplier.searchLabel"] = (
+            f"{many} खोजें" if hi else f"Search {many.lower()}"
+        )
+        words["parties.list.supplier.empty.title"] = (
+            f"अभी कोई {one} नहीं" if hi else f"No {many.lower()} yet"
+        )
     if "nav.parties" in words or "nav.suppliers" in words:
         joiner = " और " if locale == "hi" else " & "
         left = words.get("nav.parties") or _plural(customer, locale)

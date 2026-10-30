@@ -30,12 +30,15 @@ def test_a_medical_store_says_distributors_in_both_languages() -> None:
     rows: dict = {}
     en = words_of(_tenant("medical"), "en", rows)
     hi = words_of(_tenant("medical"), "hi", rows)
-    assert en == {
-        "business.kind": "Medical",
-        "nav.suppliers": "Distributors",
-        "nav.section.parties": "Customers & distributors",
-    }
+    assert en["business.kind"] == "Medical"
+    assert en["nav.suppliers"] == "Distributors"
+    assert en["nav.section.parties"] == "Customers & distributors"
+    assert en["parties.list.supplier.title"] == "Distributors"
+    assert en["parties.list.supplier.add"] == "Add distributor"
+    assert en["parties.list.supplier.empty.title"] == "No distributors yet"
+    assert "nav.parties" not in en  # customers keep the shared word
     assert hi["nav.suppliers"] == "वितरक"
+    assert hi["parties.list.supplier.add"] == "वितरक जोड़ें"
 
 
 def test_a_wholesaler_says_retailers_and_companies() -> None:
