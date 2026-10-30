@@ -201,7 +201,7 @@ def issue_invoice(
         # same), frozen like the average is. No price, no cost: never zero.
         item = row.get("item")
         if row["unit_cost_snapshot"] is None and item is not None and item.purchase_price > 0:
-            row["unit_cost_snapshot"] = item.purchase_price
+            row["unit_cost_snapshot"] = item.purchase_price * row.get("unit_factor", 1)
     replace_lines(document, rows)
 
     ledger_entry_id = None

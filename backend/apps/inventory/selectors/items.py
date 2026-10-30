@@ -56,6 +56,8 @@ def with_stock(qs: QuerySet, *, location_id: Any) -> QuerySet:
     the list renders as "—" — a zero would claim a stock count nobody took.
     """
     tracked = Q(track_stock=True, item_type=ItemType.GOODS)
+    # D P1a — every item row carries its other units (one extra query a page).
+    qs = qs.prefetch_related("extra_units__unit")
     qs = qs.annotate(
         _on_hand=Coalesce(
             _stock_subquery("on_hand", location_id), Value(Decimal("0.000")), output_field=QTY
@@ -193,6 +195,18 @@ def lookup_by_barcode(
     found = base.filter(barcode=code).first()
     if found is None:
         found = base.filter(sku=code).annotate(match_field=Value("sku")).first()
+    if found is None:
+        # D P1a — a box's own barcode: the item, with the unit it names, so a
+        # scan adds 1 box rather than 1 piece.
+        from apps.inventory.models import ItemUnit
+
+        extra = (
+            ItemUnit.objects.filter(tenant=tenant, barcode=code).select_related("unit").first()
+        )
+        if extra is not None:
+            found = base.filter(pk=extra.item_id).annotate(match_field=Value("unit_barcode")).first()
+            if found is not None:
+                found.scanned_unit = extra.unit.code
     return found
 
 

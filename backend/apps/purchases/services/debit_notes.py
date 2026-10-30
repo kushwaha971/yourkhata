@@ -193,7 +193,7 @@ def _post_stock(ctx: Ctx, note: Any, picked: list[tuple[Any, Decimal]]) -> list[
     lines = [
         MovementLine(
             item=line.item,
-            qty=-qty,
+            qty=-qty * line.unit_factor,
             movement_type=MovementType.PURCHASE_RETURN_OUT,
             movement_date=note.document_date,
             source_type=MovementSource.PURCHASE_DOCUMENT,

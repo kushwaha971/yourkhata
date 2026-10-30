@@ -106,6 +106,19 @@ def _item_row(item: Item) -> dict:
         "stock_value": _s(getattr(item, "stock_value", None)),
         "status": item.status,
         "match_field": getattr(item, "match_field", None),
+        # D P1a — the other units it sells in (1 Box = 20 PCS), and the unit a
+        # box's own barcode named when the lookup matched one.
+        "units": [
+            {
+                "code": extra.unit.code,
+                "factor": _s(extra.factor),
+                "barcode": extra.barcode,
+                "selling_price": _s(extra.selling_price),
+                "allow_decimal": extra.unit.allow_decimal,
+            }
+            for extra in item.extra_units.all()
+        ],
+        "scanned_unit": getattr(item, "scanned_unit", None),
         "updated_at": item.updated_at.isoformat(),
     }
 

@@ -116,6 +116,7 @@ class LineReadSerializer(serializers.ModelSerializer):
             "hsn_sac",
             "qty",
             "unit_code",
+            "unit_factor",
             "unit_price",
             "tax_inclusive",
             "discount_type",

@@ -118,6 +118,7 @@ class BillLineReadSerializer(serializers.ModelSerializer):
             "hsn_sac",
             "qty",
             "unit_code",
+            "unit_factor",
             "unit_cost",
             "discount_type",
             "discount_value",

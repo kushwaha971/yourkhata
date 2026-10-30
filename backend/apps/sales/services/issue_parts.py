@@ -45,6 +45,7 @@ def post_stock(
     """
     from apps.inventory.constants import ItemType, MovementType
     from apps.inventory.services.stock import MovementLine, post_movements
+    from apps.inventory.services.units import base_qty, per_line_unit
 
     movement_lines = []
     for row in rows:
@@ -54,7 +55,7 @@ def post_stock(
         movement_lines.append(
             MovementLine(
                 item=item,
-                qty=-row["qty"],
+                qty=-base_qty(row),
                 movement_type=MovementType.SALE_OUT,
                 movement_date=document.document_date,
                 source_type="sales_document",
@@ -74,7 +75,13 @@ def post_stock(
                         "details": details,
                     }
                 )
-    return {p.line.index + 1: p.movement.unit_cost for p in posted}
+    # The snapshot is per LINE unit (a box's cost): reports multiply it by the
+    # line's own qty. The movement's cost is per base unit.
+    by_no = {row["line_no"]: row for row in rows}
+    return {
+        p.line.index + 1: per_line_unit(p.movement.unit_cost, by_no[p.line.index + 1])
+        for p in posted
+    }
 
 
 def credit_check(

@@ -524,3 +524,33 @@ class StockCountLine(TenantModel):
         constraints = [
             models.UniqueConstraint(fields=["count", "item"], name="uq_stock_count_line_item"),
         ]
+
+
+class ItemUnit(TenantModel):
+    """D P1a — another unit an item is sold or bought in (design D3 "Also sold
+    as"): 1 Box = 20 PCS. Always a multiple of the item's own unit, which stays
+    the smallest; stock is kept and posted in that base unit only.
+
+    `barcode` lets a box carry its own code (a scan adds 1 box); a box with no
+    `selling_price` sells at the item's price × `factor`.
+    """
+
+    item = models.ForeignKey(Item, on_delete=models.CASCADE, related_name="extra_units")
+    unit = models.ForeignKey(Unit, on_delete=models.RESTRICT, related_name="+")
+    factor = QuantityField()
+    barcode = models.CharField(max_length=BARCODE_MAX_LENGTH, null=True, blank=True)
+    selling_price = MoneyField(null=True, blank=True)
+
+    class Meta:
+        db_table = "inventory_item_unit"
+        verbose_name = "item unit"
+        verbose_name_plural = "item units"
+        constraints = [
+            models.UniqueConstraint(fields=["item", "unit"], name="uq_item_unit"),
+            models.UniqueConstraint(
+                fields=["tenant", "barcode"],
+                condition=models.Q(barcode__isnull=False),
+                name="uq_item_unit_barcode",
+            ),
+            models.CheckConstraint(condition=models.Q(factor__gt=1), name="ck_item_unit_factor"),
+        ]

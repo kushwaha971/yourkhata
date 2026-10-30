@@ -106,6 +106,7 @@ def _post_stock(ctx: Ctx, document: PurchaseDocument, rows: list[dict]) -> list[
     """FR-6e — `purchase_in` for tracked goods at the inbound unit cost; returns PostedLines."""
     from apps.inventory.constants import ItemType, MovementSource, MovementType
     from apps.inventory.services.stock import MovementLine, post_movements
+    from apps.inventory.services.units import base_qty, per_base_unit
 
     movement_lines = []
     for row in rows:
@@ -115,12 +116,13 @@ def _post_stock(ctx: Ctx, document: PurchaseDocument, rows: list[dict]) -> list[
         movement_lines.append(
             MovementLine(
                 item=item,
-                qty=row["qty"],
+                qty=base_qty(row),
                 movement_type=MovementType.PURCHASE_IN,
                 movement_date=document.document_date,
                 source_type=MovementSource.PURCHASE_DOCUMENT,
                 source_id=document.id,
-                unit_cost=row["inbound_unit_cost"],
+                # Inbound cost is per LINE unit (a box); the movement's per base.
+                unit_cost=per_base_unit(row["inbound_unit_cost"], row),
                 index=row["line_no"] - 1,
             )
         )
@@ -198,7 +200,9 @@ def record_bill(
             itc_claimable=claimable,
         )
         if row.get("item") is not None:
-            last_costs[row["item"].id] = row["inbound_unit_cost"]
+            from apps.inventory.services.units import per_base_unit
+
+            last_costs[row["item"].id] = per_base_unit(row["inbound_unit_cost"], row)
         else:
             row["inbound_unit_cost"] = None
     posted = _post_stock(ctx, document, rows)

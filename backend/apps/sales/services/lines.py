@@ -75,6 +75,9 @@ def build_lines(
         for item in Item.objects.filter(tenant=tenant, pk__in=item_ids).select_related("unit")
     }
     rate_cache: dict[str, Any] = {}
+    from apps.inventory.services.units import extra_units, resolve
+
+    extras = extra_units(list(items.values()))
 
     for index, raw in enumerate(raw_lines):
         prefix = f"lines.{index}"
@@ -95,11 +98,18 @@ def build_lines(
 
         description = str(pick("description", item.name if item else "")).strip()[:255]
         hsn = pick("hsn_sac", item.hsn_sac if item else None) or None
-        unit_code = str(pick("unit_code", item.unit.code if item else "NOS"))[:8]
+        # D P1a — a box line: its code, how many base units it is, its price.
+        unit = resolve(item, raw.get("unit_code"), extras)
+        unit_code = unit.code
         tax_code = str(pick("tax_code", item.tax_code if item else "GST0"))
         inclusive = bool(pick("tax_inclusive", item.tax_inclusive_selling if item else False))
         qty = _decimal(raw.get("qty"), 3)
-        price = _decimal(pick("unit_price", item.selling_price if item else None), 4)
+        default_price = None
+        if item is not None:
+            default_price = (
+                unit.price if unit.price is not None else item.selling_price * unit.factor
+            ).quantize(Decimal("0.0001"))
+        price = _decimal(pick("unit_price", default_price), 4)
         d_type = raw.get("discount_type") or None
         d_value = _decimal(raw.get("discount_value"), 2) if d_type else None
 
@@ -107,7 +117,7 @@ def build_lines(
             errors[f"{prefix}.description"] = ["Describe the item."]
         if qty is None or qty <= 0:
             errors[f"{prefix}.qty"] = ["Enter a quantity above zero, up to 3 decimals."]
-        elif item is not None and not item.unit.allow_decimal and qty != qty.to_integral_value():
+        elif item is not None and not unit.allow_decimal and qty != qty.to_integral_value():
             errors[f"{prefix}.qty"] = [f"Quantity must be a whole number for {unit_code}."]
         if price is None or price < 0:
             errors[f"{prefix}.unit_price"] = ["Price cannot be negative (up to 4 decimals)."]
@@ -164,6 +174,7 @@ def build_lines(
                 "hsn_sac": hsn,
                 "qty": qty,
                 "unit_code": unit_code,
+                "unit_factor": unit.factor,
                 "unit_price": price,
                 "tax_inclusive": inclusive,
                 "discount_type": d_type,

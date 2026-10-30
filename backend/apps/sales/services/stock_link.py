@@ -37,6 +37,7 @@ def restock_rows(ctx: Ctx, document: Any, rows: list[dict]) -> list[str]:
     """`sale_return_in` for every tracked goods row. Returns the movement ids."""
     from apps.inventory.constants import MovementType
     from apps.inventory.services.stock import MovementLine, post_movements
+    from apps.inventory.services.units import base_qty, per_base_unit
 
     lines = []
     for row in rows:
@@ -46,11 +47,11 @@ def restock_rows(ctx: Ctx, document: Any, rows: list[dict]) -> list[str]:
         # None (standalone, or an invoice line with no snapshot) is the costing
         # step's "inbound without a cost": in at the current average, which is
         # left unchanged.
-        cost = row.get("unit_cost_snapshot")
+        cost = per_base_unit(row.get("unit_cost_snapshot"), row)
         lines.append(
             MovementLine(
                 item=item,
-                qty=Decimal(row["qty"]),
+                qty=base_qty(row),
                 movement_type=MovementType.SALE_RETURN_IN,
                 movement_date=document.document_date,
                 source_type="sales_document",

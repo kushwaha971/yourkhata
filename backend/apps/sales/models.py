@@ -207,6 +207,9 @@ class SalesDocumentLine(models.Model):
     hsn_sac = models.CharField(max_length=8, null=True, blank=True)
     qty = QuantityField()
     unit_code = models.CharField(max_length=8)
+    #: D P1a — how many base units one of `unit_code` is (1 for the item's own
+    #: unit). Stock moves by `qty × unit_factor`, always in the base unit.
+    unit_factor = QuantityField(default=1)
     unit_price = UnitCostField(default=0)
     tax_inclusive = models.BooleanField(default=False)
     discount_type = models.CharField(
