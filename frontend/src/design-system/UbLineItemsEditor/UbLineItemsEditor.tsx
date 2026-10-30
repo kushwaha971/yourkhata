@@ -426,6 +426,7 @@ export function UbLineItemsEditor<TForm extends FieldValues, TName extends Array
               data-line-cell=""
               data-row={index}
               data-col={col}
+              data-field={String(column.field)}
               className="flex min-w-0 flex-col gap-1"
             >
               {column.render({

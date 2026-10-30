@@ -1,6 +1,6 @@
 # C1 — Scan on a bill
 
-> **Status: STARTED** (30 Oct 2026). Design: §C1 of
+> **Status: BUILT, design gaps closed, monkey to run** (30 Oct 2026). Design: §C1 of
 > `docs/revamp/design/shop-fixes-and-business-types.html` (v7), mocks `pScan`
 > (phone camera, continuous) and `dScan` (desktop USB scanner, line flash,
 > not-found note); plan `docs/revamp/13-business-types-and-scanning-plan.md` §2.
@@ -27,3 +27,37 @@
   CLAUDE.md: a new dependency needs the owner's yes. Until then the camera
   works where the phone supports it and every other phone gets the "type the
   code" path (S7), which the design already draws.
+
+## Where it stands (30 Oct 2026, evening)
+
+`node e2e/c1-scan.mjs`: **25/25** on the live stack; `--skew` fails all 12
+read-back checks (the self-test). Side by side: `/tmp/e2e-shots/c1/compare-c1.png`.
+
+| # | Status | Evidence |
+|---|---|---|
+| S1 | passed | c1-scan: line added, qty 2 read back from the draft API (`"2.000"`), flash present |
+| S2 | passed | c1-scan: oscillator started once; `navigator.vibrate([40])` once per camera scan. Badge "Scanner connected · beep on" shows **after the first scan** (unit + live) |
+| S3 | passed | c1-scan: 404 proven first, note text exact, caret kept, nothing added |
+| S4 | passed | c1-scan: `activeElement` is the search after each scan; "What the scanner does" card shows after a scan (desktop) |
+| S5 | passed except the bill number | corner brackets measured (`clip-path: polygon`); title reads "Scanning for bill" |
+| S6 | passed | tray row "+ C1 scan item  × 1 · ₹52.50", its ink measured light on the dark tray |
+| S7 | passed | "Camera is blocked", the Barcode box focused on open, typed code adds the line |
+| S8 | unproven | timing harness not written yet |
+| S9 | passed | camera sheet and zxing in their own lazy chunks; the editors grew 1.9 KB for the search's scan path (bundle-budgets note) |
+
+**Found by looking, fixed with checks that fail first:** the tray row's words
+were dark on the dark tray (UbText paints its own colour, so the row's colour
+never reached them). `innerText` read them fine, so the check now measures
+each span's computed colour.
+
+**Differences from the design, kept on purpose (owner to confirm):**
+- *Bill number in the camera title.* The design says "Scanning for bill ·
+  INV-0419"; a draft has no number until it is issued (A4 decision), so
+  inventing one would be false. The title says "Scanning for bill".
+- *"Scanner connected" before any scan.* A USB scanner is a keyboard; the
+  browser cannot see it. The badge appears after the first scanned code.
+- *"+1 scanned" sits under the Qty box*, not beside it: the Qty column is the
+  box's own width at 1280.
+- *Tray summary vs row*: the summary is the bill's grand total after round-off
+  (₹53.00) and the row is that line's amount (₹52.50); both are the bill's
+  own figures.

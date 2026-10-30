@@ -157,6 +157,21 @@ its branch. A section that lags the code is a defect.
 - **Status:** ready for the owner's check (30 Oct 2026).
 - **Next:** B3 Shop features in Settings.
 
+## B3 · Shop features in Settings — main session
+
+- **Report:** inside the B2 report; harness `e2e/b3-features.mjs` (14).
+- **Status:** built and checked live; waiting on the owner's "1 vs 9 switches" answer.
+
+## C1 · Scan on a bill — main session
+
+- **Report:** `docs/performance/2026-10-30-shop-c1-scan-on-a-bill.md`;
+  harness `e2e/c1-scan.mjs` (25; `--skew` fails every read-back); fixture
+  `e2e/fixtures/c1_scan_item.py` (item "C1 scan item", barcode 8906000000017).
+  Run harnesses outside the sandbox with `PW_CHROME` set to the headless shell.
+- **Status:** design gaps closed on 30 Oct except the bill number in the
+  camera title (a draft has no number; see the report). Monkey next.
+- **Next:** C1 monkey (3 seeds × 390/1280 × 300 steps), then C2, then C3.
+
 ## What the stopped sessions found (27 Oct 2026, before the owner stopped them)
 
 The owner stopped the parallel sessions to save usage. Three sessions working

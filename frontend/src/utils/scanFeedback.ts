@@ -49,16 +49,25 @@ export const SCAN_FLASH_MS = 900;
  * Flash the bill line at `row` green: the desktop table's cells for that row
  * and the phone list's line. Drawn by `[data-scan-flash]` in globals.css.
  */
-export const flashLine = (row: number): void => {
+export const flashLine = (row: number, note?: string): void => {
   if (typeof document === 'undefined') return;
   requestAnimationFrame(() => {
     const targets = [
       ...document.querySelectorAll<HTMLElement>(`[data-line-cell][data-row="${row}"]`),
       ...[...document.querySelectorAll<HTMLElement>('[data-testid="invoice-line"]')].slice(row, row + 1),
     ];
+    // Design dScan: "+1 scanned" under that line's Qty while it flashes.
+    // The sales bill's table names its inputs `lines.<n>.qty`; the shared
+    // line editor (purchases) marks its cells with data-field.
+    const qty = note
+      ? (document.getElementById(`lines.${row}.qty`)?.closest<HTMLElement>('td') ??
+        document.querySelector<HTMLElement>(`[data-line-cell][data-row="${row}"][data-field="qty"]`))
+      : null;
     for (const el of targets) el.setAttribute('data-scan-flash', '');
+    qty?.setAttribute('data-scan-note', note ?? '');
     window.setTimeout(() => {
       for (const el of targets) el.removeAttribute('data-scan-flash');
+      qty?.removeAttribute('data-scan-note');
     }, SCAN_FLASH_MS);
   });
 };

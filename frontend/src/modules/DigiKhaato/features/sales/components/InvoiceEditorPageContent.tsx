@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import dynamic from 'next/dynamic';
 
-import { Banknote, PauseCircle, Save, Send, Trash2 } from 'lucide-react';
+import { Banknote, PauseCircle, Save, ScanLine, Send, Trash2 } from 'lucide-react';
 import { useStore } from 'react-redux';
 
 import {
@@ -20,6 +20,7 @@ import {
   UbPageSkeleton,
   UbPanel,
   UbStack,
+  UbStatusBadge,
   UbStatusBanner,
   UbTaskBar,
   UbText,
@@ -104,6 +105,12 @@ export function InvoiceEditorPageContent({
   const { form, preview, editor: server, canWrite, save, issue, values, today } = editor;
   const [paying, setPaying] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  /* C1 (design dScan): once a code has been scanned onto this bill, the desktop
+     says the scanner is working ("Scanner connected · beep on") and what it
+     does. Before the first scan nothing is claimed: a USB scanner is a
+     keyboard, and the browser cannot tell one is plugged in. */
+  const [scanSeen, setScanSeen] = useState(false);
+  const markScanned = useCallback(() => setScanSeen(true), []);
   // Shop item 3 — a sales order is written as an estimate is: saved, then numbered, never paid.
   // Shop item 4 — a delivery challan likewise: saved, then issued (stock out), never paid.
   const estimate = kind !== 'invoice';
@@ -513,6 +520,15 @@ export function InvoiceEditorPageContent({
           controls={docksTotals ? undefined : saveIndicator}
           actions={
             <>
+              {/* Design dScan: the badge sits on the header's right, level
+                  with the title, beside the bill's own actions. */}
+              {bill && desk && scanSeen && (
+                <UbStatusBadge
+                  label={t('sales.scan.badge')}
+                  icon={<ScanLine aria-hidden className="h-3.5 w-3.5" />}
+                  className="self-center bg-accent-quiet text-text-accent"
+                />
+              )}
               {server.documentId && (
                 <UbButton
                   variant="ghost"
@@ -671,6 +687,7 @@ export function InvoiceEditorPageContent({
               disabled={locked}
               onSubmitShortcut={requestIssue}
               openLine={openLine}
+              onScanned={markScanned}
             />
           </UbStack>
           <UbStack gap={3} className="min-w-0" data-testid="invoice-side">
@@ -705,6 +722,22 @@ export function InvoiceEditorPageContent({
                 rule46={estimate ? null : server.rule46}
                 warnings={server.warnings}
               />
+            )}
+            {bill && desk && scanSeen && (
+              // Design dScan `.card.pad.small.sec`: what the scanner does.
+              <UbPanel data-testid="scan-help">
+                <UbStack gap={1} className="p-4">
+                  <UbText as="h2" variant="body-sm-medium">
+                    {t('sales.scan.help.title')}
+                  </UbText>
+                  <UbText as="p" variant="body-sm" tone="secondary">
+                    {t('sales.scan.help.same')}
+                  </UbText>
+                  <UbText as="p" variant="body-sm" tone="secondary">
+                    {t('sales.scan.help.caret')}
+                  </UbText>
+                </UbStack>
+              </UbPanel>
             )}
           </UbStack>
         </UbGrid>

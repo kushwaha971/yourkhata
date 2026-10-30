@@ -100,6 +100,11 @@ const csrfOf = async (ctx) => ({ 'X-CSRF-Token': (await ctx.cookies()).find((c) 
   await sleep(300);
   const flashed = await page.evaluate(() => Boolean(document.querySelector('[data-scan-flash]')));
   check('desktop: the same code flashes the line green', flashed);
+  // Design dScan: "+1 scanned" under that Qty; the badge and the side card.
+  const note = await page.evaluate(() => document.getElementById('lines.0.qty')?.closest('[data-scan-note]')?.getAttribute('data-scan-note') ?? '');
+  check('desktop: "+1 scanned" under the Qty', note === (skew ? 'XX' : '+1 scanned'), note);
+  const main0 = await page.locator('main').innerText();
+  check('desktop: "Scanner connected · beep on" and "What the scanner does" after a scan', main0.includes(skew ? 'XX' : 'Scanner connected · beep on') && main0.includes('What the scanner does'));
   await page.screenshot({ path: `${dir}/1280-flash.png` });
   await sleep(1200);
   const qty = await page.locator('[id="lines.0.qty"]').inputValue().catch(() => '');
@@ -111,8 +116,8 @@ const csrfOf = async (ctx) => ({ 'X-CSRF-Token': (await ctx.cookies()).find((c) 
   check('the unknown code really is unknown (404)', miss.status() === 404, String(miss.status()));
   await burst(UNKNOWN);
   await sleep(1200);
-  const note = await page.getByTestId('scan-not-found').innerText().catch(() => '');
-  check('desktop: unknown code → "Not found: …" note', note.includes(skew ? 'XX' : `Not found: ${UNKNOWN}. The bill is not affected.`), note);
+  const missNote = await page.getByTestId('scan-not-found').innerText().catch(() => '');
+  check('desktop: unknown code → "Not found: …" note', missNote.includes(skew ? 'XX' : `Not found: ${UNKNOWN}. The bill is not affected.`), missNote);
   check('desktop: the caret is still in the search', await search.evaluate((el) => el === document.activeElement));
   await page.screenshot({ path: `${dir}/1280-not-found.png` });
   // Read back: the draft the editor saved holds the line at qty 2.
@@ -148,6 +153,18 @@ for (const camera of [true, false]) {
     });
     const tray = await page.getByTestId('scan-sheet').innerText();
     check('phone: the tray shows the item just scanned', tray.includes(skew ? 'XX' : `+ ${NAME}`), tray.slice(0, 120).replace(/\n/g, ' / '));
+    // Design pScan `.li2`: "× 1 · ₹…" beside the name, the bill's own figure.
+    const rowText = await page.getByTestId('scan-tray-row').first().innerText().catch(() => '');
+    check('phone: the tray row says "× 1 · ₹…"', /× 1 · ₹[\d,]+\.\d{2}/.test(rowText) !== skew, rowText.replace(/\n/g, ' '));
+    // innerText reads invisible ink too: the first build painted this row
+    // dark on the dark tray. Every span in it must carry a light colour.
+    const rowInks = await page.getByTestId('scan-tray-row').first().evaluate((r) => [...r.querySelectorAll('span')].map((e) => getComputedStyle(e).color));
+    check('phone: the tray row is readable (light ink on the dark tray)', rowInks.length === 2 && rowInks.every((c) => { const [r, g, b] = c.match(/\d+/g).map(Number); return r + g + b > 400; }), JSON.stringify(rowInks));
+    const frame = await page.evaluate(() => {
+      const c = document.querySelector('[data-scan-corners]');
+      return c ? getComputedStyle(c).clipPath.startsWith('polygon') : false;
+    });
+    check('phone: the frame is corner brackets (clipped ring)', frame);
     const buzz = await page.evaluate(() => window.__buzz);
     check('phone: the phone buzzed once for the scan', buzz.length === (skew ? 9 : 1), JSON.stringify(buzz));
     await page.screenshot({ path: `${dir}/390-camera-scanned.png` });
@@ -171,6 +188,7 @@ for (const camera of [true, false]) {
     check('phone: the line is on the bill', (await page.locator('main').innerText()).includes(skew ? 'XX' : NAME));
   } else {
     const text = await page.getByTestId('scan-sheet').innerText();
+    check('phone, no camera: the Barcode box is focused', await page.getByLabel('Barcode').evaluate((el) => el === document.activeElement));
     check('phone, no camera: "Camera is blocked" view', text.includes(skew ? 'XX' : 'Camera is blocked'));
     await page.getByLabel('Barcode').fill(CODE);
     await page.getByRole('button', { name: 'Add' }).click();

@@ -89,6 +89,13 @@ export function UbScanSheet({
   const blocked = !supported || denied;
   const [torchOn, setTorchOn] = useState(false);
   const [typed, setTyped] = useState('');
+  // Design pCamBlocked draws the Barcode box focused: the keypad is up and the
+  // person types at once. Not React's autoFocus, which a dialog's own focus
+  // handling has overridden before here (CLAUDE.md, LED-01).
+  const typedInput = useRef<HTMLInputElement>(null);
+  useEffect(() => {
+    if (open && blocked) typedInput.current?.focus();
+  }, [open, blocked]);
   const handler = useRef(onCode);
   useEffect(() => {
     handler.current = onCode;
@@ -216,8 +223,11 @@ export function UbScanSheet({
           <>
             <div
               aria-hidden
-              className="pointer-events-none absolute left-1/2 top-[42%] h-[150px] w-[250px] -translate-x-1/2 -translate-y-1/2 rounded-[14px] border-[3px] border-white shadow-[0_0_0_999px_rgba(0,0,0,0.45)]"
+              className="pointer-events-none absolute left-1/2 top-[42%] h-[150px] w-[250px] -translate-x-1/2 -translate-y-1/2 rounded-[14px] shadow-[0_0_0_999px_rgba(0,0,0,0.45)]"
             >
+              {/* Design `.cam .box::before`: four white corner brackets, not a
+                  full border, cut from one 3 px ring by the design's polygon. */}
+              <span data-scan-corners className="absolute inset-0 rounded-[14px] border-[3px] border-white" />
               <span className="absolute left-3 right-3 top-1/2 h-0.5 bg-[#F59E1B] shadow-[0_0_12px_#F59E1B]" />
             </div>
             <p className="absolute left-0 right-0 top-[calc(42%+92px)] text-center text-sm text-[#e6e6e6]">
@@ -255,6 +265,7 @@ export function UbScanSheet({
           <div className="flex gap-2">
             <input
               id="ub-scan-typed"
+              ref={typedInput}
               inputMode="numeric"
               autoComplete="off"
               value={typed}

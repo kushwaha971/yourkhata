@@ -91,12 +91,21 @@ it('without a built-in reader, reads with the ponyfill and serves its .wasm from
   expect(overrides.locateFile('zxing_reader.wasm', 'https://cdn.example/')).toBe('/vendor/zxing_reader-3.1.3.wasm');
 });
 
+it('draws the frame as four corner brackets, as the design does', () => {
+  /* Prevents the full white border coming back in place of the design's
+     brackets (.cam .box::before); the brackets are cut by a CSS polygon. */
+  render(<UbScanSheet open onClose={jest.fn()} onCode={jest.fn()} title="t" hint="h" labels={labels} />);
+  expect(document.querySelector('[data-scan-corners]')).not.toBeNull();
+});
+
 it('without a camera, shows the blocked view and adds a typed code', async () => {
   Object.defineProperty(navigator, 'mediaDevices', { configurable: true, value: undefined });
   jest.useRealTimers();
   const onCode = jest.fn();
   render(<UbScanSheet open onClose={jest.fn()} onCode={onCode} title="t" hint="h" labels={labels} />);
   expect(screen.getByText('Camera is blocked')).toBeInTheDocument();
+  // Design pCamBlocked draws the box focused: the keypad is already up.
+  expect(screen.getByLabelText('Barcode')).toHaveFocus();
   await userEvent.type(screen.getByLabelText('Barcode'), '8901030875021');
   await userEvent.click(screen.getByRole('button', { name: 'Add' }));
   expect(onCode).toHaveBeenCalledWith('8901030875021');

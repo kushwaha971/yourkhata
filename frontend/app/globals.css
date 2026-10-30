@@ -1033,3 +1033,27 @@ html:not([data-hydrated]) :is(button, [role='button'], a):active {
     transition: none;
   }
 }
+
+/* C1 (design `.cam .box::before`) — the camera frame is four corner brackets:
+   one 3 px ring with its middles cut away by the design's own polygon. */
+[data-scan-corners] {
+  clip-path: polygon(0 0, 22% 0, 22% 3px, 3px 3px, 3px 30%, 0 30%, 0 70%, 3px 70%, 3px calc(100% - 3px), 22% calc(100% - 3px), 22% 100%, 78% 100%, 78% calc(100% - 3px), calc(100% - 3px) calc(100% - 3px), calc(100% - 3px) 70%, 100% 70%, 100% 30%, calc(100% - 3px) 30%, calc(100% - 3px) 3px, 78% 3px, 78% 0, 100% 0, 100% 100%, 0 100%);
+}
+
+/* C1 (design dScan `+1 scanned`) — under the Qty of the line a scan just
+   added or raised, for as long as it flashes. The words come from the
+   caller (scanFeedback.flashLine), so Hindi reads Hindi. */
+[data-scan-note]::after {
+  content: attr(data-scan-note);
+  display: inline-block;
+  margin-top: 4px;
+  align-self: flex-start;
+  border-radius: 999px;
+  /* Design `.badge`: get-wash face, get ink, 11.5 px / 600, 2 px 9 px. */
+  background-color: hsl(var(--success-dim));
+  color: hsl(var(--success));
+  padding: 2px 9px;
+  font-size: 11.5px;
+  font-weight: 600;
+  white-space: nowrap;
+}

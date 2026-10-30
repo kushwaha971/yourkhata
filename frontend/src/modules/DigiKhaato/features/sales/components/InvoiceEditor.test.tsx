@@ -268,6 +268,32 @@ describe('the line table on a desktop (design §A4 dBill)', () => {
       window.matchMedia = original;
     }
   });
+
+  it('after a scan, says the scanner works, what it does, and "+1 scanned" under that Qty', async () => {
+    /* C1 design dScan. Prevents: the badge claiming a scanner is connected
+       before any code arrived (a USB scanner is a keyboard; the browser cannot
+       see it), and the scanned line losing its "+1 scanned" under Qty. */
+    const original = window.matchMedia;
+    window.matchMedia = ((query: string) => ({
+      ...original(query),
+      matches: /min-width/.test(query),
+    })) as typeof window.matchMedia;
+    try {
+      signIn(['sales.invoice.read', 'sales.invoice.write', 'inventory.item.read']);
+      renderWithProviders(<InvoiceEditorPageContent documentId={null} />);
+      const search = await screen.findByRole('combobox', { name: 'Search items to add' });
+      expect(screen.queryByText('Scanner connected · beep on')).toBeNull();
+      expect(screen.queryByTestId('scan-help')).toBeNull();
+      await userEvent.type(search, '8901234567890{Enter}');
+      expect(await screen.findByText('Scanner connected · beep on')).toBeInTheDocument();
+      expect(within(screen.getByTestId('scan-help')).getByText('What the scanner does')).toBeInTheDocument();
+      await waitFor(() =>
+        expect(document.getElementById('lines.0.qty')?.closest('[data-scan-note="+1 scanned"]')).not.toBeNull()
+      );
+    } finally {
+      window.matchMedia = original;
+    }
+  });
 });
 
 describe('a 1280 laptop (WP-05 dock, design §A4 dBill columns)', () => {
@@ -1052,6 +1078,45 @@ describe('a busy counter (07-screens/09 §3)', () => {
     expect(await screen.findByText('Check line 1: Qty')).toBeInTheDocument();
     expect(qty).toHaveFocus();
     expect(screen.queryByText(/Some fields need fixing/)).not.toBeInTheDocument();
+  });
+
+  it('the phone camera tray shows each scanned item with its quantity and amount', async () => {
+    /* C1 design pScan `.tray .li2`: "+ name" left, "× 1 · ₹…" right, from the
+       same engine as the totals. Prevents the tray going back to bare names,
+       which tell a cashier nothing about what the bill now charges. */
+    let seen: string | null = '8901234567890';
+    (globalThis as unknown as { BarcodeDetector: unknown }).BarcodeDetector = class {
+      detect = async () => {
+        const code = seen;
+        seen = null;
+        return code ? [{ rawValue: code }] : [];
+      };
+    };
+    Object.defineProperty(navigator, 'mediaDevices', {
+      configurable: true,
+      value: { getUserMedia: async () => ({ getTracks: () => [], getVideoTracks: () => [] }) },
+    });
+    Object.defineProperty(HTMLMediaElement.prototype, 'play', {
+      configurable: true,
+      value: () => Promise.resolve(),
+    });
+    const original = window.matchMedia;
+    window.matchMedia = ((query: string) => ({
+      ...original(query),
+      matches: /max-width/.test(query),
+    })) as typeof window.matchMedia;
+    try {
+      signIn(RIGHTS);
+      renderWithProviders(<InvoiceEditorPageContent documentId={null} />);
+      await userEvent.click(await screen.findByTestId('open-camera-scan'));
+      const row = await screen.findByTestId('scan-tray-row', {}, { timeout: 3000 });
+      expect(row).toHaveTextContent('+ Syska LED bulb 9W');
+      await waitFor(() => expect(row).toHaveTextContent(/× 1 · ₹[\d,]+\.\d{2}/));
+    } finally {
+      window.matchMedia = original;
+      delete (globalThis as unknown as { BarcodeDetector?: unknown }).BarcodeDetector;
+      Object.defineProperty(navigator, 'mediaDevices', { configurable: true, value: undefined });
+    }
   });
 
   it('raises Qty when the same item is scanned again, instead of adding a line', async () => {

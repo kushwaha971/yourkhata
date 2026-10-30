@@ -32,6 +32,7 @@ export function useLineQuickAdd({
   setQuantity,
   maxLines,
   lineLabel,
+  scannedNote,
   disabled = false,
 }: Readonly<{
   lines: readonly CounterLine[] | undefined;
@@ -41,6 +42,8 @@ export function useLineQuickAdd({
   setQuantity: (index: number, quantity: string) => void;
   maxLines: number;
   lineLabel: (number: number) => string;
+  /** C1 design dScan: "+1 scanned" under Qty while a scanned line flashes. */
+  scannedNote?: string;
   disabled?: boolean;
 }>): LineQuickAddResult {
   const [focusRequest, setFocusRequest] = useState<UbLineFocusRequest | null>(null);
@@ -57,7 +60,7 @@ export function useLineQuickAdd({
         setQuantity(same, counted);
         if (via === 'list') focusQuantity(same);
         // C1: the same item scanned again raises Qty and the line flashes.
-        if (via === 'scan') flashLine(same);
+        if (via === 'scan') flashLine(same, scannedNote);
         return;
       }
       const last = current.length - 1;
@@ -68,9 +71,9 @@ export function useLineQuickAdd({
       pick(index, item);
       // The search owns its scanner caret. A list choice moves to this line's Qty.
       if (via === 'list') focusQuantity(index);
-      if (via === 'scan') flashLine(index);
+      if (via === 'scan') flashLine(index, scannedNote);
     },
-    [disabled, readLines, setQuantity, focusQuantity, maxLines, appendEmpty, pick]
+    [disabled, readLines, setQuantity, focusQuantity, maxLines, appendEmpty, pick, scannedNote]
   );
   const lineOptions = useMemo(
     () =>

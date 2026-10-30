@@ -81,6 +81,8 @@ export interface ItemQuickAddLabels {
     readonly lastScanned: string;
     /** "3 items · ₹448" — the bill so far, from the caller. */
     readonly summary: string;
+    /** Design pScan: "× 2 · ₹106" for a scanned item's line on the bill. */
+    readonly lineOf?: (itemId: string) => string | undefined;
     readonly labels: UbScanSheetProps['labels'];
   };
 }
@@ -88,6 +90,10 @@ export interface ItemQuickAddLabels {
 /* The form belongs to the chunk that OPENS it, never to the bill's route. */
 /** EAN-8 … EAN-14 / UPC: what a scanner types. */
 const BARCODE_SHAPE = /^\d{8,14}$/;
+
+/** Design `.tray .li2` / `.li2.new`: the newest scan green and bold. */
+const rowInk = (index: number): string =>
+  index === 0 ? 'font-bold text-[#6FCF7C]' : 'text-[#ECEEF0]';
 
 /* C1: the camera sheet loads when the scan button is first tapped. */
 const UbScanSheet = dynamic(() => import('src/design-system').then((m) => m.UbScanSheet), {
@@ -247,15 +253,18 @@ function ItemQuickAddBase({
   /** The person moved through the list with the arrows since typing. */
   const arrowed = useRef(false);
   const [cameraOpen, setCameraOpen] = useState(false);
-  /** C1 tray: the names scanned while the camera is open, newest first. */
-  const [scanned, setScanned] = useState<readonly string[]>([]);
+  /** C1 tray: the items scanned while the camera is open, newest first, once
+      each (a second scan of one item raises its line, not the tray). */
+  const [scanned, setScanned] = useState<readonly { id: string; name: string }[]>([]);
   const scan = useCallback(
     (code: string) => {
       void search.lookup(code).then((row) => {
         if (row) {
           setMissed(null);
           scanFeedback('added');
-          setScanned((list) => [row.name, ...list].slice(0, 3));
+          setScanned((list) =>
+            [{ id: row.id, name: row.name }, ...list.filter((one) => one.id !== row.id)].slice(0, 3)
+          );
           choose(row, 'scan');
           return;
         }
@@ -549,18 +558,22 @@ function ItemQuickAddBase({
                   {labels.camera.summary}
                 </UbText>
               </UbBox>
-              {scanned.map((name, index) => (
-                <UbText
-                  key={`${name}-${index}`}
-                  as="span"
-                  variant="inherit"
-                  className={cn(
-                    'truncate text-sm',
-                    index === 0 ? 'font-bold text-[#6FCF7C]' : 'text-[#ECEEF0]'
-                  )}
+              {scanned.map((one, index) => (
+                // Design `.tray .li2`: name left (cut if long), "× qty · ₹" right.
+                // The ink goes on each span: UbText paints its own colour, and
+                // the row's colour alone left both halves invisible (c1-scan).
+                <UbBox
+                  key={one.id}
+                  data-testid="scan-tray-row"
+                  className="flex justify-between gap-2.5 text-sm"
                 >
-                  {index === 0 ? `+ ${name}` : name}
-                </UbText>
+                  <UbText as="span" variant="inherit" className={cn('min-w-0 truncate', rowInk(index))}>
+                    {index === 0 ? `+ ${one.name}` : one.name}
+                  </UbText>
+                  <UbText as="span" variant="inherit" className={cn('shrink-0 tabular-nums', rowInk(index))}>
+                    {labels.camera?.lineOf?.(one.id) ?? ''}
+                  </UbText>
+                </UbBox>
               ))}
             </UbBox>
           }

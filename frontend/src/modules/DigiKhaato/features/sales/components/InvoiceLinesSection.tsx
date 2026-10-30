@@ -53,6 +53,7 @@ export function InvoiceLinesSection({
   taxFree,
   disabled,
   openLine = null,
+  onScanned,
 }: Readonly<{
   form: UseFormReturn<InvoiceFormValues>;
   preview: EngineResult;
@@ -63,6 +64,8 @@ export function InvoiceLinesSection({
   onSubmitShortcut?: () => void;
   /** A refused finish names a line's field (design §A4): on a phone its sheet opens on it. */
   openLine?: UbLineFocusRequest | null;
+  /** C1: a code was scanned onto this bill (the desktop shows its scanner badge). */
+  onScanned?: () => void;
 }>): React.JSX.Element {
   const { t } = useTranslation();
   const { control, watch, setValue, getValues, trigger } = form;
@@ -187,8 +190,28 @@ export function InvoiceLinesSection({
     },
     maxLines: MAX_LINES,
     lineLabel: (n) => t('sales.line.label', { n }),
+    scannedNote: t('sales.scan.plusOne'),
     disabled,
   });
+  const pickItem = useCallback(
+    (row: ItemListRow, via: Parameters<typeof quickAdd>[1]) => {
+      quickAdd(row, via);
+      if (via === 'scan') onScanned?.();
+    },
+    [quickAdd, onScanned]
+  );
+  /* Design pScan tray: "× 2 · ₹106" — the scanned item's line, from the same
+     engine as the totals, so the tray and the bill never disagree. */
+  const scannedLine = useCallback(
+    (itemId: string) => {
+      const index = (lines ?? []).map((line) => line.itemId).lastIndexOf(itemId);
+      const line = lines?.[index];
+      const total = preview.lines[index]?.lineTotal;
+      if (!line || total === undefined || !/^\d+(\.\d+)?$/.test(line.qty)) return undefined;
+      return t('sales.scan.camera.line', { qty: formatQuantity(line.qty), amount: formatInr(total) });
+    },
+    [lines, preview.lines, t]
+  );
   useEffect(() => {
     if (!focusRequest || !findPending.current) return;
     findPending.current = false;
@@ -293,7 +316,7 @@ export function InvoiceLinesSection({
   const search = wide ? (
     <ItemQuickAdd
       labels={{ ...quickAddLabels, placeholder: t('sales.line.quickAdd.placeholderDesk') }}
-      onPick={quickAdd}
+      onPick={pickItem}
       disabled={disabled}
       hotkey="F2"
       className="[&_input]:text-sm"
@@ -328,6 +351,7 @@ export function InvoiceLinesSection({
             count: (lines ?? []).filter((line) => line.itemId).length,
             total: formatInr(preview.grandTotal),
           }),
+          lineOf: scannedLine,
           labels: {
             close: t('common.action.close'),
             torch: t('sales.scan.camera.torch'),
@@ -340,7 +364,7 @@ export function InvoiceLinesSection({
           },
         },
       }}
-      onPick={quickAdd}
+      onPick={pickItem}
       disabled={disabled}
     />
   );
