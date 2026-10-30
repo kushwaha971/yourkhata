@@ -119,11 +119,12 @@ export interface SessionTenant {
   /** PLT-10 BR-1 — when a `pending_deletion` business is deleted (ISO), else null. */
   readonly deletionScheduledFor?: string | null;
   /**
-   * B2 / BP-22 #1 — the business's own words, by message id (a medical store's
-   * `nav.suppliers` is "Distributors"), resolved by the server in the person's
-   * language from `parties.labels`. Read only through `useAppWords().w`.
+   * B2 / BP-22 #1 — the business's own words by language, then message id (a
+   * medical store's `en["nav.suppliers"]` is "Distributors", `hi` "वितरक"),
+   * resolved by the server from `parties.labels`. Read only through
+   * `useAppWords().w`.
    */
-  readonly words?: Readonly<Record<string, string>> | null;
+  readonly words?: Readonly<Record<string, Readonly<Record<string, string>>>> | null;
   /**
    * B2 / BP-22 #2 — the features that are on (`orders`, `batches`, …). Read
    * only through `useFeature`; no screen reads a business type (R-DEC-65).

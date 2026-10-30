@@ -85,7 +85,7 @@ interface ActiveTenantApiRow {
   readonly partner_suspended?: boolean;
   readonly deletion_scheduled_for?: string | null;
   /** B2 / BP-22 #1 — the business's own words, in the person's language. */
-  readonly words?: Record<string, string> | null;
+  readonly words?: Record<string, Record<string, string>> | null;
   /** B2 / BP-22 #2 — the feature keys that are on for this business. */
   readonly features?: string[] | null;
 }

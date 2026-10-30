@@ -79,7 +79,7 @@ def tenant_rows(user: Any) -> list[dict]:
     ]
 
 
-def active_tenant_block(tenant: Any, locale: str = "en") -> dict:
+def active_tenant_block(tenant: Any) -> dict:
     """Part 22 §22.2: "active tenant summary (`enabled_modules`, `gst_type`, `branding`)"."""
     from apps.platform_app.services.entitlements import effective_modules
 
@@ -112,7 +112,7 @@ def active_tenant_block(tenant: Any, locale: str = "en") -> dict:
         "partner_suspended": tenant.partner.status == "suspended",
         # B2 / BP-22 #1–#2: the business's own words (in the person's language)
         # and the features that are on. Screens never read `business_type`.
-        **business_block(tenant, locale),
+        **business_block(tenant),
     }
 
 
@@ -212,11 +212,7 @@ def build(
             else []
         ),
         "active_tenant_id": str(membership.tenant_id) if membership is not None else None,
-        "active_tenant": (
-            active_tenant_block(membership.tenant, getattr(user, "locale", None) or "en")
-            if membership
-            else None
-        ),
+        "active_tenant": active_tenant_block(membership.tenant) if membership else None,
         "permissions": permissions,
         "plan_limits": plan_limits_payload(membership.tenant) if membership else None,
         "feature_flags": dict(settings.UB_FEATURE_FLAGS or {}),

@@ -56,3 +56,17 @@ def test_owner_typed_words_are_sent_as_typed() -> None:
 def test_a_switch_the_owner_turned_off_wins_over_the_kind() -> None:
     rows = {"shop.features.orders": {"value": False}}
     assert "orders" not in features_of(_tenant("hardware"), rows)
+
+
+
+def test_the_session_carries_both_languages(tenant) -> None:
+    """Prevents (found by b2-menus): a Hindi screen showing "Distributors" because
+    the words were resolved in the account's saved locale, not the one on screen."""
+    from apps.platform_app.selectors.business_words import business_block
+
+    tenant.business_type = "medical"
+    tenant.save(update_fields=["business_type"])
+    words = business_block(tenant)["words"]
+    assert words["en"]["nav.suppliers"] == "Distributors"
+    assert words["hi"]["nav.suppliers"] == "वितरक"
+    assert words["hi"]["business.kind"] == "मेडिकल"

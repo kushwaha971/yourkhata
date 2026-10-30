@@ -4,6 +4,7 @@ import { useCallback, useMemo } from 'react';
 
 import { useAppSelector } from 'src/hooks/useAppStore';
 import { useTranslation, type TranslateFn } from 'src/hooks/useTranslation';
+import { selectLocale } from 'src/redux/slice/localeSlice';
 import { selectActiveTenant } from 'src/redux/slice/sessionSlice';
 import type { LedgerBook } from 'src/types/domain.types';
 
@@ -50,7 +51,10 @@ export function useAppWords(): UseAppWordsResult {
   const { app } = useNavigation();
   const manifest = useMemo(() => (app ? manifestFor(app) : undefined), [app]);
   const words = manifest?.words;
-  const business = useAppSelector(selectActiveTenant)?.words;
+  // B2: the server sends the business's words in every language; the one on
+  // screen is the person's switch, which may differ from their saved locale.
+  const locale = useAppSelector(selectLocale);
+  const business = useAppSelector(selectActiveTenant)?.words?.[locale];
   const w = useCallback<TranslateFn>(
     (id, values) => business?.[id] ?? t(words?.[id] ?? id, values),
     [t, words, business]

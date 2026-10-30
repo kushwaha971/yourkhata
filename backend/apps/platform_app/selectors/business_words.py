@@ -116,7 +116,16 @@ def words_of(tenant: Any, locale: str = "en", rows: dict[str, Any] | None = None
     return words
 
 
-def business_block(tenant: Any, locale: str = "en") -> dict[str, Any]:
-    """The session's `active_tenant.features` and `.words`, one query."""
+#: The languages the app is drawn in. The screen's language is the person's
+#: switch (a cookie), which can differ from the account's saved locale, so the
+#: session carries both and the client shows the one on screen.
+LOCALES: tuple[str, ...] = ("en", "hi")
+
+
+def business_block(tenant: Any) -> dict[str, Any]:
+    """The session's `active_tenant.features` and `.words` (per language), one query."""
     rows = _rows(tenant)
-    return {"features": features_of(tenant, rows), "words": words_of(tenant, locale, rows)}
+    return {
+        "features": features_of(tenant, rows),
+        "words": {locale: words_of(tenant, locale, rows) for locale in LOCALES},
+    }
