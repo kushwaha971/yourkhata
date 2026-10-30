@@ -289,3 +289,48 @@ design thread; primary sources only, no hands-on use; unproven cells marked).
   change. To re-run when the window clears.
 - Design difference: the "What kind of shop?" hint sits under the list (the
   field's hint slot), the mock puts it under the title.
+
+## Part B thread, 30 Oct 2026 (late) — B1/B3 gaps, re-run after Other
+
+Worked in its own worktree (branch `shop/b`, served on :3006) while part C
+ran on :3005; B checks sign in as the per-kind test owners, never the QA shop.
+
+**Checked first, before changing anything (baseline on the live app, 390,
+320, 768, 1024, 1280, EN/HI):**
+- "Tile hints wrap on desktop": not reproduced at 768, 1024 or 1280 in either
+  language; nothing to change.
+- "Other hint position": already under the title (UbField `description`); the
+  report's line was stale.
+
+**Found by looking and fixed:**
+1. Tapping a tile before typing the name turned the (autofocused) name red —
+   "Enter a name." before the merchant had done anything wrong. The step's
+   form now validates on Continue and then on every keystroke (`onSubmit` /
+   `onChange`). Jest "does not turn the name red when a tile is tapped before
+   it is typed" fails on the old code, passes now.
+2. Other's two answers were stacks of separate cards; the design (G12
+   `pOtherKind`/`dOtherKind`) draws each as one bordered list (`.lst`, `.opt`
+   rows 12×14 with a 20 px radio and 14/600 label; `.li` switch rows ≥ 60).
+   `UbRadioGroup` gained a `list` variant; the switches sit in a divided panel
+   like B3's. The phone page with Other open is shorter by the gaps.
+3. On a phone a tapped tile kept the grey hover background (Tailwind 3 applies
+   `hover:` on touch); the tile's hover is now limited to pointers that hover.
+4. Harness defect: every "dark" B1 shot was light — the app's theme is the
+   `ub_theme_choice` cookie, not the OS setting. `b1-pick` and `b-sheets` set
+   it; `b-sheets` refuses a shot whose page drew the other theme (H37).
+   a6-forms, a7-measure and a8-edges have the same gap (not B's; reported).
+
+**Re-run on the :3006 build:** `b1-pick` 124/124 (real dark now);
+`b1-signup` 16/16, `--skew` 0/16; `b1-edges` 8/8 at 390 and 8/8 at 1280 (the
+run that was owed since Other was added); onboarding jest 166/166.
+Contact sheets: `node e2e/b-sheets.mjs --tag=<t>` — B1 five states (open,
+Hardware, Wholesale → Kirana, Other → Agri, Continue with nothing) × 390/320/
+1024/1280 × light/dark × EN/HI, no overflow, no cut text, no page errors.
+
+**Still open (the owner's call, not built):**
+- Phone step 1 is long: about 1,900 px with the Shop ticked, ~2,600 with Other
+  open, because the four app cards (≈490 px) sit above the tiles. Options:
+  compact app cards on a phone, or the design's own separate "What do you
+  sell?" step (withdrawn by the owner on 30 Oct). Needs a mock first.
+- Desktop: the design puts "One kind per business…" beside Back/Continue; it
+  sits under the tiles here, because step 1 also holds the name and apps.

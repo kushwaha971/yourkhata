@@ -94,3 +94,24 @@ piece. Competitor comparison for this screen: from the design thread's Part R
 
 **Self-rating (owner's to give):** function 9, testing 9, UI 9 for the menu
 and lists; Home unchanged.
+
+## Part B thread, 30 Oct 2026 (late) — B2/B3 gaps
+
+- **B3 against `dFeatures`/`pFeatures`:** "What you sell" and "Features" are
+  600 like the design's `b`; the kind chip is the design's `.chp.on` on a
+  desktop (34 px, teal wash and border, 16 px kind picture, 14 px regular) and
+  `.chp.on.sm` on a phone (28 px, 12.5 px, no picture). Looked at 1024 and
+  1280 (both fine) and 390/320, light and dark (real dark), EN and HI.
+- **"Sidebar business block lacks the kind picture":** the design's rail
+  (`.rail .biz`) has a logo tile, the name and "<kind> · Billing & Stock" — no
+  kind picture — and R-DEC-06 keeps the YourKhata logo on the white tile. The
+  rail already shows "<kind> · Shop". Nothing to add; listed, not invented.
+- **Listed for the owner:** (1) `dFeatures` draws a Settings side menu
+  (Business details, Shop features, Bills and print, Tax and GST, Team,
+  Devices, Plan) beside the page; Settings here is a hub list, and building
+  the menu changes every Settings page — Part F, or now? (2) The rail cuts a
+  long business name with "…" exactly as the design's CSS does, against the
+  plain-words "no word cut by an ellipsis" rule. (3) 2 switches vs the
+  design's 9 — owner, 30 Oct 2026: left as built; tested again after Part D.
+- **Re-run on :3006:** `b2-menus` 126/126, `b2-edges` 9/9, `b3-features`
+  14/14; settings jest pass.

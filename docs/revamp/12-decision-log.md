@@ -862,3 +862,9 @@ R-DEC-66 (owner, 30 October 2026: "go on with what you recommend") —
    separate screen.
 3. Phone bottom bar: the later-approved design E2 #2 wins over R-DEC-51 #2 —
    Home · Customers · Suppliers · Bills · More.
+
+R-DEC-67 (owner, 30 October 2026, B3: "leave that completely … will test after
+D") — Settings › Shop features keeps only the switches whose screens exist
+(today: Sales orders and challans, plus "I also sell wholesale"). The design's
+nine switches are not raised again; the page is tested again after Part D adds
+the fields those switches would control.

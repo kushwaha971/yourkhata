@@ -100,7 +100,12 @@ for (const width of widths) {
         isMobile: width < 1024,
         hasTouch: width < 1024,
       });
-      await ctx.addCookies([{ name: 'ub_locale', value: locale, domain: new URL(base).hostname, path: '/' }]);
+      // ub_theme_choice is what picks the theme; colorScheme alone drew every
+      // "dark" case light (B-thread, 30 Oct 2026).
+      await ctx.addCookies([
+        { name: 'ub_locale', value: locale, domain: new URL(base).hostname, path: '/' },
+        { name: 'ub_theme_choice', value: theme, domain: new URL(base).hostname, path: '/' },
+      ]);
       const page = await ctx.newPage();
       try {
         await page.goto(`${base}/onboarding/step/1`, { waitUntil: 'networkidle' });

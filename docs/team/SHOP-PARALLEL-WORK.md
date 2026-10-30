@@ -160,7 +160,20 @@ its branch. A section that lags the code is a defect.
 ## B3 · Shop features in Settings — main session
 
 - **Report:** inside the B2 report; harness `e2e/b3-features.mjs` (14).
-- **Status:** built and checked live; waiting on the owner's "1 vs 9 switches" answer.
+- **Status:** built and checked live. 2 vs 9 switches: owner (30 Oct) — keep as built, test again after Part D.
+
+## Part B thread (B1–B3 gaps) — 30 Oct 2026, late
+
+- **Worktree:** `shop-a8-26fdf0` (the finished A8 folder), branch `shop/b`,
+  served on **:3006**; pushed to `dev` after a rebase. Signs in as the per-kind
+  test owners (`e2e/fixtures/b2_kind_owners.py`), never the QA shop.
+- **Fixed:** name turning red when a tile is tapped first; Other's lists drawn
+  as the design's joined list (`UbRadioGroup` `list`); sticky hover on phone
+  tiles; B3 headings 600 and the phone's small kind chip; harness dark theme
+  (H37). Reports: the B1 and B2 piece reports, "Part B thread" sections.
+- **Contact sheets:** `node e2e/b-sheets.mjs --tag=<t>` → `/tmp/e2e-shots/b-sheets/`.
+- **Waiting on the owner:** long phone step 1 (needs a mock); Settings side
+  menu (`dFeatures`); ellipsis on the rail's business name.
 
 ## C1 · Scan on a bill — main session
 
