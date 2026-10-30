@@ -2,6 +2,8 @@
 
 import { useCallback, useMemo } from 'react';
 
+import dynamic from 'next/dynamic';
+
 import { yupResolver } from '@hookform/resolvers/yup';
 import { useForm, useWatch } from 'react-hook-form';
 
@@ -11,9 +13,7 @@ import {
   UbDivider,
   UbField,
   UbForm,
-  UbRadioGroup,
   UbStack,
-  UbSwitch,
   UbText,
   UbTextInput,
 } from 'src/design-system';
@@ -41,6 +41,14 @@ import { OnboardingStepCard } from './OnboardingStepCard';
 
 import type { UseOnboardingResult } from '../hooks/useOnboarding';
 import type { BusinessStepFormValues } from '../validation/onboardingSchemas';
+
+/* G12's section loads when Other is tapped: most shops never open it, and the
+   sign-up route is the first thing every new merchant downloads (+4 KB when it
+   was static). */
+const OtherKindSection = dynamic(
+  () => import('./OtherKindSection').then((m) => m.OtherKindSection),
+  { ssr: false }
+);
 
 /**
  * PLT-03 FR-2 — step 1: business name, owner name (BR-7, only when blank), the
@@ -88,6 +96,11 @@ export function OnboardingBusinessStep({
   const pickedType = useWatch({ control: form.control, name: 'businessType' });
   const features = useWatch({ control: form.control, name: 'features' });
   // R-DEC-66: Other and its kinds (Stationery, Agri, Services, Furniture).
+  const setFeatures = useCallback(
+    (next: Partial<Record<SignupFeature, boolean>>) =>
+      form.setValue('features', next, { shouldDirty: true }),
+    [form]
+  );
   const isOtherFamily = (OTHER_KINDS as readonly string[]).includes(pickedType || '');
 
   const submit = useCallback(
@@ -248,51 +261,7 @@ export function OnboardingBusinessStep({
             no new screen (owner, 30 Oct). Picking a kind starts the switches
             from that kind; the owner can change any of them. */}
         {runsShop && !sellsWholesale && isOtherFamily && (
-          <UbStack gap={4}>
-            <UbField
-              name="businessType"
-              label={t('onboarding.other.kindTitle')}
-              hint={t('onboarding.other.kindBody')}
-            >
-              {(field) => (
-                <UbRadioGroup<OtherKind>
-                  name="otherKind"
-                  variant="card"
-                  value={(field.value as OtherKind) || 'other'}
-                  onChange={(kind) => {
-                    field.onChange(kind);
-                    form.setValue('features', featuresFor(kind), { shouldDirty: true });
-                  }}
-                  ariaLabel={t('onboarding.other.kindTitle')}
-                  describedBy={field['aria-describedby']}
-                  options={OTHER_KINDS.map((kind) => ({
-                    value: kind,
-                    label: t(`onboarding.other.kind.${kind}`),
-                    hint: t(`onboarding.other.kind.${kind}.hint`),
-                  }))}
-                />
-              )}
-            </UbField>
-            <UbStack gap={2}>
-              <UbText as="h3" variant="body-sm-medium">
-                {t('onboarding.other.needsTitle')}
-              </UbText>
-              <UbText as="p" variant="caption" tone="tertiary">
-                {t('onboarding.other.needsBody')}
-              </UbText>
-              {SIGNUP_FEATURES.map((key) => (
-                <UbSwitch
-                  key={key}
-                  checked={Boolean(features?.[key])}
-                  onCheckedChange={(on) =>
-                    form.setValue('features', { ...(features ?? {}), [key]: on }, { shouldDirty: true })
-                  }
-                  label={t(`onboarding.other.feature.${key}`)}
-                  description={t(`onboarding.other.feature.${key}.hint`)}
-                />
-              ))}
-            </UbStack>
-          </UbStack>
+          <OtherKindSection features={features} onFeatures={setFeatures} featuresFor={featuresFor} />
         )}
         {/* R-DEC-64 — "Wholesale of what?": one kind, sold wholesale. Its
             features are that kind's and wholesale's together. */}

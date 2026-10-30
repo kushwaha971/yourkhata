@@ -263,7 +263,7 @@ try {
     if (items.length !== 1) failures.push(`${width}: Add item saved ${items.length} items named "${itemName}"`);
     else if (Number(items[0].selling_price) !== 25) failures.push(`${width}: the saved item's price is ${items[0].selling_price}, typed 25`);
     // Adjust stock: remove 1 as damaged; on hand falls by exactly 1.
-    const target = (await (await ctx.request.get(`${base}/api/v1/items?page_size=30&ordering=name`)).json()).data.find((x) => Number(x.on_hand) > 2);
+    const target = (await (await ctx.request.get(`${base}/api/v1/items?page_size=200&ordering=name`)).json()).data.find((x) => Number(x.on_hand) > 2 && !/^(A5 item|Edge|A6)/.test(x.name));
     const before = Number((await (await ctx.request.get(`${base}/api/v1/items/${target.id}`)).json()).data.on_hand);
     await page.goto(`${base}/items/${target.id}`, { waitUntil: 'load' });
     await page.waitForTimeout(1500);
