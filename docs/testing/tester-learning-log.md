@@ -124,3 +124,5 @@ The overpay check, done for the first time, behaves correctly: the excess is
 kept as advance and the screen says so. It also showed that the printed bill
 had the hyphen Round off fixed this morning only on screen. The print is
 customer-facing, and the fix now uses one shared helper (`withMinusSign`).
+
+| H32 | A double tap is not only "two of the same request": in a wizard the extra taps land on the NEXT screen's button in the same place. Tap where a thumb taps (mouse at the same point, 120 ms apart) and assert where you ended up, not just how many records exist. B1's triple tap skipped GST and address while still making one business. | `b1-edges` E1 (stays on step 2) |

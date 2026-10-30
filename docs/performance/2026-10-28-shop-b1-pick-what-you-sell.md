@@ -254,3 +254,18 @@ design thread; primary sources only, no hands-on use; unproven cells marked).
   later must be easy to find (B3).
 - **Unproven:** no hands-on sign-up recordings of Vyapar, myBillBook,
   Khatabook or OkCredit yet.
+
+## Edge cases and final monkey (30 Oct 2026, evening)
+
+- **Monkey on the fixed build:** seeds 1–3 × 390/1280, 6/6 PASS.
+- **`e2e/b1-edges.mjs`, 8/8 at 390 and 8/8 at 1280** (fresh sign-ups, read back):
+  E1 three fast taps → one business and the wizard stops on step 2; E4 offline
+  → Continue off, stays, says "internet", works once online with one business;
+  E15 a forced 400 shows the server's own reason; E17 a 160-character Hindi +
+  emoji name: no overflow, nothing cut, saved exactly; E18 Continue → step 2 in
+  about 385 ms.
+- **Defect found and fixed (9be54673b):** three fast taps on step 1's Continue
+  went on through steps 2 and 3 to step 4 (GST and address never seen). A new
+  step now ignores its own Continue/Skip for 450 ms; the component test fails
+  without it.
+- After the fix: `b1-pick` 124/124, `b1-signup` 10/10, onboarding jest 159/159.
