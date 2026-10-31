@@ -1,4 +1,7 @@
 {
+  "purchases.batch.expiry": "Expiry",
+  "purchases.batch.mrp": "MRP",
+  "purchases.batch.no": "Batch no.",
   "purchases.column.date": "Date",
   "purchases.column.due": "To pay",
   "purchases.column.number": "Number",

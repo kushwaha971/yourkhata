@@ -80,6 +80,10 @@ export const ROUTES = {
   STOCK_TRANSFER: '/stock/transfer',
   /** D P2 — Print barcode labels (design D9). */
   ITEM_LABELS: '/items/labels',
+  /** D P3 — Find by IMEI (design D8). */
+  ITEM_IMEI: '/items/imei',
+  /** D P4 — Expiry (design D7). */
+  STOCK_EXPIRY: '/stock/expiry',
   SALES_INVOICES: '/sales/invoices',
   /** SAL-01 — quotations (kachha bill); SAL-04 — returns against a bill. */
   SALES_ESTIMATES: '/sales/estimates',

@@ -99,6 +99,19 @@ await page.screenshot({ path: `${dir}/1280-sold.png` });
 const sold = await serial(ctx, IMEI[0]);
 check('API: that IMEI is sold, with a warranty date', sold?.status === 'sold' && Boolean(sold?.warranty_until), JSON.stringify(sold && { s: sold.status, w: sold.warranty_until }));
 
+// ── Find by IMEI (D8) ──
+await page.goto(`${base}/items/imei`, { waitUntil: 'networkidle' });
+await page.getByTestId('find-imei-input').fill(IMEI[0]);
+await page.getByTestId('find-imei-input').press('Enter');
+await sleep(1500);
+const card = await page.getByTestId('find-imei-result').innerText().catch(() => '');
+check('find: the phone, Sold, the bill and the warranty', card.includes(NAME) && card.includes('Sold') && card.includes('Bill') && /Till .* left/.test(card), card.replace(/\n/g, ' / '));
+await page.screenshot({ path: `${dir}/1280-find.png` });
+await page.getByTestId('find-imei-input').fill('000000000000000');
+await page.getByTestId('find-imei-input').press('Enter');
+await sleep(1200);
+check('find: an unknown IMEI says so', (await page.locator('main').innerText()).includes('No phone with 000000000000000'));
+
 // ── the same IMEI again: refused ──
 const party = (await (await ctx.request.get(`${base}/api/v1/parties?type=customer&page_size=1`)).json()).data?.[0];
 const made = (await (await ctx.request.post(`${base}/api/v1/sales/invoices`, {

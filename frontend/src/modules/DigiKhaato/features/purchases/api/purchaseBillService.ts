@@ -34,6 +34,13 @@ const toLine = (row: Wire): PurchaseBillLine => ({
   qty: s(row.qty),
   unitCode: s(row.unit_code),
   serials: Array.isArray(row.serials) ? (row.serials as unknown[]).map(String) : [],
+  batches: Array.isArray(row.batches)
+    ? (row.batches as Record<string, unknown>[]).map((b) => ({
+        batchNo: String(b.batch_no ?? ''),
+        expiry: b.expiry ? String(b.expiry) : null,
+        mrp: b.mrp ? String(b.mrp) : null,
+      }))
+    : [],
   unitCost: s(row.unit_cost),
   discountType: (row.discount_type as PurchaseBillLine['discountType']) ?? null,
   discountValue: sn(row.discount_value),

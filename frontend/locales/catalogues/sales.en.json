@@ -250,6 +250,7 @@
   "sales.line.actions": "Actions",
   "sales.line.add": "Add item",
   "sales.line.amount": "Amount",
+  "sales.line.batch": "{batch} · exp {expiry}",
   "sales.line.colours": "Colours",
   "sales.line.decrease": "One less {name}",
   "sales.line.description": "Description",

@@ -250,6 +250,7 @@
   "sales.line.actions": "कार्य",
   "sales.line.add": "आइटम जोड़ें",
   "sales.line.amount": "राशि",
+  "sales.line.batch": "{batch} · एक्सपायरी {expiry}",
   "sales.line.colours": "रंग",
   "sales.line.decrease": "{name} एक कम",
   "sales.line.description": "विवरण",

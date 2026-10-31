@@ -27,6 +27,8 @@ export interface PurchaseLineForm {
   allowDecimal: boolean;
   /** D P3 — the IMEI / serial numbers of a tracked item, one per piece. */
   serials?: string[];
+  /** D P4 — a medicine's batch, expiry (YYYY-MM-DD) and MRP. */
+  batch?: { batchNo: string; expiry: string; mrp: string };
   unitCost: string;
   /** FR-12 / Alternate E — the item's last cost when it was picked, for the hint. */
   lastCost: string;
@@ -170,6 +172,17 @@ export const toPurchaseWireBody = (values: PurchaseBillFormValues): Record<strin
     qty: line.qty.trim(),
     unit_code: line.unitCode || null,
     ...(line.serials?.length ? { serials: line.serials } : {}),
+    ...(line.batch?.batchNo || line.batch?.expiry
+      ? {
+          batches: [
+            {
+              batch_no: line.batch.batchNo,
+              expiry: line.batch.expiry || null,
+              mrp: line.batch.mrp || null,
+            },
+          ],
+        }
+      : {}),
     unit_cost: line.unitCost.trim() || null,
     ...discountWire(line.discountType, line.discountValue),
     tax_code: line.taxCode || null,
@@ -222,6 +235,15 @@ export const fromPurchaseBill = (bill: PurchaseBill): PurchaseBillFormValues => 
         qty: formQty(line.qty, !/^(NOS|PCS)$/.test(line.unitCode)),
         unitCode: line.unitCode,
         serials: [...(line.serials ?? [])],
+        ...(line.batches?.[0]
+          ? {
+              batch: {
+                batchNo: line.batches[0].batchNo,
+                expiry: line.batches[0].expiry ?? '',
+                mrp: line.batches[0].mrp ?? '',
+              },
+            }
+          : {}),
         allowDecimal: !/^(NOS|PCS)$/.test(line.unitCode),
         unitCost: line.unitCost,
         lastCost: '',

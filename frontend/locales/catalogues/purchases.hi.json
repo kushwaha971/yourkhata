@@ -1,4 +1,7 @@
 {
+  "purchases.batch.expiry": "एक्सपायरी",
+  "purchases.batch.mrp": "MRP",
+  "purchases.batch.no": "बैच नंबर",
   "purchases.column.date": "तारीख",
   "purchases.column.due": "देना बाकी",
   "purchases.column.number": "नंबर",

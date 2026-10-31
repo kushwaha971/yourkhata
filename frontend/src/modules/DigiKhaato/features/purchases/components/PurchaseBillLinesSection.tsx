@@ -25,6 +25,7 @@ import { CounterLineSummary } from '../../inventory/components/CounterLineSummar
 import { ItemLineCell } from '../../inventory/components/ItemLineCell';
 import { ItemQuickAdd } from '../../inventory/components/ItemQuickAdd';
 import { LastRateNote } from '../../inventory/components/LastRateNote';
+import { LineBatchFields } from '../../inventory/components/LineBatchFields';
 import { LineSerialsField } from '../../inventory/components/LineSerialsField';
 import { LINE_FINDER_FROM, useLineQuickAdd } from '../../inventory/hooks/useLineQuickAdd';
 import { ratePlaces } from '../../sales/view-model/invoiceForm';
@@ -85,6 +86,8 @@ export function PurchaseBillLinesSection({
 
   /** D P3 — items whose every piece has its own IMEI / serial number. */
   const [serialItems, setSerialItems] = useState<Record<string, true>>({});
+  /** D P4 — medicines bought by batch and expiry. */
+  const [batchItems, setBatchItems] = useState<Record<string, true>>({});
   /** D P1a — each picked item's units, priced at cost, for the line's chips. */
   const [unitChoices, setUnitChoices] = useState<Record<string, readonly LineUnitChoice[]>>({});
 
@@ -102,6 +105,7 @@ export function PurchaseBillLinesSection({
       setValue(`${base}.taxCode`, line.taxCode);
       setValue(`${base}.itemTaxCode`, line.itemTaxCode);
       if (row.tracking === 'serial') setSerialItems((current) => ({ ...current, [row.id]: true }));
+      if (row.tracking === 'batch') setBatchItems((current) => ({ ...current, [row.id]: true }));
       const choices = lineCostChoices(row);
       if (choices.length > 0) {
         setUnitChoices((current) => ({ ...current, [row.id]: choices }));
@@ -287,9 +291,17 @@ export function PurchaseBillLinesSection({
         one: (box, n, b) => t('purchases.line.unitOne', { box, n, base: b }),
       });
       const tracked = !!line.itemId && !!serialItems[line.itemId];
-      if (!change && !taxDiffers && !remember && !unitCaption && !tracked) return null;
+      const byBatch = !!line.itemId && !!batchItems[line.itemId];
+      if (!change && !taxDiffers && !remember && !unitCaption && !tracked && !byBatch) return null;
       return (
         <UbStack gap={0} className="empty:hidden">
+          {/* D P4 — design D6: batch, expiry and MRP on a medicine's line. */}
+          {byBatch && (
+            <LineBatchFields
+              value={line.batch}
+              onChange={(next) => setValue(`lines.${index}.batch`, next, { shouldDirty: true })}
+            />
+          )}
           {/* D P3 — every phone bought is entered by its IMEI. */}
           {tracked && (
             <LineSerialsField
@@ -344,7 +356,7 @@ export function PurchaseBillLinesSection({
         </UbStack>
       );
     },
-    [lines, t, partyId, partyName, setValue, form.formState.defaultValues, order, unitChoices, serialItems]
+    [lines, t, partyId, partyName, setValue, form.formState.defaultValues, order, unitChoices, serialItems, batchItems]
   );
 
   return (

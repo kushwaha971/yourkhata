@@ -152,6 +152,8 @@
   "nav.debitNotes": "Debit notes",
   "nav.estimates": "Estimates",
   "nav.expenses": "Expenses",
+  "nav.expiry": "Expiry",
+  "nav.findImei": "Find by IMEI",
   "nav.invoices": "Bills",
   "nav.items": "Items",
   "nav.lending.borrowers": "Borrowers",

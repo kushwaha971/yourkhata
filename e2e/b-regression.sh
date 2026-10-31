@@ -36,3 +36,4 @@ run d1-transfer d1-transfer.mjs
 run d2-variants d2-variants.mjs
 run d2-labels d2-labels.mjs
 run d3-imei d3-imei.mjs
+run d4-batches d4-batches.mjs

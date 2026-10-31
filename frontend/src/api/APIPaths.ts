@@ -156,6 +156,10 @@ export const API_PATHS = {
   /** C3 — stock count (R-DEC-67). */
   /** D P1c — the shop's places and moving stock between them. */
   LOCATIONS: '/locations',
+  /** D P3 — find by IMEI. */
+  SERIAL: (code: string) => `/serials/${seg(code)}`,
+  /** D P4 — batches expired or expiring soon. */
+  STOCK_EXPIRY: '/stock/expiry',
   STOCK_TRANSFERS: '/stock-transfers',
   STOCK_TRANSFER_STOCK: '/stock-transfers/stock',
   STOCK_COUNT_OPEN: '/stock-counts/open',

@@ -131,6 +131,8 @@ export function InvoiceLinesSection({
   const [usual, setUsual] = useState<Record<string, { price: string; inclusive: boolean }>>({});
   /** D P1a — each picked item's units (box and piece), for the line's unit chips. */
   const [unitChoices, setUnitChoices] = useState<Record<string, readonly LineUnitChoice[]>>({});
+  /** D P4 — the batch a sale of each medicine would take ("DL3990 · exp 03/27"). */
+  const [nextBatch, setNextBatch] = useState<Record<string, { batchNo: string; expiry: string }>>({});
   /** D P3 — items whose every piece has its own IMEI / serial number. */
   const [serialItems, setSerialItems] = useState<Record<string, true>>({});
   /** D P2 — each garment's sizes and colours, and the row picked on each line. */
@@ -172,6 +174,8 @@ export function InvoiceLinesSection({
           [row.id]: { part, rack: row.rack ?? undefined },
         }));
       if (row.tracking === 'serial') setSerialItems((current) => ({ ...current, [row.id]: true }));
+      const coming = row.nextBatch;
+      if (coming) setNextBatch((current) => ({ ...current, [row.id]: coming }));
       const choices = lineUnitChoices(row);
       if (choices.length > 0) {
         setUnitChoices((current) => ({ ...current, [row.id]: choices }));
@@ -335,6 +339,16 @@ export function InvoiceLinesSection({
           {partText}
         </UbText>
       ) : null;
+      // D P4 — design D1 medical: the batch FEFO will take, with no extra tap.
+      const batch = nextBatch[line.itemId];
+      const batchNote = batch ? (
+        <UbText variant="caption" tone="accent" data-testid="line-batch">
+          {t('sales.line.batch', {
+            batch: batch.batchNo,
+            expiry: `${batch.expiry.slice(5, 7)}/${batch.expiry.slice(2, 4)}`,
+          })}
+        </UbText>
+      ) : null;
       // D P3 — one IMEI per phone on the line.
       const serialNote = serialItems[line.itemId] ? (
         <LineSerialsField
@@ -381,8 +395,9 @@ export function InvoiceLinesSection({
         </UbText>
       ) : null;
       if (!partyId)
-        return serialNote || variantNote || partNote || unitNote || stockNote || changedNote ? (
+        return batchNote || serialNote || variantNote || partNote || unitNote || stockNote || changedNote ? (
           <UbStack gap={0}>
+            {batchNote}
             {serialNote}
             {variantNote}
             {partNote}
@@ -393,6 +408,7 @@ export function InvoiceLinesSection({
         ) : null;
       return (
         <UbStack gap={0}>
+          {batchNote}
           {serialNote}
           {variantNote}
           {partNote}
@@ -419,7 +435,7 @@ export function InvoiceLinesSection({
         </UbStack>
       );
     },
-    [lines, partyId, partyName, setValue, listed, usual, unitChoices, partInfo, picked, variants, serialItems, pick, stockWarning, t]
+    [lines, partyId, partyName, setValue, listed, usual, unitChoices, partInfo, picked, variants, serialItems, nextBatch, pick, stockWarning, t]
   );
 
   const wide = !useIsMobileLayer();
