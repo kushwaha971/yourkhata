@@ -45,3 +45,4 @@ run d14-print d14-print.mjs
 run d-edges d-edges.mjs
 run d-look d-look.mjs
 run ad-certify ad-certify.mjs
+run ad-onboard ad-onboard.mjs
