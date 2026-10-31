@@ -55,7 +55,7 @@ try {
   const group = page.getByTestId('item-part-details');
   check('form: "PART DETAILS" shows for a parts shop', await group.isVisible().catch(() => false));
   for (const code of [MAKER, BRAND]) {
-    await page.getByTestId('item-add-part').click();
+    await page.getByTestId('item-part-add').click();
     await page.getByTestId('item-part-input').fill(code);
     await page.getByTestId('item-part-input').press('Enter');
   }
