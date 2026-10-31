@@ -177,6 +177,8 @@ export interface ItemWarning {
 export interface ItemSaveResult {
   readonly item: Item;
   readonly warnings: readonly ItemWarning[];
+  /** D P2 — how many sizes × colours a new garment became. */
+  readonly variants?: number;
 }
 
 export interface ItemListFilters {
@@ -249,6 +251,10 @@ export interface ItemFormValues {
   partNumbers: string[];
   rack: string;
   fitsVehicle: string;
+  /** D P2 — a new garment in sizes × colours; sent only when switched on. */
+  hasVariants: boolean;
+  sizes: string[];
+  colours: string[];
 }
 
 export interface ExtraUnitValues {

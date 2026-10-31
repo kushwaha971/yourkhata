@@ -197,6 +197,7 @@ class ItemViewSet(CsvExportMixin, _InventoryView, viewsets.ViewSet):
             item_type=params.get("type"),
             category_id=params.get("category_id") or None,
             status=None if status == "all" else status,
+            product_id=params.get("product_id") or None,
         )
         filtered = item_selectors.filter_stock(base, params.get("stock"))
         field = ordering.lstrip("-")
@@ -267,7 +268,17 @@ class ItemViewSet(CsvExportMixin, _InventoryView, viewsets.ViewSet):
 
     @idempotent("item_create")
     def create(self, request: Any) -> Any:
-        result = create_item(ctx=self.ctx(), payload=_cost_settable(request, _body(request)))
+        body = _cost_settable(request, _body(request))
+        if body.get("variants"):
+            # D P2 — a garment in sizes and colours: one item per size × colour.
+            from apps.inventory.services.variants import create_variants
+
+            made = create_variants(ctx=self.ctx(), payload=body)
+            return StandardResponse.created(
+                self._detail(made["items"][0].id),
+                meta={"warnings": made["warnings"], "variants": len(made["items"])},
+            )
+        result = create_item(ctx=self.ctx(), payload=body)
         return StandardResponse.created(
             self._detail(result["item"].id), meta={"warnings": result["warnings"]}
         )

@@ -123,8 +123,9 @@ export function useItemForm(): UseItemFormResult {
         dispatch(
           showSnackbar({
             severity: 'success',
-            id: 'items.form.saved',
-            params: { sku: saved.item.sku },
+            ...(saved.variants
+              ? { id: 'items.form.savedVariants', params: { count: saved.variants } }
+              : { id: 'items.form.saved', params: { sku: saved.item.sku } }),
           })
         );
         const warning = saved.warnings[0];

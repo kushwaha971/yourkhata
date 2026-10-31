@@ -68,6 +68,9 @@ const FORM: ItemFormValues = {
   partNumbers: [],
   rack: '',
   fitsVehicle: '',
+  hasVariants: false,
+  sizes: [],
+  colours: [],
 };
 
 describe('listItems', () => {

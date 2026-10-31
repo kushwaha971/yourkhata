@@ -84,7 +84,7 @@ def with_stock(qs: QuerySet, *, location_id: Any) -> QuerySet:
     """
     tracked = Q(track_stock=True, item_type=ItemType.GOODS)
     # D P1a — every item row carries its other units (one extra query a page).
-    qs = qs.prefetch_related("extra_units__unit", "codes")
+    qs = qs.prefetch_related("extra_units__unit", "codes").select_related("product")
     qs = qs.annotate(
         _on_hand=Coalesce(
             _stock_subquery("on_hand", location_id), Value(Decimal("0.000")), output_field=QTY
@@ -155,6 +155,7 @@ def item_list(
     item_type: str | None = None,
     category_id: Any = None,
     status: str | None = ItemStatus.ACTIVE,
+    product_id: Any = None,
 ) -> QuerySet:
     """Every filter except `stock` — which `counts` must ignore (FR-4 delta)."""
     qs = Item.objects.filter(tenant=tenant).select_related("unit", "category")
@@ -165,6 +166,12 @@ def item_list(
     if category_id:
         # A parent category includes its children (INV-04 AC-4).
         qs = qs.filter(Q(category_id=category_id) | Q(category__parent_id=category_id))
+    if product_id:
+        # D P2 — one garment's sizes and colours, for the bill line's picker.
+        try:
+            qs = qs.filter(product_id=product_id)
+        except (ValueError, TypeError):
+            qs = qs.none()
     qs = search(qs, q)
     return with_stock(qs, location_id=location_id)
 

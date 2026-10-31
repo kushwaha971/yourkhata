@@ -383,6 +383,7 @@ export interface ItemBody {
   readonly part_numbers?: readonly string[];
   readonly rack?: string | null;
   readonly fits_vehicle?: string | null;
+  readonly variants?: { readonly sizes: readonly string[]; readonly colours: readonly string[] };
   readonly units?: readonly {
     readonly unit_id: string;
     readonly factor: string;
@@ -447,6 +448,15 @@ export const toItemBody = (
             })),
         }
       : {}),
+    // D P2 — a new garment: the server makes one item per size × colour, and
+    // a single barcode or opening stock would belong to none of them.
+    ...(values.hasVariants && !isService && (values.sizes.length || values.colours.length)
+      ? {
+          variants: { sizes: values.sizes, colours: values.colours },
+          barcode: null,
+          opening_stock: undefined,
+        }
+      : {}),
     // D P1b — like units, the form starts from the item's own values.
     ...(withUnits && !isService
       ? {
@@ -462,12 +472,14 @@ interface SaveWire {
   readonly data: ItemDetailWire;
   readonly meta?: {
     readonly warnings?: readonly { code: string; field?: string; message: string }[];
+    readonly variants?: number;
   };
 }
 
 const toSaveResult = (body: SaveWire): ItemSaveResult => ({
   item: toItem(body.data),
   warnings: body.meta?.warnings ?? [],
+  ...(body.meta?.variants ? { variants: body.meta.variants } : {}),
 });
 
 /**

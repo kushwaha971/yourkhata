@@ -122,6 +122,11 @@ def _item_row(item: Item) -> dict:
         # D P1b — other part numbers, the rack, the vehicles it fits.
         "part_numbers": [row.code for row in item.codes.all()],
         "rack": item.rack,
+        # D P2 — the garment it is a size × colour of, and which one.
+        "product": (
+            {"id": str(item.product_id), "name": item.product.name} if item.product_id else None
+        ),
+        "attributes": item.attributes or {},
         "fits_vehicle": item.fits_vehicle,
         "updated_at": item.updated_at.isoformat(),
     }

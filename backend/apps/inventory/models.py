@@ -177,6 +177,11 @@ class Item(TenantModel, SoftDeleteModel):
     #: D P1b — where it sits ("B-4"), printed on the bill line so the boy knows
     #: where to pick from; and the vehicles it fits, as the shop writes them.
     rack = models.CharField(max_length=16, null=True, blank=True)
+    #: D P2 — the garment this size × colour belongs to, and which one it is.
+    product = models.ForeignKey(
+        "inventory.Product", on_delete=models.RESTRICT, null=True, blank=True, related_name="variants"
+    )
+    attributes = models.JSONField(default=dict, blank=True)
     fits_vehicle = models.CharField(max_length=120, null=True, blank=True)
     hsn_sac = models.CharField(max_length=8, null=True, blank=True)
     tax_code = models.CharField(max_length=16, default=DEFAULT_TAX_CODE)
@@ -601,3 +606,22 @@ class StockTransfer(TenantModel):
 
     def __str__(self) -> str:  # pragma: no cover - admin convenience
         return self.number
+
+
+class Product(TenantModel):
+    """D P2 — one garment in its sizes and colours (design D3 "SIZES AND
+    COLOURS"). Each size × colour is a normal Item pointing here (plan §P2:
+    "each variant is a normal item"), so stock, bills, GST, returns and reports
+    work unchanged; this row only groups them and remembers the choices."""
+
+    name = models.CharField(max_length=NAME_MAX_LENGTH)
+    #: {"size": ["S", "M"], "colour": ["Blue"]} — the order the shop typed.
+    attributes = models.JSONField(default=dict, blank=True)
+
+    class Meta:
+        db_table = "inventory_product"
+        verbose_name = "product"
+        verbose_name_plural = "products"
+
+    def __str__(self) -> str:  # pragma: no cover - admin convenience
+        return self.name

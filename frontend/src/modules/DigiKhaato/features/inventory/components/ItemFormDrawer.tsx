@@ -46,6 +46,7 @@ import { gstFor, marginOf } from '../view-model/itemPricing';
 import { ItemExtraUnitsFields } from './ItemExtraUnitsFields';
 import { ItemPartFields } from './ItemPartFields';
 import { ItemPriceFields } from './ItemPriceFields';
+import { ItemVariantFields } from './ItemVariantFields';
 
 import type { UseItemFormResult } from '../hooks/useItemForm';
 import type { HsnCode, ItemFormValues } from '../types/item.types';
@@ -137,6 +138,9 @@ export function ItemFormDrawer({
       partNumbers: [...(editing?.partNumbers ?? [])],
       rack: editing?.rack ?? '',
       fitsVehicle: editing?.fitsVehicle ?? '',
+      hasVariants: false,
+      sizes: [],
+      colours: [],
     }),
     [editing, prefillBarcode, prefillName, defaultUnitId, masters.units]
   );
@@ -158,6 +162,7 @@ export function ItemFormDrawer({
   const features = useAppSelector(selectActiveTenant)?.features;
   const sellsInBoxes = Boolean(features?.includes('alt_units'));
   const keepsPartNumbers = Boolean(features?.includes('part_numbers'));
+  const sellsSizes = Boolean(features?.includes('variants'));
   const name = useWatch({ control, name: 'name' });
   const taxCode = useWatch({ control, name: 'taxCode' });
   const inclusive = useWatch({ control, name: 'taxInclusiveSelling' });
@@ -399,6 +404,8 @@ export function ItemFormDrawer({
         {!isService && (sellsInBoxes || (editing?.units?.length ?? 0) > 0) && (
           <ItemExtraUnitsFields units={masters.units} baseUnitId={unitId} />
         )}
+        {/* D P2 — design D3 "SIZES AND COLOURS", for a new garment only. */}
+        {!isService && !isEdit && sellsSizes && <ItemVariantFields />}
         {/* D P1b — design D3 "PART DETAILS" for a parts shop. */}
         {!isService &&
           (keepsPartNumbers ||
