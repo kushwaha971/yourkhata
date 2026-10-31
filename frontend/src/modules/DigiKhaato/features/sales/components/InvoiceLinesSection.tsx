@@ -128,6 +128,8 @@ export function InvoiceLinesSection({
   const [usual, setUsual] = useState<Record<string, { price: string; inclusive: boolean }>>({});
   /** D P1a — each picked item's units (box and piece), for the line's unit chips. */
   const [unitChoices, setUnitChoices] = useState<Record<string, readonly LineUnitChoice[]>>({});
+  /** D P1b — each picked part's first other number and rack ("Part … · Rack B-4"). */
+  const [partInfo, setPartInfo] = useState<Record<string, { part?: string; rack?: string }>>({});
 
   // FR-15 — item defaults fill a line when the item is PICKED, never later.
   const pick = useCallback(
@@ -142,6 +144,12 @@ export function InvoiceLinesSection({
       setValue(`${base}.taxCode`, defaults.taxCode);
       setValue(`${base}.hsnSac`, defaults.hsnSac);
       setValue(`${base}.taxInclusive`, defaults.taxInclusive);
+      const part = row.partNumbers?.[0];
+      if (part || row.rack)
+        setPartInfo((current) => ({
+          ...current,
+          [row.id]: { part, rack: row.rack ?? undefined },
+        }));
       const choices = lineUnitChoices(row);
       if (choices.length > 0) {
         setUnitChoices((current) => ({ ...current, [row.id]: choices }));
@@ -283,6 +291,20 @@ export function InvoiceLinesSection({
         sold: (b, box, n) => t('sales.line.unitSold', { base: b, box, n }),
         one: (box, n, b) => t('sales.line.unitOne', { box, n, base: b }),
       });
+      const info = partInfo[line.itemId];
+      const partText = info
+        ? [
+            info.part ? t('sales.line.part', { part: info.part }) : null,
+            info.rack ? t('sales.line.rack', { rack: info.rack }) : null,
+          ]
+            .filter(Boolean)
+            .join(' · ')
+        : '';
+      const partNote = partText ? (
+        <UbText variant="caption" tone="accent" data-testid="line-part">
+          {partText}
+        </UbText>
+      ) : null;
       const unitNote = unitCaption ? (
         <UbStack gap={1} data-testid="line-unit">
           <UbText variant="caption" tone="accent">
@@ -321,8 +343,9 @@ export function InvoiceLinesSection({
         </UbText>
       ) : null;
       if (!partyId)
-        return unitNote || stockNote || changedNote ? (
+        return partNote || unitNote || stockNote || changedNote ? (
           <UbStack gap={0}>
+            {partNote}
             {unitNote}
             {stockNote}
             {changedNote}
@@ -330,6 +353,7 @@ export function InvoiceLinesSection({
         ) : null;
       return (
         <UbStack gap={0}>
+          {partNote}
           {unitNote}
           {stockNote}
           {changedNote}
@@ -353,7 +377,7 @@ export function InvoiceLinesSection({
         </UbStack>
       );
     },
-    [lines, partyId, partyName, setValue, listed, usual, unitChoices, stockWarning, t]
+    [lines, partyId, partyName, setValue, listed, usual, unitChoices, partInfo, stockWarning, t]
   );
 
   const wide = !useIsMobileLayer();

@@ -57,7 +57,7 @@ def with_stock(qs: QuerySet, *, location_id: Any) -> QuerySet:
     """
     tracked = Q(track_stock=True, item_type=ItemType.GOODS)
     # D P1a — every item row carries its other units (one extra query a page).
-    qs = qs.prefetch_related("extra_units__unit")
+    qs = qs.prefetch_related("extra_units__unit", "codes")
     qs = qs.annotate(
         _on_hand=Coalesce(
             _stock_subquery("on_hand", location_id), Value(Decimal("0.000")), output_field=QTY
@@ -96,7 +96,16 @@ def search(qs: QuerySet, q: str) -> QuerySet:
     text = (q or "").strip()[:80]
     if not text:
         return qs.annotate(match_field=Value(None, output_field=CharField()))
-    qs = qs.filter(Q(name__icontains=text) | Q(sku__istartswith=text) | Q(barcode__startswith=text))
+    # D P1b — any of the item's other part numbers, as typed ("06430" finds it).
+    from apps.inventory.models import ItemCode
+
+    by_code = ItemCode.objects.filter(code__istartswith=text).values("item_id")
+    qs = qs.filter(
+        Q(name__icontains=text)
+        | Q(sku__istartswith=text)
+        | Q(barcode__startswith=text)
+        | Q(pk__in=by_code)
+    )
     return qs.annotate(
         match_field=Case(
             When(barcode=text, then=Value("barcode")),
@@ -104,6 +113,7 @@ def search(qs: QuerySet, q: str) -> QuerySet:
             When(name__icontains=text, then=Value("name")),
             When(sku__istartswith=text, then=Value("sku")),
             When(barcode__startswith=text, then=Value("barcode")),
+            When(pk__in=by_code, then=Value("part")),
             default=Value(None),
             output_field=CharField(),
         )
@@ -195,6 +205,13 @@ def lookup_by_barcode(
     found = base.filter(barcode=code).first()
     if found is None:
         found = base.filter(sku=code).annotate(match_field=Value("sku")).first()
+    if found is None:
+        # D P1b — another part number, typed or scanned.
+        from apps.inventory.models import ItemCode
+
+        code_row = ItemCode.objects.filter(tenant=tenant, code=code.upper()).first()
+        if code_row is not None:
+            found = base.filter(pk=code_row.item_id).annotate(match_field=Value("part")).first()
     if found is None:
         # D P1a — a box's own barcode: the item, with the unit it names, so a
         # scan adds 1 box rather than 1 piece.

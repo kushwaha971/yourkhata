@@ -73,7 +73,7 @@ _PICTURE: dict[str, str] = {
 }
 
 #: Every feature key the session may carry.
-FEATURE_KEYS: tuple[str, ...] = (*presets.SIGNUP_FEATURES, "orders")
+FEATURE_KEYS: tuple[str, ...] = (*presets.SIGNUP_FEATURES, "orders", "part_numbers")
 
 
 def _setting(tenant: Any, rows: dict[str, Any], key: str) -> Any:

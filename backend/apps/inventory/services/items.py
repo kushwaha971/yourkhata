@@ -87,6 +87,8 @@ EDITABLE_FIELDS = (
     "track_stock",
     "reorder_point",
     "description",
+    "rack",
+    "fits_vehicle",
 )
 
 AUDITED_FIELDS = EDITABLE_FIELDS
@@ -348,6 +350,14 @@ def _validate(*, ctx: Ctx, data: dict, item: Item | None) -> tuple[dict, Errors,
             )
         cleaned["description"] = description
 
+    # D P1b — the part's shelf and the vehicles it fits: short free text.
+    for key, limit in (("rack", 16), ("fits_vehicle", 120)):
+        if has(key):
+            text = clean_text(data.get(key) or "") or None
+            if text and len(text) > limit:
+                errors.add(key, f"Keep it under {limit} characters.", "max_length")
+            cleaned[key] = text
+
     # Cross-field: selling ≤ MRP, compared tax-inclusive (§10).
     mrp = current("mrp")
     selling = current("selling_price")
@@ -581,9 +591,10 @@ def create_item(*, ctx: Ctx, payload: dict) -> dict:
                 details={},
             )
 
-    from apps.inventory.services.units import set_units
+    from apps.inventory.services.units import set_codes, set_units
 
     set_units(ctx=ctx, item=item, raw=payload.get("units"))
+    set_codes(ctx=ctx, item=item, raw=payload.get("part_numbers"))
     if item.track_stock and opening is None:
         # Without an opening the row starts at 0 and its level is initialised
         # silently. WITH one it is left at `ok`, so the opening post is
@@ -699,10 +710,11 @@ def update_item(*, ctx: Ctx, item_id: Any, payload: dict, can_adjust_stock: bool
             )
     if errors:
         raise ValidationFailed(errors.payload())
-    if "units" in payload:
-        from apps.inventory.services.units import set_units
+    if "units" in payload or "part_numbers" in payload:
+        from apps.inventory.services.units import set_codes, set_units
 
         set_units(ctx=ctx, item=item, raw=payload.get("units"))
+        set_codes(ctx=ctx, item=item, raw=payload.get("part_numbers"))
     if turning_off:
         stock = ItemStock.objects.select_for_update().filter(item=item, location=location).first()
         if stock is not None and stock.on_hand != 0:

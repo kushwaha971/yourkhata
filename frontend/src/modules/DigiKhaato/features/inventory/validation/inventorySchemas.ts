@@ -179,6 +179,12 @@ export const useInventorySchemas = (
         )
         .defined()
         .default([]),
+      partNumbers: Yup.array().of(Yup.string().defined()).defined().default([]),
+      rack: Yup.string().defined().default('').max(16, t('validation.maxChars', { value: 16 })),
+      fitsVehicle: Yup.string()
+        .defined()
+        .default('')
+        .max(120, t('validation.maxChars', { value: 120 })),
     });
 
     const adjustmentSchema: Yup.ObjectSchema<AdjustmentFormValues> = Yup.object({

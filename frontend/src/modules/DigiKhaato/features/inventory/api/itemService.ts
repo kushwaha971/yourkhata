@@ -55,6 +55,9 @@ export interface ItemRowWire {
     readonly allow_decimal: boolean;
   }[];
   readonly scanned_unit?: string | null;
+  readonly part_numbers?: readonly string[];
+  readonly rack?: string | null;
+  readonly fits_vehicle?: string | null;
   readonly updated_at: string;
 }
 
@@ -158,6 +161,9 @@ export const toItemRow = (row: ItemRowWire): ItemListRow => ({
     allowDecimal: unit.allow_decimal,
   })),
   scannedUnit: row.scanned_unit ?? null,
+  partNumbers: row.part_numbers ?? [],
+  rack: row.rack ?? null,
+  fitsVehicle: row.fits_vehicle ?? null,
   updatedAt: row.updated_at,
 });
 
@@ -374,6 +380,9 @@ export interface ItemBody {
     readonly unit_cost: string | null;
     readonly as_of: string | undefined;
   };
+  readonly part_numbers?: readonly string[];
+  readonly rack?: string | null;
+  readonly fits_vehicle?: string | null;
   readonly units?: readonly {
     readonly unit_id: string;
     readonly factor: string;
@@ -436,6 +445,14 @@ export const toItemBody = (
               selling_price: row.price || null,
               barcode: row.barcode.trim() || null,
             })),
+        }
+      : {}),
+    // D P1b — like units, the form starts from the item's own values.
+    ...(withUnits && !isService
+      ? {
+          part_numbers: values.partNumbers.map((code) => code.trim()).filter(Boolean),
+          rack: values.rack.trim() || null,
+          fits_vehicle: values.fitsVehicle.trim() || null,
         }
       : {}),
   };

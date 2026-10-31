@@ -26,4 +26,9 @@ register(
     TenantTable("inventory.PriceList", export_name="price_lists.csv"),
     TenantTable("inventory.PriceListRate", export_name="price_list_rates.csv"),
     TenantTable("inventory.PriceListParty", export_name="price_list_parties.csv"),
+    # C3 — shelf counts and their lines; D P1a/P1b — an item's boxes and part numbers.
+    TenantTable("inventory.StockCount", export_name="stock_counts.csv"),
+    TenantTable("inventory.StockCountLine", export_name="stock_count_lines.csv"),
+    TenantTable("inventory.ItemUnit", export_name="item_units.csv"),
+    TenantTable("inventory.ItemCode", export_name="item_codes.csv"),
 )

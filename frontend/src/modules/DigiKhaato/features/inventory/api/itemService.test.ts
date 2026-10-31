@@ -65,6 +65,9 @@ const FORM: ItemFormValues = {
   openingCost: '44',
   openingAsOf: '2026-04-01',
   extraUnits: [],
+  partNumbers: [],
+  rack: '',
+  fitsVehicle: '',
 };
 
 describe('listItems', () => {

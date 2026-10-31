@@ -119,6 +119,10 @@ def _item_row(item: Item) -> dict:
             for extra in item.extra_units.all()
         ],
         "scanned_unit": getattr(item, "scanned_unit", None),
+        # D P1b — other part numbers, the rack, the vehicles it fits.
+        "part_numbers": [row.code for row in item.codes.all()],
+        "rack": item.rack,
+        "fits_vehicle": item.fits_vehicle,
         "updated_at": item.updated_at.isoformat(),
     }
 

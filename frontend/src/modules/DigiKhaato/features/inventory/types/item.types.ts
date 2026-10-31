@@ -97,6 +97,10 @@ export interface ItemListRow {
   readonly units?: readonly ItemUnitOption[];
   /** D P1a — the unit a box's own barcode named, on a lookup that matched one. */
   readonly scannedUnit?: string | null;
+  /** D P1b — other part numbers, the rack ("B-4"), the vehicles it fits. */
+  readonly partNumbers?: readonly string[];
+  readonly rack?: string | null;
+  readonly fitsVehicle?: string | null;
   readonly updatedAt: string;
 }
 
@@ -241,6 +245,10 @@ export interface ItemFormValues {
   openingAsOf: string;
   /** D P1a — "Also sold as" rows; sent only when the business sells in boxes. */
   extraUnits: ExtraUnitValues[];
+  /** D P1b — sent only when the business keeps part numbers. */
+  partNumbers: string[];
+  rack: string;
+  fitsVehicle: string;
 }
 
 export interface ExtraUnitValues {

@@ -44,6 +44,7 @@ import { looksLikeBarcode, skuPrefix } from '../view-model/itemDisplay';
 import { gstFor, marginOf } from '../view-model/itemPricing';
 
 import { ItemExtraUnitsFields } from './ItemExtraUnitsFields';
+import { ItemPartFields } from './ItemPartFields';
 import { ItemPriceFields } from './ItemPriceFields';
 
 import type { UseItemFormResult } from '../hooks/useItemForm';
@@ -133,6 +134,9 @@ export function ItemFormDrawer({
         price: row.sellingPrice,
         barcode: row.barcode ?? '',
       })),
+      partNumbers: [...(editing?.partNumbers ?? [])],
+      rack: editing?.rack ?? '',
+      fitsVehicle: editing?.fitsVehicle ?? '',
     }),
     [editing, prefillBarcode, prefillName, defaultUnitId, masters.units]
   );
@@ -151,9 +155,9 @@ export function ItemFormDrawer({
   const itemType = useWatch({ control, name: 'itemType' });
   const trackStock = useWatch({ control, name: 'trackStock' });
   const unitId = useWatch({ control, name: 'unitId' });
-  const sellsInBoxes = Boolean(
-    useAppSelector(selectActiveTenant)?.features?.includes('alt_units')
-  );
+  const features = useAppSelector(selectActiveTenant)?.features;
+  const sellsInBoxes = Boolean(features?.includes('alt_units'));
+  const keepsPartNumbers = Boolean(features?.includes('part_numbers'));
   const name = useWatch({ control, name: 'name' });
   const taxCode = useWatch({ control, name: 'taxCode' });
   const inclusive = useWatch({ control, name: 'taxInclusiveSelling' });
@@ -395,6 +399,11 @@ export function ItemFormDrawer({
         {!isService && (sellsInBoxes || (editing?.units?.length ?? 0) > 0) && (
           <ItemExtraUnitsFields units={masters.units} baseUnitId={unitId} />
         )}
+        {/* D P1b — design D3 "PART DETAILS" for a parts shop. */}
+        {!isService &&
+          (keepsPartNumbers ||
+            (editing?.partNumbers?.length ?? 0) > 0 ||
+            Boolean(editing?.rack)) && <ItemPartFields />}
 
         <UbDisclosure
           label={t('items.form.section.tax')}

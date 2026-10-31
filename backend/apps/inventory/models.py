@@ -174,6 +174,10 @@ class Item(TenantModel, SoftDeleteModel):
         Category, on_delete=models.RESTRICT, null=True, blank=True, related_name="items"
     )
     unit = models.ForeignKey(Unit, on_delete=models.RESTRICT, related_name="items")
+    #: D P1b — where it sits ("B-4"), printed on the bill line so the boy knows
+    #: where to pick from; and the vehicles it fits, as the shop writes them.
+    rack = models.CharField(max_length=16, null=True, blank=True)
+    fits_vehicle = models.CharField(max_length=120, null=True, blank=True)
     hsn_sac = models.CharField(max_length=8, null=True, blank=True)
     tax_code = models.CharField(max_length=16, default=DEFAULT_TAX_CODE)
     tax_inclusive_selling = models.BooleanField(default=False)
@@ -553,4 +557,24 @@ class ItemUnit(TenantModel):
                 name="uq_item_unit_barcode",
             ),
             models.CheckConstraint(condition=models.Q(factor__gt=1), name="ck_item_unit_factor"),
+        ]
+
+
+class ItemCode(TenantModel):
+    """D P1b — another number the same part is known by (design D3 "Other part
+    numbers": the maker's 06430-KTE-305, a brand's BS-SPL-01). Search and the
+    scanner find the item by any of them; one code names one item in a shop."""
+
+    item = models.ForeignKey(Item, on_delete=models.CASCADE, related_name="codes")
+    code = models.CharField(max_length=40)
+
+    class Meta:
+        db_table = "inventory_item_code"
+        verbose_name = "item code"
+        verbose_name_plural = "item codes"
+        constraints = [
+            models.UniqueConstraint(fields=["tenant", "code"], name="uq_item_code_tenant_code"),
+        ]
+        indexes = [
+            models.Index(Upper("code"), name="ix_item_code_upper"),
         ]

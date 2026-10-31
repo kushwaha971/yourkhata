@@ -83,7 +83,8 @@ PRESETS: dict[str, Preset] = {
         favourite_units=("NOS", "PCS", "SET", "LTR", "BOX"),
         extra_expense_categories=("Transport", "Shop maintenance"),
         default_due_days=15,
-        features=frozenset({"orders"}),
+        # D P1b — other part numbers, fits vehicle and rack on the item.
+        features=frozenset({"orders", "part_numbers"}),
     ),
     BusinessType.JEWELLERY.value: Preset(
         inventory_enabled=True,

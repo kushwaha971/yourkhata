@@ -161,3 +161,40 @@ def set_units(*, ctx: Any, item: Any, raw: Any) -> None:
         raise ValidationFailed(errors)
     ItemUnit.objects.filter(item=item).delete()
     ItemUnit.objects.bulk_create(rows)
+
+
+MAX_CODES = 10
+
+
+def set_codes(*, ctx: Any, item: Any, raw: Any) -> None:
+    """D P1b — replace the item's other part numbers. A code is up to 40
+    characters, not the item's own SKU or barcode, and not another item's."""
+    from apps.common.exceptions import ValidationFailed
+    from apps.inventory.models import Item, ItemCode
+
+    if raw is None:
+        return
+    if not isinstance(raw, list) or len(raw) > MAX_CODES:
+        raise ValidationFailed({"part_numbers": [f"Add up to {MAX_CODES} part numbers."]})
+    codes: list[str] = []
+    errors: dict = {}
+    for index, entry in enumerate(raw):
+        code = " ".join(str(entry or "").split()).upper()
+        path = f"part_numbers.{index}"
+        if not code:
+            continue
+        if len(code) > 40:
+            errors[path] = ["Keep a part number under 40 characters."]
+        elif code in codes or code in {(item.sku or "").upper(), (item.barcode or "").upper()}:
+            continue
+        elif (
+            ItemCode.objects.filter(tenant=ctx.tenant, code=code).exclude(item=item).exists()
+            or Item.objects.filter(tenant=ctx.tenant, sku__iexact=code).exclude(pk=item.pk).exists()
+        ):
+            errors[path] = [f"Another item already has part number {code}."]
+        else:
+            codes.append(code)
+    if errors:
+        raise ValidationFailed(errors)
+    ItemCode.objects.filter(item=item).delete()
+    ItemCode.objects.bulk_create([ItemCode(tenant=ctx.tenant, item=item, code=c) for c in codes])
