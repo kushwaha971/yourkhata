@@ -280,6 +280,8 @@ export const SHOP_APP: AppManifest = {
       href: ROUTES.STOCK_EXPIRY,
       module: 'inventory',
       permission: 'inventory.stock.read',
+      // Only a business that keeps batches (a medical store by default).
+      feature: 'batches',
       section: 'stock',
       order: 9,
       tab: 'items',
@@ -292,6 +294,8 @@ export const SHOP_APP: AppManifest = {
       href: ROUTES.ITEM_IMEI,
       module: 'inventory',
       permission: 'inventory.stock.read',
+      // Only a business that tracks IMEIs (a mobile shop by default).
+      feature: 'serials',
       section: 'stock',
       order: 8,
       tab: 'items',

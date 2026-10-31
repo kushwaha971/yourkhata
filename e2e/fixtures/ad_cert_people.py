@@ -1,0 +1,62 @@
+"""A–D certification — isolated TEST businesses and people, local stack only.
+
+Run inside the backend (`python manage.py shell < ../e2e/fixtures/ad_cert_people.py`).
+Idempotent. Test values only: everyone signs in at /login/email with
+`<name>@adcert.test` and the password below. Nothing here touches any other
+business: every record is created in the three QA businesses.
+
+  QA Kirana  (kirana)       owner qa-owner · admin qa-admin · accountant qa-acct
+                            · staff qa-staff · staff qa-mixed
+  QA Medical (medical)      owner qa-owner (one person, two businesses)
+  QA Mobile  (electronics)  owner qa-mixed (staff in one, owner in another)
+"""
+
+from django.db import transaction
+
+from apps.platform_app.models import Membership, Role, Tenant, User
+from apps.platform_app.services import onboarding
+
+PASSWORD = "AdCert-Test-2026!"
+
+
+def person(name: str) -> User:
+    email = f"{name}@adcert.test"
+    user = User.objects.filter(email=email).first()
+    if user is None:
+        user = User.objects.create_user(email=email, password=PASSWORD, full_name=name.replace("-", " ").title(), locale="en")
+    return user
+
+
+def business(owner: User, name: str, kind: str) -> Tenant:
+    found = Tenant.objects.filter(name=name, memberships__user=owner).first()
+    if found is not None:
+        return found
+    with transaction.atomic():
+        membership = onboarding.create_tenant(user=owner, name=name, business_type=kind, state_code="27", apps=["shop"])
+        tenant = membership.tenant
+        onboarding.apply_preset(tenant=tenant, actor=owner)
+        Tenant.objects.filter(pk=tenant.pk).update(onboarding_step=4)
+    return Tenant.objects.get(pk=tenant.pk)
+
+
+def member(user: User, tenant: Tenant, role_code: str, default: bool = False) -> None:
+    role = Role.objects.filter(tenant__isnull=True, code=role_code).first()
+    membership = Membership.objects.filter(user=user, tenant=tenant).first()
+    if membership is None:
+        Membership.objects.create(user=user, tenant=tenant, role=role, status="active", is_default=default)
+    elif membership.role_id != role.id or membership.status != "active":
+        membership.role = role
+        membership.status = "active"
+        membership.save(update_fields=["role", "status"])
+
+
+owner = person("qa-owner")
+mixed = person("qa-mixed")
+kirana = business(owner, "QA Kirana", "kirana")
+medical = business(owner, "QA Medical", "medical")
+mobile = business(mixed, "QA Mobile", "electronics")
+member(person("qa-admin"), kirana, "admin", default=True)
+member(person("qa-acct"), kirana, "accountant", default=True)
+member(person("qa-staff"), kirana, "staff", default=True)
+member(mixed, kirana, "staff")
+print("ready", kirana.id, medical.id, mobile.id)

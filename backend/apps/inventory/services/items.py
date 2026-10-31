@@ -573,8 +573,10 @@ def create_item(*, ctx: Ctx, payload: dict) -> dict:
         # D P3 — every phone in stock has its IMEI; an opening quantity has none.
         errors.add(
             "opening_stock",
-            "Add IMEI items through a purchase, so each number is recorded.",
-            "serials_required",
+            "Add IMEI items through a purchase, so each number is recorded."
+            if cleaned.get("tracking") == "serial"
+            else "Add batch items through a purchase, so each batch and expiry is recorded.",
+            "serials_required" if cleaned.get("tracking") == "serial" else "batches_required",
         )
     elif payload.get("opening_stock"):
         if not cleaned.get("track_stock"):

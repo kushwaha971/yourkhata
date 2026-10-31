@@ -72,6 +72,8 @@ const FORM: ItemFormValues = {
   sizes: [],
   colours: [],
   addons: [],
+  tracking: 'none',
+  warrantyMonths: 0,
 };
 
 describe('listItems', () => {

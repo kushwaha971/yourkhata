@@ -47,6 +47,7 @@ import { ItemAddonFields } from './ItemAddonFields';
 import { ItemExtraUnitsFields } from './ItemExtraUnitsFields';
 import { ItemPartFields } from './ItemPartFields';
 import { ItemPriceFields } from './ItemPriceFields';
+import { ItemTrackingFields } from './ItemTrackingFields';
 import { ItemVariantFields } from './ItemVariantFields';
 
 import type { UseItemFormResult } from '../hooks/useItemForm';
@@ -143,6 +144,8 @@ export function ItemFormDrawer({
       sizes: [],
       colours: [],
       addons: (editing?.addons ?? []).map((row) => ({ name: row.name, price: row.price })),
+      tracking: editing?.tracking ?? 'none',
+      warrantyMonths: editing?.warrantyMonths ?? 0,
     }),
     [editing, prefillBarcode, prefillName, defaultUnitId, masters.units]
   );
@@ -166,6 +169,14 @@ export function ItemFormDrawer({
   const keepsPartNumbers = Boolean(features?.includes('part_numbers'));
   const sellsSizes = Boolean(features?.includes('variants'));
   const hasAddons = Boolean(features?.includes('addons'));
+  const keepsBatches = Boolean(features?.includes('batches'));
+  const keepsImei = Boolean(features?.includes('serials'));
+  // The server refuses a tracking change once stock has moved; shown locked.
+  const trackingLocked =
+    isEdit &&
+    editing?.onHand !== null &&
+    editing?.onHand !== undefined &&
+    Number(editing.onHand) !== 0;
   const name = useWatch({ control, name: 'name' });
   const taxCode = useWatch({ control, name: 'taxCode' });
   const inclusive = useWatch({ control, name: 'taxInclusiveSelling' });
@@ -183,8 +194,14 @@ export function ItemFormDrawer({
   );
   const unit = masters.units.find((row) => row.id === unitId);
   const decimals = unit?.allowDecimal ? 3 : 0;
+  const tracking = useWatch({ control, name: 'tracking' });
+  // A batch or IMEI item gets its stock through a purchase, which records each
+  // batch / number; an opening quantity has none (the server refuses it).
   const showOpening =
-    !isService && trackStock && (!isEdit || (editing !== null && !editing.trackStock));
+    !isService &&
+    trackStock &&
+    tracking === 'none' &&
+    (!isEdit || (editing !== null && !editing.trackStock));
 
   // ── HSN picker (FR-4/FR-5) ────────────────────────────────────────────────
   // Owner, 5 Oct 2026 — the HSN box lists the schedule on open, pages as it
@@ -409,6 +426,13 @@ export function ItemFormDrawer({
         )}
         {/* D P2 — design D3 "SIZES AND COLOURS", for a new garment only. */}
         {!isService && !isEdit && sellsSizes && <ItemVariantFields />}
+        {/* D3 per kind: MEDICINE DETAILS / PHONE DETAILS. */}
+        {!isService && (keepsBatches || editing?.tracking === 'batch') && (
+          <ItemTrackingFields kind="batch" locked={trackingLocked} />
+        )}
+        {!isService && (keepsImei || editing?.tracking === 'serial') && (
+          <ItemTrackingFields kind="serial" locked={trackingLocked} />
+        )}
         {/* D P6 — design D11: add-ons on a café item. */}
         {(hasAddons || (editing?.addons?.length ?? 0) > 0) && <ItemAddonFields />}
         {/* D P1b — design D3 "PART DETAILS" for a parts shop. */}

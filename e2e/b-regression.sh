@@ -44,3 +44,4 @@ run d13-docs d13-docs.mjs
 run d14-print d14-print.mjs
 run d-edges d-edges.mjs
 run d-look d-look.mjs
+run ad-certify ad-certify.mjs

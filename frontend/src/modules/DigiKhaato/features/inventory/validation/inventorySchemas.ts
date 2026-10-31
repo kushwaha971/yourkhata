@@ -190,9 +190,17 @@ export const useInventorySchemas = (
         )
         .defined()
         .default([]),
+      tracking: Yup.mixed<'none' | 'serial' | 'batch'>()
+        .oneOf(['none', 'serial', 'batch'])
+        .defined()
+        .default('none'),
+      warrantyMonths: Yup.number().defined().default(0),
       sizes: Yup.array().of(Yup.string().defined()).defined().default([]),
       colours: Yup.array().of(Yup.string().defined()).defined().default([]),
-      rack: Yup.string().defined().default('').max(16, t('validation.maxChars', { value: 16 })),
+      rack: Yup.string()
+        .defined()
+        .default('')
+        .max(16, t('validation.maxChars', { value: 16 })),
       fitsVehicle: Yup.string()
         .defined()
         .default('')

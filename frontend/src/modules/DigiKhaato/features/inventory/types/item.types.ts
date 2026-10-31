@@ -267,6 +267,9 @@ export interface ItemFormValues {
   colours: string[];
   /** D P6 — a café item's add-ons. */
   addons: { name: string; price: string }[];
+  /** D3 per kind — batch (medicine) or IMEI (phone) tracking, and warranty. */
+  tracking: 'none' | 'serial' | 'batch';
+  warrantyMonths: number;
 }
 
 export interface ExtraUnitValues {

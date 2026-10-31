@@ -1095,6 +1095,7 @@
     "sharedApp": 115.9
   },
   "//routes": [
+    "1 Nov 2026, A-D certification: the item form gains MEDICINE / PHONE DETAILS (ItemTrackingFields), and Expiry / Find by IMEI follow their feature: raised to measured + 0.3: /sales/invoices/[id]/edit route 183.2; /sales/challans/new route 183.2; /sales/orders/new route 183.2; /sales/estimates/new route 183.2; /sales/invoices/new route 183.2; /purchases/bills/new firstLoad 422.4; /stock/summary firstLoad 363.4; /items/[id] route 117.8; /items/[id] firstLoad 360.9; /items/price-lists/[id] route 102.1; /library/copies firstLoad 330.4.",
     "31 Oct 2026, Find by IMEI shows a returned phone and its debit note; Return to distributor for medicines and phones: raised to measured + 0.3: /stock/transfer route 118.9; /stock/count route 87.5; /items/labels route 84.0.",
     "31 Oct 2026, design gaps closed after the D side-by-side (Expiry table and return, IMEI camera, estimate title, challan transport column, camera Not found): raised to measured + 0.3: /sales/challans/[id]/edit firstLoad 426.3; /sales/orders/[id]/edit firstLoad 426.3; /sales/estimates/[id]/edit route 183.2; /sales/estimates/[id]/edit firstLoad 426.3; /stock/transfer firstLoad 362.0; /sales/challans route 92.2; /sales/orders route 92.2; /stock/count firstLoad 330.6; /items/labels firstLoad 327.1; /stock/expiry route 78.1; /stock/expiry firstLoad 321.3; /items/imei route 67.6; /items/imei firstLoad 310.7.",
     "31 Oct 2026, owner's grey stock note on estimates and the challan share vehicle line: raised to measured + 0.3: /sales/challans/[id]/edit route 183.0; /sales/orders/[id]/edit route 183.0; /sales/estimates/new firstLoad 426.1; /sales/invoices/new firstLoad 426.1; /sales/challans/[id] firstLoad 333.4; /d/[token] route 42.5.",
@@ -1499,7 +1500,7 @@
       "firstLoad": 335.1
     },
     "/sales/challans/new": {
-      "route": 182.9,
+      "route": 183.2,
       "firstLoad": 426.1
     },
     "/sales/challans/[id]/edit": {
@@ -1531,7 +1532,7 @@
       "firstLoad": 335.1
     },
     "/sales/orders/new": {
-      "route": 182.9,
+      "route": 183.2,
       "firstLoad": 426.1
     },
     "/sales/orders/[id]/edit": {
@@ -1547,11 +1548,11 @@
       "firstLoad": 343.1
     },
     "/sales/invoices/new": {
-      "route": 182.9,
+      "route": 183.2,
       "firstLoad": 426.1
     },
     "/sales/invoices/[id]/edit": {
-      "route": 182.9,
+      "route": 183.2,
       "firstLoad": 426.1
     },
     "/sales/invoices": {
@@ -1567,7 +1568,7 @@
       "firstLoad": 356
     },
     "/sales/estimates/new": {
-      "route": 182.9,
+      "route": 183.2,
       "firstLoad": 426.1
     },
     "/sales/estimates/[id]/edit": {
@@ -1652,7 +1653,7 @@
     },
     "/stock/summary": {
       "route": 120.0,
-      "firstLoad": 363.1
+      "firstLoad": 363.4
     },
     "/items/masters": {
       "route": 62.5,
@@ -1663,8 +1664,8 @@
       "firstLoad": 344
     },
     "/items/[id]": {
-      "route": 117.4,
-      "firstLoad": 360.5
+      "route": 117.8,
+      "firstLoad": 360.9
     },
     "/stock/low": {
       "route": 81.4,
@@ -1736,7 +1737,7 @@
     },
     "/purchases/bills/new": {
       "route": 179.1,
-      "firstLoad": 422.1
+      "firstLoad": 422.4
     },
     "/reports": {
       "route": 72,
@@ -1780,7 +1781,7 @@
     },
     "/library/copies": {
       "route": 87.3,
-      "firstLoad": 330.1
+      "firstLoad": 330.4
     },
     "/library/copies/[copyId]": {
       "route": 81.1,
@@ -1899,7 +1900,7 @@
       "firstLoad": 344
     },
     "/items/price-lists/[id]": {
-      "route": 101.8,
+      "route": 102.1,
       "firstLoad": 345.1
     },
     "/lending/messages": {

@@ -398,6 +398,8 @@ export interface ItemBody {
   readonly rack?: string | null;
   readonly fits_vehicle?: string | null;
   readonly addons?: readonly { readonly name: string; readonly price: string }[];
+  readonly tracking?: 'none' | 'serial' | 'batch';
+  readonly warranty_months?: number | null;
   readonly variants?: { readonly sizes: readonly string[]; readonly colours: readonly string[] };
   readonly units?: readonly {
     readonly unit_id: string;
@@ -481,6 +483,8 @@ export const toItemBody = (
             .map((row) => ({ name: row.name.trim(), price: row.price || '0' })),
           rack: values.rack.trim() || null,
           fits_vehicle: values.fitsVehicle.trim() || null,
+          tracking: values.tracking,
+          warranty_months: values.tracking === 'serial' ? values.warrantyMonths || null : null,
         }
       : {}),
   };

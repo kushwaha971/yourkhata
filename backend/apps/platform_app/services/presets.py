@@ -61,6 +61,8 @@ PRESETS: dict[str, Preset] = {
         favourite_units=("NOS", "BOX", "BTL", "PAC", "MLT"),
         extra_expense_categories=("Packaging", "Shop maintenance"),
         default_due_days=7,
+        # A–D certification: a medical store keeps batch and expiry (D6/D7).
+        features=frozenset({"batches"}),
     ),
     BusinessType.ELECTRONICS.value: Preset(
         inventory_enabled=True,
@@ -68,7 +70,8 @@ PRESETS: dict[str, Preset] = {
         favourite_units=("NOS", "PCS", "SET", "BOX", "MTR"),
         extra_expense_categories=("Repairs & service", "Shop maintenance"),
         default_due_days=7,
-        features=frozenset({"orders"}),
+        # D8: a mobile shop asks one IMEI for each phone.
+        features=frozenset({"orders", "serials"}),
     ),
     BusinessType.GARMENTS.value: Preset(
         inventory_enabled=True,
@@ -76,6 +79,8 @@ PRESETS: dict[str, Preset] = {
         favourite_units=("NOS", "PCS", "PRS", "SET", "MTR"),
         extra_expense_categories=("Packaging", "Shop maintenance"),
         default_due_days=7,
+        # D2: a clothes shop sells in sizes and colours.
+        features=frozenset({"variants"}),
     ),
     BusinessType.AUTO_PARTS.value: Preset(
         inventory_enabled=True,
