@@ -132,7 +132,7 @@ async function run() {
   // A made-up number is about to ask for a code: only ever from the e2e API.
   await assertE2eApi();
   await seedOwner();
-  const browser = await chromium.launch();
+  const browser = await chromium.launch({ executablePath: process.env.PW_CHROME || process.env.CHROME });
   const viewport = { width: 1440, height: 900 };
 
   // ── DEC-013: the owner adds a member by mobile; no password exists ───────

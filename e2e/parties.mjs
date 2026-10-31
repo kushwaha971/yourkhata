@@ -159,7 +159,7 @@ const shot = async (page, name) => {
 
 async function run() {
   await seed();
-  const browser = await chromium.launch({ executablePath: process.env.CHROME });
+  const browser = await chromium.launch({ executablePath: process.env.CHROME || process.env.PW_CHROME });
   const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 } });
   const page = await ctx.newPage();
 

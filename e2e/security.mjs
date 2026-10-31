@@ -66,7 +66,7 @@ async function run() {
   }
 
   // ── The browser, typing a protected URL directly ────────────────────────
-  const browser = await chromium.launch();
+  const browser = await chromium.launch({ executablePath: process.env.PW_CHROME || process.env.CHROME });
   const ctx = await browser.newContext({ viewport: { width: 1280, height: 800 } });
   const page = await ctx.newPage();
 

@@ -591,7 +591,7 @@ async function run() {
     { cwd: LOCAL_BACKEND_DIR, env: { ...process.env, DJANGO_SETTINGS_MODULE: 'config.settings.local' } }
   );
 
-  const browser = await chromium.launch({ executablePath: process.env.CHROME });
+  const browser = await chromium.launch({ executablePath: process.env.CHROME || process.env.PW_CHROME });
   await checks(browser, token, parties);
 
   if (wantShots) {

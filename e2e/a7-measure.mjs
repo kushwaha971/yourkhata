@@ -83,7 +83,9 @@ const inspect = () => {
   const frame = table.closest('[class*=rounded]') ?? table.parentElement;
   const th = [...table.querySelectorAll('thead th')].find((e) => R(e).width > 60 && e.textContent.trim());
   const thText = th && deepest(th);
-  const td = [...table.querySelectorAll('tbody td')].find((e) => R(e).width > 60);
+  // A month with no rows (the 1st of a month) shows one empty-state cell spanning
+  // the table; that is not a data cell and has no row padding to measure.
+  const td = [...table.querySelectorAll('tbody td')].find((e) => R(e).width > 60 && !(e.colSpan > 1));
   const rows = [...table.querySelectorAll('tbody tr')];
   const lastTd = rows.at(-1)?.querySelector('td');
   const pager = grid.querySelector('[data-testid=ub-grid-pagination]') ?? [...grid.querySelectorAll('nav, div')].find((e) => /of \d|का/.test(e.textContent) && e.querySelector('button') && R(e).height < 80);
@@ -162,7 +164,7 @@ for (const width of widths) {
           if (desk) {
             if (!r.frame || r.frame.radius !== '12px' || r.frame.overflow !== 'clip' || r.frame.border !== '1px') fail(key, `T1 frame ${JSON.stringify(r.frame)}`);
             if (!r.head || !near(r.head.h, 46) || r.head.font !== '13px/600' || r.head.padL !== '14px') fail(key, `T2 header ${JSON.stringify(r.head)}`);
-            if (!r.cell || r.cell.pad !== '10px 14px') fail(key, `T3 cells ${JSON.stringify(r.cell)}`);
+            if (r.cell && r.cell.pad !== '10px 14px') fail(key, `T3 cells ${JSON.stringify(r.cell)}`);
             if (!r.pager || r.pager.lines !== 1) fail(key, `T4 lines under the table ${JSON.stringify(r.pager)}`);
           }
           if (!r.line) fail(key, 'T5 no count line');
@@ -253,7 +255,7 @@ for (const width of widths.filter((w) => w >= 1024)) {
       }
       if (!r.frame || r.frame.radius !== '12px' || r.frame.overflow !== 'clip') fail(key, `T1 frame ${JSON.stringify(r.frame)}`);
       if (!r.head || !near(r.head.h, 46) || r.head.font !== '13px/600' || r.head.padL !== '14px') fail(key, `T2 header ${JSON.stringify(r.head)}`);
-      if (!r.cell || r.cell.pad !== '10px 14px') fail(key, `T3 cells ${JSON.stringify(r.cell)}`);
+      if (r.cell && r.cell.pad !== '10px 14px') fail(key, `T3 cells ${JSON.stringify(r.cell)}`);
       if (r.pager && r.pager.lines !== 1) fail(key, `T4 lines under the table ${JSON.stringify(r.pager)}`);
       console.log(key, JSON.stringify({ head: r.head, cell: r.cell, pager: r.pager }));
     } catch (e) {

@@ -140,7 +140,7 @@ const readTheme = (page) =>
   }));
 
 async function run() {
-  const browser = await chromium.launch();
+  const browser = await chromium.launch({ executablePath: process.env.PW_CHROME || process.env.CHROME });
   const names = only ? [only] : Object.keys(VIEWPORTS);
 
   for (const name of names) {

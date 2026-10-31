@@ -1462,7 +1462,7 @@ async function checks(browser, token, parties) {
 async function run() {
   const { token, parties } = await seed();
 
-  const browser = await chromium.launch({ executablePath: process.env.CHROME });
+  const browser = await chromium.launch({ executablePath: process.env.CHROME || process.env.PW_CHROME });
   await checks(browser, token, parties);
 
   if (wantShots) {
