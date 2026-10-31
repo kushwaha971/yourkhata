@@ -31,6 +31,24 @@ export function lineUnitChoices(
   ];
 }
 
+/** The same units priced at COST, for a purchase line: a box costs 20 × a piece. */
+export function lineCostChoices(
+  row: Pick<ItemListRow, 'unit' | 'purchasePrice' | 'units'>
+): readonly LineUnitChoice[] {
+  const extras = row.units ?? [];
+  if (extras.length === 0) return [];
+  const cost = Number(row.purchasePrice || 0);
+  return [
+    { code: row.unit.code, factor: 1, price: row.purchasePrice ?? '', allowDecimal: row.unit.allowDecimal },
+    ...extras.map((unit) => ({
+      code: unit.code,
+      factor: Number(unit.factor),
+      price: cost ? (cost * Number(unit.factor)).toFixed(2) : '',
+      allowDecimal: unit.allowDecimal,
+    })),
+  ];
+}
+
 /** Design D1's line caption: "Sold in PCS · BOX of 20", or "1 BOX = 20 PCS". */
 export function lineUnitCaption(
   choices: readonly LineUnitChoice[],

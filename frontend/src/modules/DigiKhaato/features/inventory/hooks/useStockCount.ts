@@ -65,7 +65,6 @@ export function useStockCount(): UseStockCount {
       const result = await dispatch(countStockItem({ id, itemId, body }));
       // The page is re-read through the invalidation map (stale → effect below).
       return countStockItem.fulfilled.match(result);
-      return false;
     },
     [dispatch, id]
   );

@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useMemo } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 
 import dynamic from 'next/dynamic';
 
@@ -8,6 +8,7 @@ import { useFieldArray, type UseFormReturn } from 'react-hook-form';
 
 import {
   UbBox,
+  UbChoiceChips,
   UbLineItemsEditor,
   UbMoneyInput,
   UbQuantityInput,
@@ -26,6 +27,11 @@ import { ItemQuickAdd } from '../../inventory/components/ItemQuickAdd';
 import { LastRateNote } from '../../inventory/components/LastRateNote';
 import { LINE_FINDER_FROM, useLineQuickAdd } from '../../inventory/hooks/useLineQuickAdd';
 import { ratePlaces } from '../../sales/view-model/invoiceForm';
+import {
+  lineCostChoices,
+  lineUnitCaption,
+  type LineUnitChoice,
+} from '../../sales/view-model/lineUnits';
 import { PURCHASE_MAX_LINES } from '../constants/purchaseConstants';
 import {
   emptyPurchaseLine,
@@ -76,6 +82,9 @@ export function PurchaseBillLinesSection({
   const partyId = watch('partyId');
   const partyName = watch('partyName');
 
+  /** D P1a — each picked item's units, priced at cost, for the line's chips. */
+  const [unitChoices, setUnitChoices] = useState<Record<string, readonly LineUnitChoice[]>>({});
+
   // FR-3 — item defaults fill a line when the item is PICKED, never later.
   const pick = useCallback(
     (index: number, row: ItemListRow) => {
@@ -89,6 +98,16 @@ export function PurchaseBillLinesSection({
       setValue(`${base}.lastCost`, line.lastCost);
       setValue(`${base}.taxCode`, line.taxCode);
       setValue(`${base}.itemTaxCode`, line.itemTaxCode);
+      const choices = lineCostChoices(row);
+      if (choices.length > 0) {
+        setUnitChoices((current) => ({ ...current, [row.id]: choices }));
+        const scanned = choices.find((choice) => choice.code === row.scannedUnit);
+        if (scanned && scanned.factor !== 1) {
+          setValue(`${base}.unitCode`, scanned.code);
+          setValue(`${base}.allowDecimal`, scanned.allowDecimal);
+          if (scanned.price) setValue(`${base}.unitCost`, scanned.price);
+        }
+      }
     },
     [setValue]
   );
@@ -257,9 +276,35 @@ export function PurchaseBillLinesSection({
       const change = purchaseCostChanged(line.unitCost, original);
       const taxDiffers = !!line.itemTaxCode && line.itemTaxCode !== line.taxCode;
       const remember = !!line.itemId && !!partyId;
-      if (!change && !taxDiffers && !remember) return null;
+      // D P1a — "Sold in NOS · BOX of 20", and NOS / BOX to buy by the box.
+      const choices = line.itemId ? (unitChoices[line.itemId] ?? []) : [];
+      const unitCaption = lineUnitCaption(choices, line.unitCode, {
+        sold: (b, box, n) => t('purchases.line.unitSold', { base: b, box, n }),
+        one: (box, n, b) => t('purchases.line.unitOne', { box, n, base: b }),
+      });
+      if (!change && !taxDiffers && !remember && !unitCaption) return null;
       return (
         <UbStack gap={0} className="empty:hidden">
+          {unitCaption && (
+            <UbStack gap={1} data-testid="line-unit">
+              <UbText variant="caption" tone="accent">
+                {unitCaption}
+              </UbText>
+              <UbChoiceChips<string>
+                value={line.unitCode}
+                onChange={(code) => {
+                  const picked = choices.find((choice) => choice.code === code);
+                  if (!picked) return;
+                  setValue(`lines.${index}.unitCode`, picked.code, { shouldDirty: true });
+                  setValue(`lines.${index}.allowDecimal`, picked.allowDecimal);
+                  if (picked.price)
+                    setValue(`lines.${index}.unitCost`, picked.price, { shouldDirty: true });
+                }}
+                options={choices.map((choice) => ({ value: choice.code, label: choice.code }))}
+                ariaLabel={t('purchases.line.unitOf', { name: line.description })}
+              />
+            </UbStack>
+          )}
           {/* Shop gap §1.5 — what this supplier charged for it last time. */}
           {remember && (
             <LastRateNote
@@ -286,7 +331,7 @@ export function PurchaseBillLinesSection({
         </UbStack>
       );
     },
-    [lines, t, partyId, partyName, setValue, form.formState.defaultValues, order]
+    [lines, t, partyId, partyName, setValue, form.formState.defaultValues, order, unitChoices]
   );
 
   return (

@@ -140,6 +140,26 @@ try {
   check('phone: no overflow', over <= 0, String(over));
   await phone.close();
 
+  // ── purchase: buy 2 boxes → +40 at the piece cost ──
+  {
+    const pc = await browser.newContext({ viewport: { width: 1280, height: 900 } });
+    const pp = await signIn(pc);
+    await pp.goto(`${base}/purchases/bills/new`, { waitUntil: 'networkidle' });
+    const q = pp.getByRole('combobox', { name: /Search items|Add item/i }).first();
+    await q.click();
+    await q.fill(NAME);
+    await pp.getByRole('option', { name: new RegExp(NAME) }).first().click({ timeout: 10000 });
+    await sleep(1000);
+    const note = pp.getByTestId('line-unit').first();
+    const pcap = await note.innerText().catch(() => '');
+    check('purchase: the line reads "Bought in NOS · BOX of 20"', pcap.includes('Bought in NOS · BOX of 20'), pcap.replace(/\n/g, ' / '));
+    await note.getByRole('button', { name: 'BOX', exact: true }).or(note.getByRole('radio', { name: 'BOX' })).first().click();
+    await sleep(500);
+    check('purchase: BOX makes it "1 BOX = 20 NOS"', (await note.innerText().catch(() => '')).includes('1 BOX = 20 NOS'));
+    await pp.screenshot({ path: `${dir}/1280-purchase.png` });
+    await pc.close();
+  }
+
   // ── off: no group ──
   await setFeature(desk, false);
   await page.goto(`${base}/items`, { waitUntil: 'networkidle' });
