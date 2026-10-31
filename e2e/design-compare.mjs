@@ -43,6 +43,10 @@ try {
     viewport: { width: 1600, height: 1200 },
     deviceScaleFactor: 1,
   });
+  // --kind=medical draws the design's mocks for that business (its picker
+  // reads localStorage 'yk-bt'); without it the page's default is used.
+  const kind = process.argv.find((a) => a.startsWith("--kind="))?.slice(7);
+  if (kind) await page.addInitScript((k) => localStorage.setItem("yk-bt", k), kind);
   await page.goto(pathToFileURL(designPath).href, { waitUntil: "load" });
   await page.waitForTimeout(800);
   const designShots = {};

@@ -40,6 +40,7 @@ import { selectMayOverrideCreditLimit } from 'src/redux/slice/sessionSlice';
 import { showSnackbar } from 'src/redux/slice/snackbarSlice';
 import type { RootState } from 'src/redux/store';
 import { ROUTES } from 'src/routes';
+import { formatBusinessDate } from 'src/utils/dates';
 import { formatInr, sumMoney } from 'src/utils/money';
 
 import { listInvoices } from '../api/salesService';
@@ -65,8 +66,7 @@ import type { InvoiceListRow } from '../types/sales.types';
 /* The payment sheet and the success sheet load with the tap that opens them. */
 const PaymentDrawerLazy = dynamic(
   () => import('./InvoicePaymentDrawer').then((m) => m.InvoicePaymentDrawer),
-  { ssr: false,
-  loading: () => <UbDrawerLoading /> }
+  { ssr: false, loading: () => <UbDrawerLoading /> }
 );
 /* Shop item 4 — only a challan has these fields, so only a challan's editor loads them. */
 const ChallanDetailsSection = dynamic(
@@ -75,8 +75,7 @@ const ChallanDetailsSection = dynamic(
 );
 const IssuedDialogLazy = dynamic(
   () => import('./InvoiceIssuedDialog').then((m) => m.InvoiceIssuedDialog),
-  { ssr: false,
-  loading: () => <UbDialogLoading /> }
+  { ssr: false, loading: () => <UbDialogLoading /> }
 );
 
 /**
@@ -514,9 +513,20 @@ export function InvoiceEditorPageContent({
               ? t('sales.newBill')
               : documentId || server.documentId
                 ? t('sales.editor.editTitle', { title })
-                : t('sales.editor.newTitle', { title })
+                : estimate && !order && !challan
+                  ? // Design D13 pEstimate: "New estimate", sentence case.
+                    t('sales.estimate.new')
+                  : t('sales.editor.newTitle', { title })
           }
-          subtitle={bill ? title : undefined}
+          subtitle={
+            bill
+              ? title
+              : estimate && !order && !challan
+                ? values.validUntil
+                  ? t('sales.estimate.validLine', { date: formatBusinessDate(values.validUntil) })
+                  : t('sales.estimate.validFor')
+                : undefined
+          }
           controls={docksTotals ? undefined : saveIndicator}
           actions={
             <>
@@ -674,7 +684,7 @@ export function InvoiceEditorPageContent({
                 }
               />
             </UbPanel>
-            {challan && (
+            {challan && !desk && (
               <UbPanel>
                 <ChallanDetailsSection form={form} disabled={locked} />
               </UbPanel>
@@ -692,6 +702,12 @@ export function InvoiceEditorPageContent({
             />
           </UbStack>
           <UbStack gap={3} className="min-w-0" data-testid="invoice-side">
+            {/* Design D13 dChallan: Transport is the side column's first card. */}
+            {challan && desk && (
+              <UbPanel>
+                <ChallanDetailsSection form={form} disabled={locked} side />
+              </UbPanel>
+            )}
             {desk && (
               <InvoicePartySection
                 form={form}
@@ -755,7 +771,9 @@ export function InvoiceEditorPageContent({
           // Design §A4: the dock sits at the bottom of the screen, also on a
           // short bill (it followed the content and floated mid-screen).
           className="mt-auto"
-          totalLabel={t('sales.totals.grand')}
+          totalLabel={t(
+            estimate && !order && !challan ? 'sales.estimate.total' : 'sales.totals.grand'
+          )}
           total={formatInr(preview.grandTotal)}
           caption={dockCaption}
           meta={saveIndicator}

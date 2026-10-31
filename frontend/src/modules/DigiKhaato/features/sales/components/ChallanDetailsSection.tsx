@@ -21,7 +21,13 @@ import type { UseFormReturn } from 'react-hook-form';
 export function ChallanDetailsSection({
   form,
   disabled,
-}: Readonly<{ form: UseFormReturn<InvoiceFormValues>; disabled: boolean }>): React.JSX.Element {
+  side = false,
+}: Readonly<{
+  form: UseFormReturn<InvoiceFormValues>;
+  disabled: boolean;
+  /** Desktop side column (design D13): one field per row. */
+  side?: boolean;
+}>): React.JSX.Element {
   const { t } = useTranslation();
   const type = form.watch('challanType');
   const features = useAppSelector(selectActiveTenant)?.features ?? [];
@@ -48,7 +54,7 @@ export function ChallanDetailsSection({
           />
         )}
       </UbField>
-      <UbGrid columns={{ base: 1, sm: 3 }} gap={3}>
+      <UbGrid columns={side ? { base: 1 } : { base: 1, sm: 3 }} gap={3}>
         <UbField name="transporter" label={t('sales.challan.transporter')}>
           {(field) => <UbTextInput {...field} maxLength={60} disabled={disabled} />}
         </UbField>
@@ -68,7 +74,7 @@ export function ChallanDetailsSection({
         </UbField>
       </UbGrid>
       {/* Design D13's Transport card: who carries the goods, and where to. */}
-      <UbGrid columns={{ base: 1, sm: 2 }} gap={3}>
+      <UbGrid columns={side ? { base: 1 } : { base: 1, sm: 2 }} gap={3}>
         <UbField name="driver" label={t('sales.challan.driver')}>
           {(field) => <UbTextInput {...field} maxLength={60} disabled={disabled} />}
         </UbField>

@@ -17,7 +17,7 @@ const check = (name, ok, detail = '') => {
 const SCREENS = [
   ['home', '/dashboard', 'home-strip'],
   ['estimate', '/sales/estimates/new', null],
-  ['challan', '/sales/delivery-challans/new', null],
+  ['challan', '/sales/challans/new', null],
   ['expiry', '/stock/expiry', 'expiry-screen'],
   ['imei', '/items/imei', null],
   ['transfer', '/stock/transfer', null],
@@ -48,6 +48,8 @@ for (const locale of ['en', 'hi']) {
         const discard = page.getByRole('dialog').getByRole('button', { name: /^(Discard|हटाएँ|छोड़ें)$/ });
         if (await discard.isVisible({ timeout: 800 }).catch(() => false)) await discard.click();
         await page.waitForTimeout(800);
+        // A wrong address must fail, not pass as a tidy 404 page.
+        check(`${tag}: the screen exists`, !(await page.getByText(/We could not find that page|वह पेज नहीं मिला/).isVisible().catch(() => false)));
         const m = await page.evaluate(() => {
           const over = document.documentElement.scrollWidth - window.innerWidth;
           const clipped = [];

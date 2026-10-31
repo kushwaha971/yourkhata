@@ -96,7 +96,7 @@ describe('the estimate editor (SAL-01, TSK-SAL-01-07)', () => {
   it('T-SAL01-8: is the bill editor titled Estimate, with "Save & send" and Estimated GST', async () => {
     signIn(['sales.estimate.read', 'sales.estimate.write']);
     renderWithProviders(<InvoiceEditorPageContent documentId={null} kind="estimate" />);
-    expect(await screen.findByRole('heading', { name: /Estimate/ })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: 'New estimate' })).toBeInTheDocument();
     expect(screen.getByTestId('invoice-issue')).toHaveTextContent('Save & send');
     expect(screen.getByTestId('estimated-gst')).toHaveTextContent(
       'Estimated GST (final on invoice)'

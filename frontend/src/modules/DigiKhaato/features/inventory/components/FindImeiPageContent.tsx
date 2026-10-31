@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 
+import dynamic from 'next/dynamic';
 import { useSearchParams } from 'next/navigation';
 
 import {
@@ -13,6 +14,7 @@ import {
   UbPageHeader,
   UbPageShell,
   UbPanel,
+  UbScanButton,
   UbSearchInput,
   UbStack,
   UbStatusBadge,
@@ -23,6 +25,11 @@ import { useTranslation } from 'src/hooks/useTranslation';
 import { formatBusinessDate } from 'src/utils/dates';
 
 import { findSerial, type SerialFound } from '../api/serialService';
+
+/* Design D8 phone: the camera loads when its button is first tapped. */
+const UbScanSheet = dynamic(() => import('src/design-system').then((m) => m.UbScanSheet), {
+  ssr: false,
+});
 
 const monthsLeft = (until: string | null): number | null => {
   if (!until) return null;
@@ -46,6 +53,7 @@ export function FindImeiPageContent(): React.JSX.Element {
   const [found, setFound] = useState<SerialFound | null>(null);
   const [missing, setMissing] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [cameraOpen, setCameraOpen] = useState(false);
 
   const look = async (value: string): Promise<void> => {
     const text = value.replace(/\s+/g, '');
@@ -69,6 +77,7 @@ export function FindImeiPageContent(): React.JSX.Element {
       <UbStack gap={3} className="max-w-xl" data-testid="find-imei">
         <UbBox
           as="form"
+          className="flex items-center gap-2"
           onSubmit={(event: React.FormEvent) => {
             event.preventDefault();
             void look(code);
@@ -81,8 +90,34 @@ export function FindImeiPageContent(): React.JSX.Element {
             aria-label={t('items.imei.placeholder')}
             autoFocus
             data-testid="find-imei-input"
+            className="min-w-0 flex-1"
           />
+          {/* Design D8: the box on the phone's IMEI sticker is a barcode. */}
+          <UbScanButton label={t('items.scan.camera')} onClick={() => setCameraOpen(true)} />
         </UbBox>
+        {cameraOpen && (
+          <UbScanSheet
+            open
+            onClose={() => setCameraOpen(false)}
+            onCode={(scanned) => {
+              setCameraOpen(false);
+              setCode(scanned);
+              void look(scanned);
+            }}
+            title={t('items.imei.title')}
+            hint={t('items.imei.placeholder')}
+            labels={{
+              close: t('common.action.close'),
+              torch: t('items.scan.camera.torch'),
+              done: t('common.action.close'),
+              blockedTitle: t('items.scan.camera.blockedTitle'),
+              blockedBody: t('items.scan.camera.blockedBody'),
+              barcode: t('items.scan.camera.barcode'),
+              add: t('items.imei.title'),
+              keepsWorking: t('items.imei.placeholder'),
+            }}
+          />
+        )}
         {busy && (
           <UbText as="p" variant="caption" tone="tertiary">
             {t('items.imei.looking')}
@@ -114,7 +149,9 @@ export function FindImeiPageContent(): React.JSX.Element {
                 {found.sale?.customer && (
                   <UbInfoRow
                     label={t('items.imei.soldTo')}
-                    value={[found.sale.customer.name, found.sale.customer.mobile].filter(Boolean).join(' · ')}
+                    value={[found.sale.customer.name, found.sale.customer.mobile]
+                      .filter(Boolean)
+                      .join(' · ')}
                   />
                 )}
                 {found.sale && (
@@ -161,7 +198,11 @@ export function FindImeiPageContent(): React.JSX.Element {
               {t('items.imei.openBill')}
             </UbButton>
             {found.sale.customer?.mobile && (
-              <UbLink href={`tel:${found.sale.customer.mobile}`} variant="body-sm-medium" className="self-center">
+              <UbLink
+                href={`tel:${found.sale.customer.mobile}`}
+                variant="body-sm-medium"
+                className="self-center"
+              >
                 {t('items.imei.call')}
               </UbLink>
             )}

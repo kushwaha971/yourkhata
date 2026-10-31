@@ -32,5 +32,6 @@
   "items.scan.nf.byCamera": "अभी कैमरे से स्कैन किया",
   "items.scan.nf.byScanner": "अभी स्कैनर से स्कैन किया",
   "items.scan.nf.title": "आपके सामान में नहीं है",
-  "items.scan.notFound": "बारकोड {code} का कोई आइटम नहीं"
+  "items.scan.notFound": "बारकोड {code} का कोई आइटम नहीं",
+  "items.scan.notFoundShort": "नहीं मिला: {code}"
 }

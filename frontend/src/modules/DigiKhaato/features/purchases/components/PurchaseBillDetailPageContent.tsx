@@ -3,6 +3,7 @@
 import { useState } from 'react';
 
 import dynamic from 'next/dynamic';
+import { useSearchParams } from 'next/navigation';
 
 import { Ban, FileOutput, Pencil, Trash2, TriangleAlert, Wallet, XCircle } from 'lucide-react';
 
@@ -57,14 +58,12 @@ const OrderCancelDialogLazy = dynamic(
 /* Shop P0 — "Return goods": the lines, the reason and the stock switch load with the tap. */
 const DebitNoteDrawerLazy = dynamic(
   () => import('./DebitNoteDrawer').then((m) => m.DebitNoteDrawer),
-  { ssr: false,
-  loading: () => <UbDrawerLoading /> }
+  { ssr: false, loading: () => <UbDrawerLoading /> }
 );
 
 const PaymentFormDrawerLazy = dynamic(
   () => import('../../payments/components/PaymentFormDrawer').then((m) => m.PaymentFormDrawer),
-  { ssr: false,
-  loading: () => <UbDrawerLoading /> }
+  { ssr: false, loading: () => <UbDrawerLoading /> }
 );
 
 const VOIDABLE = new Set(['recorded', 'partially_paid', 'paid', 'overdue']);
@@ -111,7 +110,9 @@ export function PurchaseBillDetailPageContent({
   const [voiding, setVoiding] = useState(false);
   const [cancelling, setCancelling] = useState(false);
   const [billing, setBilling] = useState(false);
-  const [returning, setReturning] = useState(false);
+  // D7: Expiry's "Return to distributor" lands here with ?return=1.
+  const returnAsked = useSearchParams()?.get('return') === '1';
+  const [returning, setReturning] = useState(returnAsked);
   const [wrongOpen, setWrongOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [paymentContext, setPaymentContext] = useState<PaymentContext | null>(null);
@@ -471,7 +472,9 @@ export function PurchaseBillDetailPageContent({
           onClose={() => setCancelling(false)}
         />
       )}
-      {returning && <DebitNoteDrawerLazy bill={bill} onClose={() => setReturning(false)} />}
+      {returning && canGoodsBack && (
+        <DebitNoteDrawerLazy bill={bill} onClose={() => setReturning(false)} />
+      )}
       {voiding && (
         <VoidDialogLazy
           bill={bill}

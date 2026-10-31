@@ -265,11 +265,15 @@ function ItemQuickAddBase({
   /** C1 tray: the items scanned while the camera is open, newest first, once
       each (a second scan of one item raises its line, not the tray). */
   const [scanned, setScanned] = useState<readonly { id: string; name: string }[]>([]);
+  /** Owner, 31 Oct 2026: a code the camera reads but nobody stocks said
+      nothing on the camera (only a buzz); it is now written in the tray. */
+  const [cameraMissed, setCameraMissed] = useState<string | null>(null);
   const scan = useCallback(
     (code: string) => {
       void search.lookup(code).then((row) => {
         if (row) {
           setMissed(null);
+          setCameraMissed(null);
           scanFeedback('added');
           setScanned((list) =>
             [{ id: row.id, name: row.name }, ...list.filter((one) => one.id !== row.id)].slice(0, 3)
@@ -278,6 +282,7 @@ function ItemQuickAddBase({
           return;
         }
         scanFeedback('notFound');
+        setCameraMissed(code);
         search.clear();
         if (labels.notFound) setMissed(code);
         else
@@ -395,6 +400,7 @@ function ItemQuickAddBase({
             label={labels.camera.open}
             onClick={() => {
               setScanned([]);
+              setCameraMissed(null);
               setCameraOpen(true);
             }}
             disabled={disabled}
@@ -561,6 +567,17 @@ function ItemQuickAddBase({
                   {labels.camera.summary}
                 </UbText>
               </UbBox>
+              {cameraMissed !== null && (
+                <UbText
+                  as="p"
+                  variant="inherit"
+                  role="status"
+                  data-testid="scan-tray-missed"
+                  className="text-sm font-semibold text-[#FFB74D]"
+                >
+                  {t('items.scan.notFoundShort', { code: cameraMissed })}
+                </UbText>
+              )}
               {scanned.map((one, index) => (
                 // Design `.tray .li2`: name left (cut if long), "× qty · ₹" right.
                 // The ink goes on each span: UbText paints its own colour, and

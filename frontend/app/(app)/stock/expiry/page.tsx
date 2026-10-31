@@ -8,6 +8,7 @@ import { ExpiryPageContent } from 'modules/DigiKhaato/features/inventory/compone
 
 // The words this screen renders arrive with its chunk (src/i18n/catalogueRegistry.ts).
 import 'src/i18n/catalogues/stock';
+import 'src/i18n/catalogues/items';
 
 /** D P4 — `/stock/expiry`: batches expired or expiring soon (design D7). */
 export default function ExpiryPage(): React.JSX.Element {

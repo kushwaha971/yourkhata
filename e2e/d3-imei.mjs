@@ -126,6 +126,17 @@ check('API: selling the same IMEI twice is refused (409)', again.status() === 40
 const still = await serial(ctx, IMEI[1]);
 check('API: the other phone is still in stock', still?.status === 'in_stock', still?.status);
 
+// Design D8 phone: a camera button beside the IMEI box, and the box and it fit.
+const phone = await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
+const p2 = await signIn(phone);
+await p2.goto(`${base}/items/imei`, { waitUntil: 'networkidle' });
+await sleep(800);
+const scan = p2.getByRole('button', { name: 'Scan with camera' });
+const sb = await scan.boundingBox().catch(() => null);
+const ib = await p2.getByTestId('find-imei-input').boundingBox().catch(() => null);
+check('phone: "Scan with camera" sits beside the IMEI box', !!sb && !!ib && Math.abs(sb.y + sb.height / 2 - (ib.y + ib.height / 2)) < 6 && sb.x > ib.x, JSON.stringify({ sb, ib }));
+await p2.screenshot({ path: `${dir}/390-find.png` });
+await phone.close();
 await ctx.close();
 await browser.close();
 const failed = results.filter((ok) => !ok).length;

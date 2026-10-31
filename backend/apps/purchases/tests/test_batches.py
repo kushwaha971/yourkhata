@@ -67,3 +67,21 @@ def test_a_batch_purchase_needs_its_number_and_expiry(owner: Any, make_item: Any
     refused = record(owner, made["id"], version=made["version"])
     assert refused.status_code == 400
     assert {"lines.0.batch_no", "lines.0.expiry"} <= set(refused.json()["error"]["details"])
+
+
+def test_an_expiring_batch_names_the_bill_it_came_in_on(
+    owner: Any, make_item: Any, make_supplier: Any, shop: Any
+) -> None:
+    """D7 "Return to distributor": the expiry row carries the recorded purchase
+    bill the batch was bought on, so the return opens THAT bill's debit note."""
+    from apps.common.dates import tenant_today
+
+    today = tenant_today(shop)
+    dolo = make_item("Dolo 650", "24.00", "GST0", tracking="batch")
+    bill = recorded_bill(
+        owner,
+        party_id=str(make_supplier().id),
+        lines=[line(dolo, "6", "24.00", batches=[{"batch_no": "DL1", "expiry": (today + dt.timedelta(days=10)).isoformat()}])],
+    )
+    row = owner.get(reverse("v1:stock-expiry") + "?within=30").json()["data"][0]
+    assert row["batch_no"] == "DL1" and row["purchase_id"] == bill["id"]

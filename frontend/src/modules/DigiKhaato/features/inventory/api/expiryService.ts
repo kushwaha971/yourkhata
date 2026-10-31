@@ -14,12 +14,17 @@ export interface ExpiryRow {
   /** Absent (not zero) without `reports.financial.read`. */
   readonly value: string | null;
   readonly supplier: string | null;
+  /** D7 — the recorded purchase bill this batch came in on (for a return). */
+  readonly purchaseId: string | null;
 }
 
 export const getExpiry = async (
   within: ExpiryWindow,
   signal?: AbortSignal
-): Promise<{ readonly rows: readonly ExpiryRow[]; readonly counts: Record<ExpiryWindow, number> }> => {
+): Promise<{
+  readonly rows: readonly ExpiryRow[];
+  readonly counts: Record<ExpiryWindow, number>;
+}> => {
   const response = await api.get<{
     data: readonly {
       item: { id: string; name: string };
@@ -29,9 +34,13 @@ export const getExpiry = async (
       qty: string;
       value?: string;
       supplier: string | null;
+      purchase_id?: string | null;
     }[];
     meta: { counts: Record<ExpiryWindow, number> };
-  }>(`${API_PATHS.STOCK_EXPIRY}${toQueryString({ within })}`, ubConfig({ signal, suppressErrorSnackbar: true }));
+  }>(
+    `${API_PATHS.STOCK_EXPIRY}${toQueryString({ within })}`,
+    ubConfig({ signal, suppressErrorSnackbar: true })
+  );
   return {
     rows: response.data.data.map((row) => ({
       item: row.item,
@@ -41,6 +50,7 @@ export const getExpiry = async (
       qty: row.qty,
       value: row.value ?? null,
       supplier: row.supplier,
+      purchaseId: row.purchase_id ?? null,
     })),
     counts: response.data.meta.counts,
   };

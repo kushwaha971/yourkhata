@@ -32,5 +32,6 @@
   "items.scan.nf.byCamera": "Scanned just now with the camera",
   "items.scan.nf.byScanner": "Scanned just now with the scanner",
   "items.scan.nf.title": "Not in your items",
-  "items.scan.notFound": "No item with barcode {code}"
+  "items.scan.notFound": "No item with barcode {code}",
+  "items.scan.notFoundShort": "Not found: {code}"
 }

@@ -168,6 +168,15 @@ for (const camera of [true, false]) {
     const buzz = await page.evaluate(() => window.__buzz);
     check('phone: the phone buzzed once for the scan', buzz.length === (skew ? 9 : 1), JSON.stringify(buzz));
     await page.screenshot({ path: `${dir}/390-camera-scanned.png` });
+    // Owner, 31 Oct 2026: an unknown code only buzzed on the camera; the
+    // "Not found" came after it was closed. It must be written on the tray.
+    await sleep(2600); // past the repeat window
+    await page.evaluate(() => { window.__seeCode = '8901030875021'; });
+    await sleep(1200);
+    await page.evaluate(() => { window.__seeCode = null; });
+    const missed = await page.getByTestId('scan-tray-missed').innerText().catch(() => '');
+    check('phone: an unknown code says "Not found: 8901030875021" on the camera', missed === 'Not found: 8901030875021', missed);
+    await page.screenshot({ path: `${dir}/390-camera-notfound.png` });
     // Nothing of the bill may paint over the camera's tray and Done (the first
     // build drew the bill's dock over them, dimmed).
     const onTop = await page.evaluate(() => {

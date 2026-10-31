@@ -181,6 +181,25 @@ def expiry_rows(*, tenant: Any, within: str, today: dt.date) -> list[dict]:
         )
     except (ValueError, DjangoValidationError):
         suppliers = {}
+    # D7 "Return to distributor": the recorded purchase each batch came in on,
+    # so a return opens that bill's own return (debit note) drawer. Newest
+    # first when a batch number arrived on more than one bill.
+    from apps.purchases.models import PurchaseDocumentLine
+
+    bought: dict[tuple[str, str], str] = {}
+    for line in (
+        PurchaseDocumentLine.objects.filter(
+            document__tenant=tenant,
+            document__kind="purchase_bill",
+            item_id__in={r.item_id for r in rows},
+        )
+        .exclude(document__status__in=("draft", "void"))
+        .exclude(batches=[])
+        .order_by("-document__document_date", "-document__created_at")
+        .values("item_id", "batches", "document_id")
+    ):
+        for entry in line["batches"] or []:
+            bought.setdefault((str(line["item_id"]), str(entry.get("batch_no"))), str(line["document_id"]))
     return [
         {
             "item": {"id": str(r.item_id), "name": r.item.name},
@@ -190,6 +209,7 @@ def expiry_rows(*, tenant: Any, within: str, today: dt.date) -> list[dict]:
             "qty": str(r.qty),
             "value": str((r.qty * avg.get(r.item_id, ZERO)).quantize(Decimal("0.01"))),
             "supplier": suppliers.get(r.supplier_id),
+            "purchase_id": bought.get((str(r.item_id), r.batch_no)),
         }
         for r in rows
     ]
