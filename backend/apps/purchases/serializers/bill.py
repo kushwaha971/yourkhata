@@ -25,6 +25,10 @@ class BillLineInputSerializer(serializers.Serializer):
     hsn_sac = serializers.CharField(required=False, allow_blank=True, allow_null=True, max_length=8)
     qty = serializers.DecimalField(max_digits=14, decimal_places=3, required=False, allow_null=True)
     unit_code = serializers.CharField(required=False, allow_null=True, max_length=8)
+    #: D P3 — a tracked item's IMEI / serial numbers, one per piece.
+    serials = serializers.ListField(
+        child=serializers.CharField(max_length=40), required=False, max_length=500
+    )
     unit_cost = serializers.DecimalField(
         max_digits=14, decimal_places=4, required=False, allow_null=True
     )
@@ -121,6 +125,7 @@ class BillLineReadSerializer(serializers.ModelSerializer):
             "qty",
             "unit_code",
             "unit_factor",
+            "serials",
             "unit_cost",
             "discount_type",
             "discount_value",

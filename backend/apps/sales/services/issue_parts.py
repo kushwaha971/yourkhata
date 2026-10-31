@@ -65,6 +65,10 @@ def post_stock(
             )
         )
     posted = post_movements(ctx=ctx, lines=movement_lines)
+    # D P3 — the phones on this bill leave stock, each one exactly once.
+    from apps.inventory.services import serials
+
+    serials.sell(ctx=ctx, document=document, rows=rows)
     if warnings is not None:
         for row in posted:
             if row.date_shortage:

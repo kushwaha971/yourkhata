@@ -89,6 +89,8 @@ EDITABLE_FIELDS = (
     "description",
     "rack",
     "fits_vehicle",
+    "tracking",
+    "warranty_months",
 )
 
 AUDITED_FIELDS = EDITABLE_FIELDS
@@ -350,6 +352,24 @@ def _validate(*, ctx: Ctx, data: dict, item: Item | None) -> tuple[dict, Errors,
             )
         cleaned["description"] = description
 
+    # D P3 — IMEI / serial tracking and the warranty a sale starts.
+    if has("tracking"):
+        tracking = data.get("tracking") or "none"
+        if tracking not in ("none", "serial"):
+            errors.add("tracking", "Choose none or serial.", "invalid")
+        elif item is not None and tracking != item.tracking and StockMovement.objects.filter(item=item).exists():
+            errors.add("tracking", "Tracking can't change once stock has moved.", "tracking_locked")
+        cleaned["tracking"] = tracking
+    if has("warranty_months"):
+        raw = data.get("warranty_months")
+        try:
+            months = int(raw) if raw not in (None, "") else None
+        except (TypeError, ValueError):
+            months = -1
+        if months is not None and not (0 <= months <= 120):
+            errors.add("warranty_months", "Enter 0 to 120 months.", "invalid")
+        cleaned["warranty_months"] = months
+
     # D P1b — the part's shelf and the vehicles it fits: short free text.
     for key, limit in (("rack", 16), ("fits_vehicle", 120)):
         if has(key):
@@ -549,7 +569,14 @@ def create_item(*, ctx: Ctx, payload: dict) -> dict:
     """FR-1/FR-2/FR-7 — `{item, warnings}`; opening stock in the same transaction."""
     cleaned, errors, warnings = _validate(ctx=ctx, data=payload, item=None)
     opening = None
-    if payload.get("opening_stock"):
+    if payload.get("opening_stock") and cleaned.get("tracking") == "serial":
+        # D P3 — every phone in stock has its IMEI; an opening quantity has none.
+        errors.add(
+            "opening_stock",
+            "Add IMEI items through a purchase, so each number is recorded.",
+            "serials_required",
+        )
+    elif payload.get("opening_stock"):
         if not cleaned.get("track_stock"):
             errors.add(
                 "opening_stock",

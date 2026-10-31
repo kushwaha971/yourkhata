@@ -196,6 +196,8 @@ class PurchaseDocumentLine(models.Model):
     #: D P1a — how many base units one of `unit_code` is (1 for the item's own
     #: unit). Stock moves by `qty × unit_factor`, always in the base unit.
     unit_factor = QuantityField(default=1)
+    #: D P3 — the IMEIs / serials of a tracked item on this line, one per piece.
+    serials = models.JSONField(default=list, blank=True)
     unit_cost = UnitCostField(default=0)
     discount_type = models.CharField(
         max_length=8, choices=DiscountType.choices, null=True, blank=True

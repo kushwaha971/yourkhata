@@ -73,6 +73,7 @@ def build_lines(
         for item in Item.objects.filter(tenant=tenant, pk__in=item_ids).select_related("unit")
     }
     rate_cache: dict[str, Any] = {}
+    from apps.inventory.services.serials import parse as line_serials
     from apps.inventory.services.units import extra_units, resolve
 
     extras = extra_units(list(items.values()))
@@ -172,6 +173,15 @@ def build_lines(
                 "qty": qty,
                 "unit_code": unit_code,
                 "unit_factor": unit.factor,
+                # D P3 — a tracked item's IMEIs, one per piece on a strict save.
+                "serials": line_serials(
+                    raw.get("serials"),
+                    item=item,
+                    base_qty=qty * unit.factor if qty else None,
+                    path=prefix,
+                    errors=errors,
+                    strict=strict,
+                ),
                 "unit_cost": cost,
                 "discount_type": d_type,
                 "discount_value": d_value,

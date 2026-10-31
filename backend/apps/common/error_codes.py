@@ -118,6 +118,9 @@ _REGISTRY: dict[str, tuple[int, bool]] = {
     # C3 stock count (R-DEC-67): a saved count is final; an empty one saves nothing.
     "count_saved": (409, False),
     "count_empty": (409, False),
+    # D P3 — IMEI / serials: a phone in stock twice, or sold that is not in stock.
+    "serial_in_stock": (409, False),
+    "serial_not_in_stock": (409, False),
     "opening_stock_required": (409, False),
     "opening_exists": (409, False),
     "duplicate_sku": (400, False),

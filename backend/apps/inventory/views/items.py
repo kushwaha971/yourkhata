@@ -589,3 +589,17 @@ class LowStockView(_InventoryView, APIView):
             rows,
             meta={**paginator.get_meta(), "totals": counts, "valuation_visible": valuation},
         )
+
+
+class SerialView(_InventoryView, APIView):
+    """D P3 — find by IMEI: which item, in stock or sold, when, warranty till."""
+
+    permission_classes = [IsAuthenticated, ModuleEnabled(ModuleCode.INVENTORY), StockReadPermissions]
+
+    def get(self, request: Any, code: str) -> Any:
+        from apps.inventory.services.serials import find
+
+        found = find(tenant=self.get_tenant(), code=code)
+        if found is None:
+            raise NotFound(f"No IMEI / serial {code}.")
+        return StandardResponse.ok(found)

@@ -182,6 +182,10 @@ class Item(TenantModel, SoftDeleteModel):
         "inventory.Product", on_delete=models.RESTRICT, null=True, blank=True, related_name="variants"
     )
     attributes = models.JSONField(default=dict, blank=True)
+    #: D P3 — "serial": every piece has its own IMEI / serial, entered when it
+    #: is bought and picked when it is sold. Stock stays a quantity.
+    tracking = models.CharField(max_length=8, default="none")
+    warranty_months = models.SmallIntegerField(null=True, blank=True)
     fits_vehicle = models.CharField(max_length=120, null=True, blank=True)
     hsn_sac = models.CharField(max_length=8, null=True, blank=True)
     tax_code = models.CharField(max_length=16, default=DEFAULT_TAX_CODE)
@@ -625,3 +629,31 @@ class Product(TenantModel):
 
     def __str__(self) -> str:  # pragma: no cover - admin convenience
         return self.name
+
+
+class Serial(TenantModel):
+    """D P3 — one phone's IMEI (or any serial): bought on a purchase line, sold
+    on a bill line, back in stock on a return. The count of `in_stock` serials
+    of a tracked item equals its stock (plan §P3)."""
+
+    IN_STOCK = "in_stock"
+    SOLD = "sold"
+
+    item = models.ForeignKey(Item, on_delete=models.RESTRICT, related_name="serials")
+    serial = models.CharField(max_length=40)
+    status = models.CharField(max_length=12, default=IN_STOCK)
+    #: The purchase that brought it in and the bill that sold it (document ids:
+    #: the line rows are replaced on every draft save, the documents are not).
+    purchase_document_id = models.UUIDField(null=True, blank=True)
+    sales_document_id = models.UUIDField(null=True, blank=True)
+    sold_on = models.DateField(null=True, blank=True)
+    warranty_until = models.DateField(null=True, blank=True)
+
+    class Meta:
+        db_table = "inventory_serial"
+        verbose_name = "serial"
+        verbose_name_plural = "serials"
+        constraints = [
+            models.UniqueConstraint(fields=["tenant", "item", "serial"], name="uq_serial_item"),
+        ]
+        indexes = [models.Index(fields=["tenant", "serial"], name="ix_serial_tenant_serial")]

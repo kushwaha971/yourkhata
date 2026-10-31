@@ -207,6 +207,10 @@ def record_bill(
         else:
             row["inbound_unit_cost"] = None
     posted = _post_stock(ctx, document, rows)
+    # D P3 — every IMEI on the bill is now in stock.
+    from apps.inventory.services import serials
+
+    serials.receive(ctx=ctx, document=document, rows=rows)
     set_last_purchase_cost(tenant=tenant, costs=last_costs)
 
     document.number = allocate_number(

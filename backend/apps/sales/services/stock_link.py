@@ -63,6 +63,11 @@ def restock_rows(ctx: Ctx, document: Any, rows: list[dict]) -> list[str]:
                 index=row["line_no"] - 1,
             )
         )
+    from apps.inventory.services import serials
+
+    serials.put_back(
+        ctx=ctx, item_serials=[(row.get("item"), list(row.get("serials") or [])) for row in rows]
+    )
     return [str(p.movement.id) for p in post_movements(ctx=ctx, lines=lines)]
 
 
@@ -107,4 +112,13 @@ def reverse_document_stock(ctx: Ctx, document: Any) -> list[str]:
         for index, movement in enumerate(written)
         if movement.id not in undone
     ]
+    # D P3 — a voided bill's phones are back in stock (a voided return's leave again
+    # through the same movements; their serials were never moved by the note).
+    from apps.inventory.services import serials
+
+    if document.kind != "credit_note":
+        serials.put_back(
+            ctx=ctx,
+            item_serials=[(line.item, list(line.serials or [])) for line in document.lines.all()],
+        )
     return [str(p.movement.id) for p in post_movements(ctx=ctx, lines=lines)]

@@ -96,6 +96,14 @@ def _reverse_stock(
         for original in originals
         if original.id not in already
     ]
+    # D P3 — a voided purchase's IMEIs leave stock (sold ones stay sold).
+    from apps.inventory.services import serials
+
+    if movement_type == "purchase_in":
+        serials.take_out(
+            ctx=ctx,
+            item_serials=[(line.item, list(line.serials or [])) for line in document.lines.all()],
+        )
     return post_movements(ctx=ctx, lines=lines)
 
 

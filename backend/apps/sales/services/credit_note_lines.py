@@ -217,6 +217,11 @@ def build_return_lines(
                 "qty": qty,
                 "unit_code": source.unit_code,
                 "unit_factor": source.unit_factor,
+                # D P3 — the phones coming back: the ones named, or the bill's first.
+                "serials": (
+                    [s for s in (raw.get("serials") or []) if s in (source.serials or [])]
+                    or list(source.serials or [])[: int(qty)]
+                ),
                 "unit_price": source.unit_price,
                 "tax_inclusive": source.tax_inclusive,
                 "discount_type": source.discount_type,

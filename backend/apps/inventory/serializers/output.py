@@ -127,6 +127,9 @@ def _item_row(item: Item) -> dict:
             {"id": str(item.product_id), "name": item.product.name} if item.product_id else None
         ),
         "attributes": item.attributes or {},
+        # D P3 — IMEI / serial tracking and the warranty months a sale starts.
+        "tracking": item.tracking,
+        "warranty_months": item.warranty_months,
         "fits_vehicle": item.fits_vehicle,
         "updated_at": item.updated_at.isoformat(),
     }
