@@ -141,6 +141,7 @@ class AuditAction:
     STOCK_OPENING_POSTED = "stock.opening_posted"
     STOCK_ADJUSTMENT_POSTED = "stock.adjustment_posted"
     STOCK_COUNT_SAVED = "stock.count_saved"
+    STOCK_TRANSFER_POSTED = "stock.transfer_posted"
     # ── Sprint 10: EXP-01 / EXP-02 (17-02 §17.4, §16) ─────────────────────
     #
     # `expense.recorded` carries the full row; `expense.voided` carries the

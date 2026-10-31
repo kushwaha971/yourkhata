@@ -15,6 +15,7 @@ from apps.inventory.views.items import (
 )
 from apps.inventory.views.price_lists import PriceListViewSet
 from apps.inventory.views.stock_counts import StockCountViewSet
+from apps.inventory.views.transfers import LocationViewSet, StockTransferViewSet
 
 router = DefaultRouter(trailing_slash=False)
 router.register("items", ItemViewSet, basename="item")
@@ -23,6 +24,8 @@ router.register("units", UnitViewSet, basename="unit")
 router.register("price-lists", PriceListViewSet, basename="price-list")
 router.register("stock-adjustments", StockAdjustmentViewSet, basename="stock-adjustment")
 router.register("stock-counts", StockCountViewSet, basename="stock-count")
+router.register("locations", LocationViewSet, basename="location")
+router.register("stock-transfers", StockTransferViewSet, basename="stock-transfer")
 
 urlpatterns = [
     path("stock/summary", StockSummaryView.as_view(), name="stock-summary"),

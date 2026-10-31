@@ -578,3 +578,26 @@ class ItemCode(TenantModel):
         indexes = [
             models.Index(Upper("code"), name="ix_item_code_upper"),
         ]
+
+
+class StockTransfer(TenantModel):
+    """D P1c — goods moved between two of the shop's places (design D10 "Move
+    stock": Godown → Shop). The lines are the `transfer_out` / `transfer_in`
+    movement pairs with this `source_id`; total stock and its value are unchanged."""
+
+    number = models.CharField(max_length=32)
+    transfer_date = models.DateField()
+    from_location = models.ForeignKey(Location, on_delete=models.RESTRICT, related_name="+")
+    to_location = models.ForeignKey(Location, on_delete=models.RESTRICT, related_name="+")
+    note = models.CharField(max_length=200, blank=True, default="")
+
+    class Meta:
+        db_table = "inventory_stock_transfer"
+        verbose_name = "stock transfer"
+        verbose_name_plural = "stock transfers"
+        constraints = [
+            models.UniqueConstraint(fields=["tenant", "number"], name="uq_stock_transfer_number"),
+        ]
+
+    def __str__(self) -> str:  # pragma: no cover - admin convenience
+        return self.number
