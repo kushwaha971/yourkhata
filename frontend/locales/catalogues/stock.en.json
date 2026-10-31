@@ -161,7 +161,7 @@
   "stock.transfer.save": "Move stock",
   "stock.transfer.saved": "{count, plural, one {Moved # item} other {Moved # items}} · {number}",
   "stock.transfer.search": "Search or scan item",
-  "stock.transfer.subtitle": "Move goods between the shop and a godown. Total stock does not change.",
+  "stock.transfer.subtitle": "Move goods between your godowns. Total stock does not change.",
   "stock.transfer.swap": "Swap From and To",
   "stock.transfer.title": "Move stock",
   "stock.transfer.to": "To"

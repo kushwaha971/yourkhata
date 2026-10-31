@@ -161,7 +161,7 @@
   "stock.transfer.save": "स्टॉक भेजें",
   "stock.transfer.saved": "{count} सामान भेजे · {number}",
   "stock.transfer.search": "सामान खोजें या स्कैन करें",
-  "stock.transfer.subtitle": "दुकान और गोदाम के बीच माल भेजें। कुल स्टॉक नहीं बदलता।",
+  "stock.transfer.subtitle": "अपने गोदामों के बीच माल भेजें। कुल स्टॉक नहीं बदलता।",
   "stock.transfer.swap": "से और को बदलें",
   "stock.transfer.title": "स्टॉक भेजें",
   "stock.transfer.to": "को"
