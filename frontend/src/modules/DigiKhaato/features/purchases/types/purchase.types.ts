@@ -111,6 +111,8 @@ export interface PurchaseBillLine {
   readonly hsnSac: string | null;
   readonly qty: string;
   readonly unitCode: string;
+  /** D P3 — IMEI / serial numbers on the line. */
+  readonly serials?: readonly string[];
   readonly unitCost: string;
   readonly discountType: PurchaseDiscountType | null;
   readonly discountValue: string | null;

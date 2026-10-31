@@ -19,6 +19,7 @@ import { listVariants } from '../../inventory/api/itemService';
 import { getPartyRates } from '../../inventory/api/priceListService';
 import { ItemQuickAdd } from '../../inventory/components/ItemQuickAdd';
 import { LastRateNote } from '../../inventory/components/LastRateNote';
+import { LineSerialsField } from '../../inventory/components/LineSerialsField';
 import { LINE_FINDER_FROM, useLineQuickAdd } from '../../inventory/hooks/useLineQuickAdd';
 import { lineRemovalUndone, lineRestored, selectInvoiceEditor } from '../redux/invoiceEditorSlice';
 import { emptyLine, type InvoiceFormValues, type InvoiceLineForm } from '../view-model/invoiceForm';
@@ -130,6 +131,8 @@ export function InvoiceLinesSection({
   const [usual, setUsual] = useState<Record<string, { price: string; inclusive: boolean }>>({});
   /** D P1a — each picked item's units (box and piece), for the line's unit chips. */
   const [unitChoices, setUnitChoices] = useState<Record<string, readonly LineUnitChoice[]>>({});
+  /** D P3 — items whose every piece has its own IMEI / serial number. */
+  const [serialItems, setSerialItems] = useState<Record<string, true>>({});
   /** D P2 — each garment's sizes and colours, and the row picked on each line. */
   const [variants, setVariants] = useState<Record<string, readonly ItemListRow[]>>({});
   const [picked, setPicked] = useState<Record<string, ItemListRow>>({});
@@ -168,6 +171,7 @@ export function InvoiceLinesSection({
           ...current,
           [row.id]: { part, rack: row.rack ?? undefined },
         }));
+      if (row.tracking === 'serial') setSerialItems((current) => ({ ...current, [row.id]: true }));
       const choices = lineUnitChoices(row);
       if (choices.length > 0) {
         setUnitChoices((current) => ({ ...current, [row.id]: choices }));
@@ -331,6 +335,14 @@ export function InvoiceLinesSection({
           {partText}
         </UbText>
       ) : null;
+      // D P3 — one IMEI per phone on the line.
+      const serialNote = serialItems[line.itemId] ? (
+        <LineSerialsField
+          serials={line.serials ?? []}
+          qty={Math.max(Math.round(Number(line.qty) || 0), 0)}
+          onChange={(next) => setValue(`lines.${index}.serials`, next, { shouldDirty: true })}
+        />
+      ) : null;
       const unitNote = unitCaption ? (
         <UbStack gap={1} data-testid="line-unit">
           <UbText variant="caption" tone="accent">
@@ -369,8 +381,9 @@ export function InvoiceLinesSection({
         </UbText>
       ) : null;
       if (!partyId)
-        return variantNote || partNote || unitNote || stockNote || changedNote ? (
+        return serialNote || variantNote || partNote || unitNote || stockNote || changedNote ? (
           <UbStack gap={0}>
+            {serialNote}
             {variantNote}
             {partNote}
             {unitNote}
@@ -380,6 +393,7 @@ export function InvoiceLinesSection({
         ) : null;
       return (
         <UbStack gap={0}>
+          {serialNote}
           {variantNote}
           {partNote}
           {unitNote}
@@ -405,7 +419,7 @@ export function InvoiceLinesSection({
         </UbStack>
       );
     },
-    [lines, partyId, partyName, setValue, listed, usual, unitChoices, partInfo, picked, variants, pick, stockWarning, t]
+    [lines, partyId, partyName, setValue, listed, usual, unitChoices, partInfo, picked, variants, serialItems, pick, stockWarning, t]
   );
 
   const wide = !useIsMobileLayer();

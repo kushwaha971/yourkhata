@@ -13,6 +13,7 @@ import {
   LayoutDashboard,
   PackageCheck,
   PackageSearch,
+  Printer,
   Receipt,
   ScanLine,
   ShoppingCart,
@@ -267,6 +268,18 @@ export const SHOP_APP: AppManifest = {
       permission: 'inventory.item.read',
       section: 'stock',
       order: 4,
+      tab: 'items',
+    },
+    // D P2 (design D9) — barcode labels for a shop that sells in sizes.
+    {
+      key: 'printLabels',
+      icon: Printer,
+      labelId: 'nav.printLabels',
+      href: ROUTES.ITEM_LABELS,
+      module: 'inventory',
+      permission: 'inventory.item.read',
+      section: 'stock',
+      order: 7,
       tab: 'items',
     },
     // D P1c (design D10) — Move stock between the shop and a godown.

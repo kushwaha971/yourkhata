@@ -33,6 +33,7 @@ const toLine = (row: Wire): PurchaseBillLine => ({
   hsnSac: sn(row.hsn_sac),
   qty: s(row.qty),
   unitCode: s(row.unit_code),
+  serials: Array.isArray(row.serials) ? (row.serials as unknown[]).map(String) : [],
   unitCost: s(row.unit_cost),
   discountType: (row.discount_type as PurchaseBillLine['discountType']) ?? null,
   discountValue: sn(row.discount_value),

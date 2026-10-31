@@ -25,6 +25,8 @@ export interface PurchaseLineForm {
   qty: string;
   unitCode: string;
   allowDecimal: boolean;
+  /** D P3 — the IMEI / serial numbers of a tracked item, one per piece. */
+  serials?: string[];
   unitCost: string;
   /** FR-12 / Alternate E — the item's last cost when it was picked, for the hint. */
   lastCost: string;
@@ -167,6 +169,7 @@ export const toPurchaseWireBody = (values: PurchaseBillFormValues): Record<strin
     description: line.description.trim() || null,
     qty: line.qty.trim(),
     unit_code: line.unitCode || null,
+    ...(line.serials?.length ? { serials: line.serials } : {}),
     unit_cost: line.unitCost.trim() || null,
     ...discountWire(line.discountType, line.discountValue),
     tax_code: line.taxCode || null,
@@ -218,6 +221,7 @@ export const fromPurchaseBill = (bill: PurchaseBill): PurchaseBillFormValues => 
         description: line.description,
         qty: formQty(line.qty, !/^(NOS|PCS)$/.test(line.unitCode)),
         unitCode: line.unitCode,
+        serials: [...(line.serials ?? [])],
         allowDecimal: !/^(NOS|PCS)$/.test(line.unitCode),
         unitCost: line.unitCost,
         lastCost: '',

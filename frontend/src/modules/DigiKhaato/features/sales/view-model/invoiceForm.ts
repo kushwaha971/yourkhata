@@ -25,6 +25,8 @@ export interface InvoiceLineForm {
   qty: string;
   unitCode: string;
   allowDecimal: boolean;
+  /** D P3 — the IMEI / serial numbers of a tracked item, one per piece. */
+  serials?: string[];
   unitPrice: string;
   taxInclusive: boolean;
   discountType: '' | DiscountType;
@@ -150,6 +152,7 @@ export const toWireBody = (values: InvoiceFormValues): Record<string, unknown> =
     hsn_sac: line.hsnSac.trim() || null,
     qty: line.qty.trim(),
     unit_code: line.unitCode || null,
+    ...(line.serials?.length ? { serials: line.serials } : {}),
     unit_price: line.unitPrice.trim() || null,
     tax_inclusive: line.taxInclusive,
     ...discountWire(line.discountType, line.discountValue),
@@ -193,6 +196,7 @@ export const fromDocument = (doc: SalesDocument): InvoiceFormValues => ({
         hsnSac: line.hsnSac ?? '',
         qty: formQty(line.qty, unitAllowsDecimal(line.unitCode)),
         unitCode: line.unitCode,
+        serials: [...(line.serials ?? [])],
         allowDecimal: unitAllowsDecimal(line.unitCode),
         unitPrice: line.unitPrice,
         taxInclusive: line.taxInclusive,

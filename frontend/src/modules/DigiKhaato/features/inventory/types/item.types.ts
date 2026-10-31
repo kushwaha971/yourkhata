@@ -97,6 +97,9 @@ export interface ItemListRow {
   readonly units?: readonly ItemUnitOption[];
   /** D P1a — the unit a box's own barcode named, on a lookup that matched one. */
   readonly scannedUnit?: string | null;
+  /** D P3 — "serial" when every piece has its own IMEI / serial number. */
+  readonly tracking?: 'none' | 'serial';
+  readonly warrantyMonths?: number | null;
   /** D P2 — the garment this is one size × colour of, and which one. */
   readonly product?: { readonly id: string; readonly name: string } | null;
   readonly attributes?: { readonly size?: string; readonly colour?: string };

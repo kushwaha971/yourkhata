@@ -55,6 +55,8 @@ export interface ItemRowWire {
     readonly allow_decimal: boolean;
   }[];
   readonly scanned_unit?: string | null;
+  readonly tracking?: 'none' | 'serial';
+  readonly warranty_months?: number | null;
   readonly product?: { readonly id: string; readonly name: string } | null;
   readonly attributes?: { readonly size?: string; readonly colour?: string };
   readonly part_numbers?: readonly string[];
@@ -163,6 +165,8 @@ export const toItemRow = (row: ItemRowWire): ItemListRow => ({
     allowDecimal: unit.allow_decimal,
   })),
   scannedUnit: row.scanned_unit ?? null,
+  tracking: row.tracking ?? 'none',
+  warrantyMonths: row.warranty_months ?? null,
   product: row.product ?? null,
   attributes: row.attributes ?? {},
   partNumbers: row.part_numbers ?? [],

@@ -25,6 +25,7 @@ import { CounterLineSummary } from '../../inventory/components/CounterLineSummar
 import { ItemLineCell } from '../../inventory/components/ItemLineCell';
 import { ItemQuickAdd } from '../../inventory/components/ItemQuickAdd';
 import { LastRateNote } from '../../inventory/components/LastRateNote';
+import { LineSerialsField } from '../../inventory/components/LineSerialsField';
 import { LINE_FINDER_FROM, useLineQuickAdd } from '../../inventory/hooks/useLineQuickAdd';
 import { ratePlaces } from '../../sales/view-model/invoiceForm';
 import {
@@ -82,6 +83,8 @@ export function PurchaseBillLinesSection({
   const partyId = watch('partyId');
   const partyName = watch('partyName');
 
+  /** D P3 — items whose every piece has its own IMEI / serial number. */
+  const [serialItems, setSerialItems] = useState<Record<string, true>>({});
   /** D P1a — each picked item's units, priced at cost, for the line's chips. */
   const [unitChoices, setUnitChoices] = useState<Record<string, readonly LineUnitChoice[]>>({});
 
@@ -98,6 +101,7 @@ export function PurchaseBillLinesSection({
       setValue(`${base}.lastCost`, line.lastCost);
       setValue(`${base}.taxCode`, line.taxCode);
       setValue(`${base}.itemTaxCode`, line.itemTaxCode);
+      if (row.tracking === 'serial') setSerialItems((current) => ({ ...current, [row.id]: true }));
       const choices = lineCostChoices(row);
       if (choices.length > 0) {
         setUnitChoices((current) => ({ ...current, [row.id]: choices }));
@@ -282,9 +286,18 @@ export function PurchaseBillLinesSection({
         sold: (b, box, n) => t('purchases.line.unitSold', { base: b, box, n }),
         one: (box, n, b) => t('purchases.line.unitOne', { box, n, base: b }),
       });
-      if (!change && !taxDiffers && !remember && !unitCaption) return null;
+      const tracked = !!line.itemId && !!serialItems[line.itemId];
+      if (!change && !taxDiffers && !remember && !unitCaption && !tracked) return null;
       return (
         <UbStack gap={0} className="empty:hidden">
+          {/* D P3 — every phone bought is entered by its IMEI. */}
+          {tracked && (
+            <LineSerialsField
+              serials={line.serials ?? []}
+              qty={Math.max(Math.round(Number(line.qty) || 0), 0)}
+              onChange={(next) => setValue(`lines.${index}.serials`, next, { shouldDirty: true })}
+            />
+          )}
           {unitCaption && (
             <UbStack gap={1} data-testid="line-unit">
               <UbText variant="caption" tone="accent">
@@ -331,7 +344,7 @@ export function PurchaseBillLinesSection({
         </UbStack>
       );
     },
-    [lines, t, partyId, partyName, setValue, form.formState.defaultValues, order, unitChoices]
+    [lines, t, partyId, partyName, setValue, form.formState.defaultValues, order, unitChoices, serialItems]
   );
 
   return (

@@ -34,6 +34,7 @@ const toLine = (row: Wire): SalesDocumentLine => ({
   hsnSac: sn(row.hsn_sac),
   qty: s(row.qty),
   unitCode: s(row.unit_code),
+  serials: Array.isArray(row.serials) ? (row.serials as unknown[]).map(String) : [],
   unitPrice: s(row.unit_price),
   taxInclusive: Boolean(row.tax_inclusive),
   discountType: (row.discount_type as SalesDocumentLine['discountType']) ?? null,

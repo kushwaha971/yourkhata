@@ -118,6 +118,8 @@ export interface SalesDocumentLine {
   readonly hsnSac: string | null;
   readonly qty: string;
   readonly unitCode: string;
+  /** D P3 — IMEI / serial numbers on the line. */
+  readonly serials?: readonly string[];
   readonly unitPrice: string;
   readonly taxInclusive: boolean;
   readonly discountType: DiscountType | null;

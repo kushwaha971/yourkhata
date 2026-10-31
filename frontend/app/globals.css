@@ -437,6 +437,39 @@
       border-bottom: 0;
     }
 
+    /* D P2 (design D9) — barcode labels. A 50 × 25 mm roll prints one label
+       per page of exactly that size; an A4 sheet of 65 is 5 across × 13 down
+       (38.1 × 21.2 mm, the common sticker sheet). */
+    @page labels50 {
+      size: 50mm 25mm;
+      margin: 0;
+    }
+
+    body:has(.ub-print-labels-roll) {
+      page: labels50;
+    }
+
+    .ub-print-labels-roll > .ub-label {
+      border: 0 !important;
+      border-radius: 0 !important;
+      break-after: page;
+      page-break-after: always;
+    }
+
+    .ub-print-labels-sheet {
+      display: grid !important;
+      grid-template-columns: repeat(5, 38.1mm);
+      grid-auto-rows: 21.2mm;
+      gap: 0 2.5mm;
+    }
+
+    .ub-print-labels-sheet > .ub-label {
+      width: 38.1mm !important;
+      height: 21.2mm !important;
+      border: 0 !important;
+      break-inside: avoid;
+    }
+
     /* PAY-04 FR-1 — the payment receipt prints onto an A5 named page: half an
        A4 sheet, which is what a receipt book is. */
     @page a5 {

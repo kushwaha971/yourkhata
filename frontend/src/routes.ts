@@ -78,6 +78,8 @@ export const ROUTES = {
   STOCK_COUNT: '/stock/count',
   /** D P1c — Move stock between the shop and a godown (design D10). */
   STOCK_TRANSFER: '/stock/transfer',
+  /** D P2 — Print barcode labels (design D9). */
+  ITEM_LABELS: '/items/labels',
   SALES_INVOICES: '/sales/invoices',
   /** SAL-01 — quotations (kachha bill); SAL-04 — returns against a bill. */
   SALES_ESTIMATES: '/sales/estimates',
