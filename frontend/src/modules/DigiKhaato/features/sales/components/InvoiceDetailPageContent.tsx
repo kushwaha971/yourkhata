@@ -71,6 +71,11 @@ const InvoiceProfitCardLazy = dynamic(
   { ssr: false }
 );
 
+const KitchenTicketLazy = dynamic(
+  () => import('./KitchenTicket').then((m) => m.KitchenTicketButton),
+  { ssr: false }
+);
+
 const EwayBillCardLazy = dynamic(() => import('./EwayBillCard').then((m) => m.EwayBillCard), {
   ssr: false,
 });
@@ -347,6 +352,10 @@ function InvoiceDetailScreen({
           )}
           {invoice && !draft && doc.status !== 'void' && can('reports.financial.read') && (
             <InvoiceProfitCardLazy id={doc.id} />
+          )}
+          {/* D P6 — design D11: the kitchen ticket, for a bill with add-ons. */}
+          {invoice && !draft && doc.lines.some((line) => (line.addons?.length ?? 0) > 0) && (
+            <KitchenTicketLazy doc={doc} />
           )}
           {/* D P5 — design D10: the e-way bill file, offered by the server. */}
           {invoice && !draft && doc.status !== 'void' && can('sales.invoice.write') && (

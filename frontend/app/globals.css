@@ -437,6 +437,21 @@
       border-bottom: 0;
     }
 
+    /* D P6 (design D11) — the kitchen ticket: a 58 mm slip without prices.
+       While it is mounted, it is the only thing on paper. */
+    @page kitchen58 {
+      size: 58mm auto;
+      margin: 3mm;
+    }
+
+    body:has(.ub-print-kitchen) {
+      page: kitchen58;
+    }
+
+    body:has(.ub-print-kitchen) .ub-print-only:not(.ub-print-kitchen) {
+      display: none !important;
+    }
+
     /* D P2 (design D9) — barcode labels. A 50 × 25 mm roll prints one label
        per page of exactly that size; an A4 sheet of 65 is 5 across × 13 down
        (38.1 × 21.2 mm, the common sticker sheet). */

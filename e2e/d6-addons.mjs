@@ -98,6 +98,23 @@ try {
   const doc = draftId ? (await (await phone.request.get(`${base}/api/v1/sales/invoices/${draftId}`)).json()).data : null;
   const l0 = doc?.lines?.[0];
   check('API: the draft holds the add-on snapshot, 2 × ₹150', l0 && Number(l0.qty) === 2 && Number(l0.unit_price) === 150 && l0.addons?.[0]?.name === 'Ice cream', JSON.stringify(l0 && { q: l0.qty, p: l0.unit_price, a: l0.addons }));
+  // D11 kitchen ticket: issue the draft (API), then print the ticket from its page.
+  const issued = await phone.request.post(`${base}/api/v1/sales/invoices/${draftId}/issue`, {
+    headers: { ...(await (async () => ({ 'X-CSRF-Token': (await phone.cookies()).find((c) => c.name === 'ub_csrf')?.value ?? '' }))()), 'Idempotency-Key': randomUUID() },
+    data: { version: doc.version, mode_breakup: [{ mode: 'cash', amount: doc.grand_total }] },
+  });
+  check('set-up: the bill is issued', issued.ok(), String(issued.status()));
+  await p2.goto(`${base}/sales/invoices/${draftId}`, { waitUntil: 'networkidle' });
+  await sleep(1500);
+  await p2.evaluate(() => { window.print = () => {}; });
+  await p2.getByTestId('kitchen-ticket').click();
+  await sleep(500);
+  await p2.emulateMedia({ media: 'print' });
+  const ticket = await p2.getByTestId('kitchen-ticket-sheet').innerText().catch(() => '');
+  await p2.screenshot({ path: `${dir}/390-kitchen-print.png` });
+  await p2.emulateMedia({ media: 'screen' });
+  check('kitchen ticket: "2 × Cold coffee", "+ Ice cream", no prices', ticket.includes(`2 × ${NAME}`) && ticket.includes('+ Ice cream') && !ticket.includes('₹'), ticket.replace(/\n/g, ' / '));
+  await p2.goto(`${base}/sales/invoices/new`, { waitUntil: 'networkidle' });
   // a plain item opens no sheet
   await p2.getByRole('combobox').first().fill('A5 item');
   await p2.getByRole('option').first().click({ timeout: 10000 });
