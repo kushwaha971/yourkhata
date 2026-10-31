@@ -260,10 +260,16 @@ def _return_serials(
 ) -> None:
     """The phones sent back leave the shelf (Find by IMEI no longer says in
     stock); kept on the note so a void brings back exactly those."""
-    from apps.inventory.services import serials as serial_svc
+    from apps.inventory.models import Serial
 
     gone = [(line.item, phones.get(line.line_no) or []) for line, _qty in picked]
-    serial_svc.take_out(ctx=ctx, item_serials=gone)
+    # Marked, not deleted: Find by IMEI then says "Returned to supplier" and on
+    # which debit note, instead of "No phone with this IMEI" (owner, 31 Oct).
+    for item, codes in gone:
+        if codes:
+            Serial.objects.filter(
+                tenant=ctx.tenant, item=item, serial__in=codes, status=Serial.IN_STOCK
+            ).update(status=Serial.RETURNED)
     sent = [
         {"item_id": str(item.id), "serials": codes, "bill_id": str(line.document_id)}
         for (line, _qty), (item, codes) in zip(picked, gone)
@@ -323,13 +329,12 @@ def _put_serials_back(ctx: Ctx, note: Any) -> None:
     from apps.inventory.models import Serial
 
     for entry in (note.meta or {}).get("serials") or []:
-        for code in entry["serials"]:
-            Serial.objects.get_or_create(
-                tenant=ctx.tenant,
-                item_id=entry["item_id"],
-                serial=code,
-                defaults={"status": Serial.IN_STOCK, "purchase_document_id": entry["bill_id"]},
-            )
+        Serial.objects.filter(
+            tenant=ctx.tenant,
+            item_id=entry["item_id"],
+            serial__in=entry["serials"],
+            status=Serial.RETURNED,
+        ).update(status=Serial.IN_STOCK)
 
 
 def _move_bill_due(bill: Any, applied: Decimal) -> None:

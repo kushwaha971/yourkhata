@@ -638,6 +638,8 @@ class Serial(TenantModel):
 
     IN_STOCK = "in_stock"
     SOLD = "sold"
+    #: Sent back to the supplier on a debit note (the note keeps which).
+    RETURNED = "returned"
 
     item = models.ForeignKey(Item, on_delete=models.RESTRICT, related_name="serials")
     serial = models.CharField(max_length=40)

@@ -133,7 +133,14 @@ const back = await ctx.request.post(`${base}/api/v1/purchases/debit-notes`, {
 });
 check('return: a phone goes back to the supplier (201)', back.status() === 201, `${back.status()} ${(await back.text()).slice(0, 160)}`);
 const gone = await serial(ctx, IMEI[1]);
-check('return: that IMEI is no longer in stock', gone?.status !== 'in_stock', JSON.stringify(gone && gone.status));
+const noteNo = (await back.json().catch(() => ({})))?.data?.number;
+check('return: that IMEI reads "returned", on its debit note', gone?.status === 'returned' && gone?.returned?.number === noteNo, JSON.stringify(gone && { s: gone.status, r: gone.returned }));
+await page.goto(`${base}/items/imei?imei=${IMEI[1]}`, { waitUntil: 'networkidle' });
+await page.getByTestId('find-imei-input').press('Enter');
+await sleep(1200);
+const shown = await page.getByTestId('find-imei-result').innerText().catch(() => '');
+check('find: the screen says "Returned to supplier" with the debit note', shown.includes('Returned to supplier') && !!noteNo && shown.includes(noteNo), shown.replace(/\n/g, ' / ').slice(0, 200));
+await page.screenshot({ path: `${dir}/1280-returned.png` });
 
 // Design D8 phone: a camera button beside the IMEI box, and the box and it fit.
 const phone = await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });

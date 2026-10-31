@@ -168,9 +168,27 @@ def find(*, tenant: Any, code: str) -> dict | None:
             return {"name": walk_in or "", "mobile": mobile}
         return None
 
+    # A phone sent back: the debit note that took it.
+    returned = (
+        PurchaseDocument.objects.filter(
+            tenant=tenant,
+            kind="debit_note",
+            status="issued",
+            meta__serials__contains=[{"serials": [row.serial]}],
+        )
+        .order_by("-document_date", "-created_at")
+        .first()
+        if row.status == Serial.RETURNED
+        else None
+    )
     return {
         "serial": row.serial,
         "status": row.status,
+        "returned": (
+            {"id": str(returned.id), "number": returned.number, "date": returned.document_date.isoformat()}
+            if returned is not None
+            else None
+        ),
         "item": {"id": str(row.item_id), "name": row.item.name},
         "sold_on": row.sold_on.isoformat() if row.sold_on else None,
         "warranty_until": row.warranty_until.isoformat() if row.warranty_until else None,

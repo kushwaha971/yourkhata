@@ -4,8 +4,14 @@ import { api, ubConfig } from 'src/api/AxiosInstances';
 /** D P3 — `GET /serials/{code}`: find by IMEI (design D8). */
 export interface SerialFound {
   readonly serial: string;
-  readonly status: 'in_stock' | 'sold';
+  readonly status: 'in_stock' | 'sold' | 'returned';
   readonly item: { readonly id: string; readonly name: string };
+  /** Sent back to the supplier: the debit note that took it. */
+  readonly returned: {
+    readonly id: string;
+    readonly number: string | null;
+    readonly date: string;
+  } | null;
   readonly warrantyUntil: string | null;
   readonly sale: {
     readonly id: string;
@@ -23,8 +29,9 @@ export interface SerialFound {
 
 interface SerialWire {
   readonly serial: string;
-  readonly status: 'in_stock' | 'sold';
+  readonly status: 'in_stock' | 'sold' | 'returned';
   readonly item: { readonly id: string; readonly name: string };
+  readonly returned?: SerialFound['returned'];
   readonly warranty_until: string | null;
   readonly sale: SerialFound['sale'];
   readonly purchase: SerialFound['purchase'];
@@ -40,6 +47,7 @@ export const findSerial = async (code: string): Promise<SerialFound> => {
     serial: row.serial,
     status: row.status,
     item: row.item,
+    returned: row.returned ?? null,
     warrantyUntil: row.warranty_until,
     sale: row.sale,
     purchase: row.purchase,

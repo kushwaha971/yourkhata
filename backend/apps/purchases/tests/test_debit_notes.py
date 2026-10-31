@@ -369,6 +369,10 @@ def test_a_phone_tracked_by_imei_can_be_sent_back(owner: Any, make_supplier: Any
     from apps.inventory.models import Serial
 
     assert Serial.objects.filter(status=Serial.IN_STOCK).count() == 1
+    # Find by IMEI says where it went (owner, 31 Oct: not "No phone with …").
+    gone = Serial.objects.get(status=Serial.RETURNED).serial
+    found = owner.get(f"/api/v1/serials/{gone}").json()["data"]
+    assert found["status"] == "returned" and found["returned"]["number"] == note.json()["data"]["number"]
     voided = owner.post(note_url(note.json()["data"]["id"], "void"), {"reason": "Shop kept it"}, format="json")
     assert voided.status_code == 200, voided.json()
     assert Serial.objects.filter(status=Serial.IN_STOCK).count() == 2

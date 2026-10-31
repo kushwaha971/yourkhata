@@ -169,6 +169,8 @@
   "items.imei.none.title": "{code} वाला फ़ोन नहीं मिला",
   "items.imei.openBill": "बिल खोलें",
   "items.imei.placeholder": "IMEI या सीरियल नंबर",
+  "items.imei.returned": "सप्लायर को लौटाया",
+  "items.imei.returnedOn": "डेबिट नोट",
   "items.imei.sold": "बिका",
   "items.imei.soldTo": "किसे बेचा",
   "items.imei.subtitle": "IMEI या सीरियल नंबर स्कैन करें या लिखें।",

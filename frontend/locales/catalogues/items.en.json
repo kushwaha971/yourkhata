@@ -169,6 +169,8 @@
   "items.imei.none.title": "No phone with {code}",
   "items.imei.openBill": "Open bill",
   "items.imei.placeholder": "IMEI or serial number",
+  "items.imei.returned": "Returned to supplier",
+  "items.imei.returnedOn": "Debit note",
   "items.imei.sold": "Sold",
   "items.imei.soldTo": "Sold to",
   "items.imei.subtitle": "Scan or type an IMEI or serial number.",

@@ -1095,6 +1095,7 @@
     "sharedApp": 115.9
   },
   "//routes": [
+    "31 Oct 2026, Find by IMEI shows a returned phone and its debit note; Return to distributor for medicines and phones: raised to measured + 0.3: /stock/transfer route 118.9; /stock/count route 87.5; /items/labels route 84.0.",
     "31 Oct 2026, design gaps closed after the D side-by-side (Expiry table and return, IMEI camera, estimate title, challan transport column, camera Not found): raised to measured + 0.3: /sales/challans/[id]/edit firstLoad 426.3; /sales/orders/[id]/edit firstLoad 426.3; /sales/estimates/[id]/edit route 183.2; /sales/estimates/[id]/edit firstLoad 426.3; /stock/transfer firstLoad 362.0; /sales/challans route 92.2; /sales/orders route 92.2; /stock/count firstLoad 330.6; /items/labels firstLoad 327.1; /stock/expiry route 78.1; /stock/expiry firstLoad 321.3; /items/imei route 67.6; /items/imei firstLoad 310.7.",
     "31 Oct 2026, owner's grey stock note on estimates and the challan share vehicle line: raised to measured + 0.3: /sales/challans/[id]/edit route 183.0; /sales/orders/[id]/edit route 183.0; /sales/estimates/new firstLoad 426.1; /sales/invoices/new firstLoad 426.1; /sales/challans/[id] firstLoad 333.4; /d/[token] route 42.5.",
     "31 Oct 2026, D14 (the print's batch / IMEI column and vehicle header): raised to measured + 0.3: /sales/invoices/[id]/edit firstLoad 426.1; /sales/challans/new firstLoad 426.1; /sales/orders/new firstLoad 426.1; /sales/invoices/[id] route 90.2.",
@@ -1942,15 +1943,15 @@
     "/solutions": {},
     "/solutions/[slug]": {},
     "/stock/count": {
-      "route": 87.2,
+      "route": 87.5,
       "firstLoad": 330.6
     },
     "/stock/transfer": {
-      "route": 118.6,
+      "route": 118.9,
       "firstLoad": 362.0
     },
     "/items/labels": {
-      "route": 83.7,
+      "route": 84.0,
       "firstLoad": 327.1
     },
     "/items/imei": {

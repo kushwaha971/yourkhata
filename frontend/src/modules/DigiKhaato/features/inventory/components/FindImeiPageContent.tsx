@@ -138,8 +138,20 @@ export function FindImeiPageContent(): React.JSX.Element {
                   {found.item.name}
                 </UbText>
                 <UbStatusBadge
-                  tone={found.status === 'sold' ? 'success' : 'info'}
-                  label={found.status === 'sold' ? t('items.imei.sold') : t('items.imei.inStock')}
+                  tone={
+                    found.status === 'sold'
+                      ? 'success'
+                      : found.status === 'returned'
+                        ? 'warning'
+                        : 'info'
+                  }
+                  label={
+                    found.status === 'sold'
+                      ? t('items.imei.sold')
+                      : found.status === 'returned'
+                        ? t('items.imei.returned')
+                        : t('items.imei.inStock')
+                  }
                 />
               </UbStack>
               <UbText as="p" variant="body-sm" tone="secondary">
@@ -171,6 +183,14 @@ export function FindImeiPageContent(): React.JSX.Element {
                       date: formatBusinessDate(found.warrantyUntil),
                       months: left ?? 0,
                     })}
+                  />
+                )}
+                {found.returned && (
+                  <UbInfoRow
+                    label={t('items.imei.returnedOn')}
+                    value={[found.returned.number, formatBusinessDate(found.returned.date)]
+                      .filter(Boolean)
+                      .join(' · ')}
                   />
                 )}
                 {found.purchase && (
