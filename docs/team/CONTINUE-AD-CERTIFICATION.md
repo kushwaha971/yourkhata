@@ -69,7 +69,14 @@ note in `bundle-budgets.json` `//routes`), `npm run i18n:split && npm run i18n:c
    and IMEIs now leave on a debit note and come back on its void.
 4. LOW — a returned phone now reads "Returned to supplier" with its debit note.
 
-## 3. What is still to do (in this order)
+## 3. Status: certification FINISHED (1 Nov 2026)
+
+The report is `docs/testing/ad-certification-report.md` — read it. Remaining
+work is only what §6 of that report lists (stale harnesses to re-baseline,
+the personal-Udhaar export risk for its own thread). **Wait for the owner's
+explicit instruction before starting Part G.**
+
+## 3a. (Historical) the steps that were still to do
 
 1. **Finish the broad monkey sweep** — 12 areas × 2 seeds × 390/1280 with
    `node e2e/monkey.mjs --path=<p> --seed=<s> --steps=120 --width=<w>`.
