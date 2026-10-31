@@ -43,6 +43,7 @@ import { useInventorySchemas } from '../validation/inventorySchemas';
 import { looksLikeBarcode, skuPrefix } from '../view-model/itemDisplay';
 import { gstFor, marginOf } from '../view-model/itemPricing';
 
+import { ItemAddonFields } from './ItemAddonFields';
 import { ItemExtraUnitsFields } from './ItemExtraUnitsFields';
 import { ItemPartFields } from './ItemPartFields';
 import { ItemPriceFields } from './ItemPriceFields';
@@ -141,6 +142,7 @@ export function ItemFormDrawer({
       hasVariants: false,
       sizes: [],
       colours: [],
+      addons: (editing?.addons ?? []).map((row) => ({ name: row.name, price: row.price })),
     }),
     [editing, prefillBarcode, prefillName, defaultUnitId, masters.units]
   );
@@ -163,6 +165,7 @@ export function ItemFormDrawer({
   const sellsInBoxes = Boolean(features?.includes('alt_units'));
   const keepsPartNumbers = Boolean(features?.includes('part_numbers'));
   const sellsSizes = Boolean(features?.includes('variants'));
+  const hasAddons = Boolean(features?.includes('addons'));
   const name = useWatch({ control, name: 'name' });
   const taxCode = useWatch({ control, name: 'taxCode' });
   const inclusive = useWatch({ control, name: 'taxInclusiveSelling' });
@@ -406,6 +409,8 @@ export function ItemFormDrawer({
         )}
         {/* D P2 — design D3 "SIZES AND COLOURS", for a new garment only. */}
         {!isService && !isEdit && sellsSizes && <ItemVariantFields />}
+        {/* D P6 — design D11: add-ons on a café item. */}
+        {(hasAddons || (editing?.addons?.length ?? 0) > 0) && <ItemAddonFields />}
         {/* D P1b — design D3 "PART DETAILS" for a parts shop. */}
         {!isService &&
           (keepsPartNumbers ||

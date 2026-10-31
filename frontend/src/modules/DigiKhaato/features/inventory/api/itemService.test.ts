@@ -71,6 +71,7 @@ const FORM: ItemFormValues = {
   hasVariants: false,
   sizes: [],
   colours: [],
+  addons: [],
 };
 
 describe('listItems', () => {

@@ -1,4 +1,8 @@
 {
+  "sales.addons.add": "Add · {amount}",
+  "sales.addons.free": "Free",
+  "sales.addons.howMany": "How many",
+  "sales.addons.title": "Add-ons",
   "sales.challan.convert.confirm": "Create the invoice for challan {number}? Items and prices are copied, and the stock the challan already took out is not taken out again.",
   "sales.challan.count": "Challans",
   "sales.challan.empty.filtered": "No challans match",

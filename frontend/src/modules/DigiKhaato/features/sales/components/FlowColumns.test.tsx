@@ -18,9 +18,18 @@ it('does not call an unbilled delivery an open credit', () => {
 
 it('retains the document date with its identity on compact desktop tables', () => {
   /** At1024 the separate date column clipped dates; joining identity must retain the fact. */
-  const columns = createFlowColumns({t,kind:'estimate',isCards:false,isCompact:true});
-  expect(columns.map(column=>column.id)).not.toContain('date');
-  const identity=columns.find(column=>column.id==='party');if(!identity)throw new Error('Missing identity');
-  render(<>{identity.cell({party:{id:'p1',name:'Radhe Krishna Enterprises'},number:'EST-42',documentDate:'2026-10-21'} as InvoiceListRow)}</>);
+  const columns = createFlowColumns({ t, kind: 'estimate', isCards: false, isCompact: true });
+  expect(columns.map((column) => column.id)).not.toContain('date');
+  const identity = columns.find((column) => column.id === 'party');
+  if (!identity) throw new Error('Missing identity');
+  render(
+    <>
+      {identity.cell({
+        party: { id: 'p1', name: 'Radhe Krishna Enterprises' },
+        number: 'EST-42',
+        documentDate: '2026-10-21',
+      } as InvoiceListRow)}
+    </>
+  );
   expect(screen.getByText(/21\/10\/2026/)).toBeInTheDocument();
 });

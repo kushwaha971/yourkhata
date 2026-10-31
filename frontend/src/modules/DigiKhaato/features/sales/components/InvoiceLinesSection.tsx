@@ -12,7 +12,7 @@ import type { UbLineFocusRequest } from 'src/design-system';
 import { useAppDispatch, useAppSelector } from 'src/hooks/useAppStore';
 import { useTranslation } from 'src/hooks/useTranslation';
 import { showSnackbar } from 'src/redux/slice/snackbarSlice';
-import { formatInr } from 'src/utils/money';
+import { addMoney, formatInr } from 'src/utils/money';
 import { exceedsQuantity, formatQuantity } from 'src/utils/quantity';
 
 import { listVariants } from '../../inventory/api/itemService';
@@ -26,6 +26,7 @@ import { emptyLine, type InvoiceFormValues, type InvoiceLineForm } from '../view
 import { itemLineDefaults } from '../view-model/itemLineDefaults';
 import { lineUnitCaption, lineUnitChoices, type LineUnitChoice } from '../view-model/lineUnits';
 
+import { AddonSheet } from './AddonSheet';
 import { InvoiceLineList, InvoiceLineTable, lineName } from './InvoiceLineEditor';
 import { LineVariantPicker } from './LineVariantPicker';
 
@@ -131,6 +132,8 @@ export function InvoiceLinesSection({
   const [usual, setUsual] = useState<Record<string, { price: string; inclusive: boolean }>>({});
   /** D P1a — each picked item's units (box and piece), for the line's unit chips. */
   const [unitChoices, setUnitChoices] = useState<Record<string, readonly LineUnitChoice[]>>({});
+  /** D P6 — the café item whose add-on sheet is open, and its line. */
+  const [addonFor, setAddonFor] = useState<{ index: number; row: ItemListRow } | null>(null);
   /** D P4 — the batch a sale of each medicine would take ("DL3990 · exp 03/27"). */
   const [nextBatch, setNextBatch] = useState<Record<string, { batchNo: string; expiry: string }>>({});
   /** D P3 — items whose every piece has its own IMEI / serial number. */
@@ -174,6 +177,8 @@ export function InvoiceLinesSection({
           [row.id]: { part, rack: row.rack ?? undefined },
         }));
       if (row.tracking === 'serial') setSerialItems((current) => ({ ...current, [row.id]: true }));
+      // D P6 — design D11: the add-on sheet opens only for an item that has add-ons.
+      if (row.addons?.length) setAddonFor({ index, row });
       const coming = row.nextBatch;
       if (coming) setNextBatch((current) => ({ ...current, [row.id]: coming }));
       const choices = lineUnitChoices(row);
@@ -339,6 +344,12 @@ export function InvoiceLinesSection({
           {partText}
         </UbText>
       ) : null;
+      // D P6 — "+ Cheese ₹20" under a café item.
+      const addonNote = line.addons?.length ? (
+        <UbText variant="caption" tone="accent" data-testid="line-addons">
+          {line.addons.map((a) => `+ ${a.name} ${formatInr(a.price)}`).join(' · ')}
+        </UbText>
+      ) : null;
       // D P4 — design D1 medical: the batch FEFO will take, with no extra tap.
       const batch = nextBatch[line.itemId];
       const batchNote = batch ? (
@@ -395,8 +406,9 @@ export function InvoiceLinesSection({
         </UbText>
       ) : null;
       if (!partyId)
-        return batchNote || serialNote || variantNote || partNote || unitNote || stockNote || changedNote ? (
+        return addonNote || batchNote || serialNote || variantNote || partNote || unitNote || stockNote || changedNote ? (
           <UbStack gap={0}>
+            {addonNote}
             {batchNote}
             {serialNote}
             {variantNote}
@@ -408,6 +420,7 @@ export function InvoiceLinesSection({
         ) : null;
       return (
         <UbStack gap={0}>
+          {addonNote}
           {batchNote}
           {serialNote}
           {variantNote}
@@ -512,6 +525,24 @@ export function InvoiceLinesSection({
 
   return (
     <UbStack gap={3}>
+      {addonFor && (
+        <AddonSheet
+          item={addonFor.row}
+          onClose={() => setAddonFor(null)}
+          onAdd={(chosen, qty) => {
+            const base = `lines.${addonFor.index}` as const;
+            const each = chosen.reduce((sum, a) => addMoney(sum, a.price), addonFor.row.sellingPrice || '0');
+            setValue(`${base}.addons`, chosen, { shouldDirty: true });
+            setValue(`${base}.qty`, String(qty), { shouldDirty: true });
+            setValue(`${base}.unitPrice`, each, { shouldDirty: true });
+            setUsual((current) => ({
+              ...current,
+              [addonFor.row.id]: { price: each, inclusive: addonFor.row.taxInclusiveSelling ?? false },
+            }));
+            setAddonFor(null);
+          }}
+        />
+      )}
       {!wide && search}
       {lineOptions.length >= LINE_FINDER_FROM && (
         <UbBox data-testid="invoice-line-finder">

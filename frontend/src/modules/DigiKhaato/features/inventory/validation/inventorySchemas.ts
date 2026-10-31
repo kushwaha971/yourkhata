@@ -181,6 +181,15 @@ export const useInventorySchemas = (
         .default([]),
       partNumbers: Yup.array().of(Yup.string().defined()).defined().default([]),
       hasVariants: Yup.boolean().defined().default(false),
+      addons: Yup.array()
+        .of(
+          Yup.object({
+            name: Yup.string().defined().default('').max(60),
+            price: Yup.string().defined().default(''),
+          })
+        )
+        .defined()
+        .default([]),
       sizes: Yup.array().of(Yup.string().defined()).defined().default([]),
       colours: Yup.array().of(Yup.string().defined()).defined().default([]),
       rack: Yup.string().defined().default('').max(16, t('validation.maxChars', { value: 16 })),

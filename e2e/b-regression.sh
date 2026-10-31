@@ -38,3 +38,4 @@ run d2-labels d2-labels.mjs
 run d3-imei d3-imei.mjs
 run d4-batches d4-batches.mjs
 run d5-eway d5-eway.mjs
+run d6-addons d6-addons.mjs

@@ -1,5 +1,6 @@
 {
   "//": [
+    "31 Oct 2026, D P6 add-ons: the sales editors moved for AddonSheet and the line add-on caption; item routes for ItemAddonFields. Measured + 0.3.",
     "31 Oct 2026, D P5: the bill detail routes moved for the dynamic() EwayBillCard import. Measured + 0.3.",
     "31 Oct 2026, D P3 find by IMEI + D P4 batches: /items/imei and /stock/expiry are new routes at measured + 0.3; the sales and purchase editors moved for the batch caption and LineBatchFields; every route for two nav rows. Measured + 0.3.",
     "31 Oct 2026, D P2 labels + D P3 IMEI: /items/labels is a new route (Print labels with the in-house Code 128 encoder and the shared item search) at measured + 0.3; the sales and purchase editors moved for LineSerialsField; every route for the Print labels nav row. Measured + 0.3.",
@@ -1484,19 +1485,19 @@
     },
     "/sales/challans/[id]": {
       "route": 89.7,
-      "firstLoad": 332.8
+      "firstLoad": 333.1
     },
     "/sales/challans": {
       "route": 91.9,
       "firstLoad": 334.8
     },
     "/sales/challans/new": {
-      "route": 181.6,
-      "firstLoad": 424.7
+      "route": 182.4,
+      "firstLoad": 425.5
     },
     "/sales/challans/[id]/edit": {
-      "route": 181.6,
-      "firstLoad": 424.7
+      "route": 182.4,
+      "firstLoad": 425.6
     },
     "/purchases/orders/[id]": {
       "route": 78.4,
@@ -1523,12 +1524,12 @@
       "firstLoad": 334.8
     },
     "/sales/orders/new": {
-      "route": 181.6,
-      "firstLoad": 424.7
+      "route": 182.4,
+      "firstLoad": 425.5
     },
     "/sales/orders/[id]/edit": {
-      "route": 181.6,
-      "firstLoad": 424.7
+      "route": 182.4,
+      "firstLoad": 425.6
     },
     "/parties": {
       "route": 109,
@@ -1539,12 +1540,12 @@
       "firstLoad": 342.5
     },
     "/sales/invoices/new": {
-      "route": 181.6,
-      "firstLoad": 424.7
+      "route": 182.4,
+      "firstLoad": 425.5
     },
     "/sales/invoices/[id]/edit": {
-      "route": 181.6,
-      "firstLoad": 424.7
+      "route": 182.4,
+      "firstLoad": 425.5
     },
     "/sales/invoices": {
       "route": 98,
@@ -1559,12 +1560,12 @@
       "firstLoad": 356
     },
     "/sales/estimates/new": {
-      "route": 181.6,
-      "firstLoad": 424.7
+      "route": 182.4,
+      "firstLoad": 425.5
     },
     "/sales/estimates/[id]/edit": {
-      "route": 181.6,
-      "firstLoad": 424.7
+      "route": 182.4,
+      "firstLoad": 425.6
     },
     "/sales/estimates/[id]": {
       "route": 89.7,

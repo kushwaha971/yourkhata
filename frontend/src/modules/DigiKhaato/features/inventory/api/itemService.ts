@@ -55,6 +55,7 @@ export interface ItemRowWire {
     readonly allow_decimal: boolean;
   }[];
   readonly scanned_unit?: string | null;
+  readonly addons?: readonly { readonly name: string; readonly price: string }[];
   readonly tracking?: 'none' | 'serial' | 'batch';
   readonly next_batch?: { readonly batch_no: string; readonly expiry: string } | null;
   readonly warranty_months?: number | null;
@@ -166,6 +167,7 @@ export const toItemRow = (row: ItemRowWire): ItemListRow => ({
     allowDecimal: unit.allow_decimal,
   })),
   scannedUnit: row.scanned_unit ?? null,
+  addons: row.addons ?? [],
   tracking: row.tracking ?? 'none',
   nextBatch: row.next_batch
     ? { batchNo: row.next_batch.batch_no, expiry: row.next_batch.expiry }
@@ -395,6 +397,7 @@ export interface ItemBody {
   readonly part_numbers?: readonly string[];
   readonly rack?: string | null;
   readonly fits_vehicle?: string | null;
+  readonly addons?: readonly { readonly name: string; readonly price: string }[];
   readonly variants?: { readonly sizes: readonly string[]; readonly colours: readonly string[] };
   readonly units?: readonly {
     readonly unit_id: string;
@@ -473,6 +476,9 @@ export const toItemBody = (
     ...(withUnits && !isService
       ? {
           part_numbers: values.partNumbers.map((code) => code.trim()).filter(Boolean),
+          addons: values.addons
+            .filter((row) => row.name.trim())
+            .map((row) => ({ name: row.name.trim(), price: row.price || '0' })),
           rack: values.rack.trim() || null,
           fits_vehicle: values.fitsVehicle.trim() || null,
         }

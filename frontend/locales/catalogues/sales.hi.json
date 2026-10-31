@@ -1,4 +1,8 @@
 {
+  "sales.addons.add": "जोड़ें · {amount}",
+  "sales.addons.free": "मुफ़्त",
+  "sales.addons.howMany": "कितने",
+  "sales.addons.title": "ऐड-ऑन",
   "sales.challan.convert.confirm": "चालान {number} का बिल बनाएँ? आइटम और रेट कॉपी होंगे, और जो स्टॉक चालान से घट चुका है वह दोबारा नहीं घटेगा।",
   "sales.challan.count": "चालान",
   "sales.challan.empty.filtered": "कोई चालान नहीं मिला",

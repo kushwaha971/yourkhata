@@ -35,6 +35,12 @@ const toLine = (row: Wire): SalesDocumentLine => ({
   qty: s(row.qty),
   unitCode: s(row.unit_code),
   serials: Array.isArray(row.serials) ? (row.serials as unknown[]).map(String) : [],
+  addons: Array.isArray(row.addons)
+    ? (row.addons as Record<string, unknown>[]).map((a) => ({
+        name: String(a.name ?? ''),
+        price: String(a.price ?? '0'),
+      }))
+    : [],
   unitPrice: s(row.unit_price),
   taxInclusive: Boolean(row.tax_inclusive),
   discountType: (row.discount_type as SalesDocumentLine['discountType']) ?? null,

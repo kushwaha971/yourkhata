@@ -4,7 +4,6 @@ import userEvent from '@testing-library/user-event';
 import { UbDialog } from 'src/design-system';
 import { renderWithProviders } from 'src/tests/renderWithProviders';
 
-
 import { makeDocument } from '../testing/salesFixtures';
 
 import { InvoiceDetailPageContent } from './InvoiceDetailPageContent';

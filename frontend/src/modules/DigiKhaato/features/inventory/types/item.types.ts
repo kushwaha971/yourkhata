@@ -97,6 +97,8 @@ export interface ItemListRow {
   readonly units?: readonly ItemUnitOption[];
   /** D P1a — the unit a box's own barcode named, on a lookup that matched one. */
   readonly scannedUnit?: string | null;
+  /** D P6 — a café item's add-ons ("Ice cream +₹30"). */
+  readonly addons?: readonly { readonly name: string; readonly price: string }[];
   /** D P3 — "serial" when every piece has its own IMEI / serial number. */
   readonly tracking?: 'none' | 'serial' | 'batch';
   /** D P4 — the batch a sale would take next, for the bill line's caption. */
@@ -263,6 +265,8 @@ export interface ItemFormValues {
   hasVariants: boolean;
   sizes: string[];
   colours: string[];
+  /** D P6 — a café item's add-ons. */
+  addons: { name: string; price: string }[];
 }
 
 export interface ExtraUnitValues {

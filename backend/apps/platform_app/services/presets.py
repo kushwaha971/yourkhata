@@ -185,6 +185,8 @@ PRESETS: dict[str, Preset] = {
         extra_expense_categories=("Gas & fuel", "Raw material", "Delivery charges"),
         default_due_days=7,
         items_track_stock_default=False,  # FR-7: food items default `track_stock=false`
+        # D P6 — sweets, bakery and café: add-ons on items (design D11).
+        features=frozenset({"addons"}),
     ),
     BusinessType.OTHER.value: Preset(
         inventory_enabled=True,

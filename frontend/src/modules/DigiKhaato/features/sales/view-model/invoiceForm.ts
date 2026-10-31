@@ -27,6 +27,8 @@ export interface InvoiceLineForm {
   allowDecimal: boolean;
   /** D P3 — the IMEI / serial numbers of a tracked item, one per piece. */
   serials?: string[];
+  /** D P6 — a café item's add-ons on this line (priced into unitPrice). */
+  addons?: { name: string; price: string }[];
   unitPrice: string;
   taxInclusive: boolean;
   discountType: '' | DiscountType;
@@ -153,6 +155,7 @@ export const toWireBody = (values: InvoiceFormValues): Record<string, unknown> =
     qty: line.qty.trim(),
     unit_code: line.unitCode || null,
     ...(line.serials?.length ? { serials: line.serials } : {}),
+    ...(line.addons?.length ? { addons: line.addons.map((a) => ({ name: a.name })) } : {}),
     unit_price: line.unitPrice.trim() || null,
     tax_inclusive: line.taxInclusive,
     ...discountWire(line.discountType, line.discountValue),
@@ -197,6 +200,7 @@ export const fromDocument = (doc: SalesDocument): InvoiceFormValues => ({
         qty: formQty(line.qty, unitAllowsDecimal(line.unitCode)),
         unitCode: line.unitCode,
         serials: [...(line.serials ?? [])],
+        addons: [...(line.addons ?? [])],
         allowDecimal: unitAllowsDecimal(line.unitCode),
         unitPrice: line.unitPrice,
         taxInclusive: line.taxInclusive,
