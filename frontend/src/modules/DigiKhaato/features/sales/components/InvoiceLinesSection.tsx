@@ -15,6 +15,7 @@ import { showSnackbar } from 'src/redux/slice/snackbarSlice';
 import { formatInr } from 'src/utils/money';
 import { exceedsQuantity, formatQuantity } from 'src/utils/quantity';
 
+import { listVariants } from '../../inventory/api/itemService';
 import { getPartyRates } from '../../inventory/api/priceListService';
 import { ItemQuickAdd } from '../../inventory/components/ItemQuickAdd';
 import { LastRateNote } from '../../inventory/components/LastRateNote';
@@ -25,6 +26,7 @@ import { itemLineDefaults } from '../view-model/itemLineDefaults';
 import { lineUnitCaption, lineUnitChoices, type LineUnitChoice } from '../view-model/lineUnits';
 
 import { InvoiceLineList, InvoiceLineTable, lineName } from './InvoiceLineEditor';
+import { LineVariantPicker } from './LineVariantPicker';
 
 import type { ItemListRow } from '../../inventory/types/item.types';
 import type { EngineResult } from '../view-model/taxEngine';
@@ -128,6 +130,9 @@ export function InvoiceLinesSection({
   const [usual, setUsual] = useState<Record<string, { price: string; inclusive: boolean }>>({});
   /** D P1a — each picked item's units (box and piece), for the line's unit chips. */
   const [unitChoices, setUnitChoices] = useState<Record<string, readonly LineUnitChoice[]>>({});
+  /** D P2 — each garment's sizes and colours, and the row picked on each line. */
+  const [variants, setVariants] = useState<Record<string, readonly ItemListRow[]>>({});
+  const [picked, setPicked] = useState<Record<string, ItemListRow>>({});
   /** D P1b — each picked part's first other number and rack ("Part … · Rack B-4"). */
   const [partInfo, setPartInfo] = useState<Record<string, { part?: string; rack?: string }>>({});
 
@@ -144,6 +149,19 @@ export function InvoiceLinesSection({
       setValue(`${base}.taxCode`, defaults.taxCode);
       setValue(`${base}.hsnSac`, defaults.hsnSac);
       setValue(`${base}.taxInclusive`, defaults.taxInclusive);
+      if (row.product) {
+        const productId = row.product.id;
+        setPicked((current) => ({ ...current, [row.id]: row }));
+        void listVariants(productId)
+          .then((rows) => {
+            setVariants((current) => ({ ...current, [productId]: rows }));
+            setPicked((current) => ({
+              ...current,
+              ...Object.fromEntries(rows.map((one) => [one.id, one])),
+            }));
+          })
+          .catch(() => undefined);
+      }
       const part = row.partNumbers?.[0];
       if (part || row.rack)
         setPartInfo((current) => ({
@@ -291,6 +309,14 @@ export function InvoiceLinesSection({
         sold: (b, box, n) => t('sales.line.unitSold', { base: b, box, n }),
         one: (box, n, b) => t('sales.line.unitOne', { box, n, base: b }),
       });
+      const pickedRow = picked[line.itemId];
+      const variantNote = pickedRow?.product ? (
+        <LineVariantPicker
+          current={pickedRow}
+          variants={variants[pickedRow.product.id] ?? [pickedRow]}
+          onPick={(row) => pick(index, row)}
+        />
+      ) : null;
       const info = partInfo[line.itemId];
       const partText = info
         ? [
@@ -343,8 +369,9 @@ export function InvoiceLinesSection({
         </UbText>
       ) : null;
       if (!partyId)
-        return partNote || unitNote || stockNote || changedNote ? (
+        return variantNote || partNote || unitNote || stockNote || changedNote ? (
           <UbStack gap={0}>
+            {variantNote}
             {partNote}
             {unitNote}
             {stockNote}
@@ -353,6 +380,7 @@ export function InvoiceLinesSection({
         ) : null;
       return (
         <UbStack gap={0}>
+          {variantNote}
           {partNote}
           {unitNote}
           {stockNote}
@@ -377,7 +405,7 @@ export function InvoiceLinesSection({
         </UbStack>
       );
     },
-    [lines, partyId, partyName, setValue, listed, usual, unitChoices, partInfo, stockWarning, t]
+    [lines, partyId, partyName, setValue, listed, usual, unitChoices, partInfo, picked, variants, pick, stockWarning, t]
   );
 
   const wide = !useIsMobileLayer();

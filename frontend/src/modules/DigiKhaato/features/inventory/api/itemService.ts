@@ -55,6 +55,8 @@ export interface ItemRowWire {
     readonly allow_decimal: boolean;
   }[];
   readonly scanned_unit?: string | null;
+  readonly product?: { readonly id: string; readonly name: string } | null;
+  readonly attributes?: { readonly size?: string; readonly colour?: string };
   readonly part_numbers?: readonly string[];
   readonly rack?: string | null;
   readonly fits_vehicle?: string | null;
@@ -161,6 +163,8 @@ export const toItemRow = (row: ItemRowWire): ItemListRow => ({
     allowDecimal: unit.allow_decimal,
   })),
   scannedUnit: row.scanned_unit ?? null,
+  product: row.product ?? null,
+  attributes: row.attributes ?? {},
   partNumbers: row.part_numbers ?? [],
   rack: row.rack ?? null,
   fitsVehicle: row.fits_vehicle ?? null,
@@ -547,4 +551,16 @@ export const listMovements = async (
     nextCursor: response.data.meta.next_cursor,
     hasMore: response.data.meta.has_more,
   };
+};
+
+/** D P2 — one garment's sizes and colours, with stock, for the bill line's picker. */
+export const listVariants = async (
+  productId: string,
+  signal?: AbortSignal
+): Promise<readonly ItemListRow[]> => {
+  const response = await api.get<{ data: readonly ItemRowWire[] }>(
+    `${API_PATHS.ITEMS}${toQueryString({ product_id: productId, page_size: 60, ordering: 'name' })}`,
+    ubConfig({ signal, suppressErrorSnackbar: true })
+  );
+  return response.data.data.map(toItemRow);
 };

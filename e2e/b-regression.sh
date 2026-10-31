@@ -33,3 +33,4 @@ run c-journey c-journey.mjs
 run d1-units d1-units.mjs
 run d1-parts d1-parts.mjs
 run d1-transfer d1-transfer.mjs
+run d2-variants d2-variants.mjs

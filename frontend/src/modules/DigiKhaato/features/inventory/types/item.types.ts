@@ -97,6 +97,9 @@ export interface ItemListRow {
   readonly units?: readonly ItemUnitOption[];
   /** D P1a — the unit a box's own barcode named, on a lookup that matched one. */
   readonly scannedUnit?: string | null;
+  /** D P2 — the garment this is one size × colour of, and which one. */
+  readonly product?: { readonly id: string; readonly name: string } | null;
+  readonly attributes?: { readonly size?: string; readonly colour?: string };
   /** D P1b — other part numbers, the rack ("B-4"), the vehicles it fits. */
   readonly partNumbers?: readonly string[];
   readonly rack?: string | null;
