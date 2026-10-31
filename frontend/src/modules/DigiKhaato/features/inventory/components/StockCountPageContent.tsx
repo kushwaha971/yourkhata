@@ -401,6 +401,8 @@ export function StockCountPageContent(): React.JSX.Element {
           columns={columns}
           rowId={(row) => row.itemId}
           rowName={(row) => row.name}
+          // 320 px cut "In books 4 · Not counted yet" to "Not cou…" (D LOOK sweep).
+          cardLayout="compact"
           state={gridState}
           labels={labels}
           emptyStates={{
