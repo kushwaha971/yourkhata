@@ -148,6 +148,7 @@ export const getStockSummary = async (
   const query = toQueryString({
     q: filters.q || undefined,
     category_id: filters.categoryId || undefined,
+    location_id: filters.locationId || undefined,
     status: filters.status || undefined,
     hide_zero: filters.hideZero ? undefined : 'false',
     as_of: filters.asOf ?? undefined,

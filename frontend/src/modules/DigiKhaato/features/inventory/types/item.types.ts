@@ -344,6 +344,8 @@ export interface StockSummaryRow {
 export interface StockSummaryFilters {
   readonly q: string;
   readonly categoryId: string;
+  /** D P1c — one godown; '' (or absent) is the whole business. */
+  readonly locationId?: string;
   readonly status: '' | 'in' | 'low' | 'out' | 'negative';
   readonly hideZero: boolean;
   readonly asOf: string | null;

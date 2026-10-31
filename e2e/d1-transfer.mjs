@@ -101,6 +101,20 @@ await page.screenshot({ path: `${dir}/1280-short.png` });
 const [s2, g2] = await held();
 check('API: nothing moved', s2 === 70 && g2 === 30, `${s2} / ${g2}`);
 
+// The whole business's stock, and one godown on request (Stock summary filter).
+const list = (await (await ctx.request.get(`${base}/api/v1/items?q=${encodeURIComponent(NAME)}`)).json()).data?.[0];
+check('API: the Items list shows the whole business (100), not only Main', Number(list?.on_hand) === (skew ? 99 : 100), String(list?.on_hand));
+const one = (await (await ctx.request.get(`${base}/api/v1/stock/summary?q=${encodeURIComponent(NAME)}&location_id=${godown.id}`)).json()).data?.[0];
+check('API: Stock summary for the godown alone says 30', Number(one?.on_hand) === 30, String(one?.on_hand));
+await page.goto(`${base}/stock/summary`, { waitUntil: 'networkidle' });
+await page.reload({ waitUntil: 'networkidle' });
+const filters = page.getByRole('button', { name: /^Filters/ }).first();
+if (await filters.isVisible().catch(() => false)) await filters.click();
+await sleep(600);
+check('summary: a "Godown" filter is offered', (await page.getByText('Godown', { exact: true }).count()) > 0);
+await page.screenshot({ path: `${dir}/1280-summary-filter.png` });
+await page.keyboard.press('Escape');
+
 // The bill and the purchase offer the godown once a second one exists.
 await page.goto(`${base}/sales/invoices/new`, { waitUntil: 'networkidle' });
 await page.reload({ waitUntil: 'networkidle' });

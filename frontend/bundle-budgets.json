@@ -1,5 +1,6 @@
 {
   "//": [
+    "31 Oct 2026, D P1c (Stock summary by godown): /stock/summary moved for the Godown filter (usePlaces). Measured + 0.3.",
     "31 Oct 2026, D P1c (godown on documents): the sales and purchase editors moved ~0.3-0.5 KB for the Godown choice (usePlaces + transferService list). Measured + 0.3.",
     "31 Oct 2026, D P1c (godowns): /stock/transfer is a new route at its measured size + 0.3 (Move stock: the data grid, the shared item search and two place selects, the weight of /stock/count). Other routes moved through the nav row and the transfer API paths. Measured + 0.3.",
     "31 Oct 2026, D P1b (part numbers): the sales editors and item routes moved up to ~0.5 KB for the line Part/Rack caption and the item form PART DETAILS group (ItemPartFields). Measured + 0.3.",
@@ -1638,8 +1639,8 @@
       "firstLoad": 307.9
     },
     "/stock/summary": {
-      "route": 118.3,
-      "firstLoad": 361.3
+      "route": 118.9,
+      "firstLoad": 361.9
     },
     "/items/masters": {
       "route": 62.0,

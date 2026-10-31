@@ -48,6 +48,7 @@ import { ListExportButton } from 'modules/DigiKhaato/features/imports/components
 
 import { stockSummaryExportPath } from '../api/stockService';
 import { useInventoryMasters } from '../hooks/useInventoryMasters';
+import { usePlaces } from '../hooks/usePlaces';
 import { useStockAdjustment } from '../hooks/useStockAdjustment';
 import { useStockSummary } from '../hooks/useStockReports';
 import { inventoryGridLabels } from '../view-model/gridLabels';
@@ -202,7 +203,20 @@ export function StockSummaryPageContent(): React.JSX.Element {
   const masters = useInventoryMasters();
   const { filters, update, summary } = report;
   const phone = tier === 'cards';
+  const places = usePlaces();
   const sheetSpecs: UbFilterSpec[] = [
+    // D P1c — one godown, once there are two; "Any" is the whole business.
+    ...(places.length > 1
+      ? [
+          {
+            kind: 'single' as const,
+            key: 'locationId',
+            label: t('stock.summary.filter.godown'),
+            anyLabel: t('stock.summary.filter.allGodowns'),
+            options: places.map((place) => ({ value: place.id, label: place.name })),
+          },
+        ]
+      : []),
     {
       kind: 'single',
       key: 'categoryId',
@@ -238,12 +252,14 @@ export function StockSummaryPageContent(): React.JSX.Element {
       : []),
   ];
   const sheetValues: UbFilterValues = {
+    locationId: filters.locationId ?? '',
     categoryId: filters.categoryId ?? '',
     status: filters.status ?? '',
     ...(phone ? { zero: filters.hideZero ? '' : 'show' } : {}),
   };
   const applySheet = (next: UbFilterValues) =>
     update({
+      locationId: next.locationId ?? '',
       categoryId: next.categoryId ?? '',
       status: (next.status ?? '') as StockSummaryFilters['status'],
       ...(phone ? { hideZero: next.zero !== 'show' } : {}),
@@ -268,7 +284,7 @@ export function StockSummaryPageContent(): React.JSX.Element {
     [t]
   );
   const rows = summary?.rows ?? [];
-  const filtered = Boolean(filters.q || filters.categoryId || filters.status);
+  const filtered = Boolean(filters.q || filters.categoryId || filters.status || filters.locationId);
   const gridState: UbGridState =
     report.status === 'loading' || (report.status === 'idle' && !summary)
       ? 'loading'
@@ -409,7 +425,7 @@ export function StockSummaryPageContent(): React.JSX.Element {
                   action: (
                     <UbButton
                       variant="secondary"
-                      onClick={() => update({ q: '', categoryId: '', status: '' })}
+                      onClick={() => update({ q: '', categoryId: '', status: '', locationId: '' })}
                     >
                       {t('common.action.clearFilters')}
                     </UbButton>
