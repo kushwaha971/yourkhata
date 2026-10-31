@@ -179,7 +179,7 @@ describe('the delivery challan (Shop item 4)', () => {
     renderWithProviders(<InvoiceEditorPageContent documentId={null} kind="delivery_challan" />);
     expect(await screen.findByRole('heading', { name: /Delivery challan/ })).toBeInTheDocument();
     expect(screen.getByTestId('invoice-issue')).toHaveTextContent('Save & issue');
-    expect(screen.getByTestId('challan-details')).toHaveTextContent('Vehicle number');
+    expect(screen.getByTestId('challan-details')).toHaveTextContent('Vehicle no.');
     expect(screen.queryByRole('radio', { name: 'Walk-in' })).not.toBeInTheDocument();
     await settle();
   });

@@ -127,6 +127,8 @@ export const toLinks = (raw: unknown): SalesDocumentLinks => {
           transporter: s((row.challan as Wire).transporter),
           vehicleNumber: s((row.challan as Wire).vehicle_number),
           ewayBillNumber: s((row.challan as Wire).eway_bill_number),
+          driver: s((row.challan as Wire).driver),
+          deliverTo: s((row.challan as Wire).deliver_to),
         }
       : null,
   };

@@ -93,6 +93,9 @@ export interface ChallanDetails {
   readonly transporter: string;
   readonly vehicleNumber: string;
   readonly ewayBillNumber: string;
+  /** Design D13's Transport card: who carries the goods, and where to. */
+  readonly driver: string;
+  readonly deliverTo: string;
 }
 
 /** SAL-01 FR-10 / SAL-04 §14 — the lists' tabs, each a set of statuses on the server. */

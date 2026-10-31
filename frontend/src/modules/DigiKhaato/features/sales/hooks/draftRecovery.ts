@@ -25,6 +25,8 @@ const wireBodyFor = (kind: EditorKind, values: InvoiceFormValues): Record<string
             transporter: values.transporter.trim(),
             vehicle_number: values.vehicleNumber.trim(),
             eway_bill_number: values.ewayBillNumber.trim(),
+            driver: values.driver.trim(),
+            deliver_to: values.deliverTo.trim(),
           }
         : toWireBody(values);
 

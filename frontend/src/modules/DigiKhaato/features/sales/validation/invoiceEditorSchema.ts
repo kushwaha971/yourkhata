@@ -221,6 +221,14 @@ export const buildInvoiceEditorSchema = (
       .defined()
       .default('')
       .max(60, t('validation.maxChars', { value: 60 })),
+    driver: Yup.string()
+      .defined()
+      .default('')
+      .max(60, t('validation.maxChars', { value: 60 })),
+    deliverTo: Yup.string()
+      .defined()
+      .default('')
+      .max(160, t('validation.maxChars', { value: 160 })),
     placeOfSupplyState: Yup.string()
       .defined()
       .default('')

@@ -50,14 +50,17 @@ CHALLAN_TYPES: tuple[str, ...] = (
     "sample",
     "other",
 )
-TRANSPORT_FIELDS: tuple[str, ...] = ("transporter", "vehicle_number", "eway_bill_number")
+TRANSPORT_FIELDS: tuple[str, ...] = ("transporter", "vehicle_number", "eway_bill_number", "driver", "deliver_to")
 TRANSPORT_MAX = 60
+# D13: an address is longer than a name or a number.
+TRANSPORT_MAX_BY_FIELD = {"deliver_to": 160}
 VOID_REASON_MIN = 3
 VOID_REASON_MAX = 160
 
 
 def _apply_challan_fields(document: Any, payload: dict) -> None:
-    """`meta.challan` = `{type, transporter, vehicle_number, eway_bill_number}` (FR-2)."""
+    """`meta.challan` = `{type, transporter, vehicle_number, eway_bill_number, driver,
+    deliver_to}` (FR-2; driver and deliver_to are design D13's Transport card)."""
     current = dict((document.meta or {}).get("challan") or {})
     errors: dict[str, list[str]] = {}
     if "challan_type" in payload:
@@ -69,8 +72,9 @@ def _apply_challan_fields(document: Any, payload: dict) -> None:
     for name in TRANSPORT_FIELDS:
         if name in payload:
             text = " ".join(str(payload.get(name) or "").split())
-            if len(text) > TRANSPORT_MAX:
-                errors[name] = [f"Keep this under {TRANSPORT_MAX} characters."]
+            limit = TRANSPORT_MAX_BY_FIELD.get(name, TRANSPORT_MAX)
+            if len(text) > limit:
+                errors[name] = [f"Keep this under {limit} characters."]
             current[name] = text.upper() if name == "vehicle_number" else text
     if errors:
         raise ValidationFailed(errors)

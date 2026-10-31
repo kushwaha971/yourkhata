@@ -171,3 +171,12 @@ def test_staff_issue_and_bill_challans_and_only_an_owner_voids(
         == 403
     )
     assert staff.post(challan_url(challan["id"], "convert"), {}, format="json").status_code == 201
+
+
+def test_a_challan_keeps_its_driver_and_where_to_deliver(owner: Any, make_item: Any, make_party: Any) -> None:
+    """Design D13's Transport card: driver and delivery address print on the
+    challan the driver carries, so they must survive the save."""
+    party, rice = make_party(), make_item(stock="40")
+    challan = issued_challan(owner, party, rice, driver="Santosh", deliver_to="Patil Bungalow, Sector 4")
+    assert challan["links"]["challan"]["driver"] == "Santosh"
+    assert challan["links"]["challan"]["deliver_to"] == "Patil Bungalow, Sector 4"

@@ -2,8 +2,10 @@
 
 import { useMemo } from 'react';
 
-import { UbField, UbGrid, UbSelect, UbStack, UbTextInput } from 'src/design-system';
+import { UbField, UbGrid, UbSelect, UbStack, UbText, UbTextInput } from 'src/design-system';
+import { useAppSelector } from 'src/hooks/useAppStore';
 import { useTranslation } from 'src/hooks/useTranslation';
+import { selectActiveTenant } from 'src/redux/slice/sessionSlice';
 
 import { CHALLAN_TYPES } from '../types/salesFlows.types';
 
@@ -22,6 +24,9 @@ export function ChallanDetailsSection({
 }: Readonly<{ form: UseFormReturn<InvoiceFormValues>; disabled: boolean }>): React.JSX.Element {
   const { t } = useTranslation();
   const type = form.watch('challanType');
+  const features = useAppSelector(selectActiveTenant)?.features ?? [];
+  // The note names how stock leaves for this business: from the batch that expires first, or plain.
+  const tracking = features.includes('batches') ? 'batch' : 'plain';
   const options = useMemo(
     () => CHALLAN_TYPES.map((value) => ({ value, label: t(`sales.challan.type.${value}`) })),
     [t]
@@ -62,6 +67,18 @@ export function ChallanDetailsSection({
           )}
         </UbField>
       </UbGrid>
+      {/* Design D13's Transport card: who carries the goods, and where to. */}
+      <UbGrid columns={{ base: 1, sm: 2 }} gap={3}>
+        <UbField name="driver" label={t('sales.challan.driver')}>
+          {(field) => <UbTextInput {...field} maxLength={60} disabled={disabled} />}
+        </UbField>
+        <UbField name="deliverTo" label={t('sales.challan.deliverTo')}>
+          {(field) => <UbTextInput {...field} maxLength={160} disabled={disabled} />}
+        </UbField>
+      </UbGrid>
+      <UbText variant="body-sm" tone="secondary" data-testid="challan-stock-note">
+        {t(tracking === 'batch' ? 'sales.challan.stockNoteBatch' : 'sales.challan.stockNote')}
+      </UbText>
     </UbStack>
   );
 }

@@ -43,6 +43,8 @@ class ChallanWriteSerializer(InvoiceWriteSerializer):
     transporter = serializers.CharField(required=False, allow_blank=True, max_length=120)
     vehicle_number = serializers.CharField(required=False, allow_blank=True, max_length=120)
     eway_bill_number = serializers.CharField(required=False, allow_blank=True, max_length=120)
+    driver = serializers.CharField(required=False, allow_blank=True, max_length=120)
+    deliver_to = serializers.CharField(required=False, allow_blank=True, max_length=200)
 
 
 class CancelSerializer(serializers.Serializer):

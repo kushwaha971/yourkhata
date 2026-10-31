@@ -40,3 +40,4 @@ run d4-batches d4-batches.mjs
 run d5-eway d5-eway.mjs
 run d6-addons d6-addons.mjs
 run d12-strip d12-strip.mjs
+run d13-docs d13-docs.mjs

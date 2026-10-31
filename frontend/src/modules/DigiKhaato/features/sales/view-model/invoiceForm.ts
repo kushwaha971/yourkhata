@@ -67,6 +67,8 @@ export interface InvoiceFormValues {
   transporter: string;
   vehicleNumber: string;
   ewayBillNumber: string;
+  driver: string;
+  deliverTo: string;
 }
 
 /** SAL-07 FR-1 — counters bill walk-ins; everybody else bills a party. */
@@ -117,6 +119,8 @@ export const emptyInvoiceForm = (
   transporter: '',
   vehicleNumber: '',
   ewayBillNumber: '',
+  driver: '',
+  deliverTo: '',
 });
 
 const isNumber = (value: string): boolean => /^\d+(\.\d+)?$/.test(value.trim());
@@ -220,6 +224,8 @@ export const fromDocument = (doc: SalesDocument): InvoiceFormValues => ({
   transporter: doc.links.challan?.transporter ?? '',
   vehicleNumber: doc.links.challan?.vehicleNumber ?? '',
   ewayBillNumber: doc.links.challan?.ewayBillNumber ?? '',
+  driver: doc.links.challan?.driver ?? '',
+  deliverTo: doc.links.challan?.deliverTo ?? '',
 });
 
 export interface RateLookup {

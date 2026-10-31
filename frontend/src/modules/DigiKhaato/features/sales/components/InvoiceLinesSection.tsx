@@ -59,6 +59,7 @@ export function InvoiceLinesSection({
   disabled,
   openLine = null,
   onScanned,
+  stockRule = 'takes',
 }: Readonly<{
   form: UseFormReturn<InvoiceFormValues>;
   preview: EngineResult;
@@ -71,6 +72,11 @@ export function InvoiceLinesSection({
   openLine?: UbLineFocusRequest | null;
   /** C1: a code was scanned onto this bill (the desktop shows its scanner badge). */
   onScanned?: () => void;
+  /**
+   * Design D13: an estimate or an order takes no stock, batch or IMEI, so its
+   * lines show neither and a note says so; a bill and a challan take them.
+   */
+  stockRule?: 'takes' | 'estimate' | 'order';
 }>): React.JSX.Element {
   const { t } = useTranslation();
   const { control, watch, setValue, getValues, trigger } = form;
@@ -135,9 +141,13 @@ export function InvoiceLinesSection({
   /** D P6 — the café item whose add-on sheet is open, and its line. */
   const [addonFor, setAddonFor] = useState<{ index: number; row: ItemListRow } | null>(null);
   /** D P4 — the batch a sale of each medicine would take ("DL3990 · exp 03/27"). */
-  const [nextBatch, setNextBatch] = useState<Record<string, { batchNo: string; expiry: string }>>({});
+  const [nextBatch, setNextBatch] = useState<Record<string, { batchNo: string; expiry: string }>>(
+    {}
+  );
   /** D P3 — items whose every piece has its own IMEI / serial number. */
   const [serialItems, setSerialItems] = useState<Record<string, true>>({});
+  /** D13 — batch-tracked items, even with no batch in stock yet. */
+  const [batchItems, setBatchItems] = useState<Record<string, true>>({});
   /** D P2 — each garment's sizes and colours, and the row picked on each line. */
   const [variants, setVariants] = useState<Record<string, readonly ItemListRow[]>>({});
   const [picked, setPicked] = useState<Record<string, ItemListRow>>({});
@@ -177,6 +187,7 @@ export function InvoiceLinesSection({
           [row.id]: { part, rack: row.rack ?? undefined },
         }));
       if (row.tracking === 'serial') setSerialItems((current) => ({ ...current, [row.id]: true }));
+      if (row.tracking === 'batch') setBatchItems((current) => ({ ...current, [row.id]: true }));
       // D P6 — design D11: the add-on sheet opens only for an item that has add-ons.
       if (row.addons?.length) setAddonFor({ index, row });
       const coming = row.nextBatch;
@@ -262,7 +273,10 @@ export function InvoiceLinesSection({
       const line = lines?.[index];
       const total = preview.lines[index]?.lineTotal;
       if (!line || total === undefined || !/^\d+(\.\d+)?$/.test(line.qty)) return undefined;
-      return t('sales.scan.camera.line', { qty: formatQuantity(line.qty), amount: formatInr(total) });
+      return t('sales.scan.camera.line', {
+        qty: formatQuantity(line.qty),
+        amount: formatInr(total),
+      });
     },
     [lines, preview.lines, t]
   );
@@ -351,7 +365,7 @@ export function InvoiceLinesSection({
         </UbText>
       ) : null;
       // D P4 — design D1 medical: the batch FEFO will take, with no extra tap.
-      const batch = nextBatch[line.itemId];
+      const batch = stockRule === 'takes' ? nextBatch[line.itemId] : undefined;
       const batchNote = batch ? (
         <UbText variant="caption" tone="accent" data-testid="line-batch">
           {t('sales.line.batch', {
@@ -361,13 +375,14 @@ export function InvoiceLinesSection({
         </UbText>
       ) : null;
       // D P3 — one IMEI per phone on the line.
-      const serialNote = serialItems[line.itemId] ? (
-        <LineSerialsField
-          serials={line.serials ?? []}
-          qty={Math.max(Math.round(Number(line.qty) || 0), 0)}
-          onChange={(next) => setValue(`lines.${index}.serials`, next, { shouldDirty: true })}
-        />
-      ) : null;
+      const serialNote =
+        stockRule === 'takes' && serialItems[line.itemId] ? (
+          <LineSerialsField
+            serials={line.serials ?? []}
+            qty={Math.max(Math.round(Number(line.qty) || 0), 0)}
+            onChange={(next) => setValue(`lines.${index}.serials`, next, { shouldDirty: true })}
+          />
+        ) : null;
       const unitNote = unitCaption ? (
         <UbStack gap={1} data-testid="line-unit">
           <UbText variant="caption" tone="accent">
@@ -406,7 +421,14 @@ export function InvoiceLinesSection({
         </UbText>
       ) : null;
       if (!partyId)
-        return addonNote || batchNote || serialNote || variantNote || partNote || unitNote || stockNote || changedNote ? (
+        return addonNote ||
+          batchNote ||
+          serialNote ||
+          variantNote ||
+          partNote ||
+          unitNote ||
+          stockNote ||
+          changedNote ? (
           <UbStack gap={0}>
             {addonNote}
             {batchNote}
@@ -448,7 +470,24 @@ export function InvoiceLinesSection({
         </UbStack>
       );
     },
-    [lines, partyId, partyName, setValue, listed, usual, unitChoices, partInfo, picked, variants, serialItems, nextBatch, pick, stockWarning, t]
+    [
+      lines,
+      partyId,
+      partyName,
+      setValue,
+      listed,
+      usual,
+      unitChoices,
+      partInfo,
+      picked,
+      variants,
+      serialItems,
+      nextBatch,
+      pick,
+      stockWarning,
+      stockRule,
+      t,
+    ]
   );
 
   const wide = !useIsMobileLayer();
@@ -531,13 +570,19 @@ export function InvoiceLinesSection({
           onClose={() => setAddonFor(null)}
           onAdd={(chosen, qty) => {
             const base = `lines.${addonFor.index}` as const;
-            const each = chosen.reduce((sum, a) => addMoney(sum, a.price), addonFor.row.sellingPrice || '0');
+            const each = chosen.reduce(
+              (sum, a) => addMoney(sum, a.price),
+              addonFor.row.sellingPrice || '0'
+            );
             setValue(`${base}.addons`, chosen, { shouldDirty: true });
             setValue(`${base}.qty`, String(qty), { shouldDirty: true });
             setValue(`${base}.unitPrice`, each, { shouldDirty: true });
             setUsual((current) => ({
               ...current,
-              [addonFor.row.id]: { price: each, inclusive: addonFor.row.taxInclusiveSelling ?? false },
+              [addonFor.row.id]: {
+                price: each,
+                inclusive: addonFor.row.taxInclusiveSelling ?? false,
+              },
             }));
             setAddonFor(null);
           }}
@@ -579,6 +624,17 @@ export function InvoiceLinesSection({
             {t('sales.line.noneYetHint')}
           </UbText>
         </UbStack>
+      )}
+      {stockRule !== 'takes' && hasItems && (
+        <UbText variant="caption" tone="secondary" data-testid="lines-stock-note">
+          {stockRule === 'order'
+            ? t('sales.order.stockNote')
+            : lines.some(
+                  (line) => line.itemId && (serialItems[line.itemId] || batchItems[line.itemId])
+                )
+              ? t('sales.estimate.stockNoteTracked')
+              : t('sales.estimate.stockNote')}
+        </UbText>
       )}
     </UbStack>
   );

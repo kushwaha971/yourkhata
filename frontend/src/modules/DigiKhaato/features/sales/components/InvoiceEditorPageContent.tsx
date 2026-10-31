@@ -688,6 +688,7 @@ export function InvoiceEditorPageContent({
               onSubmitShortcut={requestIssue}
               openLine={openLine}
               onScanned={markScanned}
+              stockRule={order ? 'order' : estimate && !challan ? 'estimate' : 'takes'}
             />
           </UbStack>
           <UbStack gap={3} className="min-w-0" data-testid="invoice-side">

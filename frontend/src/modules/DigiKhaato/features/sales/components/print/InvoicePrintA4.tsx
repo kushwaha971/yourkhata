@@ -229,6 +229,18 @@ export function InvoicePrintA4({
                       <td>{doc.links.challan.ewayBillNumber}</td>
                     </tr>
                   )}
+                  {doc.links.challan.driver && (
+                    <tr>
+                      <th scope="row">{t('sales.challan.driver')}</th>
+                      <td>{doc.links.challan.driver}</td>
+                    </tr>
+                  )}
+                  {doc.links.challan.deliverTo && (
+                    <tr>
+                      <th scope="row">{t('sales.challan.deliverTo')}</th>
+                      <td data-testid="print-deliver-to">{doc.links.challan.deliverTo}</td>
+                    </tr>
+                  )}
                 </>
               )}
               <tr>
