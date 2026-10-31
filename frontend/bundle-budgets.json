@@ -1,5 +1,6 @@
 {
   "//": [
+    "31 Oct 2026, D P5: the bill detail routes moved for the dynamic() EwayBillCard import. Measured + 0.3.",
     "31 Oct 2026, D P3 find by IMEI + D P4 batches: /items/imei and /stock/expiry are new routes at measured + 0.3; the sales and purchase editors moved for the batch caption and LineBatchFields; every route for two nav rows. Measured + 0.3.",
     "31 Oct 2026, D P2 labels + D P3 IMEI: /items/labels is a new route (Print labels with the in-house Code 128 encoder and the shared item search) at measured + 0.3; the sales and purchase editors moved for LineSerialsField; every route for the Print labels nav row. Measured + 0.3.",
     "31 Oct 2026, D P2 (sizes and colours): the sales editors and item routes moved for LineVariantPicker, listVariants and the item form SIZES AND COLOURS group (ItemVariantFields, ItemChipList). Measured + 0.3.",
@@ -1486,7 +1487,7 @@
       "firstLoad": 332.8
     },
     "/sales/challans": {
-      "route": 91.5,
+      "route": 91.9,
       "firstLoad": 334.8
     },
     "/sales/challans/new": {
@@ -1518,7 +1519,7 @@
       "firstLoad": 332.8
     },
     "/sales/orders": {
-      "route": 91.5,
+      "route": 91.9,
       "firstLoad": 334.8
     },
     "/sales/orders/new": {
@@ -1550,7 +1551,7 @@
       "firstLoad": 335.0
     },
     "/sales/invoices/[id]": {
-      "route": 89.4,
+      "route": 89.9,
       "firstLoad": 332.8
     },
     "/sales/estimates": {
@@ -1575,7 +1576,7 @@
     },
     "/sales/credit-notes/new": {
       "route": 155.5,
-      "firstLoad": 398.3
+      "firstLoad": 398.8
     },
     "/sales/credit-notes/[id]": {
       "route": 89.7,
@@ -1599,7 +1600,7 @@
     },
     "/parties/tags": {
       "route": 76.0,
-      "firstLoad": 318.8
+      "firstLoad": 319.1
     },
     "/parties/[id]/statement": {
       "route": 93,
@@ -1647,7 +1648,7 @@
     },
     "/items/masters": {
       "route": 62.5,
-      "firstLoad": 305.3
+      "firstLoad": 305.6
     },
     "/items": {
       "route": 108,
@@ -1687,7 +1688,7 @@
     },
     "/imports/[id]": {
       "route": 60.6,
-      "firstLoad": 303.4
+      "firstLoad": 303.7
     },
     "/admin": {
       "route": 11.3,
@@ -1711,7 +1712,7 @@
     },
     "/settings/data": {
       "route": 67.3,
-      "firstLoad": 310.1
+      "firstLoad": 310.4
     },
     "/purchases/bills/[id]": {
       "route": 78.2,
@@ -1763,7 +1764,7 @@
     },
     "/settings/business-days": {
       "route": 71.6,
-      "firstLoad": 314.4
+      "firstLoad": 314.7
     },
     "/library/catalogue": {
       "route": 89.1,
@@ -1795,11 +1796,11 @@
     },
     "/library/catalogue/categories": {
       "route": 76.1,
-      "firstLoad": 318.9
+      "firstLoad": 319.2
     },
     "/library/catalogue/locations": {
       "route": 76.1,
-      "firstLoad": 318.9
+      "firstLoad": 319.2
     },
     "/library/counter": {
       "route": 86.3,
@@ -1830,7 +1831,7 @@
       "firstLoad": 295.1
     },
     "/d/[token]": {
-      "route": 41.8,
+      "route": 42.2,
       "firstLoad": 285.1
     },
     "/accept-invite/[token]": {
@@ -1859,7 +1860,7 @@
     },
     "/library/attendance": {
       "route": 79.4,
-      "firstLoad": 322.2
+      "firstLoad": 322.5
     },
     "/library/messages": {
       "route": 76.9,
@@ -1907,7 +1908,7 @@
     },
     "/items/price-lists": {
       "route": 66.9,
-      "firstLoad": 309.7
+      "firstLoad": 310.0
     },
     "/login/email": {
       "route": 58.6,

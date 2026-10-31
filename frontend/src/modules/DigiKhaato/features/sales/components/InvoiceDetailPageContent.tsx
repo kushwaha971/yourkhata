@@ -71,9 +71,14 @@ const InvoiceProfitCardLazy = dynamic(
   { ssr: false }
 );
 
+const EwayBillCardLazy = dynamic(() => import('./EwayBillCard').then((m) => m.EwayBillCard), {
+  ssr: false,
+});
+
 const PaymentFormDrawerLazy = dynamic(
   () => import('../../payments/components/PaymentFormDrawer').then((m) => m.PaymentFormDrawer),
-  { ssr: false, loading: () => <UbDrawerLoading /> }
+  { ssr: false,
+  loading: () => <UbDrawerLoading /> }
 );
 
 type DetailKind = 'invoice' | FlowKind;
@@ -343,6 +348,10 @@ function InvoiceDetailScreen({
           {invoice && !draft && doc.status !== 'void' && can('reports.financial.read') && (
             <InvoiceProfitCardLazy id={doc.id} />
           )}
+          {/* D P5 — design D10: the e-way bill file, offered by the server. */}
+          {invoice && !draft && doc.status !== 'void' && can('sales.invoice.write') && (
+            <EwayBillCardLazy id={doc.id} number={doc.number} />
+          )}
         </UbStack>
         <DocumentLinesList doc={doc} />
         <UbStack
@@ -399,6 +408,9 @@ function InvoiceDetailScreen({
 import 'src/i18n/catalogues/salesDetail';
 
 /** A different document must never retain the previous payment/share/print state. */
-export function InvoiceDetailPageContent({ id, kind = 'invoice' }: Readonly<{ id: string; kind?: DetailKind }>): React.JSX.Element {
+export function InvoiceDetailPageContent({
+  id,
+  kind = 'invoice',
+}: Readonly<{ id: string; kind?: DetailKind }>): React.JSX.Element {
   return <InvoiceDetailScreen key={`${kind}:${id}`} id={id} kind={kind} />;
 }

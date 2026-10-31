@@ -171,6 +171,8 @@ export const API_PATHS = {
   // ── sales ─────────────────────────────────────────────────────────────────
   SALES_INVOICES: '/sales/invoices',
   SALES_INVOICE: (id: string) => `/sales/invoices/${seg(id)}`,
+  /** D P5 — transport details and the GST portal's e-way bill file. */
+  SALES_INVOICE_EWAY: (id: string) => `/sales/invoices/${seg(id)}/eway`,
   SALES_INVOICE_ISSUE: (id: string) => `/sales/invoices/${seg(id)}/issue`,
   SALES_INVOICE_VOID: (id: string) => `/sales/invoices/${seg(id)}/void`,
   SALES_INVOICE_SHARE_LINKS: (id: string) => `/sales/invoices/${seg(id)}/share-links`,
