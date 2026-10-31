@@ -56,20 +56,20 @@ WHATSAPP = MessageChannel.WHATSAPP.value
 DEFAULT_TEMPLATES: dict[tuple[str, str, str], str] = {
     # LED-06 — the WhatsApp reminder. Polite Hinglish in `en` (§8), Hindi in `hi`.
     (TEMPLATE_REMINDER_MANUAL, WHATSAPP, "en"): (
-        "Namaste {{party_name}} ji, {{shop}} ka Rs {{balance}} baaki hai{{due_line}}. "
+        "Namaste {{party_name}} ji, {{shop}} ka Rs {{balance}} baaki hai{{for_line}}{{due_line}}. "
         "Kripya bhugtan karein.\n{{upi_line}}{{note_line}}— {{shop}}"
     ),
     (TEMPLATE_REMINDER_MANUAL, WHATSAPP, "hi"): (
-        "नमस्ते {{party_name}} जी, {{shop}} का Rs {{balance}} बाकी है{{due_line}}। "
+        "नमस्ते {{party_name}} जी, {{shop}} का Rs {{balance}} बाकी है{{for_line}}{{due_line}}। "
         "कृपया भुगतान करें।\n{{upi_line}}{{note_line}}— {{shop}}"
     ),
     # The same words through the merchant's own SMS app (`sms:` link) and through
     # a provider. Shorter: SMS is billed per segment.
     (TEMPLATE_REMINDER_MANUAL_SMS, SMS, "en"): (
-        "{{shop}}: Rs {{balance}} is due{{due_line}}. {{pay_line}}{{note_line}}-{{shop}}"
+        "{{shop}}: Rs {{balance}} is due{{for_line}}{{due_line}}. {{pay_line}}{{note_line}}-{{shop}}"
     ),
     (TEMPLATE_REMINDER_MANUAL_SMS, SMS, "hi"): (
-        "{{shop}}: Rs {{balance}} बाकी है{{due_line}}। {{pay_line}}{{note_line}}-{{shop}}"
+        "{{shop}}: Rs {{balance}} बाकी है{{for_line}}{{due_line}}। {{pay_line}}{{note_line}}-{{shop}}"
     ),
     # LED-07 — the automated D-1 / D0 SMS.
     (TEMPLATE_REMINDER_D1, SMS, "en"): (

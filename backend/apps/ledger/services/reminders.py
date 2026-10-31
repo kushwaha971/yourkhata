@@ -190,7 +190,11 @@ def preview_reminder(
     party = _check_remindable(_find_party(ctx, party_id), channel=None, book=book)
     trade = trade_balance(party, book)
     composed = messaging.compose_reminder(
-        tenant=ctx.tenant, party=party, balance=trade, note=_clean_note(note)
+        tenant=ctx.tenant,
+        party=party,
+        balance=trade,
+        note=_clean_note(note),
+        business_book=book == "shop",
     )
     return {
         "party_id": str(party.id),
@@ -337,6 +341,7 @@ def send_reminder(*, ctx: Ctx, reminder_id: Any, bulk: bool = False, text: Any =
             balance=balance,
             note=reminder.note,
             reference=_reference(reminder.id),
+            business_book=reminder.module == "sales",
         ),
         text,
     )
@@ -418,6 +423,7 @@ def bulk_reminders(*, ctx: Ctx, payload: dict) -> dict:
             balance=trade,
             note=note,
             reference=_reference(reminder.id),
+            business_book=book == "shop",
         )
         items.append(
             {

@@ -47,6 +47,10 @@ FRAGMENTS: dict[str, dict[str, str]] = {
         "pay_at_shop": "Please pay at the shop. ",
         "note_line": "{note}\n",
         "sms_note": "{note} ",
+        # Design D15 (owner's choice, 31 Oct): the Business book's reminder says
+        # what the money is for, in the business's own words.
+        "for_medical": ", dawaiyon ka",
+        "for_auto_parts": ", parts ka",
     },
     "hi": {
         "due_line": " (वसूली तारीख {date})",
@@ -55,6 +59,8 @@ FRAGMENTS: dict[str, dict[str, str]] = {
         "pay_at_shop": "कृपया दुकान पर भुगतान करें। ",
         "note_line": "{note}\n",
         "sms_note": "{note} ",
+        "for_medical": ", दवाइयों का",
+        "for_auto_parts": ", पार्ट्स का",
     },
 }
 
@@ -152,6 +158,7 @@ def compose_reminder(
     note: str = "",
     reference: str | None = None,
     today: dt.date | None = None,
+    business_book: bool = False,
 ) -> ComposedReminder:
     """The WhatsApp text and the SMS-app text for one manual reminder (LED-06 §17)."""
     locale = message_locale(tenant)
@@ -169,6 +176,9 @@ def compose_reminder(
         "due_line": due_line,
         "upi_line": frag["upi_line"].format(link=link) if link else "",
         "note_line": frag["note_line"].format(note=note) if note else "",
+        "for_line": (
+            frag.get(f"for_{getattr(tenant, 'business_type', '')}", "") if business_book else ""
+        ),
     }
     wa_template = resolve_template(
         tenant=tenant, code=TEMPLATE_REMINDER_MANUAL, channel="whatsapp", locale=locale

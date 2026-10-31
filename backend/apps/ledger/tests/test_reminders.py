@@ -270,3 +270,19 @@ def test_another_tenants_reminder_is_not_found(tenant: Any, other_tenant: Any, a
         == 404
     )
     assert _create(mine, theirs).status_code == 404
+
+
+def test_a_business_book_reminder_says_what_the_money_is_for(tenant: Any, owes: Any) -> None:
+    """Design D15 (owner's choice, 31 Oct): a medical store's Business-book
+    reminder says the money is for medicines; the Money book's never does,
+    because a personal loan is not for medicines."""
+    from apps.notifications.services.whatsapp_text import compose_reminder
+
+    tenant.business_type = "medical"
+    shop = compose_reminder(tenant=tenant, party=owes, balance=Decimal("860"), business_book=True)
+    personal = compose_reminder(tenant=tenant, party=owes, balance=Decimal("860"))
+    assert "baaki hai, dawaiyon ka" in shop.text
+    assert "dawaiyon" not in personal.text
+    tenant.business_type = "kirana"
+    plain = compose_reminder(tenant=tenant, party=owes, balance=Decimal("860"), business_book=True)
+    assert plain.text == personal.text
