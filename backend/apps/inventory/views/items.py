@@ -603,3 +603,24 @@ class SerialView(_InventoryView, APIView):
         if found is None:
             raise NotFound(f"No IMEI / serial {code}.")
         return StandardResponse.ok(found)
+
+
+class ExpiryView(_InventoryView, APIView):
+    """D P4 — design D7 "Expiry": batches expired, or expiring within 30/60/90 days."""
+
+    permission_classes = [IsAuthenticated, ModuleEnabled(ModuleCode.INVENTORY), StockReadPermissions]
+
+    def get(self, request: Any) -> Any:
+        from apps.inventory.services.batches import expiry_rows
+
+        within = request.query_params.get("within") or "30"
+        today = tenant_today(self.get_tenant())
+        rows = expiry_rows(tenant=self.get_tenant(), within=within, today=today)
+        counts = {
+            key: len(expiry_rows(tenant=self.get_tenant(), within=key, today=today))
+            for key in ("expired", "30", "60", "90")
+        }
+        if not _valuation_visible(request):
+            for row in rows:
+                row.pop("value", None)
+        return StandardResponse.ok(rows, meta={"counts": counts})

@@ -211,6 +211,10 @@ def record_bill(
     from apps.inventory.services import serials
 
     serials.receive(ctx=ctx, document=document, rows=rows)
+    # D P4 — each line's batch grows by what was bought.
+    from apps.inventory.services import batches
+
+    batches.receive(ctx=ctx, document=document, rows=rows)
     set_last_purchase_cost(tenant=tenant, costs=last_costs)
 
     document.number = allocate_number(

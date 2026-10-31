@@ -217,6 +217,8 @@ class SalesDocumentLine(models.Model):
     unit_factor = QuantityField(default=1)
     #: D P3 — the IMEIs / serials of a tracked item on this line, one per piece.
     serials = models.JSONField(default=list, blank=True)
+    #: D P4 — the batches on this line: [{batch_no, expiry, mrp?, qty}].
+    batches = models.JSONField(default=list, blank=True)
     unit_price = UnitCostField(default=0)
     tax_inclusive = models.BooleanField(default=False)
     discount_type = models.CharField(

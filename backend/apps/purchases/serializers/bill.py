@@ -29,6 +29,8 @@ class BillLineInputSerializer(serializers.Serializer):
     serials = serializers.ListField(
         child=serializers.CharField(max_length=40), required=False, max_length=500
     )
+    #: D P4 — a medicine's batch on this line.
+    batches = serializers.ListField(child=serializers.DictField(), required=False, max_length=5)
     unit_cost = serializers.DecimalField(
         max_digits=14, decimal_places=4, required=False, allow_null=True
     )
@@ -126,6 +128,7 @@ class BillLineReadSerializer(serializers.ModelSerializer):
             "unit_code",
             "unit_factor",
             "serials",
+            "batches",
             "unit_cost",
             "discount_type",
             "discount_value",

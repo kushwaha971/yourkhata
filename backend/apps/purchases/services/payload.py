@@ -243,6 +243,7 @@ def _line_as_payload(line: PurchaseDocumentLine) -> dict:
         "qty": line.qty,
         "unit_code": line.unit_code,
         "serials": list(line.serials or []),
+        "batches": list(line.batches or []),
         "unit_cost": line.unit_cost,
         "discount_type": line.discount_type,
         "discount_value": line.discount_value,

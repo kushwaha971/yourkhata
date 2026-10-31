@@ -31,6 +31,8 @@ class LineInputSerializer(serializers.Serializer):
     serials = serializers.ListField(
         child=serializers.CharField(max_length=40), required=False, max_length=500
     )
+    #: D P4 — a medicine's batch on this line.
+    batches = serializers.ListField(child=serializers.DictField(), required=False, max_length=5)
     unit_price = serializers.DecimalField(
         max_digits=14, decimal_places=4, required=False, allow_null=True
     )
@@ -124,6 +126,7 @@ class LineReadSerializer(serializers.ModelSerializer):
             "unit_code",
             "unit_factor",
             "serials",
+            "batches",
             "unit_price",
             "tax_inclusive",
             "discount_type",

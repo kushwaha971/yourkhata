@@ -657,3 +657,26 @@ class Serial(TenantModel):
             models.UniqueConstraint(fields=["tenant", "item", "serial"], name="uq_serial_item"),
         ]
         indexes = [models.Index(fields=["tenant", "serial"], name="ix_serial_tenant_serial")]
+
+
+class Batch(TenantModel):
+    """D P4 — one batch of a medicine: its number, expiry, MRP and how many
+    pieces of it are left (design D6 / D7). Kept beside the stock engine, as
+    IMEIs are: the item's quantity and average cost stay where they are, and
+    a batch only says which strips are which. See services/batches.py."""
+
+    item = models.ForeignKey(Item, on_delete=models.RESTRICT, related_name="batches")
+    batch_no = models.CharField(max_length=32)
+    expiry = models.DateField()
+    mrp = MoneyField(null=True, blank=True)
+    qty = QuantityField(default=0)
+    supplier_id = models.UUIDField(null=True, blank=True)
+
+    class Meta:
+        db_table = "inventory_batch"
+        verbose_name = "batch"
+        verbose_name_plural = "batches"
+        constraints = [
+            models.UniqueConstraint(fields=["tenant", "item", "batch_no"], name="uq_batch_item_no"),
+        ]
+        indexes = [models.Index(fields=["tenant", "expiry"], name="ix_batch_tenant_expiry")]

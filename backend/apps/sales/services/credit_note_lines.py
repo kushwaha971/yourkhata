@@ -222,6 +222,8 @@ def build_return_lines(
                     [s for s in (raw.get("serials") or []) if s in (source.serials or [])]
                     or list(source.serials or [])[: int(qty)]
                 ),
+                # D P4 — back into the batches the bill took, earliest first.
+                "batches": _returned_batches(source, qty),
                 "unit_price": source.unit_price,
                 "tax_inclusive": source.tax_inclusive,
                 "discount_type": source.discount_type,
@@ -320,3 +322,17 @@ def stored_return_request(document: Any) -> list[dict]:
         else:
             request.append({"against_line_id": str(line.against_line_id), "qty": line.qty})
     return request
+
+
+def _returned_batches(source: Any, qty: Decimal) -> list[dict]:
+    """D P4 — `qty` (line units) back to the batches the bill line took."""
+    left = qty * Decimal(source.unit_factor or 1)
+    out: list[dict] = []
+    for entry in source.batches or []:
+        if left <= 0:
+            break
+        take = min(Decimal(str(entry.get("qty") or "0")), left)
+        if take > 0:
+            out.append({**entry, "qty": str(take)})
+            left -= take
+    return out

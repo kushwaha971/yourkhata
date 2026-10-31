@@ -68,6 +68,11 @@ def restock_rows(ctx: Ctx, document: Any, rows: list[dict]) -> list[str]:
     serials.put_back(
         ctx=ctx, item_serials=[(row.get("item"), list(row.get("serials") or [])) for row in rows]
     )
+    from apps.inventory.services import batches
+
+    batches.put_back(
+        ctx=ctx, item_batches=[(row.get("item"), list(row.get("batches") or [])) for row in rows]
+    )
     return [str(p.movement.id) for p in post_movements(ctx=ctx, lines=lines)]
 
 
@@ -120,5 +125,11 @@ def reverse_document_stock(ctx: Ctx, document: Any) -> list[str]:
         serials.put_back(
             ctx=ctx,
             item_serials=[(line.item, list(line.serials or [])) for line in document.lines.all()],
+        )
+        from apps.inventory.services import batches
+
+        batches.put_back(
+            ctx=ctx,
+            item_batches=[(line.item, list(line.batches or [])) for line in document.lines.all()],
         )
     return [str(p.movement.id) for p in post_movements(ctx=ctx, lines=lines)]

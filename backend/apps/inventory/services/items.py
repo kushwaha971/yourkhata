@@ -355,8 +355,8 @@ def _validate(*, ctx: Ctx, data: dict, item: Item | None) -> tuple[dict, Errors,
     # D P3 — IMEI / serial tracking and the warranty a sale starts.
     if has("tracking"):
         tracking = data.get("tracking") or "none"
-        if tracking not in ("none", "serial"):
-            errors.add("tracking", "Choose none or serial.", "invalid")
+        if tracking not in ("none", "serial", "batch"):
+            errors.add("tracking", "Choose none, serial or batch.", "invalid")
         elif item is not None and tracking != item.tracking and StockMovement.objects.filter(item=item).exists():
             errors.add("tracking", "Tracking can't change once stock has moved.", "tracking_locked")
         cleaned["tracking"] = tracking
@@ -569,7 +569,7 @@ def create_item(*, ctx: Ctx, payload: dict) -> dict:
     """FR-1/FR-2/FR-7 — `{item, warnings}`; opening stock in the same transaction."""
     cleaned, errors, warnings = _validate(ctx=ctx, data=payload, item=None)
     opening = None
-    if payload.get("opening_stock") and cleaned.get("tracking") == "serial":
+    if payload.get("opening_stock") and cleaned.get("tracking") in ("serial", "batch"):
         # D P3 — every phone in stock has its IMEI; an opening quantity has none.
         errors.add(
             "opening_stock",

@@ -145,14 +145,56 @@ def find(*, tenant: Any, code: str) -> dict | None:
     row = Serial.objects.filter(tenant=tenant, serial=text).select_related("item").first()
     if row is None:
         return None
+    from apps.purchases.models import PurchaseDocument
+    from apps.sales.models import SalesDocument
+
+    sale = (
+        SalesDocument.objects.filter(tenant=tenant, pk=row.sales_document_id).select_related("party").first()
+        if row.sales_document_id
+        else None
+    )
+    bought = (
+        PurchaseDocument.objects.filter(tenant=tenant, pk=row.purchase_document_id)
+        .select_related("party")
+        .first()
+        if row.purchase_document_id
+        else None
+    )
+
+    def who(party: Any, walk_in: str | None = None, mobile: str | None = None) -> dict | None:
+        if party is not None:
+            return {"name": party.name, "mobile": getattr(party, "mobile", None)}
+        if walk_in or mobile:
+            return {"name": walk_in or "", "mobile": mobile}
+        return None
+
     return {
         "serial": row.serial,
         "status": row.status,
         "item": {"id": str(row.item_id), "name": row.item.name},
-        "purchase_document_id": str(row.purchase_document_id) if row.purchase_document_id else None,
-        "sales_document_id": str(row.sales_document_id) if row.sales_document_id else None,
         "sold_on": row.sold_on.isoformat() if row.sold_on else None,
         "warranty_until": row.warranty_until.isoformat() if row.warranty_until else None,
+        # D8 — "Sold to", "Bill", "Bought from".
+        "sale": (
+            {
+                "id": str(sale.id),
+                "number": sale.number,
+                "date": sale.document_date.isoformat(),
+                "customer": who(sale.party, sale.walk_in_name, sale.walk_in_mobile),
+            }
+            if sale is not None
+            else None
+        ),
+        "purchase": (
+            {
+                "id": str(bought.id),
+                "number": bought.number,
+                "date": bought.document_date.isoformat(),
+                "supplier": who(bought.party),
+            }
+            if bought is not None
+            else None
+        ),
     }
 
 

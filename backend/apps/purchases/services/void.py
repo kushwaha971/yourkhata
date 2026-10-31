@@ -104,6 +104,12 @@ def _reverse_stock(
             ctx=ctx,
             item_serials=[(line.item, list(line.serials or [])) for line in document.lines.all()],
         )
+        from apps.inventory.services import batches
+
+        batches.take_out(
+            ctx=ctx,
+            item_batches=[(line.item, list(line.batches or [])) for line in document.lines.all()],
+        )
     return post_movements(ctx=ctx, lines=lines)
 
 

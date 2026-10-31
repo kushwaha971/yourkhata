@@ -130,6 +130,9 @@ def _item_row(item: Item) -> dict:
         # D P3 — IMEI / serial tracking and the warranty months a sale starts.
         "tracking": item.tracking,
         "warranty_months": item.warranty_months,
+        # D P4 — the batch a sale would take next (earliest unexpired with stock),
+        # for the bill line's caption. One query, only for batch-tracked items.
+        "next_batch": _next_batch(item) if item.tracking == "batch" else None,
         "fits_vehicle": item.fits_vehicle,
         "updated_at": item.updated_at.isoformat(),
     }
@@ -315,3 +318,15 @@ def adjustment_dict(adjustment: StockAdjustment, movements: list[StockMovement])
         "created_by": _user(adjustment.created_by),
         "created_at": adjustment.created_at.isoformat(),
     }
+
+
+def _next_batch(item: Item) -> dict | None:
+    from apps.common.dates import tenant_today
+    from apps.inventory.models import Batch
+
+    batch = (
+        Batch.objects.filter(item=item, qty__gt=0, expiry__gte=tenant_today(item.tenant))
+        .order_by("expiry", "batch_no")
+        .first()
+    )
+    return {"batch_no": batch.batch_no, "expiry": batch.expiry.isoformat()} if batch else None

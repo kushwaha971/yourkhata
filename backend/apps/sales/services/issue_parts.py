@@ -69,6 +69,10 @@ def post_stock(
     from apps.inventory.services import serials
 
     serials.sell(ctx=ctx, document=document, rows=rows)
+    # D P4 — earliest expiry first; the line keeps which batches it took.
+    from apps.inventory.services import batches
+
+    batches.allocate(ctx=ctx, document=document, rows=rows)
     if warnings is not None:
         for row in posted:
             if row.date_shortage:

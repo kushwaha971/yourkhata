@@ -34,4 +34,5 @@ register(
     TenantTable("inventory.StockTransfer", export_name="stock_transfers.csv"),
     TenantTable("inventory.Product", export_name="products.csv"),
     TenantTable("inventory.Serial", export_name="serials.csv"),
+    TenantTable("inventory.Batch", export_name="batches.csv"),
 )

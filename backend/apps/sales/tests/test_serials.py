@@ -51,6 +51,7 @@ def test_a_phone_is_sold_once_and_its_warranty_starts(owner: Any, phone: Any, ma
     assert sold.status == "sold" and sold.warranty_until is not None
     found = owner.get(reverse("v1:serial-detail", args=["IMEI111"])).json()["data"]
     assert found["status"] == "sold" and found["item"]["name"] == "Redmi 13C"
+    assert found["sale"]["number"] and found["sale"]["customer"]["name"] == party.name
     # The same phone on a second bill is refused.
     again = draft(owner, party_id=str(party.id), lines=[line(phone, "1", serials=["IMEI111"])]).json()["data"]
     refused = issue(owner, again["id"], version=again["version"])

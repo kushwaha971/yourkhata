@@ -198,6 +198,8 @@ class PurchaseDocumentLine(models.Model):
     unit_factor = QuantityField(default=1)
     #: D P3 — the IMEIs / serials of a tracked item on this line, one per piece.
     serials = models.JSONField(default=list, blank=True)
+    #: D P4 — the batches on this line: [{batch_no, expiry, mrp?, qty}].
+    batches = models.JSONField(default=list, blank=True)
     unit_cost = UnitCostField(default=0)
     discount_type = models.CharField(
         max_length=8, choices=DiscountType.choices, null=True, blank=True

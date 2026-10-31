@@ -10,6 +10,7 @@ from apps.inventory.views.items import (
     ItemViewSet,
     LowStockView,
     StockAdjustmentViewSet,
+    ExpiryView,
     SerialView,
     StockSummaryView,
     UnitViewSet,
@@ -32,5 +33,6 @@ urlpatterns = [
     path("stock/summary", StockSummaryView.as_view(), name="stock-summary"),
     path("stock/low", LowStockView.as_view(), name="stock-low"),
     path("serials/<str:code>", SerialView.as_view(), name="serial-detail"),
+    path("stock/expiry", ExpiryView.as_view(), name="stock-expiry"),
     *router.urls,
 ]

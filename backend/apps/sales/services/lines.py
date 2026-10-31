@@ -176,6 +176,12 @@ def build_lines(
                 "qty": qty,
                 "unit_code": unit_code,
                 "unit_factor": unit.factor,
+                # D P4 — a batch the counter chose; otherwise FEFO picks at issue.
+                "batches": [
+                    {"batch_no": str(b.get("batch_no") or "").upper()}
+                    for b in (raw.get("batches") or [])
+                    if isinstance(b, dict) and b.get("batch_no")
+                ][:5],
                 # D P3 — a tracked item's IMEIs, one per piece on a strict save.
                 "serials": line_serials(
                     raw.get("serials"),
