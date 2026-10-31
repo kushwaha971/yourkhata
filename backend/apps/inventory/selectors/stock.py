@@ -66,9 +66,10 @@ def summary_queryset(
             )
         )
 
-    scoped = StockMovement.objects.filter(
-        item=OuterRef("pk"), location_id=location_id, movement_date__lte=as_of
-    )
+    scoped = StockMovement.objects.filter(item=OuterRef("pk"), movement_date__lte=as_of)
+    # D P1c — one place, or (None) the whole business.
+    if location_id is not None:
+        scoped = scoped.filter(location_id=location_id)
     qty_asof = Subquery(
         scoped.values("item").annotate(total=Sum("qty")).values("total")[:1], output_field=QTY
     )

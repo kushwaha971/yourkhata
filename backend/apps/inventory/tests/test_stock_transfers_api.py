@@ -105,3 +105,21 @@ def test_staff_cannot_move_stock(api_as: Any, tenant: Any, make_item: Any, main:
     shop = str(default_location(tenant).id)
     assert move(staff, shop, shop, [{"item_id": str(item.id), "qty": "1"}]).status_code == 403
     assert staff.get(reverse("v1:location-list")).status_code == 200
+
+
+def test_lists_show_the_whole_business_or_one_godown(owner: Any, tenant: Any, make_item: Any) -> None:
+    """Before this, every list read MAIN only: 30 moved to the godown vanished
+    from the Items list and the stock value. Without `location_id` they show
+    every place summed; with it, one place."""
+    parle = make_item("Parle-G", opening=("100", "40"))
+    shop = str(default_location(tenant).id)
+    godown = add_place(owner, "Godown")["id"]
+    move(owner, shop, godown, [{"item_id": str(parle.id), "qty": "30"}])
+    row = owner.get(reverse("v1:item-list") + "?q=Parle").json()["data"][0]
+    assert (row["on_hand"], row["avg_cost"]) == ("100.000", "40.0000")
+    summary = owner.get(reverse("v1:stock-summary")).json()["data"]
+    assert [r["on_hand"] for r in summary if r["item"]["name"] == "Parle-G"] == ["100.000"]
+    at_godown = owner.get(reverse("v1:item-list") + f"?q=Parle&location_id={godown}").json()["data"][0]
+    assert at_godown["on_hand"] == "30.000"
+    bad = owner.get(reverse("v1:item-list") + "?location_id=01a18dba-0000-7000-8000-000000000000")
+    assert bad.status_code == 400

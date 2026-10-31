@@ -9,6 +9,7 @@ from __future__ import annotations
 import datetime as dt
 from typing import Any
 
+from django.core.exceptions import ValidationError as DjangoValidationError
 from django.db.models import F
 from rest_framework import viewsets
 from rest_framework.decorators import action
@@ -122,7 +123,21 @@ class _InventoryView:
         return Ctx.from_request(self.request)
 
     def location_id(self) -> Any:
-        return default_location(self.get_tenant()).id
+        """D P1c — `?location_id=` reads one place; without it, the whole
+        business (every place summed), which is what the Items list, the item
+        page and Stock summary show once a godown exists."""
+        raw = self.request.query_params.get("location_id")
+        if raw:
+            from apps.inventory.models import Location
+
+            try:
+                place = Location.objects.filter(tenant=self.get_tenant(), pk=raw).first()
+            except (ValueError, TypeError, DjangoValidationError):
+                place = None
+            if place is None:
+                raise ValidationFailed({"location_id": ["Choose one of your godowns."]})
+            return place.id
+        return None
 
 
 #: IMP-02 FR-2's `items` resource. Cost and value columns need

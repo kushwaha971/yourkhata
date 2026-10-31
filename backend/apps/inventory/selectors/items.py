@@ -18,14 +18,16 @@ from django.db.models import (
     DecimalField,
     ExpressionWrapper,
     F,
+    Max,
     OuterRef,
     Q,
     QuerySet,
     Subquery,
+    Sum,
     Value,
     When,
 )
-from django.db.models.functions import Coalesce, Round
+from django.db.models.functions import Coalesce, NullIf, Round
 
 from apps.inventory.constants import (
     MOVEMENTS_RECENT,
@@ -43,9 +45,34 @@ MONEY = DecimalField(max_digits=16, decimal_places=2)
 
 
 def _stock_subquery(field: str, location_id: Any) -> Subquery:
+    """One place's figure, or (D P1c, `location_id=None`) the whole business's:
+    stock summed over every place, and the average as total value ÷ total qty,
+    so a godown never hides stock from the Items list or the stock value."""
+    if location_id is not None:
+        return Subquery(
+            ItemStock.objects.filter(item=OuterRef("pk"), location_id=location_id).values(field)[
+                :1
+            ],
+            output_field=QTY if field == "on_hand" else COST,
+        )
+    rows = ItemStock.objects.filter(item=OuterRef("pk")).values("item")
+    if field == "on_hand":
+        return Subquery(rows.annotate(total=Sum("on_hand")).values("total")[:1], output_field=QTY)
     return Subquery(
-        ItemStock.objects.filter(item=OuterRef("pk"), location_id=location_id).values(field)[:1],
-        output_field=QTY if field == "on_hand" else COST,
+        rows.annotate(
+            avg=Coalesce(
+                Round(
+                    ExpressionWrapper(
+                        Sum("stock_value") / NullIf(Sum("on_hand"), Value(Decimal("0"))),
+                        output_field=COST,
+                    ),
+                    4,
+                ),
+                Max("avg_cost"),
+                output_field=COST,
+            )
+        ).values("avg")[:1],
+        output_field=COST,
     )
 
 
