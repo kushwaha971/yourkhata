@@ -170,3 +170,23 @@ export const documentTotalRows = (doc: SalesDocument, t: TranslateFn): [string, 
 /** Credit-note reductions are separate from cash received. */
 export const documentCredited = (doc: SalesDocument): string =>
   subtractMoney(subtractMoney(doc.grandTotal, doc.amountPaid), doc.amountDue);
+
+export type BusinessColumn = 'batch' | 'imei';
+
+export function businessColumn(doc: SalesDocument): BusinessColumn | null {
+  if (doc.lines.some((line) => (line.batches?.length ?? 0) > 0)) return 'batch';
+  if (doc.lines.some((line) => (line.serials?.length ?? 0) > 0)) return 'imei';
+  return null;
+}
+
+/** "DL3990 · 03/27" per batch taken; IMEIs one after another. */
+export function extraCell(line: SalesDocumentLine, column: BusinessColumn): string {
+  if (column === 'imei') return (line.serials ?? []).join(', ');
+  return (line.batches ?? [])
+    .map((batch) =>
+      batch.expiry
+        ? `${batch.batchNo} · ${batch.expiry.slice(5, 7)}/${batch.expiry.slice(2, 4)}`
+        : batch.batchNo
+    )
+    .join(', ');
+}

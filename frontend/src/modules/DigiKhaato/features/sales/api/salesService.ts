@@ -35,6 +35,13 @@ const toLine = (row: Wire): SalesDocumentLine => ({
   qty: s(row.qty),
   unitCode: s(row.unit_code),
   serials: Array.isArray(row.serials) ? (row.serials as unknown[]).map(String) : [],
+  batches: Array.isArray(row.batches)
+    ? (row.batches as Record<string, unknown>[]).map((b) => ({
+        batchNo: String(b.batch_no ?? ''),
+        expiry: b.expiry ? String(b.expiry) : null,
+        qty: String(b.qty ?? ''),
+      }))
+    : [],
   addons: Array.isArray(row.addons)
     ? (row.addons as Record<string, unknown>[]).map((a) => ({
         name: String(a.name ?? ''),

@@ -256,3 +256,34 @@ it.each(['A4', '80 mm'] as const)('prints a rounding down with a true minus sign
   expect(screen.getByText(size === 'A4' ? '−₹0.47' : '−0.47')).toBeInTheDocument();
   expect(screen.queryByText(/^-₹?0\.47$/)).toBeNull();
 });
+
+it('D14: a medicine bill prints the batch and expiry each line took, and a plain bill does not', () => {
+  // A chemist must be able to tell a customer which batch they were sold.
+  const plain = makeDocument();
+  const doc: SalesDocument = {
+    ...plain,
+    lines: plain.lines.map((line, index) =>
+      index === 0
+        ? { ...line, batches: [{ batchNo: 'DL3990', expiry: '2027-03-31', qty: '1' }] }
+        : line
+    ),
+  };
+  const { unmount } = renderWithProviders(<A4 doc={doc} />);
+  expect(lineHeaders()).toContain('Batch · Exp');
+  expect(within(screen.getByTestId('print-lines')).getByText('DL3990 · 03/27')).toBeInTheDocument();
+  unmount();
+  renderWithProviders(<A4 doc={plain} />);
+  expect(lineHeaders()).not.toContain('Batch · Exp');
+});
+
+it('D14: a phone bill prints its IMEI on the 80 mm slip', () => {
+  const plain = makeDocument();
+  const doc: SalesDocument = {
+    ...plain,
+    lines: plain.lines.map((line, index) =>
+      index === 0 ? { ...line, serials: ['356938035643809'] } : line
+    ),
+  };
+  renderWithProviders(<Thermal doc={doc} />);
+  expect(screen.getByText(/356938035643809/)).toBeInTheDocument();
+});

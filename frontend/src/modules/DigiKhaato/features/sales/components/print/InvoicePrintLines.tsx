@@ -5,7 +5,16 @@ import { Fragment } from 'react';
 import type { TranslateFn } from 'src/hooks/useTranslation';
 import { formatAmount } from 'src/utils/money';
 
-import { halfRate, hasCess, lineTotals, pct, trimQty, type TaxColumns } from './printModel';
+import {
+  businessColumn,
+  extraCell,
+  halfRate,
+  hasCess,
+  lineTotals,
+  pct,
+  trimQty,
+  type TaxColumns,
+} from './printModel';
 
 import type { SalesDocument } from '../../types/sales.types';
 
@@ -40,6 +49,9 @@ export function InvoicePrintLines({
   // A tax heading spans its rate and amount, so the plain columns span two rows.
   const taxRows = columns === 'none' ? 1 : 2;
   const sums = lineTotals(doc.lines);
+  // Design D14: the business's own column — the batches a medicine line took,
+  // or a phone's IMEIs — only when a line on this document carries them.
+  const extra = businessColumn(doc);
   return (
     <>
       <ol
@@ -53,6 +65,9 @@ export function InvoicePrintLines({
                 {line.lineNo}. {line.description}
               </p>
               {line.hsnSac && <p className="text-[0.625rem]">HSN/SAC {line.hsnSac}</p>}
+              {extra && extraCell(line, extra) && (
+                <p className="text-[0.625rem]">{`${t(`sales.print.col.${extra}`)} ${extraCell(line, extra)}`}</p>
+              )}
               <p>
                 {`${trimQty(line.qty)} ${line.unitCode} × ${formatAmount(line.unitPrice)}`}
                 {line.discountAmount !== '0.00' &&
@@ -85,6 +100,11 @@ export function InvoicePrintLines({
               {t('sales.line.description')}
             </th>
             <th rowSpan={taxRows}>{t('sales.print.hsn')}</th>
+            {extra && (
+              <th rowSpan={taxRows} data-col={extra}>
+                {t(`sales.print.col.${extra}`)}
+              </th>
+            )}
             <th rowSpan={taxRows}>{t('sales.line.qty')}</th>
             <th rowSpan={taxRows}>{t('sales.line.rate')}</th>
             <th rowSpan={taxRows}>{t('sales.line.discount')}</th>
@@ -126,6 +146,7 @@ export function InvoicePrintLines({
               <td className="text-center">{line.lineNo}</td>
               <td className="text-left">{line.description}</td>
               <td className="text-center">{line.hsnSac || '—'}</td>
+              {extra && <td className="text-left">{extraCell(line, extra) || '—'}</td>}
               <td className="whitespace-nowrap text-right">
                 {trimQty(line.qty)} {line.unitCode}
               </td>
@@ -162,6 +183,7 @@ export function InvoicePrintLines({
             <td />
             <td className="text-left">{t('sales.print.total')}</td>
             <td />
+            {extra && <td />}
             <td className="whitespace-nowrap text-right">
               {sums.qty !== null ? `${sums.qty} ${doc.lines[0]?.unitCode ?? ''}` : ''}
             </td>

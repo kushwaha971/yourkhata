@@ -14,7 +14,16 @@ import {
   notTaxInvoiceId,
 } from '../../view-model/invoiceDisplay';
 
-import { pct, taxColumns, taxSummary, thermalName, trimQty, watermark } from './printModel';
+import {
+  businessColumn,
+  extraCell,
+  pct,
+  taxColumns,
+  taxSummary,
+  thermalName,
+  trimQty,
+  watermark,
+} from './printModel';
 
 import type { SalesDocument, UpiIntent } from '../../types/sales.types';
 
@@ -39,6 +48,7 @@ export function InvoicePrintThermal80({
 }>): React.JSX.Element {
   const columns = taxColumns(doc);
   const mark = watermark(doc);
+  const extra = businessColumn(doc);
   const supplier = doc.supplier;
   const who = doc.partySnapshot?.name || doc.walkInName || t('sales.walkIn.customer');
   const row = (label: string, value: string, strong = false) => (
@@ -82,9 +92,11 @@ export function InvoicePrintThermal80({
         {t('sales.print.to')}: {thermalName(who)}
       </p>
       <p className="border-b border-dashed border-black" />
+      {doc.vehicle?.number && <p>{`${t('sales.editor.vehicleNo')}: ${doc.vehicle.number}`}</p>}
       {doc.lines.map((line) => (
         <div key={line.lineNo} className="py-0.5">
           <p>{thermalName(line.description)}</p>
+          {extra && extraCell(line, extra) && <p>{`  ${extraCell(line, extra)}`}</p>}
           <p className="flex justify-between">
             <span>
               {trimQty(line.qty)} {line.unitCode} x {formatAmount(line.unitPrice)}

@@ -429,6 +429,8 @@
   "sales.print.bankName": "बैंक",
   "sales.print.billTo": "बिल प्राप्तकर्ता",
   "sales.print.branch": "शाखा",
+  "sales.print.col.batch": "बैच · एक्सपायरी",
+  "sales.print.col.imei": "IMEI",
   "sales.print.computerGenerated": "यह कंप्यूटर से बना दस्तावेज़ है।",
   "sales.print.credited": "घटाएँ: क्रेडिट नोट",
   "sales.print.declaration": "हम घोषित करते हैं कि यह दस्तावेज़ बताए गए माल या सेवाओं की वास्तविक कीमत दिखाता है और सभी विवरण सही हैं।",

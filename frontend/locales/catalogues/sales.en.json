@@ -429,6 +429,8 @@
   "sales.print.bankName": "Bank",
   "sales.print.billTo": "Bill to",
   "sales.print.branch": "Branch",
+  "sales.print.col.batch": "Batch · Exp",
+  "sales.print.col.imei": "IMEI",
   "sales.print.computerGenerated": "This is a computer-generated document.",
   "sales.print.credited": "Less: credit notes",
   "sales.print.declaration": "We declare that this document shows the actual price of the goods or services described and that all particulars are true and correct.",

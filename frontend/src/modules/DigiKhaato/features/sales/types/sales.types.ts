@@ -120,6 +120,12 @@ export interface SalesDocumentLine {
   readonly unitCode: string;
   /** D P3 — IMEI / serial numbers on the line. */
   readonly serials?: readonly string[];
+  /** D P4 — the batches an issued line took (earliest expiry first). */
+  readonly batches?: readonly {
+    readonly batchNo: string;
+    readonly expiry: string | null;
+    readonly qty: string;
+  }[];
   /** D P6 — the add-ons on the line. */
   readonly addons?: readonly { readonly name: string; readonly price: string }[];
   readonly unitPrice: string;

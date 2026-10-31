@@ -1095,6 +1095,7 @@
     "sharedApp": 115.9
   },
   "//routes": [
+    "31 Oct 2026, D14 (the print's batch / IMEI column and vehicle header): raised to measured + 0.3: /sales/invoices/[id]/edit firstLoad 426.1; /sales/challans/new firstLoad 426.1; /sales/orders/new firstLoad 426.1; /sales/invoices/[id] route 90.2.",
     "31 Oct 2026, D13 (challan Driver / person and Deliver to, the estimate and order stock note): raised to measured + 0.3: /sales/challans/[id]/edit firstLoad 426.0; /sales/orders/[id]/edit firstLoad 426.0; /sales/estimates/[id]/edit route 182.9; /sales/estimates/[id]/edit firstLoad 426.0; /sales/invoices/[id]/edit route 182.9; /sales/challans/new route 182.9; /sales/orders/new route 182.9; /sales/estimates/new route 182.9; /sales/invoices/new route 182.9; /sales/credit-notes/new firstLoad 399.2.",
     "31 Oct 2026, D12 Home strip (HomeStrip and its service on Home): raised to measured + 0.3: /sales/invoices/[id]/edit firstLoad 425.8; /sales/challans/new firstLoad 425.8; /sales/orders/new firstLoad 425.8; /sales/estimates/new firstLoad 425.8; /sales/invoices/new firstLoad 425.8; /reports/day-book firstLoad 366.6; /parties/[id] firstLoad 366.0; /reports/purchase-register route 122.4; /reports/purchase-register firstLoad 365.5; /reports/sales-register route 122.4; /reports/sales-register firstLoad 365.5; /reports/profit route 117.3; /dashboard route 99.9; /dashboard firstLoad 343.1; /login/email firstLoad 301.8.",
     "31 Oct 2026, D P1b/P6 (vehicle and mechanic on a parts bill, the kitchen ticket portalled to <body>): the sales editors and the challan list moved 0.0-0.1 KB, which is that code. Raised to measured + 0.3: /sales/challans/[id]/edit route 182.7; /sales/orders/[id]/edit route 182.7; /sales/credit-notes/new route 155.9; /sales/challans firstLoad 335.1; /sales/orders firstLoad 335.1; /sales/challans/[id] route 90.2; /sales/credit-notes/[id] route 90.2; /sales/orders/[id] route 90.2; /sales/orders/[id] firstLoad 333.3; /sales/estimates/[id] route 90.2; /sales/invoices/[id] firstLoad 333.3; /d/[token] firstLoad 285.5.",
@@ -1496,7 +1497,7 @@
     },
     "/sales/challans/new": {
       "route": 182.9,
-      "firstLoad": 425.8
+      "firstLoad": 426.1
     },
     "/sales/challans/[id]/edit": {
       "route": 182.7,
@@ -1528,7 +1529,7 @@
     },
     "/sales/orders/new": {
       "route": 182.9,
-      "firstLoad": 425.8
+      "firstLoad": 426.1
     },
     "/sales/orders/[id]/edit": {
       "route": 182.7,
@@ -1548,14 +1549,14 @@
     },
     "/sales/invoices/[id]/edit": {
       "route": 182.9,
-      "firstLoad": 425.8
+      "firstLoad": 426.1
     },
     "/sales/invoices": {
       "route": 98,
       "firstLoad": 335.0
     },
     "/sales/invoices/[id]": {
-      "route": 89.9,
+      "route": 90.2,
       "firstLoad": 333.3
     },
     "/sales/estimates": {
