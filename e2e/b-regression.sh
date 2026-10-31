@@ -42,3 +42,5 @@ run d6-addons d6-addons.mjs
 run d12-strip d12-strip.mjs
 run d13-docs d13-docs.mjs
 run d14-print d14-print.mjs
+run d-edges d-edges.mjs
+run d-look d-look.mjs

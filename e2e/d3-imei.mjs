@@ -125,6 +125,15 @@ const again = await ctx.request.post(`${base}/api/v1/sales/invoices/${made.id}/i
 check('API: selling the same IMEI twice is refused (409)', again.status() === 409, String(again.status()));
 const still = await serial(ctx, IMEI[1]);
 check('API: the other phone is still in stock', still?.status === 'in_stock', still?.status);
+// Back to the supplier: the debit note takes the bill's phone still on the
+// shelf (the first build refused every phone return with "Enter 1 IMEI").
+const back = await ctx.request.post(`${base}/api/v1/purchases/debit-notes`, {
+  headers: await headers(ctx, { 'Idempotency-Key': randomUUID() }),
+  data: { against_id: still?.purchase?.id, reason: 'goods_returned', lines: [{ bill_line_no: 1, qty: '1' }] },
+});
+check('return: a phone goes back to the supplier (201)', back.status() === 201, `${back.status()} ${(await back.text()).slice(0, 160)}`);
+const gone = await serial(ctx, IMEI[1]);
+check('return: that IMEI is no longer in stock', gone?.status !== 'in_stock', JSON.stringify(gone && gone.status));
 
 // Design D8 phone: a camera button beside the IMEI box, and the box and it fit.
 const phone = await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });

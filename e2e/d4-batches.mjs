@@ -111,6 +111,16 @@ await page.waitForURL(/\/purchases\/bills\/[0-9a-f-]{36}\?return=1/, { timeout: 
 const drawerOpen = await page.getByTestId('debit-note-lines').waitFor({ timeout: 10000 }).then(() => true).catch(() => false);
 check('Return to distributor: opens the debit note of the bill the batch came in on', drawerOpen && (await page.getByTestId('debit-note-lines').innerText()).includes(NAME), page.url());
 await page.screenshot({ path: `${dir}/1280-return.png` });
+// Issue it: 4 back to the distributor. The batch must lose them too (the
+// first build moved stock but left the batch, and refused every medicine
+// return with "Enter the batch number").
+await page.getByTestId('debit-note-lines').getByRole('textbox').first().fill('4');
+await page.getByRole('combobox', { name: 'Reason' }).click();
+await page.getByRole('option', { name: 'Goods returned' }).click();
+await page.getByTestId('debit-note-issue').click();
+await sleep(2500);
+const afterReturn = ((await (await ctx.request.get(`${base}/api/v1/stock/expiry?within=90`)).json()).data ?? []).find((r) => r.batch_no === BATCH);
+check('Return to distributor: the debit note takes 4 out of the batch (9 → 5)', Number(afterReturn?.qty) === 5, JSON.stringify(afterReturn && afterReturn.qty));
 
 const phone = await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
 const p2 = await signIn(phone);

@@ -325,3 +325,50 @@ def test_mixed_cost_return_credits_bill_price_but_stock_uses_weighted_average(
     supplier.refresh_from_db()
     assert supplier.shop_balance == Decimal("-3360.00")
     assert_replay()
+
+
+def test_returning_medicine_takes_it_out_of_its_batch_and_a_void_puts_it_back(
+    owner: Any, make_supplier: Any, make_item: Any, shop: Any
+) -> None:
+    """D7 "Return to distributor": the stock went down on a debit note but the
+    batch kept its pieces, so Expiry still listed medicine already sent back
+    (and the batches held more than the shelf)."""
+    import datetime as dt
+
+    from apps.common.dates import tenant_today
+    from apps.inventory.models import Batch
+
+    dolo = make_item("Dolo 650", "24.00", "GST0", tracking="batch")
+    # Already expired: what a chemist sends back most.
+    expiry = (tenant_today(shop) - dt.timedelta(days=20)).isoformat()
+    bill = recorded_bill(
+        owner,
+        party_id=str(make_supplier().id),
+        lines=[line(dolo, "10", "24.00", batches=[{"batch_no": "DL1", "expiry": expiry}])],
+    )
+    note = return_goods(owner, bill, (1, "4"))
+    assert note.status_code == 201, note.json()
+    assert Batch.objects.get(batch_no="DL1").qty == Decimal("6.000")
+    assert on_hand(dolo) == Decimal("6.000")
+    voided = owner.post(note_url(note.json()["data"]["id"], "void"), {"reason": "Distributor refused"}, format="json")
+    assert voided.status_code == 200, voided.json()
+    assert Batch.objects.get(batch_no="DL1").qty == Decimal("10.000")
+
+
+def test_a_phone_tracked_by_imei_can_be_sent_back(owner: Any, make_supplier: Any, make_item: Any) -> None:
+    """A debit note re-checks its lines like a purchase; a phone's line must
+    name its IMEIs, so a return of a phone could be refused outright."""
+    phone = make_item("Redmi 13C", "8000.00", "GST18", tracking="serial")
+    bill = recorded_bill(
+        owner,
+        party_id=str(make_supplier().id),
+        lines=[line(phone, "2", "8000.00", serials=["356938035643801", "356938035643802"])],
+    )
+    note = return_goods(owner, bill, (1, "1"))
+    assert note.status_code == 201, note.json()
+    from apps.inventory.models import Serial
+
+    assert Serial.objects.filter(status=Serial.IN_STOCK).count() == 1
+    voided = owner.post(note_url(note.json()["data"]["id"], "void"), {"reason": "Shop kept it"}, format="json")
+    assert voided.status_code == 200, voided.json()
+    assert Serial.objects.filter(status=Serial.IN_STOCK).count() == 2

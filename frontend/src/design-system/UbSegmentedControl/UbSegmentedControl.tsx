@@ -58,8 +58,8 @@ export function UbSegmentedControl<T extends string>({
             className={cn(
               'ub-hit ds-body-s-semibold h-9 min-w-0 truncate rounded-lg px-2',
               // A 320 px phone cut "Saved customer" to "Saved custom…": below 360
-              // the label gets the padding back and one point less.
-              'max-[359px]:px-1 max-[359px]:text-[13px]',
+              // the label gets the side padding back (the design keeps 14 px).
+              'max-[359px]:px-0.5',
               'transition-colors duration-fast ease-standard',
               'focus-visible:shadow-focus focus-visible:outline-none disabled:cursor-not-allowed',
               on

@@ -43,6 +43,7 @@ from decimal import Decimal
 from typing import Any
 
 from django.db import transaction
+from django.db.models import F
 from django.utils import timezone
 
 from apps.common.audit import AuditAction, write_audit
@@ -146,7 +147,7 @@ def _requested(bill: Any, raw_lines: list[dict]) -> list[tuple[Any, Decimal]]:
     return picked
 
 
-def _line_payload(line: Any, qty: Decimal) -> dict:
+def _line_payload(line: Any, qty: Decimal, serials: list[str] | None = None) -> dict:
     """The bill line at the returned quantity; a rupee discount shrinks with it."""
     discount_value = line.discount_value
     if line.discount_type == "amount" and discount_value is not None:
@@ -161,6 +162,16 @@ def _line_payload(line: Any, qty: Decimal) -> dict:
         "discount_type": line.discount_type,
         "discount_value": discount_value,
         "tax_code": line.tax_code,
+        # D7: a batch medicine's line must name its batch; the return names the
+        # one(s) the bill brought in (without it every medicine return was
+        # refused with "Enter the batch number").
+        # A phone's line names the IMEIs going back (picked by `_pick_serials`).
+        **({"serials": serials} if serials else {}),
+        **(
+            {"batches": [{k: v for k, v in b.items() if k in ("batch_no", "expiry", "mrp")} for b in line.batches[:1]]}
+            if line.batches
+            else {}
+        ),
     }
 
 
@@ -206,6 +217,119 @@ def _post_stock(ctx: Ctx, note: Any, picked: list[tuple[Any, Decimal]]) -> list[
         if line.item is not None and line.item.item_type == ItemType.GOODS and line.item.track_stock
     ]
     return post_movements(ctx=ctx, lines=lines)
+
+
+def _return_batches(ctx: Ctx, note: Any, picked: list[tuple[Any, Decimal]]) -> None:
+    """D7 "Return to distributor": the medicine sent back leaves its batches.
+
+    The bill line knows the batch(es) it brought in; the returned pieces come
+    out of them, earliest expiry first (what a chemist sends back is what is
+    about to expire), never below what a batch still holds. What was taken is
+    kept on the note so a void puts exactly that back. Without it the stock
+    went down and Expiry still listed the medicine that had gone back.
+    """
+    from apps.inventory.models import Batch
+    from apps.inventory.services import batches as batch_svc
+
+    taken_all: list[dict] = []
+    for line, qty in picked:
+        item = line.item
+        if item is None or not batch_svc.tracked(item) or not line.batches:
+            continue
+        wanted = qty * line.unit_factor
+        names = [b.get("batch_no") for b in line.batches if b.get("batch_no")]
+        for batch in (
+            Batch.objects.select_for_update()
+            .filter(tenant=ctx.tenant, item=item, batch_no__in=names, qty__gt=0)
+            .order_by("expiry")
+        ):
+            if wanted <= 0:
+                break
+            take = min(batch.qty, wanted)
+            batch.qty -= take
+            batch.save(update_fields=["qty"])
+            wanted -= take
+            taken_all.append({"item_id": str(item.id), "batch_no": batch.batch_no, "qty": str(take)})
+    if taken_all:
+        note.meta = {**(note.meta or {}), "batches": taken_all}
+        note.save(update_fields=["meta"])
+
+
+def _return_serials(
+    ctx: Ctx, note: Any, picked: list[tuple[Any, Decimal]], phones: dict[int, list[str]]
+) -> None:
+    """The phones sent back leave the shelf (Find by IMEI no longer says in
+    stock); kept on the note so a void brings back exactly those."""
+    from apps.inventory.services import serials as serial_svc
+
+    gone = [(line.item, phones.get(line.line_no) or []) for line, _qty in picked]
+    serial_svc.take_out(ctx=ctx, item_serials=gone)
+    sent = [
+        {"item_id": str(item.id), "serials": codes, "bill_id": str(line.document_id)}
+        for (line, _qty), (item, codes) in zip(picked, gone)
+        if codes
+    ]
+    if sent:
+        note.meta = {**(note.meta or {}), "serials": sent}
+        note.save(update_fields=["meta"])
+
+
+def _pick_serials(ctx: Ctx, bill: Any, picked: list[tuple[Any, Decimal]]) -> dict[int, list[str]]:
+    """Phones going back: the IMEIs this bill brought in that are still on the
+    shelf, as many as are returned. A debit note re-checks its lines like a
+    purchase, which needs one IMEI per phone; without this every phone return
+    was refused. Fewer on the shelf than asked is said plainly."""
+    from apps.inventory.models import Serial
+    from apps.inventory.services import serials as serial_svc
+
+    chosen: dict[int, list[str]] = {}
+    errors: dict[str, list[str]] = {}
+    for index, (line, qty) in enumerate(picked):
+        if line.item is None or not serial_svc.tracked(line.item):
+            continue
+        wanted = int(qty * line.unit_factor)
+        on_shelf = list(
+            Serial.objects.filter(
+                tenant=ctx.tenant,
+                item=line.item,
+                status=Serial.IN_STOCK,
+                serial__in=[str(s) for s in (line.serials or [])],
+            )
+            .order_by("serial")
+            .values_list("serial", flat=True)[:wanted]
+        )
+        if len(on_shelf) < wanted:
+            errors[f"lines.{index}.qty"] = [
+                f"Only {len(on_shelf)} of these phones are still in stock to send back."
+            ]
+        chosen[line.line_no] = on_shelf
+    if errors:
+        raise ValidationFailed(errors)
+    return chosen
+
+
+def _put_batches_back(ctx: Ctx, note: Any) -> None:
+    """A voided return: the batches get back what `_return_batches` took."""
+    from apps.inventory.models import Batch
+
+    for entry in (note.meta or {}).get("batches") or []:
+        Batch.objects.filter(
+            tenant=ctx.tenant, item_id=entry["item_id"], batch_no=entry["batch_no"]
+        ).update(qty=F("qty") + Decimal(entry["qty"]))
+
+
+def _put_serials_back(ctx: Ctx, note: Any) -> None:
+    """A voided return: its phones are on the shelf again, from their bill."""
+    from apps.inventory.models import Serial
+
+    for entry in (note.meta or {}).get("serials") or []:
+        for code in entry["serials"]:
+            Serial.objects.get_or_create(
+                tenant=ctx.tenant,
+                item_id=entry["item_id"],
+                serial=code,
+                defaults={"status": Serial.IN_STOCK, "purchase_document_id": entry["bill_id"]},
+            )
 
 
 def _move_bill_due(bill: Any, applied: Decimal) -> None:
@@ -278,6 +402,7 @@ def issue_debit_note(*, ctx: Ctx, payload: dict) -> dict:
         raise ValidationFailed({"document_date": ["Cannot be before the bill date."]})
 
     picked = _requested(bill, list(payload.get("lines") or []))
+    phones = _pick_serials(ctx, bill, picked)
     restock = payload.get("restock", True) is not False
     discount_type, discount_value = _document_discount(bill, picked)
 
@@ -304,7 +429,9 @@ def issue_debit_note(*, ctx: Ctx, payload: dict) -> dict:
             # Not the supplier's bill number: that column is unique per supplier across
             # every recorded purchase document, so it stays on the bill (and in
             # `meta.against`), never on the note.
-            "lines": [_line_payload(line, qty) for line, qty in picked],
+            "lines": [
+                _line_payload(line, qty, phones.get(line.line_no)) for line, qty in picked
+            ],
         },
         strict=True,
     )
@@ -337,6 +464,9 @@ def issue_debit_note(*, ctx: Ctx, payload: dict) -> dict:
     drafts.replace_lines(note, outcome["rows"])
 
     posted = _post_stock(ctx, note, picked) if restock else []
+    if restock:
+        _return_batches(ctx, note, picked)
+        _return_serials(ctx, note, picked, phones)
     entry_id = None
     balance = None
     if note.grand_total > 0:
@@ -398,6 +528,8 @@ def void_debit_note(*, ctx: Ctx, document_id: Any, reason: str) -> dict:
     )
     before = drafts.snapshot(note)
     posted = _reverse_stock(ctx, note, reason, movement_type="purchase_return_out")
+    _put_batches_back(ctx, note)
+    _put_serials_back(ctx, note)
     original = standing_bill_entry(tenant=ctx.tenant, document_id=note.id, entry_type="debit_note")
     if original is not None and party is not None:
         reverse_bill_credit(ctx=ctx, original=original, party=party, reason=reason, document=note)
