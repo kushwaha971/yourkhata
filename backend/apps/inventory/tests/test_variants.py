@@ -58,3 +58,10 @@ def test_a_shared_barcode_or_opening_stock_is_refused(owner: Any) -> None:
     refused = shirt(owner, barcode="8901725133917")
     assert refused.status_code == 400 and "barcode" in refused.json()["error"]["details"]
     assert not Product.objects.exists() and not Item.objects.exists()
+
+
+def test_home_strip_counts_sold_out_sizes(owner: Any) -> None:
+    """D12 — a clothes shop's Home strip: sizes with nothing in stock."""
+    shirt(owner)
+    tiles = owner.get(reverse("v1:stock-home-strip")).json()["data"]
+    assert {"key": "soldOutSizes", "count": 8} in tiles

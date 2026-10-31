@@ -7,6 +7,7 @@ a selector or a service, wrap the result in the envelope.
 from __future__ import annotations
 
 import datetime as dt
+from decimal import Decimal
 from typing import Any
 
 from django.core.exceptions import ValidationError as DjangoValidationError
@@ -624,3 +625,37 @@ class ExpiryView(_InventoryView, APIView):
             for row in rows:
                 row.pop("value", None)
         return StandardResponse.ok(rows, meta={"counts": counts})
+
+
+class HomeStripView(_InventoryView, APIView):
+    """D12 — the strip of the business's own figures under Home's day line:
+    batches expiring in 30 days (medicine), phones in stock (IMEI), sizes sold
+    out (clothes). A tile appears only when that business keeps such things."""
+
+    permission_classes = [IsAuthenticated, ModuleEnabled(ModuleCode.INVENTORY), StockReadPermissions]
+
+    def get(self, request: Any) -> Any:
+        from apps.inventory.models import Batch, Serial
+        from apps.inventory.services.batches import expiry_rows
+
+        tenant = self.get_tenant()
+        today = tenant_today(tenant)
+        valuation = _valuation_visible(request)
+        tiles = []
+        if Batch.objects.filter(tenant=tenant).exists():
+            rows = expiry_rows(tenant=tenant, within="30", today=today)
+            tile = {"key": "expiring", "count": len(rows)}
+            if valuation:
+                tile["value"] = str(sum((Decimal(r["value"]) for r in rows), Decimal("0.00")))
+            tiles.append(tile)
+        if Serial.objects.filter(tenant=tenant).exists():
+            tiles.append(
+                {"key": "phones", "count": Serial.objects.filter(tenant=tenant, status=Serial.IN_STOCK).count()}
+            )
+        variants = item_selectors.with_stock(
+            Item.objects.filter(tenant=tenant, product__isnull=False, status=ItemStatus.ACTIVE),
+            location_id=None,
+        )
+        if variants.exists():
+            tiles.append({"key": "soldOutSizes", "count": variants.filter(on_hand__lte=0).count()})
+        return StandardResponse.ok(tiles)

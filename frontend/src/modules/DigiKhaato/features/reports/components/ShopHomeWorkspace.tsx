@@ -34,6 +34,7 @@ import { formatBusinessDate } from 'src/utils/dates';
 import { formatInr, isZeroAmount } from 'src/utils/money';
 import { formatInrUnbroken } from 'src/utils/moneyUnbroken';
 
+import { HomeStrip } from '../../inventory/components/HomeStrip';
 import { PROMISE_DATE_FORMAT } from '../../parties/view-model/shopPromiseFacts';
 import { useCounter } from '../hooks/useCounter';
 import { useHomeCharts } from '../hooks/useHomeCharts';
@@ -497,6 +498,7 @@ export function ShopHomeWorkspace({
         )}
         {overview.status === 'failed' && <PartUnavailable onRetry={refresh} t={t} />}
       </UbBox>
+      {hasModule('inventory') && <HomeStrip />}
       {counter.failed && <PartUnavailable onRetry={refresh} t={t} />}
       {failed(data, PARTS.today) && <PartUnavailable onRetry={refresh} t={t} />}
       <UbBox className="grid grid-cols-1 gap-5 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)]">

@@ -28,6 +28,9 @@ import type { DashboardData } from '../types/reports.types';
  * empty book; and the refresh icon asks the server to recompute.
  */
 jest.mock('../api/dashboardService');
+jest.mock('../../inventory/api/homeStripService', () => ({
+  getHomeStrip: jest.fn().mockResolvedValue([]),
+}));
 jest.mock('../api/dashboardChartsService');
 jest.mock('../api/counterService', () => ({
   getCounter: jest.fn().mockResolvedValue({ as_of: '2026-10-19' }),
