@@ -179,6 +179,8 @@ export interface SalesDocument extends SalesDocumentTotals {
   readonly dueOn: string | null;
   readonly validUntil: string | null;
   readonly placeOfSupplyState: string;
+  /** D P1c — the godown, or null for the business's first place. */
+  readonly location?: { readonly id: string; readonly name: string } | null;
   readonly isInterState: boolean;
   readonly reverseCharge: boolean;
   readonly discountType: DiscountType | null;

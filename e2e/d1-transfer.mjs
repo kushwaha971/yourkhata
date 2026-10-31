@@ -58,6 +58,12 @@ if (await page.getByTestId('transfer-add-place').isVisible().catch(() => false))
 const places = (await (await ctx.request.get(`${base}/api/v1/locations`)).json()).data;
 const shop = places.find((p) => p.is_default);
 const godown = places.find((p) => !p.is_default);
+// A business that added its godown before the switch existed turns it on here
+// (POST /locations sets it for every new one).
+await ctx.request.put(`${base}/api/v1/tenants/current/settings`, {
+  data: { values: { 'shop.features.godowns': { value: true } } },
+  headers: await headers(ctx),
+});
 check('place: the shop now has a second place', Boolean(shop && godown), places.map((p) => p.name).join(', '));
 
 const held = async () => {
@@ -94,6 +100,23 @@ check('short: Move stock stays off', await page.getByTestId('transfer-save').isD
 await page.screenshot({ path: `${dir}/1280-short.png` });
 const [s2, g2] = await held();
 check('API: nothing moved', s2 === 70 && g2 === 30, `${s2} / ${g2}`);
+
+// The bill and the purchase offer the godown once a second one exists.
+await page.goto(`${base}/sales/invoices/new`, { waitUntil: 'networkidle' });
+await page.reload({ waitUntil: 'networkidle' });
+const details = page.getByRole('button', { name: /More details/ }).first();
+if (await details.isVisible().catch(() => false)) await details.click().catch(() => {});
+await sleep(800);
+check('bill: a "Godown" choice in More details', await page.getByLabel('Godown').first().isVisible().catch(() => false));
+await page.screenshot({ path: `${dir}/1280-bill-godown.png` });
+await page.goto(`${base}/purchases/bills/new`, { waitUntil: 'networkidle' });
+await sleep(800);
+const pDetails = page.getByRole('button', { name: /More details|Bill details|Details/ }).first();
+if (!(await page.getByLabel('Godown').first().isVisible().catch(() => false)) && (await pDetails.isVisible().catch(() => false)))
+  await pDetails.click().catch(() => {});
+await sleep(600);
+await page.screenshot({ path: `${dir}/1280-purchase-godown.png` });
+check('purchase: a "Godown" choice on the header', await page.getByLabel('Godown').first().isVisible().catch(() => false));
 
 const phone = await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
 const p2 = await signIn(phone);

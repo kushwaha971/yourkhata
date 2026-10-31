@@ -225,6 +225,7 @@ export const buildInvoiceEditorSchema = (
       .defined()
       .default('')
       .test('pos', t('sales.validation.posRequired'), (value) => /^\d{2}$/.test(value ?? '')),
+    locationId: Yup.string().defined().default(''),
     reverseCharge: Yup.boolean().defined().default(false),
     roundOffEnabled: Yup.boolean().defined().default(true),
     discountType: Yup.mixed<InvoiceFormValues['discountType']>()

@@ -118,6 +118,12 @@ export const toBill = (row: Wire): PurchaseBill => {
     amountDue: s(row.amount_due),
     lines: ((row.lines ?? []) as Wire[]).map(toLine),
     notes: s(row.notes),
+    location: row.location
+      ? {
+          id: s((row.location as Record<string, unknown>).id),
+          name: s((row.location as Record<string, unknown>).name),
+        }
+      : null,
     ledgerEntryId: ledger ? sn(ledger.id) : null,
     payments: ((row.payments ?? []) as Wire[]).map((p) => ({
       id: s(p.id),

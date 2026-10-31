@@ -46,6 +46,8 @@ export interface InvoiceFormValues {
   /** SAL-01 FR-4 — estimates only; empty means "the default, counted by the server". */
   validUntil: string;
   placeOfSupplyState: string;
+  /** D P1c — the godown the goods leave from; '' is the business's first place. */
+  locationId: string;
   reverseCharge: boolean;
   roundOffEnabled: boolean;
   discountType: '' | DiscountType;
@@ -95,6 +97,7 @@ export const emptyInvoiceForm = (
   dueOn: '',
   validUntil: '',
   placeOfSupplyState: tenantState,
+  locationId: '',
   reverseCharge: false,
   roundOffEnabled: true,
   discountType: '',
@@ -135,6 +138,7 @@ export const toWireBody = (values: InvoiceFormValues): Record<string, unknown> =
   document_date: values.documentDate || null,
   due_on: values.mode === 'party' && values.dueOn ? values.dueOn : null,
   place_of_supply_state: values.placeOfSupplyState || null,
+  location_id: values.locationId || null,
   reverse_charge: values.reverseCharge,
   round_off_enabled: values.roundOffEnabled,
   ...discountWire(values.discountType, values.discountValue),
@@ -175,6 +179,7 @@ export const fromDocument = (doc: SalesDocument): InvoiceFormValues => ({
   dueOn: doc.dueOn ?? '',
   validUntil: doc.validUntil ?? '',
   placeOfSupplyState: doc.placeOfSupplyState,
+  locationId: doc.location?.id ?? '',
   reverseCharge: doc.reverseCharge,
   roundOffEnabled: doc.roundOffEnabled,
   discountType: doc.discountType ?? '',

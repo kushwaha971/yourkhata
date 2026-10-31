@@ -29,6 +29,7 @@ import { cn } from 'src/utils/cn';
 import { formatBusinessDate } from 'src/utils/dates';
 
 import { ExpensePartyField } from '../../expenses/components/ExpensePartyField';
+import { usePlaces } from '../../inventory/hooks/usePlaces';
 import { useAppWords } from '../../navigation/useAppWords';
 import { GST_STATES } from '../../onboarding/constants/gstStates';
 import { getParty } from '../../parties/api/partyService';
@@ -90,6 +91,7 @@ export function InvoicePartySection({
   const partyName = watch('partyName');
   const documentDate = watch('documentDate');
   const pos = watch('placeOfSupplyState');
+  const places = usePlaces();
   const partyId = watch('partyId');
   /*
    * 07-screens/09 §3 — once a saved customer is picked, the field collapses to
@@ -240,6 +242,24 @@ export function InvoicePartySection({
             )}
           </UbField>
         </UbGrid>
+        {/* D P1c — design D10: the godown, only once a second one exists. Below
+            the grid: as its third column it squeezed Date to "31 O…" (LOOK). */}
+        {places.length > 1 && (
+          <UbField name="locationId" label={t('sales.editor.godown')}>
+            {(field) => (
+              <UbSelect
+                id={field.id}
+                aria-label={t('sales.editor.godown')}
+                value={(field.value as string) || (places.find((p) => p.isDefault)?.id ?? '')}
+                options={places.map((place) => ({ value: place.id, label: place.name }))}
+                onChange={(next) =>
+                  field.onChange(places.find((p) => p.id === next)?.isDefault ? '' : next)
+                }
+                disabled={disabled}
+              />
+            )}
+          </UbField>
+        )}
         <UbText variant="caption" tone="tertiary">
           {interState ? t('sales.editor.interState') : t('sales.editor.intraState')}
         </UbText>

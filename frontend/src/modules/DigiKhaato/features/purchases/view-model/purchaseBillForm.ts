@@ -50,6 +50,8 @@ export interface PurchaseBillFormValues {
   discountType: '' | PurchaseDiscountType;
   discountValue: string;
   notes: string;
+  /** D P1c — the godown the goods arrive at; '' is the business's first place. */
+  locationId?: string;
   lines: PurchaseLineForm[];
 }
 
@@ -159,6 +161,7 @@ export const toPurchaseWireBody = (values: PurchaseBillFormValues): Record<strin
   round_off_enabled: values.roundOffEnabled,
   ...discountWire(values.discountType, values.discountValue),
   notes: values.notes,
+  location_id: values.locationId || null,
   lines: values.lines.filter(isCompletePurchaseLine).map((line) => ({
     item_id: line.itemId,
     description: line.description.trim() || null,
@@ -208,6 +211,7 @@ export const fromPurchaseBill = (bill: PurchaseBill): PurchaseBillFormValues => 
   discountType: bill.discountType ?? '',
   discountValue: bill.discountValue ?? '',
   notes: bill.notes,
+  locationId: bill.location?.id ?? '',
   lines: bill.lines.length
     ? bill.lines.map((line) => ({
         itemId: line.itemId,

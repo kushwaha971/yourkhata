@@ -101,6 +101,12 @@ export const toDocument = (row: Wire): SalesDocument => {
     documentDate: s(row.document_date),
     dueOn: sn(row.due_on),
     placeOfSupplyState: s(row.place_of_supply_state),
+    location: row.location
+      ? {
+          id: s((row.location as Record<string, unknown>).id),
+          name: s((row.location as Record<string, unknown>).name),
+        }
+      : null,
     isInterState: Boolean(row.is_inter_state),
     reverseCharge: Boolean(row.reverse_charge),
     discountType: (row.discount_type as SalesDocument['discountType']) ?? null,

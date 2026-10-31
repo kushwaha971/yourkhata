@@ -13,12 +13,14 @@ import {
   UbText,
   UbTextInput,
   UbPanel,
+  UbSelect,
 } from 'src/design-system';
 import { useDocksEditorTotals } from 'src/hooks/useDocksEditorTotals';
 import { useTranslation } from 'src/hooks/useTranslation';
 import { ROUTES } from 'src/routes';
 import { formatBusinessDate } from 'src/utils/dates';
 
+import { usePlaces } from '../../inventory/hooks/usePlaces';
 import { SUPPLIER_INVOICE_MAX } from '../constants/purchaseConstants';
 import { defaultDueOn, type PurchaseBillFormValues } from '../view-model/purchaseBillForm';
 
@@ -57,6 +59,7 @@ export function PurchaseBillHeaderSection({
 }>): React.JSX.Element {
   const { t } = useTranslation();
   const folds = useDocksEditorTotals();
+  const places = usePlaces();
   const { watch, setValue } = form;
   const partyName = watch('partyName');
   const partyId = watch('partyId');
@@ -183,6 +186,25 @@ export function PurchaseBillHeaderSection({
                     )}
                   </UbField>
                 </>
+              )}
+              {/* D P1c — design D10: the godown, only once a second one exists. */}
+              {places.length > 1 && (
+                <UbField name="locationId" label={t('purchases.editor.godown')}>
+                  {(field) => (
+                    <UbSelect
+                      id={field.id}
+                      aria-label={t('purchases.editor.godown')}
+                      value={
+                        (field.value as string) || (places.find((p) => p.isDefault)?.id ?? '')
+                      }
+                      options={places.map((place) => ({ value: place.id, label: place.name }))}
+                      onChange={(next) =>
+                        field.onChange(places.find((p) => p.id === next)?.isDefault ? '' : next)
+                      }
+                      disabled={disabled}
+                    />
+                  )}
+                </UbField>
               )}
               <UbField
                 name="documentDate"

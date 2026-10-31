@@ -1,5 +1,6 @@
 {
   "//": [
+    "31 Oct 2026, D P1c (godown on documents): the sales and purchase editors moved ~0.3-0.5 KB for the Godown choice (usePlaces + transferService list). Measured + 0.3.",
     "31 Oct 2026, D P1c (godowns): /stock/transfer is a new route at its measured size + 0.3 (Move stock: the data grid, the shared item search and two place selects, the weight of /stock/count). Other routes moved through the nav row and the transfer API paths. Measured + 0.3.",
     "31 Oct 2026, D P1b (part numbers): the sales editors and item routes moved up to ~0.5 KB for the line Part/Rack caption and the item form PART DETAILS group (ItemPartFields). Measured + 0.3.",
     "31 Oct 2026, D P1a purchases: the four purchase editor routes moved ~0.3 KB for the purchase line unit chips (lineCostChoices). Measured + 0.3.",
@@ -1473,7 +1474,7 @@
       "firstLoad": 320.8
     },
     "/purchases/debit-notes": {
-      "route": 88.3,
+      "route": 88.6,
       "firstLoad": 331.6
     },
     "/sales/challans/[id]": {
@@ -1485,28 +1486,28 @@
       "firstLoad": 334.4
     },
     "/sales/challans/new": {
-      "route": 179.1,
-      "firstLoad": 422.2
+      "route": 179.5,
+      "firstLoad": 422.5
     },
     "/sales/challans/[id]/edit": {
-      "route": 179.2,
-      "firstLoad": 422.2
+      "route": 179.5,
+      "firstLoad": 422.6
     },
     "/purchases/orders/[id]": {
       "route": 77.9,
       "firstLoad": 320.8
     },
     "/purchases/orders": {
-      "route": 88.3,
+      "route": 88.6,
       "firstLoad": 331.6
     },
     "/purchases/orders/new": {
-      "route": 176.3,
-      "firstLoad": 419.3
+      "route": 176.9,
+      "firstLoad": 419.9
     },
     "/purchases/orders/[id]/edit": {
-      "route": 176.3,
-      "firstLoad": 419.3
+      "route": 176.9,
+      "firstLoad": 420.0
     },
     "/sales/orders/[id]": {
       "route": 89.2,
@@ -1517,12 +1518,12 @@
       "firstLoad": 334.4
     },
     "/sales/orders/new": {
-      "route": 179.1,
-      "firstLoad": 422.2
+      "route": 179.5,
+      "firstLoad": 422.5
     },
     "/sales/orders/[id]/edit": {
-      "route": 179.2,
-      "firstLoad": 422.2
+      "route": 179.5,
+      "firstLoad": 422.6
     },
     "/parties": {
       "route": 109,
@@ -1533,12 +1534,12 @@
       "firstLoad": 342.1
     },
     "/sales/invoices/new": {
-      "route": 179.0,
-      "firstLoad": 422.2
+      "route": 179.5,
+      "firstLoad": 422.5
     },
     "/sales/invoices/[id]/edit": {
-      "route": 179.2,
-      "firstLoad": 422.2
+      "route": 179.5,
+      "firstLoad": 422.5
     },
     "/sales/invoices": {
       "route": 98,
@@ -1553,12 +1554,12 @@
       "firstLoad": 356
     },
     "/sales/estimates/new": {
-      "route": 179.1,
-      "firstLoad": 422.2
+      "route": 179.5,
+      "firstLoad": 422.5
     },
     "/sales/estimates/[id]/edit": {
-      "route": 179.2,
-      "firstLoad": 422.2
+      "route": 179.5,
+      "firstLoad": 422.6
     },
     "/sales/estimates/[id]": {
       "route": 89.2,
@@ -1713,16 +1714,16 @@
       "firstLoad": 320.8
     },
     "/purchases/bills/[id]/edit": {
-      "route": 176.3,
-      "firstLoad": 419.3
+      "route": 176.9,
+      "firstLoad": 419.9
     },
     "/purchases/bills": {
       "route": 95,
       "firstLoad": 331.6
     },
     "/purchases/bills/new": {
-      "route": 176.3,
-      "firstLoad": 419.3
+      "route": 176.9,
+      "firstLoad": 419.9
     },
     "/reports": {
       "route": 72,

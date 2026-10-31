@@ -120,6 +120,7 @@
   "purchases.editor.error.delete": "The draft could not be deleted.",
   "purchases.editor.error.record": "The bill could not be recorded.",
   "purchases.editor.error.save": "The draft could not be saved.",
+  "purchases.editor.godown": "Godown",
   "purchases.editor.interState": "Supplier in another state — IGST",
   "purchases.editor.intraState": "Supplier in your state — CGST + SGST",
   "purchases.editor.itc": "Input tax credit",

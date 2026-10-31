@@ -161,6 +161,7 @@
   "sales.editor.error.delete": "ड्राफ्ट नहीं हटा",
   "sales.editor.error.issue": "बिल नहीं बना। ड्राफ्ट रखा गया।",
   "sales.editor.error.save": "ड्राफ्ट सेव नहीं हुआ",
+  "sales.editor.godown": "गोदाम",
   "sales.editor.interState": "अंतर-राज्य आपूर्ति — IGST",
   "sales.editor.intraState": "राज्य के भीतर आपूर्ति — CGST + SGST",
   "sales.editor.issue": "बिल बनाएँ",

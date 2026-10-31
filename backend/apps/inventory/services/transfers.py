@@ -48,6 +48,13 @@ def add_location(*, ctx: Ctx, name: Any) -> Location:
         raise ValidationFailed({"name": [f"{text} is already one of your places."]})
     if existing.count() >= MAX_LOCATIONS:
         raise ValidationFailed({"name": [f"Up to {MAX_LOCATIONS} places."]})
+    # D P1c — a second place turns godowns on: the bill and purchase editors
+    # read `godowns` from the session before they ask which place.
+    from apps.platform_app.models import TenantSetting
+
+    TenantSetting.objects.update_or_create(
+        tenant=ctx.tenant, key="shop.features.godowns", defaults={"value": {"value": True}}
+    )
     code = f"L{existing.count() + 1:02d}"
     while existing.filter(code=code).exists():
         code = f"L{int(code[1:]) + 1:02d}"

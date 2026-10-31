@@ -120,6 +120,7 @@
   "purchases.editor.error.delete": "ड्राफ्ट हटाया नहीं जा सका।",
   "purchases.editor.error.record": "बिल दर्ज नहीं हो सका।",
   "purchases.editor.error.save": "ड्राफ्ट सेव नहीं हो सका।",
+  "purchases.editor.godown": "गोदाम",
   "purchases.editor.interState": "सप्लायर दूसरे राज्य में — IGST",
   "purchases.editor.intraState": "सप्लायर आपके राज्य में — CGST + SGST",
   "purchases.editor.itc": "इनपुट टैक्स क्रेडिट",

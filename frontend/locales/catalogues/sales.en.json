@@ -161,6 +161,7 @@
   "sales.editor.error.delete": "Couldn't delete the draft",
   "sales.editor.error.issue": "Couldn't issue. Draft kept.",
   "sales.editor.error.save": "Couldn't save the draft",
+  "sales.editor.godown": "Godown",
   "sales.editor.interState": "Inter-state supply — IGST",
   "sales.editor.intraState": "Intra-state supply — CGST + SGST",
   "sales.editor.issue": "Issue",

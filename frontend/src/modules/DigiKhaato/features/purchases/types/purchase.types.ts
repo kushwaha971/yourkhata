@@ -186,6 +186,8 @@ export interface PurchaseBill {
   readonly amountDue: string;
   readonly lines: readonly PurchaseBillLine[];
   readonly notes: string;
+  /** D P1c — the godown, or null for the business's first place. */
+  readonly location?: { readonly id: string; readonly name: string } | null;
   readonly ledgerEntryId: string | null;
   readonly payments: readonly PurchaseBillPayment[];
   readonly createdBy: PurchasePerson | null;
