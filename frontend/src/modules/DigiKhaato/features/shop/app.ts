@@ -1,5 +1,6 @@
 import {
   AlertTriangle,
+  ArrowLeftRight,
   BarChart3,
   BookOpen,
   BookUser,
@@ -266,6 +267,18 @@ export const SHOP_APP: AppManifest = {
       permission: 'inventory.item.read',
       section: 'stock',
       order: 4,
+      tab: 'items',
+    },
+    // D P1c (design D10) — Move stock between the shop and a godown.
+    {
+      key: 'stockTransfer',
+      icon: ArrowLeftRight,
+      labelId: 'nav.stockTransfer',
+      href: ROUTES.STOCK_TRANSFER,
+      module: 'inventory',
+      permission: 'inventory.stock.adjust',
+      section: 'stock',
+      order: 6,
       tab: 'items',
     },
     // C3 (design dCount, R-DEC-67) — walk the shelves, scan, save the differences.

@@ -154,6 +154,10 @@ export const API_PATHS = {
   STOCK_SUMMARY: '/stock/summary',
   STOCK_LOW: '/stock/low',
   /** C3 — stock count (R-DEC-67). */
+  /** D P1c — the shop's places and moving stock between them. */
+  LOCATIONS: '/locations',
+  STOCK_TRANSFERS: '/stock-transfers',
+  STOCK_TRANSFER_STOCK: '/stock-transfers/stock',
   STOCK_COUNT_OPEN: '/stock-counts/open',
   STOCK_COUNT: (id: string) => `/stock-counts/${seg(id)}`,
   STOCK_COUNT_LINES: (id: string) => `/stock-counts/${seg(id)}/lines`,
@@ -324,6 +328,8 @@ export const IDEMPOTENT_POST_PATHS: readonly string[] = [
   API_PATHS.DEBIT_NOTES,
   API_PATHS.PAYMENTS,
   API_PATHS.STOCK_ADJUSTMENTS,
+  // D P1c — a retried move must not move the goods twice.
+  API_PATHS.STOCK_TRANSFERS,
   // BP-17 — a retried count must not record the drawer twice.
   API_PATHS.REPORT_CASH_COUNTS,
   // INV-01 — a retried item create must not mint a second SKU for one item.

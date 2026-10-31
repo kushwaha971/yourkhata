@@ -85,7 +85,7 @@ try {
   const before = Number(
     (await api(`/parties/${party.id}?book=shop`)).data.shop.customer_balance,
   );
-  const item = (await api("/items?page_size=50&ordering=name")).data.find(
+  const item = (await api("/items?page_size=200&ordering=name&stock_status=ok")).data.find(
     (i) => Number(i.selling_price) > 0 && Number(i.on_hand ?? 1) > 0,
   );
   console.log(

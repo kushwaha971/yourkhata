@@ -32,3 +32,4 @@ run b3-features b3-features.mjs
 run c-journey c-journey.mjs
 run d1-units d1-units.mjs
 run d1-parts d1-parts.mjs
+run d1-transfer d1-transfer.mjs
