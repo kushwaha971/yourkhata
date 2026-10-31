@@ -68,6 +68,10 @@ try {
   check('API: saved with Ice cream ₹30 and Less sugar free', JSON.stringify(found?.addons) === JSON.stringify([{ name: 'Ice cream', price: '30.00' }, { name: 'Less sugar', price: '0.00' }]), JSON.stringify(found?.addons));
   if (!found) throw new Error('not saved');
   const det = (await (await desk.request.get(`${base}/api/v1/items/${found.id}`)).json()).data;
+  await desk.request.post(`${base}/api/v1/stock-adjustments`, {
+    headers: await headers(desk, { 'Idempotency-Key': randomUUID() }),
+    data: { reason: 'count', lines: [{ item_id: found.id, qty: '10', unit_cost: '40' }] },
+  });
   await desk.request.patch(`${base}/api/v1/items/${found.id}`, { headers: await headers(desk), data: { version: det.version, selling_price: '120' } });
 
   const phone = await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
@@ -101,9 +105,9 @@ try {
   // D11 kitchen ticket: issue the draft (API), then print the ticket from its page.
   const issued = await phone.request.post(`${base}/api/v1/sales/invoices/${draftId}/issue`, {
     headers: { ...(await (async () => ({ 'X-CSRF-Token': (await phone.cookies()).find((c) => c.name === 'ub_csrf')?.value ?? '' }))()), 'Idempotency-Key': randomUUID() },
-    data: { version: doc.version, mode_breakup: [{ mode: 'cash', amount: doc.grand_total }] },
+    data: { version: doc.version, payment: { mode_breakup: [{ mode: 'cash', amount: doc.grand_total }] } },
   });
-  check('set-up: the bill is issued', issued.ok(), String(issued.status()));
+  check('set-up: the bill is issued', issued.ok(), `${issued.status()} ${(await issued.text()).slice(0, 300)}`);
   await p2.goto(`${base}/sales/invoices/${draftId}`, { waitUntil: 'networkidle' });
   await sleep(1500);
   await p2.evaluate(() => { window.print = () => {}; });
@@ -111,8 +115,12 @@ try {
   await sleep(500);
   await p2.emulateMedia({ media: 'print' });
   const ticket = await p2.getByTestId('kitchen-ticket-sheet').innerText().catch(() => '');
-  await p2.screenshot({ path: `${dir}/390-kitchen-print.png` });
+  const box = await p2.getByTestId('kitchen-ticket-sheet').boundingBox();
+  check('kitchen ticket: drawn on the paper', !!box && box.height > 40 && box.width > 100 && box.y < 20, JSON.stringify(box));
+  await p2.screenshot({ path: `${dir}/390-kitchen-print.png`, fullPage: true });
+  const billOnPaper = (await p2.locator('body').innerText()).includes('TAX INVOICE');
   await p2.emulateMedia({ media: 'screen' });
+  check('kitchen ticket: the bill is not on the paper', !billOnPaper);
   check('kitchen ticket: "2 × Cold coffee", "+ Ice cream", no prices', ticket.includes(`2 × ${NAME}`) && ticket.includes('+ Ice cream') && !ticket.includes('₹'), ticket.replace(/\n/g, ' / '));
   await p2.goto(`${base}/sales/invoices/new`, { waitUntil: 'networkidle' });
   // a plain item opens no sheet

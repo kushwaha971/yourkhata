@@ -364,7 +364,7 @@ function InvoiceDetailScreen({
         </UbStack>
         <DocumentLinesList doc={doc} />
         <UbStack
-          className="hidden min-w-0 overflow-x-auto rounded-card border border-border-hairline bg-white xl:col-start-1 xl:row-start-1 xl:flex print:flex print:overflow-visible print:rounded-none print:border-0"
+          className="ub-print-doc hidden min-w-0 overflow-x-auto rounded-card border border-border-hairline bg-white xl:col-start-1 xl:row-start-1 xl:flex print:flex print:overflow-visible print:rounded-none print:border-0"
           data-testid="desktop-paper-preview"
         >
           <PrintSheetLazy
@@ -385,7 +385,7 @@ function InvoiceDetailScreen({
           className="sm:w-[calc(100vw-2rem)] sm:max-w-4xl"
         >
           <UbStack
-            className="overflow-x-auto bg-white"
+            className="ub-print-doc overflow-x-auto bg-white"
             role="region"
             aria-label={t('sales.print.preview')}
             tabIndex={0}

@@ -3,6 +3,8 @@
 import { useEffect, useState } from 'react';
 
 import { ChefHat } from 'lucide-react';
+import { createPortal } from 'react-dom';
+
 
 import { UbBox, UbButton, UbText } from 'src/design-system';
 import { useTranslation } from 'src/hooks/useTranslation';
@@ -14,7 +16,9 @@ import type { SalesDocument } from '../types/sales.types';
 /**
  * D P6 — design D11's kitchen ticket: a second small print (58 mm) of what to
  * make, without prices: "2 × Cold coffee / + Ice cream". The button mounts
- * the ticket only while printing, so the bill's own print is untouched.
+ * the ticket only while printing, so the bill's own print is untouched. It is
+ * portalled to <body> because the button sits in the page chrome, which print
+ * hides — inside it the ticket printed as a blank page.
  */
 export function KitchenTicketButton({ doc }: Readonly<{ doc: SalesDocument }>): React.JSX.Element {
   const { t } = useTranslation();
@@ -39,33 +43,38 @@ export function KitchenTicketButton({ doc }: Readonly<{ doc: SalesDocument }>): 
       >
         {t('sales.kitchen.print')}
       </UbButton>
-      {printing && (
-        <UbBox className="ub-print-only ub-print-kitchen hidden font-mono text-black" data-testid="kitchen-ticket-sheet">
-          <UbText as="p" variant="inherit" className="text-[11pt] font-bold">
-            {t('sales.kitchen.title', { token: doc.number ?? '' })}
-          </UbText>
-          <UbText as="p" variant="inherit" className="text-[9pt]">
-            {formatTimestamp(doc.issuedAt ?? doc.createdAt)}
-          </UbText>
-          <UbBox className="my-1 border-t border-dashed border-black" />
-          {doc.lines.map((line) => (
-            <UbBox key={line.id ?? line.lineNo}>
-              <UbText as="p" variant="inherit" className="text-[10pt]">
-                {`${trimQuantity(line.qty)} × ${line.description}`}
-              </UbText>
-              {(line.addons ?? []).map((addon) => (
-                <UbText key={addon.name} as="p" variant="inherit" className="pl-3 text-[10pt]">
-                  {`+ ${addon.name}`}
+      {printing &&
+        createPortal(
+          <UbBox
+            className="ub-print-only ub-print-kitchen hidden font-mono text-black"
+            data-testid="kitchen-ticket-sheet"
+          >
+            <UbText as="p" variant="inherit" className="text-[11pt] font-bold">
+              {t('sales.kitchen.title', { token: doc.number ?? '' })}
+            </UbText>
+            <UbText as="p" variant="inherit" className="text-[9pt]">
+              {formatTimestamp(doc.issuedAt ?? doc.createdAt)}
+            </UbText>
+            <UbBox className="my-1 border-t border-dashed border-black" />
+            {doc.lines.map((line) => (
+              <UbBox key={line.id ?? line.lineNo}>
+                <UbText as="p" variant="inherit" className="text-[10pt]">
+                  {`${trimQuantity(line.qty)} × ${line.description}`}
                 </UbText>
-              ))}
-            </UbBox>
-          ))}
-          <UbBox className="my-1 border-t border-dashed border-black" />
-          <UbText as="p" variant="inherit" className="text-[9pt]">
-            {t('sales.kitchen.footer', { number: doc.number ?? '' })}
-          </UbText>
-        </UbBox>
-      )}
+                {(line.addons ?? []).map((addon) => (
+                  <UbText key={addon.name} as="p" variant="inherit" className="pl-3 text-[10pt]">
+                    {`+ ${addon.name}`}
+                  </UbText>
+                ))}
+              </UbBox>
+            ))}
+            <UbBox className="my-1 border-t border-dashed border-black" />
+            <UbText as="p" variant="inherit" className="text-[9pt]">
+              {t('sales.kitchen.footer', { number: doc.number ?? '' })}
+            </UbText>
+          </UbBox>,
+          document.body
+        )}
     </>
   );
 }

@@ -448,7 +448,9 @@
       page: kitchen58;
     }
 
-    body:has(.ub-print-kitchen) .ub-print-only:not(.ub-print-kitchen) {
+    body:has(.ub-print-kitchen) .ub-print-only:not(.ub-print-kitchen),
+    body:has(.ub-print-kitchen) .ub-print-doc,
+    body:has(> .ub-print-kitchen) > :not(.ub-print-kitchen) {
       display: none !important;
     }
 

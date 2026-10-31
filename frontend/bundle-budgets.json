@@ -1095,6 +1095,7 @@
     "sharedApp": 115.9
   },
   "//routes": [
+    "31 Oct 2026, D P1b/P6 (vehicle and mechanic on a parts bill, the kitchen ticket portalled to <body>): the sales editors and the challan list moved 0.0-0.1 KB, which is that code. Raised to measured + 0.3: /sales/challans/[id]/edit route 182.7; /sales/orders/[id]/edit route 182.7; /sales/credit-notes/new route 155.9; /sales/challans firstLoad 335.1; /sales/orders firstLoad 335.1; /sales/challans/[id] route 90.2; /sales/credit-notes/[id] route 90.2; /sales/orders/[id] route 90.2; /sales/orders/[id] firstLoad 333.3; /sales/estimates/[id] route 90.2; /sales/invoices/[id] firstLoad 333.3; /d/[token] firstLoad 285.5.",
     "30 Oct 2026, C1 scan on a bill (design pScan/dScan/pCamBlocked, ADR-064): the item search gained the scan path (exact lookup on a barcode-shaped Enter, the 'Not found' note, the beep and buzz, the line flash with '+1 scanned'), the phone's camera button and its tray, and the bill the desktop's scanner badge and 'What the scanner does' card. The camera sheet and the iPhone reader (zxing-wasm) stay in their own lazily loaded chunks; what remains is the search and its feedback on the editors (+1.9 KB route on the eight sales and four purchase editors) and the design-system barrel the sheet is reached through (+0.0-0.2 KB first load elsewhere). Raised to measured + 0.3: /sales/challans/[id]/edit route 177.8; /sales/challans/[id]/edit firstLoad 420.7; /sales/orders/[id]/edit route 177.8; /sales/orders/[id]/edit firstLoad 420.7; /sales/estimates/[id]/edit route 177.8; /sales/estimates/[id]/edit firstLoad 420.7; /sales/invoices/[id]/edit route 177.8; /sales/invoices/[id]/edit firstLoad 420.7; /sales/challans/new route 177.8; /sales/challans/new firstLoad 420.7; /sales/orders/new route 177.8; /sales/orders/new firstLoad 420.7; /sales/estimates/new route 177.8; /sales/estimates/new firstLoad 420.7; /sales/invoices/new route 177.8; /sales/invoices/new firstLoad 420.7; /purchases/orders/[id]/edit route 175.3; /purchases/orders/[id]/edit firstLoad 418.2; /purchases/bills/[id]/edit route 175.3; /purchases/bills/[id]/edit firstLoad 418.2; /purchases/orders/new route 175.3; /purchases/orders/new firstLoad 418.2; /purchases/bills/new route 175.3; /purchases/bills/new firstLoad 418.2; /sales/credit-notes/new route 154.7; /sales/credit-notes/new firstLoad 397.5; /settings/profile route 149.2; /settings/profile firstLoad 392.1; /lending/loans/new route 143.7; /lending/loans/new firstLoad 386.6; /library/settings route 123.3; /library/settings firstLoad 366.2; /reports/day-book route 122.9; /reports/day-book firstLoad 365.8; /reports/gst-summary route 121.5; /reports/gst-summary firstLoad 364.4; /reports/profit firstLoad 359.6; /stock/summary route 116.0; /items/[id] firstLoad 357.8; /settings route 112.4; /settings firstLoad 355.3; /reports/aging route 106.4; /reports/aging firstLoad 349.3; /ledger/aging route 106.4; /ledger/aging firstLoad 349.3; /items/price-lists/[id] route 100.9; /items/price-lists/[id] firstLoad 343.8; /settings/branding route 99.7; /settings/branding firstLoad 342.5; /dashboard route 98.9; /dashboard firstLoad 341.7; /settings/team route 95.5; /settings/team firstLoad 338.4; /sales/invoices firstLoad 334.1; /sales/challans route 91.1; /sales/challans firstLoad 334.0; /sales/orders route 91.1; /sales/orders firstLoad 334.0; /library/members/[membershipId] route 90.3; /library/members/[membershipId] firstLoad 333.2; /library/members route 89.7; /library/members firstLoad 332.6; /sales/challans/[id] route 89.2; /sales/challans/[id] firstLoad 332.0; /sales/credit-notes/[id] route 89.2; /sales/orders/[id] route 89.2; /sales/orders/[id] firstLoad 332.0; /sales/estimates/[id] route 89.2; /sales/invoices/[id] route 89.1; /sales/invoices/[id] firstLoad 332.0; /library/catalogue firstLoad 331.7; /purchases/orders firstLoad 331.2; /purchases/debit-notes firstLoad 331.2; /purchases/bills firstLoad 331.2; /library/copies route 86.6; /library/copies firstLoad 329.4; /library/counter route 86.0; /library/counter firstLoad 328.9; /library/seats route 84.1; /library/seats firstLoad 326.9; /lending/borrowers firstLoad 325.6; /library firstLoad 325.4; /library/fees route 82.2; /library/fees firstLoad 325.1; /ledger/reminders route 82.1; /ledger/reminders firstLoad 325.0; /library/copies/[copyId] route 80.8; /library/copies/[copyId] firstLoad 323.7; /lending/loans firstLoad 322.5; /library/money route 79.0; /library/money firstLoad 321.9; /library/attendance route 78.9; /library/attendance firstLoad 321.8; /stock/low route 78.9; /stock/low firstLoad 321.7; /payments/[id] firstLoad 320.8; /library/catalogue/[titleId] route 77.9; /library/catalogue/[titleId] firstLoad 320.8; /purchases/orders/[id] route 77.1; /purchases/orders/[id] firstLoad 320.0; /purchases/debit-notes/[id] route 77.1; /purchases/debit-notes/[id] firstLoad 320.0; /purchases/bills/[id] route 77.1; /purchases/bills/[id] firstLoad 320.0; /library/messages firstLoad 319.5; /library/catalogue/categories route 75.6; /library/catalogue/categories firstLoad 318.5; /library/catalogue/locations route 75.6; /library/catalogue/locations firstLoad 318.5; /parties/tags route 75.5; /parties/tags firstLoad 318.4; /lending/loans/[loanId] route 74.9; /lending/loans/[loanId] firstLoad 317.8; /lending firstLoad 317.7; /settings/business-days route 71.1; /settings/business-days firstLoad 314.0; /lending/messages route 69.9; /lending/messages firstLoad 312.8; /settings/shop-features route 68.0; /settings/shop-features firstLoad 310.9; /settings/data route 66.8; /settings/data firstLoad 309.7; /lending/routes route 66.7; /lending/routes firstLoad 309.6; /items/price-lists route 66.4; /items/price-lists firstLoad 309.3; /settings/devices route 64.7; /settings/devices firstLoad 307.5; /items/masters route 62.0; /items/masters firstLoad 304.9; /imports/[id] route 60.1; /imports/[id] firstLoad 303.0; /imports route 60.1; /imports firstLoad 302.9; /switch firstLoad 301.7; /more route 58.0; /more firstLoad 300.9; /settings/plan route 57.8; /settings/plan firstLoad 300.6; /apps route 57.3; /apps firstLoad 300.2; /d/[token] firstLoad 284.7; at the rounding edge: /parties/[id] firstLoad 365.3; /reports/profit route 116.7; /items/[id] route 114.9; /library/catalogue route 88.8; /purchases/orders route 88.3; /purchases/debit-notes route 88.3; /lending/borrowers route 82.7; /library route 82.5; /lending/loans route 79.6; /payments/[id] route 77.9; /library/messages route 76.6; /lending route 74.8; /switch route 58.8; /reset-password firstLoad 295.7; /set-password firstLoad 294.5; /d/[token] route 41.8; /admin firstLoad 254.2.",
     "24 Oct 2026, 08 \u00a76 receive payment drawer: the counter's new words went into their own catalogue (paymentCounter, loaded only by the drawer's chunk) after a first build put them in the payments catalogue and cost /payments/[id] 1.6 KB. What remains is UbStatusBanner's opt-in actionBelow, which every route that loads the banner carries: 25 figures moved by 0.0-0.1 KB. Shared app unchanged. Raised to measured + 0.3; recorded in docs/performance/2026-10-24-receive-payment.md.",
     "24 Oct 2026, 08 \u00a710 payment receipt: /payments/[id] gained the summary panel, the docked Share \u00b7 Print \u00b7 \u22ef (UbBottomBar, UbMoreActions and its action sheet) and the money catalogue for the mode names, 69.3 -> 74.4 KB route. The same commit gave UbStatusBanner a neutral tone and moved ReasonConfirmDialog's reason chips to UbChoiceChips, which every route that loads those shared modules (or whose chunks Turbopack regrouped around them) carries by 0.0-0.4 KB; /lending/loans moved 1.1 KB through that regrouping. A first build that gave the banner its own Ban icon cost 24 more routes; it uses Info instead. Shared app unchanged (114.6). Raised to measured + 0.3; recorded in docs/performance/2026-10-24-payment-receipt.md.",
@@ -1484,19 +1485,19 @@
       "firstLoad": 332.1
     },
     "/sales/challans/[id]": {
-      "route": 89.7,
+      "route": 90.2,
       "firstLoad": 333.1
     },
     "/sales/challans": {
       "route": 91.9,
-      "firstLoad": 334.8
+      "firstLoad": 335.1
     },
     "/sales/challans/new": {
       "route": 182.4,
       "firstLoad": 425.5
     },
     "/sales/challans/[id]/edit": {
-      "route": 182.4,
+      "route": 182.7,
       "firstLoad": 425.6
     },
     "/purchases/orders/[id]": {
@@ -1516,19 +1517,19 @@
       "firstLoad": 422.2
     },
     "/sales/orders/[id]": {
-      "route": 89.7,
-      "firstLoad": 332.8
+      "route": 90.2,
+      "firstLoad": 333.3
     },
     "/sales/orders": {
       "route": 91.9,
-      "firstLoad": 334.8
+      "firstLoad": 335.1
     },
     "/sales/orders/new": {
       "route": 182.4,
       "firstLoad": 425.5
     },
     "/sales/orders/[id]/edit": {
-      "route": 182.4,
+      "route": 182.7,
       "firstLoad": 425.6
     },
     "/parties": {
@@ -1553,7 +1554,7 @@
     },
     "/sales/invoices/[id]": {
       "route": 89.9,
-      "firstLoad": 332.8
+      "firstLoad": 333.3
     },
     "/sales/estimates": {
       "route": 98,
@@ -1568,7 +1569,7 @@
       "firstLoad": 425.6
     },
     "/sales/estimates/[id]": {
-      "route": 89.7,
+      "route": 90.2,
       "firstLoad": 336
     },
     "/sales/credit-notes": {
@@ -1576,11 +1577,11 @@
       "firstLoad": 356
     },
     "/sales/credit-notes/new": {
-      "route": 155.5,
+      "route": 155.9,
       "firstLoad": 398.8
     },
     "/sales/credit-notes/[id]": {
-      "route": 89.7,
+      "route": 90.2,
       "firstLoad": 336
     },
     "/onboarding/step/[n]": {
@@ -1833,7 +1834,7 @@
     },
     "/d/[token]": {
       "route": 42.2,
-      "firstLoad": 285.1
+      "firstLoad": 285.5
     },
     "/accept-invite/[token]": {
       "route": 11.4,

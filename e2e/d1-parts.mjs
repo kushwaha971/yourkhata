@@ -83,6 +83,9 @@ try {
 
   // D1 auto parts: Vehicle no. and Mechanic in More details, kept on the bill.
   await page.goto(`${base}/sales/invoices/new`, { waitUntil: 'networkidle' });
+  await sleep(1000);
+  const discard = page.getByRole('dialog').getByRole('button', { name: 'Discard' });
+  if (await discard.isVisible({ timeout: 2000 }).catch(() => false)) await discard.click();
   const details = page.getByRole('button', { name: /More details/ }).first();
   if (!(await page.getByLabel('Vehicle no.').isVisible().catch(() => false))) await details.click().catch(() => {});
   await page.getByLabel('Vehicle no.').fill('mh 12 kt 4471');
