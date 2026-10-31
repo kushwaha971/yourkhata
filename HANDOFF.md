@@ -1,5 +1,7 @@
 # DigiKhaato — Handoff / Continuation Prompt
 
+> **1 Nov 2026 — START HERE: `docs/team/CONTINUE-AD-CERTIFICATION.md`.** Parts A–D of the Shop revamp are built; the A–D certification is mid-way; Part G waits for the owner's explicit go. That file supersedes everything below for what to do next.
+
 Last updated: 5 Oct 2026 (§0 is live); older sections last revised 29 Sep 2026 (IST) — MVP complete; final UAT approved with issues and all fixed (D1–D8, D10); product renamed YourKhata (yourkhata.com, logo concept A applied, round-2 logo options awaiting owner choice); support sessions now truly view-only (SEC-A); demo videos: plan/scripts/pipeline done, recording paused.
 
 ---
