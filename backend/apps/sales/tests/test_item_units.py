@@ -119,3 +119,39 @@ def test_bad_units_are_refused_with_the_field_named(owner: Any, make_item: Any) 
     with pytest.raises(ValidationFailed) as taken:
         make_item("Bad2", "10.00", "GST18", stock=None, units=[{"unit_id": str(box().id), "factor": "12", "barcode": "8900000000001"}])
     assert "units.0.barcode" in taken.value.details
+
+
+def test_a_bill_from_the_godown_takes_the_godowns_stock(
+    owner: Any, switch: Any, make_party: Any, shop: Any
+) -> None:
+    """D P1c — a bill with `location_id` sells out of that godown; its return
+    comes back to it; MAIN is untouched."""
+    import uuid
+
+    from apps.common.context import Ctx
+    from apps.inventory.services.transfers import add_location, post_transfer
+    from apps.inventory.services.stock import default_location
+
+    godown = add_location(ctx=Ctx.system(shop), name="Godown")
+    post_transfer(
+        ctx=Ctx.system(shop),
+        payload={
+            "from_location_id": str(default_location(shop).id),
+            "to_location_id": str(godown.id),
+            "lines": [{"item_id": str(switch.id), "qty": "50"}],
+        },
+    )
+    invoice = issued_invoice(
+        owner, make_party(), [line(switch, "1", unit_code="BOX")], location_id=str(godown.id)
+    )
+    assert invoice["location"] == {"id": str(godown.id), "name": "Godown"}
+    at = lambda place: ItemStock.objects.get(item=switch, location=place).on_hand  # noqa: E731
+    assert (at(default_location(shop)), at(godown)) == (Decimal("150.000"), Decimal("30.000"))
+    created = owner.post(
+        reverse(CREDIT_NOTES),
+        {"against_id": invoice["id"], "reason": "sales_return", "lines": [{"against_line_id": invoice["lines"][0]["id"], "qty": "1"}]},
+        format="json",
+    ).json()["data"]
+    assert issue_note(owner, created["id"]).status_code == 200
+    assert at(godown) == Decimal("50.000")
+    del uuid

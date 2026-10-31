@@ -80,6 +80,11 @@ class PurchaseDocument(TenantModel):
     amount_paid = MoneyField(default=0)
     amount_due = MoneyField(default=0)
     notes = models.TextField(blank=True, default="")
+    #: D P1c — the godown the goods leave from / arrive at; NULL is the
+    #: business's first place (MAIN), which is every document before godowns.
+    location = models.ForeignKey(
+        "inventory.Location", on_delete=models.RESTRICT, null=True, blank=True, related_name="+"
+    )
     recorded_at = models.DateTimeField(null=True, blank=True)
     voided_at = models.DateTimeField(null=True, blank=True)
     voided_by = models.ForeignKey(

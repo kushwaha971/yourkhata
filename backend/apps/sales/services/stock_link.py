@@ -52,6 +52,9 @@ def restock_rows(ctx: Ctx, document: Any, rows: list[dict]) -> list[str]:
             MovementLine(
                 item=item,
                 qty=base_qty(row),
+                # A return comes back to the godown the bill sold from.
+                location=getattr(getattr(document, "against", None), "location", None)
+                or document.location,
                 movement_type=MovementType.SALE_RETURN_IN,
                 movement_date=document.document_date,
                 source_type="sales_document",

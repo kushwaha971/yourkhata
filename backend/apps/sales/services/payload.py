@@ -134,6 +134,7 @@ def apply_payload(
             document.walk_in_mobile = normalise_mobile(document.walk_in_mobile)
         except InvalidMobile as exc:
             errors["walk_in_mobile"] = [str(exc)]
+    apply_location(tenant, document, payload, errors)
     for text in ("notes", "terms"):
         if len(getattr(document, text) or "") > NOTES_MAX:
             errors[text] = ["Keep this under 2,000 characters."]
@@ -234,3 +235,25 @@ def _line_as_payload(line: SalesDocumentLine) -> dict:
         "discount_value": line.discount_value,
         "tax_code": line.tax_code,
     }
+
+
+def apply_location(tenant: Any, document: Any, payload: dict, errors: dict) -> None:
+    """D P1c — `location_id` names one of the business's places; blank is MAIN."""
+    if "location_id" not in payload:
+        return
+    raw = payload.get("location_id")
+    if not raw:
+        document.location = None
+        return
+    from django.core.exceptions import ValidationError as DjangoValidationError
+
+    from apps.inventory.models import Location
+
+    try:
+        place = Location.objects.filter(tenant=tenant, pk=raw, is_active=True).first()
+    except (ValueError, TypeError, DjangoValidationError):
+        place = None
+    if place is None:
+        errors["location_id"] = ["Choose one of your godowns."]
+    else:
+        document.location = place

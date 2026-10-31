@@ -117,6 +117,7 @@ def _post_stock(ctx: Ctx, document: PurchaseDocument, rows: list[dict]) -> list[
             MovementLine(
                 item=item,
                 qty=base_qty(row),
+                location=document.location,
                 movement_type=MovementType.PURCHASE_IN,
                 movement_date=document.document_date,
                 source_type=MovementSource.PURCHASE_DOCUMENT,

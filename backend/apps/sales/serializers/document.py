@@ -76,6 +76,8 @@ class InvoiceWriteSerializer(serializers.Serializer):
         max_digits=14, decimal_places=2, required=False, allow_null=True
     )
     notes = serializers.CharField(required=False, allow_blank=True)
+    #: D P1c — the godown; blank or absent is the business's first place.
+    location_id = serializers.UUIDField(required=False, allow_null=True)
     terms = serializers.CharField(required=False, allow_blank=True)
     lines = LineInputSerializer(many=True, required=False)
     payment = PaymentInputSerializer(required=False, allow_null=True)
@@ -153,6 +155,7 @@ def supplier_block(document: SalesDocument) -> dict:
 
 
 class DocumentReadSerializer(serializers.ModelSerializer):
+    location = serializers.SerializerMethodField()
     party = serializers.SerializerMethodField()
     party_snapshot = serializers.SerializerMethodField()
     supplier = serializers.SerializerMethodField()
@@ -202,6 +205,7 @@ class DocumentReadSerializer(serializers.ModelSerializer):
             "payments",
             "lines",
             "notes",
+            "location",
             "terms",
             "doc_discount_allocation",
             "created_by",
@@ -213,6 +217,11 @@ class DocumentReadSerializer(serializers.ModelSerializer):
             "created_at",
             "updated_at",
         )
+
+    def get_location(self, obj: Any) -> dict | None:
+        """D P1c — the godown, or null for the business's first place."""
+        place = obj.location
+        return {"id": str(place.id), "name": place.name} if place is not None else None
 
     def get_party(self, obj: SalesDocument) -> dict | None:
         party = obj.party

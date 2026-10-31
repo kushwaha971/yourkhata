@@ -76,6 +76,8 @@ class BillWriteSerializer(serializers.Serializer):
         max_digits=14, decimal_places=2, required=False, allow_null=True
     )
     notes = serializers.CharField(required=False, allow_blank=True)
+    #: D P1c — the godown; blank or absent is the business's first place.
+    location_id = serializers.UUIDField(required=False, allow_null=True)
     lines = BillLineInputSerializer(many=True, required=False)
     version = serializers.IntegerField(required=False)
     # Read only by `?record=true` (create-and-record); a draft stores no payment.
@@ -143,6 +145,7 @@ class BillLineReadSerializer(serializers.ModelSerializer):
 
 
 class BillReadSerializer(serializers.ModelSerializer):
+    location = serializers.SerializerMethodField()
     party = serializers.SerializerMethodField()
     party_snapshot = serializers.SerializerMethodField()
     lines = BillLineReadSerializer(many=True, read_only=True)
@@ -188,6 +191,7 @@ class BillReadSerializer(serializers.ModelSerializer):
             "amount_due",
             "lines",
             "notes",
+            "location",
             "doc_discount_allocation",
             "ledger_entry",
             "payments",
@@ -257,6 +261,11 @@ class BillReadSerializer(serializers.ModelSerializer):
             "debit_applied": str(debit_applied(obj)),
             "returned": {str(k): str(v) for k, v in returned_quantities(obj).items()},
         }
+
+    def get_location(self, obj: Any) -> dict | None:
+        """D P1c — the godown, or null for the business's first place."""
+        place = obj.location
+        return {"id": str(place.id), "name": place.name} if place is not None else None
 
     def get_party(self, obj: PurchaseDocument) -> dict | None:
         party = obj.party

@@ -194,6 +194,8 @@ def _post_stock(ctx: Ctx, note: Any, picked: list[tuple[Any, Decimal]]) -> list[
         MovementLine(
             item=line.item,
             qty=-qty * line.unit_factor,
+            # Goods go back out of the godown the bill brought them into.
+            location=line.document.location,
             movement_type=MovementType.PURCHASE_RETURN_OUT,
             movement_date=note.document_date,
             source_type=MovementSource.PURCHASE_DOCUMENT,

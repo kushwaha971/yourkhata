@@ -155,6 +155,7 @@ def apply_payload(ctx: Ctx, document: PurchaseDocument, payload: dict, *, strict
             }
         )
 
+    apply_location(tenant, document, payload, errors)
     if len(document.notes or "") > NOTES_MAX:
         errors["notes"] = ["Keep this under 2,000 characters."]
     if document.discount_type not in (None, "", "percent", "amount"):
@@ -246,3 +247,25 @@ def _line_as_payload(line: PurchaseDocumentLine) -> dict:
         "discount_value": line.discount_value,
         "tax_code": line.tax_code,
     }
+
+
+def apply_location(tenant: Any, document: Any, payload: dict, errors: dict) -> None:
+    """D P1c — `location_id` names one of the business's places; blank is MAIN."""
+    if "location_id" not in payload:
+        return
+    raw = payload.get("location_id")
+    if not raw:
+        document.location = None
+        return
+    from django.core.exceptions import ValidationError as DjangoValidationError
+
+    from apps.inventory.models import Location
+
+    try:
+        place = Location.objects.filter(tenant=tenant, pk=raw, is_active=True).first()
+    except (ValueError, TypeError, DjangoValidationError):
+        place = None
+    if place is None:
+        errors["location_id"] = ["Choose one of your godowns."]
+    else:
+        document.location = place

@@ -56,6 +56,7 @@ def post_stock(
             MovementLine(
                 item=item,
                 qty=-base_qty(row),
+                location=document.location,
                 movement_type=MovementType.SALE_OUT,
                 movement_date=document.document_date,
                 source_type="sales_document",
