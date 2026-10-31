@@ -81,6 +81,21 @@ try {
   check('desktop: the brand number adds the line, captioned "Part … · Rack B-4"', part === (skew ? 'XX' : `Part ${MAKER} · Rack B-4`), part);
   await page.screenshot({ path: `${dir}/1280-bill.png` });
 
+  // D1 auto parts: Vehicle no. and Mechanic in More details, kept on the bill.
+  await page.goto(`${base}/sales/invoices/new`, { waitUntil: 'networkidle' });
+  const details = page.getByRole('button', { name: /More details/ }).first();
+  if (!(await page.getByLabel('Vehicle no.').isVisible().catch(() => false))) await details.click().catch(() => {});
+  await page.getByLabel('Vehicle no.').fill('mh 12 kt 4471');
+  await page.getByLabel('Mechanic').fill('Raju Garage');
+  const s2 = page.getByRole('combobox', { name: 'Search items to add' });
+  await s2.fill(NAME);
+  await page.getByRole('option', { name: new RegExp(NAME) }).first().click({ timeout: 10000 });
+  await sleep(4500);
+  const draftId = /\/invoices\/([0-9a-f-]{36})/.exec(page.url())?.[1];
+  const draft = draftId ? (await (await desk.request.get(`${base}/api/v1/sales/invoices/${draftId}`)).json()).data : null;
+  check('bill: Vehicle no. and Mechanic kept (MH12KT4471, Raju Garage)', draft?.vehicle?.number === 'MH12KT4471' && draft?.vehicle?.mechanic === 'Raju Garage', JSON.stringify(draft?.vehicle));
+  await page.screenshot({ path: `${dir}/1280-vehicle.png` });
+
   const phone = await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
   const p2 = await signIn(phone);
   await p2.goto(`${base}/sales/invoices/new`, { waitUntil: 'networkidle' });

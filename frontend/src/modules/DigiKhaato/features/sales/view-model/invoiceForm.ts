@@ -52,6 +52,9 @@ export interface InvoiceFormValues {
   placeOfSupplyState: string;
   /** D P1c — the godown the goods leave from; '' is the business's first place. */
   locationId: string;
+  /** D P1b — design D1 auto parts: the vehicle and its mechanic. */
+  vehicleNo?: string;
+  mechanic?: string;
   reverseCharge: boolean;
   roundOffEnabled: boolean;
   discountType: '' | DiscountType;
@@ -143,6 +146,8 @@ export const toWireBody = (values: InvoiceFormValues): Record<string, unknown> =
   due_on: values.mode === 'party' && values.dueOn ? values.dueOn : null,
   place_of_supply_state: values.placeOfSupplyState || null,
   location_id: values.locationId || null,
+  ...(values.vehicleNo !== undefined ? { vehicle_number: values.vehicleNo } : {}),
+  ...(values.mechanic !== undefined ? { mechanic: values.mechanic } : {}),
   reverse_charge: values.reverseCharge,
   round_off_enabled: values.roundOffEnabled,
   ...discountWire(values.discountType, values.discountValue),
@@ -186,6 +191,8 @@ export const fromDocument = (doc: SalesDocument): InvoiceFormValues => ({
   validUntil: doc.validUntil ?? '',
   placeOfSupplyState: doc.placeOfSupplyState,
   locationId: doc.location?.id ?? '',
+  vehicleNo: doc.vehicle?.number ?? '',
+  mechanic: doc.vehicle?.mechanic ?? '',
   reverseCharge: doc.reverseCharge,
   roundOffEnabled: doc.roundOffEnabled,
   discountType: doc.discountType ?? '',

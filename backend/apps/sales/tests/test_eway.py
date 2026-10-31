@@ -40,3 +40,17 @@ def test_a_small_local_bill_is_not_offered(owner: Any, make_item: Any, make_part
     rice = make_item()
     invoice = issued_invoice(owner, make_party(), [line(rice, "1")])
     assert owner.get(invoice_url(invoice["id"], "eway")).json()["data"]["offered"] is False
+
+
+def test_an_auto_parts_bill_keeps_the_vehicle_and_mechanic(owner: Any, make_item: Any, make_party: Any) -> None:
+    """D1 auto parts "Vehicle no." and "Mechanic", cleaned and read back."""
+    from apps.sales.tests.conftest import draft
+
+    made = draft(
+        owner,
+        party_id=str(make_party().id),
+        lines=[line(make_item(), "1")],
+        vehicle_number="mh 12 kt 4471",
+        mechanic=" Raju  Garage ",
+    ).json()["data"]
+    assert made["vehicle"] == {"number": "MH12KT4471", "mechanic": "Raju Garage"}

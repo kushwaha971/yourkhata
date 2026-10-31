@@ -21,9 +21,11 @@ import {
   UbTextInput,
   useIsMobileLayer,
 } from 'src/design-system';
+import { useAppSelector } from 'src/hooks/useAppStore';
 import { useDocksEditorTotals } from 'src/hooks/useDocksEditorTotals';
 import { usePermissions } from 'src/hooks/usePermissions';
 import { useTranslation } from 'src/hooks/useTranslation';
+import { selectActiveTenant } from 'src/redux/slice/sessionSlice';
 import type { Locale } from 'src/types/domain.types';
 import { cn } from 'src/utils/cn';
 import { formatBusinessDate } from 'src/utils/dates';
@@ -92,6 +94,9 @@ export function InvoicePartySection({
   const documentDate = watch('documentDate');
   const pos = watch('placeOfSupplyState');
   const places = usePlaces();
+  const keepsVehicles = Boolean(
+    useAppSelector(selectActiveTenant)?.features?.includes('part_numbers')
+  );
   const partyId = watch('partyId');
   /*
    * 07-screens/09 §3 — once a saved customer is picked, the field collapses to
@@ -242,6 +247,27 @@ export function InvoicePartySection({
             )}
           </UbField>
         </UbGrid>
+        {/* D P1b — design D1 auto parts: Vehicle no. and Mechanic. */}
+        {keepsVehicles && (
+          <UbGrid columns={{ base: 1, sm: 2 }} gap={3}>
+            <UbField name="vehicleNo" label={t('sales.editor.vehicleNo')} hint={t('sales.editor.vehicleHint')}>
+              {(field) => (
+                <UbTextInput
+                  {...field}
+                  value={(field.value as string) ?? ''}
+                  onChange={(next) => field.onChange(next.toUpperCase())}
+                  maxLength={20}
+                  disabled={disabled}
+                />
+              )}
+            </UbField>
+            <UbField name="mechanic" label={t('sales.editor.mechanic')}>
+              {(field) => (
+                <UbTextInput {...field} value={(field.value as string) ?? ''} maxLength={60} disabled={disabled} />
+              )}
+            </UbField>
+          </UbGrid>
+        )}
         {/* D P1c — design D10: the godown, only once a second one exists. Below
             the grid: as its third column it squeezed Date to "31 O…" (LOOK). */}
         {places.length > 1 && (

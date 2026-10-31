@@ -108,6 +108,7 @@ export const toDocument = (row: Wire): SalesDocument => {
     documentDate: s(row.document_date),
     dueOn: sn(row.due_on),
     placeOfSupplyState: s(row.place_of_supply_state),
+    vehicle: (row.vehicle as { number?: string; mechanic?: string } | null) ?? null,
     location: row.location
       ? {
           id: s((row.location as Record<string, unknown>).id),

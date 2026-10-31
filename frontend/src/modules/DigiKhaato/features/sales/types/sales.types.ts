@@ -185,6 +185,8 @@ export interface SalesDocument extends SalesDocumentTotals {
   readonly placeOfSupplyState: string;
   /** D P1c — the godown, or null for the business's first place. */
   readonly location?: { readonly id: string; readonly name: string } | null;
+  /** D P1b — an auto-parts bill's vehicle and mechanic. */
+  readonly vehicle?: { readonly number?: string; readonly mechanic?: string } | null;
   readonly isInterState: boolean;
   readonly reverseCharge: boolean;
   readonly discountType: DiscountType | null;

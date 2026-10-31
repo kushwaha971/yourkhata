@@ -86,6 +86,9 @@ class InvoiceWriteSerializer(serializers.Serializer):
     notes = serializers.CharField(required=False, allow_blank=True)
     #: D P1c — the godown; blank or absent is the business's first place.
     location_id = serializers.UUIDField(required=False, allow_null=True)
+    #: D P1b — design D1 auto parts: the vehicle and the mechanic, printed on the bill.
+    vehicle_number = serializers.CharField(required=False, allow_blank=True, max_length=20)
+    mechanic = serializers.CharField(required=False, allow_blank=True, max_length=60)
     terms = serializers.CharField(required=False, allow_blank=True)
     lines = LineInputSerializer(many=True, required=False)
     payment = PaymentInputSerializer(required=False, allow_null=True)
@@ -167,6 +170,7 @@ def supplier_block(document: SalesDocument) -> dict:
 
 class DocumentReadSerializer(serializers.ModelSerializer):
     location = serializers.SerializerMethodField()
+    vehicle = serializers.SerializerMethodField()
     party = serializers.SerializerMethodField()
     party_snapshot = serializers.SerializerMethodField()
     supplier = serializers.SerializerMethodField()
@@ -217,6 +221,7 @@ class DocumentReadSerializer(serializers.ModelSerializer):
             "lines",
             "notes",
             "location",
+            "vehicle",
             "terms",
             "doc_discount_allocation",
             "created_by",
@@ -228,6 +233,10 @@ class DocumentReadSerializer(serializers.ModelSerializer):
             "created_at",
             "updated_at",
         )
+
+    def get_vehicle(self, obj: Any) -> dict | None:
+        """D P1b — {number, mechanic} on an auto-parts bill, or null."""
+        return (obj.meta or {}).get("vehicle") or None
 
     def get_location(self, obj: Any) -> dict | None:
         """D P1c — the godown, or null for the business's first place."""

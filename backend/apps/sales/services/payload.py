@@ -135,6 +135,14 @@ def apply_payload(
         except InvalidMobile as exc:
             errors["walk_in_mobile"] = [str(exc)]
     apply_location(tenant, document, payload, errors)
+    # D P1b — the vehicle and its mechanic (auto parts), kept in meta.vehicle.
+    if "vehicle_number" in payload or "mechanic" in payload:
+        vehicle = dict((document.meta or {}).get("vehicle") or {})
+        if "vehicle_number" in payload:
+            vehicle["number"] = "".join(str(payload.get("vehicle_number") or "").split()).upper()[:20]
+        if "mechanic" in payload:
+            vehicle["mechanic"] = " ".join(str(payload.get("mechanic") or "").split())[:60]
+        document.meta = {**(document.meta or {}), "vehicle": {k: v for k, v in vehicle.items() if v}}
     for text in ("notes", "terms"):
         if len(getattr(document, text) or "") > NOTES_MAX:
             errors[text] = ["Keep this under 2,000 characters."]
