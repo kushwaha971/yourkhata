@@ -40,7 +40,10 @@ const shareText = (
     });
   }
   if (doc.kind === 'delivery_challan') {
-    return t('sales.challan.shareText', { ...base });
+    // Design D15 "Goods dispatched": the vehicle the goods left on, when known.
+    const vehicle = doc.links.challan?.vehicleNumber;
+    const text = t('sales.challan.shareText', { ...base });
+    return vehicle ? `${text}\n${t('sales.challan.shareVehicle', { vehicle })}` : text;
   }
   if (doc.kind === 'sales_order') {
     return t('sales.order.shareText', { ...base, total: formatInr(doc.grandTotal) });

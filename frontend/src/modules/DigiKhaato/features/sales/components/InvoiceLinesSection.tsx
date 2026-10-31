@@ -313,15 +313,21 @@ export function InvoiceLinesSection({
       const line = lines?.[index];
       if (!line?.itemId) return null;
       const held = stock[line.itemId];
-      return held && exceedsQuantity(line.qty, held.onHand) ? (
+      if (!held || !exceedsQuantity(line.qty, held.onHand)) return null;
+      const qty = formatQuantity(String(Math.max(Number(held.onHand), 0)), held.unit);
+      // Owner, 31 Oct 2026: an estimate or order takes no stock, so a short
+      // quantity there is information ("0 in stock"), not a red error.
+      return stockRule === 'takes' ? (
         <UbText variant="caption" tone="error" data-testid="line-stock-short">
-          {t('sales.line.stockShort', {
-            qty: formatQuantity(String(Math.max(Number(held.onHand), 0)), held.unit),
-          })}
+          {t('sales.line.stockShort', { qty })}
         </UbText>
-      ) : null;
+      ) : (
+        <UbText variant="caption" tone="secondary" data-testid="line-stock-info">
+          {t('sales.line.stockInfo', { qty })}
+        </UbText>
+      );
     },
-    [lines, stock, t]
+    [lines, stock, stockRule, t]
   );
 
   // Stock warnings remain visible on a compact summary as well as in its form.

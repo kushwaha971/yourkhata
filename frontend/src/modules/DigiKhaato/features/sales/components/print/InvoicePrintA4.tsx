@@ -243,14 +243,15 @@ export function InvoicePrintA4({
                   )}
                 </>
               )}
-              {/* Design D14: an auto-parts bill's vehicle and mechanic in the header. */}
-              {doc.vehicle?.number && (
+              {/* Design D14: an auto-parts bill's vehicle and mechanic in the header.
+                  A challan prints its own transport rows above, vehicle included. */}
+              {doc.kind !== 'delivery_challan' && doc.vehicle?.number && (
                 <tr>
                   <th scope="row">{t('sales.editor.vehicleNo')}</th>
                   <td data-testid="print-vehicle">{doc.vehicle.number}</td>
                 </tr>
               )}
-              {doc.vehicle?.mechanic && (
+              {doc.kind !== 'delivery_challan' && doc.vehicle?.mechanic && (
                 <tr>
                   <th scope="row">{t('sales.editor.mechanic')}</th>
                   <td>{doc.vehicle.mechanic}</td>

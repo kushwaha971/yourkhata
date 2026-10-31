@@ -1095,6 +1095,7 @@
     "sharedApp": 115.9
   },
   "//routes": [
+    "31 Oct 2026, owner's grey stock note on estimates and the challan share vehicle line: raised to measured + 0.3: /sales/challans/[id]/edit route 183.0; /sales/orders/[id]/edit route 183.0; /sales/estimates/new firstLoad 426.1; /sales/invoices/new firstLoad 426.1; /sales/challans/[id] firstLoad 333.4; /d/[token] route 42.5.",
     "31 Oct 2026, D14 (the print's batch / IMEI column and vehicle header): raised to measured + 0.3: /sales/invoices/[id]/edit firstLoad 426.1; /sales/challans/new firstLoad 426.1; /sales/orders/new firstLoad 426.1; /sales/invoices/[id] route 90.2.",
     "31 Oct 2026, D13 (challan Driver / person and Deliver to, the estimate and order stock note): raised to measured + 0.3: /sales/challans/[id]/edit firstLoad 426.0; /sales/orders/[id]/edit firstLoad 426.0; /sales/estimates/[id]/edit route 182.9; /sales/estimates/[id]/edit firstLoad 426.0; /sales/invoices/[id]/edit route 182.9; /sales/challans/new route 182.9; /sales/orders/new route 182.9; /sales/estimates/new route 182.9; /sales/invoices/new route 182.9; /sales/credit-notes/new firstLoad 399.2.",
     "31 Oct 2026, D12 Home strip (HomeStrip and its service on Home): raised to measured + 0.3: /sales/invoices/[id]/edit firstLoad 425.8; /sales/challans/new firstLoad 425.8; /sales/orders/new firstLoad 425.8; /sales/estimates/new firstLoad 425.8; /sales/invoices/new firstLoad 425.8; /reports/day-book firstLoad 366.6; /parties/[id] firstLoad 366.0; /reports/purchase-register route 122.4; /reports/purchase-register firstLoad 365.5; /reports/sales-register route 122.4; /reports/sales-register firstLoad 365.5; /reports/profit route 117.3; /dashboard route 99.9; /dashboard firstLoad 343.1; /login/email firstLoad 301.8.",
@@ -1489,7 +1490,7 @@
     },
     "/sales/challans/[id]": {
       "route": 90.2,
-      "firstLoad": 333.1
+      "firstLoad": 333.4
     },
     "/sales/challans": {
       "route": 91.9,
@@ -1500,7 +1501,7 @@
       "firstLoad": 426.1
     },
     "/sales/challans/[id]/edit": {
-      "route": 182.7,
+      "route": 183.0,
       "firstLoad": 426.0
     },
     "/purchases/orders/[id]": {
@@ -1532,7 +1533,7 @@
       "firstLoad": 426.1
     },
     "/sales/orders/[id]/edit": {
-      "route": 182.7,
+      "route": 183.0,
       "firstLoad": 426.0
     },
     "/parties": {
@@ -1545,7 +1546,7 @@
     },
     "/sales/invoices/new": {
       "route": 182.9,
-      "firstLoad": 425.8
+      "firstLoad": 426.1
     },
     "/sales/invoices/[id]/edit": {
       "route": 182.9,
@@ -1565,7 +1566,7 @@
     },
     "/sales/estimates/new": {
       "route": 182.9,
-      "firstLoad": 425.8
+      "firstLoad": 426.1
     },
     "/sales/estimates/[id]/edit": {
       "route": 182.9,
@@ -1836,7 +1837,7 @@
       "firstLoad": 295.1
     },
     "/d/[token]": {
-      "route": 42.2,
+      "route": 42.5,
       "firstLoad": 285.5
     },
     "/accept-invite/[token]": {

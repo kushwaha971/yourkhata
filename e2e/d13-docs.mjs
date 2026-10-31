@@ -68,6 +68,8 @@ await sleep(1500);
 const note = await page.getByTestId('lines-stock-note').innerText().catch(() => '');
 check('estimate: the note says nothing is taken until the bill', note === 'No stock moves and no batch or IMEI is taken until the estimate becomes a bill. Batch / IMEI is picked when you convert.', note);
 check('estimate: no batch caption on the line', (await page.getByTestId('line-batch').count()) === 0);
+const info = await page.getByTestId('line-stock-info').first().innerText().catch(() => '');
+check('estimate: a short item says "0 NOS in stock" in grey, not a red warning', /^0 NOS in stock$/.test(info) && (await page.getByTestId('line-stock-short').count()) === 0, info);
 await page.screenshot({ path: `${dir}/1280-estimate.png` });
 
 // challan
@@ -99,11 +101,19 @@ const issued = await ctx.request.post(`${base}/api/v1/sales/delivery-challans/${
 check('set-up: the challan is issued', issued.ok(), `${issued.status()} ${(await issued.text()).slice(0, 200)}`);
 await page.goto(`${base}/sales/challans/${draft.id}`, { waitUntil: 'networkidle' });
 await sleep(1500);
+await page.evaluate(() => { window.__opened = []; window.open = (url) => { window.__opened.push(String(url)); return null; }; });
+await page.getByRole('button', { name: /^Share$/ }).first().click().catch(() => {});
+await sleep(1500);
+const sent = decodeURIComponent((await page.locator('a[href*="wa.me"], a[href*="whatsapp"]').first().getAttribute('href').catch(() => '')) || '');
+await page.screenshot({ path: `${dir}/1280-share.png` });
+check('share: the WhatsApp text names the vehicle (D15 goods dispatched)', sent.includes('Vehicle MH 14 GU 2290.'), sent.slice(-160) || 'no link');
+await page.keyboard.press('Escape').catch(() => {});
 await page.emulateMedia({ media: 'print' });
 const sheet = await page.locator('body').innerText();
 await page.screenshot({ path: `${dir}/1280-challan-print.png`, fullPage: true });
 await page.emulateMedia({ media: 'screen' });
 check('print: Driver / person and Deliver to on the challan', sheet.includes('Santosh') && sheet.includes('Patil Bungalow, Sector 4'));
+check('print: "Vehicle no." appears once on a challan', sheet.split('Vehicle no.').length === 2, String(sheet.split('Vehicle no.').length - 1));
 
 const phone = await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
 const p2 = await signIn(phone);
