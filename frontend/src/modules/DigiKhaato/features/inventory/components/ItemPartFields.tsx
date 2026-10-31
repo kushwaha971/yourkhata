@@ -37,7 +37,7 @@ export function ItemPartFields(): React.JSX.Element {
       className="rounded-lg border border-dashed border-warning p-3"
       data-testid="item-part-details"
     >
-      <UbText as="p" variant="label" tone="tertiary">
+      <UbText as="p" variant="label" tone="tertiary" className="uppercase tracking-wide">
         {t('items.form.parts.title')}
       </UbText>
       <UbStack gap={1.5}>
