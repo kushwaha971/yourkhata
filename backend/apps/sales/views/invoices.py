@@ -206,3 +206,21 @@ class InvoiceViewSet(
     def upi_intent(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         document = get_object_or_404(detail_queryset(tenant=self.get_tenant()), pk=kwargs["pk"])
         return StandardResponse.ok(upi_intent(document))
+
+
+    # D P5 — the e-way bill's transport details, and the portal's upload file.
+    @action(detail=True, methods=["get", "post"], url_path="eway")
+    def eway(self, request: Any, *args: Any, **kwargs: Any) -> Any:
+        from apps.sales.services import eway as eway_service
+
+        document = get_object_or_404(detail_queryset(tenant=self.get_tenant()), pk=kwargs["pk"])
+        if request.method == "POST":
+            saved = eway_service.save_transport(document, dict(request.data))
+            return StandardResponse.ok({"offered": eway_service.offered(document), "transport": saved})
+        return StandardResponse.ok(
+            {
+                "offered": eway_service.offered(document),
+                "transport": (document.meta or {}).get("eway"),
+                "file": eway_service.portal_json(document) if (document.meta or {}).get("eway") else None,
+            }
+        )

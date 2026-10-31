@@ -121,6 +121,7 @@ _REGISTRY: dict[str, tuple[int, bool]] = {
     # D P3 — IMEI / serials: a phone in stock twice, or sold that is not in stock.
     "serial_in_stock": (409, False),
     "serial_not_in_stock": (409, False),
+    "eway_not_issued": (409, False),
     "opening_stock_required": (409, False),
     "opening_exists": (409, False),
     "duplicate_sku": (400, False),
