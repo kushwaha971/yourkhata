@@ -680,3 +680,19 @@ class Batch(TenantModel):
             models.UniqueConstraint(fields=["tenant", "item", "batch_no"], name="uq_batch_item_no"),
         ]
         indexes = [models.Index(fields=["tenant", "expiry"], name="ix_batch_tenant_expiry")]
+
+
+class ItemAddon(TenantModel):
+    """D P6 — an extra on a café item (design D11): "Ice cream +₹30", "Less
+    sugar" free. The bill line keeps a snapshot of the ones chosen."""
+
+    item = models.ForeignKey(Item, on_delete=models.CASCADE, related_name="addons")
+    name = models.CharField(max_length=60)
+    price = MoneyField(default=0)
+    position = models.SmallIntegerField(default=0)
+
+    class Meta:
+        db_table = "inventory_item_addon"
+        verbose_name = "item add-on"
+        verbose_name_plural = "item add-ons"
+        constraints = [models.UniqueConstraint(fields=["item", "name"], name="uq_item_addon_name")]

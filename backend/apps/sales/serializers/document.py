@@ -33,6 +33,8 @@ class LineInputSerializer(serializers.Serializer):
     )
     #: D P4 — a medicine's batch on this line.
     batches = serializers.ListField(child=serializers.DictField(), required=False, max_length=5)
+    #: D P6 — a café item's add-ons chosen for this line.
+    addons = serializers.ListField(child=serializers.DictField(), required=False, max_length=12)
     unit_price = serializers.DecimalField(
         max_digits=14, decimal_places=4, required=False, allow_null=True
     )
@@ -127,6 +129,7 @@ class LineReadSerializer(serializers.ModelSerializer):
             "unit_factor",
             "serials",
             "batches",
+            "addons",
             "unit_price",
             "tax_inclusive",
             "discount_type",

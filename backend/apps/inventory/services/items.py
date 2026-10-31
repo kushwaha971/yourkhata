@@ -622,6 +622,9 @@ def create_item(*, ctx: Ctx, payload: dict) -> dict:
 
     set_units(ctx=ctx, item=item, raw=payload.get("units"))
     set_codes(ctx=ctx, item=item, raw=payload.get("part_numbers"))
+    from apps.inventory.services.units import set_addons
+
+    set_addons(ctx=ctx, item=item, raw=payload.get("addons"))
     if item.track_stock and opening is None:
         # Without an opening the row starts at 0 and its level is initialised
         # silently. WITH one it is left at `ok`, so the opening post is
@@ -737,6 +740,10 @@ def update_item(*, ctx: Ctx, item_id: Any, payload: dict, can_adjust_stock: bool
             )
     if errors:
         raise ValidationFailed(errors.payload())
+    if "addons" in payload:
+        from apps.inventory.services.units import set_addons
+
+        set_addons(ctx=ctx, item=item, raw=payload.get("addons"))
     if "units" in payload or "part_numbers" in payload:
         from apps.inventory.services.units import set_codes, set_units
 

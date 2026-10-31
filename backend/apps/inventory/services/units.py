@@ -198,3 +198,41 @@ def set_codes(*, ctx: Any, item: Any, raw: Any) -> None:
         raise ValidationFailed(errors)
     ItemCode.objects.filter(item=item).delete()
     ItemCode.objects.bulk_create([ItemCode(tenant=ctx.tenant, item=item, code=c) for c in codes])
+
+
+MAX_ADDONS = 12
+
+
+def set_addons(*, ctx: Any, item: Any, raw: Any) -> None:
+    """D P6 — replace a café item's add-ons: `[{name, price}]`, up to 12."""
+    from apps.common.exceptions import ValidationFailed
+    from apps.inventory.models import ItemAddon
+
+    if raw is None:
+        return
+    if not isinstance(raw, list) or len(raw) > MAX_ADDONS:
+        raise ValidationFailed({"addons": [f"Add up to {MAX_ADDONS} add-ons."]})
+    rows: list = []
+    errors: dict = {}
+    names: set = set()
+    for index, entry in enumerate(raw):
+        entry = entry if isinstance(entry, dict) else {}
+        name = " ".join(str(entry.get("name") or "").split())[:60]
+        if not name:
+            continue
+        if name.lower() in names:
+            errors[f"addons.{index}.name"] = ["This add-on is listed twice."]
+            continue
+        names.add(name.lower())
+        try:
+            price = Decimal(str(entry.get("price") or "0"))
+        except Exception:  # noqa: BLE001
+            price = Decimal("-1")
+        if not price.is_finite() or price < 0:
+            errors[f"addons.{index}.price"] = ["Enter a price of zero or more."]
+            continue
+        rows.append(ItemAddon(tenant=ctx.tenant, item=item, name=name, price=price.quantize(Decimal("0.01")), position=index))
+    if errors:
+        raise ValidationFailed(errors)
+    ItemAddon.objects.filter(item=item).delete()
+    ItemAddon.objects.bulk_create(rows)

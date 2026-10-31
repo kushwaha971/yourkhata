@@ -84,7 +84,7 @@ def with_stock(qs: QuerySet, *, location_id: Any) -> QuerySet:
     """
     tracked = Q(track_stock=True, item_type=ItemType.GOODS)
     # D P1a — every item row carries its other units (one extra query a page).
-    qs = qs.prefetch_related("extra_units__unit", "codes").select_related("product")
+    qs = qs.prefetch_related("extra_units__unit", "codes", "addons").select_related("product")
     qs = qs.annotate(
         _on_hand=Coalesce(
             _stock_subquery("on_hand", location_id), Value(Decimal("0.000")), output_field=QTY

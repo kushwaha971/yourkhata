@@ -128,6 +128,12 @@ def _item_row(item: Item) -> dict:
         ),
         "attributes": item.attributes or {},
         # D P3 — IMEI / serial tracking and the warranty months a sale starts.
+        # D P6 — a café item's add-ons, for the bill's add-on sheet.
+        "addons": [
+            # Sorted here: `.order_by()` would bypass the page's prefetch.
+            {"name": a.name, "price": str(a.price)}
+            for a in sorted(item.addons.all(), key=lambda a: a.position)
+        ],
         "tracking": item.tracking,
         "warranty_months": item.warranty_months,
         # D P4 — the batch a sale would take next (earliest unexpired with stock),

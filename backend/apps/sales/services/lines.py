@@ -110,6 +110,20 @@ def build_lines(
             default_price = (
                 unit.price if unit.price is not None else item.selling_price * unit.factor
             ).quantize(Decimal("0.0001"))
+        # D P6 — the café item's add-ons chosen for each piece, priced from the
+        # item (a snapshot on the line); a default price includes them.
+        chosen_addons: list = []
+        if item is not None and raw.get("addons"):
+            offered = {a.name.lower(): a for a in item.addons.all()}
+            for entry in raw.get("addons") or []:
+                name = str((entry or {}).get("name") if isinstance(entry, dict) else entry or "").strip()
+                found = offered.get(name.lower())
+                if found is None:
+                    errors[f"{prefix}.addons"] = [f"{name} is not an add-on of this item."]
+                    continue
+                chosen_addons.append({"name": found.name, "price": str(found.price)})
+            if default_price is not None:
+                default_price = default_price + sum(Decimal(a["price"]) for a in chosen_addons)
         price = _decimal(pick("unit_price", default_price), 4)
         d_type = raw.get("discount_type") or None
         d_value = _decimal(raw.get("discount_value"), 2) if d_type else None
@@ -177,6 +191,7 @@ def build_lines(
                 "unit_code": unit_code,
                 "unit_factor": unit.factor,
                 # D P4 — a batch the counter chose; otherwise FEFO picks at issue.
+                "addons": chosen_addons,
                 "batches": [
                     {"batch_no": str(b.get("batch_no") or "").upper()}
                     for b in (raw.get("batches") or [])

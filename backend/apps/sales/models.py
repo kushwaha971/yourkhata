@@ -219,6 +219,8 @@ class SalesDocumentLine(models.Model):
     serials = models.JSONField(default=list, blank=True)
     #: D P4 — the batches on this line: [{batch_no, expiry, mrp?, qty}].
     batches = models.JSONField(default=list, blank=True)
+    #: D P6 — the add-ons chosen for each piece: [{name, price}] (a snapshot).
+    addons = models.JSONField(default=list, blank=True)
     unit_price = UnitCostField(default=0)
     tax_inclusive = models.BooleanField(default=False)
     discount_type = models.CharField(
