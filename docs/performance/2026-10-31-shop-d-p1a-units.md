@@ -40,3 +40,5 @@ in the smallest unit.
 - D1's sample "Havells wire, 1 Coil = 90 m" sells the coil as the item's base
   unit and also states its length. Is "length per coil" just a caption, or must
   wire also sell by the metre (base = m, Coil = 90 m)? Built as the second.
+  **Answered (owner, 31 Oct 2026): yes, wire sells by the metre.** An item
+  with base unit MTR and "Also sold as Coil = 90 MTR" does exactly that.
