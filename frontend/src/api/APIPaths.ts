@@ -160,6 +160,9 @@ export const API_PATHS = {
   SERIAL: (code: string) => `/serials/${seg(code)}`,
   /** D P4 — batches expired or expiring soon. */
   STOCK_EXPIRY: '/stock/expiry',
+  /** G1 — a jeweller's rate per gram, today and by month. */
+  METAL_RATES_TODAY: '/metal-rates/today',
+  METAL_RATES: '/metal-rates',
   /** D12 — the business's own figures on Home. */
   STOCK_HOME_STRIP: '/stock/home-strip',
   STOCK_TRANSFERS: '/stock-transfers',

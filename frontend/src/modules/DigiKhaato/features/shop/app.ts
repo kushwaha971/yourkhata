@@ -20,6 +20,7 @@ import {
   ShoppingCart,
   Smartphone,
   Tags,
+  TrendingUp,
   Truck,
   Undo2,
   Store,
@@ -270,6 +271,20 @@ export const SHOP_APP: AppManifest = {
       permission: 'inventory.item.read',
       section: 'stock',
       order: 4,
+      tab: 'items',
+    },
+    // G1 — a jeweller's rate per gram for the day; first in Items & stock
+    // (design nav: `unshift`), only where the `rates` feature is on.
+    {
+      key: 'rates',
+      icon: TrendingUp,
+      labelId: 'nav.rates',
+      href: ROUTES.STOCK_RATES,
+      module: 'inventory',
+      permission: 'inventory.item.read',
+      feature: 'rates',
+      section: 'stock',
+      order: 0,
       tab: 'items',
     },
     // D P4 (design D7) — batches expired or expiring soon.
