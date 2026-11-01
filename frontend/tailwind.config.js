@@ -377,11 +377,11 @@ module.exports = {
         ],
         'body-sm': ['0.875rem', { lineHeight: '1.43', fontWeight: '400' }],
         caption: ['0.75rem', { lineHeight: '1.33', fontWeight: '500' }],
-        button: [
-          'clamp(1rem, 0.97rem + 0.15vw, 1.0625rem)',
-          { lineHeight: '1.3', fontWeight: '700' },
-        ],
-        'button-sm': ['0.9375rem', { lineHeight: '1.33', fontWeight: '600' }],
+        // Owner, 1 Nov 2026: the design's button type everywhere (design CSS
+        // .btn 14px/600, .btn.lg 15px, .btn.sm 13px). Was 16-17 px / 700.
+        button: ['0.875rem', { lineHeight: '1.43', fontWeight: '600' }],
+        'button-lg': ['0.9375rem', { lineHeight: '1.33', fontWeight: '600' }],
+        'button-sm': ['0.8125rem', { lineHeight: '1.23', fontWeight: '600' }],
       },
       fontFamily: {
         sans: ['var(--font-sans)'],

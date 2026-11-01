@@ -243,7 +243,7 @@ const BUTTON_SIZE: Record<MLButtonSize, string> = {
   sm: 'h-7 px-3 text-button-sm',
   md: 'h-10 px-4 text-button',
   // 44px is the mobile touch-target floor (R-A-3).
-  lg: 'h-11 px-5 text-button',
+  lg: 'h-11 px-5 text-button-lg',
 };
 
 /**

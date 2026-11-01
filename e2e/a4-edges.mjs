@@ -115,7 +115,9 @@ const addItem = async (page, name) => {
 // property that is proven, never by position).
 const HARNESS_MADE = /^(A\d+ item|Edge |A6 )/;
 const stockedItems = async (s) =>
-  (await s.api('/items?page_size=200&ordering=name')).filter(
+  // Most stock first (2 Nov): by name, harness-made items kept filling the
+  // first 200 and items[13] stopped existing.
+  (await s.api('/items?page_size=200&ordering=-on_hand')).filter(
     (i) => Number(i.selling_price) > 0 && Number(i.on_hand ?? 0) > 20 && !HARNESS_MADE.test(i.name)
   );
 const lines = (page) => page.locator('[data-testid=invoice-line] [data-part=name]').allInnerTexts();

@@ -896,3 +896,12 @@ permission, setting key (`shop.extra_types`, `shop.features.*`), API key and
 TextChoices label. "Ledger" was already used twice for the Money book
 ("Customer ledger", a landing tab, "Your ledger gets a write-off"); those now
 say "Customer khata", "Money book" and "Your books", so the word means one app.
+
+R-DEC-70 (owner, 1–2 November 2026, on G1). Two answers to the conflicts the G1
+side-by-side listed. "Fix G1 first": the phone gets Back beside the page title
+where the design draws it (Today's rate), and a rate box reads "₹12,710 / g"
+(desktop) or "₹12,710" (phone), through an opt-in `unit` on `UbMoneyInput`;
+every other money box is unchanged. "Button type first": every button's text
+takes the design's type, 14 px / 600 (`.btn`), 15 px (`.btn.lg`) and 13 px
+(`.btn.sm`), replacing 16–17 px / 700; heights stay 40 / 44 / 28 px. Still
+open from G1: the history's search field, the 1024 px layout, the 320 px bar.

@@ -63,12 +63,12 @@ already advertise the rate. No paid rate feed (ADR-021).
    rates card (card keeps 420 px).
 5. **320 px dock.** At 320 the two dock buttons drop to 14 px text so Save
    rates stays on screen; 390 and up keep the design's 46 px / 15 px.
-6. **Button type.** The design's buttons are 14 px / 600 (desktop) and
-   46 px / 15 px (phone bar). Ours come from the shared button token,
-   16–17 px / 700, and the documented 44 px `lg` (DESIGN-SYSTEM.md), on every
-   screen. Heights match on desktop (40 px). Changing the type here alone
-   would make this one screen differ; changing it everywhere is the owner's
-   call.
+6. **Button type.** The design's buttons are 14 px / 600 (`.btn`), 15 px
+   (`.btn.lg`) and 13 px (`.btn.sm`); ours were 16–17 px / 700 on every
+   screen. **Owner, 1 Nov: "Button type first" → changed app-wide** in the one
+   place it is set (`tailwind.config.js` `button`, `button-lg`,
+   `button-sm`). Heights stay as documented (40 / 44 / 28 px), so the phone
+   bar's 44 px against the design's 46 is still a difference.
 7. **Money box look.** The design writes "₹12,710 / g" (desktop) and
    "₹12,710" (phone), right-aligned. **Owner, 1 Nov → built** as an opt-in
    `unit` on `UbMoneyInput`: when it is set, ₹ hugs the figure and the unit
@@ -195,3 +195,20 @@ was proved to fail before the fix:
   fails on the old rule.
 - **Still open:** the shared button type (conflict 6), the history search
   (conflict 8), 1024 px (conflict 4), and the 320 px dock (conflict 5).
+
+## Owner's "Button type first" (2 Nov)
+
+- Every button's text is now the design's: medium 14 px / 600, large 15 px /
+  600 (`text-button-lg`, new), small 13 px / 600. It is set in
+  `tailwind.config.js` and used by `MLButton`, so every button and
+  button-styled link follows. Measured live: Home's header buttons are
+  14 px / 600 at 40 px tall; G1's phone bar is 15 px / 600 at 44 px.
+- **A latent defect found on the way:** `cn()` only knew `button` and
+  `button-sm` as text sizes. A new `text-button-lg` would have been read as a
+  COLOUR, and tailwind-merge would have dropped the button's own ink (for
+  example the orange button's text colour). It is registered now; the cn test
+  fails without it.
+- **Paise read as two digits:** the history and "Yesterday" showed ₹150.5;
+  they now show ₹150.50 (unit test, proved to fail on the old formatting).
+- G1 harness: the phone bar is checked at 44 / 15 / 600 and the desktop
+  header at 40 / 14 / 600. The check was proved to fail on the old type.

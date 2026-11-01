@@ -114,3 +114,14 @@ it('a whole rupee rate still reads whole after leaving the box (not 12,710.00)',
   await userEvent.tab();
   expect(screen.getByLabelText('Gold 24K (999)')).toHaveValue('12,710');
 });
+
+it('paise read as two digits: Yesterday ₹150.50, not ₹150.5', async () => {
+  signIn(['inventory.item.read']);
+  const yesterday = rates.yesterday as NonNullable<TodayRates['yesterday']>;
+  service.getTodayRates.mockResolvedValue({
+    ...rates,
+    yesterday: { ...yesterday, rates: { ...yesterday.rates, silver: '150.50' } },
+  });
+  renderWithProviders(<RatesPageContent />);
+  expect(await screen.findByText('Yesterday ₹150.50')).toBeInTheDocument();
+});

@@ -98,8 +98,9 @@ const kirana = await session('qa-owner');
   const y = before.data?.yesterday?.rates ?? {};
   for (const p of ['gold_24k', 'gold_22k', 'gold_18k', 'silver']) {
     const shown = (await page.getByTestId(`rate-input-${p}`).inputValue()).replaceAll(',', '');
-    const want = y[p] ? String(Number(y[p])) : '';
-    if (shown !== want) fail('F2', `${p} box shows "${shown}", yesterday was "${want}"`);
+    // Compared as numbers: "150.50" on screen is yesterday's 150.50.
+    const want = y[p] ? Number(y[p]) : null;
+    if ((shown === '' ? null : Number(shown)) !== want) fail('F2', `${p} box shows "${shown}", yesterday was ${y[p]}`);
   }
   if (puts !== 0) fail('F2', `Same as yesterday sent ${puts} save(s)`);
 
@@ -239,7 +240,8 @@ for (const width of widths) {
           // 320 px has no mock; the two dock buttons step down a size there to fit.
           // Design .btn.lg is 46 / 15 px; the design system's lg is 44 px with the shared
           // button type (DESIGN-SYSTEM.md). Listed for the owner; checked against the system.
-          if (m.btn && m.btn.h !== 44) fail(key, `dock button ${m.btn.h}px (design system lg 44)`);
+          // Owner, 1 Nov: the design's type on every button (.btn.lg 15 px / 600).
+          if (width >= 360 && m.btn && (m.btn.h !== 44 || m.btn.font !== 15 || m.btn.weight !== '600')) fail(key, `dock button ${m.btn.h}px / ${m.btn.font}px / ${m.btn.weight} (44 / 15 / 600)`);
           if (m.row && m.row.h < 56) fail(key, `rate row ${m.row.h}px (design ≥ 56)`);
           if (!m.back || m.back[0] < 44 || m.back[1] < 44 || m.back[2] !== '/more') fail(key, `Back ${JSON.stringify(m.back)} (design: beside the title, 44 px, to More)`);
           if (/\/ g/.test(m.boxText)) fail(key, 'phone box shows "/ g" (design: ₹ 12,710 only)');
@@ -249,7 +251,7 @@ for (const width of widths) {
           // design .btn 40 / 14px 600
           // Height matches the design (40); its 14 px / 600 type differs from the shared
           // button token (16–17 px / 700). Listed for the owner, not changed on one screen.
-          if (m.btn && m.btn.h !== 40) fail(key, `header button ${m.btn.h}px (design 40)`);
+          if (m.btn && (m.btn.h !== 40 || m.btn.font !== 14 || m.btn.weight !== '600')) fail(key, `header button ${m.btn.h}px / ${m.btn.font}px / ${m.btn.weight} (design 40 / 14 / 600)`);
         }
         const title = locale === 'hi' ? 'आज का भाव' : "Today's rate";
         if (!(await page.getByRole('heading', { name: title }).count())) fail(key, `no "${title}" heading`);

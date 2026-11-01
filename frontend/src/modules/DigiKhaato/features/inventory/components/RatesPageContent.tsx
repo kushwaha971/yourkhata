@@ -56,7 +56,9 @@ const EMPTY: Draft = { gold_24k: '', gold_22k: '', gold_18k: '', silver: '' };
 const rupees = (value: string | null | undefined): string => {
   if (!value) return '—';
   const n = Number(value);
-  return `₹${n.toLocaleString('en-IN', { maximumFractionDigits: 2 })}`;
+  // Paise, when there are any, as two digits: ₹150.50, never ₹150.5.
+  const paise = Math.round(n * 100) % 100 !== 0;
+  return `₹${n.toLocaleString('en-IN', { minimumFractionDigits: paise ? 2 : 0, maximumFractionDigits: 2 })}`;
 };
 
 const toDraft = (rates: RateFigures | undefined): Draft =>

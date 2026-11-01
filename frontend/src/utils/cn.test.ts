@@ -32,4 +32,7 @@ it('keeps semantic typography separate from CTA foreground color', () => {
   expect(cn('text-cta-foreground', 'text-button')).toBe('text-cta-foreground text-button');
   expect(cn('text-text-secondary', 'text-body-sm')).toBe('text-text-secondary text-body-sm');
   expect(cn('text-button', 'text-caption')).toBe('text-caption');
+  // The large button's size (owner, 1 Nov) must not be read as a colour and
+  // drop the button's own ink.
+  expect(cn('text-cta-foreground', 'text-button-lg')).toBe('text-cta-foreground text-button-lg');
 });

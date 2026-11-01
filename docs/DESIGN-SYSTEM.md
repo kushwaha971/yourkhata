@@ -61,7 +61,7 @@ migration. Money is tabular; `UbAmount` receivable/payable uses `get`/`give`.
 | Thing                                   | Value                                                                |
 | --------------------------------------- | -------------------------------------------------------------------- |
 | Every input, select, search, date field | 40 px (`h-10`), 8 px radius, token hairline, ink border on focus |
-| Buttons                                 | `md` 40 px, `sm` 28 px, `lg` 44 px, token-backed button typography                |
+| Buttons                                 | `md` 40 px 14/600, `sm` 28 px 13/600, `lg` 44 px 15/600 (R-DEC-70)             |
 | Filter chips                            | 32 px pills                                                          |
 | Cards and panels                        | 12 px radius, hairline border, 16 px padding                         |
 | Stat tiles                              | `UbStatCard` in `UbStatGrid`: up to five across, filling the row     |
