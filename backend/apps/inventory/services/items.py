@@ -647,7 +647,25 @@ def create_item(*, ctx: Ctx, payload: dict) -> dict:
     )
     if opening is not None:
         _post_opening(ctx=ctx, item=item, opening=opening, path="create")
+    if payload.get("tag"):
+        _add_first_tag(ctx=ctx, item=item, raw=payload["tag"])
     return {"item": item, "warnings": warnings}
+
+
+def _add_first_tag(*, ctx: Ctx, item: Item, raw: Any) -> None:
+    """G2a — design D3 draws "Tag details" on the Add item form: the item and
+    its first piece are saved together or not at all (this runs inside
+    `create_item`'s transaction). The tag's refusals come back under `tag.`."""
+    from apps.inventory.services.tags import add_tag
+    from apps.platform_app.selectors.business_words import features_of
+
+    if "jewellery" not in features_of(ctx.tenant) or not isinstance(raw, dict):
+        raise ValidationFailed({"tag": ["Tags are not used by this business."]})
+    try:
+        add_tag(ctx=ctx, item=item, data=raw)
+    except ValidationFailed as exc:
+        details = getattr(exc, "details", None) or {}
+        raise ValidationFailed({f"tag.{k}": v for k, v in details.items() if k != "field_codes"}) from None
 
 
 def _insert(*, ctx: Ctx, fields: dict, sku: str) -> Item:

@@ -124,3 +124,31 @@ def test_a_piece_already_in_the_shop_is_held_at_its_metal_value_today(owner: Any
 
     move = StockMovement.objects.filter(item=chain).latest("created_at")
     assert move.unit_cost == Decimal("143761.0000")
+
+
+def _create(client: Any, **fields: Any) -> Any:
+    import uuid
+
+    from apps.inventory.tests.conftest import unit
+
+    body = {"name": "Gold chain 22K", "unit_id": str(unit("NOS").id), "tracking": "serial", **fields}
+    return client.post(reverse("v1:item-list"), body, format="json", HTTP_IDEMPOTENCY_KEY=str(uuid.uuid4()))
+
+
+def test_the_add_item_form_saves_the_item_and_its_first_tag_together(owner: Any) -> None:
+    """Design D3 "Tag details" on Add item: one save, both rows."""
+    res = _create(owner, tag=TAG)
+    assert res.status_code == 201, res.content
+    item_id = res.json()["data"]["id"]
+    rows = owner.get(reverse("v1:item-tags", args=[item_id])).json()["data"]
+    assert [r["tag_no"] for r in rows] == ["GC-1042"]
+
+
+def test_a_wrong_first_tag_saves_neither_and_names_the_tag_field(owner: Any) -> None:
+    """A refused tag must not leave an item behind with no piece in it."""
+    from apps.inventory.models import Item
+
+    res = _create(owner, tag={**TAG, "net_g": "1.000"})
+    assert res.status_code == 400
+    assert "tag.net_g" in res.json()["error"]["details"]
+    assert not Item.objects.filter(name="Gold chain 22K").exists()
