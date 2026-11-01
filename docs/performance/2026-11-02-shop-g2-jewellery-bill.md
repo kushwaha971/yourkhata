@@ -69,6 +69,21 @@ Feature key `jewellery` (Part H's name), on for the jewellery preset.
    payal is "925"; G1 has only "Silver (999)". Listed: either add "Silver 925"
    to G1's rates or price 925 pieces from the 999 rate.
 
+3. **Cost of a piece already in the shop.** The design's tag form asks no
+   cost, but stock needs one. Built: its metal value at today's G1 rate (net g
+   × the rate for its purity), or ₹0 before a rate is set. A piece BOUGHT comes
+   in through a purchase at its price. The owner may prefer a cost field.
+
+## G2a backend (2 Nov), done
+
+- `inventory.TagDetail` (one-to-one on `Serial`), migration 0016.
+- `GET/POST /api/v1/items/<id>/tags` and `GET /api/v1/jewel-tags/summary`.
+- Feature `jewellery`, on for the jewellery preset; any other kind gets 404.
+- Read: `inventory.item.read`. Add: `inventory.stock.adjust`, because adding a
+  tag puts a piece into stock (a stock adjustment, reason Other, "Tag … added").
+- Tests: `apps/inventory/tests/test_jewellery_tags.py`, 13. The kind-gate test
+  was proved to fail without the gate.
+
 ## Next steps
 
 G2a backend: `TagDetail`, the tag create/list API on an item, the feature key,

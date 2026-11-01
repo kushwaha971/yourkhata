@@ -18,6 +18,7 @@ from apps.inventory.views.items import (
 )
 from apps.inventory.views.metal_rates import RateHistoryView, TodayRateView
 from apps.inventory.views.price_lists import PriceListViewSet
+from apps.inventory.views.tags import ItemTagsView, TagSummaryView
 from apps.inventory.views.stock_counts import StockCountViewSet
 from apps.inventory.views.transfers import LocationViewSet, StockTransferViewSet
 
@@ -36,6 +37,9 @@ urlpatterns = [
     path("stock/low", LowStockView.as_view(), name="stock-low"),
     path("serials/<str:code>", SerialView.as_view(), name="serial-detail"),
     path("stock/expiry", ExpiryView.as_view(), name="stock-expiry"),
+    # G2a — a jeweller's tags (before the router, whose items/<pk>/ owns the rest).
+    path("items/<uuid:pk>/tags", ItemTagsView.as_view(), name="item-tags"),
+    path("jewel-tags/summary", TagSummaryView.as_view(), name="jewel-tag-summary"),
     path("metal-rates/today", TodayRateView.as_view(), name="metal-rate-today"),
     path("metal-rates", RateHistoryView.as_view(), name="metal-rate-history"),
     path("stock/home-strip", HomeStripView.as_view(), name="stock-home-strip"),

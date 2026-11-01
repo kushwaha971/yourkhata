@@ -722,3 +722,31 @@ class MetalRate(TenantModel):
         verbose_name = "metal rate"
         verbose_name_plural = "metal rates"
         constraints = [models.UniqueConstraint(fields=["tenant", "day"], name="uq_metal_rate_day")]
+
+
+class TagDetail(TenantModel):
+    """G2a — what a jeweller's tag says about one piece (design D3 "Tag details").
+
+    The tag itself is a `Serial` (its `serial` is the tag no.), so a piece is in
+    stock, sold on a bill or returned through the IMEI engine; this row holds
+    the weights and charges the bill prices it by (G2b): net weight × the day's
+    rate for its purity, plus making, wastage and the stone charge.
+    """
+
+    serial = models.OneToOneField(Serial, on_delete=models.CASCADE, related_name="tag")
+    #: One of the G1 purities (`services.metal_rates.PURITIES`).
+    purity = models.CharField(max_length=12)
+    gross_g = QuantityField()
+    stone_g = QuantityField(default=0)
+    net_g = QuantityField()
+    #: "pct" (of the metal value) or "per_g" (₹ per net gram).
+    making_type = models.CharField(max_length=8, default="pct")
+    making_value = MoneyField(default=0)
+    wastage_pct = MoneyField(default=0)
+    stone_charge = MoneyField(default=0)
+    huid = models.CharField(max_length=6, blank=True, default="")
+
+    class Meta:
+        db_table = "inventory_tag_detail"
+        verbose_name = "tag detail"
+        verbose_name_plural = "tag details"
