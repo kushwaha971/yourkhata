@@ -10,6 +10,7 @@ import { hasReason } from 'src/utils/reason';
 
 import { categoryExists, unitCodeExists } from '../view-model/mastersView';
 
+import type { TagFormValues } from '../api/tagService';
 import type {
   AdjustmentFormValues,
   AdjustmentMode,
@@ -195,6 +196,25 @@ export const useInventorySchemas = (
         .defined()
         .default('none'),
       warrantyMonths: Yup.number().defined().default(0),
+      // G2a — the server checks the weights (net = gross − stone, HUID, unique
+      // tag no.) and names the box; here a typed tag needs its gross weight.
+      tag: Yup.object({
+        tagNo: Yup.string().defined().default(''),
+        purity: Yup.mixed<TagFormValues['purity']>().defined().default('gold_22k'),
+        grossG: Yup.string()
+          .defined()
+          .default('')
+          .when('tagNo', {
+            is: (tagNo: string) => Boolean(tagNo?.trim()),
+            then: (schema) => schema.trim().required(t('items.form.tag.grossRequired')),
+          }),
+        stoneG: Yup.string().defined().default(''),
+        netG: Yup.string().defined().default(''),
+        makingType: Yup.mixed<'pct' | 'per_g'>().oneOf(['pct', 'per_g']).defined().default('pct'),
+        makingValue: Yup.string().defined().default(''),
+        wastagePct: Yup.string().defined().default(''),
+        huid: Yup.string().defined().default(''),
+      }).defined(),
       sizes: Yup.array().of(Yup.string().defined()).defined().default([]),
       colours: Yup.array().of(Yup.string().defined()).defined().default([]),
       rack: Yup.string()

@@ -26,8 +26,10 @@ import {
   UbStatusBanner,
   UbText,
 } from 'src/design-system';
+import { useAppSelector } from 'src/hooks/useAppStore';
 import { usePermissions } from 'src/hooks/usePermissions';
 import { useTranslation } from 'src/hooks/useTranslation';
+import { selectActiveTenant } from 'src/redux/slice/sessionSlice';
 import { formatBusinessDate } from 'src/utils/dates';
 import { formatInr } from 'src/utils/money';
 import { formatQuantity } from 'src/utils/quantity';
@@ -48,8 +50,7 @@ const ItemFormDrawer = dynamic(() => import('./ItemFormDrawer').then((m) => m.It
 });
 const StockAdjustmentDrawer = dynamic(
   () => import('./StockAdjustmentDrawer').then((m) => m.StockAdjustmentDrawer),
-  { ssr: false,
-  loading: () => <UbDrawerLoading /> }
+  { ssr: false, loading: () => <UbDrawerLoading /> }
 );
 /** The Sales and Purchases tabs load with the tap that opens them: +7.7 KB
  * on the route chunk otherwise, paid by everyone who opens an item to read
@@ -57,13 +58,16 @@ const StockAdjustmentDrawer = dynamic(
 const ItemTradePanel = dynamic(() => import('./ItemTradePanel').then((m) => m.ItemTradePanel), {
   ssr: false,
 });
+// G2a — a jeweller's "Weight and rate" tab; only that kind ever loads it.
+const ItemTagsPanel = dynamic(() => import('./ItemTagsPanel').then((m) => m.ItemTagsPanel), {
+  ssr: false,
+});
 const AdjustmentDetailDialog = dynamic(
   () => import('./AdjustmentDetailDialog').then((m) => m.AdjustmentDetailDialog),
-  { ssr: false,
-  loading: () => <UbDialogLoading /> }
+  { ssr: false, loading: () => <UbDialogLoading /> }
 );
 
-type ItemTab = 'movements' | 'sales' | 'purchases';
+type ItemTab = 'tags' | 'movements' | 'sales' | 'purchases';
 
 const TYPE_FILTERS: readonly (MovementType | 'all')[] = [
   'all',
@@ -96,6 +100,7 @@ export function ItemDetailPageContent({ id }: Readonly<{ id: string }>): React.J
   const [busy, setBusy] = useState(false);
   const { item, can, impaired } = detail;
   const perms = usePermissions();
+  const features = useAppSelector(selectActiveTenant)?.features;
   const [tab, setTab] = useState<ItemTab | null>(null);
 
   const typeOptions = useMemo(
@@ -143,7 +148,10 @@ export function ItemDetailPageContent({ id }: Readonly<{ id: string }>): React.J
       : perms.hasModule('purchases') && perms.can('purchases.bill.read');
 
   const showMovements = tracked && can.stock;
+  // G2a — design D5 for a jeweller: "Weight and rate" first.
+  const showTags = Boolean(features?.includes('jewellery')) && item?.tracking === 'serial';
   const tabs = [
+    ...(showTags ? [{ value: 'tags' as const, label: t('items.tags.title') }] : []),
     ...(showMovements
       ? [{ value: 'movements' as const, label: t('items.detail.movementsTab') }]
       : []),
@@ -343,8 +351,15 @@ export function ItemDetailPageContent({ id }: Readonly<{ id: string }>): React.J
               ) : (
                 <UbSectionHeading title={t('items.detail.history')} />
               )}
+              {active === 'tags' && item && (
+                <ItemTagsPanel
+                  itemId={item.id}
+                  canAdd={can.adjust && !archived}
+                  onChanged={detail.refetch}
+                />
+              )}
               {active === 'movements' && movementsSection}
-              {active !== 'movements' && (
+              {active !== 'movements' && active !== 'tags' && (
                 <ItemTradePanel key={active} itemId={item.id} side={active} unitCode={unit} />
               )}
             </UbStack>

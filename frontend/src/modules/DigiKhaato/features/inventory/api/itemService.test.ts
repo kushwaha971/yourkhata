@@ -13,6 +13,7 @@ import {
   type ItemRowWire,
 } from './itemService';
 import { toAdjustmentBody } from './stockService';
+import { EMPTY_TAG } from './tagService';
 
 import type { ItemFormValues } from '../types/item.types';
 
@@ -74,6 +75,7 @@ const FORM: ItemFormValues = {
   addons: [],
   tracking: 'none',
   warrantyMonths: 0,
+  tag: { ...EMPTY_TAG },
 };
 
 describe('listItems', () => {
@@ -193,6 +195,22 @@ describe('lookupItemByBarcode', () => {
 });
 
 describe('toItemBody', () => {
+  it('G2a: sends the first tag only with a NEW item that has a tag no.', () => {
+    const tag = { ...EMPTY_TAG, tagNo: ' gc-1042 ', grossG: '12.900', stoneG: '0.560' };
+    const body = toItemBody({ ...FORM, tag }, { withOpening: true }) as unknown as Record<string, unknown>;
+    expect(body.tag).toEqual(
+      expect.objectContaining({
+        tag_no: 'gc-1042',
+        purity: 'gold_22k',
+        gross_g: '12.900',
+        stone_g: '0.560',
+        net_g: '',
+      })
+    );
+    expect(toItemBody({ ...FORM, tag }, { withOpening: false })).not.toHaveProperty('tag');
+    expect(toItemBody(FORM, { withOpening: true })).not.toHaveProperty('tag');
+  });
+
   it('sends blanks as null and the opening stock only on create', () => {
     const body = toItemBody(FORM, { withOpening: true });
     expect(body.name).toBe('Basmati Rice');

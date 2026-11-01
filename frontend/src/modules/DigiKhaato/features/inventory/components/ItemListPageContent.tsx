@@ -51,11 +51,13 @@ import {
   type UbGridState,
 } from 'src/design-system/UbDataGrid';
 import { useAppRouter } from 'src/hooks/useAppRouter';
+import { useAppSelector } from 'src/hooks/useAppStore';
 import { useAppDispatch } from 'src/hooks/useAppStore';
 import { useDebounce } from 'src/hooks/useDebounce';
 import { usePermissions } from 'src/hooks/usePermissions';
 import { useScannerListener } from 'src/hooks/useScannerListener';
 import { useTranslation } from 'src/hooks/useTranslation';
+import { selectActiveTenant } from 'src/redux/slice/sessionSlice';
 import { showSnackbar } from 'src/redux/slice/snackbarSlice';
 import { ROUTES, itemPath } from 'src/routes';
 import { formatInr } from 'src/utils/money';
@@ -67,6 +69,7 @@ import {
 } from 'modules/DigiKhaato/features/imports/components/ListHeaderActions';
 
 import { itemExportPath, lookupItemByBarcode } from '../api/itemService';
+import { getTagsInStock } from '../api/tagService';
 import { useInventoryMasters } from '../hooks/useInventoryMasters';
 import { useItemForm } from '../hooks/useItemForm';
 import { useItemList } from '../hooks/useItemList';
@@ -90,15 +93,13 @@ const ItemFormDrawer = dynamic(() => import('./ItemFormDrawer').then((m) => m.It
 });
 const StockAdjustmentDrawer = dynamic(
   () => import('./StockAdjustmentDrawer').then((m) => m.StockAdjustmentDrawer),
-  { ssr: false,
-  loading: () => <UbDrawerLoading /> }
+  { ssr: false, loading: () => <UbDrawerLoading /> }
 );
 /* 09 §8.4 — the saved snackbar's View opens this, so every screen that
    mounts the drawer mounts it too. */
 const AdjustmentDetailDialog = dynamic(
   () => import('./AdjustmentDetailDialog').then((m) => m.AdjustmentDetailDialog),
-  { ssr: false,
-  loading: () => <UbDialogLoading /> }
+  { ssr: false, loading: () => <UbDialogLoading /> }
 );
 
 /** The phone card's disc: what KIND of item this is, not initials — an item
@@ -206,7 +207,9 @@ export function ItemListPageContent(): React.JSX.Element {
       // C2 (design pScanNF): a phone answers with its own sheet; the snackbar
       // would only repeat it underneath.
       if (!phone)
-        dispatch(showSnackbar({ severity: 'warning', id: 'items.scan.notFound', params: { code } }));
+        dispatch(
+          showSnackbar({ severity: 'warning', id: 'items.scan.notFound', params: { code } })
+        );
       return false;
     },
     [router, dispatch, phone]
@@ -328,6 +331,17 @@ export function ItemListPageContent(): React.JSX.Element {
       })),
     [counts, t]
   );
+
+  const keepsTags = Boolean(useAppSelector(selectActiveTenant)?.features?.includes('jewellery'));
+  const [tagsInStock, setTagsInStock] = useState<number | null>(null);
+  useEffect(() => {
+    if (!keepsTags) return undefined;
+    const controller = new AbortController();
+    void getTagsInStock(controller.signal)
+      .then(setTagsInStock)
+      .catch(() => undefined);
+    return () => controller.abort();
+  }, [keepsTags]);
 
   /* 09 §8.1 — on a phone the stock states are chips, not a sheet: All · Low · Out of
      stock, with the server's counts. "Low" holds out-of-stock too, as the tab does. */
@@ -633,6 +647,12 @@ export function ItemListPageContent(): React.JSX.Element {
           </SummaryStatGrid>
         )}
 
+        {tagsInStock !== null && !emptyBook && (
+          // G2a — design D4 for a jeweller: "Tags in stock · N", from the server.
+          <UbText as="p" variant="body-sm-medium" tone="secondary" data-testid="tags-in-stock">
+            {t('items.tagsInStock', { n: tagsInStock })}
+          </UbText>
+        )}
         {emptyBook ? (
           /* Owner, 12 Oct 2026: "I don't want that type of screen in case of
              empty" — one sentence and one button on the page; no ₹0 totals,

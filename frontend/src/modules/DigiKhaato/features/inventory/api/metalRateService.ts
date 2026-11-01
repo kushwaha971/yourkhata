@@ -30,7 +30,11 @@ interface DayRateDto {
 const toDay = (row: DayRateDto | null): DayRate | null =>
   row ? { day: row.day, rates: row.rates, setBy: row.set_by, setAt: row.set_at } : null;
 
-const toToday = (data: { day: string; today: DayRateDto | null; yesterday: DayRateDto | null }): TodayRates => ({
+const toToday = (data: {
+  day: string;
+  today: DayRateDto | null;
+  yesterday: DayRateDto | null;
+}): TodayRates => ({
   day: data.day,
   today: toDay(data.today),
   yesterday: toDay(data.yesterday),
@@ -46,7 +50,10 @@ export const getTodayRates = async (signal?: AbortSignal): Promise<TodayRates> =
 
 /** Blank purities are sent as null: a metal the shop doesn't sell. */
 export const saveTodayRates = async (rates: RateFigures): Promise<TodayRates> => {
-  const response = await api.put<{ data: Parameters<typeof toToday>[0] }>(API_PATHS.METAL_RATES_TODAY, rates);
+  const response = await api.put<{ data: Parameters<typeof toToday>[0] }>(
+    API_PATHS.METAL_RATES_TODAY,
+    rates
+  );
   return toToday(response.data.data);
 };
 

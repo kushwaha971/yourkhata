@@ -2,6 +2,8 @@ import { API_PATHS } from 'src/api/APIPaths';
 import { api, ubConfig } from 'src/api/AxiosInstances';
 import { toQueryString } from 'src/utils/queryString';
 
+import { toTagBody } from './tagService';
+
 import type {
   Item,
   ItemFormValues,
@@ -486,6 +488,10 @@ export const toItemBody = (
           tracking: values.tracking,
           warranty_months: values.tracking === 'serial' ? values.warrantyMonths || null : null,
         }
+      : {}),
+    // G2a — the first tag rides with a NEW item (one transaction on the server).
+    ...(withOpening && !isService && values.tag?.tagNo.trim()
+      ? { tag: toTagBody(values.tag) }
       : {}),
   };
 };

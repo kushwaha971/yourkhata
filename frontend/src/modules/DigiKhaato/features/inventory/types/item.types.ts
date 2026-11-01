@@ -1,3 +1,4 @@
+import type { TagFormValues } from '../api/tagService';
 /**
  * Domain types for INV-01…INV-08 (camelCase; the service maps the wire).
  *
@@ -270,6 +271,8 @@ export interface ItemFormValues {
   /** D3 per kind — batch (medicine) or IMEI (phone) tracking, and warranty. */
   tracking: 'none' | 'serial' | 'batch';
   warrantyMonths: number;
+  /** G2a — a jeweller's first tag, saved with the item (design D3 "Tag details"). */
+  tag: TagFormValues;
 }
 
 export interface ExtraUnitValues {

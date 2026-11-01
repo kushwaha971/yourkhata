@@ -525,11 +525,7 @@ export function StockCountPageContent(): React.JSX.Element {
         open={confirming}
         onOpenChange={setConfirming}
         title={t('stock.count.confirm.title')}
-        description={
-          summary
-            ? t('stock.count.confirm.body', { count: summary.differ })
-            : undefined
-        }
+        description={summary ? t('stock.count.confirm.body', { count: summary.differ }) : undefined}
         closeLabel={t('common.action.close')}
         footer={
           <>

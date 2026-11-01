@@ -37,6 +37,7 @@ import { comboPaging } from 'src/utils/searchPaging';
 
 import { lookupItemByBarcode } from '../api/itemService';
 import { searchHsn } from '../api/mastersService';
+import { EMPTY_TAG } from '../api/tagService';
 import { DEFAULT_TAX_CODE, DEFAULT_UNIT_CODE } from '../constants/inventoryConstants';
 import { useInventoryMasters } from '../hooks/useInventoryMasters';
 import { useInventorySchemas } from '../validation/inventorySchemas';
@@ -47,6 +48,7 @@ import { ItemAddonFields } from './ItemAddonFields';
 import { ItemExtraUnitsFields } from './ItemExtraUnitsFields';
 import { ItemPartFields } from './ItemPartFields';
 import { ItemPriceFields } from './ItemPriceFields';
+import { ItemTagFields } from './ItemTagFields';
 import { ItemTrackingFields } from './ItemTrackingFields';
 import { ItemVariantFields } from './ItemVariantFields';
 
@@ -146,6 +148,7 @@ export function ItemFormDrawer({
       addons: (editing?.addons ?? []).map((row) => ({ name: row.name, price: row.price })),
       tracking: editing?.tracking ?? 'none',
       warrantyMonths: editing?.warrantyMonths ?? 0,
+      tag: { ...EMPTY_TAG },
     }),
     [editing, prefillBarcode, prefillName, defaultUnitId, masters.units]
   );
@@ -171,6 +174,8 @@ export function ItemFormDrawer({
   const hasAddons = Boolean(features?.includes('addons'));
   const keepsBatches = Boolean(features?.includes('batches'));
   const keepsImei = Boolean(features?.includes('serials'));
+  // G2a — a jeweller's item is made with its first tag (design D3 "Tag details").
+  const keepsTags = Boolean(features?.includes('jewellery'));
   // The server refuses a tracking change once stock has moved; shown locked.
   const trackingLocked =
     isEdit &&
@@ -430,7 +435,8 @@ export function ItemFormDrawer({
         {!isService && (keepsBatches || editing?.tracking === 'batch') && (
           <ItemTrackingFields kind="batch" locked={trackingLocked} />
         )}
-        {!isService && (keepsImei || editing?.tracking === 'serial') && (
+        {!isService && keepsTags && !isEdit && <ItemTagFields />}
+        {!isService && !keepsTags && (keepsImei || editing?.tracking === 'serial') && (
           <ItemTrackingFields kind="serial" locked={trackingLocked} />
         )}
         {/* D P6 — design D11: add-ons on a café item. */}

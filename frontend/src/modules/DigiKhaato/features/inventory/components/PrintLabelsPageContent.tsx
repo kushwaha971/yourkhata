@@ -56,13 +56,16 @@ export function PrintLabelsPageContent(): React.JSX.Element {
   const [size, setSize] = useState<LabelSize>('roll');
   const [showPrice, setShowPrice] = useState(true);
 
-  const toRow = (item: {
-    id: string;
-    name: string;
-    barcode: string | null;
-    sku: string;
-    sellingPrice: string;
-  }, count: string): LabelRow => ({
+  const toRow = (
+    item: {
+      id: string;
+      name: string;
+      barcode: string | null;
+      sku: string;
+      sellingPrice: string;
+    },
+    count: string
+  ): LabelRow => ({
     itemId: item.id,
     name: item.name,
     code: item.barcode || item.sku,
@@ -86,7 +89,11 @@ export function PrintLabelsPageContent(): React.JSX.Element {
               count: lines.reduce((sum, line) => sum + Math.round(Number(line.qty)), 0),
             })
           );
-          setRows(items.map((item, index) => toRow(item, String(Math.round(Number(lines[index]?.qty ?? 1))))));
+          setRows(
+            items.map((item, index) =>
+              toRow(item, String(Math.round(Number(lines[index]?.qty ?? 1))))
+            )
+          );
         })
         .catch(() => undefined);
     } else if (itemId) {
@@ -148,9 +155,7 @@ export function PrintLabelsPageContent(): React.JSX.Element {
             }}
             onPick={(item) =>
               setRows((all) =>
-                all.some((row) => row.itemId === item.id)
-                  ? all
-                  : [...all, toRow(item, '1')]
+                all.some((row) => row.itemId === item.id) ? all : [...all, toRow(item, '1')]
               )
             }
             openOnFocus={false}
@@ -206,13 +211,18 @@ export function PrintLabelsPageContent(): React.JSX.Element {
               onCheckedChange={setShowPrice}
               label={t('items.labels.showPrice')}
               description={
-                rows[0] ? t('items.labels.priceHint', { price: formatInr(rows[0].price) }) : undefined
+                rows[0]
+                  ? t('items.labels.priceHint', { price: formatInr(rows[0].price) })
+                  : undefined
               }
             />
             <UbText as="p" variant="body-sm-medium">
               {t('items.labels.preview')}
             </UbText>
-            <UbBox className="grid grid-cols-[repeat(auto-fill,50mm)] gap-2" data-testid="labels-preview">
+            <UbBox
+              className="grid grid-cols-[repeat(auto-fill,50mm)] gap-2"
+              data-testid="labels-preview"
+            >
               {labels.slice(0, 6).map(({ key, row }) => (
                 <BarcodeLabel
                   key={key}
@@ -227,11 +237,13 @@ export function PrintLabelsPageContent(): React.JSX.Element {
         </UbPanel>
       </UbBox>
       {/* What the printer gets: every label, on the chosen paper. */}
-      <UbBox className={
+      <UbBox
+        className={
           size === 'roll'
             ? 'ub-print-only ub-print-labels-roll hidden'
             : 'ub-print-only ub-print-labels-sheet hidden'
-        }>
+        }
+      >
         {labels.map(({ key, row }) => (
           <BarcodeLabel
             key={key}
