@@ -11,6 +11,7 @@ import {
   UbMoneyInput,
   UbPageHeader,
   UbPageShell,
+  UbPanel,
   UbStack,
   UbText,
   useGridTier,
@@ -61,7 +62,7 @@ const toDraft = (rates: RateFigures | undefined): Draft =>
     : EMPTY;
 
 const dayLabel = (iso: string, locale: string, long: boolean): string =>
-  new Date(`${iso}T00:00:00`).toLocaleDateString(locale === 'hi' ? 'hi-IN' : 'en-IN', {
+  new Date(`${iso}T00:00:00`).toLocaleDateString(locale.startsWith('hi') ? 'hi-IN' : 'en-IN', {
     weekday: long ? 'long' : 'short',
     day: 'numeric',
     month: 'short',
@@ -69,7 +70,10 @@ const dayLabel = (iso: string, locale: string, long: boolean): string =>
 
 const timeLabel = (iso: string, locale: string): string =>
   new Date(iso)
-    .toLocaleTimeString(locale === 'hi' ? 'hi-IN' : 'en-IN', { hour: 'numeric', minute: '2-digit' })
+    .toLocaleTimeString(locale.startsWith('hi') ? 'hi-IN' : 'en-IN', {
+      hour: 'numeric',
+      minute: '2-digit',
+    })
     .toLowerCase();
 
 /** A refusal per box, in the person's words, before anything is sent. */
@@ -140,6 +144,7 @@ const shareBoard = async (
 const historyColumns = (t: TranslateFn, locale: string): UbDataGridColumn<DayRate>[] => [
   {
     id: 'date',
+    widthShare: 1,
     header: t('stock.rates.col.date'),
     priority: 1,
     cardSlot: 'title',
@@ -147,6 +152,7 @@ const historyColumns = (t: TranslateFn, locale: string): UbDataGridColumn<DayRat
   },
   {
     id: 'k22',
+    widthShare: 1,
     header: '22K',
     priority: 1,
     align: 'end',
@@ -155,6 +161,7 @@ const historyColumns = (t: TranslateFn, locale: string): UbDataGridColumn<DayRat
   },
   {
     id: 'k24',
+    widthShare: 1,
     header: '24K',
     priority: 1,
     align: 'end',
@@ -163,6 +170,7 @@ const historyColumns = (t: TranslateFn, locale: string): UbDataGridColumn<DayRat
   },
   {
     id: 'silver',
+    widthShare: 1,
     header: t('stock.rates.col.silver'),
     priority: 1,
     align: 'end',
@@ -171,6 +179,7 @@ const historyColumns = (t: TranslateFn, locale: string): UbDataGridColumn<DayRat
   },
   {
     id: 'by',
+    widthShare: 2,
     header: t('stock.rates.col.setBy'),
     priority: 1,
     cardSlot: 'trailing',
@@ -302,13 +311,14 @@ export function RatesPageContent(): React.JSX.Element {
       <UbMoneyInput
         value={draft[p]}
         onChange={(value) => setDraft((d) => ({ ...d, [p]: value }))}
-        decimalPlaces={0}
+        // Whole rupees as the design prints them; paise kept and shown when typed.
+        decimalPlaces={draft[p].includes('.') ? 2 : 0}
         maxDecimalPlaces={2}
         invalid={Boolean(errors[p])}
         disabled={!canSet || !data}
         aria-label={names[p]}
         placeholder={t('stock.rates.placeholder')}
-        className={desk ? undefined : 'h-10 w-[130px]'}
+        className={desk ? 'shrink-0' : 'h-10 w-[130px] shrink-0'}
         data-testid={`rate-input-${p}`}
       />
     </UbBox>
@@ -331,7 +341,7 @@ export function RatesPageContent(): React.JSX.Element {
       size={desk ? undefined : 'lg'}
       onClick={sameAsYesterday}
       disabled={!canSet || !data?.yesterday}
-      className={desk ? undefined : 'flex-1'}
+      className={desk ? undefined : 'min-w-0 flex-1 max-[359px]:px-2 max-[359px]:text-sm'}
       data-testid="rate-same"
     >
       {t('stock.rates.sameAsYesterday')}
@@ -344,7 +354,7 @@ export function RatesPageContent(): React.JSX.Element {
       busy={saving}
       busyLabel={t('stock.rates.saving')}
       disabled={!canSet || !data}
-      className={desk ? undefined : 'flex-1'}
+      className={desk ? undefined : 'min-w-0 flex-1 max-[359px]:px-2 max-[359px]:text-sm'}
       data-testid="rate-save"
     >
       {t('stock.rates.save')}
@@ -412,15 +422,15 @@ export function RatesPageContent(): React.JSX.Element {
       />
       {desk ? (
         <UbBox
-          className="grid grid-cols-[420px_minmax(0,1fr)] items-start gap-4"
+          className="grid grid-cols-1 items-start gap-4 xl:grid-cols-[420px_minmax(0,1fr)] [&>*:first-child]:max-xl:w-[420px]"
           data-testid="rate-screen"
         >
-          <UbCard className="grid gap-3.5 p-4" aria-busy={!data}>
-            {rows}
+          <UbPanel className="grid gap-3.5 p-4" aria-busy={!data}>
+            <UbBox className="grid gap-3.5">{rows}</UbBox>
             <UbText as="p" variant="caption" tone="secondary" data-testid="rate-set-line">
               {setLine} {t('stock.rates.keeps')}
             </UbText>
-          </UbCard>
+          </UbPanel>
           <UbDataGrid
             rows={history ?? []}
             columns={columns}
@@ -453,21 +463,23 @@ export function RatesPageContent(): React.JSX.Element {
         </UbBox>
       ) : (
         <UbStack gap={3} className="pb-24" data-testid="rate-screen">
-          <UbCard className="p-0" aria-busy={!data}>
+          <UbPanel className="p-0" aria-busy={!data}>
             {rows}
-          </UbCard>
+          </UbPanel>
           <UbText as="p" variant="caption" tone="secondary">
             {t('stock.rates.note')}
           </UbText>
-          <UbCard className="grid gap-1.5 p-4">
-            <UbText as="span" variant="body-sm-medium">
-              {t('stock.rates.shareTitle')}
-            </UbText>
-            <UbText as="span" variant="caption" tone="secondary">
-              {t('stock.rates.shareBody')}
-            </UbText>
-            <UbBox className="justify-self-start">{shareButton}</UbBox>
-          </UbCard>
+          <UbPanel className="p-4">
+            <UbStack gap={1.5} className="items-start">
+              <UbText as="span" variant="body-sm-medium">
+                {t('stock.rates.shareTitle')}
+              </UbText>
+              <UbText as="span" variant="caption" tone="secondary">
+                {t('stock.rates.shareBody')}
+              </UbText>
+              {shareButton}
+            </UbStack>
+          </UbPanel>
           <UbBottomBar className="flex gap-2 border-t border-border-hairline bg-surface-card px-4 py-3">
             {sameButton}
             {saveButton}

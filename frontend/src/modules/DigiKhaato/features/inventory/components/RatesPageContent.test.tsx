@@ -23,7 +23,11 @@ jest.mock('../api/metalRateService', () => ({
   saveTodayRates: jest.fn(),
   getRateHistory: jest.fn(),
 }));
-const service = jest.requireMock('../api/metalRateService') as Record<string, jest.Mock>;
+const service = jest.requireMock('../api/metalRateService') as {
+  getTodayRates: jest.Mock;
+  saveTodayRates: jest.Mock;
+  getRateHistory: jest.Mock;
+};
 
 const rates: TodayRates = {
   day: '2026-10-30',
@@ -68,7 +72,7 @@ beforeEach(() => {
 
 it('Same as yesterday fills the boxes and saves nothing until Save rates', async () => {
   signIn(['inventory.item.read', 'inventory.item.write']);
-  renderWithProviders(<RatesPageContent />, { store });
+  renderWithProviders(<RatesPageContent />);
   await userEvent.click(await screen.findByRole('button', { name: 'Same as yesterday' }));
   expect(screen.getByLabelText('Gold 22K (916)')).toHaveValue('11,595');
   expect(service.saveTodayRates).not.toHaveBeenCalled();
@@ -86,7 +90,7 @@ it('Same as yesterday fills the boxes and saves nothing until Save rates', async
 
 it('refuses a zero rate by name and sends nothing', async () => {
   signIn(['inventory.item.read', 'inventory.item.write']);
-  renderWithProviders(<RatesPageContent />, { store });
+  renderWithProviders(<RatesPageContent />);
   await waitFor(() => expect(screen.getByLabelText('Silver (999)')).toBeEnabled());
   await userEvent.type(screen.getByLabelText('Silver (999)'), '0');
   await userEvent.click(screen.getByRole('button', { name: 'Save rates' }));
@@ -96,7 +100,7 @@ it('refuses a zero rate by name and sends nothing', async () => {
 
 it('staff read the rate but cannot change it', async () => {
   signIn(['inventory.item.read']);
-  renderWithProviders(<RatesPageContent />, { store });
+  renderWithProviders(<RatesPageContent />);
   await screen.findByRole('button', { name: 'Same as yesterday' });
   expect(screen.getByLabelText('Gold 22K (916)')).toBeDisabled();
   expect(screen.getByRole('button', { name: 'Save rates' })).toBeDisabled();

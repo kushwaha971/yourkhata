@@ -9,6 +9,7 @@ business: every record is created in the three QA businesses.
                             · staff qa-staff · staff qa-mixed
   QA Medical (medical)      owner qa-owner (one person, two businesses)
   QA Mobile  (electronics)  owner qa-mixed (staff in one, owner in another)
+  QA Jewellery (jewellery)  owner qa-jeweller · staff qa-jstaff (Part G: G1 today's rate)
 """
 
 from django.db import transaction
@@ -59,4 +60,18 @@ member(person("qa-admin"), kirana, "admin", default=True)
 member(person("qa-acct"), kirana, "accountant", default=True)
 member(person("qa-staff"), kirana, "staff", default=True)
 member(mixed, kirana, "staff")
-print("ready", kirana.id, medical.id, mobile.id)
+jeweller = person("qa-jeweller")
+jewellery = business(jeweller, "QA Jewellery", "jewellery")
+member(person("qa-jstaff"), jewellery, "staff", default=True)
+# G1: yesterday's rates, so Same as yesterday and "Up/Down from yesterday" have
+# something to read. Only ever yesterday's row; today's is the harness's to set.
+import datetime as _dt
+from apps.common.dates import tenant_today
+from apps.inventory.models import MetalRate
+
+MetalRate.objects.get_or_create(
+    tenant=jewellery,
+    day=tenant_today(jewellery) - _dt.timedelta(days=1),
+    defaults={"gold_24k": "12650", "gold_22k": "11595", "gold_18k": "9485", "silver": "151", "set_by_name": "Qa Jeweller"},
+)
+print("ready", kirana.id, medical.id, mobile.id, jewellery.id)
