@@ -135,6 +135,20 @@ already advertise the rate. No paid rate feed (ADR-021).
   8. the dock buttons did not split the bar;
   9. a comma in the date.
 
+## Unit suites (final)
+
+- **Frontend:** `npx jest`, 469 suites, **5019/5019 pass**.
+- **Backend:** everything passes except these, none of which G1 touched (no
+  file under `apps/common` or `apps/library` changed since 862c2120b):
+  - the five already open before G1: the tenant export of `PersonalBook`, three
+    import-rule checks, and the Dues timing test;
+  - four Library tests that fail by DATE: on 1 Nov their fixture makes a
+    membership that ends on 31 Oct, before it starts;
+  - `test_registry_is_closed_and_complete`: 228 error codes against 223
+    expected, drift from before G1.
+
+  All are open, for a separate fix.
+
 ## Not proven
 
 - **The picture share on a real phone.** Only the code path exists; the

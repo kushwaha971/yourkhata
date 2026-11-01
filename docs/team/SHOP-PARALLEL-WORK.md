@@ -234,3 +234,14 @@ idle, so do not message sessions the owner has stopped.
   lists and the payment header; 5 backend failures predating A6.
 - **Then,** in the owner's order: Part F, Parts B/C/D, and the module round
   for the whole Shop (P0 standard §9).
+
+## G1 · Today's rate (Jewellery) — main session, 1 Nov 2026
+
+- **State:** built, in test, 8.0. Waiting for the owner's answers on conflicts 3–8 in the report.
+- **Branch:** `shop/a2` (pushed to `dev`). Report: `docs/performance/2026-11-01-shop-g1-todays-rate.md`.
+- **Harness:** `e2e/g1-rate.mjs`, now in `b-regression.sh`. QA data: QA Jewellery in `e2e/fixtures/ad_cert_people.py`.
+- **Next:** G2 (bill by weight, old gold, PAN), which copies the day's rate onto each bill. Handover: `docs/team/CONTINUE-PART-G.md`.
+- **Open (not G1's):**
+  - which harness switches off the scale QA shop's Expenses app;
+  - four Library tests that fail by date on 1 Nov;
+  - the error-registry count (228 against 223).
