@@ -698,3 +698,27 @@ class ItemAddon(TenantModel):
         verbose_name = "item add-on"
         verbose_name_plural = "item add-ons"
         constraints = [models.UniqueConstraint(fields=["item", "name"], name="uq_item_addon_name")]
+
+
+class MetalRate(TenantModel):
+    """G1 — a jeweller's rate per gram for one day (design §G1 "Today's rate").
+
+    Typed each morning from the association board; there is no rate feed
+    (ADR-021). One row per business per day: saving again the same day replaces
+    that day's figures, and earlier days are the read-only history. A bill
+    copies the rate it was issued at (G2), so changing today's rate never
+    reprices a bill already made. A blank purity is one the shop doesn't sell.
+    """
+
+    day = models.DateField()
+    gold_24k = MoneyField(null=True, blank=True)
+    gold_22k = MoneyField(null=True, blank=True)
+    gold_18k = MoneyField(null=True, blank=True)
+    silver = MoneyField(null=True, blank=True)
+    set_by_name = models.CharField(max_length=120, blank=True, default="")
+
+    class Meta:
+        db_table = "inventory_metal_rate"
+        verbose_name = "metal rate"
+        verbose_name_plural = "metal rates"
+        constraints = [models.UniqueConstraint(fields=["tenant", "day"], name="uq_metal_rate_day")]

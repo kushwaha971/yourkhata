@@ -310,7 +310,7 @@ SETTINGS: dict[str, SettingSpec] = {
                 (lambda k: lambda bt: {"value": k in _preset(bt).features})(key),
                 _bool_value,
             )
-            for key in (*presets.SIGNUP_FEATURES, "orders", "part_numbers", "godowns", "addons", "serials")
+            for key in (*presets.SIGNUP_FEATURES, "orders", "part_numbers", "godowns", "addons", "serials", "rates")
         ),
         SettingSpec(
             "parties.labels",

@@ -97,6 +97,8 @@ PRESETS: dict[str, Preset] = {
         favourite_units=("GMS", "NOS", "PCS"),
         extra_expense_categories=("Making charges", "Shop maintenance"),
         default_due_days=7,
+        # G1 — today's rate per gram, typed each morning (Part H key `rates`).
+        features=frozenset({"rates"}),
     ),
     # R-DEC-66 / G12 — Other's kinds. "Something else" stays `other`.
     BusinessType.STATIONERY.value: Preset(
