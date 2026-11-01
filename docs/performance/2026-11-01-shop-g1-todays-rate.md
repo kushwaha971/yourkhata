@@ -85,3 +85,72 @@ already advertise the rate. No paid rate feed (ADR-021).
    and desktop compositions.
 3. `e2e/g1-rate.mjs`: measure, read back with a `--skew`, LOOK at every size,
    theme and language; monkey; b-regression.
+
+## Results (1 Nov 2026, final build)
+
+- **`e2e/g1-rate.mjs`: 0 failures, 0 console errors.** It covers:
+  - **F (business task):** QA Jewellery's owner types today's rates and saves.
+    The API holds exactly what was typed, to the paisa; the boxes after a
+    reload and the history's first row show the same. `--skew` (₹1 off on
+    22K) fails, as it must.
+  - **F2:** Same as yesterday fills the boxes from the API's yesterday and sends
+    no save.
+  - **F3:** a zero is refused under Silver by name; nothing is sent.
+  - **F4:** picking last month shows exactly the API's rows for that month.
+  - **L (16 views):** 390, 320, 1024 and 1280 px, light and dark (asserted on
+    `html[data-theme]`), English and Hindi. No page wider than the screen, no
+    text cut, history columns measured, phone box 130 × 40, rows at least 56 px,
+    dock 44 px, desktop rates column 420 px, header buttons 40 px.
+  - **S:** staff see the rate; the boxes and Save are disabled; a direct PUT
+    answers 403.
+  - **K:** a kirana gets 404 from the API and has no menu row.
+- **Backend:** `apps/inventory/tests/test_metal_rates.py`, 9 tests. The kirana
+  404 test was proved to fail with the feature check removed.
+- **Frontend unit:** `RatesPageContent.test.tsx`, 3 tests. The zero-rate test
+  was proved to fail with the check loosened.
+- **Side by side:** `design-compare.mjs --kind=jewel`, pRate against 390 and
+  dRate against 1280, looked at. The differences that remain are conflicts
+  3–8 above.
+- **Monkey:** `/stock/rates`, seeds 131–133 at 390 and 1280, as the QA
+  jeweller: **6/6 PASS**.
+- **§10 regression (`b-regression.sh`, 38 harnesses):** 36 passed first time.
+  - `a4-money` crashed picking `items[17]` of a filtered list that other
+    harnesses' items had shrunk (H25). Fixed in the harness (falls back to the
+    last match); PASS.
+  - `a7-measure` failed on /expenses: the scale QA shop's Expenses app had been
+    switched off on 31 Oct 20:30 UTC, before G1, by an earlier run that did not
+    switch it back. Turned back on in the local QA data; 32/32. **Open:** find
+    which harness leaves it off.
+- **Bundle:** `/stock/rates` is a new route at 110.5 KB (measured + 0.3).
+  Stock routes and the shared chunk moved 0.1–0.6 KB for the new words and the
+  menu row; the note is in `bundle-budgets.json`.
+- **Defects found by looking and fixed** (none was caught by a unit test):
+  1. paise hidden in the Silver box;
+  2. rates touching with no gap;
+  3. at 320 px, a doubled card padding pushed Save rates 27 px off the screen;
+  4. the Hindi date came out in English;
+  5. one `widthShare` collapsed four history columns;
+  6. at 1024 px, five money columns were cut;
+  7. the month picker was missing;
+  8. the dock buttons did not split the bar;
+  9. a comma in the date.
+
+## Not proven
+
+- **The picture share on a real phone.** Only the code path exists; the
+  harness cannot drive a share sheet.
+- **Copying the rate onto a bill** is G2's.
+
+## Score sheet (P0 §8)
+
+| Points | Earned | Evidence |
+|---|---|---|
+| Business 2 | 2 | Saved rates read back to the paisa, skew fails; per-day replace; history by month matches the API |
+| Design 1 | 0.5 | Composition, words and sizes match pRate/dRate at 390 and 1280. Conflicts 3–8 stay open (Back arrow, button type, money box look, history search), so the design is not yet exact |
+| Functional 1 | 1 | Same as yesterday, refusals, staff and kind gating proved live and in unit tests |
+| User 2 | 2 | Monkey 6/6; Hindi and dark looked at; 320 px fits |
+| Data 1 | 1 | Separate per business (kind gating, tenant rows); exported with the business (`metal_rates.csv`) |
+| Performance 1 | 0.5 | Route measured and budgeted; no speed baseline was taken, because the screen is new |
+| Honesty 1 | 1 | This report, the conflicts, and the repeated H37 mistake are all recorded |
+| Owner found nothing 1 | 0 | The owner's |
+| **Total** | **8.0 / 10** | **In test; waiting for the owner's answers on conflicts 3–8** |

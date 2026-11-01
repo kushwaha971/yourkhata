@@ -149,7 +149,10 @@ try {
   const items = (await api('/items?page_size=200&ordering=name')).data.filter(
     (i) => Number(i.selling_price) > 0 && Number(i.on_hand) > 20 && !/^(A\d+ item|Edge |A6 )/.test(i.name)
   );
-  const item = items[17];
+  // Other harnesses keep adding items that sort into the first 200 by name, so
+  // fewer than 18 may qualify (G1 regression, 1 Nov): fall back to the last one.
+  const item = items[17] ?? items.at(-1);
+  if (!item) throw new Error('no priced item with more than 20 in stock in the first 200 by name');
   const bal0 = Number((await api(`/parties/${party.id}?book=shop`)).data.shop.customer_balance);
   const stock0 = Number((await api(`/items/${item.id}`)).data.on_hand);
   await page.goto(`${base}/sales/invoices/new`, { waitUntil: 'load' });
