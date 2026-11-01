@@ -32,10 +32,7 @@ export interface LineBatch {
 export function LineBatchFields({
   value,
   onChange,
-}: Readonly<{
-  value: LineBatch | undefined;
-  onChange: (next: LineBatch) => void;
-}>): React.JSX.Element {
+}: Readonly<{ value: LineBatch | undefined; onChange: (next: LineBatch) => void }>): React.JSX.Element {
   const { t } = useTranslation();
   const current = value ?? { batchNo: '', expiry: '', mrp: '' };
   const [month, setMonth] = useState(monthOf(current.expiry));

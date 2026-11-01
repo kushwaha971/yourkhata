@@ -119,9 +119,7 @@ function useStockTransferState() {
         if (add)
           setRows((all) =>
             all.map((row) =>
-              row.itemId === itemId
-                ? { ...row, qty: trimQuantity(addQuantity(row.qty || '0', String(add))) }
-                : row
+              row.itemId === itemId ? { ...row, qty: trimQuantity(addQuantity(row.qty || '0', String(add))) } : row
             )
           );
         return;

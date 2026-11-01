@@ -33,7 +33,7 @@ const MasterFormDialog = dynamic(
   () => import('./MasterFormDialog').then((m) => m.MasterFormDialog),
   {
     ssr: false,
-    loading: () => <UbDialogLoading />,
+  loading: () => <UbDialogLoading />,
   }
 );
 

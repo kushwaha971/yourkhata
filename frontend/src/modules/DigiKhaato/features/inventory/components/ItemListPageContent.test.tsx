@@ -162,9 +162,7 @@ it('on a phone, a camera scan of an unknown code opens "Not in your items" with 
    * barcode. The camera reads once and closes; the sheet says it was the
    * camera, shows the code big, and Add opens the form with that barcode.
    */
-  jest
-    .mocked(service.listItems)
-    .mockResolvedValue({ ...PAGE, rows: [ROW], total: 1, hasAny: true });
+  jest.mocked(service.listItems).mockResolvedValue({ ...PAGE, rows: [ROW], total: 1, hasAny: true });
   const lookup = jest.mocked(service.lookupItemByBarcode).mockResolvedValue(null);
   let seen: string | null = '8901030875021';
   (globalThis as unknown as { BarcodeDetector: unknown }).BarcodeDetector = class {
@@ -196,10 +194,7 @@ it('on a phone, a camera scan of an unknown code opens "Not in your items" with 
     await user.click(within(sheet).getByRole('button', { name: /Add item with this barcode/ }));
     // The item form opens for a new item with the scanned barcode filled in.
     await waitFor(() =>
-      expect(
-        (store.getState() as unknown as { itemForm?: { openFor: string; prefillBarcode: string } })
-          .itemForm
-      ).toMatchObject({
+      expect((store.getState() as unknown as { itemForm?: { openFor: string; prefillBarcode: string } }).itemForm).toMatchObject({
         openFor: 'new',
         prefillBarcode: '8901030875021',
       })

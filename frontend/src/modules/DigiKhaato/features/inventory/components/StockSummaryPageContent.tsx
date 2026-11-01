@@ -63,11 +63,13 @@ import type { StockSummaryFilters, StockSummaryRow } from '../types/item.types';
    saved adjustment's detail belong to the chunk that opens them. */
 const StockAdjustmentDrawer = dynamic(
   () => import('./StockAdjustmentDrawer').then((m) => m.StockAdjustmentDrawer),
-  { ssr: false, loading: () => <UbDrawerLoading /> }
+  { ssr: false,
+  loading: () => <UbDrawerLoading /> }
 );
 const AdjustmentDetailDialog = dynamic(
   () => import('./AdjustmentDetailDialog').then((m) => m.AdjustmentDetailDialog),
-  { ssr: false, loading: () => <UbDialogLoading /> }
+  { ssr: false,
+  loading: () => <UbDialogLoading /> }
 );
 
 /** The summary's columns — a module-level factory, so no cell is a component

@@ -49,11 +49,7 @@ export function HomeStrip(): React.JSX.Element | null {
           data-testid={`home-strip-${tile.key}`}
           className="bg-surface grid min-w-0 gap-0.5 rounded-card border border-border-hairline px-3 py-2.5 lg:px-4 lg:py-3"
         >
-          <UbText
-            variant="inherit"
-            tone="secondary"
-            className="text-[12px] font-semibold leading-tight [overflow-wrap:anywhere]"
-          >
+          <UbText variant="inherit" tone="secondary" className="text-[12px] font-semibold leading-tight [overflow-wrap:anywhere]">
             {t(`reports.home.strip.${tile.key}`)}
           </UbText>
           <UbText
@@ -65,11 +61,7 @@ export function HomeStrip(): React.JSX.Element | null {
               : String(tile.count)}
           </UbText>
           {tile.value !== null && (
-            <UbText
-              variant="inherit"
-              tone="secondary"
-              className="text-body-sm [overflow-wrap:anywhere]"
-            >
+            <UbText variant="inherit" tone="secondary" className="text-body-sm [overflow-wrap:anywhere]">
               {t('reports.home.strip.worth', { amount: formatInr(tile.value) })}
             </UbText>
           )}
