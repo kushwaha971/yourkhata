@@ -10,6 +10,8 @@ import {
   UbDialogLoading,
   UbStack,
   UbStatusBadge,
+  useGridTier,
+  useMediaQuery,
   type UbDataGridColumn,
 } from 'src/design-system';
 import { useTranslation, type TranslateFn } from 'src/hooks/useTranslation';
@@ -32,7 +34,9 @@ const PURITY: Record<string, string> = {
   silver: 'Silver 999',
 };
 
-const columns = (t: TranslateFn): UbDataGridColumn<Tag>[] => [
+/** Below 1280 the item page's tab column is ~350 px: Purity and HUID go (a
+ * phone's card keeps Purity in its line). */
+const columns = (t: TranslateFn, full: boolean): UbDataGridColumn<Tag>[] => [
   {
     id: 'tag',
     header: t('items.tags.col.tag'),
@@ -50,22 +54,30 @@ const columns = (t: TranslateFn): UbDataGridColumn<Tag>[] => [
     widthShare: 1,
     cell: (r) => (r.netG ? `${Number(r.netG).toFixed(3)} g` : '—'),
   },
-  {
-    id: 'purity',
-    header: t('items.tags.col.purity'),
-    priority: 1,
-    cardSlot: 'meta',
-    widthShare: 1,
-    cell: (r) => (r.purity ? PURITY[r.purity] : '—'),
-  },
-  {
-    id: 'huid',
-    header: 'HUID',
-    priority: 1,
-    cardSlot: 'none',
-    widthShare: 1,
-    cell: (r) => r.huid || '—',
-  },
+  ...(full
+    ? ([
+        {
+          id: 'purity',
+          header: t('items.tags.col.purity'),
+          priority: 2,
+          cardSlot: 'meta',
+          widthShare: 1,
+          cell: (r) => (r.purity ? PURITY[r.purity] : '—'),
+        },
+      ] as UbDataGridColumn<Tag>[])
+    : []),
+  ...(full
+    ? ([
+        {
+          id: 'huid',
+          header: 'HUID',
+          priority: 3,
+          cardSlot: 'none',
+          widthShare: 1,
+          cell: (r) => r.huid || '—',
+        },
+      ] as UbDataGridColumn<Tag>[])
+    : []),
   {
     id: 'status',
     header: t('items.tags.col.status'),
@@ -105,7 +117,10 @@ export function ItemTagsPanel({
     return () => controller.abort();
   }, [itemId]);
 
-  const cols = useMemo(() => columns(t), [t]);
+  const tier = useGridTier();
+  const xl = useMediaQuery('(min-width: 1280px)');
+  const full = xl || tier === 'cards';
+  const cols = useMemo(() => columns(t, full), [t, full]);
   const labels = useMemo(
     () =>
       inventoryGridLabels(t, {

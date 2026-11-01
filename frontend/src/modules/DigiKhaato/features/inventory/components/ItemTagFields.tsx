@@ -1,7 +1,5 @@
 'use client';
 
-import { useEffect } from 'react';
-
 import { useFormContext, useWatch } from 'react-hook-form';
 
 import {
@@ -47,10 +45,6 @@ export function ItemTagFields(): React.JSX.Element {
   const { setValue, control } = useFormContext<TagFormHost>();
   const makingType = useWatch({ control, name: 'tag.makingType' });
 
-  useEffect(() => {
-    setValue('tracking', 'serial');
-  }, [setValue]);
-
   const grams = (name: 'tag.grossG' | 'tag.stoneG' | 'tag.netG', label: string) => (
     <UbField name={name} label={label}>
       {(field) => (
@@ -74,7 +68,7 @@ export function ItemTagFields(): React.JSX.Element {
       <UbText as="p" variant="label" tone="tertiary" className="uppercase tracking-wide">
         {t('items.form.tag.title')}
       </UbText>
-      <UbBox className="grid grid-cols-2 gap-3">
+      <UbBox className="grid grid-cols-1 gap-3 min-[360px]:grid-cols-2">
         <UbField name="tag.tagNo" label={t('items.form.tag.no')}>
           {(field) => (
             <UbTextInput
@@ -97,7 +91,7 @@ export function ItemTagFields(): React.JSX.Element {
           )}
         </UbField>
       </UbBox>
-      <UbBox className="grid grid-cols-3 gap-3">
+      <UbBox className="grid grid-cols-2 gap-3 min-[360px]:grid-cols-3">
         {grams('tag.grossG', t('items.form.tag.gross'))}
         {grams('tag.stoneG', t('items.form.tag.stone'))}
         {grams('tag.netG', t('items.form.tag.net'))}

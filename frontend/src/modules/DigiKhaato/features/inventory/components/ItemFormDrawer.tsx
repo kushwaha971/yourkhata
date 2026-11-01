@@ -106,6 +106,9 @@ export function ItemFormDrawer({
     [masters.units]
   );
 
+  const keepsTagsDefault = Boolean(
+    useAppSelector(selectActiveTenant)?.features?.includes('jewellery')
+  );
   const defaults = useMemo<ItemFormValues>(
     () => ({
       name: editing?.name ?? prefillName,
@@ -146,11 +149,13 @@ export function ItemFormDrawer({
       sizes: [],
       colours: [],
       addons: (editing?.addons ?? []).map((row) => ({ name: row.name, price: row.price })),
-      tracking: editing?.tracking ?? 'none',
+      // G2a — a jeweller's new item keeps tags from the start (its pieces are
+      // tagged); set here, not by the group on mount, which `reset` undid.
+      tracking: editing?.tracking ?? (keepsTagsDefault ? 'serial' : 'none'),
       warrantyMonths: editing?.warrantyMonths ?? 0,
       tag: { ...EMPTY_TAG },
     }),
-    [editing, prefillBarcode, prefillName, defaultUnitId, masters.units]
+    [editing, prefillBarcode, prefillName, defaultUnitId, masters.units, keepsTagsDefault]
   );
 
   const form = useForm<ItemFormValues>({

@@ -94,7 +94,14 @@ const UbQuantityInputInner = forwardRef<HTMLInputElement, UbQuantityInputProps>(
           value={value ?? ''}
           onChange={handleChange}
           invalid={invalid}
-          className={cn('ds-num text-right', unit && 'pr-14', invalid && 'border-formError')}
+          // A one- or two-character unit (g, %) needs 32 px, not the 56 a
+          // three-letter code (KGS) does: "12.900 g" was cut in a phone's third
+          // of a row (G2a).
+          className={cn(
+            'ds-num text-right',
+            unit && (unit.length <= 2 ? 'pr-8' : 'pr-14'),
+            invalid && 'border-formError'
+          )}
           {...rest}
           onFocus={handleFocus}
           onBlur={handleBlur}
