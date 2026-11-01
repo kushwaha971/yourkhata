@@ -38,7 +38,7 @@ already advertise the rate. No paid rate feed (ADR-021).
   not save until Save rates.
 - A rate must be a positive amount with at most two decimals; empty is allowed
   for a metal the shop doesn't sell (it shows "—" in history).
-- Feature key `shop.features.metal_rates`, on by default only for jewellery.
+- Feature key `shop.features.rates` (the name Part H proposes), on by default only for jewellery.
 - Permission: setting rates is the owner's/manager's; staff can read.
 - "A bill keeps the rate it was issued at" is G2's (the jewellery bill copies
   the rate onto the bill). G1 only stores and serves the day's rate.
