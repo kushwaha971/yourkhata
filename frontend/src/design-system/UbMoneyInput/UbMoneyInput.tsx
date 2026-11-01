@@ -59,6 +59,13 @@ export interface UbMoneyInputProps extends Omit<
   readonly decimalPlaces?: number;
   /** Optional entry precision for unit rates; ordinary money keeps decimalPlaces. */
   readonly maxDecimalPlaces?: number;
+  /**
+   * G1 (design §G1 "₹ 12,710 / g"): a unit after the amount. Set, the symbol
+   * sits right beside the figure and the unit follows it, the whole group
+   * right-aligned in the box (`""` for the symbol beside the figure with no
+   * unit); unset, the box is drawn exactly as before.
+   */
+  readonly unit?: string;
   readonly className?: string;
 }
 
@@ -137,6 +144,7 @@ const UbMoneyInputInner = forwardRef<HTMLInputElement, UbMoneyInputProps>(
       currencySymbol = '₹',
       decimalPlaces = 2,
       maxDecimalPlaces = decimalPlaces,
+      unit,
       className,
       onFocus,
       onBlur,
@@ -156,6 +164,108 @@ const UbMoneyInputInner = forwardRef<HTMLInputElement, UbMoneyInputProps>(
     const raw = capDecimals(value ?? '', maxDecimalPlaces);
     const shown = focused || !value ? raw : groupIndian(value, decimalPlaces);
 
+    const field = (
+      <MLInput
+        ref={ref}
+        // `inputMode="decimal"` rather than `type="number"`: a number input
+        // gives a phone the right keypad but also spinners, scroll-wheel
+        // increments and a browser-localised decimal separator, none of
+        // which belong on an amount.
+        type="text"
+        inputMode="decimal"
+        // With a unit the hidden twin sets the width; without size=1 an input
+        // keeps its own ~20-character width and the figure drifts from ₹.
+        size={unit !== undefined ? 1 : undefined}
+        autoComplete="off"
+        value={shown}
+        onChange={handleChange}
+        invalid={invalid}
+        onFocus={(event) => {
+          const input = event.currentTarget;
+          const request = ++focusRequest.current;
+          if (input.value !== raw) {
+            // Native select() may focus the field before it establishes its
+            // range. Wait for that call to finish, then commit the raw render
+            // and restore the same digits before the next input event.
+            queueMicrotask(() => {
+              if (
+                request !== focusRequest.current ||
+                !input.isConnected ||
+                input.ownerDocument.activeElement !== input
+              )
+                return;
+              const shown = input.value;
+              const rawOffset = (offset: number | null) =>
+                shown.slice(0, offset ?? shown.length).replace(/,/g, '').length;
+              const start = rawOffset(input.selectionStart);
+              const end = rawOffset(input.selectionEnd);
+              const selectedAll = input.selectionStart === 0 && input.selectionEnd === shown.length;
+              flushSync(() => setFocused(true));
+              input.setSelectionRange(
+                Math.min(start, input.value.length),
+                selectedAll ? input.value.length : Math.min(end, input.value.length)
+              );
+            });
+          } else setFocused(true);
+          onFocus?.(event);
+        }}
+        onBlur={(event) => {
+          focusRequest.current += 1;
+          setFocused(false);
+          // Committed to the caller's precision on the way out, so the form
+          // holds "2300.00" rather than "2300." or "2300".
+          if (value) onChange(padDecimals(value, maxDecimalPlaces));
+          onBlur?.(event);
+        }}
+        className={
+          unit !== undefined
+            ? 'ds-num col-start-1 row-start-1 h-auto w-full min-w-0 border-0 bg-transparent p-0 text-right shadow-none outline-none focus-visible:border-0 disabled:bg-transparent'
+            : cn('ds-num text-right', currencySymbol && 'pl-7', invalid && 'border-formError')
+        }
+        {...rest}
+      />
+    );
+
+    if (unit !== undefined) {
+      return (
+        // The box is drawn here, not by the input: the input is only as wide as
+        // its figure (the hidden twin sizes it), so ₹ and the unit can hug it.
+        // A label, so a tap anywhere in the box focuses the figure; the caller
+        // names the field with aria-label rather than wrapping it in another.
+        <label
+          className={cn(
+            'ds-body-base-regular flex h-10 w-full cursor-text items-center justify-end gap-1 rounded-control border bg-surface-card px-3 text-text-primary transition-colors duration-fast ease-standard',
+            invalid
+              ? 'border-formError focus-within:shadow-[inset_0_0_0_1px_hsl(var(--form-error))]'
+              : 'border-border-hairline focus-within:border-text-primary hover:border-border-subtle',
+            rest.disabled && 'cursor-not-allowed bg-surface-sunken text-text-muted',
+            className
+          )}
+        >
+          {currencySymbol && (
+            <span aria-hidden className="ds-num shrink-0 max-lg:text-[1rem]">
+              {currencySymbol}
+            </span>
+          )}
+          <span className="inline-grid min-w-[2ch]">
+            <span
+              aria-hidden // 16 px below lg, as globals.css gives every input there (no iOS zoom):
+              // the twin must measure the figure in the size it is drawn.
+              className="ds-num invisible col-start-1 row-start-1 whitespace-pre max-lg:text-[1rem]"
+            >
+              {shown || rest.placeholder || ' '}
+            </span>
+            {field}
+          </span>
+          {unit && (
+            <span aria-hidden className="shrink-0 text-text-secondary max-lg:text-[1rem]">
+              {unit}
+            </span>
+          )}
+        </label>
+      );
+    }
+
     return (
       <div className={cn('relative flex w-full items-center', className)}>
         {/* An empty symbol draws nothing and reserves no space: a table cell
@@ -168,63 +278,7 @@ const UbMoneyInputInner = forwardRef<HTMLInputElement, UbMoneyInputProps>(
             {currencySymbol}
           </span>
         )}
-        <MLInput
-          ref={ref}
-          // `inputMode="decimal"` rather than `type="number"`: a number input
-          // gives a phone the right keypad but also spinners, scroll-wheel
-          // increments and a browser-localised decimal separator, none of
-          // which belong on an amount.
-          type="text"
-          inputMode="decimal"
-          autoComplete="off"
-          value={shown}
-          onChange={handleChange}
-          invalid={invalid}
-          onFocus={(event) => {
-            const input = event.currentTarget;
-            const request = ++focusRequest.current;
-            if (input.value !== raw) {
-              // Native select() may focus the field before it establishes its
-              // range. Wait for that call to finish, then commit the raw render
-              // and restore the same digits before the next input event.
-              queueMicrotask(() => {
-                if (
-                  request !== focusRequest.current ||
-                  !input.isConnected ||
-                  input.ownerDocument.activeElement !== input
-                )
-                  return;
-                const shown = input.value;
-                const rawOffset = (offset: number | null) =>
-                  shown.slice(0, offset ?? shown.length).replace(/,/g, '').length;
-                const start = rawOffset(input.selectionStart);
-                const end = rawOffset(input.selectionEnd);
-                const selectedAll =
-                  input.selectionStart === 0 && input.selectionEnd === shown.length;
-                flushSync(() => setFocused(true));
-                input.setSelectionRange(
-                  Math.min(start, input.value.length),
-                  selectedAll ? input.value.length : Math.min(end, input.value.length)
-                );
-              });
-            } else setFocused(true);
-            onFocus?.(event);
-          }}
-          onBlur={(event) => {
-            focusRequest.current += 1;
-            setFocused(false);
-            // Committed to the caller's precision on the way out, so the form
-            // holds "2300.00" rather than "2300." or "2300".
-            if (value) onChange(padDecimals(value, maxDecimalPlaces));
-            onBlur?.(event);
-          }}
-          className={cn(
-            'ds-num text-right',
-            currencySymbol && 'pl-7',
-            invalid && 'border-formError'
-          )}
-          {...rest}
-        />
+        {field}
       </div>
     );
   }

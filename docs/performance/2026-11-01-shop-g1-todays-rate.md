@@ -55,10 +55,9 @@ already advertise the rate. No paid rate feed (ADR-021).
 
 ## Conflicts found while building (listed for the owner)
 
-3. **Phone header Back arrow.** `M.pRate` draws Back beside the title. No Shop
-   page opened from More has its own Back on a phone (the top bar and bottom bar
-   do that job); adding it to this page alone would make it the odd one out.
-   Not added; the owner's call.
+3. **Phone header Back arrow.** `M.pRate` draws Back beside the title.
+   **Owner, 1 Nov: "Fix G1 first" → added**, as the Money book person page
+   does it: a 44 px link beside the title, going to More.
 4. **1024 px has no mock.** The design draws 1280 only. At 1024 the history's
    five money columns cut in 300 px, so below 1280 the history sits under the
    rates card (card keeps 420 px).
@@ -70,9 +69,10 @@ already advertise the rate. No paid rate feed (ADR-021).
    screen. Heights match on desktop (40 px). Changing the type here alone
    would make this one screen differ; changing it everywhere is the owner's
    call.
-7. **Money box look.** The design writes "₹12,710 / g" right-aligned; the
-   shared `UbMoneyInput` keeps ₹ at the left and has no "/ g" suffix. Not
-   changed for one screen.
+7. **Money box look.** The design writes "₹12,710 / g" (desktop) and
+   "₹12,710" (phone), right-aligned. **Owner, 1 Nov → built** as an opt-in
+   `unit` on `UbMoneyInput`: when it is set, ₹ hugs the figure and the unit
+   follows; every other money box is drawn exactly as before (unit test).
 8. **History bar.** The design's history bar has a search field beside
    "Month"; with one row a day, a month is at most 31 rows, so only the month
    picker is built. Listed in case the owner wants it.
@@ -168,3 +168,30 @@ already advertise the rate. No paid rate feed (ADR-021).
 | Honesty 1 | 1 | This report, the conflicts, and the repeated H37 mistake are all recorded |
 | Owner found nothing 1 | 0 | The owner's |
 | **Total** | **8.0 / 10** | **In test; waiting for the owner's answers on conflicts 3–8** |
+
+## Owner's "Fix G1 first" (1 Nov, later)
+
+- **Back arrow** on the phone, beside the title, 44 px, going to More. The
+  harness checks its size and where it goes.
+- **"₹12,710 / g"**: the `unit` option on the shared money box. The input is
+  exactly as wide as its figure (a hidden twin sizes it), so ₹ sits beside the
+  digits.
+
+Three defects in that work were found only by looking, each with a check that
+was proved to fail before the fix:
+  1. With an empty unit the phone kept the old inner box and cut the figure
+     ("12,78("). A unit test now checks the inner box, and the harness checks
+     that no rate box cuts its figure.
+  2. An input keeps a built-in width of about 20 characters, so ₹ drifted
+     40 px from the digits. The fix is `size=1`. The harness measures the
+     TEXT's own box: its first version measured the input's edge and passed
+     on the broken build.
+  3. Phones draw input text at 16 px (globals.css, against iOS zoom) while the
+     twin was 14 px, so the last digit was cut. The twin now measures at the
+     drawn size.
+
+- **Also fixed:** after leaving a box, "12710" became "12710.00" and the box
+  read "12,710.00". Paise now show only when they are not zero; the unit test
+  fails on the old rule.
+- **Still open:** the shared button type (conflict 6), the history search
+  (conflict 8), 1024 px (conflict 4), and the 320 px dock (conflict 5).

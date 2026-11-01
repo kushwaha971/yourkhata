@@ -105,3 +105,12 @@ it('staff read the rate but cannot change it', async () => {
   expect(screen.getByLabelText('Gold 22K (916)')).toBeDisabled();
   expect(screen.getByRole('button', { name: 'Save rates' })).toBeDisabled();
 });
+
+it('a whole rupee rate still reads whole after leaving the box (not 12,710.00)', async () => {
+  signIn(['inventory.item.read', 'inventory.item.write']);
+  renderWithProviders(<RatesPageContent />);
+  await waitFor(() => expect(screen.getByLabelText('Gold 24K (999)')).toBeEnabled());
+  await userEvent.type(screen.getByLabelText('Gold 24K (999)'), '12710');
+  await userEvent.tab();
+  expect(screen.getByLabelText('Gold 24K (999)')).toHaveValue('12,710');
+});

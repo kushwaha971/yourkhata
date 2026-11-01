@@ -2,12 +2,15 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
+import { ArrowLeft } from 'lucide-react';
+
 import {
   UbBottomBar,
   UbBox,
   UbButton,
   UbCard,
   UbDataGrid,
+  UbLink,
   UbMoneyInput,
   UbPageHeader,
   UbPageShell,
@@ -23,6 +26,7 @@ import { usePermissions } from 'src/hooks/usePermissions';
 import { useTranslation, type TranslateFn } from 'src/hooks/useTranslation';
 import { selectActiveTenant } from 'src/redux/slice/sessionSlice';
 import { showSnackbar } from 'src/redux/slice/snackbarSlice';
+import { ROUTES } from 'src/routes';
 
 import {
   getRateHistory,
@@ -332,8 +336,11 @@ export function RatesPageContent(): React.JSX.Element {
       <UbMoneyInput
         value={draft[p]}
         onChange={(value) => setDraft((d) => ({ ...d, [p]: value }))}
-        // Whole rupees as the design prints them; paise kept and shown when typed.
-        decimalPlaces={draft[p].includes('.') ? 2 : 0}
+        // Whole rupees as the design prints them; paise shown only when there are
+        // some (leaving the box pads to "12710.00", which must still read 12,710).
+        // Design: "₹ 12,710 / g" on a desktop, "₹ 12,710" on a phone.
+        unit={desk ? '/ g' : ''}
+        decimalPlaces={/\.\d*[1-9]/.test(draft[p]) ? 2 : 0}
         maxDecimalPlaces={2}
         invalid={Boolean(errors[p])}
         disabled={!canSet || !data}
@@ -428,19 +435,40 @@ export function RatesPageContent(): React.JSX.Element {
 
   return (
     <UbPageShell>
-      <UbPageHeader
-        title={t('stock.rates.title')}
-        subtitle={subtitle}
-        primaryActions={
-          desk ? (
+      {desk ? (
+        <UbPageHeader
+          title={t('stock.rates.title')}
+          subtitle={subtitle}
+          primaryActions={
             <UbStack direction="row" gap={2}>
               {shareButton}
               {sameButton}
               {saveButton}
             </UbStack>
-          ) : undefined
-        }
-      />
+          }
+        />
+      ) : (
+        // Design pRate: Back beside the title. The page opens from More on a
+        // phone, so Back goes there (the Money book person page's pattern).
+        <UbStack direction="row" align="start" gap={2}>
+          <UbLink
+            href={ROUTES.MORE}
+            aria-label={t('stock.rates.back')}
+            title={t('stock.rates.back')}
+            underline={false}
+            tone="secondary"
+            data-testid="rate-back"
+            className="-ml-2 -mt-1 flex h-11 w-11 shrink-0 items-center justify-center rounded-control active:bg-surface-active"
+          >
+            <ArrowLeft className="h-5 w-5" aria-hidden />
+          </UbLink>
+          <UbPageHeader
+            className="min-w-0 flex-1"
+            title={t('stock.rates.title')}
+            subtitle={subtitle}
+          />
+        </UbStack>
+      )}
       {desk ? (
         <UbBox
           className="grid grid-cols-1 items-start gap-4 xl:grid-cols-[420px_minmax(0,1fr)] [&>*:first-child]:max-xl:w-[420px]"

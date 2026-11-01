@@ -192,6 +192,23 @@ const measure = () => {
   };
   out.btn = px(document.querySelector('[data-testid=rate-same]'));
   out.row = px(document.querySelector('[data-testid=rate-row-gold_22k]'));
+  // Design "₹ 12,710 / g": ₹ hugs the figure (the input is as wide as its text).
+  const input = document.querySelector('[data-testid=rate-input-gold_22k]');
+  const sym = input?.closest('label')?.firstElementChild;
+  // Measured to the FIGURE (the hidden twin that sizes the input), not the
+  // input's edge: an input wider than its text passed the edge measure.
+  const twin = input?.previousElementSibling;
+  // The twin stretches with its grid, so measure the TEXT's own box.
+  const text = twin ? (() => { const r = document.createRange(); r.selectNodeContents(twin); return r.getBoundingClientRect(); })() : null;
+  out.hug = sym && text ? Math.round(text.left - sym.getBoundingClientRect().right) : null;
+  out.wide = input && text ? Math.round(input.getBoundingClientRect().width - text.width) : null;
+  out.boxText = input?.closest('label')?.textContent ?? '';
+  // A rate box must not cut its own figure (seen: "12,78(" on a phone).
+  out.inputCut = [...document.querySelectorAll('[data-testid^=rate-input-]')]
+    .filter((el) => el.scrollWidth > el.clientWidth + 1)
+    .map((el) => el.value);
+  const back = document.querySelector('[data-testid=rate-back]');
+  out.back = back ? [Math.round(back.getBoundingClientRect().width), Math.round(back.getBoundingClientRect().height), new URL(back.href).pathname] : null;
   const card = document.querySelector('[data-testid=rate-screen] > *');
   out.col = card ? Math.round(card.getBoundingClientRect().width) : null;
   return out;
@@ -209,6 +226,9 @@ for (const width of widths) {
         const m = await page.evaluate(measure);
         const painted = await page.evaluate(() => document.documentElement.getAttribute('data-theme'));
         if (painted !== theme) fail(key, `the page painted ${painted}, not ${theme}`);
+        if (m.wide === null || m.wide > 2) fail(key, `the figure's box is ${m.wide}px wider than the figure`);
+        if (m.inputCut.length) fail(key, `rate box cuts its figure: ${m.inputCut.join(', ')}`);
+        if (m.hug === null || m.hug > 8) fail(key, `₹ is ${m.hug}px from the figure (design: beside it)`);
         if (m.overflow > 0) fail(key, `page ${m.overflow}px wider than the screen`);
         if (m.cut.length) fail(key, `text cut: ${m.cut.slice(0, 4).join(' | ')}`);
         if (width < 1024) {
@@ -221,8 +241,11 @@ for (const width of widths) {
           // button type (DESIGN-SYSTEM.md). Listed for the owner; checked against the system.
           if (m.btn && m.btn.h !== 44) fail(key, `dock button ${m.btn.h}px (design system lg 44)`);
           if (m.row && m.row.h < 56) fail(key, `rate row ${m.row.h}px (design ≥ 56)`);
+          if (!m.back || m.back[0] < 44 || m.back[1] < 44 || m.back[2] !== '/more') fail(key, `Back ${JSON.stringify(m.back)} (design: beside the title, 44 px, to More)`);
+          if (/\/ g/.test(m.boxText)) fail(key, 'phone box shows "/ g" (design: ₹ 12,710 only)');
         } else {
           if (m.col !== 420) fail(key, `rates column ${m.col}px (design 420)`);
+          if (!/\/ g/.test(m.boxText)) fail(key, `desktop box "${m.boxText}" lacks "/ g"`);
           // design .btn 40 / 14px 600
           // Height matches the design (40); its 14 px / 600 type differs from the shared
           // button token (16–17 px / 700). Listed for the owner, not changed on one screen.

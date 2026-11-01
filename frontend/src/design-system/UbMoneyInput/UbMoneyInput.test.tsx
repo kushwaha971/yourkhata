@@ -191,3 +191,43 @@ describe('what the merchant sees while typing', () => {
     expect(field).toHaveAttribute('type', 'text');
   });
 });
+
+describe('G1: a unit after the amount (design "₹ 12,710 / g")', () => {
+  it('draws ₹ beside the figure and the unit after it, and still types', async () => {
+    const seen = jest.fn();
+    function Unit() {
+      const [value, setValue] = useState('');
+      return (
+        <UbMoneyInput
+          value={value}
+          onChange={(next) => {
+            setValue(next);
+            seen(next);
+          }}
+          unit="/ g"
+          decimalPlaces={0}
+          maxDecimalPlaces={2}
+          aria-label="Rate"
+        />
+      );
+    }
+    const { container } = render(<Unit />);
+    const box = container.querySelector('label');
+    expect(box).toHaveTextContent('₹');
+    expect(box).toHaveTextContent('/ g');
+    await userEvent.type(screen.getByLabelText('Rate'), '12710');
+    expect(seen).toHaveBeenLastCalledWith('12710');
+  });
+
+  it('an empty unit still puts ₹ beside the figure, with no box inside the box', () => {
+    render(<UbMoneyInput value="12710" onChange={() => undefined} unit="" aria-label="Rate" />);
+    // Seen on a phone: the input kept its own border and padding and cut "12,710".
+    expect(screen.getByLabelText('Rate')).toHaveClass('border-0', 'p-0');
+    expect(screen.getByLabelText('Rate').closest('label')).not.toHaveTextContent('/ g');
+  });
+
+  it('without a unit the box is drawn as before: no label wrapper', () => {
+    const { container } = render(<Harness onValue={() => undefined} />);
+    expect(container.querySelector('label')).toBeNull();
+  });
+});
