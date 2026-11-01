@@ -46,3 +46,5 @@ run d-edges d-edges.mjs
 run d-look d-look.mjs
 run ad-certify ad-certify.mjs
 run ad-onboard ad-onboard.mjs
+# Part G
+run g1-rate g1-rate.mjs

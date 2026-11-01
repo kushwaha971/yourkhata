@@ -159,6 +159,7 @@
   "stock.rates.keeps": "A bill keeps the rate it was issued at, even if you change it later today.",
   "stock.rates.loadFailed": "Today's rate could not be loaded. Check your internet, then try again.",
   "stock.rates.loading": "Loading rates",
+  "stock.rates.month": "Month",
   "stock.rates.notSet": "Not set yet today.",
   "stock.rates.note": "Per gram. Type it each morning from your association's board or your bullion dealer. No rate feed is used.",
   "stock.rates.placeholder": "Rate / g",

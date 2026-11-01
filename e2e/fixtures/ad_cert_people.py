@@ -74,4 +74,12 @@ MetalRate.objects.get_or_create(
     day=tenant_today(jewellery) - _dt.timedelta(days=1),
     defaults={"gold_24k": "12650", "gold_22k": "11595", "gold_18k": "9485", "silver": "151", "set_by_name": "Qa Jeweller"},
 )
+# Three earlier days (the design's history: 27–29 Oct figures), so Rate history
+# has a month to show and the month picker something to pick.
+for back, rates in ((2, ("12665", "11610", "9495", "151")), (3, ("12590", "11540", "9440", "149")), (4, ("12600", "11550", "9450", "150"))):
+    MetalRate.objects.get_or_create(
+        tenant=jewellery,
+        day=tenant_today(jewellery) - _dt.timedelta(days=back),
+        defaults=dict(zip(("gold_24k", "gold_22k", "gold_18k", "silver"), rates), set_by_name="Qa Jeweller"),
+    )
 print("ready", kirana.id, medical.id, mobile.id, jewellery.id)

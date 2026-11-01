@@ -148,6 +148,19 @@ const kirana = await session('qa-owner');
   if (!firstRow.includes(want22)) fail('F', `history's first row "${firstRow.replace(/\s+/g, ' ')}" lacks ${want22}`);
   const setLine = await page.getByTestId('rate-set-line').innerText();
   if (!setLine.includes(after.data.today.set_by)) fail('F', `set line "${setLine}" does not name ${after.data.today.set_by}`);
+  // F4 — the month picker: last month's rows, read back from the API.
+  const prev = new Date(`${after.data.day.slice(0, 7)}-01T00:00:00`);
+  prev.setMonth(prev.getMonth() - 1);
+  const prevMonth = `${prev.getFullYear()}-${String(prev.getMonth() + 1).padStart(2, '0')}`;
+  const hist = (await (await ctx.request.get(`${api}/metal-rates?month=${prevMonth}`)).json()).data.rows;
+  await page.getByRole('combobox', { name: 'Month' }).click();
+  await page.getByRole('option', { name: prev.toLocaleDateString('en-IN', { month: 'long', year: 'numeric' }) }).click();
+  await page.waitForFunction((n) => document.querySelectorAll('[data-testid=ub-grid-row]').length === n, hist.length, { timeout: 8000 }).catch(() => undefined);
+  const shownRows = await page.locator('[data-testid=ub-grid-row]').count();
+  if (hist.length < 2) fail('F4', `the fixture left ${hist.length} rows in ${prevMonth}`);
+  if (shownRows !== hist.length) fail('F4', `${prevMonth}: ${shownRows} rows on screen, API has ${hist.length}`);
+  const top = hist[0] ? `₹${Number(hist[0].rates.gold_22k).toLocaleString('en-IN')}` : '';
+  if (hist[0] && !(await page.locator('[data-testid=ub-grid-row]').first().innerText()).includes(top)) fail('F4', `first row lacks ${top}`);
   notes.push(`F saved 22K ${got.gold_22k}, 24K ${got.gold_24k}, silver ${got.silver}; history row: ${firstRow.replace(/\s+/g, ' ')}`);
   await ctx.close();
 }
@@ -171,6 +184,14 @@ const measure = () => {
     const r = document.querySelector('[data-testid=rate-save]')?.getBoundingClientRect();
     return r ? [Math.round(r.height), Math.round(r.bottom), window.innerHeight] : null;
   })();
+  const px = (el) => {
+    if (!el) return null;
+    const r = el.getBoundingClientRect();
+    const cs = getComputedStyle(el);
+    return { h: Math.round(r.height), font: parseFloat(cs.fontSize), weight: cs.fontWeight };
+  };
+  out.btn = px(document.querySelector('[data-testid=rate-same]'));
+  out.row = px(document.querySelector('[data-testid=rate-row-gold_22k]'));
   const card = document.querySelector('[data-testid=rate-screen] > *');
   out.col = card ? Math.round(card.getBoundingClientRect().width) : null;
   return out;
@@ -194,11 +215,23 @@ for (const width of widths) {
           if (!m.box || Math.abs(m.box[0] - 130) > 2 || Math.abs(m.box[1] - 40) > 2) fail(key, `rate box ${m.box} (design 130×40)`);
           if (!m.save || m.save[0] < 44) fail(key, `Save ${m.save?.[0]}px tall (< 44)`);
           if (m.save && m.save[1] > m.save[2]) fail(key, `Save below the screen (${m.save[1]} > ${m.save[2]})`);
-        } else if (m.col !== 420) fail(key, `rates column ${m.col}px (design 420)`);
+          // design .btn.lg 46 / 15px, .li min-height 56
+          // 320 px has no mock; the two dock buttons step down a size there to fit.
+          // Design .btn.lg is 46 / 15 px; the design system's lg is 44 px with the shared
+          // button type (DESIGN-SYSTEM.md). Listed for the owner; checked against the system.
+          if (m.btn && m.btn.h !== 44) fail(key, `dock button ${m.btn.h}px (design system lg 44)`);
+          if (m.row && m.row.h < 56) fail(key, `rate row ${m.row.h}px (design ≥ 56)`);
+        } else {
+          if (m.col !== 420) fail(key, `rates column ${m.col}px (design 420)`);
+          // design .btn 40 / 14px 600
+          // Height matches the design (40); its 14 px / 600 type differs from the shared
+          // button token (16–17 px / 700). Listed for the owner, not changed on one screen.
+          if (m.btn && m.btn.h !== 40) fail(key, `header button ${m.btn.h}px (design 40)`);
+        }
         const title = locale === 'hi' ? 'आज का भाव' : "Today's rate";
         if (!(await page.getByRole('heading', { name: title }).count())) fail(key, `no "${title}" heading`);
         await page.screenshot({ path: `${dir}/${tag}-${width}-${theme}-${locale}.png`, fullPage: true });
-        notes.push(`${key}: box ${m.box} save ${m.save} col ${m.col}`);
+        notes.push(`${key}: box ${m.box} save ${m.save} col ${m.col} btn ${JSON.stringify(m.btn)} row ${m.row?.h}`);
       } catch (e) {
         fail(key, `error ${e.message.split('\n')[0]}`);
       }

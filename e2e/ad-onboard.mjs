@@ -17,14 +17,14 @@ const check = (name, ok, detail = '') => {
 const tag = Date.now().toString().slice(-6);
 // kind → what it must have, and what it must not.
 const KINDS = {
-  kirana: { has: [], hasNav: [], not: ['Expiry', 'Find by IMEI'] },
+  kirana: { has: [], hasNav: [], not: ['Expiry', 'Find by IMEI', "Today's rate"] },
   medical: { has: ['batches'], hasNav: ['Expiry'], not: ['Find by IMEI', 'Sales orders'], word: ['nav.suppliers', 'Distributors'] },
   electronics: { has: ['serials', 'orders'], hasNav: ['Find by IMEI', 'Sales orders'], not: ['Expiry'] },
   garments: { has: ['variants'], hasNav: [], not: ['Expiry', 'Find by IMEI'] },
   auto_parts: { has: ['part_numbers', 'orders'], hasNav: ['Sales orders'], not: ['Expiry', 'Find by IMEI'] },
   hardware: { has: ['orders'], hasNav: ['Delivery challans'], not: ['Expiry', 'Find by IMEI'] },
   food: { has: ['addons'], hasNav: [], not: ['Expiry', 'Find by IMEI', 'Sales orders'] },
-  jewellery: { has: [], hasNav: [], not: ['Expiry', 'Find by IMEI'] },
+  jewellery: { has: ['rates'], hasNav: ["Today's rate"], not: ['Expiry', 'Find by IMEI'] },
 };
 
 const browser = await chromium.launch(process.env.PW_CHROME ? { executablePath: process.env.PW_CHROME } : {});

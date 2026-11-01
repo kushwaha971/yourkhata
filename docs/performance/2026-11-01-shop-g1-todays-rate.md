@@ -1,6 +1,6 @@
 # G1 — Today's rate (Jewellery)
 
-> **Status: design review written; nothing built yet.** Design: §G1 of
+> **Status: built, in test** (score at the end). Design: §G1 of
 > `docs/revamp/design/shop-fixes-and-business-types.html` (mocks `M.pRate`,
 > `M.dRate`, data `RATES`). Harness to write: `e2e/g1-rate.mjs`.
 
@@ -53,7 +53,31 @@ already advertise the rate. No paid rate feed (ADR-021).
    browser's share sheet**, with a text fallback where image sharing isn't
    supported.
 
-## Next steps
+## Conflicts found while building (listed for the owner)
+
+3. **Phone header Back arrow.** `M.pRate` draws Back beside the title. No Shop
+   page opened from More has its own Back on a phone (the top bar and bottom bar
+   do that job); adding it to this page alone would make it the odd one out.
+   Not added; the owner's call.
+4. **1024 px has no mock.** The design draws 1280 only. At 1024 the history's
+   five money columns cut in 300 px, so below 1280 the history sits under the
+   rates card (card keeps 420 px).
+5. **320 px dock.** At 320 the two dock buttons drop to 14 px text so Save
+   rates stays on screen; 390 and up keep the design's 46 px / 15 px.
+6. **Button type.** The design's buttons are 14 px / 600 (desktop) and
+   46 px / 15 px (phone bar). Ours come from the shared button token,
+   16–17 px / 700, and the documented 44 px `lg` (DESIGN-SYSTEM.md), on every
+   screen. Heights match on desktop (40 px). Changing the type here alone
+   would make this one screen differ; changing it everywhere is the owner's
+   call.
+7. **Money box look.** The design writes "₹12,710 / g" right-aligned; the
+   shared `UbMoneyInput` keeps ₹ at the left and has no "/ g" suffix. Not
+   changed for one screen.
+8. **History bar.** The design's history bar has a search field beside
+   "Month"; with one row a day, a month is at most 31 rows, so only the month
+   picker is built. Listed in case the owner wants it.
+
+## Next steps (as written before building)
 
 1. Backend: model + migration, `GET/PUT /shop/rates/today`, `GET /shop/rates?month=`,
    feature key, permission, tests.

@@ -12,6 +12,7 @@ import {
   UbPageHeader,
   UbPageShell,
   UbPanel,
+  UbSelect,
   UbStack,
   UbText,
   useGridTier,
@@ -61,12 +62,15 @@ const toDraft = (rates: RateFigures | undefined): Draft =>
       ) as Draft)
     : EMPTY;
 
+/** "Thu 30 Oct" / "Thursday 30 Oct" as the design writes it: no comma. */
 const dayLabel = (iso: string, locale: string, long: boolean): string =>
-  new Date(`${iso}T00:00:00`).toLocaleDateString(locale.startsWith('hi') ? 'hi-IN' : 'en-IN', {
-    weekday: long ? 'long' : 'short',
-    day: 'numeric',
-    month: 'short',
-  });
+  new Date(`${iso}T00:00:00`)
+    .toLocaleDateString(locale.startsWith('hi') ? 'hi-IN' : 'en-IN', {
+      weekday: long ? 'long' : 'short',
+      day: 'numeric',
+      month: 'short',
+    })
+    .replace(',', '');
 
 const timeLabel = (iso: string, locale: string): string =>
   new Date(iso)
@@ -187,6 +191,21 @@ const historyColumns = (t: TranslateFn, locale: string): UbDataGridColumn<DayRat
   },
 ];
 
+/** The twelve months up to today's, newest first, as `YYYY-MM` with a name. */
+const monthOptions = (today: string, locale: string): { value: string; label: string }[] => {
+  const [y, m] = today.split('-').map(Number) as [number, number];
+  return Array.from({ length: 12 }, (_, n) => {
+    const d = new Date(y, m - 1 - n, 1);
+    return {
+      value: `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`,
+      label: d.toLocaleDateString(locale.startsWith('hi') ? 'hi-IN' : 'en-IN', {
+        month: 'long',
+        year: 'numeric',
+      }),
+    };
+  });
+};
+
 export function RatesPageContent(): React.JSX.Element {
   const { t, locale } = useTranslation();
   const dispatch = useAppDispatch();
@@ -218,7 +237,9 @@ export function RatesPageContent(): React.JSX.Element {
     return () => controller.abort();
   }, [load]);
 
-  const month = data?.day.slice(0, 7);
+  // Design "Rate history · Month: October": this month unless another is picked.
+  const [pickedMonth, setPickedMonth] = useState<string | null>(null);
+  const month = pickedMonth ?? data?.day.slice(0, 7);
   useEffect(() => {
     if (!desk || !month) return undefined;
     const controller = new AbortController();
@@ -289,7 +310,7 @@ export function RatesPageContent(): React.JSX.Element {
       className={
         desk
           ? 'grid grid-cols-[1fr_150px] items-center gap-3'
-          : 'flex min-h-[64px] items-center justify-between gap-3 border-b border-border-hairline px-4 py-2.5 last:border-b-0'
+          : 'flex min-h-[56px] items-center justify-between gap-3 border-b border-border-hairline px-4 py-3 last:border-b-0'
       }
       data-testid={`rate-row-${p}`}
     >
@@ -450,6 +471,23 @@ export function RatesPageContent(): React.JSX.Element {
               error: { title: '', description: '', requestId: null, requestIdLabel: '' },
             }}
             caption={t('stock.rates.history')}
+            toolbar={
+              <UbBox className="flex items-center justify-between gap-3 px-4 py-3">
+                <UbText as="span" variant="body-sm-medium">
+                  {t('stock.rates.history')}
+                </UbText>
+                {data && (
+                  <UbSelect
+                    value={month}
+                    onChange={setPickedMonth}
+                    options={monthOptions(data.day, locale)}
+                    aria-label={t('stock.rates.month')}
+                    className="w-[180px]"
+                    data-testid="rate-month"
+                  />
+                )}
+              </UbBox>
+            }
             cardAvatar={false}
             page={{
               page: 1,
@@ -480,7 +518,7 @@ export function RatesPageContent(): React.JSX.Element {
               {shareButton}
             </UbStack>
           </UbPanel>
-          <UbBottomBar className="flex gap-2 border-t border-border-hairline bg-surface-card px-4 py-3">
+          <UbBottomBar className="grid grid-cols-2 gap-2 border-t border-border-hairline bg-surface-card px-4 py-3">
             {sameButton}
             {saveButton}
           </UbBottomBar>
