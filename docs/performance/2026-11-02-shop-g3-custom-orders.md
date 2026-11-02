@@ -56,3 +56,30 @@ server tests. Two guards caught G3a's own misses: its day-counting did not use
 
 Live: `e2e/g3o-order-bill.mjs` 9/9, `--skew` fails on the rate; g3a 16/16; g2c
 13/13. Server: 8 tests in `test_custom_orders.py`.
+
+## G3b — karigars (2 Nov)
+
+| Design (G3 `dJOrders`) | Built | Verified by |
+|---|---|---|
+| Karigars panel: Issued, Received, weight with the karigar, Wastage | `KarigarsPanel` (rows, same on a phone) | g3b I1/R2 read back |
+| Wastage "1.4% · within 1.5%" | issued − received on lots that are back | pytest with the design's 37.400 / 36.880; g3b R2 (+ `--skew`) |
+| Issue gold to karigar; Gold with karigars | `IssueGoldDialog`; count line | g3b I1 |
+| Order status "With Raju · 18.2 g issued" | from the order's lots still out | pytest, g3b I1 |
+
+Listed for the owner:
+- Going over a karigar's limit is shown, never refused (the business decides).
+  A weight back heavier than given is refused, as a typing mistake.
+- The mock's row is inconsistent: 37.400 given, 36.880 back, yet 18.200 "with
+  him". Here with the karigar = lots not yet back.
+- The mock's "with him" reads "With karigar", which assumes nobody's gender.
+- New order's Karigar field is not built: a karigar joins an order by issuing
+  gold for it.
+- A lot comes back once, whole. Part-receipts are not built.
+- Recording only: there is no raw-gold stock for issuing to reduce. Receiving
+  does not make tags yet (G3c, D6).
+- No edit or delete of a karigar or a lot, so a mistyped lot cannot be corrected.
+
+Live: `e2e/g3b-karigars.mjs` 19/19 (390, 320, 1280; light, dark; EN, HI), g3a
+16/16, 0 console errors; `--skew` fails on the wastage. Server: 14 tests in
+`test_custom_orders.py`; the full suite on a fresh database fails only where it
+failed before G2. Monkey runs and the score sheet are not done.

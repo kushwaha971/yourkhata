@@ -15,6 +15,8 @@ export interface CustomOrder {
   readonly advancePaymentId: string | null;
   readonly fixedRate: string | null;
   readonly status: CustomOrderStatus;
+  /** G3b — whose hands this order's gold is in, or null. */
+  readonly withKarigar: { readonly name: string; readonly issued_g: string } | null;
 }
 
 interface Wire {
@@ -29,6 +31,7 @@ interface Wire {
   advance_payment_id: string | null;
   fixed_rate: string | null;
   status: CustomOrderStatus;
+  with_karigar: CustomOrder['withKarigar'];
 }
 
 const toOrder = (w: Wire): CustomOrder => ({
@@ -43,6 +46,7 @@ const toOrder = (w: Wire): CustomOrder => ({
   advancePaymentId: w.advance_payment_id,
   fixedRate: w.fixed_rate,
   status: w.status,
+  withKarigar: w.with_karigar,
 });
 
 export interface CustomOrderList {

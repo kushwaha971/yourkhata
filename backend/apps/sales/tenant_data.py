@@ -25,4 +25,6 @@ register(
     TenantTable("sales.SalesCreditApplication", export_name="sales_credit_applications.csv"),
     TenantTable("sales.DraftCreation", export_name="sales_draft_creations.csv"),
     TenantTable("sales.CustomOrder", export_name="custom_orders.csv"),
+    TenantTable("sales.Karigar", export_name="karigars.csv"),
+    TenantTable("sales.KarigarLot", export_name="karigar_lots.csv"),
 )

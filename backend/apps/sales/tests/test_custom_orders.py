@@ -138,3 +138,73 @@ def test_another_customers_bill_cannot_take_the_order(jeweller: Any, owner: Any,
     refused = issue(owner, made["id"], version=made["version"])
     assert refused.status_code == 409 and refused.json()["error"]["code"] == "custom_order_status"
     assert Payment.objects.get(pk=order["advance_payment_id"]).meta.get("earmark")
+
+
+# ── G3b: karigars ───────────────────────────────────────────────────────────
+
+
+def _karigar(owner: Any, limit: str = "1.5") -> dict:
+    res = owner.post(reverse("v1:karigars"), {"name": "Raju Soni", "wastage_limit_pct": limit}, format="json")
+    assert res.status_code == 201, res.content
+    return res.json()["data"]
+
+
+def _issue(owner: Any, karigar: dict, weight: str = "37.400", **extra: Any) -> dict:
+    res = owner.post(
+        reverse("v1:karigar-issue", args=[karigar["id"]]),
+        {"weight_g": weight, "purity": "gold_22k", "client_key": str(uuid.uuid4()), **extra},
+        format="json",
+    )
+    assert res.status_code == 201, res.content
+    return res.json()["data"]
+
+
+def _row(owner: Any) -> dict:
+    return owner.get(reverse("v1:karigars")).json()["data"]["rows"][0]
+
+
+def test_gold_given_and_received_back_works_out_the_wastage(jeweller: Any, owner: Any) -> None:
+    """The design's figures: 37.400 g given, 36.880 g back = 1.4%, within 1.5%."""
+    lot = _issue(owner, _karigar(owner))
+    data = owner.get(reverse("v1:karigars")).json()["data"]
+    assert data["gold_with_karigars"] == "37.400" and data["rows"][0]["wastage_pct"] is None
+    back = owner.post(reverse("v1:karigar-receive", args=[lot["id"]]), {"received_g": "36.880"}, format="json")
+    assert back.status_code == 200, back.content
+    row = _row(owner)
+    assert (row["issued_g"], row["received_g"], row["with_g"], row["wastage_pct"]) == ("37.400", "36.880", "0.000", "1.4")
+    assert row["over_limit"] is False
+
+
+def test_over_the_limit_is_shown_and_never_refused(jeweller: Any, owner: Any) -> None:
+    lot = _issue(owner, _karigar(owner), "10.000")
+    assert owner.post(reverse("v1:karigar-receive", args=[lot["id"]]), {"received_g": "9.000"}, format="json").status_code == 200
+    assert _row(owner)["over_limit"] is True
+
+
+def test_a_lot_comes_back_once_and_never_heavier(jeweller: Any, owner: Any) -> None:
+    lot = _issue(owner, _karigar(owner), "10.000")
+    url = reverse("v1:karigar-receive", args=[lot["id"]])
+    assert owner.post(url, {"received_g": "10.001"}, format="json").status_code == 400
+    assert owner.post(url, {"received_g": "9.900"}, format="json").status_code == 200
+    again = owner.post(url, {"received_g": "9.900"}, format="json")
+    assert again.status_code == 409 and again.json()["error"]["code"] == "karigar_lot_received"
+
+
+def test_a_double_tapped_issue_is_one_lot(jeweller: Any, owner: Any) -> None:
+    karigar = _karigar(owner)
+    body = {"weight_g": "5", "purity": "gold_22k", "client_key": str(uuid.uuid4())}
+    url = reverse("v1:karigar-issue", args=[karigar["id"]])
+    assert owner.post(url, body, format="json").status_code == 201
+    assert owner.post(url, body, format="json").status_code == 200
+    assert _row(owner)["issued_g"] == "5.000"
+
+
+def test_an_order_says_who_has_its_gold(jeweller: Any, owner: Any, make_party: Any) -> None:
+    order = owner.post(reverse(URL), _body(make_party()), format="json").json()["data"]
+    _issue(owner, _karigar(owner), "18.200", order_id=order["id"])
+    row = owner.get(reverse(URL)).json()["data"]["rows"][0]
+    assert row["with_karigar"] == {"name": "Raju Soni", "issued_g": "18.200"}
+
+
+def test_a_shop_that_is_not_a_jeweller_has_no_karigars(owner: Any) -> None:
+    assert owner.get(reverse("v1:karigars")).status_code == 404

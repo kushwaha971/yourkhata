@@ -8,8 +8,10 @@ import { Plus } from 'lucide-react';
 
 import {
   UbActionLink,
+  UbBox,
   UbButton,
   UbConfirmDialog,
+  UbDialogLoading,
   UbDrawerLoading,
   UbPageHeader,
   UbPageShell,
@@ -39,7 +41,22 @@ import {
   type CustomOrderList,
   type CustomOrderStatus,
 } from '../api/customOrderService';
+import { listKarigars, type KarigarList, type KarigarLot } from '../api/karigarService';
 
+import { KarigarsPanel } from './KarigarsPanel';
+
+const AddKarigarDialog = dynamic(() => import('./KarigarDialogs').then((m) => m.AddKarigarDialog), {
+  ssr: false,
+  loading: () => <UbDialogLoading />,
+});
+const IssueGoldDialog = dynamic(() => import('./KarigarDialogs').then((m) => m.IssueGoldDialog), {
+  ssr: false,
+  loading: () => <UbDialogLoading />,
+});
+const ReceiveGoldDialog = dynamic(
+  () => import('./KarigarDialogs').then((m) => m.ReceiveGoldDialog),
+  { ssr: false, loading: () => <UbDialogLoading /> }
+);
 const CustomOrderDrawer = dynamic(
   () => import('./CustomOrderDrawer').then((m) => m.CustomOrderDrawer),
   { ssr: false, loading: () => <UbDrawerLoading /> }
@@ -85,7 +102,7 @@ const orderColumns = ({
     header: t('sales.customOrder.col.order'),
     priority: 1,
     cardSlot: 'meta',
-    widthShare: 2,
+    widthShare: 3,
     cell: (o) => o.number,
   },
   {
@@ -105,7 +122,7 @@ const orderColumns = ({
     header: t('sales.customOrder.col.what'),
     priority: 1,
     cardSlot: 'meta',
-    widthShare: 4,
+    widthShare: 3,
     cell: (o) => (
       <UbText as="span" variant="inherit" className="block whitespace-normal break-words">
         {orderWhat(o, t)}
@@ -134,7 +151,7 @@ const orderColumns = ({
     header: t('sales.customOrder.col.status'),
     priority: 1,
     cardSlot: 'trailing',
-    widthShare: 4,
+    widthShare: 6,
     cell: (o) => (
       <UbStack gap={1} className="items-start">
         {badge(o)}
@@ -170,9 +187,8 @@ const orderColumns = ({
 ];
 
 /**
- * G3a — design G3 dJOrders: orders to make and the advance taken. The mock's
- * "Gold with karigars" figure, Karigars panel and "Issue gold to karigar"
- * arrive with G3b; nothing is drawn for them until there is a figure behind it.
+ * G3a/G3b — design G3 dJOrders: orders to make, the advance taken, and gold with
+ * each karigar.
  * Mark ready, Delivered and Cancel are not in the mock: an order has to be able
  * to finish, and finishing is what releases its advance to the final bill.
  */
@@ -188,6 +204,19 @@ export function CustomOrdersPageContent(): React.JSX.Element {
   const [cancelling, setCancelling] = useState<CustomOrder | null>(null);
   const [nonce, setNonce] = useState(0);
   const reload = useCallback(() => setNonce((n) => n + 1), []);
+  const [karigars, setKarigars] = useState<KarigarList | null>(null);
+  const [dialog, setDialog] = useState<'add' | 'issue' | KarigarLot | null>(null);
+  useEffect(() => {
+    const controller = new AbortController();
+    void listKarigars(controller.signal)
+      .then(setKarigars)
+      .catch(() => undefined);
+    return () => controller.abort();
+  }, [nonce]);
+  const dialogDone = useCallback(() => {
+    setDialog(null);
+    setNonce((n) => n + 1);
+  }, []);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -240,6 +269,17 @@ export function CustomOrdersPageContent(): React.JSX.Element {
           />
         );
       }
+      if (o.withKarigar) {
+        return (
+          <UbStatusBadge
+            tone="info"
+            label={t('sales.karigar.withBadge', {
+              name: o.withKarigar.name,
+              weight: Number(o.withKarigar.issued_g).toString(),
+            })}
+          />
+        );
+      }
       return <UbStatusBadge tone="neutral" label={t('sales.customOrder.status.open')} />;
     },
     [t]
@@ -269,13 +309,24 @@ export function CustomOrdersPageContent(): React.JSX.Element {
         subtitle={t('sales.customOrder.subtitle')}
         primaryActions={
           canWrite ? (
-            <UbButton
-              icon={<Plus className="h-4 w-4" aria-hidden />}
-              onClick={() => setAdding(true)}
-              data-testid="custom-order-new"
-            >
-              {t('sales.customOrder.newShort')}
-            </UbButton>
+            <UbStack direction="row" gap={2} className="flex-wrap">
+              {(karigars?.rows.length ?? 0) > 0 && (
+                <UbButton
+                  variant="secondary"
+                  onClick={() => setDialog('issue')}
+                  data-testid="karigar-issue"
+                >
+                  {t('sales.karigar.issue')}
+                </UbButton>
+              )}
+              <UbButton
+                icon={<Plus className="h-4 w-4" aria-hidden />}
+                onClick={() => setAdding(true)}
+                data-testid="custom-order-new"
+              >
+                {t('sales.customOrder.newShort')}
+              </UbButton>
+            </UbStack>
           ) : undefined
         }
       />
@@ -288,6 +339,9 @@ export function CustomOrdersPageContent(): React.JSX.Element {
             data-testid="custom-order-count"
           >
             {t('sales.customOrder.count', { open: data.open, held: formatInr(data.advanceHeld) })}
+            {karigars
+              ? ` · ${t('sales.karigar.goldWith', { weight: karigars.gold_with_karigars })}`
+              : ''}
           </UbText>
         )}
         <UbSearchInput
@@ -387,6 +441,28 @@ export function CustomOrdersPageContent(): React.JSX.Element {
           />
         )}
       </UbStack>
+      {karigars && (
+        <UbBox className="mt-4">
+          <KarigarsPanel
+            data={karigars}
+            canWrite={canWrite}
+            onAdd={() => setDialog('add')}
+            onReceive={setDialog}
+          />
+        </UbBox>
+      )}
+      {dialog === 'add' && <AddKarigarDialog onClose={() => setDialog(null)} onDone={dialogDone} />}
+      {dialog === 'issue' && karigars && (
+        <IssueGoldDialog
+          karigars={karigars.rows}
+          orders={rows}
+          onClose={() => setDialog(null)}
+          onDone={dialogDone}
+        />
+      )}
+      {dialog && typeof dialog === 'object' && (
+        <ReceiveGoldDialog lot={dialog} onClose={() => setDialog(null)} onDone={dialogDone} />
+      )}
       {adding && (
         <CustomOrderDrawer
           onClose={() => setAdding(false)}

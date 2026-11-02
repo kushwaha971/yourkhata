@@ -353,3 +353,44 @@ class CustomOrder(TenantModel):
             models.UniqueConstraint(fields=["tenant", "number"], name="uq_custom_order_number"),
             models.UniqueConstraint(fields=["tenant", "client_key"], name="uq_custom_order_client_key"),
         ]
+
+
+class Karigar(TenantModel):
+    """G3b — a craftsman a jeweller gives gold to (design G3 "Karigars"), with
+    the wastage allowed. Going over it is shown, never refused."""
+
+    name = models.CharField(max_length=120)
+    mobile = models.CharField(max_length=15, blank=True, default="")
+    wastage_limit_pct = MoneyField(default=0)
+
+    class Meta:
+        db_table = "sales_karigar"
+        verbose_name = "karigar"
+        verbose_name_plural = "karigars"
+        ordering = ["name"]
+        constraints = [models.UniqueConstraint(fields=["tenant", "name"], name="uq_karigar_name")]
+
+
+class KarigarLot(TenantModel):
+    """G3b — one lot of gold weighed out to a karigar and, later, weighed back.
+
+    With the karigar until `received_g` is set; wastage is issued − received, known only
+    once the lot is back. Recording only: there is no raw-gold stock for it to
+    move. `client_key` makes a double-tapped Issue one lot.
+    """
+
+    karigar = models.ForeignKey(Karigar, on_delete=models.RESTRICT, related_name="lots")
+    order = models.ForeignKey(CustomOrder, on_delete=models.SET_NULL, null=True, blank=True, related_name="lots")
+    client_key = models.UUIDField()
+    purity = models.CharField(max_length=12)
+    issued_g = QuantityField()
+    issued_on = models.DateField()
+    received_g = QuantityField(null=True, blank=True)
+    received_on = models.DateField(null=True, blank=True)
+
+    class Meta:
+        db_table = "sales_karigar_lot"
+        verbose_name = "karigar lot"
+        verbose_name_plural = "karigar lots"
+        ordering = ["issued_on", "created_at"]
+        constraints = [models.UniqueConstraint(fields=["tenant", "client_key"], name="uq_karigar_lot_client_key")]

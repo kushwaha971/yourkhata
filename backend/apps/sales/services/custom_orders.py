@@ -26,6 +26,14 @@ NEXT = {
 }
 
 
+def _with_karigar(order: CustomOrder) -> dict | None:
+    """G3b — "With Raju · 18.2 g issued": whose hands this order's gold is in."""
+    lots = [x for x in order.lots.all() if x.received_g is None]
+    if not lots:
+        return None
+    return {"name": lots[0].karigar.name, "issued_g": f"{sum(x.issued_g for x in lots):.3f}"}
+
+
 def view(order: CustomOrder) -> dict:
     return {
         "id": str(order.id),
@@ -40,6 +48,7 @@ def view(order: CustomOrder) -> dict:
         "fixed_rate": f"{order.fixed_rate:.2f}" if order.fixed_rate is not None else None,
         "status": order.status,
         "invoice_id": str(order.invoice_id) if order.invoice_id else None,
+        "with_karigar": _with_karigar(order),
     }
 
 
@@ -175,7 +184,7 @@ def move_order(*, ctx: Ctx, order_id: Any, status: Any) -> CustomOrder:
 
 
 def list_orders(*, tenant: Any, q: str = "", scope: str = "open") -> dict:
-    rows = CustomOrder.objects.filter(tenant=tenant).select_related("party")
+    rows = CustomOrder.objects.filter(tenant=tenant).select_related("party").prefetch_related("lots__karigar")
     live = rows.filter(status__in=(CustomOrder.OPEN, CustomOrder.READY))
     summary = live.aggregate(held=Sum("advance"))
     shown = live if scope == "open" else rows

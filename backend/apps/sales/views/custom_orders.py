@@ -14,7 +14,7 @@ from apps.common.exceptions import NotFound
 from apps.common.permissions import HasPermission, ModuleEnabled
 from apps.common.responses import StandardResponse
 from apps.common.tenancy import get_effective_tenant
-from apps.sales.services import custom_orders
+from apps.sales.services import custom_orders, karigars
 
 _READ = HasPermission("sales.invoice.read")
 _WRITE = HasPermission("sales.invoice.write")
@@ -59,3 +59,24 @@ class CustomOrderDetailView(_View):
     def get(self, request: Any, pk: Any) -> Any:
         order = custom_orders.get_order(tenant=get_effective_tenant(request), order_id=pk)
         return StandardResponse.ok(custom_orders.view(order))
+
+
+class KarigarsView(_View):
+    def get(self, request: Any) -> Any:
+        return StandardResponse.ok(karigars.list_karigars(tenant=get_effective_tenant(request)))
+
+    def post(self, request: Any) -> Any:
+        return StandardResponse.created(karigars.create_karigar(ctx=Ctx.from_request(request), data=request.data))
+
+
+class KarigarIssueView(_View):
+    def post(self, request: Any, pk: Any) -> Any:
+        lot, created = karigars.issue_gold(ctx=Ctx.from_request(request), karigar_id=pk, data=request.data)
+        body = karigars.lot_view(lot)
+        return StandardResponse.created(body) if created else StandardResponse.ok(body)
+
+
+class KarigarReceiveView(_View):
+    def post(self, request: Any, pk: Any) -> Any:
+        lot = karigars.receive_gold(ctx=Ctx.from_request(request), lot_id=pk, data=request.data)
+        return StandardResponse.ok(karigars.lot_view(lot))

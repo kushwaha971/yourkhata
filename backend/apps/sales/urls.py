@@ -8,7 +8,14 @@ from rest_framework.routers import DefaultRouter
 from apps.sales.views.challans import DeliveryChallanViewSet
 from apps.sales.views.credit_notes import CreditNoteViewSet
 from apps.sales.views.estimates import EstimateViewSet
-from apps.sales.views.custom_orders import CustomOrderDetailView, CustomOrdersView, CustomOrderStatusView
+from apps.sales.views.custom_orders import (
+    CustomOrderDetailView,
+    CustomOrdersView,
+    CustomOrderStatusView,
+    KarigarIssueView,
+    KarigarReceiveView,
+    KarigarsView,
+)
 from apps.sales.views.invoices import InvoiceViewSet
 from apps.sales.views.orders import SalesOrderViewSet
 
@@ -24,5 +31,9 @@ urlpatterns = [
     path("custom-orders", CustomOrdersView.as_view(), name="custom-orders"),
     path("custom-orders/<uuid:pk>", CustomOrderDetailView.as_view(), name="custom-order-detail"),
     path("custom-orders/<uuid:pk>/status", CustomOrderStatusView.as_view(), name="custom-order-status"),
+    # G3b — karigars.
+    path("karigars", KarigarsView.as_view(), name="karigars"),
+    path("karigars/<uuid:pk>/issue", KarigarIssueView.as_view(), name="karigar-issue"),
+    path("karigar-lots/<uuid:pk>/receive", KarigarReceiveView.as_view(), name="karigar-receive"),
     *router.urls,
 ]
