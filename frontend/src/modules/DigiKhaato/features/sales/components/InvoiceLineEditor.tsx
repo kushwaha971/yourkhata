@@ -109,7 +109,15 @@ export function InvoiceLineDetails({
   if (line?.jewel)
     return (
       <UbStack gap={4} data-testid="invoice-line-details">
-        <JewelLineFields form={form} index={index} jewel={line.jewel} disabled={disabled} t={t} />
+        <JewelLineFields
+          form={form}
+          index={index}
+          jewel={line.jewel}
+          taxOptions={taxOptions}
+          taxFree={taxFree}
+          disabled={disabled}
+          t={t}
+        />
       </UbStack>
     );
   return (
@@ -391,29 +399,62 @@ export function InvoiceLineTable({
     }
   }, [focusRequest]);
   const indexes = shownIndexes(lines);
-  const columns: UbEditTableColumn[] = [
-    { id: 'n', header: '#', width: 'w-11' },
-    { id: 'item', header: t('sales.line.item'), wrap: true },
-    { id: 'qty', header: t('sales.line.qty'), align: 'end', tight: true },
-    { id: 'unit', header: t('sales.line.unit') },
-    { id: 'rate', header: t('sales.line.rate'), align: 'end', tight: true },
-    { id: 'discount', header: t('sales.line.discountPct'), align: 'end', tight: true },
-    ...(taxFree ? [] : [{ id: 'gst', header: t('sales.line.gst'), align: 'end' as const }]),
-    { id: 'amount', header: t('sales.line.amount'), align: 'end' },
-    {
-      id: 'actions',
-      header: t('sales.line.actions'),
-      srOnlyHeader: true,
-      align: 'end',
-      width: 'w-10',
-      tight: true,
-    },
-  ];
+  // G2b — design G2 dJewelBill: a bill of tag pieces reads Tag · item, Net wt,
+  // Rate (per gram), Making, Amount. A bill that mixes in a plain item keeps
+  // the shared columns, so no plain line sits under "Net wt".
+  const jewelBill =
+    indexes.some((i) => lines[i]?.jewel) &&
+    indexes.every((i) => lines[i]?.jewel || (!lines[i]?.itemId && !lines[i]?.description.trim()));
+  const columns: UbEditTableColumn[] = jewelBill
+    ? [
+        { id: 'n', header: '#', width: 'w-11' },
+        { id: 'item', header: t('sales.line.jewel.colItem'), wrap: true },
+        { id: 'qty', header: t('sales.line.jewel.colNet'), align: 'end', tight: true },
+        { id: 'rate', header: t('sales.line.rate'), align: 'end', tight: true },
+        { id: 'discount', header: t('sales.line.jewel.making'), align: 'end', tight: true },
+        ...(taxFree ? [] : [{ id: 'gst', header: t('sales.line.gst'), align: 'end' as const }]),
+        { id: 'amount', header: t('sales.line.amount'), align: 'end' },
+        {
+          id: 'actions',
+          header: t('sales.line.actions'),
+          srOnlyHeader: true,
+          align: 'end',
+          width: 'w-10',
+          tight: true,
+        },
+      ]
+    : [
+        { id: 'n', header: '#', width: 'w-11' },
+        { id: 'item', header: t('sales.line.item'), wrap: true },
+        { id: 'qty', header: t('sales.line.qty'), align: 'end', tight: true },
+        { id: 'unit', header: t('sales.line.unit') },
+        { id: 'rate', header: t('sales.line.rate'), align: 'end', tight: true },
+        { id: 'discount', header: t('sales.line.discountPct'), align: 'end', tight: true },
+        ...(taxFree ? [] : [{ id: 'gst', header: t('sales.line.gst'), align: 'end' as const }]),
+        { id: 'amount', header: t('sales.line.amount'), align: 'end' },
+        {
+          id: 'actions',
+          header: t('sales.line.actions'),
+          srOnlyHeader: true,
+          align: 'end',
+          width: 'w-10',
+          tight: true,
+        },
+      ];
   const rows: UbEditTableRow[] = indexes.map((index, n) => {
     const line = lines[index];
     const name = lineName(line, t);
     const base = `lines.${index}` as const;
-    const note = renderLineNote(index);
+    const note =
+      jewelBill && line?.jewel ? (
+        <UbText variant="caption" tone="tertiary" data-testid="line-jewel">
+          {[line.jewel.tag_no, line.jewel.huid ? `HUID ${line.jewel.huid}` : '']
+            .filter(Boolean)
+            .join(' · ')}
+        </UbText>
+      ) : (
+        renderLineNote(index)
+      );
     const tax = taxOptions.find((o) => o.value === line?.taxCode)?.label ?? line?.taxCode ?? '';
     // G2b — a tag line is one piece priced by weight: its quantity, rate and
     // discount are not typed in the row (the server would replace a typed
@@ -587,6 +628,18 @@ export function InvoiceLineTable({
           ]
         : []
     );
+    if (jewelBill && jewel) {
+      // Net wt in Qty's place, no Unit, Making in Disc.'s place; the caption
+      // under the name is the tag and its HUID, the rest being in columns.
+      cells[2] = fixed('qty', `${jewel.net_g} g`);
+      cells[5] = fixed(
+        'discount',
+        jewel.making_type === 'pct'
+          ? `${Number(jewel.making_value)}%`
+          : `${formatInr(jewel.making_value)}/g`
+      );
+      void cells.splice(3, 1);
+    }
     return {
       key: String(index),
       'data-testid': 'invoice-line',

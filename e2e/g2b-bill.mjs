@@ -101,8 +101,13 @@ await page.getByTestId('invoice-lines').waitFor({ timeout: 20000 }).catch(() => 
 await scanInto(page, tagA.toLowerCase());
 const caption = page.getByTestId('line-jewel').first();
 await caption.waitFor({ timeout: 10000 }).catch(() => undefined);
-const capText = (await caption.innerText().catch(() => '')).replace(/\s+/g, ' ');
-check('S1: the scan adds the line with its weight caption', capText.includes(tagA) && capText.includes('12.340 g') && capText.includes('22K 916'), capText);
+// Desktop, design dJewelBill: Tag · item | Net wt | Rate | Making | Amount.
+const row = (await page.getByTestId('invoice-line').first().innerText().catch(() => '')).replace(/\s+/g, ' ');
+const head = (await page.locator('thead').first().innerText().catch(() => '')).replace(/\s+/g, ' ');
+const headHasGst = /\bGST\b/.test(head);
+check('S1: the scan adds the tag line (tag · HUID under the name)', (await caption.innerText().catch(() => '')).includes(`${tagA} · HUID 7K2P9X`));
+check('S1: jeweller columns Tag · item, Net wt, Rate, Making', ['Tag · item', 'Net wt', 'Rate', 'Making'].every((w) => head.includes(w)) && !head.includes('Disc.'), head);
+check('S1: the row reads 12.340 g · ₹11,650.00/g · 12%', row.includes('12.340 g') && row.includes('₹11,650.00/g') && row.includes('12%'), row);
 await scanInto(page, tagA);
 await page.waitForTimeout(800);
 check('S2: the same tag again is said, not added', (await page.getByTestId('line-jewel').count()) === 1, `${await page.getByTestId('line-jewel').count()} lines`);
@@ -160,6 +165,11 @@ for (const [width, theme] of [[390, 'light'], [320, 'dark']]) {
     await making.fill('850');
     await p.waitForTimeout(300);
     const breakdown = (await p.getByTestId('jewel-breakdown').innerText().catch(() => '')).replace(/\s+/g, ' ');
+    const gst = p.getByTestId('jewel-line').getByLabel('GST');
+    // The picker follows the bill's own rule: shown wherever the bill charges
+    // GST (a registered business), hidden on a business that charges none.
+    check('S3: the GST picker follows the bill (shown when the bill shows GST)', ((await gst.count()) > 0) === headHasGst, `picker ${await gst.count()}, bill GST ${headHasGst}`);
+    check('S3: the sheet never states a fixed GST', !(await p.getByTestId('jewel-line').innerText()).includes('GST 3%'));
     check('S3: the sheet shows the parts at ₹850/g', breakdown.includes('₹1,43,761.00') && breakdown.includes('₹10,489.00') && breakdown.includes('₹1,54,250.00'), breakdown);
   }
   const m = await p.evaluate(() => {

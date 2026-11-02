@@ -7,6 +7,7 @@ import {
   UbMoneyInput,
   UbQuantityInput,
   UbSegmentedControl,
+  UbSelect,
   UbStack,
   UbText,
 } from 'src/design-system';
@@ -23,18 +24,23 @@ import type { UseFormReturn } from 'react-hook-form';
  * G2b — design D2 for a jeweller: a tag line's sheet. Gross and stone are the
  * tag's (shown, not changed here); Net, the rate and making may be changed for
  * this bill only. The parts below add up to the line total, and GST (3%) is
- * added on the bill. The rate is today's and stays with the bill once issued.
+ * added on the bill at the line's GST, which the business chooses. The rate is today's and stays with the bill once issued.
  */
 export function JewelLineFields({
   form,
   index,
   jewel,
+  taxOptions,
+  taxFree,
   disabled,
   t,
 }: Readonly<{
   form: UseFormReturn<InvoiceFormValues>;
   index: number;
   jewel: JewelLine;
+  /** The business picks the GST on every line, 0% included (owner, 2 Nov). */
+  taxOptions: readonly { value: string; label: string }[];
+  taxFree: boolean;
   disabled: boolean;
   t: TranslateFn;
 }>): React.JSX.Element {
@@ -166,6 +172,19 @@ export function JewelLineFields({
             className="min-h-11"
           />
         </UbStack>
+      )}
+      {!taxFree && (
+        <UbField name={`${base}.taxCode`} label={t('sales.line.gst')}>
+          {(field) => (
+            <UbSelect
+              id={field.id}
+              value={(field.value as string) ?? ''}
+              options={taxOptions}
+              onChange={(next) => field.onChange(next)}
+              disabled={disabled}
+            />
+          )}
+        </UbField>
       )}
       {jewel.huid && (
         <UbText variant="caption" tone="tertiary">

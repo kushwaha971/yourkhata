@@ -122,11 +122,15 @@ sheet's making box and the three weight boxes were cut at 390/320; those rows
 stack below 640/360 px. The weight dropped out of the line caption (a shell
 expansion while editing) and the live check caught it.
 
-**Not built yet, listed (not chosen silently):**
-1. The design's desktop table for a jeweller has its own columns (Tag · item,
-   Net wt, Rate, Making, Amount); the built table keeps the shared columns
-   with the weight in the caption. Next step if wanted.
-2. A jeweller's item does not default to GST 3%: an item saved at GST 0 bills
-   with "No GST is charged". Proposed: the jewellery preset's default tax code
-   is GST3 (owner to confirm; 5% only for job work).
-3. Old gold (G2c) and PAN / the cash limit (G2d) are the next pieces.
+**Gaps closed (2 Nov, owner "Gaps first"):**
+1. Desktop: a bill of tag pieces reads Tag · item | Net wt | Rate (per g) |
+   Making | Amount, as dJewelBill; a bill mixing in a plain item keeps the
+   shared columns. Live: g2b S1 reads the header and the row.
+2. GST — owner decision: no GST default by kind anywhere; the business picks
+   the rate on every line, 0% included (a 3% jewellery default was built and
+   taken back). The tag line's sheet got its GST picker back (it follows the
+   bill: hidden on a business that charges no GST, as every line) and no longer
+   prints "GST 3%" as a fact. Unit test for both cases; live S3 checks the
+   unregistered case and that no fixed rate is stated.
+
+**Next:** G2c old gold taken in, then G2d PAN and the cash limit.
