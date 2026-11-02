@@ -1,9 +1,11 @@
 import type { TranslateFn } from 'src/hooks/useTranslation';
+import { PURITY_SHORT } from 'src/modules/DigiKhaato/features/inventory/api/tagService';
 import { formatInr, subtractMoney, sumMoney, withMinusSign } from 'src/utils/money';
 import { sumQuantities, trimQuantity } from 'src/utils/quantity';
 
 import { THERMAL_NAME_CHARS } from '../../constants/salesConstants';
 import { sgstLabelId, showsTax } from '../../view-model/invoiceDisplay';
+
 
 import type { SalesDocument, SalesDocumentLine } from '../../types/sales.types';
 
@@ -171,9 +173,11 @@ export const documentTotalRows = (doc: SalesDocument, t: TranslateFn): [string, 
 export const documentCredited = (doc: SalesDocument): string =>
   subtractMoney(subtractMoney(doc.grandTotal, doc.amountPaid), doc.amountDue);
 
-export type BusinessColumn = 'batch' | 'imei';
+export type BusinessColumn = 'batch' | 'imei' | 'jewel';
 
 export function businessColumn(doc: SalesDocument): BusinessColumn | null {
+  // G2b — design D14 for a jeweller: "Net wt · Purity", HUID per line.
+  if (doc.lines.some((line) => line.jewel)) return 'jewel';
   if (doc.lines.some((line) => (line.batches?.length ?? 0) > 0)) return 'batch';
   if (doc.lines.some((line) => (line.serials?.length ?? 0) > 0)) return 'imei';
   return null;
@@ -181,6 +185,13 @@ export function businessColumn(doc: SalesDocument): BusinessColumn | null {
 
 /** "DL3990 · 03/27" per batch taken; IMEIs one after another. */
 export function extraCell(line: SalesDocumentLine, column: BusinessColumn): string {
+  if (column === 'jewel') {
+    const j = line.jewel;
+    if (!j) return '';
+    return [`${j.net_g} g`, PURITY_SHORT[j.purity] ?? j.purity, j.huid ? `HUID ${j.huid}` : '']
+      .filter(Boolean)
+      .join(' · ');
+  }
   if (column === 'imei') return (line.serials ?? []).join(', ');
   return (line.batches ?? [])
     .map((batch) =>
@@ -189,4 +200,23 @@ export function extraCell(line: SalesDocumentLine, column: BusinessColumn): stri
         : batch.batchNo
     )
     .join(', ');
+}
+
+/**
+ * G2b — design D14's line for a jeweller: "Rates used: 22K ₹11,650/g ·
+ * Silver ₹150/g." Each purity once, at the rate its lines were priced at
+ * (a line whose rate was changed shows its own, so the print never claims a
+ * rate the bill did not use).
+ */
+export function jewelRatesLine(doc: SalesDocument, t: TranslateFn): string | null {
+  const seen = new Map<string, string>();
+  for (const line of doc.lines) {
+    const j = line.jewel;
+    if (!j?.rate) continue;
+    const label = PURITY_SHORT[j.purity] ?? j.purity;
+    const text = `${label} ${formatInr(j.rate)}/g`;
+    seen.set(`${label}|${j.rate}`, text);
+  }
+  if (seen.size === 0) return null;
+  return t('sales.print.jewelRates', { rates: [...seen.values()].join(' · ') });
 }

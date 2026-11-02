@@ -3,7 +3,7 @@ import { discountWire } from 'src/utils/discountWire';
 import { formQty } from 'src/utils/quantity';
 
 import type { EngineDocumentInput, EngineGstType } from './taxEngine';
-import type { DiscountType, SalesDocument } from '../types/sales.types';
+import type { DiscountType, JewelLine, SalesDocument } from '../types/sales.types';
 import type { ChallanType } from '../types/salesFlows.types';
 
 /**
@@ -29,6 +29,8 @@ export interface InvoiceLineForm {
   serials?: string[];
   /** D P6 — a café item's add-ons on this line (priced into unitPrice). */
   addons?: { name: string; price: string }[];
+  /** G2b — a jeweller's piece: priced by the server from this snapshot. */
+  jewel?: JewelLine | null;
   unitPrice: string;
   taxInclusive: boolean;
   discountType: '' | DiscountType;
@@ -165,6 +167,7 @@ export const toWireBody = (values: InvoiceFormValues): Record<string, unknown> =
     unit_code: line.unitCode || null,
     ...(line.serials?.length ? { serials: line.serials } : {}),
     ...(line.addons?.length ? { addons: line.addons.map((a) => ({ name: a.name })) } : {}),
+    ...(line.jewel ? { jewel: line.jewel } : {}),
     unit_price: line.unitPrice.trim() || null,
     tax_inclusive: line.taxInclusive,
     ...discountWire(line.discountType, line.discountValue),
@@ -212,6 +215,7 @@ export const fromDocument = (doc: SalesDocument): InvoiceFormValues => ({
         unitCode: line.unitCode,
         serials: [...(line.serials ?? [])],
         addons: [...(line.addons ?? [])],
+        jewel: line.jewel ?? null,
         allowDecimal: unitAllowsDecimal(line.unitCode),
         unitPrice: line.unitPrice,
         taxInclusive: line.taxInclusive,

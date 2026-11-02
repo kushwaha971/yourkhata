@@ -128,6 +128,11 @@ export type ItemQuickAddVia = 'scan' | 'list';
 export interface ItemQuickAddProps {
   readonly labels: ItemQuickAddLabels;
   readonly onPick: (row: ItemListRow, via: ItemQuickAddVia) => void;
+  /**
+   * G2b — tried before the barcode lookup; true when the code was handled
+   * (a jeweller's tag label adds its piece). False falls through to items.
+   */
+  readonly scanFirst?: (code: string) => Promise<boolean>;
   readonly disabled?: boolean;
   readonly className?: string;
   /** Shown at the end of the search box (design §A4 billTable). */
@@ -146,6 +151,7 @@ export interface ItemQuickAddProps {
 function ItemQuickAddBase({
   labels,
   onPick,
+  scanFirst,
   disabled = false,
   className,
   trailing,
@@ -268,7 +274,7 @@ function ItemQuickAddBase({
   /** Owner, 31 Oct 2026: a code the camera reads but nobody stocks said
       nothing on the camera (only a buzz); it is now written in the tray. */
   const [cameraMissed, setCameraMissed] = useState<string | null>(null);
-  const scan = useCallback(
+  const byBarcode = useCallback(
     (code: string) => {
       void search.lookup(code).then((row) => {
         if (row) {
@@ -292,6 +298,27 @@ function ItemQuickAddBase({
       });
     },
     [search, choose, dispatch, labels]
+  );
+  const scan = useCallback(
+    (code: string) => {
+      if (!scanFirst) {
+        byBarcode(code);
+        return;
+      }
+      void scanFirst(code)
+        .catch(() => false)
+        .then((handled) => {
+          if (!handled) {
+            byBarcode(code);
+            return;
+          }
+          setMissed(null);
+          setCameraMissed(null);
+          scanFeedback('added');
+          search.clear();
+        });
+    },
+    [scanFirst, byBarcode, search]
   );
 
   const handleKey = useCallback(

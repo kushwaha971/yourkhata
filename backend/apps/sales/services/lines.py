@@ -125,6 +125,23 @@ def build_lines(
             if default_price is not None:
                 default_price = default_price + sum(Decimal(a["price"]) for a in chosen_addons)
         price = _decimal(pick("unit_price", default_price), 4)
+        # G2b — a jeweller's tag line is priced by its weight at the day's rate
+        # (the snapshot is the price); GST is added on the bill, never inside.
+        jewel = None
+        if item is not None and raw.get("jewel") is not None:
+            from apps.inventory.services.tags import line_jewel
+
+            jewel = line_jewel(
+                tenant=tenant,
+                item=item,
+                serials=["".join(str(v or "").split()).upper() for v in (raw.get("serials") or [])],
+                raw=raw.get("jewel"),
+                path=prefix,
+                errors=errors,
+            )
+            if jewel is not None and "total" in jewel:
+                price = Decimal(jewel["total"])
+                inclusive = False
         d_type = raw.get("discount_type") or None
         d_value = _decimal(raw.get("discount_value"), 2) if d_type else None
 
@@ -192,6 +209,7 @@ def build_lines(
                 "unit_factor": unit.factor,
                 # D P4 — a batch the counter chose; otherwise FEFO picks at issue.
                 "addons": chosen_addons,
+                "jewel": jewel or {},
                 "batches": [
                     {"batch_no": str(b.get("batch_no") or "").upper()}
                     for b in (raw.get("batches") or [])

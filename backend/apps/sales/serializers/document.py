@@ -35,6 +35,8 @@ class LineInputSerializer(serializers.Serializer):
     batches = serializers.ListField(child=serializers.DictField(), required=False, max_length=5)
     #: D P6 — a café item's add-ons chosen for this line.
     addons = serializers.ListField(child=serializers.DictField(), required=False, max_length=12)
+    #: G2b — a jeweller's piece: weights, rate and charges (see `tags.line_jewel`).
+    jewel = serializers.DictField(required=False, allow_null=True)
     unit_price = serializers.DecimalField(
         max_digits=14, decimal_places=4, required=False, allow_null=True
     )
@@ -133,6 +135,7 @@ class LineReadSerializer(serializers.ModelSerializer):
             "serials",
             "batches",
             "addons",
+            "jewel",
             "unit_price",
             "tax_inclusive",
             "discount_type",

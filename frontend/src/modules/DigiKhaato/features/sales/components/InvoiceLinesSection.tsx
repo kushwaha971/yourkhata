@@ -11,12 +11,14 @@ import { UbBox, UbChoiceChips, UbStack, UbText, useIsMobileLayer } from 'src/des
 import type { UbLineFocusRequest } from 'src/design-system';
 import { useAppDispatch, useAppSelector } from 'src/hooks/useAppStore';
 import { useTranslation } from 'src/hooks/useTranslation';
+import { selectActiveTenant } from 'src/redux/slice/sessionSlice';
 import { showSnackbar } from 'src/redux/slice/snackbarSlice';
 import { addMoney, formatInr } from 'src/utils/money';
 import { exceedsQuantity, formatQuantity } from 'src/utils/quantity';
 
 import { listVariants } from '../../inventory/api/itemService';
 import { getPartyRates } from '../../inventory/api/priceListService';
+import { lookupTag, PURITY_SHORT } from '../../inventory/api/tagService';
 import { ItemQuickAdd } from '../../inventory/components/ItemQuickAdd';
 import { LastRateNote } from '../../inventory/components/LastRateNote';
 import { LineSerialsField } from '../../inventory/components/LineSerialsField';
@@ -265,6 +267,48 @@ export function InvoiceLinesSection({
     },
     [quickAdd, onScanned]
   );
+  /* G2b — design G2 "Scan tag or search": a jeweller's tag label is one piece.
+     Its line is filled whole from the server (weights, today's rate, price);
+     the same tag twice is said, never added. Anything else is an item code. */
+  const keepsTags = Boolean(useAppSelector(selectActiveTenant)?.features?.includes('jewellery'));
+  const scanTag = useCallback(
+    async (code: string): Promise<boolean> => {
+      const found = await lookupTag(code);
+      if (!found) return false;
+      const all = getValues('lines') ?? [];
+      if (all.some((line) => line.jewel?.tag_no === found.jewel.tag_no)) {
+        dispatch(
+          showSnackbar({
+            severity: 'info',
+            id: 'sales.line.jewel.twice',
+            params: { tag: found.jewel.tag_no },
+          })
+        );
+        return true;
+      }
+      const filled: InvoiceLineForm = {
+        ...emptyLine(),
+        itemId: found.itemId,
+        description: found.itemName,
+        hsnSac: found.hsnSac ?? '',
+        qty: '1',
+        unitCode: found.unitCode,
+        allowDecimal: false,
+        serials: [found.jewel.tag_no],
+        jewel: found.jewel,
+        unitPrice: found.jewel.total ?? '',
+        taxInclusive: false,
+        taxCode: found.taxCode,
+      };
+      const empty = all.findIndex((line) => !line.itemId && !line.description.trim());
+      if (empty >= 0) fieldArray.update(empty, filled);
+      else fieldArray.append(filled, { shouldFocus: false });
+      onScanned?.();
+      return true;
+    },
+    [getValues, dispatch, fieldArray, onScanned]
+  );
+
   /* Design pScan tray: "× 2 · ₹106" — the scanned item's line, from the same
      engine as the totals, so the tray and the bill never disagree. */
   const scannedLine = useCallback(
@@ -380,9 +424,38 @@ export function InvoiceLinesSection({
           })}
         </UbText>
       ) : null;
-      // D P3 — one IMEI per phone on the line.
+      // G2b — design G2: "GC-1042 · 12.340 g · 22K 916 · ₹11,650/g · making 12%".
+      const jewel = line.jewel;
+      const jewelNote = jewel ? (
+        <UbStack gap={0} data-testid="line-jewel">
+          <UbText variant="caption" tone="accent" className="ds-num">
+            {[
+              jewel.tag_no,
+              `${jewel.net_g} g`,
+              PURITY_SHORT[jewel.purity] ?? jewel.purity,
+              jewel.rate ? t('sales.line.jewel.rate', { rate: formatInr(jewel.rate) }) : null,
+              t(
+                jewel.making_type === 'pct'
+                  ? 'sales.line.jewel.makingPct'
+                  : 'sales.line.jewel.makingPerG',
+                {
+                  value: Number(jewel.making_value).toString(),
+                }
+              ),
+            ]
+              .filter(Boolean)
+              .join(' · ')}
+          </UbText>
+          {jewel.huid && (
+            <UbText variant="caption" tone="tertiary">
+              {t('sales.line.jewel.huid', { huid: jewel.huid })}
+            </UbText>
+          )}
+        </UbStack>
+      ) : null;
+      // D P3 — one IMEI per phone on the line (a jeweller's tag is its own).
       const serialNote =
-        stockRule === 'takes' && serialItems[line.itemId] ? (
+        !jewel && stockRule === 'takes' && serialItems[line.itemId] ? (
           <LineSerialsField
             serials={line.serials ?? []}
             qty={Math.max(Math.round(Number(line.qty) || 0), 0)}
@@ -427,7 +500,8 @@ export function InvoiceLinesSection({
         </UbText>
       ) : null;
       if (!partyId)
-        return addonNote ||
+        return jewelNote ||
+          addonNote ||
           batchNote ||
           serialNote ||
           variantNote ||
@@ -436,6 +510,7 @@ export function InvoiceLinesSection({
           stockNote ||
           changedNote ? (
           <UbStack gap={0}>
+            {jewelNote}
             {addonNote}
             {batchNote}
             {serialNote}
@@ -448,6 +523,7 @@ export function InvoiceLinesSection({
         ) : null;
       return (
         <UbStack gap={0}>
+          {jewelNote}
           {addonNote}
           {batchNote}
           {serialNote}
@@ -504,6 +580,7 @@ export function InvoiceLinesSection({
     <ItemQuickAdd
       labels={{ ...quickAddLabels, placeholder: t('sales.line.quickAdd.placeholderDesk') }}
       onPick={pickItem}
+      scanFirst={keepsTags ? scanTag : undefined}
       disabled={disabled}
       hotkey="F2"
       className="[&_input]:text-sm"
@@ -552,6 +629,7 @@ export function InvoiceLinesSection({
         },
       }}
       onPick={pickItem}
+      scanFirst={keepsTags ? scanTag : undefined}
       disabled={disabled}
     />
   );

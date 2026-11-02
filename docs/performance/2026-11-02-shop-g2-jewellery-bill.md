@@ -89,3 +89,44 @@ Feature key `jewellery` (Part H's name), on for the jewellery preset.
 G2a backend: `TagDetail`, the tag create/list API on an item, the feature key,
 tests. Then the form group, the tab and the chip, the harness, LOOK, monkey,
 regression, report. Then G2b.
+
+## D3/D5 rebuild (2 Nov), pushed 2184b6def and 59877a880
+
+The Add item form and the item page follow D3/D5 for every kind. Live:
+item-form 29/29, item-detail 124/124, ad-certify 77/77, d1/d2/d6 passing,
+g2a 0 failures (skew fails as it must). Kept against the design, listed for
+the owner: no "Sold this month" (no figure behind it); Sales and Purchases
+tabs instead of "Price history"; Archive in the desktop header; "More
+details" does not say photo (items have none).
+
+## G2b — the bill by weight (2 Nov)
+
+**Spec to check** (design G2 `dJewelBill`, D2 jewellery `lineBody`, D14 print):
+
+| Design | Source | Built | Verified by |
+|---|---|---|---|
+| "Scan tag or search" adds the piece | G2 lede, `pOldGold` addbar | `scanFirst` on quick-add → `/jewel-tags/lookup` | g2b S1 (network + caption) |
+| Same tag twice is not added | busy-counter rule | snackbar "Tag … is already on this bill." | g2b S2 |
+| Price = net × rate + making + wastage + stone | D2 `wb` rows | `tags.price_piece`, mirrored in `jewelPrice.ts` (half-even BigInt) | pytest design example; jest same figures + half-paisa cases; g2b S1/S3 read back |
+| Sheet: Gross · Stone · Net, Rate · 22K 916 "Today's rate · locked on issue", Making % / ₹ per g, parts, HUID line | D2 jewel `lineBody` | `JewelLineFields` | g2b S3 + LOOK 390/320 |
+| Rate locked on issue | D2 hint | the rate is written on the line snapshot (`jewel`), never re-read | pytest + g2b S4 (rate changed after issue) |
+| GST 3% on the bill, not in the line | D2 last row | line is tax-exclusive at the item's GST code | pytest taxable = total |
+| Print: "Net wt · Purity", HUID per line, "Rates used: …" | D14 `a4()` | `businessColumn('jewel')`, `jewelRatesLine` | g2b P |
+| Tag sold once | serial engine (D P3) | the tag is the line's serial | pytest + g2b S4 lookup 404 |
+
+**Defects found on the running app and fixed:** the desktop row kept Qty,
+Rate and Disc. boxes on a tag line — a typed rate would be silently replaced
+by the server, and ₹1,61,012 was cut in its box; they are fixed text now
+("1", "₹11,650.00/g", "—") and the phone stepper stops at one piece. The
+sheet's making box and the three weight boxes were cut at 390/320; those rows
+stack below 640/360 px. The weight dropped out of the line caption (a shell
+expansion while editing) and the live check caught it.
+
+**Not built yet, listed (not chosen silently):**
+1. The design's desktop table for a jeweller has its own columns (Tag · item,
+   Net wt, Rate, Making, Amount); the built table keeps the shared columns
+   with the weight in the caption. Next step if wanted.
+2. A jeweller's item does not default to GST 3%: an item saved at GST 0 bills
+   with "No GST is charged". Proposed: the jewellery preset's default tax code
+   is GST3 (owner to confirm; 5% only for job work).
+3. Old gold (G2c) and PAN / the cash limit (G2d) are the next pieces.

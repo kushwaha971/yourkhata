@@ -53,7 +53,12 @@ Built and pushed. Report `docs/performance/2026-11-01-shop-g1-todays-rate.md`
 
 ## Next
 
-G2 · Bill by weight, old gold and PAN (design §G2): tag lines, weight × today's
-rate + making, old gold taken in to its own stock, PAN asked at ₹2 lakh, cash of
-₹2 lakh or more on one bill refused. Start with the design review (spec table
-from `M.pOldGold` / `M.dJewelBill` and D1/D2/D3/D14 for Jewellery).
+G2a (tags), the D3/D5 rebuild and G2b (bill by weight) are in; state and gaps
+in `docs/performance/2026-11-02-shop-g2-jewellery-bill.md`. Live checks:
+`node e2e/g2a-tags.mjs`, `node e2e/g2b-bill.mjs` (both have `--skew`).
+Owner calls waiting: the jeweller's own desktop bill columns (Net wt · Rate ·
+Making), and GST 3% as the jewellery default tax code.
+
+Next piece: G2c · old gold taken in (design `M.pOldGold`): weight, tested
+purity, rate, melting %, its value off the bill, kept in its own old-gold
+stock. Then G2d · PAN at ₹2 lakh and the cash limit.

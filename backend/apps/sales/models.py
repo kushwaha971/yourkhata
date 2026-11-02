@@ -221,6 +221,10 @@ class SalesDocumentLine(models.Model):
     batches = models.JSONField(default=list, blank=True)
     #: D P6 — the add-ons chosen for each piece: [{name, price}] (a snapshot).
     addons = models.JSONField(default=list, blank=True)
+    #: G2b — a jeweller's piece: the tag's weights, the rate per gram written
+    #: on the line, and the parts of its price (metal, making, wastage, stone).
+    #: The rate stays as written: an issued bill is never repriced.
+    jewel = models.JSONField(default=dict, blank=True)
     unit_price = UnitCostField(default=0)
     tax_inclusive = models.BooleanField(default=False)
     discount_type = models.CharField(

@@ -1,6 +1,7 @@
 import type { PaymentMode } from 'src/types/domain.types';
 
 import type { SalesDocumentLinks } from './salesFlows.types';
+import type { JewelLine } from '../../inventory/api/tagService';
 
 /**
  * SAL-02/03/06/07/08 — the sales document as the client holds it, camelCased
@@ -110,6 +111,8 @@ export interface IssuePayment {
   readonly note: string;
 }
 
+export type { JewelLine };
+
 export interface SalesDocumentLine {
   readonly id: string | null;
   readonly lineNo: number;
@@ -128,6 +131,8 @@ export interface SalesDocumentLine {
   }[];
   /** D P6 — the add-ons on the line. */
   readonly addons?: readonly { readonly name: string; readonly price: string }[];
+  /** G2b — a jeweller's piece (null on every other line). */
+  readonly jewel?: JewelLine | null;
   readonly unitPrice: string;
   readonly taxInclusive: boolean;
   readonly discountType: DiscountType | null;

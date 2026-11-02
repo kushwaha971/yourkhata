@@ -106,3 +106,71 @@ export const getTagsInStock = async (signal?: AbortSignal): Promise<number> => {
   );
   return res.data.data.in_stock;
 };
+
+/**
+ * G2b — a jeweller's piece on a bill line: the tag's weights, the rate per
+ * gram written on the line (kept once issued), and the parts of its price.
+ * The wire's snake_case keys are kept: the snapshot goes back as it came.
+ */
+export interface JewelLine {
+  readonly tag_no: string;
+  readonly purity: string;
+  readonly gross_g: string;
+  readonly stone_g: string;
+  readonly net_g: string;
+  readonly rate: string | null;
+  readonly making_type: 'pct' | 'per_g';
+  readonly making_value: string;
+  readonly wastage_pct: string;
+  readonly stone_charge: string;
+  readonly huid: string;
+  readonly metal?: string;
+  readonly making?: string;
+  readonly wastage?: string;
+  readonly stone?: string;
+  readonly total?: string;
+}
+
+/** G2b — "Scan tag or search" on a bill: a tag in stock and its line at today's rate. */
+export interface ScannedTag {
+  readonly itemId: string;
+  readonly itemName: string;
+  readonly unitCode: string;
+  readonly taxCode: string;
+  readonly hsnSac: string | null;
+  readonly jewel: JewelLine;
+}
+
+/** Null when no tag in stock has this number (unknown, or already sold). */
+export const lookupTag = async (code: string): Promise<ScannedTag | null> => {
+  const res = await api
+    .get<{
+      data: {
+        item_id: string;
+        item_name: string;
+        unit_code: string;
+        tax_code: string;
+        hsn_sac: string | null;
+        jewel: JewelLine;
+      };
+    }>('/jewel-tags/lookup', ubConfig({ params: { tag: code }, suppressErrorSnackbar: true }))
+    .catch(() => null);
+  if (!res) return null;
+  const d = res.data.data;
+  return {
+    itemId: d.item_id,
+    itemName: d.item_name,
+    unitCode: d.unit_code,
+    taxCode: d.tax_code,
+    hsnSac: d.hsn_sac,
+    jewel: d.jewel,
+  };
+};
+
+/** A purity as the design prints it in a row: "22K 916". */
+export const PURITY_SHORT: Readonly<Record<string, string>> = {
+  gold_24k: '24K 999',
+  gold_22k: '22K 916',
+  gold_18k: '18K 750',
+  silver: 'Silver 999',
+};

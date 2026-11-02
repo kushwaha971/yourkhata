@@ -10,6 +10,7 @@ import type {
   PaymentBreakupRow,
   SalesDocument,
   SalesDocumentEnvelope,
+  JewelLine,
   SalesDocumentLine,
   ShareLink,
   UpiIntent,
@@ -48,6 +49,10 @@ const toLine = (row: Wire): SalesDocumentLine => ({
         price: String(a.price ?? '0'),
       }))
     : [],
+  jewel:
+    row.jewel && typeof row.jewel === 'object' && Object.keys(row.jewel).length
+      ? (row.jewel as JewelLine)
+      : null,
   unitPrice: s(row.unit_price),
   taxInclusive: Boolean(row.tax_inclusive),
   discountType: (row.discount_type as SalesDocumentLine['discountType']) ?? null,

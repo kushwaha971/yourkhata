@@ -56,3 +56,14 @@ class ItemTagsView(_TagsView):
 class TagSummaryView(_TagsView):
     def get(self, request: Any) -> Any:
         return StandardResponse.ok({"in_stock": tags.in_stock_count(tenant=get_effective_tenant(request))})
+
+
+class TagLookupView(_TagsView):
+    """G2b — the bill's "Scan tag or search": a tag in stock and its line at
+    today's rate. A sold or unknown tag is a 404 the counter can say aloud."""
+
+    def get(self, request: Any) -> Any:
+        found = tags.lookup(tenant=get_effective_tenant(request), tag_no=request.query_params.get("tag", ""))
+        if found is None:
+            raise NotFound("No tag in stock with this number.")
+        return StandardResponse.ok(found)

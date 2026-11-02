@@ -28,6 +28,7 @@ import {
   halfRate,
   hsnSummary,
   isPaidStamp,
+  jewelRatesLine,
   pct,
   watermark,
 } from './printModel';
@@ -444,6 +445,9 @@ export function InvoicePrintA4({
                   date: formatBusinessDate(doc.links.against.documentDate),
                 })}
               </p>
+            )}
+            {jewelRatesLine(doc, t) && (
+              <p data-testid="print-jewel-rates">{jewelRatesLine(doc, t)}</p>
             )}
             {doc.terms && (
               <div>

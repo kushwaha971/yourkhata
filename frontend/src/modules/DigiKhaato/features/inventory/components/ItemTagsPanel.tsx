@@ -16,7 +16,7 @@ import {
 import { useTranslation, type TranslateFn } from 'src/hooks/useTranslation';
 import { formatBusinessDate } from 'src/utils/dates';
 
-import { listItemTags, type Tag } from '../api/tagService';
+import { listItemTags, PURITY_SHORT, type Tag } from '../api/tagService';
 import { inventoryGridLabels } from '../view-model/gridLabels';
 import { ITEM_SELECT_IDS } from '../view-model/itemGridIds';
 
@@ -26,12 +26,6 @@ const AddTagDialogLazy = dynamic(() => import('./AddTagDialog').then((m) => m.Ad
   loading: () => <UbDialogLoading />,
 });
 
-const PURITY: Record<string, string> = {
-  gold_24k: '24K 999',
-  gold_22k: '22K 916',
-  gold_18k: '18K 750',
-  silver: 'Silver 999',
-};
 
 /** Design D5: a table at every width. A phone shows Tag, Net wt and Purity;
  * from lg the tab spans the page and adds HUID and Status; below 360 px
@@ -62,7 +56,7 @@ const columns = (t: TranslateFn, wide: boolean, roomy: boolean): UbDataGridColum
           priority: 2,
           cardSlot: 'meta',
           widthShare: 1,
-          cell: (r) => (r.purity ? PURITY[r.purity] : '—'),
+          cell: (r) => (r.purity ? PURITY_SHORT[r.purity] : '—'),
         },
       ] as UbDataGridColumn<Tag>[])
     : []),

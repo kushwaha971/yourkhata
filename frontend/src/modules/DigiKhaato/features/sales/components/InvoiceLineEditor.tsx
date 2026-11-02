@@ -35,6 +35,8 @@ import {
   type InvoiceLineForm,
 } from '../view-model/invoiceForm';
 
+import { JewelLineFields } from './JewelLineFields';
+
 import type { EngineResult } from '../view-model/taxEngine';
 import type { UseFormReturn } from 'react-hook-form';
 
@@ -103,6 +105,13 @@ export function InvoiceLineDetails({
 }>): React.JSX.Element {
   const { setValue, trigger } = form;
   const base = `lines.${index}` as const;
+  // G2b — a jeweller's tag line is priced by its weight, not typed.
+  if (line?.jewel)
+    return (
+      <UbStack gap={4} data-testid="invoice-line-details">
+        <JewelLineFields form={form} index={index} jewel={line.jewel} disabled={disabled} t={t} />
+      </UbStack>
+    );
   return (
     <UbStack gap={4} data-testid="invoice-line-details">
       <UbBox className={cn('grid gap-4', wide ? 'grid-cols-4' : 'grid-cols-2')}>
@@ -247,7 +256,8 @@ function LineRowPhone({
           removeLabel={t('sales.line.removeOf', { name })}
           onRemove={onRemove}
           disabled={disabled}
-          max={Number(LINE_QTY_LIMIT)}
+          // G2b — a tag is one piece: − removes it, + has nothing to add.
+          max={line?.jewel ? 1 : Number(LINE_QTY_LIMIT)}
         />
         <UbText data-part="rate" className="min-w-0 truncate text-[0.8125rem] text-text-secondary">
           {t('sales.line.unitRate', {
@@ -405,6 +415,20 @@ export function InvoiceLineTable({
     const base = `lines.${index}` as const;
     const note = renderLineNote(index);
     const tax = taxOptions.find((o) => o.value === line?.taxCode)?.label ?? line?.taxCode ?? '';
+    // G2b — a tag line is one piece priced by weight: its quantity, rate and
+    // discount are not typed in the row (the server would replace a typed
+    // rate); the rate per gram is shown, and the sheet changes the rest.
+    const jewel = line?.jewel;
+    const fixed = (key: string, text: string) => (
+      <UbText
+        key={key}
+        variant="inherit"
+        tone="secondary"
+        className="block text-right tabular-nums"
+      >
+        {text}
+      </UbText>
+    );
     const cells: ReactNode[] = [
       <UbText key="n" variant="inherit" className="tabular-nums text-text-tertiary">
         {n + 1}
@@ -423,89 +447,101 @@ export function InvoiceLineTable({
         </UbPressable>
         {note && <UbBox className="text-xs">{note}</UbBox>}
       </UbStack>,
-      <UbField
-        key="qty"
-        name={`${base}.qty`}
-        label={t('sales.line.qtyOf', { name })}
-        labelHidden
-        reserveError={false}
-        messageElsewhere
-      >
-        {(field) => (
-          <UbQuantityInput
-            className="ml-auto w-[76px] [&_input]:h-[34px] [&_input]:text-sm"
-            id={field.id}
-            aria-describedby={field['aria-describedby']}
-            aria-label={t('sales.line.qtyOf', { name })}
-            value={(field.value as string) ?? ''}
-            onChange={(next) => {
-              field.onChange(next);
-              void form.trigger(`${base}.qty`);
-            }}
-            decimals={line?.allowDecimal === false ? 0 : 3}
-            invalid={field.invalid}
-          />
-        )}
-      </UbField>,
+      jewel ? (
+        fixed('qty', '1')
+      ) : (
+        <UbField
+          key="qty"
+          name={`${base}.qty`}
+          label={t('sales.line.qtyOf', { name })}
+          labelHidden
+          reserveError={false}
+          messageElsewhere
+        >
+          {(field) => (
+            <UbQuantityInput
+              className="ml-auto w-[76px] [&_input]:h-[34px] [&_input]:text-sm"
+              id={field.id}
+              aria-describedby={field['aria-describedby']}
+              aria-label={t('sales.line.qtyOf', { name })}
+              value={(field.value as string) ?? ''}
+              onChange={(next) => {
+                field.onChange(next);
+                void form.trigger(`${base}.qty`);
+              }}
+              decimals={line?.allowDecimal === false ? 0 : 3}
+              invalid={field.invalid}
+            />
+          )}
+        </UbField>
+      ),
       <UbText key="unit" variant="inherit" tone="secondary">
         {line?.unitCode}
       </UbText>,
-      <UbField
-        key="rate"
-        name={`${base}.unitPrice`}
-        label={t('sales.line.rateOf', { name })}
-        labelHidden
-        reserveError={false}
-        messageElsewhere
-      >
-        {(field) => (
-          <UbMoneyInput
-            className="ml-auto w-[92px] [&_input]:h-[34px] [&_input]:text-sm"
-            id={field.id}
-            aria-describedby={field['aria-describedby']}
-            aria-label={t('sales.line.rateOf', { name })}
-            value={(field.value as string) ?? ''}
-            onChange={(next) => {
-              field.onChange(next);
-              void form.trigger([`${base}.unitPrice`, `${base}.qty`]);
-            }}
-            decimalPlaces={ratePlaces((field.value as string) ?? '')}
-            invalid={field.invalid}
-          />
-        )}
-      </UbField>,
-      <UbField
-        key="discount"
-        name={`${base}.discountValue`}
-        label={t('sales.line.discountOf', { name })}
-        labelHidden
-        reserveError={false}
-        messageElsewhere
-      >
-        {(field) => (
-          <UbMoneyInput
-            // Design §A4 billTable: the cell is the number alone; "Disc. %" in
-            // the header carries the unit. With a % inside, a 56 px box showed
-            // "150" as "15" and "5.00" as "5.(" (manual pass, 1280).
-            className="ml-auto w-[64px] [&_input]:h-[34px] [&_input]:px-2 [&_input]:text-sm"
-            id={field.id}
-            aria-describedby={field['aria-describedby']}
-            aria-label={t('sales.line.discountOf', { name })}
-            value={(field.value as string) ?? ''}
-            currencySymbol=""
-            decimalPlaces={2}
-            invalid={field.invalid}
-            onChange={(typed) => {
-              // R-DEC-59: past 100 it goes back to 100.
-              const next = clampDiscount(typed, 'percent');
-              field.onChange(next);
-              form.setValue(`${base}.discountType`, next ? 'percent' : '', { shouldDirty: true });
-              void form.trigger(`${base}.discountValue`);
-            }}
-            placeholder="0"
-          />
-        )}
-      </UbField>,
+      jewel ? (
+        fixed('rate', jewel.rate ? `${formatInr(jewel.rate)}/g` : '—')
+      ) : (
+        <UbField
+          key="rate"
+          name={`${base}.unitPrice`}
+          label={t('sales.line.rateOf', { name })}
+          labelHidden
+          reserveError={false}
+          messageElsewhere
+        >
+          {(field) => (
+            <UbMoneyInput
+              className="ml-auto w-[92px] [&_input]:h-[34px] [&_input]:text-sm"
+              id={field.id}
+              aria-describedby={field['aria-describedby']}
+              aria-label={t('sales.line.rateOf', { name })}
+              value={(field.value as string) ?? ''}
+              onChange={(next) => {
+                field.onChange(next);
+                void form.trigger([`${base}.unitPrice`, `${base}.qty`]);
+              }}
+              decimalPlaces={ratePlaces((field.value as string) ?? '')}
+              invalid={field.invalid}
+            />
+          )}
+        </UbField>
+      ),
+      jewel ? (
+        fixed('discount', '—')
+      ) : (
+        <UbField
+          key="discount"
+          name={`${base}.discountValue`}
+          label={t('sales.line.discountOf', { name })}
+          labelHidden
+          reserveError={false}
+          messageElsewhere
+        >
+          {(field) => (
+            <UbMoneyInput
+              // Design §A4 billTable: the cell is the number alone; "Disc. %" in
+              // the header carries the unit. With a % inside, a 56 px box showed
+              // "150" as "15" and "5.00" as "5.(" (manual pass, 1280).
+              className="ml-auto w-[64px] [&_input]:h-[34px] [&_input]:px-2 [&_input]:text-sm"
+              id={field.id}
+              aria-describedby={field['aria-describedby']}
+              aria-label={t('sales.line.discountOf', { name })}
+              value={(field.value as string) ?? ''}
+              currencySymbol=""
+              decimalPlaces={2}
+              invalid={field.invalid}
+              onChange={(typed) => {
+                // R-DEC-59: past 100 it goes back to 100.
+                const next = clampDiscount(typed, 'percent');
+                field.onChange(next);
+                form.setValue(`${base}.discountType`, next ? 'percent' : '', { shouldDirty: true });
+                void form.trigger(`${base}.discountValue`);
+              }}
+              placeholder="0"
+            />
+          )}
+        </UbField>
+      ),
       ...(taxFree
         ? []
         : [
