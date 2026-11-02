@@ -238,6 +238,10 @@ class AuditAction:
     # PAY-05 × SAL-04 FR-10 — the refund payment was voided; its amount is open credit again.
     CREDIT_NOTE_REFUND_RELEASED = "credit_note.refund_released"
     INVOICE_VOIDED = "invoice.voided"
+    # A wrong weight is corrected, and the row keeps what it said before.
+    KARIGAR_UPDATED = "karigar.updated"
+    KARIGAR_LOT_CORRECTED = "karigar_lot.corrected"
+    KARIGAR_LOT_REMOVED = "karigar_lot.removed"
     # ── Sprint 5: LED-05 … LED-08 (17-02 §16) ──────────────────────────────
     #
     # LED-05 §16: the system clearing a collection date because the balance

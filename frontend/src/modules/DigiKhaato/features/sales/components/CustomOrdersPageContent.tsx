@@ -44,6 +44,7 @@ import {
 import {
   finishLotTags,
   listKarigars,
+  type Karigar,
   type KarigarList,
   type KarigarLot,
 } from '../api/karigarService';
@@ -60,6 +61,14 @@ const IssueGoldDialog = dynamic(() => import('./KarigarDialogs').then((m) => m.I
 });
 const ReceiveGoldDialog = dynamic(
   () => import('./KarigarDialogs').then((m) => m.ReceiveGoldDialog),
+  { ssr: false, loading: () => <UbDialogLoading /> }
+);
+const CorrectLotDialog = dynamic(() => import('./KarigarDialogs').then((m) => m.CorrectLotDialog), {
+  ssr: false,
+  loading: () => <UbDialogLoading />,
+});
+const EditKarigarDialog = dynamic(
+  () => import('./KarigarDialogs').then((m) => m.EditKarigarDialog),
   { ssr: false, loading: () => <UbDialogLoading /> }
 );
 const MakeTagDialog = dynamic(() => import('./KarigarDialogs').then((m) => m.MakeTagDialog), {
@@ -216,6 +225,8 @@ export function CustomOrdersPageContent(): React.JSX.Element {
   const [karigars, setKarigars] = useState<KarigarList | null>(null);
   const [dialog, setDialog] = useState<'add' | 'issue' | KarigarLot | null>(null);
   const [tagging, setTagging] = useState<KarigarLot | null>(null);
+  const [correcting, setCorrecting] = useState<KarigarLot | null>(null);
+  const [editing, setEditing] = useState<Karigar | null>(null);
   useEffect(() => {
     const controller = new AbortController();
     void listKarigars(controller.signal)
@@ -459,6 +470,8 @@ export function CustomOrdersPageContent(): React.JSX.Element {
             onAdd={() => setDialog('add')}
             onReceive={setDialog}
             onMakeTag={setTagging}
+            onCorrect={setCorrecting}
+            onEdit={setEditing}
             onTagsDone={(lot) =>
               void finishLotTags(lot.id)
                 .then(dialogDone)
@@ -468,6 +481,26 @@ export function CustomOrdersPageContent(): React.JSX.Element {
             }
           />
         </UbBox>
+      )}
+      {correcting && (
+        <CorrectLotDialog
+          lot={correcting}
+          onClose={() => setCorrecting(null)}
+          onDone={() => {
+            setCorrecting(null);
+            dialogDone();
+          }}
+        />
+      )}
+      {editing && (
+        <EditKarigarDialog
+          karigar={editing}
+          onClose={() => setEditing(null)}
+          onDone={() => {
+            setEditing(null);
+            dialogDone();
+          }}
+        />
       )}
       {tagging && (
         <MakeTagDialog

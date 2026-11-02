@@ -107,3 +107,18 @@ purchase-screen version of this (D6) is not built; it lives on Custom orders.
 
 Live: `e2e/g3c-tags.mjs` (390, 320, 1280), `--skew` fails on the cost; g2a and
 g3b rerun. Server: 3 new tests. Monkey runs and the score sheet are not done.
+
+## Correcting a mistyped lot (2 Nov)
+
+Every lot still on the panel has Correct: weight given, weight received (once
+back) and purity. Wastage follows from the new figures, and the audit log keeps
+the old ones. Remove takes out a lot entered by mistake, after asking; once tags
+were made from it, it cannot be removed. A karigar's name and limit have Edit.
+
+Limits: a lot that has left the panel ("No more tags") can no longer be corrected
+on screen. Tags already made keep their own weights. Any member who can write
+bills can correct or remove; the audit log names who did. A lot back at 0 g now
+stays on the panel, so a typed 0 can be corrected.
+
+Live: `e2e/g3d-lot-correct.mjs` 9/9, `--skew` fails on the wastage; g3b 19/19, g3c
+11/11. Server: 4 new tests; `apps/sales` all pass.

@@ -125,6 +125,7 @@ _REGISTRY: dict[str, tuple[int, bool]] = {
     "custom_order_status": (409, False),
     "karigar_lot_received": (409, False),
     "karigar_lot_not_back": (409, False),
+    "karigar_lot_has_tags": (409, False),
     "eway_not_issued": (409, False),
     "opening_stock_required": (409, False),
     "opening_exists": (409, False),

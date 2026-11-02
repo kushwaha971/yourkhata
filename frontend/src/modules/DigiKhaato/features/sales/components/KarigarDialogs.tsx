@@ -6,6 +6,7 @@ import { FormProvider, useForm, useWatch } from 'react-hook-form';
 
 import {
   UbButton,
+  UbConfirmDialog,
   UbDialog,
   UbField,
   UbForm,
@@ -14,7 +15,9 @@ import {
   UbSelect,
   UbTextInput,
 } from 'src/design-system';
+import { useAppDispatch } from 'src/hooks/useAppStore';
 import { useTranslation } from 'src/hooks/useTranslation';
+import { showSnackbar } from 'src/redux/slice/snackbarSlice';
 import type { ApiErrorShape } from 'src/types/api.types';
 import { applyServerErrors } from 'src/utils/applyServerErrors';
 
@@ -24,9 +27,12 @@ import { EMPTY_TAG, PURITY_SHORT, TAG_FIELD, toTagBody } from '../../inventory/a
 import { ItemTagFields, type TagFormHost } from '../../inventory/components/ItemTagFields';
 import {
   addKarigar,
+  correctLot,
   issueGold,
   makeLotTag,
   receiveGold,
+  removeLot,
+  updateKarigar,
   type Karigar,
   type KarigarLot,
 } from '../api/karigarService';
@@ -334,5 +340,123 @@ export function MakeTagDialog({
         </UbField>
       </Shell>
     </FormProvider>
+  );
+}
+
+/** Correct a mistyped lot, or remove one entered by mistake (not once it made tags). */
+export function CorrectLotDialog({
+  lot,
+  onClose,
+  onDone,
+}: Readonly<{ lot: KarigarLot; onClose: () => void; onDone: () => void }>): React.JSX.Element {
+  const { t } = useTranslation();
+  const dispatch = useAppDispatch();
+  const [confirming, setConfirming] = useState(false);
+  const form = useForm({
+    defaultValues: {
+      issued_g: lot.issued_g,
+      received_g: lot.received_g ?? '',
+      purity: lot.purity,
+    },
+  });
+  return (
+    <>
+      <Shell
+        title={t('sales.karigar.correctTitle', { name: lot.karigar.name })}
+        saveLabel={t('sales.karigar.correctSave')}
+        form={form}
+        fields={['issued_g', 'received_g', 'purity']}
+        onClose={onClose}
+        save={async (v) => {
+          await correctLot(lot.id, {
+            issued_g: v.issued_g,
+            purity: v.purity,
+            ...(lot.received_g === null ? {} : { received_g: v.received_g }),
+          });
+          onDone();
+        }}
+      >
+        {grams(form as never, 'issued_g', t('sales.karigar.given'))}
+        {lot.received_g !== null && grams(form as never, 'received_g', t('sales.karigar.received'))}
+        <UbField name="purity" label={t('sales.customOrder.purity')}>
+          {(field) => (
+            <UbSelect
+              id={field.id}
+              aria-label={t('sales.customOrder.purity')}
+              value={field.value as string}
+              options={PURITIES.map((p) => ({ value: p, label: PURITY_SHORT[p] ?? p }))}
+              onChange={(next) => form.setValue('purity', next, { shouldDirty: true })}
+            />
+          )}
+        </UbField>
+        {lot.tag_count === 0 && (
+          <UbButton
+            variant="ghost"
+            className="self-start text-error"
+            onClick={() => setConfirming(true)}
+            data-testid="karigar-lot-remove"
+          >
+            {t('sales.karigar.remove')}
+          </UbButton>
+        )}
+      </Shell>
+      <UbConfirmDialog
+        open={confirming}
+        onOpenChange={setConfirming}
+        title={t('sales.karigar.removeTitle')}
+        description={t('sales.karigar.removeBody', { weight: lot.issued_g })}
+        confirmLabel={t('sales.karigar.remove')}
+        cancelLabel={t('sales.karigar.removeKeep')}
+        closeLabel={t('common.action.close')}
+        destructive
+        onConfirm={() =>
+          void removeLot(lot.id)
+            .then(onDone)
+            .catch(() => {
+              setConfirming(false);
+              dispatch(showSnackbar({ severity: 'error', id: 'sales.karigar.removeFailed' }));
+            })
+        }
+      />
+    </>
+  );
+}
+
+export function EditKarigarDialog({
+  karigar,
+  onClose,
+  onDone,
+}: Readonly<{ karigar: Karigar; onClose: () => void; onDone: () => void }>): React.JSX.Element {
+  const { t } = useTranslation();
+  const form = useForm({
+    defaultValues: { name: karigar.name, wastage_limit_pct: karigar.wastage_limit_pct },
+  });
+  return (
+    <Shell
+      title={t('sales.karigar.edit')}
+      saveLabel={t('sales.karigar.correctSave')}
+      form={form}
+      fields={['name', 'wastage_limit_pct']}
+      onClose={onClose}
+      save={async (v) => {
+        await updateKarigar(karigar.id, v);
+        onDone();
+      }}
+    >
+      <UbField name="name" label={t('sales.karigar.name')}>
+        {(field) => <UbTextInput {...field} value={field.value as string} maxLength={120} />}
+      </UbField>
+      <UbField name="wastage_limit_pct" label={t('sales.karigar.limit')}>
+        {(field) => (
+          <UbQuantityInput
+            {...field}
+            value={field.value as string}
+            onChange={(next) => form.setValue('wastage_limit_pct', next, { shouldDirty: true })}
+            decimals={2}
+            unit="%"
+          />
+        )}
+      </UbField>
+    </Shell>
   );
 }

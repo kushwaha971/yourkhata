@@ -75,3 +75,22 @@ export const makeLotTag = async (
 export const finishLotTags = async (lotId: string): Promise<void> => {
   await api.post(`/sales/karigar-lots/${lotId}/tags-done`, {});
 };
+
+/** A mistyped weight or purity; the server keeps the old figures in the audit log. */
+export const correctLot = async (
+  lotId: string,
+  body: { issued_g: string; purity: string; received_g?: string }
+): Promise<void> => {
+  await api.patch(`/sales/karigar-lots/${lotId}`, body);
+};
+
+export const removeLot = async (lotId: string): Promise<void> => {
+  await api.delete(`/sales/karigar-lots/${lotId}`);
+};
+
+export const updateKarigar = async (
+  id: string,
+  body: { name: string; wastage_limit_pct: string }
+): Promise<void> => {
+  await api.patch(`/sales/karigars/${id}`, body);
+};

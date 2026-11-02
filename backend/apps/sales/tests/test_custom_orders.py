@@ -263,3 +263,51 @@ def test_the_same_tag_no_twice_is_refused_and_counts_once(jeweller: Any, owner: 
     assert owner.post(url, body, format="json").status_code == 201
     assert owner.post(url, body, format="json").status_code == 400
     assert owner.get(reverse("v1:karigars")).json()["data"]["to_tag"][0]["tag_count"] == 1
+
+
+# ── correcting a mistyped lot ───────────────────────────────────────────────
+
+
+def test_a_mistyped_lot_is_corrected_the_wastage_follows_and_the_old_figure_is_kept(jeweller: Any, owner: Any) -> None:
+    from apps.common.audit import AuditAction
+    from apps.platform_app.models.audit import AuditLog
+
+    lot = _issue(owner, _karigar(owner), "374.000")
+    owner.post(reverse("v1:karigar-receive", args=[lot["id"]]), {"received_g": "36.880"}, format="json")
+    url = reverse("v1:karigar-lot", args=[lot["id"]])
+    res = owner.patch(url, {"issued_g": "37.400"}, format="json")
+    assert res.status_code == 200, res.content
+    assert _row(owner)["wastage_pct"] == "1.4"
+    audit = AuditLog.objects.get(action=AuditAction.KARIGAR_LOT_CORRECTED)
+    assert audit.before["issued_g"] == "374.000" and audit.after["issued_g"] == "37.400"
+
+
+def test_a_correction_cannot_make_gold_come_back_heavier(jeweller: Any, owner: Any) -> None:
+    lot = _issue(owner, _karigar(owner), "10.000")
+    url = reverse("v1:karigar-lot", args=[lot["id"]])
+    assert owner.patch(url, {"received_g": "1"}, format="json").status_code == 400  # not back yet
+    owner.post(reverse("v1:karigar-receive", args=[lot["id"]]), {"received_g": "9.000"}, format="json")
+    assert owner.patch(url, {"received_g": "11"}, format="json").status_code == 400
+    assert owner.patch(url, {"issued_g": "8"}, format="json").status_code == 400
+    assert _row(owner)["issued_g"] == "10.000"
+
+
+def test_a_lot_entered_by_mistake_is_removed_unless_tags_came_from_it(jeweller: Any, owner: Any, make_item: Any) -> None:
+    from apps.sales.models import KarigarLot
+
+    karigar = _karigar(owner)
+    wrong = _issue(owner, karigar, "5.000")
+    assert owner.delete(reverse("v1:karigar-lot", args=[wrong["id"]])).status_code == 200
+    assert not KarigarLot.objects.filter(pk=wrong["id"]).exists()
+    lot = _issue(owner, karigar, "37.400")
+    owner.post(reverse("v1:karigar-receive", args=[lot["id"]]), {"received_g": "36.880"}, format="json")
+    owner.post(reverse("v1:karigar-make-tag", args=[lot["id"]]), {"item_id": str(_item(make_item).id), "tag": {**TAG, "tag_no": "KR-9"}}, format="json")
+    refused = owner.delete(reverse("v1:karigar-lot", args=[lot["id"]]))
+    assert refused.status_code == 409 and refused.json()["error"]["code"] == "karigar_lot_has_tags"
+
+
+def test_a_karigars_name_and_limit_can_be_changed(jeweller: Any, owner: Any) -> None:
+    karigar = _karigar(owner)
+    res = owner.patch(reverse("v1:karigar-detail", args=[karigar["id"]]), {"name": "Raju S", "wastage_limit_pct": "2"}, format="json")
+    assert res.status_code == 200, res.content
+    assert (_row(owner)["name"], _row(owner)["wastage_limit_pct"]) == ("Raju S", "2.00")

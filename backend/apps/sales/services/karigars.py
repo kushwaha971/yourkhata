@@ -10,6 +10,7 @@ from typing import Any
 from django.core.exceptions import ValidationError
 from django.db import transaction
 
+from apps.common.audit import AuditAction, write_audit
 from apps.common.context import Ctx
 from apps.common.dates import tenant_today
 from apps.common.exceptions import BusinessRuleViolation, NotFound, ValidationFailed
@@ -65,7 +66,7 @@ def list_karigars(*, tenant: Any) -> dict:
     return {
         "rows": rows,
         "open_lots": [lot_view(x) for x in lots if x.received_g is None],
-        "to_tag": [lot_view(x) for x in lots if x.received_g is not None and x.received_g > 0 and not x.tags_done],
+        "to_tag": [lot_view(x) for x in lots if x.received_g is not None and not x.tags_done],
         "gold_with_karigars": _g(sum((x.issued_g for x in lots if x.received_g is None), ZERO)),
     }
 
@@ -207,3 +208,115 @@ def _received_lot(*, ctx: Ctx, lot_id: Any) -> KarigarLot:
     if lot.received_g is None:
         raise BusinessRuleViolation("karigar_lot_not_back", "Receive this gold back first.", details={})
     return lot
+
+
+def _lot_figures(lot: KarigarLot) -> dict:
+    return {
+        "purity": lot.purity,
+        "issued_g": _g(lot.issued_g),
+        "received_g": _g(lot.received_g) if lot.received_g is not None else None,
+    }
+
+
+def _locked_lot(*, ctx: Ctx, lot_id: Any) -> KarigarLot:
+    lot = (
+        KarigarLot.objects.select_for_update(of=("self",))
+        .select_related("karigar", "order")
+        .filter(tenant=ctx.tenant, pk=lot_id)
+        .first()
+    )
+    if lot is None:
+        raise NotFound("No such lot.")
+    return lot
+
+
+@transaction.atomic
+def correct_lot(*, ctx: Ctx, lot_id: Any, data: dict) -> dict:
+    """A mistyped weight or purity. Wastage follows from the new figures; tags
+    already made keep their own weights; the audit row keeps the old figures."""
+    from apps.inventory.services.metal_rates import PURITIES
+    from apps.inventory.services.tags import _dec
+
+    lot = _locked_lot(ctx=ctx, lot_id=lot_id)
+    before = _lot_figures(lot)
+    errors: dict[str, list[str]] = {}
+    issued = lot.issued_g
+    if "issued_g" in data:
+        issued = _dec(data.get("issued_g"), "issued_g", errors, required=True, places=3, minimum=Decimal("0.001")) or issued
+    received = lot.received_g
+    if "received_g" in data:
+        if lot.received_g is None:
+            errors["received_g"] = ["This gold is not back yet."]
+        else:
+            got = _dec(data.get("received_g"), "received_g", errors, required=True, places=3, minimum=ZERO)
+            received = got if got is not None else received
+    purity = data.get("purity", lot.purity)
+    if purity not in PURITIES:
+        errors["purity"] = ["Choose the purity."]
+    if received is not None and "received_g" not in errors and "issued_g" not in errors and received > issued:
+        errors["received_g"] = [f"More than the {issued:.3f} g given. Check the weight."]
+    if errors:
+        raise ValidationFailed(errors, "Check the weight.")
+    lot.issued_g, lot.received_g, lot.purity = issued, received, purity
+    lot.save(update_fields=["issued_g", "received_g", "purity"])
+    write_audit(
+        ctx=ctx,
+        action=AuditAction.KARIGAR_LOT_CORRECTED,
+        entity_type="karigar_lot",
+        entity_id=lot.id,
+        before=before,
+        after=_lot_figures(lot),
+    )
+    return lot_view(lot)
+
+
+@transaction.atomic
+def remove_lot(*, ctx: Ctx, lot_id: Any) -> None:
+    """A lot entered by mistake. Once pieces are tagged from it, it stays."""
+    lot = _locked_lot(ctx=ctx, lot_id=lot_id)
+    if lot.tag_count:
+        raise BusinessRuleViolation(
+            "karigar_lot_has_tags", "Tags were made from this gold, so it cannot be removed.", details={}
+        )
+    write_audit(
+        ctx=ctx,
+        action=AuditAction.KARIGAR_LOT_REMOVED,
+        entity_type="karigar_lot",
+        entity_id=lot.id,
+        before={**_lot_figures(lot), "karigar": lot.karigar.name},
+    )
+    lot.delete()
+
+
+@transaction.atomic
+def update_karigar(*, ctx: Ctx, karigar_id: Any, data: dict) -> dict:
+    from apps.inventory.services.tags import _dec
+
+    karigar = Karigar.objects.select_for_update().filter(tenant=ctx.tenant, pk=karigar_id).first()
+    if karigar is None:
+        raise NotFound("No such karigar.")
+    before = {"name": karigar.name, "wastage_limit_pct": f"{karigar.wastage_limit_pct:.2f}"}
+    errors: dict[str, list[str]] = {}
+    name = " ".join(str(data.get("name", karigar.name) or "").split())
+    if not name:
+        errors["name"] = ["Enter the karigar's name."]
+    elif len(name) > 120:
+        errors["name"] = ["Keep the name under 120 characters."]
+    elif Karigar.objects.filter(tenant=ctx.tenant, name__iexact=name).exclude(pk=karigar.pk).exists():
+        errors["name"] = ["You already have a karigar with this name."]
+    limit = _dec(data.get("wastage_limit_pct"), "wastage_limit_pct", errors, required=False, places=2, minimum=ZERO) or ZERO
+    if limit > 100 and "wastage_limit_pct" not in errors:
+        errors["wastage_limit_pct"] = ["The limit is a percentage up to 100."]
+    if errors:
+        raise ValidationFailed(errors, "Check the karigar.")
+    karigar.name, karigar.wastage_limit_pct = name, limit
+    karigar.save(update_fields=["name", "wastage_limit_pct"])
+    write_audit(
+        ctx=ctx,
+        action=AuditAction.KARIGAR_UPDATED,
+        entity_type="karigar",
+        entity_id=karigar.id,
+        before=before,
+        after={"name": name, "wastage_limit_pct": f"{limit:.2f}"},
+    )
+    return karigar_view(karigar, list(karigar.lots.all()))

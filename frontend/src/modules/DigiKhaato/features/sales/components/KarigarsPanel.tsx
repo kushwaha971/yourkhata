@@ -28,6 +28,8 @@ export function KarigarsPanel({
   onReceive,
   onMakeTag,
   onTagsDone,
+  onCorrect,
+  onEdit,
 }: Readonly<{
   data: KarigarList;
   canWrite: boolean;
@@ -35,6 +37,8 @@ export function KarigarsPanel({
   onReceive: (lot: KarigarLot) => void;
   onMakeTag: (lot: KarigarLot) => void;
   onTagsDone: (lot: KarigarLot) => void;
+  onCorrect: (lot: KarigarLot) => void;
+  onEdit: (k: Karigar) => void;
 }>): React.JSX.Element {
   const { t } = useTranslation();
   return (
@@ -71,9 +75,21 @@ export function KarigarsPanel({
                 <UbText variant="body-sm-medium" className="break-words">
                   {k.name}
                 </UbText>
-                {wastage && (
-                  <UbStatusBadge tone={k.over_limit ? 'warning' : 'success'} label={wastage} />
-                )}
+                <UbStack direction="row" gap={2} align="center" className="flex-wrap">
+                  {wastage && (
+                    <UbStatusBadge tone={k.over_limit ? 'warning' : 'success'} label={wastage} />
+                  )}
+                  {canWrite && (
+                    <UbButton
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => onEdit(k)}
+                      data-testid="karigar-edit"
+                    >
+                      {t('sales.karigar.edit')}
+                    </UbButton>
+                  )}
+                </UbStack>
               </UbStack>
               <UbText variant="body-sm" tone="secondary" className="ds-num">
                 {t('sales.karigar.figures', {
@@ -105,9 +121,19 @@ export function KarigarsPanel({
                 .join(' · ')}
             </UbText>
             {canWrite && (
-              <UbButton variant="secondary" size="sm" onClick={() => onReceive(lot)}>
-                {t('sales.karigar.receive')}
-              </UbButton>
+              <UbStack direction="row" gap={1} className="flex-wrap">
+                <UbButton variant="secondary" size="sm" onClick={() => onReceive(lot)}>
+                  {t('sales.karigar.receive')}
+                </UbButton>
+                <UbButton
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => onCorrect(lot)}
+                  data-testid="karigar-lot-correct"
+                >
+                  {t('sales.karigar.correct')}
+                </UbButton>
+              </UbStack>
             )}
           </UbStack>
         ))}
@@ -140,6 +166,14 @@ export function KarigarsPanel({
                     {t('sales.karigar.printLabels')}
                   </UbActionLink>
                 )}
+                <UbButton
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => onCorrect(lot)}
+                  data-testid="karigar-lot-correct"
+                >
+                  {t('sales.karigar.correct')}
+                </UbButton>
                 <UbButton variant="ghost" size="sm" onClick={() => onTagsDone(lot)}>
                   {t('sales.karigar.tagsDone')}
                 </UbButton>

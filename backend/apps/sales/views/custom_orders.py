@@ -90,3 +90,17 @@ class KarigarMakeTagView(_View):
 class KarigarTagsDoneView(_View):
     def post(self, request: Any, pk: Any) -> Any:
         return StandardResponse.ok(karigars.finish_tagging(ctx=Ctx.from_request(request), lot_id=pk))
+
+
+class KarigarLotView(_View):
+    def patch(self, request: Any, pk: Any) -> Any:
+        return StandardResponse.ok(karigars.correct_lot(ctx=Ctx.from_request(request), lot_id=pk, data=request.data))
+
+    def delete(self, request: Any, pk: Any) -> Any:
+        karigars.remove_lot(ctx=Ctx.from_request(request), lot_id=pk)
+        return StandardResponse.ok({"removed": True})
+
+
+class KarigarDetailView(_View):
+    def patch(self, request: Any, pk: Any) -> Any:
+        return StandardResponse.ok(karigars.update_karigar(ctx=Ctx.from_request(request), karigar_id=pk, data=request.data))
