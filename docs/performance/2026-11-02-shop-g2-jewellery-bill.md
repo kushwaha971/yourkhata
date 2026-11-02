@@ -168,9 +168,9 @@ the ones already failing before G2.
 
 | Design (G2 `dJewelBill` side column) | Built | Verified by |
 |---|---|---|
-| PAN box, "Needed because the bill is ₹2 lakh or more." | `JewelPanField`, shown on a jeweller's bill from ₹2,00,000; kept in `meta.pan` | g2d N1/N2 (+ `--skew`) |
+| PAN box (design hint "Needed because…" reworded "Optional. For a bill of ₹2 lakh or more.") | `JewelPanField`, shown on a jeweller's bill from ₹2,00,000; kept in `meta.pan` | g2d N1/N2 (+ `--skew`) |
 | A wrong PAN is said under the box | server: "Enter the 10-character PAN, like ABCPK1234L." | pytest + g2d N2 |
-| Issue refused without PAN (Rule 114B) | `jewel_rules.check_jewel_limits`; a saved customer's GSTIN fills it | pytest |
+| Issue refused without PAN (Rule 114B) | **Not enforced, owner's decision (2 Nov): PAN is optional.** A blank PAN never stops a bill; a saved customer's GSTIN fills it (`jewel_rules.fill_pan_from_gstin`) | pytest |
 | "Cash over ₹1,99,999 can't be taken…" | **Not built, owner's decision (2 Nov): no cash limit anywhere; how a bill is paid is up to the business.** Built, then removed: no notice, "Paid cash" stays on, the server takes it | pytest (whole ₹2 lakh-plus bill in cash issues) + g2d N1/N3 |
 | Only for a jeweller | `features` gate | pytest (a non-jeweller's ₹2.5 lakh cash bill issues) |
 

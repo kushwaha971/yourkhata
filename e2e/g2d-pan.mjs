@@ -4,8 +4,7 @@
 // QA Jewellery, owner qa-jeweller. A tag at ₹15,000/g with 12% making is
 // 12.340 × 15,000 × 1.12 = ₹2,07,312 — over ₹2 lakh. Checks:
 //   B   a bill under ₹2 lakh shows no PAN box and no cash notice;
-//   N1  over ₹2 lakh: the PAN box with "Needed because the bill is ₹2 lakh or
-//       more."; no cash notice and "Paid cash" stays on (owner: no cash limit);
+//   N1  over ₹2 lakh: the optional PAN box; no cash notice and "Paid cash" stays on (owner: no cash limit);
 //   N2  a wrong PAN is refused under the box; the right one is kept by the
 //       server, upper-cased (--skew expects another PAN: it must then fail);
 //   N3  the whole bill issued in cash, the PAN kept on the bill;
@@ -101,7 +100,7 @@ await scanInto(page, tags[1]);
 const pan = page.getByTestId('jewel-pan');
 await pan.waitFor({ timeout: 8000 }).catch(() => undefined);
 check('N1: the PAN box appears at ₹2 lakh', (await pan.count()) === 1);
-check('N1: "Needed because the bill is ₹2 lakh or more."', (await page.getByText('Needed because the bill is ₹2 lakh or more.').count()) >= 1);
+check('N1: the box says it is optional', (await page.getByText('Optional. For a bill of ₹2 lakh or more.').count()) >= 1);
 check('N1: no cash notice (owner: no cash limit anywhere)', (await page.getByText(/Cash over ₹1,99,999/).count()) === 0);
 check('N1: "Paid cash" stays on', !(await page.getByRole('button', { name: /Paid cash/ }).first().isDisabled().catch(() => true)));
 await page.screenshot({ path: `${dir}/desk-1280-over.png`, fullPage: true });

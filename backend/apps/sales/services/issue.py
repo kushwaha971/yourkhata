@@ -130,11 +130,10 @@ def issue_invoice(
     cleaned_payment = validate_payment(
         payment=payment, grand_total=document.grand_total - old_gold, walk_in=walk_in
     )
-    # G2d — a jeweller's bill of ₹2 lakh or more needs the PAN (Rule 114B).
-    # No cash limit is applied: how a bill is paid is the business's choice.
-    from apps.sales.services.jewel_rules import check_jewel_limits
+    # G2d — a PAN the customer's GSTIN carries; neither PAN nor cash ever stops a bill.
+    from apps.sales.services.jewel_rules import fill_pan_from_gstin
 
-    check_jewel_limits(tenant=tenant, document=document, party=early_party)
+    fill_pan_from_gstin(tenant=tenant, document=document, party=early_party)
 
     party = None
     if not walk_in:

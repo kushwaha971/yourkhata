@@ -4,10 +4,9 @@ import { UbField, UbTextInput } from 'src/design-system';
 import type { TranslateFn } from 'src/hooks/useTranslation';
 
 /**
- * G2d — design G2 dJewelBill: "PAN · Needed because the bill is ₹2 lakh or
- * more." Shown on a jeweller's bill only once the total reaches ₹2 lakh; the
- * server refuses the issue without it (Rule 114B), and a saved customer with
- * a GSTIN fills it from there.
+ * G2d — design G2 dJewelBill's PAN box, shown on a jeweller's bill once the
+ * total reaches ₹2 lakh. Optional (owner, 2 Nov 2026): it never stops a bill;
+ * a saved customer with a GSTIN fills it from there.
  */
 export function JewelPanField({
   disabled,

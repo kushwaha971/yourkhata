@@ -276,7 +276,7 @@
   "sales.issued.title": "{number} issued",
   "sales.issued.view": "View bill",
   "sales.jewel.pan": "PAN",
-  "sales.jewel.panHint": "Needed because the bill is ₹2 lakh or more.",
+  "sales.jewel.panHint": "Optional. For a bill of ₹2 lakh or more.",
   "sales.kitchen.footer": "Bill {number} · no prices",
   "sales.kitchen.print": "Kitchen ticket",
   "sales.kitchen.title": "KITCHEN · {token}",

@@ -187,12 +187,12 @@ def _big_bill(owner: Any, chain: Any, **extra: Any) -> dict:
     return draft(owner, lines=[line(chain, "1", serials=["GC-1042"], jewel={})], **extra).json()["data"]
 
 
-def test_a_bill_of_two_lakh_needs_the_pan(owner: Any, chain: Any) -> None:
+def test_a_bill_of_two_lakh_issues_without_a_pan(owner: Any, chain: Any) -> None:
+    """Owner, 2 Nov 2026: the PAN is optional; it never stops a bill."""
     made = _big_bill(owner, chain)
-    rest = {"mode_breakup": [{"mode": "upi", "amount": made["grand_total"]}]}
-    refused = issue(owner, made["id"], version=made["version"], payment=rest)
-    assert refused.status_code == 400
-    assert refused.json()["error"]["details"]["pan"] == ["PAN is needed because the bill is ₹2 lakh or more."]
+    paid = issue(owner, made["id"], version=made["version"], payment={"mode_breakup": [{"mode": "upi", "amount": made["grand_total"]}]})
+    assert paid.status_code == 200, paid.content
+    assert paid.json()["data"]["pan"] is None
 
 
 def test_a_wrong_pan_is_said_under_the_box(owner: Any, chain: Any) -> None:

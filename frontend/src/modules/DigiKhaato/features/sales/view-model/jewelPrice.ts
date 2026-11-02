@@ -90,5 +90,5 @@ export const priceOldGold = (g: OldGoldForm | null | undefined): OldGoldParts | 
   return { gross: rupees(gross), less: rupees(less), value: rupees(gross - less) };
 };
 
-/** G2d — Rule 114B: a jeweller's bill of ₹2,00,000 or more needs the PAN. */
+/** G2d — a jeweller's bill of ₹2,00,000 or more offers the PAN box. */
 export const JEWEL_LIMIT = 200000;

@@ -134,8 +134,8 @@ export function InvoiceEditorPageContent({
   const oldGoldValue = jeweller ? (priceOldGold(values.oldGold)?.value ?? null) : null;
   /** What the customer pays now: the bill, less any old gold taken in. */
   const toPay = oldGoldValue ? subtractMoney(preview.grandTotal, oldGoldValue) : preview.grandTotal;
-  // G2d — design G2: a jeweller's bill of ₹2 lakh or more asks the PAN (Rule
-  // 114B). No cash limit: how a bill is paid is the business's choice (owner).
+  // G2d — design G2: a jeweller's bill of ₹2 lakh or more offers the PAN box.
+  // Neither PAN nor cash ever stops a bill: that is the business's choice (owner).
   const needsPan = jeweller && Number(preview.grandTotal) >= JEWEL_LIMIT;
   const docksTotals = useDocksEditorTotals();
   // dBill's two columns start at 1280; below it the totals stay under the lines.

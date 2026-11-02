@@ -276,7 +276,7 @@
   "sales.issued.title": "{number} बन गया",
   "sales.issued.view": "बिल देखें",
   "sales.jewel.pan": "PAN",
-  "sales.jewel.panHint": "ज़रूरी, क्योंकि बिल ₹2 लाख या उससे ज़्यादा है।",
+  "sales.jewel.panHint": "ज़रूरी नहीं। ₹2 लाख या उससे ज़्यादा के बिल के लिए।",
   "sales.kitchen.footer": "बिल {number} · दाम नहीं",
   "sales.kitchen.print": "किचन टिकट",
   "sales.kitchen.title": "किचन · {token}",
