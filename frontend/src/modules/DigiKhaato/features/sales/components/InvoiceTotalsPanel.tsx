@@ -6,7 +6,7 @@ import { UbButton, UbPopover, UbPanel, UbStack, UbText } from 'src/design-system
 import { EDITOR_TOTALS_PANEL_CLASS } from 'src/hooks/useDocksEditorTotals';
 import { useTranslation } from 'src/hooks/useTranslation';
 import { cn } from 'src/utils/cn';
-import { absMoney, addMoney, formatInr, isNegativeAmount } from 'src/utils/money';
+import { absMoney, addMoney, formatInr, isNegativeAmount, subtractMoney } from 'src/utils/money';
 
 import { salesWarningMessage, sgstLabelId } from '../view-model/invoiceDisplay';
 
@@ -41,6 +41,7 @@ export function InvoiceTotalsPanel({
   alwaysDiscount = false,
   rule46,
   warnings,
+  oldGold = null,
 }: Readonly<{
   form: UseFormReturn<InvoiceFormValues>;
   preview: EngineResult;
@@ -51,6 +52,8 @@ export function InvoiceTotalsPanel({
   alwaysDiscount?: boolean;
   rule46: Rule46Check | null;
   warnings: readonly SalesWarning[];
+  /** G2c — the old gold taken in (it comes off what is paid, not off the bill). */
+  oldGold?: string | null;
 }>): React.JSX.Element {
   const { t } = useTranslation();
   const { watch } = form;
@@ -111,6 +114,22 @@ export function InvoiceTotalsPanel({
             {formatInr(preview.grandTotal)}
           </UbText>
         </UbStack>
+        {oldGold && (
+          <>
+            {row(t('sales.oldGold.row'), `− ${formatInr(oldGold)}`)}
+            <UbStack
+              direction="row"
+              justify="between"
+              align="center"
+              className="border-t border-border-hairline pt-2.5 text-base font-bold"
+            >
+              <UbText variant="inherit">{t('sales.oldGold.toPay')}</UbText>
+              <UbText variant="inherit" className="ds-num" data-testid="invoice-to-pay">
+                {formatInr(subtractMoney(preview.grandTotal, oldGold))}
+              </UbText>
+            </UbStack>
+          </>
+        )}
         {rule46 && (
           <UbPopover
             label={t('sales.invoiceChecks.title')}

@@ -11,6 +11,7 @@ import type {
   SalesDocument,
   SalesDocumentEnvelope,
   JewelLine,
+  OldGoldWire,
   SalesDocumentLine,
   ShareLink,
   UpiIntent,
@@ -121,6 +122,7 @@ export const toDocument = (row: Wire): SalesDocument => {
     dueOn: sn(row.due_on),
     placeOfSupplyState: s(row.place_of_supply_state),
     vehicle: (row.vehicle as { number?: string; mechanic?: string } | null) ?? null,
+    oldGold: (row.old_gold as OldGoldWire | null) ?? null,
     location: row.location
       ? {
           id: s((row.location as Record<string, unknown>).id),

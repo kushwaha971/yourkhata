@@ -56,9 +56,9 @@ Built and pushed. Report `docs/performance/2026-11-01-shop-g1-todays-rate.md`
 G2a (tags), the D3/D5 rebuild and G2b (bill by weight) are in; state and gaps
 in `docs/performance/2026-11-02-shop-g2-jewellery-bill.md`. Live checks:
 `node e2e/g2a-tags.mjs`, `node e2e/g2b-bill.mjs` (both have `--skew`).
-Owner calls waiting: the jeweller's own desktop bill columns (Net wt · Rate ·
-Making), and GST 3% as the jewellery default tax code.
+Owner decided 2 Nov: no GST default by kind anywhere; the business picks the
+rate, 0% allowed. The jeweller's desktop columns are built.
 
-Next piece: G2c · old gold taken in (design `M.pOldGold`): weight, tested
-purity, rate, melting %, its value off the bill, kept in its own old-gold
-stock. Then G2d · PAN at ₹2 lakh and the cash limit.
+G2c (old gold taken in) is in: `node e2e/g2c-old-gold.mjs`. Next piece:
+G2d · PAN asked at ₹2 lakh, and cash of ₹2 lakh or more on one bill refused
+(design `M.dJewelBill` side column).

@@ -1,3 +1,4 @@
+import type { OldGoldForm } from './invoiceForm';
 import type { JewelLine } from '../../inventory/api/tagService';
 
 /**
@@ -32,6 +33,10 @@ const toPaise = (units: bigint): bigint => halfEven(units, 10n ** BigInt(SCALE -
 /** Two SCALE-decimal numbers multiplied, in paise. */
 const mul = (a: bigint, b: bigint): bigint => halfEven(a * b, 10n ** BigInt(2 * SCALE - 2));
 
+/** base (paise) × percent% — percent carries SCALE decimals — rounded once. */
+const pct = (base: bigint, percent: bigint): bigint =>
+  halfEven(base * percent, 100n * 10n ** BigInt(SCALE));
+
 const rupees = (paise: bigint): string => {
   const sign = paise < 0n ? '-' : '';
   const abs = paise < 0n ? -paise : paise;
@@ -55,9 +60,6 @@ export const priceJewel = (j: JewelLine): JewelParts | null => {
   const stone = toUnits(j.stone_charge) ?? 0n;
   if (net === null || rate === null) return null;
   const metal = mul(net, rate);
-  // base (paise) × percent% — percent carries SCALE decimals — rounded once.
-  const pct = (base: bigint, percent: bigint): bigint =>
-    halfEven(base * percent, 100n * 10n ** BigInt(SCALE));
   const makingPaise = j.making_type === 'pct' ? pct(metal, making) : mul(net, making);
   const wastagePaise = pct(metal, wastage);
   const stonePaise = toPaise(stone);
@@ -68,4 +70,22 @@ export const priceJewel = (j: JewelLine): JewelParts | null => {
     stone: rupees(stonePaise),
     total: rupees(metal + makingPaise + wastagePaise + stonePaise),
   };
+};
+
+export interface OldGoldParts {
+  readonly gross: string;
+  readonly less: string;
+  readonly value: string;
+}
+
+/** G2c — `apps.inventory.services.old_gold.price`: weight × rate, less the melting %. */
+export const priceOldGold = (g: OldGoldForm | null | undefined): OldGoldParts | null => {
+  if (!g) return null;
+  const weight = toUnits(g.weightG);
+  const rate = toUnits(g.rate);
+  const lessPct = toUnits(g.lessPct) ?? 0n;
+  if (weight === null || rate === null) return null;
+  const gross = mul(weight, rate);
+  const less = pct(gross, lessPct);
+  return { gross: rupees(gross), less: rupees(less), value: rupees(gross - less) };
 };

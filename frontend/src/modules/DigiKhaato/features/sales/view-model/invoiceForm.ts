@@ -38,6 +38,14 @@ export interface InvoiceLineForm {
   taxCode: string;
 }
 
+/** G2c — what the counter types for old gold; the server prices it. */
+export interface OldGoldForm {
+  weightG: string;
+  purity: string;
+  rate: string;
+  lessPct: string;
+}
+
 export interface InvoiceFormValues {
   /** Internal first-create identity, persisted with the local copy; never printed. */
   clientDraftKey?: string;
@@ -56,6 +64,8 @@ export interface InvoiceFormValues {
   locationId: string;
   /** D P1b — design D1 auto parts: the vehicle and its mechanic. */
   vehicleNo?: string;
+  /** G2c — a jeweller's old gold taken in (null: none; undefined: not a jeweller's bill). */
+  oldGold?: OldGoldForm | null;
   mechanic?: string;
   reverseCharge: boolean;
   roundOffEnabled: boolean;
@@ -153,6 +163,18 @@ export const toWireBody = (values: InvoiceFormValues): Record<string, unknown> =
   place_of_supply_state: values.placeOfSupplyState || null,
   location_id: values.locationId || null,
   ...(values.vehicleNo !== undefined ? { vehicle_number: values.vehicleNo } : {}),
+  ...(values.oldGold !== undefined
+    ? {
+        old_gold: values.oldGold
+          ? {
+              weight_g: values.oldGold.weightG,
+              purity: values.oldGold.purity,
+              rate: values.oldGold.rate,
+              less_pct: values.oldGold.lessPct,
+            }
+          : null,
+      }
+    : {}),
   ...(values.mechanic !== undefined ? { mechanic: values.mechanic } : {}),
   reverse_charge: values.reverseCharge,
   round_off_enabled: values.roundOffEnabled,
@@ -199,6 +221,14 @@ export const fromDocument = (doc: SalesDocument): InvoiceFormValues => ({
   placeOfSupplyState: doc.placeOfSupplyState,
   locationId: doc.location?.id ?? '',
   vehicleNo: doc.vehicle?.number ?? '',
+  oldGold: doc.oldGold
+    ? {
+        weightG: doc.oldGold.weight_g,
+        purity: doc.oldGold.purity,
+        rate: doc.oldGold.rate,
+        lessPct: doc.oldGold.less_pct,
+      }
+    : null,
   mechanic: doc.vehicle?.mechanic ?? '',
   reverseCharge: doc.reverseCharge,
   roundOffEnabled: doc.roundOffEnabled,

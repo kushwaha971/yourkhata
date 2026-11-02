@@ -443,15 +443,19 @@ def _manual(
     return chosen
 
 
-def _walk_in(ctx: Ctx, *, document_id: Any, amount: Decimal) -> list[_Chosen]:
-    """FR-9 / BR-8 — the walk-in bill's own payment settles it exactly, and only it."""
+def _walk_in(ctx: Ctx, *, document_id: Any, amount: Decimal, part: bool = False) -> list[_Chosen]:
+    """FR-9 / BR-8 — the walk-in bill's own payment settles it exactly, and only it.
+
+    `part` is for a no-money adjustment only (G2c old gold taken in): it settles
+    its share first, and the customer's payment then settles the rest exactly."""
     target = target_for("sales_document")
     assert target is not None
     documents = target.lock(tenant=ctx.tenant, ids=[document_id])
     if not documents or target.party_id(documents[0]) is not None:
         raise NotFound("No such bill.")
     document = documents[0]
-    if target.outstanding(document) != amount:
+    outstanding = target.outstanding(document)
+    if (amount > outstanding) if part else (outstanding != amount):
         raise ValidationFailed({"payment": ["quick sale must be paid in full"]})
     return [_Chosen(target, document, amount)]
 
@@ -508,7 +512,7 @@ def record_payment(*, ctx: Ctx, payload: dict, walk_in_document_id: Any = None) 
     return _record(ctx=ctx, payload=payload, walk_in_document_id=walk_in_document_id)
 
 
-def record_adjustment(*, ctx: Ctx, payload: dict) -> dict:
+def record_adjustment(*, ctx: Ctx, payload: dict, walk_in_document_id: Any = None) -> dict:
     """A4b (ADR-044, contracts §1.4) — `record_payment` for an `adjustment` payment.
 
     The same validation, locks, allocation, numbering, ledger posting and audit as
@@ -516,14 +520,18 @@ def record_adjustment(*, ctx: Ctx, payload: dict) -> dict:
     `adjustment` line. Called ONLY by `payments.services.deposits` — the two halves
     of applying a held deposit and an opening deposit (R37) — and by lending for a
     loan brought in from paper (QA F8): its disbursal and what it had already
-    collected, which is R37's case for a loan. Never from a request's own mode: the
+    collected, which is R37's case for a loan; and by a jeweller's old gold taken
+    in against a bill (G2c), which may be a quick sale (`walk_in_document_id`).
+    Never from a request's own mode: the
     server decides, and no public path accepts `adjustment`. Runs inside the
     caller's transaction.
     """
     lines = payload.get("mode_breakup") or []
     if len(lines) != 1 or (lines[0] or {}).get("mode") != PaymentMode.ADJUSTMENT:
         raise ValueError("record_adjustment writes exactly one adjustment line")
-    return _record(ctx=ctx, payload=payload, allow_adjustment=True)
+    return _record(
+        ctx=ctx, payload=payload, walk_in_document_id=walk_in_document_id, allow_adjustment=True
+    )
 
 
 def _record(
@@ -538,7 +546,9 @@ def _record(
     if walk_in_document_id is not None:
         if direction != PaymentDirection.IN:
             raise ValidationFailed({"direction": ["A quick sale is money received."]})
-        chosen = _walk_in(ctx, document_id=walk_in_document_id, amount=amount)
+        chosen = _walk_in(
+            ctx, document_id=walk_in_document_id, amount=amount, part=allow_adjustment
+        )
         mode = AllocationMode.MANUAL
     else:
         if not payload.get("party_id"):

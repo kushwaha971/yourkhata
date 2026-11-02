@@ -36,12 +36,12 @@ import { useStillWorking } from 'src/hooks/useStillWorking';
 import { useTranslation } from 'src/hooks/useTranslation';
 import { selectLocale } from 'src/redux/slice/localeSlice';
 import { selectNetworkState } from 'src/redux/slice/networkSlice';
-import { selectMayOverrideCreditLimit } from 'src/redux/slice/sessionSlice';
+import { selectActiveTenant, selectMayOverrideCreditLimit } from 'src/redux/slice/sessionSlice';
 import { showSnackbar } from 'src/redux/slice/snackbarSlice';
 import type { RootState } from 'src/redux/store';
 import { ROUTES } from 'src/routes';
 import { formatBusinessDate } from 'src/utils/dates';
-import { formatInr, sumMoney } from 'src/utils/money';
+import { formatInr, subtractMoney, sumMoney } from 'src/utils/money';
 
 import { listInvoices } from '../api/salesService';
 import { useDraftAutosave } from '../hooks/useDraftAutosave';
@@ -51,6 +51,7 @@ import { deleteInvoiceDraft } from '../redux/salesThunk';
 import { firstWrongField } from '../view-model/firstWrongField';
 import { documentTitleId, stockShortLines, stockShortMessage } from '../view-model/invoiceDisplay';
 import { fullCashPayment, type PaymentRowForm } from '../view-model/invoiceForm';
+import { priceOldGold } from '../view-model/jewelPrice';
 import { serverReason } from '../view-model/serverReason';
 
 import { InvoiceBillAdjustments } from './InvoiceBillAdjustments';
@@ -60,6 +61,7 @@ import { InvoiceLinesSection } from './InvoiceLinesSection';
 import { InvoicePartySection } from './InvoicePartySection';
 import { InvoiceSaveIndicator } from './InvoiceSaveIndicator';
 import { InvoiceTotalsPanel } from './InvoiceTotalsPanel';
+import { OldGoldSection } from './OldGoldSection';
 
 import type { InvoiceListRow } from '../types/sales.types';
 
@@ -126,6 +128,11 @@ export function InvoiceEditorPageContent({
   const context = server.context;
   const taxFree = context ? context.gstType !== 'regular' : false;
   const walkIn = values.mode === 'walkIn';
+  // G2c — a jeweller's bill may take old gold in: it comes off what is paid.
+  const jeweller = Boolean(useAppSelector(selectActiveTenant)?.features?.includes('jewellery'));
+  const oldGoldValue = jeweller ? (priceOldGold(values.oldGold)?.value ?? null) : null;
+  /** What the customer pays now: the bill, less any old gold taken in. */
+  const toPay = oldGoldValue ? subtractMoney(preview.grandTotal, oldGoldValue) : preview.grandTotal;
   const docksTotals = useDocksEditorTotals();
   // dBill's two columns start at 1280; below it the totals stay under the lines.
   const desk = useMediaQuery('(min-width: 1280px)');
@@ -206,9 +213,9 @@ export function InvoiceEditorPageContent({
     // SAL-07 FR-3 / SAL-02 FR-10 — a walk-in pays in full; a party bill may
     // take a payment at issue or go on "Full credit" from the same sheet. An
     // estimate moves no money (SAL-01 FR-8): it is saved, never paid.
-    if (!estimate && preview.grandTotal !== '0.00') setPaying(true);
+    if (!estimate && toPay !== '0.00') setPaying(true);
     else void finishIssue(null);
-  }, [hasLines, locked, estimate, preview.grandTotal, finishIssue]);
+  }, [hasLines, locked, estimate, toPay, finishIssue]);
   // Every way to issue (the button, Ctrl+Enter, the form's own submit) runs the
   // schema first, so a half-filled row stops the issue with its reason under
   // the cell instead of being left off the bill.
@@ -228,9 +235,9 @@ export function InvoiceEditorPageContent({
     () =>
       void form.handleSubmit(() => {
         if (!hasLines || locked) return;
-        void finishIssue(fullCashPayment(preview.grandTotal));
+        void finishIssue(fullCashPayment(toPay));
       })(),
-    [form, hasLines, locked, finishIssue, preview.grandTotal]
+    [form, hasLines, locked, finishIssue, toPay]
   );
   const { submitCount, errors } = form.formState;
   const refused = submitCount > 0 && Object.keys(errors).length > 0;
@@ -406,12 +413,12 @@ export function InvoiceEditorPageContent({
     ? undefined
     : t('sales.editor.issueWithTotal', {
         action: issueLabel,
-        total: formatInr(preview.grandTotal),
+        total: formatInr(toPay),
       });
   const issueDisabled = !hasLines || locked || offline;
   const cashName = server.issuing
     ? undefined
-    : t('sales.editor.issueWithTotal', { action: cashLabel, total: formatInr(preview.grandTotal) });
+    : t('sales.editor.issueWithTotal', { action: cashLabel, total: formatInr(toPay) });
   /* The sheet's own confirm shows "Issuing…"; with no sheet the button tapped does. */
   const cashBusy = server.issuing && !paying;
 
@@ -700,6 +707,9 @@ export function InvoiceEditorPageContent({
               onScanned={markScanned}
               stockRule={order ? 'order' : estimate && !challan ? 'estimate' : 'takes'}
             />
+            {jeweller && bill && !estimate && (
+              <OldGoldSection form={form} disabled={locked} t={t} />
+            )}
           </UbStack>
           <UbStack gap={3} className="min-w-0" data-testid="invoice-side">
             {/* Design D13 dChallan: Transport is the side column's first card. */}
@@ -738,6 +748,7 @@ export function InvoiceEditorPageContent({
                 alwaysDiscount={desk}
                 rule46={estimate ? null : server.rule46}
                 warnings={server.warnings}
+                oldGold={oldGoldValue}
               />
             )}
             {bill && desk && scanSeen && (
@@ -772,9 +783,13 @@ export function InvoiceEditorPageContent({
           // short bill (it followed the content and floated mid-screen).
           className="mt-auto"
           totalLabel={t(
-            estimate && !order && !challan ? 'sales.estimate.total' : 'sales.totals.grand'
+            oldGoldValue
+              ? 'sales.oldGold.toPay'
+              : estimate && !order && !challan
+                ? 'sales.estimate.total'
+                : 'sales.totals.grand'
           )}
-          total={formatInr(preview.grandTotal)}
+          total={formatInr(toPay)}
           caption={dockCaption}
           meta={saveIndicator}
           note={finishNote}
@@ -820,7 +835,7 @@ export function InvoiceEditorPageContent({
       {paying && (
         <PaymentDrawerLazy
           open
-          grandTotal={preview.grandTotal}
+          grandTotal={toPay}
           busy={server.issuing}
           onClose={() => setPaying(false)}
           onConfirm={(rows) => void finishIssue(rows)}

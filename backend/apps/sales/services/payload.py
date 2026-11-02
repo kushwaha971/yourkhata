@@ -143,6 +143,14 @@ def apply_payload(
         if "mechanic" in payload:
             vehicle["mechanic"] = " ".join(str(payload.get("mechanic") or "").split())[:60]
         document.meta = {**(document.meta or {}), "vehicle": {k: v for k, v in vehicle.items() if v}}
+    # G2c — a jeweller's old gold taken in, priced by the server, kept in
+    # meta.old_gold until issue settles it (`inventory.services.old_gold`).
+    if "old_gold" in payload:
+        from apps.inventory.services.old_gold import price as price_old_gold
+
+        priced = price_old_gold(tenant=tenant, raw=payload.get("old_gold"), errors=errors)
+        meta = {k: v for k, v in (document.meta or {}).items() if k != "old_gold"}
+        document.meta = {**meta, **({"old_gold": priced} if priced else {})}
     for text in ("notes", "terms"):
         if len(getattr(document, text) or "") > NOTES_MAX:
             errors[text] = ["Keep this under 2,000 characters."]

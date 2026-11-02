@@ -136,6 +136,14 @@ def void_invoice(
 
     released_credit = _release_credit_applications(ctx, document)
     unallocated = release_invoice_payments(ctx=ctx, document=document, reason=reason)
+    if document.party_id is None:
+        # G2c — a quick sale's settlements are voided (handed back over the
+        # counter), its old gold with them: it leaves the old-gold stock. On a
+        # party bill the settlement stays as the customer's credit, and the
+        # gold stays with the shop that owes it.
+        from apps.inventory.models import OldGold
+
+        OldGold.objects.filter(tenant=ctx.tenant, document_id=document.id).delete()
     # `void_payment` un-applied the walk-in receipt on the bill's row itself;
     # re-read so this save does not write back the stale in-memory figures.
     document.refresh_from_db()

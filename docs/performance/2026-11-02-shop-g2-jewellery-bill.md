@@ -134,3 +134,32 @@ expansion while editing) and the live check caught it.
    unregistered case and that no fixed rate is stated.
 
 **Next:** G2c old gold taken in, then G2d PAN and the cash limit.
+
+## G2c — old gold taken in (2 Nov)
+
+| Design (G2 `pOldGold`, `dJewelBill`, D14) | Built | Verified by |
+|---|---|---|
+| Sheet: Weight, Purity (tested) "22K · 91.6%", Rate, Less (melting) %, the three rows, the note, "Take ₹… off" | `OldGoldSection` sheet; rate defaults to today's for the purity | g2c O1 + LOOK 390/320 |
+| value = weight × rate − less %, to the paisa | `old_gold.price` (server), `priceOldGold` (screen, same rounding) | pytest design example (₹93,619.40); jest same; g2c O2 read-back with `--skew` |
+| "Old gold taken in · Edit" card, "− ₹…" | card under the lines (jeweller's bills only) | g2c O2 |
+| Totals: Old gold −, To pay | `InvoiceTotalsPanel` rows; dock and "Paid cash" use To pay | g2c O2/O3 |
+| Comes off the bill; a purchase from the customer, own old-gold stock, never mixed with tags | `inventory_old_gold` row per bill; value settled at issue as a no-money adjustment allocated to the bill (cashbook never counts it); GST stays on the full bill | pytest (party: paid/due split, adjustment mode; quick sale: cash = rest exactly) |
+| Print: "Old gold taken in: ₹93,619 (8.200 g)" | appended to the rates line | g2c P |
+
+Rules decided in code, listed for the owner:
+- Old gold worth more than the bill is refused (`old_gold_over_bill`); paying
+  the customer the difference is not built.
+- A voided quick sale hands the old gold back (its row leaves the stock, its
+  settlement is voided with the counter receipt). A voided party bill keeps
+  the gold and leaves its value as the customer's credit, as every party
+  payment is kept on a void (BR-4).
+- The design rounds "₹93,619"; the bill keeps paise (₹93,619.40), like every
+  other money figure in the app.
+- `test_registry_is_closed_and_complete` was already failing (228 vs 223);
+  `old_gold_over_bill` makes it 229. Its count needs refreshing in a separate fix.
+
+Live: `e2e/g2c-old-gold.mjs` 13/13, 0 console errors; `--skew` fails on the
+read-back as it must. Server: 10 jewellery-bill tests; full suite's failures are
+the ones already failing before G2.
+
+**Next:** G2d — PAN at ₹2 lakh and the cash limit.

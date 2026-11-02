@@ -750,3 +750,32 @@ class TagDetail(TenantModel):
         db_table = "inventory_tag_detail"
         verbose_name = "tag detail"
         verbose_name_plural = "tag details"
+
+
+class OldGold(TenantModel):
+    """G2c — old gold a jeweller takes in against a bill (design G2 "Old gold
+    taken in"). It is a purchase from the customer, kept in its own old-gold
+    stock by purity and never mixed with tags (it is not a sellable piece).
+
+    The weight is what was weighed; the purity is the tested one; the rate per
+    gram and the melting deduction are the counter's, written here as they
+    were used, so the bill's figure can always be explained. Its value came
+    off the bill as a no-money settlement (`payment_id`), never as cash.
+    """
+
+    #: The bill it came in against (a sales document id).
+    document_id = models.UUIDField()
+    party_id = models.UUIDField(null=True, blank=True)
+    taken_on = models.DateField()
+    purity = models.CharField(max_length=12)
+    weight_g = QuantityField()
+    rate = MoneyField()
+    less_pct = MoneyField(default=0)
+    value = MoneyField()
+    payment_id = models.UUIDField(null=True, blank=True)
+
+    class Meta:
+        db_table = "inventory_old_gold"
+        verbose_name = "old gold"
+        verbose_name_plural = "old gold"
+        constraints = [models.UniqueConstraint(fields=["tenant", "document_id"], name="uq_old_gold_document")]

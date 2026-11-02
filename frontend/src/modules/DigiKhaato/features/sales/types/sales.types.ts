@@ -1,7 +1,7 @@
 import type { PaymentMode } from 'src/types/domain.types';
 
 import type { SalesDocumentLinks } from './salesFlows.types';
-import type { JewelLine } from '../../inventory/api/tagService';
+import type { JewelLine, OldGoldWire } from '../../inventory/api/tagService';
 
 /**
  * SAL-02/03/06/07/08 — the sales document as the client holds it, camelCased
@@ -111,7 +111,7 @@ export interface IssuePayment {
   readonly note: string;
 }
 
-export type { JewelLine };
+export type { JewelLine, OldGoldWire };
 
 export interface SalesDocumentLine {
   readonly id: string | null;
@@ -198,6 +198,8 @@ export interface SalesDocument extends SalesDocumentTotals {
   readonly location?: { readonly id: string; readonly name: string } | null;
   /** D P1b — an auto-parts bill's vehicle and mechanic. */
   readonly vehicle?: { readonly number?: string; readonly mechanic?: string } | null;
+  /** G2c — a jeweller's old gold taken in on this bill (priced by the server). */
+  readonly oldGold?: OldGoldWire | null;
   readonly isInterState: boolean;
   readonly reverseCharge: boolean;
   readonly discountType: DiscountType | null;

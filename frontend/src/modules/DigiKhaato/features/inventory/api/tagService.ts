@@ -174,3 +174,17 @@ export const PURITY_SHORT: Readonly<Record<string, string>> = {
   gold_18k: '18K 750',
   silver: 'Silver 999',
 };
+
+/**
+ * G2c — old gold taken in against a bill (design G2 pOldGold): what the
+ * server priced. `value` comes off what the customer pays.
+ */
+export interface OldGoldWire {
+  readonly weight_g: string;
+  readonly purity: string;
+  readonly rate: string;
+  readonly less_pct: string;
+  readonly gross: string;
+  readonly less: string;
+  readonly value: string;
+}

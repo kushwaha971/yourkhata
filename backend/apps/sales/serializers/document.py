@@ -91,6 +91,8 @@ class InvoiceWriteSerializer(serializers.Serializer):
     #: D P1b — design D1 auto parts: the vehicle and the mechanic, printed on the bill.
     vehicle_number = serializers.CharField(required=False, allow_blank=True, max_length=20)
     mechanic = serializers.CharField(required=False, allow_blank=True, max_length=60)
+    #: G2c — a jeweller's old gold taken in: {weight_g, purity, rate?, less_pct}.
+    old_gold = serializers.DictField(required=False, allow_null=True)
     terms = serializers.CharField(required=False, allow_blank=True)
     lines = LineInputSerializer(many=True, required=False)
     payment = PaymentInputSerializer(required=False, allow_null=True)
@@ -174,6 +176,7 @@ def supplier_block(document: SalesDocument) -> dict:
 class DocumentReadSerializer(serializers.ModelSerializer):
     location = serializers.SerializerMethodField()
     vehicle = serializers.SerializerMethodField()
+    old_gold = serializers.SerializerMethodField()
     party = serializers.SerializerMethodField()
     party_snapshot = serializers.SerializerMethodField()
     supplier = serializers.SerializerMethodField()
@@ -225,6 +228,7 @@ class DocumentReadSerializer(serializers.ModelSerializer):
             "notes",
             "location",
             "vehicle",
+            "old_gold",
             "terms",
             "doc_discount_allocation",
             "created_by",
@@ -240,6 +244,10 @@ class DocumentReadSerializer(serializers.ModelSerializer):
     def get_vehicle(self, obj: Any) -> dict | None:
         """D P1b — {number, mechanic} on an auto-parts bill, or null."""
         return (obj.meta or {}).get("vehicle") or None
+
+    def get_old_gold(self, obj: Any) -> dict | None:
+        """G2c — the old gold taken in on this bill (priced), or null."""
+        return (obj.meta or {}).get("old_gold") or None
 
     def get_location(self, obj: Any) -> dict | None:
         """D P1c — the godown, or null for the business's first place."""

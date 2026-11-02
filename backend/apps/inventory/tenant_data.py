@@ -38,4 +38,5 @@ register(
     TenantTable("inventory.ItemAddon", export_name="item_addons.csv"),
     TenantTable("inventory.MetalRate", export_name="metal_rates.csv"),
     TenantTable("inventory.TagDetail", export_name="tag_details.csv"),
+    TenantTable("inventory.OldGold", export_name="old_gold.csv"),
 )

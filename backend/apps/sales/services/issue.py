@@ -115,8 +115,20 @@ def issue_invoice(
             details={"issues": hard},
         )
     walk_in = document.party_id is None
+    # G2c — old gold taken in comes off what the customer pays (never more
+    # than the bill); the rest is paid, or owed, as on any bill.
+    from apps.inventory.services.old_gold import take_in as take_in_old_gold
+    from apps.inventory.services.old_gold import value_of as old_gold_value
+
+    old_gold = old_gold_value(document)
+    if old_gold > document.grand_total:
+        raise BusinessRuleViolation(
+            "old_gold_over_bill",
+            "The old gold is worth more than this bill. Take in less, or add to the bill.",
+            details={"old_gold": f"{old_gold:.2f}", "grand_total": f"{document.grand_total:.2f}"},
+        )
     cleaned_payment = validate_payment(
-        payment=payment, grand_total=document.grand_total, walk_in=walk_in
+        payment=payment, grand_total=document.grand_total - old_gold, walk_in=walk_in
     )
 
     party = None
@@ -142,7 +154,7 @@ def issue_invoice(
     # The credit check reads the part going on CREDIT (BR-13), so it is decided
     # now, before anything is written; the payment itself is recorded after the
     # invoice exists, through PAY-01 (see `payment_seam`).
-    amount_paid = paid_at_issue(cleaned_payment, document.grand_total)
+    amount_paid = paid_at_issue(cleaned_payment, document.grand_total - old_gold) + old_gold
     amount_due = document.grand_total - amount_paid
     overridden = False
     if party is not None and amount_due > 0:
@@ -210,6 +222,10 @@ def issue_invoice(
         entry, balance = post_invoice_debit(ctx=ctx, document=document, party=party)
         ledger_entry_id = str(entry.id)
 
+    # Old gold first: on a quick sale the customer's payment then settles
+    # exactly what is left, as a quick sale's payment always must.
+    if take_in_old_gold(ctx=ctx, document=document) is not None:
+        document.refresh_from_db()
     receipt = record_issue_payment(ctx=ctx, document=document, payment=cleaned_payment)
     if receipt is not None:
         document.refresh_from_db()

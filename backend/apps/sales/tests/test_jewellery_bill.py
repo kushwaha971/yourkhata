@@ -106,3 +106,72 @@ def test_no_rate_today_is_said_under_the_line(owner: Any, chain: Any, make_party
     made = draft(owner, party_id=str(make_party().id), lines=[body])
     assert made.status_code == 400, made.content
     assert made.json()["error"]["details"]["lines.0.jewel.rate"] == ["Set today's rate first."]
+
+
+# ── G2c: old gold taken in ──────────────────────────────────────────────────
+
+OLD = {"weight_g": "8.200", "purity": "gold_22k", "less_pct": "2"}
+
+
+def test_old_gold_is_priced_as_the_design_shows(owner: Any, chain: Any, make_party: Any) -> None:
+    """pOldGold: 8.200 g × ₹11,650 = ₹95,530.00; less 2% = ₹1,910.60; value ₹93,619.40."""
+    _rate(owner)
+    body = line(chain, "1", serials=["GC-1042"], jewel={})
+    made = draft(owner, party_id=str(make_party().id), lines=[body], old_gold=OLD).json()["data"]
+    assert made["old_gold"] == {
+        "weight_g": "8.200", "purity": "gold_22k", "rate": "11650.00", "less_pct": "2.00",
+        "gross": "95530.00", "less": "1910.60", "value": "93619.40",
+    }
+
+
+def test_old_gold_comes_off_a_party_bill_without_touching_the_cash(owner: Any, chain: Any, make_party: Any) -> None:
+    """The bill keeps its full value (GST on all of it); the old gold settles its
+    part as no money moved, so the cashbook never counts it; the rest is due."""
+    from apps.inventory.models import OldGold
+    from apps.payments.models import Payment
+
+    _rate(owner)
+    party = make_party()
+    made = draft(owner, party_id=str(party.id), lines=[line(chain, "1", serials=["GC-1042"], jewel={})], old_gold=OLD).json()["data"]
+    issued = issue(owner, made["id"], version=made["version"]).json()["data"]
+    total = Decimal(issued["grand_total"])
+    assert Decimal(issued["amount_paid"]) == Decimal("93619.40")
+    assert Decimal(issued["amount_due"]) == total - Decimal("93619.40")
+    row = OldGold.objects.get(document_id=made["id"])
+    assert (row.weight_g, row.purity, row.value) == (Decimal("8.200"), "gold_22k", Decimal("93619.40"))
+    assert Payment.objects.get(pk=row.payment_id).primary_mode == "adjustment"
+
+
+def test_a_quick_sale_pays_the_rest_after_old_gold(owner: Any, chain: Any) -> None:
+    _rate(owner)
+    made = draft(owner, lines=[line(chain, "1", serials=["GC-1042"], jewel={})], old_gold=OLD).json()["data"]
+    total = Decimal(made["grand_total"])
+    rest = f"{total - Decimal('93619.40'):.2f}"
+    full = issue(owner, made["id"], version=made["version"], payment={"mode_breakup": [{"mode": "cash", "amount": made["grand_total"]}]})
+    assert full.status_code == 400  # the whole bill in cash would be paid twice
+    paid = issue(owner, made["id"], version=made["version"], payment={"mode_breakup": [{"mode": "upi", "amount": rest}]})
+    assert paid.status_code == 200, paid.content
+    assert paid.json()["data"]["status"] == "paid"
+
+
+def test_old_gold_worth_more_than_the_bill_is_refused(owner: Any, chain: Any, make_party: Any) -> None:
+    _rate(owner)
+    big = {"weight_g": "30.000", "purity": "gold_22k", "less_pct": "0"}
+    made = draft(owner, party_id=str(make_party().id), lines=[line(chain, "1", serials=["GC-1042"], jewel={})], old_gold=big).json()["data"]
+    refused = issue(owner, made["id"], version=made["version"])
+    assert refused.status_code == 409 and refused.json()["error"]["code"] == "old_gold_over_bill"
+
+
+def test_a_voided_quick_sale_hands_the_old_gold_back(owner: Any, chain: Any) -> None:
+    """Its receipts are voided over the counter, so its old gold leaves the old-gold stock."""
+    from apps.inventory.models import OldGold
+    from apps.sales.tests.conftest import invoice_url
+
+    _rate(owner)
+    made = draft(owner, lines=[line(chain, "1", serials=["GC-1042"], jewel={})], old_gold=OLD).json()["data"]
+    rest = f"{Decimal(made['grand_total']) - Decimal('93619.40'):.2f}"
+    issue(owner, made["id"], version=made["version"], payment={"mode_breakup": [{"mode": "cash", "amount": rest}]})
+    assert OldGold.objects.filter(document_id=made["id"]).exists()
+    voided = owner.post(invoice_url(made["id"], "void"), {"reason": "Wrong piece"}, format="json")
+    assert voided.status_code == 200, voided.content
+    assert not OldGold.objects.filter(document_id=made["id"]).exists()

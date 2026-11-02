@@ -1,4 +1,4 @@
-import { priceJewel } from './jewelPrice';
+import { priceJewel, priceOldGold } from './jewelPrice';
 
 import type { JewelLine } from '../../inventory/api/tagService';
 
@@ -49,4 +49,16 @@ it('rounds a half paisa to even, like the server', () => {
 it('waits for a net weight and a rate', () => {
   expect(priceJewel({ ...CHAIN, rate: null })).toBeNull();
   expect(priceJewel({ ...CHAIN, net_g: '' })).toBeNull();
+});
+
+/** pOldGold, and the server's `test_old_gold_is_priced_as_the_design_shows`. */
+it('prices old gold as the design shows', () => {
+  expect(
+    priceOldGold({ weightG: '8.200', purity: 'gold_22k', rate: '11650', lessPct: '2' })
+  ).toEqual({
+    gross: '95530.00',
+    less: '1910.60',
+    value: '93619.40',
+  });
+  expect(priceOldGold({ weightG: '', purity: 'gold_22k', rate: '11650', lessPct: '2' })).toBeNull();
 });

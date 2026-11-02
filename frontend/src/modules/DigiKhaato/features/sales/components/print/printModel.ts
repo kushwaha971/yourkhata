@@ -217,6 +217,11 @@ export function jewelRatesLine(doc: SalesDocument, t: TranslateFn): string | nul
     const text = `${label} ${formatInr(j.rate)}/g`;
     seen.set(`${label}|${j.rate}`, text);
   }
-  if (seen.size === 0) return null;
-  return t('sales.print.jewelRates', { rates: [...seen.values()].join(' · ') });
+  const old = doc.oldGold
+    ? t('sales.print.oldGold', { value: formatInr(doc.oldGold.value), weight: doc.oldGold.weight_g })
+    : '';
+  if (seen.size === 0) return old || null;
+  return [t('sales.print.jewelRates', { rates: [...seen.values()].join(' · ') }), old]
+    .filter(Boolean)
+    .join(' ');
 }
