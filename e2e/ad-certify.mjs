@@ -224,7 +224,7 @@ for (const [who, biz, group, toggle, extra] of [
   await who.page.getByRole('button', { name: /^(Add item|New item)$/ }).first().click();
   const dlg = who.page.getByRole('dialog');
   const name = `AD ${biz} tracked ${tag}`;
-  await dlg.getByLabel('Item name').fill(name);
+  await dlg.getByLabel('Name', { exact: true }).fill(name);
   const grp = who.page.getByTestId(group);
   const shown = await grp.isVisible().catch(() => false);
   await grp.getByText(toggle).click().catch(() => {});

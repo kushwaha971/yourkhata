@@ -227,7 +227,7 @@ try {
   /* ---------- ⋯ → Edit opens the form ---------- */
   await page.getByRole('button', { name: 'More actions' }).click();
   await page.getByRole('dialog').getByRole('button', { name: 'Edit' }).click();
-  await page.getByRole('dialog').getByRole('textbox', { name: /Item name/ }).first().waitFor({ timeout: 15000 });
+  await page.getByRole('dialog').getByRole('textbox', { name: 'Name', exact: true }).first().waitFor({ timeout: 15000 });
   check('⋯ → Edit opens the item form', true);
   await page.keyboard.press('Escape');
 

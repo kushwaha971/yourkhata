@@ -190,7 +190,7 @@ try {
   /* ---------- Save a new item, read it back ---------- */
   await openCreate();
   const name = `QA83 Ghee tin ${stamp}`;
-  await page.getByRole('dialog').getByRole('textbox', { name: /Item name/ }).fill(name);
+  await page.getByRole('dialog').getByRole('textbox', { name: 'Name', exact: true }).fill(name);
   await page.getByRole('dialog').getByRole('textbox', { name: /Selling price/i }).fill('250');
   await page.getByRole('dialog').getByRole('button', { name: /^Save/ }).click();
   await page.getByRole('dialog').waitFor({ state: 'detached', timeout: 15000 });
@@ -204,7 +204,7 @@ try {
   await page.getByTestId('item-detail-screen').waitFor({ timeout: 15000 });
   await page.getByRole('button', { name: /Edit/ }).first().click();
   const editDialog = page.getByRole('dialog');
-  await editDialog.getByRole('textbox', { name: /Item name/ }).waitFor({ timeout: 15000 });
+  await editDialog.getByRole('textbox', { name: 'Name', exact: true }).waitFor({ timeout: 15000 });
   // This item was saved without a cost, so its fold starts closed; a cost would open it.
   check(
     'edit shows the folded form',

@@ -60,7 +60,7 @@ try {
   await page.getByRole('button', { name: /^(Add item|New item)$/ }).first().click().catch(async () => {
     await page.keyboard.press('n');
   });
-  await page.getByRole('dialog').getByLabel('Item name').fill(NAME);
+  await page.getByRole('dialog').getByLabel('Name', { exact: true }).fill(NAME);
   const group = page.getByTestId('item-extra-units');
   check('form: "ALSO SOLD AS" shows when the shop sells in boxes', await group.isVisible().catch(() => false));
   await page.getByTestId('item-add-unit').click();

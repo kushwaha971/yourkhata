@@ -255,7 +255,7 @@ try {
     await page.waitForTimeout(300);
     if (await dlg.getByText('Enter an item name.').count()) failures.push(`${width}: tapping a switch painted the untouched name red`);
     await dlg.getByRole('switch').first().click();
-    await dlg.getByLabel(/^Item name/).fill(itemName);
+    await dlg.getByLabel('Name', { exact: true }).fill(itemName);
     await dlg.locator('#sellingPrice').fill('25');
     await page.locator('[data-ub-overlay-footer] button').last().click();
     await page.waitForTimeout(2500);

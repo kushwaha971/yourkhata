@@ -32,9 +32,10 @@ import type { ItemFormValues } from '../types/item.types';
  * form value that is never sent; it is read from the two prices.
  */
 export function ItemPriceFields({
+  part,
   canSeeCost,
   gst,
-}: Readonly<{ canSeeCost: boolean; gst: Gst }>): React.JSX.Element {
+}: Readonly<{ part: 'price' | 'cost'; canSeeCost: boolean; gst: Gst }>): React.JSX.Element {
   const { t } = useTranslation();
   const { control, getValues, setValue, formState } = useFormContext<ItemFormValues>();
   const cost = useWatch({ control, name: 'purchasePrice' }) ?? '';
@@ -73,7 +74,7 @@ export function ItemPriceFields({
   // and rereads the margin — the price is what the merchant charges.
   const { inclusive, rate, cess } = gst;
   useEffect(() => {
-    follow('gst');
+    if (part === 'price') follow('gst');
     // eslint-disable-next-line react-hooks/exhaustive-deps -- the GST's own parts, not the object
   }, [inclusive, rate, cess]);
 
@@ -83,8 +84,10 @@ export function ItemPriceFields({
       ? undefined
       : t('items.form.margin.hint');
 
-  return (
-    <>
+  /* Design D3 puts the selling price beside its GST and the rest in "More
+     details": the form renders this twice, once per part. */
+  if (part === 'price') {
+    return (
       <UbField
         name="sellingPrice"
         label={t('items.form.sellingPrice.label')}
@@ -100,7 +103,10 @@ export function ItemPriceFields({
           />
         )}
       </UbField>
-
+    );
+  }
+  return (
+    <>
       <UbField
         name="taxInclusiveSelling"
         label={t('items.form.taxInclusive.label')}

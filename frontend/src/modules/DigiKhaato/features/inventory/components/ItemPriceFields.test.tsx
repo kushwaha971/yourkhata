@@ -26,7 +26,8 @@ function Harness({
   });
   return (
     <FormProvider {...form}>
-      <ItemPriceFields canSeeCost={canSeeCost} gst={gst} />
+      <ItemPriceFields part="price" canSeeCost={canSeeCost} gst={gst} />
+      <ItemPriceFields part="cost" canSeeCost={canSeeCost} gst={gst} />
     </FormProvider>
   );
 }

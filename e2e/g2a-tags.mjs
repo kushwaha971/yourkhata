@@ -73,7 +73,7 @@ const get = async (ctx, path) => {
 const openAddItem = async (page) => {
   await page.goto(`${base}/items`);
   await page.getByRole('button', { name: /^Add item/ }).first().click();
-  await page.getByRole('dialog').getByLabel('Item name').waitFor({ timeout: 15000 });
+  await page.getByRole('dialog').getByLabel('Name', { exact: true }).waitFor({ timeout: 15000 });
 };
 
 const fillTag = async (page, { no, gross, stone, net = '' }) => {
@@ -95,9 +95,9 @@ let itemId = null;
   // F2 first: the refusal must leave no item behind.
   await openAddItem(page);
   const badName = `G2a refused ${run}`;
-  await page.getByRole('dialog').getByLabel('Item name').fill(badName);
+  await page.getByRole('dialog').getByLabel('Name', { exact: true }).fill(badName);
   await fillTag(page, { no: `X-${run}`, gross: '12.900', stone: '0.560', net: '12.000' });
-  await page.getByRole('dialog').getByRole('button', { name: 'Save', exact: true }).click();
+  await page.getByRole('dialog').getByRole('button', { name: 'Save item', exact: true }).click();
   if (process.env.G2A_DEBUG) await page.screenshot({ path: `${dir}/debug-after-save.png` });
   const netBox = page.getByLabel('Net', { exact: true });
   await page.waitForFunction(() => document.querySelector('[id="tag.netG"]')?.getAttribute('aria-invalid') === 'true', null, { timeout: 8000 }).catch(() => undefined);
@@ -107,9 +107,9 @@ let itemId = null;
 
   // F1 — fix the net (blank: the server works it out) and save.
   const name = `G2a chain ${run}`;
-  await page.getByRole('dialog').getByLabel('Item name').fill(name);
+  await page.getByRole('dialog').getByLabel('Name', { exact: true }).fill(name);
   await netBox.fill('');
-  await page.getByRole('dialog').getByRole('button', { name: 'Save', exact: true }).click();
+  await page.getByRole('dialog').getByRole('button', { name: 'Save item', exact: true }).click();
   await page.getByTestId('item-tag-fields').waitFor({ state: 'detached', timeout: 10000 }).catch(() => undefined);
   const made = await get(ctx, `/items?q=${encodeURIComponent(name)}`);
   itemId = made.body?.data?.[0]?.id ?? null;

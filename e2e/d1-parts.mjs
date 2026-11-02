@@ -51,7 +51,7 @@ try {
   await page.goto(`${base}/items`, { waitUntil: 'networkidle' });
   await page.reload({ waitUntil: 'networkidle' });
   await page.getByRole('button', { name: /^(Add item|New item)$/ }).first().click();
-  await page.getByRole('dialog').getByLabel('Item name').fill(NAME);
+  await page.getByRole('dialog').getByLabel('Name', { exact: true }).fill(NAME);
   const group = page.getByTestId('item-part-details');
   check('form: "PART DETAILS" shows for a parts shop', await group.isVisible().catch(() => false));
   for (const code of [MAKER, BRAND]) {

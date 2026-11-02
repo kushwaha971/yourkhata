@@ -138,19 +138,20 @@ beforeEach(() => {
     .mockResolvedValue({ rows: [MOVE], nextCursor: null, hasMore: false });
 });
 
-it('leads with the stock in words, then Adjust stock and Edit on the page', async () => {
+it('D5: the summary leads with the stock, and the dock holds Adjust stock and Edit item', async () => {
   signIn(OWNER);
   renderWithProviders(<ItemDetailPageContent id="i1" />);
-  expect(await screen.findByTestId('item-stock-figure')).toHaveTextContent('24 BAG in stock');
-  expect(screen.getByText('Low below 5 BAG')).toBeInTheDocument();
+  expect(await screen.findByTestId('item-stock-figure')).toHaveTextContent('24 BAG');
+  expect(screen.getByText('Reorder at 5 BAG')).toBeInTheDocument();
   const row = screen.getByTestId('item-primary-actions');
   expect(within(row).getByRole('button', { name: /Adjust stock/ })).toBeInTheDocument();
-  expect(within(row).getByRole('button', { name: /Edit/ })).toBeInTheDocument();
+  expect(within(row).getByRole('button', { name: /Edit item/ })).toBeInTheDocument();
 });
 
 it('shows the usual price with its GST, and the margin only with the cost permission', async () => {
   signIn(OWNER);
   const { unmount } = renderWithProviders(<ItemDetailPageContent id="i1" />);
+  await userEvent.click(await screen.findByRole('tab', { name: 'Details' }));
   const price = await screen.findByTestId('item-price');
   expect(within(price).getByText('Usual price')).toBeInTheDocument();
   expect(within(price).getByText('incl. GST 5%')).toBeInTheDocument();
@@ -160,6 +161,7 @@ it('shows the usual price with its GST, and the margin only with the cost permis
   signIn(OWNER.filter((p) => p !== 'reports.financial.read'));
   jest.mocked(service.getItem).mockResolvedValue({ ...ITEM, purchasePrice: null, avgCost: null });
   renderWithProviders(<ItemDetailPageContent id="i1" />);
+  await userEvent.click(await screen.findByRole('tab', { name: 'Details' }));
   const hidden = await screen.findByTestId('item-price');
   expect(within(hidden).queryByText('Purchase price')).not.toBeInTheDocument();
   expect(within(hidden).queryByTestId('item-margin')).not.toBeInTheDocument();
@@ -169,6 +171,7 @@ it('says a below-cost margin in words, not colour alone', async () => {
   signIn(OWNER);
   jest.mocked(service.getItem).mockResolvedValue({ ...ITEM, sellingPrice: '350.00' });
   renderWithProviders(<ItemDetailPageContent id="i1" />);
+  await userEvent.click(await screen.findByRole('tab', { name: 'Details' }));
   expect(await screen.findByTestId('item-margin')).toHaveTextContent(/selling below cost/);
 });
 
@@ -180,7 +183,7 @@ it('names a cancelled bill on its movement and links to it, with no raw message 
   expect(screen.queryByText(/stock\.adjust\.reason/)).not.toBeInTheDocument();
 });
 
-it('history is chips; a failed movements tab offers retry instead of "No movements yet"', async () => {
+it('history is tabs; a failed movements tab offers retry instead of "No movements yet"', async () => {
   signIn(OWNER);
   jest.mocked(service.listMovements).mockRejectedValueOnce(new Error('offline'));
   jest.mocked(service.getItem).mockResolvedValue({ ...ITEM, id: 'i2' });
@@ -189,7 +192,7 @@ it('history is chips; a failed movements tab offers retry instead of "No movemen
   expect(screen.queryByText('No movements yet')).not.toBeInTheDocument();
   await userEvent.click(screen.getByRole('button', { name: 'Try again' }));
   expect(await screen.findByRole('link', { name: /PB\/0012 cancelled/ })).toBeInTheDocument();
-  expect(screen.getByRole('radio', { name: 'Sales' })).toBeInTheDocument();
+  expect(screen.getByRole('tab', { name: 'Sales' })).toBeInTheDocument();
 });
 
 it('a service says it has no stock and offers no Adjust stock', async () => {
@@ -203,7 +206,7 @@ it('a service says it has no stock and offers no Adjust stock', async () => {
     stock: [],
   });
   renderWithProviders(<ItemDetailPageContent id="i1" />);
-  expect(await screen.findByText('Services have no stock')).toBeInTheDocument();
+  expect(await screen.findByText('No stock')).toBeInTheDocument();
   expect(screen.queryByTestId('item-adjust')).not.toBeInTheDocument();
 });
 

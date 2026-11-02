@@ -54,7 +54,7 @@ try {
   await page.goto(`${base}/items`, { waitUntil: 'networkidle' });
   await page.reload({ waitUntil: 'networkidle' });
   await page.getByRole('button', { name: /^(Add item|New item)$/ }).first().click();
-  await page.getByRole('dialog').getByLabel('Item name').fill(NAME);
+  await page.getByRole('dialog').getByLabel('Name', { exact: true }).fill(NAME);
   await page.getByRole('dialog').getByLabel('Selling price').first().fill('599').catch(() => {});
   const group = page.getByTestId('item-variants');
   check('form: "SIZES AND COLOURS" shows for a clothes shop', await group.isVisible().catch(() => false));
