@@ -96,12 +96,12 @@ export function ItemTagFields(): React.JSX.Element {
         {grams('tag.stoneG', t('items.form.tag.stone'))}
         {grams('tag.netG', t('items.form.tag.net'))}
       </UbBox>
-      <UbBox className="grid grid-cols-1 items-end gap-3 min-[360px]:grid-cols-2">
+      <UbBox className="grid grid-cols-1 gap-3">
         {/* Design D3: Making is ONE field — the amount, and beside it whether
             it is a percent or rupees per gram. */}
         <UbField name="tag.makingValue" label={t('items.form.tag.making')}>
           {(field) => (
-            <UbBox className="grid grid-cols-1 items-center gap-2 min-[360px]:grid-cols-[minmax(0,1fr)_auto]">
+            <UbBox className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2">
               {makingType === 'per_g' ? (
                 <UbMoneyInput
                   {...field}

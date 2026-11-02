@@ -387,6 +387,12 @@ class KarigarLot(TenantModel):
     issued_on = models.DateField()
     received_g = QuantityField(null=True, blank=True)
     received_on = models.DateField(null=True, blank=True)
+    #: G3c — the net weight and pieces tagged from this lot so far, the item of
+    #: the last piece (for its labels), and whether the counter is done tagging.
+    tagged_g = QuantityField(default=0)
+    tag_count = models.IntegerField(default=0)
+    last_item_id = models.UUIDField(null=True, blank=True)
+    tags_done = models.BooleanField(default=False)
 
     class Meta:
         db_table = "sales_karigar_lot"

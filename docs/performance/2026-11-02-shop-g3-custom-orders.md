@@ -83,3 +83,27 @@ Live: `e2e/g3b-karigars.mjs` 19/19 (390, 320, 1280; light, dark; EN, HI), g3a
 16/16, 0 console errors; `--skew` fails on the wastage. Server: 14 tests in
 `test_custom_orders.py`; the full suite on a fresh database fails only where it
 failed before G2. Monkey runs and the score sheet are not done.
+
+## G3c — receiving makes tags (2 Nov)
+
+Gold back from a karigar appears as "to tag". Make tag asks the item, the shared
+Tag details and the labour per gram; the piece goes into stock costed at metal +
+labour (design D6: ₹11,650 × 12 g + ₹350 × 12 g = ₹1,44,000). The lot counts the
+pieces and net grams, offers Print labels for the last piece's item, and "No more
+tags" clears it. A repeated tag no. is refused under its box.
+
+Found by looking: the Making amount box was about 25 px wide on a phone, in the
+shared Tag details form (so Add item and Add tag had it too), because a box is
+only measured for cut text when it has a value. Making now has its own row, which
+differs from the design's Making beside Wastage; g3c measures the box's width.
+
+Listed for the owner: a tagged net weight beyond what came back is allowed, not
+refused (the piece may use other gold). Tags are made one at a time, where the
+design's button says "Make 3 tags". Print labels opens the labels page for the
+item; whether its label prints the tag's own weight and HUID was not checked. The
+item list is the first page of items that keep tags, so a shop with many items
+may not find theirs. An item cannot be created from this dialog. The design's
+purchase-screen version of this (D6) is not built; it lives on Custom orders.
+
+Live: `e2e/g3c-tags.mjs` (390, 320, 1280), `--skew` fails on the cost; g2a and
+g3b rerun. Server: 3 new tests. Monkey runs and the score sheet are not done.

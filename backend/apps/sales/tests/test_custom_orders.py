@@ -208,3 +208,58 @@ def test_an_order_says_who_has_its_gold(jeweller: Any, owner: Any, make_party: A
 
 def test_a_shop_that_is_not_a_jeweller_has_no_karigars(owner: Any) -> None:
     assert owner.get(reverse("v1:karigars")).status_code == 404
+
+
+# ── G3c: receiving makes tags ───────────────────────────────────────────────
+
+
+TAG = {"purity": "gold_22k", "gross_g": "12.000", "net_g": "12.000", "making_type": "pct", "making_value": "12"}
+
+
+def _back_lot(owner: Any) -> dict:
+    lot = _issue(owner, _karigar(owner), "37.400")
+    assert owner.post(reverse("v1:karigar-receive", args=[lot["id"]]), {"received_g": "36.880"}, format="json").status_code == 200
+    return lot
+
+
+def _item(make_item: Any) -> Any:
+    return make_item("Gold chain 22K", "0", "GST0", stock=None, tracking="serial")
+
+
+def test_a_received_lot_makes_tags_in_stock_costed_with_labour(jeweller: Any, owner: Any, make_item: Any) -> None:
+    """Metal 12 g × ₹11,650 + labour 12 g × ₹350 = ₹1,44,000 is what the piece cost."""
+    from apps.inventory.models import ItemStock
+
+    _rate(owner)
+    lot, item = _back_lot(owner), _item(make_item)
+    res = owner.post(
+        reverse("v1:karigar-make-tag", args=[lot["id"]]),
+        {"item_id": str(item.id), "labour_per_g": "350", "tag": {**TAG, "tag_no": "KR-1"}},
+        format="json",
+    )
+    assert res.status_code == 201, res.content
+    assert res.json()["data"]["lot"]["tagged_g"] == "12.000"
+    assert owner.get(reverse("v1:jewel-tag-lookup"), {"tag": "KR-1"}).status_code == 200
+    stock = ItemStock.objects.get(item=item)
+    assert stock.on_hand == 1 and stock.avg_cost == Decimal("144000.0000")
+
+
+def test_gold_not_back_makes_no_tag_and_done_clears_the_lot(jeweller: Any, owner: Any, make_item: Any) -> None:
+    lot = _issue(owner, _karigar(owner), "10.000")
+    url = reverse("v1:karigar-make-tag", args=[lot["id"]])
+    body = {"item_id": str(_item(make_item).id), "tag": {**TAG, "tag_no": "KR-2"}}
+    refused = owner.post(url, body, format="json")
+    assert refused.status_code == 409 and refused.json()["error"]["code"] == "karigar_lot_not_back"
+    owner.post(reverse("v1:karigar-receive", args=[lot["id"]]), {"received_g": "9.900"}, format="json")
+    assert len(owner.get(reverse("v1:karigars")).json()["data"]["to_tag"]) == 1
+    assert owner.post(reverse("v1:karigar-tags-done", args=[lot["id"]]), {}, format="json").status_code == 200
+    assert owner.get(reverse("v1:karigars")).json()["data"]["to_tag"] == []
+
+
+def test_the_same_tag_no_twice_is_refused_and_counts_once(jeweller: Any, owner: Any, make_item: Any) -> None:
+    lot, item = _back_lot(owner), _item(make_item)
+    url = reverse("v1:karigar-make-tag", args=[lot["id"]])
+    body = {"item_id": str(item.id), "tag": {**TAG, "tag_no": "KR-3"}}
+    assert owner.post(url, body, format="json").status_code == 201
+    assert owner.post(url, body, format="json").status_code == 400
+    assert owner.get(reverse("v1:karigars")).json()["data"]["to_tag"][0]["tag_count"] == 1

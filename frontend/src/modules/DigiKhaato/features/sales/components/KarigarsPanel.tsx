@@ -1,7 +1,8 @@
 'use client';
 
-import { UbButton, UbPanel, UbStack, UbStatusBadge, UbText } from 'src/design-system';
+import { UbActionLink, UbButton, UbPanel, UbStack, UbStatusBadge, UbText } from 'src/design-system';
 import { useTranslation } from 'src/hooks/useTranslation';
+import { ROUTES } from 'src/routes';
 
 import { PURITY_SHORT } from '../../inventory/api/tagService';
 
@@ -25,11 +26,15 @@ export function KarigarsPanel({
   canWrite,
   onAdd,
   onReceive,
+  onMakeTag,
+  onTagsDone,
 }: Readonly<{
   data: KarigarList;
   canWrite: boolean;
   onAdd: () => void;
   onReceive: (lot: KarigarLot) => void;
+  onMakeTag: (lot: KarigarLot) => void;
+  onTagsDone: (lot: KarigarLot) => void;
 }>): React.JSX.Element {
   const { t } = useTranslation();
   return (
@@ -103,6 +108,42 @@ export function KarigarsPanel({
               <UbButton variant="secondary" size="sm" onClick={() => onReceive(lot)}>
                 {t('sales.karigar.receive')}
               </UbButton>
+            )}
+          </UbStack>
+        ))}
+        {data.to_tag.map((lot) => (
+          <UbStack
+            key={lot.id}
+            gap={2}
+            className="rounded-lg border border-dashed border-border-subtle p-3"
+            data-testid="karigar-to-tag"
+          >
+            <UbText variant="body-sm" className="ds-num break-words">
+              {t('sales.karigar.toTag', {
+                name: lot.karigar.name,
+                back: lot.received_g ?? '0',
+                tagged: lot.tagged_g,
+                count: lot.tag_count,
+              })}
+            </UbText>
+            {canWrite && (
+              <UbStack direction="row" gap={2} className="flex-wrap">
+                <UbButton size="sm" onClick={() => onMakeTag(lot)} data-testid="karigar-make-tag">
+                  {t('sales.karigar.makeTag')}
+                </UbButton>
+                {lot.last_item_id && (
+                  <UbActionLink
+                    size="sm"
+                    href={`${ROUTES.ITEM_LABELS}?item=${lot.last_item_id}`}
+                    data-testid="karigar-labels"
+                  >
+                    {t('sales.karigar.printLabels')}
+                  </UbActionLink>
+                )}
+                <UbButton variant="ghost" size="sm" onClick={() => onTagsDone(lot)}>
+                  {t('sales.karigar.tagsDone')}
+                </UbButton>
+              </UbStack>
             )}
           </UbStack>
         ))}

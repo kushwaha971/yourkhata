@@ -123,7 +123,7 @@ def _metal_value(tenant: Any, clean: dict) -> Decimal:
 
 
 @transaction.atomic
-def add_tag(*, ctx: Ctx, item: Item, data: dict) -> dict:
+def add_tag(*, ctx: Ctx, item: Item, data: dict, labour_per_g: Decimal = Decimal("0")) -> dict:
     """One piece into stock with its tag; the item must keep serials (tags)."""
     from apps.inventory.services.adjustments import post_adjustment
 
@@ -136,7 +136,7 @@ def add_tag(*, ctx: Ctx, item: Item, data: dict) -> dict:
             "adjustment_date": tenant_today(ctx.tenant).isoformat(),
             "reason": "other",
             "note": f"Tag {clean['tag_no']} added",
-            "lines": [{"item_id": str(item.id), "qty": "1", "unit_cost": str(_metal_value(ctx.tenant, clean))}],
+            "lines": [{"item_id": str(item.id), "qty": "1", "unit_cost": str(_metal_value(ctx.tenant, clean) + (clean["net_g"] * labour_per_g).quantize(Decimal("0.0001")))}],
         },
     )
     serial = Serial.objects.create(

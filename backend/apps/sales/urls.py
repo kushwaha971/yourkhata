@@ -13,8 +13,10 @@ from apps.sales.views.custom_orders import (
     CustomOrdersView,
     CustomOrderStatusView,
     KarigarIssueView,
+    KarigarMakeTagView,
     KarigarReceiveView,
     KarigarsView,
+    KarigarTagsDoneView,
 )
 from apps.sales.views.invoices import InvoiceViewSet
 from apps.sales.views.orders import SalesOrderViewSet
@@ -35,5 +37,7 @@ urlpatterns = [
     path("karigars", KarigarsView.as_view(), name="karigars"),
     path("karigars/<uuid:pk>/issue", KarigarIssueView.as_view(), name="karigar-issue"),
     path("karigar-lots/<uuid:pk>/receive", KarigarReceiveView.as_view(), name="karigar-receive"),
+    path("karigar-lots/<uuid:pk>/tags", KarigarMakeTagView.as_view(), name="karigar-make-tag"),
+    path("karigar-lots/<uuid:pk>/tags-done", KarigarTagsDoneView.as_view(), name="karigar-tags-done"),
     *router.urls,
 ]

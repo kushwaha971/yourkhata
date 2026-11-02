@@ -19,11 +19,17 @@ export interface KarigarLot {
   readonly purity: string;
   readonly issued_g: string;
   readonly issued_on: string;
+  readonly received_g: string | null;
+  /** G3c — what has been tagged from this lot so far. */
+  readonly tagged_g: string;
+  readonly tag_count: number;
+  readonly last_item_id: string | null;
 }
 
 export interface KarigarList {
   readonly rows: readonly Karigar[];
   readonly open_lots: readonly KarigarLot[];
+  readonly to_tag: readonly KarigarLot[];
   readonly gold_with_karigars: string;
 }
 
@@ -56,4 +62,16 @@ export const receiveGold = async (lotId: string, receivedG: string): Promise<Kar
     received_g: receivedG,
   });
   return res.data.data;
+};
+
+/** G3c — one piece from gold received back; `tag` is `toTagBody`'s shape. */
+export const makeLotTag = async (
+  lotId: string,
+  body: { item_id: string; labour_per_g: string; tag: Record<string, string> }
+): Promise<void> => {
+  await api.post(`/sales/karigar-lots/${lotId}/tags`, body);
+};
+
+export const finishLotTags = async (lotId: string): Promise<void> => {
+  await api.post(`/sales/karigar-lots/${lotId}/tags-done`, {});
 };

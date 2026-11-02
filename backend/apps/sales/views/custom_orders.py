@@ -80,3 +80,13 @@ class KarigarReceiveView(_View):
     def post(self, request: Any, pk: Any) -> Any:
         lot = karigars.receive_gold(ctx=Ctx.from_request(request), lot_id=pk, data=request.data)
         return StandardResponse.ok(karigars.lot_view(lot))
+
+
+class KarigarMakeTagView(_View):
+    def post(self, request: Any, pk: Any) -> Any:
+        return StandardResponse.created(karigars.make_tag(ctx=Ctx.from_request(request), lot_id=pk, data=request.data))
+
+
+class KarigarTagsDoneView(_View):
+    def post(self, request: Any, pk: Any) -> Any:
+        return StandardResponse.ok(karigars.finish_tagging(ctx=Ctx.from_request(request), lot_id=pk))

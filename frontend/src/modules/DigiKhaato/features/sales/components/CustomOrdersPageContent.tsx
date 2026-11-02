@@ -41,7 +41,12 @@ import {
   type CustomOrderList,
   type CustomOrderStatus,
 } from '../api/customOrderService';
-import { listKarigars, type KarigarList, type KarigarLot } from '../api/karigarService';
+import {
+  finishLotTags,
+  listKarigars,
+  type KarigarList,
+  type KarigarLot,
+} from '../api/karigarService';
 
 import { KarigarsPanel } from './KarigarsPanel';
 
@@ -57,6 +62,10 @@ const ReceiveGoldDialog = dynamic(
   () => import('./KarigarDialogs').then((m) => m.ReceiveGoldDialog),
   { ssr: false, loading: () => <UbDialogLoading /> }
 );
+const MakeTagDialog = dynamic(() => import('./KarigarDialogs').then((m) => m.MakeTagDialog), {
+  ssr: false,
+  loading: () => <UbDialogLoading />,
+});
 const CustomOrderDrawer = dynamic(
   () => import('./CustomOrderDrawer').then((m) => m.CustomOrderDrawer),
   { ssr: false, loading: () => <UbDrawerLoading /> }
@@ -206,6 +215,7 @@ export function CustomOrdersPageContent(): React.JSX.Element {
   const reload = useCallback(() => setNonce((n) => n + 1), []);
   const [karigars, setKarigars] = useState<KarigarList | null>(null);
   const [dialog, setDialog] = useState<'add' | 'issue' | KarigarLot | null>(null);
+  const [tagging, setTagging] = useState<KarigarLot | null>(null);
   useEffect(() => {
     const controller = new AbortController();
     void listKarigars(controller.signal)
@@ -448,8 +458,26 @@ export function CustomOrdersPageContent(): React.JSX.Element {
             canWrite={canWrite}
             onAdd={() => setDialog('add')}
             onReceive={setDialog}
+            onMakeTag={setTagging}
+            onTagsDone={(lot) =>
+              void finishLotTags(lot.id)
+                .then(dialogDone)
+                .catch(() =>
+                  dispatch(showSnackbar({ severity: 'error', id: 'sales.customOrder.moveFailed' }))
+                )
+            }
           />
         </UbBox>
+      )}
+      {tagging && (
+        <MakeTagDialog
+          lot={tagging}
+          onClose={() => setTagging(null)}
+          onDone={() => {
+            setTagging(null);
+            dialogDone();
+          }}
+        />
       )}
       {dialog === 'add' && <AddKarigarDialog onClose={() => setDialog(null)} onDone={dialogDone} />}
       {dialog === 'issue' && karigars && (

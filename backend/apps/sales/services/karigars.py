@@ -31,6 +31,9 @@ def lot_view(lot: KarigarLot) -> dict:
         "issued_g": _g(lot.issued_g),
         "issued_on": lot.issued_on.isoformat(),
         "received_g": _g(lot.received_g) if lot.received_g is not None else None,
+        "tagged_g": _g(lot.tagged_g),
+        "tag_count": lot.tag_count,
+        "last_item_id": str(lot.last_item_id) if lot.last_item_id else None,
     }
 
 
@@ -62,6 +65,7 @@ def list_karigars(*, tenant: Any) -> dict:
     return {
         "rows": rows,
         "open_lots": [lot_view(x) for x in lots if x.received_g is None],
+        "to_tag": [lot_view(x) for x in lots if x.received_g is not None and x.received_g > 0 and not x.tags_done],
         "gold_with_karigars": _g(sum((x.issued_g for x in lots if x.received_g is None), ZERO)),
     }
 
@@ -153,4 +157,53 @@ def receive_gold(*, ctx: Ctx, lot_id: Any, data: dict) -> KarigarLot:
     lot.received_g = received
     lot.received_on = tenant_today(ctx.tenant)
     lot.save(update_fields=["received_g", "received_on"])
+    return lot
+
+
+@transaction.atomic
+def make_tag(*, ctx: Ctx, lot_id: Any, data: dict) -> dict:
+    """G3c (design D6): one piece from gold received back: its tag goes into
+    stock, costed at the metal plus the labour. A net weight beyond what came
+    back is the counter's call (the piece may use other gold), so it is allowed."""
+    from apps.inventory.models import Item
+    from apps.inventory.services.tags import _dec, add_tag
+
+    lot = _received_lot(ctx=ctx, lot_id=lot_id)
+    errors: dict[str, list[str]] = {}
+    try:
+        item = Item.objects.filter(tenant=ctx.tenant, pk=data.get("item_id")).first()
+    except (ValueError, TypeError, ValidationError):
+        item = None
+    if item is None:
+        errors["item_id"] = ["Choose the item."]
+    labour = _dec(data.get("labour_per_g"), "labour_per_g", errors, required=False, places=2, minimum=ZERO) or ZERO
+    if errors:
+        raise ValidationFailed(errors, "Check the tag details.")
+    tag = add_tag(ctx=ctx, item=item, data=data.get("tag") or {}, labour_per_g=labour)
+    lot.tagged_g += Decimal(tag["net_g"])
+    lot.tag_count += 1
+    lot.last_item_id = item.id
+    lot.save(update_fields=["tagged_g", "tag_count", "last_item_id"])
+    return {"tag": tag, "lot": lot_view(lot)}
+
+
+@transaction.atomic
+def finish_tagging(*, ctx: Ctx, lot_id: Any) -> dict:
+    lot = _received_lot(ctx=ctx, lot_id=lot_id)
+    lot.tags_done = True
+    lot.save(update_fields=["tags_done"])
+    return lot_view(lot)
+
+
+def _received_lot(*, ctx: Ctx, lot_id: Any) -> KarigarLot:
+    lot = (
+        KarigarLot.objects.select_for_update(of=("self",))
+        .select_related("karigar", "order")
+        .filter(tenant=ctx.tenant, pk=lot_id)
+        .first()
+    )
+    if lot is None:
+        raise NotFound("No such lot.")
+    if lot.received_g is None:
+        raise BusinessRuleViolation("karigar_lot_not_back", "Receive this gold back first.", details={})
     return lot
