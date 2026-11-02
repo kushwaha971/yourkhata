@@ -40,6 +40,7 @@ class CustomOrdersView(_View):
                 tenant=get_effective_tenant(request),
                 q=request.query_params.get("q", ""),
                 scope=request.query_params.get("scope", "open"),
+                karigar=request.query_params.get("karigar", ""),
             )
         )
 

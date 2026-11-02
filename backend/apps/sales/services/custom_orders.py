@@ -183,7 +183,7 @@ def move_order(*, ctx: Ctx, order_id: Any, status: Any) -> CustomOrder:
     return order
 
 
-def list_orders(*, tenant: Any, q: str = "", scope: str = "open") -> dict:
+def list_orders(*, tenant: Any, q: str = "", scope: str = "open", karigar: str = "") -> dict:
     rows = CustomOrder.objects.filter(tenant=tenant).select_related("party").prefetch_related("lots__karigar")
     live = rows.filter(status__in=(CustomOrder.OPEN, CustomOrder.READY))
     summary = live.aggregate(held=Sum("advance"))
@@ -191,6 +191,11 @@ def list_orders(*, tenant: Any, q: str = "", scope: str = "open") -> dict:
     text = " ".join(str(q or "").split())
     if text:
         shown = shown.filter(Q(number__icontains=text) | Q(party__name__icontains=text) | Q(what__icontains=text))
+    if karigar:
+        try:
+            shown = shown.filter(lots__karigar_id=uuid.UUID(str(karigar))).distinct()
+        except ValueError:
+            shown = shown.none()
     return {
         "rows": [view(o) for o in shown.order_by("deliver_on", "number")[:200]],
         "open": live.count(),

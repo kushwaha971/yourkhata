@@ -27,6 +27,8 @@ await page.waitForURL((u) => !u.pathname.startsWith('/login'), { timeout: 30000 
 const hdr = async () => ({ 'X-CSRF-Token': (await ctx.cookies()).find((c) => c.name === 'ub_csrf')?.value ?? '', 'Idempotency-Key': randomUUID() });
 const get = async (p) => (await (await ctx.request.get(`${api}${p}`)).json()).data;
 const post = async (p, data) => (await (await ctx.request.post(`${api}${p}`, { headers: await hdr(), data })).json()).data;
+// Tidy earlier runs' lots so the panel's fold is open and this run's rows are read.
+for (const old of (await get('/sales/karigars')).open_lots) await post(`/sales/karigar-lots/${old.id}/receive`, { received_g: '0' });
 const name = `Sunil ${run}`;
 const k = await post('/sales/karigars', { name, wastage_limit_pct: '1.5' });
 const me = async () => (await get('/sales/karigars')).rows.find((r) => r.id === k.id);
@@ -56,7 +58,7 @@ await d.waitFor({ state: 'detached', timeout: 10000 }).catch(() => undefined);
 await page.waitForTimeout(900);
 const want = skew ? '1.5' : '1.4';
 check(`the wastage follows: ${want}%`, (await me()).wastage_pct === want, (await me()).wastage_pct);
-check('…on screen, within the limit', (await page.getByTestId('karigar-row').filter({ hasText: name }).getByText('1.4% · within 1.5%').count()) === 1);
+check('…on screen, within the limit', (await page.getByTestId('karigars').locator('tr, [data-testid=karigar-row]').filter({ hasText: name }).getByText('1.4% · within 1.5%').count()) === 1);
 await post(`/sales/karigars/${k.id}/issue`, { weight_g: '99', purity: 'gold_22k', client_key: randomUUID() });
 await page.reload();
 await page.getByTestId('karigar-lot').filter({ hasText: name }).getByTestId('karigar-lot-correct').click();
@@ -64,7 +66,7 @@ await page.getByTestId('karigar-lot-remove').click();
 await page.getByRole('alertdialog').or(page.getByRole('dialog').filter({ hasText: 'Remove this gold?' })).getByRole('button', { name: 'Remove', exact: true }).last().click();
 await page.waitForTimeout(1200);
 check('a mistaken lot is removed after asking', (await me()).with_g === '0.000', (await me()).with_g);
-const row = page.getByTestId('karigar-row').filter({ hasText: name });
+const row = page.getByTestId('karigars').locator('tr, [data-testid=karigar-row]').filter({ hasText: name });
 await row.getByTestId('karigar-edit').click();
 d = page.getByRole('dialog');
 await d.getByLabel('Wastage allowed').fill('1');

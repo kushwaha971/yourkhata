@@ -1971,8 +1971,8 @@
       "firstLoad": 354.6
     },
     "/sales/custom-orders": {
-      "route": 89.4,
-      "firstLoad": 332.6
+      "route": 90.8,
+      "firstLoad": 334.0
     }
   },
   "//ignoreRoutes": [

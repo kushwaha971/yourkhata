@@ -51,6 +51,8 @@ import {
 
 import { KarigarsPanel } from './KarigarsPanel';
 
+// The dropdown primitive is 35 KB; the list reads before anyone filters.
+const UbSelect = dynamic(() => import('src/design-system').then((m) => m.UbSelect), { ssr: false });
 const AddKarigarDialog = dynamic(() => import('./KarigarDialogs').then((m) => m.AddKarigarDialog), {
   ssr: false,
   loading: () => <UbDialogLoading />,
@@ -88,6 +90,8 @@ const shortDate = (date: string): string =>
     month: 'short',
     timeZone: 'UTC',
   });
+
+const isLive = (o: CustomOrder): boolean => o.status === 'open' || o.status === 'ready';
 
 const billHref = (o: CustomOrder): string =>
   `${ROUTES.SALES_INVOICES}/new?custom_order=${o.id}&party=${o.party.id}&partyName=${encodeURIComponent(o.party.name)}`;
@@ -173,7 +177,7 @@ const orderColumns = ({
     cell: (o) => (
       <UbStack gap={1} className="items-start">
         {badge(o)}
-        {canWrite && (
+        {canWrite && isLive(o) && (
           <UbStack direction="row" gap={1} className="flex-wrap">
             <UbActionLink
               href={billHref(o)}
@@ -216,6 +220,8 @@ export function CustomOrdersPageContent(): React.JSX.Element {
   const canWrite = usePermissions().can('sales.invoice.write');
   const cards = useGridTier() === 'cards';
   const [q, setQ] = useState('');
+  const [scope, setScope] = useState<'open' | 'all'>('open');
+  const [karigar, setKarigar] = useState('');
   const [data, setData] = useState<CustomOrderList | null>(null);
   const [failed, setFailed] = useState(false);
   const [adding, setAdding] = useState(false);
@@ -242,7 +248,7 @@ export function CustomOrdersPageContent(): React.JSX.Element {
   useEffect(() => {
     const controller = new AbortController();
     const timer = setTimeout(() => {
-      listCustomOrders(q, controller.signal)
+      listCustomOrders({ q, scope, karigar }, controller.signal)
         .then((next) => {
           setData(next);
           setFailed(false);
@@ -255,7 +261,7 @@ export function CustomOrdersPageContent(): React.JSX.Element {
       clearTimeout(timer);
       controller.abort();
     };
-  }, [q, nonce]);
+  }, [q, scope, karigar, nonce]);
 
   const move = useCallback(
     async (order: CustomOrder, status: CustomOrderStatus) => {
@@ -273,6 +279,9 @@ export function CustomOrdersPageContent(): React.JSX.Element {
 
   const badge = useCallback(
     (o: CustomOrder) => {
+      if (o.status === 'delivered' || o.status === 'cancelled') {
+        return <UbStatusBadge tone="neutral" label={t(`sales.customOrder.status.${o.status}`)} />;
+      }
       if (o.status === 'ready') {
         return <UbStatusBadge tone="success" label={t('sales.customOrder.status.ready')} />;
       }
@@ -367,12 +376,38 @@ export function CustomOrdersPageContent(): React.JSX.Element {
               : ''}
           </UbText>
         )}
-        <UbSearchInput
-          value={q}
-          onChange={setQ}
-          placeholder={t('sales.customOrder.search')}
-          aria-label={t('sales.customOrder.search')}
-        />
+        <UbBox className="grid grid-cols-2 gap-2 sm:flex">
+          <UbBox className="col-span-2 min-w-0 sm:flex-1">
+            <UbSearchInput
+              value={q}
+              onChange={setQ}
+              placeholder={t('sales.customOrder.search')}
+              aria-label={t('sales.customOrder.search')}
+            />
+          </UbBox>
+          <UbSelect
+            aria-label={t('sales.customOrder.col.status')}
+            value={scope}
+            options={[
+              { value: 'open', label: t('sales.customOrder.filter.open') },
+              { value: 'all', label: t('sales.customOrder.filter.all') },
+            ]}
+            onChange={(next) => setScope(next as 'open' | 'all')}
+            className="sm:w-44"
+          />
+          {(karigars?.rows.length ?? 0) > 0 && (
+            <UbSelect
+              aria-label={t('sales.karigar.who')}
+              value={karigar || 'all'}
+              options={[
+                { value: 'all', label: t('sales.customOrder.filter.allKarigars') },
+                ...(karigars?.rows ?? []).map((k) => ({ value: k.id, label: k.name })),
+              ]}
+              onChange={(next) => setKarigar(next === 'all' ? '' : next)}
+              className="sm:w-52"
+            />
+          )}
+        </UbBox>
         {cards && data !== null && !failed && rows.length > 0 ? (
           <UbStack gap={2}>
             {rows.map((o) => (
@@ -398,7 +433,7 @@ export function CustomOrdersPageContent(): React.JSX.Element {
                       advance: formatInr(o.advance),
                     })}
                   </UbText>
-                  {canWrite && (
+                  {canWrite && isLive(o) && (
                     <UbStack direction="row" gap={2} className="flex-wrap">
                       <UbActionLink
                         href={billHref(o)}

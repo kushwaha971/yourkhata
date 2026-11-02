@@ -157,3 +157,26 @@ Score (P0 section 8), evidence named above. **6 of 10, so G3 is "in test".**
 
 Also open: staff can remove a karigar lot (audit names them); Back not run on purpose
 outside the monkey; late labels (past dates can't be created) unit-untested.
+
+## Closing the gaps (2 Nov): now 7 of 10, still "in test"
+
+Built: order, issue-gold and make-tag forms keep a device copy through reload and
+Back (and the client key, so saving after a lost reply is one record); Status and
+Karigar filters; Karigars as a table on a desktop; lots folded past five; finished
+orders offer no actions. Unit test proves "N days late". Catalogue rows filled.
+
+Hand pass in the browser at 375 px: signed in, opened the list, opened New order, typed
+with nothing focused. It was short. Findings: nothing is focused when the form opens (kept:
+a phone keyboard would cover the form); closing a typed form drops it without asking,
+unlike Add item (open); a phone sees the first order halfway down (filters now share a row).
+
+| Points | Got | Why |
+|---|---|---|
+| Business 2 | 2 | as before |
+| Design 1 | 0 | side by side LOOKED at 390 and 1280; computed sizes not compared with CSS numbers. Still missing: photo, Karigar field; design has no Make bill or Mark ready |
+| Functional 1 | 1 | as before |
+| User 2 | 1 | catalogue filled, but the hand pass was short and the monkey is 6 valid runs |
+| Data 1 | 1 | reload, Back, offline, lost reply, two tabs run on purpose; closing a typed form on purpose still drops it |
+| Performance 1 | 1 | as before |
+| Honesty 1 | 1 | this list |
+| Owner 1 | 0 | not yet earned |

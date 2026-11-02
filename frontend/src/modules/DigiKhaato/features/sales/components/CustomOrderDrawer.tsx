@@ -15,10 +15,13 @@ import {
   UbQuantityInput,
   UbSelect,
   UbSwitch,
+  UbText,
   UbTextInput,
 } from 'src/design-system';
 import { useAppRouter } from 'src/hooks/useAppRouter';
+import { useAppSelector } from 'src/hooks/useAppStore';
 import { useTranslation } from 'src/hooks/useTranslation';
+import { selectActiveTenant } from 'src/redux/slice/sessionSlice';
 import { ROUTES } from 'src/routes';
 import type { ApiErrorShape } from 'src/types/api.types';
 import { applyServerErrors } from 'src/utils/applyServerErrors';
@@ -34,6 +37,7 @@ import {
   type CustomOrder,
   type CustomOrderFormValues,
 } from '../api/customOrderService';
+import { useFormDeviceCopy } from '../hooks/useFormDeviceCopy';
 
 const inDays = (n: number): string => addDaysIso(todayInTenantTz(), n);
 
@@ -52,7 +56,6 @@ export function CustomOrderDrawer({
   const { t } = useTranslation();
   const router = useAppRouter();
   const formId = useId();
-  const clientKey = useRef(crypto.randomUUID());
   const receipt = useRef(false);
   const [errors, setErrors] = useState<readonly string[]>([]);
   const form = useForm<CustomOrderFormValues>({
@@ -68,6 +71,8 @@ export function CustomOrderDrawer({
       fixRate: false,
     },
   });
+  const tenantId = useAppSelector(selectActiveTenant)?.id ?? '';
+  const copy = useFormDeviceCopy(`custom-order-new:${tenantId}`, form);
   const { setValue, control } = form;
   const partyName = useWatch({ control, name: 'partyName' });
   const advance = useWatch({ control, name: 'advance' });
@@ -75,7 +80,8 @@ export function CustomOrderDrawer({
   const submit = useCallback(
     async (values: CustomOrderFormValues) => {
       try {
-        const order = await createCustomOrder(values, clientKey.current);
+        const order = await createCustomOrder(values, copy.clientKey);
+        copy.clear();
         onSaved(order);
         if (receipt.current && order.advancePaymentId) {
           router.push(`${ROUTES.PAYMENTS}/${order.advancePaymentId}`);
@@ -93,13 +99,17 @@ export function CustomOrderDrawer({
         );
       }
     },
-    [onSaved, router, form.setError, t]
+    [onSaved, router, form.setError, t, copy]
   );
   const busy = form.formState.isSubmitting;
   return (
     <UbDrawer
       open
-      onOpenChange={(next) => (next ? undefined : onClose())}
+      onOpenChange={(next) => {
+        if (next) return;
+        copy.clear();
+        onClose();
+      }}
       title={t('sales.customOrder.new')}
       closeLabel={t('common.action.close')}
       dismissOnBackdrop={!form.formState.isDirty}
@@ -132,6 +142,11 @@ export function CustomOrderDrawer({
       }
     >
       <UbForm id={formId} form={form} onSubmit={submit} formErrors={errors}>
+        {copy.restored && (
+          <UbText variant="caption" tone="secondary" data-testid="form-restored">
+            {t('sales.customOrder.restored')}
+          </UbText>
+        )}
         <UbField name="partyId" label={t('sales.customOrder.customer')}>
           {(field) => (
             <PartyPickerField

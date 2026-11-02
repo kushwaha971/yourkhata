@@ -61,6 +61,10 @@ such action.
 | E27 | A restyle quietly breaks saving | every form drawer saves after the change, read back by record id | — | pass (A5: customer, item, stock; payment via A4) | n/a | pass | pass |
 | E18 | Slow, laggy lists (C5) | page time-to-content and API p95 under the monkey | pass (p95 < 1 s locally) | not run | not run | not run | not run |
 
+### Jewellery custom orders and karigars (G3, 2 Nov 2026)
+
+E1 pass (g3a double tap, g3e E4 lost reply). E2 fixed (order, issue and tag forms keep a device copy; g3e E5, E5c). E3 n/a (no document address on the form). E4 pass (g3e E7). E5 pass (g3e E6, a stale tab refreshes). E6 pass (g3o, g3e E8: screen = API). E7 partial: absurd weights not limited, a heavier-than-given lot refused. E8 n/a. E9 pass (g3c stock read back). E10 pass (the advance is in the Shop bucket, g3o). E11 n/a (tags only). E12 fixed (g3d correct and remove, audit kept). E13 n/a. E14 pass (monkey). E15 partial: a refused status move says a general "Couldn't update", not the server's reason. E16 n/a. E17 not run on these screens beyond wrapping names. E18 pass (monkey). E19 pass (g3e E9, finished orders offer no action). E20 n/a. E21 pass (g3e E3). E22 n/a. E23 pass (advance over the bill, pytest). E24 pass (g2c, g2b print). E25 n/a. E26 not run on purpose. E27 pass.
+
 ## How the monkey uses this
 
 `e2e/monkey.mjs` now does what a distracted user does, not only taps: reload,

@@ -311,3 +311,17 @@ def test_a_karigars_name_and_limit_can_be_changed(jeweller: Any, owner: Any) -> 
     res = owner.patch(reverse("v1:karigar-detail", args=[karigar["id"]]), {"name": "Raju S", "wastage_limit_pct": "2"}, format="json")
     assert res.status_code == 200, res.content
     assert (_row(owner)["name"], _row(owner)["wastage_limit_pct"]) == ("Raju S", "2.00")
+
+
+def test_orders_filter_by_status_and_karigar(jeweller: Any, owner: Any, make_party: Any) -> None:
+    party = make_party()
+    done = owner.post(reverse(URL), _body(party, what="Done"), format="json").json()["data"]
+    held = owner.post(reverse(URL), _body(party, what="Held"), format="json").json()["data"]
+    status = reverse("v1:custom-order-status", args=[done["id"]])
+    owner.post(status, {"status": "cancelled"}, format="json")
+    karigar = _karigar(owner)
+    _issue(owner, karigar, "1.000", order_id=held["id"])
+    names = lambda **q: [r["what"] for r in owner.get(reverse(URL), q).json()["data"]["rows"]]  # noqa: E731
+    assert names() == ["Held"]
+    assert sorted(names(scope="all")) == ["Done", "Held"]
+    assert names(scope="all", karigar=karigar["id"]) == ["Held"]

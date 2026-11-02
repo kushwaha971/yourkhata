@@ -29,6 +29,8 @@ await page.waitForURL((u) => !u.pathname.startsWith('/login'), { timeout: 30000 
 const hdr = async (x = {}) => ({ 'X-CSRF-Token': (await ctx.cookies()).find((c) => c.name === 'ub_csrf')?.value ?? '', ...x });
 const get = async (p) => (await (await ctx.request.get(`${api}${p}`)).json()).data;
 const post = async (p, data) => (await (await ctx.request.post(`${api}${p}`, { headers: await hdr({ 'Idempotency-Key': randomUUID() }), data })).json()).data;
+// Tidy earlier runs' lots so the panel's fold is open and this run's rows are read.
+for (const old of (await get('/sales/karigars')).open_lots) await post(`/sales/karigar-lots/${old.id}/receive`, { received_g: '0' });
 const party = await post('/parties', { name: `G3b Asha ${run}`, type: 'customer', is_customer: true });
 const what = `Earrings ${run}`;
 const order = await post('/sales/custom-orders', { client_key: randomUUID(), party_id: party.id, what, purity: 'gold_22k', deliver_on: new Date(Date.now() + 5 * 864e5).toISOString().slice(0, 10) });
@@ -83,7 +85,7 @@ await page.waitForTimeout(1000);
 const back = await me();
 const want = skew ? '1.5' : '1.4';
 check(`R2: wastage ${want}%`, back?.wastage_pct === want, back?.wastage_pct);
-check('R2: within the limit, on screen', (await page.getByTestId('karigar-row').filter({ hasText: name }).getByText('1.4% · within 1.5%').count()) === 1);
+check('R2: within the limit, on screen', (await page.getByTestId('karigars').locator('tr, [data-testid=karigar-row]').filter({ hasText: name }).getByText('1.4% · within 1.5%').count()) === 1);
 check('R2: nothing left with the karigar', back?.with_g === '0.000', back?.with_g);
 
 const lot = await post(`/sales/karigars/${k.id}/issue`, { weight_g: '10', purity: 'gold_22k', client_key: randomUUID() });
@@ -94,7 +96,7 @@ await d.getByLabel('Weight received').fill('1');
 await page.getByTestId('karigar-save').click();
 await d.waitFor({ state: 'detached', timeout: 10000 }).catch(() => undefined);
 await page.waitForTimeout(1000);
-check('R3: over the limit is saved and said', (await me())?.over_limit === true && (await page.getByTestId('karigar-row').filter({ hasText: name }).getByText(/over 1\.5%/).count()) === 1, lot.id);
+check('R3: over the limit is saved and said', (await me())?.over_limit === true && (await page.getByTestId('karigars').locator('tr, [data-testid=karigar-row]').filter({ hasText: name }).getByText(/over 1\.5%/).count()) === 1, lot.id);
 
 const host = new URL(base).hostname;
 const state = await ctx.storageState();

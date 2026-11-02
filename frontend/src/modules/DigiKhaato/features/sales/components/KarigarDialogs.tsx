@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useId, useRef, useState } from 'react';
+import { useEffect, useId, useState } from 'react';
 
 import { FormProvider, useForm, useWatch } from 'react-hook-form';
 
@@ -36,6 +36,7 @@ import {
   type Karigar,
   type KarigarLot,
 } from '../api/karigarService';
+import { useFormDeviceCopy } from '../hooks/useFormDeviceCopy';
 
 import type { CustomOrder } from '../api/customOrderService';
 import type { FieldValues, UseFormReturn } from 'react-hook-form';
@@ -158,7 +159,6 @@ export function IssueGoldDialog({
   onDone: () => void;
 }>): React.JSX.Element {
   const { t } = useTranslation();
-  const clientKey = useRef(crypto.randomUUID());
   const form = useForm({
     defaultValues: {
       karigar: karigars[0]?.id ?? '',
@@ -168,20 +168,25 @@ export function IssueGoldDialog({
     },
   });
   const orderId = useWatch({ control: form.control, name: 'order_id' });
+  const copy = useFormDeviceCopy('karigar-issue', form);
   return (
     <Shell
       title={t('sales.karigar.issue')}
       saveLabel={t('sales.karigar.issueSave')}
       form={form}
       fields={['weight_g', 'purity', 'order_id']}
-      onClose={onClose}
+      onClose={() => {
+        copy.clear();
+        onClose();
+      }}
       save={async (v) => {
         await issueGold(v.karigar, {
           weight_g: v.weight_g,
           purity: v.purity,
           order_id: v.order_id || null,
-          client_key: clientKey.current,
+          client_key: copy.clientKey,
         });
+        copy.clear();
         onDone();
       }}
     >
@@ -284,6 +289,7 @@ export function MakeTagDialog({
     },
   });
   const itemId = useWatch({ control: form.control, name: 'item_id' });
+  const copy = useFormDeviceCopy(`karigar-tag:${lot.id}`, form);
   return (
     <FormProvider {...form}>
       <Shell
@@ -291,7 +297,10 @@ export function MakeTagDialog({
         saveLabel={t('sales.karigar.makeTag')}
         form={form}
         fields={['tag', 'item_id', 'labour_per_g']}
-        onClose={onClose}
+        onClose={() => {
+          copy.clear();
+          onClose();
+        }}
         save={async (v) => {
           try {
             await makeLotTag(lot.id, {
@@ -310,6 +319,7 @@ export function MakeTagDialog({
               ),
             };
           }
+          copy.clear();
           onDone();
         }}
       >

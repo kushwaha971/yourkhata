@@ -15,6 +15,7 @@ export interface CustomOrder {
   readonly advancePaymentId: string | null;
   readonly fixedRate: string | null;
   readonly status: CustomOrderStatus;
+  readonly invoiceId: string | null;
   /** G3b — whose hands this order's gold is in, or null. */
   readonly withKarigar: { readonly name: string; readonly issued_g: string } | null;
 }
@@ -31,6 +32,7 @@ interface Wire {
   advance_payment_id: string | null;
   fixed_rate: string | null;
   status: CustomOrderStatus;
+  invoice_id: string | null;
   with_karigar: CustomOrder['withKarigar'];
 }
 
@@ -46,6 +48,7 @@ const toOrder = (w: Wire): CustomOrder => ({
   advancePaymentId: w.advance_payment_id,
   fixedRate: w.fixed_rate,
   status: w.status,
+  invoiceId: w.invoice_id,
   withKarigar: w.with_karigar,
 });
 
@@ -56,12 +59,16 @@ export interface CustomOrderList {
 }
 
 export const listCustomOrders = async (
-  q: string,
+  filters: { readonly q: string; readonly scope: 'open' | 'all'; readonly karigar: string },
   signal?: AbortSignal
 ): Promise<CustomOrderList> => {
   const res = await api.get<{ data: { rows: Wire[]; open: number; advance_held: string } }>(
     '/sales/custom-orders',
-    ubConfig({ params: { q }, signal, suppressErrorSnackbar: true })
+    ubConfig({
+      params: { q: filters.q, scope: filters.scope, karigar: filters.karigar || undefined },
+      signal,
+      suppressErrorSnackbar: true,
+    })
   );
   const d = res.data.data;
   return { rows: d.rows.map(toOrder), open: d.open, advanceHeld: d.advance_held };

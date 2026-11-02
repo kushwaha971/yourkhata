@@ -79,12 +79,49 @@ await page.waitForTimeout(800);
 const lostRows = (await get(`/sales/custom-orders?q=${encodeURIComponent(lost)}`)).rows;
 check('E4: saving again is one order, one advance', lostRows.length === 1, String(lostRows.length));
 
-// E5 reload mid-form: does it warn or keep? (recorded honestly)
+// E5 reload mid-form: what was typed comes back, and nothing was saved
 await page.getByTestId('custom-order-new').click();
 await page.getByRole('dialog').getByLabel('What to make').fill('half typed');
+await page.waitForTimeout(200);
 await page.reload();
 await page.getByTestId('custom-orders').waitFor({ timeout: 15000 });
-check('E5: reload mid-form does not crash or save', (await get(`/sales/custom-orders?q=half%20typed`)).rows.length === 0);
+check('E5: reload mid-form saves nothing', (await get(`/sales/custom-orders?q=half%20typed`)).rows.length === 0);
+await page.getByTestId('custom-order-new').click();
+const again5 = page.getByRole('dialog').getByLabel('What to make');
+await again5.waitFor({ timeout: 10000 });
+check('E5: reopening brings back what was typed', (await again5.inputValue()) === 'half typed', await again5.inputValue());
+check('E5: …and says so', (await page.getByTestId('form-restored').count()) === 1);
+await page.keyboard.press('Escape');
+await page.getByRole('button', { name: /Leave/ }).click({ timeout: 1500 }).catch(() => undefined);
+await page.waitForTimeout(400);
+await page.getByTestId('custom-order-new').click();
+await page.getByRole('dialog').getByLabel('What to make').waitFor({ timeout: 10000 });
+check('E5: closing on purpose clears it', (await page.getByRole('dialog').getByLabel('What to make').inputValue()) === '');
+await page.keyboard.press('Escape');
+await page.waitForTimeout(400);
+
+// E5c Back and Forward mid-form keep it too
+await page.getByTestId('custom-order-new').click();
+await page.getByRole('dialog').getByLabel('What to make').fill('back typed');
+await page.waitForTimeout(200);
+await page.goto(`${base}/items`);
+await page.goBack();
+await page.getByTestId('custom-orders').waitFor({ timeout: 15000 });
+await page.getByTestId('custom-order-new').click();
+const again5c = page.getByRole('dialog').getByLabel('What to make');
+await again5c.waitFor({ timeout: 10000 });
+check('E5c: leaving and coming Back keeps what was typed', (await again5c.inputValue()) === 'back typed', await again5c.inputValue());
+await page.keyboard.press('Escape');
+await page.getByRole('button', { name: /Leave/ }).click({ timeout: 1500 }).catch(() => undefined);
+await page.waitForTimeout(400);
+
+// E5b filters
+await page.getByRole('combobox', { name: 'Status' }).or(page.getByLabel('Status').first()).first().click().catch(() => undefined);
+await page.getByRole('option', { name: 'Status: All' }).click().catch(() => undefined);
+await page.waitForTimeout(900);
+check('E5b: Status: All shows finished orders', (await page.getByText('Delivered', { exact: true }).count()) >= 1);
+await page.reload();
+await page.getByTestId('custom-orders').waitFor({ timeout: 15000 });
 
 // E6 two tabs: mark ready and delivered in one, the other still shows Mark ready
 const twoWhat = `Two ${run}`;
