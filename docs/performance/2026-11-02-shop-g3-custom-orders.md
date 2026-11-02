@@ -34,3 +34,25 @@ switch. Monkey runs and the score sheet are not done.
 
 Live: `e2e/g3a-orders.mjs` 16/16, 0 console errors; `--skew` fails on the rate.
 Server: 5 tests in `test_custom_orders.py`.
+
+## G3a follow-on — a custom order becomes its bill (2 Nov)
+
+"Make bill" on an order opens a new bill for its customer, linked in
+`meta.custom_order`. A scanned tag of the order's purity takes the rate fixed
+against the advance, even if today's rate has moved. The totals show "Advance
+ORD-…" and To pay. Issuing refuses another customer or a finished order (409),
+applies the advance to the bill, and marks the order delivered with the bill's
+id; an advance bigger than the bill leaves the rest usable by that customer.
+
+Limits, listed: voiding that bill keeps the order delivered and leaves the
+advance as the customer's credit. The fixed rate is applied when the tag is
+scanned, so a tag already on the bill keeps its rate, and the rate can still be
+changed on the line. Issuing through the payment sheet on screen was not driven
+live; the live check issues through the API.
+
+Found: the issue path crashed (a missing `Decimal` import), caught by the new
+server tests. Two guards caught G3a's own misses: its day-counting did not use
+`utils/calendarDays`, and the menu test did not know the new entry.
+
+Live: `e2e/g3o-order-bill.mjs` 9/9, `--skew` fails on the rate; g3a 16/16; g2c
+13/13. Server: 8 tests in `test_custom_orders.py`.

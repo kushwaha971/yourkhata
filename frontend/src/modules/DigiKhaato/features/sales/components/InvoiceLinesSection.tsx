@@ -26,6 +26,7 @@ import { LINE_FINDER_FROM, useLineQuickAdd } from '../../inventory/hooks/useLine
 import { lineRemovalUndone, lineRestored, selectInvoiceEditor } from '../redux/invoiceEditorSlice';
 import { emptyLine, type InvoiceFormValues, type InvoiceLineForm } from '../view-model/invoiceForm';
 import { itemLineDefaults } from '../view-model/itemLineDefaults';
+import { priceJewel } from '../view-model/jewelPrice';
 import { lineUnitCaption, lineUnitChoices, type LineUnitChoice } from '../view-model/lineUnits';
 
 import { AddonSheet } from './AddonSheet';
@@ -286,6 +287,12 @@ export function InvoiceLinesSection({
         );
         return true;
       }
+      // G3a — a bill delivering an order keeps the rate fixed against its advance.
+      const order = getValues('customOrder');
+      const fixed =
+        order?.fixed_rate && order.purity === found.jewel.purity ? order.fixed_rate : null;
+      const base = fixed ? { ...found.jewel, rate: fixed } : found.jewel;
+      const jewel = fixed ? { ...base, ...(priceJewel(base) ?? {}) } : base;
       const filled: InvoiceLineForm = {
         ...emptyLine(),
         itemId: found.itemId,
@@ -295,8 +302,8 @@ export function InvoiceLinesSection({
         unitCode: found.unitCode,
         allowDecimal: false,
         serials: [found.jewel.tag_no],
-        jewel: found.jewel,
-        unitPrice: found.jewel.total ?? '',
+        jewel,
+        unitPrice: jewel.total ?? '',
         taxInclusive: false,
         taxCode: found.taxCode,
       };

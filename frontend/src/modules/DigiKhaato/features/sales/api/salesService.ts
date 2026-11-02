@@ -10,6 +10,7 @@ import type {
   PaymentBreakupRow,
   SalesDocument,
   SalesDocumentEnvelope,
+  BillCustomOrder,
   JewelLine,
   OldGoldWire,
   SalesDocumentLine,
@@ -124,6 +125,7 @@ export const toDocument = (row: Wire): SalesDocument => {
     vehicle: (row.vehicle as { number?: string; mechanic?: string } | null) ?? null,
     oldGold: (row.old_gold as OldGoldWire | null) ?? null,
     pan: (row.pan as string | null) ?? null,
+    customOrder: (row.custom_order as BillCustomOrder | null) ?? null,
     location: row.location
       ? {
           id: s((row.location as Record<string, unknown>).id),

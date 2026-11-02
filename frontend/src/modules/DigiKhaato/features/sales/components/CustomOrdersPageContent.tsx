@@ -7,6 +7,7 @@ import dynamic from 'next/dynamic';
 import { Plus } from 'lucide-react';
 
 import {
+  UbActionLink,
   UbButton,
   UbConfirmDialog,
   UbDrawerLoading,
@@ -24,6 +25,9 @@ import { useAppDispatch } from 'src/hooks/useAppStore';
 import { usePermissions } from 'src/hooks/usePermissions';
 import { useTranslation, type TranslateFn } from 'src/hooks/useTranslation';
 import { showSnackbar } from 'src/redux/slice/snackbarSlice';
+import { ROUTES } from 'src/routes';
+import { daysBetweenIso } from 'src/utils/calendarDays';
+import { todayInTenantTz } from 'src/utils/dates';
 import { formatInr } from 'src/utils/money';
 
 import { PURITY_SHORT } from '../../inventory/api/tagService';
@@ -41,19 +45,17 @@ const CustomOrderDrawer = dynamic(
   { ssr: false, loading: () => <UbDrawerLoading /> }
 );
 
-const DAY = 86400000;
-/** Whole days from today (the device's) to a yyyy-mm-dd date. */
-const daysTo = (date: string): number => {
-  const now = new Date();
-  const today = Date.UTC(now.getFullYear(), now.getMonth(), now.getDate());
-  return Math.round((Date.parse(`${date}T00:00:00Z`) - today) / DAY);
-};
+/** Whole days from today (the business's own) to a yyyy-mm-dd date. */
+const daysTo = (date: string): number => daysBetweenIso(todayInTenantTz(), date);
 const shortDate = (date: string): string =>
   new Date(`${date}T00:00:00Z`).toLocaleDateString('en-IN', {
     day: '2-digit',
     month: 'short',
     timeZone: 'UTC',
   });
+
+const billHref = (o: CustomOrder): string =>
+  `${ROUTES.SALES_INVOICES}/new?custom_order=${o.id}&party=${o.party.id}&partyName=${encodeURIComponent(o.party.name)}`;
 
 const orderWhat = (o: CustomOrder, t: TranslateFn): string =>
   [
@@ -137,7 +139,15 @@ const orderColumns = ({
       <UbStack gap={1} className="items-start">
         {badge(o)}
         {canWrite && (
-          <UbStack direction="row" gap={1}>
+          <UbStack direction="row" gap={1} className="flex-wrap">
+            <UbActionLink
+              href={billHref(o)}
+              variant="primary"
+              size="sm"
+              data-testid="custom-order-bill"
+            >
+              {t('sales.customOrder.makeBill')}
+            </UbActionLink>
             <UbButton
               variant="secondary"
               size="sm"
@@ -312,7 +322,15 @@ export function CustomOrdersPageContent(): React.JSX.Element {
                     })}
                   </UbText>
                   {canWrite && (
-                    <UbStack direction="row" gap={2}>
+                    <UbStack direction="row" gap={2} className="flex-wrap">
+                      <UbActionLink
+                        href={billHref(o)}
+                        variant="primary"
+                        size="sm"
+                        data-testid="custom-order-bill"
+                      >
+                        {t('sales.customOrder.makeBill')}
+                      </UbActionLink>
                       <UbButton
                         variant="secondary"
                         size="sm"

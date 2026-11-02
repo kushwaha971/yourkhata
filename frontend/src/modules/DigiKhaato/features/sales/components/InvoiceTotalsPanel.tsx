@@ -42,6 +42,8 @@ export function InvoiceTotalsPanel({
   rule46,
   warnings,
   oldGold = null,
+  advance = null,
+  advanceOf = '',
 }: Readonly<{
   form: UseFormReturn<InvoiceFormValues>;
   preview: EngineResult;
@@ -54,6 +56,9 @@ export function InvoiceTotalsPanel({
   warnings: readonly SalesWarning[];
   /** G2c — the old gold taken in (it comes off what is paid, not off the bill). */
   oldGold?: string | null;
+  /** G3a — the custom order's advance applied at issue, and that order's number. */
+  advance?: string | null;
+  advanceOf?: string;
 }>): React.JSX.Element {
   const { t } = useTranslation();
   const { watch } = form;
@@ -114,9 +119,14 @@ export function InvoiceTotalsPanel({
             {formatInr(preview.grandTotal)}
           </UbText>
         </UbStack>
-        {oldGold && (
+        {(oldGold || advance) && (
           <>
-            {row(t('sales.oldGold.row'), `− ${formatInr(oldGold)}`)}
+            {oldGold && row(t('sales.oldGold.row'), `− ${formatInr(oldGold)}`)}
+            {advance &&
+              row(
+                t('sales.customOrder.advanceOf', { number: advanceOf }),
+                `− ${formatInr(advance)}`
+              )}
             <UbStack
               direction="row"
               justify="between"
@@ -125,7 +135,12 @@ export function InvoiceTotalsPanel({
             >
               <UbText variant="inherit">{t('sales.oldGold.toPay')}</UbText>
               <UbText variant="inherit" className="ds-num" data-testid="invoice-to-pay">
-                {formatInr(subtractMoney(preview.grandTotal, oldGold))}
+                {formatInr(
+                  subtractMoney(
+                    subtractMoney(preview.grandTotal, oldGold ?? '0.00'),
+                    advance ?? '0.00'
+                  )
+                )}
               </UbText>
             </UbStack>
           </>

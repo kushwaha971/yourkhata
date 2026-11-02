@@ -25,6 +25,7 @@ import { todayInTenantTz } from 'src/utils/dates';
 import { mayHaveBeenSaved } from 'src/utils/requestKey';
 
 import { getItem } from '../../inventory/api/itemService';
+import { getCustomOrder } from '../api/customOrderService';
 import { getInvoice } from '../api/salesService';
 import {
   editorReset,
@@ -92,6 +93,7 @@ export const useInvoiceEditor = (
 ): UseInvoiceEditorResult => {
   const search = useSearchParams();
   const initialItem = search.get('item');
+  const initialOrder = search.get('custom_order');
   const { partyId: initialParty, partyName: initialPartyName } = usePartyEditorSeed();
   const dispatch = useAppDispatch();
   const store = useStore<RootState>();
@@ -191,6 +193,28 @@ export const useInvoiceEditor = (
       );
     }
   }, [documentId, document, context, form, today, kind, initialParty, initialPartyName]);
+
+  // G3a — "Make bill" on a custom order: a NEW bill that delivers it.
+  useEffect(() => {
+    if (documentId || !initialOrder || !context || seeded.current !== 'new') return undefined;
+    const controller = new AbortController();
+    void getCustomOrder(initialOrder, controller.signal)
+      .then((order) =>
+        form.setValue(
+          'customOrder',
+          {
+            id: order.id,
+            number: order.number,
+            purity: order.purity,
+            fixed_rate: order.fixedRate,
+            advance: order.advance,
+          },
+          { shouldDirty: true }
+        )
+      )
+      .catch(() => undefined);
+    return () => controller.abort();
+  }, [documentId, initialOrder, context, form]);
 
   // A Home handoff is a proposed line in a NEW editor only; existing drafts,
   // manual changes and revoked/switching contexts always win over a late read.

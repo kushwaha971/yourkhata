@@ -29,6 +29,7 @@ party → documents → payments → sequence) and applied after the payment tak
 from __future__ import annotations
 
 import datetime as dt
+from decimal import Decimal
 from typing import Any
 
 from django.db import transaction
@@ -130,6 +131,10 @@ def issue_invoice(
     cleaned_payment = validate_payment(
         payment=payment, grand_total=document.grand_total - old_gold, walk_in=walk_in
     )
+    # G3a — a bill that delivers a custom order applies its advance.
+    from apps.sales.services.custom_orders import advance_for_issue, mark_delivered_by
+
+    custom_order, advance_ids = advance_for_issue(ctx=ctx, document=document)
     # G2d — a PAN the customer's GSTIN carries; neither PAN nor cash ever stops a bill.
     from apps.sales.services.jewel_rules import fill_pan_from_gstin
 
@@ -160,6 +165,8 @@ def issue_invoice(
     # invoice exists, through PAY-01 (see `payment_seam`).
     amount_paid = paid_at_issue(cleaned_payment, document.grand_total - old_gold) + old_gold
     amount_due = document.grand_total - amount_paid
+    if custom_order is not None:  # the advance is applied below; only the rest goes on credit
+        amount_due = max(amount_due - custom_order.advance, Decimal("0"))
     overridden = False
     if party is not None and amount_due > 0:
         warning, overridden = check_party_credit(
@@ -181,7 +188,7 @@ def issue_invoice(
         ctx,
         document,
         credit_note_ids=apply_credit_note_ids,
-        payment_ids=apply_payment_ids,
+        payment_ids=[*(str(i) for i in (apply_payment_ids or ())), *advance_ids],
         open_advances=apply_open_advances,
     )
 
@@ -236,6 +243,7 @@ def issue_invoice(
         if receipt["party_balance"] is not None:
             balance = receipt["party_balance"]
     applied = apply_held_money(ctx, document, held)
+    mark_delivered_by(order=custom_order, document=document)
 
     write_audit(
         ctx=ctx,

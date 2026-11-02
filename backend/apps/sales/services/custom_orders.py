@@ -39,6 +39,7 @@ def view(order: CustomOrder) -> dict:
         "advance_payment_id": str(order.advance_payment_id) if order.advance_payment_id else None,
         "fixed_rate": f"{order.fixed_rate:.2f}" if order.fixed_rate is not None else None,
         "status": order.status,
+        "invoice_id": str(order.invoice_id) if order.invoice_id else None,
     }
 
 
@@ -186,3 +187,70 @@ def list_orders(*, tenant: Any, q: str = "", scope: str = "open") -> dict:
         "open": live.count(),
         "advance_held": f"{summary['held'] or Decimal('0'):.2f}",
     }
+
+
+def get_order(*, tenant: Any, order_id: Any) -> CustomOrder:
+    order = CustomOrder.objects.select_related("party").filter(tenant=tenant, pk=order_id).first()
+    if order is None:
+        raise NotFound("No such order.")
+    return order
+
+
+def link_to_draft(*, tenant: Any, document: Any, order_id: Any, errors: dict) -> None:
+    """`meta.custom_order` of a draft: which order this bill delivers (null clears it)."""
+    meta = {k: v for k, v in (document.meta or {}).items() if k != "custom_order"}
+    document.meta = meta
+    if not order_id:
+        return
+    try:
+        order = CustomOrder.objects.filter(tenant=tenant, pk=order_id).first()
+    except (ValueError, TypeError, ValidationError):
+        order = None
+    if order is None or order.status not in (CustomOrder.OPEN, CustomOrder.READY):
+        errors["custom_order_id"] = ["This order is already finished."]
+        return
+    document.meta = {
+        **meta,
+        "custom_order": {
+            "id": str(order.id),
+            "number": order.number,
+            "purity": order.purity,
+            "fixed_rate": f"{order.fixed_rate:.2f}" if order.fixed_rate is not None else None,
+            "advance": f"{order.advance:.2f}",
+        },
+    }
+
+
+def advance_for_issue(*, ctx: Ctx, document: Any) -> tuple[CustomOrder | None, list[str]]:
+    """At issue: lock the linked order, refuse if it cannot be delivered by this
+    bill, and release its advance so the issue can apply it to this bill."""
+    from apps.payments.models import Payment
+
+    link = (document.meta or {}).get("custom_order") or {}
+    if not link.get("id"):
+        return None, []
+    order = CustomOrder.objects.select_for_update().filter(tenant=ctx.tenant, pk=link["id"]).first()
+    if order is None or order.status not in (CustomOrder.OPEN, CustomOrder.READY):
+        raise BusinessRuleViolation(
+            "custom_order_status", "This order is already finished. Remove it from the bill.", details={}
+        )
+    if order.party_id != document.party_id:
+        raise BusinessRuleViolation(
+            "custom_order_status", "This bill is for a different customer than the order.", details={}
+        )
+    if not order.advance_payment_id:
+        return order, []
+    payment = Payment.objects.select_for_update().filter(tenant=ctx.tenant, pk=order.advance_payment_id).first()
+    if payment is None:
+        return order, []
+    payment.meta = {k: v for k, v in (payment.meta or {}).items() if k != "earmark"}
+    payment.save(update_fields=["meta"])
+    return order, [str(payment.id)]
+
+
+def mark_delivered_by(*, order: CustomOrder | None, document: Any) -> None:
+    if order is None:
+        return
+    order.status = CustomOrder.DELIVERED
+    order.invoice_id = document.id
+    order.save(update_fields=["status", "invoice_id"])

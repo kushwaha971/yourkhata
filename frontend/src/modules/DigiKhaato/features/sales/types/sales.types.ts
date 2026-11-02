@@ -113,6 +113,15 @@ export interface IssuePayment {
 
 export type { JewelLine, OldGoldWire };
 
+/** G3a — what a bill keeps of the custom order it delivers (wire keys kept). */
+export interface BillCustomOrder {
+  readonly id: string;
+  readonly number: string;
+  readonly purity: string;
+  readonly fixed_rate: string | null;
+  readonly advance: string;
+}
+
 export interface SalesDocumentLine {
   readonly id: string | null;
   readonly lineNo: number;
@@ -202,6 +211,8 @@ export interface SalesDocument extends SalesDocumentTotals {
   readonly oldGold?: OldGoldWire | null;
   /** G2d — the customer's PAN kept with a jeweller's bill. */
   readonly pan?: string | null;
+  /** G3a — the custom order this bill delivers. */
+  readonly customOrder?: BillCustomOrder | null;
   readonly isInterState: boolean;
   readonly reverseCharge: boolean;
   readonly discountType: DiscountType | null;

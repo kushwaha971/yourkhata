@@ -53,3 +53,9 @@ class CustomOrderStatusView(_View):
     def post(self, request: Any, pk: Any) -> Any:
         order = custom_orders.move_order(ctx=Ctx.from_request(request), order_id=pk, status=request.data.get("status"))
         return StandardResponse.ok(custom_orders.view(order))
+
+
+class CustomOrderDetailView(_View):
+    def get(self, request: Any, pk: Any) -> Any:
+        order = custom_orders.get_order(tenant=get_effective_tenant(request), order_id=pk)
+        return StandardResponse.ok(custom_orders.view(order))

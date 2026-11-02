@@ -341,6 +341,8 @@ class CustomOrder(TenantModel):
     #: The rate per gram fixed against the advance, or null when it is not fixed.
     fixed_rate = MoneyField(null=True, blank=True)
     status = models.CharField(max_length=12, default=OPEN)
+    #: The bill that delivered this order, once there is one.
+    invoice_id = models.UUIDField(null=True, blank=True)
 
     class Meta:
         db_table = "sales_custom_order"

@@ -22,6 +22,8 @@ import { useTranslation } from 'src/hooks/useTranslation';
 import { ROUTES } from 'src/routes';
 import type { ApiErrorShape } from 'src/types/api.types';
 import { applyServerErrors } from 'src/utils/applyServerErrors';
+import { addDaysIso } from 'src/utils/calendarDays';
+import { todayInTenantTz } from 'src/utils/dates';
 
 import { PURITIES } from '../../inventory/api/metalRateService';
 import { PURITY_SHORT } from '../../inventory/api/tagService';
@@ -33,11 +35,7 @@ import {
   type CustomOrderFormValues,
 } from '../api/customOrderService';
 
-const inDays = (n: number): string => {
-  const d = new Date();
-  d.setDate(d.getDate() + n);
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-};
+const inDays = (n: number): string => addDaysIso(todayInTenantTz(), n);
 
 const MODES = ['cash', 'upi', 'bank', 'cheque', 'card'] as const;
 

@@ -133,7 +133,17 @@ export function InvoiceEditorPageContent({
   const jeweller = Boolean(useAppSelector(selectActiveTenant)?.features?.includes('jewellery'));
   const oldGoldValue = jeweller ? (priceOldGold(values.oldGold)?.value ?? null) : null;
   /** What the customer pays now: the bill, less any old gold taken in. */
-  const toPay = oldGoldValue ? subtractMoney(preview.grandTotal, oldGoldValue) : preview.grandTotal;
+  const billOrder = jeweller ? (values.customOrder ?? null) : null;
+  const afterGold = oldGoldValue
+    ? subtractMoney(preview.grandTotal, oldGoldValue)
+    : preview.grandTotal;
+  // G3a — the order's advance is applied at issue, never more than what is left.
+  const advanceOff = billOrder
+    ? Number(billOrder.advance) > Number(afterGold)
+      ? afterGold
+      : billOrder.advance
+    : null;
+  const toPay = advanceOff ? subtractMoney(afterGold, advanceOff) : afterGold;
   // G2d — design G2: a jeweller's bill of ₹2 lakh or more offers the PAN box.
   // Neither PAN nor cash ever stops a bill: that is the business's choice (owner).
   const needsPan = jeweller && Number(preview.grandTotal) >= JEWEL_LIMIT;
@@ -711,6 +721,16 @@ export function InvoiceEditorPageContent({
               onScanned={markScanned}
               stockRule={order ? 'order' : estimate && !challan ? 'estimate' : 'takes'}
             />
+            {billOrder && (
+              <UbText variant="body-sm" tone="secondary" data-testid="bill-order-note">
+                {t(
+                  billOrder.fixed_rate
+                    ? 'sales.customOrder.billNoteFixed'
+                    : 'sales.customOrder.billNote',
+                  { number: billOrder.number, rate: formatInr(billOrder.fixed_rate ?? '0') }
+                )}
+              </UbText>
+            )}
             {jeweller && bill && !estimate && (
               <OldGoldSection form={form} disabled={locked} t={t} />
             )}
@@ -754,6 +774,8 @@ export function InvoiceEditorPageContent({
                 rule46={estimate ? null : server.rule46}
                 warnings={server.warnings}
                 oldGold={oldGoldValue}
+                advance={advanceOff}
+                advanceOf={billOrder?.number}
               />
             )}
             {bill && desk && scanSeen && (
@@ -788,7 +810,7 @@ export function InvoiceEditorPageContent({
           // short bill (it followed the content and floated mid-screen).
           className="mt-auto"
           totalLabel={t(
-            oldGoldValue
+            oldGoldValue || advanceOff
               ? 'sales.oldGold.toPay'
               : estimate && !order && !challan
                 ? 'sales.estimate.total'

@@ -153,6 +153,11 @@ def apply_payload(
         if pan and not is_valid_pan(pan):
             errors["pan"] = ["Enter the 10-character PAN, like ABCPK1234L."]
         document.meta = {**meta, **({"pan": pan} if pan else {})}
+    # G3a — the custom order this bill delivers, kept in meta.custom_order.
+    if "custom_order_id" in payload:
+        from apps.sales.services.custom_orders import link_to_draft
+
+        link_to_draft(tenant=tenant, document=document, order_id=payload.get("custom_order_id"), errors=errors)
     # G2c — a jeweller's old gold taken in, priced by the server, kept in
     # meta.old_gold until issue settles it (`inventory.services.old_gold`).
     if "old_gold" in payload:

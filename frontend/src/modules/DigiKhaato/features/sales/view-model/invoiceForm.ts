@@ -3,7 +3,7 @@ import { discountWire } from 'src/utils/discountWire';
 import { formQty } from 'src/utils/quantity';
 
 import type { EngineDocumentInput, EngineGstType } from './taxEngine';
-import type { DiscountType, JewelLine, SalesDocument } from '../types/sales.types';
+import type { BillCustomOrder, DiscountType, JewelLine, SalesDocument } from '../types/sales.types';
 import type { ChallanType } from '../types/salesFlows.types';
 
 /**
@@ -68,6 +68,8 @@ export interface InvoiceFormValues {
   oldGold?: OldGoldForm | null;
   /** G2d — the customer's PAN on a jeweller's bill of ₹2 lakh or more. */
   pan?: string;
+  /** G3a — the custom order this bill delivers. */
+  customOrder?: BillCustomOrder | null;
   mechanic?: string;
   reverseCharge: boolean;
   roundOffEnabled: boolean;
@@ -165,6 +167,7 @@ export const toWireBody = (values: InvoiceFormValues): Record<string, unknown> =
   place_of_supply_state: values.placeOfSupplyState || null,
   location_id: values.locationId || null,
   ...(values.vehicleNo !== undefined ? { vehicle_number: values.vehicleNo } : {}),
+  ...(values.customOrder !== undefined ? { custom_order_id: values.customOrder?.id ?? null } : {}),
   ...(values.pan !== undefined ? { pan: values.pan.trim().toUpperCase() } : {}),
   ...(values.oldGold !== undefined
     ? {
@@ -225,6 +228,7 @@ export const fromDocument = (doc: SalesDocument): InvoiceFormValues => ({
   locationId: doc.location?.id ?? '',
   vehicleNo: doc.vehicle?.number ?? '',
   pan: doc.pan ?? '',
+  customOrder: doc.customOrder ?? null,
   oldGold: doc.oldGold
     ? {
         weightG: doc.oldGold.weight_g,

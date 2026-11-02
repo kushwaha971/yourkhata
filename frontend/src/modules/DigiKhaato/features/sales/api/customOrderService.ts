@@ -63,6 +63,14 @@ export const listCustomOrders = async (
   return { rows: d.rows.map(toOrder), open: d.open, advanceHeld: d.advance_held };
 };
 
+export const getCustomOrder = async (id: string, signal?: AbortSignal): Promise<CustomOrder> => {
+  const res = await api.get<{ data: Wire }>(
+    `/sales/custom-orders/${id}`,
+    ubConfig({ signal, suppressErrorSnackbar: true })
+  );
+  return toOrder(res.data.data);
+};
+
 export interface CustomOrderFormValues {
   partyId: string;
   partyName: string;

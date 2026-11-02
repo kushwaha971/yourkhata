@@ -82,3 +82,59 @@ def test_refusals_are_said_under_their_fields(jeweller: Any, owner: Any, make_pa
 
 def test_a_shop_that_is_not_a_jeweller_has_no_custom_orders(owner: Any) -> None:
     assert owner.get(reverse(URL)).status_code == 404
+
+
+def _tag_item(owner: Any, make_item: Any) -> Any:
+    item = make_item("Gold chain 22K", "0", "GST0", stock=None, tracking="serial")
+    tag = {"tag_no": "OB-1", "purity": "gold_22k", "gross_g": "1.000", "net_g": "1.000", "making_type": "pct", "making_value": "0"}
+    assert owner.post(reverse("v1:item-tags", args=[item.id]), tag, format="json").status_code == 201
+    return item
+
+
+def test_a_bill_delivers_the_order_and_applies_its_advance(jeweller: Any, owner: Any, make_party: Any, make_item: Any) -> None:
+    """₹1,000 advance on an ₹11,650 piece: ₹10,650 is due, the order is delivered and
+    names the bill; the bill's balance and the receipt agree."""
+    from apps.sales.tests.conftest import draft, issue, line
+
+    _rate(owner)
+    party = make_party()
+    order = owner.post(reverse(URL), _body(party, advance="1000"), format="json").json()["data"]
+    item = _tag_item(owner, make_item)
+    body = line(item, "1", serials=["OB-1"], jewel={})
+    made = draft(owner, party_id=str(party.id), lines=[body], custom_order_id=order["id"]).json()["data"]
+    assert made["custom_order"]["number"] == order["number"]
+    done = issue(owner, made["id"], version=made["version"])
+    assert done.status_code == 200, done.content
+    data = done.json()["data"]
+    assert Decimal(data["amount_paid"]) == Decimal("1000.00")
+    assert Decimal(data["amount_due"]) == Decimal(data["grand_total"]) - Decimal("1000.00")
+    after = owner.get(reverse("v1:custom-order-detail", args=[order["id"]])).json()["data"]
+    assert after["status"] == "delivered" and after["invoice_id"] == made["id"]
+    assert Payment.objects.get(pk=order["advance_payment_id"]).unallocated_amount == 0
+
+
+def test_an_advance_bigger_than_the_bill_leaves_the_rest_usable(jeweller: Any, owner: Any, make_party: Any, make_item: Any) -> None:
+    from apps.payments.selectors.payments import open_advances
+    from apps.sales.tests.conftest import draft, issue, line
+
+    _rate(owner)
+    party = make_party()
+    order = owner.post(reverse(URL), _body(party, advance="20000"), format="json").json()["data"]
+    item = _tag_item(owner, make_item)
+    made = draft(owner, party_id=str(party.id), lines=[line(item, "1", serials=["OB-1"], jewel={})], custom_order_id=order["id"]).json()["data"]
+    data = issue(owner, made["id"], version=made["version"]).json()["data"]
+    assert data["status"] == "paid"
+    assert open_advances(tenant=jeweller, party_id=party.id).count() == 1
+
+
+def test_another_customers_bill_cannot_take_the_order(jeweller: Any, owner: Any, make_party: Any, make_item: Any) -> None:
+    from apps.sales.tests.conftest import draft, issue, line
+
+    _rate(owner)
+    order = owner.post(reverse(URL), _body(make_party(), advance="1000"), format="json").json()["data"]
+    item = _tag_item(owner, make_item)
+    other = make_party(name="Someone else")
+    made = draft(owner, party_id=str(other.id), lines=[line(item, "1", serials=["OB-1"], jewel={})], custom_order_id=order["id"]).json()["data"]
+    refused = issue(owner, made["id"], version=made["version"])
+    assert refused.status_code == 409 and refused.json()["error"]["code"] == "custom_order_status"
+    assert Payment.objects.get(pk=order["advance_payment_id"]).meta.get("earmark")
