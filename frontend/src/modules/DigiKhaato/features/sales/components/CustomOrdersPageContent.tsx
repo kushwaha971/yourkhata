@@ -20,6 +20,7 @@ import {
   UbStack,
   UbStatusBadge,
   UbText,
+  useIsMobileLayer,
   type UbDataGridColumn,
 } from 'src/design-system';
 import { UbDataGrid, useGridTier } from 'src/design-system/UbDataGrid';
@@ -219,6 +220,7 @@ export function CustomOrdersPageContent(): React.JSX.Element {
   const dispatch = useAppDispatch();
   const canWrite = usePermissions().can('sales.invoice.write');
   const cards = useGridTier() === 'cards';
+  const phone = useIsMobileLayer();
   const [q, setQ] = useState('');
   const [scope, setScope] = useState<'open' | 'all'>('open');
   const [karigar, setKarigar] = useState('');
@@ -341,11 +343,12 @@ export function CustomOrdersPageContent(): React.JSX.Element {
         subtitle={t('sales.customOrder.subtitle')}
         primaryActions={
           canWrite ? (
-            <UbBox className="grid w-full auto-cols-auto grid-flow-col gap-2 sm:w-auto [&>button]:h-auto [&>button]:min-h-11 [&>button]:whitespace-normal">
+            <UbStack direction="row" gap={2}>
               {(karigars?.rows.length ?? 0) > 0 && (
                 <UbButton
                   variant="secondary"
                   onClick={() => setDialog('issue')}
+                  size={phone ? 'sm' : undefined}
                   data-testid="karigar-issue"
                 >
                   {t('sales.karigar.issue')}
@@ -354,11 +357,12 @@ export function CustomOrdersPageContent(): React.JSX.Element {
               <UbButton
                 icon={<Plus className="h-4 w-4" aria-hidden />}
                 onClick={() => setAdding(true)}
+                size={phone ? 'sm' : undefined}
                 data-testid="custom-order-new"
               >
                 {t('sales.customOrder.newShort')}
               </UbButton>
-            </UbBox>
+            </UbStack>
           ) : undefined
         }
       />

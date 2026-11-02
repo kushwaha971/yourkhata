@@ -125,7 +125,7 @@ for (const [width, theme] of [[390, 'light'], [320, 'dark'], [1280, 'dark']]) {
   if ((await p.getByTestId('karigar-issue').count()) > 0) {
     const [ib, nb] = [await p.getByTestId('karigar-issue').boundingBox(), await p.getByTestId('custom-order-new').boundingBox()];
     check(`L ${width} ${theme}: Issue gold and New order sit side by side`, Math.abs(ib.y - nb.y) < 2 && ib.x + ib.width <= nb.x && nb.x + nb.width <= width, `${Math.round(ib.y)}/${Math.round(nb.y)}`);
-    check(`L ${width} ${theme}: both are at least 44 px tall`, ib.height >= 44 && nb.height >= 44, `${ib.height}/${nb.height}`);
+    check(`L ${width} ${theme}: one line each, not stretched`, ib.height >= 28 && ib.height <= 44 && nb.height <= 44 && /ub-hit/.test(await p.getByTestId('karigar-issue').getAttribute('class')), `${ib.height}/${nb.height}`);
   }
   check(`L ${width} ${theme}: list fits, no text cut`, m.overflow <= 0 && !m.cut.length, `${m.overflow}px ${m.cut.slice(0, 3).join(' | ')}`);
   await p.screenshot({ path: `${dir}/list-${width}-${theme}.png` });
