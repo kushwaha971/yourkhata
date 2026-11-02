@@ -264,6 +264,8 @@ export function CustomOrdersPageContent(): React.JSX.Element {
         reload();
       } catch {
         dispatch(showSnackbar({ severity: 'error', id: 'sales.customOrder.moveFailed' }));
+        // Another tab may have moved it: show what is true now.
+        reload();
       }
     },
     [dispatch, reload]

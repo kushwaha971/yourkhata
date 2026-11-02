@@ -23,6 +23,8 @@ const ROOT = process.cwd();
 
 /** Always mounted, so a loading view would draw while it is closed. */
 const NOT_AN_OPENER = new Set([
+  // G2c: an inline card on a jeweller's bill, always mounted; its sheet is inside it.
+  'src/modules/DigiKhaato/features/sales/components/InvoiceEditorPageContent.tsx:OldGoldSection',
   // Always mounted: a seat's panel stays beside the seat map and opens in place.
   'src/modules/DigiKhaato/features/library/components/SeatsPageContent.tsx:SeatPanelLazy',
   // Page content that happens to contain dialogs; not opened by a tap.

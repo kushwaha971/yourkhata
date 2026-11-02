@@ -167,13 +167,7 @@ export const lookupTag = async (code: string): Promise<ScannedTag | null> => {
   };
 };
 
-/** A purity as the design prints it in a row: "22K 916". */
-export const PURITY_SHORT: Readonly<Record<string, string>> = {
-  gold_24k: '24K 999',
-  gold_22k: '22K 916',
-  gold_18k: '18K 750',
-  silver: 'Silver 999',
-};
+export { PURITY_SHORT } from '../constants/purity';
 
 /**
  * G2c — old gold taken in against a bill (design G2 pOldGold): what the

@@ -61,12 +61,17 @@ import { InvoiceLinesSection } from './InvoiceLinesSection';
 import { InvoicePartySection } from './InvoicePartySection';
 import { InvoiceSaveIndicator } from './InvoiceSaveIndicator';
 import { InvoiceTotalsPanel } from './InvoiceTotalsPanel';
-import { JewelPanField } from './JewelPanField';
-import { OldGoldSection } from './OldGoldSection';
 
 import type { InvoiceListRow } from '../types/sales.types';
 
 /* The payment sheet and the success sheet load with the tap that opens them. */
+// Jewellers only; no other shop pays for these on the bill.
+const OldGoldSection = dynamic(() => import('./OldGoldSection').then((m) => m.OldGoldSection), {
+  ssr: false,
+});
+const JewelPanField = dynamic(() => import('./JewelPanField').then((m) => m.JewelPanField), {
+  ssr: false,
+});
 const PaymentDrawerLazy = dynamic(
   () => import('./InvoicePaymentDrawer').then((m) => m.InvoicePaymentDrawer),
   { ssr: false, loading: () => <UbDrawerLoading /> }

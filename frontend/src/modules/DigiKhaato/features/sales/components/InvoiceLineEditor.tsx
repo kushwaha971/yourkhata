@@ -2,6 +2,8 @@
 
 import { useEffect, useState, type ReactNode } from 'react';
 
+import dynamic from 'next/dynamic';
+
 import { Trash2 } from 'lucide-react';
 
 import { LINE_QTY_LIMIT } from 'src/constants';
@@ -35,10 +37,13 @@ import {
   type InvoiceLineForm,
 } from '../view-model/invoiceForm';
 
-import { JewelLineFields } from './JewelLineFields';
-
 import type { EngineResult } from '../view-model/taxEngine';
 import type { UseFormReturn } from 'react-hook-form';
+
+// Only a jeweller's tag line opens this; no other shop pays for it.
+const JewelLineFields = dynamic(() => import('./JewelLineFields').then((m) => m.JewelLineFields), {
+  ssr: false,
+});
 
 /**
  * A4 / FB-014 — the bill's lines as the approved design draws them.

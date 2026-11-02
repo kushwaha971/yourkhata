@@ -430,6 +430,9 @@ try {
   armed = true;
 
   for (let i = 0; i < steps; i += 1) {
+    // G3: a jeweller's tagged item asks which piece; a merchant answers.
+    const tagChoice = page.getByTestId("tag-choice").getByRole("button").first();
+    if (await tagChoice.count().catch(() => 0)) await tagChoice.click({ timeout: 2000 }).catch(() => undefined);
     lastStepAt = Date.now();
     // A run that has signed itself out tests nothing but the sign-in page, so
     // stop and say so plainly, with the last steps (see SKIP).

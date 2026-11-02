@@ -7,7 +7,15 @@ import dynamic from 'next/dynamic';
 import { ScanLine } from 'lucide-react';
 import { useFieldArray, type UseFormReturn } from 'react-hook-form';
 
-import { UbBox, UbChoiceChips, UbStack, UbText, useIsMobileLayer } from 'src/design-system';
+import {
+  UbBox,
+  UbButton,
+  UbChoiceChips,
+  UbDialog,
+  UbStack,
+  UbText,
+  useIsMobileLayer,
+} from 'src/design-system';
 import type { UbLineFocusRequest } from 'src/design-system';
 import { useAppDispatch, useAppSelector } from 'src/hooks/useAppStore';
 import { useTranslation } from 'src/hooks/useTranslation';
@@ -18,7 +26,7 @@ import { exceedsQuantity, formatQuantity } from 'src/utils/quantity';
 
 import { listVariants } from '../../inventory/api/itemService';
 import { getPartyRates } from '../../inventory/api/priceListService';
-import { lookupTag, PURITY_SHORT } from '../../inventory/api/tagService';
+import { listItemTags, lookupTag, PURITY_SHORT, type Tag } from '../../inventory/api/tagService';
 import { ItemQuickAdd } from '../../inventory/components/ItemQuickAdd';
 import { LastRateNote } from '../../inventory/components/LastRateNote';
 import { LineSerialsField } from '../../inventory/components/LineSerialsField';
@@ -316,6 +324,39 @@ export function InvoiceLinesSection({
     [getValues, dispatch, fieldArray, onScanned]
   );
 
+  /* G3 (monkey seed 33): a tagged item picked by NAME had no tag, asked for an
+     "IMEI" and was refused at issue. A name search offers its tags in stock,
+     and a tag chosen takes the same path as a tag scanned. */
+  const [tagChoice, setTagChoice] = useState<{
+    name: string;
+    tags: readonly Tag[];
+  } | null>(null);
+  const pickOrChooseTag = useCallback(
+    (row: ItemListRow, via: Parameters<typeof quickAdd>[1]) => {
+      if (!keepsTags || row.tracking !== 'serial') {
+        pickItem(row, via);
+        return;
+      }
+      void listItemTags(row.id)
+        .then((tags) => {
+          const inStock = tags.filter((tag) => tag.status === 'in_stock');
+          if (inStock.length === 0) {
+            dispatch(
+              showSnackbar({
+                severity: 'info',
+                id: 'sales.line.jewel.noTags',
+                params: { name: row.name },
+              })
+            );
+            return;
+          }
+          setTagChoice({ name: row.name, tags: inStock });
+        })
+        .catch(() => undefined);
+    },
+    [keepsTags, pickItem, dispatch]
+  );
+
   /* Design pScan tray: "× 2 · ₹106" — the scanned item's line, from the same
      engine as the totals, so the tray and the bill never disagree. */
   const scannedLine = useCallback(
@@ -586,7 +627,7 @@ export function InvoiceLinesSection({
   const search = wide ? (
     <ItemQuickAdd
       labels={{ ...quickAddLabels, placeholder: t('sales.line.quickAdd.placeholderDesk') }}
-      onPick={pickItem}
+      onPick={pickOrChooseTag}
       scanFirst={keepsTags ? scanTag : undefined}
       disabled={disabled}
       hotkey="F2"
@@ -635,7 +676,7 @@ export function InvoiceLinesSection({
           },
         },
       }}
-      onPick={pickItem}
+      onPick={pickOrChooseTag}
       scanFirst={keepsTags ? scanTag : undefined}
       disabled={disabled}
     />
@@ -726,6 +767,32 @@ export function InvoiceLinesSection({
               ? t('sales.estimate.stockNoteTracked')
               : t('sales.estimate.stockNote')}
         </UbText>
+      )}
+      {tagChoice && (
+        <UbDialog
+          open
+          onOpenChange={(next) => (next ? undefined : setTagChoice(null))}
+          title={t('sales.line.jewel.chooseTag', { name: tagChoice.name })}
+          closeLabel={t('common.action.close')}
+        >
+          <UbStack gap={2} data-testid="tag-choice">
+            {tagChoice.tags.map((tag) => (
+              <UbButton
+                key={tag.id}
+                variant="secondary"
+                className="h-auto min-h-11 justify-between whitespace-normal text-left"
+                onClick={() => {
+                  setTagChoice(null);
+                  void scanTag(tag.tagNo);
+                }}
+              >
+                {[tag.tagNo, tag.netG ? `${Number(tag.netG).toFixed(3)} g` : null, tag.huid || null]
+                  .filter(Boolean)
+                  .join(' · ')}
+              </UbButton>
+            ))}
+          </UbStack>
+        </UbDialog>
       )}
     </UbStack>
   );

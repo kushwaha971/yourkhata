@@ -14,12 +14,15 @@ export function BarcodeLabel({
   name,
   code,
   price,
+  detail,
   className,
 }: Readonly<{
   business: string;
   name: string;
   code: string;
   price: string | null;
+  /** G3c — a jeweller's piece: "12.340 g · 22K 916 · HUID 7K2P9X". */
+  detail?: string;
   className?: string;
 }>): React.JSX.Element {
   const widths = code128Widths(code);
@@ -49,7 +52,7 @@ export function BarcodeLabel({
         <svg
           viewBox={`0 0 ${total} 30`}
           preserveAspectRatio="none"
-          className="h-[9mm] w-full shrink-0"
+          className={cn('w-full shrink-0', detail ? 'h-[7mm]' : 'h-[9mm]')}
           role="img"
           aria-label={code}
         >
@@ -59,6 +62,11 @@ export function BarcodeLabel({
       <UbText as="span" variant="inherit" className="truncate text-[2.4mm] leading-[1.2] text-black">
         {price ? `${code} · ${price}` : code}
       </UbText>
+      {detail && (
+        <UbText as="span" variant="inherit" className="truncate text-[2.4mm] leading-[1.2] text-black">
+          {detail}
+        </UbText>
+      )}
     </UbStack>
   );
 }

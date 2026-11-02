@@ -1,5 +1,5 @@
 import type { TranslateFn } from 'src/hooks/useTranslation';
-import { PURITY_SHORT } from 'src/modules/DigiKhaato/features/inventory/api/tagService';
+import { PURITY_SHORT } from 'src/modules/DigiKhaato/features/inventory/constants/purity';
 import { formatInr, subtractMoney, sumMoney, withMinusSign } from 'src/utils/money';
 import { sumQuantities, trimQuantity } from 'src/utils/quantity';
 
