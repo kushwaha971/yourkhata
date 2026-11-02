@@ -51,7 +51,7 @@ import { deleteInvoiceDraft } from '../redux/salesThunk';
 import { firstWrongField } from '../view-model/firstWrongField';
 import { documentTitleId, stockShortLines, stockShortMessage } from '../view-model/invoiceDisplay';
 import { fullCashPayment, type PaymentRowForm } from '../view-model/invoiceForm';
-import { priceOldGold } from '../view-model/jewelPrice';
+import { JEWEL_LIMIT, priceOldGold } from '../view-model/jewelPrice';
 import { serverReason } from '../view-model/serverReason';
 
 import { InvoiceBillAdjustments } from './InvoiceBillAdjustments';
@@ -61,6 +61,7 @@ import { InvoiceLinesSection } from './InvoiceLinesSection';
 import { InvoicePartySection } from './InvoicePartySection';
 import { InvoiceSaveIndicator } from './InvoiceSaveIndicator';
 import { InvoiceTotalsPanel } from './InvoiceTotalsPanel';
+import { JewelPanField } from './JewelPanField';
 import { OldGoldSection } from './OldGoldSection';
 
 import type { InvoiceListRow } from '../types/sales.types';
@@ -133,6 +134,10 @@ export function InvoiceEditorPageContent({
   const oldGoldValue = jeweller ? (priceOldGold(values.oldGold)?.value ?? null) : null;
   /** What the customer pays now: the bill, less any old gold taken in. */
   const toPay = oldGoldValue ? subtractMoney(preview.grandTotal, oldGoldValue) : preview.grandTotal;
+  // G2d — design G2: a jeweller's bill of ₹2 lakh or more asks the PAN (Rule
+  // 114B), and ₹2 lakh or more cannot be taken in cash on one bill (s.269ST).
+  const needsPan = jeweller && Number(preview.grandTotal) >= JEWEL_LIMIT;
+  const cashTooMuch = jeweller && Number(toPay) >= JEWEL_LIMIT;
   const docksTotals = useDocksEditorTotals();
   // dBill's two columns start at 1280; below it the totals stay under the lines.
   const desk = useMediaQuery('(min-width: 1280px)');
@@ -604,7 +609,7 @@ export function InvoiceEditorPageContent({
                   onClick={requestCash}
                   busy={cashBusy}
                   busyLabel={issueBusyLabel}
-                  disabled={issueDisabled}
+                  disabled={issueDisabled || cashTooMuch}
                   aria-label={cashName}
                   data-testid="invoice-paid-cash"
                   className="max-2xl:hidden"
@@ -739,6 +744,7 @@ export function InvoiceEditorPageContent({
             )}
             {/* Design §A4 pBillEmpty / dBillTop: a bill with no item has no
                 totals card; the dock already says ₹0 and why it cannot finish. */}
+            {needsPan && bill && <JewelPanField disabled={locked} t={t} />}
             {(hasLines || !bill) && (
               <InvoiceTotalsPanel
                 form={form}
@@ -749,6 +755,13 @@ export function InvoiceEditorPageContent({
                 rule46={estimate ? null : server.rule46}
                 warnings={server.warnings}
                 oldGold={oldGoldValue}
+              />
+            )}
+            {cashTooMuch && bill && (
+              <UbStatusBanner
+                tone="warning"
+                title={t('sales.jewel.cashLimit')}
+                data-testid="cash-limit"
               />
             )}
             {bill && desk && scanSeen && (
@@ -822,7 +835,7 @@ export function InvoiceEditorPageContent({
               onClick={requestCash}
               busy={cashBusy}
               busyLabel={issueBusyLabel}
-              disabled={issueDisabled}
+              disabled={issueDisabled || cashTooMuch}
               aria-label={cashName}
               data-testid="invoice-dock-paid-cash"
             >

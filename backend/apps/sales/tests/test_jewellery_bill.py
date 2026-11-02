@@ -175,3 +175,52 @@ def test_a_voided_quick_sale_hands_the_old_gold_back(owner: Any, chain: Any) -> 
     voided = owner.post(invoice_url(made["id"], "void"), {"reason": "Wrong piece"}, format="json")
     assert voided.status_code == 200, voided.content
     assert not OldGold.objects.filter(document_id=made["id"]).exists()
+
+
+# ── G2d: PAN at ₹2 lakh, and the cash limit ─────────────────────────────────
+
+
+def _big_bill(owner: Any, chain: Any, **extra: Any) -> dict:
+    """GC-1042 at ₹11,650/g with 12% making is ₹1,61,012.32; at ₹15,000/g it is
+    12.340 × 15,000 × 1.12 = ₹2,07,312 — over ₹2 lakh."""
+    _rate(owner, "15000")
+    return draft(owner, lines=[line(chain, "1", serials=["GC-1042"], jewel={})], **extra).json()["data"]
+
+
+def test_a_bill_of_two_lakh_needs_the_pan(owner: Any, chain: Any) -> None:
+    made = _big_bill(owner, chain)
+    rest = {"mode_breakup": [{"mode": "upi", "amount": made["grand_total"]}]}
+    refused = issue(owner, made["id"], version=made["version"], payment=rest)
+    assert refused.status_code == 400
+    assert refused.json()["error"]["details"]["pan"] == ["PAN is needed because the bill is ₹2 lakh or more."]
+
+
+def test_a_wrong_pan_is_said_under_the_box(owner: Any, chain: Any) -> None:
+    res = draft(owner, lines=[line(chain, "1", serials=["GC-1042"], jewel={})], pan="ABC123")
+    assert res.status_code == 400 and "pan" in res.json()["error"]["details"]
+
+
+def test_with_its_pan_the_bill_issues_and_keeps_it(owner: Any, chain: Any) -> None:
+    made = _big_bill(owner, chain, pan="abcpk1234l")
+    assert made["pan"] == "ABCPK1234L"
+    paid = issue(owner, made["id"], version=made["version"], payment={"mode_breakup": [{"mode": "upi", "amount": made["grand_total"]}]})
+    assert paid.status_code == 200, paid.content
+    assert paid.json()["data"]["pan"] == "ABCPK1234L"
+
+
+def test_two_lakh_in_cash_on_one_bill_is_refused(owner: Any, chain: Any) -> None:
+    """s.269ST: ₹1,99,999 cash is taken; ₹2,00,000 is not, and the rest goes by UPI."""
+    made = _big_bill(owner, chain, pan="ABCPK1234L")
+    total = Decimal(made["grand_total"])
+    over = {"mode_breakup": [{"mode": "cash", "amount": "200000.00"}, {"mode": "upi", "amount": f"{total - 200000:.2f}"}]}
+    refused = issue(owner, made["id"], version=made["version"], payment=over)
+    assert refused.status_code == 400 and "payment" in refused.json()["error"]["details"]
+    under = {"mode_breakup": [{"mode": "cash", "amount": "199999.00"}, {"mode": "upi", "amount": f"{total - 199999:.2f}"}]}
+    assert issue(owner, made["id"], version=made["version"], payment=under).status_code == 200
+
+
+def test_a_shop_that_is_not_a_jeweller_is_not_asked(owner: Any, make_item: Any) -> None:
+    """The limits are drawn for the jeweller only (BP-22)."""
+    big = make_item("Tractor part", "250000.00", "GST0", stock="1")
+    made = draft(owner, lines=[line(big, "1")]).json()["data"]
+    assert issue(owner, made["id"], version=made["version"], payment={"mode_breakup": [{"mode": "cash", "amount": made["grand_total"]}]}).status_code == 200

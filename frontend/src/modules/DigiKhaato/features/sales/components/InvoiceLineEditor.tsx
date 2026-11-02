@@ -267,11 +267,21 @@ function LineRowPhone({
           // G2b — a tag is one piece: − removes it, + has nothing to add.
           max={line?.jewel ? 1 : Number(LINE_QTY_LIMIT)}
         />
-        <UbText data-part="rate" className="min-w-0 truncate text-[0.8125rem] text-text-secondary">
-          {t('sales.line.unitRate', {
-            unit: line?.unitCode || '',
-            rate: formatInr(line?.unitPrice || '0'),
-          })}
+        <UbText
+          data-part="rate"
+          className={cn(
+            'min-w-0 text-[0.8125rem] text-text-secondary',
+            // A tag line's caption wraps rather than cut its weight or rate.
+            line?.jewel ? 'break-words' : 'truncate'
+          )}
+        >
+          {/* G2b — a tag line is priced per gram: "12.340 g · ₹15,000.00/g". */}
+          {line?.jewel
+            ? `${line.jewel.net_g} g · ${formatInr(line.jewel.rate ?? '0').replace(/\.00$/, '')}/g`
+            : t('sales.line.unitRate', {
+                unit: line?.unitCode || '',
+                rate: formatInr(line?.unitPrice || '0'),
+              })}
         </UbText>
         <UbButton
           variant="ghost"

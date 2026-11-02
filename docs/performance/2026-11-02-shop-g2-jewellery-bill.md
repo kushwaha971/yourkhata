@@ -163,3 +163,29 @@ read-back as it must. Server: 10 jewellery-bill tests; full suite's failures are
 the ones already failing before G2.
 
 **Next:** G2d — PAN at ₹2 lakh and the cash limit.
+
+## G2d — PAN at ₹2 lakh and the cash limit (2 Nov)
+
+| Design (G2 `dJewelBill` side column) | Built | Verified by |
+|---|---|---|
+| PAN box, "Needed because the bill is ₹2 lakh or more." | `JewelPanField`, shown on a jeweller's bill from ₹2,00,000; kept in `meta.pan` | g2d N1/N2 (+ `--skew`) |
+| A wrong PAN is said under the box | server: "Enter the 10-character PAN, like ABCPK1234L." | pytest + g2d N2 |
+| Issue refused without PAN (Rule 114B) | `jewel_rules.check_jewel_limits`; a saved customer's GSTIN fills it | pytest |
+| "Cash over ₹1,99,999 can't be taken on one bill. Take the rest by UPI, card or bank." | warning under the totals; "Paid cash" off; server refuses ₹2,00,000 cash (s.269ST) | pytest (₹2,00,000 refused, ₹1,99,999 + UPI issues) + g2d N1/N3 |
+| Only for a jeweller | `features` gate | pytest (a non-jeweller's ₹2.5 lakh cash bill issues) |
+
+Found on the running app and fixed: a tag line's phone caption read
+"NOS · ₹2,07,3…" — the piece price, cut. It now reads "12.340 g · ₹15,000/g"
+and wraps rather than cut; the check measures it at 320.
+
+Listed, not chosen silently:
+1. The law (s.269ST) applies to every business, not only jewellers; the design
+   draws it for the jeweller and BP-22 builds per kind. Extending it is the
+   owner's call.
+2. Only the cash taken at issue is counted. Cash recorded later against the
+   same bill (Payments) is not added to it yet.
+3. The PAN is kept on the bill, not on the customer: the customer record has
+   no PAN field (one with a GSTIN carries it). The A4 print does not show the
+   PAN yet.
+
+Live: g2d 19/19, g2c 13/13, g2b 21/21, all 0 console errors.

@@ -123,6 +123,7 @@ export const toDocument = (row: Wire): SalesDocument => {
     placeOfSupplyState: s(row.place_of_supply_state),
     vehicle: (row.vehicle as { number?: string; mechanic?: string } | null) ?? null,
     oldGold: (row.old_gold as OldGoldWire | null) ?? null,
+    pan: (row.pan as string | null) ?? null,
     location: row.location
       ? {
           id: s((row.location as Record<string, unknown>).id),

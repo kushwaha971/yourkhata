@@ -200,6 +200,8 @@ export interface SalesDocument extends SalesDocumentTotals {
   readonly vehicle?: { readonly number?: string; readonly mechanic?: string } | null;
   /** G2c — a jeweller's old gold taken in on this bill (priced by the server). */
   readonly oldGold?: OldGoldWire | null;
+  /** G2d — the customer's PAN kept with a jeweller's bill. */
+  readonly pan?: string | null;
   readonly isInterState: boolean;
   readonly reverseCharge: boolean;
   readonly discountType: DiscountType | null;

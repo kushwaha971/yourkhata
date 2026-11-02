@@ -89,3 +89,6 @@ export const priceOldGold = (g: OldGoldForm | null | undefined): OldGoldParts | 
   const less = pct(gross, lessPct);
   return { gross: rupees(gross), less: rupees(less), value: rupees(gross - less) };
 };
+
+/** G2d — Rule 114B (PAN) and s.269ST (cash) both start at ₹2,00,000 on one bill. */
+export const JEWEL_LIMIT = 200000;

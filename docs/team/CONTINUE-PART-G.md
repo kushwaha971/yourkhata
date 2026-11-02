@@ -59,6 +59,8 @@ in `docs/performance/2026-11-02-shop-g2-jewellery-bill.md`. Live checks:
 Owner decided 2 Nov: no GST default by kind anywhere; the business picks the
 rate, 0% allowed. The jeweller's desktop columns are built.
 
-G2c (old gold taken in) is in: `node e2e/g2c-old-gold.mjs`. Next piece:
-G2d · PAN asked at ₹2 lakh, and cash of ₹2 lakh or more on one bill refused
-(design `M.dJewelBill` side column).
+G2 is complete: G2a tags, G2b bill by weight, G2c old gold, G2d PAN and the
+cash limit. Live checks: `e2e/g2a-tags.mjs`, `g2b-bill.mjs`, `g2c-old-gold.mjs`,
+`g2d-pan-cash.mjs` (each has `--skew`). Owner calls listed in the G2 report
+(cash limit for every kind?, old gold over the bill, PAN on the print).
+Next: G3 · custom orders and karigar (design §G3).

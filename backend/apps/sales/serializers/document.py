@@ -93,6 +93,8 @@ class InvoiceWriteSerializer(serializers.Serializer):
     mechanic = serializers.CharField(required=False, allow_blank=True, max_length=60)
     #: G2c — a jeweller's old gold taken in: {weight_g, purity, rate?, less_pct}.
     old_gold = serializers.DictField(required=False, allow_null=True)
+    #: G2d — the customer's PAN on a jeweller's bill of ₹2 lakh or more.
+    pan = serializers.CharField(required=False, allow_blank=True, max_length=12)
     terms = serializers.CharField(required=False, allow_blank=True)
     lines = LineInputSerializer(many=True, required=False)
     payment = PaymentInputSerializer(required=False, allow_null=True)
@@ -177,6 +179,7 @@ class DocumentReadSerializer(serializers.ModelSerializer):
     location = serializers.SerializerMethodField()
     vehicle = serializers.SerializerMethodField()
     old_gold = serializers.SerializerMethodField()
+    pan = serializers.SerializerMethodField()
     party = serializers.SerializerMethodField()
     party_snapshot = serializers.SerializerMethodField()
     supplier = serializers.SerializerMethodField()
@@ -229,6 +232,7 @@ class DocumentReadSerializer(serializers.ModelSerializer):
             "location",
             "vehicle",
             "old_gold",
+            "pan",
             "terms",
             "doc_discount_allocation",
             "created_by",
@@ -248,6 +252,10 @@ class DocumentReadSerializer(serializers.ModelSerializer):
     def get_old_gold(self, obj: Any) -> dict | None:
         """G2c — the old gold taken in on this bill (priced), or null."""
         return (obj.meta or {}).get("old_gold") or None
+
+    def get_pan(self, obj: Any) -> str | None:
+        """G2d — the customer's PAN kept with this bill, or null."""
+        return (obj.meta or {}).get("pan") or None
 
     def get_location(self, obj: Any) -> dict | None:
         """D P1c — the godown, or null for the business's first place."""

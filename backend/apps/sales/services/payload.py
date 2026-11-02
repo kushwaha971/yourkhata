@@ -143,6 +143,16 @@ def apply_payload(
         if "mechanic" in payload:
             vehicle["mechanic"] = " ".join(str(payload.get("mechanic") or "").split())[:60]
         document.meta = {**(document.meta or {}), "vehicle": {k: v for k, v in vehicle.items() if v}}
+    # G2d — the customer's PAN, asked on a jeweller's bill of ₹2 lakh or more
+    # (Rule 114B), kept with the bill in meta.pan.
+    if "pan" in payload:
+        from apps.tax.validators import is_valid_pan
+
+        pan = "".join(str(payload.get("pan") or "").split()).upper()
+        meta = {k: v for k, v in (document.meta or {}).items() if k != "pan"}
+        if pan and not is_valid_pan(pan):
+            errors["pan"] = ["Enter the 10-character PAN, like ABCPK1234L."]
+        document.meta = {**meta, **({"pan": pan} if pan else {})}
     # G2c — a jeweller's old gold taken in, priced by the server, kept in
     # meta.old_gold until issue settles it (`inventory.services.old_gold`).
     if "old_gold" in payload:

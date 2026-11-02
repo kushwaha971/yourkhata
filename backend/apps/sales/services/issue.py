@@ -130,6 +130,11 @@ def issue_invoice(
     cleaned_payment = validate_payment(
         payment=payment, grand_total=document.grand_total - old_gold, walk_in=walk_in
     )
+    # G2d — a jeweller's two legal limits (design G2): PAN on a bill of ₹2 lakh
+    # or more (Rule 114B), and no ₹2 lakh or more in cash on one bill (s.269ST).
+    from apps.sales.services.jewel_rules import check_jewel_limits
+
+    check_jewel_limits(tenant=tenant, document=document, payment=cleaned_payment, party=early_party)
 
     party = None
     if not walk_in:

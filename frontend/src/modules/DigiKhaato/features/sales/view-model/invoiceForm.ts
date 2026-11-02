@@ -66,6 +66,8 @@ export interface InvoiceFormValues {
   vehicleNo?: string;
   /** G2c — a jeweller's old gold taken in (null: none; undefined: not a jeweller's bill). */
   oldGold?: OldGoldForm | null;
+  /** G2d — the customer's PAN on a jeweller's bill of ₹2 lakh or more. */
+  pan?: string;
   mechanic?: string;
   reverseCharge: boolean;
   roundOffEnabled: boolean;
@@ -163,6 +165,7 @@ export const toWireBody = (values: InvoiceFormValues): Record<string, unknown> =
   place_of_supply_state: values.placeOfSupplyState || null,
   location_id: values.locationId || null,
   ...(values.vehicleNo !== undefined ? { vehicle_number: values.vehicleNo } : {}),
+  ...(values.pan !== undefined ? { pan: values.pan.trim().toUpperCase() } : {}),
   ...(values.oldGold !== undefined
     ? {
         old_gold: values.oldGold
@@ -221,6 +224,7 @@ export const fromDocument = (doc: SalesDocument): InvoiceFormValues => ({
   placeOfSupplyState: doc.placeOfSupplyState,
   locationId: doc.location?.id ?? '',
   vehicleNo: doc.vehicle?.number ?? '',
+  pan: doc.pan ?? '',
   oldGold: doc.oldGold
     ? {
         weightG: doc.oldGold.weight_g,
