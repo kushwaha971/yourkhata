@@ -10,14 +10,17 @@ from apps.sales.views.credit_notes import CreditNoteViewSet
 from apps.sales.views.estimates import EstimateViewSet
 from apps.sales.views.custom_orders import (
     CustomOrderDetailView,
+    CustomOrderPhotoView,
     CustomOrdersView,
     CustomOrderStatusView,
+    JewelHomeView,
     KarigarDetailView,
     KarigarIssueView,
     KarigarLotView,
     KarigarMakeTagView,
     KarigarReceiveView,
     KarigarsView,
+    OldGoldView,
     KarigarTagsDoneView,
 )
 from apps.sales.views.invoices import InvoiceViewSet
@@ -43,5 +46,8 @@ urlpatterns = [
     path("karigar-lots/<uuid:pk>/tags-done", KarigarTagsDoneView.as_view(), name="karigar-tags-done"),
     path("karigars/<uuid:pk>", KarigarDetailView.as_view(), name="karigar-detail"),
     path("karigar-lots/<uuid:pk>", KarigarLotView.as_view(), name="karigar-lot"),
+    path("jewel-home", JewelHomeView.as_view(), name="jewel-home"),
+    path("old-gold", OldGoldView.as_view(), name="old-gold"),
+    path("custom-orders/<uuid:pk>/photo", CustomOrderPhotoView.as_view(), name="custom-order-photo"),
     *router.urls,
 ]

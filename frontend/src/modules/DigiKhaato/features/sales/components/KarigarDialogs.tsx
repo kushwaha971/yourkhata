@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useId, useState } from 'react';
+import { useId, useState } from 'react';
 
 import { FormProvider, useForm, useWatch } from 'react-hook-form';
 
@@ -13,17 +13,21 @@ import {
   UbMoneyInput,
   UbQuantityInput,
   UbSelect,
+  UbStack,
+  UbSwitch,
+  UbText,
   UbTextInput,
 } from 'src/design-system';
 import { useAppDispatch } from 'src/hooks/useAppStore';
+import { usePermissions } from 'src/hooks/usePermissions';
 import { useTranslation } from 'src/hooks/useTranslation';
 import { showSnackbar } from 'src/redux/slice/snackbarSlice';
 import type { ApiErrorShape } from 'src/types/api.types';
 import { applyServerErrors } from 'src/utils/applyServerErrors';
 
-import { searchItems } from '../../inventory/api/itemService';
 import { PURITIES, type Purity } from '../../inventory/api/metalRateService';
 import { EMPTY_TAG, PURITY_SHORT, TAG_FIELD, toTagBody } from '../../inventory/api/tagService';
+import { ItemQuickAdd } from '../../inventory/components/ItemQuickAdd';
 import { ItemTagFields, type TagFormHost } from '../../inventory/components/ItemTagFields';
 import {
   addKarigar,
@@ -40,6 +44,10 @@ import { useFormDeviceCopy } from '../hooks/useFormDeviceCopy';
 
 import type { CustomOrder } from '../api/customOrderService';
 import type { FieldValues, UseFormReturn } from 'react-hook-form';
+
+// The item search's own words arrive with this dialog's chunk.
+import 'src/i18n/catalogues/itemPicker';
+import 'src/i18n/catalogues/movement';
 
 /** Shared: a form in a dialog, its save button, and server errors under the boxes. */
 function Shell<T extends FieldValues>({
@@ -237,7 +245,7 @@ export function ReceiveGoldDialog({
   onDone,
 }: Readonly<{ lot: KarigarLot; onClose: () => void; onDone: () => void }>): React.JSX.Element {
   const { t } = useTranslation();
-  const form = useForm({ defaultValues: { received_g: '' } });
+  const form = useForm({ defaultValues: { received_g: '', more: false } });
   return (
     <Shell
       title={t('sales.karigar.receiveTitle', { name: lot.karigar.name, weight: lot.issued_g })}
@@ -246,11 +254,22 @@ export function ReceiveGoldDialog({
       fields={['received_g']}
       onClose={onClose}
       save={async (v) => {
-        await receiveGold(lot.id, v.received_g);
+        await receiveGold(lot.id, v.received_g, v.more);
         onDone();
       }}
     >
       {grams(form as never, 'received_g', t('sales.karigar.received'))}
+      <UbField name="more" label={t('sales.karigar.moreToCome')} controlOwnsLabel>
+        {(field) => (
+          <UbSwitch
+            id={field.id}
+            checked={Boolean(field.value)}
+            onCheckedChange={field.onChange}
+            label={t('sales.karigar.moreToCome')}
+            description={t('sales.karigar.moreToComeHint')}
+          />
+        )}
+      </UbField>
     </Shell>
   );
 }
@@ -266,20 +285,7 @@ export function MakeTagDialog({
   onDone,
 }: Readonly<{ lot: KarigarLot; onClose: () => void; onDone: () => void }>): React.JSX.Element {
   const { t } = useTranslation();
-  const [items, setItems] = useState<readonly { value: string; label: string }[] | null>(null);
-  useEffect(() => {
-    const controller = new AbortController();
-    void searchItems('', 1, controller.signal)
-      .then(({ rows }) =>
-        setItems(
-          rows
-            .filter((row) => row.tracking === 'serial')
-            .map((row) => ({ value: row.id, label: row.name }))
-        )
-      )
-      .catch(() => setItems([]));
-    return () => controller.abort();
-  }, []);
+  const [itemName, setItemName] = useState('');
   const form = useForm<TagFormHost & { item_id: string; labour_per_g: string }>({
     defaultValues: {
       tag: { ...EMPTY_TAG, purity: lot.purity as Purity },
@@ -288,7 +294,6 @@ export function MakeTagDialog({
       labour_per_g: '',
     },
   });
-  const itemId = useWatch({ control: form.control, name: 'item_id' });
   const copy = useFormDeviceCopy(`karigar-tag:${lot.id}`, form);
   return (
     <FormProvider {...form}>
@@ -323,18 +328,28 @@ export function MakeTagDialog({
           onDone();
         }}
       >
-        <UbField name="item_id" label={t('sales.karigar.item')}>
-          {(field) => (
-            <UbSelect
-              id={field.id}
-              aria-label={t('sales.karigar.item')}
-              value={itemId}
-              placeholder={t(
-                items?.length === 0 ? 'sales.karigar.noItems' : 'sales.karigar.chooseItem'
+        <UbField name="item_id" label={t('sales.karigar.item')} controlOwnsLabel>
+          {() => (
+            <UbStack gap={1}>
+              <ItemQuickAdd
+                labels={{
+                  label: t('sales.karigar.item'),
+                  placeholder: t('sales.karigar.chooseItem'),
+                  empty: (query: string) => t('stock.count.pickEmpty', { query }),
+                  none: t('stock.count.pickNone'),
+                  askOwner: t('stock.count.pickAskOwner'),
+                }}
+                onPick={(row) => {
+                  form.setValue('item_id', row.id, { shouldDirty: true });
+                  setItemName(row.name);
+                }}
+              />
+              {itemName && (
+                <UbText variant="caption" tone="accent" data-testid="make-tag-item">
+                  {itemName}
+                </UbText>
               )}
-              options={items ?? []}
-              onChange={(next) => form.setValue('item_id', next, { shouldDirty: true })}
-            />
+            </UbStack>
           )}
         </UbField>
         <ItemTagFields />
@@ -362,6 +377,7 @@ export function CorrectLotDialog({
   const { t } = useTranslation();
   const dispatch = useAppDispatch();
   const [confirming, setConfirming] = useState(false);
+  const canRemove = usePermissions().can('sales.invoice.void');
   const form = useForm({
     defaultValues: {
       issued_g: lot.issued_g,
@@ -399,7 +415,7 @@ export function CorrectLotDialog({
             />
           )}
         </UbField>
-        {lot.tag_count === 0 && (
+        {lot.tag_count === 0 && canRemove && (
           <UbButton
             variant="ghost"
             className="self-start text-error"

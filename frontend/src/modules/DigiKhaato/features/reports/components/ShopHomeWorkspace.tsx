@@ -60,6 +60,11 @@ import { HomeRepeats } from './HomeRepeats';
 import type { PaymentContext } from '../../payments/types/payment.types';
 import type { DashboardData } from '../types/reports.types';
 
+// A jeweller's strip, and its words: no other shop pays for them.
+const JewelHomeStrip = dynamic(
+  () => import('../../sales/components/JewelHomeStrip').then((m) => m.JewelHomeStrip),
+  { ssr: false }
+);
 const Charts = dynamic(() => import('./DashboardCharts').then((m) => m.DashboardCharts), {
   ssr: false,
 });
@@ -101,6 +106,7 @@ export function ShopHomeWorkspace({
   const { t, d } = useTranslation();
   const mobile = useIsMobileLayer();
   const tenant = useAppSelector(selectActiveTenant);
+  const jeweller = Boolean(tenant?.features?.includes('jewellery'));
   const { can, hasModule } = usePermissions();
   const impaired = useAppSelector(selectNetworkImpaired);
   const params = useSearchParams();
@@ -499,6 +505,7 @@ export function ShopHomeWorkspace({
         {overview.status === 'failed' && <PartUnavailable onRetry={refresh} t={t} />}
       </UbBox>
       {hasModule('inventory') && <HomeStrip />}
+      {hasModule('sales') && jeweller && <JewelHomeStrip />}
       {counter.failed && <PartUnavailable onRetry={refresh} t={t} />}
       {failed(data, PARTS.today) && <PartUnavailable onRetry={refresh} t={t} />}
       <UbBox className="grid grid-cols-1 gap-5 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)]">

@@ -154,10 +154,10 @@ def test_a_quick_sale_pays_the_rest_after_old_gold(owner: Any, chain: Any) -> No
     assert paid.json()["data"]["status"] == "paid"
 
 
-def test_old_gold_worth_more_than_the_bill_is_refused(owner: Any, chain: Any, make_party: Any) -> None:
+def test_old_gold_worth_more_than_a_quick_sale_is_refused(owner: Any, chain: Any) -> None:
     _rate(owner)
     big = {"weight_g": "30.000", "purity": "gold_22k", "less_pct": "0"}
-    made = draft(owner, party_id=str(make_party().id), lines=[line(chain, "1", serials=["GC-1042"], jewel={})], old_gold=big).json()["data"]
+    made = draft(owner, lines=[line(chain, "1", serials=["GC-1042"], jewel={})], old_gold=big).json()["data"]
     refused = issue(owner, made["id"], version=made["version"])
     assert refused.status_code == 409 and refused.json()["error"]["code"] == "old_gold_over_bill"
 

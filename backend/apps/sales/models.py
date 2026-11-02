@@ -341,6 +341,10 @@ class CustomOrder(TenantModel):
     #: The rate per gram fixed against the advance, or null when it is not fixed.
     fixed_rate = MoneyField(null=True, blank=True)
     status = models.CharField(max_length=12, default=OPEN)
+    #: Who will make it, chosen on the form; gold issued says who holds gold.
+    karigar = models.ForeignKey("sales.Karigar", on_delete=models.SET_NULL, null=True, blank=True, related_name="orders")
+    #: G3's design photo (a `files_attachment`).
+    photo_id = models.UUIDField(null=True, blank=True)
     #: The bill that delivered this order, once there is one.
     invoice_id = models.UUIDField(null=True, blank=True)
 

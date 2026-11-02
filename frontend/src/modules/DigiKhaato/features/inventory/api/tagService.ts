@@ -5,7 +5,7 @@ import type { Purity } from './metalRateService';
 /** G2a — a jeweller's tag: one piece, priced by its weight (design D3/D5). */
 export interface TagFormValues {
   tagNo: string;
-  purity: Purity;
+  purity: Purity | 'silver_925';
   grossG: string;
   stoneG: string;
   netG: string;

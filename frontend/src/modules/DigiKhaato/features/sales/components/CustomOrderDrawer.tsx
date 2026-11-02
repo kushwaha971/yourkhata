@@ -8,9 +8,12 @@ import { CompactDrawer as UbDrawer } from 'src/components/records/CompactOverlay
 import {
   UbBox,
   UbButton,
+  UbConfirmDialog,
   UbDateInput,
   UbField,
+  UbFileUpload,
   UbForm,
+  UbLink,
   UbMoneyInput,
   UbQuantityInput,
   UbSelect,
@@ -19,9 +22,10 @@ import {
   UbTextInput,
 } from 'src/design-system';
 import { useAppRouter } from 'src/hooks/useAppRouter';
-import { useAppSelector } from 'src/hooks/useAppStore';
+import { useAppDispatch, useAppSelector } from 'src/hooks/useAppStore';
 import { useTranslation } from 'src/hooks/useTranslation';
 import { selectActiveTenant } from 'src/redux/slice/sessionSlice';
+import { showSnackbar } from 'src/redux/slice/snackbarSlice';
 import { ROUTES } from 'src/routes';
 import type { ApiErrorShape } from 'src/types/api.types';
 import { applyServerErrors } from 'src/utils/applyServerErrors';
@@ -33,6 +37,8 @@ import { PURITY_SHORT } from '../../inventory/api/tagService';
 import { PartyPickerField } from '../../parties/components/PartyPickerField';
 import {
   createCustomOrder,
+  updateCustomOrder,
+  uploadOrderPhoto,
   ORDER_FIELD,
   type CustomOrder,
   type CustomOrderFormValues,
@@ -50,11 +56,19 @@ const MODES = ['cash', 'upi', 'bank', 'cheque', 'card'] as const;
  * it the cashbook could not know where the advance went.
  */
 export function CustomOrderDrawer({
+  order: editing = null,
+  karigars,
   onClose,
   onSaved,
-}: Readonly<{ onClose: () => void; onSaved: (order: CustomOrder) => void }>): React.JSX.Element {
+}: Readonly<{
+  order?: CustomOrder | null;
+  karigars: readonly { readonly id: string; readonly name: string }[];
+  onClose: () => void;
+  onSaved: (order: CustomOrder) => void;
+}>): React.JSX.Element {
   const { t } = useTranslation();
   const router = useAppRouter();
+  const dispatch = useAppDispatch();
   const formId = useId();
   const receipt = useRef(false);
   const [errors, setErrors] = useState<readonly string[]>([]);
@@ -69,10 +83,23 @@ export function CustomOrderDrawer({
       advance: '',
       advanceMode: 'cash',
       fixRate: false,
+      karigarId: editing?.karigarId ?? '',
+      ...(editing
+        ? {
+            partyId: editing.party.id,
+            partyName: editing.party.name,
+            what: editing.what,
+            approxWeightG: editing.approxWeightG ?? '',
+            purity: editing.purity,
+            deliverOn: editing.deliverOn,
+          }
+        : {}),
     },
   });
   const tenantId = useAppSelector(selectActiveTenant)?.id ?? '';
-  const copy = useFormDeviceCopy(`custom-order-new:${tenantId}`, form);
+  const copy = useFormDeviceCopy(`custom-order-${editing ? editing.id : 'new'}:${tenantId}`, form);
+  const [confirmLeave, setConfirmLeave] = useState(false);
+  const [photo, setPhoto] = useState<File | null>(null);
   const { setValue, control } = form;
   const partyName = useWatch({ control, name: 'partyName' });
   const advance = useWatch({ control, name: 'advance' });
@@ -80,7 +107,15 @@ export function CustomOrderDrawer({
   const submit = useCallback(
     async (values: CustomOrderFormValues) => {
       try {
-        const order = await createCustomOrder(values, copy.clientKey);
+        const order = editing
+          ? await updateCustomOrder(editing.id, values)
+          : await createCustomOrder(values, copy.clientKey);
+        // The order is saved; a photo that fails is said, and can be added on Edit.
+        if (photo) {
+          await uploadOrderPhoto(order.id, photo).catch(() =>
+            dispatch(showSnackbar({ severity: 'warning', id: 'sales.customOrder.photoFailed' }))
+          );
+        }
         copy.clear();
         onSaved(order);
         if (receipt.current && order.advancePaymentId) {
@@ -99,7 +134,7 @@ export function CustomOrderDrawer({
         );
       }
     },
-    [onSaved, router, form.setError, t, copy]
+    [onSaved, router, form.setError, t, copy, editing, photo, dispatch]
   );
   const busy = form.formState.isSubmitting;
   return (
@@ -107,10 +142,14 @@ export function CustomOrderDrawer({
       open
       onOpenChange={(next) => {
         if (next) return;
+        if (form.formState.isDirty) {
+          setConfirmLeave(true);
+          return;
+        }
         copy.clear();
         onClose();
       }}
-      title={t('sales.customOrder.new')}
+      title={editing ? editing.number : t('sales.customOrder.new')}
       closeLabel={t('common.action.close')}
       dismissOnBackdrop={!form.formState.isDirty}
       footer={
@@ -130,7 +169,7 @@ export function CustomOrderDrawer({
             type="submit"
             form={formId}
             busy={busy}
-            disabled={!hasAdvance}
+            disabled={!hasAdvance || Boolean(editing)}
             onClick={() => {
               receipt.current = true;
             }}
@@ -147,27 +186,29 @@ export function CustomOrderDrawer({
             {t('sales.customOrder.restored')}
           </UbText>
         )}
-        <UbField name="partyId" label={t('sales.customOrder.customer')}>
-          {(field) => (
-            <PartyPickerField
-              field={field}
-              pickedName={partyName}
-              onPick={(id, name) => {
-                setValue('partyId', id, { shouldDirty: true });
-                setValue('partyName', name);
-              }}
-              labels={{
-                clear: (name) => t('sales.customOrder.clear', { name }),
-                noAccess: t('sales.customOrder.noAccess'),
-                results: t('sales.customOrder.results'),
-                noMatch: t('sales.customOrder.noMatch'),
-              }}
-              t={t}
-              type="customer"
-              book="shop"
-            />
-          )}
-        </UbField>
+        {!editing && (
+          <UbField name="partyId" label={t('sales.customOrder.customer')}>
+            {(field) => (
+              <PartyPickerField
+                field={field}
+                pickedName={partyName}
+                onPick={(id, name) => {
+                  setValue('partyId', id, { shouldDirty: true });
+                  setValue('partyName', name);
+                }}
+                labels={{
+                  clear: (name) => t('sales.customOrder.clear', { name }),
+                  noAccess: t('sales.customOrder.noAccess'),
+                  results: t('sales.customOrder.results'),
+                  noMatch: t('sales.customOrder.noMatch'),
+                }}
+                t={t}
+                type="customer"
+                book="shop"
+              />
+            )}
+          </UbField>
+        )}
         <UbField name="what" label={t('sales.customOrder.what')}>
           {(field) => <UbTextInput {...field} value={field.value as string} maxLength={200} />}
         </UbField>
@@ -207,17 +248,19 @@ export function CustomOrderDrawer({
               />
             )}
           </UbField>
-          <UbField name="advance" label={t('sales.customOrder.advance')}>
-            {(field) => (
-              <UbMoneyInput
-                {...field}
-                value={field.value as string}
-                onChange={(next) => setValue('advance', next, { shouldDirty: true })}
-              />
-            )}
-          </UbField>
+          {!editing && (
+            <UbField name="advance" label={t('sales.customOrder.advance')}>
+              {(field) => (
+                <UbMoneyInput
+                  {...field}
+                  value={field.value as string}
+                  onChange={(next) => setValue('advance', next, { shouldDirty: true })}
+                />
+              )}
+            </UbField>
+          )}
         </UbBox>
-        {hasAdvance && (
+        {hasAdvance && !editing && (
           <UbField name="advanceMode" label={t('sales.customOrder.paidBy')}>
             {(field) => (
               <UbSelect
@@ -230,18 +273,76 @@ export function CustomOrderDrawer({
             )}
           </UbField>
         )}
-        <UbField name="fixRate" label={t('sales.customOrder.fixRate')} controlOwnsLabel>
-          {(field) => (
-            <UbSwitch
-              id={field.id}
-              checked={Boolean(field.value)}
-              onCheckedChange={field.onChange}
-              label={t('sales.customOrder.fixRate')}
-              description={t('sales.customOrder.fixRateHint')}
-            />
-          )}
-        </UbField>
+        {!editing && (
+          <UbField name="fixRate" label={t('sales.customOrder.fixRate')} controlOwnsLabel>
+            {(field) => (
+              <UbSwitch
+                id={field.id}
+                checked={Boolean(field.value)}
+                onCheckedChange={field.onChange}
+                label={t('sales.customOrder.fixRate')}
+                description={t('sales.customOrder.fixRateHint')}
+              />
+            )}
+          </UbField>
+        )}
+        {karigars.length > 0 && (
+          <UbField name="karigarId" label={t('sales.karigar.who')}>
+            {(field) => (
+              <UbSelect
+                id={field.id}
+                aria-label={t('sales.karigar.who')}
+                value={(field.value as string) || 'none'}
+                options={[
+                  { value: 'none', label: t('sales.customOrder.noKarigar') },
+                  ...karigars.map((k) => ({ value: k.id, label: k.name })),
+                ]}
+                onChange={(next) =>
+                  setValue('karigarId', next === 'none' ? '' : next, { shouldDirty: true })
+                }
+              />
+            )}
+          </UbField>
+        )}
+        <UbFileUpload
+          label={
+            photo
+              ? photo.name
+              : t(editing?.photoId ? 'sales.customOrder.photoChange' : 'sales.customOrder.photoAdd')
+          }
+          accept="image/png,image/jpeg,image/webp"
+          maxBytes={2 * 1024 * 1024}
+          onSelect={setPhoto}
+          onReject={() =>
+            dispatch(showSnackbar({ severity: 'warning', id: 'sales.customOrder.photoRejected' }))
+          }
+          variant="secondary"
+        />
+        {editing?.photoId && (
+          <UbLink
+            href={`/api/v1/files/${editing.photoId}`}
+            variant="caption"
+            data-testid="order-photo-link"
+          >
+            {t('sales.customOrder.photoView')}
+          </UbLink>
+        )}
       </UbForm>
+      <UbConfirmDialog
+        open={confirmLeave}
+        onOpenChange={setConfirmLeave}
+        title={t('sales.customOrder.leaveTitle')}
+        description={t('sales.customOrder.leaveBody')}
+        confirmLabel={t('sales.customOrder.leave')}
+        cancelLabel={t('sales.customOrder.stay')}
+        closeLabel={t('common.action.close')}
+        destructive
+        onConfirm={() => {
+          setConfirmLeave(false);
+          copy.clear();
+          onClose();
+        }}
+      />
     </UbDrawer>
   );
 }

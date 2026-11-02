@@ -20,10 +20,13 @@ import { ItemTagFields, type TagFormHost } from './ItemTagFields';
  */
 export function AddTagDialog({
   itemId,
+  tagNo = '',
   onClose,
   onAdded,
 }: Readonly<{
   itemId: string;
+  /** A piece bought on a purchase: its number is fixed, its weights are new. */
+  tagNo?: string;
   onClose: () => void;
   onAdded: (tag: Tag) => void;
 }>): React.JSX.Element {
@@ -31,7 +34,7 @@ export function AddTagDialog({
   const formId = useId();
   const [errors, setErrors] = useState<readonly string[]>([]);
   const form = useForm<TagFormHost>({
-    defaultValues: { tag: { ...EMPTY_TAG }, tracking: 'serial' },
+    defaultValues: { tag: { ...EMPTY_TAG, tagNo }, tracking: 'serial' },
   });
   const submit = useCallback(
     async (values: TagFormHost) => {

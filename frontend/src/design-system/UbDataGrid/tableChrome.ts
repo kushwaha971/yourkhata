@@ -33,7 +33,8 @@ export const GRID_THEAD = 'sticky top-0 z-10 bg-surface-subtle';
 export const GRID_HEAD_ROW = 'border-b border-border-hairline';
 
 export const GRID_TH =
-  'ds-body-s-medium h-12 select-none whitespace-nowrap px-3 py-0 align-middle text-text-primary';
+  // Design `.tf th`: 46 px, 13 px / 600 in the second ink.
+  'h-[46px] select-none whitespace-nowrap px-3 py-0 align-middle text-[13px] font-semibold text-text-secondary';
 
 /** The checkbox column: fixed at 48 px so the name column starts in one place. */
 export const GRID_SELECT_CELL = 'w-12 px-3 py-2';

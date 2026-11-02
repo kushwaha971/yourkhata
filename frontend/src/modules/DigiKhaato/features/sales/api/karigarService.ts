@@ -57,9 +57,14 @@ export const issueGold = async (
   return res.data.data;
 };
 
-export const receiveGold = async (lotId: string, receivedG: string): Promise<KarigarLot> => {
+export const receiveGold = async (
+  lotId: string,
+  receivedG: string,
+  moreToCome = false
+): Promise<KarigarLot> => {
   const res = await api.post<{ data: KarigarLot }>(`/sales/karigar-lots/${lotId}/receive`, {
     received_g: receivedG,
+    more_to_come: moreToCome,
   });
   return res.data.data;
 };

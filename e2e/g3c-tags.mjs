@@ -46,8 +46,8 @@ const fillTag = async (no) => {
   await row.getByTestId('karigar-make-tag').click();
   const d = page.getByRole('dialog');
   await d.getByLabel('Tag no.').waitFor({ timeout: 10000 });
-  await d.getByLabel('Item', { exact: true }).click();
-  await page.getByRole('option', { name: itemName }).click();
+  await d.getByPlaceholder('Choose the item').fill(itemName);
+  await page.getByRole('option', { name: itemName }).first().click();
   await d.getByLabel('Tag no.').fill(no);
   await d.getByLabel('Gross').fill('12');
   await d.getByLabel('Labour').fill('350');

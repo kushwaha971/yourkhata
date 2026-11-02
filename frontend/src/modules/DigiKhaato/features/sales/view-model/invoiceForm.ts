@@ -186,7 +186,8 @@ export const toWireBody = (values: InvoiceFormValues): Record<string, unknown> =
   round_off_enabled: values.roundOffEnabled,
   ...discountWire(values.discountType, values.discountValue),
   notes: values.notes,
-  terms: values.terms,
+  // Blank is not sent: the server fills the shop's own terms line on a new bill.
+  ...(values.terms ? { terms: values.terms } : {}),
   lines: values.lines.filter(isCompleteLine).map((line) => ({
     item_id: line.itemId,
     description: line.description.trim() || null,

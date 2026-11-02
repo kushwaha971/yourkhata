@@ -5,4 +5,5 @@ export const PURITY_SHORT: Readonly<Record<string, string>> = {
   gold_22k: '22K 916',
   gold_18k: '18K 750',
   silver: 'Silver 999',
+  silver_925: 'Silver 925',
 };

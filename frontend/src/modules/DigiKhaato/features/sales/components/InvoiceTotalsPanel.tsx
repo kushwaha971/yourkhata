@@ -33,6 +33,12 @@ const ISSUE_COPY: Readonly<Record<string, string>> = {
  * or IGST), cess, round-off and the grand total, announced politely to a
  * screen reader as it changes (§5). Missing invoice details have a checklist.
  */
+/** Never below nothing: old gold over the bill stays with the customer. */
+const toPayOf = (total: string, oldGold: string | null, advance: string | null): string => {
+  const left = subtractMoney(subtractMoney(total, oldGold ?? '0.00'), advance ?? '0.00');
+  return isNegativeAmount(left) ? '0.00' : left;
+};
+
 export function InvoiceTotalsPanel({
   form,
   preview,
@@ -135,12 +141,7 @@ export function InvoiceTotalsPanel({
             >
               <UbText variant="inherit">{t('sales.oldGold.toPay')}</UbText>
               <UbText variant="inherit" className="ds-num" data-testid="invoice-to-pay">
-                {formatInr(
-                  subtractMoney(
-                    subtractMoney(preview.grandTotal, oldGold ?? '0.00'),
-                    advance ?? '0.00'
-                  )
-                )}
+                {formatInr(toPayOf(preview.grandTotal, oldGold, advance))}
               </UbText>
             </UbStack>
           </>

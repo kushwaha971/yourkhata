@@ -17,6 +17,8 @@ import { useTranslation } from 'src/hooks/useTranslation';
 
 import { PURITIES, type Purity } from '../api/metalRateService';
 
+type TagPurity = Purity | 'silver_925';
+
 import type { TagFormValues } from '../api/tagService';
 
 /** Any form with a tag: the Add item form, or the item page's Add tag dialog. */
@@ -25,12 +27,15 @@ export interface TagFormHost {
   tracking: 'none' | 'serial' | 'batch';
 }
 
-const PURITY_LABEL: Record<Purity, string> = {
+const PURITY_LABEL: Record<TagPurity, string> = {
   gold_24k: 'stock.rates.gold24',
   gold_22k: 'stock.rates.gold22',
   gold_18k: 'stock.rates.gold18',
   silver: 'stock.rates.silver',
+  silver_925: 'items.form.tag.silver925',
 };
+
+const TAG_PURITIES: readonly TagPurity[] = [...PURITIES, 'silver_925'];
 
 /**
  * G2a — design D3 for a jeweller, "Tag details" on Add item: the first piece of
@@ -85,8 +90,8 @@ export function ItemTagFields(): React.JSX.Element {
               id={field.id}
               aria-label={t('items.form.tag.purity')}
               value={field.value as string}
-              options={PURITIES.map((p) => ({ value: p, label: t(PURITY_LABEL[p]) }))}
-              onChange={(next) => setValue('tag.purity', next as Purity, { shouldDirty: true })}
+              options={TAG_PURITIES.map((p) => ({ value: p, label: t(PURITY_LABEL[p]) }))}
+              onChange={(next) => setValue('tag.purity', next as TagPurity, { shouldDirty: true })}
             />
           )}
         </UbField>

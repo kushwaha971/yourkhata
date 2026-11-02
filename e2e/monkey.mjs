@@ -418,6 +418,13 @@ try {
   lastT0 = Date.now();
   await page.goto(url, { waitUntil: "networkidle" });
   await pageSpeed("start");
+  // G3: start with a real line, so the bill's data check always has data to guard.
+  if (arg("line", "")) {
+    const box = page.getByPlaceholder(/Search or scan item|Search item or scan/).first();
+    await box.fill(arg("line", "")).catch(() => undefined);
+    await page.getByRole("option").first().click({ timeout: 5000 }).catch(() => undefined);
+    await page.keyboard.press("Escape").catch(() => undefined);
+  }
   await page.evaluate(() => {
     window.__long = 0;
     try {

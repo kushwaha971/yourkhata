@@ -17,7 +17,9 @@ export interface CustomOrder {
   readonly status: CustomOrderStatus;
   readonly invoiceId: string | null;
   /** G3b — whose hands this order's gold is in, or null. */
-  readonly withKarigar: { readonly name: string; readonly issued_g: string } | null;
+  readonly withKarigar: { readonly name: string; readonly issued_g: string | null } | null;
+  readonly karigarId: string | null;
+  readonly photoId: string | null;
 }
 
 interface Wire {
@@ -34,6 +36,8 @@ interface Wire {
   status: CustomOrderStatus;
   invoice_id: string | null;
   with_karigar: CustomOrder['withKarigar'];
+  karigar_id: string | null;
+  photo_id: string | null;
 }
 
 const toOrder = (w: Wire): CustomOrder => ({
@@ -50,6 +54,8 @@ const toOrder = (w: Wire): CustomOrder => ({
   status: w.status,
   invoiceId: w.invoice_id,
   withKarigar: w.with_karigar,
+  karigarId: w.karigar_id,
+  photoId: w.photo_id,
 });
 
 export interface CustomOrderList {
@@ -92,6 +98,7 @@ export interface CustomOrderFormValues {
   advance: string;
   advanceMode: string;
   fixRate: boolean;
+  karigarId: string;
 }
 
 /** `clientKey` is made once per open form, so a double tap is one order. */
@@ -109,6 +116,7 @@ export const createCustomOrder = async (
     advance: v.advance,
     advance_mode: v.advanceMode,
     fix_rate: v.fixRate,
+    karigar_id: v.karigarId || null,
   });
   return toOrder(res.data.data);
 };
@@ -131,4 +139,28 @@ export const ORDER_FIELD: Readonly<Record<string, keyof CustomOrderFormValues>> 
   advance: 'advance',
   advance_mode: 'advanceMode',
   fix_rate: 'fixRate',
+  karigar_id: 'karigarId',
+};
+
+export const updateCustomOrder = async (
+  id: string,
+  v: Pick<CustomOrderFormValues, 'what' | 'approxWeightG' | 'deliverOn' | 'karigarId'>
+): Promise<CustomOrder> => {
+  const res = await api.patch<{ data: Wire }>(`/sales/custom-orders/${id}`, {
+    what: v.what,
+    approx_weight_g: v.approxWeightG,
+    deliver_on: v.deliverOn,
+    karigar_id: v.karigarId || null,
+  });
+  return toOrder(res.data.data);
+};
+
+export const uploadOrderPhoto = async (id: string, file: File): Promise<void> => {
+  const body = new FormData();
+  body.append('photo', file);
+  await api.post(
+    `/sales/custom-orders/${id}/photo`,
+    body,
+    ubConfig({ headers: { 'Content-Type': 'multipart/form-data' } })
+  );
 };

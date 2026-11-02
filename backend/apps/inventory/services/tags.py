@@ -20,6 +20,10 @@ from apps.common.exceptions import ValidationFailed
 from apps.inventory.models import Item, Serial, TagDetail
 from apps.inventory.services.metal_rates import PURITIES
 
+#: A tag's purity: the day's rates, plus silver 925 priced at the silver rate
+#: (the design's payal is 925 and its rate board has one silver rate).
+TAG_PURITIES = (*PURITIES, "silver_925")
+RATE_OF = {"silver_925": "silver"}
 MAKING_TYPES = ("pct", "per_g")
 #: A BIS hallmark unique ID: six letters and digits.
 HUID = re.compile(r"^[A-Z0-9]{6}$")
@@ -44,17 +48,23 @@ def _dec(raw: Any, field: str, errors: dict, *, required: bool, places: int, min
     return value
 
 
-def _clean(*, tenant: Any, data: dict) -> dict:
+def _clean(*, tenant: Any, data: dict, allow_serial: Any = None) -> dict:
     errors: dict[str, list[str]] = {}
     tag_no = str(data.get("tag_no") or "").strip().upper()
     if not tag_no:
         errors["tag_no"] = ["Enter the tag no."]
     elif len(tag_no) > 40:
         errors["tag_no"] = ["Keep the tag no. to 40 characters."]
-    elif Serial.objects.filter(tenant=tenant, serial=tag_no).exists():
+    elif (
+        Serial.objects.filter(tenant=tenant, serial=tag_no)
+        # G: a piece bought on a purchase is in stock with its number and no
+        # weights yet; giving it weights is not a second use of the number.
+        .exclude(pk__in=[allow_serial] if allow_serial else [])
+        .exists()
+    ):
         errors["tag_no"] = ["This tag no. is already used."]
     purity = data.get("purity")
-    if purity not in PURITIES:
+    if purity not in TAG_PURITIES:
         errors["purity"] = ["Choose the metal and purity."]
     gross = _dec(data.get("gross_g"), "gross_g", errors, required=True, places=3, minimum=Decimal("0.001"))
     stone = _dec(data.get("stone_g"), "stone_g", errors, required=False, places=3, minimum=Decimal("0")) or Decimal("0")
@@ -118,7 +128,7 @@ def _metal_value(tenant: Any, clean: dict) -> Decimal:
     asks no cost; a piece BOUGHT comes in through a purchase at its price."""
     from apps.inventory.models import MetalRate
 
-    rate = MetalRate.objects.filter(tenant=tenant, day=tenant_today(tenant)).values_list(clean["purity"], flat=True).first()
+    rate = MetalRate.objects.filter(tenant=tenant, day=tenant_today(tenant)).values_list(RATE_OF.get(clean["purity"], clean["purity"]), flat=True).first()
     return (clean["net_g"] * rate).quantize(Decimal("0.0001")) if rate else Decimal("0")
 
 
@@ -129,7 +139,15 @@ def add_tag(*, ctx: Ctx, item: Item, data: dict, labour_per_g: Decimal = Decimal
 
     if item.tracking != "serial":
         raise ValidationFailed({"tag_no": ["This item does not keep tags."]}, "Check the tag details.")
-    clean = _clean(tenant=ctx.tenant, data=data)
+    bought = Serial.objects.filter(
+        tenant=ctx.tenant, item=item, serial=str(data.get("tag_no") or "").strip().upper(), status=Serial.IN_STOCK, tag__isnull=True
+    ).first()
+    clean = _clean(tenant=ctx.tenant, data=data, allow_serial=bought.pk if bought else None)
+    if bought is not None:
+        # Already in stock through its purchase: only the weights are new.
+        clean.pop("tag_no")
+        TagDetail.objects.create(tenant=ctx.tenant, serial=bought, **clean)
+        return tag_view(bought)
     adjustment = post_adjustment(
         ctx=ctx,
         payload={
@@ -166,9 +184,9 @@ def rate_today(*, tenant: Any, purity: str) -> Decimal | None:
     """Today's G1 rate per gram for a purity, or None before it is set."""
     from apps.inventory.models import MetalRate
 
-    if purity not in PURITIES:
+    if purity not in TAG_PURITIES:
         return None
-    return MetalRate.objects.filter(tenant=tenant, day=tenant_today(tenant)).values_list(purity, flat=True).first()
+    return MetalRate.objects.filter(tenant=tenant, day=tenant_today(tenant)).values_list(RATE_OF.get(purity, purity), flat=True).first()
 
 
 def price_piece(

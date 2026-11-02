@@ -155,9 +155,22 @@ def receive_gold(*, ctx: Ctx, lot_id: Any, data: dict) -> KarigarLot:
         errors["received_g"] = [f"More than the {lot.issued_g:.3f} g given. Check the weight."]
     if errors:
         raise ValidationFailed(errors, "Check the weight.")
+    if data.get("more_to_come") and received < lot.issued_g:
+        # Part back: this lot closes at what came, the rest stays out as its own
+        # lot, so no wastage is counted until the last of it is back.
+        KarigarLot.objects.create(
+            tenant=ctx.tenant,
+            karigar=lot.karigar,
+            order=lot.order,
+            client_key=uuid.uuid4(),
+            purity=lot.purity,
+            issued_g=lot.issued_g - received,
+            issued_on=lot.issued_on,
+        )
+        lot.issued_g = received
     lot.received_g = received
     lot.received_on = tenant_today(ctx.tenant)
-    lot.save(update_fields=["received_g", "received_on"])
+    lot.save(update_fields=["issued_g", "received_g", "received_on"])
     return lot
 
 

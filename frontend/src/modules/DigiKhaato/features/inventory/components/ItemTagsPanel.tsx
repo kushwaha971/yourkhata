@@ -26,11 +26,15 @@ const AddTagDialogLazy = dynamic(() => import('./AddTagDialog').then((m) => m.Ad
   loading: () => <UbDialogLoading />,
 });
 
-
 /** Design D5: a table at every width. A phone shows Tag, Net wt and Purity;
  * from lg the tab spans the page and adds HUID and Status; below 360 px
  * Purity goes too. */
-const columns = (t: TranslateFn, wide: boolean, roomy: boolean): UbDataGridColumn<Tag>[] => [
+const columns = (
+  t: TranslateFn,
+  wide: boolean,
+  roomy: boolean,
+  addWeights: ((tag: Tag) => void) | null
+): UbDataGridColumn<Tag>[] => [
   {
     id: 'tag',
     header: t('items.tags.col.tag'),
@@ -46,7 +50,21 @@ const columns = (t: TranslateFn, wide: boolean, roomy: boolean): UbDataGridColum
     align: 'end',
     cardSlot: 'meta',
     widthShare: 1,
-    cell: (r) => (r.netG ? `${Number(r.netG).toFixed(3)} g` : '—'),
+    cell: (r) =>
+      r.netG ? (
+        `${Number(r.netG).toFixed(3)} g`
+      ) : addWeights && r.status === 'in_stock' ? (
+        <UbButton
+          variant="secondary"
+          size="sm"
+          onClick={() => addWeights(r)}
+          data-testid="tag-add-weights"
+        >
+          {t('items.tags.addWeights')}
+        </UbButton>
+      ) : (
+        '—'
+      ),
   },
   ...(roomy
     ? ([
@@ -119,7 +137,11 @@ export function ItemTagsPanel({
   const wide = useMediaQuery('(min-width: 1024px)');
   // Below 360 px a third column cuts the weights: Purity waits for room.
   const roomy = useMediaQuery('(min-width: 360px)');
-  const cols = useMemo(() => columns(t, wide, roomy), [t, wide, roomy]);
+  const [weighing, setWeighing] = useState<string | null>(null);
+  const cols = useMemo(
+    () => columns(t, wide, roomy, canAdd ? (tag) => setWeighing(tag.tagNo) : null),
+    [t, wide, roomy, canAdd]
+  );
   const labels = useMemo(
     () =>
       inventoryGridLabels(t, {
@@ -164,6 +186,18 @@ export function ItemTagsPanel({
         }}
         onPageChange={() => undefined}
       />
+      {weighing && (
+        <AddTagDialogLazy
+          itemId={itemId}
+          tagNo={weighing}
+          onClose={() => setWeighing(null)}
+          onAdded={(tag) => {
+            setRows((prev) => (prev ?? []).map((row) => (row.tagNo === tag.tagNo ? tag : row)));
+            setWeighing(null);
+            onChanged();
+          }}
+        />
+      )}
       {adding && (
         <AddTagDialogLazy
           itemId={itemId}

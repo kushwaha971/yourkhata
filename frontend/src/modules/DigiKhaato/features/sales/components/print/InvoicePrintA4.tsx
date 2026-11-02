@@ -305,6 +305,11 @@ export function InvoicePrintA4({
               {formatPhoneForDisplay(buyerMobile)}
             </p>
           )}
+          {doc.pan && (
+            <p data-testid="print-pan">
+              <span className="font-semibold">PAN:</span> {doc.pan}
+            </p>
+          )}
         </div>
 
         <div className="gst-row">

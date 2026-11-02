@@ -81,6 +81,7 @@ def take_in(*, ctx: Any, document: Any) -> dict | None:
     value = value_of(document)
     if value <= 0:
         return None
+    # More than the bill: the rest stays with a saved customer as an advance.
     walk_in = document.party_id is None
     recorded = record_adjustment(
         ctx=ctx,
@@ -94,7 +95,7 @@ def take_in(*, ctx: Any, document: Any) -> dict | None:
             "context": "old_gold",
             "meta": {"document_id": str(document.id), "document_number": document.number},
             "allocations": [
-                {"document_type": "sales_document", "document_id": str(document.id), "amount": str(value)}
+                {"document_type": "sales_document", "document_id": str(document.id), "amount": str(min(value, document.grand_total))}
             ],
         },
         walk_in_document_id=document.id if walk_in else None,

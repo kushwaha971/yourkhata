@@ -26,6 +26,8 @@ const order = (o: Partial<orders.CustomOrder>): orders.CustomOrder => ({
   status: 'open',
   invoiceId: null,
   withKarigar: null,
+  karigarId: null,
+  photoId: null,
   ...o,
 });
 

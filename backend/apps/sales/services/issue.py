@@ -122,12 +122,13 @@ def issue_invoice(
     from apps.inventory.services.old_gold import value_of as old_gold_value
 
     old_gold = old_gold_value(document)
-    if old_gold > document.grand_total:
+    if old_gold > document.grand_total and walk_in:
         raise BusinessRuleViolation(
             "old_gold_over_bill",
-            "The old gold is worth more than this bill. Take in less, or add to the bill.",
+            "The old gold is worth more than this bill. Choose a saved customer to keep the rest as their advance.",
             details={"old_gold": f"{old_gold:.2f}", "grand_total": f"{document.grand_total:.2f}"},
         )
+    old_gold = min(old_gold, document.grand_total)  # any rest is the customer's advance
     cleaned_payment = validate_payment(
         payment=payment, grand_total=document.grand_total - old_gold, walk_in=walk_in
     )

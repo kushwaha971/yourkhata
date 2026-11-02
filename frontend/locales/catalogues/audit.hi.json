@@ -33,6 +33,7 @@
   "audit.action.challan.updated": "ड्राफ्ट डिलीवरी चालान बदला",
   "audit.action.challan.voided": "डिलीवरी चालान रद्द किया",
   "audit.action.credit.limit.set": "उधार सीमा बदली",
+  "audit.action.custom_order.updated": "कस्टम ऑर्डर बदला",
   "audit.action.debit_note.issued": "डेबिट नोट जारी",
   "audit.action.debit_note.voided": "डेबिट नोट रद्द",
   "audit.action.expense.recorded": "खर्च जोड़ा",

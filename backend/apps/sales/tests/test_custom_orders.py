@@ -325,3 +325,128 @@ def test_orders_filter_by_status_and_karigar(jeweller: Any, owner: Any, make_par
     assert names() == ["Held"]
     assert sorted(names(scope="all")) == ["Done", "Held"]
     assert names(scope="all", karigar=karigar["id"]) == ["Held"]
+
+
+# ── finishing jewellery ─────────────────────────────────────────────────────
+
+
+def test_part_of_a_lot_back_leaves_the_rest_out_with_no_wastage_yet(jeweller: Any, owner: Any) -> None:
+    lot = _issue(owner, _karigar(owner), "37.400")
+    res = owner.post(reverse("v1:karigar-receive", args=[lot["id"]]), {"received_g": "20", "more_to_come": True}, format="json")
+    assert res.status_code == 200, res.content
+    row = _row(owner)
+    assert (row["issued_g"], row["received_g"], row["with_g"], row["wastage_pct"]) == ("37.400", "20.000", "17.400", "0.0")
+    rest = owner.get(reverse("v1:karigars")).json()["data"]["open_lots"][0]
+    owner.post(reverse("v1:karigar-receive", args=[rest["id"]]), {"received_g": "16.880"}, format="json")
+    assert _row(owner)["wastage_pct"] == "1.4"
+
+
+def test_a_live_order_can_be_edited_and_a_finished_one_cannot(jeweller: Any, owner: Any, make_party: Any) -> None:
+    karigar = _karigar(owner)
+    order = owner.post(reverse(URL), _body(make_party(), karigar_id=karigar["id"]), format="json").json()["data"]
+    assert order["with_karigar"] == {"name": "Raju Soni", "issued_g": None}
+    url = reverse("v1:custom-order-detail", args=[order["id"]])
+    assert owner.patch(url, {"what": "Bangles"}, format="json").json()["data"]["what"] == "Bangles"
+    owner.post(reverse("v1:custom-order-status", args=[order["id"]]), {"status": "cancelled"}, format="json")
+    assert owner.patch(url, {"what": "x"}, format="json").status_code == 409
+
+
+def test_only_an_owner_removes_a_lot(jeweller: Any, owner: Any, api_as: Any) -> None:
+    from apps.common.constants import RoleCode
+
+    lot = _issue(owner, _karigar(owner), "5.000")
+    staff = api_as(jeweller, RoleCode.STAFF.value)[0]
+    assert staff.delete(reverse("v1:karigar-lot", args=[lot["id"]])).status_code == 403
+    assert owner.delete(reverse("v1:karigar-lot", args=[lot["id"]])).status_code == 200
+
+
+def test_old_gold_page_and_home_read_what_was_taken(jeweller: Any, owner: Any, make_party: Any, make_item: Any) -> None:
+    from apps.sales.tests.conftest import draft, issue, line
+
+    _rate(owner)
+    party = make_party()
+    item = _tag_item(owner, make_item)
+    old = {"weight_g": "0.500", "purity": "gold_22k", "less_pct": "0"}
+    made = draft(owner, party_id=str(party.id), lines=[line(item, "1", serials=["OB-1"], jewel={})], old_gold=old).json()["data"]
+    issue(owner, made["id"], version=made["version"])
+    page = owner.get(reverse("v1:old-gold")).json()["data"]
+    assert page["stock"][0]["weight_g"] == "0.500" and page["rows"][0]["customer"] == party.name
+    home = owner.get(reverse("v1:jewel-home")).json()["data"]
+    assert home["gold_22k"] == "11650.00" and home["old_gold_month_g"] == "0.500"
+
+
+def test_old_gold_over_the_bill_stays_as_the_customers_advance(jeweller: Any, owner: Any, make_party: Any, make_item: Any) -> None:
+    from apps.payments.selectors.payments import open_advances
+    from apps.sales.tests.conftest import draft, issue, line
+
+    _rate(owner)
+    party = make_party()
+    item = _tag_item(owner, make_item)  # 1 g: ₹11,650
+    big = {"weight_g": "2.000", "purity": "gold_22k", "less_pct": "0"}  # ₹23,300
+    made = draft(owner, party_id=str(party.id), lines=[line(item, "1", serials=["OB-1"], jewel={})], old_gold=big).json()["data"]
+    done = issue(owner, made["id"], version=made["version"])
+    assert done.status_code == 200, done.content
+    assert done.json()["data"]["status"] == "paid"
+    from apps.payments.models import Payment
+
+    left = Payment.objects.filter(party_id=party.id, primary_mode="adjustment").first()
+    assert left.unallocated_amount == Decimal("11650.00")
+
+
+def test_a_jewellers_bill_carries_the_terms_line(jeweller: Any, owner: Any, make_party: Any) -> None:
+    from apps.sales.services.settings import JEWELLERY_TERMS, default_terms
+
+    assert default_terms(jeweller) == JEWELLERY_TERMS
+
+
+def _png() -> Any:
+    import io
+
+    from django.core.files.uploadedfile import SimpleUploadedFile
+    from PIL import Image
+
+    raw = io.BytesIO()
+    Image.new("RGB", (100, 100), "gold").save(raw, "PNG")
+    return SimpleUploadedFile("design.png", raw.getvalue(), content_type="image/png")
+
+
+def test_an_order_keeps_its_design_photo_and_serves_it(jeweller: Any, owner: Any, make_party: Any, settings: Any, tmp_path: Any) -> None:
+    settings.MEDIA_ROOT = tmp_path
+    order = owner.post(reverse(URL), _body(make_party()), format="json").json()["data"]
+    res = owner.post(reverse("v1:custom-order-photo", args=[order["id"]]), {"photo": _png()}, format="multipart")
+    assert res.status_code == 200, res.content
+    photo = res.json()["data"]["photo_id"]
+    assert owner.get(reverse("v1:file-content", args=[photo])).status_code == 200
+    bad = owner.post(reverse("v1:custom-order-photo", args=[order["id"]]), {}, format="multipart")
+    assert bad.status_code == 400
+
+
+def test_a_piece_bought_on_a_purchase_gets_its_weights_without_a_second_stock_move(jeweller: Any, owner: Any, make_item: Any) -> None:
+    """Its number is in stock from the purchase; the weights make it billable."""
+    from apps.common.context import Ctx
+    from apps.inventory.models import Serial, StockMovement
+    from apps.inventory.services.serials import receive
+
+    item = make_item("Bought chain", "0", "GST0", stock=None, tracking="serial")
+
+    class Doc:
+        id = None
+
+    receive(ctx=Ctx.system(jeweller), document=Doc(), rows=[{"item": item, "serials": ["PB-1"]}])
+    before = StockMovement.objects.filter(item=item).count()
+    res = owner.post(reverse("v1:item-tags", args=[item.id]), {**TAG, "tag_no": "PB-1"}, format="json")
+    assert res.status_code == 201, res.content
+    assert StockMovement.objects.filter(item=item).count() == before
+    assert Serial.objects.filter(item=item, serial="PB-1").count() == 1
+    _rate(owner)
+    assert owner.get(reverse("v1:jewel-tag-lookup"), {"tag": "PB-1"}).status_code == 200
+
+
+def test_silver_925_is_priced_at_the_silver_rate(jeweller: Any, owner: Any, make_item: Any) -> None:
+    owner.put(reverse("v1:metal-rate-today"), {"silver": "150"}, format="json")
+    item = make_item("Silver payal", "0", "GST0", stock=None, tracking="serial")
+    body = {"tag_no": "SP-1", "purity": "silver_925", "gross_g": "45.500", "net_g": "45.500", "making_type": "per_g", "making_value": "40"}
+    assert owner.post(reverse("v1:item-tags", args=[item.id]), body, format="json").status_code == 201
+    found = owner.get(reverse("v1:jewel-tag-lookup"), {"tag": "SP-1"}).json()["data"]["jewel"]
+    # 45.5 × 150 = 6,825; 45.5 × 40 = 1,820: the design's ₹8,645.
+    assert found["rate"] == "150.00" and found["total"] == "8645.00"

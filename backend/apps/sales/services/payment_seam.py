@@ -81,7 +81,7 @@ def record_issue_payment(*, ctx: Ctx, document: Any, payment: dict | None) -> di
     # G2c — old gold settles its own part of the bill (`old_gold.take_in`).
     from apps.inventory.services.old_gold import value_of
 
-    share = paid_at_issue(payment, document.grand_total - value_of(document))
+    share = paid_at_issue(payment, max(document.grand_total - value_of(document), ZERO))
     payload: dict[str, Any] = {
         "direction": "in",
         "party_id": str(document.party_id) if not walk_in else None,

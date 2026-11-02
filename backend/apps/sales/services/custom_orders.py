@@ -30,7 +30,7 @@ def _with_karigar(order: CustomOrder) -> dict | None:
     """G3b — "With Raju · 18.2 g issued": whose hands this order's gold is in."""
     lots = [x for x in order.lots.all() if x.received_g is None]
     if not lots:
-        return None
+        return {"name": order.karigar.name, "issued_g": None} if order.karigar_id else None
     return {"name": lots[0].karigar.name, "issued_g": f"{sum(x.issued_g for x in lots):.3f}"}
 
 
@@ -49,6 +49,8 @@ def view(order: CustomOrder) -> dict:
         "status": order.status,
         "invoice_id": str(order.invoice_id) if order.invoice_id else None,
         "with_karigar": _with_karigar(order),
+        "karigar_id": str(order.karigar_id) if order.karigar_id else None,
+        "photo_id": str(order.photo_id) if order.photo_id else None,
     }
 
 
@@ -93,6 +95,16 @@ def _clean(*, ctx: Ctx, data: dict) -> dict:
             fixed = rate_today(tenant=ctx.tenant, purity=purity)
             if fixed is None:
                 errors["fix_rate"] = ["Set today's rate first."]
+    karigar = None
+    if data.get("karigar_id"):
+        from apps.sales.models import Karigar
+
+        try:
+            karigar = Karigar.objects.filter(tenant=ctx.tenant, pk=data["karigar_id"]).first()
+        except (ValueError, TypeError, ValidationError):
+            karigar = None
+        if karigar is None:
+            errors["karigar_id"] = ["Choose a karigar from the list."]
     try:
         client_key = uuid.UUID(str(data.get("client_key")))
     except ValueError:
@@ -109,6 +121,7 @@ def _clean(*, ctx: Ctx, data: dict) -> dict:
         "mode": mode,
         "fixed_rate": fixed,
         "client_key": client_key,
+        "karigar": karigar,
     }
 
 
@@ -136,6 +149,7 @@ def create_order(*, ctx: Ctx, data: dict) -> tuple[CustomOrder, bool]:
         deliver_on=clean["deliver_on"],
         advance=clean["advance"],
         fixed_rate=clean["fixed_rate"],
+        karigar=clean["karigar"],
     )
     if clean["advance"] > 0:
         recorded = record_payment(
@@ -184,7 +198,7 @@ def move_order(*, ctx: Ctx, order_id: Any, status: Any) -> CustomOrder:
 
 
 def list_orders(*, tenant: Any, q: str = "", scope: str = "open", karigar: str = "") -> dict:
-    rows = CustomOrder.objects.filter(tenant=tenant).select_related("party").prefetch_related("lots__karigar")
+    rows = CustomOrder.objects.filter(tenant=tenant).select_related("party", "karigar").prefetch_related("lots__karigar")
     live = rows.filter(status__in=(CustomOrder.OPEN, CustomOrder.READY))
     summary = live.aggregate(held=Sum("advance"))
     shown = live if scope == "open" else rows
@@ -204,7 +218,7 @@ def list_orders(*, tenant: Any, q: str = "", scope: str = "open", karigar: str =
 
 
 def get_order(*, tenant: Any, order_id: Any) -> CustomOrder:
-    order = CustomOrder.objects.select_related("party").filter(tenant=tenant, pk=order_id).first()
+    order = CustomOrder.objects.select_related("party", "karigar").filter(tenant=tenant, pk=order_id).first()
     if order is None:
         raise NotFound("No such order.")
     return order
@@ -268,3 +282,125 @@ def mark_delivered_by(*, order: CustomOrder | None, document: Any) -> None:
     order.status = CustomOrder.DELIVERED
     order.invoice_id = document.id
     order.save(update_fields=["status", "invoice_id"])
+
+
+@transaction.atomic
+def update_order(*, ctx: Ctx, order_id: Any, data: dict) -> CustomOrder:
+    """What to make, weight, date and karigar, while the order is live. The
+    customer, advance and fixed rate are money already taken, so they stay."""
+    from apps.common.audit import AuditAction, write_audit
+    from apps.inventory.services.tags import _dec
+    from apps.sales.models import Karigar
+
+    order = CustomOrder.objects.select_for_update(of=("self",)).select_related("party", "karigar").filter(tenant=ctx.tenant, pk=order_id).first()
+    if order is None:
+        raise NotFound("No such order.")
+    if order.status not in (CustomOrder.OPEN, CustomOrder.READY):
+        raise BusinessRuleViolation("custom_order_status", "This order is already finished.", details={})
+    before = view(order)
+    errors: dict[str, list[str]] = {}
+    what = " ".join(str(data.get("what", order.what) or "").split())
+    if not what:
+        errors["what"] = ["Say what to make."]
+    elif len(what) > 200:
+        errors["what"] = ["Keep this under 200 characters."]
+    weight = order.approx_weight_g
+    if "approx_weight_g" in data:
+        weight = _dec(data.get("approx_weight_g"), "approx_weight_g", errors, required=False, places=3, minimum=Decimal("0.001"))
+    deliver_on = order.deliver_on
+    if "deliver_on" in data:
+        try:
+            deliver_on = dt.date.fromisoformat(str(data.get("deliver_on") or ""))
+        except ValueError:
+            errors["deliver_on"] = ["Choose the delivery date."]
+    karigar = order.karigar
+    if "karigar_id" in data:
+        karigar = None
+        if data.get("karigar_id"):
+            try:
+                karigar = Karigar.objects.filter(tenant=ctx.tenant, pk=data["karigar_id"]).first()
+            except (ValueError, TypeError, ValidationError):
+                karigar = None
+            if karigar is None:
+                errors["karigar_id"] = ["Choose a karigar from the list."]
+    if errors:
+        raise ValidationFailed(errors, "Check the order.")
+    order.what, order.approx_weight_g, order.deliver_on, order.karigar = what, weight, deliver_on, karigar
+    order.save(update_fields=["what", "approx_weight_g", "deliver_on", "karigar"])
+    write_audit(ctx=ctx, action=AuditAction.CUSTOM_ORDER_UPDATED, entity_type="custom_order", entity_id=order.id, before=before, after=view(order))
+    return order
+
+
+def jewel_home(*, tenant: Any) -> dict:
+    """D12's strip for a jeweller: today's 22K rate, orders due, old gold this month."""
+    from apps.inventory.models import MetalRate, OldGold
+
+    today = tenant_today(tenant)
+    rate = MetalRate.objects.filter(tenant=tenant, day=today).first()
+    live = CustomOrder.objects.filter(tenant=tenant, status__in=(CustomOrder.OPEN, CustomOrder.READY))
+    due = live.filter(deliver_on__lte=today + dt.timedelta(days=7))
+    with_karigar = due.filter(lots__received_g__isnull=True, lots__isnull=False).distinct().count()
+    grams = OldGold.objects.filter(tenant=tenant, taken_on__year=today.year, taken_on__month=today.month).aggregate(g=Sum("weight_g"))["g"]
+    return {
+        "gold_22k": f"{rate.gold_22k:.2f}" if rate and rate.gold_22k is not None else None,
+        "silver": f"{rate.silver:.2f}" if rate and rate.silver is not None else None,
+        "orders_due": due.count(),
+        "orders_with_karigar": with_karigar,
+        "old_gold_month_g": f"{grams or Decimal('0'):.3f}",
+    }
+
+
+def old_gold_page(*, tenant: Any) -> dict:
+    """G2's old-gold stock: grams held by purity, and each lot with its bill."""
+    from apps.inventory.models import OldGold
+    from apps.inventory.services.old_gold import stock
+    from apps.parties.models import Party
+    from apps.sales.models import SalesDocument
+
+    rows = list(OldGold.objects.filter(tenant=tenant).order_by("-taken_on", "-created_at")[:200])
+    names = dict(Party.objects.filter(tenant=tenant, pk__in=[r.party_id for r in rows if r.party_id]).values_list("id", "name"))
+    bills = dict(SalesDocument.objects.filter(tenant=tenant, pk__in=[r.document_id for r in rows]).values_list("id", "number"))
+    return {
+        "stock": stock(tenant=tenant),
+        "rows": [
+            {
+                "id": str(r.id),
+                "taken_on": r.taken_on.isoformat(),
+                "customer": names.get(r.party_id),
+                "bill_id": str(r.document_id),
+                "bill_number": bills.get(r.document_id),
+                "purity": r.purity,
+                "weight_g": f"{r.weight_g:.3f}",
+                "rate": f"{r.rate:.2f}",
+                "less_pct": f"{r.less_pct:.2f}",
+                "value": f"{r.value:.2f}",
+            }
+            for r in rows
+        ],
+    }
+
+
+@transaction.atomic
+def set_photo(*, ctx: Ctx, order_id: Any, upload: Any) -> CustomOrder:
+    """G3's design photo: checked and re-encoded like every image the app stores."""
+    from apps.files.constants import AttachmentKind
+    from apps.files.services.images import retire, store_branding_image
+
+    order = CustomOrder.objects.select_for_update(of=("self",)).select_related("party", "karigar").filter(tenant=ctx.tenant, pk=order_id).first()
+    if order is None:
+        raise NotFound("No such order.")
+    if upload is None:
+        raise ValidationFailed({"photo": ["Choose a photo."]}, "Choose a photo.")
+    stored = store_branding_image(
+        tenant=ctx.tenant,
+        kind=AttachmentKind.ITEM_IMAGE,
+        upload=upload,
+        owner_type="custom_order",
+        owner_id=order.id,
+        actor=ctx.actor if ctx.actor_type == "user" else None,
+    )
+    if order.photo_id:
+        retire(attachment_id=order.photo_id, tenant=ctx.tenant)
+    order.photo_id = stored.id
+    order.save(update_fields=["photo_id"])
+    return order

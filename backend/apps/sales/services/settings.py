@@ -50,8 +50,17 @@ def require_hsn_b2b(tenant: Any) -> bool:
     return bool(setting_field(tenant, REQUIRE_HSN_B2B_SETTING, "value", False))
 
 
+#: Design E5's terms line for a jeweller, until the shop writes its own.
+JEWELLERY_TERMS = "Rates as on the bill date. BIS hallmarked; HUID per piece. Buy-back as per shop policy."
+
+
 def default_terms(tenant: Any) -> str:
-    return str(setting_field(tenant, TERMS_SETTING, "text", ""))
+    text = str(setting_field(tenant, TERMS_SETTING, "text", ""))
+    if text:
+        return text
+    from apps.platform_app.selectors.business_words import features_of
+
+    return JEWELLERY_TERMS if "jewellery" in features_of(tenant) else ""
 
 
 def show_upi_qr(tenant: Any) -> bool:

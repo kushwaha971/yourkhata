@@ -139,8 +139,11 @@ export function InvoiceEditorPageContent({
   const oldGoldValue = jeweller ? (priceOldGold(values.oldGold)?.value ?? null) : null;
   /** What the customer pays now: the bill, less any old gold taken in. */
   const billOrder = jeweller ? (values.customOrder ?? null) : null;
+  // Old gold above the bill leaves nothing to pay; a saved customer keeps the rest.
   const afterGold = oldGoldValue
-    ? subtractMoney(preview.grandTotal, oldGoldValue)
+    ? Number(oldGoldValue) >= Number(preview.grandTotal)
+      ? '0.00'
+      : subtractMoney(preview.grandTotal, oldGoldValue)
     : preview.grandTotal;
   // G3a — the order's advance is applied at issue, never more than what is left.
   const advanceOff = billOrder

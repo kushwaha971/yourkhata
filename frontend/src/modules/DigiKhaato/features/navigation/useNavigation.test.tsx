@@ -136,7 +136,7 @@ describe('one menu per app', () => {
       'account',
     ]);
     const sales = nav.sections.find((s) => s.key === 'sales')?.items.map((i) => i.key);
-    expect(sales).toEqual(['invoices', 'customOrders', 'estimates', 'salesOrders', 'challans', 'creditNotes']);
+    expect(sales).toEqual(['invoices', 'customOrders', 'oldGold', 'estimates', 'salesOrders', 'challans', 'creditNotes']);
     expect(nav.shell.partySearch).toBe(true);
   });
 

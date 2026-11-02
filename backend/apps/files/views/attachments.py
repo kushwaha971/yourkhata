@@ -27,7 +27,7 @@ from apps.files.selectors.attachments import attachment_of_tenant
 #: R-DEC-18 — the kinds this route publishes URLs for (`branding.attachment_url`).
 #: Import uploads and export files have their own routes, which check the kind's
 #: permission and book; serving them here by id would bypass both.
-SERVED_KINDS = frozenset({AttachmentKind.LOGO, AttachmentKind.SIGNATURE})
+SERVED_KINDS = frozenset({AttachmentKind.LOGO, AttachmentKind.SIGNATURE, AttachmentKind.ITEM_IMAGE})
 
 
 class AttachmentContentView(APIView):

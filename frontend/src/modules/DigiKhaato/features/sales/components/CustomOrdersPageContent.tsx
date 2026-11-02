@@ -24,9 +24,10 @@ import {
   type UbDataGridColumn,
 } from 'src/design-system';
 import { UbDataGrid, useGridTier } from 'src/design-system/UbDataGrid';
-import { useAppDispatch } from 'src/hooks/useAppStore';
+import { useAppDispatch, useAppSelector } from 'src/hooks/useAppStore';
 import { usePermissions } from 'src/hooks/usePermissions';
 import { useTranslation, type TranslateFn } from 'src/hooks/useTranslation';
+import { selectActiveTenant } from 'src/redux/slice/sessionSlice';
 import { showSnackbar } from 'src/redux/slice/snackbarSlice';
 import { ROUTES } from 'src/routes';
 import { daysBetweenIso } from 'src/utils/calendarDays';
@@ -74,6 +75,10 @@ const EditKarigarDialog = dynamic(
   () => import('./KarigarDialogs').then((m) => m.EditKarigarDialog),
   { ssr: false, loading: () => <UbDialogLoading /> }
 );
+const UbShareSheet = dynamic(() => import('src/design-system').then((m) => m.UbShareSheet), {
+  ssr: false,
+  loading: () => <UbDialogLoading />,
+});
 const MakeTagDialog = dynamic(() => import('./KarigarDialogs').then((m) => m.MakeTagDialog), {
   ssr: false,
   loading: () => <UbDialogLoading />,
@@ -113,12 +118,16 @@ const orderColumns = ({
   canWrite,
   move,
   askCancel,
+  onEdit,
+  onTell,
 }: Readonly<{
   t: TranslateFn;
   badge: (o: CustomOrder) => React.JSX.Element;
   canWrite: boolean;
   move: (o: CustomOrder, status: CustomOrderStatus) => Promise<void>;
   askCancel: (o: CustomOrder) => void;
+  onEdit: (o: CustomOrder) => void;
+  onTell: (o: CustomOrder) => void;
 }>): UbDataGridColumn<CustomOrder>[] => [
   {
     id: 'order',
@@ -202,6 +211,24 @@ const orderColumns = ({
             <UbButton variant="ghost" size="sm" onClick={() => askCancel(o)}>
               {t('sales.customOrder.cancel')}
             </UbButton>
+            {o.status === 'ready' && (
+              <UbButton
+                variant="secondary"
+                size="sm"
+                onClick={() => onTell(o)}
+                data-testid="custom-order-tell"
+              >
+                {t('sales.customOrder.tell')}
+              </UbButton>
+            )}
+            <UbButton
+              variant="ghost"
+              size="sm"
+              onClick={() => onEdit(o)}
+              data-testid="custom-order-edit"
+            >
+              {t('sales.karigar.edit')}
+            </UbButton>
           </UbStack>
         )}
       </UbStack>
@@ -227,6 +254,8 @@ export function CustomOrdersPageContent(): React.JSX.Element {
   const [data, setData] = useState<CustomOrderList | null>(null);
   const [failed, setFailed] = useState(false);
   const [adding, setAdding] = useState(false);
+  const [editingOrder, setEditingOrder] = useState<CustomOrder | null>(null);
+  const shop = useAppSelector(selectActiveTenant)?.name ?? '';
   const [cancelling, setCancelling] = useState<CustomOrder | null>(null);
   const [nonce, setNonce] = useState(0);
   const reload = useCallback(() => setNonce((n) => n + 1), []);
@@ -279,6 +308,15 @@ export function CustomOrdersPageContent(): React.JSX.Element {
     [dispatch, reload]
   );
 
+  const openEdit = useCallback((o: CustomOrder) => {
+    setEditingOrder(o);
+    setAdding(true);
+  }, []);
+  // Design E5: nothing is sent by itself; the shop reads and may edit the words,
+  // then WhatsApp opens with them filled in.
+  const [telling, setTelling] = useState<CustomOrder | null>(null);
+  const tell = setTelling;
+
   const badge = useCallback(
     (o: CustomOrder) => {
       if (o.status === 'delivered' || o.status === 'cancelled') {
@@ -307,10 +345,14 @@ export function CustomOrdersPageContent(): React.JSX.Element {
         return (
           <UbStatusBadge
             tone="info"
-            label={t('sales.karigar.withBadge', {
-              name: o.withKarigar.name,
-              weight: Number(o.withKarigar.issued_g).toString(),
-            })}
+            label={
+              o.withKarigar.issued_g
+                ? t('sales.karigar.withBadge', {
+                    name: o.withKarigar.name,
+                    weight: Number(o.withKarigar.issued_g).toString(),
+                  })
+                : t('sales.karigar.withName', { name: o.withKarigar.name })
+            }
           />
         );
       }
@@ -320,8 +362,17 @@ export function CustomOrdersPageContent(): React.JSX.Element {
   );
 
   const columns = useMemo(
-    () => orderColumns({ t, badge, canWrite, move, askCancel: setCancelling }),
-    [t, badge, canWrite, move]
+    () =>
+      orderColumns({
+        t,
+        badge,
+        canWrite,
+        move,
+        askCancel: setCancelling,
+        onEdit: openEdit,
+        onTell: tell,
+      }),
+    [t, badge, canWrite, move, openEdit, tell]
   );
   const labels = useMemo(
     () =>
@@ -461,6 +512,24 @@ export function CustomOrdersPageContent(): React.JSX.Element {
                       <UbButton variant="ghost" size="sm" onClick={() => setCancelling(o)}>
                         {t('sales.customOrder.cancel')}
                       </UbButton>
+                      {o.status === 'ready' && (
+                        <UbButton
+                          variant="secondary"
+                          size="sm"
+                          onClick={() => tell(o)}
+                          data-testid="custom-order-tell"
+                        >
+                          {t('sales.customOrder.tell')}
+                        </UbButton>
+                      )}
+                      <UbButton
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => openEdit(o)}
+                        data-testid="custom-order-edit"
+                      >
+                        {t('sales.karigar.edit')}
+                      </UbButton>
                     </UbStack>
                   )}
                 </UbStack>
@@ -543,6 +612,31 @@ export function CustomOrdersPageContent(): React.JSX.Element {
           }}
         />
       )}
+      {telling && (
+        <UbShareSheet
+          open
+          onOpenChange={(next) => (next ? undefined : setTelling(null))}
+          title={t('sales.customOrder.tell')}
+          description={telling.party.name}
+          message={t('sales.customOrder.readyMessage', {
+            name: telling.party.name,
+            what: telling.what,
+            number: telling.number,
+            shop,
+          })}
+          phone={telling.party.mobile}
+          labels={{
+            preview: t('sales.customOrder.tellPreview'),
+            reset: t('sales.customOrder.tellReset'),
+            empty: t('sales.customOrder.tellEmpty'),
+            whatsapp: t('sales.customOrder.tellWhatsapp'),
+            sms: t('sales.customOrder.tellSms'),
+            copy: t('sales.customOrder.tellCopy'),
+            more: t('sales.customOrder.tellMore'),
+            close: t('common.action.close'),
+          }}
+        />
+      )}
       {tagging && (
         <MakeTagDialog
           lot={tagging}
@@ -567,9 +661,15 @@ export function CustomOrdersPageContent(): React.JSX.Element {
       )}
       {adding && (
         <CustomOrderDrawer
-          onClose={() => setAdding(false)}
+          order={editingOrder}
+          karigars={karigars?.rows ?? []}
+          onClose={() => {
+            setAdding(false);
+            setEditingOrder(null);
+          }}
           onSaved={() => {
             setAdding(false);
+            setEditingOrder(null);
             reload();
           }}
         />

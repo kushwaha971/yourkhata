@@ -297,6 +297,7 @@ ACTION_LABELS: dict[str, str] = {
     "invoice.draft_deleted": "Deleted a draft bill",
     "invoice.draft_updated": "Changed a draft bill",
     "invoice.issued": "Issued bill",
+    "custom_order.updated": "Changed custom order",
     "karigar.updated": "Changed karigar",
     "karigar_lot.corrected": "Corrected gold given to karigar",
     "karigar_lot.removed": "Removed gold given to karigar",

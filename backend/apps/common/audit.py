@@ -239,6 +239,7 @@ class AuditAction:
     CREDIT_NOTE_REFUND_RELEASED = "credit_note.refund_released"
     INVOICE_VOIDED = "invoice.voided"
     # A wrong weight is corrected, and the row keeps what it said before.
+    CUSTOM_ORDER_UPDATED = "custom_order.updated"
     KARIGAR_UPDATED = "karigar.updated"
     KARIGAR_LOT_CORRECTED = "karigar_lot.corrected"
     KARIGAR_LOT_REMOVED = "karigar_lot.removed"

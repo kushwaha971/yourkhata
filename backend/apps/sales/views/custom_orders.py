@@ -5,6 +5,7 @@ from __future__ import annotations
 
 from typing import Any
 
+from rest_framework.parsers import FormParser, MultiPartParser
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.views import APIView
 
@@ -61,6 +62,20 @@ class CustomOrderDetailView(_View):
         order = custom_orders.get_order(tenant=get_effective_tenant(request), order_id=pk)
         return StandardResponse.ok(custom_orders.view(order))
 
+    def patch(self, request: Any, pk: Any) -> Any:
+        order = custom_orders.update_order(ctx=Ctx.from_request(request), order_id=pk, data=request.data)
+        return StandardResponse.ok(custom_orders.view(order))
+
+
+class JewelHomeView(_View):
+    def get(self, request: Any) -> Any:
+        return StandardResponse.ok(custom_orders.jewel_home(tenant=get_effective_tenant(request)))
+
+
+class OldGoldView(_View):
+    def get(self, request: Any) -> Any:
+        return StandardResponse.ok(custom_orders.old_gold_page(tenant=get_effective_tenant(request)))
+
 
 class KarigarsView(_View):
     def get(self, request: Any) -> Any:
@@ -94,6 +109,12 @@ class KarigarTagsDoneView(_View):
 
 
 class KarigarLotView(_View):
+    def get_permissions(self) -> list[Any]:
+        # Removing gold from the record is an owner's act, like voiding a bill.
+        if self.request.method == "DELETE":
+            return [IsAuthenticated(), ModuleEnabled(ModuleCode.SALES)(), HasPermission("sales.invoice.void")()]
+        return super().get_permissions()
+
     def patch(self, request: Any, pk: Any) -> Any:
         return StandardResponse.ok(karigars.correct_lot(ctx=Ctx.from_request(request), lot_id=pk, data=request.data))
 
@@ -105,3 +126,11 @@ class KarigarLotView(_View):
 class KarigarDetailView(_View):
     def patch(self, request: Any, pk: Any) -> Any:
         return StandardResponse.ok(karigars.update_karigar(ctx=Ctx.from_request(request), karigar_id=pk, data=request.data))
+
+
+class CustomOrderPhotoView(_View):
+    parser_classes = [MultiPartParser, FormParser]
+
+    def post(self, request: Any, pk: Any) -> Any:
+        order = custom_orders.set_photo(ctx=Ctx.from_request(request), order_id=pk, upload=request.FILES.get("photo"))
+        return StandardResponse.ok(custom_orders.view(order))
