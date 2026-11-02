@@ -177,7 +177,7 @@ def test_a_voided_quick_sale_hands_the_old_gold_back(owner: Any, chain: Any) -> 
     assert not OldGold.objects.filter(document_id=made["id"]).exists()
 
 
-# ── G2d: PAN at ₹2 lakh, and the cash limit ─────────────────────────────────
+# ── G2d: PAN at ₹2 lakh (no cash limit) ─────────────────────────────────
 
 
 def _big_bill(owner: Any, chain: Any, **extra: Any) -> dict:
@@ -208,15 +208,12 @@ def test_with_its_pan_the_bill_issues_and_keeps_it(owner: Any, chain: Any) -> No
     assert paid.json()["data"]["pan"] == "ABCPK1234L"
 
 
-def test_two_lakh_in_cash_on_one_bill_is_refused(owner: Any, chain: Any) -> None:
-    """s.269ST: ₹1,99,999 cash is taken; ₹2,00,000 is not, and the rest goes by UPI."""
+def test_no_cash_limit_is_applied(owner: Any, chain: Any) -> None:
+    """Owner, 2 Nov 2026: how a bill is paid is the business's choice — the whole
+    ₹2 lakh-plus jeweller's bill may be taken in cash (no s.269ST refusal)."""
     made = _big_bill(owner, chain, pan="ABCPK1234L")
-    total = Decimal(made["grand_total"])
-    over = {"mode_breakup": [{"mode": "cash", "amount": "200000.00"}, {"mode": "upi", "amount": f"{total - 200000:.2f}"}]}
-    refused = issue(owner, made["id"], version=made["version"], payment=over)
-    assert refused.status_code == 400 and "payment" in refused.json()["error"]["details"]
-    under = {"mode_breakup": [{"mode": "cash", "amount": "199999.00"}, {"mode": "upi", "amount": f"{total - 199999:.2f}"}]}
-    assert issue(owner, made["id"], version=made["version"], payment=under).status_code == 200
+    cash = {"mode_breakup": [{"mode": "cash", "amount": made["grand_total"]}]}
+    assert issue(owner, made["id"], version=made["version"], payment=cash).status_code == 200
 
 
 def test_a_shop_that_is_not_a_jeweller_is_not_asked(owner: Any, make_item: Any) -> None:

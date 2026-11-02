@@ -275,7 +275,6 @@
   "sales.issued.paid": "Paid {amount} ({modes})",
   "sales.issued.title": "{number} issued",
   "sales.issued.view": "View bill",
-  "sales.jewel.cashLimit": "Cash over ₹1,99,999 can't be taken on one bill. Take the rest by UPI, card or bank.",
   "sales.jewel.pan": "PAN",
   "sales.jewel.panHint": "Needed because the bill is ₹2 lakh or more.",
   "sales.kitchen.footer": "Bill {number} · no prices",

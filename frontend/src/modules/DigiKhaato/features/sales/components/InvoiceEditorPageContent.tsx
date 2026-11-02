@@ -135,9 +135,8 @@ export function InvoiceEditorPageContent({
   /** What the customer pays now: the bill, less any old gold taken in. */
   const toPay = oldGoldValue ? subtractMoney(preview.grandTotal, oldGoldValue) : preview.grandTotal;
   // G2d — design G2: a jeweller's bill of ₹2 lakh or more asks the PAN (Rule
-  // 114B), and ₹2 lakh or more cannot be taken in cash on one bill (s.269ST).
+  // 114B). No cash limit: how a bill is paid is the business's choice (owner).
   const needsPan = jeweller && Number(preview.grandTotal) >= JEWEL_LIMIT;
-  const cashTooMuch = jeweller && Number(toPay) >= JEWEL_LIMIT;
   const docksTotals = useDocksEditorTotals();
   // dBill's two columns start at 1280; below it the totals stay under the lines.
   const desk = useMediaQuery('(min-width: 1280px)');
@@ -609,7 +608,7 @@ export function InvoiceEditorPageContent({
                   onClick={requestCash}
                   busy={cashBusy}
                   busyLabel={issueBusyLabel}
-                  disabled={issueDisabled || cashTooMuch}
+                  disabled={issueDisabled}
                   aria-label={cashName}
                   data-testid="invoice-paid-cash"
                   className="max-2xl:hidden"
@@ -757,13 +756,6 @@ export function InvoiceEditorPageContent({
                 oldGold={oldGoldValue}
               />
             )}
-            {cashTooMuch && bill && (
-              <UbStatusBanner
-                tone="warning"
-                title={t('sales.jewel.cashLimit')}
-                data-testid="cash-limit"
-              />
-            )}
             {bill && desk && scanSeen && (
               // Design dScan `.card.pad.small.sec`: what the scanner does.
               <UbPanel data-testid="scan-help">
@@ -835,7 +827,7 @@ export function InvoiceEditorPageContent({
               onClick={requestCash}
               busy={cashBusy}
               busyLabel={issueBusyLabel}
-              disabled={issueDisabled || cashTooMuch}
+              disabled={issueDisabled}
               aria-label={cashName}
               data-testid="invoice-dock-paid-cash"
             >

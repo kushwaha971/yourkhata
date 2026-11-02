@@ -1,18 +1,17 @@
-// G2d — a jeweller's two limits on one bill (design G2 dJewelBill side column;
+// G2d — a jeweller's PAN at ₹2 lakh, and no cash limit (design G2 dJewelBill side column;
 // report docs/performance/2026-11-02-shop-g2-jewellery-bill.md).
 //
 // QA Jewellery, owner qa-jeweller. A tag at ₹15,000/g with 12% making is
 // 12.340 × 15,000 × 1.12 = ₹2,07,312 — over ₹2 lakh. Checks:
 //   B   a bill under ₹2 lakh shows no PAN box and no cash notice;
 //   N1  over ₹2 lakh: the PAN box with "Needed because the bill is ₹2 lakh or
-//       more.", the cash notice, and "Paid cash" turned off;
+//       more."; no cash notice and "Paid cash" stays on (owner: no cash limit);
 //   N2  a wrong PAN is refused under the box; the right one is kept by the
 //       server, upper-cased (--skew expects another PAN: it must then fail);
-//   N3  issued with ₹2,00,000 cash: refused; with ₹1,99,999 cash + UPI: issued,
-//       the PAN kept on the bill;
+//   N3  the whole bill issued in cash, the PAN kept on the bill;
 //   L   390 light and 320 dark: nothing wider than the screen, no text cut.
 //
-//   node e2e/g2d-pan-cash.mjs [--skew]
+//   node e2e/g2d-pan.mjs [--skew]
 import { mkdirSync } from 'node:fs';
 import { randomUUID } from 'node:crypto';
 import { chromium } from 'playwright';
@@ -91,7 +90,6 @@ await page.getByRole('button', { name: 'Quick sale', exact: true }).first().clic
 await scanInto(page, tags[0]);
 await page.waitForTimeout(500);
 check('B: ₹1,61,012 asks no PAN', (await page.getByTestId('jewel-pan').count()) === 0);
-check('B: …and shows no cash notice', (await page.getByText(/Cash over ₹1,99,999/).count()) === 0);
 // Let the draft save before leaving, or the next bill asks about it first.
 await page.waitForTimeout(4000);
 
@@ -104,9 +102,8 @@ const pan = page.getByTestId('jewel-pan');
 await pan.waitFor({ timeout: 8000 }).catch(() => undefined);
 check('N1: the PAN box appears at ₹2 lakh', (await pan.count()) === 1);
 check('N1: "Needed because the bill is ₹2 lakh or more."', (await page.getByText('Needed because the bill is ₹2 lakh or more.').count()) >= 1);
-const NOTICE = "Cash over ₹1,99,999 can't be taken on one bill. Take the rest by UPI, card or bank.";
-check('N1: the cash notice says the limit', (await page.getByText(NOTICE).count()) === 1);
-check('N1: "Paid cash" is off', await page.getByRole('button', { name: /Paid cash/ }).first().isDisabled().catch(() => false));
+check('N1: no cash notice (owner: no cash limit anywhere)', (await page.getByText(/Cash over ₹1,99,999/).count()) === 0);
+check('N1: "Paid cash" stays on', !(await page.getByRole('button', { name: /Paid cash/ }).first().isDisabled().catch(() => true)));
 await page.screenshot({ path: `${dir}/desk-1280-over.png`, fullPage: true });
 await pan.fill('ABC12');
 await page.waitForTimeout(4000);
@@ -117,16 +114,11 @@ const saved = await draftOf(tags[1]);
 const want = skew ? 'ABCPK9999L' : 'ABCPK1234L';
 check(`N2: the server kept PAN ${want}`, saved?.pan === want, String(saved?.pan));
 if (saved) {
-  const total = Number(saved.grand_total);
-  const pay = async (cash) =>
-    ctx.request.post(`${api}/sales/invoices/${saved.id}/issue`, {
-      headers: await hdr({ 'Idempotency-Key': randomUUID() }),
-      data: { version: saved.version, payment: { mode_breakup: [{ mode: 'cash', amount: cash.toFixed(2) }, { mode: 'upi', amount: (total - cash).toFixed(2) }] } },
-    });
-  const over = await pay(200000);
-  check('N3: ₹2,00,000 cash is refused', over.status() === 400, String(over.status()));
-  const under = await pay(199999);
-  check('N3: ₹1,99,999 cash + UPI issues', under.ok(), String(under.status()));
+  const whole = await ctx.request.post(`${api}/sales/invoices/${saved.id}/issue`, {
+    headers: await hdr({ 'Idempotency-Key': randomUUID() }),
+    data: { version: saved.version, payment: { mode_breakup: [{ mode: 'cash', amount: saved.grand_total }] } },
+  });
+  check('N3: the whole bill may be taken in cash', whole.ok(), String(whole.status()));
   const after = await get(`/sales/invoices/${saved.id}`);
   check('N3: the issued bill keeps the PAN', after?.pan === 'ABCPK1234L', String(after?.pan));
 }
@@ -160,8 +152,8 @@ for (const [width, theme, tag] of [[390, 'light', tags[2]], [320, 'dark', tags[3
   });
   check(`L ${width} ${theme}: the row reads its weight and rate per gram`, /12\.340 g · ₹15,000\/g/.test(m.rate), m.rate);
   check(`L ${width} ${theme}: page no wider than the screen`, m.overflow <= 0, `${m.overflow}px`);
-  check(`L ${width} ${theme}: PAN and notice not cut`, m.cut.length === 0, m.cut.join(' | '));
-  check(`L ${width} ${theme}: PAN box and notice shown`, (await p.getByTestId('jewel-pan').count()) === 1 && (await p.getByText(/Cash over ₹1,99,999/).count()) === 1);
+  check(`L ${width} ${theme}: PAN and row not cut`, m.cut.length === 0, m.cut.join(' | '));
+  check(`L ${width} ${theme}: PAN box shown`, (await p.getByTestId('jewel-pan').count()) === 1);
   await p.screenshot({ path: `${dir}/phone-${width}-${theme}.png`, fullPage: true });
   await phone.close();
 }
