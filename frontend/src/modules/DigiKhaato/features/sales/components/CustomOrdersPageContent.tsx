@@ -341,7 +341,7 @@ export function CustomOrdersPageContent(): React.JSX.Element {
         subtitle={t('sales.customOrder.subtitle')}
         primaryActions={
           canWrite ? (
-            <UbStack direction="row" gap={2} className="flex-wrap">
+            <UbBox className="grid w-full auto-cols-auto grid-flow-col gap-2 sm:w-auto [&>button]:h-auto [&>button]:min-h-11 [&>button]:whitespace-normal">
               {(karigars?.rows.length ?? 0) > 0 && (
                 <UbButton
                   variant="secondary"
@@ -358,7 +358,7 @@ export function CustomOrdersPageContent(): React.JSX.Element {
               >
                 {t('sales.customOrder.newShort')}
               </UbButton>
-            </UbStack>
+            </UbBox>
           ) : undefined
         }
       />
