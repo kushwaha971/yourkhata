@@ -4,9 +4,10 @@ import { useMemo, useState } from 'react';
 
 import dynamic from 'next/dynamic';
 
-import { Archive, ArchiveRestore, PackageMinus, Pencil } from 'lucide-react';
+import { Archive, ArchiveRestore, PackageMinus, Pencil, Printer } from 'lucide-react';
 
 import {
+  UbActionLink,
   UbBottomBar,
   UbBox,
   UbButton,
@@ -15,6 +16,7 @@ import {
   UbDrawerLoading,
   UbEmptyState,
   UbInfoRow,
+  UbLink,
   UbPageHeader,
   UbPageHeaderMobileActions,
   UbPageShell,
@@ -30,6 +32,7 @@ import { useAppSelector } from 'src/hooks/useAppStore';
 import { usePermissions } from 'src/hooks/usePermissions';
 import { useTranslation } from 'src/hooks/useTranslation';
 import { selectActiveTenant } from 'src/redux/slice/sessionSlice';
+import { ROUTES } from 'src/routes';
 import { cn } from 'src/utils/cn';
 import { formatBusinessDate } from 'src/utils/dates';
 import { formatInr } from 'src/utils/money';
@@ -255,16 +258,44 @@ export function ItemDetailPageContent({ id }: Readonly<{ id: string }>): React.J
       </UbButton>
     );
 
+  // Design D5: a business that prints labels (sizes, or a jeweller's tags)
+  // gets Print labels; on a phone it takes the dock's second place.
+  const printsLabels = Boolean(features?.includes('variants') || features?.includes('jewellery'));
+  const printLabels = (className?: string, variant?: 'primary') => (
+    <UbActionLink
+      href={`${ROUTES.ITEM_LABELS}?item=${item.id}`}
+      variant={variant}
+      icon={<Printer className="h-4 w-4" aria-hidden />}
+      className={className}
+    >
+      {t('items.detail.printLabels')}
+    </UbActionLink>
+  );
+  const dockSecond = printsLabels
+    ? printLabels(canAdjust ? 'min-h-11' : 'col-span-2 min-h-11', 'primary')
+    : editItemButton(canAdjust ? 'min-h-11' : 'col-span-2 min-h-11');
+
   return (
     <UbPageShell>
+      <UbText as="p" variant="caption" tone="tertiary" className="max-lg:hidden">
+        <UbLink href={ROUTES.ITEMS} variant="caption">
+          {t('items.detail.crumb')}
+        </UbLink>
+        {` › ${item.name}`}
+      </UbText>
       <UbPageHeader
         title={item.name}
         wrapTitle
         subtitle={[item.category?.name, item.unit.code].filter(Boolean).join(' · ')}
         renderMobileActions={() =>
-          archiveButton ? (
+          archiveButton || (printsLabels && canEdit) ? (
             <UbPageHeaderMobileActions
-              actions={archiveButton}
+              actions={
+                <>
+                  {printsLabels && editItemButton()}
+                  {archiveButton}
+                </>
+              }
               mobile={{
                 menuLabel: t('common.action.moreActions'),
                 closeLabel: t('common.action.close'),
@@ -276,6 +307,7 @@ export function ItemDetailPageContent({ id }: Readonly<{ id: string }>): React.J
           <>
             {archiveButton}
             {adjustSecondary()}
+            {printsLabels && printLabels()}
             {editItemButton()}
           </>
         }
@@ -329,14 +361,14 @@ export function ItemDetailPageContent({ id }: Readonly<{ id: string }>): React.J
           </UbTabs>
         </UbPanel>
       </UbStack>
-      {(canAdjust || canEdit) && (
+      {(canAdjust || canEdit || printsLabels) && (
         <UbBottomBar
           sticky
-          className="-mx-4 grid grid-cols-2 gap-2 border-t border-border-hairline bg-surface-card px-4 pb-[calc(0.875rem+env(safe-area-inset-bottom,0px))] pt-2.5 lg:hidden"
+          className="fixed inset-x-0 bottom-[var(--ub-nav-offset)] grid grid-cols-2 gap-2 border-t border-border-hairline bg-surface-card px-4 pb-[calc(0.875rem+env(safe-area-inset-bottom,0px))] pt-2.5 lg:hidden"
           data-testid="item-primary-actions"
         >
           {adjustSecondary(canEdit ? 'min-h-11' : 'col-span-2 min-h-11')}
-          {editItemButton(canAdjust ? 'min-h-11' : 'col-span-2 min-h-11')}
+          {dockSecond}
         </UbBottomBar>
       )}
       <UbConfirmDialog

@@ -96,28 +96,17 @@ export function ItemTagFields(): React.JSX.Element {
         {grams('tag.stoneG', t('items.form.tag.stone'))}
         {grams('tag.netG', t('items.form.tag.net'))}
       </UbBox>
-      <UbBox className="grid grid-cols-2 items-end gap-3">
-        <UbStack gap={1.5}>
-          <UbText as="span" variant="label">
-            {t('items.form.tag.making')}
-          </UbText>
-          <UbSegmentedControl<'pct' | 'per_g'>
-            value={makingType}
-            onChange={(next) => setValue('tag.makingType', next, { shouldDirty: true })}
-            options={[
-              { value: 'pct', label: '%' },
-              { value: 'per_g', label: t('items.form.tag.perGram') },
-            ]}
-            ariaLabel={t('items.form.tag.making')}
-          />
-          <UbField name="tag.makingValue" label={t('items.form.tag.makingAmount')} labelHidden>
-            {(field) =>
-              makingType === 'per_g' ? (
+      <UbBox className="grid grid-cols-1 items-end gap-3 min-[360px]:grid-cols-2">
+        {/* Design D3: Making is ONE field — the amount, and beside it whether
+            it is a percent or rupees per gram. */}
+        <UbField name="tag.makingValue" label={t('items.form.tag.making')}>
+          {(field) => (
+            <UbBox className="grid grid-cols-1 items-center gap-2 min-[360px]:grid-cols-[minmax(0,1fr)_auto]">
+              {makingType === 'per_g' ? (
                 <UbMoneyInput
                   {...field}
                   value={field.value as string}
                   onChange={(next) => setValue('tag.makingValue', next, { shouldDirty: true })}
-                  unit="/ g"
                 />
               ) : (
                 <UbQuantityInput
@@ -125,12 +114,20 @@ export function ItemTagFields(): React.JSX.Element {
                   value={field.value as string}
                   onChange={(next) => setValue('tag.makingValue', next, { shouldDirty: true })}
                   decimals={2}
-                  unit="%"
                 />
-              )
-            }
-          </UbField>
-        </UbStack>
+              )}
+              <UbSegmentedControl<'pct' | 'per_g'>
+                value={makingType}
+                onChange={(next) => setValue('tag.makingType', next, { shouldDirty: true })}
+                options={[
+                  { value: 'pct', label: '%' },
+                  { value: 'per_g', label: t('items.form.tag.perGram') },
+                ]}
+                ariaLabel={t('items.form.tag.makingType')}
+              />
+            </UbBox>
+          )}
+        </UbField>
         <UbField name="tag.wastagePct" label={t('items.form.tag.wastage')}>
           {(field) => (
             <UbQuantityInput

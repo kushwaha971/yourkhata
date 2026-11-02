@@ -125,19 +125,23 @@ try {
     'focus lands on Name',
     await page.evaluate(() => document.activeElement?.getAttribute('name') === 'name')
   );
+  // Design D3: Barcode, Category, price + GST and unit up front; the rest in
+  // one "More details" fold.
   check(
-    'the fast path carries the Includes GST switch',
-    (await dialog.getByRole('switch', { name: /includes GST/i }).count()) === 1
+    'D3: Barcode and Category are in the fast path',
+    (await dialog.getByRole('textbox', { name: /^Barcode/i }).count()) === 1 &&
+      (await dialog.getByRole('combobox', { name: /Category/i }).count()) >= 1
   );
+  check(
+    'D3: Includes GST waits in More details',
+    (await dialog.getByRole('switch', { name: /includes GST/i }).count()) === 0 &&
+      (await dialog.getByRole('button', { name: /More details/i }).count()) === 1
+  );
+  await dialog.getByRole('button', { name: /More details/i }).click();
   check(
     'Cost and margin is folded (no purchase price box yet)',
     (await dialog.getByRole('textbox', { name: /Purchase price/i }).count()) === 0 &&
       (await dialog.getByRole('button', { name: /Cost and margin/i }).count()) === 1
-  );
-  check(
-    'Category is folded (no category box in the fast path)',
-    (await dialog.getByRole('combobox', { name: /Category/i }).count()) === 0 &&
-      (await dialog.getByRole('button', { name: /Category/i }).count()) === 1
   );
 
   /* ---------- Cost and margin ---------- */
@@ -158,7 +162,6 @@ try {
 
   /* ---------- Barcode duplicate ---------- */
   if (withBarcode) {
-    await dialog.getByRole('button', { name: /SKU and barcode/i }).click();
     await dialog.getByRole('textbox', { name: /Barcode/i }).fill(withBarcode.barcode);
     await dialog.getByRole('textbox', { name: /Barcode/i }).blur();
     const link = dialog.getByRole('link', { name: /Open it/i });
@@ -206,6 +209,7 @@ try {
   const editDialog = page.getByRole('dialog');
   await editDialog.getByRole('textbox', { name: 'Name', exact: true }).waitFor({ timeout: 15000 });
   // This item was saved without a cost, so its fold starts closed; a cost would open it.
+  await editDialog.getByRole('button', { name: /More details/i }).click();
   check(
     'edit shows the folded form',
     (await editDialog.getByRole('button', { name: /Cost and margin/i }).count()) === 1

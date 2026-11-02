@@ -10,7 +10,6 @@ import {
   UbDialogLoading,
   UbStack,
   UbStatusBadge,
-  useGridTier,
   useMediaQuery,
   type UbDataGridColumn,
 } from 'src/design-system';
@@ -34,9 +33,10 @@ const PURITY: Record<string, string> = {
   silver: 'Silver 999',
 };
 
-/** Below 1280 the item page's tab column is ~350 px: Purity and HUID go (a
- * phone's card keeps Purity in its line). */
-const columns = (t: TranslateFn, full: boolean): UbDataGridColumn<Tag>[] => [
+/** Design D5: a table at every width. A phone shows Tag, Net wt and Purity;
+ * from lg the tab spans the page and adds HUID and Status; below 360 px
+ * Purity goes too. */
+const columns = (t: TranslateFn, wide: boolean, roomy: boolean): UbDataGridColumn<Tag>[] => [
   {
     id: 'tag',
     header: t('items.tags.col.tag'),
@@ -54,7 +54,7 @@ const columns = (t: TranslateFn, full: boolean): UbDataGridColumn<Tag>[] => [
     widthShare: 1,
     cell: (r) => (r.netG ? `${Number(r.netG).toFixed(3)} g` : '—'),
   },
-  ...(full
+  ...(roomy
     ? ([
         {
           id: 'purity',
@@ -66,7 +66,8 @@ const columns = (t: TranslateFn, full: boolean): UbDataGridColumn<Tag>[] => [
         },
       ] as UbDataGridColumn<Tag>[])
     : []),
-  ...(full
+
+  ...(wide
     ? ([
         {
           id: 'huid',
@@ -78,25 +79,29 @@ const columns = (t: TranslateFn, full: boolean): UbDataGridColumn<Tag>[] => [
         },
       ] as UbDataGridColumn<Tag>[])
     : []),
-  {
-    id: 'status',
-    header: t('items.tags.col.status'),
-    priority: 1,
-    cardSlot: 'trailing',
-    widthShare: 1,
-    cell: (r) => (
-      <UbStatusBadge
-        tone={r.status === 'in_stock' ? 'success' : 'neutral'}
-        label={
-          r.status === 'in_stock'
-            ? t('items.tags.inStock')
-            : r.status === 'sold' && r.soldOn
-              ? t('items.tags.soldOn', { date: formatBusinessDate(r.soldOn) })
-              : t('items.tags.returned')
-        }
-      />
-    ),
-  },
+  ...(wide
+    ? ([
+        {
+          id: 'status',
+          header: t('items.tags.col.status'),
+          priority: 1,
+          cardSlot: 'trailing',
+          widthShare: 1,
+          cell: (r) => (
+            <UbStatusBadge
+              tone={r.status === 'in_stock' ? 'success' : 'neutral'}
+              label={
+                r.status === 'in_stock'
+                  ? t('items.tags.inStock')
+                  : r.status === 'sold' && r.soldOn
+                    ? t('items.tags.soldOn', { date: formatBusinessDate(r.soldOn) })
+                    : t('items.tags.returned')
+              }
+            />
+          ),
+        },
+      ] as UbDataGridColumn<Tag>[])
+    : []),
 ];
 
 /** G2a — design D5 for a jeweller: the item page's "Weight and rate" tab. */
@@ -117,10 +122,10 @@ export function ItemTagsPanel({
     return () => controller.abort();
   }, [itemId]);
 
-  const tier = useGridTier();
-  const xl = useMediaQuery('(min-width: 1280px)');
-  const full = xl || tier === 'cards';
-  const cols = useMemo(() => columns(t, full), [t, full]);
+  const wide = useMediaQuery('(min-width: 1024px)');
+  // Below 360 px a third column cuts the weights: Purity waits for room.
+  const roomy = useMediaQuery('(min-width: 360px)');
+  const cols = useMemo(() => columns(t, wide, roomy), [t, wide, roomy]);
   const labels = useMemo(
     () =>
       inventoryGridLabels(t, {
@@ -156,6 +161,7 @@ export function ItemTagsPanel({
         }}
         caption={t('items.tags.title')}
         cardAvatar={false}
+        tier="full"
         page={{
           page: 1,
           pageSize: Math.max(rows?.length ?? 0, 1),

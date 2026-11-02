@@ -2,17 +2,22 @@
 
 import { useCallback, useEffect, useId, useMemo, useState } from 'react';
 
+import dynamic from 'next/dynamic';
+
 import { yupResolver } from '@hookform/resolvers/yup';
+import { ScanLine } from 'lucide-react';
 import { useForm, useWatch } from 'react-hook-form';
 
 import { CompactDrawer as UbDrawer } from 'src/components/records/CompactOverlays';
 import {
   UbAsyncCombobox,
+  UbBox,
   UbButton,
   UbChoiceChips,
   UbCombobox,
   UbConfirmDialog,
   UbDateInput,
+  UbDialogLoading,
   UbDisclosure,
   UbField,
   UbGrid,
@@ -55,16 +60,22 @@ import { ItemVariantFields } from './ItemVariantFields';
 import type { UseItemFormResult } from '../hooks/useItemForm';
 import type { HsnCode, ItemFormValues } from '../types/item.types';
 
-// Loaded with dynamic(), so its own words come with its own chunk rather than
+// Loaded lazily, so its own words come with its own chunk rather than
 // with the screen that opens it (src/i18n/catalogueRegistry.ts).
+const UbScanSheet = dynamic(() => import('src/design-system').then((m) => m.UbScanSheet), {
+  ssr: false,
+  loading: () => <UbDialogLoading />,
+});
+
 import 'src/i18n/catalogues/inventory';
+import 'src/i18n/catalogues/itemPicker';
 import 'src/i18n/catalogues/items';
 import 'src/i18n/catalogues/movement';
 import 'src/i18n/catalogues/stock';
 import 'src/i18n/catalogues/validation';
 
 /**
- * INV-01 — create and edit an item, in a drawer (`dynamic()` from the pages
+ * INV-01 — create and edit an item, in a drawer (lazily loaded from the pages
  * that open it: react-hook-form, Yup and a dozen controls belong in the chunk
  * that OPENS the form, not in the list a merchant opens to read).
  *
@@ -267,6 +278,7 @@ export function ItemFormDrawer({
 
   // ── Leave without saving? (States) ────────────────────────────────────────
   const [confirmLeave, setConfirmLeave] = useState(false);
+  const [cameraOpen, setCameraOpen] = useState(false);
   const requestClose = useCallback(() => {
     if (formState.isDirty) setConfirmLeave(true);
     else close();
@@ -405,23 +417,38 @@ export function ItemFormDrawer({
               hint={barcodeHint?.text}
             >
               {(field) => (
-                <UbTextInput
-                  {...field}
-                  autoComplete="off"
-                  inputMode="numeric"
-                  maxLength={48}
-                  onBlur={() => {
-                    field.onBlur();
-                    void checkBarcode();
-                  }}
-                  onKeyDown={(event: React.KeyboardEvent<HTMLInputElement>) => {
-                    /* FR-11 — the scanner's Enter is not a submit. */
-                    if (event.key === 'Enter') {
-                      event.preventDefault();
-                      (event.target as HTMLInputElement).blur();
-                    }
-                  }}
-                />
+                /* Design D3: the barcode box carries a scan button. */
+                <UbBox className="relative">
+                  <UbTextInput
+                    {...field}
+                    autoComplete="off"
+                    inputMode="numeric"
+                    className="pr-11"
+                    maxLength={48}
+                    onBlur={() => {
+                      field.onBlur();
+                      void checkBarcode();
+                    }}
+                    onKeyDown={(event: React.KeyboardEvent<HTMLInputElement>) => {
+                      /* FR-11 — the scanner's Enter is not a submit. */
+                      if (event.key === 'Enter') {
+                        event.preventDefault();
+                        (event.target as HTMLInputElement).blur();
+                      }
+                    }}
+                  />
+                  <UbButton
+                    variant="ghost"
+                    size="sm"
+                    iconOnly
+                    icon={<ScanLine aria-hidden className="h-4 w-4" />}
+                    className="ub-hit absolute right-1 top-1/2 h-9 w-9 -translate-y-1/2"
+                    onClick={() => setCameraOpen(true)}
+                    data-testid="item-barcode-scan"
+                  >
+                    {t('items.scan.camera')}
+                  </UbButton>
+                </UbBox>
               )}
             </UbField>
           )}
@@ -448,7 +475,7 @@ export function ItemFormDrawer({
             {t('items.form.barcode.open')}
           </UbLink>
         )}
-        <UbGrid columns={2} gap={3}>
+        <UbGrid gap={3} className="min-[360px]:grid-cols-2">
           <ItemPriceFields part="price" canSeeCost={canSeeCost} gst={gst} />
           <UbField
             name="taxCode"
@@ -473,7 +500,7 @@ export function ItemFormDrawer({
             )}
           </UbField>
         </UbGrid>
-        <UbGrid columns={2} gap={3}>
+        <UbGrid gap={3} className="min-[360px]:grid-cols-2">
           <UbField
             name="unitId"
             label={t('items.form.unit.label')}
@@ -686,6 +713,29 @@ export function ItemFormDrawer({
           </UbField>
         </UbDisclosure>
       </UbForm>
+      {cameraOpen && (
+        <UbScanSheet
+          open
+          onClose={() => setCameraOpen(false)}
+          onCode={(code: string) => {
+            setCameraOpen(false);
+            setValue('barcode', code, { shouldDirty: true });
+            void checkBarcode();
+          }}
+          title={t('items.scan.camera.title')}
+          hint={t('items.scan.camera.hint')}
+          labels={{
+            close: t('common.action.close'),
+            torch: t('items.scan.camera.torch'),
+            done: t('common.action.close'),
+            blockedTitle: t('items.scan.camera.blockedTitle'),
+            blockedBody: t('items.scan.camera.blockedBody'),
+            barcode: t('items.scan.camera.barcode'),
+            add: t('items.scan.camera.find'),
+            keepsWorking: t('items.scan.camera.keepsWorking'),
+          }}
+        />
+      )}
       <UbConfirmDialog
         open={confirmLeave}
         onOpenChange={setConfirmLeave}

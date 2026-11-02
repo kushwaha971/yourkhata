@@ -35,7 +35,7 @@ it('sends the tag as typed, making by ₹ per g', async () => {
   await userEvent.type(screen.getByLabelText('Gross'), '4.100');
   await userEvent.type(screen.getByLabelText('Stone'), '0.250');
   await userEvent.click(screen.getByRole('button', { name: '₹ per g' }));
-  await userEvent.type(screen.getByLabelText('Making amount'), '850');
+  await userEvent.type(screen.getByLabelText('Making'), '850');
   await userEvent.click(screen.getByTestId('tag-add-save'));
   await waitFor(() => expect(onAdded).toHaveBeenCalled());
   expect(service.addTag).toHaveBeenCalledWith(

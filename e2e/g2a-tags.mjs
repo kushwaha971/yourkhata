@@ -81,7 +81,7 @@ const fillTag = async (page, { no, gross, stone, net = '' }) => {
   await page.getByLabel('Gross').fill(gross);
   await page.getByLabel('Stone').fill(stone);
   if (net) await page.getByLabel('Net', { exact: true }).fill(net);
-  await page.getByLabel('Making amount').fill('12');
+  await page.getByLabel('Making', { exact: true }).fill('12');
   await page.getByLabel('HUID').fill('7K2P9X');
 };
 

@@ -119,6 +119,9 @@ try {
         if (r.width <= 1) continue; // screen-reader-only labels are clipped on purpose
         if (el.scrollWidth > el.clientWidth + 1 && el.clientWidth > 0 && s.overflow !== 'visible')
           cut.push(el.textContent.trim().slice(0, 30));
+        // A tab strip scrolls sideways on purpose; a tab scrolled out of view is
+        // reachable, not cut. The strip itself must still fit the screen.
+        if (el.closest('[role=tablist]')) continue;
         if (r.right > innerWidth + 1) cut.push(`offscreen:${el.textContent.trim().slice(0, 30)}`);
       }
       const heights = [...document.querySelectorAll('[data-testid=item-primary-actions] button')]
@@ -126,6 +129,7 @@ try {
         .map((e) => Math.round(e.getBoundingClientRect().height));
       return {
         overflow: document.documentElement.scrollWidth - innerWidth,
+        strip: Math.max(0, ...[...document.querySelectorAll('[role=tablist]')].map((e) => e.getBoundingClientRect().right - innerWidth)),
         stock: top('[data-testid=item-stock]'),
         actions: top('[data-testid=item-primary-actions]'),
         price: top('[data-testid=item-price]'),
@@ -136,6 +140,8 @@ try {
       };
     });
 
+  const innerHeightOf = (width) => (width === 1280 ? 800 : 780);
+
   /* ---------- LOOK ---------- */
   for (const locale of ['en', 'hi']) {
     await ctx.addCookies([{ name: 'ub_locale', value: locale, url: base }]);
@@ -143,18 +149,26 @@ try {
       await page.setViewportSize({ width, height: width === 1280 ? 800 : 780 });
       for (const [slug, id] of PAGES) {
         await page.goto(`${base}/items/${id}`);
-        await page.getByTestId('item-price').waitFor({ timeout: 15000 });
+        await page.getByTestId('item-stock').waitFor({ timeout: 15000 });
         if (slug === 'goods') await page.getByTestId('item-movements').waitFor({ timeout: 15000 });
         const m = await measure();
         const tag = `${slug} ${width} ${locale}`;
         check(`${tag}: no sideways scroll`, m.overflow <= 0, `${m.overflow}px`);
+        check(`${tag}: the tab strip fits the screen`, m.strip <= 1, `${m.strip}px`);
         check(`${tag}: no text cut or off screen`, m.cut.length === 0, m.cut.join(' | '));
         check(`${tag}: no raw message id`, !m.raw);
         check(`${tag}: actions ≥ 44 px`, m.heights.every((h) => h >= 44), m.heights.join(','));
         if (width < 1280) {
-          const order = [m.stock, m.actions, m.price, m.history].filter((x) => x !== null);
+          // D5: the summary, then the tabs; the actions sit in a dock at the
+          // bottom of the screen, in reach of the thumb.
+          const order = [m.stock, m.history].filter((x) => x !== null);
           check(
-            `${tag}: stock, actions, price, then history`,
+            `${tag}: D5 dock is at the bottom of the screen`,
+            m.actions === null || m.actions > innerHeightOf(width) - 200,
+            String(m.actions)
+          );
+          check(
+            `${tag}: summary, then the tabs`,
             order.every((v, i) => i === 0 || v > order[i - 1]),
             order.map(Math.round).join('/')
           );
@@ -191,7 +205,7 @@ try {
 
   /* ---------- Sales chip loads its own panel ---------- */
   await page.goto(`${base}/items/${goods.id}`);
-  await page.getByRole('radio', { name: 'Sales' }).click();
+  await page.getByRole('tab', { name: 'Sales' }).click();
   await page.waitForTimeout(1500);
   check(
     'Sales chip shows the sales panel, not movements',
@@ -224,16 +238,15 @@ try {
   check('Adjust stock: the stock block moved too', moved, figure);
   if (SHOTS) await page.screenshot({ path: `${SHOTS}/after-adjust-390.png`, fullPage: true });
 
-  /* ---------- ⋯ → Edit opens the form ---------- */
-  await page.getByRole('button', { name: 'More actions' }).click();
-  await page.getByRole('dialog').getByRole('button', { name: 'Edit' }).click();
+  /* ---------- D5: the dock's Edit item opens the form ---------- */
+  await page.getByTestId('item-primary-actions').getByRole('button', { name: 'Edit item' }).click();
   await page.getByRole('dialog').getByRole('textbox', { name: 'Name', exact: true }).first().waitFor({ timeout: 15000 });
-  check('⋯ → Edit opens the item form', true);
+  check('dock → Edit item opens the item form', true);
   await page.keyboard.press('Escape');
 
   /* ---------- Service and archived ---------- */
   await page.goto(`${base}/items/${service.id}`);
-  await page.getByText('Services have no stock').waitFor({ timeout: 15000 });
+  await page.getByText('No stock', { exact: true }).waitFor({ timeout: 15000 });
   check('a service says it has no stock', (await page.getByTestId('item-adjust').count()) === 0);
   await page.goto(`${base}/items/${archived.id}`);
   await page.getByText(/This item is archived/).waitFor({ timeout: 15000 });
