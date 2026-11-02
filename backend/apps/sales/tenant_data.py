@@ -24,4 +24,5 @@ register(
     ),
     TenantTable("sales.SalesCreditApplication", export_name="sales_credit_applications.csv"),
     TenantTable("sales.DraftCreation", export_name="sales_draft_creations.csv"),
+    TenantTable("sales.CustomOrder", export_name="custom_orders.csv"),
 )

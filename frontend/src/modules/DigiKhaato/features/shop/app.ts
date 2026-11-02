@@ -8,6 +8,7 @@ import {
   Boxes,
   ClipboardCheck,
   ClipboardList,
+  Gem,
   CreditCard,
   FileMinus,
   FileText,
@@ -128,6 +129,19 @@ export const SHOP_APP: AppManifest = {
       section: 'sales',
       order: 1,
       bottomNav: true,
+    },
+    // G3a — a jeweller's custom orders, right under Bills (design nav `jord`).
+    {
+      key: 'customOrders',
+      icon: Gem,
+      labelId: 'nav.customOrders',
+      href: ROUTES.SALES_CUSTOM_ORDERS,
+      module: 'sales',
+      permission: 'sales.invoice.read',
+      feature: 'jewellery',
+      section: 'sales',
+      order: 1.5,
+      tab: 'invoices',
     },
     {
       key: 'estimates',

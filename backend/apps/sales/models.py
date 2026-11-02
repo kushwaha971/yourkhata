@@ -312,3 +312,42 @@ class SalesCreditApplication(TenantModel):
 
     def __str__(self) -> str:  # pragma: no cover
         return f"{self.credit_note_id} → {self.invoice_id}: {self.amount}"
+
+
+class CustomOrder(TenantModel):
+    """G3a — a jeweller's custom order (design G3 `pJOrder`, `dJOrders`).
+
+    What to make, for whom, by when, with an advance that may fix the rate. The
+    advance is a real payment earmarked to this order, so no other bill can use
+    it automatically; delivering or cancelling releases it to the customer's
+    open advances, where the final bill can apply it. `client_key` makes a
+    double-tapped Save one order and one receipt.
+    """
+
+    OPEN = "open"
+    READY = "ready"
+    DELIVERED = "delivered"
+    CANCELLED = "cancelled"
+
+    number = models.CharField(max_length=16)
+    client_key = models.UUIDField()
+    party = models.ForeignKey("parties.Party", on_delete=models.RESTRICT, related_name="custom_orders")
+    what = models.CharField(max_length=200)
+    approx_weight_g = QuantityField(null=True, blank=True)
+    purity = models.CharField(max_length=12)
+    deliver_on = models.DateField()
+    advance = MoneyField(default=0)
+    advance_payment_id = models.UUIDField(null=True, blank=True)
+    #: The rate per gram fixed against the advance, or null when it is not fixed.
+    fixed_rate = MoneyField(null=True, blank=True)
+    status = models.CharField(max_length=12, default=OPEN)
+
+    class Meta:
+        db_table = "sales_custom_order"
+        verbose_name = "custom order"
+        verbose_name_plural = "custom orders"
+        ordering = ["-created_at"]
+        constraints = [
+            models.UniqueConstraint(fields=["tenant", "number"], name="uq_custom_order_number"),
+            models.UniqueConstraint(fields=["tenant", "client_key"], name="uq_custom_order_client_key"),
+        ]

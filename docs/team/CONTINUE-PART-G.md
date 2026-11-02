@@ -62,4 +62,5 @@ rate, 0% allowed. The jeweller's desktop columns are built.
 G2 is complete: G2a tags, G2b bill by weight, G2c old gold, G2d PAN. Live checks: `e2e/g2a-tags.mjs`, `g2b-bill.mjs`, `g2c-old-gold.mjs`,
 `g2d-pan.mjs` (each has `--skew`). Owner calls listed in the G2 report
 (old gold over the bill, PAN on the print; owner decided: no cash limit anywhere).
-Next: G3 · custom orders and karigar (design §G3).
+G3a custom orders is in (`docs/performance/2026-11-02-shop-g3-custom-orders.md`,
+`e2e/g3a-orders.mjs`). Next: G3b karigars, or order → bill first (owner's call).

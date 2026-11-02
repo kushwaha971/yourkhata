@@ -122,6 +122,7 @@ _REGISTRY: dict[str, tuple[int, bool]] = {
     "serial_in_stock": (409, False),
     "serial_not_in_stock": (409, False),
     "old_gold_over_bill": (409, False),
+    "custom_order_status": (409, False),
     "eway_not_issued": (409, False),
     "opening_stock_required": (409, False),
     "opening_exists": (409, False),
