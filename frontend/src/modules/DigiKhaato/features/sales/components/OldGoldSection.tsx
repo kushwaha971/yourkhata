@@ -14,6 +14,7 @@ import {
   UbQuantityInput,
   UbSelect,
   UbStack,
+  UbSwitch,
   UbText,
 } from 'src/design-system';
 import type { TranslateFn } from 'src/hooks/useTranslation';
@@ -241,7 +242,14 @@ export function OldGoldSection({
                 />
               </UbStack>
             )}
-            <UbText variant="caption" tone="tertiary">
+            <UbSwitch
+                  checked={Boolean(draft.cashBack)}
+                  onCheckedChange={(on) => setEditing({ ...draft, cashBack: on })}
+                  label={t('sales.oldGold.cashBack')}
+                  description={t('sales.oldGold.cashBackHint')}
+                  data-testid="old-gold-cash-back"
+                />
+                <UbText variant="caption" tone="tertiary">
               {t('sales.oldGold.note')}
             </UbText>
           </UbStack>

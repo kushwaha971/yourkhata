@@ -123,8 +123,19 @@ export interface UbShareSheetProps {
   readonly phone?: string | null;
   readonly labels: UbShareSheetLabels;
   readonly whatsappIcon?: ReactNode;
+  /** A different message in the same opening: its edit starts over. */
+  readonly draftKey?: string;
   /** A focused personal reminder can open only the channel the user selected. */
   readonly onlyChannel?: 'whatsapp' | 'sms';
+  /**
+   * Design `pRemind`: the words as a WhatsApp bubble, with Edit text beside
+   * Share on WhatsApp and the note under them, instead of the box and rows.
+   */
+  readonly conversation?: {
+    readonly editText: string;
+    readonly share: string;
+    readonly note: string;
+  };
   /**
    * A channel was opened (or the text copied). Never evidence of delivery.
    * `text` is the words that left with it, after any edit — what a caller
@@ -161,6 +172,8 @@ function UbShareSheetBase({
   labels,
   whatsappIcon,
   onlyChannel,
+  draftKey,
+  conversation,
   onShared,
   onFailed,
   returnFocusRef,
@@ -169,12 +182,16 @@ function UbShareSheetBase({
   /* `null` = untouched, so the box follows the default. The edit belongs to one
      opening for one recipient; adjusting state during render (not in an effect)
      means the old words are never drawn against the new recipient. */
-  const session = open ? (phone ?? '') : null;
+  const session = open ? `${phone ?? ''}|${draftKey ?? ''}` : null;
   const [edit, setEdit] = useState<{ session: string | null; text: string | null }>({
     session,
     text: null,
   });
-  if (edit.session !== session) setEdit({ session, text: null });
+  const [editing, setEditing] = useState(false);
+  if (edit.session !== session) {
+    setEdit({ session, text: null });
+    setEditing(false);
+  }
   const draft = edit.session === session ? edit.text : null;
   const text = finalMessage(message, draft);
   const smsText = draft ?? smsMessage ?? message;
@@ -252,6 +269,32 @@ function UbShareSheetBase({
     >
       {pending ? (
         <div className="flex flex-col gap-4">{pending}</div>
+      ) : conversation && !editing && !blank ? (
+        <div className="flex flex-col gap-3">
+          {notice}
+          {/* WhatsApp's own wallpaper and bubble, as drawn in the design. */}
+          <div className="grid rounded-xl bg-[#ECE5DD] p-3">
+            <p className="ds-body-s-regular justify-self-start whitespace-pre-wrap break-words rounded-lg bg-white p-2.5 text-[#111]">
+              {text}
+            </p>
+          </div>
+          <p className="ds-body-s-regular text-text-tertiary">{conversation.note}</p>
+          <div className="grid grid-cols-[auto_minmax(0,1fr)] gap-2">
+            <UbButton variant="secondary" size="lg" onClick={() => setEditing(true)}>
+              {conversation.editText}
+            </UbButton>
+            <a
+              href={buildWhatsAppUrl(text, phone)}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={openedVia('whatsapp')}
+              className={mlButtonClasses('primary', 'lg', 'outline-none focus-visible:shadow-focus')}
+            >
+              {whatsappIcon ?? <MessageCircle aria-hidden className="h-4 w-4" />}
+              <span>{conversation.share}</span>
+            </a>
+          </div>
+        </div>
       ) : (
         <div className="flex flex-col gap-4">
           {notice}

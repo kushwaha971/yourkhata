@@ -127,6 +127,11 @@ class ShareLinkSerializer(serializers.Serializer):
 
 
 class LineReadSerializer(serializers.ModelSerializer):
+    tracks_serial = serializers.SerializerMethodField()
+
+    def get_tracks_serial(self, line: SalesDocumentLine) -> bool:
+        return line.item is not None and line.item.tracking == "serial"
+
     class Meta:
         model = SalesDocumentLine
         fields = (
@@ -139,6 +144,7 @@ class LineReadSerializer(serializers.ModelSerializer):
             "unit_code",
             "unit_factor",
             "serials",
+            "tracks_serial",
             "batches",
             "addons",
             "jewel",

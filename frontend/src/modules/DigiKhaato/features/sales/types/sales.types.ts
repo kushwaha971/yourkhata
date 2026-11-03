@@ -132,6 +132,8 @@ export interface SalesDocumentLine {
   readonly unitCode: string;
   /** D P3 — IMEI / serial numbers on the line. */
   readonly serials?: readonly string[];
+  /** The item needs one IMEI / tag per piece: a saved draft has to remember that. */
+  readonly tracksSerial?: boolean;
   /** D P4 — the batches an issued line took (earliest expiry first). */
   readonly batches?: readonly {
     readonly batchNo: string;

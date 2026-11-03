@@ -94,6 +94,7 @@ export const ROUTES = {
   /** G3a — a jeweller's custom orders (design §G3). */
   SALES_CUSTOM_ORDERS: '/sales/custom-orders',
   SALES_OLD_GOLD: '/sales/old-gold',
+  SALES_KARIGARS: '/sales/karigars',
   /** Shop item 4 — goods that left before the bill. */
   SALES_CHALLANS: '/sales/challans',
   SALES_CREDIT_NOTES: '/sales/credit-notes',
@@ -126,6 +127,7 @@ export const ROUTES = {
   SETTINGS_DEVICES: '/settings/devices',
   /** B3 — Settings › Shop features (design dFeatures / pFeatures). */
   SETTINGS_SHOP_FEATURES: '/settings/shop-features',
+  SETTINGS_MESSAGES: '/settings/messages',
   /** PLT-10 — "Your data": export, deletion, support consent. Owner only. */
   SETTINGS_DATA: '/settings/data',
   // ── A9b ── PLT-X08: the business-days calendar (closed weekdays, holidays).

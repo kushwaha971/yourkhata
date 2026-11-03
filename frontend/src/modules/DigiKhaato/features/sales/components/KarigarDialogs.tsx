@@ -1,6 +1,7 @@
 'use client';
 
-import { useId, useState } from 'react';
+import { useEffect, useId, useState } from 'react';
+
 
 import { FormProvider, useForm, useWatch } from 'react-hook-form';
 
@@ -18,14 +19,16 @@ import {
   UbText,
   UbTextInput,
 } from 'src/design-system';
+import { useAppRouter } from 'src/hooks/useAppRouter';
 import { useAppDispatch } from 'src/hooks/useAppStore';
 import { usePermissions } from 'src/hooks/usePermissions';
 import { useTranslation } from 'src/hooks/useTranslation';
 import { showSnackbar } from 'src/redux/slice/snackbarSlice';
+import { ROUTES } from 'src/routes';
 import type { ApiErrorShape } from 'src/types/api.types';
 import { applyServerErrors } from 'src/utils/applyServerErrors';
 
-import { PURITIES, type Purity } from '../../inventory/api/metalRateService';
+import { PURITIES, useJewelDefaults, type Purity } from '../../inventory/api/metalRateService';
 import { EMPTY_TAG, PURITY_SHORT, TAG_FIELD, toTagBody } from '../../inventory/api/tagService';
 import { ItemQuickAdd } from '../../inventory/components/ItemQuickAdd';
 import { ItemTagFields, type TagFormHost } from '../../inventory/components/ItemTagFields';
@@ -125,6 +128,13 @@ export function AddKarigarDialog({
 }: Readonly<{ onClose: () => void; onDone: () => void }>): React.JSX.Element {
   const { t } = useTranslation();
   const form = useForm({ defaultValues: { name: '', wastage_limit_pct: '' } });
+  const defaults = useJewelDefaults();
+  const { getValues, setValue } = form;
+  useEffect(() => {
+    if (defaults?.wastage_limit_pct && !getValues('wastage_limit_pct')) {
+      setValue('wastage_limit_pct', defaults.wastage_limit_pct);
+    }
+  }, [defaults, getValues, setValue]);
   return (
     <Shell
       title={t('sales.karigar.add')}
@@ -285,7 +295,11 @@ export function MakeTagDialog({
   onDone,
 }: Readonly<{ lot: KarigarLot; onClose: () => void; onDone: () => void }>): React.JSX.Element {
   const { t } = useTranslation();
+  const router = useAppRouter();
   const [itemName, setItemName] = useState('');
+  // Design D6 "Make 3 tags and print labels": after each piece, another or print.
+  const [made, setMade] = useState<readonly string[]>([]);
+  const [between, setBetween] = useState(false);
   const form = useForm<TagFormHost & { item_id: string; labour_per_g: string }>({
     defaultValues: {
       tag: { ...EMPTY_TAG, purity: lot.purity as Purity },
@@ -295,6 +309,52 @@ export function MakeTagDialog({
     },
   });
   const copy = useFormDeviceCopy(`karigar-tag:${lot.id}`, form);
+  if (between) {
+    return (
+      <UbDialog
+        open
+        onOpenChange={(next) => (next ? undefined : onDone())}
+        title={t('sales.karigar.tagsMade', { count: made.length })}
+        closeLabel={t('common.action.close')}
+      >
+        <UbStack gap={3}>
+          <UbText variant="body-sm" className="ds-num" data-testid="tags-made">
+            {made.join(', ')}
+          </UbText>
+          <UbStack direction="row" gap={2} className="flex-wrap">
+            <UbButton
+              size="sm"
+              data-testid="make-another"
+              onClick={() => {
+                const v = form.getValues();
+                form.reset({
+                  ...v,
+                  tag: { ...v.tag, tagNo: '', grossG: '', stoneG: '', netG: '', huid: '' },
+                });
+                setBetween(false);
+              }}
+            >
+              {t('sales.karigar.makeAnother')}
+            </UbButton>
+            <UbButton
+              size="sm"
+              variant="secondary"
+              data-testid="print-made"
+              onClick={() => {
+                onDone();
+                router.push(`${ROUTES.ITEM_LABELS}?item=${form.getValues('item_id')}`);
+              }}
+            >
+              {t('sales.karigar.printLabels')}
+            </UbButton>
+            <UbButton size="sm" variant="ghost" onClick={onDone}>
+              {t('common.action.close')}
+            </UbButton>
+          </UbStack>
+        </UbStack>
+      </UbDialog>
+    );
+  }
   return (
     <FormProvider {...form}>
       <Shell
@@ -325,7 +385,8 @@ export function MakeTagDialog({
             };
           }
           copy.clear();
-          onDone();
+          setMade((list) => [...list, v.tag.tagNo.trim().toUpperCase()]);
+          setBetween(true);
         }}
       >
         <UbField name="item_id" label={t('sales.karigar.item')} controlOwnsLabel>

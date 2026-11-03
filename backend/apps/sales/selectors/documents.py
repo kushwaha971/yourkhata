@@ -40,7 +40,7 @@ def detail_queryset(*, tenant: Any, kinds: tuple[str, ...] | None = INVOICE_KIND
     rows = SalesDocument.objects.for_tenant(tenant)
     if kinds is not None:
         rows = rows.filter(kind__in=kinds)
-    return rows.select_related("party", "created_by", "tenant").prefetch_related("lines")
+    return rows.select_related("party", "created_by", "tenant").prefetch_related("lines", "lines__item")
 
 
 def apply_tab(

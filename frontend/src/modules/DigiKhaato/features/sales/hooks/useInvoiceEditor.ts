@@ -352,6 +352,22 @@ export const useInvoiceEditor = (
         );
         return moveEstimate.fulfilled.match(sent) ? sent.payload : null;
       }
+      // Whichever way a line lost its tag, the saved bill is the truth: say so
+      // here rather than sending an issue the server must refuse (monkey seed 42).
+      const unmarked = saved.document.lines.find(
+        (line) => line.tracksSerial && (line.serials?.length ?? 0) !== Number(line.qty)
+      );
+      if (unmarked) {
+        const jeweller = selectActiveTenant(store.getState())?.features?.includes('jewellery');
+        dispatch(
+          showSnackbar({
+            severity: 'warning',
+            id: jeweller ? 'sales.line.jewel.needsTag' : 'sales.line.serials.needed',
+            params: { name: unmarked.description },
+          })
+        );
+        return null;
+      }
       const body: Record<string, unknown> = { version: saved.document.version, override };
       if (payment) body.payment = paymentWireBody(payment, form.getValues('documentDate'));
       const result = await dispatch(
@@ -366,7 +382,7 @@ export const useInvoiceEditor = (
       if (!mayHaveBeenSaved(result.payload)) idempotency.rotate();
       return null;
     },
-    [save, dispatch, form, idempotency, kind]
+    [save, store, dispatch, form, idempotency, kind]
   );
 
   /** "New bill" after an issue on `/new`: a blank editor without a page load (Ctrl+N, §6). */

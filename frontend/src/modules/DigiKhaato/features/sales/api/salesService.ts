@@ -38,6 +38,7 @@ const toLine = (row: Wire): SalesDocumentLine => ({
   qty: s(row.qty),
   unitCode: s(row.unit_code),
   serials: Array.isArray(row.serials) ? (row.serials as unknown[]).map(String) : [],
+  tracksSerial: row.tracks_serial === true,
   batches: Array.isArray(row.batches)
     ? (row.batches as Record<string, unknown>[]).map((b) => ({
         batchNo: String(b.batch_no ?? ''),

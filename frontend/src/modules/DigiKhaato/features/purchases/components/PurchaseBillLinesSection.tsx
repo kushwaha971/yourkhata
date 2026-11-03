@@ -17,7 +17,9 @@ import {
   UbText,
   type UbLineItemsColumn,
 } from 'src/design-system';
+import { useAppSelector } from 'src/hooks/useAppStore';
 import { useTranslation } from 'src/hooks/useTranslation';
+import { selectActiveTenant } from 'src/redux/slice/sessionSlice';
 import { formatAmount, formatInr } from 'src/utils/money';
 import { taxRateLabel } from 'src/utils/taxRateLabel';
 
@@ -81,6 +83,7 @@ export function PurchaseBillLinesSection({
   const { control, watch, setValue, getValues, trigger } = form;
   const fieldArray = useFieldArray({ control, name: 'lines', keyName: 'key' });
   const lines = watch('lines');
+  const jeweller = Boolean(useAppSelector(selectActiveTenant)?.features?.includes('jewellery'));
   const partyId = watch('partyId');
   const partyName = watch('partyName');
 
@@ -310,6 +313,11 @@ export function PurchaseBillLinesSection({
               onChange={(next) => setValue(`lines.${index}.serials`, next, { shouldDirty: true })}
             />
           )}
+          {tracked && jeweller && (
+            <UbText variant="caption" tone="tertiary">
+              {t('purchases.line.tagWeightsNext')}
+            </UbText>
+          )}
           {unitCaption && (
             <UbStack gap={1} data-testid="line-unit">
               <UbText variant="caption" tone="accent">
@@ -356,7 +364,19 @@ export function PurchaseBillLinesSection({
         </UbStack>
       );
     },
-    [lines, t, partyId, partyName, setValue, form.formState.defaultValues, order, unitChoices, serialItems, batchItems]
+    [
+      lines,
+      t,
+      partyId,
+      partyName,
+      setValue,
+      form.formState.defaultValues,
+      order,
+      unitChoices,
+      jeweller,
+      serialItems,
+      batchItems,
+    ]
   );
 
   return (

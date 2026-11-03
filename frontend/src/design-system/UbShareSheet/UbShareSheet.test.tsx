@@ -378,3 +378,36 @@ describe('UbShareSheet', () => {
     });
   });
 });
+
+describe('UbShareSheet conversation (design pRemind)', () => {
+  const conversation = { editText: 'Edit text', share: 'Share on WhatsApp', note: 'Nothing is sent.' };
+  const props: UbShareSheetProps = {
+    open: true,
+    onOpenChange: () => undefined,
+    title: 'Send a message',
+    message: 'Namaste Sita',
+    phone: '+919900011122',
+    labels: LABELS,
+    conversation,
+  };
+
+  /** Prevents an edited message being dropped: the link must carry the typed words. */
+  it('shows a bubble, and Edit text changes the words WhatsApp receives', async () => {
+    const user = userEvent.setup();
+    render(<UbShareSheet {...props} />);
+    expect(screen.queryByRole('textbox')).not.toBeInTheDocument();
+    expect(screen.getByText('Namaste Sita')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Share on WhatsApp' })).toHaveAttribute(
+      'href',
+      expect.stringContaining('Namaste%20Sita')
+    );
+    await user.click(screen.getByRole('button', { name: 'Edit text' }));
+    const box = screen.getByRole('textbox', { name: 'Message' });
+    await user.clear(box);
+    await user.type(box, 'Hello');
+    expect(screen.getByRole('link', { name: 'WhatsApp' })).toHaveAttribute(
+      'href',
+      expect.stringContaining('Hello')
+    );
+  });
+});

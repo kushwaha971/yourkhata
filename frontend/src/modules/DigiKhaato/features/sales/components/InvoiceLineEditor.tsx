@@ -26,7 +26,9 @@ import {
   type UbEditTableRow,
 } from 'src/design-system';
 import type { UbLineFocusRequest } from 'src/design-system';
+import { useAppSelector } from 'src/hooks/useAppStore';
 import type { TranslateFn } from 'src/hooks/useTranslation';
+import { selectActiveTenant } from 'src/redux/slice/sessionSlice';
 import { cn } from 'src/utils/cn';
 import { formatInr } from 'src/utils/money';
 
@@ -417,8 +419,9 @@ export function InvoiceLineTable({
   // G2b — design G2 dJewelBill: a bill of tag pieces reads Tag · item, Net wt,
   // Rate (per gram), Making, Amount. A bill that mixes in a plain item keeps
   // the shared columns, so no plain line sits under "Net wt".
+  const jeweller = Boolean(useAppSelector(selectActiveTenant)?.features?.includes('jewellery'));
   const jewelBill =
-    indexes.some((i) => lines[i]?.jewel) &&
+    (indexes.some((i) => lines[i]?.jewel) || (jeweller && !indexes.some((i) => lines[i]?.itemId || lines[i]?.description.trim()))) &&
     indexes.every((i) => lines[i]?.jewel || (!lines[i]?.itemId && !lines[i]?.description.trim()));
   const columns: UbEditTableColumn[] = jewelBill
     ? [

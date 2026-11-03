@@ -702,6 +702,8 @@ def apply_preset(*, tenant: Any, actor: Any = None, ctx: Any = None) -> dict:
     created["categories"] = seed_expense_categories(tenant)
     created["categories"] += _seed_extra_categories(tenant, preset.extra_expense_categories)
     created["locations"] = _seed_main_location(tenant)
+    if "jewellery" in preset.features:
+        created["item_categories"] = _seed_jewel_categories(tenant)
 
     write_audit(
         ctx=ctx or Ctx(tenant=tenant, actor=actor, actor_type="user" if actor else "system"),
@@ -782,6 +784,29 @@ def _seed_extra_categories(tenant: Any, names: tuple[str, ...]) -> int:
             tenant=tenant,
             name=name,
             defaults={"is_system": False, "sort_order": order},
+        )
+        created += int(was_created)
+    return created
+
+
+#: Design `STARTCAT.jewel`: what a new jeweller's Add item offers on day one.
+JEWEL_CATEGORIES = (
+    "Gold · chains",
+    "Gold · rings",
+    "Gold · bangles",
+    "Silver · payal and anklets",
+    "Silver · utensils and coins",
+    "Diamond and stone",
+)
+
+
+def _seed_jewel_categories(tenant: Any) -> int:
+    from apps.inventory.models import Category
+
+    created = 0
+    for order, name in enumerate(JEWEL_CATEGORIES):
+        _row, was_created = Category.objects.get_or_create(
+            tenant=tenant, name=name, parent=None, defaults={"sort_order": order}
         )
         created += int(was_created)
     return created

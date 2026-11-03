@@ -57,6 +57,8 @@ const tag = `KG-${run}`;
 let d = await fillTag(tag);
 await page.screenshot({ path: `${dir}/dialog-1280.png` });
 await page.getByTestId('karigar-save').click();
+await page.getByTestId('make-another').waitFor({ timeout: 10000 });
+await page.getByRole('dialog').getByRole('button', { name: 'Close' }).last().click();
 await d.waitFor({ state: 'detached', timeout: 10000 }).catch(() => undefined);
 await page.waitForTimeout(1000);
 const found = await (await ctx.request.get(`${api}/jewel-tags/lookup?tag=${tag}`));

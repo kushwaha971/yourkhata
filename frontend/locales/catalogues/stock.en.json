@@ -173,6 +173,7 @@
   "stock.rates.setAt": "Set at {time} by {name}.",
   "stock.rates.share": "Share on WhatsApp",
   "stock.rates.shareBody": "Sends a picture of the rate board to WhatsApp.",
+  "stock.rates.shareText": "{shop} today: {rates}.",
   "stock.rates.shareTitle": "Share today's rate",
   "stock.rates.silver": "Silver (999)",
   "stock.rates.subtitle": "{day} · used by every bill today",

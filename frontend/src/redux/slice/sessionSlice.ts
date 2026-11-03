@@ -130,6 +130,8 @@ export interface SessionTenant {
    * only through `useFeature`; no screen reads a business type (R-DEC-65).
    */
   readonly features?: string[] | null;
+  /** D15: the words the business saved for its own messages, by message and language. */
+  readonly messages?: Readonly<Record<string, Readonly<Record<string, string>>>> | null;
   /** B3 — the kind's picture (`UbShopKind`), drawn on Settings › Shop features. */
   readonly kindPicture?: string | null;
 }

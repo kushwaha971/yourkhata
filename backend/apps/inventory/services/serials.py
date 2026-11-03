@@ -26,6 +26,15 @@ def tracked(item: Any) -> bool:
     return item is not None and getattr(item, "tracking", "none") == "serial"
 
 
+def _missing_message(item: Any, base_qty: Decimal, entered: int) -> str:
+    """A jeweller's tracked piece is told apart by its tag; "IMEI" means nothing there."""
+    from apps.platform_app.selectors.business_words import features_of
+
+    if "jewellery" in features_of(item.tenant):
+        return f"Remove {item.name} and add it again to choose its tag."
+    return f"Enter {base_qty.normalize():f} IMEI / serial numbers ({entered} entered)."
+
+
 def parse(raw: Any, *, item: Any, base_qty: Decimal | None, path: str, errors: dict, strict: bool) -> list[str]:
     """A line's serials: trimmed, upper-cased, unique; on a strict save, one per piece."""
     if not tracked(item):
@@ -36,7 +45,7 @@ def parse(raw: Any, *, item: Any, base_qty: Decimal | None, path: str, errors: d
         if text and text not in values:
             values.append(text)
     if strict and base_qty is not None and Decimal(len(values)) != base_qty:
-        errors[f"{path}.serials"] = [f"Enter {base_qty.normalize():f} IMEI / serial numbers ({len(values)} entered)."]
+        errors[f"{path}.serials"] = [_missing_message(item, base_qty, len(values))]
     return values
 
 

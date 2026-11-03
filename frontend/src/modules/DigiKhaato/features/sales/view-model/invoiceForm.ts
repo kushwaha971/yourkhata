@@ -27,6 +27,8 @@ export interface InvoiceLineForm {
   allowDecimal: boolean;
   /** D P3 — the IMEI / serial numbers of a tracked item, one per piece. */
   serials?: string[];
+  /** Needs one per piece before the bill can be issued. */
+  tracksSerial?: boolean;
   /** D P6 — a café item's add-ons on this line (priced into unitPrice). */
   addons?: { name: string; price: string }[];
   /** G2b — a jeweller's piece: priced by the server from this snapshot. */
@@ -44,6 +46,7 @@ export interface OldGoldForm {
   purity: string;
   rate: string;
   lessPct: string;
+  cashBack?: boolean;
 }
 
 export interface InvoiceFormValues {
@@ -171,14 +174,17 @@ export const toWireBody = (values: InvoiceFormValues): Record<string, unknown> =
   ...(values.pan !== undefined ? { pan: values.pan.trim().toUpperCase() } : {}),
   ...(values.oldGold !== undefined
     ? {
-        old_gold: values.oldGold
-          ? {
-              weight_g: values.oldGold.weightG,
-              purity: values.oldGold.purity,
-              rate: values.oldGold.rate,
-              less_pct: values.oldGold.lessPct,
-            }
-          : null,
+        // The cash-back switch alone makes this object: no weight or purity is no old gold.
+        old_gold:
+          values.oldGold && (values.oldGold.weightG || values.oldGold.purity)
+            ? {
+                weight_g: values.oldGold.weightG,
+                purity: values.oldGold.purity,
+                rate: values.oldGold.rate,
+                less_pct: values.oldGold.lessPct,
+                cash_back: Boolean(values.oldGold.cashBack),
+              }
+            : null,
       }
     : {}),
   ...(values.mechanic !== undefined ? { mechanic: values.mechanic } : {}),
@@ -236,6 +242,7 @@ export const fromDocument = (doc: SalesDocument): InvoiceFormValues => ({
         purity: doc.oldGold.purity,
         rate: doc.oldGold.rate,
         lessPct: doc.oldGold.less_pct,
+        cashBack: Boolean(doc.oldGold.cash_back),
       }
     : null,
   mechanic: doc.vehicle?.mechanic ?? '',
@@ -253,6 +260,7 @@ export const fromDocument = (doc: SalesDocument): InvoiceFormValues => ({
         qty: formQty(line.qty, unitAllowsDecimal(line.unitCode)),
         unitCode: line.unitCode,
         serials: [...(line.serials ?? [])],
+        tracksSerial: line.tracksSerial === true,
         addons: [...(line.addons ?? [])],
         jewel: line.jewel ?? null,
         allowDecimal: unitAllowsDecimal(line.unitCode),

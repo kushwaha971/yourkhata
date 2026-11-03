@@ -80,8 +80,9 @@ check('O2: the count line says the API figures', line.includes(`Open ${list.open
 await page.getByPlaceholder('Order, customer or item').fill(w1);
 await page.waitForTimeout(800);
 await page.screenshot({ path: `${dir}/list-1280.png` });
+await page.getByTestId('custom-order-more').first().click();
 await page.getByRole('button', { name: 'Mark ready' }).first().click();
-await page.getByRole('button', { name: 'Delivered' }).first().waitFor({ timeout: 8000 });
+await page.getByTestId('custom-order-more').first().click();
 await page.getByRole('button', { name: 'Delivered' }).first().click();
 await page.waitForTimeout(1200);
 check('O4: delivered leaves the open list', (await find(w1)).length === 0);

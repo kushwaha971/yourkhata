@@ -21,6 +21,7 @@ export function ShopCustomerReminder({
   return (
     <PartyReminderSheet
       partyId={party.id}
+      partyName={party.name}
       book="shop"
       open
       onOpenChange={(open) => {

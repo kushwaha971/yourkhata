@@ -1,8 +1,12 @@
 {
   "reminders.sheet.call": "कॉल करें",
+  "reminders.sheet.editText": "शब्द बदलें",
   "reminders.sheet.error": "मैसेज तैयार नहीं हो सका।",
   "reminders.sheet.loading": "मैसेज तैयार हो रहा है",
+  "reminders.sheet.opensNote": "WhatsApp इन शब्दों के साथ खुलेगा। जब तक आप वहाँ भेजें नहीं दबाते, कुछ नहीं जाता।",
   "reminders.sheet.recent": "आपने इस ग्राहक को {when} {channel} पर याद दिलाया था।",
+  "reminders.sheet.sendMessage": "मैसेज भेजें",
+  "reminders.sheet.shareOnWhatsapp": "WhatsApp पर भेजें",
   "share.copied": "संदेश कॉपी हो गया",
   "share.copyFailed": "कॉपी नहीं हो सका। संदेश चुनकर खुद कॉपी करें।",
   "share.copyText": "टेक्स्ट कॉपी करें",

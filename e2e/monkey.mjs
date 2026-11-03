@@ -423,6 +423,11 @@ try {
     const box = page.getByPlaceholder(/Search or scan item|Search item or scan/).first();
     await box.fill(arg("line", "")).catch(() => undefined);
     await page.getByRole("option").first().click({ timeout: 5000 }).catch(() => undefined);
+    // A jeweller's piece asks which tag first.
+    const startTag = page.getByTestId("tag-choice");
+    await startTag.waitFor({ timeout: 1500 }).catch(() => undefined);
+    if (await startTag.isVisible().catch(() => false))
+      await startTag.getByRole("button").first().click({ timeout: 1500 }).catch(() => undefined);
     await page.keyboard.press("Escape").catch(() => undefined);
   }
   await page.evaluate(() => {
@@ -502,6 +507,12 @@ try {
             await opt.waitFor({ timeout: 3000 }).catch(() => {});
             if (await opt.count()) await opt.click({ timeout: 1500 }).catch(() => {});
             await page.waitForTimeout(300);
+            // A jeweller's tagged piece asks which tag: choose one, as the counter would.
+            const tagBox = page.getByTestId("tag-choice");
+            if (await tagBox.isVisible().catch(() => false)) {
+              await tagBox.getByRole("button").first().click({ timeout: 1500 }).catch(() => {});
+              await page.waitForTimeout(300);
+            }
             if (rand() < 0.7) await page.keyboard.press("Escape").catch(() => {});
           }
         } else if (kind === "scan") {
@@ -658,6 +669,35 @@ try {
       await page.keyboard.press("Escape").catch(() => {});
     }
     if (failures.length) break;
+  }
+  // The random run never reloaded with lines on the bill: do it once on purpose,
+  // so the data check always guards something rather than proving nothing.
+  if (!failures.length && keptChecks === 0 && path.startsWith("/sales/invoices") && arg("line", "")) {
+    await page.goto(`${base}${path}`, { waitUntil: "load" }).catch(() => undefined);
+    // In both languages: the random run may have left the app in Hindi.
+    const box = page.getByPlaceholder(/Search or scan item|Search item or scan|आइटम खोजें या स्कैन करें/).first();
+    await box.waitFor({ timeout: 8000 }).catch(() => undefined);
+    // The random run may have left a bill on this device; its sheet covers the search.
+    const discard = page.getByRole("button", { name: /^(Discard|छोड़ें|हटाएँ)$/ }).first();
+    await discard.waitFor({ timeout: 2500 }).catch(() => undefined);
+    if (await discard.isVisible().catch(() => false)) await discard.click().catch(() => undefined);
+    // Earlier runs sell test pieces, so the first match may have no tag left: try the next.
+    for (let tryNo = 0; tryNo < 8 && !(await linesNow()).length; tryNo += 1) {
+      await box.fill(arg("line", "")).catch(() => undefined);
+      await page.getByRole("option").nth(tryNo).click({ timeout: 5000 }).catch(() => undefined);
+      const closingTag = page.getByTestId("tag-choice");
+      await closingTag.waitFor({ timeout: 1500 }).catch(() => undefined);
+      if (await closingTag.isVisible().catch(() => false))
+        await closingTag.getByRole("button").first().click({ timeout: 1500 }).catch(() => undefined);
+      await page.keyboard.press("Escape").catch(() => undefined);
+      await page.waitForTimeout(800);
+    }
+    await page.waitForTimeout(2500);
+    const before = await linesNow();
+    await page.screenshot({ path: `${dir}/closing-${seed}-${width}.png` }).catch(() => undefined);
+    log.push(`closing reload (${before.length} lines) at ${page.url().replace(base, "")}`);
+    await page.reload({ waitUntil: "load", timeout: 20000 }).catch(() => undefined);
+    await checkKept(steps, before, "the closing reload", null);
   }
   await page.screenshot({ path: `${dir}/monkey-${seed}-${width}.png` });
   var heapEnd = await page.evaluate(() => performance.memory?.usedJSHeapSize ?? 0).catch(() => 0);

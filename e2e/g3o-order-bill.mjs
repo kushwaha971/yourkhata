@@ -40,6 +40,7 @@ await rate('12000');
 await page.goto(`${base}/sales/custom-orders`);
 await page.getByPlaceholder('Order, customer or item').fill(what);
 await page.waitForTimeout(900);
+await page.getByTestId('custom-order-more').first().click();
 await page.getByTestId('custom-order-bill').first().click();
 await page.waitForURL(/custom_order=/, { timeout: 15000 });
 await page.getByTestId('bill-order-note').waitFor({ timeout: 15000 });

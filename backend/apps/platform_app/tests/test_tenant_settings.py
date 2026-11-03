@@ -333,3 +333,13 @@ def test_a_modules_only_patch_does_not_touch_the_profile(owner: Any, tenant: Any
         reverse("v1:tenant-current"), {"enabled_modules": tenant.enabled_modules}, format="json"
     )
     assert not AuditLog.objects.filter(action="tenant.updated", tenant=tenant).exists()
+
+
+def test_kind_messages_refuse_an_unknown_message_or_word() -> None:
+    """D15: a typo like {nmae} would reach the customer as literal braces."""
+    clean = schema._kind_messages({"order_ready": {"en": " {name} is ready ", "hi": ""}}, None)
+    assert clean == {"order_ready": {"en": "{name} is ready", "hi": ""}}
+    with pytest.raises(schema.SettingError):
+        schema._kind_messages({"order_ready": {"en": "{amount}"}}, None)
+    with pytest.raises(schema.SettingError):
+        schema._kind_messages({"refill": {"en": "hello"}}, None)

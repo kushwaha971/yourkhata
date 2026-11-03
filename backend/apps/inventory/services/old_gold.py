@@ -58,6 +58,7 @@ def price(*, tenant: Any, raw: Any, errors: dict, path: str = "old_gold") -> dic
         "gross": f"{gross:.2f}",
         "less": f"{less_amount:.2f}",
         "value": f"{gross - less_amount:.2f}",
+        **({"cash_back": True} if raw.get("cash_back") else {}),
     }
 
 
@@ -75,7 +76,7 @@ def take_in(*, ctx: Any, document: Any) -> dict | None:
     """
     from apps.common.constants import PaymentMode
     from apps.inventory.models import OldGold
-    from apps.payments.services.record import record_adjustment
+    from apps.payments.services.record import record_adjustment, record_payment
 
     old = (document.meta or {}).get("old_gold") or {}
     value = value_of(document)
@@ -100,6 +101,23 @@ def take_in(*, ctx: Any, document: Any) -> dict | None:
         },
         walk_in_document_id=document.id if walk_in else None,
     )
+    # Worth more than the bill and the customer wants the rest in cash: real
+    # money goes out, so the cashbook counts it and the advance is used up.
+    extra = value - document.grand_total
+    if old.get("cash_back") and extra > 0 and not walk_in:
+        record_payment(
+            ctx=ctx,
+            payload={
+                "direction": "out",
+                "party_id": str(document.party_id),
+                "payment_date": document.document_date.isoformat(),
+                "amount": str(extra),
+                "mode_breakup": [{"mode": PaymentMode.CASH.value, "amount": str(extra)}],
+                "note": f"Old gold cash back, {document.number}",
+                "allocations": "none",
+                "meta": {"document_id": str(document.id), "document_number": document.number},
+            },
+        )
     row = OldGold.objects.create(
         tenant=ctx.tenant,
         document_id=document.id,

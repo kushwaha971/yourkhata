@@ -6,6 +6,8 @@ import {
   useEffect,
   useId,
   useMemo,
+  type CSSProperties,
+  useLayoutEffect,
   useRef,
   useState,
   type ReactNode,
@@ -123,6 +125,10 @@ interface NoMatchAction {
  * would have been typed into the quantity. A pick from the list hands the
  * caret on, since a person choosing by name usually sets the quantity next.
  */
+const LIST_GAP = 44;
+const LIST_MAX = 320;
+const LIST_MIN = 120;
+
 export type ItemQuickAddVia = 'scan' | 'list';
 
 export interface ItemQuickAddProps {
@@ -380,9 +386,34 @@ function ItemQuickAddBase({
     [search, active, open, choose, scan, actions, extra]
   );
 
+  /* The bill's table scrolls sideways, which clips anything absolute inside it:
+     the list showed one row over the lines (LOOK). Placed against the window. */
+  const showList = open && search.active;
+  const [listPlace, setListPlace] = useState<CSSProperties>();
+  useLayoutEffect(() => {
+    if (!showList) return;
+    const place = () => {
+      const box = input.current?.closest('[data-testid="item-quick-add"]');
+      if (!box) return;
+      const { left, top, width } = box.getBoundingClientRect();
+      const below = top + LIST_GAP;
+      setListPlace({
+        left,
+        top: below,
+        width,
+        maxHeight: Math.min(LIST_MAX, Math.max(window.innerHeight - below - 8, LIST_MIN)),
+      });
+    };
+    place();
+    window.addEventListener('scroll', place, true);
+    window.addEventListener('resize', place);
+    return () => {
+      window.removeEventListener('scroll', place, true);
+      window.removeEventListener('resize', place);
+    };
+  }, [showList]);
   if (!search.canSearch) return null;
 
-  const showList = open && search.active;
 
   return (
     <UbBox className={cn('relative w-full', className)} data-testid="item-quick-add">
@@ -440,7 +471,8 @@ function ItemQuickAddBase({
           id={listId}
           role="listbox"
           aria-label={labels.label}
-          className="absolute left-0 right-0 top-11 z-40 max-h-80 overflow-y-auto rounded-control border border-border-hairline bg-surface-card py-1 shadow-2"
+          style={listPlace}
+          className="fixed z-40 overflow-y-auto rounded-control border border-border-hairline bg-surface-card py-1 shadow-2"
         >
           {search.options.length === 0 ? (
             <UbBox as="li" className="px-3 py-2">

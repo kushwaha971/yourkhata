@@ -648,7 +648,10 @@ class HomeStripView(_InventoryView, APIView):
             if valuation:
                 tile["value"] = str(sum((Decimal(r["value"]) for r in rows), Decimal("0.00")))
             tiles.append(tile)
-        if Serial.objects.filter(tenant=tenant).exists():
+        # A jeweller's serials are tags, and its Home has its own strip.
+        from apps.platform_app.selectors.business_words import features_of
+
+        if "jewellery" not in features_of(tenant) and Serial.objects.filter(tenant=tenant).exists():
             tiles.append(
                 {"key": "phones", "count": Serial.objects.filter(tenant=tenant, status=Serial.IN_STOCK).count()}
             )

@@ -174,6 +174,7 @@ export { PURITY_SHORT } from '../constants/purity';
  * server priced. `value` comes off what the customer pays.
  */
 export interface OldGoldWire {
+  readonly cash_back?: boolean;
   readonly weight_g: string;
   readonly purity: string;
   readonly rate: string;

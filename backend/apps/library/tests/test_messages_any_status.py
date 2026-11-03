@@ -72,12 +72,13 @@ def _ends_on(member: dict, day: dt.date) -> None:
 
 
 def test_a_paid_student_can_be_told_their_plan_ends_on_a_date(room: dict) -> None:
-    """B51 AC1: a paid student's plan ends on 31/10 — the desk can say so."""
+    """B51 AC1: a paid student's plan has an end date — the desk can say so."""
     asha = room["admit"]("Asha Kulkarni", "9876500001")
-    _ends_on(asha, dt.date(2026, 10, 31))
+    ends = tenant_today(room["tenant"]) + dt.timedelta(days=30)
+    _ends_on(asha, ends)
     body = room["client"].get(_url(asha, "plan_end")).json()
     assert "data" in body, body
-    assert "31/10/2026" in body["data"]["text"]
+    assert ends.strftime("%d/%m/%Y") in body["data"]["text"]
     assert "Monthly" in body["data"]["text"]
 
 
@@ -85,11 +86,12 @@ def test_a_paid_student_can_be_sent_the_desks_own_words_personalised(room: dict)
     """B51 AC1: a custom message, with {name}, {amount} (what is owed now) and
     {due_date} filled in per student, signed with the library's name."""
     asha = room["admit"]("Asha Kulkarni", "9876500002", paid=None)
-    _ends_on(asha, dt.date(2026, 10, 31))
+    ends = tenant_today(room["tenant"]) + dt.timedelta(days=30)
+    _ends_on(asha, ends)
     text = "Hi {name}, the room is closed on Sunday. Plan till {due_date}, fee {amount}."
     data = room["client"].get(_url(asha, "custom"), {"text": text}).json()["data"]
     assert data["text"].startswith("Hi Asha, the room is closed on Sunday.")
-    assert "Plan till 31/10/2026, fee Rs 900.00." in data["text"]
+    assert f"Plan till {ends:%d/%m/%Y}, fee Rs 900.00." in data["text"]
 
 
 def test_a_custom_message_cannot_be_empty(room: dict) -> None:
@@ -134,7 +136,7 @@ def test_two_custom_messages_the_same_day_are_both_recorded(room: dict) -> None:
 def test_each_send_is_in_the_students_message_log(room: dict) -> None:
     """F4 AC3: what was sent, when, and what it was about — newest first."""
     asha = room["admit"]("Asha Kulkarni", "9876500007")
-    _ends_on(asha, dt.date(2026, 10, 31))
+    _ends_on(asha, tenant_today(room["tenant"]) + dt.timedelta(days=30))
     room["client"].post(_url(asha, "plan_end"), {}, format="json")
     room["client"].post(_url(asha, "custom"), {"text": "Closed Sunday"}, format="json")
     log = (

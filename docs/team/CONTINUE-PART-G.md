@@ -66,3 +66,7 @@ G3a custom orders is in (`docs/performance/2026-11-02-shop-g3-custom-orders.md`,
 `e2e/g3a-orders.mjs`). Order → bill and G3b karigars are in (`g3o-order-bill.mjs`, `g3b-karigars.mjs`).
 G3c receiving makes tags is in (`g3c-tags.mjs`). Next: correcting a mistyped lot,
 or G4 (medical).
+
+## State, 3 Nov 2026
+
+Nothing since `5302c0e54` is committed. The fixes, pending checks, unbuilt items and design differences are in `docs/performance/2026-11-02-jewellery-module-round.md` (update of 3 Nov). Next: read the final round, finish the design comparison, run the server suite alone, then commit by file name, push and verify the SHA. No score yet.

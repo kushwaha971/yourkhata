@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 
 import {
   UbEmptyState,
+  UbBox,
   UbLink,
   UbPageHeader,
   UbPageShell,
@@ -57,49 +58,43 @@ export function OldGoldPageContent(): React.JSX.Element {
       )}
       {data && data.rows.length > 0 && (
         <UbStack gap={3} data-testid="old-gold-page">
-          <UbText
-            variant="body-sm"
-            tone="secondary"
-            className="ds-num"
-            data-testid="old-gold-stock"
-          >
+          <UbText variant="body-sm-medium" className="ds-num" data-testid="old-gold-stock">
             {data.stock
-              .map((row) => `${PURITY_SHORT[row.purity] ?? row.purity} ${row.weight_g} g`)
-              .join(' · ')}
+              .map((row) => `${PURITY_SHORT[row.purity] ?? row.purity}: ${row.weight_g} g`)
+              .join('  |  ')}
           </UbText>
           <UbStack gap={2}>
             {data.rows.map((row) => (
               <UbPanel key={row.id} className="p-4" data-testid="old-gold-row">
-                <UbStack
-                  direction="row"
-                  justify="between"
-                  align="start"
-                  className="flex-wrap gap-2"
-                >
-                  <UbStack gap={0} className="min-w-0">
-                    <UbText variant="body-sm-medium" className="ds-num">
-                      {`${row.weight_g} g · ${PURITY_SHORT[row.purity] ?? row.purity}`}
-                    </UbText>
-                    <UbText variant="caption" tone="tertiary" className="break-words">
-                      {[
-                        formatBusinessDate(row.taken_on),
-                        row.customer,
-                        t('sales.oldGoldPage.less', { pct: Number(row.less_pct).toString() }),
-                      ]
-                        .filter(Boolean)
-                        .join(' · ')}
-                    </UbText>
-                  </UbStack>
-                  <UbStack gap={0} className="items-end">
-                    <UbText variant="body-sm-medium" className="ds-num">
-                      {formatInr(row.value)}
-                    </UbText>
-                    {row.bill_number && (
-                      <UbLink href={`${ROUTES.SALES_INVOICES}/${row.bill_id}`} variant="caption">
+                <UbStack gap={1}>
+                  <UbStack direction="row" justify="between" align="center" className="gap-3">
+                    {row.bill_number ? (
+                      <UbLink
+                        href={`${ROUTES.SALES_INVOICES}/${row.bill_id}`}
+                        variant="body-sm"
+                        className="ds-num inline-flex min-h-11 min-w-0 items-center md:min-h-0"
+                      >
                         {row.bill_number}
                       </UbLink>
+                    ) : (
+                      <UbBox />
                     )}
+                    <UbText variant="body-sm-medium" className="ds-num shrink-0 whitespace-nowrap">
+                      {formatInr(row.value)}
+                    </UbText>
                   </UbStack>
+                  <UbText variant="body-sm-medium" className="ds-num">
+                    {`${row.weight_g} g · ${PURITY_SHORT[row.purity] ?? row.purity}`}
+                  </UbText>
+                  <UbText variant="caption" tone="tertiary" className="break-words">
+                    {[
+                      formatBusinessDate(row.taken_on),
+                      row.customer,
+                      t('sales.oldGoldPage.less', { pct: Number(row.less_pct).toString() }),
+                    ]
+                      .filter(Boolean)
+                      .join(' · ')}
+                  </UbText>
                 </UbStack>
               </UbPanel>
             ))}

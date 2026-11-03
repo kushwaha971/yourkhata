@@ -1,8 +1,8 @@
 """Private Udhaar scopes reuse the existing atomic money and audit services."""
 
 from django.db import transaction
-from rest_framework.exceptions import PermissionDenied
 
+from apps.common.exceptions import PermissionDenied
 from apps.parties.models import PersonalBook
 from apps.platform_app.models import Membership, Role, Tenant, User
 

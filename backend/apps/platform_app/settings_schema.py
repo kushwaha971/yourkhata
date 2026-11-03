@@ -65,6 +65,13 @@ REMINDER_PLACEHOLDERS: tuple[str, ...] = (
     "upi_link",
 )
 REMINDER_REQUIRED_PLACEHOLDER = "amount"
+#: D15: the messages a kind's own features add, and the words each may carry.
+#: Blank means the standard words. The payment reminder is not here: it is
+#: `ledger.reminder_templates`, which the reminder renderer already reads.
+KIND_MESSAGES: dict[str, tuple[str, ...]] = {
+    "order_ready": ("name", "what", "number", "shop"),
+    "todays_rate": ("shop", "rates"),
+}
 REMINDER_MAX_CHARS = 500
 REMINDER_LOCALES: tuple[str, ...] = ("en", "hi")
 
@@ -207,6 +214,31 @@ def _reminder_templates(value: Any, _tenant: Any) -> dict:
     return cleaned
 
 
+def _kind_messages(value: Any, _tenant: Any) -> dict:
+    """`{message: {"en": str, "hi": str}}`; an unknown message or word is refused."""
+    cleaned: dict[str, dict[str, str]] = {}
+    errors: list[str] = []
+    for key, texts in _object(value).items():
+        if key not in KIND_MESSAGES:
+            raise SettingError([f"Unknown message {key!r}."])
+        texts = _object(texts)
+        row: dict[str, str] = {}
+        for locale in REMINDER_LOCALES:
+            text = texts.get(locale, "")
+            if not isinstance(text, str):
+                raise SettingError(["Enter the message as text."])
+            if len(text) > REMINDER_MAX_CHARS:
+                errors.append(f"Keep the message under {REMINDER_MAX_CHARS} characters.")
+            for name in _PLACEHOLDER_RE.findall(text):
+                if name.strip() not in KIND_MESSAGES[key]:
+                    errors.append(f"Unknown placeholder {{{name.strip()}}}")
+            row[locale] = text.strip()
+        cleaned[key] = row
+    if errors:
+        raise SettingError(errors)
+    return cleaned
+
+
 def _party_labels(value: Any, _tenant: Any) -> dict:
     raw = _object(value)
     cleaned: dict[str, str] = {}
@@ -226,6 +258,35 @@ def _number_format(value: Any, _tenant: Any) -> dict:
 
 
 # ── The catalogue ────────────────────────────────────────────────────────────
+
+
+def _jewel(value: Any, _tenant: Any) -> dict:
+    """A jeweller's defaults: blank means none; the PAN figure is always set."""
+    from decimal import Decimal, InvalidOperation
+
+    obj = _object(value)
+    if obj.get("making_type", "pct") not in ("pct", "per_g"):
+        raise SettingError(["Choose percent or rupees per gram."])
+    out: dict[str, str] = {"making_type": obj.get("making_type", "pct")}
+    for field, ceiling in (
+        ("making_value", None if obj.get("making_type") == "per_g" else Decimal(100)),
+        ("wastage_pct", Decimal(100)),
+        ("wastage_limit_pct", Decimal(100)),
+        ("pan_limit", None),
+    ):
+        raw = str(obj.get(field) or "").replace(",", "").strip()
+        if raw:
+            try:
+                number = Decimal(raw)
+            except InvalidOperation:
+                raise SettingError(["Enter a number."]) from None
+            if not number.is_finite() or number < 0 or (ceiling is not None and number > ceiling):
+                raise SettingError(["Enter a percentage up to 100."] if ceiling else ["Enter an amount above zero."])
+            raw = f"{number:.2f}"
+        out[field] = raw
+    if not out["pan_limit"] or Decimal(out["pan_limit"]) <= 0:
+        raise SettingError(["Enter an amount above zero."])
+    return out
 
 
 def _preset(business_type: str) -> presets.Preset:
@@ -297,11 +358,25 @@ SETTINGS: dict[str, SettingSpec] = {
         # R-DEC-64 — "Wholesale of what?": the business is ONE kind, and this
         # says it sells that kind wholesale. Its defaults join wholesale's
         # preset to the kind's (`presets.combined`).
+        SettingSpec("shop.messages", SECTION_GENERAL, lambda bt: {}, _kind_messages),
         SettingSpec(
             "shop.wholesale",
             SECTION_GENERAL,
             lambda bt: {"value": bt in presets.WHOLESALE_TYPES},
             _bool_value,
+        ),
+        # Design: a jeweller's "making default · wastage limit · PAN limit".
+        SettingSpec(
+            "shop.jewel",
+            SECTION_GENERAL,
+            lambda bt: {
+                "making_type": "pct",
+                "making_value": "",
+                "wastage_pct": "",
+                "wastage_limit_pct": "",
+                "pan_limit": "200000.00",
+            },
+            _jewel,
         ),
         *(
             SettingSpec(

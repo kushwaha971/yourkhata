@@ -15,6 +15,7 @@ import {
   UbPageHeader,
   UbPageShell,
   UbPanel,
+  UbSearchInput,
   UbSelect,
   UbStack,
   UbText,
@@ -27,6 +28,8 @@ import { useTranslation, type TranslateFn } from 'src/hooks/useTranslation';
 import { selectActiveTenant } from 'src/redux/slice/sessionSlice';
 import { showSnackbar } from 'src/redux/slice/snackbarSlice';
 import { ROUTES } from 'src/routes';
+
+import { useKindMessage } from 'modules/DigiKhaato/features/settings/hooks/useKindMessage';
 
 import {
   getRateHistory,
@@ -110,9 +113,9 @@ const checkDraft = (draft: Draft, t: TranslateFn): Partial<Record<Purity, string
 const shareBoard = async (
   shop: string,
   day: string,
-  lines: readonly (readonly [string, string])[]
+  lines: readonly (readonly [string, string])[],
+  text: string
 ): Promise<void> => {
-  const text = [shop, day, ...lines.map(([name, rate]) => `${name}: ${rate}`)].join('\n');
   const canvas = document.createElement('canvas');
   canvas.width = 720;
   canvas.height = 220 + lines.length * 72;
@@ -193,7 +196,11 @@ const historyColumns = (t: TranslateFn, locale: string): UbDataGridColumn<DayRat
     header: t('stock.rates.col.setBy'),
     priority: 1,
     cardSlot: 'trailing',
-    cell: (r) => `${r.setBy}, ${timeLabel(r.setAt, locale)}`,
+    cell: (r) => (
+      <UbText as="span" variant="inherit" className="block whitespace-normal break-words">
+        {`${r.setBy}, ${timeLabel(r.setAt, locale)}`}
+      </UbText>
+    ),
   },
 ];
 
@@ -214,6 +221,7 @@ const monthOptions = (today: string, locale: string): { value: string; label: st
 
 export function RatesPageContent(): React.JSX.Element {
   const { t, locale } = useTranslation();
+  const rateMessage = useKindMessage('todays_rate');
   const dispatch = useAppDispatch();
   const desk = useGridTier() !== 'cards';
   const { can } = usePermissions();
@@ -225,6 +233,7 @@ export function RatesPageContent(): React.JSX.Element {
   const [errors, setErrors] = useState<Partial<Record<Purity, string>>>({});
   const [saving, setSaving] = useState(false);
   const [history, setHistory] = useState<readonly DayRate[] | null>(null);
+  const [historyQuery, setHistoryQuery] = useState('');
 
   const load = useCallback((signal?: AbortSignal) => {
     void getTodayRates(signal)
@@ -292,7 +301,15 @@ export function RatesPageContent(): React.JSX.Element {
     const lines = PURITIES.filter((p) => draft[p].trim()).map(
       (p) => [names[p], `${rupees(draft[p])} / g`] as const
     );
-    void shareBoard(shop, dayLabel(data.day, locale, true), lines);
+    void shareBoard(
+      shop,
+      dayLabel(data.day, locale, true),
+      lines,
+      rateMessage('stock.rates.shareText', {
+        shop,
+        rates: lines.map(([name, rate]) => `${name} ${rate}`).join(' · '),
+      })
+    );
   };
 
   /** "Yesterday ₹X" (phone) or "Up/Down ₹X from yesterday" (desktop). */
@@ -411,6 +428,12 @@ export function RatesPageContent(): React.JSX.Element {
     [t]
   );
   const columns = useMemo(() => historyColumns(t, locale), [t, locale]);
+  // Design "Rate history" search: the month's rows, by anything a row shows.
+  const shownHistory = useMemo(() => {
+    const term = historyQuery.trim().toLowerCase();
+    if (!history || !term) return history;
+    return history.filter((row) => JSON.stringify(row).toLowerCase().includes(term));
+  }, [history, historyQuery]);
 
   if (failed) {
     return (
@@ -483,7 +506,7 @@ export function RatesPageContent(): React.JSX.Element {
             </UbText>
           </UbPanel>
           <UbDataGrid
-            rows={history ?? []}
+            rows={shownHistory ?? []}
             columns={columns}
             rowId={(r) => r.day}
             rowName={(r) => r.day}
@@ -503,9 +526,15 @@ export function RatesPageContent(): React.JSX.Element {
             caption={t('stock.rates.history')}
             toolbar={
               <UbBox className="flex items-center justify-between gap-3 px-4 py-3">
-                <UbText as="span" variant="body-sm-medium">
-                  {t('stock.rates.history')}
-                </UbText>
+                <UbBox className="min-w-0 flex-1">
+                  <UbSearchInput
+                    value={historyQuery}
+                    onChange={setHistoryQuery}
+                    placeholder={t('stock.rates.history')}
+                    aria-label={t('stock.rates.history')}
+                    data-testid="rate-history-search"
+                  />
+                </UbBox>
                 {data && (
                   <UbSelect
                     value={month}
@@ -521,8 +550,8 @@ export function RatesPageContent(): React.JSX.Element {
             cardAvatar={false}
             page={{
               page: 1,
-              pageSize: Math.max(history?.length ?? 0, 1),
-              total: history?.length ?? 0,
+              pageSize: Math.max(shownHistory?.length ?? 0, 1),
+              total: shownHistory?.length ?? 0,
               totalPages: 1,
             }}
             onPageChange={() => undefined}
@@ -530,7 +559,7 @@ export function RatesPageContent(): React.JSX.Element {
           />
         </UbBox>
       ) : (
-        <UbStack gap={3} className="pb-24" data-testid="rate-screen">
+        <UbStack gap={3} className="min-h-[calc(100dvh-13.5rem)]" data-testid="rate-screen">
           <UbPanel className="p-0" aria-busy={!data}>
             {rows}
           </UbPanel>
@@ -548,7 +577,7 @@ export function RatesPageContent(): React.JSX.Element {
               {shareButton}
             </UbStack>
           </UbPanel>
-          <UbBottomBar className="grid grid-cols-2 gap-2 border-t border-border-hairline bg-surface-card px-4 py-3">
+          <UbBottomBar className="mt-auto grid grid-cols-2 gap-2 border-t border-border-hairline bg-surface-card px-4 py-3">
             {sameButton}
             {saveButton}
           </UbBottomBar>

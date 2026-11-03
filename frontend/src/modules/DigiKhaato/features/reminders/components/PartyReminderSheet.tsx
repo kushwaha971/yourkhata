@@ -1,11 +1,13 @@
 'use client';
 
-import { memo, useCallback, useEffect, useRef, type RefObject, type ReactNode } from 'react';
+import { memo, useCallback, useEffect, useRef, useState, type RefObject, type ReactNode } from 'react';
 
 import {
   UbButton,
+  UbChoiceChips,
   UbShareSheet,
   UbSkeleton,
+  UbStack,
   UbStatusBanner,
   type UbShareChannel,
   type UbShareSheetLabels,
@@ -17,6 +19,7 @@ import { useTranslation } from 'src/hooks/useTranslation';
 import { relativeTimeView } from 'src/utils/relativeTime';
 import { toDialableNumber } from 'src/utils/share';
 
+import { useReminderChoices } from '../hooks/useReminderChoices';
 import {
   previewCleared,
   selectReminderPreview,
@@ -50,6 +53,8 @@ import 'src/i18n/catalogues/share';
  */
 export interface PartyReminderSheetProps {
   readonly partyId: string;
+  /** Given where the jeweller's other messages may be chosen (D15 `pRemind`). */
+  readonly partyName?: string;
   readonly book?: 'main' | 'shop';
   readonly open: boolean;
   readonly onOpenChange: (open: boolean) => void;
@@ -70,6 +75,7 @@ const CHANNEL_OF: Readonly<Partial<Record<UbShareChannel, SendManualReminderArg[
 
 function PartyReminderSheetBase({
   partyId,
+  partyName = '',
   book = 'main',
   open,
   onOpenChange,
@@ -101,9 +107,15 @@ function PartyReminderSheetBase({
     };
   }, [open, partyId, dispatch, book]);
 
+  const choices = useReminderChoices(open, { id: partyId, name: partyName });
+  const [choiceKey, setChoiceKey] = useState('payment');
+  const choice = choices.find((c) => c.key === choiceKey);
+  const chosenText = choice?.text;
+
   const onShared = useCallback(
     (channel: UbShareChannel, text: string) => {
-      const logged = CHANNEL_OF[channel];
+      // Only the payment reminder belongs in the reminder log.
+      const logged = chosenText ? undefined : CHANNEL_OF[channel];
       if (book === 'shop' && logged) {
         if (handedOff.current) return;
         handedOff.current = true;
@@ -120,7 +132,7 @@ function PartyReminderSheetBase({
           })
         );
     },
-    [feedback, dispatch, partyId, book]
+    [feedback, dispatch, partyId, book, chosenText]
   );
 
   const retry = useCallback(() => {
@@ -161,18 +173,47 @@ function PartyReminderSheetBase({
     <UbSkeleton variant="text" count={4} label={t('reminders.sheet.loading')} />
   );
 
+  const chips =
+    choices.length > 1 ? (
+      <UbChoiceChips
+        ariaLabel={t('reminders.sheet.sendMessage')}
+        value={choice?.key ?? 'payment'}
+        onChange={setChoiceKey}
+        options={choices.map((c) => ({ value: c.key, label: c.label }))}
+      />
+    ) : undefined;
+
   return (
     <UbShareSheet
       whatsappIcon={whatsappIcon}
       onlyChannel={onlyChannel}
       open={open}
       onOpenChange={onOpenChange}
-      title={title}
+      title={chips ? t('reminders.sheet.sendMessage') : title}
+      draftKey={choice?.key}
+      conversation={
+        chips
+          ? {
+              editText: t('reminders.sheet.editText'),
+              share: t('reminders.sheet.shareOnWhatsapp'),
+              note: t('reminders.sheet.opensNote'),
+            }
+          : undefined
+      }
       description={description}
-      message={ready ? onlyChannel === 'sms' ? preview.smsText ?? preview.text : preview.text : ''}
-      smsMessage={ready && onlyChannel !== 'sms' ? preview.smsText : undefined}
-      notice={notice}
-      pending={pending}
+      message={chosenText ?? (ready ? onlyChannel === 'sms' ? preview.smsText ?? preview.text : preview.text : '')}
+      smsMessage={!chosenText && ready && onlyChannel !== 'sms' ? preview.smsText : undefined}
+      notice={
+        chips ? (
+          <UbStack gap={2}>
+            {chips}
+            {!chosenText && notice}
+          </UbStack>
+        ) : (
+          notice
+        )
+      }
+      pending={chosenText ? undefined : pending}
       callHref={phone ? `tel:${toDialableNumber(phone)}` : null}
       phone={phone}
       labels={labels}

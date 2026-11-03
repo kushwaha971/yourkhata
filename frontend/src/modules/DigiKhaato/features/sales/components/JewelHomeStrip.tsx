@@ -32,7 +32,7 @@ export function JewelHomeStrip(): React.JSX.Element | null {
       key: 'rate',
       href: ROUTES.STOCK_RATES,
       label: t('sales.jewelHome.rate'),
-      value: data.gold_22k ? `${formatInr(data.gold_22k)}/g` : t('sales.jewelHome.rateNotSet'),
+      value: data.gold_22k ? `${formatInr(data.gold_22k).replace(/\.00$/, '')}/g` : t('sales.jewelHome.rateNotSet'),
       sub: data.silver ? t('sales.jewelHome.silver', { rate: formatInr(data.silver) }) : '',
     },
     {

@@ -197,6 +197,7 @@ export function InvoiceLinesSection({
           ...current,
           [row.id]: { part, rack: row.rack ?? undefined },
         }));
+      setValue(`${base}.tracksSerial`, row.tracking === 'serial');
       if (row.tracking === 'serial') setSerialItems((current) => ({ ...current, [row.id]: true }));
       if (row.tracking === 'batch') setBatchItems((current) => ({ ...current, [row.id]: true }));
       // D P6 — design D11: the add-on sheet opens only for an item that has add-ons.
@@ -310,6 +311,8 @@ export function InvoiceLinesSection({
         unitCode: found.unitCode,
         allowDecimal: false,
         serials: [found.jewel.tag_no],
+        // If the tag is ever lost from this line, the bill stops before issue.
+        tracksSerial: true,
         jewel,
         unitPrice: jewel.total ?? '',
         taxInclusive: false,
@@ -331,12 +334,8 @@ export function InvoiceLinesSection({
     name: string;
     tags: readonly Tag[];
   } | null>(null);
-  const pickOrChooseTag = useCallback(
-    (row: ItemListRow, via: Parameters<typeof quickAdd>[1]) => {
-      if (!keepsTags || row.tracking !== 'serial') {
-        pickItem(row, via);
-        return;
-      }
+  const chooseTag = useCallback(
+    (row: ItemListRow) => {
       void listItemTags(row.id)
         .then((tags) => {
           const inStock = tags.filter((tag) => tag.status === 'in_stock');
@@ -354,7 +353,16 @@ export function InvoiceLinesSection({
         })
         .catch(() => undefined);
     },
-    [keepsTags, pickItem, dispatch]
+    [dispatch]
+  );
+  const keepsTag = useCallback(
+    (row: ItemListRow) => keepsTags && row.tracking === 'serial',
+    [keepsTags]
+  );
+  const pickOrChooseTag = useCallback(
+    (row: ItemListRow, via: Parameters<typeof quickAdd>[1]) =>
+      keepsTag(row) ? chooseTag(row) : pickItem(row, via),
+    [keepsTag, chooseTag, pickItem]
   );
 
   /* Design pScan tray: "× 2 · ₹106" — the scanned item's line, from the same
@@ -388,7 +396,9 @@ export function InvoiceLinesSection({
       create: (query: string) => t('sales.line.quickAdd.create', { query }),
       restore: (name: string) => t('sales.line.quickAdd.restore', { name }),
       // C1 (design dScan): an unknown code is a note under the search.
-      notFound: (code: string) => t('sales.scan.notFound', { code }),
+      // A long junk scan must not stretch the table: only its start is useful.
+      notFound: (code: string) =>
+        t('sales.scan.notFound', { code: code.length > 40 ? `${code.slice(0, 40)}…` : code }),
       addScanned: t('sales.scan.addItem'),
       dismiss: t('common.action.close'),
     }),
@@ -503,7 +513,7 @@ export function InvoiceLinesSection({
       ) : null;
       // D P3 — one IMEI per phone on the line (a jeweller's tag is its own).
       const serialNote =
-        !jewel && stockRule === 'takes' && serialItems[line.itemId] ? (
+        !jewel && !keepsTags && stockRule === 'takes' && (serialItems[line.itemId] || line.tracksSerial) ? (
           <LineSerialsField
             serials={line.serials ?? []}
             qty={Math.max(Math.round(Number(line.qty) || 0), 0)}
@@ -601,6 +611,7 @@ export function InvoiceLinesSection({
       );
     },
     [
+      keepsTags,
       lines,
       partyId,
       partyName,
@@ -629,6 +640,7 @@ export function InvoiceLinesSection({
       labels={{ ...quickAddLabels, placeholder: t('sales.line.quickAdd.placeholderDesk') }}
       onPick={pickOrChooseTag}
       scanFirst={keepsTags ? scanTag : undefined}
+      openOnFocus={!keepsTags}
       disabled={disabled}
       hotkey="F2"
       className="[&_input]:text-sm"
@@ -678,6 +690,7 @@ export function InvoiceLinesSection({
       }}
       onPick={pickOrChooseTag}
       scanFirst={keepsTags ? scanTag : undefined}
+      openOnFocus={!keepsTags}
       disabled={disabled}
     />
   );

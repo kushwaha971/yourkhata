@@ -80,7 +80,7 @@ def test_a_deposit_already_held_is_security_held_without_cash_today(
         library_on,
         existing_student=True,
         starts_on="2026-08-01",
-        valid_until="2026-10-31",
+        valid_until=(tenant_today(library_on) + dt.timedelta(days=30)).isoformat(),
         deposit_held="500.00",
     )
     assert response.status_code == 201, response.content

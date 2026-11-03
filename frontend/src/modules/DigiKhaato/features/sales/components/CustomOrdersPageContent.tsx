@@ -3,11 +3,13 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import dynamic from 'next/dynamic';
+import { useSearchParams } from 'next/navigation';
 
-import { Plus } from 'lucide-react';
+import { MoreHorizontal, Plus } from 'lucide-react';
 
 import {
   UbActionLink,
+  UbActionSheet,
   UbBox,
   UbButton,
   UbConfirmDialog,
@@ -33,6 +35,8 @@ import { ROUTES } from 'src/routes';
 import { daysBetweenIso } from 'src/utils/calendarDays';
 import { todayInTenantTz } from 'src/utils/dates';
 import { formatInr } from 'src/utils/money';
+
+import { useKindMessage } from 'modules/DigiKhaato/features/settings/hooks/useKindMessage';
 
 import { PURITY_SHORT } from '../../inventory/api/tagService';
 import { inventoryGridLabels } from '../../inventory/view-model/gridLabels';
@@ -112,6 +116,80 @@ const orderWhat = (o: CustomOrder, t: TranslateFn): string =>
     .filter(Boolean)
     .join(' · ');
 
+/** Design dJOrders keeps a row to one line: the actions wait behind ⋯. */
+function OrderMenu({
+  order: o,
+  t,
+  move,
+  askCancel,
+  onEdit,
+  onTell,
+}: Readonly<{
+  order: CustomOrder;
+  t: TranslateFn;
+  move: (o: CustomOrder, status: CustomOrderStatus) => Promise<void>;
+  askCancel: (o: CustomOrder) => void;
+  onEdit: (o: CustomOrder) => void;
+  onTell: (o: CustomOrder) => void;
+}>): React.JSX.Element {
+  const [open, setOpen] = useState(false);
+  const act = (run: () => void) => () => {
+    setOpen(false);
+    run();
+  };
+  return (
+    <>
+      <UbButton
+        variant="ghost"
+        size="sm"
+        iconOnly
+        onClick={() => setOpen(true)}
+        data-testid="custom-order-more"
+        icon={<MoreHorizontal className="h-4 w-4" aria-hidden />}
+      >
+        {t('sales.customOrder.actions', { number: o.number })}
+      </UbButton>
+      <UbActionSheet
+        open={open}
+        onOpenChange={setOpen}
+        title={o.number}
+        closeLabel={t('common.action.close')}
+      >
+        <UbStack gap={2} className="p-4">
+          <UbActionLink href={billHref(o)} variant="primary" data-testid="custom-order-bill">
+            {t('sales.customOrder.makeBill')}
+          </UbActionLink>
+          <UbButton
+            variant="secondary"
+            onClick={act(() => void move(o, o.status === 'open' ? 'ready' : 'delivered'))}
+          >
+            {t(
+              o.status === 'open'
+                ? 'sales.customOrder.markReady'
+                : 'sales.customOrder.markDelivered'
+            )}
+          </UbButton>
+          {o.status === 'ready' && (
+            <UbButton
+              variant="secondary"
+              onClick={act(() => onTell(o))}
+              data-testid="custom-order-tell"
+            >
+              {t('sales.customOrder.tell')}
+            </UbButton>
+          )}
+          <UbButton variant="ghost" onClick={act(() => onEdit(o))} data-testid="custom-order-edit">
+            {t('sales.karigar.edit')}
+          </UbButton>
+          <UbButton variant="ghost" onClick={act(() => askCancel(o))}>
+            {t('sales.customOrder.cancel')}
+          </UbButton>
+        </UbStack>
+      </UbActionSheet>
+    </>
+  );
+}
+
 const orderColumns = ({
   t,
   badge,
@@ -185,51 +263,17 @@ const orderColumns = ({
     cardSlot: 'trailing',
     widthShare: 6,
     cell: (o) => (
-      <UbStack gap={1} className="items-start">
+      <UbStack direction="row" align="center" justify="between" className="gap-1">
         {badge(o)}
         {canWrite && isLive(o) && (
-          <UbStack direction="row" gap={1} className="flex-wrap">
-            <UbActionLink
-              href={billHref(o)}
-              variant="primary"
-              size="sm"
-              data-testid="custom-order-bill"
-            >
-              {t('sales.customOrder.makeBill')}
-            </UbActionLink>
-            <UbButton
-              variant="secondary"
-              size="sm"
-              onClick={() => void move(o, o.status === 'open' ? 'ready' : 'delivered')}
-            >
-              {t(
-                o.status === 'open'
-                  ? 'sales.customOrder.markReady'
-                  : 'sales.customOrder.markDelivered'
-              )}
-            </UbButton>
-            <UbButton variant="ghost" size="sm" onClick={() => askCancel(o)}>
-              {t('sales.customOrder.cancel')}
-            </UbButton>
-            {o.status === 'ready' && (
-              <UbButton
-                variant="secondary"
-                size="sm"
-                onClick={() => onTell(o)}
-                data-testid="custom-order-tell"
-              >
-                {t('sales.customOrder.tell')}
-              </UbButton>
-            )}
-            <UbButton
-              variant="ghost"
-              size="sm"
-              onClick={() => onEdit(o)}
-              data-testid="custom-order-edit"
-            >
-              {t('sales.karigar.edit')}
-            </UbButton>
-          </UbStack>
+          <OrderMenu
+            order={o}
+            t={t}
+            move={move}
+            askCancel={askCancel}
+            onEdit={onEdit}
+            onTell={onTell}
+          />
         )}
       </UbStack>
     ),
@@ -244,6 +288,7 @@ const orderColumns = ({
  */
 export function CustomOrdersPageContent(): React.JSX.Element {
   const { t } = useTranslation();
+  const readyMessage = useKindMessage('order_ready');
   const dispatch = useAppDispatch();
   const canWrite = usePermissions().can('sales.invoice.write');
   const cards = useGridTier() === 'cards';
@@ -384,6 +429,13 @@ export function CustomOrdersPageContent(): React.JSX.Element {
       }),
     [t]
   );
+  // The menu's Karigars row lands on the panel once it has loaded.
+  const toKarigars = useSearchParams()?.get('view') === 'karigars';
+  // Only once the orders are in too: they push the panel down as they arrive.
+  const karigarsReady = Boolean(karigars) && data !== null;
+  useEffect(() => {
+    if (toKarigars && karigarsReady) document.getElementById('karigars')?.scrollIntoView();
+  }, [toKarigars, karigarsReady]);
   const rows = data?.rows ?? [];
   const state = failed ? 'error' : data === null ? 'loading' : rows.length === 0 ? 'empty' : 'rows';
 
@@ -397,7 +449,7 @@ export function CustomOrdersPageContent(): React.JSX.Element {
             <UbStack direction="row" gap={2}>
               {(karigars?.rows.length ?? 0) > 0 && (
                 <UbButton
-                  variant="secondary"
+                  variant="outlineNeutral"
                   onClick={() => setDialog('issue')}
                   size={phone ? 'sm' : undefined}
                   data-testid="karigar-issue"
@@ -574,7 +626,8 @@ export function CustomOrdersPageContent(): React.JSX.Element {
       </UbStack>
       {karigars && (
         <UbBox className="mt-4">
-          <KarigarsPanel
+          <UbBox id="karigars" className="scroll-mt-20">
+<KarigarsPanel
             data={karigars}
             canWrite={canWrite}
             onAdd={() => setDialog('add')}
@@ -590,6 +643,7 @@ export function CustomOrdersPageContent(): React.JSX.Element {
                 )
             }
           />
+</UbBox>
         </UbBox>
       )}
       {correcting && (
@@ -618,12 +672,12 @@ export function CustomOrdersPageContent(): React.JSX.Element {
           onOpenChange={(next) => (next ? undefined : setTelling(null))}
           title={t('sales.customOrder.tell')}
           description={telling.party.name}
-          message={t('sales.customOrder.readyMessage', {
-            name: telling.party.name,
-            what: telling.what,
-            number: telling.number,
-            shop,
-          })}
+          message={readyMessage(
+            telling.fixedRate
+              ? 'sales.customOrder.readyMessage'
+              : 'sales.customOrder.readyMessageTodayRate',
+            { name: telling.party.name, what: telling.what, number: telling.number, shop }
+          )}
           phone={telling.party.mobile}
           labels={{
             preview: t('sales.customOrder.tellPreview'),

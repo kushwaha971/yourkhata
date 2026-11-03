@@ -108,6 +108,19 @@ def test_no_rate_today_is_said_under_the_line(owner: Any, chain: Any, make_party
     assert made.json()["error"]["details"]["lines.0.jewel.rate"] == ["Set today's rate first."]
 
 
+def test_a_piece_with_no_tag_asks_for_the_tag_not_an_imei(owner: Any, chain: Any, make_party: Any) -> None:
+    """Monkey seed 42: an untagged chain was refused at issue with "Enter 1 IMEI"."""
+    _rate(owner)
+    body = {key: value for key, value in line(chain, "1").items() if key not in ("serials", "jewel")}
+    made = draft(owner, party_id=str(make_party().id), lines=[body])
+    assert made.status_code == 201, made.content
+    assert made.json()["data"]["lines"][0]["tracks_serial"] is True
+    issued = issue(owner, made.json()["data"]["id"], version=made.json()["data"]["version"])
+    assert issued.status_code == 400, issued.content
+    words = issued.json()["error"]["details"]["lines.0.serials"][0]
+    assert "tag" in words and "IMEI" not in words
+
+
 # ── G2c: old gold taken in ──────────────────────────────────────────────────
 
 OLD = {"weight_g": "8.200", "purity": "gold_22k", "less_pct": "2"}
@@ -221,3 +234,49 @@ def test_a_shop_that_is_not_a_jeweller_is_not_asked(owner: Any, make_item: Any) 
     big = make_item("Tractor part", "250000.00", "GST0", stock="1")
     made = draft(owner, lines=[line(big, "1")]).json()["data"]
     assert issue(owner, made["id"], version=made["version"], payment={"mode_breakup": [{"mode": "cash", "amount": made["grand_total"]}]}).status_code == 200
+
+
+def test_the_pan_figure_comes_from_settings(shop):
+    """Defect prevented: a lowered PAN limit in Settings being ignored by the bill."""
+    from decimal import Decimal
+
+    from apps.platform_app.models import TenantSetting
+    from apps.sales.services.jewel_rules import pan_limit
+
+    assert pan_limit(shop) == Decimal("200000.00")
+    TenantSetting.objects.update_or_create(
+        tenant=shop, key="shop.jewel", defaults={"value": {"pan_limit": "50000.00"}}
+    )
+    assert pan_limit(shop) == Decimal("50000.00")
+
+
+def test_jewel_settings_refuse_nonsense():
+    """Defect prevented: a wastage of 500% or a PAN limit of nothing being saved."""
+    import pytest as _pytest
+
+    from apps.platform_app.settings_schema import SettingError, _jewel
+
+    good = _jewel({"making_type": "pct", "making_value": "12", "pan_limit": "2,00,000"}, None)
+    assert good["making_value"] == "12.00" and good["pan_limit"] == "200000.00"
+    for bad in ({"wastage_pct": "500", "pan_limit": "1"}, {"pan_limit": ""}, {"making_type": "x", "pan_limit": "1"}):
+        with _pytest.raises(SettingError):
+            _jewel(bad, None)
+
+
+def test_old_gold_over_the_bill_can_be_paid_out_in_cash(owner: Any, chain: Any, make_party: Any) -> None:
+    """Defect prevented: the extra paid in cash never reaching the cashbook, or staying as an advance too."""
+    from apps.inventory.models import OldGold
+    from apps.payments.models import Payment
+
+    _rate(owner)
+    party = make_party()
+    big = {"weight_g": "30.000", "purity": "gold_22k", "less_pct": "0", "cash_back": True}
+    made = draft(owner, party_id=str(party.id), lines=[line(chain, "1", serials=["GC-1042"], jewel={})], old_gold=big).json()["data"]
+    done = issue(owner, made["id"], version=made["version"])
+    assert done.status_code == 200, done.content
+    row = OldGold.objects.get(document_id=made["id"])
+    extra = row.value - Decimal(done.json()["data"]["grand_total"])
+    out = Payment.objects.get(direction="out", party_id=party.id, meta__document_id=made["id"])
+    assert out.primary_mode == "cash" and out.amount == extra
+    party.refresh_from_db()
+    assert party.shop_balance == 0

@@ -19,4 +19,7 @@ import type { NavSectionView } from './useNavigation';
 export const LANDING_FALLBACK: string = ROUTES.PARTIES;
 
 export const landingPath = (sections: readonly NavSectionView[]): string =>
-  sections[0]?.items[0]?.href ?? LANDING_FALLBACK;
+  // Karigars is a jump to a panel on Custom orders, never a place to land.
+  sections[0]?.items.find((item) => item.href !== ROUTES.SALES_KARIGARS)?.href ??
+  sections[1]?.items[0]?.href ??
+  LANDING_FALLBACK;

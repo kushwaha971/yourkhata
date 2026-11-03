@@ -16,12 +16,18 @@ import {
   UbText,
   type UbShopKind,
 } from 'src/design-system';
+import { useAppSelector } from 'src/hooks/useAppStore';
 import { useTranslation } from 'src/hooks/useTranslation';
+import { selectActiveTenant } from 'src/redux/slice/sessionSlice';
 
 import { useAppWords } from 'modules/DigiKhaato/features/navigation/useAppWords';
 
 import { useSettingsAccess } from '../hooks/useSettingsAccess';
 import { useTenantSettings } from '../hooks/useTenantSettings';
+
+import { JewelDefaultsPanel } from './JewelDefaultsPanel';
+
+import type { JewelDefaults } from '../../inventory/api/metalRateService';
 
 /**
  * B3 — Settings › Shop features (design `dFeatures` / `pFeatures`, R-DEC-65).
@@ -50,6 +56,7 @@ const isOn = (value: unknown): boolean =>
 export function ShopFeaturesPageContent(): React.JSX.Element {
   const { t } = useTranslation();
   const { kindLabel, kindPicture } = useAppWords();
+  const jeweller = Boolean(useAppSelector(selectActiveTenant)?.features?.includes('jewellery'));
   const access = useSettingsAccess();
   const settings = useTenantSettings(access.canView);
   const { data, status, error, refetch } = settings;
@@ -136,6 +143,14 @@ export function ShopFeaturesPageContent(): React.JSX.Element {
             </UbText>
           </UbStack>
         </UbPanel>
+        {jeweller && (
+          <JewelDefaultsPanel
+            key={JSON.stringify(values['shop.jewel'] ?? null)}
+            values={values['shop.jewel'] as JewelDefaults | undefined}
+            disabled={busy}
+            onSave={(next) => settings.saveSection('shop', { 'shop.jewel': next })}
+          />
+        )}
         <UbStack gap={1}>
           <UbText as="h2" variant="body-medium" className="font-semibold">
             {t('settings.shop.features')}

@@ -173,6 +173,7 @@
   "stock.rates.setAt": "{time} बजे {name} ने लिखा।",
   "stock.rates.share": "WhatsApp पर भेजें",
   "stock.rates.shareBody": "भाव बोर्ड की फ़ोटो WhatsApp पर भेजता है।",
+  "stock.rates.shareText": "{shop} आज: {rates}।",
   "stock.rates.shareTitle": "आज का भाव भेजें",
   "stock.rates.silver": "चाँदी (999)",
   "stock.rates.subtitle": "{day} · आज के हर बिल में लगेगा",

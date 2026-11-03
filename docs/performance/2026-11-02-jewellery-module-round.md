@@ -44,3 +44,45 @@ Silver 925 is priced at the one silver rate. Part receipts: "More to come".
 | Owner 1 | 0 | only the owner can give it |
 
 Reachable next: Design and a longer hand pass give 9. The owner's point gives 10.
+
+## Update, 3 Nov 2026: fixes after the last LOOK and monkey round
+
+**Fixed**
+
+- A tagged piece with no tag was refused at issue with an IMEI message. The bill now holds it first (`pieceUnmarked()` in `finishIssue` and `startIssue`), and the server's message asks a jeweller to remove the piece and add it again to choose its tag. The draft remembers tracking through `tracks_serial`.
+- A lone old-gold cash-back switch made a draft refuse to save. `toWireBody` sends `old_gold` only with a weight or purity.
+- The item search list was clipped to one row in the bill's scrolling table and reopened over the chosen piece. It is now placed against the window, and it does not open on focus for a jeweller. `ItemQuickAdd` is shared, so purchases and stock count need a recheck.
+- Today's rate: Set by wraps, and rate history has a search box.
+- The Karigars route has a loading view; a stale `keepsTags` dependency is fixed.
+- Wording: the order-ready message adds "Balance as per today's rate." when no rate is fixed; the rate share text follows the design's one line.
+
+**Previous build's round (before the last fixes, so it does not count as final):** 14 harnesses passed, 42 of 42 monkey runs passed, both skew self-tests caught their wrong figures, and unit tests were 5041 of 5042 (the Karigars loading view, since fixed).
+
+**Results, 3 Nov 2026 (night). The final build had a targeted rerun only, not a full round (owner asked to finish within two hours).**
+
+- Full round on the build before the last fixes: 14 harnesses pass, skews caught, 46 of 48 monkeys. The 2 failures were seed 43 (harness: the Restore sheet covered the search) and seed 42 on /settings/messages 390 (an untagged piece reached issue).
+- Final build: /settings/messages 3 seeds x 2 sizes pass; /sales/invoices/new seeds 42 and 43 at 390 pass; g2b-bill, g3c-tags, jewel-day pass. The other 34 monkey runs and 11 harnesses were NOT rerun on it.
+- Server suite: 5030 tests, 1 failure, the Dues speed test (78 s against 60 s) on a busy machine; it passes alone.
+- Seed 42: issue now also checks the saved bill and stops with a clear message. HOW the line lost its tag was not found; that remains open.
+
+**PENDING, no result yet**
+
+- WhatsApp bubble on the reminder sheet: built and unit tested, not yet LOOKED at on the running app.
+- Design comparison: desktop bill with real data against `dJewelBill`, phone old gold sheet with values, Messages menu, dark and Hindi.
+- Purchases and stock count search list recheck.
+
+**Not built**
+
+- "Final weight" in the order-ready message: no final-weight field was found on an order, so the figure is left out rather than invented.
+
+**Design differences to list for the owner**
+
+- Attach statement PDF on the reminder sheet is not built; no such file exists.
+- The Messages menu lacks Bills and print, Tax and GST: those screens do not exist.
+
+- Date chips "In 7/15 days" are kept; the design has none.
+- The cash-limit notice is omitted by the owner's rule (no cash limit).
+- The phone order form is a tall sheet; the design shows a full page.
+- Karigars' section and menu position differ from the design.
+
+The score sheet above predates this update. No new score is given until the pending items have results.

@@ -85,3 +85,10 @@ proved nothing.
 
 Each module's piece adds its row values here, and its own edge harness for
 the cases the monkey cannot reach by chance (E1, E4, E5, E10, E11).
+
+## Jewellery, added 3 Nov 2026
+
+- Tagged piece on a bill with no tag chosen: held before issue, with a message about the tag rather than an IMEI. Covered by `test_a_piece_with_no_tag_asks_for_the_tag_not_an_imei`.
+- Old gold cash-back switched on with no weight or purity: the draft still saves. Covered in `invoiceForm.test.ts`.
+- Item search inside a scrolling bill table: the list shows full rows and does not cover the chosen piece. Measured in `e2e/g4b-bought-cashback.mjs`.
+- Monkey flips the jewellery switch mid-round: state reset by `e2e/_reset.mjs`.

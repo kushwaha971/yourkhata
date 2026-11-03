@@ -1,5 +1,8 @@
 'use client';
 
+import 'src/i18n/catalogues/items';
+import 'src/i18n/catalogues/stock';
+
 import { useCallback, useId, useState } from 'react';
 
 import { useForm } from 'react-hook-form';

@@ -7,3 +7,8 @@ export const PURITY_SHORT: Readonly<Record<string, string>> = {
   silver: 'Silver 999',
   silver_925: 'Silver 925',
 };
+
+/** One tola is 11.664 g. The design shows tola beside grams. */
+export const GRAMS_PER_TOLA = 11.664;
+export const toTola = (grams: string | number): string =>
+  (Number(grams) / GRAMS_PER_TOLA).toFixed(3);

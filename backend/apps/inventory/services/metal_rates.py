@@ -41,13 +41,22 @@ def _view(row: MetalRate | None, tenant: Any) -> dict[str, Any] | None:
     }
 
 
+def jewel_defaults(tenant: Any) -> dict[str, str]:
+    """The owner's making, wastage and PAN figures, as Settings stores them."""
+    from apps.platform_app.models import TenantSetting
+    from apps.platform_app.settings_schema import SETTINGS
+
+    row = TenantSetting.objects.filter(tenant=tenant, key="shop.jewel").first()
+    return row.value if row is not None else SETTINGS["shop.jewel"].default("")
+
+
 def today_view(*, tenant: Any) -> dict[str, Any]:
     """Today's row (or null), the latest earlier day's, and today's date."""
     today = tenant_today(tenant)
     rows = MetalRate.objects.filter(tenant=tenant, day__lte=today).order_by("-day")[:2]
     current = next((r for r in rows if r.day == today), None)
     previous = next((r for r in rows if r.day < today), None)
-    return {"day": today.isoformat(), "today": _view(current, tenant), "yesterday": _view(previous, tenant)}
+    return {"day": today.isoformat(), "defaults": jewel_defaults(tenant), "today": _view(current, tenant), "yesterday": _view(previous, tenant)}
 
 
 def _parse(raw: Any, field: str, details: dict[str, list[str]]) -> Decimal | None:

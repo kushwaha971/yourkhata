@@ -10,6 +10,7 @@ import {
   ClipboardList,
   Repeat,
   Gem,
+  Hammer,
   CreditCard,
   FileMinus,
   FileText,
@@ -102,6 +103,18 @@ export const SHOP_APP: AppManifest = {
       order: 1,
       bottomNav: true,
       tabLabelId: 'nav.tab.parties',
+    },
+    {
+      // Design: Karigars sit with the people; their work is on Custom orders.
+      key: 'karigars',
+      icon: Hammer,
+      labelId: 'nav.karigars',
+      href: ROUTES.SALES_KARIGARS,
+      module: 'sales',
+      permission: 'sales.invoice.read',
+      feature: 'jewellery',
+      section: 'parties',
+      order: 2.5,
     },
     {
       key: 'suppliers',

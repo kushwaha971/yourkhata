@@ -16,6 +16,13 @@ from typing import Any
 LIMIT = Decimal("200000.00")
 
 
+def pan_limit(tenant: Any) -> Decimal:
+    """The figure the owner set in Settings, ₹2 lakh until they do."""
+    from apps.sales.services.settings import setting_field
+
+    return Decimal(str(setting_field(tenant, "shop.jewel", "pan_limit", f"{LIMIT:.2f}")))
+
+
 def fill_pan_from_gstin(*, tenant: Any, document: Any, party: Any) -> None:
     """A jeweller's big bill with no PAN typed takes the one its customer's GSTIN carries."""
     from apps.platform_app.selectors.business_words import features_of
@@ -23,7 +30,7 @@ def fill_pan_from_gstin(*, tenant: Any, document: Any, party: Any) -> None:
 
     if "jewellery" not in features_of(tenant):
         return
-    if document.grand_total < LIMIT or (document.meta or {}).get("pan"):
+    if document.grand_total < pan_limit(tenant) or (document.meta or {}).get("pan"):
         return
     gstin = getattr(party, "gstin", None) if party is not None else None
     if gstin and is_valid_gstin(gstin):

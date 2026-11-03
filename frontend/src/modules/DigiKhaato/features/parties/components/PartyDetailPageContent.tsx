@@ -901,6 +901,7 @@ export function ExistingPartyDetailPageContent({
       {reminder.canRemind && reminder.open && (
         <PartyReminderSheetLazy
           partyId={reminder.partyId}
+          partyName={shopBook ? party?.name : undefined}
           book={shopBook ? 'shop' : 'main'}
           open={reminder.open}
           onOpenChange={reminder.setOpen}

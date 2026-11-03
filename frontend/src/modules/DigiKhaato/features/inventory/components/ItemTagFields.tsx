@@ -1,5 +1,7 @@
 'use client';
 
+import { useEffect } from 'react';
+
 import { useFormContext, useWatch } from 'react-hook-form';
 
 import {
@@ -15,7 +17,8 @@ import {
 } from 'src/design-system';
 import { useTranslation } from 'src/hooks/useTranslation';
 
-import { PURITIES, type Purity } from '../api/metalRateService';
+import { PURITIES, useJewelDefaults, type Purity } from '../api/metalRateService';
+import { toTola } from '../constants/purity';
 
 type TagPurity = Purity | 'silver_925';
 
@@ -47,8 +50,24 @@ const TAG_PURITIES: readonly TagPurity[] = [...PURITIES, 'silver_925'];
  */
 export function ItemTagFields(): React.JSX.Element {
   const { t } = useTranslation();
-  const { setValue, control } = useFormContext<TagFormHost>();
+  const { setValue, getValues, control } = useFormContext<TagFormHost>();
   const makingType = useWatch({ control, name: 'tag.makingType' });
+  const netG = useWatch({ control, name: 'tag.netG' });
+  const grossG = useWatch({ control, name: 'tag.grossG' });
+  const stoneG = useWatch({ control, name: 'tag.stoneG' });
+  const weighed = netG || (grossG ? String(Number(grossG) - Number(stoneG || 0)) : '');
+  const defaults = useJewelDefaults();
+  // The owner's making and wastage fill a blank form; anything typed stays.
+  useEffect(() => {
+    if (!defaults) return;
+    if (!getValues('tag.makingValue') && defaults.making_value) {
+      setValue('tag.makingType', defaults.making_type);
+      setValue('tag.makingValue', defaults.making_value);
+    }
+    if (!getValues('tag.wastagePct') && defaults.wastage_pct) {
+      setValue('tag.wastagePct', defaults.wastage_pct);
+    }
+  }, [defaults, getValues, setValue]);
 
   const grams = (name: 'tag.grossG' | 'tag.stoneG' | 'tag.netG', label: string) => (
     <UbField name={name} label={label}>
@@ -101,6 +120,11 @@ export function ItemTagFields(): React.JSX.Element {
         {grams('tag.stoneG', t('items.form.tag.stone'))}
         {grams('tag.netG', t('items.form.tag.net'))}
       </UbBox>
+      {Number(weighed) > 0 && (
+        <UbText variant="caption" tone="tertiary" className="ds-num" data-testid="tag-tola">
+          {t('items.form.tag.tola', { tola: toTola(weighed) })}
+        </UbText>
+      )}
       <UbBox className="grid grid-cols-1 gap-3">
         {/* Design D3: Making is ONE field — the amount, and beside it whether
             it is a percent or rupees per gram. */}

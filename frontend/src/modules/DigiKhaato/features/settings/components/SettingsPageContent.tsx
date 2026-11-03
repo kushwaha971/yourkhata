@@ -9,6 +9,7 @@ import {
   CreditCard,
   DatabaseBackup,
   History,
+  MessageSquare,
   MonitorSmartphone,
   Palette,
   Store,
@@ -30,7 +31,9 @@ import {
   UbStack,
   UbText,
 } from 'src/design-system';
+import { useAppSelector } from 'src/hooks/useAppStore';
 import { useTranslation } from 'src/hooks/useTranslation';
+import { selectActiveTenant } from 'src/redux/slice/sessionSlice';
 import { ROUTES } from 'src/routes';
 
 import { useSettingsAccess } from '../hooks/useSettingsAccess';
@@ -68,6 +71,9 @@ export function SettingsPageContent(): React.JSX.Element {
 
   const runsShop = data?.modules.enabled.includes('sales') ?? false;
   const calendarReaders = data?.calendarReaders;
+  const hasOwnMessages = Boolean(
+    useAppSelector(selectActiveTenant)?.features?.includes('jewellery')
+  );
   const links = useMemo<readonly HubLink[]>(
     () => [
       { key: 'profile', href: ROUTES.SETTINGS_PROFILE, icon: Building2, show: access.canView },
@@ -83,6 +89,13 @@ export function SettingsPageContent(): React.JSX.Element {
         icon: Store,
         show: access.canView && runsShop,
       },
+      // D15 — only a kind whose features add messages of their own.
+      {
+        key: 'messages',
+        href: ROUTES.SETTINGS_MESSAGES,
+        icon: MessageSquare,
+        show: access.canView && hasOwnMessages,
+      },
       { key: 'data', href: ROUTES.SETTINGS_DATA, icon: DatabaseBackup, show: access.isOwner },
       // A9b (PLT-X08 §7) — only while an enabled feature reads the calendar:
       // business days for a shop with nothing that counts days would be a
@@ -94,7 +107,7 @@ export function SettingsPageContent(): React.JSX.Element {
         show: access.canView && (calendarReaders?.length ?? 0) > 0,
       },
     ],
-    [access, calendarReaders, runsShop]
+    [access, calendarReaders, hasOwnMessages, runsShop]
   );
 
   const handleConflictOpenChange = useCallback(

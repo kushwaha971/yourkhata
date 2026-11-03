@@ -40,3 +40,14 @@ describe('toWireBody discounts', () => {
     expect(wire).toMatchObject({ discount_type: null, discount_value: null });
   });
 });
+
+describe('toWireBody old gold', () => {
+  /** Monkey seed 43: the cash-back switch alone made a half old-gold, and the bill could not save. */
+  it('sends none when only the cash-back switch exists', () => {
+    const body = toWireBody({
+      ...emptyInvoiceForm('2026-10-26', 'party', '27'),
+      oldGold: { cashBack: false } as never,
+    });
+    expect(body.old_gold).toBeNull();
+  });
+});

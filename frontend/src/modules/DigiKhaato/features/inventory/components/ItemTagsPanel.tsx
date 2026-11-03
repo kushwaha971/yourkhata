@@ -4,11 +4,13 @@ import { useEffect, useMemo, useState } from 'react';
 
 import dynamic from 'next/dynamic';
 
+
 import {
   UbButton,
   UbDataGrid,
   UbDialogLoading,
   UbStack,
+  UbText,
   UbStatusBadge,
   useMediaQuery,
   type UbDataGridColumn,
@@ -17,6 +19,7 @@ import { useTranslation, type TranslateFn } from 'src/hooks/useTranslation';
 import { formatBusinessDate } from 'src/utils/dates';
 
 import { listItemTags, PURITY_SHORT, type Tag } from '../api/tagService';
+import { toTola } from '../constants/purity';
 import { inventoryGridLabels } from '../view-model/gridLabels';
 import { ITEM_SELECT_IDS } from '../view-model/itemGridIds';
 
@@ -52,7 +55,12 @@ const columns = (
     widthShare: 1,
     cell: (r) =>
       r.netG ? (
-        `${Number(r.netG).toFixed(3)} g`
+        <UbStack gap={0} className="items-end">
+          <UbText as="span" variant="inherit" className="ds-num">{`${Number(r.netG).toFixed(3)} g`}</UbText>
+          <UbText as="span" variant="caption" tone="tertiary" className="ds-num">
+            {`${toTola(r.netG)} ${t('items.tags.tolaShort')}`}
+          </UbText>
+        </UbStack>
       ) : addWeights && r.status === 'in_stock' ? (
         <UbButton
           variant="secondary"

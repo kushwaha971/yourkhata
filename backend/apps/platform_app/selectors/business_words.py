@@ -173,13 +173,24 @@ def words_of(tenant: Any, locale: str = "en", rows: dict[str, Any] | None = None
 LOCALES: tuple[str, ...] = ("en", "hi")
 
 
+def _kind_messages(tenant: Any) -> dict[str, Any]:
+    """The words the business saved for its own messages (`shop.messages`)."""
+    from apps.platform_app.models import TenantSetting
+
+    row = TenantSetting.objects.filter(tenant=tenant, key="shop.messages").first()
+    return row.value if row is not None and isinstance(row.value, dict) else {}
+
+
 def business_block(tenant: Any) -> dict[str, Any]:
     """The session's `active_tenant.features` and `.words` (per language), one query."""
     rows = _rows(tenant)
+    features = features_of(tenant, rows)
     return {
+        # D15: every member sends these, and only an owner can read Settings.
+        **({"messages": _kind_messages(tenant)} if "jewellery" in features else {}),
         # B3: the design draws the kind as a chip with its picture; Other's
         # kinds and the older broad types use the "other" picture.
         "kind_picture": _PICTURE.get(tenant.business_type, "other"),
-        "features": features_of(tenant, rows),
+        "features": features,
         "words": {locale: words_of(tenant, locale, rows) for locale in LOCALES},
     }

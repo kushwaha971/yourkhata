@@ -41,6 +41,8 @@ import { usePurchaseBillDetail } from '../hooks/usePurchaseBillDetail';
 import { deletePurchaseBillDraft, movePurchaseOrder } from '../redux/purchaseBillThunk';
 import { PURCHASE_STATUS_TONE, supplierName, trimQty } from '../view-model/purchaseBillDisplay';
 
+import { BoughtPiecesPanel } from './BoughtPiecesPanel';
+
 import type { PaymentContext } from '../../payments/types/payment.types';
 import type { PurchaseBill, PurchaseKind } from '../types/purchase.types';
 
@@ -410,6 +412,7 @@ export function PurchaseBillDetailPageContent({
               )}
             </UbStack>
           )}
+          <BoughtPiecesPanel lines={bill.lines} />
           <PurchaseLinks bill={bill} isBill={isBill} order={order} note={note} />
         </UbStack>
         <PurchaseLines bill={bill} isBill={isBill} order={order} note={note} />

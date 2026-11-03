@@ -43,6 +43,7 @@ import { ROUTES } from 'src/routes';
 import { formatBusinessDate } from 'src/utils/dates';
 import { formatInr, subtractMoney, sumMoney } from 'src/utils/money';
 
+import { useJewelDefaults } from '../../inventory/api/metalRateService';
 import { listInvoices } from '../api/salesService';
 import { useDraftAutosave } from '../hooks/useDraftAutosave';
 import { useInvoiceEditor, type EditorKind } from '../hooks/useInvoiceEditor';
@@ -152,9 +153,11 @@ export function InvoiceEditorPageContent({
       : billOrder.advance
     : null;
   const toPay = advanceOff ? subtractMoney(afterGold, advanceOff) : afterGold;
+  const jewelDefaults = useJewelDefaults(jeweller);
+  const panLimit = Number(jewelDefaults?.pan_limit ?? JEWEL_LIMIT);
   // G2d — design G2: a jeweller's bill of ₹2 lakh or more offers the PAN box.
   // Neither PAN nor cash ever stops a bill: that is the business's choice (owner).
-  const needsPan = jeweller && Number(preview.grandTotal) >= JEWEL_LIMIT;
+  const needsPan = jeweller && Number(preview.grandTotal) >= panLimit;
   const docksTotals = useDocksEditorTotals();
   // dBill's two columns start at 1280; below it the totals stay under the lines.
   const desk = useMediaQuery('(min-width: 1280px)');
@@ -213,8 +216,30 @@ export function InvoiceEditorPageContent({
       ? t('sales.editor.stillIssuing')
       : null;
 
+  // Monkey seed 42: a tracked piece with no IMEI or tag went to the server and
+  // came back refused. Every way to issue stops here first, naming the line.
+  const pieceUnmarked = useCallback(() => {
+    if (estimate) return false;
+    const short = form
+      .getValues('lines')
+      .find(
+        (line) =>
+          line.tracksSerial &&
+          (line.serials?.length ?? 0) !== (Number(line.qty) || 0)
+      );
+    if (!short) return false;
+    dispatch(
+      showSnackbar({
+        severity: 'warning',
+        id: jeweller ? 'sales.line.jewel.needsTag' : 'sales.line.serials.needed',
+        params: { name: short.description },
+      })
+    );
+    return true;
+  }, [estimate, form, jeweller, dispatch]);
   const finishIssue = useCallback(
     async (payment: readonly PaymentRowForm[] | null, override = false) => {
+      if (pieceUnmarked()) return;
       const result = await issue(payment, override);
       // The sheet would hide the banner that says why nothing happened (QA B1).
       const refused = store.getState().invoiceEditor?.error?.code;
@@ -228,21 +253,22 @@ export function InvoiceEditorPageContent({
         if (estimate) router.push(`${home}/${result.document.id}`);
       }
     },
-    [issue, autosave, estimate, router, home, store]
+    [issue, autosave, estimate, router, home, store, pieceUnmarked]
   );
   const startIssue = useCallback(() => {
-    if (!hasLines || locked) return;
+    if (!hasLines || locked || pieceUnmarked()) return;
     // SAL-07 FR-3 / SAL-02 FR-10 — a walk-in pays in full; a party bill may
     // take a payment at issue or go on "Full credit" from the same sheet. An
     // estimate moves no money (SAL-01 FR-8): it is saved, never paid.
     if (!estimate && toPay !== '0.00') setPaying(true);
     else void finishIssue(null);
-  }, [hasLines, locked, estimate, toPay, finishIssue]);
+  }, [hasLines, locked, estimate, toPay, finishIssue, pieceUnmarked]);
   // Every way to issue (the button, Ctrl+Enter, the form's own submit) runs the
   // schema first, so a half-filled row stops the issue with its reason under
   // the cell instead of being left off the bill.
   const requestIssue = useCallback(
-    () => void form.handleSubmit(() => startIssue())(),
+    () =>
+      void form.handleSubmit(() => startIssue())(),
     [form, startIssue]
   );
   /*

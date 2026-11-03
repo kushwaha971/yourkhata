@@ -26,6 +26,7 @@ export interface OldGoldRow {
   readonly purity: string;
   readonly weight_g: string;
   readonly less_pct: string;
+  readonly cash_back?: boolean;
   readonly value: string;
 }
 

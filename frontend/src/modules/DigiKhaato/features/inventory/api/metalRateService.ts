@@ -1,3 +1,5 @@
+import { useEffect, useState } from 'react';
+
 import { API_PATHS } from 'src/api/APIPaths';
 import { api, ubConfig } from 'src/api/AxiosInstances';
 import { toQueryString } from 'src/utils/queryString';
@@ -14,8 +16,20 @@ export interface DayRate {
   readonly setAt: string;
 }
 
+/** The owner's Settings figures; staff read them here, not from Settings. */
+export interface JewelDefaults {
+  readonly making_type: 'pct' | 'per_g';
+  readonly making_value: string;
+  readonly wastage_pct: string;
+  readonly wastage_limit_pct: string;
+  readonly pan_limit: string;
+}
+
+export const DEFAULT_PAN_LIMIT = 200000;
+
 export interface TodayRates {
   readonly day: string;
+  readonly defaults?: JewelDefaults;
   readonly today: DayRate | null;
   readonly yesterday: DayRate | null;
 }
@@ -32,10 +46,12 @@ const toDay = (row: DayRateDto | null): DayRate | null =>
 
 const toToday = (data: {
   day: string;
+  defaults?: JewelDefaults;
   today: DayRateDto | null;
   yesterday: DayRateDto | null;
 }): TodayRates => ({
   day: data.day,
+  defaults: data.defaults,
   today: toDay(data.today),
   yesterday: toDay(data.yesterday),
 });
@@ -46,6 +62,20 @@ export const getTodayRates = async (signal?: AbortSignal): Promise<TodayRates> =
     ubConfig({ signal, suppressErrorSnackbar: true })
   );
   return toToday(response.data.data);
+};
+
+/** The figures alone: null while loading, or if they could not be read. */
+export const useJewelDefaults = (on = true): JewelDefaults | null => {
+  const [defaults, setDefaults] = useState<JewelDefaults | null>(null);
+  useEffect(() => {
+    if (!on) return undefined;
+    const controller = new AbortController();
+    getTodayRates(controller.signal)
+      .then((rates) => setDefaults(rates.defaults ?? null))
+      .catch(() => undefined);
+    return () => controller.abort();
+  }, [on]);
+  return defaults;
 };
 
 /** Blank purities are sent as null: a metal the shop doesn't sell. */
