@@ -230,8 +230,16 @@ class ItemViewSet(CsvExportMixin, _InventoryView, viewsets.ViewSet):
         # Every member: "GST 5% included" is on the bill they are writing
         # (Counter Mode step 9); only the margin built from it is cost-gated.
         gst = _gst_percents(self.get_tenant(), page)
+        from apps.inventory.services import kind_column
+
+        meta["kind_column"] = kind_column.column_of(self.get_tenant())
+        kind = kind_column.lines(key=meta["kind_column"], items=list(page))
         return StandardResponse.ok(
-            [item_row(item, valuation=valuation, gst_percent=gst) for item in page], meta=meta
+            [
+                {**item_row(item, valuation=valuation, gst_percent=gst), "kind_line": kind.get(str(item.id))}
+                for item in page
+            ],
+            meta=meta,
         )
 
     def _detail(self, item_id: Any) -> dict:

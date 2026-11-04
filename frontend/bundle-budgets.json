@@ -1658,8 +1658,8 @@
       "firstLoad": 308.5
     },
     "/stock/summary": {
-      "route": 121.3,
-      "firstLoad": 364.6
+      "route": 121.7,
+      "firstLoad": 365.0
     },
     "/items/masters": {
       "route": 62.5,
@@ -1670,11 +1670,11 @@
       "firstLoad": 344
     },
     "/items/[id]": {
-      "route": 118.8,
-      "firstLoad": 362.0
+      "route": 119.1,
+      "firstLoad": 362.4
     },
     "/stock/low": {
-      "route": 82.4,
+      "route": 82.8,
       "firstLoad": 325.8
     },
     "/expenses": {
@@ -1962,12 +1962,12 @@
       "firstLoad": 329.9
     },
     "/items/imei": {
-      "route": 68.4,
-      "firstLoad": 311.6
+      "route": 68.7,
+      "firstLoad": 312.0
     },
     "/stock/expiry": {
-      "route": 79.3,
-      "firstLoad": 322.6
+      "route": 79.7,
+      "firstLoad": 323.0
     },
     "/stock/rates": {
       "route": 112.6,

@@ -11,6 +11,7 @@ import type {
   ItemListResult,
   ItemListRow,
   ItemSaveResult,
+  KindLine,
   MovementFilters,
   MovementPage,
   StockMovement,
@@ -37,6 +38,7 @@ export interface ItemRowWire {
    *  `reports.financial.read` (INV-08 EC-4) — absent, never zero. */
   readonly purchase_price?: string;
   readonly tax_code: string;
+  readonly kind_line?: KindLine | null;
   readonly hsn_sac?: string | null;
   readonly tax_inclusive_selling?: boolean;
   /** WP-07 — sent with the cost keys only: today's GST plus cess, for the margin. */
@@ -150,6 +152,7 @@ export const toItemRow = (row: ItemRowWire): ItemListRow => ({
   sellingPrice: row.selling_price,
   purchasePrice: row.purchase_price ?? null,
   taxCode: row.tax_code,
+  kindLine: row.kind_line ?? null,
   hsnSac: row.hsn_sac ?? null,
   taxInclusiveSelling: row.tax_inclusive_selling ?? false,
   gstPercent: row.gst_percent ?? null,

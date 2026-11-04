@@ -288,6 +288,12 @@ it('opens a payment row on its receipt and an expense row in its sheet', async (
   mockSearch = 'period=today';
   signIn(['expenses.expense.read', 'reports.financial.read']);
   renderWithProviders(<CashbookPageContent />);
+  /* Money that came in was painted the "to pay" red. */
+  expect(
+    (await screen.findByRole('button', { name: 'Open Received from Anita Verma' })).querySelector(
+      '.text-give'
+    )
+  ).toBeNull();
   await userEvent.click(
     await screen.findByRole('button', { name: 'Open Received from Anita Verma' })
   );

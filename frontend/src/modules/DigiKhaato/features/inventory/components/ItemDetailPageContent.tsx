@@ -118,7 +118,8 @@ export function ItemDetailPageContent({ id }: Readonly<{ id: string }>): React.J
   );
 
   if (!item && detail.status === 'failed') {
-    const missing = detail.error?.code === 'not_found';
+    // A typed address like /items/new is no item either, not a form to correct.
+    const missing = ['not_found', 'validation_error'].includes(detail.error?.code ?? '');
     return (
       <UbPageShell>
         <UbEmptyState

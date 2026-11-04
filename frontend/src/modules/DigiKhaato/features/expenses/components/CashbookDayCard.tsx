@@ -128,7 +128,7 @@ export function CashbookDayCard({
               </UbStack>
               <UbAmount
                 value={row.amount}
-                tone={row.direction === 'in' ? 'payable' : 'neutral'}
+                tone={row.direction === 'in' ? 'receivable' : 'neutral'}
                 sign={row.direction === 'in' ? 'plus' : 'minus'}
                 label={t(row.direction === 'in' ? 'cashbook.in' : 'cashbook.out')}
                 labelHidden

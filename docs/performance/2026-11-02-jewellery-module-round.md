@@ -93,3 +93,15 @@ Reachable next: Design and a longer hand pass give 9. The owner's point gives 10
 - Karigars' section and menu position differ from the design.
 
 The score sheet above predates this update. No new score is given until the pending items have results.
+
+## Screen-by-screen design comparison, 4 Nov 2026 (`e2e/jewel-design-sweep.mjs`)
+
+Sheets in `/tmp/e2e-shots/jd`. Looked at: 18 main pairs and all 14 desktop registers. Not yet looked at: 14 phone registers, dMessages, pFeatures, dFeatures. No page overflowed at 390 or 1280. Hand pass not started.
+
+Gaps against the design:
+
+- Items: each kind's own column is now built, seen on the jeweller only; the extra header buttons remain.
+- Fixed: money in on the Cash book was red; `/items/new` now says not found.
+- Purchase: the "From karigar" block (issued, received, labour, wastage, Make 3 tags) is not built; "Record bill" where the design says "New purchase"; an empty line is shown before any item is picked.
+- Phone full-screen pages (rate, count, purchase, estimate) keep the shell header and, on rate, the bottom menu; the design has a back header only.
+- The older registers (bills, estimates, credit notes, purchases, debit notes, expenses, stock, low stock, price lists, payments, cash book, reports, categories, suppliers) differ from the F mocks in layout, columns, buttons and words. Reports and Cash book are different compositions.

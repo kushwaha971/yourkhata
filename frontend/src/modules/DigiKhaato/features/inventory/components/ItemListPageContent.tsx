@@ -74,6 +74,7 @@ import { useInventoryMasters } from '../hooks/useInventoryMasters';
 import { useItemForm } from '../hooks/useItemForm';
 import { useItemList } from '../hooks/useItemList';
 import { useStockAdjustment } from '../hooks/useStockAdjustment';
+import { KIND_COLUMNS } from '../types/item.types';
 import { inventoryGridLabels } from '../view-model/gridLabels';
 import { ITEM_SELECT_IDS } from '../view-model/itemGridIds';
 
@@ -228,9 +229,11 @@ export function ItemListPageContent(): React.JSX.Element {
     enabled: !itemForm.open && !adjustment.open && !cameraOpen,
   });
 
+  const features = useAppSelector(selectActiveTenant)?.features;
+  const kindColumn = KIND_COLUMNS.find((key) => features?.includes(key)) ?? null;
   const columns = useMemo(
-    () => createItemColumns({ t, tier, valuation: can('reports.financial.read') }),
-    [t, tier, can]
+    () => createItemColumns({ t, tier, valuation: can('reports.financial.read'), kindColumn }),
+    [t, tier, can, kindColumn]
   );
   const labels = useMemo(
     () =>

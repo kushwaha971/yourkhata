@@ -69,7 +69,31 @@ export interface HsnCode {
   readonly isService: boolean;
 }
 
+/** The Items list's one kind-specific column (design D4), chosen by the server. */
+export type KindColumn =
+  | 'jewellery'
+  | 'batches'
+  | 'serials'
+  | 'part_numbers'
+  | 'godowns'
+  | 'alt_units'
+  | 'variants'
+  | 'addons';
+/** First match wins, the same order as the server's `kind_column.ORDER`. */
+export const KIND_COLUMNS: readonly KindColumn[] = [
+  'jewellery',
+  'batches',
+  'serials',
+  'part_numbers',
+  'godowns',
+  'alt_units',
+  'variants',
+  'addons',
+];
+export type KindLine = string | Readonly<Record<string, string | number | null>>;
+
 export interface ItemListRow {
+  readonly kindLine?: KindLine | null;
   readonly id: string;
   readonly name: string;
   readonly sku: string;

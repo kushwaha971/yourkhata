@@ -9,7 +9,17 @@ import { taxCodeLabel } from '../view-model/taxCodeLabel';
 
 import { StockBadge } from './StockBadge';
 
-import type { ItemListRow } from '../types/item.types';
+import type { ItemListRow, KindColumn, KindLine } from '../types/item.types';
+
+const kindText = (key: KindColumn, line: KindLine | null | undefined, t: TranslateFn): string | null => {
+  if (!line) return null;
+  if (typeof line === 'string') return line;
+  if (key === 'batches') return t('items.kind.batches.line', { expiry: String(line.expiry), n: Number(line.batches) });
+  if (key === 'serials') return t('items.kind.serials.line', { n: Number(line.count) });
+  if (key === 'part_numbers') return `${line.part ?? '—'} · ${line.rack ?? '—'}`;
+  if (key === 'godowns') return `${line.shop} · ${line.godown}`;
+  return Object.values(line).join(' · ');
+};
 
 /**
  * INV-02 §7 — Item (name + SKU) · Category · Unit · Selling · Purchase · GST ·
@@ -22,11 +32,14 @@ export const createItemColumns = ({
   t,
   tier,
   valuation = true,
+  kindColumn = null,
 }: {
   readonly t: TranslateFn;
   readonly tier: UbGridTier;
   /** INV-08 EC-4 — without `reports.financial.read` the Purchase column goes. */
   readonly valuation?: boolean;
+  /** Design D4: the kind's own column replaces Unit, Purchase and GST. */
+  readonly kindColumn?: KindColumn | null;
 }): readonly UbDataGridColumn<ItemListRow>[] => {
   const isCards = tier === 'cards';
   const columns: UbDataGridColumn<ItemListRow>[] = [
@@ -87,6 +100,22 @@ export const createItemColumns = ({
             cardSlot: 'meta',
             /* The code tells two items of one name apart (EC-11). */
             cell: (row: ItemListRow) => row.sku,
+          },
+        ] satisfies UbDataGridColumn<ItemListRow>[])
+      : []),
+    ...(kindColumn
+      ? ([
+          {
+            id: 'kind',
+            header: t(`items.kind.${kindColumn}.col`),
+            priority: 1,
+            cardSlot: 'meta',
+            widthShare: 24,
+            cell: (row: ItemListRow) => (
+              <UbText as="span" variant="body-sm" className="font-semibold text-primary">
+                {kindText(kindColumn, row.kindLine, t) ?? (isCards ? null : '—')}
+              </UbText>
+            ),
           },
         ] satisfies UbDataGridColumn<ItemListRow>[])
       : []),
@@ -178,5 +207,11 @@ export const createItemColumns = ({
       ),
     },
   ];
+  if (kindColumn) {
+    // A phone card has room for two lines: stock and the kind's own, not the code.
+    const hidden = new Set(['unit', 'purchasePrice', 'tax', 'sellingPrice', 'code']);
+    const price = columns.find((column) => column.id === 'sellingPrice');
+    return [...columns.filter((column) => !hidden.has(column.id)), ...(price ? [price] : [])];
+  }
   return valuation ? columns : columns.filter((column) => column.id !== 'purchasePrice');
 };
