@@ -323,6 +323,7 @@ export function InvoicesListPageContent(): React.JSX.Element {
     <UbViewportPageShell>
       <UbPageHeader
         title={t('sales.list.title')}
+        subtitle={t('sales.list.subtitle')}
         actions={<SalesSectionLinks current="invoice" />}
         primaryAction={
           canWrite && !emptyBook ? (

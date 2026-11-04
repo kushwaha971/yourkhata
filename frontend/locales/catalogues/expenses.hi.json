@@ -68,6 +68,7 @@
   "expenses.status.owedTo": "{name} को देना है",
   "expenses.status.paid": "भुगतान हुआ",
   "expenses.status.unpaid": "बाकी",
+  "expenses.subtitle": "दुकान चलाने का खर्च।",
   "expenses.tab.all": "सभी",
   "expenses.tab.label": "कौन से खर्च",
   "expenses.tab.unpaid": "बाकी",

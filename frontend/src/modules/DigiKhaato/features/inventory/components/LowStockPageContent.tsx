@@ -305,7 +305,7 @@ export function LowStockPageContent(): React.JSX.Element {
 
   return (
     <UbPageShell>
-      <UbPageHeader title={t('stock.low.title')} />
+      <UbPageHeader title={t('stock.low.title')} subtitle={t('stock.low.subtitle')} />
       <UbStack gap={4} data-testid="low-stock-screen">
         {report.low && (
           <SummaryStatGrid storageKey="lowStock">

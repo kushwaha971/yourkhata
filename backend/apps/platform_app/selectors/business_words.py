@@ -145,6 +145,11 @@ def words_of(tenant: Any, locale: str = "en", rows: dict[str, Any] | None = None
         words["parties.list.customer.title"] = many
         words["parties.list.customer.add"] = add(customer)
     if supplier != _SHARED[1]:
+        low = _plural(supplier, locale).lower()
+        # The register subtitles (design SCR) name the kind's own people.
+        words["purchases.list.titleSub"] = f"{low} के बिल।" if hi else f"Bills from your {low}."
+        words["purchases.order.listTitleSub"] = f"आपने {low} से जो मँगाया।" if hi else f"What you asked {low} to send."
+        words["purchases.debitNote.listTitleSub"] = f"{low} को वापस भेजा गया माल।" if hi else f"Goods you sent back to {low}."
         many = _plural(supplier, locale)
         one = _ONE_HI.get(supplier, supplier) if hi else supplier
         words["nav.suppliers"] = many

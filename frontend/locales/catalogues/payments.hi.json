@@ -140,6 +140,7 @@
   "payments.search.placeholder": "नाम या रसीद नंबर",
   "payments.share.error": "रसीद का संदेश तैयार नहीं हो सका।",
   "payments.status.void": "रद्द",
+  "payments.subtitle": "आया और गया पैसा।",
   "payments.tab.all": "सभी",
   "payments.tab.in": "प्राप्त",
   "payments.tab.label": "भुगतान",

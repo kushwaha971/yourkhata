@@ -140,6 +140,7 @@
   "payments.search.placeholder": "Name or receipt number",
   "payments.share.error": "The receipt text could not be prepared.",
   "payments.status.void": "Cancelled",
+  "payments.subtitle": "Money in and out.",
   "payments.tab.all": "All",
   "payments.tab.in": "Received",
   "payments.tab.label": "Payments",

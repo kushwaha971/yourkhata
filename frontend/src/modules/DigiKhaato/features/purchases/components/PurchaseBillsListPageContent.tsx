@@ -35,6 +35,7 @@ import { useTranslation } from 'src/hooks/useTranslation';
 import { ROUTES } from 'src/routes';
 import { formatBusinessDate } from 'src/utils/dates';
 
+import { useAppWords } from '../../navigation/useAppWords';
 import {
   DEFAULT_PURCHASE_BILL_PRESET,
   PURCHASE_BILL_PRESETS,
@@ -105,6 +106,7 @@ export function PurchaseBillsListPageContent({
   const wide = useMediaQuery('(min-width: 1280px)');
   const tier = gridTier === 'full' && !wide ? 'compact' : gridTier;
   const list = usePurchaseBillList(kind, tier === 'cards' ? 'append' : 'replace');
+  const { w } = useAppWords();
   const copy = LIST_COPY[kind];
   const order = kind === 'purchase_order';
   const NEW_BILL = `${copy.home}/new`;
@@ -384,6 +386,7 @@ export function PurchaseBillsListPageContent({
     <UbViewportPageShell>
       <UbPageHeader
         title={t(copy.title)}
+        subtitle={w(`${copy.title}Sub`)}
         actions={Object.entries(LIST_COPY)
           .filter(([key]) => key !== kind)
           .map(([key, section]) => (

@@ -214,6 +214,7 @@ export function CashbookPageContent(): React.JSX.Element {
     <UbPageShell>
       <UbPageHeader
         title={t('cashbook.title')}
+        subtitle={t('cashbook.subtitle')}
         actions={
           form.canWrite && !emptyBook ? (
             <UbButton

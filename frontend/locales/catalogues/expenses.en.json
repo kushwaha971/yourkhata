@@ -68,6 +68,7 @@
   "expenses.status.owedTo": "to pay {name}",
   "expenses.status.paid": "Paid",
   "expenses.status.unpaid": "Unpaid",
+  "expenses.subtitle": "Money spent to run the shop.",
   "expenses.tab.all": "All",
   "expenses.tab.label": "Which expenses",
   "expenses.tab.unpaid": "Unpaid",

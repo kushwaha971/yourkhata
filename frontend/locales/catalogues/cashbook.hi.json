@@ -47,6 +47,7 @@
   "cashbook.share": "{name}: खर्च का {percent}%",
   "cashbook.short": "₹{amount} कम",
   "cashbook.staffScope": "आप केवल आज का नकद देख सकते हैं",
+  "cashbook.subtitle": "गल्ले की नकदी, दिन-ब-दिन।",
   "cashbook.voidedNote": "{count, plural, one {इस दिन # एंट्री रद्द हुई} other {इस दिन # एंट्रियाँ रद्द हुईं}}",
   "cashbook.whereMoneyWent": "पैसा कहाँ गया"
 }

@@ -323,6 +323,7 @@ export function StockSummaryPageContent(): React.JSX.Element {
     <UbPageShell>
       <UbPageHeader
         title={t('stock.summary.title')}
+        subtitle={t('stock.summary.subtitle')}
         actions={
           !emptyBook && (
             <>

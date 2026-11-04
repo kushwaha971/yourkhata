@@ -47,6 +47,7 @@
   "cashbook.share": "{name}: {percent}% of expenses",
   "cashbook.short": "Short by ₹{amount}",
   "cashbook.staffScope": "You can see today's cash only",
+  "cashbook.subtitle": "Cash in the drawer, day by day.",
   "cashbook.voidedNote": "{count, plural, one {# cancelled entry on this day} other {# cancelled entries on this day}}",
   "cashbook.whereMoneyWent": "Where the money went"
 }

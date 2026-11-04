@@ -323,6 +323,7 @@ export function PaymentsPageContent(): React.JSX.Element {
     <UbViewportPageShell>
       <UbPageHeader
         title={t('payments.title')}
+        subtitle={t('payments.subtitle')}
         primaryAction={
           receive && (
             <UbButton

@@ -40,6 +40,22 @@ export const createInvoiceColumns = ({
   readonly isCards: boolean;
   readonly isCompact?: boolean;
 }): readonly UbDataGridColumn<InvoiceListRow>[] => [
+  ...(isCards || isCompact
+    ? []
+    : ([
+        {
+          id: 'number',
+          header: t('sales.column.bill'),
+          priority: 1,
+          cardSlot: 'none',
+          widthShare: 20,
+          cell: (row) => (
+            <UbText as="span" variant="body-sm" className="ds-num whitespace-normal break-words">
+              {row.number ?? t('sales.status.draft')}
+            </UbText>
+          ),
+        },
+      ] satisfies UbDataGridColumn<InvoiceListRow>[])),
   {
     id: 'party',
     header: t('sales.column.party'),
@@ -67,7 +83,7 @@ export const createInvoiceColumns = ({
             tone="tertiary"
             className="ds-num whitespace-normal break-words"
           >
-            {isCompact ? `${number} · ${formatBusinessDate(row.documentDate)}` : number}
+            {isCompact ? `${number} · ${formatBusinessDate(row.documentDate)}` : null}
           </UbText>
           {row.origin && <OriginBadge origin={row.origin} />}
         </UbStack>

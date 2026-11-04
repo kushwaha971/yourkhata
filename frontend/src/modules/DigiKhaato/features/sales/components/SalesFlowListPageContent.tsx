@@ -342,6 +342,7 @@ export function SalesFlowListPageContent({
       <UbPageHeader
         wrapTitle
         title={t(`${ns}.listTitle`)}
+        subtitle={t(`${ns}.listSubtitle`)}
         actions={<SalesSectionLinks current={kind} />}
         primaryAction={
           newEstimate && !emptyBook ? (

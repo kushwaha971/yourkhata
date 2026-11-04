@@ -338,6 +338,7 @@ export function ExpensesPageContent(): React.JSX.Element {
     <UbViewportPageShell>
       <UbPageHeader
         title={t('expenses.title')}
+        subtitle={t('expenses.subtitle')}
         actions={
           <>
             {/* Library P0 — the cash book is the Shop's word and the Shop's
