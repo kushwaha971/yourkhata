@@ -433,6 +433,7 @@ export const SHOP_APP: AppManifest = {
     partySearch: true,
     commandSearch: true,
     // Design §A4 (R-DEC-55): the bill editor's phone bar is × · New bill · ⋯.
-    pageHeaderPattern: '^/sales/invoices/(new|[^/]+/edit)/?$',
+    pageHeaderPattern:
+      '^/(sales/invoices/(new|[^/]+/edit)|sales/estimates/new|purchases/bills/(new|[^/]+/edit)|stock/(rates|count))/?$',
   },
 };

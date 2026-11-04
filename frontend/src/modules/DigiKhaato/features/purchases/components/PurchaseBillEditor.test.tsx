@@ -418,6 +418,7 @@ describe('current draft safety (purchase §7)', () => {
   it('guards a custom GST choice on an unfinished new line', async () => {
     // Defect: an otherwise empty row is omitted from the draft, including a tax choice.
     renderWithProviders(<PurchaseBillEditorPageContent documentId={null} />);
+    await userEvent.click(await screen.findByRole('button', { name: 'Add item' }));
     await userEvent.click(await screen.findByLabelText('GST, line 1'));
     await userEvent.click(await screen.findByRole('option', { name: /5\s*%/ }));
     const event = new Event('beforeunload', { cancelable: true });
@@ -473,7 +474,7 @@ describe('current draft safety (purchase §7)', () => {
       const dock = screen.getByTestId('purchase-dock');
       expect(within(dock).getByRole('status')).toHaveTextContent(UNSAVED);
       expect(within(dock).getByRole('button', { name: 'Save draft' })).toBeDisabled();
-      expect(within(dock).getByRole('button', { name: 'Record' })).toBeDisabled();
+      expect(within(dock).getByRole('button', { name: 'Record purchase' })).toBeDisabled();
     } finally {
       store.dispatch(responseObserved());
       restore();
@@ -491,7 +492,7 @@ describe('current draft safety (purchase §7)', () => {
       await userEvent.clear(screen.getByLabelText('Qty, line 2'));
       await userEvent.click(row);
       await userEvent.click(
-        within(screen.getByTestId('purchase-dock')).getByRole('button', { name: 'Record' })
+        within(screen.getByTestId('purchase-dock')).getByRole('button', { name: 'Record purchase' })
       );
       await waitFor(() => expect(store.getState().snackbar.id).toBe('purchases.line.incomplete'));
       expect(service.updatePurchaseBill).not.toHaveBeenCalled();
@@ -598,7 +599,7 @@ describe('the supplier details on a 1280 laptop (WP-05 compact context)', () => 
       renderWithProviders(<PurchaseBillEditorPageContent documentId="b1" />);
       await screen.findByRole('button', { name: /Agro Traders.*Edit/ });
       await userEvent.click(
-        within(screen.getByTestId('purchase-dock')).getByRole('button', { name: 'Record' })
+        within(screen.getByTestId('purchase-dock')).getByRole('button', { name: 'Record purchase' })
       );
       expect(await screen.findByTestId('duplicate-warning')).toBeVisible();
       expect(screen.getByRole('button', { name: /Agro Traders.*Edit/ })).toHaveAttribute(

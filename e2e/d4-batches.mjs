@@ -65,7 +65,7 @@ await page.getByTestId('line-batch-no').fill(BATCH);
 await page.getByTestId('line-batch-expiry').fill(`${expiry.slice(5, 7)}/${expiry.slice(0, 4)}`);
 await page.getByTestId('line-batch-fields').getByLabel('MRP').fill('32');
 await page.screenshot({ path: `${dir}/1280-purchase.png` });
-await page.getByTestId('purchase-dock').getByRole('button', { name: 'Record', exact: true }).click();
+await page.getByTestId('purchase-dock').getByRole('button', { name: 'Record purchase', exact: true }).click();
 await page.getByTestId('purchase-paid-now-confirm').waitFor({ timeout: 10000 }).catch(() => {});
 const later = page.getByRole('dialog').getByRole('button', { name: /Pay later/ });
 if (await later.count()) await later.first().click();

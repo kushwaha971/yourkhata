@@ -122,7 +122,7 @@ it('lists this financial year and shows the server payables totals (PUR-03 FR-3)
   // On a phone (jsdom's width) the tabs are inside the one Filters sheet.
   expect(screen.queryByRole('tab')).not.toBeInTheDocument();
   expect(screen.getByTestId('filters-button')).toBeInTheDocument();
-  expect(screen.getByRole('link', { name: /Record bill/ })).toBeInTheDocument();
+  expect(screen.getByRole('link', { name: /New purchase/ })).toBeInTheDocument();
   expect(lastAsked()).toMatchObject({ tab: 'all', dateFrom: expect.stringMatching(/-04-01$/) });
 });
 
@@ -161,8 +161,8 @@ it('shows a shop that has never bought anything one sentence, not tabs and ₹0'
   expect(screen.queryByRole('searchbox')).not.toBeInTheDocument();
   expect(screen.queryByText('₹4,921.00')).not.toBeInTheDocument();
   // One button, in the middle of the screen — not a second one in the header.
-  expect(screen.getAllByRole('button', { name: /Record bill/ })).toHaveLength(1);
-  expect(screen.queryByRole('link', { name: /Record bill/ })).not.toBeInTheDocument();
+  expect(screen.getAllByRole('button', { name: /New purchase/ })).toHaveLength(1);
+  expect(screen.queryByRole('link', { name: /New purchase/ })).not.toBeInTheDocument();
 });
 
 it('keeps the filters when a search found nothing in a book that has bills', async () => {
@@ -176,7 +176,7 @@ it('offers New bill only to a role that can record one (the accountant reads)', 
   signIn(['purchases.bill.read']);
   renderWithProviders(<PurchaseBillsListPageContent />);
   await screen.findAllByText(/Agro Traders/);
-  expect(screen.queryByRole('link', { name: /Record bill/ })).not.toBeInTheDocument();
+  expect(screen.queryByRole('link', { name: /New purchase/ })).not.toBeInTheDocument();
 });
 
 it('tells a member without access so, and asks nothing', () => {

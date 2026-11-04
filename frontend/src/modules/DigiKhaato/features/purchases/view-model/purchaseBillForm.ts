@@ -126,7 +126,7 @@ export const emptyPurchaseForm = (today: string, itcDefault: boolean): PurchaseB
   discountType: '',
   discountValue: '',
   notes: '',
-  lines: [emptyPurchaseLine()],
+  lines: [],
 });
 
 const isNumber = (value: string): boolean => /^\d+(\.\d+)?$/.test(value.trim());

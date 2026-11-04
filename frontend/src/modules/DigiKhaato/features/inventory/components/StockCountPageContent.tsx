@@ -10,6 +10,7 @@ import {
   UbDialog,
   UbEmptyState,
   UbPageHeader,
+  UbTaskBar,
   UbPageShell,
   UbQuantityInput,
   UbStack,
@@ -332,6 +333,21 @@ export function StockCountPageContent(): React.JSX.Element {
 
   return (
     <UbPageShell>
+      {phone ? (
+        <UbTaskBar
+          back
+          title={t('stock.count.title')}
+          subtitle={
+            summary
+              ? t('stock.count.started', { time: formatShopTime(summary.startedAt) })
+              : undefined
+          }
+          onClose={() => router.push(ROUTES.ITEMS)}
+          closeLabel={t('common.action.back')}
+          className="-mx-4 -mt-4 mb-1"
+          trailing={saveButton}
+        />
+      ) : (
       <UbPageHeader
         title={t('stock.count.title')}
         subtitle={
@@ -352,6 +368,7 @@ export function StockCountPageContent(): React.JSX.Element {
           </>
         }
       />
+      )}
       <UbStack gap={3} data-testid="stock-count-screen" className="pb-24 lg:pb-0">
         <ItemQuickAdd
           labels={{

@@ -389,7 +389,7 @@ try {
       const beforeRecord = recordRequests;
       const beforeWrites = draftWrites;
       await dock
-        .getByRole('button', { name: locale === 'hi' ? 'दर्ज करें' : 'Record', exact: true })
+        .getByRole('button', { name: locale === 'hi' ? 'खरीद दर्ज करें' : 'Record purchase', exact: true })
         .click();
       await page.waitForFunction(
         () =>

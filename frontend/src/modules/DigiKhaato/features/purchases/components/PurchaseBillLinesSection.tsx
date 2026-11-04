@@ -44,6 +44,8 @@ import {
   type PurchaseBillFormValues,
 } from '../view-model/purchaseBillForm';
 
+import { PurchaseKarigarBlock } from './PurchaseKarigarBlock';
+
 import type { ItemListRow } from '../../inventory/types/item.types';
 import type { EngineResult } from '../../sales/view-model/taxEngine';
 
@@ -395,6 +397,7 @@ export function PurchaseBillLinesSection({
           />
         </UbBox>
       )}
+      {jeweller && !order && <PurchaseKarigarBlock />}
       <UbLineItemsEditor<PurchaseBillFormValues, 'lines'>
         focusRequest={focusRequest}
         tableFrom={1536}

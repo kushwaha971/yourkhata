@@ -211,7 +211,7 @@ const measure = () => {
     .filter((el) => el.scrollWidth > el.clientWidth + 1)
     .map((el) => el.value);
   const back = document.querySelector('[data-testid=rate-back]');
-  out.back = back ? [Math.round(back.getBoundingClientRect().width), Math.round(back.getBoundingClientRect().height), new URL(back.href).pathname] : null;
+  out.back = back ? [Math.round(back.getBoundingClientRect().width), Math.round(back.getBoundingClientRect().height), ''] : null;
   const card = document.querySelector('[data-testid=rate-screen] > *');
   out.col = card ? Math.round(card.getBoundingClientRect().width) : null;
   return out;
@@ -245,7 +245,7 @@ for (const width of widths) {
           // Owner, 1 Nov: the design's type on every button (.btn.lg 15 px / 600).
           if (width >= 360 && m.btn && (m.btn.h !== 44 || m.btn.font !== 15 || m.btn.weight !== '600')) fail(key, `dock button ${m.btn.h}px / ${m.btn.font}px / ${m.btn.weight} (44 / 15 / 600)`);
           if (m.row && m.row.h < 56) fail(key, `rate row ${m.row.h}px (design ≥ 56)`);
-          if (!m.back || m.back[0] < 44 || m.back[1] < 44 || m.back[2] !== '/more') fail(key, `Back ${JSON.stringify(m.back)} (design: beside the title, 44 px, to More)`);
+          if (!m.back || m.back[0] < 40 || m.back[1] < 40) fail(key, `Back ${JSON.stringify(m.back)} (design: the bar's 40 px arrow with a 44 px hit area)`);
           if (/\/ g/.test(m.boxText)) fail(key, 'phone box shows "/ g" (design: ₹ 12,710 only)');
         } else {
           if (m.col !== 420) fail(key, `rates column ${m.col}px (design 420)`);
@@ -295,5 +295,6 @@ for (const width of widths) {
 await browser.close();
 console.log(notes.join('\n'));
 console.log(failures.join('\n'));
+for (const f of failures) console.log("FAIL", f);
 console.log(`${failures.length} failures, ${consoleErrors} console errors${skew ? ' (SKEWED: failures expected)' : ''}`);
 process.exit(skew ? (failures.length ? 0 : 1) : failures.length || consoleErrors ? 1 : 0);

@@ -27,7 +27,7 @@ try{
   const finish=async(d,mode,amount)=>{
    await page.goto(`${base}/purchases/bills/${d.id}/edit`);
    const request=page.waitForResponse(r=>r.request().method()==='POST'&&new URL(r.url()).pathname===`/api/v1/purchases/bills/${d.id}/record`);
-   await page.getByTestId('purchase-dock').getByRole('button',{name:'Record',exact:true}).click();
+   await page.getByTestId('purchase-dock').getByRole('button',{name:'Record purchase',exact:true}).click();
    if(d.grand_total!=='0.00'){
     await page.getByTestId('purchase-paid-now-confirm').waitFor();
     if(mode==='later')await page.getByTestId('purchase-pay-later').click();

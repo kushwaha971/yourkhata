@@ -161,7 +161,7 @@ export function InvoiceEditorPageContent({
   const docksTotals = useDocksEditorTotals();
   // dBill's two columns start at 1280; below it the totals stay under the lines.
   const desk = useMediaQuery('(min-width: 1280px)');
-  const phoneBar = useIsMobileLayer() && !order && !challan && !estimate;
+  const phoneBar = useIsMobileLayer() && !order && !challan;
   const hasLines = preview.lines.length > 0 && values.lines.some((l) => l.itemId || l.description);
   const locked = server.issuing || !!server.issued;
   // Nothing to keep: no item, no customer, never saved. Save draft on such a
@@ -506,8 +506,14 @@ export function InvoiceEditorPageContent({
            keeps the two ways to finish. × leaves for the bills list, and the
            bill is kept (it autosaves, and the device keeps a copy). */
         <UbTaskBar
-          title={t('sales.newBill')}
-          subtitle={title}
+          title={estimate ? t('sales.estimate.new') : t('sales.newBill')}
+          subtitle={
+            estimate
+              ? values.validUntil
+                ? t('sales.estimate.validLine', { date: formatBusinessDate(values.validUntil) })
+                : t('sales.estimate.validFor')
+              : title
+          }
           onClose={() => router.push(home)}
           closeLabel={t('common.action.close')}
           // Full width, as the design's bar: out of the page's 16 px padding.

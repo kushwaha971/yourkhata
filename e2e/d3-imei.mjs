@@ -68,7 +68,7 @@ for (const code of IMEI) {
 const count = await page.getByTestId('line-serials-count').first().innerText().catch(() => '');
 check('purchase: "2 of 2 entered"', count === '2 of 2 entered', count);
 await page.screenshot({ path: `${dir}/1280-purchase.png` });
-await page.getByTestId('purchase-dock').getByRole('button', { name: 'Record', exact: true }).click();
+await page.getByTestId('purchase-dock').getByRole('button', { name: 'Record purchase', exact: true }).click();
 await page.getByTestId('purchase-paid-now-confirm').waitFor({ timeout: 10000 }).catch(() => {});
 const later = page.getByRole('dialog').getByRole('button', { name: /Pay later|Not paid|Record without/ });
 if (await later.count()) await later.first().click();

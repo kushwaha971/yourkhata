@@ -14,6 +14,8 @@ import {
   UbForm,
   UbGrid,
   UbPageHeader,
+  UbTaskBar,
+  useIsMobileLayer,
   UbPageShell,
   UbPageSkeleton,
   UbStack,
@@ -77,6 +79,7 @@ export function PurchaseBillEditorPageContent({
 }: Readonly<{ documentId: string | null; kind?: PurchaseKind }>): React.JSX.Element {
   const { t } = useTranslation();
   const router = useAppRouter();
+  const mobileLayer = useIsMobileLayer();
   const dispatch = useAppDispatch();
   const editor = usePurchaseBillEditor(documentId, kind);
   // Shop item 3 — the same editor writes an order: Send in place of Record, never paid.
@@ -324,9 +327,32 @@ export function PurchaseBillEditorPageContent({
         .join(' · ')
     : undefined;
 
+  const phoneBar = mobileLayer && !order;
   return (
     <UbPageShell>
+      {phoneBar && (
+        <UbTaskBar
+          title={t(documentId || server.documentId ? 'purchases.editor.editTitle' : 'purchases.editor.newTitle')}
+          onClose={requestClose}
+          closeLabel={t('purchases.editor.close')}
+          className="-mx-4 -mt-4 mb-1"
+          trailing={
+            server.documentId ? (
+              <UbButton
+                variant="ghost"
+                iconOnly
+                icon={<Trash2 className="h-4 w-4" aria-hidden />}
+                onClick={() => setConfirmDelete(true)}
+                disabled={locked}
+              >
+                {t('purchases.editor.delete')}
+              </UbButton>
+            ) : undefined
+          }
+        />
+      )}
       <UbPageHeader
+        className={phoneBar ? (paymentRefused || recordRecovery ? '[&_h1]:hidden' : 'hidden') : undefined}
         title={
           documentId || server.documentId
             ? t(order ? 'purchases.order.editTitle' : 'purchases.editor.editTitle')
@@ -355,6 +381,7 @@ export function PurchaseBillEditorPageContent({
           ) : undefined
         }
         actions={
+          phoneBar ? undefined : (
           <>
             <UbButton
               variant="ghost"
@@ -417,6 +444,7 @@ export function PurchaseBillEditorPageContent({
               )}
             </UbButton>
           </>
+          )
         }
       />
 

@@ -17,6 +17,11 @@ import type { TodayRates } from '../api/metalRateService';
  * blank purity as null, that a zero rate is refused by name before any
  * request, and that staff can read the rate but not change it.
  */
+jest.mock('next/navigation', () => ({
+  useRouter: () => ({ push: jest.fn(), replace: jest.fn(), back: jest.fn(), prefetch: jest.fn() }),
+  usePathname: () => '/stock/rates',
+  useSearchParams: () => new URLSearchParams(),
+}));
 jest.mock('../api/metalRateService', () => ({
   ...jest.requireActual('../api/metalRateService'),
   getTodayRates: jest.fn(),

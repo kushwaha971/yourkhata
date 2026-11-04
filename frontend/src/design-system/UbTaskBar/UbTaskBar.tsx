@@ -2,7 +2,7 @@
 
 import { memo, type ReactNode } from 'react';
 
-import { X } from 'lucide-react';
+import { ArrowLeft, X } from 'lucide-react';
 
 import { cn } from 'src/utils/cn';
 
@@ -20,6 +20,9 @@ export interface UbTaskBarProps {
   readonly subtitle?: string;
   readonly onClose: () => void;
   readonly closeLabel: string;
+  /** Design `head:'back'`: an arrow for a page you go back from, not × for a task. */
+  readonly back?: boolean;
+  readonly closeTestId?: string;
   readonly trailing?: ReactNode;
   readonly className?: string;
 }
@@ -29,6 +32,8 @@ function UbTaskBarBase({
   subtitle,
   onClose,
   closeLabel,
+  back = false,
+  closeTestId,
   trailing,
   className,
 }: Readonly<UbTaskBarProps>) {
@@ -45,9 +50,10 @@ function UbTaskBarBase({
         type="button"
         onClick={onClose}
         aria-label={closeLabel}
+        data-testid={closeTestId}
         className="ub-hit grid h-10 w-10 shrink-0 place-items-center rounded-[10px] text-text-primary focus-visible:shadow-focus focus-visible:outline-none"
       >
-        <X aria-hidden className="h-5 w-5" />
+        {back ? <ArrowLeft aria-hidden className="h-5 w-5" /> : <X aria-hidden className="h-5 w-5" />}
       </button>
       <div className="grid min-w-0 flex-1 leading-[1.25]">
         <h1 className="break-words text-base font-semibold text-text-primary">{title}</h1>

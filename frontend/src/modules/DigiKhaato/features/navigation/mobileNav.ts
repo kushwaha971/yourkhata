@@ -47,7 +47,7 @@ const KHATA = new RegExp(`^${ROUTES.PARTIES}/[^/]+$`);
  */
 /** A menu row that is still a focused task: the stock count docks "Scan with
  *  camera" and "Save count" where the bar would be (design pCount). */
-const FOCUSED_ROWS: readonly string[] = [ROUTES.STOCK_COUNT];
+const FOCUSED_ROWS: readonly string[] = [ROUTES.STOCK_COUNT, ROUTES.STOCK_RATES];
 
 export const isFocusedTask = (pathname: string): boolean =>
   /\/(new|edit)$/.test(pathname) ||

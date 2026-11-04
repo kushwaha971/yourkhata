@@ -2,7 +2,6 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
-import { ArrowLeft } from 'lucide-react';
 
 import {
   UbBottomBar,
@@ -10,9 +9,9 @@ import {
   UbButton,
   UbCard,
   UbDataGrid,
-  UbLink,
   UbMoneyInput,
   UbPageHeader,
+  UbTaskBar,
   UbPageShell,
   UbPanel,
   UbSearchInput,
@@ -22,6 +21,7 @@ import {
   useGridTier,
   type UbDataGridColumn,
 } from 'src/design-system';
+import { useAppRouter } from 'src/hooks/useAppRouter';
 import { useAppDispatch, useAppSelector } from 'src/hooks/useAppStore';
 import { usePermissions } from 'src/hooks/usePermissions';
 import { useTranslation, type TranslateFn } from 'src/hooks/useTranslation';
@@ -220,6 +220,7 @@ const monthOptions = (today: string, locale: string): { value: string; label: st
 };
 
 export function RatesPageContent(): React.JSX.Element {
+  const router = useAppRouter();
   const { t, locale } = useTranslation();
   const rateMessage = useKindMessage('todays_rate');
   const dispatch = useAppDispatch();
@@ -475,24 +476,15 @@ export function RatesPageContent(): React.JSX.Element {
       ) : (
         // Design pRate: Back beside the title. The page opens from More on a
         // phone, so Back goes there (the Money book person page's pattern).
-        <UbStack direction="row" align="start" gap={2}>
-          <UbLink
-            href={ROUTES.MORE}
-            aria-label={t('stock.rates.back')}
-            title={t('stock.rates.back')}
-            underline={false}
-            tone="secondary"
-            data-testid="rate-back"
-            className="-ml-2 -mt-1 flex h-11 w-11 shrink-0 items-center justify-center rounded-control active:bg-surface-active"
-          >
-            <ArrowLeft className="h-5 w-5" aria-hidden />
-          </UbLink>
-          <UbPageHeader
-            className="min-w-0 flex-1"
-            title={t('stock.rates.title')}
-            subtitle={subtitle}
-          />
-        </UbStack>
+        <UbTaskBar
+          back
+          title={t('stock.rates.title')}
+          subtitle={subtitle}
+          onClose={() => router.push(ROUTES.MORE)}
+          closeLabel={t('stock.rates.back')}
+          closeTestId="rate-back"
+          className="-mx-4 -mt-4 mb-1"
+        />
       )}
       {desk ? (
         <UbBox
@@ -577,7 +569,7 @@ export function RatesPageContent(): React.JSX.Element {
               {shareButton}
             </UbStack>
           </UbPanel>
-          <UbBottomBar className="mt-auto grid grid-cols-2 gap-2 border-t border-border-hairline bg-surface-card px-4 py-3">
+          <UbBottomBar clearToBottom className="mt-auto -mx-4 grid grid-cols-2 gap-2 border-t border-border-hairline bg-surface-card px-4 pb-[calc(0.75rem+env(safe-area-inset-bottom,0px))] pt-3">
             {sameButton}
             {saveButton}
           </UbBottomBar>
