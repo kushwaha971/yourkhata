@@ -13,6 +13,7 @@ const HREF: Record<HomeStripKey, string> = {
   expiring: `${ROUTES.STOCK_EXPIRY}?within=30`,
   phones: ROUTES.ITEM_IMEI,
   soldOutSizes: ROUTES.STOCK_LOW,
+  lowStock: ROUTES.STOCK_LOW,
 };
 
 /**

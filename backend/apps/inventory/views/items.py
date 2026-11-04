@@ -669,4 +669,10 @@ class HomeStripView(_InventoryView, APIView):
         )
         if variants.exists():
             tiles.append({"key": "soldOutSizes", "count": variants.filter(on_hand__lte=0).count()})
+        # A shop with nothing of its own (design KPI, kirana) still has its low
+        # stock. A jeweller's Home has its own strip.
+        if not tiles and "jewellery" not in features_of(tenant):
+            base = item_selectors.item_list(tenant=tenant, location_id=None, status=ItemStatus.ACTIVE)
+            counts = item_selectors.list_meta(base, base)["counts"]
+            tiles.append({"key": "lowStock", "count": counts["low"] + counts["out"]})
         return StandardResponse.ok(tiles)

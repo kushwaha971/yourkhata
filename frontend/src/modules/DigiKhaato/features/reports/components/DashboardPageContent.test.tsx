@@ -200,7 +200,7 @@ it('says whose Shop and which day in the header, with New bill and the rest unde
   service.getDashboard.mockResolvedValue(DATA());
   signIn(OWNER);
   renderWithProviders(<DashboardPageContent />);
-  const heading = await screen.findByRole('heading', { name: 'Home' });
+  const heading = await screen.findByRole('heading', { name: 'Dashboard' });
   // "Shree Ganesh Kirana Stores" was cut to "Shree Ganesh Ki…" on a 360 px
   // phone: the title is a business name now, and a name is not cut.
   expect(heading).not.toHaveClass('truncate');
