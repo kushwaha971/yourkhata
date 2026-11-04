@@ -458,6 +458,7 @@
   "sales.line.jewel.metal": "Metal {net} g × {rate}",
   "sales.line.jewel.needsTag": "Remove {name} and add it again to choose its tag.",
   "sales.line.jewel.net": "Net wt",
+  "sales.line.jewel.noRate": "Set today's rate first, then add this piece.",
   "sales.line.jewel.noTags": "{name} has no tags in stock.",
   "sales.line.jewel.perGram": "₹ per g",
   "sales.line.jewel.rate": "{rate}/g",

@@ -20,7 +20,7 @@ export const fillMessage = (text: string, vars: Vars): string =>
  */
 export function useKindMessage(key: string): (standardId: string, vars: Vars) => string {
   const { t, locale } = useTranslation();
-  const saved = useAppSelector(selectActiveTenant)?.messages?.[key]?.[locale];
+  const saved = useAppSelector(selectActiveTenant)?.messages?.[key]?.[locale.startsWith('hi') ? 'hi' : 'en'];
   return useCallback(
     (standardId, vars) => (saved ? fillMessage(saved, vars) : t(standardId, vars)),
     [saved, t]

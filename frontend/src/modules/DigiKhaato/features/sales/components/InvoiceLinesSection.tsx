@@ -300,6 +300,12 @@ export function InvoiceLinesSection({
       const order = getValues('customOrder');
       const fixed =
         order?.fixed_rate && order.purity === found.jewel.purity ? order.fixed_rate : null;
+      // Before the morning's rate a piece has no price: say so here, rather than
+      // a ₹0 line whose save the server refuses with nothing shown on it.
+      if (!fixed && !found.jewel.rate) {
+        dispatch(showSnackbar({ severity: 'warning', id: 'sales.line.jewel.noRate' }));
+        return true;
+      }
       const base = fixed ? { ...found.jewel, rate: fixed } : found.jewel;
       const jewel = fixed ? { ...base, ...(priceJewel(base) ?? {}) } : base;
       const filled: InvoiceLineForm = {

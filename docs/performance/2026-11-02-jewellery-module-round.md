@@ -32,6 +32,8 @@ Silver 925 is priced at the one silver rate. Part receipts: "More to come".
 - Paying cash back for old gold over the bill
 
 ## Score (P0 section 8): 7 of 10. Not 9.
+
+Rechecked 4 Nov 2026 after the full round: still 7. Design stays 0 (not every screen measured, listed differences remain); User stays 1 (the hand pass is still short).
 | Points | Got | Why |
 |---|---|---|
 | Business 2 | 2 | read back by id with skewed self-tests; finished orders and bills locked |
@@ -65,11 +67,15 @@ Reachable next: Design and a longer hand pass give 9. The owner's point gives 10
 - Server suite: 5030 tests, 1 failure, the Dues speed test (78 s against 60 s) on a busy machine; it passes alone.
 - Seed 42: issue now also checks the saved bill and stops with a clear message. HOW the line lost its tag was not found; that remains open.
 
-**PENDING, no result yet**
+**Results, 4 Nov 2026, full round on the final app build**
 
-- WhatsApp bubble on the reminder sheet: built and unit tested, not yet LOOKED at on the running app.
-- Design comparison: desktop bill with real data against `dJewelBill`, phone old gold sheet with values, Messages menu, dark and Hindi.
-- Purchases and stock count search list recheck.
+- 14 harnesses: 13 passed first time. g1-rate failed on its month-picker wait (this month and last held the same number of rows, so it read the old row); the wait was fixed and g1-rate passes alone. The app did not change.
+- Skews caught. 48 of 48 monkeys pass. Jest 5052 of 5052, lint 0, locales in step.
+- Server suite: 5030 tests, 1 failure, the Dues speed test (80 s against 60 s) while the machine was busy; it passes alone. Under load it is still over its limit.
+- LOOK: reminder sheet at 390, 320, dark Hindi and desktop matches `pRemind` except Attach PDF. Purchases and stock count search lists measured at 1280 and 390: 320 px high, not clipped.
+- Defects found by LOOK and fixed: Messages highlight invisible, Hindi preview using English words, a no-rate piece giving a ₹0 bill stuck on Saving.
+- Not rechecked by eye: the no-rate message on the final build (covered by no test), and the Messages preview in Hindi after its fix.
+- Open: how seed 42's line lost its tag is still unknown; the guard stops the bill.
 
 **Not built**
 
@@ -82,6 +88,7 @@ Reachable next: Design and a longer hand pass give 9. The owner's point gives 10
 
 - Date chips "In 7/15 days" are kept; the design has none.
 - The cash-limit notice is omitted by the owner's rule (no cash limit).
+- The bill's subtitle says "Invoice"; the design shows the number and locked rate. A draft has no number until it is issued.
 - The phone order form is a tall sheet; the design shows a full page.
 - Karigars' section and menu position differ from the design.
 

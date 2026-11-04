@@ -68,7 +68,7 @@ export function MessagesPageContent(): React.JSX.Element {
   const defs = (tenant?.features ?? []).flatMap((feature) => MESSAGES_BY_FEATURE[feature] ?? []);
   const stored = data?.values['shop.messages'] as Stored | undefined;
   const reminder = data?.values['ledger.reminder_templates'] as ReminderTemplates | undefined;
-  const lang = locale === 'hi' ? 'hi' : 'en';
+  const lang = locale.startsWith('hi') ? 'hi' : 'en';
   const terms = (data?.values['documents.terms'] as { text?: string } | undefined)?.text;
 
   const shop = tenant?.name ?? '';
@@ -164,7 +164,7 @@ export function MessagesPageContent(): React.JSX.Element {
                   justify="between"
                   align="center"
                   gap={2}
-                  className={`p-3 ${def.key === shown.key ? 'bg-[var(--primary-50)]' : ''}`}
+                  className={`p-3 ${def.key === shown.key ? 'bg-accent' : ''}`}
                 >
                   <UbStack gap={0} className="min-w-0">
                     <UbText variant="body-medium" className="font-semibold">
@@ -272,10 +272,10 @@ export function MessagesPageContent(): React.JSX.Element {
   return (
     <UbPageShell>
       <UbPageHeader
-        title={t('settings.messages.title')}
+        title={t('settings.title')}
         subtitle={shop}
       />
-      <UbStack className="items-start gap-6 lg:grid lg:grid-cols-[200px_minmax(0,1fr)]">
+      <UbStack className="items-start gap-6 lg:grid lg:grid-cols-[220px_minmax(0,1fr)]">
         {/* Design `dMessages`: only the rows that have a screen of their own. */}
         <UbStack as="nav" aria-label={t('settings.messages.menu')} gap={1} className="hidden lg:flex">
           {SETTINGS_MENU.map((row) => (
@@ -286,7 +286,7 @@ export function MessagesPageContent(): React.JSX.Element {
               tone="primary"
               underline={false}
               aria-current={row.key === 'messages' ? 'page' : undefined}
-              className={`rounded-lg px-3 py-2 ${row.key === 'messages' ? 'bg-[var(--primary-50)] font-semibold' : ''}`}
+              className={`rounded-lg px-3 py-[9px] text-sm ${row.key === 'messages' ? 'bg-accent font-semibold' : ''}`}
             >
               {t(`settings.messages.menu.${row.key}`)}
             </UbLink>

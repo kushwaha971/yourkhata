@@ -1562,7 +1562,7 @@
       "firstLoad": 433.0
     },
     "/sales/invoices": {
-      "route": 94.4,
+      "route": 94.7,
       "firstLoad": 337.8
     },
     "/sales/invoices/[id]": {

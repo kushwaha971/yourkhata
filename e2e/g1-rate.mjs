@@ -156,12 +156,14 @@ const kirana = await session('qa-owner');
   const hist = (await (await ctx.request.get(`${api}/metal-rates?month=${prevMonth}`)).json()).data.rows;
   await page.getByRole('combobox', { name: 'Month' }).click();
   await page.getByRole('option', { name: prev.toLocaleDateString('en-IN', { month: 'long', year: 'numeric' }) }).click();
-  await page.waitForFunction((n) => document.querySelectorAll('[data-testid=ub-grid-row]').length === n, hist.length, { timeout: 8000 }).catch(() => undefined);
+  // Wait for the month's own top row: this month can hold the same NUMBER of rows.
+  const topRow = hist[0] ? `₹${Number(hist[0].rates.gold_22k).toLocaleString('en-IN')}` : '';
+  await page.waitForFunction(([n, t]) => { const r = document.querySelectorAll('[data-testid=ub-grid-row]'); return r.length === n && r[0]?.textContent.includes(t); }, [hist.length, topRow], { timeout: 8000 }).catch(() => undefined);
   const shownRows = await page.locator('[data-testid=ub-grid-row]').count();
   if (hist.length < 2) fail('F4', `the fixture left ${hist.length} rows in ${prevMonth}`);
   if (shownRows !== hist.length) fail('F4', `${prevMonth}: ${shownRows} rows on screen, API has ${hist.length}`);
   const top = hist[0] ? `₹${Number(hist[0].rates.gold_22k).toLocaleString('en-IN')}` : '';
-  if (hist[0] && !(await page.locator('[data-testid=ub-grid-row]').first().innerText()).includes(top)) fail('F4', `first row lacks ${top}`);
+  if (hist[0] && !(await page.locator('[data-testid=ub-grid-row]').first().innerText()).includes(top)) fail('F4', `first row "${await page.locator('[data-testid=ub-grid-row]').first().innerText()}" lacks ${top}; API top ${JSON.stringify(hist[0])}`);
   notes.push(`F saved 22K ${got.gold_22k}, 24K ${got.gold_24k}, silver ${got.silver}; history row: ${firstRow.replace(/\s+/g, ' ')}`);
   await ctx.close();
 }
