@@ -223,12 +223,12 @@ export function ShopHomeWorkspace({
     <UbStack
       key={figure.key}
       gap={0}
-      className="min-w-0 gap-px border-border-hairline px-3.5 py-2.5 [&+&]:border-l"
+      className="min-w-0 gap-px border-border-hairline px-3.5 py-2.5 leading-[1.45] [&+&]:border-l"
     >
       <UbLink
         href={figure.href}
         underline={false}
-        className="flex flex-col gap-px whitespace-normal break-words"
+        className="flex flex-col gap-px whitespace-normal break-words leading-[1.45]"
       >
         <UbText variant="inherit" tone="tertiary" className="text-[12px] font-semibold">
           {figure.key === 'toCollect'
@@ -480,8 +480,14 @@ export function ShopHomeWorkspace({
           data-testid="home-followups"
           className="min-w-0"
         >
-          <UbStack direction="row" justify="between" align="center" className="gap-2 px-4 py-3">
-            <UbText as="h2" variant="inherit" className="text-[15px] font-semibold">
+          <UbStack
+            direction="row"
+            justify="between"
+            align="center"
+            className="min-h-[47px] gap-2 px-4 py-3"
+            data-testid="home-followups-head"
+          >
+            <UbText as="h2" variant="inherit" className="text-[15px] font-semibold leading-[1.45]">
               {t('reports.home.followups')}
             </UbText>
             <UbText variant="inherit" tone="tertiary" className="hidden text-[12.5px] lg:block">

@@ -79,22 +79,22 @@ export function HomePromises({
                 as="li"
                 direction="row"
                 align="center"
-                className="gap-3 border-b border-border-hairline px-4 py-3 last:border-b-0"
+                className="min-h-14 gap-3 border-b border-border-hairline px-4 py-3 last:border-b-0"
                 data-testid="home-promise-row"
               >
                 <UbStack gap={0} className="min-w-0 flex-1">
                   <UbLink
                     href={partyPath(promise.party.id, supplier ? 'supplier' : undefined)}
                     underline={false}
-                    variant="body-sm-medium"
-                    className="ds-num whitespace-normal break-words"
+                    variant="inherit"
+                    className="ds-num whitespace-normal break-words text-[14px] font-medium leading-[1.45]"
                   >
                     {homePromiseTitle(t, promise, today, formatDate)}
                   </UbLink>
                   <UbText
-                    variant="caption"
-                    tone={promise.daysLate ? 'warning' : 'secondary'}
-                    className="ds-num"
+                    variant="inherit"
+                    tone={promise.daysLate ? 'warning' : 'tertiary'}
+                    className="ds-num text-[12.5px] leading-[1.45]"
                   >
                     {homePromiseCaption(t, promise)}
                   </UbText>

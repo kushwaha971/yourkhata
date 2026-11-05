@@ -452,8 +452,9 @@ it('keeps Needs attention on the page, each row with its amount, age and next st
   renderWithProviders(<DashboardPageContent />);
   const attention = await screen.findByTestId('home-followups');
   expect(screen.queryByRole('button', { name: 'Details' })).not.toBeInTheDocument();
-  const rows = within(attention).getAllByRole('link');
-  expect(rows.map((row) => row.textContent)).toEqual([
+  const rows = within(attention).getAllByRole('link').filter((row) => row.textContent !== 'Open');
+  const faces = within(attention).getAllByTestId('home-follow-row');
+  expect(faces.map((row) => row.textContent)).toEqual([
     expect.stringMatching(/Collect ₹900\.00 from 2 overdue bills.*Oldest is 25 days late/),
     expect.stringMatching(/Pay ₹1,000\.00 on 1 overdue supplier bill.*Oldest is 12 days late/),
     expect.stringMatching(/1 item out of stock.*Reorder/),

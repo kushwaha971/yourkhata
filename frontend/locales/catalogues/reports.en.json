@@ -384,6 +384,7 @@
   "reports.home.moreReports": "More reports and comparisons",
   "reports.home.notDue": "Not due yet",
   "reports.home.offline": "As of {date} · no internet. Showing the last loaded figures.",
+  "reports.home.open": "Open",
   "reports.home.paidOut": "Paid out",
   "reports.home.paidOutBasis": "Payments + paid expenses",
   "reports.home.paidOutPhone": "Payments + paid expenses",

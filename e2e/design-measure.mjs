@@ -29,7 +29,7 @@ const collect = (root) => {
     const c = getComputedStyle(el), k = getComputedStyle(box), q = box.getBoundingClientRect();
     out.set(text, {
       fontSize: c.fontSize, fontWeight: c.fontWeight, color: c.color,
-      boxH: box === el ? null : Math.round(q.height), radius: box === el ? null : k.borderTopLeftRadius,
+      boxH: box === el ? null : box.offsetHeight, radius: box === el ? null : k.borderTopLeftRadius,
       bg: box === el ? null : k.backgroundColor, border: box === el ? null : k.borderTopColor,
       padX: box === el ? null : k.paddingLeft,
     });
@@ -42,6 +42,19 @@ await dp.goto(`file://${resolve('docs/revamp/design/shop-fixes-and-business-type
 await dp.waitForTimeout(1500);
 await dp.locator('select').filter({ has: dp.locator('option[value=jewel]') }).first().selectOption(kind);
 await dp.waitForTimeout(2000);
+// Boxes the words cannot reach: same-role parts, compared by height and padding.
+const PARTS = [
+  ['day line cell', '.dayl>div', '[data-testid=home-figures]>div'],
+  ['panel head', '.panel>.ph2', '[data-testid=home-followups-head]'],
+  ['list row', '.lst>.li', '[data-testid=home-follow-row],[data-testid=home-promise-row]'],
+  ['strip tile', '.card[style*="display:grid;gap:2px"]', '[data-testid^=home-strip-]'],
+];
+const partOf = ([sel]) => {
+  const e = [...document.querySelectorAll(sel)].find((n) => n.offsetWidth);
+  if (!e) return null;
+  const c = getComputedStyle(e);
+  return { h: e.offsetHeight, padT: c.paddingTop, padL: c.paddingLeft, radius: c.borderTopLeftRadius };
+};
 const dark = process.argv.includes('--dark');
 if (dark) await dp.evaluate(() => document.documentElement.setAttribute('data-theme', 'dark'));
 const el = dp.locator(`[data-mock="${mockId}"]`).first();
@@ -67,6 +80,12 @@ const app = new Map(await p.locator('main').first().evaluate(collect));
 const SAME = { 'rgb(122, 129, 140)': 'rgb(101, 109, 120)' };
 if (process.argv.includes('--hi')) design.clear();
 const bad = [], unmatched = [];
+for (const [name, ds, as] of PARTS) {
+  const d = await el.evaluate((root, sel) => { const e = [...root.querySelectorAll(sel)].find((n) => n.offsetWidth); if (!e) return null; const c = getComputedStyle(e); return { h: e.offsetHeight, padT: c.paddingTop, padL: c.paddingLeft, radius: c.borderTopLeftRadius }; }, ds);
+  const a = await p.evaluate(partOf, [as]);
+  if (!d || !a) { console.log(`part ${name}: ${d ? 'not on app' : 'not in mock'}`); continue; }
+  for (const k of Object.keys(d)) if (String(d[k]) !== String(a[k])) bad.push({ text: name, key: k, design: d[k], app: a[k] });
+}
 for (const [text, d] of design) {
   const a = app.get(text);
   if (!a) { unmatched.push(text); continue; }
@@ -78,8 +97,8 @@ for (const [text, d] of design) {
       bad.push({ text, key, design: d[key], app: a[key] });
   }
 }
-await b.close();
 for (const r of bad) console.log(`${r.text.padEnd(32)} ${r.key.padEnd(11)} design ${r.design}  app ${r.app}`);
 console.log(`\n${mockId} @${width}: ${design.size} design texts, ${bad.length} mismatches, ${unmatched.length} not on the app`);
 if (process.argv.includes('--missing')) console.log('not on the app:', unmatched.join(' | '));
+await b.close();
 if (bad.length) process.exitCode = 1;
