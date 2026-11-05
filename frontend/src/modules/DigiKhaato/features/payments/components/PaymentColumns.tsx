@@ -59,22 +59,6 @@ export const createPaymentColumns = ({
             widthShare: 12,
             cell: date,
           },
-          {
-            id: 'number',
-            header: t('payments.column.number'),
-            priority: 1,
-            cardSlot: 'none',
-            widthShare: 17,
-            cell: (row) => (
-              <UbText
-                as="span"
-                variant="body-sm"
-                className={cn('ds-mono block', cancelled(row) && 'line-through opacity-60')}
-              >
-                {row.number}
-              </UbText>
-            ),
-          },
         ] satisfies UbDataGridColumn<PaymentRow>[])),
     {
       id: 'party',
@@ -114,6 +98,22 @@ export const createPaymentColumns = ({
         ] satisfies UbDataGridColumn<PaymentRow>[])
       : ([
           {
+            id: 'number',
+            header: t('payments.column.number'),
+            priority: 1,
+            cardSlot: 'none',
+            widthShare: 17,
+            cell: (row) => (
+              <UbText
+                as="span"
+                variant="body-sm"
+                className={cn('ds-mono block', cancelled(row) && 'line-through opacity-60')}
+              >
+                {row.number}
+              </UbText>
+            ),
+          },
+          {
             id: 'mode',
             header: t('payments.column.mode'),
             priority: 2,
@@ -122,21 +122,6 @@ export const createPaymentColumns = ({
             cell: mode,
           },
         ] satisfies UbDataGridColumn<PaymentRow>[])),
-    {
-      id: 'status',
-      header: t('payments.column.status'),
-      priority: 1,
-      cardSlot: 'meta',
-      widthShare: 13,
-      cell: (row) => {
-        if (!cancelled(row)) return isCards ? '' : null;
-        return isCards ? (
-          t('payments.status.void')
-        ) : (
-          <UbStatusBadge tone="neutral" label={t('payments.status.void')} />
-        );
-      },
-    },
     {
       id: 'amount',
       header: t('payments.column.amount'),
@@ -153,10 +138,26 @@ export const createPaymentColumns = ({
              cancelled payment moved no money, so it is not green either. */
           tone={row.direction === 'in' && !cancelled(row) ? 'receivable' : 'neutral'}
           label={t(`payments.direction.${row.direction}`)}
-          labelHidden={isCards}
+          sign={row.direction === 'in' && !cancelled(row) ? 'plus' : 'none'}
+          labelHidden
           className={cancelled(row) ? 'line-through opacity-60' : undefined}
         />
       ),
+    },
+    {
+      id: 'status',
+      header: t('payments.column.status'),
+      priority: 1,
+      cardSlot: 'meta',
+      widthShare: 13,
+      cell: (row) => {
+        if (!cancelled(row)) return isCards ? '' : null;
+        return isCards ? (
+          t('payments.status.void')
+        ) : (
+          <UbStatusBadge tone="neutral" label={t('payments.status.void')} />
+        );
+      },
     },
   ];
 };

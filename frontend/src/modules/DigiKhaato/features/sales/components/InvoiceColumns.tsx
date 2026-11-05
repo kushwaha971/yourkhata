@@ -56,6 +56,35 @@ export const createInvoiceColumns = ({
           ),
         },
       ] satisfies UbDataGridColumn<InvoiceListRow>[])),
+  ...(isCompact
+    ? []
+    : ([
+        {
+          id: 'date',
+          header: t('sales.column.date'),
+          priority: 1,
+          cardSlot: 'meta',
+          widthShare: 16,
+          cell: (row) => {
+            const date = formatBusinessDate(row.documentDate);
+            if (!isCards)
+              return (
+                <UbText as="span" variant="body-sm" className="block whitespace-normal break-words">
+                  {date}
+                </UbText>
+              );
+            const who = row.party?.name ?? row.walkInName ?? t('sales.walkIn.label');
+            const caption = `${date} · ${who} · ${formatInr(row.grandTotal)}`;
+            if (!row.origin) return caption;
+            const words = originWords(row.origin);
+            const from = t(words.id, {
+              module: words.moduleId ? t(words.moduleId) : words.module,
+              label: words.label ?? '',
+            });
+            return `${caption} · ${from}`;
+          },
+        },
+      ] satisfies UbDataGridColumn<InvoiceListRow>[])),
   {
     id: 'party',
     header: t('sales.column.party'),
@@ -91,73 +120,6 @@ export const createInvoiceColumns = ({
       );
     },
   },
-  ...(isCompact
-    ? []
-    : ([
-        {
-          id: 'date',
-          header: t('sales.column.date'),
-          priority: 1,
-          cardSlot: 'meta',
-          widthShare: 16,
-          cell: (row) => {
-            const date = formatBusinessDate(row.documentDate);
-            if (!isCards)
-              return (
-                <UbText as="span" variant="body-sm" className="block whitespace-normal break-words">
-                  {date}
-                </UbText>
-              );
-            const who = row.party?.name ?? row.walkInName ?? t('sales.walkIn.label');
-            const caption = `${date} · ${who} · ${formatInr(row.grandTotal)}`;
-            if (!row.origin) return caption;
-            const words = originWords(row.origin);
-            const from = t(words.id, {
-              module: words.moduleId ? t(words.moduleId) : words.module,
-              label: words.label ?? '',
-            });
-            return `${caption} · ${from}`;
-          },
-        },
-      ] satisfies UbDataGridColumn<InvoiceListRow>[])),
-  {
-    id: 'status',
-    header: t('sales.column.status'),
-    priority: 1,
-    cardSlot: 'trailing',
-    widthShare: 14,
-    cell: (row) => {
-      const overdue = row.isOverdue ? 'overdue' : row.status;
-      const label =
-        overdue === 'issued' && row.amountDue !== '0.00'
-          ? t('sales.tab.unpaid')
-          : t(`sales.status.${overdue}`);
-      return <UbStatusBadge tone={STATUS_TONE[overdue]} label={label} />;
-    },
-  },
-  {
-    id: 'due',
-    header: t('sales.column.due'),
-    priority: 2,
-    cardSlot: 'none',
-    align: 'end',
-    widthShare: 16,
-    cell: (row) => {
-      const days = daysOverdue(row.dueOn, today);
-      return (
-        <UbStack gap={0} className="items-end">
-          <UbAmount value={row.amountDue} size="sm" />
-          {row.amountDue !== '0.00' && row.dueOn && (
-            <UbText as="span" variant="caption" tone={days > 0 ? 'error' : 'tertiary'}>
-              {days > 0
-                ? t('sales.list.overdueDays', { days })
-                : t('sales.list.dueOn', { date: formatBusinessDate(row.dueOn) })}
-            </UbText>
-          )}
-        </UbStack>
-      );
-    },
-  },
   {
     id: 'total',
     header: t('sales.column.total'),
@@ -172,5 +134,43 @@ export const createInvoiceColumns = ({
         className={row.status === 'void' ? 'line-through opacity-60' : undefined}
       />
     ),
+  },
+  {
+    id: 'due',
+    header: t('sales.column.due'),
+    priority: 2,
+    cardSlot: 'none',
+    align: 'end',
+    widthShare: 16,
+    cell: (row) => {
+      const days = daysOverdue(row.dueOn, today);
+      return (
+        <UbStack direction="row" gap={2} className="flex-wrap items-baseline justify-end">
+          <UbAmount value={row.amountDue} size="sm" />
+          {row.amountDue !== '0.00' && row.dueOn && (
+            <UbText as="span" variant="caption" tone={days > 0 ? 'error' : 'tertiary'}>
+              {days > 0
+                ? t('sales.list.overdueDays', { days })
+                : t('sales.list.dueOn', { date: formatBusinessDate(row.dueOn) })}
+            </UbText>
+          )}
+        </UbStack>
+      );
+    },
+  },
+  {
+    id: 'status',
+    header: t('sales.column.status'),
+    priority: 1,
+    cardSlot: 'trailing',
+    widthShare: 14,
+    cell: (row) => {
+      const overdue = row.isOverdue ? 'overdue' : row.status;
+      const label =
+        overdue === 'issued' && row.amountDue !== '0.00'
+          ? t('sales.tab.unpaid')
+          : t(`sales.status.${overdue}`);
+      return <UbStatusBadge tone={STATUS_TONE[overdue]} label={label} />;
+    },
   },
 ];

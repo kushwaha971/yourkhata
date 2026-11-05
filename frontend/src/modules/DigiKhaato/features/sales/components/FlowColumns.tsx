@@ -26,6 +26,41 @@ export const createFlowColumns = ({
   readonly isCards: boolean;
   readonly isCompact?: boolean;
 }): readonly UbDataGridColumn<InvoiceListRow>[] => [
+  ...(isCards || isCompact
+    ? []
+    : ([
+        {
+          id: 'number',
+          header: t(`sales.flow.column.${kind}`),
+          priority: 1,
+          cardSlot: 'none',
+          widthShare: 20,
+          cell: (row) => (
+            <UbText as="span" variant="body-sm" className="ds-num whitespace-normal break-words">
+              {row.number ?? t('sales.status.draft')}
+            </UbText>
+          ),
+        },
+      ] satisfies UbDataGridColumn<InvoiceListRow>[])),
+  ...(isCompact
+    ? []
+    : ([
+        {
+          id: 'date',
+          header: t('sales.column.date'),
+          priority: 1,
+          cardSlot: 'meta',
+          widthShare: 12,
+          cell: (row) =>
+            isCards
+              ? [
+                  formatBusinessDate(row.documentDate),
+                  row.party?.name ?? row.walkInName ?? t('sales.walkIn.label'),
+                  formatInr(row.grandTotal),
+                ].join(' · ')
+              : formatBusinessDate(row.documentDate),
+        },
+      ] satisfies UbDataGridColumn<InvoiceListRow>[])),
   {
     id: 'party',
     header: t('sales.column.party'),
@@ -50,45 +85,33 @@ export const createFlowColumns = ({
           <UbText as="span" variant="body-sm" className="whitespace-normal break-words">
             {name}
           </UbText>
-          <UbText
-            as="span"
-            variant="caption"
-            tone="tertiary"
-            className="ds-num whitespace-normal break-words"
-          >
-            {isCompact ? `${number} · ${formatBusinessDate(row.documentDate)}` : number}
-          </UbText>
+          {isCompact && (
+            <UbText
+              as="span"
+              variant="caption"
+              tone="tertiary"
+              className="ds-num whitespace-normal break-words"
+            >
+              {`${number} · ${formatBusinessDate(row.documentDate)}`}
+            </UbText>
+          )}
         </UbStack>
       );
     },
   },
-  ...(isCompact
-    ? []
-    : ([
-        {
-          id: 'date',
-          header: t('sales.column.date'),
-          priority: 1,
-          cardSlot: 'meta',
-          widthShare: 12,
-          cell: (row) =>
-            isCards
-              ? [
-                  formatBusinessDate(row.documentDate),
-                  row.party?.name ?? row.walkInName ?? t('sales.walkIn.label'),
-                  formatInr(row.grandTotal),
-                ].join(' · ')
-              : formatBusinessDate(row.documentDate),
-        },
-      ] satisfies UbDataGridColumn<InvoiceListRow>[])),
   {
-    id: 'status',
-    header: t('sales.column.status'),
+    id: 'total',
+    header: t('sales.column.total'),
     priority: 1,
-    cardSlot: 'trailing',
-    widthShare: 14,
+    align: 'end',
+    cardSlot: 'none',
+    widthShare: 16,
     cell: (row) => (
-      <UbStatusBadge tone={STATUS_TONE[row.status]} label={t(`sales.status.${row.status}`)} />
+      <UbAmount
+        value={row.grandTotal}
+        size="sm"
+        className={row.status === 'void' ? 'line-through opacity-60' : undefined}
+      />
     ),
   },
   // Shop item 3 — an order has no validity and no credit: its status says it all.
@@ -117,18 +140,13 @@ export const createFlowColumns = ({
             },
       ] satisfies UbDataGridColumn<InvoiceListRow>[])),
   {
-    id: 'total',
-    header: t('sales.column.total'),
+    id: 'status',
+    header: t('sales.column.status'),
     priority: 1,
-    align: 'end',
-    cardSlot: 'none',
-    widthShare: 16,
+    cardSlot: 'trailing',
+    widthShare: 14,
     cell: (row) => (
-      <UbAmount
-        value={row.grandTotal}
-        size="sm"
-        className={row.status === 'void' ? 'line-through opacity-60' : undefined}
-      />
+      <UbStatusBadge tone={STATUS_TONE[row.status]} label={t(`sales.status.${row.status}`)} />
     ),
   },
 ];
