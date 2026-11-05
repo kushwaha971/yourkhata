@@ -19,6 +19,7 @@ from apps.common.book_access import allowed_books, require_book
 from apps.common.constants import LedgerBucket, ModuleCode
 from apps.common.context import Ctx
 from apps.common.exceptions import ValidationFailed
+from apps.common.exports import CsvExportMixin, ExportColumn, csv_date
 from apps.common.idempotency import idempotent
 from apps.common.permissions import ModuleEnabled
 from apps.common.responses import StandardResponse
@@ -61,7 +62,21 @@ def _money_meta(result: dict) -> dict:
     return meta
 
 
+#: The filtered register as a file: what the row shows, plus its reference.
+PAYMENT_EXPORT_COLUMNS = (
+    ExportColumn("number", lambda p: p.number),
+    ExportColumn("date", lambda p: csv_date(p.payment_date)),
+    ExportColumn("direction", lambda p: p.direction),
+    ExportColumn("party", lambda p: p.party.name if p.party_id else ""),
+    ExportColumn("mode", lambda p: p.primary_mode or ""),
+    ExportColumn("reference", lambda p: p.reference),
+    ExportColumn("amount", lambda p: p.amount, numeric=True),
+    ExportColumn("status", lambda p: p.status),
+)
+
+
 class PaymentViewSet(
+    CsvExportMixin,
     TenantScopeMixin,
     mixins.ListModelMixin,
     mixins.RetrieveModelMixin,
@@ -78,6 +93,8 @@ class PaymentViewSet(
     lookup_value_regex = UUID_RE
     permission_classes = [IsAuthenticated, ModuleEnabled(ModuleCode.PAYMENTS), PaymentPermissions]
     throttle_classes = [ScopedUserRateThrottle]
+    export_resource = "payments"
+    export_columns = PAYMENT_EXPORT_COLUMNS
 
     def authorize_book(self, request: Any, codename: str) -> bool:
         if self.kwargs.get("pk"):
@@ -124,6 +141,8 @@ class PaymentViewSet(
 
     def list(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         """A page and `meta.totals` over the FILTERED set (FR-10) — voids never counted."""
+        if self.wants_csv(request):
+            return self.csv_export(request)
         queryset = self.filter_queryset(self.get_queryset())
         totals = payment_totals(queryset)
         page = self.paginate_queryset(queryset)

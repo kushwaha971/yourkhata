@@ -129,7 +129,7 @@ it('says a cancelled payment is Cancelled, in words, on its card', async () => {
   );
   renderWithProviders(<PaymentsPageContent />);
   const card = (await screen.findAllByTestId('ub-grid-card'))[0];
-  expect(within(card as HTMLElement).getByText('Cancelled')).toBeInTheDocument();
+  expect(within(card as HTMLElement).getByText(/Cancelled/)).toBeInTheDocument();
   expect(within(card as HTMLElement).getByText(/Anita Verma · Cash/)).toBeInTheDocument();
 });
 

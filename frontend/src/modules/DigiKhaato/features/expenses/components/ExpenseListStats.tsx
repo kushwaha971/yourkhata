@@ -1,8 +1,8 @@
 'use client';
 
-import { UbAmount, UbSkeleton, UbStack, UbTag, UbText, isUbTagColor } from 'src/design-system';
+import { UbCountLine, UbStack, UbTag, UbText, isUbTagColor } from 'src/design-system';
 import { useTranslation } from 'src/hooks/useTranslation';
-import { formatInr } from 'src/utils/money';
+import { formatInr, isZeroAmount } from 'src/utils/money';
 
 import type { ExpenseTotals } from '../types/expense.types';
 
@@ -39,29 +39,25 @@ export function ExpenseListStats({
       aria-busy={waiting || undefined}
       data-testid="expense-register-summary"
     >
-      <UbStack direction="row" align="baseline" className="flex-wrap gap-x-2 gap-y-1">
-        {waiting ? (
-          <UbStack direction="row" align="center" className="gap-1.5">
-            <UbText as="span" variant="body-sm" tone="secondary">
-              {t(cancelled ? 'expenses.total.cancelled' : 'expenses.total.label')}
-            </UbText>
-            <UbSkeleton variant="figure" />
-          </UbStack>
-        ) : (
-          <UbAmount
-            value={totals.amount}
-            size="sm"
-            inline
-            label={t(cancelled ? 'expenses.total.cancelled' : 'expenses.total.label')}
-            className="flex-row-reverse items-baseline gap-1.5"
-          />
-        )}
-        {!waiting && (
-          <UbText as="span" variant="body-sm" tone="secondary">
-            {`· ${t('expenses.total.count', { count: totals.count })}`}
-          </UbText>
-        )}
-      </UbStack>
+      {/* The design's count line, kept in place while a search runs. */}
+      <UbCountLine
+        loading={waiting}
+        items={[
+          {
+            id: 'total',
+            template: `${t(cancelled ? 'expenses.total.cancelled' : 'expenses.total.label')} {amount}`,
+            values: {
+              amount: {
+                text: waiting ? '\u00A0'.repeat(8) : formatInr(totals.amount),
+                tone: cancelled || isZeroAmount(totals.amount) ? 'neutral' : 'payable',
+              },
+            },
+          },
+          ...(waiting
+            ? []
+            : [{ id: 'count', template: t('expenses.total.count', { count: totals.count }) }]),
+        ]}
+      />
       {!cancelled && top.length > 0 && (
         /* One line on a phone, scrolling sideways: wrapped, the three
            categories took two lines at 390 px and three at 320 px, all of it

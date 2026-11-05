@@ -19,7 +19,7 @@ import type { PaymentRow } from '../types/payment.types';
  * | Name   | 1 | title    | "Quick Sale" when nobody was named. |
  * | Mode   | 2 | —        | The primary mode, "+1" when split (PAY-02 FR-7). |
  * | Amount | 1 | trailing | With its word, Received or Paid out, never colour alone. |
- * | Status | 1 | meta     | Only Cancelled earns a badge; on a card it is the word. |
+ * Only Cancelled earns a badge, beside the number; on a card it is the word.
  *
  * Below 1280 px (`isCompact`) the date joins the number under the name and the
  * Date and Number columns go, as on the bills register. What a payment settled is on the
@@ -93,7 +93,10 @@ export const createPaymentColumns = ({
             header: t('payments.column.number'),
             priority: 1,
             cardSlot: 'meta',
-            cell: (row) => `${name(row)} · ${mode(row)}`,
+            cell: (row) =>
+              [name(row), mode(row), cancelled(row) ? t('payments.status.void') : null]
+                .filter(Boolean)
+                .join(' · '),
           },
         ] satisfies UbDataGridColumn<PaymentRow>[])
       : ([
@@ -102,14 +105,23 @@ export const createPaymentColumns = ({
             header: t('payments.column.number'),
             priority: 1,
             cardSlot: 'none',
-            widthShare: 17,
+            widthShare: 26,
             cell: (row) => (
               <UbText
                 as="span"
                 variant="body-sm"
-                className={cn('ds-mono block', cancelled(row) && 'line-through opacity-60')}
+                className="ds-num inline-flex items-center gap-2 whitespace-nowrap"
               >
-                {row.number}
+                <UbText
+                  as="span"
+                  variant="body-sm"
+                  className={cancelled(row) ? 'line-through opacity-60' : undefined}
+                >
+                  {row.number}
+                </UbText>
+                {cancelled(row) && (
+                  <UbStatusBadge tone="neutral" label={t('payments.status.void')} />
+                )}
               </UbText>
             ),
           },
@@ -128,7 +140,7 @@ export const createPaymentColumns = ({
       priority: 1,
       align: 'end',
       cardSlot: 'trailing',
-      widthShare: 21,
+      widthShare: 18,
       cell: (row) => (
         <UbAmount
           value={row.amount}
@@ -143,21 +155,6 @@ export const createPaymentColumns = ({
           className={cancelled(row) ? 'line-through opacity-60' : undefined}
         />
       ),
-    },
-    {
-      id: 'status',
-      header: t('payments.column.status'),
-      priority: 1,
-      cardSlot: 'meta',
-      widthShare: 13,
-      cell: (row) => {
-        if (!cancelled(row)) return isCards ? '' : null;
-        return isCards ? (
-          t('payments.status.void')
-        ) : (
-          <UbStatusBadge tone="neutral" label={t('payments.status.void')} />
-        );
-      },
     },
   ];
 };

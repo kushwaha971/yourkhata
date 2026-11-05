@@ -39,6 +39,9 @@ import { useTranslation } from 'src/hooks/useTranslation';
 import { ROUTES } from 'src/routes';
 import { PAYMENT_MODES, type PaymentMode } from 'src/types/domain.types';
 
+import { ListExportButton } from 'modules/DigiKhaato/features/imports/components/ListHeaderActions';
+
+import { paymentExportPath } from '../api/paymentService';
 import {
   DEFAULT_PAYMENT_PRESET,
   PAYMENT_PRESETS,
@@ -385,6 +388,15 @@ export function PaymentsPageContent(): React.JSX.Element {
       <UbPageHeader
         title={t('payments.title')}
         subtitle={t('payments.subtitle')}
+        actions={
+          !emptyBook && (
+            <ListExportButton
+              listPath={paymentExportPath(list.filters)}
+              permission="reports.export"
+              empty={list.status === 'succeeded' && list.total === 0}
+            />
+          )
+        }
         primaryAction={
           receive && (
             <UbButton

@@ -5,10 +5,9 @@ import { useTranslation } from 'src/hooks/useTranslation';
 import type { PaymentTotals } from '../types/payment.types';
 
 /**
- * 08 §9 — Received and Paid out, each with how many, over the FILTERED set and
- * never netted: money in and money out are two different questions. Cancelled
- * payments are not counted; that money did not move. Money in is green, money
- * out plain ink, as in the rows.
+ * 08 §9 — Received and Paid out over the FILTERED set and never netted: money in
+ * and money out are two different questions. Cancelled payments are not counted;
+ * that money did not move. Coloured as the design's count line draws them.
  */
 const NONE: PaymentTotals = {
   count: 0,
@@ -36,14 +35,15 @@ export function PaymentListStats({
       figures={[
         {
           key: 'in',
-          label: t('payments.total.inCount', { count: totals.countIn }),
+          label: t('payments.total.in'),
           amount: totals.amountIn,
           tone: 'receivable',
         },
         {
           key: 'out',
-          label: t('payments.total.outCount', { count: totals.countOut }),
+          label: t('payments.total.out'),
           amount: totals.amountOut,
+          tone: 'payable',
         },
       ]}
     />

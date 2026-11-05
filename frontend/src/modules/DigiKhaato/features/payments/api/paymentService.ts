@@ -246,6 +246,10 @@ export const paymentListQuery = (filters: PaymentFilters): string =>
 
 // ── Endpoints ───────────────────────────────────────────────────────────────
 
+/** The same filters as the list, as a CSV (the design's Export). */
+export const paymentExportPath = (filters: PaymentFilters): string =>
+  `${API_PATHS.PAYMENTS}${paymentListQuery({ ...filters, page: 1 })}`;
+
 export const listPayments = async (
   filters: PaymentFilters,
   signal?: AbortSignal

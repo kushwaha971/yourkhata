@@ -52,7 +52,7 @@
   "payments.filter.allModes": "All modes",
   "payments.filter.mode": "Mode",
   "payments.list.caption": "Payments",
-  "payments.list.countWord": "payments",
+  "payments.list.countWord": "Payments",
   "payments.list.error.body": "Check the connection and try again.",
   "payments.list.error.title": "Payments could not be loaded",
   "payments.list.filteredTotals": "Totals for these payments",

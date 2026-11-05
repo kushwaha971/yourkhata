@@ -33,12 +33,22 @@ export const createPurchaseBillColumns = ({
   const columns: UbDataGridColumn<PurchaseBillListRow>[] = [
     {
       id: 'number',
-      header: t('purchases.column.number'),
+      header: t(
+        order
+          ? 'purchases.column.order'
+          : note
+            ? 'purchases.column.debitNote'
+            : 'purchases.column.purchase'
+      ),
       priority: 2,
       // The phone row leads with the number (design F-pur-p).
       cardSlot: isCards ? 'title' : 'none',
-      widthShare: 14,
-      cell: (row) => text(row.number ?? t('purchases.status.draft')),
+      widthShare: 18,
+      cell: (row) => (
+        <UbText as="span" variant="body-sm" className="ds-num block whitespace-nowrap">
+          {row.number ?? t('purchases.status.draft')}
+        </UbText>
+      ),
     },
     ...(!order
       ? [
