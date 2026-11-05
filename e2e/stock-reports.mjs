@@ -111,8 +111,14 @@ try {
   };
   const first = await make('QA87 Besan pack');
   const second = await make('QA87 Rava pack');
-  const low = await get('/stock/low?page_size=200');
-  const lowRow = low.find?.((r) => r.item.id === first.id) ?? (low.rows ?? []).find((r) => r.item.id === first.id);
+  // Out-of-stock rows come first, so a low row sits on the book's last pages.
+  let lowRow;
+  for (let n = 1; n < 40 && !lowRow; n += 1) {
+    const low = await get(`/stock/low?page=${n}&page_size=100`);
+    const rows = low.rows ?? low;
+    lowRow = rows.find?.((r) => r.item.id === first.id);
+    if (!rows.length) break;
+  }
   check('the server lists the new item as low', Boolean(lowRow), lowRow ? `suggested ${lowRow.suggested_qty}` : 'missing');
 
   const openLow = async () => {
@@ -122,7 +128,7 @@ try {
   };
   /** The low list is out-of-stock first, then by name; page until the row shows. */
   const findCard = async (name) => {
-    for (let i = 0; i < 10; i++) {
+    for (let i = 0; i < 20; i++) {
       const card = page.getByTestId('ub-grid-card').filter({ hasText: name });
       if (await card.count()) return card.first();
       const next = page.getByRole('button', { name: /Next page|अगला/ }).locator('visible=true').first();
@@ -204,7 +210,7 @@ try {
   await page.setViewportSize({ width: 1280, height: 900 });
   await openLow();
   const pick = async (name) => {
-    for (let i = 0; i < 10; i++) {
+    for (let i = 0; i < 20; i++) {
       const row = page.getByRole('row').filter({ hasText: name });
       if (await row.count()) {
         await row.first().getByRole('checkbox').check();

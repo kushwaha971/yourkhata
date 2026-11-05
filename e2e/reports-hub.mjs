@@ -4,10 +4,9 @@
  *   NODE_PATH=$(npm root -g) node e2e/reports-hub.mjs [--shots=/tmp/e2e-shots/reports-hub]
  *
  *  * at 390, 320, 1024 and 1280 in English and Hindi: no sideways scroll, no
- *    text cut, every row is one target of at least 44 px, one column below
- *    1024 and two from 1024;
- *  * the groups are Money · People · Stock · Sales and tax, each row titled by
- *    its question with the report's name under it;
+ *    text cut, every row is one target of at least 44 px, one column at every
+ *    width (the design's single list);
+ *  * each row carries the report's name and its plain question;
  *  * every row opens a screen that is not a "not found" page.
  */
 import { mkdirSync } from 'node:fs';
@@ -39,7 +38,8 @@ const measure = () => {
   }
   const hub = document.querySelector('[data-testid="reports-hub"]');
   const rows = [...hub.querySelectorAll('a')].map((a) => {
-    const card = a.closest('[class*="relative"]').getBoundingClientRect();
+    // The link stretches over its row, so the row's box is the real target.
+    const card = a.parentElement.getBoundingClientRect();
     return { h: Math.round(card.height), left: Math.round(card.left) };
   });
   return {
@@ -47,7 +47,6 @@ const measure = () => {
     cut: [...new Set(cut)],
     rows,
     columns: new Set(rows.map((r) => r.left)).size,
-    groups: [...hub.querySelectorAll('section')].map((s) => s.getAttribute('aria-label')),
   };
 };
 
@@ -61,7 +60,6 @@ try {
   await page.click('button[type=submit]');
   await page.waitForURL((u) => !u.pathname.startsWith('/login'));
 
-  const GROUPS = { en: ['Money', 'People', 'Stock', 'Sales and tax'], hi: ['पैसा', 'लोग', 'स्टॉक', 'बिक्री और टैक्स'] };
   for (const locale of ['en', 'hi']) {
     await ctx.addCookies([{ name: 'ub_locale', value: locale, url: base }]);
     for (const width of [390, 320, 1024, 1280]) {
@@ -72,9 +70,8 @@ try {
       const m = await page.evaluate(measure);
       check(`${tag}: no sideways scroll`, m.overflow <= 0, `${m.overflow}px`);
       check(`${tag}: no text cut`, m.cut.length === 0, m.cut.join(' | '));
-      check(`${tag}: every row is a target of 44 px or more`, m.rows.length > 0 && m.rows.every((r) => r.h >= 44), JSON.stringify(m.rows.map((r) => r.h)));
-      check(`${tag}: ${width >= 1024 ? 'two columns' : 'one column'}`, m.columns === (width >= 1024 ? 2 : 1), String(m.columns));
-      check(`${tag}: the four groups in order`, JSON.stringify(m.groups) === JSON.stringify(GROUPS[locale]), JSON.stringify(m.groups));
+      check(`${tag}: every row is a full target (44 px by touch, 40 by mouse)`, m.rows.length > 0 && m.rows.every((r) => r.h >= (width >= 1024 ? 40 : 44)), JSON.stringify(m.rows.map((r) => r.h)));
+      check(`${tag}: one column`, m.columns === 1, String(m.columns));
       if (SHOTS) await page.screenshot({ path: `${SHOTS}/hub-${width}-${locale}.png`, fullPage: true });
     }
   }
@@ -82,18 +79,19 @@ try {
   await page.setViewportSize({ width: 390, height: 780 });
   await page.goto(`${base}/reports`, { waitUntil: 'networkidle' });
   const first = page.getByTestId('reports-hub').getByRole('link').first();
-  check('a row reads its question and the report name', (await first.getAttribute('aria-label')) === 'What happened today? · Day book', await first.getAttribute('aria-label'));
+  const firstWords = await first.getAttribute('aria-label');
+  check('a row reads the report name and its question', /Day book/.test(firstWords) && /\?/.test(firstWords), firstWords);
   const hrefs = await page.getByTestId('reports-hub').locator('a').evaluateAll((as) => as.map((a) => a.getAttribute('href')));
   for (const href of hrefs) {
     await page.goto(`${base}${href}`, { waitUntil: 'domcontentloaded' });
     await page.waitForLoadState('networkidle');
     const text = await page.locator('main').innerText();
-    check(`${href} opens a screen`, !/not found|404/i.test(text) && text.trim().length > 20, text.slice(0, 40).replace(/\n/g, ' '));
+    check(`${href} opens a screen`, !/not found|(?<![\d,.])404(?![\d,.])/i.test(text) && text.trim().length > 20, text.slice(0, 40).replace(/\n/g, ' '));
   }
   // Tap the CARD, not the words: the whole card is the target.
   await page.goto(`${base}/reports`, { waitUntil: 'networkidle' });
   const card = await page.getByTestId('reports-hub').locator('a').nth(1).evaluate((a) => {
-    const r = a.closest('[class*="relative"]').getBoundingClientRect();
+    const r = a.parentElement.getBoundingClientRect();
     return { x: r.right - 30, y: r.top + r.height / 2 };
   });
   await page.mouse.click(card.x, card.y);

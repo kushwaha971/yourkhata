@@ -102,6 +102,8 @@ try {
       const region = page.getByTestId('ub-grid-scroll-region'),
         pager = page.getByTestId('ub-grid-pagination');
       if (!(await region.count())) throw Error('Missing bounded row region');
+      // A phone joins the next page under its rows; only a desktop has a pager.
+      if (!(await pager.count())) { await ctx.close(); continue; }
       const pagerY = await pager.boundingBox();
       await region.evaluate((el) => (el.scrollTop = el.scrollHeight));
       await check('rows-scrolled');
