@@ -9,7 +9,7 @@
  *  * LOOKs at 390, 320, 1024 and 1280 in English and Hindi: no sideways
  *    scroll, every text node inside its box, the page itself does not scroll
  *    (only the rows do), chips with a 32 px face and a 44 px target on a phone,
- *    no pager on a phone and a pager on a desktop, the seven columns at 1280;
+ *    no pager on a phone and a pager on a desktop, the design's four columns;
  *  * a phone joins the next page under its cards when the list is scrolled;
  *  * Add expense: the caret is in Amount on open and nothing is red; one chip
  *    picks the category; Save writes ONE expense and says "Saved ₹1.00 · … ·
@@ -195,9 +195,8 @@ try {
         if (locale === 'en')
           check(
             `${tag}: columns`,
-            width === 1280
-              ? ['Date', 'Number', 'Category', 'Paid to', 'Paid by', 'Amount', 'Status'].every((h) => m.headers.includes(h))
-              : !m.headers.includes('Date') && m.headers.includes('Category'),
+            // F-exp-d: Date · Type · Paid by · Amount, the same at 1024 and 1280.
+            m.headers.join('|') === 'Date|Type|Paid by|Amount',
             m.headers.join(', ')
           );
       }
