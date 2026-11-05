@@ -125,7 +125,7 @@ function Results({
                 <span className="grid min-w-0 flex-1 leading-[1.3]">
                   <span className="ds-body-s-semibold line-clamp-2 break-words text-text-primary">{row.title}</span>
                   {row.detail && (
-                    <span className="truncate text-[0.78125rem] text-text-tertiary">
+                    <span className="line-clamp-2 break-words text-[0.78125rem] text-text-tertiary">
                       {row.detail}
                     </span>
                   )}
