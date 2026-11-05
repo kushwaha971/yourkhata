@@ -11,6 +11,7 @@ import 'src/i18n/catalogues/cashbook';
 import 'src/i18n/catalogues/expenses';
 import 'src/i18n/catalogues/money';
 import 'src/i18n/catalogues/period';
+import 'src/i18n/catalogues/reports';
 
 /**
  * EXP-03 FR-6 — `/cashbook`. The range lives in the URL, so an owner can send

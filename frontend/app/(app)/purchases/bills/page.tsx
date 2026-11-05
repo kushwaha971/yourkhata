@@ -9,6 +9,7 @@ import { PurchaseBillsListPageContent } from 'modules/DigiKhaato/features/purcha
 // The words this screen renders arrive with its chunk (src/i18n/catalogueRegistry.ts).
 import 'src/i18n/catalogues/money';
 import 'src/i18n/catalogues/purchases';
+import 'src/i18n/catalogues/exports';
 
 /** PUR-03 — `/purchases/bills`. Suspense because the tab and the range live in the URL. */
 export default function PurchaseBillsPage(): React.JSX.Element {

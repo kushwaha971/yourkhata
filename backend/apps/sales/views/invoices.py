@@ -18,16 +18,23 @@ from rest_framework.permissions import SAFE_METHODS, IsAuthenticated
 from apps.common.constants import ModuleCode
 from apps.common.context import Ctx
 from apps.common.exceptions import ValidationFailed
+from apps.common.exports import CsvExportMixin, ExportColumn, csv_date
 from apps.common.idempotency import idempotent
 from apps.common.permissions import ModuleEnabled
 from apps.common.responses import StandardResponse
 from apps.common.throttling import ScopedUserRateThrottle
 from apps.common.viewsets import TenantScopeMixin
+from apps.common.dates import tenant_today
 from apps.sales.constants import TAB_STATUSES
 from apps.sales.filters import InvoiceFilterSet
 from apps.sales.models import SalesDocument
 from apps.sales.permissions import InvoicePermissions
-from apps.sales.selectors.documents import ORDERING_FIELDS, detail_queryset, list_invoices
+from apps.sales.selectors.documents import (
+    ORDERING_FIELDS,
+    apply_tab,
+    detail_queryset,
+    list_invoices,
+)
 from apps.sales.serializers.document import (
     DocumentReadSerializer,
     InvoiceWriteSerializer,
@@ -50,7 +57,18 @@ def _require_key(request: Any) -> None:
         )
 
 
+INVOICE_EXPORT_COLUMNS = (
+    ExportColumn("number", lambda d: d.number or ""),
+    ExportColumn("date", lambda d: csv_date(d.document_date)),
+    ExportColumn("customer", lambda d: d.party.name if d.party_id else ""),
+    ExportColumn("amount", lambda d: d.grand_total, numeric=True),
+    ExportColumn("due", lambda d: d.amount_due, numeric=True),
+    ExportColumn("status", lambda d: d.status),
+)
+
+
 class InvoiceViewSet(
+    CsvExportMixin,
     TenantScopeMixin,
     mixins.ListModelMixin,
     mixins.RetrieveModelMixin,
@@ -62,6 +80,8 @@ class InvoiceViewSet(
     ordering_fields = ORDERING_FIELDS
     permission_classes = [IsAuthenticated, ModuleEnabled(ModuleCode.SALES), InvoicePermissions]
     throttle_classes = [ScopedUserRateThrottle]
+    export_resource = "bills"
+    export_columns = INVOICE_EXPORT_COLUMNS
 
     def get_throttles(self) -> list[Any]:
         scope = "user" if self.request.method in SAFE_METHODS else "ledger_write"
@@ -72,7 +92,21 @@ class InvoiceViewSet(
             return list_invoices(tenant=self.get_tenant())
         return detail_queryset(tenant=self.get_tenant())
 
+    def export_queryset(self) -> Any:
+        """The file is the screen: the tab narrows it as it narrows the list."""
+        tab = self.request.query_params.get("tab") or "all"
+        if tab not in TAB_STATUSES:
+            raise ValidationFailed({"tab": [f"Choose one of {', '.join(TAB_STATUSES)}."]})
+        return apply_tab(
+            self.filter_queryset(self.get_queryset()),
+            tab,
+            TAB_STATUSES,
+            today=tenant_today(self.get_tenant()),
+        )
+
     def list(self, request: Any, *args: Any, **kwargs: Any) -> Any:
+        if self.wants_csv(request):
+            return self.csv_export(request)
         return tabbed_list(self, request, TAB_STATUSES)
 
     def retrieve(self, request: Any, *args: Any, **kwargs: Any) -> Any:

@@ -9,6 +9,7 @@ import { InvoicesListPageContent } from 'modules/DigiKhaato/features/sales/compo
 // The words this screen renders arrive with its chunk (src/i18n/catalogueRegistry.ts).
 import 'src/i18n/catalogues/money';
 import 'src/i18n/catalogues/sales';
+import 'src/i18n/catalogues/exports';
 
 /** SAL-08 — `/sales/invoices`. Suspense because the tab and dates live in the URL. */
 export default function InvoicesPage(): React.JSX.Element {

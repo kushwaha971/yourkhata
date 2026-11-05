@@ -9,6 +9,7 @@ import { PurchaseBillsListPageContent } from 'modules/DigiKhaato/features/purcha
 // The words this screen renders arrive with its chunk (src/i18n/catalogueRegistry.ts).
 import 'src/i18n/catalogues/money';
 import 'src/i18n/catalogues/purchases';
+import 'src/i18n/catalogues/exports';
 
 /** Shop P0 — `/purchases/debit-notes`: goods sent back to suppliers. */
 export default function DebitNotesPage(): React.JSX.Element {

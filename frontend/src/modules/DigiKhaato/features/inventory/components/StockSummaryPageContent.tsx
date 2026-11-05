@@ -6,10 +6,10 @@ import dynamic from 'next/dynamic';
 
 import { SlidersHorizontal, TriangleAlert } from 'lucide-react';
 
-import { SummaryStatGrid } from 'src/components/stats/SummaryStatGrid';
 import {
   isoToday,
   UbActionLink,
+  UbCountLine,
   UbActiveFilters,
   UbButton,
   UbDateInput,
@@ -24,7 +24,6 @@ import {
   UbPageShell,
   UbSearchInput,
   UbStack,
-  UbStatCard,
   UbStatusBanner,
   UbSwitch,
   UbText,
@@ -397,16 +396,27 @@ export function StockSummaryPageContent(): React.JSX.Element {
               />
             )}
             {summary && (
-              <SummaryStatGrid storageKey="stockSummary">
-                {valuation && summary.totals.value !== null && (
-                  <UbStatCard
-                    label={t('stock.summary.totalValue')}
-                    value={formatInr(summary.totals.value)}
-                    subtext={t('stock.summary.valueNote')}
-                  />
-                )}
-                <UbStatCard label={t('stock.summary.items')} value={String(summary.totals.items)} />
-              </SummaryStatGrid>
+              <UbCountLine
+                className="py-2"
+                label={t('stock.summary.title')}
+                data-testid="stock-count-line"
+                items={[
+                  ...(valuation && summary.totals.value !== null
+                    ? [
+                        {
+                          id: 'value',
+                          template: t('items.list.count.value'),
+                          values: { amount: { text: formatInr(summary.totals.value) } },
+                        },
+                      ]
+                    : []),
+                  {
+                    id: 'items',
+                    template: t('stock.summary.count.items'),
+                    values: { n: { text: String(summary.totals.items) } },
+                  },
+                ]}
+              />
             )}
             <UbDataGrid
               rows={rows}

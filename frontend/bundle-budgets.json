@@ -1494,8 +1494,8 @@
       "firstLoad": 322.8
     },
     "/purchases/debit-notes": {
-      "route": 89.0,
-      "firstLoad": 332.3
+      "route": 92.0,
+      "firstLoad": 335.3
     },
     "/sales/challans/[id]": {
       "route": 93.4,
@@ -1518,8 +1518,8 @@
       "firstLoad": 322.8
     },
     "/purchases/orders": {
-      "route": 89.0,
-      "firstLoad": 332.3
+      "route": 92.0,
+      "firstLoad": 335.3
     },
     "/purchases/orders/new": {
       "route": 182.2,
@@ -1562,8 +1562,8 @@
       "firstLoad": 433.0
     },
     "/sales/invoices": {
-      "route": 94.7,
-      "firstLoad": 337.8
+      "route": 98.3,
+      "firstLoad": 341.6
     },
     "/sales/invoices/[id]": {
       "route": 93.4,
@@ -1683,7 +1683,7 @@
     },
     "/cashbook": {
       "route": 92,
-      "firstLoad": 327
+      "firstLoad": 328.1
     },
     "/payments": {
       "route": 104,
@@ -1739,7 +1739,7 @@
     },
     "/purchases/bills": {
       "route": 95,
-      "firstLoad": 332.3
+      "firstLoad": 335.3
     },
     "/purchases/bills/new": {
       "route": 182.2,

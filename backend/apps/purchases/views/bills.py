@@ -24,6 +24,7 @@ from apps.common.permissions import ModuleEnabled
 from apps.common.responses import StandardResponse
 from apps.common.throttling import ScopedUserRateThrottle
 from apps.common.viewsets import TenantScopeMixin
+from apps.common.exports import CsvExportMixin, ExportColumn, csv_date
 from apps.purchases.constants import TAB_STATUSES
 from apps.purchases.filters import PurchaseBillFilterSet
 from apps.purchases.models import PurchaseDocument
@@ -94,7 +95,19 @@ def draft_created(result: dict, envelope: Any = _envelope) -> Any:
     return respond(body["data"], meta=body["meta"])
 
 
+PURCHASE_BILL_EXPORT_COLUMNS = (
+    ExportColumn("number", lambda d: d.number or ""),
+    ExportColumn("their_number", lambda d: d.supplier_invoice_number or ""),
+    ExportColumn("date", lambda d: csv_date(d.document_date)),
+    ExportColumn("supplier", lambda d: d.party.name if d.party_id else ""),
+    ExportColumn("amount", lambda d: d.grand_total, numeric=True),
+    ExportColumn("to_pay", lambda d: d.amount_due, numeric=True),
+    ExportColumn("status", lambda d: d.status),
+)
+
+
 class PurchaseBillViewSet(
+    CsvExportMixin,
     TenantScopeMixin,
     mixins.ListModelMixin,
     mixins.RetrieveModelMixin,
@@ -110,6 +123,8 @@ class PurchaseBillViewSet(
         PurchaseBillPermissions,
     ]
     throttle_classes = [ScopedUserRateThrottle]
+    export_resource = "purchases"
+    export_columns = PURCHASE_BILL_EXPORT_COLUMNS
 
     def get_throttles(self) -> list[Any]:
         scope = "user" if self.request.method in SAFE_METHODS else "ledger_write"
@@ -120,7 +135,20 @@ class PurchaseBillViewSet(
             return list_bills(tenant=self.get_tenant())
         return detail_queryset(tenant=self.get_tenant())
 
+    def export_queryset(self) -> Any:
+        """The file is the screen: the tab narrows it as it narrows the list."""
+        tab = self.request.query_params.get("tab") or "all"
+        if tab not in TAB_STATUSES:
+            raise ValidationFailed({"tab": ["Choose all, unpaid, overdue, paid, draft or void."]})
+        return apply_tab(
+            self.filter_queryset(self.get_queryset()),
+            tab,
+            today=tenant_today(self.get_tenant()),
+        )
+
     def list(self, request: Any, *args: Any, **kwargs: Any) -> Any:
+        if self.wants_csv(request):
+            return self.csv_export(request)
         tab = request.query_params.get("tab") or "all"
         if tab not in TAB_STATUSES:
             raise ValidationFailed({"tab": ["Choose all, unpaid, overdue, paid, draft or void."]})

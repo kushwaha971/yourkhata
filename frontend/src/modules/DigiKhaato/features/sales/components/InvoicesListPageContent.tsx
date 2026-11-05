@@ -33,6 +33,9 @@ import { useCommittedSearch } from 'src/hooks/useCommittedSearch';
 import { useTranslation } from 'src/hooks/useTranslation';
 import { ROUTES } from 'src/routes';
 
+import { ListExportButton } from 'modules/DigiKhaato/features/imports/components/ListHeaderActions';
+
+import { invoiceExportPath } from '../api/salesService';
 import {
   DEFAULT_INVOICE_PRESET,
   INVOICE_PRESETS,
@@ -381,7 +384,16 @@ export function InvoicesListPageContent(): React.JSX.Element {
       <UbPageHeader
         title={t('sales.list.title')}
         subtitle={t('sales.list.subtitle')}
-        actions={<SalesSectionLinks current="invoice" />}
+        actions={
+          <>
+            <SalesSectionLinks current="invoice" />
+            <ListExportButton
+              listPath={invoiceExportPath({ ...filters, partyId: null })}
+              permission="reports.export"
+              empty={list.status === 'succeeded' && list.total === 0}
+            />
+          </>
+        }
         primaryAction={
           canWrite && !emptyBook ? (
             <UbActionLink

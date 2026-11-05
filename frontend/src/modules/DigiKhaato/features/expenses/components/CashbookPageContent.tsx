@@ -55,6 +55,10 @@ const ExpenseDetailDrawerLazy = dynamic(
   { ssr: false,
   loading: () => <UbDrawerLoading /> }
 );
+const CashCountDrawerLazy = dynamic(
+  () => import('../../reports/components/CashCountDrawer').then((m) => m.CashCountDrawer),
+  { ssr: false, loading: () => <UbDrawerLoading /> }
+);
 const PaymentFormDrawerLazy = dynamic(
   () =>
     import('modules/DigiKhaato/features/payments/components/PaymentFormDrawer').then(
@@ -90,6 +94,8 @@ export function CashbookPageContent(): React.JSX.Element {
   const book = useCashbook();
   const form = useExpenseForm();
   const [payment, setPayment] = useState<PaymentContext | null>(null);
+  const [counting, setCounting] = useState(false);
+  const canCount = hasModule('reports') && can('reports.financial.read');
   const canReceive = hasModule('payments') && can('payments.payment.write');
 
   const presets = useMemo(
@@ -216,18 +222,31 @@ export function CashbookPageContent(): React.JSX.Element {
         title={t('cashbook.title')}
         subtitle={t('cashbook.subtitle')}
         actions={
-          form.canWrite && !emptyBook ? (
-            <UbButton
-              icon={<Plus className="h-4 w-4" aria-hidden />}
-              iconOnly="mobile"
-              onClick={form.openDrawer}
-            >
-              {t('cashbook.addExpense')}
-            </UbButton>
-          ) : undefined
+          emptyBook ? undefined : (
+            <>
+              {form.canWrite && (
+                <UbButton
+                  variant="secondary"
+                  icon={<Plus className="h-4 w-4" aria-hidden />}
+                  iconOnly="mobile"
+                  onClick={form.openDrawer}
+                >
+                  {t('cashbook.addExpense')}
+                </UbButton>
+              )}
+              {canCount && (
+                <UbButton onClick={() => setCounting(true)} data-testid="cashbook-count">
+                  {t('reports.cashCount.action')}
+                </UbButton>
+              )}
+            </>
+          )
         }
       />
 
+      {counting && (
+        <CashCountDrawerLazy open onClose={() => setCounting(false)} onSaved={book.refetch} />
+      )}
       <UbStack gap={4} data-testid="cashbook-screen">
         {emptyBook ? (
           <UbEmptyState

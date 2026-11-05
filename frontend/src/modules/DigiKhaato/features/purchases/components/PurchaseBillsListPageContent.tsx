@@ -35,7 +35,10 @@ import { useTranslation } from 'src/hooks/useTranslation';
 import { ROUTES } from 'src/routes';
 import { formatBusinessDate } from 'src/utils/dates';
 
+import { ListExportButton } from 'modules/DigiKhaato/features/imports/components/ListHeaderActions';
+
 import { useAppWords } from '../../navigation/useAppWords';
+import { purchaseBillExportPath } from '../api/purchaseBillService';
 import {
   DEFAULT_PURCHASE_BILL_PRESET,
   PURCHASE_BILL_PRESETS,
@@ -434,13 +437,24 @@ export function PurchaseBillsListPageContent({
       <UbPageHeader
         title={t(copy.title)}
         subtitle={w(`${copy.title}Sub`)}
-        actions={Object.entries(LIST_COPY)
-          .filter(([key]) => key !== kind)
-          .map(([key, section]) => (
-            <UbActionLink key={key} href={section.home} variant="secondary">
-              {t(section.title)}
-            </UbActionLink>
-          ))}
+        actions={
+          <>
+            {Object.entries(LIST_COPY)
+              .filter(([key]) => key !== kind)
+              .map(([key, section]) => (
+                <UbActionLink key={key} href={section.home} variant="secondary">
+                  {t(section.title)}
+                </UbActionLink>
+              ))}
+            {kind === 'purchase_bill' && (
+              <ListExportButton
+                listPath={purchaseBillExportPath({ ...filters, partyId: null })}
+                permission="reports.export"
+                empty={list.status === 'succeeded' && list.total === 0}
+              />
+            )}
+          </>
+        }
         primaryAction={
           canWrite && copy.newLabel && !emptyBook ? (
             <UbActionLink

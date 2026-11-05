@@ -27,3 +27,15 @@ def test_a_filter_that_finds_nothing_still_says_bills_exist(owner: Any, make_ite
     assert draft(owner, lines=[line(make_item())]).status_code == 201
     body = owner.get(reverse(INVOICES), {"q": "nobody-has-this-name"}).json()
     assert body["data"] == [] and body["meta"]["has_any"] is True
+
+
+def test_the_bills_export_is_the_tab_on_screen(owner: Any, make_item: Any) -> None:
+    """Export on Bills is the list as filtered: a draft is in Draft's file and
+    not in Paid's, so the download can never show bills the merchant filtered out."""
+    assert draft(owner, lines=[line(make_item())]).status_code == 201
+    drafts = owner.get(reverse(INVOICES), {"format": "csv", "tab": "draft"})
+    paid = owner.get(reverse(INVOICES), {"format": "csv", "tab": "paid"})
+    assert drafts.status_code == 200
+    assert "draft" in b"".join(drafts.streaming_content).decode().splitlines()[-1]
+    assert paid.status_code == 400
+    assert paid.json()["error"]["code"] == "nothing_to_export"

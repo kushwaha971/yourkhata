@@ -223,6 +223,9 @@ export const invoiceListQuery = (filters: InvoiceListQuery): string =>
     page: filters.page > 1 ? filters.page : undefined,
   });
 
+export const invoiceExportPath = (filters: InvoiceListQuery): string =>
+  `${API_PATHS.SALES_INVOICES}${invoiceListQuery({ ...filters, page: 1 })}`;
+
 export const listInvoices = async (
   filters: InvoiceListQuery,
   signal?: AbortSignal
