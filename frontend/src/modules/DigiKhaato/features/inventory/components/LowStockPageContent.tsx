@@ -4,7 +4,7 @@ import { useCallback, useMemo, useState } from 'react';
 
 import dynamic from 'next/dynamic';
 
-import { SlidersHorizontal } from 'lucide-react';
+import { SlidersHorizontal, ShoppingCart } from 'lucide-react';
 
 import {
   UbButton,
@@ -25,6 +25,7 @@ import {
   type UbGridState,
   type UbGridTier,
 } from 'src/design-system/UbDataGrid';
+import { UbPageHeaderMobileActions } from 'src/design-system/UbPageHeader/UbPageHeaderMobileActions';
 import { useAppRouter } from 'src/hooks/useAppRouter';
 import { usePermissions } from 'src/hooks/usePermissions';
 import { useTranslation, type TranslateFn } from 'src/hooks/useTranslation';
@@ -317,6 +318,22 @@ export function LowStockPageContent(): React.JSX.Element {
               {t('stock.low.makeOrder')}
             </UbButton>
           )
+        }
+        renderMobileActions={() =>
+          canOrder && rows.length > 0 ? (
+            <UbPageHeaderMobileActions
+              mobile={{
+                menuLabel: t('common.action.moreActions'),
+                closeLabel: t('common.action.close'),
+                primaryPlacement: 'header',
+                primary: {
+                  label: t('stock.low.makeOrder'),
+                  icon: <ShoppingCart className="h-6 w-6" aria-hidden />,
+                  onClick: () => order(selectedRows.length > 0 ? selectedRows : rows),
+                },
+              }}
+            />
+          ) : null
         }
       />
       <UbStack gap={4} data-testid="low-stock-screen">

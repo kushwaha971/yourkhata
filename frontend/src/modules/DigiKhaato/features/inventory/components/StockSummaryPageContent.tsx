@@ -4,7 +4,7 @@ import { useMemo } from 'react';
 
 import dynamic from 'next/dynamic';
 
-import { SlidersHorizontal, TriangleAlert } from 'lucide-react';
+import { Download } from 'lucide-react';
 
 import {
   isoToday,
@@ -35,6 +35,7 @@ import {
   type UbGridState,
   type UbGridTier,
 } from 'src/design-system/UbDataGrid';
+import { UbPageHeaderMobileActions } from 'src/design-system/UbPageHeader/UbPageHeaderMobileActions';
 import { useAppRouter } from 'src/hooks/useAppRouter';
 import { usePermissions } from 'src/hooks/usePermissions';
 import { useTranslation, type TranslateFn } from 'src/hooks/useTranslation';
@@ -44,6 +45,7 @@ import { formatInr } from 'src/utils/money';
 import { formatQuantity } from 'src/utils/quantity';
 
 import { ListExportButton } from 'modules/DigiKhaato/features/imports/components/ListHeaderActions';
+import { useListExport } from 'modules/DigiKhaato/features/imports/hooks/useListExport';
 
 import { stockSummaryExportPath } from '../api/stockService';
 import { useInventoryMasters } from '../hooks/useInventoryMasters';
@@ -201,6 +203,7 @@ export function StockSummaryPageContent(): React.JSX.Element {
   const report = useStockSummary();
   const masters = useInventoryMasters();
   const { filters, update, summary } = report;
+  const exportList = useListExport(stockSummaryExportPath(filters));
   const phone = tier === 'cards';
   const places = usePlaces();
   const sheetSpecs: UbFilterSpec[] = [
@@ -324,48 +327,30 @@ export function StockSummaryPageContent(): React.JSX.Element {
         title={t('stock.summary.title')}
         subtitle={t('stock.summary.subtitle')}
         actions={
-          !emptyBook && (
-            <>
-              <UbDateInput
-                name="stock-as-of"
-                appearance="inline"
-                inlineLabel={t('stock.summary.asOf')}
-                aria-label={t('stock.summary.asOf')}
-                placeholder={t('items.form.date.placeholder')}
-                value={filters.asOf ?? today}
-                max={today}
-                onChange={(value: string | null) =>
-                  update({ asOf: value && value !== today ? value : null })
-                }
-              />
-              {adjustment.canAdjust && (
-                <UbButton
-                  variant="secondary"
-                  icon={<SlidersHorizontal className="h-4 w-4" aria-hidden />}
-                  iconOnly="mobile"
-                  onClick={() => adjustment.openFor()}
-                  data-testid="summary-adjust"
-                >
-                  {t('items.detail.adjust')}
-                </UbButton>
-              )}
-              <UbActionLink
-                href={ROUTES.STOCK_LOW}
-                variant="secondary"
-                icon={<TriangleAlert className="h-4 w-4" aria-hidden />}
-                iconOnly="mobile"
-              >
-                {t('stock.low.title')}
-              </UbActionLink>
-              {canExport && (
-                <ListExportButton
-                  listPath={stockSummaryExportPath(filters)}
-                  permission="reports.export"
-                  empty={summary ? summary.total === 0 : true}
-                />
-              )}
-            </>
-          )
+          !emptyBook && canExport ? (
+            <ListExportButton
+              listPath={stockSummaryExportPath(filters)}
+              permission="reports.export"
+              empty={summary ? summary.total === 0 : true}
+            />
+          ) : undefined
+        }
+        /* The design's phone draws Export as the screen's one button (F-stock-p). */
+        renderMobileActions={() =>
+          !emptyBook && canExport && can('reports.export') ? (
+            <UbPageHeaderMobileActions
+              mobile={{
+                menuLabel: t('common.action.moreActions'),
+                closeLabel: t('common.action.close'),
+                primaryPlacement: 'header',
+                primary: {
+                  label: t('exports.action'),
+                  icon: <Download className="h-6 w-6" aria-hidden />,
+                  onClick: () => void exportList.start(),
+                },
+              }}
+            />
+          ) : null
         }
       />
       <UbStack gap={4} data-testid="stock-summary-screen">
@@ -494,6 +479,19 @@ export function StockSummaryPageContent(): React.JSX.Element {
               }
               filters={
                 <UbStack direction="row" gap={2} wrap align="center">
+                  {/* The design's register tool: the date the stock is read on. */}
+                  <UbDateInput
+                name="stock-as-of"
+                appearance="inline"
+                inlineLabel={t('stock.summary.asOf')}
+                aria-label={t('stock.summary.asOf')}
+                placeholder={t('items.form.date.placeholder')}
+                value={filters.asOf ?? today}
+                max={today}
+                onChange={(value: string | null) =>
+                  update({ asOf: value && value !== today ? value : null })
+                }
+              />
                   {/* Owner, 6 Oct 2026: category and status behind ONE Filters button. */}
                   <UbFilterSheet
                     compact

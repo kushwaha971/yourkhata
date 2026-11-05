@@ -239,12 +239,13 @@ try {
     if (SHOTS) await page.screenshot({ path: `${SHOTS}/order-selected-1280.png`, fullPage: true });
   }
 
-  /* ---------- Summary: Adjust stock ---------- */
-  await page.goto(`${base}/stock/summary`);
-  await page.getByTestId('stock-summary-screen').waitFor({ timeout: 15000 });
-  await page.getByTestId('summary-adjust').click();
+  /* ---------- Adjust stock ----------
+     The design's Stock summary header draws Export only, so Adjust stock is
+     reached from a Low stock row (and an item's own page). */
+  await openLow();
+  await page.getByRole('button', { name: /^Adjust stock/ }).first().click();
   await page.getByRole('dialog').getByRole('radiogroup').waitFor({ timeout: 15000 });
-  check('Stock summary opens Adjust stock', true);
+  check('a Low stock row opens Adjust stock', true);
 } finally {
   await browser.close();
 }
