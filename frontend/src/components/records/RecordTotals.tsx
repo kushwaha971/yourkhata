@@ -1,5 +1,6 @@
 'use client';
-import { UbAmount, UbSkeleton, UbStack, UbText } from 'src/design-system';
+import { UbCountLine, type UbCountLineItem } from 'src/design-system';
+import { formatInr, isZeroAmount } from 'src/utils/money';
 /**
  * Filtered server totals; status chips can carry the visible mobile count.
  *
@@ -14,7 +15,6 @@ export function RecordTotals({
   countLabel,
   figures,
   testId,
-  columns = false,
   compactShort = false,
   countInMobileChips = false,
   loading = false,
@@ -29,8 +29,6 @@ export function RecordTotals({
     tone?: 'neutral' | 'receivable' | 'payable';
   }[];
   testId?: string;
-  /** Two readable money columns on phones without a stack of stat cards. */
-  columns?: boolean;
   /** Avoid duplicate count chrome on short phones; status chips still show the count. */
   compactShort?: boolean;
   /** Keep the count accessible without repeating a count already visible in status chips. */
@@ -38,72 +36,31 @@ export function RecordTotals({
   /** The figures are on their way: shimmer in place, never collapse. */
   loading?: boolean;
 }>): React.JSX.Element {
-  return (
-    <UbStack
-      direction="row"
-      align="baseline"
-      className={`flex-wrap justify-between gap-3 py-2 ${compactShort ? 'max-md:py-1 max-md:[@media(max-height:640px)]:gap-1' : ''}`}
-      aria-label={label}
-      role="status"
-      aria-busy={loading || undefined}
-      data-testid={testId}
-    >
-      {/* Baseline, so the line's own baseline is the count's TEXT while the
-          shimmer stands in for the number — centred, the shimmer's bottom
-          edge became the baseline and the line grew 2 px on a laptop. */}
-      <UbStack
-        direction="row"
-        align="baseline"
-        className={`gap-1.5 ${
-          countInMobileChips
-            ? 'sr-only md:not-sr-only'
-            : compactShort
-              ? 'max-md:[@media(max-height:640px)]:sr-only'
-              : ''
-        }`}
-      >
-        {loading && <UbSkeleton variant="figure" className="[&>*]:w-6" />}
-        <UbText variant="body-sm" tone="secondary">
-          {loading ? countLabel : `${count} ${countLabel}`}
-        </UbText>
-      </UbStack>
-      <UbStack
-        direction="row"
-        align="baseline"
-        className={
-          columns
-            ? 'grid w-full grid-cols-2 gap-x-3 gap-y-2 md:flex md:w-auto md:gap-x-5'
-            : compactShort
-              ? // R-DEC-33: a phone's money strip keeps to one line where it can.
-                'flex-wrap gap-x-3 gap-y-1 md:gap-x-5 md:gap-y-2'
-              : 'flex-wrap gap-x-5 gap-y-2'
-        }
-      >
-        {figures.map((f) =>
-          loading ? (
-            <UbStack key={f.key} direction="row" align="center" className="gap-1.5">
-              <UbText as="span" variant="body-sm" tone="secondary">
-                {f.label}
-              </UbText>
-              <UbSkeleton variant="figure" />
-            </UbStack>
-          ) : (
-            <UbAmount
-              key={f.key}
-              value={f.amount}
-              label={f.label}
-              tone={f.tone ?? 'neutral'}
-              size="sm"
-              inline={!columns}
-              className={
-                columns
-                  ? 'flex-col-reverse items-start gap-1 md:flex-row-reverse md:items-baseline md:gap-1.5'
-                  : 'flex-row-reverse items-baseline gap-1.5'
-              }
-            />
-          )
-        )}
-      </UbStack>
-    </UbStack>
-  );
+  /* The design's count line: figures first, the count last ("This month ₹3,42,800
+     Not paid ₹18,450 Bills 412"), and the line keeps its place while loading. */
+  // Blank while loading: the grey bar keeps its width and no false zero is read out.
+  const blank = '\u00A0'.repeat(8);
+  const items: UbCountLineItem[] = [
+    ...figures.map((f) => ({
+      id: f.key,
+      template: `${f.label} {amount}`,
+      values: {
+        amount: {
+          text: loading ? blank : formatInr(f.amount),
+          tone: isZeroAmount(f.amount) ? 'neutral' : (f.tone ?? 'neutral'),
+        },
+      },
+    })),
+    {
+      id: 'count',
+      template: `${countLabel} {count}`,
+      values: { count: { text: loading ? blank : String(count) } },
+      className: countInMobileChips
+        ? 'max-md:sr-only'
+        : compactShort
+          ? 'max-md:[@media(max-height:640px)]:sr-only'
+          : undefined,
+    },
+  ];
+  return <UbCountLine items={items} label={label} loading={loading} data-testid={testId} />;
 }

@@ -38,7 +38,7 @@ describe('RecordTotals', () => {
     );
     const line = screen.getByTestId('t');
     expect(line).not.toHaveAttribute('aria-busy');
-    expect(line).toHaveTextContent('0 Bills');
+    expect(line).toHaveTextContent('Bills 0');
     expect(line).toHaveTextContent('₹0.00');
   });
 });

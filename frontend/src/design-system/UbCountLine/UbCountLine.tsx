@@ -73,6 +73,7 @@ function UbCountLineBase({
       aria-label={label}
       aria-busy={loading || undefined}
       data-testid={testId}
+      data-ub-count-line=""
       data-loading={loading ? '' : undefined}
       className={cn(
         'm-0 flex min-h-6 flex-wrap items-center gap-x-4 gap-y-1 text-[13.5px] leading-6 text-text-secondary',
