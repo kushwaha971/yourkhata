@@ -67,7 +67,7 @@ export function HomeBalanceLane({
     >
       {/* The design's head: "To collect · customers" and the amount on one line. */}
       <UbStack direction="row" justify="between" align="center" className="gap-2 px-4 py-3">
-        <UbText as="h2" variant="body-sm-medium" className="min-w-0 font-bold">
+        <UbText as="h2" variant="inherit" className="min-w-0 text-[15px] font-semibold">
           {label}
         </UbText>
         <UbLink

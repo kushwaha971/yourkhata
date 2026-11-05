@@ -228,7 +228,7 @@ export function ShopHomeWorkspace({
         underline={false}
         className="flex flex-col gap-px whitespace-normal break-words"
       >
-        <UbText variant="inherit" tone="secondary" className="text-[12px] font-semibold">
+        <UbText variant="inherit" tone="tertiary" className="text-[12px] font-semibold">
           {figure.key === 'toCollect'
             ? t('reports.dashboard.tile.toCollect')
             : t(
@@ -249,7 +249,7 @@ export function ShopHomeWorkspace({
           )}
         </UbText>
       </UbLink>
-      <UbText variant="inherit" tone="secondary" className="text-[12px]" title={figure.caption}>
+      <UbText variant="inherit" tone="tertiary" className="text-[12px]" title={figure.caption}>
         {mobile && figure.key === 'paidOut'
           ? t('reports.home.paidOutPhone')
           : mobile && figure.key === 'cash'
@@ -449,7 +449,7 @@ export function ShopHomeWorkspace({
           <UbStack direction="row" className="gap-3" align="center">
             {canPay && (
               <UbButton
-                className="flex-1"
+                className="flex-1 text-[15px] font-semibold"
                 variant="outlineNeutral"
                 onClick={() => openPayment('in')}
               >
@@ -458,7 +458,7 @@ export function ShopHomeWorkspace({
             )}
             {hasModule('sales') && can('sales.invoice.write') && (
               <UbActionLink
-                className="flex-1"
+                className="flex-1 text-[15px] font-semibold"
                 href={`${ROUTES.SALES_INVOICES}/new`}
                 variant="primary"
                 icon={<Plus aria-hidden className="h-4 w-4" />}
@@ -479,10 +479,10 @@ export function ShopHomeWorkspace({
           className="min-w-0"
         >
           <UbStack direction="row" justify="between" align="center" className="gap-2 px-4 py-3">
-            <UbText as="h2" variant="body-sm-medium" className="font-bold">
+            <UbText as="h2" variant="inherit" className="text-[15px] font-semibold">
               {t('reports.home.followups')}
             </UbText>
-            <UbText variant="caption" tone="secondary" className="hidden lg:block">
+            <UbText variant="inherit" tone="tertiary" className="hidden text-[12.5px] lg:block">
               {t('reports.home.followupsBasis')}
             </UbText>
           </UbStack>

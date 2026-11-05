@@ -54,7 +54,7 @@ export function HomeStrip(): React.JSX.Element | null {
           data-testid={`home-strip-${tile.key}`}
           className="bg-surface grid min-w-0 gap-0.5 rounded-card border border-border-hairline px-3 py-2.5 lg:px-4 lg:py-3"
         >
-          <UbText variant="inherit" tone="secondary" className="text-[12px] font-semibold leading-tight [overflow-wrap:anywhere]">
+          <UbText variant="inherit" tone="tertiary" className="text-[12px] font-semibold leading-tight [overflow-wrap:anywhere]">
             {t(`reports.home.strip.${tile.key}`)}
           </UbText>
           <UbText
@@ -68,12 +68,12 @@ export function HomeStrip(): React.JSX.Element | null {
                 : String(tile.count)}
           </UbText>
           {tile.key === 'dueWeek' && (
-            <UbText variant="inherit" tone="secondary" className="truncate text-[12px]">
+            <UbText variant="inherit" tone="tertiary" className="truncate text-[12px]">
               {t('reports.home.customerCount', { count: tile.count })}
             </UbText>
           )}
           {tile.names && tile.names.length > 0 && (
-            <UbText variant="inherit" tone="secondary" className="truncate text-[12px]">
+            <UbText variant="inherit" tone="tertiary" className="truncate text-[12px]">
               {tile.names.join(', ')}
             </UbText>
           )}
