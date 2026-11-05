@@ -58,7 +58,11 @@ export const createPurchaseBillColumns = ({
             priority: 2,
             cardSlot: 'none',
             widthShare: 12,
-            cell: (row: PurchaseBillListRow) => text(row.supplierInvoiceNumber ?? '—'),
+            cell: (row: PurchaseBillListRow) => (
+              <UbText as="span" variant="body-sm" className="ds-num block whitespace-nowrap">
+                {row.supplierInvoiceNumber ?? '—'}
+              </UbText>
+            ),
           } satisfies UbDataGridColumn<PurchaseBillListRow>,
         ]
       : []),

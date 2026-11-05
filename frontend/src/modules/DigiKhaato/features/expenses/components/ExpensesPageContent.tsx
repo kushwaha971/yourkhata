@@ -419,6 +419,7 @@ export function ExpensesPageContent(): React.JSX.Element {
             {(activeApp === null || activeApp === 'shop') && (
               <UbActionLink
                 href={ROUTES.CASHBOOK}
+                variant="secondary"
                 icon={<BookOpen className="h-4 w-4" aria-hidden />}
                 iconOnly="mobile"
               >
