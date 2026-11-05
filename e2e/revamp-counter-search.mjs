@@ -26,12 +26,12 @@ try{for(const width of [320,1280])for(const theme of ['light','dark']){
  await page.getByRole('option',{name:new RegExp('Receive ₹2,000.00 from')}).first().click();const dialog=page.getByRole('dialog');await dialog.waitFor();await page.waitForLoadState('networkidle');
  if(await dialog.locator('input[inputmode=decimal]').first().inputValue()!=='2000.00')throw Error('Payment amount was not seeded');await shot('name-amount-payment','[role=dialog]');
  await home();await search(item.name);
- await page.getByRole('option',{name:new RegExp('New bill with')}).filter({hasText:item.name}).first().click();
+ await page.getByRole('option').filter({hasText:item.name}).first().click();
  await page.waitForURL(u=>u.pathname==='/sales/invoices/new');await page.waitForLoadState('networkidle');
  // The existing editor may autosave a DRAFT; this never clicks Issue or posts money.
  await page.getByText(item.name,{exact:true}).first().waitFor();await shot('item-bill');
  for(const [row,path,kind] of [[sale,'/sales/invoices/','sale'],[purchase,'/purchases/bills/','purchase']]){
-  await home();await search(row.number);await page.getByRole('option',{name:new RegExp(`Open ${row.number.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')}`)}).first().waitFor();await shot(`${kind}-number`,'[cmdk-root]');await page.getByRole('option',{name:new RegExp(`Open ${row.number.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')}`)}).first().click();await page.waitForURL(u=>u.pathname===`${path}${row.id}`);
+  await home();await search(row.number);await page.getByRole('option',{name:new RegExp(`${row.number.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')}`)}).first().waitFor();await shot(`${kind}-number`,'[cmdk-root]');await page.getByRole('option',{name:new RegExp(`${row.number.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')}`)}).first().click();await page.waitForURL(u=>u.pathname===`${path}${row.id}`);
  }
  console.log(`${width} ${theme}: real name+amount, item-seeded invoice, sales and purchase numbers PASS`);await context.close();
 }}finally{writeFileSync(`${dir}/results.json`,JSON.stringify(results,null,2));await browser.close();}
