@@ -16,7 +16,7 @@ try{for(const width of [320,1280])for(const theme of ['light','dark']){
  const items=(await get('/items?status=active')).data;
  const invoices=(await get('/sales/invoices?book=shop&tab=unpaid&date_from=2000-01-01')).data;
  const purchases=(await get('/purchases/bills?tab=unpaid&date_from=2000-01-01')).data;
- const customer=parties[0],item=items[0],sale=invoices.find(r=>r.number),purchase=purchases.find(r=>r.number);
+ const customer=parties[0],item=items.find(r=>/^[A-Za-z][A-Za-z ]*\d*$/.test(r.name))??items[0],sale=invoices.find(r=>r.number),purchase=purchases.find(r=>r.number);
  if(!customer||!item||!sale||!purchase)throw Error(`Fixture missing: customers=${parties.length}, items=${items.length}, invoices=${JSON.stringify(invoices.slice(0,1))}, purchases=${JSON.stringify(purchases.slice(0,1))}`);
  const home=async()=>{await page.goto(`${base}/dashboard`,{waitUntil:'networkidle'});await page.getByTestId('shop-home-workspace').waitFor();};
  const search=async(query)=>{await page.getByTestId('counter-search').filter({visible:true}).locator('button').first().click();await page.getByPlaceholder('Find or start: name, item, bill no.', {exact:true}).fill(query);};

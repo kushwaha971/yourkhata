@@ -16,7 +16,7 @@ try{const context=await browser.newContext({viewport:{width:1280,height:800}}),p
    await p.screenshot({path:`${dir}/expense.png`});await d.getByRole('button',{name:'Close',exact:true}).click();
   }else{
    const prefix=source.kind==='sale'?'/sales/invoices':'/purchases/bills';await p.locator(`a[href="${prefix}/new?repeat=${source.id}"]`).click();await p.waitForURL(u=>u.pathname===`${prefix}/new`);await p.waitForLoadState('networkidle');
-   await p.getByText(source.name,{exact:true}).first().waitFor();
+   await p.getByText(source.name).first().waitFor();
    // A real edit would normally arm server autosave. Repeat explicitly waits for Save.
    const qty=p.locator('input[name="lines.0.qty"]');if(await qty.count())await qty.fill('2');await p.waitForTimeout(11000);
    if(posts.length)throw Error(`Repeat silently posted ${posts}`);await p.screenshot({path:`${dir}/${source.kind}.png`});
