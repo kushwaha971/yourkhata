@@ -20,6 +20,8 @@ interface CategoryWire {
   readonly name: string;
   readonly parent_id: string | null;
   readonly item_count: number;
+  readonly stock_value?: string;
+  readonly tax_code?: string | null;
   readonly children?: readonly CategoryWire[];
 }
 
@@ -47,6 +49,8 @@ const toCategory = (row: CategoryWire): Category => ({
   name: row.name,
   parentId: row.parent_id,
   itemCount: row.item_count,
+  stockValue: row.stock_value ?? null,
+  taxCode: row.tax_code ?? null,
   children: (row.children ?? []).map(toCategory),
 });
 

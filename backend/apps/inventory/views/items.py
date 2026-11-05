@@ -370,7 +370,11 @@ class CategoryViewSet(_InventoryView, viewsets.ViewSet):
     permission_classes = [IsAuthenticated, ModuleEnabled(ModuleCode.INVENTORY), MasterPermissions]
 
     def list(self, request: Any) -> Any:
-        return StandardResponse.ok(item_selectors.category_tree(tenant=self.get_tenant()))
+        return StandardResponse.ok(
+            item_selectors.category_tree(
+                tenant=self.get_tenant(), valuation=_valuation_visible(request)
+            )
+        )
 
     def create(self, request: Any) -> Any:
         body = _body(request)

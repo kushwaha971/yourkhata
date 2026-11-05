@@ -344,13 +344,51 @@ def resolve_sources(rows: list[StockMovement]) -> dict[Any, str]:
     return dict(StockAdjustment.objects.filter(pk__in=adjustment_ids).values_list("id", "number"))
 
 
-def category_tree(*, tenant: Any) -> list[dict]:
+def _category_figures(*, tenant: Any, valuation: bool) -> tuple[dict, dict]:
+    """The design's Stock value and GST usually columns (F-cat-d).
+
+    The value sums each place's ROUNDED on-hand × average cost, as the stock
+    summary does, so a category adds up to its rows. "Usually" is the tax code
+    most of its live items carry; a tie goes to the lower code so it is stable.
+    """
+    values: dict[Any, Decimal] = {}
+    if valuation:
+        for row in (
+            ItemStock.objects.filter(tenant=tenant, item__deleted_at__isnull=True)
+            .exclude(item__category_id=None)
+            .values("item__category_id")
+            .annotate(
+                total=Sum(Round(ExpressionWrapper(F("on_hand") * F("avg_cost"), output_field=MONEY), 2))
+            )
+        ):
+            values[row["item__category_id"]] = row["total"] or Decimal("0.00")
+    taxes: dict[Any, str] = {}
+    for row in (
+        Item.objects.filter(tenant=tenant, deleted_at__isnull=True)
+        .exclude(category_id=None)
+        .values("category_id", "tax_code")
+        .annotate(n=Count("id"))
+        .order_by("category_id", "-n", "tax_code")
+    ):
+        taxes.setdefault(row["category_id"], row["tax_code"])
+    return values, taxes
+
+
+def category_tree(*, tenant: Any, valuation: bool = False) -> list[dict]:
     """FR-4 — top-level categories with their children and live item counts."""
     rows = list(
         Category.objects.filter(tenant=tenant)
         .annotate(item_count=Count("items", filter=Q(items__deleted_at__isnull=True)))
         .order_by("sort_order", "name")
     )
+    values, taxes = _category_figures(tenant=tenant, valuation=valuation)
+
+    def figures(row: Category) -> dict:
+        # The value is withheld, not zeroed, when the viewer may not see cost.
+        out: dict = {"tax_code": taxes.get(row.id)}
+        if valuation:
+            out["stock_value"] = str(values.get(row.id, Decimal("0.00")))
+        return out
     children: dict[Any, list[dict]] = {}
     for row in rows:
         if row.parent_id:
@@ -360,6 +398,7 @@ def category_tree(*, tenant: Any) -> list[dict]:
                     "name": row.name,
                     "parent_id": str(row.parent_id),
                     "item_count": row.item_count,
+                    **figures(row),
                 }
             )
     return [
@@ -368,6 +407,7 @@ def category_tree(*, tenant: Any) -> list[dict]:
             "name": row.name,
             "parent_id": None,
             "item_count": row.item_count,
+            **figures(row),
             "children": children.get(row.id, []),
         }
         for row in rows

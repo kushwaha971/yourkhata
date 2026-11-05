@@ -49,6 +49,10 @@ export interface CategoryRef {
 export interface Category extends CategoryRef {
   readonly parentId: string | null;
   readonly itemCount: number;
+  /** Withheld (null) when the viewer may not see cost. */
+  readonly stockValue?: string | null;
+  /** The tax code most of its items carry. */
+  readonly taxCode?: string | null;
   readonly children: readonly Category[];
 }
 

@@ -89,6 +89,22 @@ try {
   };
   const stamp = Date.now().toString(36).toUpperCase();
 
+  // Units moved out of the chips the design does not draw: a header button, or ⋯ on a phone.
+  const toUnits = async () => {
+    const direct = page.getByTestId('masters-switch');
+    if (await direct.isVisible().catch(() => false)) await direct.click();
+    else {
+      await page.locator('main button[aria-haspopup=dialog]').first().click();
+      await page.getByRole('dialog').getByRole('group').getByRole('button').last().click();
+    }
+    await page.getByTestId('masters-units').waitFor();
+  };
+  const addCategory = async () => {
+    const direct = page.getByTestId('masters-add-category');
+    if (await direct.isVisible().catch(() => false)) await direct.click();
+    else await page.getByTestId('page-cta').getByRole('button').click();
+  };
+
   const open = async () => {
     await page.goto(`${base}/items/masters`);
     await page.getByTestId('masters-categories').or(page.getByTestId('masters-units')).first().waitFor({ timeout: 15000 });
@@ -101,18 +117,16 @@ try {
     for (const width of [390, 320, 1280]) {
       await page.setViewportSize({ width, height: width === 1280 ? 900 : 780 });
       await open();
-      for (const section of width === 1280 ? ['both'] : ['categories', 'units']) {
-        if (section === 'units') await page.getByRole('tab').nth(1).click();
+      for (const section of ['categories', 'units']) {
+        if (section === 'units') await toUnits();
         await page.waitForTimeout(250);
         const m = await page.evaluate(measure);
         const tag = `${section} ${width} ${locale}`;
         check(`${tag}: no sideways scroll`, m.overflow <= 0, `${m.overflow}px`);
         check(`${tag}: no text cut`, m.cut.length === 0, m.cut.join(' | '));
-        if (width < 1280) {
-          check(`${tag}: + Add target ≥ 44 px`, m.add >= 44, `${m.add}`);
-          check(`${tag}: chip face 32 px, target ≥ 44 px`, m.tabFace === 32 && m.tab >= 44, `${m.tabFace}/${m.tab}`);
-        } else {
-          check(`${tag}: the two panels sit side by side`, m.sideBySide);
+        if (width < 1280 && section === 'categories') {
+          const cta = await page.getByTestId('page-cta').getByRole('button').boundingBox();
+          check(`${tag}: Add category is the design's 46 px button`, Math.round(cta?.height ?? 0) === 46, `${cta?.height}`);
         }
         if (section !== 'categories') {
           const order = await page.evaluate(() => {
@@ -154,7 +168,7 @@ try {
   check('the list now shows it', await page.getByTestId('category-list').getByText(name).isVisible());
 
   /* ---------- the same name again ---------- */
-  await page.getByTestId('masters-add-category').click();
+  await addCategory();
   await dialog.getByRole('textbox', { name: /Category name/ }).fill(`  ${name.toUpperCase()} `);
   await dialog.getByRole('button', { name: 'Add category' }).click();
   check('the same name is refused as Already exists', await dialog.getByText('Already exists.').isVisible());
@@ -165,7 +179,7 @@ try {
 
   /* ---------- two fast taps ---------- */
   const twice = `QA85 Twice ${stamp}`;
-  await page.getByTestId('masters-add-category').click();
+  await addCategory();
   await dialog.getByRole('textbox', { name: /Category name/ }).fill(twice);
   /* Two clicks in the same task, before React can disable the button: the
      double tap of a busy counter, which Playwright's own click waits out. */
@@ -182,7 +196,7 @@ try {
 
   /* ---------- find → add a unit ---------- */
   const code = `Q${stamp.slice(-5)}`;
-  await page.getByRole('tab').nth(1).click();
+  await toUnits();
   await page.getByRole('searchbox', { name: 'Find a unit' }).fill(code.toLowerCase());
   await page.getByTestId('masters-add-named').click();
   const codeField = dialog.getByRole('textbox', { name: /Code/ });

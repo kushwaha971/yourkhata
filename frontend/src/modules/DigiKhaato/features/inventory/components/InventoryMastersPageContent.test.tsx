@@ -122,7 +122,7 @@ it('says a category already exists instead of sending it', async () => {
 it('lists the standard units first, locked, and the shop’s own below', async () => {
   const user = userEvent.setup();
   renderWithProviders(<InventoryMastersPageContent />);
-  await user.click(await screen.findByRole('tab', { name: 'Units' }));
+  await user.click(await screen.findByTestId('masters-switch'));
   const standard = await screen.findByTestId('unit-list-standard');
   const own = screen.getByTestId('unit-list-own');
   expect(standard.compareDocumentPosition(own) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
@@ -133,7 +133,7 @@ it('lists the standard units first, locked, and the shop’s own below', async (
 it('refuses a unit code that already exists, standard or not', async () => {
   const user = userEvent.setup();
   renderWithProviders(<InventoryMastersPageContent />);
-  await user.click(await screen.findByRole('tab', { name: 'Units' }));
+  await user.click(await screen.findByTestId('masters-switch'));
   await user.type(screen.getByRole('searchbox', { name: 'Find a unit' }), 'box');
   await user.click(screen.getByRole('button', { name: 'Add it as a unit' }));
   const dialog = await screen.findByRole('dialog');

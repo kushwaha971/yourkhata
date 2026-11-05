@@ -8,7 +8,7 @@ import { Lock, Plus } from 'lucide-react';
 
 import {
   UbButton,
-  UbChipTabs,
+  UbCountLine,
   UbDialogLoading,
   UbDivider,
   UbEmptyState,
@@ -22,10 +22,14 @@ import {
   UbStatusBadge,
   UbText,
 } from 'src/design-system';
+import { useIsMobileLayer } from 'src/design-system/motion/useMediaQuery';
+import { UbPageHeaderMobileActions } from 'src/design-system/UbPageHeader/UbPageHeaderMobileActions';
 import { useTranslation } from 'src/hooks/useTranslation';
+import { formatInr } from 'src/utils/money';
 
+import { saveBlob } from '../../imports/api/fileDownload';
 import { useInventoryMasters } from '../hooks/useInventoryMasters';
-import { filterCategories, filterUnits, splitUnits } from '../view-model/mastersView';
+import { filterCategories, filterUnits, splitUnits, usualGstLabel } from '../view-model/mastersView';
 
 import type { Category, Unit } from '../types/item.types';
 
@@ -96,40 +100,49 @@ function NoMatch({
   );
 }
 
+/** The design's columns (F-cat-d): Category, Items, Stock value, GST usually. */
+const CATEGORY_GRID = 'lg:grid lg:grid-cols-[40fr_20fr_20fr_20fr] lg:items-center lg:gap-3';
+
 function CategoryRows({ rows }: Readonly<{ rows: readonly Category[] }>): React.JSX.Element {
   const { t } = useTranslation();
+  const flat = rows.flatMap((parent) => [
+    { row: parent, child: false },
+    ...parent.children.map((row) => ({ row, child: true })),
+  ]);
   return (
-    <UbStack as="ul" gap={0} data-testid="category-list" className="-mx-4">
-      {rows.map((parent, index) => (
-        <UbStack as="li" key={parent.id} gap={0}>
-          {index > 0 && <UbDivider />}
-          <UbStack direction="row" gap={3} justify="between" align="center" className="px-4 py-3">
-            <UbText variant="body-sm-medium" className="min-w-0 break-words">
-              {parent.name}
-            </UbText>
-            <UbText variant="caption" tone="tertiary" className="ds-num shrink-0">
-              {t('inventory.masters.itemCount', { count: parent.itemCount })}
-            </UbText>
-          </UbStack>
-          {parent.children.map((child) => (
-            <UbStack
-              key={child.id}
-              direction="row"
-              gap={3}
-              justify="between"
-              align="center"
-              className="py-2 pl-8 pr-4"
-            >
-              <UbText variant="body-sm" className="min-w-0 break-words">
-                {child.name}
+    <UbStack as="ul" gap={0} data-testid="category-list">
+      {flat.map(({ row, child }) => {
+        const value = row.stockValue ? formatInr(row.stockValue) : null;
+        const gst = usualGstLabel(row.taxCode, t);
+        return (
+          <UbStack
+            as="li"
+            key={row.id}
+            direction="row"
+            justify="between"
+            align="center"
+            className={`min-h-[62px] gap-3 border-b border-border-hairline py-3 pr-4 last:border-b-0 lg:min-h-[41px] lg:py-2 ${child ? 'pl-8' : 'pl-4'} ${CATEGORY_GRID}`}
+          >
+            <UbStack gap={0} className="min-w-0 flex-1">
+              <UbText as="span" variant="body-sm" className="break-words">
+                {row.name}
               </UbText>
-              <UbText variant="caption" tone="tertiary" className="ds-num shrink-0">
-                {t('inventory.masters.itemCount', { count: child.itemCount })}
+              <UbText as="span" variant="caption" tone="tertiary" className="ds-num lg:hidden">
+                {[String(row.itemCount), value].filter(Boolean).join(' · ')}
               </UbText>
             </UbStack>
-          ))}
-        </UbStack>
-      ))}
+            <UbText as="span" variant="body-sm" className="ds-num max-lg:hidden">
+              {row.itemCount}
+            </UbText>
+            <UbText as="span" variant="body-sm" className="ds-num max-lg:hidden">
+              {value ?? '—'}
+            </UbText>
+            <UbText as="span" variant="body-sm" className="ds-num shrink-0">
+              {gst}
+            </UbText>
+          </UbStack>
+        );
+      })}
     </UbStack>
   );
 }
@@ -184,9 +197,35 @@ export function InventoryMastersPageContent(): React.JSX.Element {
   const { t } = useTranslation();
   const masters = useInventoryMasters();
   const [tab, setTab] = useState<MasterTab>('categories');
+  const isPhone = useIsMobileLayer();
   const [adding, setAdding] = useState<Adding>(null);
   const [categoryQuery, setCategoryQuery] = useState('');
   const [unitQuery, setUnitQuery] = useState('');
+
+  const categorySearch = (
+    <UbSearchInput
+      value={categoryQuery}
+      onChange={setCategoryQuery}
+      placeholder={t('inventory.masters.category.searchShort')}
+      aria-label={t('inventory.masters.category.search')}
+    />
+  );
+  const categoryCount = masters.categories.reduce((n, row) => n + 1 + row.children.length, 0);
+  const exportCategories = () => {
+    const cell = (value: string) => `"${value.replace(/"/g, '""')}"`;
+    const head = (['name', 'items', 'value', 'gst'] as const).map((key) =>
+      t(`inventory.masters.category.column.${key}`)
+    );
+    const body = masters.categories
+      .flatMap((row) => [row, ...row.children])
+      .map((row) => [row.name, String(row.itemCount), row.stockValue ?? '', usualGstLabel(row.taxCode, t)]);
+    saveBlob(
+      new Blob([[head, ...body].map((line) => line.map(cell).join(',')).join('\r\n')], {
+        type: 'text/csv;charset=utf-8',
+      }),
+      'categories.csv'
+    );
+  };
 
   const categories = useMemo(
     () => filterCategories(masters.categories, categoryQuery),
@@ -198,56 +237,66 @@ export function InventoryMastersPageContent(): React.JSX.Element {
   );
 
   const categorySection = (
-    <UbPanel
-      data-testid="masters-categories"
-      className={tab === 'categories' ? undefined : 'max-lg:hidden'}
-    >
-      <UbPanelSection
-        title={t('inventory.masters.categories')}
-        action={
-          masters.canWrite ? (
-            <AddButton
-              label={t('inventory.masters.category.add')}
-              testId="masters-add-category"
-              onClick={() => setAdding({ kind: 'category', seed: '' })}
-            />
-          ) : undefined
-        }
-      >
-        {masters.categoriesLoading && masters.categories.length === 0 ? (
-          <UbSkeleton variant="list" />
-        ) : masters.categories.length === 0 ? (
-          <UbEmptyState
-            variant="firstUse"
-            title={t('inventory.masters.category.empty.title')}
-            description={t('inventory.masters.category.empty.body')}
+    <UbStack gap={3} data-testid="masters-categories" className={tab === 'categories' ? undefined : 'hidden'}>
+      {masters.categoriesLoading && masters.categories.length === 0 ? (
+        <UbSkeleton variant="list" />
+      ) : masters.categories.length === 0 ? (
+        <UbEmptyState
+          variant="firstUse"
+          title={t('inventory.masters.category.empty.title')}
+          description={t('inventory.masters.category.empty.body')}
+        />
+      ) : (
+        <>
+          {isPhone && categorySearch}
+          <UbCountLine
+            items={[
+              {
+                id: 'count',
+                template: t('inventory.masters.category.count'),
+                values: { count: { text: String(categoryCount) } },
+              },
+            ]}
           />
-        ) : (
-          <>
-            <UbSearchInput
-              value={categoryQuery}
-              onChange={setCategoryQuery}
-              placeholder={t('inventory.masters.category.search')}
-              aria-label={t('inventory.masters.category.search')}
-            />
+          <UbStack
+            gap={0}
+            data-ub-register-frame=""
+            className="overflow-hidden rounded-card border border-border-hairline bg-surface-card"
+          >
+            {!isPhone && (
+              <UbStack className="border-b border-border-hairline p-3">{categorySearch}</UbStack>
+            )}
+            <UbStack
+              direction="row"
+              className={`hidden bg-surface-sunken px-4 py-2 lg:grid ${CATEGORY_GRID}`}
+              aria-hidden
+            >
+              {(['name', 'items', 'value', 'gst'] as const).map((key) => (
+                <UbText as="span" key={key} variant="caption" tone="secondary" className="text-[13px] font-semibold">
+                  {t(`inventory.masters.category.column.${key}`)}
+                </UbText>
+              ))}
+            </UbStack>
             {categories.length === 0 ? (
-              <NoMatch
-                query={categoryQuery}
-                canWrite={masters.canWrite}
-                addLabel={t('inventory.masters.category.addThis')}
-                onAdd={() => setAdding({ kind: 'category', seed: categoryQuery.trim() })}
-              />
+              <UbStack className="p-4">
+                <NoMatch
+                  query={categoryQuery}
+                  canWrite={masters.canWrite}
+                  addLabel={t('inventory.masters.category.addThis')}
+                  onAdd={() => setAdding({ kind: 'category', seed: categoryQuery.trim() })}
+                />
+              </UbStack>
             ) : (
               <CategoryRows rows={categories} />
             )}
-          </>
-        )}
-      </UbPanelSection>
-    </UbPanel>
+          </UbStack>
+        </>
+      )}
+    </UbStack>
   );
 
   const unitSection = (
-    <UbPanel data-testid="masters-units" className={tab === 'units' ? undefined : 'max-lg:hidden'}>
+    <UbPanel data-testid="masters-units" className={tab === 'units' ? undefined : 'hidden'}>
       <UbPanelSection
         title={t('inventory.masters.units')}
         action={
@@ -307,31 +356,63 @@ export function InventoryMastersPageContent(): React.JSX.Element {
     </UbPanel>
   );
 
+  const onCategories = tab === 'categories';
   return (
     <UbPageShell>
-      <UbPageHeader title={t('inventory.masters.title')} />
-      {/* The layout is CSS, not a media query in JavaScript: the server cannot
-          know the width, so a JS switch hydrated the phone layout on every
-          desktop load and then rebuilt the page (measured +135 ms at 4x CPU).
-          Below lg the chips pick one section; from lg both sit side by side
-          and the chip row is hidden. */}
-      <UbChipTabs<MasterTab>
-        value={tab}
-        onValueChange={setTab}
-        ariaLabel={t('inventory.masters.title')}
-        size="sm"
-        listClassName="lg:hidden"
-        panelClassName="pt-3 lg:pt-0"
-        tabs={[
-          { value: 'categories', label: t('inventory.masters.categories') },
-          { value: 'units', label: t('inventory.masters.units') },
-        ]}
-      >
-        <UbStack gap={4} className="lg:grid lg:grid-cols-2 lg:items-start">
-          {categorySection}
-          {unitSection}
-        </UbStack>
-      </UbChipTabs>
+      <UbPageHeader
+        title={t(onCategories ? 'inventory.masters.categories' : 'inventory.masters.units')}
+        subtitle={onCategories ? t('inventory.masters.category.subtitle') : undefined}
+        actions={
+          <>
+            {onCategories && masters.categories.length > 0 && (
+              <UbButton variant="secondary" onClick={exportCategories}>
+                {t('inventory.masters.export')}
+              </UbButton>
+            )}
+            {/* Units have no screen in the design; they are one button away. */}
+            <UbButton
+              variant="secondary"
+              data-testid="masters-switch"
+              onClick={() => setTab(onCategories ? 'units' : 'categories')}
+            >
+              {t(onCategories ? 'inventory.masters.units' : 'inventory.masters.categories')}
+            </UbButton>
+          </>
+        }
+        primaryAction={
+          onCategories && masters.canWrite ? (
+            <UbButton
+              data-testid="masters-add-category"
+              onClick={() => setAdding({ kind: 'category', seed: '' })}
+            >
+              {t('inventory.masters.category.add')}
+            </UbButton>
+          ) : undefined
+        }
+        renderMobileActions={(actions) => (
+            <UbPageHeaderMobileActions
+              actions={actions}
+              mobile={{
+                menuLabel: t('common.action.moreActions'),
+                closeLabel: t('common.action.close'),
+                primaryPlacement: 'header',
+                primary:
+                  onCategories && masters.canWrite
+                    ? {
+                        label: t('inventory.masters.category.add'),
+                        icon: <Plus className="h-6 w-6" aria-hidden />,
+                        onClick: () => setAdding({ kind: 'category', seed: '' }),
+                      }
+                    : undefined,
+              }}
+            />
+          )
+        }
+      />
+      <UbStack gap={4}>
+        {categorySection}
+        {unitSection}
+      </UbStack>
       {adding && (
         <MasterFormDialog kind={adding.kind} seed={adding.seed} onClose={() => setAdding(null)} />
       )}

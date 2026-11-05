@@ -204,3 +204,25 @@ def test_low_stock_costs_gated_and_never_purchased_is_null(
     staff = api_as(tenant, RoleCode.STAFF.value)[0]
     staff_row = staff.get(reverse("v1:stock-low")).json()["data"][0]
     assert "avg_cost" not in staff_row and "last_purchase_cost" not in staff_row
+
+
+def test_a_category_carries_its_stock_value_and_usual_gst(
+    owner: Any, tenant: Any, make_item: Any
+) -> None:
+    """F-cat-d draws Stock value and GST usually per category. Without them the
+    screen would have to guess, and a value summed from unrounded rows would
+    disagree with the stock summary by paise (3 × 46.625 rounds per row)."""
+    from apps.inventory.models import Item
+    from apps.inventory.selectors.items import category_tree
+
+    cat = Category.objects.create(tenant=tenant, name="QA Dal")
+    made = [make_item(n, opening=("3", "46.625")) for n in ("Moong", "Masoor", "Chana")]
+    for item, code in zip(made, ["GST5", "GST5", "GST12"]):
+        Item.objects.filter(pk=getattr(item, "pk", None) or item["id"]).update(
+            category=cat, tax_code=code
+        )
+    row = next(r for r in category_tree(tenant=tenant, valuation=True) if r["id"] == str(cat.id))
+    assert row["tax_code"] == "GST5"
+    assert row["stock_value"] == "419.64"
+    hidden = next(r for r in category_tree(tenant=tenant) if r["id"] == str(cat.id))
+    assert "stock_value" not in hidden

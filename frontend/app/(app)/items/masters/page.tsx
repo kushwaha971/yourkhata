@@ -8,6 +8,7 @@ import { InventoryMastersPageContent } from 'modules/DigiKhaato/features/invento
 
 // The words this screen renders arrive with its chunk (src/i18n/catalogueRegistry.ts).
 import 'src/i18n/catalogues/inventory';
+import 'src/i18n/catalogues/money';
 
 /** INV-04 — `/items/masters`: categories and units. */
 export default function InventoryMastersPage(): React.JSX.Element {
