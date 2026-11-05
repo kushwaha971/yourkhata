@@ -95,14 +95,13 @@ const createSummaryColumns = ({
         isCards ? (
           row.item.name
         ) : (
-          <UbStack gap={0}>
-            <UbLink href={itemPath(row.item.id)} variant="body-sm-medium">
-              {row.item.name}
-            </UbLink>
-            <UbText as="span" variant="caption" tone="tertiary" className="ds-mono">
-              {row.item.sku}
-            </UbText>
-          </UbStack>
+          <UbLink
+            href={itemPath(row.item.id)}
+            variant="body-sm"
+            className="text-text-primary no-underline"
+          >
+            {row.item.name}
+          </UbLink>
         ),
     },
     {
@@ -124,7 +123,7 @@ const createSummaryColumns = ({
       cardSlot: valuation ? 'meta' : 'trailing',
       widthShare: 16,
       cell: (row) => (
-        <UbStack gap={1} align="end">
+        <UbStack direction="row" gap={2} align="center" className="flex-wrap justify-end">
           <UbText
             as="span"
             variant="body-sm"
@@ -133,7 +132,8 @@ const createSummaryColumns = ({
           >
             {formatQuantity(row.onHand, row.item.unitCode)}
           </UbText>
-          {!isCards && (
+          {/* The normal case says nothing; only a shelf that needs attention earns a badge. */}
+          {!isCards && row.stockStatus !== 'ok' && (
             <StockBadge status={row.stockStatus} onHand={row.onHand} unitCode={row.item.unitCode} />
           )}
         </UbStack>

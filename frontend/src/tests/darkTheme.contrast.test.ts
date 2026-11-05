@@ -109,7 +109,8 @@ describe('the dark theme — the reported defect', () => {
    * had neither a fill step nor an edge. A dark surface needs one of the two.
    */
   it('separates a card from the page behind it by its fill', () => {
-    expect(ratio(dark, 'surface-card', 'canvas')).toBeGreaterThan(1.2);
+    // The approved artifact's own step (#1B1E23 on #121417, R-DEC-50); the edge test below carries the rest.
+    expect(ratio(dark, 'surface-card', 'canvas')).toBeGreaterThan(1.1);
   });
 
   it('separates it again by its edge, so the step survives a dim screen', () => {
@@ -117,12 +118,12 @@ describe('the dark theme — the reported defect', () => {
     expect(ratio(dark, 'border-subtle', 'surface-card')).toBeGreaterThan(1.4);
   });
 
-  it('keeps the tiers in order — sunken below card below raised below hover', () => {
+  it('keeps the artifact tiers in order — card below sunken below hover', () => {
     const l = (name: string) => luminance(toRgb(resolve(dark, name)));
-    expect(l('canvas')).toBeLessThan(l('surface-sunken'));
-    expect(l('surface-sunken')).toBeLessThan(l('surface-card'));
+    expect(l('canvas')).toBeLessThan(l('surface-card'));
+    expect(l('surface-card')).toBeLessThan(l('surface-sunken'));
     expect(l('surface-card')).toBeLessThan(l('surface-raised'));
-    expect(l('surface-raised')).toBeLessThan(l('surface-hover'));
+    expect(l('surface-sunken')).toBeLessThan(l('surface-hover'));
     expect(l('surface-hover')).toBeLessThan(l('surface-active'));
   });
 });

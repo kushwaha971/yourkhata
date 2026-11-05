@@ -1,4 +1,4 @@
-import { screen } from '@testing-library/react';
+import { fireEvent, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
 import { UbText } from 'src/design-system';
@@ -167,7 +167,7 @@ describe('ReportsHubPageContent', () => {
     expect(screen.queryByRole('link', { name: /Cash book/ })).not.toBeInTheDocument();
   });
 
-  it("titles each row by the merchant's question, with the report's name under it", () => {
+  it("lists each report by name beside the merchant's question, and search finds either", () => {
     /* 09 §10.1 — the question is what a shopkeeper knows; "Receivables
        aging" was a word they had to learn before they could find the answer. */
     signIn(
@@ -175,12 +175,13 @@ describe('ReportsHubPageContent', () => {
       ['reports', 'ledger', 'sales']
     );
     renderWithProviders(<ReportsHubPageContent />);
-    const people = screen.getByRole('region', { name: 'People' });
-    expect(people).toHaveTextContent('Who has not paid me yet?Money to collect');
-    expect(screen.getByRole('region', { name: 'Sales and tax' })).toHaveTextContent(
-      'How much did I earn?Profit'
-    );
+    const hub = screen.getByTestId('reports-hub');
+    expect(hub).toHaveTextContent('Money to collectWho has not paid me yet?');
+    expect(hub).toHaveTextContent('ProfitHow much did I earn?');
     expect(screen.queryByText(/aging|Profit and loss/)).not.toBeInTheDocument();
+    fireEvent.change(screen.getByRole('searchbox'), { target: { value: 'earn' } });
+    expect(hub).toHaveTextContent('Profit');
+    expect(hub).not.toHaveTextContent('Money to collect');
   });
 
   it('tells a reader with no report what to do', () => {

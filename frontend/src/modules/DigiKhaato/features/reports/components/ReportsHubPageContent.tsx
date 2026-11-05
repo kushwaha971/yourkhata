@@ -1,29 +1,13 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 
 import {
-  BookOpen,
-  BookOpenText,
-  ChevronRight,
-  Hourglass,
-  PackageMinus,
-  PackageSearch,
-  type LucideIcon,
-  Landmark,
-  ReceiptText,
-  ShoppingCart,
-  TrendingUp,
-} from 'lucide-react';
-
-import {
-  UbCard,
   UbEmptyState,
-  UbGrid,
   UbLink,
   UbPageHeader,
   UbPageShell,
-  UbSectionHeading,
+  UbSearchInput,
   UbStack,
   UbText,
 } from 'src/design-system';
@@ -32,38 +16,31 @@ import { useTranslation } from 'src/hooks/useTranslation';
 
 import {
   REPORT_CATALOGUE,
-  REPORT_GROUPS,
   visibleReports,
-  type ReportCatalogueEntry,
 } from '../constants/reportCatalogue';
-
-const ICONS: Readonly<Record<ReportCatalogueEntry['icon'], LucideIcon>> = {
-  dayBook: BookOpenText,
-  cashbook: BookOpen,
-  receivable: Hourglass,
-  payable: Hourglass,
-  stock: PackageSearch,
-  lowStock: PackageMinus,
-  salesRegister: ReceiptText,
-  purchaseRegister: ShoppingCart,
-  gst: Landmark,
-  profit: TrendingUp,
-};
 
 /**
  * `/reports` — the index of reports this reader can open (RPT-common:
- * "index of reports by permission"), grouped as a merchant thinks about them:
- * money, people, stock, sales and tax. Every row is a built screen; a report
- * its reader may not open is not listed at all, rather than listed and refused.
- *
- * 09 §10.1 — each row is titled by the QUESTION it answers ("What happened
- * today?") with the report's name under it: a shopkeeper knows the question,
- * not that its answer is called a day book.
+ * "index of reports by permission"), the design's one list: the report's name
+ * and, beside it, the question it answers, since a shopkeeper knows the question
+ * and not that its answer is called a day book. Search matches either. Every row
+ * is a built screen; one its reader may not open is not listed at all.
  */
 export function ReportsHubPageContent(): React.JSX.Element {
   const { t } = useTranslation();
   const { can, hasModule } = usePermissions();
   const visible = useMemo(() => visibleReports(REPORT_CATALOGUE, can, hasModule), [can, hasModule]);
+
+  const [search, setSearch] = useState('');
+  const needle = search.trim().toLowerCase();
+  const rows = visible
+    .map((entry) => ({
+      key: entry.key,
+      href: entry.href,
+      name: t(`reports.shell.hub.${entry.key}.title`),
+      question: t(`reports.shell.hub.${entry.key}.question`),
+    }))
+    .filter((row) => `${row.name} ${row.question}`.toLowerCase().includes(needle));
 
   return (
     <UbPageShell>
@@ -78,67 +55,46 @@ export function ReportsHubPageContent(): React.JSX.Element {
           description={t('reports.shell.hub.empty.body')}
         />
       ) : (
-        <UbStack gap={4} data-testid="reports-hub">
-          {REPORT_GROUPS.map((group) => {
-            const entries = visible.filter((entry) => entry.group === group);
-            if (entries.length === 0) return null;
-            return (
+        <UbStack
+          gap={0}
+          data-testid="reports-hub"
+          className="overflow-hidden rounded-card border border-border-hairline bg-surface-card"
+        >
+          <UbStack className="border-b border-border-hairline p-3">
+            <UbSearchInput
+              value={search}
+              onChange={setSearch}
+              placeholder={t('reports.shell.hub.search')}
+              aria-label={t('reports.shell.hub.search')}
+            />
+          </UbStack>
+          {rows.length === 0 ? (
+            <UbStack className="p-6">
+              <UbText variant="body-sm" tone="secondary">
+                {t('reports.shell.hub.noMatch')}
+              </UbText>
+            </UbStack>
+          ) : (
+            rows.map(({ key, href, name, question }) => (
+              /* The name's link covers the row: one row, one target. */
               <UbStack
-                key={group}
-                gap={2}
-                as="section"
-                aria-label={t(`reports.shell.hub.group.${group}`)}
+                key={key}
+                className="relative border-b border-border-hairline px-[14px] py-2.5 last:border-b-0 hover:bg-surface-hover lg:grid lg:grid-cols-[minmax(0,2fr)_minmax(0,3fr)] lg:items-center"
               >
-                <UbSectionHeading title={t(`reports.shell.hub.group.${group}`)} />
-                {/* docs/mobile-redesign (A17) — on a phone a group is one list of
-                    rows in a single bordered card, not a stack of cards with
-                    underlined links; a desktop keeps its grid of cards. */}
-                <UbGrid
-                  columns={{ base: 1, lg: 2 }}
-                  gap={3}
-                  className="max-lg:gap-0 max-lg:overflow-hidden max-lg:rounded-card max-lg:border max-lg:border-border-hairline"
+                <UbLink
+                  href={href}
+                  variant="body-sm"
+                  aria-label={t('reports.shell.hub.link', { question, name })}
+                  className="text-text-primary no-underline after:absolute after:inset-0 after:content-['']"
                 >
-                  {entries.map((entry) => {
-                    const Icon = ICONS[entry.icon];
-                    const question = t(`reports.shell.hub.${entry.key}.question`);
-                    const name = t(`reports.shell.hub.${entry.key}.title`);
-                    return (
-                      // The card carries a chevron and reads as one target, so it
-                      // is one: the title link's `::after` covers the card (a
-                      // stretched link). It was an 18 px line of text inside a
-                      // 90 px card that did nothing when tapped (Sprint 12, R-A-3).
-                      <UbCard
-                        key={entry.key}
-                        padded
-                        className="relative max-lg:rounded-none max-lg:border-x-0 max-lg:border-t-0 max-lg:last:border-b-0"
-                      >
-                        <UbStack direction="row" align="start" className="gap-3">
-                          <Icon className="mt-0.5 h-5 w-5 shrink-0 text-text-accent" aria-hidden />
-                          <UbStack gap={1} className="min-w-0 flex-1">
-                            <UbLink
-                              href={entry.href}
-                              variant="body-medium"
-                              aria-label={t('reports.shell.hub.link', { question, name })}
-                              className="after:absolute after:inset-0 after:rounded-card after:content-[''] max-lg:no-underline"
-                            >
-                              {question}
-                            </UbLink>
-                            <UbText variant="body-sm" tone="tertiary">
-                              {name}
-                            </UbText>
-                          </UbStack>
-                          <ChevronRight
-                            className="h-4 w-4 shrink-0 text-text-tertiary"
-                            aria-hidden
-                          />
-                        </UbStack>
-                      </UbCard>
-                    );
-                  })}
-                </UbGrid>
+                  {name}
+                </UbLink>
+                <UbText variant="body-sm" tone="secondary">
+                  {question}
+                </UbText>
               </UbStack>
-            );
-          })}
+            ))
+          )}
         </UbStack>
       )}
     </UbPageShell>

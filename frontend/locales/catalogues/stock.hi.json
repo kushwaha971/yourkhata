@@ -131,6 +131,7 @@
   "stock.low.error.title": "कम स्टॉक लोड नहीं हो सका",
   "stock.low.lastCostCaption": "खरीद मूल्य {price}",
   "stock.low.loading": "कम स्टॉक लोड हो रहा है…",
+  "stock.low.makeOrder": "खरीद ऑर्डर बनाएँ",
   "stock.low.order": "ऑर्डर करें",
   "stock.low.orderItem": "{name} का ऑर्डर करें",
   "stock.low.orderSelected": "चुने हुए का ऑर्डर करें",

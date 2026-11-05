@@ -6,7 +6,6 @@ import dynamic from 'next/dynamic';
 
 import { SlidersHorizontal } from 'lucide-react';
 
-import { SummaryStatGrid } from 'src/components/stats/SummaryStatGrid';
 import {
   UbButton,
   UbDialogLoading,
@@ -15,8 +14,8 @@ import {
   UbLink,
   UbPageHeader,
   UbPageShell,
+  UbCountLine,
   UbStack,
-  UbStatCard,
   UbText,
 } from 'src/design-system';
 import {
@@ -305,21 +304,37 @@ export function LowStockPageContent(): React.JSX.Element {
 
   return (
     <UbPageShell>
-      <UbPageHeader title={t('stock.low.title')} subtitle={t('stock.low.subtitle')} />
+      <UbPageHeader
+        title={t('stock.low.title')}
+        subtitle={t('stock.low.subtitle')}
+        primaryAction={
+          canOrder &&
+          rows.length > 0 && (
+            <UbButton
+              onClick={() => order(selectedRows.length > 0 ? selectedRows : rows)}
+              data-testid="low-stock-order-all"
+            >
+              {t('stock.low.makeOrder')}
+            </UbButton>
+          )
+        }
+      />
       <UbStack gap={4} data-testid="low-stock-screen">
         {report.low && (
-          <SummaryStatGrid storageKey="lowStock">
-            <UbStatCard
-              label={t('items.stock.out')}
-              value={String(report.low.totals.out)}
-              tone={report.low.totals.out > 0 ? 'danger' : 'default'}
-            />
-            <UbStatCard
-              label={t('items.stock.low')}
-              value={String(report.low.totals.low)}
-              tone={report.low.totals.low > 0 ? 'warning' : 'default'}
-            />
-          </SummaryStatGrid>
+          <UbCountLine
+            items={[
+              {
+                id: 'low',
+                template: `${t('items.stock.low')} {n}`,
+                values: { n: { text: String(report.low.totals.low) } },
+              },
+              {
+                id: 'out',
+                template: `${t('items.stock.out')} {n}`,
+                values: { n: { text: String(report.low.totals.out) } },
+              },
+            ]}
+          />
         )}
         <UbDataGrid
           rows={rows}

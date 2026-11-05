@@ -11,6 +11,7 @@ import 'src/i18n/catalogues/money';
 import 'src/i18n/catalogues/paymentActions';
 import 'src/i18n/catalogues/payments';
 import 'src/i18n/catalogues/period';
+import 'src/i18n/catalogues/exports';
 
 /**
  * PAY-01 FR-10 — `/payments`. A Suspense boundary and one page-content import
