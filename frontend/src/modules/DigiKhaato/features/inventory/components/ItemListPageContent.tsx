@@ -6,7 +6,6 @@ import dynamic from 'next/dynamic';
 
 import {
   BarChart3,
-  Boxes,
   ListOrdered,
   Package,
   PackageMinus,
@@ -17,9 +16,9 @@ import {
   Wrench,
 } from 'lucide-react';
 
-import { SummaryStatGrid } from 'src/components/stats/SummaryStatGrid';
 import {
   UbActionLink,
+  UbCountLine,
   UbActiveFilters,
   UbButton,
   UbChoiceChips,
@@ -37,7 +36,6 @@ import {
   UbScanButton,
   UbSearchInput,
   UbStack,
-  UbStatCard,
   UbStatusBanner,
   UbTabs,
   UbText,
@@ -496,6 +494,7 @@ export function ItemListPageContent(): React.JSX.Element {
     <UbViewportPageShell>
       <UbPageHeader
         title={t('items.list.title')}
+        subtitle={t('items.list.subtitle')}
         actions={
           <>
             {canReadStock && (
@@ -621,33 +620,39 @@ export function ItemListPageContent(): React.JSX.Element {
         {/* 09 §8.1 — a phone goes straight from the search to the items; the
             low/out count is on its chip and the stock value on Stock summary. */}
         {list.totals && !emptyBook && !phone && (
-          <SummaryStatGrid storageKey="items">
-            <UbStatCard
-              icon={<Boxes className="h-4 w-4" aria-hidden />}
-              label={t('items.list.stat.items')}
-              value={String(list.totals.items)}
-              /* The phone fold (CR-130): the count is already on the "All"
-                 tab, and a third tile would sit alone on its own row. */
-              className="max-md:hidden"
-            />
-            {canSeeValuation && list.totals.stockValue !== null && (
-              <UbStatCard
-                label={t('items.list.stat.value')}
-                value={formatInr(list.totals.stockValue)}
-                subtext={t('items.list.stat.valueHint')}
-              />
-            )}
-            {lowOut !== null && (
-              <UbStatCard
-                icon={<TriangleAlert className="h-4 w-4" aria-hidden />}
-                label={t('items.list.stat.lowOut')}
-                value={String(lowOut)}
-                tone={lowOut > 0 ? 'warning' : 'default'}
-                onClick={() => update({ tab: 'low' })}
-                pressed={filters.tab === 'low'}
-              />
-            )}
-          </SummaryStatGrid>
+          <UbCountLine
+            className="py-2"
+            label={t('items.list.tabs')}
+            data-testid="items-count-line"
+            items={[
+              ...(canSeeValuation && list.totals.stockValue !== null
+                ? [
+                    {
+                      id: 'value',
+                      template: t('items.list.count.value'),
+                      values: { amount: { text: formatInr(list.totals.stockValue) } },
+                    },
+                  ]
+                : []),
+              ...(lowOut !== null
+                ? [
+                    {
+                      id: 'low',
+                      template: t('items.list.count.low'),
+                      values: { n: { text: String(lowOut) } },
+                    },
+                  ]
+                : []),
+              {
+                id: 'showing',
+                template: t('items.list.count.showing'),
+                values: {
+                  n: { text: String(list.rows.length) },
+                  total: { text: String(list.total) },
+                },
+              },
+            ]}
+          />
         )}
 
         {tagsInStock !== null && !emptyBook && (
