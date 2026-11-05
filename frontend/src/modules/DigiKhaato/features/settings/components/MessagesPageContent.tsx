@@ -65,6 +65,20 @@ export function MessagesPageContent(): React.JSX.Element {
   const [draft, setDraft] = useState('');
   const [selected, setSelected] = useState<string | null>(null);
 
+  /* The bill's extra column follows the shop's features, as the design's card
+     does: weight and purity, batch, IMEI, size, part number, or none. */
+  const features = tenant?.features ?? [];
+  const extraColumn = features.includes('jewellery')
+    ? 'columnJewel'
+    : features.includes('batches')
+      ? 'columnBatch'
+      : features.includes('serials')
+        ? 'columnSerial'
+        : features.includes('variants')
+          ? 'columnSize'
+          : features.includes('part_numbers')
+            ? 'columnPart'
+            : 'columnNone';
   const defs = (tenant?.features ?? []).flatMap((feature) => MESSAGES_BY_FEATURE[feature] ?? []);
   const stored = data?.values['shop.messages'] as Stored | undefined;
   const reminder = data?.values['ledger.reminder_templates'] as ReminderTemplates | undefined;
@@ -167,17 +181,16 @@ export function MessagesPageContent(): React.JSX.Element {
                   className={`p-3 ${def.key === shown.key ? 'bg-accent' : ''}`}
                 >
                   <UbStack gap={0} className="min-w-0">
-                    <UbText variant="body-medium" className="font-semibold">
-                      {title}
-                    </UbText>
-                    <UbText variant="caption" tone="muted">
+                    <UbText variant="body-sm-medium">{title}</UbText>
+                    <UbText variant="caption" tone="tertiary" className="text-[12.5px]">
                       {t(`settings.messages.${def.key}.when`)}
                     </UbText>
                   </UbStack>
                   {access.canEdit && (
                     <UbButton
-                      variant="ghost"
+                      variant="link"
                       size="sm"
+                      className="text-[12.5px]"
                       aria-label={`${t('settings.messages.edit')} ${title}`}
                       onClick={() => {
                         setSelected(def.key);
@@ -194,18 +207,18 @@ export function MessagesPageContent(): React.JSX.Element {
           </UbPanel>
           <UbPanel>
             <UbStack gap={2} className="p-4">
-              <UbText variant="body-medium" className="font-semibold">
+              <UbText variant="body-sm-medium" className="font-semibold">
                 {t('settings.messages.print')}
               </UbText>
               <UbStack direction="row" justify="between" gap={3}>
-                <UbText variant="body-sm" tone="muted">
+                <UbText variant="body-sm" tone="secondary">
                   {t('settings.messages.print.name')}
                 </UbText>
                 <UbText variant="body-sm">{shop}</UbText>
               </UbStack>
               {terms && (
                 <UbStack direction="row" justify="between" gap={3}>
-                  <UbText variant="body-sm" tone="muted">
+                  <UbText variant="body-sm" tone="secondary">
                     {t('settings.messages.print.terms')}
                   </UbText>
                   <UbText variant="body-sm" className="max-w-[60%] text-right">
@@ -214,10 +227,10 @@ export function MessagesPageContent(): React.JSX.Element {
                 </UbStack>
               )}
               <UbStack direction="row" justify="between" gap={3}>
-                <UbText variant="body-sm" tone="muted">
+                <UbText variant="body-sm" tone="secondary">
                   {t('settings.messages.print.column')}
                 </UbText>
-                <UbText variant="body-sm">{t('settings.messages.print.columnJewel')}</UbText>
+                <UbText variant="body-sm">{t(`settings.messages.print.${extraColumn}`)}</UbText>
               </UbStack>
             </UbStack>
           </UbPanel>
