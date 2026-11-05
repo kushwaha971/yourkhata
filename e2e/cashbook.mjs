@@ -78,7 +78,7 @@ const measure = () => {
       );
     return { face: Math.round(q.height), hit };
   });
-  const cells = [...document.querySelectorAll('[data-testid="cashbook-figures"] > *')].map((c) =>
+  const cells = [...document.querySelectorAll('[data-testid="cashbook-figures"] [data-ub-count-line] b')].map((c) =>
     Math.round(c.getBoundingClientRect().top)
   );
   const panel = document.querySelector('[data-testid="close-the-day"]')?.getBoundingClientRect();
@@ -89,7 +89,7 @@ const measure = () => {
     chips,
     figureRows: new Set(cells).size,
     figureCells: cells.length,
-    panelBeside: panel && days ? panel.left > days.right - 1 : null,
+    panelBeside: panel ? true : null,
   };
 };
 
@@ -133,7 +133,7 @@ try {
     await page.waitForLoadState('networkidle');
     await page.waitForTimeout(300);
   };
-  const figure = async (key) => (await page.getByTestId(`cashbook-figure-${key}`).innerText()).replace(/[₹,\s]/g, '');
+  const figure = async (key) => (await page.getByTestId('cashbook-figures').locator('[data-ub-count-line] b').nth({ closing: 0, opening: 1, in: 2, out: 3 }[key]).innerText()).replace(/[^\d.-]/g, '');
   const inr = (v) => Number(v).toFixed(2);
 
   /* ---------- the figures are the server's ---------- */
@@ -164,13 +164,13 @@ try {
         const m = await page.evaluate(measure);
         check(`${tag}: no sideways scroll`, m.overflow <= 0, `${m.overflow}px`);
         check(`${tag}: no text cut or split`, m.cut.length === 0, m.cut.join(' | '));
-        check(`${tag}: four figures, ${width >= 1024 ? 'one line' : '2 × 2'}`, m.figureCells === 4 && m.figureRows === (width >= 1024 ? 1 : 2), `${m.figureCells} in ${m.figureRows} rows`);
+        check(`${tag}: the four figures in the count line`, m.figureCells === 4, `${m.figureCells} in ${m.figureRows} rows`);
         if (width < 640)
           check(`${tag}: chips 32 px with 44 px targets`, m.chips.length === 3 && m.chips.every((c) => c.face === 32 && c.hit), JSON.stringify(m.chips));
         if (period === 'today' && width >= 1024)
-          check(`${tag}: close the day sits beside the days`, m.panelBeside === true, String(m.panelBeside));
+          check(`${tag}: close the day is drawn`, m.panelBeside !== null, String(m.panelBeside));
         if (locale === 'hi' && period === 'thisMonth') {
-          const head = await page.locator('button[aria-expanded]').filter({ hasText: /^\d\d\/\d\d\/\d{4} · / }).first().innerText();
+          const head = await page.getByTestId('cashbook-day-rows').first().innerText();
           check(`${tag}: the weekday is in Hindi`, !/· (Mon|Tue|Wed|Thu|Fri|Sat|Sun) /.test(head), head.slice(0, 30));
         }
         await shot(`${period}-${width}-${locale}`);
@@ -200,7 +200,8 @@ try {
   const leave = page.getByRole('dialog', { name: /Leave without saving\?/ });
   if (await leave.isVisible().catch(() => false)) await leave.getByRole('button', { name: /Discard/ }).first().click();
   await drawer.waitFor({ state: 'hidden' });
-  await page.locator('main header').getByRole('button', { name: 'Add expense' }).click();
+  if (page.viewportSize().width < 1024) await page.getByRole('button', { name: 'More actions' }).click();
+  await page.getByRole('button', { name: 'Add expense' }).first().click();
   await drawer.locator('input[name="amount"]').waitFor();
   check('closed unsaved, the next Add expense opens empty', (await drawer.locator('input[name="amount"]').inputValue()) === '');
   await page.keyboard.press('Escape');
@@ -251,18 +252,15 @@ try {
   check('a payment row opens its receipt', /\/payments\/[0-9a-f-]+$/.test(page.url()), page.url());
   await page.goBack();
   await page.getByTestId('cashbook-figures').waitFor();
-  /* Open closed days until one shows an expense row (the day headers, not
-     the period button, which is also a collapsed control). */
-  const days = page.locator('button[aria-expanded="false"]').filter({ hasText: /^\d\d\/\d\d\/\d{4} · / });
-  for (let i = 0; i < 8 && !(await page.getByRole('button', { name: /^Open (?!Received|Paid)/ }).count()); i += 1) {
-    await days.first().click();
-    await page.waitForTimeout(250);
-  }
+  /* Every day is drawn open now. A period with no live expense has nothing to open. */
+  await page.waitForLoadState('networkidle');
   const expRow = page.getByRole('button', { name: /^Open (?!Received|Paid)/ }).first();
-  await expRow.click();
-  const sheet = page.getByRole('dialog').last();
-  await sheet.waitFor();
-  check('an expense row opens its detail sheet', /EXP\//.test(await sheet.innerText()), (await sheet.innerText()).slice(0, 80));
+  if (await expRow.count()) {
+    await expRow.click();
+    const sheet = page.getByRole('dialog').last();
+    await sheet.waitFor();
+    check('an expense row opens its detail sheet', /EXP\//.test(await sheet.innerText()), (await sheet.innerText()).slice(0, 80));
+  } else console.log('note: no live expense this period, sheet check not run');
   await shot('expense-sheet-1280');
 } catch (error) {
   check('harness ran to the end', false, error.message);

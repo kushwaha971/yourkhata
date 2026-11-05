@@ -210,10 +210,10 @@ it('shows the four figures with their meaning, and a closing below zero in words
   signIn(['expenses.expense.read', 'reports.financial.read']);
   renderWithProviders(<CashbookPageContent />);
   const group = await screen.findByRole('group', { name: 'Cash book figures' });
-  expect(group).toHaveTextContent('Opening₹0.00');
-  expect(group).toHaveTextContent('Money in₹2,000.00');
-  expect(group).toHaveTextContent('Money out₹440.00');
-  expect(group).toHaveTextContent('Closing-₹150.00');
+  expect(group).toHaveTextContent('Opening ₹0.00');
+  expect(group).toHaveTextContent('Money in ₹2,000.00');
+  expect(group).toHaveTextContent('Money out ₹440.00');
+  expect(group).toHaveTextContent('by your records -₹150.00');
   expect(group).toHaveTextContent('Cash below zero — an entry is probably missing');
   expect(screen.getByRole('radio', { name: 'Cash' })).toBeChecked();
 });
@@ -349,7 +349,7 @@ it('shows a business that never moved money one empty state and no ₹0.00', asy
   expect(screen.getAllByRole('button', { name: 'Add expense' })).toHaveLength(1);
   expect(screen.queryByText(/This month|Today/)).not.toBeInTheDocument();
   expect(screen.queryByText('Cash or bank')).not.toBeInTheDocument();
-  expect(screen.queryByText('Opening')).not.toBeInTheDocument();
+  expect(screen.queryByTestId('cashbook-figures')).not.toBeInTheDocument();
   expect(screen.queryByText('Money in')).not.toBeInTheDocument();
   expect(screen.queryByText('Days')).not.toBeInTheDocument();
   expect(screen.queryByText(/₹0\.00/)).not.toBeInTheDocument();
@@ -366,8 +366,7 @@ it('keeps every control when the range is quiet but the book is not', async () =
     await screen.findByText('No money came in or went out in this period')
   ).toBeInTheDocument();
   expect(screen.queryByText(EMPTY_BOOK_TITLE)).not.toBeInTheDocument();
-  expect(screen.getByText('Opening')).toBeInTheDocument();
-  expect(screen.getByText('Days')).toBeInTheDocument();
+  expect(screen.getByTestId('cashbook-figures')).toHaveTextContent('Opening');
 });
 
 it('never hides the controls for a server that does not say', async () => {
@@ -375,6 +374,6 @@ it('never hides the controls for a server that does not say', async () => {
   cashbookService.getCashbook.mockResolvedValue(DATA('full'));
   signIn(['expenses.expense.read', 'reports.financial.read']);
   renderWithProviders(<CashbookPageContent />);
-  expect(await screen.findByText('Opening')).toBeInTheDocument();
+  expect(await screen.findByTestId('cashbook-figures')).toHaveTextContent('Opening');
   expect(screen.queryByText(EMPTY_BOOK_TITLE)).not.toBeInTheDocument();
 });
