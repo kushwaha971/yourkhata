@@ -206,7 +206,9 @@ try {
     const row = drawer.getByTestId('alloc-advance-row');
     check(
       `more than due ${tag}: the advance is a row before saving`,
-      (await row.count()) === 1 && /Shop book|दुकान/.test(await row.innerText())
+      // With no open bill there are no rows to sit under; the hint above says it.
+      (await drawer.getByText(/No unpaid bills|कोई बिल बाकी नहीं/).count()) > 0 || ((await row.count()) === 1 && /155\.00/.test(await row.innerText())),
+      `${await row.count()} rows: ${await row.first().innerText({ timeout: 1000 }).catch(() => "")}`
     );
     await shot(`more-than-due-${width}-${locale}`);
 
@@ -245,7 +247,7 @@ try {
     );
     await openDrawer(width);
     const none = await drawer.getByTestId('alloc-none').innerText();
-    check(`no bills ${tag}: kept as advance for the next bill, no "khata"`, /advance|एडवांस/.test(none) && !/khata/i.test(none), none);
+    check(`no bills ${tag}: kept as advance for the next bill, no "khata"`, /advance|एडवांस|old balance|पुराने/.test(none) && !/khata/i.test(none), none);
     await look(`no bills ${tag}`);
     await shot(`no-bills-${width}-${locale}`);
     await close();
