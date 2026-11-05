@@ -113,8 +113,15 @@ export function PurchaseBillTotalsPanel({
         />
         <UbDivider />
         <UbStack direction="row" justify="between" align="center" aria-live="polite">
-          <UbText variant="h4">{t('purchases.totals.grand')}</UbText>
-          <UbText variant="h3" className="ds-num" data-testid="purchase-grand-total">
+          {/* The design's .totals .grand: one 16 px bold line, label and figure. */}
+          <UbText variant="inherit" className="text-[16px] font-bold text-text-primary">
+            {t('purchases.totals.grand')}
+          </UbText>
+          <UbText
+            variant="inherit"
+            className="ds-num text-[16px] font-bold text-text-primary"
+            data-testid="purchase-grand-total"
+          >
             {formatInr(preview.grandTotal)}
           </UbText>
         </UbStack>

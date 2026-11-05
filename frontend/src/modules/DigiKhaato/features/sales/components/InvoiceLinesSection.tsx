@@ -768,7 +768,7 @@ export function InvoiceLinesSection({
           className="items-center rounded-card border border-border-hairline bg-surface-card px-5 py-7 text-center"
         >
           <ScanLine aria-hidden className="h-7 w-7 text-text-accent" />
-          <UbText variant="inherit" className="text-[15px] font-semibold">
+          <UbText variant="inherit" className="text-[14px] font-semibold">
             {t('sales.line.noneYet')}
           </UbText>
           <UbText variant="caption" tone="tertiary" className="text-[0.8125rem]">

@@ -63,8 +63,9 @@ function UbTotalDockBase({
       )}
     >
       <div className="flex min-w-0 flex-1 flex-col">
-        <span className="ds-caption text-text-tertiary">{totalLabel}</span>
-        <span className="ds-num whitespace-normal break-words text-[1.25rem] font-semibold leading-7 text-text-primary">
+        {/* The design's dock (.pdock/.ddock .tot): a 13 px label over a 22 px figure. */}
+        <span className="text-[13px] leading-[1.15] text-text-secondary">{totalLabel}</span>
+        <span className="ds-num whitespace-normal break-words text-[22px] font-extrabold leading-[1.15] text-text-primary">
           {total}
         </span>
         {caption ? (
@@ -77,13 +78,13 @@ function UbTotalDockBase({
         ) : null}
         {meta}
       </div>
-      <div className="grid min-w-0 grid-cols-2 gap-2 sm:flex sm:shrink-0 sm:items-center [&>button]:h-auto [&>button]:min-h-11 [&>button]:whitespace-normal">
+      <div className="grid min-w-0 grid-cols-2 gap-2 sm:flex sm:shrink-0 sm:items-center [&>button]:h-auto [&>button]:min-h-[46px] [&>button]:whitespace-normal [&>button]:text-[15px] [&>button]:font-semibold">
         {children}
       </div>
       {note ? (
         <p
           role="status"
-          className="order-first basis-full text-[13px] leading-5 text-text-secondary"
+          className="order-first basis-full text-[13px] leading-5 text-text-tertiary"
           data-testid="total-dock-note"
         >
           {note}

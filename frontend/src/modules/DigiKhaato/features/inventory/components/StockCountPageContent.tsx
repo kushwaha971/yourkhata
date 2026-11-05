@@ -15,6 +15,7 @@ import {
   UbQuantityInput,
   UbStack,
   UbText,
+  UbCountLine,
 } from 'src/design-system';
 import {
   UbDataGrid,
@@ -146,7 +147,7 @@ const createCountColumns = ({
               as="span"
               variant="body-sm-medium"
               aria-hidden
-              className="inline-flex h-8 items-center rounded-lg border border-border-hairline bg-surface-card px-3"
+              className="inline-flex h-8 items-center rounded-lg border border-border-hairline bg-surface-card px-3 text-[13px] font-semibold"
             >
               {t('stock.count.count')}
             </UbText>
@@ -159,7 +160,7 @@ const createCountColumns = ({
             as="span"
             variant="body-sm-medium"
             tone={view.tone}
-            className="ds-num whitespace-nowrap"
+            className="ds-num whitespace-nowrap font-bold"
             data-testid="count-difference"
           >
             {view.text}
@@ -296,26 +297,86 @@ export function StockCountPageContent(): React.JSX.Element {
 
   // "Counted 18 items · 4 differ · Value change −₹1,240" (desktop: "18 of 248").
   const countLine = summary && (
-    <UbStack
-      direction="row"
-      gap={4}
-      className="flex-wrap text-[13px] text-text-secondary"
+    /* The design's count line: the figures bold, a loss in the give tone. */
+    <UbCountLine
       data-testid="count-line"
-    >
-      <UbText as="span" variant="inherit">
-        {phone
-          ? t('stock.count.counted', { count: summary.counted })
-          : t('stock.count.countedOf', { count: summary.counted, total: summary.itemsTotal })}
-      </UbText>
-      <UbText as="span" variant="inherit">
-        {t('stock.count.differ', { count: summary.differ })}
-      </UbText>
-      {summary.valueChange !== null && (
-        <UbText as="span" variant="inherit">
-          {t('stock.count.valueChange', { amount: withMinusSign(summary.valueChange) })}
-        </UbText>
-      )}
-    </UbStack>
+      items={[
+        {
+          id: 'counted',
+          template: phone
+            ? t(summary.counted === 1 ? 'stock.count.line.countedOne' : 'stock.count.line.counted')
+            : t('stock.count.line.countedOf'),
+          values: {
+            n: { text: String(summary.counted) },
+            total: { text: String(summary.itemsTotal) },
+          },
+        },
+        {
+          id: 'differ',
+          template: t(summary.differ === 1 ? 'stock.count.line.differOne' : 'stock.count.line.differ'),
+          values: { n: { text: String(summary.differ), tone: summary.differ > 0 ? 'payable' : 'neutral' } },
+        },
+        ...(summary.valueChange !== null
+          ? [
+              {
+                id: 'value',
+                template: t('stock.count.line.value'),
+                values: {
+                  amount: {
+                    text: withMinusSign(summary.valueChange),
+                    tone: summary.valueChange.startsWith('-') ? ('payable' as const) : ('neutral' as const),
+                  },
+                },
+              },
+            ]
+          : []),
+      ]}
+    />
+  );
+
+  const quickAdd = (
+    <ItemQuickAdd
+      labels={{
+        label: t('stock.count.search'),
+        placeholder: t('stock.count.search'),
+        empty: (query: string) => t('stock.count.pickEmpty', { query }),
+        none: t('stock.count.pickNone'),
+        askOwner: t('stock.count.pickAskOwner'),
+        notFound: (code: string) => t('stock.count.notFound', { code }),
+        dismiss: t('common.action.close'),
+        ...(phone
+          ? {
+              camera: {
+                open: t('items.scan.camera'),
+                title: t('stock.count.title'),
+                hint: t('items.scan.camera.hint'),
+                lastScanned: t('stock.count.lastScanned'),
+                summary: summary ? t('stock.count.counted', { count: summary.counted }) : '',
+                lineOf: (itemId: string) => {
+                  const row = rows.find((one) => one.itemId === itemId);
+                  return row?.countedQty
+                    ? t('stock.count.trayLine', { count: formatQuantity(row.countedQty) })
+                    : undefined;
+                },
+                labels: {
+                  close: t('common.action.close'),
+                  torch: t('items.scan.camera.torch'),
+                  done: t('stock.count.done'),
+                  blockedTitle: t('items.scan.camera.blockedTitle'),
+                  blockedBody: t('items.scan.camera.blockedBody'),
+                  barcode: t('items.scan.camera.barcode'),
+                  add: t('stock.count.add'),
+                  keepsWorking: t('stock.count.keepsWorking'),
+                },
+              },
+            }
+          : {}),
+      }}
+      onPick={pick}
+      disabled={!summary || summary.status !== 'open'}
+      hotkey={phone ? undefined : 'F2'}
+      openOnFocus={false}
+    />
   );
 
   const saveButton = canSave && (
@@ -370,56 +431,19 @@ export function StockCountPageContent(): React.JSX.Element {
       />
       )}
       <UbStack gap={3} data-testid="stock-count-screen" className="pb-24 lg:pb-0">
-        <ItemQuickAdd
-          labels={{
-            label: t('stock.count.search'),
-            placeholder: t('stock.count.search'),
-            empty: (query: string) => t('stock.count.pickEmpty', { query }),
-            none: t('stock.count.pickNone'),
-            askOwner: t('stock.count.pickAskOwner'),
-            notFound: (code: string) => t('stock.count.notFound', { code }),
-            dismiss: t('common.action.close'),
-            ...(phone
-              ? {
-                  camera: {
-                    open: t('items.scan.camera'),
-                    title: t('stock.count.title'),
-                    hint: t('items.scan.camera.hint'),
-                    lastScanned: t('stock.count.lastScanned'),
-                    summary: summary ? t('stock.count.counted', { count: summary.counted }) : '',
-                    lineOf: (itemId: string) => {
-                      const row = rows.find((one) => one.itemId === itemId);
-                      return row?.countedQty
-                        ? t('stock.count.trayLine', { count: formatQuantity(row.countedQty) })
-                        : undefined;
-                    },
-                    labels: {
-                      close: t('common.action.close'),
-                      torch: t('items.scan.camera.torch'),
-                      done: t('stock.count.done'),
-                      blockedTitle: t('items.scan.camera.blockedTitle'),
-                      blockedBody: t('items.scan.camera.blockedBody'),
-                      barcode: t('items.scan.camera.barcode'),
-                      add: t('stock.count.add'),
-                      keepsWorking: t('stock.count.keepsWorking'),
-                    },
-                  },
-                }
-              : {}),
-          }}
-          onPick={pick}
-          disabled={!summary || summary.status !== 'open'}
-          hotkey={phone ? undefined : 'F2'}
-          openOnFocus={false}
-        />
+        {/* Design pCount: the scan bar, then the count line. dCount draws the
+            count line first and the scan bar inside the register's frame. */}
+        {phone && quickAdd}
         {countLine}
         <UbDataGrid
+          toolbar={phone ? undefined : <UbStack className="min-w-0 flex-1">{quickAdd}</UbStack>}
+          variant="register"
           rows={rows}
           columns={columns}
           rowId={(row) => row.itemId}
           rowName={(row) => row.name}
           // 320 px cut "In books 4 · Not counted yet" to "Not cou…" (D LOOK sweep).
-          cardLayout="compact"
+          cardLayout="stacked"
           state={gridState}
           labels={labels}
           emptyStates={{
