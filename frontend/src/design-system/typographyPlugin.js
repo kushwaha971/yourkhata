@@ -82,7 +82,13 @@ module.exports = plugin(({ addComponents }) => {
     '.ds-body-medium': tier('base', 'medium'),
     '.ds-body-sm': tier('s', 'regular'),
     '.ds-body-sm-medium': tier('s', 'medium'),
-    '.ds-caption': tier('s', 'regular'),
+    // The approved design (R-DEC-50, 26 Oct 2026) sets captions, hints and the
+    // line under a row at 12.5 px (`.small`, `.hint`, `.swr small`); BrandHub's
+    // 14 px tier, mapped here on 23 Sep, made every one of them a size too big.
+    '.ds-caption': {
+      ...fixed('0.78125rem', '1.4', 'regular'),
+      '&:lang(hi)': { lineHeight: '1.5' },
+    },
     '.ds-label': tier('s', 'medium'),
     /** Latin-only uppercase tier; R-S-5 still forbids it beside a `t(…)`. */
     '.ds-label-caps': tier('xs', 'medium', SANS, {

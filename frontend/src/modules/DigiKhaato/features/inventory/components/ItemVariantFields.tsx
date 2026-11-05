@@ -40,7 +40,7 @@ export function ItemVariantFields(): React.JSX.Element {
       className="rounded-lg border border-dashed border-warning p-3"
       data-testid="item-variants"
     >
-      <UbText as="p" variant="label" tone="tertiary" className="uppercase tracking-wide">
+      <UbText as="p" variant="label" tone="tertiary" className="text-[12px] font-bold uppercase tracking-[0.06em]">
         {t('items.form.variants.title')}
       </UbText>
       <UbSwitch

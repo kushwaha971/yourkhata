@@ -89,7 +89,7 @@ export function ItemTagFields(): React.JSX.Element {
       className="rounded-lg border border-dashed border-warning p-3"
       data-testid="item-tag-fields"
     >
-      <UbText as="p" variant="label" tone="tertiary" className="uppercase tracking-wide">
+      <UbText as="p" variant="label" tone="tertiary" className="text-[12px] font-bold uppercase tracking-[0.06em]">
         {t('items.form.tag.title')}
       </UbText>
       <UbBox className="grid grid-cols-1 gap-3 min-[360px]:grid-cols-2">

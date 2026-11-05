@@ -811,17 +811,21 @@ export function PartyListPageContent({
                   manager is useful read-only — the counts are the fastest way
                   to see which tag holds which part of the book — and the
                   destructive actions inside it are permission-gated there. */}
-              <UbActionLink
-                href={ROUTES.PARTY_TAGS}
-                icon={<Tags className="h-4 w-4" aria-hidden />}
-                iconOnly="mobile"
-              >
-                {t('parties.tags.filter.manage')}
-              </UbActionLink>
+              {/* F-supp-d draws Export and Add supplier only; tags and import
+                  stay on Customers, where dCustomers draws them. */}
+              {!supplier && (
+                <UbActionLink
+                  href={ROUTES.PARTY_TAGS}
+                  icon={<Tags className="h-4 w-4" aria-hidden />}
+                  iconOnly="mobile"
+                >
+                  {t('parties.tags.filter.manage')}
+                </UbActionLink>
+              )}
               {/* IMP-01 FR-14 / IMP-02 FR-13 — bring a sheet in, take this
                   list out. Each hides itself for a role that may not use it,
                   and the export carries the list's own filters (BR-1). */}
-              <ImportActionLink kind="parties" />
+              {!supplier && <ImportActionLink kind="parties" />}
               <ListExportButton
                 listPath={partyExportPath(filters)}
                 permission="parties.party.export"

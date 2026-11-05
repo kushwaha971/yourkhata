@@ -85,7 +85,7 @@ export function ReportsHubPageContent(): React.JSX.Element {
                   href={href}
                   variant="body-sm"
                   aria-label={t('reports.shell.hub.link', { question, name })}
-                  className="text-text-primary no-underline after:absolute after:inset-0 after:content-['']"
+                  className="text-text-primary no-underline after:absolute after:inset-0 after:content-[''] max-lg:font-medium"
                 >
                   {name}
                 </UbLink>

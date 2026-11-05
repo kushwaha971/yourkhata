@@ -49,7 +49,7 @@ export function ItemExtraUnitsFields({
       className="rounded-lg border border-dashed border-warning p-3"
       data-testid="item-extra-units"
     >
-      <UbText as="p" variant="label" tone="tertiary" className="uppercase tracking-wide">
+      <UbText as="p" variant="label" tone="tertiary" className="text-[12px] font-bold uppercase tracking-[0.06em]">
         {t('items.form.units.title')}
       </UbText>
       {fields.map((row, index) => (

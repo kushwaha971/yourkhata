@@ -68,9 +68,10 @@ function UbSwitchBase({
       )}
     >
       <span className="flex min-w-0 flex-col gap-0.5">
-        <span className="ds-body-sm text-text-primary">{label}</span>
+        {/* The design's .swr: a 14 px medium label over a 12.5 px tertiary line. */}
+        <span className="ds-body-sm-medium text-text-primary">{label}</span>
         {description && (
-          <span id={descriptionId} className="ds-caption text-text-tertiary">
+          <span id={descriptionId} className="ds-caption text-[12.5px] text-text-tertiary">
             {description}
           </span>
         )}

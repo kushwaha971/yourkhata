@@ -56,7 +56,7 @@ export function AddonSheet({
       }
     >
       <UbStack gap={3} data-testid="addon-sheet">
-        <UbText as="p" variant="label" tone="tertiary" className="uppercase tracking-wide">
+        <UbText as="p" variant="label" tone="tertiary" className="text-[12px] font-bold uppercase tracking-[0.06em]">
           {t('sales.addons.title')}
         </UbText>
         <UbStack gap={0} className="rounded-lg border border-border-hairline">

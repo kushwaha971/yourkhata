@@ -77,7 +77,9 @@ function PartyNameCellBase({
         as="span"
         variant="body-sm-medium"
         truncate={!wrap}
-        className={wrap ? 'whitespace-normal break-words' : undefined}
+        /* The design's tables (dCustomers, F-supp-d) set the name at 400; a
+           phone row keeps it at 500. */
+        className={wrap ? 'whitespace-normal break-words lg:font-normal' : 'lg:font-normal'}
       >
         {name}
       </UbText>

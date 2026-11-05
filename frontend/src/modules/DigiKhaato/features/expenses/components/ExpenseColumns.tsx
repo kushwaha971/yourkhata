@@ -1,11 +1,4 @@
-import {
-  UbAmount,
-  UbStack,
-  UbStatusBadge,
-  UbTag,
-  UbText,
-  isUbTagColor,
-} from 'src/design-system';
+import { UbAmount, UbStatusBadge, UbText } from 'src/design-system';
 import type { UbDataGridColumn } from 'src/design-system/UbDataGrid';
 import type { TranslateFn } from 'src/hooks/useTranslation';
 import { cn } from 'src/utils/cn';
@@ -35,10 +28,10 @@ import type { Expense } from '../types/expense.types';
 export const createExpenseColumns = ({
   t,
   isCards,
-  isCompact = false,
 }: {
   readonly t: TranslateFn;
   readonly isCards: boolean;
+  /** Kept for callers: the design's desktop register is the same at every width. */
   readonly isCompact?: boolean;
 }): readonly UbDataGridColumn<Expense>[] => {
   const archived = t('expenses.category.archivedSuffix');
@@ -115,91 +108,37 @@ export const createExpenseColumns = ({
       },
     ];
 
+  /* The design's desktop register (F-exp-d): Date · Type · Paid by · Amount.
+     Unpaid and Cancelled are said in the Paid by cell, where the reader looks
+     for how it was paid; the number and note are on the expense's sheet. */
   return [
-    ...(isCompact
-      ? []
-      : ([
-          {
-            id: 'date',
-            header: t('expenses.column.date'),
-            priority: 1,
-            cardSlot: 'none',
-            widthShare: 11,
-            cell: date,
-          },
-          {
-            id: 'number',
-            header: t('expenses.column.number'),
-            priority: 1,
-            cardSlot: 'none',
-            widthShare: 19,
-            cell: (row) => (
-              <UbStack gap={0} className="min-w-0">
-                <UbText
-                  as="span"
-                  variant="body-sm"
-                  className={cn('ds-mono block', cancelled(row) && 'line-through opacity-60')}
-                >
-                  {row.number}
-                </UbText>
-                {note(row) && (
-                  <UbText as="span" variant="caption" tone="tertiary" className="line-clamp-2">
-                    {note(row)}
-                  </UbText>
-                )}
-              </UbStack>
-            ),
-          },
-        ] satisfies UbDataGridColumn<Expense>[])),
     {
-      id: 'category',
-      header: t('expenses.category'),
+      id: 'date',
+      header: t('expenses.column.date'),
       priority: 1,
-      cardSlot: 'title',
-      widthShare: isCompact ? 30 : 16,
-      cell: (row) => {
-        const tag = (
-          <UbTag
-            name={categoryLabel(row.category, archived)}
-            color={isUbTagColor(row.category.color) ? row.category.color : null}
-          />
-        );
-        if (!isCompact) return tag;
-        return (
-          <UbStack gap={1} className="min-w-0 items-start">
-            {tag}
-            <UbText
-              as="span"
-              variant="caption"
-              tone="tertiary"
-              className={cn('ds-num whitespace-normal', cancelled(row) && 'line-through')}
-            >
-              {`${row.number} · ${date(row)}`}
-            </UbText>
-            {note(row) && (
-              <UbText as="span" variant="caption" tone="tertiary" className="line-clamp-2">
-                {note(row)}
-              </UbText>
-            )}
-          </UbStack>
-        );
-      },
+      cardSlot: 'none',
+      widthShare: 18,
+      cell: date,
     },
     {
-      id: 'party',
-      header: t('expenses.column.party'),
-      priority: 2,
-      cardSlot: 'none',
-      widthShare: 16,
-      cell: (row) => row.party?.name ?? '—',
+      id: 'category',
+      header: t('expenses.column.type'),
+      priority: 1,
+      cardSlot: 'title',
+      widthShare: 34,
+      cell: (row) => (
+        <UbText as="span" variant="body-sm" className={cn(cancelled(row) && 'line-through opacity-60')}>
+          {categoryLabel(row.category, archived)}
+        </UbText>
+      ),
     },
     {
       id: 'mode',
-      header: t('expenses.mode'),
-      priority: 2,
+      header: t('expenses.column.paidBy'),
+      priority: 1,
       cardSlot: 'none',
-      widthShare: 11,
-      cell: (row) => mode(row) ?? '—',
+      widthShare: 30,
+      cell: (row) => badge(row) ?? mode(row) ?? '—',
     },
     {
       id: 'amount',
@@ -207,7 +146,7 @@ export const createExpenseColumns = ({
       priority: 1,
       align: 'end',
       cardSlot: 'trailing',
-      widthShare: 14,
+      widthShare: 18,
       cell: (row) => (
         <UbAmount
           value={row.amount}
@@ -215,19 +154,6 @@ export const createExpenseColumns = ({
           className={cancelled(row) ? 'line-through opacity-60' : undefined}
         />
       ),
-    },
-    {
-      id: 'status',
-      header: t('expenses.column.status'),
-      priority: 1,
-      cardSlot: 'none',
-      widthShare: 13,
-      cell: (row) =>
-        cancelled(row) ? (
-          <UbStatusBadge tone="neutral" label={t('expenses.void.badge')} />
-        ) : row.paid ? null : (
-          <UbStatusBadge tone="warning" label={t('expenses.status.unpaid')} />
-        ),
     },
   ];
 };
