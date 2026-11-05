@@ -70,6 +70,8 @@ const measure = () => {
     }
   }
   const chips = [...document.querySelectorAll('main [role="radiogroup"] button[role="radio"]')].map((b) => {
+    // elementFromPoint sees only the viewport; the chips now sit under the register.
+    b.scrollIntoView({ block: 'center' });
     const q = b.getBoundingClientRect();
     const hit =
       innerWidth >= 640 ||
