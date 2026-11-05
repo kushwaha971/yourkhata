@@ -8,7 +8,7 @@ Last updated: 5 Oct 2026 (§0 is live); older sections last revised 29 Sep 2026 
 
 > **16 Oct 2026: the current work is the Shop/IMS readiness programme.** Start from `docs/shop-ims-readiness/AGENT_START_PROMPT.md` ("Current handoff") and the newest `QA.md` entry; they supersede the §0 checklist below for what to do next. §0 remains the record of the 12 Oct screen-design work and the owner's standing rules.
 
-> **5 Nov 2026, design match for all kinds (branch shop/a2, not pushed):** Dashboard, register tables and count lines done and measured; kind shops seeded by `e2e/seed-kind-shops.mjs`. Next: phone row heights, Stock, Low stock, Price lists, Reports, Categories, forms, kind-only screens, unbuilt kind modules, Hindi, full suites, harnesses, monkeys. Not yet 9/10.
+> **6 Nov 2026, design match for all kinds (branch shop/a2, not pushed):** Matched to the artifact and measured per kind: Reports, Stock summary, Low stock, Payments, Expenses, Cash book (exact, owner's ask; extras under More details), Categories (+ stock value and usual GST from the API), Price lists, Items (design columns; kind chips without a server filter are not shown), phone docked worded buttons on every register, the forms' total dock, Stock count, Rates, Shop features, Messages (extra column per kind). Harnesses updated to the new layouts. Open: the Items rebuild for `/items?add=1` (Add item measurable) is unbuilt; a full sweep for medical/mobile/garments is running; kind-only modules (Schedule H, Repairs, Site dues, etc.) are unbuilt; Hindi LOOK, full suites, monkeys, score sheet and push remain. Not 9/10.
 
 ## 0. RESUME HERE — live state (updated 12 Oct 2026; the owner pushes `dev`)
 
