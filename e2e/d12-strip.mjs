@@ -35,7 +35,7 @@ for (const [w, h] of [[1280, 900], [390, 844], [320, 700]]) {
   const ctx = await browser.newContext({ viewport: { width: w, height: h }, ...(w < 768 ? { isMobile: true, hasTouch: true } : {}) });
   const page = await signIn(ctx);
   const tiles = (await (await ctx.request.get(`${base}/api/v1/stock/home-strip`)).json()).data ?? [];
-  if (w === 1280) check('API: the three kinds' tiles and the short book', tiles.length === 4, JSON.stringify(tiles));
+  if (w === 1280) check('API: three kind tiles and the short book', tiles.length === 4, JSON.stringify(tiles));
   await page.goto(`${base}/dashboard`, { waitUntil: 'networkidle' });
   await sleep(1500);
   const strip = page.getByTestId('home-strip');
