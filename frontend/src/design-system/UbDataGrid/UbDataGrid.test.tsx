@@ -780,14 +780,14 @@ describe('the paging bar', () => {
 });
 
 describe("BrandHub's height logic", () => {
-  it('gives every row the same 52px, set as a height rather than a class', async () => {
+  it('gives every row the same 42px, set as a height rather than a class', async () => {
     await renderGridWithTable('full');
 
     // BrandHub sets `style={{ height: rowHeight }}` on the `<tr>` so a screen
     // can override it; ours was `h-14` baked into the class, which no caller
-    // could reach. 52 is BrandHub's default and this grid's.
+    // could reach. 42 is the design's row and this grid's.
     for (const row of screen.getAllByTestId('ub-grid-row')) {
-      expect(row).toHaveStyle({ height: '52px' });
+      expect(row).toHaveStyle({ height: '42px' });
     }
   });
 

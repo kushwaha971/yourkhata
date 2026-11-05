@@ -66,7 +66,8 @@ export const createInvoiceColumns = ({
       const walkIn = !row.party;
       const name = row.party?.name ?? row.walkInName ?? t('sales.walkIn.label');
       const number = row.number ?? t('sales.status.draft');
-      if (isCards) return name;
+      // The phone row leads with the bill number; who and how much sit under it (design F-bills-p).
+      if (isCards) return number;
       return (
         <UbStack gap={0} className="min-w-0">
           <UbText
@@ -107,7 +108,8 @@ export const createInvoiceColumns = ({
                   {date}
                 </UbText>
               );
-            const caption = `${row.number ?? t('sales.status.draft')} · ${date}`;
+            const who = row.party?.name ?? row.walkInName ?? t('sales.walkIn.label');
+            const caption = `${date} · ${who} · ${formatInr(row.grandTotal)}`;
             if (!row.origin) return caption;
             const words = originWords(row.origin);
             const from = t(words.id, {
@@ -122,7 +124,7 @@ export const createInvoiceColumns = ({
     id: 'status',
     header: t('sales.column.status'),
     priority: 1,
-    cardSlot: 'meta',
+    cardSlot: 'trailing',
     widthShare: 14,
     cell: (row) => {
       const overdue = row.isOverdue ? 'overdue' : row.status;
@@ -130,18 +132,7 @@ export const createInvoiceColumns = ({
         overdue === 'issued' && row.amountDue !== '0.00'
           ? t('sales.tab.unpaid')
           : t(`sales.status.${overdue}`);
-      return isCards ? (
-        [
-          label,
-          row.amountDue !== '0.00'
-            ? t('sales.list.dueAmount', { amount: formatInr(row.amountDue) })
-            : '',
-        ]
-          .filter(Boolean)
-          .join(' · ')
-      ) : (
-        <UbStatusBadge tone={STATUS_TONE[overdue]} label={label} />
-      );
+      return <UbStatusBadge tone={STATUS_TONE[overdue]} label={label} />;
     },
   },
   {
@@ -172,7 +163,7 @@ export const createInvoiceColumns = ({
     header: t('sales.column.total'),
     priority: 1,
     align: 'end',
-    cardSlot: 'trailing',
+    cardSlot: 'none',
     widthShare: 16,
     cell: (row) => (
       <UbAmount

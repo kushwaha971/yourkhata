@@ -1,17 +1,14 @@
-import { UbAmount, UbStack, UbText } from 'src/design-system';
+import { UbAmount, UbStack, UbStatusBadge, UbText } from 'src/design-system';
 import type { UbDataGridColumn } from 'src/design-system/UbDataGrid';
 import type { TranslateFn } from 'src/hooks/useTranslation';
 import { formatBusinessDate } from 'src/utils/dates';
 import { compareMoney, formatInr } from 'src/utils/money';
-
-import { daysLate } from '../view-model/purchaseBillDisplay';
 
 import type { PurchaseBillListRow } from '../types/purchase.types';
 
 /** §5 counter register: supplier first on phones; paper identity, due and status never hidden. */
 export const createPurchaseBillColumns = ({
   t,
-  today,
   isCards,
   order = false,
   note = false,
@@ -38,7 +35,8 @@ export const createPurchaseBillColumns = ({
       id: 'number',
       header: t('purchases.column.number'),
       priority: 2,
-      cardSlot: 'none',
+      // The phone row leads with the number (design F-pur-p).
+      cardSlot: isCards ? 'title' : 'none',
       widthShare: 14,
       cell: (row) => text(row.number ?? t('purchases.status.draft')),
     },
@@ -66,7 +64,7 @@ export const createPurchaseBillColumns = ({
       id: 'supplier',
       header: t('purchases.column.supplier'),
       priority: 1,
-      cardSlot: 'title',
+      cardSlot: 'none',
       widthShare: 24,
       cell: (row) => (
         <UbStack gap={0}>
@@ -95,7 +93,7 @@ export const createPurchaseBillColumns = ({
       header: t('purchases.column.total'),
       priority: 1,
       align: 'end',
-      cardSlot: 'trailing',
+      cardSlot: 'none',
       widthShare: 15,
       cell: (row) => (
         <UbAmount
@@ -137,17 +135,14 @@ export const createPurchaseBillColumns = ({
       id: 'status',
       header: t('purchases.column.status'),
       priority: 1,
-      cardSlot: 'none',
+      cardSlot: 'trailing',
       widthShare: 12,
       cell: (row) => (
-        <UbText
-          as="span"
-          variant="body-sm"
-          tone={row.isOverdue ? 'error' : 'secondary'}
-          className="block whitespace-normal break-words"
-        >
-          {status(row)}
-        </UbText>
+        <UbStatusBadge
+          tone={row.isOverdue ? 'error' : due(row) ? 'warning' : 'success'}
+          label={status(row)}
+          className="max-w-full whitespace-normal"
+        />
       ),
     },
   ];
@@ -160,42 +155,21 @@ export const createPurchaseBillColumns = ({
         cardSlot: 'meta',
         cell: (row) =>
           [
-            row.number ?? t('purchases.status.draft'),
-            row.supplierInvoiceNumber,
             formatBusinessDate(row.documentDate),
+            row.party?.name,
+            formatInr(row.grandTotal),
+            row.supplierInvoiceNumber,
+            /* What is still open must survive the shorter row. A return's open
+               amount is credit the supplier owes back, never "to pay". */
+            !order && due(row)
+              ? t(note ? 'purchases.list.openCredit' : 'purchases.list.amountToPay', {
+                  amount: formatInr(row.amountDue),
+                })
+              : null,
           ]
             .filter(Boolean)
             .join(' · '),
       },
-      {
-        id: 'payment',
-        header: '',
-        priority: 1,
-        cardSlot: 'meta',
-        cell: (row) => (
-          <UbStack gap={0}>
-            <UbText
-              as="span"
-              variant="caption"
-              tone={row.isOverdue ? 'error' : 'secondary'}
-              className="whitespace-normal"
-            >
-              {status(row)}
-              {/* A return's open amount is credit the supplier owes back, never "to pay". */}
-              {!order && due(row)
-                ? ` · ${t(note ? 'purchases.list.openCredit' : 'purchases.list.amountToPay', {
-                    amount: formatInr(row.amountDue),
-                  })}`
-                : ''}
-            </UbText>
-            {row.isOverdue && row.dueOn && (
-              <UbText as="span" variant="caption" tone="error">
-                {t('purchases.list.daysLate', { days: daysLate(row.dueOn, today) })}
-              </UbText>
-            )}
-          </UbStack>
-        ),
-      }
     );
   return columns;
 };

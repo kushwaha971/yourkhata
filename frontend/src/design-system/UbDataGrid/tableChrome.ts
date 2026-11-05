@@ -69,7 +69,7 @@ export const REGISTER_TH =
   'h-[46px] select-none whitespace-nowrap px-[14px] py-0 align-middle text-[13px] font-semibold leading-tight text-text-secondary';
 
 /** The sort button fills the header cell's height, not 48 px of its own. */
-export const REGISTER_TH_BUTTON_HEIGHT = 'h-[46px]';
+export const REGISTER_TH_BUTTON_HEIGHT = 'h-[45px]';
 
 export const REGISTER_TD = 'truncate px-[14px] py-[10px] text-[14px] align-middle text-text-primary';
 

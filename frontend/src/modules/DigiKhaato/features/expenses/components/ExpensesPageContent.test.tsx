@@ -153,14 +153,14 @@ it('asks the server for cancelled expenses when the Cancelled chip is chosen', a
   expect(mockSearch).toContain('tab=void');
 });
 
-it('reads a card as the category, then number · mode · date, then the note', async () => {
+it('reads a card as the date, then category · mode, then the note', async () => {
   /* 08 §12 Phone — "Rent" is what the money went on; before the revamp the
      note took the title and the category was nowhere on a phone card. */
   signIn(['expenses.expense.read']);
   renderWithProviders(<ExpensesPageContent />);
   const card = (await screen.findAllByTestId('ub-grid-card'))[0] as HTMLElement;
-  expect(within(card).getByText('Food')).toBeInTheDocument();
-  expect(within(card).getByText('EXP/26-27/0001 · Cash · 24/09/2026')).toBeInTheDocument();
+  expect(within(card).getByText('24/09/2026')).toBeInTheDocument();
+  expect(within(card).getByText('Food · Cash')).toBeInTheDocument();
   expect(within(card).getByText('Tea for staff')).toBeInTheDocument();
 });
 

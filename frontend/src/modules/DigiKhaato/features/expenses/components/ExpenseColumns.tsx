@@ -71,7 +71,7 @@ export const createExpenseColumns = ({
         header: t('expenses.category'),
         priority: 1,
         cardSlot: 'title',
-        cell: (row) => categoryLabel(row.category, archived),
+        cell: date,
       },
       {
         id: 'detail',
@@ -88,7 +88,7 @@ export const createExpenseColumns = ({
               tone="tertiary"
               className={cn('ds-num', cancelled(row) && 'line-through')}
             >
-              {[row.number, mode(row), date(row)].filter(Boolean).join(' · ')}
+              {[categoryLabel(row.category, archived), mode(row)].filter(Boolean).join(' · ')}
             </UbText>
             {note(row) && (
               <UbText as="span" variant="caption" tone="secondary" className="line-clamp-2">

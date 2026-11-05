@@ -83,7 +83,8 @@ export const createPaymentColumns = ({
       cardSlot: 'title',
       widthShare: isCompact ? 32 : 23,
       cell: (row) => {
-        if (isCards || !isCompact) return name(row);
+        if (isCards) return date(row);
+        if (!isCompact) return name(row);
         return (
           <UbStack gap={0} className="min-w-0">
             <UbText as="span" variant="body-sm" className="whitespace-normal break-words">
@@ -108,7 +109,7 @@ export const createPaymentColumns = ({
             header: t('payments.column.number'),
             priority: 1,
             cardSlot: 'meta',
-            cell: (row) => `${row.number} · ${mode(row)} · ${date(row)}`,
+            cell: (row) => `${name(row)} · ${mode(row)}`,
           },
         ] satisfies UbDataGridColumn<PaymentRow>[])
       : ([
@@ -152,6 +153,7 @@ export const createPaymentColumns = ({
              cancelled payment moved no money, so it is not green either. */
           tone={row.direction === 'in' && !cancelled(row) ? 'receivable' : 'neutral'}
           label={t(`payments.direction.${row.direction}`)}
+          labelHidden={isCards}
           className={cancelled(row) ? 'line-through opacity-60' : undefined}
         />
       ),

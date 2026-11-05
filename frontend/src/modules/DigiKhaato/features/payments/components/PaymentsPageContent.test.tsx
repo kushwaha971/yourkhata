@@ -119,7 +119,7 @@ beforeEach(() => {
 
 it("asks for the Shop's own payments, never another app's", async () => {
   renderWithProviders(<PaymentsPageContent />);
-  await screen.findByText('Anita Verma');
+  await screen.findByText(/Anita Verma/);
   expect(lastAsked().bucket).toBe('shop');
 });
 
@@ -130,7 +130,7 @@ it('says a cancelled payment is Cancelled, in words, on its card', async () => {
   renderWithProviders(<PaymentsPageContent />);
   const card = (await screen.findAllByTestId('ub-grid-card'))[0];
   expect(within(card as HTMLElement).getByText('Cancelled')).toBeInTheDocument();
-  expect(within(card as HTMLElement).getByText(/RCT\/26-27\/0233 · Cash ·/)).toBeInTheDocument();
+  expect(within(card as HTMLElement).getByText(/Anita Verma · Cash/)).toBeInTheDocument();
 });
 
 /** R-DEC-33: a phone scrolls one joined card list; there are no page arrows to aim at. */
@@ -175,5 +175,5 @@ it('paints money in as money got, and money out in plain ink', async () => {
 it('names a receipt with nobody on it as a Quick Sale', async () => {
   service.listPayments.mockImplementation(async () => page([{ ...ANITA, party: null }]));
   renderWithProviders(<PaymentsPageContent />);
-  expect(await screen.findByText('Quick Sale')).toBeInTheDocument();
+  expect(await screen.findByText(/Quick Sale/)).toBeInTheDocument();
 });

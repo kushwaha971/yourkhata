@@ -241,6 +241,8 @@ export const ShopPartyRowActions = memo(function ShopPartyRowActions({
     <UbButton
       variant="outlineNeutral"
       size="sm"
+      // A settled phone row is its figure and nothing else (design pCustomers); the row itself opens.
+      className={!payable && !remindable ? 'max-lg:hidden' : undefined}
       aria-label={`${label} · ${party.name}`}
       onClick={() => {
         if (payable) onPay?.(party);

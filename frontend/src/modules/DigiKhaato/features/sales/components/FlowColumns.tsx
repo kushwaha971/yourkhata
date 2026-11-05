@@ -2,6 +2,7 @@ import { UbAmount, UbStack, UbStatusBadge, UbText } from 'src/design-system';
 import type { UbDataGridColumn } from 'src/design-system/UbDataGrid';
 import type { TranslateFn } from 'src/hooks/useTranslation';
 import { formatBusinessDate } from 'src/utils/dates';
+import { formatInr } from 'src/utils/money';
 
 import { STATUS_TONE } from '../view-model/invoiceDisplay';
 
@@ -41,7 +42,7 @@ export const createFlowColumns = ({
             variant="body-sm"
             className="whitespace-normal break-words font-semibold"
           >
-            {name}
+            {number}
           </UbText>
         );
       return (
@@ -72,7 +73,11 @@ export const createFlowColumns = ({
           widthShare: 12,
           cell: (row) =>
             isCards
-              ? [row.number, formatBusinessDate(row.documentDate)].filter(Boolean).join(' · ')
+              ? [
+                  formatBusinessDate(row.documentDate),
+                  row.party?.name ?? row.walkInName ?? t('sales.walkIn.label'),
+                  formatInr(row.grandTotal),
+                ].join(' · ')
               : formatBusinessDate(row.documentDate),
         },
       ] satisfies UbDataGridColumn<InvoiceListRow>[])),
@@ -80,14 +85,11 @@ export const createFlowColumns = ({
     id: 'status',
     header: t('sales.column.status'),
     priority: 1,
-    cardSlot: 'meta',
+    cardSlot: 'trailing',
     widthShare: 14,
-    cell: (row) =>
-      isCards ? (
-        t(`sales.status.${row.status}`)
-      ) : (
-        <UbStatusBadge tone={STATUS_TONE[row.status]} label={t(`sales.status.${row.status}`)} />
-      ),
+    cell: (row) => (
+      <UbStatusBadge tone={STATUS_TONE[row.status]} label={t(`sales.status.${row.status}`)} />
+    ),
   },
   // Shop item 3 — an order has no validity and no credit: its status says it all.
   ...(kind === 'sales_order' || kind === 'delivery_challan'
@@ -119,7 +121,7 @@ export const createFlowColumns = ({
     header: t('sales.column.total'),
     priority: 1,
     align: 'end',
-    cardSlot: 'trailing',
+    cardSlot: 'none',
     widthShare: 16,
     cell: (row) => (
       <UbAmount
