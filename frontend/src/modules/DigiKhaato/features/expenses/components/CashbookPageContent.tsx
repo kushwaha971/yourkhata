@@ -23,6 +23,7 @@ import {
   UbStatusBanner,
   UbText,
 } from 'src/design-system';
+import { useIsMobileLayer } from 'src/design-system/motion/useMediaQuery';
 import { UbPageHeaderMobileActions } from 'src/design-system/UbPageHeader/UbPageHeaderMobileActions';
 import { useAppRouter } from 'src/hooks/useAppRouter';
 import { usePermissions } from 'src/hooks/usePermissions';
@@ -40,7 +41,7 @@ import { useExpenseForm } from '../hooks/useExpenseForm';
 import { isNegative, shareOf } from '../view-model/expenseDisplay';
 
 import { CashbookClosePanel } from './CashbookClosePanel';
-import { CASHBOOK_ROW_GRID, CashbookDayCard, cashRowLabel } from './CashbookDayCard';
+import { CASHBOOK_ROW_GRID, CashbookRows, cashRowLabel } from './CashbookDayCard';
 
 import type { CashbookBucketFilter, CashbookData, CashFigures, CashRow } from '../types/cashbook.types';
 import type { ExpensePreset } from '../types/expense.types';
@@ -107,7 +108,7 @@ const BUCKETS: readonly CashbookBucketFilter[] = ['cash', 'bank', 'all'];
  * says where its opening comes from instead of offering a control for it.
  */
 export function CashbookPageContent(): React.JSX.Element {
-  const { t, locale } = useTranslation();
+  const { t } = useTranslation();
   const router = useAppRouter();
   const { can, hasModule } = usePermissions();
   const book = useCashbook();
@@ -115,12 +116,16 @@ export function CashbookPageContent(): React.JSX.Element {
   const [payment, setPayment] = useState<PaymentContext | null>(null);
   const [counting, setCounting] = useState(false);
   const [search, setSearch] = useState('');
+  const isPhone = useIsMobileLayer();
   const canCount = hasModule('reports') && can('reports.financial.read');
   const canReceive = hasModule('payments') && can('payments.payment.write');
 
   const presets = useMemo(
-    () => CASHBOOK_PRESETS.map((value) => ({ value, label: t(`expenses.period.${value}`) })),
-    [t]
+    () => CASHBOOK_PRESETS.map((value) => {
+        const label = t(`expenses.period.${value}`);
+        return { value, label: isPhone ? label : t('cashbook.datePrefix', { label }) };
+      }),
+    [t, isPhone]
   );
   const bucketOptions = useMemo(
     () => BUCKETS.map((value) => ({ value, label: t(`cashbook.bucket.${value}`) })),
@@ -212,7 +217,7 @@ export function CashbookPageContent(): React.JSX.Element {
           )
         : day.rows,
     }))
-    .filter(({ day, rows }) => !needle || (rows.length > 0 && day));
+    .filter(({ rows }) => rows.length > 0);
 
   const closePanel = book.isToday && expectedCash !== null && (
     <CashbookClosePanel
@@ -223,35 +228,51 @@ export function CashbookPageContent(): React.JSX.Element {
     />
   );
 
+  const exportButton = data ? (
+    <UbButton
+      variant="secondary"
+      onClick={() =>
+        saveBlob(cashbookCsv(data.days, t), `cashbook-${filters.dateFrom}-${filters.dateTo}.csv`)
+      }
+    >
+      {t('cashbook.export')}
+    </UbButton>
+  ) : null;
+  const period = (
+    <UbDateRangePicker<ExpensePreset>
+              presets={presets}
+              preset={filters.preset}
+              onPresetChange={book.setPreset}
+              customPreset="custom"
+              from={filters.dateFrom}
+              to={filters.dateTo}
+              onRangeChange={book.setRange}
+              max={book.today}
+              name="cashbook-period"
+              labels={{
+                presets: t('expenses.period.label'),
+                from: t('expenses.period.from'),
+                to: t('expenses.period.to'),
+                apply: t('common.action.apply'),
+                close: t('common.action.close'),
+              }}
+            />
+  );
+  const searchBox = (
+    <UbSearchInput
+      value={search}
+      onChange={setSearch}
+      placeholder={t('cashbook.search')}
+      aria-label={t('cashbook.search')}
+    />
+  );
+
   return (
     <UbPageShell>
       <UbPageHeader
         title={t('cashbook.title')}
-        subtitle={t('cashbook.subtitle')}
-        actions={
-          emptyBook ? undefined : (
-            <>
-              {data && (
-                <UbButton
-                  variant="secondary"
-                  onClick={() =>
-                    saveBlob(
-                      cashbookCsv(data.days, t),
-                      `cashbook-${filters.dateFrom}-${filters.dateTo}.csv`
-                    )
-                  }
-                >
-                  {t('cashbook.export')}
-                </UbButton>
-              )}
-              {form.canWrite && (
-                <UbButton variant="secondary" onClick={form.openDrawer}>
-                  {t('cashbook.addExpense')}
-                </UbButton>
-              )}
-            </>
-          )
-        }
+        subtitle={isPhone ? undefined : t('cashbook.subtitle')}
+        actions={emptyBook || isPhone || !data ? undefined : exportButton}
         primaryAction={
           !emptyBook && canCount ? (
             <UbButton onClick={() => setCounting(true)} data-testid="cashbook-count">
@@ -259,10 +280,10 @@ export function CashbookPageContent(): React.JSX.Element {
             </UbButton>
           ) : undefined
         }
-        renderMobileActions={(actions) =>
+        renderMobileActions={() =>
           emptyBook ? null : (
             <UbPageHeaderMobileActions
-              actions={actions}
+              actions={undefined}
               mobile={{
                 menuLabel: t('common.action.moreActions'),
                 closeLabel: t('common.action.close'),
@@ -324,38 +345,23 @@ export function CashbookPageContent(): React.JSX.Element {
 
         {data && !emptyBook && (
           <>
-            <UbStack gap={1} role="group" aria-label={t('cashbook.figures')} data-testid="cashbook-figures">
-              <UbCountLine
-                items={[
-                  {
-                    id: 'closing',
-                    template: t(`cashbook.records.${filters.bucket}`),
-                    values: { amount: { text: formatInr(value(data.range.closing)) } },
-                  },
-                  {
-                    id: 'opening',
-                    template: `${t('cashbook.opening')} {amount}`,
-                    values: { amount: { text: formatInr(value(data.range.opening)) } },
-                  },
-                  {
-                    id: 'in',
-                    template: `${t('cashbook.in')} {amount}`,
-                    values: { amount: { text: formatInr(value(data.range.in)), tone: 'receivable' } },
-                  },
-                  {
-                    id: 'out',
-                    template: `${t('cashbook.out')} {amount}`,
-                    values: { amount: { text: formatInr(value(data.range.out)) } },
-                  },
-                ]}
-              />
-              {below && (
-                <UbText variant="caption" tone="error">
-                  {t('cashbook.negative')}
-                </UbText>
-              )}
-            </UbStack>
+            {isPhone && searchBox}
+            <UbCountLine
+              items={[
+                {
+                  id: 'closing',
+                  template: t(`cashbook.records.${filters.bucket}`),
+                  values: { amount: { text: formatInr(value(data.range.closing)) } },
+                },
+              ]}
+            />
+            {below && (
+              <UbText variant="caption" tone="error">
+                {t('cashbook.negative')}
+              </UbText>
+            )}
 
+            {/* Closing time is why the screen is opened on Today, so it is not folded. */}
             {closePanel}
 
             <UbStack
@@ -363,61 +369,24 @@ export function CashbookPageContent(): React.JSX.Element {
               data-ub-register-frame=""
               className="overflow-hidden rounded-card border border-border-hairline bg-surface-card"
             >
-              <UbStack
-                direction="row"
-                align="center"
-                className="flex-wrap gap-2 border-b border-border-hairline p-3"
-              >
-                <UbStack className="min-w-[14rem] flex-1">
-                  <UbSearchInput
-                    value={search}
-                    onChange={setSearch}
-                    placeholder={t('cashbook.search')}
-                    aria-label={t('cashbook.search')}
-                  />
+              {!isPhone && (
+                <UbStack direction="row" align="center" className="gap-2 border-b border-border-hairline p-3">
+                  <UbStack className="min-w-0 flex-1">{searchBox}</UbStack>
+                  {book.fullScope && period}
                 </UbStack>
-                {book.fullScope && (
-                  <UbStack direction="row" align="center" className="flex-wrap gap-x-2 gap-y-3">
-            <UbDateRangePicker<ExpensePreset>
-              presets={presets}
-              preset={filters.preset}
-              onPresetChange={book.setPreset}
-              customPreset="custom"
-              from={filters.dateFrom}
-              to={filters.dateTo}
-              onRangeChange={book.setRange}
-              max={book.today}
-              name="cashbook-period"
-              labels={{
-                presets: t('expenses.period.label'),
-                from: t('expenses.period.from'),
-                to: t('expenses.period.to'),
-                apply: t('common.action.apply'),
-                close: t('common.action.close'),
-              }}
-            />
-            <UbChoiceChips<CashbookBucketFilter>
-              value={filters.bucket}
-              onChange={book.setBucket}
-              options={bucketOptions}
-              ariaLabel={t('cashbook.bucket.label')}
-              className="flex-nowrap"
-            />
-          </UbStack>
-                )}
-              </UbStack>
+              )}
               <UbStack
                 direction="row"
                 className={`hidden bg-surface-sunken px-4 py-2 lg:grid ${CASHBOOK_ROW_GRID}`}
                 aria-hidden
               >
                 {(['time', 'what'] as const).map((key) => (
-                  <UbText as="span" key={key} variant="caption" tone="secondary">
+                  <UbText as="span" key={key} variant="caption" tone="secondary" className="text-[13px] font-semibold">
                     {t(`cashbook.column.${key}`)}
                   </UbText>
                 ))}
                 {(['in', 'out'] as const).map((key) => (
-                  <UbText as="span" key={key} variant="caption" tone="secondary" className="text-right">
+                  <UbText as="span" key={key} variant="caption" tone="secondary" className="text-right text-[13px] font-semibold">
                     {t(`cashbook.column.${key}`)}
                   </UbText>
                 ))}
@@ -429,23 +398,66 @@ export function CashbookPageContent(): React.JSX.Element {
                   description={t('cashbook.empty.body')}
                 />
               ) : (
-                days.map(({ day, rows }) => (
-                  <CashbookDayCard
-                    key={day.date}
-                    day={day}
-                    rows={rows}
-                    t={t}
-                    locale={locale}
-                    onOpenRow={openRow}
-                  />
-                ))
+                <CashbookRows days={days} today={book.today} t={t} onOpenRow={openRow} />
               )}
             </UbStack>
 
-            {book.fullScope && data.byCategory.length > 0 && (
-              <UbDisclosure label={t('cashbook.whereMoneyWent')}>
-                <UbStack gap={3}>
-                  {data.byCategory.map((row) => {
+            {/* What the design's composition does not draw stays one tap away. */}
+            <UbDisclosure label={t('cashbook.more')}>
+              <UbStack gap={4} data-testid="cashbook-more">
+                <UbStack direction="row" align="center" className="flex-wrap gap-2 p-1.5">
+                  {isPhone && exportButton}
+                  {form.canWrite && (
+                    <UbButton variant="secondary" onClick={form.openDrawer}>
+                      {t('cashbook.addExpense')}
+                    </UbButton>
+                  )}
+                  {book.fullScope && isPhone && period}
+                  {book.fullScope && (
+                    <UbChoiceChips<CashbookBucketFilter>
+              value={filters.bucket}
+              onChange={book.setBucket}
+              options={bucketOptions}
+              ariaLabel={t('cashbook.bucket.label')}
+              className="flex-nowrap"
+            />
+                  )}
+                </UbStack>
+                <UbStack role="group" aria-label={t('cashbook.figures')} data-testid="cashbook-figures">
+                  <UbCountLine
+                    items={[
+                      {
+                        id: 'opening',
+                        template: `${t('cashbook.opening')} {amount}`,
+                        values: { amount: { text: formatInr(value(data.range.opening)) } },
+                      },
+                      {
+                        id: 'in',
+                        template: `${t('cashbook.in')} {amount}`,
+                        values: { amount: { text: formatInr(value(data.range.in)), tone: 'receivable' } },
+                      },
+                      {
+                        id: 'out',
+                        template: `${t('cashbook.out')} {amount}`,
+                        values: { amount: { text: formatInr(value(data.range.out)) } },
+                      },
+                      {
+                        id: 'closing',
+                        template: `${t('cashbook.closing')} {amount}`,
+                        values: { amount: { text: formatInr(value(data.range.closing)) } },
+                      },
+                    ]}
+                  />
+                </UbStack>
+                {data.days.some((day) => day.voidedCount > 0) && (
+                  <UbText variant="caption" tone="tertiary">
+                    {t('cashbook.voidedNote', {
+                      count: data.days.reduce((total, day) => total + day.voidedCount, 0),
+                    })}
+                  </UbText>
+                )}
+                {book.fullScope &&
+                  data.byCategory.map((row) => {
                     const percent = shareOf(row.amount, spent);
                     return (
                       <UbStack key={row.id} gap={1}>
@@ -468,9 +480,8 @@ export function CashbookPageContent(): React.JSX.Element {
                       </UbStack>
                     );
                   })}
-                </UbStack>
-              </UbDisclosure>
-            )}
+              </UbStack>
+            </UbDisclosure>
           </>
         )}
       </UbStack>

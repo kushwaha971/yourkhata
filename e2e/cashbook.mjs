@@ -129,11 +129,12 @@ try {
   });
   const open = async (query) => {
     await page.goto(`${base}/cashbook?${query}`, { waitUntil: 'domcontentloaded' });
+    await page.getByRole('button', { name: /More details|और जानकारी/ }).click({ timeout: 30000 });
     await page.getByTestId('cashbook-figures').waitFor({ timeout: 30000 });
     await page.waitForLoadState('networkidle');
     await page.waitForTimeout(300);
   };
-  const figure = async (key) => (await page.getByTestId('cashbook-figures').locator('[data-ub-count-line] b').nth({ closing: 0, opening: 1, in: 2, out: 3 }[key]).innerText()).replace(/[^\d.-]/g, '');
+  const figure = async (key) => (await page.getByTestId('cashbook-figures').locator('[data-ub-count-line] b').nth({ opening: 0, in: 1, out: 2, closing: 3 }[key]).innerText()).replace(/[^\d.-]/g, '');
   const inr = (v) => Number(v).toFixed(2);
 
   /* ---------- the figures are the server's ---------- */
@@ -151,7 +152,7 @@ try {
   const cash = (await getJson(`/cashbook${cashAsk}`)).data;
   for (const key of ['opening', 'closing'])
     check(`this month, Cash: ${key} is the server's cash figure`, (await figure(key)) === inr(cash.range[key].cash), `${await figure(key)} vs ${cash.range[key].cash}`);
-  check('the bucket is in the address bar', page.url().includes('bucket=cash'), page.url());
+  check('Cash is the default, so the address bar stays short', !page.url().includes('bucket='), page.url());
 
   /* ---------- LOOK ---------- */
   for (const locale of ['en', 'hi']) {
@@ -200,8 +201,7 @@ try {
   const leave = page.getByRole('dialog', { name: /Leave without saving\?/ });
   if (await leave.isVisible().catch(() => false)) await leave.getByRole('button', { name: /Discard/ }).first().click();
   await drawer.waitFor({ state: 'hidden' });
-  if (page.viewportSize().width < 1024) await page.getByRole('button', { name: 'More actions' }).click();
-  await page.getByRole('button', { name: 'Add expense' }).first().click();
+    await page.getByRole('button', { name: 'Add expense' }).first().click();
   await drawer.locator('input[name="amount"]').waitFor();
   check('closed unsaved, the next Add expense opens empty', (await drawer.locator('input[name="amount"]').inputValue()) === '');
   await page.keyboard.press('Escape');
@@ -251,7 +251,7 @@ try {
   await page.waitForURL(/\/payments\/[0-9a-f-]+$/, { timeout: 15000 });
   check('a payment row opens its receipt', /\/payments\/[0-9a-f-]+$/.test(page.url()), page.url());
   await page.goBack();
-  await page.getByTestId('cashbook-figures').waitFor();
+  await page.getByTestId('cashbook-day-rows').first().waitFor();
   /* Every day is drawn open now. A period with no live expense has nothing to open. */
   await page.waitForLoadState('networkidle');
   const expRow = page.getByRole('button', { name: /^Open (?!Received|Paid)/ }).first();

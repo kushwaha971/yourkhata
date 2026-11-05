@@ -146,7 +146,7 @@ export const cashbookFiltersFromQuery = (
     preset,
     dateFrom: resolved?.dateFrom ?? (hasDates ? (from as string) : today),
     dateTo: resolved?.dateTo ?? (hasDates ? (to as string) : today),
-    bucket: bucket && BUCKETS.includes(bucket) ? bucket : 'all',
+    bucket: bucket && BUCKETS.includes(bucket) ? bucket : 'cash',
   };
 };
 
@@ -157,7 +157,7 @@ export const cashbookQueryFromFilters = (filters: CashbookFilters): string => {
     search.set('from', filters.dateFrom);
     search.set('to', filters.dateTo);
   }
-  if (filters.bucket !== 'all') search.set('bucket', filters.bucket);
+  if (filters.bucket !== 'cash') search.set('bucket', filters.bucket);
   return search.toString();
 };
 

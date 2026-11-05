@@ -151,7 +151,7 @@ it('asks for the range in the URL when the member may read the books', async () 
   renderWithProviders(<CashbookPageContent />);
   await screen.findByText('Close the day');
   const asked = cashbookService.getCashbook.mock.calls[0]?.[0] as CashbookFilters;
-  expect(asked).toEqual({ preset: 'today', dateFrom: TODAY, dateTo: TODAY, bucket: 'all' });
+  expect(asked).toEqual({ preset: 'today', dateFrom: TODAY, dateTo: TODAY, bucket: 'cash' });
 });
 
 it('tells the merchant how far the drawer is off, and opens the fix filled in', async () => {
@@ -209,12 +209,13 @@ it('shows the four figures with their meaning, and a closing below zero in words
   mockSearch = 'period=today&bucket=cash';
   signIn(['expenses.expense.read', 'reports.financial.read']);
   renderWithProviders(<CashbookPageContent />);
+  await userEvent.click(await screen.findByRole('button', { name: 'More details' }));
   const group = await screen.findByRole('group', { name: 'Cash book figures' });
   expect(group).toHaveTextContent('Opening ₹0.00');
   expect(group).toHaveTextContent('Money in ₹2,000.00');
   expect(group).toHaveTextContent('Money out ₹440.00');
-  expect(group).toHaveTextContent('by your records -₹150.00');
-  expect(group).toHaveTextContent('Cash below zero — an entry is probably missing');
+  expect(group).toHaveTextContent('Closing -₹150.00');
+  expect(screen.getByText('Cash below zero — an entry is probably missing')).toBeInTheDocument();
   expect(screen.getByRole('radio', { name: 'Cash' })).toBeChecked();
 });
 
@@ -298,13 +299,14 @@ it('opens a payment row on its receipt and an expense row in its sheet', async (
     await screen.findByRole('button', { name: 'Open Received from Anita Verma' })
   );
   expect(mockPush).toHaveBeenCalledWith('/payments/pay-9');
-  const tea = screen.getByRole('button', { name: 'Open Tea' });
+  const tea = screen.getByRole('button', { name: 'Open Expense: Tea' });
   await userEvent.click(tea);
   await userEvent.click(tea);
   expect(expenseService.getExpense).toHaveBeenCalledTimes(1);
   expect(expenseService.getExpense).toHaveBeenCalledWith('exp-3', expect.anything());
   expect(screen.queryByRole('button', { name: 'Open Received from Ravi' })).toBeNull();
   expect(screen.getByText('Received from Ravi')).toBeInTheDocument();
+  await userEvent.click(screen.getByRole('button', { name: 'More details' }));
   expect(screen.getByText('1 cancelled entry on this day')).toBeInTheDocument();
 });
 
@@ -349,7 +351,7 @@ it('shows a business that never moved money one empty state and no ₹0.00', asy
   expect(screen.getAllByRole('button', { name: 'Add expense' })).toHaveLength(1);
   expect(screen.queryByText(/This month|Today/)).not.toBeInTheDocument();
   expect(screen.queryByText('Cash or bank')).not.toBeInTheDocument();
-  expect(screen.queryByTestId('cashbook-figures')).not.toBeInTheDocument();
+  expect(screen.queryByTestId('cashbook-day-rows')).not.toBeInTheDocument();
   expect(screen.queryByText('Money in')).not.toBeInTheDocument();
   expect(screen.queryByText('Days')).not.toBeInTheDocument();
   expect(screen.queryByText(/₹0\.00/)).not.toBeInTheDocument();
@@ -366,7 +368,7 @@ it('keeps every control when the range is quiet but the book is not', async () =
     await screen.findByText('No money came in or went out in this period')
   ).toBeInTheDocument();
   expect(screen.queryByText(EMPTY_BOOK_TITLE)).not.toBeInTheDocument();
-  expect(screen.getByTestId('cashbook-figures')).toHaveTextContent('Opening');
+  expect(screen.getByRole('button', { name: 'More details' })).toBeInTheDocument();
 });
 
 it('never hides the controls for a server that does not say', async () => {
@@ -374,6 +376,6 @@ it('never hides the controls for a server that does not say', async () => {
   cashbookService.getCashbook.mockResolvedValue(DATA('full'));
   signIn(['expenses.expense.read', 'reports.financial.read']);
   renderWithProviders(<CashbookPageContent />);
-  expect(await screen.findByTestId('cashbook-figures')).toHaveTextContent('Opening');
+  expect(await screen.findByRole('button', { name: 'More details' })).toBeInTheDocument();
   expect(screen.queryByText(EMPTY_BOOK_TITLE)).not.toBeInTheDocument();
 });
