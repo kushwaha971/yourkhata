@@ -104,7 +104,7 @@ export function ShopFeaturesPageContent(): React.JSX.Element {
       <UbStack gap={4}>
         <UbPanel>
           <UbStack gap={3} className="p-4">
-            <UbText as="h2" variant="body-medium" className="font-semibold">
+            <UbText as="h2" variant="body-medium" className="text-[14px] font-semibold">
               {t('settings.shop.whatYouSell')}
             </UbText>
             {kindLabel && (
@@ -152,10 +152,10 @@ export function ShopFeaturesPageContent(): React.JSX.Element {
           />
         )}
         <UbStack gap={1}>
-          <UbText as="h2" variant="body-medium" className="font-semibold">
+          <UbText as="h2" variant="body-medium" className="text-[14px] font-semibold">
             {t('settings.shop.features')}
           </UbText>
-          <UbText as="p" variant="caption" tone="tertiary">
+          <UbText as="p" variant="caption" tone="tertiary" className="text-[12.5px]">
             {t('settings.shop.features.note')}
           </UbText>
         </UbStack>

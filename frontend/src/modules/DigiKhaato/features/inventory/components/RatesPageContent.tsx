@@ -339,7 +339,8 @@ export function RatesPageContent(): React.JSX.Element {
       data-testid={`rate-row-${p}`}
     >
       <UbStack gap={0.5} className="min-w-0">
-        <UbText as="span" variant="body-sm-medium">
+        {/* pRate draws the metal at 500, dRate at 600. */}
+        <UbText as="span" variant="body-sm-medium" className="lg:font-semibold">
           {names[p]}
         </UbText>
         {yesterdayLine(p) && (
@@ -498,6 +499,7 @@ export function RatesPageContent(): React.JSX.Element {
             </UbText>
           </UbPanel>
           <UbDataGrid
+            variant="register"
             rows={shownHistory ?? []}
             columns={columns}
             rowId={(r) => r.day}
@@ -560,10 +562,10 @@ export function RatesPageContent(): React.JSX.Element {
           </UbText>
           <UbPanel className="p-4">
             <UbStack gap={1.5} className="items-start">
-              <UbText as="span" variant="body-sm-medium">
+              <UbText as="span" variant="body-sm-medium" className="font-semibold">
                 {t('stock.rates.shareTitle')}
               </UbText>
-              <UbText as="span" variant="caption" tone="secondary">
+              <UbText as="span" variant="caption" tone="tertiary" className="text-[12.5px]">
                 {t('stock.rates.shareBody')}
               </UbText>
               {shareButton}
