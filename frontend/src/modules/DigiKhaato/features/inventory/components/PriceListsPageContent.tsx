@@ -8,13 +8,15 @@ import { Plus } from 'lucide-react';
 
 import {
   UbButton,
+  UbCountLine,
   UbDialogLoading,
   UbEmptyState,
-  UbLink,
   UbPageHeader,
   UbPageShell,
+  UbSearchInput,
   UbText,
 } from 'src/design-system';
+import { useIsMobileLayer } from 'src/design-system/motion/useMediaQuery';
 import {
   preloadGridTable,
   UbDataGrid,
@@ -23,11 +25,13 @@ import {
   type UbGridState,
   type UbGridTier,
 } from 'src/design-system/UbDataGrid';
+import { UbPageHeaderMobileActions } from 'src/design-system/UbPageHeader/UbPageHeaderMobileActions';
 import { useAppRouter } from 'src/hooks/useAppRouter';
 import { usePermissions } from 'src/hooks/usePermissions';
 import { useTranslation, type TranslateFn } from 'src/hooks/useTranslation';
 import { priceListPath } from 'src/routes';
 
+import { saveBlob } from '../../imports/api/fileDownload';
 import { listPriceLists, type PriceList } from '../api/priceListService';
 import { inventoryGridLabels } from '../view-model/gridLabels';
 import { priceRule } from '../view-model/priceListDisplay';
@@ -46,6 +50,18 @@ const PriceListFormDialog = dynamic(
  * adds how many rates are pinned. Module-level, so no cell is a component
  * defined during render.
  */
+const forLabel = (row: PriceList, t: TranslateFn): string =>
+  t('priceLists.customers', { count: row.partyCount });
+/** "All" when the rule prices every item; otherwise how many rates are pinned. */
+const itemsLabel = (row: PriceList, t: TranslateFn): string =>
+  Number(row.adjustPercent || 0) ? t('priceLists.items.all') : String(row.rateCount);
+const ruleLabel = (row: PriceList, t: TranslateFn): string =>
+  Number(row.adjustPercent || 0) ? priceRule(row.adjustPercent, t) : t('priceLists.rule.fixed');
+
+/**
+ * The design's register (F-pl-d / F-pl-p): Price list, For, Items, Rule. A
+ * phone reads the name, "8 customers · All" under it and the rule at the right.
+ */
 const createListColumns = (t: TranslateFn, tier: UbGridTier): UbDataGridColumn<PriceList>[] => [
   {
     id: 'name',
@@ -53,49 +69,56 @@ const createListColumns = (t: TranslateFn, tier: UbGridTier): UbDataGridColumn<P
     priority: 1,
     cardSlot: 'title',
     widthShare: 30,
-    /* A card is one button already, so its name is text; a table row opens
-       from a link in its first cell. */
-    cell: (row) =>
-      tier === 'cards' ? (
-        <UbText as="span" variant="body-sm-medium" className="break-words">
-          {row.name}
-        </UbText>
-      ) : (
-        <UbLink href={priceListPath(row.id)} variant="body-sm-medium">
-          {row.name}
-        </UbLink>
-      ),
+    /* The grid's own open control wraps the first cell, so the name is text:
+       a link inside it was a link inside a button. */
+    cell: (row) => (
+      <UbText as="span" variant={tier === 'cards' ? 'body-sm-medium' : 'body-sm'} className="break-words">
+        {row.name}
+      </UbText>
+    ),
+  },
+  {
+    id: 'for',
+    header: t('priceLists.col.for'),
+    priority: 1,
+    cardSlot: 'none',
+    widthShare: 20,
+    cell: (row) => forLabel(row, t),
+  },
+  {
+    id: 'items',
+    header: t('priceLists.col.items'),
+    priority: 1,
+    cardSlot: 'none',
+    widthShare: 15,
+    cell: (row) => itemsLabel(row, t),
   },
   {
     id: 'rule',
     header: t('priceLists.col.rule'),
     priority: 1,
-    cardSlot: 'meta',
-    widthShare: 30,
-    cell: (row) => priceRule(row.adjustPercent, t),
-  },
-  {
-    id: 'customers',
-    header: t('priceLists.col.customers'),
-    priority: 1,
-    align: 'end',
     cardSlot: 'trailing',
-    widthShare: 20,
-    cell: (row) => (
-      <UbText as="span" variant={tier === 'cards' ? 'caption' : 'body-sm'} tone="secondary">
-        {t('priceLists.customers', { count: row.partyCount })}
-      </UbText>
-    ),
+    widthShare: 35,
+    cell: (row) =>
+      tier === 'cards' ? (
+        <UbText as="span" variant="body-sm" className="text-right">
+          {ruleLabel(row, t)}
+        </UbText>
+      ) : (
+        ruleLabel(row, t)
+      ),
   },
-  {
-    id: 'pinned',
-    header: t('priceLists.col.pinned'),
-    priority: 2,
-    align: 'end',
-    cardSlot: 'none',
-    widthShare: 20,
-    cell: (row) => t('priceLists.pinned', { count: row.rateCount }),
-  },
+  ...(tier === 'cards'
+    ? ([
+        {
+          id: 'meta',
+          header: '',
+          priority: 1,
+          cardSlot: 'meta',
+          cell: (row: PriceList) => `${forLabel(row, t)} · ${itemsLabel(row, t)}`,
+        },
+      ] satisfies UbDataGridColumn<PriceList>[])
+    : []),
 ];
 
 type Load =
@@ -119,6 +142,8 @@ export function PriceListsPageContent(): React.JSX.Element {
   const [load, setLoad] = useState<Load>({ status: 'loading' });
   const [attempt, setAttempt] = useState(0);
   const [adding, setAdding] = useState(false);
+  const [search, setSearch] = useState('');
+  const isPhone = useIsMobileLayer();
 
   useEffect(() => {
     if (!canRead) return undefined;
@@ -151,14 +176,37 @@ export function PriceListsPageContent(): React.JSX.Element {
       }),
     [t]
   );
-  const rows = load.status === 'ready' ? load.lists : [];
+  const all = load.status === 'ready' ? load.lists : [];
+  const needle = search.trim().toLowerCase();
+  const rows = needle ? all.filter((row) => row.name.toLowerCase().includes(needle)) : all;
+  const searchBox = (
+    <UbSearchInput
+      value={search}
+      onChange={setSearch}
+      placeholder={t('priceLists.search')}
+      aria-label={t('priceLists.search')}
+    />
+  );
+  const exportLists = () => {
+    const cell = (value: string) => `"${value.replace(/"/g, '""')}"`;
+    const head = ['name', 'for', 'items', 'rule'].map((key) => t(`priceLists.col.${key}`));
+    const body = all.map((row) => [row.name, forLabel(row, t), itemsLabel(row, t), ruleLabel(row, t)]);
+    saveBlob(
+      new Blob([[head, ...body].map((line) => line.map(cell).join(',')).join('\r\n')], {
+        type: 'text/csv;charset=utf-8',
+      }),
+      'price-lists.csv'
+    );
+  };
   const gridState: UbGridState =
     load.status === 'loading'
       ? 'loading'
       : load.status === 'failed'
         ? 'error'
         : rows.length === 0
-          ? 'empty'
+          ? needle
+            ? 'filtered-empty'
+            : 'empty'
           : 'rows';
 
   if (!canRead) {
@@ -177,20 +225,55 @@ export function PriceListsPageContent(): React.JSX.Element {
     <UbPageShell>
       <UbPageHeader
         title={t('priceLists.title')}
-        subtitle={t('priceLists.subtitle')}
+        subtitle={isPhone ? undefined : t('priceLists.subtitle')}
         actions={
-          canWrite ? (
-            <UbButton
-              icon={<Plus className="h-4 w-4" aria-hidden />}
-              iconOnly="mobile"
-              onClick={() => setAdding(true)}
-            >
-              {t('priceLists.new')}
+          all.length > 0 ? (
+            <UbButton variant="secondary" onClick={exportLists}>
+              {t('priceLists.export')}
             </UbButton>
           ) : undefined
         }
+        primaryAction={
+          canWrite && all.length > 0 ? (
+            <UbButton onClick={() => setAdding(true)}>{t('priceLists.new')}</UbButton>
+          ) : undefined
+        }
+        renderMobileActions={(actions) => (
+          <UbPageHeaderMobileActions
+            actions={actions}
+            mobile={{
+              menuLabel: t('common.action.moreActions'),
+              closeLabel: t('common.action.close'),
+              primaryPlacement: 'header',
+              primary:
+                canWrite && all.length > 0
+                  ? {
+                      label: t('priceLists.new'),
+                      icon: <Plus className="h-6 w-6" aria-hidden />,
+                      onClick: () => setAdding(true),
+                    }
+                  : undefined,
+            }}
+          />
+        )}
       />
+      {all.length > 0 && (
+        <>
+          {isPhone && searchBox}
+          <UbCountLine
+            items={[
+              {
+                id: 'count',
+                template: t('priceLists.count'),
+                values: { count: { text: String(all.length) } },
+              },
+            ]}
+          />
+        </>
+      )}
       <UbDataGrid
+        toolbar={!isPhone && all.length > 0 ? searchBox : undefined}
+        variant="register"
         rows={rows}
         columns={columns}
         rowId={(row) => row.id}
@@ -207,7 +290,7 @@ export function PriceListsPageContent(): React.JSX.Element {
               </UbButton>
             ) : undefined,
           },
-          filtered: { title: t('priceLists.empty.title'), description: t('priceLists.empty.body') },
+          filtered: { title: t('priceLists.noMatch', { query: search.trim() }), description: '' },
           error: {
             title: t('priceLists.error'),
             description: '',

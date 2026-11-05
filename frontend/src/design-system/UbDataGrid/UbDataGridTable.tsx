@@ -417,7 +417,9 @@ function UbDataGridTableBase<TRow>({
                           onClick={handleOpen(row.original)}
                           aria-label={fillTemplate(labels.openRow, { name })}
                           className={cn(
-                            'w-full rounded-sm text-left outline-none',
+                            // Block, not the button's inline-block: an inline box sits on
+                            // the text baseline and added 1 px to every row (design 41).
+                            'block w-full rounded-sm text-left outline-none',
                             'hover:underline focus-visible:shadow-focus'
                           )}
                         >

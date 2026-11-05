@@ -89,7 +89,7 @@ test('the list page says what each list does and who is on it', async () => {
   renderWithProviders(<PriceListsPageContent />);
   expect(await screen.findByText('Wholesale')).toBeInTheDocument();
   expect(screen.getByText('5% below usual price')).toBeInTheDocument();
-  expect(screen.getByText('1 customer')).toBeInTheDocument();
+  expect(screen.getByText(/1 customer/)).toBeInTheDocument();
   await userEvent.click(screen.getByText('Wholesale'));
   expect(push).toHaveBeenCalledWith('/items/price-lists/w1');
 });

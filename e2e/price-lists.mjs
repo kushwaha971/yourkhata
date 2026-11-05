@@ -183,7 +183,13 @@ try {
         }
         if (screen === 'detail' && width === 1280) check(`${tag}: the rule sits beside the pinned rates`, m.side);
         if (screen === 'list' && width === 1280)
-          check(`${tag}: a table row opens its list`, (await page.locator('main table a').filter({ hasText: listName }).getAttribute('href')) === `/items/price-lists/${listId}`);
+        {
+          // The grid's open control is a button; a link inside it was nested interactive.
+          await page.locator('main table button').filter({ hasText: listName }).click();
+          await page.waitForURL(/\/items\/price-lists\/[^/]+$/, { timeout: 10000 }).catch(() => undefined);
+          check(`${tag}: a table row opens its list`, new URL(page.url()).pathname === `/items/price-lists/${listId}`, page.url());
+          await page.goBack();
+        }
         if (SHOTS) await page.screenshot({ path: `${SHOTS}/${screen}-${width}-${locale}.png`, fullPage: true });
       }
     }
