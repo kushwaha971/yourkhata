@@ -53,7 +53,7 @@ export function HomeStrip(): React.JSX.Element | null {
           href={HREF[tile.key]}
           underline={false}
           data-testid={`home-strip-${tile.key}`}
-          className="bg-surface grid min-h-[82px] min-w-0 gap-0.5 rounded-card leading-[1.45] lg:min-h-[95px] border border-border-hairline px-3 py-2.5 lg:px-4 lg:py-3"
+          className="bg-surface-card grid min-h-[86px] min-w-0 gap-0.5 rounded-card text-text-primary leading-[1.45] lg:min-h-[95px] border border-border-hairline px-3 py-2.5 lg:px-4 lg:py-3"
         >
           <UbText variant="inherit" tone="tertiary" className="text-[12px] font-semibold [overflow-wrap:anywhere]">
             {t(`reports.home.strip.${tile.key}`)}

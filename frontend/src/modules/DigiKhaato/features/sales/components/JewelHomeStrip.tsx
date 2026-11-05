@@ -63,23 +63,23 @@ export function JewelHomeStrip(): React.JSX.Element | null {
           href={tile.href}
           underline={false}
           data-testid={`jewel-home-${tile.key}`}
-          className="grid min-w-0 gap-0.5 rounded-card border border-border-hairline bg-surface-card px-3 py-2.5"
+          className="grid min-h-[86px] min-w-0 gap-0.5 rounded-card border border-border-hairline bg-surface-card px-3 py-2.5 leading-[1.45] text-text-primary lg:min-h-[95px] lg:px-4 lg:py-3"
         >
           <UbText
             variant="inherit"
             tone="tertiary"
-            className="text-[12px] font-semibold leading-tight"
+            className="text-[12px] font-semibold"
           >
             {tile.label}
           </UbText>
           <UbText
             variant="inherit"
-            className="break-words text-[17px] font-extrabold tabular-nums lg:text-[20px]"
+            className="break-words text-[17px] font-extrabold leading-[1.45] tabular-nums lg:text-[20px]"
           >
             {tile.value}
           </UbText>
           {tile.sub && (
-            <UbText variant="inherit" tone="tertiary" className="text-[12.5px] leading-tight">
+            <UbText variant="inherit" tone="tertiary" className="text-[12.5px]">
               {tile.sub}
             </UbText>
           )}

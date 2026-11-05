@@ -29,11 +29,11 @@
   --accent-quiet: rgba(43, 163, 174, 0.12);
   --accent-line: rgba(14, 124, 134, 0.35);
 
-  --canvas: 216 12.2% 8.04%;
-  --surface-sunken: 214.29 11.86% 11.57%;
-  --surface-card: 213.33 11.39% 15.49%;
+  --canvas: 216.00 12.20% 8.04%;
+  --surface-sunken: 216.00 12.50% 15.69%;
+  --surface-card: 217.50 12.90% 12.16%;
   --surface-raised: 216 10.64% 18.43%;
-  --surface-hover: 212.31 11.93% 21.37%;
+  --surface-hover: 212.73 12.64% 17.06%;
   --surface-active: 205.26 14.96% 24.9%;
 
   /* Counter Mode v5 — the rail stays teal in the dark (#0E2427). */
@@ -43,11 +43,11 @@
 
   --text-on-nav: 210 11.76% 93.33%;
   --text-on-nav-muted: 184.8 30% 80%;
-  --surface-subtle: 213.33 11.39% 15.49%;
+  --surface-subtle: 216.00 12.50% 15.69%;
   --border-nav-active: 187.83 23.23% 19.41%;
 
-  --border-hairline: 214.29 12.28% 22.35%;
-  --border-subtle: 213.33 12.16% 29.02%;
+  --border-hairline: 215.00 11.54% 20.39%;
+  --border-subtle: 213.75 10.39% 30.20%;
 
   --border-strong: 215.45 9.02% 52.16%;
   --border-focus: var(--primary-300);

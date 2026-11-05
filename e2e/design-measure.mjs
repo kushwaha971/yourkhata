@@ -43,17 +43,38 @@ await dp.waitForTimeout(1500);
 await dp.locator('select').filter({ has: dp.locator('option[value=jewel]') }).first().selectOption(kind);
 await dp.waitForTimeout(2000);
 // Boxes the words cannot reach: same-role parts, compared by height and padding.
+const HEAD = '[data-ub-page-header]', FRAME = '[data-ub-register-frame]';
 const PARTS = [
-  ['day line cell', '.dayl>div', '[data-testid=home-figures]>div'],
-  ['panel head', '.panel>.ph2', '[data-testid=home-followups-head]'],
-  ['list row', '.lst>.li', '[data-testid=home-follow-row],[data-testid=home-promise-row]'],
-  ['strip tile', '.card[style*="display:grid;gap:2px"]', '[data-testid^=home-strip-]'],
+  ['day line cell', '.dayl>div', '[data-testid=home-figures]>div', ['fontSize']],
+  ['panel head', '.panel>.ph2', '[data-testid=home-followups-head]', ['fontSize']],
+  ['list row', '.lst>.li', '[data-testid=home-follow-row],[data-testid=home-promise-row]', ['fontSize']],
+  ['strip tile', '.card[style*="display:grid;gap:2px"]', '[data-testid^=home-strip-],[data-testid^=jewel-home-]', ['fontSize']],
+  // Register parts: measured whatever the sample data says, because the words never match.
+  ['page title', '.phd h1,.ptitle', 'main h1', ['h']],
+  ['page subtitle', '.phd p', '[data-ub-page-subtitle]', ['h']],
+  ['header button', '.acts .btn:not(.cta)', `${HEAD} a:not(.bg-cta),${HEAD} button:not(.bg-cta)`],
+  ['header CTA', '.acts .btn.cta', `${HEAD} .bg-cta`],
+  ['count line', '.countline', '[data-testid=count-line]', ['h', 'bg']],
+  ['count value', '.countline b:not(.get):not(.give)', '[data-testid=count-line] b.text-text-primary', ['h', 'bg']],
+  ['register frame', '.tf', FRAME, ['h', 'padT', 'padL']],
+  ['search box', '.inp', `main input[type=search]`, [], (e) => e.parentElement],
+  ['tool button', '.tools .btn', `${FRAME} [data-part=tool],${FRAME} [role=combobox]`],
+  ['table head', '.tf th', `${FRAME} th`],
+  ['table cell', '.tf tbody td', `${FRAME} tbody td`, ['h', 'bg']],
+  ['table row', '.tf tbody tr', `${FRAME} tbody tr`, ['padT', 'padL', 'bg', 'fontSize', 'fontWeight', 'color']],
+  ['status badge', '.tf .badge,.lst .badge', 'main [data-part=badge],main [data-testid=ub-status-badge]'],
+  ['pager', '.pager', '[data-testid=ub-grid-pager],[data-part=pager]', ['bg']],
+  ['pager button', '.pager .btn', '[data-testid=ub-grid-pager] button,[data-part=pager] button'],
+  ['filter chip', '.pills .chp:not(.on)', 'main button[aria-pressed=false]'],
+  ['filter chip on', '.pills .chp.on', 'main button[aria-pressed=true]'],
+  ['card row', '.lst>.li', 'main [data-testid=ub-grid-card],main [data-part=card-row]', ['bg']],
 ];
-const partOf = ([sel]) => {
-  const e = [...document.querySelectorAll(sel)].find((n) => n.offsetWidth);
+const readPart = ([sel, hop]) => {
+  let e = [...document.querySelectorAll(sel)].find((n) => n.offsetWidth);
   if (!e) return null;
+  if (hop) e = e.parentElement;
   const c = getComputedStyle(e);
-  return { h: e.offsetHeight, padT: c.paddingTop, padL: c.paddingLeft, radius: c.borderTopLeftRadius };
+  return { h: e.offsetHeight, padT: c.paddingTop, padL: c.paddingLeft, radius: c.borderTopLeftRadius, fontSize: c.fontSize, fontWeight: c.fontWeight, color: c.color, bg: c.backgroundColor };
 };
 const dark = process.argv.includes('--dark');
 if (dark) await dp.evaluate(() => document.documentElement.setAttribute('data-theme', 'dark'));
@@ -80,11 +101,22 @@ const app = new Map(await p.locator('main').first().evaluate(collect));
 const SAME = { 'rgb(122, 129, 140)': 'rgb(101, 109, 120)' };
 if (process.argv.includes('--hi')) design.clear();
 const bad = [], unmatched = [];
-for (const [name, ds, as] of PARTS) {
-  const d = await el.evaluate((root, sel) => { const e = [...root.querySelectorAll(sel)].find((n) => n.offsetWidth); if (!e) return null; const c = getComputedStyle(e); return { h: e.offsetHeight, padT: c.paddingTop, padL: c.paddingLeft, radius: c.borderTopLeftRadius }; }, ds);
-  const a = await p.evaluate(partOf, [as]);
-  if (!d || !a) { console.log(`part ${name}: ${d ? 'not on app' : 'not in mock'}`); continue; }
-  for (const k of Object.keys(d)) if (String(d[k]) !== String(a[k])) bad.push({ text: name, key: k, design: d[k], app: a[k] });
+const scoped = (root, [sel]) => {
+  const e = [...root.querySelectorAll(sel)].find((n) => n.offsetWidth);
+  if (!e) return null;
+  const c = getComputedStyle(e);
+  return { h: e.offsetHeight, padT: c.paddingTop, padL: c.paddingLeft, radius: c.borderTopLeftRadius, fontSize: c.fontSize, fontWeight: c.fontWeight, color: c.color, bg: c.backgroundColor };
+};
+for (const [name, ds, as, skip = [], hop] of PARTS) {
+  const d = await el.evaluate(scoped, [ds]);
+  const a = await p.evaluate(readPart, [as, Boolean(hop)]);
+  if (!d) continue; // this mock does not draw the part
+  if (!a) { console.log(`part ${name}: not found on the app`); continue; }
+  for (const k of Object.keys(d)) {
+    if (skip.includes(k) || String(d[k]) === String(a[k])) continue;
+    if (k === 'color' && SAME[d[k]] === a[k]) continue;
+    bad.push({ text: `[${name}]`, key: k, design: d[k], app: a[k] });
+  }
 }
 for (const [text, d] of design) {
   const a = app.get(text);
