@@ -25,7 +25,7 @@ const login = async (w, h) => {
   const page = await c.newPage();
   await page.goto(`${base}/login/email`);
   await page.locator('input[type=email],input[name=email]').first().fill(email);
-  await page.locator('input[type=password]').first().fill('AdCert-Test-2026!');
+  await page.locator('input[type=password]').first().fill(arg('password', 'AdCert-Test-2026!'));
   await page.keyboard.press('Enter');
   await page.waitForURL((u) => !u.pathname.startsWith('/login'), { timeout: 30000 });
   return page;

@@ -793,10 +793,8 @@ export function PartyListPageContent({
                 : t('parties.list.title')
           }
           subtitle={
-            compactShop
-              ? t('parties.list.shop.book')
-              : compactKhata
-                ? t('parties.khata.subtitle')
+            compactKhata
+              ? t('parties.khata.subtitle')
               : kind === 'supplier'
                 ? t('parties.list.supplier.subtitle')
                 : kind === 'customer'
@@ -1059,6 +1057,57 @@ export function PartyListPageContent({
                   onBalance={handleBalance}
                   filters={
                     <>
+                      {/* The design's desktop toolbar: Show and Balance beside
+                          the search; a phone keeps its one-tap chips. */}
+                      <UbStack direction="row" gap={2} className="hidden lg:flex">
+                        <UbFilterSelect
+                          spec={{
+                            kind: 'single',
+                            key: 'status',
+                            label: t('parties.list.filter.status.label'),
+                            options: STATUS_OPTIONS.map((value) => ({
+                              value,
+                              label: t(`parties.list.status.${value}`),
+                            })),
+                          }}
+                          value={filters.status}
+                          onChange={(value) => handleStatus(value)}
+                          closeLabel={t('common.action.close')}
+                        />
+                        <UbFilterSelect
+                          spec={{
+                            kind: 'single',
+                            key: 'balance',
+                            label: t('parties.list.column.balance'),
+                            options: [
+                              { value: '', label: t('parties.list.filter.any') },
+                              {
+                                value: supplier ? 'i_owe' : 'owes_me',
+                                label: t(
+                                  supplier ? 'parties.list.supplier.owes' : 'parties.list.shop.owes'
+                                ),
+                              },
+                              { value: 'late', label: t('parties.list.shop.late') },
+                              {
+                                value: supplier ? 'owes_me' : 'i_owe',
+                                label: t(
+                                  supplier
+                                    ? 'parties.list.supplier.advance'
+                                    : 'parties.list.shop.credit'
+                                ),
+                              },
+                              { value: 'settled', label: t('parties.list.balance.settled') },
+                            ],
+                          }}
+                          value={filters.late ? 'late' : filters.balance}
+                          onChange={(value) =>
+                            value === 'late'
+                              ? setFilters({ balance: '', late: 'overdue' })
+                              : setFilters({ balance: value as typeof filters.balance, late: '' })
+                          }
+                          closeLabel={t('common.action.close')}
+                        />
+                      </UbStack>
                       <PartyListSortSheet
                         t={t}
                         ordering={filters.ordering}

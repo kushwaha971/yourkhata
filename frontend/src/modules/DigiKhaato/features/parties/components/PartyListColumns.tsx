@@ -1,6 +1,7 @@
 import { UbStatusBadge } from 'src/design-system';
 import type { UbDataGridColumn } from 'src/design-system/UbDataGrid';
 import type { TranslateFn } from 'src/hooks/useTranslation';
+import { formatPhoneForDisplay } from 'src/utils/share';
 
 import { activityView, contactLine } from '../view-model/partyDisplay';
 import { PARTY_SORT_FIELDS } from '../view-model/partyListSort';
@@ -144,11 +145,7 @@ export const createPartyColumns = ({
               : undefined
           }
           contact={
-            compactShop
-              ? phoneCards
-                ? shopAgeView(party, t, supplier).label
-                : contactLine(party)
-              : undefined
+compactShop && phoneCards ? shopAgeView(party, t, supplier).label : undefined
           }
           tags={compactKhata ? [] : party.tags}
           reserveTagLane={!compactShop && !compactKhata && hasTags}
@@ -168,7 +165,7 @@ export const createPartyColumns = ({
       align: 'end',
       sortField: PARTY_SORT_FIELDS.balance,
       cardSlot: 'trailing',
-      widthShare: compactKhata ? 32 : compactShop ? 20 : 20,
+      widthShare: compactKhata ? 32 : compactShop ? 18 : 20,
       cell: (party) => (
         <PartyBalanceCell
           balance={party.balance}
@@ -206,7 +203,7 @@ export const createPartyColumns = ({
     },
     {
       id: 'contact',
-      header: t('parties.list.column.contact'),
+      header: t(compactShop ? 'parties.list.shop.mobile' : 'parties.list.column.contact'),
       priority: 3,
       cardSlot: 'meta',
       /**
@@ -221,7 +218,16 @@ export const createPartyColumns = ({
        * is the shape that survives selection being switched on.
        */
       widthShare: 18,
-      cell: (party) => <PartyMetaCell text={contactLine(party)} wrap />,
+      cell: (party) => (
+        <PartyMetaCell
+          text={
+            compactShop && !phoneCards
+              ? (formatPhoneForDisplay(party.mobile)?.replace(/ /g, '\u00a0') ?? '')
+              : contactLine(party)
+          }
+          wrap
+        />
+      ),
     },
     {
       id: 'status',
@@ -247,7 +253,7 @@ export const createPartyColumns = ({
     priority: 2,
     sortField: 'oldest_due_on',
     cardSlot: 'none',
-    widthShare: 18,
+    widthShare: 16,
     cell: (party) => {
       const age = shopAgeView(party, t, supplier);
       return (
@@ -279,7 +285,7 @@ export const createPartyColumns = ({
   return [
     ...columns.filter((column) => column.id === 'name' || column.id === 'balance'),
     late,
-    ...columns.filter((column) => column.id === 'activity'),
+    ...columns.filter((column) => column.id === 'contact' || column.id === 'status'),
     actions,
   ];
 };
