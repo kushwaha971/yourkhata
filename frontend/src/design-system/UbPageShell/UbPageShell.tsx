@@ -76,7 +76,7 @@ function UbPageShellBase({
         viewport
           ? {
               height:
-                'calc(var(--ub-page-viewport, 100dvh) - var(--ub-page-top, 0px) - var(--ub-nav-offset, 0px))',
+                'calc(var(--ub-page-viewport, 100dvh) - var(--ub-page-top, 0px) - var(--ub-nav-offset, 0px) - var(--ub-page-cta, 0px))',
             }
           : undefined
       }

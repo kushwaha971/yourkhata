@@ -59,7 +59,7 @@
   "payments.list.loading": "Loading payments",
   "payments.list.open": "Open {name}",
   "payments.list.quickSale": "Quick Sale",
-  "payments.list.receive": "Receive payment",
+  "payments.list.receive": "Receive money",
   "payments.list.selectAll": "Select all payments",
   "payments.list.selectRow": "Select {name}",
   "payments.mode.add": "Add mode",

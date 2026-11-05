@@ -14,7 +14,7 @@
  *  * a phone joins the next page under its cards when the list is scrolled;
  *  * Cancelled asks the server for cancelled payments and every card says so;
  *  * a receipt number typed in the search finds that receipt;
- *  * a card opens its receipt; Receive payment opens the drawer.
+ *  * a card opens its receipt; Receive money opens the drawer.
  *
  * Local QA tenant only. It records one ₹1 receipt to a QA customer and
  * cancels it, because the QA book has no cancelled payment to read.
@@ -252,12 +252,12 @@ try {
   await page.waitForURL(new RegExp(`/payments/${one.id}`), { timeout: 15000 }).catch(() => undefined);
   check('a card opens its receipt', page.url().includes(`/payments/${one.id}`), page.url());
 
-  /* ---------- Receive payment ---------- */
+  /* ---------- Receive money ---------- */
   await open();
-  await page.getByRole('button', { name: 'Receive payment' }).first().click();
+  await page.getByRole('button', { name: 'Receive money' }).first().click();
   const dialog = page.getByRole('dialog');
   await dialog.waitFor({ timeout: 15000 });
-  check('Receive payment opens the drawer', await dialog.isVisible());
+  check('Receive money opens the drawer', await dialog.isVisible());
   if (SHOTS) await page.screenshot({ path: `${SHOTS}/receive-390.png` });
   await page.keyboard.press('Escape');
 } finally {

@@ -155,7 +155,7 @@ it('shows a business with no payment at all one sentence and one button', async 
   service.listPayments.mockImplementation(async () => page([], { hasAny: false }));
   renderWithProviders(<PaymentsPageContent />);
   expect(await screen.findByText('No payments yet')).toBeInTheDocument();
-  expect(screen.getAllByRole('button', { name: /Receive payment/ }).length).toBeGreaterThan(0);
+  expect(screen.getAllByRole('button', { name: /Receive money/ }).length).toBeGreaterThan(0);
   expect(screen.queryByRole('searchbox')).not.toBeInTheDocument();
 });
 

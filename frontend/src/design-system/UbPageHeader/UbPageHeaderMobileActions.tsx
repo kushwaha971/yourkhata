@@ -1,12 +1,13 @@
 'use client';
 
-import { useRef, useState, type ReactNode } from 'react';
+import { useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 
 import dynamic from 'next/dynamic';
 
 import { MoreHorizontal } from 'lucide-react';
 
 import { useIsMobileLayer } from 'src/design-system/motion/useMediaQuery';
+import { UbBottomBar } from 'src/design-system/UbBottomBar';
 import { UbButton } from 'src/design-system/UbButton';
 import { UbDialogLoading } from 'src/design-system/UbDialog';
 import { UbFab } from 'src/design-system/UbFab';
@@ -25,7 +26,8 @@ export interface UbPageHeaderMobile {
   /**
    * The screen's one primary action, as the phone's floating button. On a
    * desktop the same action is the `primaryAction` element at the end of the
-   * header's row, exactly as before.
+   * header's row, exactly as before. `header` is the design's worded amber
+   * button (`.btn.cta.lg.w`, 46 px), held under the rows above the bottom menu.
    */
   readonly primaryPlacement?: 'floating' | 'header';
   readonly primary?: {
@@ -35,6 +37,8 @@ export interface UbPageHeaderMobile {
     readonly href?: string;
   };
 }
+
+const PAGE_CTA_HEIGHT = 62;
 
 /**
  * docs/mobile-redesign/05 — a list screen's header actions below `lg`: a ⋯
@@ -53,6 +57,16 @@ export function UbPageHeaderMobileActions({
   const { primary } = mobile;
   // Rendered only on a phone, so a desktop DOM has no second "Add" and no ⋯.
   const isMobile = useIsMobileLayer();
+  const docked = isMobile && Boolean(primary) && mobile.primaryPlacement === 'header';
+  // Registers fit the viewport, so they give up the button's height (R-DEC-30).
+  useLayoutEffect(() => {
+    if (!docked) return undefined;
+    const root = document.documentElement.style;
+    root.setProperty('--ub-page-cta', `${PAGE_CTA_HEIGHT}px`);
+    return () => {
+      root.removeProperty('--ub-page-cta');
+    };
+  }, [docked]);
   if (!isMobile) return null;
 
   return (
@@ -88,15 +102,22 @@ export function UbPageHeaderMobileActions({
         </div>
       ) : null}
       {primary && mobile.primaryPlacement === 'header' ? (
-        <UbButton
-          variant="ghost"
-          iconOnly
-          icon={primary.icon}
-          className="h-11 w-11"
-          onClick={primary.onClick}
+        <UbBottomBar
+          sticky={false}
+          data-testid="page-cta"
+          className="fixed inset-x-0 bottom-[var(--ub-nav-offset)] z-20 bg-canvas px-4 py-2 lg:hidden"
         >
-          {primary.label}
-        </UbButton>
+          <UbButton
+            variant="primary"
+            className="h-[46px] w-full rounded-lg text-[15px] font-semibold"
+            onClick={() => {
+              if (primary.onClick) primary.onClick();
+              else if (primary.href) router.push(primary.href);
+            }}
+          >
+            {primary.label}
+          </UbButton>
+        </UbBottomBar>
       ) : primary ? (
         <UbFab
           mobileOnly

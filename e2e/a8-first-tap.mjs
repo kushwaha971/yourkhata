@@ -29,13 +29,13 @@ const rows = [];
 /** [page, opener's accessible name, what it opens] — the Shop's drawer openers. */
 const OPENERS = [
   ['/dashboard', /^Pay supplier/, 'payment drawer'],
-  ['/dashboard', /^(Receive payment|Receive money)/, 'payment drawer'],
+  ['/dashboard', /^(Receive money|Receive money)/, 'payment drawer'],
   ['/customers', /^Add customer/, 'contact form'],
   ['/suppliers', /^Add supplier/, 'contact form'],
   ['/customers', /^Remind/, 'reminder sheet'],
   ['/suppliers', /^Pay$/, 'payment drawer'],
   ['/items', /^Add item/, 'item form'],
-  ['/payments', /^Receive payment/, 'payment drawer'],
+  ['/payments', /^Receive money/, 'payment drawer'],
   ['/expenses', /^(Add expense|New expense|Record expense)/, 'expense form'],
 ];
 

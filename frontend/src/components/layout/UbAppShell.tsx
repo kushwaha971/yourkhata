@@ -151,7 +151,7 @@ export function UbAppShell({ children }: Readonly<{ children: ReactNode }>): Rea
             as="main"
             id={APP_CONTENT_ID}
             tabIndex={-1}
-            className="flex-1 pb-[var(--ub-nav-offset)] outline-none"
+            className="flex-1 pb-[calc(var(--ub-nav-offset)+var(--ub-page-cta,0px))] outline-none"
           >
             {children}
           </UbBox>
