@@ -1,4 +1,3 @@
-import { UbStatusBadge } from 'src/design-system';
 import type { UbDataGridColumn } from 'src/design-system/UbDataGrid';
 import type { TranslateFn } from 'src/hooks/useTranslation';
 import { formatPhoneForDisplay } from 'src/utils/share';
@@ -170,7 +169,7 @@ compactShop && phoneCards ? shopAgeView(party, t, supplier).label : undefined
         <PartyBalanceCell
           balance={party.balance}
           labels={balanceLabels}
-          labelHidden={hideBalanceLabel}
+          labelHidden={hideBalanceLabel || (phoneCards && compactShop && Number(party.balance) !== 0)}
         />
       ),
     },
@@ -205,7 +204,8 @@ compactShop && phoneCards ? shopAgeView(party, t, supplier).label : undefined
       id: 'contact',
       header: t(compactShop ? 'parties.list.shop.mobile' : 'parties.list.column.contact'),
       priority: 3,
-      cardSlot: 'meta',
+      // The phone row is name and how late; the mobile is one tap further (design pCustomers).
+      cardSlot: compactShop ? 'none' : 'meta',
       /**
        * Every column states a width and the five sum to 100, including this one.
        *
@@ -257,7 +257,7 @@ compactShop && phoneCards ? shopAgeView(party, t, supplier).label : undefined
     cell: (party) => {
       const age = shopAgeView(party, t, supplier);
       return (
-        <UbStatusBadge label={age.label} tone={age.tone} className="max-w-full whitespace-normal" />
+        <PartyMetaCell text={age.label} wrap />
       );
     },
   };

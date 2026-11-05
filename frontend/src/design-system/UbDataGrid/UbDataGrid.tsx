@@ -429,7 +429,7 @@ export function UbDataGrid<TRow>({
     ) : (
       <UbDataGridPagination
         className={cn(
-          fillHeight && 'shrink-0 bg-surface-card px-2 py-2',
+          fillHeight && 'shrink-0 bg-surface-card',
           // A register's rows sit in their own rounded card, so the pager's
           // hairline drew a second, full-width rule under that card's border.
           variant === 'register' && !registerFrame && 'border-t-0'

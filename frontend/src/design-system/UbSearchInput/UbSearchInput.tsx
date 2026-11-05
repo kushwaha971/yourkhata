@@ -28,7 +28,7 @@ const UbSearchInputInner = forwardRef<HTMLInputElement, UbSearchInputProps>(
     return (
       <div
         className={cn(
-          'flex h-10 w-full items-center gap-2 rounded-control border bg-surface-card px-3',
+          'flex h-11 w-full items-center gap-2 rounded-control border bg-surface-card px-3 lg:h-10',
           'transition-colors duration-fast ease-standard focus-within:border-text-primary',
           ML_CONTROL_TONE(false),
           className
@@ -40,7 +40,7 @@ const UbSearchInputInner = forwardRef<HTMLInputElement, UbSearchInputProps>(
           type="search"
           value={value}
           onChange={(event) => onChange(event.target.value)}
-          className="ds-body-base-regular h-full min-w-0 flex-1 bg-transparent text-text-primary outline-none placeholder:text-text-muted [&::-webkit-search-cancel-button]:hidden"
+          className="ds-body-base-regular h-full lg:!text-[14px] min-w-0 flex-1 bg-transparent text-text-primary outline-none placeholder:text-text-muted [&::-webkit-search-cancel-button]:hidden"
           {...rest}
         />
         {trailing}

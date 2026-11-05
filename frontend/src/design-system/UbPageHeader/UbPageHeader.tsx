@@ -150,7 +150,7 @@ function UbPageHeaderBase({
             // title (a name) still truncates.
             <p
               data-ub-page-subtitle=""
-              className="ds-body-base-regular break-words leading-5 text-text-tertiary"
+              className="ds-body-base-regular break-words leading-5 text-text-secondary"
             >
               {subtitle}
             </p>

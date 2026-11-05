@@ -72,7 +72,7 @@ function PartyNameCellBase({
   maxTags,
 }: Readonly<PartyNameCellProps>) {
   return (
-    <UbBox as="span" className="flex min-w-0 flex-col gap-1">
+    <UbBox as="span" className="flex min-w-0 flex-col">
       <UbText
         as="span"
         variant="body-sm-medium"

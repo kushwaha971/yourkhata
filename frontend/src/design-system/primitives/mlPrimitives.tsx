@@ -81,7 +81,7 @@ const BADGE_VARIANT: Record<MLBadgeVariant, string> = {
   success: 'bg-success-dim text-success',
   warning: 'bg-warning-dim text-warning',
   error: 'bg-error-dim text-error',
-  info: 'bg-info-dim text-info',
+  info: 'bg-accent-quiet text-text-accent',
 };
 
 export const MLBadge = forwardRef<HTMLSpanElement, MLBadgeProps>(function MLBadge(
@@ -92,7 +92,7 @@ export const MLBadge = forwardRef<HTMLSpanElement, MLBadgeProps>(function MLBadg
     <span
       ref={ref}
       className={cn(
-        'ds-chip inline-flex shrink-0 items-center gap-1 whitespace-nowrap rounded-pill px-2 py-0.5',
+        'inline-flex shrink-0 items-center gap-1 whitespace-nowrap rounded-pill px-[9px] py-0.5 text-[11.5px] font-semibold leading-[15px]',
         BADGE_VARIANT[variant],
         className
       )}
@@ -240,10 +240,10 @@ const BUTTON_VARIANT: Record<MLButtonVariant, string> = {
 const BUTTON_SIZE: Record<MLButtonSize, string> = {
   /* Figma "button": 12 px side padding, 14/20 text in a 36 px box; the
      compact in-row variant is 28 px with 12/16 text. */
-  sm: 'h-7 px-3 text-button-sm',
+  sm: 'h-8 px-2.5 text-[13px] font-semibold',
   md: 'h-10 px-4 text-button',
   // 44px is the mobile touch-target floor (R-A-3).
-  lg: 'h-11 px-5 text-button-lg',
+  lg: 'h-[46px] px-5 text-[15px] font-semibold',
 };
 
 /**

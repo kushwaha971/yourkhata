@@ -83,7 +83,7 @@ export const ShopPartySummary = memo(function ShopPartySummary({
       loading={loading}
       loadingNote={t('parties.list.countLine.searching')}
       label={t('parties.list.totals.region')}
-      className="py-2"
+      className="pb-3"
       data-testid="count-line"
     />
   );

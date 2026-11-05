@@ -37,7 +37,7 @@ export const GRID_TH =
   'h-[46px] select-none whitespace-nowrap px-3 py-0 align-middle text-[13px] font-semibold text-text-secondary';
 
 /** The checkbox column: fixed at 48 px so the name column starts in one place. */
-export const GRID_SELECT_CELL = 'w-12 px-3 py-2';
+export const GRID_SELECT_CELL = 'w-12 px-3 py-0';
 
 /**
  * BrandHub's row is 52 px, set as an inline height on the `<tr>` so a grid can
@@ -55,7 +55,7 @@ export const GRID_SELECT_CELL = 'w-12 px-3 py-2';
 export const GRID_ROW = 'border-b border-border-hairline transition-colors last:border-b-0';
 
 /** BrandHub's `rowHeight` default. */
-export const GRID_ROW_HEIGHT = 52;
+export const GRID_ROW_HEIGHT = 42;
 
 export const GRID_TD = 'ds-body-base-regular truncate px-3 py-2 align-middle text-text-primary';
 
@@ -71,7 +71,7 @@ export const REGISTER_TH =
 /** The sort button fills the header cell's height, not 48 px of its own. */
 export const REGISTER_TH_BUTTON_HEIGHT = 'h-[46px]';
 
-export const REGISTER_TD = 'ds-body-base-regular truncate px-[14px] py-[10px] align-middle text-text-primary';
+export const REGISTER_TD = 'truncate px-[14px] py-[10px] text-[14px] align-middle text-text-primary';
 
 /**
  * The one frame around a register's rows AND its pager (A7 ¶1–2): rounded,

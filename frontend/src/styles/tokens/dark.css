@@ -11,6 +11,7 @@
   --text-disabled: 214.29 7.22% 38.04%;
   /* Dark hover LIGHTENS the marigold; pressing darkens it instead, to the light
      theme's hover step (ink 5.81:1), so press and hover never look the same. */
+  --cta: 34.72 91.75% 61.96%;
   --cta-press: var(--accent-700);
   --cta-hover: var(--accent-600);
   --accent-50: 36 48.39% 12.16%;
@@ -26,7 +27,7 @@
   --accent: var(--primary-50);
   --accent-hover: var(--primary-300);
   --accent-press: var(--primary-500);
-  --accent-quiet: rgba(43, 163, 174, 0.12);
+  --accent-quiet: #14302F;
   --accent-line: rgba(14, 124, 134, 0.35);
 
   --canvas: 216.00 12.20% 8.04%;
@@ -54,26 +55,26 @@
 
   --text-primary: 210 11.76% 93.33%;
 
-  --text-secondary: 216 8.88% 66.86%;
+  --text-secondary: 215.00 10.53% 77.65%;
   --text-tertiary: 212.3 9.4% 63.1%; /* design dark --ink-3 #98A0AA */
 
   --text-muted: 216 8.88% 66.86%;
   --text-inverse: 216 12.2% 8.04%;
-  --text-accent: var(--primary-300);
+  --text-accent: 184.33 49.24% 61.37%;
 
   --brand-knot: 3.08 67.24% 54.51%;
 
-  --success: 120 47.33% 52.35%;
+  --success: 128.12 50.00% 62.35%;
   --success-bright: 151.65 57.47% 43.33%;
-  --success-dim: 158.33 54.55% 12.94%;
+  --success-dim: 133.85 37.14% 13.73%;
 
   --warning: 38.12 86.73% 61.57%;
   --warning-bright: 36.34 69.72% 50.78%;
-  --warning-dim: 39.47 59.38% 12.55%;
+  --warning-dim: 43.33 54.55% 12.94%;
 
   --error: 4.03 100% 73.73%;
   --error-bright: 353.71 67.14% 58.24%;
-  --error-dim: 349.41 45.95% 14.51%;
+  --error-dim: 3.87 36.47% 16.67%;
 
   --form-error: 4.03 100% 73.73%;
   --form-error-bright: 339.75 66.81% 46.08%;

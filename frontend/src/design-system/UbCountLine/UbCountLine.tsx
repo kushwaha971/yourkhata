@@ -90,7 +90,7 @@ function UbCountLineBase({
                 key={index}
                 data-part="value"
                 className={cn(
-                  'font-semibold tabular-nums',
+                  'font-bold tabular-nums',
                   // `.countline.loading b`: the figure keeps its width and goes quiet.
                   loading
                     ? 'rounded-[4px] bg-surface-sunken text-transparent'

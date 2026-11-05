@@ -397,7 +397,7 @@ export function StockSummaryPageContent(): React.JSX.Element {
             )}
             {summary && (
               <UbCountLine
-                className="py-2"
+                className="pb-3"
                 label={t('stock.summary.title')}
                 data-testid="stock-count-line"
                 items={[

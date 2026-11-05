@@ -96,7 +96,7 @@ const cardBody = <TRow,>(
         {model.title ? model.title.cell(row) : name}
       </span>
       {model.meta.length > 0 && (
-        <span className="ds-caption flex min-w-0 flex-wrap items-center gap-x-2 text-text-tertiary">
+        <span className="flex min-w-0 flex-wrap items-center gap-x-2 text-[12.5px] leading-[1.45] text-text-tertiary">
           {model.meta.map((column) => (
             <span
               key={column.id}
@@ -161,21 +161,21 @@ function UbDataGridMobileListBase<TRow>({
             className="border-b border-border-hairline last:border-b-0"
           >
             {actions ? (
-              <div className="flex min-w-0 items-center gap-3 px-3 py-3 sm:px-4">
+              <div className="flex min-w-0 items-center gap-3 px-4 py-3">
                 <button
                   type="button"
                   onClick={handleOpen(row)}
                   aria-label={fillTemplate(labels.openRow, { name })}
-                  className="flex min-w-0 flex-1 flex-col gap-1 rounded-control py-1 text-left outline-none hover:text-text-accent focus-visible:shadow-focus"
+                  className="flex min-w-0 flex-1 flex-col rounded-control text-left outline-none hover:text-text-accent focus-visible:shadow-focus"
                 >
                   {model.title?.cell(row)}
                   {model.meta.map((column) => (
-                    <span key={column.id} className="ds-caption text-text-tertiary">
+                    <span key={column.id} className="text-[12.5px] leading-[1.45] text-text-tertiary">
                       {column.cell(row)}
                     </span>
                   ))}
                 </button>
-                <div className="flex shrink-0 flex-col items-end gap-2">
+                <div className="flex shrink-0 flex-col items-end gap-1">
                   {model.trailing?.cell(row)}
                   {actions(row)}
                 </div>

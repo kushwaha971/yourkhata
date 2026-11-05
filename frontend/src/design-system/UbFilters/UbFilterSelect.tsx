@@ -45,7 +45,7 @@ const panels = deferredModule(() => import('./filterPanels'));
 export const FILTER_BUTTON_CLASS = cn(
   // R-DEC-33: match the 40 px search field; compact phone padding fits one row.
   // `ub-hit` keeps a 44 px mobile target; explicit small chart filters remain 32 px.
-  'ub-hit ds-body-s-regular inline-flex h-10 max-w-full shrink-0 items-center gap-1.5 rounded-control border px-2.5 sm:gap-2 sm:px-3',
+  'ub-hit inline-flex h-10 text-[14px] font-semibold max-w-full shrink-0 items-center gap-1.5 rounded-control border px-2.5 sm:gap-2 sm:px-3 lg:px-4',
   'transition-colors duration-fast ease-standard motion-reduce:transition-none',
   'outline-none focus-visible:shadow-focus disabled:cursor-not-allowed disabled:opacity-60'
 );
