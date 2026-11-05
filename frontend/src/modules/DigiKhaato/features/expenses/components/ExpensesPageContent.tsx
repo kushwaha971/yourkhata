@@ -274,11 +274,84 @@ export function ExpensesPageContent(): React.JSX.Element {
       aria-label={t('expenses.search.label')}
       /* On a desktop the box gives up width before the three filters wrap
          to a second row (1024 px did, with Category added). */
-      className={phone ? 'min-w-0 flex-1' : 'min-w-40 max-w-72 flex-1'}
+      className={'min-w-0 flex-1'}
     />
+  );
+  const summary = (totals || list.status === 'loading' || list.status === 'idle') && (
+              <ExpenseListStats
+                totals={totals}
+                cancelled={filters.tab === 'void'}
+                loading={list.status === 'loading' || list.status === 'idle'}
+              />
+            );
+  /* Search and period inside the table's card on a desktop (see Bills). */
+  const tools = (
+            <UbStack
+              direction="row"
+              align="center"
+              className="flex-wrap gap-3"
+              data-testid="expense-register-toolbar"
+            >
+              {searchBox}
+              {phone ? (
+                <UbFilterSheet
+                  compact
+                  specs={phoneSpecs}
+                  values={phoneValues}
+                  onApply={applyPhone}
+                  labels={{
+                    title: t('common.filters.title'),
+                    apply: t('common.action.apply'),
+                    reset: t('common.action.reset'),
+                    close: t('common.action.close'),
+                  }}
+                />
+              ) : (
+                <>
+                  <UbPeriodSelect<ExpensePreset>
+                    presets={presets}
+                    value={filters.preset}
+                    customValue="custom"
+                    from={filters.dateFrom}
+                    to={filters.dateTo}
+                    max={list.today}
+                    onChange={(preset, from, to) => {
+                      if (preset === 'custom' && from && to) list.setRange(from, to);
+                      else list.setPreset(preset);
+                    }}
+                    labels={{
+                      period: t('expenses.period.label'),
+                      from: t('expenses.period.from'),
+                      to: t('expenses.period.to'),
+                      apply: t('common.action.apply'),
+                      close: t('common.action.close'),
+                    }}
+                  />
+                  {/* Below 1280 px each says only its value ("All categories"):
+                      with "Category:" and "Paid by:" in front the search hint
+                      was cut to "Number, note or c" at 1024. The accessible
+                      name keeps both. */}
+                  <UbFilterSelect
+                    spec={categorySpec}
+                    showLabel={wide}
+                    value={filters.categoryId ?? ''}
+                    onChange={(value) => list.setCategory(value || null)}
+                    closeLabel={t('common.action.close')}
+                  />
+                  <UbFilterSelect
+                    spec={modeSpec}
+                    showLabel={wide}
+                    value={filters.mode ?? ''}
+                    onChange={(value) => list.setMode(value ? (value as PaymentMode) : null)}
+                    closeLabel={t('common.action.close')}
+                  />
+                </>
+              )}
+            </UbStack>
   );
   const grid = (
     <UbDataGrid
+      toolbar={phone ? undefined : tools}
       rows={list.rows}
       columns={columns}
       rowId={rowId}
@@ -418,68 +491,8 @@ export function ExpensesPageContent(): React.JSX.Element {
           />
         ) : (
           <>
-            <UbStack
-              direction="row"
-              align="center"
-              className="flex-wrap gap-3"
-              data-testid="expense-register-toolbar"
-            >
-              {searchBox}
-              {phone ? (
-                <UbFilterSheet
-                  compact
-                  specs={phoneSpecs}
-                  values={phoneValues}
-                  onApply={applyPhone}
-                  labels={{
-                    title: t('common.filters.title'),
-                    apply: t('common.action.apply'),
-                    reset: t('common.action.reset'),
-                    close: t('common.action.close'),
-                  }}
-                />
-              ) : (
-                <>
-                  <UbPeriodSelect<ExpensePreset>
-                    presets={presets}
-                    value={filters.preset}
-                    customValue="custom"
-                    from={filters.dateFrom}
-                    to={filters.dateTo}
-                    max={list.today}
-                    onChange={(preset, from, to) => {
-                      if (preset === 'custom' && from && to) list.setRange(from, to);
-                      else list.setPreset(preset);
-                    }}
-                    labels={{
-                      period: t('expenses.period.label'),
-                      from: t('expenses.period.from'),
-                      to: t('expenses.period.to'),
-                      apply: t('common.action.apply'),
-                      close: t('common.action.close'),
-                    }}
-                  />
-                  {/* Below 1280 px each says only its value ("All categories"):
-                      with "Category:" and "Paid by:" in front the search hint
-                      was cut to "Number, note or c" at 1024. The accessible
-                      name keeps both. */}
-                  <UbFilterSelect
-                    spec={categorySpec}
-                    showLabel={wide}
-                    value={filters.categoryId ?? ''}
-                    onChange={(value) => list.setCategory(value || null)}
-                    closeLabel={t('common.action.close')}
-                  />
-                  <UbFilterSelect
-                    spec={modeSpec}
-                    showLabel={wide}
-                    value={filters.mode ?? ''}
-                    onChange={(value) => list.setMode(value ? (value as PaymentMode) : null)}
-                    closeLabel={t('common.action.close')}
-                  />
-                </>
-              )}
-            </UbStack>
+            {phone && tools}
+            {!phone && summary}
             <UbChoiceChips<ExpenseTab>
               value={filters.tab}
               onChange={list.setTab}
@@ -487,13 +500,7 @@ export function ExpensesPageContent(): React.JSX.Element {
               ariaLabel={t('expenses.tab.label')}
               className="flex-nowrap overflow-x-auto py-1.5 [&>button]:shrink-0"
             />
-            {(totals || list.status === 'loading' || list.status === 'idle') && (
-              <ExpenseListStats
-                totals={totals}
-                cancelled={filters.tab === 'void'}
-                loading={list.status === 'loading' || list.status === 'idle'}
-              />
-            )}
+            {phone && summary}
             {grid}
           </>
         )}

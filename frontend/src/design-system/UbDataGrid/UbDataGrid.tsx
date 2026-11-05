@@ -455,7 +455,7 @@ export function UbDataGrid<TRow>({
       )}
     >
       {toolbar && !selectedIds?.length ? (
-        toolbar
+        registerFrame ? null : toolbar
       ) : (
         <UbDataGridToolbar
           search={search}
@@ -484,6 +484,10 @@ export function UbDataGrid<TRow>({
       {beforeRows}
 
       <RegisterFrame on={registerFrame} fill={fillHeight}>
+      {/* The design's `.tools`: the search lives in the table's own card. */}
+      {registerFrame && toolbar && !selectedIds?.length && (
+        <div className="shrink-0 border-b border-border-hairline p-3">{toolbar}</div>
+      )}
       <div
         ref={scrollRegion}
         data-testid="ub-grid-scroll-region"

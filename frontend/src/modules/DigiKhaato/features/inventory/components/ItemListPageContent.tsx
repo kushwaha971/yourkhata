@@ -497,7 +497,7 @@ export function ItemListPageContent(): React.JSX.Element {
         subtitle={t('items.list.subtitle')}
         actions={
           <>
-            {canReadStock && (
+            {phone && canReadStock && (
               <UbActionLink
                 href={ROUTES.STOCK_SUMMARY}
                 variant="secondary"

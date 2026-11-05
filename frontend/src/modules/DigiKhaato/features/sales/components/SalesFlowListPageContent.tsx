@@ -284,8 +284,49 @@ export function SalesFlowListPageContent({
         ]}
       />
     ) : null;
+  /* Search and period inside the table's card on a desktop (see Bills). */
+  const tools = (
+            <UbStack direction="row" align="center" className="flex-wrap gap-3">
+              {searchBox}
+              {phone ? (
+                <UbFilterSheet
+                  compact
+                  specs={phoneSpecs}
+                  values={phoneValues}
+                  onApply={applyPhone}
+                  labels={{
+                    title: t('common.filters.title'),
+                    apply: t('common.action.apply'),
+                    reset: t('common.action.reset'),
+                    close: t('common.action.close'),
+                  }}
+                />
+              ) : (
+                <UbPeriodSelect<InvoicePreset>
+                  presets={presets}
+                  value={filters.preset}
+                  customValue="custom"
+                  from={filters.dateFrom}
+                  to={filters.dateTo}
+                  max={list.today}
+                  onChange={(preset, from, to) => {
+                    if (preset === 'custom' && from && to) list.setRange(from, to);
+                    else list.setPreset(preset);
+                  }}
+                  labels={{
+                    period: t('sales.period.label'),
+                    from: t('sales.period.from'),
+                    to: t('sales.period.to'),
+                    apply: t('common.action.apply'),
+                    close: t('common.action.close'),
+                  }}
+                />
+              )}
+            </UbStack>
+  );
   const grid = (
     <UbDataGrid
+      toolbar={phone ? undefined : tools}
       rows={list.rows}
       columns={columns}
       rowId={rowId}
@@ -394,43 +435,8 @@ export function SalesFlowListPageContent({
           />
         ) : (
           <>
-            <UbStack direction="row" align="center" className="flex-wrap gap-3">
-              {searchBox}
-              {phone ? (
-                <UbFilterSheet
-                  compact
-                  specs={phoneSpecs}
-                  values={phoneValues}
-                  onApply={applyPhone}
-                  labels={{
-                    title: t('common.filters.title'),
-                    apply: t('common.action.apply'),
-                    reset: t('common.action.reset'),
-                    close: t('common.action.close'),
-                  }}
-                />
-              ) : (
-                <UbPeriodSelect<InvoicePreset>
-                  presets={presets}
-                  value={filters.preset}
-                  customValue="custom"
-                  from={filters.dateFrom}
-                  to={filters.dateTo}
-                  max={list.today}
-                  onChange={(preset, from, to) => {
-                    if (preset === 'custom' && from && to) list.setRange(from, to);
-                    else list.setPreset(preset);
-                  }}
-                  labels={{
-                    period: t('sales.period.label'),
-                    from: t('sales.period.from'),
-                    to: t('sales.period.to'),
-                    apply: t('common.action.apply'),
-                    close: t('common.action.close'),
-                  }}
-                />
-              )}
-            </UbStack>
+            {phone && tools}
+            {!phone && stats}
             <UbChoiceChips<FlowTab>
               revealSelected
               value={filters.tab}
@@ -439,7 +445,7 @@ export function SalesFlowListPageContent({
               ariaLabel={t('sales.flow.status')}
               className="flex-nowrap overflow-x-auto py-1.5 [&>button]:shrink-0"
             />
-            {stats}
+            {phone && stats}
             {grid}
           </>
         )}

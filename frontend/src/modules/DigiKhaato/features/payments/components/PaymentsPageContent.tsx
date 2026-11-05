@@ -262,11 +262,72 @@ export function PaymentsPageContent(): React.JSX.Element {
       onChange={setSearch}
       placeholder={t('payments.search.placeholder')}
       aria-label={t('payments.search.label')}
-      className={phone ? 'min-w-0 flex-1' : 'w-72'}
+      className={'min-w-0 flex-1'}
     />
+  );
+  const summary = (totals || list.status === 'loading' || list.status === 'idle') &&
+              filters.tab !== 'void' && (
+                <PaymentListStats
+                  totals={totals}
+                  loading={list.status === 'loading' || list.status === 'idle'}
+                />
+              );
+  /* Search and period inside the table's card on a desktop (see Bills). */
+  const tools = (
+            <UbStack
+              direction="row"
+              align="center"
+              className="flex-wrap gap-3"
+              data-testid="payment-register-toolbar"
+            >
+              {searchBox}
+              {phone ? (
+                <UbFilterSheet
+                  compact
+                  specs={phoneSpecs}
+                  values={phoneValues}
+                  onApply={applyPhone}
+                  labels={{
+                    title: t('common.filters.title'),
+                    apply: t('common.action.apply'),
+                    reset: t('common.action.reset'),
+                    close: t('common.action.close'),
+                  }}
+                />
+              ) : (
+                <>
+                  <UbPeriodSelect<PaymentPreset>
+                    presets={presets}
+                    value={filters.preset as PaymentPreset}
+                    customValue="custom"
+                    from={filters.dateFrom}
+                    to={filters.dateTo}
+                    max={list.today}
+                    onChange={(preset, from, to) => {
+                      if (preset === 'custom' && from && to) list.setRange(from, to);
+                      else list.setPreset(preset);
+                    }}
+                    labels={{
+                      period: t('expenses.period.label'),
+                      from: t('expenses.period.from'),
+                      to: t('expenses.period.to'),
+                      apply: t('common.action.apply'),
+                      close: t('common.action.close'),
+                    }}
+                  />
+                  <UbFilterSelect
+                    spec={modeSpec}
+                    value={filters.mode ?? ''}
+                    onChange={(value) => list.setMode(value ? (value as PaymentMode) : null)}
+                    closeLabel={t('common.action.close')}
+                  />
+                </>
+              )}
+            </UbStack>
   );
   const grid = (
     <UbDataGrid
+      toolbar={phone ? undefined : tools}
       rows={list.rows}
       columns={columns}
       rowId={rowId}
@@ -378,56 +439,8 @@ export function PaymentsPageContent(): React.JSX.Element {
           />
         ) : (
           <>
-            <UbStack
-              direction="row"
-              align="center"
-              className="flex-wrap gap-3"
-              data-testid="payment-register-toolbar"
-            >
-              {searchBox}
-              {phone ? (
-                <UbFilterSheet
-                  compact
-                  specs={phoneSpecs}
-                  values={phoneValues}
-                  onApply={applyPhone}
-                  labels={{
-                    title: t('common.filters.title'),
-                    apply: t('common.action.apply'),
-                    reset: t('common.action.reset'),
-                    close: t('common.action.close'),
-                  }}
-                />
-              ) : (
-                <>
-                  <UbPeriodSelect<PaymentPreset>
-                    presets={presets}
-                    value={filters.preset as PaymentPreset}
-                    customValue="custom"
-                    from={filters.dateFrom}
-                    to={filters.dateTo}
-                    max={list.today}
-                    onChange={(preset, from, to) => {
-                      if (preset === 'custom' && from && to) list.setRange(from, to);
-                      else list.setPreset(preset);
-                    }}
-                    labels={{
-                      period: t('expenses.period.label'),
-                      from: t('expenses.period.from'),
-                      to: t('expenses.period.to'),
-                      apply: t('common.action.apply'),
-                      close: t('common.action.close'),
-                    }}
-                  />
-                  <UbFilterSelect
-                    spec={modeSpec}
-                    value={filters.mode ?? ''}
-                    onChange={(value) => list.setMode(value ? (value as PaymentMode) : null)}
-                    closeLabel={t('common.action.close')}
-                  />
-                </>
-              )}
-            </UbStack>
+            {phone && tools}
+            {!phone && summary}
             <UbChoiceChips<PaymentTab>
               value={filters.tab}
               onChange={list.setTab}
@@ -437,13 +450,7 @@ export function PaymentsPageContent(): React.JSX.Element {
             />
             {/* Cancelled payments are never counted, so their tab has no totals:
                 "Received · 0 payments ₹0.00" over a list of them read as a fault. */}
-            {(totals || list.status === 'loading' || list.status === 'idle') &&
-              filters.tab !== 'void' && (
-                <PaymentListStats
-                  totals={totals}
-                  loading={list.status === 'loading' || list.status === 'idle'}
-                />
-              )}
+            {phone && summary}
             {grid}
           </>
         )}
