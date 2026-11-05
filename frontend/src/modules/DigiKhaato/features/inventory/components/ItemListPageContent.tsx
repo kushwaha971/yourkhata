@@ -26,7 +26,9 @@ import {
   UbDialogLoading,
   UbDrawerLoading,
   UbEmptyState,
+  UbFilterSelect,
   UbFilterSheet,
+  type UbFilterSingleSpec,
   type UbFilterSpec,
   type UbFilterValues,
   UbLoadMore,
@@ -37,7 +39,6 @@ import {
   UbSearchInput,
   UbStack,
   UbStatusBanner,
-  UbTabs,
   UbText,
   UbViewportPageShell,
 } from 'src/design-system';
@@ -322,17 +323,6 @@ export function ItemListPageContent(): React.JSX.Element {
   );
 
   const counts = list.counts;
-  const tabs = useMemo(
-    () =>
-      (['all', 'in', 'low', 'out'] as const).map((tab) => ({
-        value: tab,
-        label: counts
-          ? t('items.list.tab.withCount', { label: t(`items.list.tab.${tab}`), count: counts[tab] })
-          : t(`items.list.tab.${tab}`),
-      })),
-    [counts, t]
-  );
-
   const keepsTags = Boolean(useAppSelector(selectActiveTenant)?.features?.includes('jewellery'));
   const [tagsInStock, setTagsInStock] = useState<number | null>(null);
   useEffect(() => {
@@ -348,8 +338,8 @@ export function ItemListPageContent(): React.JSX.Element {
      stock, with the server's counts. "Low" holds out-of-stock too, as the tab does. */
   const chips = useMemo(
     () =>
-      (['all', 'low', 'out'] as const).map((tab) => {
-        const label = t(tab === 'out' ? 'items.stock.out' : `items.list.tab.${tab}`);
+      (['all', 'low'] as const).map((tab) => {
+        const label = t(tab === 'low' ? 'items.list.lowStock' : `items.list.tab.${tab}`);
         return {
           value: tab,
           label: counts ? t('items.list.tab.withCount', { label, count: counts[tab] }) : label,
@@ -401,7 +391,11 @@ export function ItemListPageContent(): React.JSX.Element {
   /* Owner, 6 Oct 2026: type, category and status behind ONE Filters button
      (they took three selects, and three rows on a phone); what is on shows
      beside it as pills. */
-  const filterControls = (
+  const categorySpec = sheetSpecs.find(
+    (spec): spec is UbFilterSingleSpec => spec.key === 'categoryId' && spec.kind === 'single'
+  );
+  const otherSpecs = sheetSpecs.filter((spec) => spec.key !== 'categoryId');
+  const filterControls = phone ? (
     <>
       <UbFilterSheet
         compact
@@ -425,6 +419,34 @@ export function ItemListPageContent(): React.JSX.Element {
         }}
       />
     </>
+  ) : (
+    /* The design's register tool is "Category: All"; type and archived stay
+       behind one Filters button beside it, and categories are edited from here. */
+    <UbStack direction="row" align="center" className="gap-2">
+      {categorySpec && (
+        <UbFilterSelect
+          spec={categorySpec}
+          value={filters.categoryId ?? ''}
+          onChange={(value) => update({ categoryId: value })}
+          closeLabel={t('common.action.close')}
+        />
+      )}
+      <UbFilterSheet
+        compact
+        specs={otherSpecs}
+        values={sheetValues}
+        onApply={applySheet}
+        labels={{
+          title: t('common.filters.title'),
+          apply: t('common.action.apply'),
+          reset: t('common.action.reset'),
+          close: t('common.action.close'),
+        }}
+      />
+      <UbActionLink href={ROUTES.ITEM_MASTERS} variant="ghost">
+        {t('items.list.masters')}
+      </UbActionLink>
+    </UbStack>
   );
   const grid = (
     <UbDataGrid
@@ -529,14 +551,16 @@ export function ItemListPageContent(): React.JSX.Element {
                 {t('items.list.priceLists')}
               </UbActionLink>
             )}
-            <UbActionLink
-              href={ROUTES.ITEM_MASTERS}
-              variant="secondary"
-              icon={<Tags className="h-4 w-4" aria-hidden />}
-              iconOnly="mobile"
-            >
-              {t('items.list.masters')}
-            </UbActionLink>
+            {phone && (
+              <UbActionLink
+                href={ROUTES.ITEM_MASTERS}
+                variant="secondary"
+                icon={<Tags className="h-4 w-4" aria-hidden />}
+                iconOnly="mobile"
+              >
+                {t('items.list.masters')}
+              </UbActionLink>
+            )}
             {/* IMP-01 FR-14 / IMP-02 FR-13 — see the party list's header. */}
             <ImportActionLink kind="items" />
             <ListExportButton
@@ -544,7 +568,9 @@ export function ItemListPageContent(): React.JSX.Element {
               permission="reports.export"
               empty={list.status === 'succeeded' && list.total === 0}
             />
-            {canAdjust && (
+            {/* The design's desktop header is Import, Export, Add item; adjusting
+                stock is on an item's own page and the phone's ⋯. */}
+            {canAdjust && phone && (
               <UbButton
                 variant="secondary"
                 icon={<PackageMinus className="h-4 w-4" aria-hidden />}
@@ -619,9 +645,8 @@ export function ItemListPageContent(): React.JSX.Element {
 
         {/* 09 §8.1 — a phone goes straight from the search to the items; the
             low/out count is on its chip and the stock value on Stock summary. */}
-        {list.totals && !emptyBook && !phone && (
+        {list.totals && !emptyBook && (
           <UbCountLine
-            className="py-2"
             label={t('items.list.tabs')}
             data-testid="items-count-line"
             items={[
@@ -634,7 +659,7 @@ export function ItemListPageContent(): React.JSX.Element {
                     },
                   ]
                 : []),
-              ...(lowOut !== null
+              ...(lowOut !== null && !phone
                 ? [
                     {
                       id: 'low',
@@ -693,18 +718,7 @@ export function ItemListPageContent(): React.JSX.Element {
             {grid}
           </>
         ) : (
-          <UbTabs<StockTab>
-            value={filters.tab}
-            onValueChange={(tab) => update({ tab })}
-            tabs={tabs}
-            ariaLabel={t('items.list.tabs')}
-            layout="fit"
-            /* The table's rows scroll inside the viewport and its pager stays in
-               reach (R-DEC-30): the panel must pass the height down. */
-            className="min-h-0 flex-1 [&>[role=tabpanel]]:min-h-0 [&>[role=tabpanel]]:flex-1"
-          >
-            {grid}
-          </UbTabs>
+          grid
         )}
       </UbStack>
 

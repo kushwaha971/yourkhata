@@ -49,7 +49,7 @@ try {
   await page.waitForLoadState('networkidle');
   const words = await page.getByTestId('ub-grid-card').evaluateAll((cards) => cards.map((c) => c.textContent ?? ''));
   check('Low chip: cards match the server count', words.length === Math.min(lowMeta.total, 25), `${words.length} vs ${lowMeta.total}`);
-  check('Low chip: every card says Low or Out of stock in words', words.every((w) => /Low: .* left|Out of stock/.test(w)));
+  check('Low chip: every card says Low or Out of stock in words', words.every((w) => /\d[\d.,]* left|Out of stock/.test(w)));
   if (SHOTS) await page.screenshot({ path: `${SHOTS}/low-390.png` });
 
   const first = page.getByTestId('ub-grid-card').first();

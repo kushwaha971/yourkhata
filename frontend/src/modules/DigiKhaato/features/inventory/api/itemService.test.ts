@@ -159,11 +159,13 @@ describe('valuation withheld (INV-08 EC-4, QA: stock value leaked to staff)', ()
     expect(toItemBody(FORM, { withOpening: false })).toHaveProperty('purchase_price');
   });
 
-  it('drops the Purchase column for a member who may not see costs', () => {
+  it('never puts the cost in the Items register, whoever is looking', () => {
+    /* The design's register (dItems) has no cost column at all; the cost is on
+       the item's page, behind the same valuation permission. */
     const t = ((key: string) => key) as TranslateFn;
     const ids = (valuation: boolean): string[] =>
       createItemColumns({ t, tier: 'full', valuation }).map((column) => column.id);
-    expect(ids(true)).toContain('purchasePrice');
+    expect(ids(true)).not.toContain('purchasePrice');
     expect(ids(false)).not.toContain('purchasePrice');
   });
 });

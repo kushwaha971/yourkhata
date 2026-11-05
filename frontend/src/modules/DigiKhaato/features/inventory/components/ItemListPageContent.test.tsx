@@ -91,8 +91,9 @@ it('on a phone, Low is a chip above the cards, not inside the Filters sheet (09 
   const user = userEvent.setup();
   renderWithProviders(<ItemListPageContent />);
   const group = await screen.findByRole('radiogroup', { name: 'Stock' });
-  expect(within(group).getByRole('radio', { name: 'Out of stock · 0' })).toBeInTheDocument();
-  await user.click(within(group).getByRole('radio', { name: 'Low · 1' }));
+  // The design's phone chips: All · Low stock (pItems).
+  expect(within(group).getByRole('radio', { name: 'All · 3' })).toBeInTheDocument();
+  await user.click(within(group).getByRole('radio', { name: 'Low stock · 1' }));
   await waitFor(() =>
     expect(mockReplace).toHaveBeenCalledWith(expect.stringContaining('tab=low'), {
       scroll: false,
@@ -146,12 +147,12 @@ it('on a phone, a card reads price, stock in words and code — never the cost (
   signIn(['inventory.item.read', 'reports.financial.read']);
   renderWithProviders(<ItemListPageContent />);
   const card = (await screen.findByText('Lifebuoy Soap 100g')).closest('li') as HTMLElement;
-  expect(card).toHaveTextContent('₹1,059.00usual price');
-  expect(within(card).getByText('12 NOS in stock')).toBeInTheDocument();
-  expect(within(card).getByText('LIFEBUOY-001')).toBeInTheDocument();
-  expect(card).not.toHaveTextContent('Soap & co');
+  // pItems: the name, the category under it, the price over the stock in words.
+  expect(within(card).getByText('₹1,059.00')).toBeInTheDocument();
+  expect(within(card).getByText('12 in stock')).toBeInTheDocument();
+  expect(card).toHaveTextContent('Soap & co');
   expect(within(card).queryByText(/₹40\.00/)).not.toBeInTheDocument();
-  expect(screen.getByText('Low: 3 NOS left')).toBeInTheDocument();
+  expect(screen.getByText('3 left')).toBeInTheDocument();
   expect(screen.getAllByText('Out of stock').length).toBeGreaterThan(0);
 });
 

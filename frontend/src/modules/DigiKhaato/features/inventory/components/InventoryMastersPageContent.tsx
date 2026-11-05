@@ -29,7 +29,8 @@ import { formatInr } from 'src/utils/money';
 
 import { saveBlob } from '../../imports/api/fileDownload';
 import { useInventoryMasters } from '../hooks/useInventoryMasters';
-import { filterCategories, filterUnits, splitUnits, usualGstLabel } from '../view-model/mastersView';
+import { filterCategories, filterUnits, splitUnits } from '../view-model/mastersView';
+import { usualGstLabel } from '../view-model/usualGst';
 
 import type { Category, Unit } from '../types/item.types';
 
