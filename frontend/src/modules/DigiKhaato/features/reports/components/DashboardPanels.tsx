@@ -482,7 +482,14 @@ export function NeedsAttention({
   data,
   onRetry,
   t,
-}: Readonly<{ data: DashboardData; onRetry: () => void; t: TranslateFn }>): React.JSX.Element {
+  embedded = false,
+}: Readonly<{
+  data: DashboardData;
+  onRetry: () => void;
+  t: TranslateFn;
+  /** Rows only, inside Home's Follow-ups panel. */
+  embedded?: boolean;
+}>): React.JSX.Element {
   const broken = failed(data, PARTS.attention);
   const { tiles } = data;
   const items: UbAttentionItem[] = [];
@@ -546,12 +553,13 @@ export function NeedsAttention({
       href: ROUTES.STOCK_LOW,
       tone: 'warning',
     });
-  return (
-    <UbPanel as="section" aria-label={t('reports.dashboard.attention.title')}>
+  const body = (
       <UbStack gap={0}>
-        <UbText as="h2" variant="h3" className="px-4 pt-4">
-          {t('reports.dashboard.attention.title')}
-        </UbText>
+        {!embedded && (
+          <UbText as="h2" variant="h3" className="px-4 pt-4">
+            {t('reports.dashboard.attention.title')}
+          </UbText>
+        )}
         {items.length > 0 && <UbAttentionList items={items} className="mx-0 py-1" />}
         {/* "Nothing needs you" only when every part it reads arrived. */}
         {broken ? (
@@ -564,6 +572,12 @@ export function NeedsAttention({
           )
         )}
       </UbStack>
+  );
+  return embedded ? (
+    body
+  ) : (
+    <UbPanel as="section" aria-label={t('reports.dashboard.attention.title')}>
+      {body}
     </UbPanel>
   );
 }

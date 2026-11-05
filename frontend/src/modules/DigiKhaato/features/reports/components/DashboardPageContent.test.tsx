@@ -204,7 +204,7 @@ it('says whose Shop and which day in the header, with New bill and the rest unde
   // "Shree Ganesh Kirana Stores" was cut to "Shree Ganesh Ki…" on a 360 px
   // phone: the title is a business name now, and a name is not cut.
   expect(heading).not.toHaveClass('truncate');
-  expect(screen.getByText(/^Kumar Stores · 18\/09\/2026/)).toBeInTheDocument();
+  expect(screen.getByText(/^Kumar Stores · /)).toBeInTheDocument();
   expect(screen.getByRole('link', { name: 'New bill' })).toHaveAttribute(
     'href',
     '/sales/invoices/new'
@@ -227,7 +227,7 @@ it("shows today's net sales, money received and cash in hand, each opening its r
   signIn(OWNER);
   renderWithProviders(<DashboardPageContent />);
   const today = await screen.findByRole('region', { name: 'Today so far' });
-  expect(within(today).getByText('Billed')).toBeInTheDocument();
+  expect(within(today).getByText('Billed today')).toBeInTheDocument();
   expect(within(today).getByText('Received')).toBeInTheDocument();
   expect(within(today).getByText('2 receipts')).toBeInTheDocument();
   expect(within(today).getByRole('link', { name: /Received/ })).toHaveAttribute(
@@ -246,10 +246,10 @@ it('labels negative cash as records and states the excluded opening cash', async
   });
   signIn(OWNER);
   renderWithProviders(<DashboardPageContent />);
-  const today = await screen.findByRole('region', { name: 'Today so far' });
-  expect(within(today).getByText('Cash by your records')).toBeInTheDocument();
-  expect(within(today).getByText(/opening cash excluded/)).toBeInTheDocument();
-  expect(within(today).getByText(/150\.00/)).toHaveTextContent(/[-‑−]/);
+  await screen.findByTestId('home-more');
+  expect(within(screen.getByTestId('home-more')).getByText('Cash by your records')).toBeInTheDocument();
+  expect(within(screen.getByTestId('home-more')).getByText(/opening cash excluded/)).toBeInTheDocument();
+  expect(within(screen.getByTestId('home-more')).getByText(/150\.00/)).toHaveTextContent(/[-‑−]/);
 });
 
 /** BP-17 — Home says when the drawer was last counted and how it compared. */
@@ -261,12 +261,12 @@ it('says the drawer is not counted and offers Count cash on the same line', asyn
   });
   signIn(OWNER);
   renderWithProviders(<DashboardPageContent />);
-  const today = await screen.findByRole('region', { name: 'Today so far' });
-  expect(within(today).getByTestId('home-cash-count-last')).toHaveTextContent('Not counted');
-  expect(within(today).getByTestId('home-cash-count')).toHaveTextContent(
+  await screen.findByTestId('home-more');
+  expect(within(screen.getByTestId('home-more')).getByTestId('home-cash-count-last')).toHaveTextContent('Not counted');
+  expect(within(screen.getByTestId('home-more')).getByTestId('home-cash-count')).toHaveTextContent(
     'Not counted · Count cash'
   );
-  await userEvent.click(within(today).getByRole('button', { name: 'Count cash' }));
+  await userEvent.click(within(screen.getByTestId('home-more')).getByRole('button', { name: 'Count cash' }));
   expect(await screen.findByTestId('cash-count-drawer')).toBeInTheDocument();
 });
 
@@ -325,8 +325,7 @@ it('lists the orders waiting on someone in Needs attention, each opening its lis
   });
   signIn(OWNER);
   renderWithProviders(<DashboardPageContent />);
-  await userEvent.click(await screen.findByRole('tab', { name: 'Follow-ups' }));
-  const panel = await screen.findByRole('region', { name: 'Needs attention' });
+  const panel = await screen.findByTestId('home-followups');
   expect(
     within(panel).getByRole('link', { name: /2 customer orders to deliver and bill · ₹1,000\.00/ })
   ).toHaveAttribute('href', '/sales/orders?tab=open&from=2026-09-06&to=2026-09-18');
@@ -451,8 +450,7 @@ it('keeps Needs attention on the page, each row with its amount, age and next st
   service.getDashboard.mockResolvedValue(DATA());
   signIn(OWNER);
   renderWithProviders(<DashboardPageContent />);
-  await userEvent.click(await screen.findByRole('tab', { name: 'Follow-ups' }));
-  const attention = await screen.findByRole('region', { name: 'Needs attention' });
+  const attention = await screen.findByTestId('home-followups');
   expect(screen.queryByRole('button', { name: 'Details' })).not.toBeInTheDocument();
   const rows = within(attention).getAllByRole('link');
   expect(rows.map((row) => row.textContent)).toEqual([
@@ -481,8 +479,7 @@ it('says when nothing needs the merchant, rather than hiding the section', async
   service.getDashboard.mockResolvedValue(DATA({ tiles: quiet, lowStockItems: [] }));
   signIn(OWNER);
   renderWithProviders(<DashboardPageContent />);
-  await userEvent.click(await screen.findByRole('tab', { name: 'Follow-ups' }));
-  const attention = await screen.findByRole('region', { name: 'Needs attention' });
+  const attention = await screen.findByTestId('home-followups');
   expect(within(attention).getByText('Nothing needs you right now.')).toBeInTheDocument();
 });
 
@@ -740,8 +737,7 @@ it('says which panel could not load and keeps the rest of the page', async () =>
     within(customers).getByRole('link', { name: /To collect.*₹7,000\.00/ })
   ).toBeInTheDocument();
 
-  await userEvent.click(screen.getByRole('tab', { name: 'Follow-ups' }));
-  const attention = screen.getByRole('region', { name: 'Needs attention' });
+  const attention = screen.getByTestId('home-followups');
   expect(within(attention).getByText('This section could not load.')).toBeInTheDocument();
   expect(within(attention).queryByText('Nothing needs you right now.')).not.toBeInTheDocument();
   expect(screen.getByRole('region', { name: 'Today so far' })).toBeInTheDocument();

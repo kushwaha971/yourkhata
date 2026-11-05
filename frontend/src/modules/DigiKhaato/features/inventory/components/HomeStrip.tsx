@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 
-import { UbBox, UbLink, UbText } from 'src/design-system';
+import { UbBox, UbLink, UbText, useIsMobileLayer } from 'src/design-system';
 import { useTranslation } from 'src/hooks/useTranslation';
 import { ROUTES } from 'src/routes';
 import { formatInr } from 'src/utils/money';
@@ -14,6 +14,7 @@ const HREF: Record<HomeStripKey, string> = {
   phones: ROUTES.ITEM_IMEI,
   soldOutSizes: ROUTES.STOCK_LOW,
   lowStock: ROUTES.STOCK_LOW,
+  dueWeek: `${ROUTES.SALES_INVOICES}?tab=unpaid`,
 };
 
 /**
@@ -25,6 +26,7 @@ const HREF: Record<HomeStripKey, string> = {
  */
 export function HomeStrip(): React.JSX.Element | null {
   const { t } = useTranslation();
+  const mobile = useIsMobileLayer();
   const [tiles, setTiles] = useState<readonly HomeStripTile[]>([]);
   useEffect(() => {
     const controller = new AbortController();
@@ -33,16 +35,18 @@ export function HomeStrip(): React.JSX.Element | null {
       .catch(() => setTiles([]));
     return () => controller.abort();
   }, []);
-  if (tiles.length === 0) return null;
+  /* The design's phone strip holds two tiles, its desktop strip three. */
+  const shown = tiles.slice(0, mobile ? 2 : 3);
+  if (shown.length === 0) return null;
   return (
     <UbBox
       as="section"
       aria-label={t('reports.home.strip.label')}
       data-testid="home-strip"
       className="grid gap-2 lg:gap-3"
-      style={{ gridTemplateColumns: `repeat(${tiles.length}, minmax(0, 1fr))` }}
+      style={{ gridTemplateColumns: `repeat(${shown.length}, minmax(0, 1fr))` }}
     >
-      {tiles.map((tile) => (
+      {shown.map((tile) => (
         <UbLink
           key={tile.key}
           href={HREF[tile.key]}
@@ -59,9 +63,21 @@ export function HomeStrip(): React.JSX.Element | null {
           >
             {tile.key === 'expiring'
               ? t('reports.home.strip.expiringValue', { count: tile.count })
-              : String(tile.count)}
+              : tile.key === 'dueWeek'
+                ? formatInr(tile.value ?? '0')
+                : String(tile.count)}
           </UbText>
-          {tile.value !== null && (
+          {tile.key === 'dueWeek' && (
+            <UbText variant="inherit" tone="secondary" className="truncate text-[12px]">
+              {t('reports.home.customerCount', { count: tile.count })}
+            </UbText>
+          )}
+          {tile.names && tile.names.length > 0 && (
+            <UbText variant="inherit" tone="secondary" className="truncate text-[12px]">
+              {tile.names.join(', ')}
+            </UbText>
+          )}
+          {tile.key !== 'dueWeek' && tile.value !== null && (
             <UbText variant="inherit" tone="secondary" className="text-body-sm [overflow-wrap:anywhere]">
               {t('reports.home.strip.worth', { amount: formatInr(tile.value) })}
             </UbText>

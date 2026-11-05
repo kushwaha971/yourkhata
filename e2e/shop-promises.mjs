@@ -133,7 +133,6 @@ try {
   const openFollowUps = async () => {
     await page.goto(`${base}/dashboard`, { waitUntil: 'networkidle' });
     await page.getByTestId('shop-home-workspace').waitFor();
-    await page.getByRole('tab').nth(1).click();
     await page.waitForTimeout(400);
   };
   const addPromise = async ({ quick, amount, note }) => {
@@ -155,7 +154,7 @@ try {
   const drawer = await addPromise({ quick: 'Today', amount: '1500', note: NOTE });
   const d = await page.evaluate(measure, '[data-testid="shop-promise-drawer"]');
   check('390 en: the drawer has no sideways scroll or cut text', d.overflow <= 0 && d.cut.length === 0, `${d.overflow}px ${d.cut.join(' | ')}`);
-  check('the drawer says a promise changes no bill', (await drawer.innerText()).includes('It does not change any bill or what they owe.'));
+  check('the drawer says a promise changes no bill', (await drawer.innerText()).includes('It does not change any bill or what they have to pay.'));
   if (SHOTS) await page.screenshot({ path: `${SHOTS}/drawer-390.png` });
   await page.getByTestId('shop-promise-save').dblclick();
   await page.getByTestId('shop-promise-line').waitFor();
@@ -201,7 +200,7 @@ try {
   const balance = await shopBalance(customer.id);
   check(
     "Home lists the customer's promise with today's Shop balance",
-    mine.includes(`Owes ₹${inr(balance)}`),
+    mine.includes(`To collect ₹${inr(balance)}`),
     `${mine.replace(/\n/g, ' · ')} vs ${balance}`
   );
   check('the shop\'s private note is not on Home', !(await page.getByTestId('home-promises').innerText()).includes(NOTE));

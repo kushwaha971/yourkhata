@@ -110,6 +110,7 @@ try {
       const line = await page.getByTestId('home-cash-count-last').innerText();
       check(`${tag}: the cash figure says when it was last counted`, line.trim().length > 0, line);
       if (width < 1024) {
+        await page.getByTestId('home-cash-count-open').evaluate((el) => el.scrollIntoView({ block: 'center' }));
         const tgt = await page.evaluate(target, 'home-cash-count-open');
         check(
           `${tag}: Count cash is a 44 px target`,

@@ -35,6 +35,7 @@ export function HomePromises({
   onPay,
   onRetry,
   t,
+  embedded = false,
 }: Readonly<{
   state: HomePromisesState;
   today: string;
@@ -45,6 +46,8 @@ export function HomePromises({
   onPay: (promise: ShopPromise) => void;
   onRetry: () => void;
   t: TranslateFn;
+  /** Inside Home's Follow-ups panel, which draws the heading and the frame. */
+  embedded?: boolean;
 }>): React.JSX.Element | null {
   if (state.status !== 'ready')
     return state.status === 'failed' ? (
@@ -53,17 +56,16 @@ export function HomePromises({
       </UbPanel>
     ) : null;
   if (state.rows.length === 0) return null;
-  return (
-    <UbPanel as="section" aria-label={t('homePromise.title')} data-testid="home-promises">
-      <UbStack gap={0}>
-        <UbStack gap={0} className="px-4 pt-4">
+  const body = (
+      <UbStack gap={0} data-testid={embedded ? 'home-promises' : undefined}>
+        {!embedded && <UbStack gap={0} className="px-4 pt-4">
           <UbText as="h2" variant="h3">
             {t('homePromise.title')}
           </UbText>
           <UbText variant="caption" tone="secondary">
             {t('homePromise.basis')}
           </UbText>
-        </UbStack>
+        </UbStack>}
         <UbStack as="ul" gap={0} className="py-1">
           {state.rows.map((promise) => {
             const supplier = promise.role === 'supplier';
@@ -116,6 +118,12 @@ export function HomePromises({
           })}
         </UbStack>
       </UbStack>
+  );
+  return embedded ? (
+    body
+  ) : (
+    <UbPanel as="section" aria-label={t('homePromise.title')} data-testid="home-promises">
+      {body}
     </UbPanel>
   );
 }

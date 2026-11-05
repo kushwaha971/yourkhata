@@ -6,6 +6,8 @@ import { partyPath } from 'src/routes';
 import { formatBusinessDate } from 'src/utils/dates';
 import { formatInr } from 'src/utils/money';
 
+import { useAppWords } from '../../navigation/useAppWords';
+
 import type { CounterLane } from '../api/counterService';
 export interface HomeLanePerson {
   id: string;
@@ -41,8 +43,9 @@ export function HomeBalanceLane({
   promises?: ReadonlyMap<string, string>;
 }>): React.JSX.Element {
   const { t } = useTranslation();
+  const { w } = useAppWords();
   const displayAmount = details?.total ?? amount;
-  const label = t(supplier ? 'reports.home.toPay' : 'reports.home.toCollect');
+  const label = w(supplier ? 'reports.home.toPay' : 'reports.home.toCollect');
   const rows: readonly HomeLanePerson[] = details
     ? details.people.map((p) => ({
         id: p.id,
@@ -62,54 +65,21 @@ export function HomeBalanceLane({
       )}
       className="bg-surface-card [&>.h-px]:hidden lg:[&>.h-px]:block"
     >
-      <UbStack direction="row" justify="between" className="flex-wrap gap-1 px-3 pt-3 lg:p-4">
-        <UbText as="h2" variant="body-sm-medium">
-          <UbBox as="span" className="lg:hidden">
-            {t(supplier ? 'reports.home.payShort' : 'reports.home.collectShort')}
-          </UbBox>
-          <UbBox as="span" className="hidden lg:inline">
-            {label}
-          </UbBox>
+      {/* The design's head: "To collect · customers" and the amount on one line. */}
+      <UbStack direction="row" justify="between" align="center" className="gap-2 px-4 py-3">
+        <UbText as="h2" variant="body-sm-medium" className="min-w-0 font-bold">
+          {label}
         </UbText>
-        <UbText variant="caption" tone="secondary" className="hidden lg:block">
-          {t('reports.home.shopOnly')}
-        </UbText>
-      </UbStack>
-      <UbStack gap={2} className="p-3 lg:p-4">
         <UbLink
           href={href}
           aria-label={`${t(supplier ? 'reports.dashboard.tile.toPay' : 'reports.dashboard.tile.toCollect')} ${formatInr(displayAmount)}`}
           underline={false}
-          className={`ds-num font-bold ${formatInr(displayAmount).length > 11 ? 'text-caption min-[360px]:text-body-sm' : 'text-base'} ${supplier ? 'text-give' : 'text-get'} lg:text-2xl`}
+          className={`ds-num shrink-0 font-bold text-body-sm ${supplier ? 'text-give' : 'text-get'}`}
         >
           {displayAmount === null ? null : formatInr(displayAmount)}
         </UbLink>
-        {details && (
-          <UbText variant="caption" tone="secondary">
-            {t(supplier ? 'reports.home.supplierCount' : 'reports.home.customerCount', {
-              count: details.count,
-            })}
-          </UbText>
-        )}
-        {details && (
-          <UbBox className="hidden lg:block">
-            <UbBalanceBands
-              label={label}
-              bands={details.bands.map((b) => ({
-                key: b.key,
-                label: t(`reports.home.band.${b.key}`),
-                value: formatInr(b.amount),
-                amount: b.amount,
-              }))}
-            />
-            <UbText variant="caption" tone="secondary" className="mt-1">
-              {t('reports.home.bandBasis')}
-            </UbText>
-          </UbBox>
-        )}
       </UbStack>
       {failure && <UbBox className="p-3">{failure}</UbBox>}
-      {children && <UbBox className="hidden px-4 lg:block">{children}</UbBox>}
       <UbStack
         as="ul"
         aria-label={t(
@@ -179,6 +149,32 @@ export function HomeBalanceLane({
           </UbText>
         )}
       </UbStack>
+      <UbStack gap={2} className="hidden p-4 lg:flex">
+        {details && (
+          <UbText variant="caption" tone="secondary">
+            {t(supplier ? 'reports.home.supplierCount' : 'reports.home.customerCount', {
+              count: details.count,
+            })}
+          </UbText>
+        )}
+        {details && (
+          <UbBox className="hidden lg:block">
+            <UbBalanceBands
+              label={label}
+              bands={details.bands.map((b) => ({
+                key: b.key,
+                label: t(`reports.home.band.${b.key}`),
+                value: formatInr(b.amount),
+                amount: b.amount,
+              }))}
+            />
+            <UbText variant="caption" tone="secondary" className="mt-1">
+              {t('reports.home.bandBasis')}
+            </UbText>
+          </UbBox>
+        )}
+      </UbStack>
+      {children && <UbBox className="hidden px-4 lg:block">{children}</UbBox>}
       <UbBox className="hidden p-4 lg:block">
         <UbLink href={href} variant="caption">
           {t(

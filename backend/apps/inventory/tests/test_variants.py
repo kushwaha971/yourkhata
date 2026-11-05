@@ -65,3 +65,13 @@ def test_home_strip_counts_sold_out_sizes(owner: Any) -> None:
     shirt(owner)
     tiles = owner.get(reverse("v1:stock-home-strip")).json()["data"]
     assert {"key": "soldOutSizes", "count": 8} in tiles
+
+
+@pytest.mark.django_db
+def test_home_strip_of_a_plain_shop_has_due_week_and_low_stock_names(owner: Any) -> None:
+    """Kirana's design strip: the amount due this week and the short items named,
+    so the tiles are not bare counts. A zero due week still reads as a real zero."""
+    tiles = {t["key"]: t for t in owner.get(reverse("v1:stock-home-strip")).json()["data"]}
+    assert tiles["dueWeek"]["value"] == "0.00"
+    assert tiles["dueWeek"]["count"] == 0
+    assert tiles["lowStock"]["names"] == []

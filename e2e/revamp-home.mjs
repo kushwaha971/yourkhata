@@ -101,7 +101,7 @@ export async function shootHome({ signedInContext, widths, themes, locale, dir, 
     await check('ready');
     await check('ready-full', { fullPage: true });
     // Tabs, when the new Home has them (the old screen has none).
-    for (const [name, state] of [[/^(Follow-ups|फ़ॉलो-अप)/, 'tab-followups'], [/^(Insights|जानकारी)/, 'tab-insights']]) {
+    for (const [name, state] of [[/^(Insights|जानकारी)/, 'tab-insights']]) {
       const tab = page.getByRole('tab', { name }).filter({ visible: true }).first();
       if (await tab.count()) {
         await tab.click();

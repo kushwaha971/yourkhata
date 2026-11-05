@@ -175,7 +175,7 @@ describe('UAT D2 — the phone and tablet chrome', () => {
     await user.click(within(mobileHeader()).getByRole('button', { name: 'Find or start' }));
 
     // A1 shortened the hint so it fits at 320 px.
-    const input = await screen.findByPlaceholderText('Search name, item or bill no.');
+    const input = await screen.findByPlaceholderText('Find or start: name, item, bill no.');
     expect(input).toHaveFocus();
   });
 

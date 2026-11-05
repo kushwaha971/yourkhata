@@ -170,7 +170,7 @@ try {
   check(
     'Home says Ramesh is in both lists, with the two figures the server holds',
     noteText.includes('Ramesh Traders is in both lists.') &&
-      noteText.includes(`They owe you ₹${inr(before.customer_balance)} as a customer and you owe them ₹${inr(before.supplier_balance)} as a supplier.`),
+      noteText.includes(`As a customer you will get ₹${inr(before.customer_balance)} from them, and as a supplier you will give them ₹${inr(before.supplier_balance)}.`),
     noteText
   );
   check('Home names only the contact in both lists', !noteText.includes('Meena'), noteText);
@@ -187,7 +187,7 @@ try {
   const afterText = (await page.getByTestId('settle-after').innerText()).replace(/\s+/g, ' ');
   const wantCust = inr(Number(before.customer_balance) - Number(MAX));
   const wantSupp = inr(Number(before.supplier_balance) - Number(MAX));
-  check('"After this" shows both results before anything is written', afterText.includes(`They owe you ₹${wantCust}`) && afterText.includes(`You owe them ₹${wantSupp}`), afterText);
+  check('"After this" shows both results before anything is written', afterText.includes(`You will get ₹${wantCust}`) && afterText.includes(`You will give ₹${wantSupp}`), afterText);
   const focused = await page.evaluate(() => document.activeElement?.textContent?.trim());
   check('focus opens on Keep separate, so Enter never settles', focused === 'Keep separate', focused);
   check('the honest line says no cash moves both ways', (await dialog.innerText()).includes(`Records ₹${inr(MAX)} received from Ramesh Traders in Customers and ₹${inr(MAX)} paid to Ramesh Traders in Suppliers`));

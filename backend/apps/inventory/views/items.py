@@ -635,6 +635,28 @@ class ExpiryView(_InventoryView, APIView):
         return StandardResponse.ok(rows, meta={"counts": counts})
 
 
+def _shop_due_week_tile(request: Any, tenant: Any, today: Any) -> list[dict]:
+    """The design's "Udhaar due this week": open bills due in seven days and the
+    customers they belong to. Absent for someone who may not read bills."""
+    from datetime import timedelta
+
+    from django.db.models import Count, Sum
+
+    from apps.sales.constants import OPEN_STATUSES
+    from apps.sales.models import SalesDocument
+
+    if not _has(request, "sales.invoice.read"):
+        return []
+    row = SalesDocument.objects.filter(
+        tenant=tenant,
+        kind="invoice",
+        status__in=OPEN_STATUSES,
+        due_on__gte=today,
+        due_on__lte=today + timedelta(days=7),
+    ).aggregate(amount=Sum("amount_due"), people=Count("party", distinct=True))
+    return [{"key": "dueWeek", "count": row["people"], "value": str(row["amount"] or "0.00")}]
+
+
 class HomeStripView(_InventoryView, APIView):
     """D12 — the strip of the business's own figures under Home's day line:
     batches expiring in 30 days (medicine), phones in stock (IMEI), sizes sold
@@ -674,5 +696,15 @@ class HomeStripView(_InventoryView, APIView):
         if not tiles and "jewellery" not in features_of(tenant):
             base = item_selectors.item_list(tenant=tenant, location_id=None, status=ItemStatus.ACTIVE)
             counts = item_selectors.list_meta(base, base)["counts"]
-            tiles.append({"key": "lowStock", "count": counts["low"] + counts["out"]})
+            from apps.inventory.constants import StockStatus
+
+            tiles.extend(_shop_due_week_tile(request, tenant, today))
+            short = base.filter(stock_status__in=(StockStatus.LOW, StockStatus.OUT)).order_by("name")
+            tiles.append(
+                {
+                    "key": "lowStock",
+                    "count": counts["low"] + counts["out"],
+                    "names": [item.name for item in short[:2]],
+                }
+            )
         return StandardResponse.ok(tiles)

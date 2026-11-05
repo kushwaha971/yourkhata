@@ -7,6 +7,7 @@ import { chromium } from 'playwright';
 const base = process.env.E2E_BASE ?? 'http://localhost:3000';
 const arg = (n, d) => process.argv.find((a) => a.startsWith(`--${n}=`))?.slice(n.length + 3) ?? d;
 const kind = arg('kind', 'jewel');
+const only = arg('only', '').split(',').filter(Boolean);
 const email = arg('email', 'qa-jeweller@adcert.test');
 const out = `/tmp/e2e-shots/jd/${kind}`;
 mkdirSync(out, { recursive: true });
@@ -34,8 +35,8 @@ const desk = await login(1280, 800);
 const sheet = await (await b.newContext({ viewport: { width: 1500, height: 800 } })).newPage();
 const uri = (buf) => `data:image/png;base64,${buf.toString('base64')}`;
 
-for (const { mock, route, section, only } of PAIRS) {
-  if (only && !only.includes(kind)) continue;
+for (const { mock, route, section } of PAIRS) {
+  if (only.length && !only.includes(mock)) continue;
   const page = mock.startsWith('p') || mock.endsWith('-p') ? phone : desk;
   const el = design.locator(section ? `#${section} [data-mock="${mock}"]` : `[data-mock="${mock}"]`).first();
   if (!(await el.isVisible())) { console.log('no mock', mock); continue; }
