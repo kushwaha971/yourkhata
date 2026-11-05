@@ -26,11 +26,11 @@
 },
 {
 "mock": "pItemForm",
-"route": "/items/new"
+"route": "/items?add=1"
 },
 {
 "mock": "dItemForm",
-"route": "/items/new"
+"route": "/items?add=1"
 },
 {
 "mock": "pBillEmpty",

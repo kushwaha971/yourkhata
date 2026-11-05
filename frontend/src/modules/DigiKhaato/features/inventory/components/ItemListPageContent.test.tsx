@@ -208,3 +208,13 @@ it('on a phone, a camera scan of an unknown code opens "Not in your items" with 
     Object.defineProperty(navigator, 'mediaDevices', { configurable: true, value: undefined });
   }
 });
+
+it('opens Add item when the address asks for it with add=1', async () => {
+  /* `/items?add=1` is the Add item link (and how dItemForm is measured). Without
+     it the old `/items/new` fell into the item page and showed nothing. */
+  mockSearch = 'add=1';
+  jest.mocked(service.listItems).mockResolvedValue({ ...PAGE, rows: [ROW], total: 1, hasAny: true });
+  signIn(['inventory.item.read', 'inventory.item.write']);
+  renderWithProviders(<ItemListPageContent />);
+  expect(await screen.findByRole('dialog', { name: /Add item/ })).toBeInTheDocument();
+});

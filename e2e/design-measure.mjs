@@ -94,7 +94,11 @@ await p.waitForTimeout(3000);
 if (dark) { await p.evaluate(() => document.documentElement.setAttribute('data-theme', 'dark')); await p.waitForTimeout(400); }
 const over = await p.evaluate(() => document.documentElement.scrollWidth - innerWidth);
 if (over > 0) console.log('OVERFLOW', over);
-const app = new Map(await p.locator('main').first().evaluate(collect));
+// An open drawer or dialog is part of the screen the design draws (dItemForm).
+const app = new Map([
+  ...(await p.locator('main').first().evaluate(collect)),
+  ...(await p.locator('[role=dialog]').evaluateAll((els, fn) => els.flatMap((el) => new Function(`return (${fn})`)()(el)), collect.toString())),
+]);
 
 // The one agreed token difference: ink-3 fails 4.5:1 on white, so the app's tertiary is darker (CLAUDE.md gate 7).
 const SAME = { 'rgb(122, 129, 140)': 'rgb(101, 109, 120)' };

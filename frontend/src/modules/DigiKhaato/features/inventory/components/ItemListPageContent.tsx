@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import dynamic from 'next/dynamic';
+import { useSearchParams } from 'next/navigation';
 
 import {
   BarChart3,
@@ -123,6 +124,16 @@ export function ItemListPageContent(): React.JSX.Element {
   const tier = useGridTier();
   const list = useItemList(tier === 'cards' ? 'append' : 'replace');
   const itemForm = useItemForm();
+  /* `/items?add=1` opens Add item over the list, so the action has an address
+     a merchant can bookmark and the design's dItemForm can be reached. */
+  const askedToAdd = useSearchParams()?.get('add') === '1';
+  const { openCreate } = itemForm;
+  const openedFromUrl = useRef(false);
+  useEffect(() => {
+    if (!askedToAdd || openedFromUrl.current) return;
+    openedFromUrl.current = true;
+    openCreate();
+  }, [askedToAdd, openCreate]);
   const adjustment = useStockAdjustment();
   const { can } = usePermissions();
   const masters = useInventoryMasters();
