@@ -36,6 +36,7 @@ import { formatInr, isZeroAmount } from 'src/utils/money';
 import { formatInrUnbroken } from 'src/utils/moneyUnbroken';
 
 import { HomeStrip } from '../../inventory/components/HomeStrip';
+import { useAppWords } from '../../navigation/useAppWords';
 import { PROMISE_DATE_FORMAT } from '../../parties/view-model/shopPromiseFacts';
 import { useCounter } from '../hooks/useCounter';
 import { useHomeCharts } from '../hooks/useHomeCharts';
@@ -105,6 +106,7 @@ export function ShopHomeWorkspace({
   secondsAgo = 0,
 }: Readonly<{ data: DashboardData; refresh: () => void; secondsAgo?: number }>): React.JSX.Element {
   const { t, d } = useTranslation();
+  const { w } = useAppWords();
   const mobile = useIsMobileLayer();
   const tenant = useAppSelector(selectActiveTenant);
   const jeweller = Boolean(tenant?.features?.includes('jewellery'));
@@ -402,7 +404,7 @@ export function ShopHomeWorkspace({
                 {t('reports.home.receive')}
               </UbButton>
               <UbButton variant="outlineNeutral" onClick={() => openPayment('out')}>
-                {t('reports.home.paySupplier')}
+                {w('reports.home.paySupplier')}
               </UbButton>
             </UbBox>
           )}
@@ -553,7 +555,7 @@ export function ShopHomeWorkspace({
                     },
                     {
                       key: 'pay',
-                      label: t('reports.home.paySupplier'),
+                      label: w('reports.home.paySupplier'),
                       onSelect: () => openPayment('out'),
                     },
                   ]

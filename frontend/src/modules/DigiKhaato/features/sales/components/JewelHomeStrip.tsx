@@ -67,7 +67,7 @@ export function JewelHomeStrip(): React.JSX.Element | null {
         >
           <UbText
             variant="inherit"
-            tone="secondary"
+            tone="tertiary"
             className="text-[12px] font-semibold leading-tight"
           >
             {tile.label}
@@ -79,7 +79,7 @@ export function JewelHomeStrip(): React.JSX.Element | null {
             {tile.value}
           </UbText>
           {tile.sub && (
-            <UbText variant="inherit" tone="secondary" className="text-[12px] leading-tight">
+            <UbText variant="inherit" tone="tertiary" className="text-[12.5px] leading-tight">
               {tile.sub}
             </UbText>
           )}

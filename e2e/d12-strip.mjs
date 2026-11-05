@@ -35,12 +35,13 @@ for (const [w, h] of [[1280, 900], [390, 844], [320, 700]]) {
   const ctx = await browser.newContext({ viewport: { width: w, height: h }, ...(w < 768 ? { isMobile: true, hasTouch: true } : {}) });
   const page = await signIn(ctx);
   const tiles = (await (await ctx.request.get(`${base}/api/v1/stock/home-strip`)).json()).data ?? [];
-  if (w === 1280) check('API: three tiles for a business with batches, IMEIs and sizes', tiles.length === 3, JSON.stringify(tiles));
+  if (w === 1280) check('API: the three kinds' tiles and the short book', tiles.length === 4, JSON.stringify(tiles));
   await page.goto(`${base}/dashboard`, { waitUntil: 'networkidle' });
   await sleep(1500);
   const strip = page.getByTestId('home-strip');
   check(`${w}: the strip is on Home`, await strip.isVisible().catch(() => false));
-  for (const tile of tiles) {
+  // The design's strip holds three tiles on a desktop and two on a phone.
+  for (const tile of tiles.slice(0, w < 1024 ? 2 : 3)) {
     const text = (await page.getByTestId(`home-strip-${tile.key}`).innerText().catch(() => '')).replace(/\n/g, ' / ');
     const want = skew ? tile.count + 1 : tile.count;
     check(`${w}: ${tile.key} shows the server's ${want}`, new RegExp(`(^|\\D)${want}(\\D|$)`).test(text), text);

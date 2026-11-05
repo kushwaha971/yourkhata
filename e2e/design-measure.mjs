@@ -42,12 +42,15 @@ await dp.goto(`file://${resolve('docs/revamp/design/shop-fixes-and-business-type
 await dp.waitForTimeout(1500);
 await dp.locator('select').filter({ has: dp.locator('option[value=jewel]') }).first().selectOption(kind);
 await dp.waitForTimeout(2000);
+const dark = process.argv.includes('--dark');
+if (dark) await dp.evaluate(() => document.documentElement.setAttribute('data-theme', 'dark'));
 const el = dp.locator(`[data-mock="${mockId}"]`).first();
 await el.scrollIntoViewIfNeeded();
 const design = new Map(await el.evaluate(collect));
 
 const c = await b.newContext({ viewport: { width, height: phone ? 844 : 800 } });
 const p = await c.newPage();
+if (process.argv.includes('--hi')) await c.addCookies([{ name: 'ub_locale', value: 'hi', url: base }]);
 await p.goto(`${base}/login/email`);
 await p.locator('input[type=email]').first().fill(arg('email', 'scale@digikhaato.test'));
 await p.locator('input[type=password]').first().fill(arg('password', 'Scale-Run-2026!'));
@@ -55,10 +58,14 @@ await p.keyboard.press('Enter');
 await p.waitForURL((u) => !u.pathname.startsWith('/login'));
 await p.goto(base + arg('route', pair.route));
 await p.waitForTimeout(3000);
+if (dark) { await p.evaluate(() => document.documentElement.setAttribute('data-theme', 'dark')); await p.waitForTimeout(400); }
+const over = await p.evaluate(() => document.documentElement.scrollWidth - innerWidth);
+if (over > 0) console.log('OVERFLOW', over);
 const app = new Map(await p.locator('main').first().evaluate(collect));
 
 // The one agreed token difference: ink-3 fails 4.5:1 on white, so the app's tertiary is darker (CLAUDE.md gate 7).
 const SAME = { 'rgb(122, 129, 140)': 'rgb(101, 109, 120)' };
+if (process.argv.includes('--hi')) design.clear();
 const bad = [], unmatched = [];
 for (const [text, d] of design) {
   const a = app.get(text);

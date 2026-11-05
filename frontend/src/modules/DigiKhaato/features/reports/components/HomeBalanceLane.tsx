@@ -149,7 +149,7 @@ export function HomeBalanceLane({
           </UbText>
         )}
       </UbStack>
-      <UbStack gap={2} className="hidden p-4 lg:flex">
+      <UbStack gap={2} className={details?.count ? 'hidden p-4 lg:flex' : 'hidden'}>
         {details && (
           <UbText variant="caption" tone="secondary">
             {t(supplier ? 'reports.home.supplierCount' : 'reports.home.customerCount', {

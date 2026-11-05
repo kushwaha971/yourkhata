@@ -2,7 +2,7 @@ import { API_PATHS } from 'src/api/APIPaths';
 import { api, ubConfig } from 'src/api/AxiosInstances';
 
 /** D12 — `GET /stock/home-strip`: only the tiles this business keeps. */
-export type HomeStripKey = 'expiring' | 'phones' | 'soldOutSizes' | 'lowStock' | 'dueWeek';
+export type HomeStripKey = 'expiring' | 'phones' | 'soldOutSizes' | 'lowStock' | 'dueWeek' | 'shortBook';
 
 export interface HomeStripTile {
   readonly key: HomeStripKey;

@@ -75,3 +75,17 @@ def test_home_strip_of_a_plain_shop_has_due_week_and_low_stock_names(owner: Any)
     assert tiles["dueWeek"]["value"] == "0.00"
     assert tiles["dueWeek"]["count"] == 0
     assert tiles["lowStock"]["names"] == []
+
+
+
+@pytest.mark.django_db
+def test_home_strip_of_a_batch_shop_is_its_own(owner: Any, tenant: Any) -> None:
+    """A medical store sees expiry at a true zero and its short book, not a
+    kirana's Udhaar tile, from the day it opens with no batch yet."""
+    from apps.platform_app.models import TenantSetting
+
+    TenantSetting.objects.update_or_create(
+        tenant=tenant, key="shop.features.batches", defaults={"value": {"value": True}}
+    )
+    keys = [t["key"] for t in owner.get(reverse("v1:stock-home-strip")).json()["data"]]
+    assert keys == ["expiring", "shortBook"]

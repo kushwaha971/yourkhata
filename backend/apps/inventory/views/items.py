@@ -672,16 +672,22 @@ class HomeStripView(_InventoryView, APIView):
         today = tenant_today(tenant)
         valuation = _valuation_visible(request)
         tiles = []
-        if Batch.objects.filter(tenant=tenant).exists():
+        from apps.inventory.constants import StockStatus
+        from apps.platform_app.selectors.business_words import features_of
+
+        # A tile follows what the business keeps, so a new medical store sees its
+        # expiry at a true zero rather than another shop's tiles.
+        features = features_of(tenant)
+        jeweller = "jewellery" in features
+        keeps_batches = "batches" in features or Batch.objects.filter(tenant=tenant).exists()
+        if keeps_batches:
             rows = expiry_rows(tenant=tenant, within="30", today=today)
             tile = {"key": "expiring", "count": len(rows)}
             if valuation:
                 tile["value"] = str(sum((Decimal(r["value"]) for r in rows), Decimal("0.00")))
             tiles.append(tile)
         # A jeweller's serials are tags, and its Home has its own strip.
-        from apps.platform_app.selectors.business_words import features_of
-
-        if "jewellery" not in features_of(tenant) and Serial.objects.filter(tenant=tenant).exists():
+        if not jeweller and ("serials" in features or Serial.objects.filter(tenant=tenant).exists()):
             tiles.append(
                 {"key": "phones", "count": Serial.objects.filter(tenant=tenant, status=Serial.IN_STOCK).count()}
             )
@@ -689,20 +695,18 @@ class HomeStripView(_InventoryView, APIView):
             Item.objects.filter(tenant=tenant, product__isnull=False, status=ItemStatus.ACTIVE),
             location_id=None,
         )
-        if variants.exists():
+        if "variants" in features or variants.exists():
             tiles.append({"key": "soldOutSizes", "count": variants.filter(on_hand__lte=0).count()})
-        # A shop with nothing of its own (design KPI, kirana) still has its low
-        # stock. A jeweller's Home has its own strip.
-        if not tiles and "jewellery" not in features_of(tenant):
+        if not jeweller:
+            if not tiles:
+                tiles.extend(_shop_due_week_tile(request, tenant, today))
             base = item_selectors.item_list(tenant=tenant, location_id=None, status=ItemStatus.ACTIVE)
             counts = item_selectors.list_meta(base, base)["counts"]
-            from apps.inventory.constants import StockStatus
-
-            tiles.extend(_shop_due_week_tile(request, tenant, today))
             short = base.filter(stock_status__in=(StockStatus.LOW, StockStatus.OUT)).order_by("name")
             tiles.append(
                 {
-                    "key": "lowStock",
+                    # A medical store calls this its short book (design D12).
+                    "key": "shortBook" if keeps_batches else "lowStock",
                     "count": counts["low"] + counts["out"],
                     "names": [item.name for item in short[:2]],
                 }

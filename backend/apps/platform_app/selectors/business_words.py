@@ -144,6 +144,9 @@ def words_of(tenant: Any, locale: str = "en", rows: dict[str, Any] | None = None
         # The Shop's people list (partyBooks catalogue).
         words["parties.list.customer.title"] = many
         words["parties.list.customer.add"] = add(customer)
+        words["reports.home.toCollect"] = (
+            f"{many} से लेना है" if locale == "hi" else f"To collect · {many.lower()}"
+        )
     if supplier != _SHARED[1]:
         low = _plural(supplier, locale).lower()
         # The register subtitles (design SCR) name the kind's own people.
@@ -152,6 +155,8 @@ def words_of(tenant: Any, locale: str = "en", rows: dict[str, Any] | None = None
         words["purchases.debitNote.listTitleSub"] = f"{low} को वापस भेजा गया माल।" if hi else f"Goods you sent back to {low}."
         many = _plural(supplier, locale)
         one = _ONE_HI.get(supplier, supplier) if hi else supplier
+        words["reports.home.paySupplier"] = f"{one} को भुगतान" if hi else f"Pay {one.lower()}"
+        words["reports.home.toPay"] = f"{one} को देना है" if hi else f"To pay · {low}"
         words["nav.suppliers"] = many
         words["parties.list.supplier.title"] = many
         words["parties.list.supplier.add"] = add(supplier)

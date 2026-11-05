@@ -14,6 +14,7 @@ const HREF: Record<HomeStripKey, string> = {
   phones: ROUTES.ITEM_IMEI,
   soldOutSizes: ROUTES.STOCK_LOW,
   lowStock: ROUTES.STOCK_LOW,
+  shortBook: ROUTES.STOCK_LOW,
   dueWeek: `${ROUTES.SALES_INVOICES}?tab=unpaid`,
 };
 
@@ -68,17 +69,17 @@ export function HomeStrip(): React.JSX.Element | null {
                 : String(tile.count)}
           </UbText>
           {tile.key === 'dueWeek' && (
-            <UbText variant="inherit" tone="tertiary" className="truncate text-[12px]">
+            <UbText variant="inherit" tone="tertiary" className="truncate text-[12.5px]">
               {t('reports.home.customerCount', { count: tile.count })}
             </UbText>
           )}
           {tile.names && tile.names.length > 0 && (
-            <UbText variant="inherit" tone="tertiary" className="truncate text-[12px]">
+            <UbText variant="inherit" tone="tertiary" className="truncate text-[12.5px]">
               {tile.names.join(', ')}
             </UbText>
           )}
           {tile.key !== 'dueWeek' && tile.value !== null && (
-            <UbText variant="inherit" tone="secondary" className="text-body-sm [overflow-wrap:anywhere]">
+            <UbText variant="inherit" tone="tertiary" className="text-[12.5px] [overflow-wrap:anywhere]">
               {t('reports.home.strip.worth', { amount: formatInr(tile.value) })}
             </UbText>
           )}
