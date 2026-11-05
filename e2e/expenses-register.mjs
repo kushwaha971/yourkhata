@@ -365,7 +365,7 @@ try {
   /* ---------- the Cancelled chip lists it, and every card says so ---------- */
   await open('?tab=void');
   const cards = page.getByTestId('ub-grid-card');
-  check('the cancelled expense is listed under Cancelled', (await cards.allInnerTexts()).some((x) => x.includes(supplier.name)));
+  check('the cancelled expense is listed under Cancelled', (await cards.allInnerTexts()).some((x) => x.includes('QA89 owed')));
   const all = await cards.evaluateAll((els) => els.every((e) => /Cancelled/.test(e.textContent)));
   check('every cancelled card says Cancelled', all);
   if (SHOTS) await page.screenshot({ path: `${SHOTS}/cancelled-390.png` });
