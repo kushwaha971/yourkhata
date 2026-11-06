@@ -2,10 +2,18 @@
 
 import { useFormContext } from 'react-hook-form';
 
-import { UbField, UbSelect, UbStack, UbSwitch, UbText } from 'src/design-system';
+import {
+  UbField,
+  UbSegmentedControl,
+  UbSelect,
+  UbStack,
+  UbSwitch,
+  UbText,
+  UbTextInput,
+} from 'src/design-system';
 import { useTranslation } from 'src/hooks/useTranslation';
 
-import type { ItemFormValues } from '../types/item.types';
+import { ITEM_SCHEDULES, type ItemFormValues, type ItemSchedule } from '../types/item.types';
 
 const WARRANTY_MONTHS = [0, 3, 6, 12, 24] as const;
 
@@ -26,6 +34,7 @@ export function ItemTrackingFields({
   const { t } = useTranslation();
   const { watch, setValue } = useFormContext<ItemFormValues>();
   const tracking = watch('tracking');
+  const schedule = watch('schedule') ?? '';
   const on = tracking === kind;
   return (
     <UbStack
@@ -47,6 +56,34 @@ export function ItemTrackingFields({
         )}
         disabled={locked}
       />
+      {kind === 'batch' && (
+        /* G4 design (dItemForm, medical): the salt the bill's substitutes
+           match on, and the drug schedule that asks for doctor and patient. */
+        <>
+          <UbField name="salt" label={t('items.form.salt')}>
+            {(field) => (
+              <UbTextInput
+                {...field}
+                placeholder={t('items.form.salt.placeholder')}
+                value={String(field.value ?? '')}
+              />
+            )}
+          </UbField>
+          <UbField name="schedule" label={t('items.form.schedule')}>
+            {() => (
+              <UbSegmentedControl<ItemSchedule>
+                value={schedule}
+                onChange={(next) => setValue('schedule', next, { shouldDirty: true })}
+                ariaLabel={t('items.form.schedule')}
+                options={ITEM_SCHEDULES.map((value) => ({
+                  value,
+                  label: value || t('items.form.schedule.none'),
+                }))}
+              />
+            )}
+          </UbField>
+        </>
+      )}
       {kind === 'serial' && on && (
         <UbField name="warrantyMonths" label={t('items.form.warranty')}>
           {(field) => (

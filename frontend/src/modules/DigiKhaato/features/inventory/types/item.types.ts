@@ -140,6 +140,9 @@ export interface ItemListRow {
   readonly partNumbers?: readonly string[];
   readonly rack?: string | null;
   readonly fitsVehicle?: string | null;
+  /** G4 — a medicine's salt and drug schedule ("", H, H1, X). */
+  readonly salt?: string | null;
+  readonly schedule?: ItemSchedule;
   readonly updatedAt: string;
 }
 
@@ -290,6 +293,9 @@ export interface ItemFormValues {
   partNumbers: string[];
   rack: string;
   fitsVehicle: string;
+  /** G4 — sent only by a medical store. */
+  salt: string;
+  schedule: ItemSchedule;
   /** D P2 — a new garment in sizes × colours; sent only when switched on. */
   hasVariants: boolean;
   sizes: string[];
@@ -442,3 +448,7 @@ export interface LowStockResult {
   readonly total: number;
   readonly totals: { readonly low: number; readonly out: number };
 }
+
+/** G4 — a medicine's drug schedule; "" is none. */
+export type ItemSchedule = '' | 'H' | 'H1' | 'X';
+export const ITEM_SCHEDULES: readonly ItemSchedule[] = ['', 'H', 'H1', 'X'];

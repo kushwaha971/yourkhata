@@ -8,6 +8,7 @@ import { useTranslation } from 'src/hooks/useTranslation';
 import { useValidationSchemas } from 'src/hooks/useValidationSchemas';
 import { hasReason } from 'src/utils/reason';
 
+import { ITEM_SCHEDULES, type ItemSchedule } from '../types/item.types';
 import { categoryExists, unitCodeExists } from '../view-model/mastersView';
 
 import type { TagFormValues } from '../api/tagService';
@@ -225,6 +226,11 @@ export const useInventorySchemas = (
         .defined()
         .default('')
         .max(120, t('validation.maxChars', { value: 120 })),
+      salt: Yup.string()
+        .defined()
+        .default('')
+        .max(160, t('validation.maxChars', { value: 160 })),
+      schedule: Yup.mixed<ItemSchedule>().oneOf([...ITEM_SCHEDULES]).defined().default(''),
     });
 
     const adjustmentSchema: Yup.ObjectSchema<AdjustmentFormValues> = Yup.object({

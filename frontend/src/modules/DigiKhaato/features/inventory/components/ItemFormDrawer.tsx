@@ -156,6 +156,8 @@ export function ItemFormDrawer({
       partNumbers: [...(editing?.partNumbers ?? [])],
       rack: editing?.rack ?? '',
       fitsVehicle: editing?.fitsVehicle ?? '',
+      salt: editing?.salt ?? '',
+      schedule: editing?.schedule ?? '',
       hasVariants: false,
       sizes: [],
       colours: [],

@@ -11,6 +11,7 @@ import type {
   ItemListResult,
   ItemListRow,
   ItemSaveResult,
+  ItemSchedule,
   KindLine,
   MovementFilters,
   MovementPage,
@@ -68,6 +69,8 @@ export interface ItemRowWire {
   readonly part_numbers?: readonly string[];
   readonly rack?: string | null;
   readonly fits_vehicle?: string | null;
+  readonly salt?: string | null;
+  readonly schedule?: string;
   readonly updated_at: string;
 }
 
@@ -183,6 +186,8 @@ export const toItemRow = (row: ItemRowWire): ItemListRow => ({
   partNumbers: row.part_numbers ?? [],
   rack: row.rack ?? null,
   fitsVehicle: row.fits_vehicle ?? null,
+  salt: row.salt ?? null,
+  schedule: (row.schedule ?? '') as ItemSchedule,
   updatedAt: row.updated_at,
 });
 
@@ -402,6 +407,8 @@ export interface ItemBody {
   readonly part_numbers?: readonly string[];
   readonly rack?: string | null;
   readonly fits_vehicle?: string | null;
+  readonly salt?: string | null;
+  readonly schedule?: ItemSchedule;
   readonly addons?: readonly { readonly name: string; readonly price: string }[];
   readonly tracking?: 'none' | 'serial' | 'batch';
   readonly warranty_months?: number | null;
@@ -489,6 +496,9 @@ export const toItemBody = (
           rack: values.rack.trim() || null,
           fits_vehicle: values.fitsVehicle.trim() || null,
           tracking: values.tracking,
+          // G4 — a medicine's salt and schedule (blank for any other item).
+          salt: values.salt.trim() || null,
+          schedule: values.schedule,
           warranty_months: values.tracking === 'serial' ? values.warrantyMonths || null : null,
         }
       : {}),

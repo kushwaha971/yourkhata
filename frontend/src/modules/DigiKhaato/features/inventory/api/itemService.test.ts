@@ -69,6 +69,8 @@ const FORM: ItemFormValues = {
   partNumbers: [],
   rack: '',
   fitsVehicle: '',
+  salt: '',
+  schedule: '',
   hasVariants: false,
   sizes: [],
   colours: [],
@@ -197,6 +199,17 @@ describe('lookupItemByBarcode', () => {
 });
 
 describe('toItemBody', () => {
+  it('sends a medicine its salt and schedule (G4)', () => {
+    /* The bill's substitutes match on the salt and a scheduled medicine asks
+       for the doctor; a form that drops either loses both features silently. */
+    const body = toItemBody(
+      { ...FORM, salt: '  Paracetamol 650 mg ', schedule: 'H' },
+      { withOpening: false }
+    ) as unknown as Record<string, unknown>;
+    expect(body.salt).toBe('Paracetamol 650 mg');
+    expect(body.schedule).toBe('H');
+  });
+
   it('G2a: sends the first tag only with a NEW item that has a tag no.', () => {
     const tag = { ...EMPTY_TAG, tagNo: ' gc-1042 ', grossG: '12.900', stoneG: '0.560' };
     const body = toItemBody({ ...FORM, tag }, { withOpening: true }) as unknown as Record<string, unknown>;
