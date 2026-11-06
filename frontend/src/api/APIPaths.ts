@@ -160,6 +160,7 @@ export const API_PATHS = {
   SERIAL: (code: string) => `/serials/${seg(code)}`,
   /** D P4 — batches expired or expiring soon. */
   STOCK_EXPIRY: '/stock/expiry',
+  REPORT_SCHEDULE_H: '/sales/reports/schedule-h',
   // G4 — a medical store's short book and same-salt substitutes.
   STOCK_SHORT_BOOK: '/stock/short-book',
   STOCK_SHORT_BOOK_ORDERED: '/stock/short-book/ordered',

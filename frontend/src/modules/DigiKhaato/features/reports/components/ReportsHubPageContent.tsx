@@ -11,8 +11,10 @@ import {
   UbStack,
   UbText,
 } from 'src/design-system';
+import { useAppSelector } from 'src/hooks/useAppStore';
 import { usePermissions } from 'src/hooks/usePermissions';
 import { useTranslation } from 'src/hooks/useTranslation';
+import { selectActiveTenant } from 'src/redux/slice/sessionSlice';
 
 import {
   REPORT_CATALOGUE,
@@ -29,7 +31,11 @@ import {
 export function ReportsHubPageContent(): React.JSX.Element {
   const { t } = useTranslation();
   const { can, hasModule } = usePermissions();
-  const visible = useMemo(() => visibleReports(REPORT_CATALOGUE, can, hasModule), [can, hasModule]);
+  const features = useAppSelector(selectActiveTenant)?.features;
+  const visible = useMemo(
+    () => visibleReports(REPORT_CATALOGUE, can, hasModule, features ?? []),
+    [can, hasModule, features]
+  );
 
   const [search, setSearch] = useState('');
   const needle = search.trim().toLowerCase();

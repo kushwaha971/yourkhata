@@ -116,6 +116,26 @@ try {
     check(`${width}: self-test — a wrong doctor would fail`, rx.doctor !== 'Dr. Someone Else');
     const over = await page.evaluate(() => document.documentElement.scrollWidth - innerWidth);
     check(`${width}: no sideways scroll`, over <= 0, `${over}px`);
+
+    /* The register: issue the bill (a quick sale is paid in full), then the
+       Schedule H register lists it with its doctor. */
+    if (saved?.id) {
+      const issued = await api('POST', `/sales/invoices/${saved.id}/issue`, {
+        version: saved.version,
+        payment: { mode_breakup: [{ mode: 'cash', amount: saved.grand_total }] },
+      });
+      check(`${width}: the bill issues`, Boolean(issued.data?.number), JSON.stringify(issued.error ?? {}).slice(0, 120));
+      await page.goto(`${base}/reports`, { waitUntil: 'networkidle' });
+      check(`${width}: Reports lists the Schedule H register`, (await page.getByText('Schedule H register').count()) > 0);
+      await page.goto(`${base}/reports/schedule-h`, { waitUntil: 'networkidle' });
+      await page.getByTestId('schedule-h-register').waitFor({ timeout: 15000 });
+      await page.waitForTimeout(800);
+      const reg = await page.locator('main').innerText();
+      check(`${width}: the register lists the bill with its doctor`, reg.includes(issued.data?.number ?? '§') && reg.includes('Dr. S. Kulkarni'), reg.slice(0, 160).replace(/\n/g, ' | '));
+      if (SHOTS) await page.screenshot({ path: `${SHOTS}/register-${width}.png`, fullPage: true });
+      const regOver = await page.evaluate(() => document.documentElement.scrollWidth - innerWidth);
+      check(`${width}: the register does not scroll sideways`, regOver <= 0, `${regOver}px`);
+    }
     await ctx.close();
   }
 } catch (error) {

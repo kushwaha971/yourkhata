@@ -26,6 +26,8 @@ export interface ReportCatalogueEntry {
   readonly href: string;
   readonly modules: readonly ModuleCode[];
   readonly permissions: readonly PermissionCode[];
+  /** G4 — listed only where the business has this feature (a medical store's `batches`). */
+  readonly feature?: string;
   /** A lucide icon name the hub maps to a component (keeps icons out of this module). */
   readonly icon:
     | 'dayBook'
@@ -37,7 +39,9 @@ export interface ReportCatalogueEntry {
     | 'salesRegister'
     | 'purchaseRegister'
     | 'gst'
-    | 'profit';
+    | 'profit'
+    | 'expiry'
+    | 'scheduleH';
 }
 
 export const REPORT_GROUPS: readonly ReportGroup[] = ['money', 'parties', 'stock', 'sales'];
@@ -117,6 +121,25 @@ export const REPORT_CATALOGUE: readonly ReportCatalogueEntry[] = [
     icon: 'profit',
   },
   {
+    // G4 — a medical store's batches by expiry, and its Schedule H sales.
+    key: 'nearExpiry',
+    group: 'stock',
+    href: ROUTES.STOCK_EXPIRY,
+    modules: ['inventory'],
+    permissions: ['inventory.stock.read'],
+    feature: 'batches',
+    icon: 'expiry',
+  },
+  {
+    key: 'scheduleH',
+    group: 'sales',
+    href: ROUTES.REPORTS_SCHEDULE_H,
+    modules: ['reports', 'sales'],
+    permissions: ['reports.basic.read', 'sales.invoice.read'],
+    feature: 'batches',
+    icon: 'scheduleH',
+  },
+  {
     key: 'gstSummary',
     group: 'sales',
     href: ROUTES.REPORTS_GST_SUMMARY,
@@ -129,8 +152,12 @@ export const REPORT_CATALOGUE: readonly ReportCatalogueEntry[] = [
 export const visibleReports = (
   entries: readonly ReportCatalogueEntry[],
   can: (permission: PermissionCode) => boolean,
-  hasModule: (module: ModuleCode) => boolean
+  hasModule: (module: ModuleCode) => boolean,
+  features: readonly string[] = []
 ): readonly ReportCatalogueEntry[] =>
   entries.filter(
-    (entry) => entry.modules.every(hasModule) && entry.permissions.every((code) => can(code))
+    (entry) =>
+      entry.modules.every(hasModule) &&
+      entry.permissions.every((code) => can(code)) &&
+      (!entry.feature || features.includes(entry.feature))
   );

@@ -24,6 +24,7 @@ from apps.sales.views.custom_orders import (
     KarigarTagsDoneView,
 )
 from apps.sales.views.invoices import InvoiceViewSet
+from apps.sales.views.schedule_h import ScheduleHRegisterView
 from apps.sales.views.orders import SalesOrderViewSet
 
 router = DefaultRouter(trailing_slash=False)
@@ -35,6 +36,8 @@ router.register("credit-notes", CreditNoteViewSet, basename="sales-credit-note")
 
 urlpatterns = [
     # G3a — a jeweller's custom orders.
+    # G4 — a medical store's Schedule H register.
+    path("reports/schedule-h", ScheduleHRegisterView.as_view(), name="schedule-h-register"),
     path("custom-orders", CustomOrdersView.as_view(), name="custom-orders"),
     path("custom-orders/<uuid:pk>", CustomOrderDetailView.as_view(), name="custom-order-detail"),
     path("custom-orders/<uuid:pk>/status", CustomOrderStatusView.as_view(), name="custom-order-status"),
