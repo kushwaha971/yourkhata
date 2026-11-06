@@ -88,7 +88,7 @@ def test_substitutes_share_the_salt_and_list_stock_first_then_cheapest(
     make_item("Pacimol 650", salt="Paracetamol 650 mg", selling_price="28")
     make_item("Azithral 500", salt="Azithromycin 500 mg", opening=("5", "80"))
     rows = owner.get(reverse("v1:item-substitutes", args=[crocin.id])).json()["data"]
-    assert [(r["item"]["name"], r["in_stock"]) for r in rows] == [
+    assert [(r["name"], r["in_stock"]) for r in rows] == [
         ("Dolo 650", True),
         ("Calpol 650", True),
         ("Pacimol 650", False),

@@ -13,6 +13,7 @@ from __future__ import annotations
 from decimal import Decimal
 from typing import Any
 
+from django.core.exceptions import ValidationError as DjangoValidationError
 from django.db import IntegrityError, transaction
 from django.utils import timezone
 
@@ -185,34 +186,31 @@ def mark_ordered(*, ctx: Ctx, item_ids: list[Any]) -> int:
     ).update(ordered_at=timezone.now())
 
 
-def substitutes(*, tenant: Any, item_id: Any) -> list[dict]:
-    """G4 pSubst — other medicines with the same salt, in stock first, then cheapest."""
-    from apps.inventory.selectors.stock import with_stock
+def substitutes(*, tenant: Any, item_id: Any) -> list[Item]:
+    """G4 pSubst — other medicines with the same salt, in stock first, then cheapest.
+
+    Returned as items carrying their stock, so the caller serialises them as the
+    bill's own search rows: a substitute is added to the bill like any pick.
+    """
+    from apps.inventory.selectors.items import item_list
 
     try:
         item = Item.objects.get(tenant=tenant, pk=item_id)
-    except (Item.DoesNotExist, ValueError, TypeError) as exc:
+    except (Item.DoesNotExist, ValueError, TypeError, DjangoValidationError) as exc:
         raise NotFound("Item not found.") from exc
     salt = " ".join((item.salt or "").split()).lower()
     if not salt:
         return []
     same = [
         other
-        for other in with_stock(
-            Item.objects.filter(tenant=tenant, status=ItemStatus.ACTIVE, salt__isnull=False)
-            .exclude(pk=item.pk)
-            .select_related("unit"),
-            location_id=None,
-        )
+        for other in item_list(tenant=tenant, location_id=None).filter(salt__isnull=False).exclude(pk=item.pk)
         if " ".join((other.salt or "").split()).lower() == salt
     ]
-    same.sort(key=lambda o: (o.stock_status == StockStatus.OUT, -o.on_hand, o.selling_price))
-    return [
-        {
-            "item": _item(other),
-            "on_hand": str(other.on_hand),
-            "selling_price": str(other.selling_price),
-            "in_stock": other.stock_status != StockStatus.OUT,
-        }
-        for other in same
-    ]
+    same.sort(
+        key=lambda o: (
+            o.stock_status == StockStatus.OUT,
+            -(o.on_hand if o.on_hand is not None else Decimal("0")),
+            o.selling_price,
+        )
+    )
+    return same

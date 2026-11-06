@@ -29,6 +29,8 @@ export interface InvoiceLineForm {
   serials?: string[];
   /** Needs one per piece before the bill can be issued. */
   tracksSerial?: boolean;
+  /** G4 — the picked medicine's drug schedule; local, never sent. */
+  schedule?: string;
   /** D P6 — a café item's add-ons on this line (priced into unitPrice). */
   addons?: { name: string; price: string }[];
   /** G2b — a jeweller's piece: priced by the server from this snapshot. */
@@ -74,6 +76,9 @@ export interface InvoiceFormValues {
   /** G3a — the custom order this bill delivers. */
   customOrder?: BillCustomOrder | null;
   mechanic?: string;
+  /** G4 — a Schedule H medicine's prescription: the doctor and the patient. */
+  rxDoctor?: string;
+  rxPatient?: string;
   reverseCharge: boolean;
   roundOffEnabled: boolean;
   discountType: '' | DiscountType;
@@ -188,6 +193,9 @@ export const toWireBody = (values: InvoiceFormValues): Record<string, unknown> =
       }
     : {}),
   ...(values.mechanic !== undefined ? { mechanic: values.mechanic } : {}),
+  ...(values.rxDoctor !== undefined
+    ? { rx_doctor: values.rxDoctor.trim(), rx_patient: (values.rxPatient ?? '').trim() }
+    : {}),
   reverse_charge: values.reverseCharge,
   round_off_enabled: values.roundOffEnabled,
   ...discountWire(values.discountType, values.discountValue),
@@ -246,6 +254,8 @@ export const fromDocument = (doc: SalesDocument): InvoiceFormValues => ({
       }
     : null,
   mechanic: doc.vehicle?.mechanic ?? '',
+  rxDoctor: doc.rx?.doctor ?? '',
+  rxPatient: doc.rx?.patient ?? '',
   reverseCharge: doc.reverseCharge,
   roundOffEnabled: doc.roundOffEnabled,
   discountType: doc.discountType ?? '',

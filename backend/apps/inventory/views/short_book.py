@@ -64,6 +64,19 @@ class ShortBookOrderedView(_MedicineView):
 
 class SubstitutesView(_MedicineView):
     def get(self, request: Any, pk: str) -> Any:
+        from apps.inventory.serializers.output import item_row
+        from apps.inventory.views.items import _gst_percents, _valuation_visible
+
+        tenant = get_effective_tenant(request)
+        items = short_book.substitutes(tenant=tenant, item_id=pk)
+        valuation = _valuation_visible(request)
+        gst = _gst_percents(tenant, items)
         return StandardResponse.ok(
-            short_book.substitutes(tenant=get_effective_tenant(request), item_id=pk)
+            [
+                {
+                    **item_row(item, valuation=valuation, gst_percent=gst),
+                    "in_stock": item.stock_status != "out",
+                }
+                for item in items
+            ]
         )

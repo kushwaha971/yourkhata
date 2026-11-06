@@ -1,6 +1,10 @@
 import { API_PATHS } from 'src/api/APIPaths';
 import { api, ubConfig } from 'src/api/AxiosInstances';
 
+import { toItemRow, type ItemRowWire } from './itemService';
+
+import type { ItemListRow } from '../types/item.types';
+
 /** G4 — `GET /stock/short-book` (design dShortBook). */
 export type ShortBookReason = 'asked' | 'manual' | 'low';
 
@@ -86,11 +90,10 @@ export const markShortBookOrdered = async (itemIds: readonly string[]): Promise<
   return response.data.data.closed;
 };
 
-/** G4 pSubst — medicines with the same salt, in stock first, then cheapest. */
+/** G4 pSubst — medicines with the same salt, in stock first, then cheapest.
+ *  Each is a full search row, so the bill adds it exactly like any pick. */
 export interface Substitute {
-  readonly item: { readonly id: string; readonly name: string; readonly unitCode: string };
-  readonly onHand: string;
-  readonly sellingPrice: string;
+  readonly row: ItemListRow;
   readonly inStock: boolean;
 }
 
@@ -98,18 +101,9 @@ export const getSubstitutes = async (
   itemId: string,
   signal?: AbortSignal
 ): Promise<readonly Substitute[]> => {
-  const response = await api.get<{
-    data: readonly {
-      item: { id: string; name: string; unit_code: string };
-      on_hand: string;
-      selling_price: string;
-      in_stock: boolean;
-    }[];
-  }>(API_PATHS.ITEM_SUBSTITUTES(itemId), ubConfig({ signal, suppressErrorSnackbar: true }));
-  return response.data.data.map((row) => ({
-    item: { id: row.item.id, name: row.item.name, unitCode: row.item.unit_code },
-    onHand: row.on_hand,
-    sellingPrice: row.selling_price,
-    inStock: row.in_stock,
-  }));
+  const response = await api.get<{ data: readonly (ItemRowWire & { in_stock: boolean })[] }>(
+    API_PATHS.ITEM_SUBSTITUTES(itemId),
+    ubConfig({ signal, suppressErrorSnackbar: true })
+  );
+  return response.data.data.map((wire) => ({ row: toItemRow(wire), inStock: wire.in_stock }));
 };

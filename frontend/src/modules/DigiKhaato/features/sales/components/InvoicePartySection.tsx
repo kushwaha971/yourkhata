@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import dynamic from 'next/dynamic';
 
-import { type UseFormReturn } from 'react-hook-form';
+import { useWatch, type UseFormReturn } from 'react-hook-form';
 
 import {
   UbBox,
@@ -97,6 +97,10 @@ export function InvoicePartySection({
   const keepsVehicles = Boolean(
     useAppSelector(selectActiveTenant)?.features?.includes('part_numbers')
   );
+  const keepsBatches = Boolean(useAppSelector(selectActiveTenant)?.features?.includes('batches'));
+  // useWatch, not watch: this section must re-render when a line is picked.
+  const watchedLines = useWatch({ control: form.control, name: 'lines' });
+  const scheduled = (watchedLines ?? []).some((line) => Boolean(line.schedule));
   const partyId = watch('partyId');
   /*
    * 07-screens/09 §3 — once a saved customer is picked, the field collapses to
@@ -325,6 +329,23 @@ export function InvoicePartySection({
       </UbDisclosure>
     );
   };
+  /* G4 — design D1 medical: Doctor and Patient name, in the bill's own card
+     (not folded under More details) while a Schedule H / H1 / X medicine is on
+     the bill, or the bill already has them. */
+  const rxBlock = keepsBatches && (scheduled || Boolean(watch('rxDoctor')) || Boolean(watch('rxPatient'))) && (
+          <UbGrid columns={{ base: 1, sm: 2 }} gap={3} data-testid="bill-rx">
+            <UbField name="rxDoctor" label={t('sales.editor.rxDoctor')} hint={t('sales.editor.rxHint')}>
+              {(field) => (
+                <UbTextInput {...field} value={(field.value as string) ?? ''} maxLength={80} disabled={disabled} />
+              )}
+            </UbField>
+            <UbField name="rxPatient" label={t('sales.editor.rxPatient')}>
+              {(field) => (
+                <UbTextInput {...field} value={(field.value as string) ?? ''} maxLength={80} disabled={disabled} />
+              )}
+            </UbField>
+          </UbGrid>
+        );
   const showDetails = part !== 'who';
   const detailsBlock = showDetails && renderDetails();
   if (part === 'details') return <>{detailsBlock}</>;
@@ -427,6 +448,7 @@ export function InvoicePartySection({
           (walk-in name and mobile, the dates, the place of supply) fold under
           one line that says what they are, so the items come first. A desktop
           renders them exactly as before. */}
+      {rxBlock}
       {detailsBlock}
     </UbStack>
   );

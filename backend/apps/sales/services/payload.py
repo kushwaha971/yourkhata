@@ -153,6 +153,17 @@ def apply_payload(
         if pan and not is_valid_pan(pan):
             errors["pan"] = ["Enter the 10-character PAN, like ABCPK1234L."]
         document.meta = {**meta, **({"pan": pan} if pan else {})}
+    # G4 — a Schedule H / H1 / X medicine's prescription: the doctor and the
+    # patient, kept with the bill in meta.rx for the Schedule H register. Asked
+    # by the bill when such a medicine is on it; like the PAN, never a block.
+    if "rx_doctor" in payload or "rx_patient" in payload:
+        rx = dict((document.meta or {}).get("rx") or {})
+        for key, field in (("doctor", "rx_doctor"), ("patient", "rx_patient")):
+            if field in payload:
+                rx[key] = " ".join(str(payload.get(field) or "").split())[:80]
+        meta = {k: v for k, v in (document.meta or {}).items() if k != "rx"}
+        rx = {k: v for k, v in rx.items() if v}
+        document.meta = {**meta, **({"rx": rx} if rx else {})}
     # G3a — the custom order this bill delivers, kept in meta.custom_order.
     if "custom_order_id" in payload:
         from apps.sales.services.custom_orders import link_to_draft

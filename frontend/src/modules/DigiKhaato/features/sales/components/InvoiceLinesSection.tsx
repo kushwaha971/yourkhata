@@ -40,6 +40,7 @@ import { lineUnitCaption, lineUnitChoices, type LineUnitChoice } from '../view-m
 import { AddonSheet } from './AddonSheet';
 import { InvoiceLineList, InvoiceLineTable, lineName } from './InvoiceLineEditor';
 import { LineVariantPicker } from './LineVariantPicker';
+import { SubstituteSheet } from './SubstituteSheet';
 
 import type { ItemListRow } from '../../inventory/types/item.types';
 import type { EngineResult } from '../view-model/taxEngine';
@@ -198,6 +199,7 @@ export function InvoiceLinesSection({
           [row.id]: { part, rack: row.rack ?? undefined },
         }));
       setValue(`${base}.tracksSerial`, row.tracking === 'serial');
+      setValue(`${base}.schedule`, row.schedule ?? '');
       if (row.tracking === 'serial') setSerialItems((current) => ({ ...current, [row.id]: true }));
       if (row.tracking === 'batch') setBatchItems((current) => ({ ...current, [row.id]: true }));
       // D P6 — design D11: the add-on sheet opens only for an item that has add-ons.
@@ -365,10 +367,31 @@ export function InvoiceLinesSection({
     (row: ItemListRow) => keepsTags && row.tracking === 'serial',
     [keepsTags]
   );
+  /* G4 (design pSubst) — a medicine with a salt that is out of stock on a bill
+     that takes stock opens its same-salt substitutes before it is billed. */
+  const keepsBatches = Boolean(useAppSelector(selectActiveTenant)?.features?.includes('batches'));
+  const [substituteFor, setSubstituteFor] = useState<{
+    row: ItemListRow;
+    via: Parameters<typeof quickAdd>[1];
+  } | null>(null);
+  /* The sheet hands focus back to the search, which would open its list over
+     the line just added: let the focus land, then let go of it. */
+  const closeSubstitutes = useCallback(() => {
+    setSubstituteFor(null);
+    window.setTimeout(() => {
+      const active = document.activeElement;
+      if (active instanceof HTMLElement && active.getAttribute('role') === 'combobox') active.blur();
+    }, 0);
+  }, []);
   const pickOrChooseTag = useCallback(
-    (row: ItemListRow, via: Parameters<typeof quickAdd>[1]) =>
-      keepsTag(row) ? chooseTag(row) : pickItem(row, via),
-    [keepsTag, chooseTag, pickItem]
+    (row: ItemListRow, via: Parameters<typeof quickAdd>[1]) => {
+      if (keepsTag(row)) return chooseTag(row);
+      const out = row.trackStock && row.onHand !== null && Number(row.onHand) <= 0;
+      if (keepsBatches && stockRule === 'takes' && out && row.salt)
+        return setSubstituteFor({ row, via });
+      return pickItem(row, via);
+    },
+    [keepsTag, chooseTag, pickItem, keepsBatches, stockRule]
   );
 
   /* Design pScan tray: "× 2 · ₹106" — the scanned item's line, from the same
@@ -715,6 +738,20 @@ export function InvoiceLinesSection({
 
   return (
     <UbStack gap={3}>
+      {substituteFor && (
+        <SubstituteSheet
+          item={substituteFor.row}
+          onClose={() => setSubstituteFor(null)}
+          onAnyway={() => {
+            pickItem(substituteFor.row, substituteFor.via);
+            closeSubstitutes();
+          }}
+          onUse={(row) => {
+            pickItem(row, substituteFor.via);
+            closeSubstitutes();
+          }}
+        />
+      )}
       {addonFor && (
         <AddonSheet
           item={addonFor.row}

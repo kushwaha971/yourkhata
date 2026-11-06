@@ -213,6 +213,8 @@ export interface SalesDocument extends SalesDocumentTotals {
   readonly oldGold?: OldGoldWire | null;
   /** G2d — the customer's PAN kept with a jeweller's bill. */
   readonly pan?: string | null;
+  /** G4 — the prescription for a Schedule H medicine on this bill. */
+  readonly rx?: { readonly doctor?: string; readonly patient?: string } | null;
   /** G3a — the custom order this bill delivers. */
   readonly customOrder?: BillCustomOrder | null;
   readonly isInterState: boolean;
