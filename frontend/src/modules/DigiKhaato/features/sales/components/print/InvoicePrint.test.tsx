@@ -287,3 +287,17 @@ it('D14: a phone bill prints its IMEI on the 80 mm slip', () => {
   renderWithProviders(<Thermal doc={doc} />);
   expect(screen.getByText(/356938035643809/)).toBeInTheDocument();
 });
+
+it('G4: a Schedule H sale prints the prescription line, and a plain bill prints none', () => {
+  /* The design's footer line ("Schedule H drug: sold on prescription of Dr. …")
+     is what the drug inspector reads on the customer's copy. */
+  const { unmount } = renderWithProviders(
+    <A4 doc={makeDocument({ rx: { doctor: 'Dr. S. Kulkarni', patient: 'Meena Jadhav' } })} />
+  );
+  expect(screen.getByTestId('print-rx')).toHaveTextContent(
+    'Schedule H drug: sold on prescription of Dr. S. Kulkarni for Meena Jadhav.'
+  );
+  unmount();
+  renderWithProviders(<A4 doc={makeDocument()} />);
+  expect(screen.queryByTestId('print-rx')).toBeNull();
+});

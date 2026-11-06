@@ -454,6 +454,12 @@ export function InvoicePrintA4({
             {jewelRatesLine(doc, t) && (
               <p data-testid="print-jewel-rates">{jewelRatesLine(doc, t)}</p>
             )}
+            {/* G4 — the design's footer line for a Schedule H medicine's sale. */}
+            {doc.rx?.doctor && (
+              <p data-testid="print-rx">
+                {t(doc.rx.patient ? 'sales.print.rxFor' : 'sales.print.rx', { doctor: doc.rx.doctor, patient: doc.rx.patient ?? '' })}
+              </p>
+            )}
             {doc.terms && (
               <div>
                 <p className="gst-label">{t('sales.print.terms')}</p>

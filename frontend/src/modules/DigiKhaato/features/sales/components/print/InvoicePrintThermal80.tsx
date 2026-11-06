@@ -152,6 +152,9 @@ export function InvoicePrintThermal80({
       <footer className="mt-2 text-center">
         <p>{t('sales.print.thanks')}</p>
         {doc.kind === 'bill_of_supply' && <p>{COMPOSITION_FOOTER}</p>}
+        {doc.rx?.doctor && (
+          <p>{t(doc.rx.patient ? 'sales.print.rxFor' : 'sales.print.rx', { doctor: doc.rx.doctor, patient: doc.rx.patient ?? '' })}</p>
+        )}
         {doc.terms && <p className="line-clamp-2">{doc.terms}</p>}
         {/* CR-2026-09-29-BRAND-A: signed by the shop, never by the product. */}
         <p data-testid="print-issued-by">

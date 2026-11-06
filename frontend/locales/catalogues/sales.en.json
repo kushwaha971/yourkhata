@@ -668,6 +668,8 @@
   "sales.print.rate": "Rate",
   "sales.print.ratePct": "Rate",
   "sales.print.reverseCharge": "Tax payable on reverse charge",
+  "sales.print.rx": "Schedule H drug: sold on prescription of {doctor}.",
+  "sales.print.rxFor": "Schedule H drug: sold on prescription of {doctor} for {patient}.",
   "sales.print.scanToPay": "Scan to pay",
   "sales.print.scanToPayAmount": "Scan to pay {amount}",
   "sales.print.signatory": "Authorised signatory",

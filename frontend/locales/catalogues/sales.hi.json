@@ -668,6 +668,8 @@
   "sales.print.rate": "दर",
   "sales.print.ratePct": "दर",
   "sales.print.reverseCharge": "रिवर्स चार्ज पर देय कर",
+  "sales.print.rx": "Schedule H दवा: {doctor} के पर्चे पर बेची गई।",
+  "sales.print.rxFor": "Schedule H दवा: {doctor} के पर्चे पर {patient} के लिए बेची गई।",
   "sales.print.scanToPay": "भुगतान के लिए स्कैन करें",
   "sales.print.scanToPayAmount": "{amount} के भुगतान के लिए स्कैन करें",
   "sales.print.signatory": "अधिकृत हस्ताक्षरकर्ता",
