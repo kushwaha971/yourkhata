@@ -39,4 +39,6 @@ register(
     TenantTable("inventory.MetalRate", export_name="metal_rates.csv"),
     TenantTable("inventory.TagDetail", export_name="tag_details.csv"),
     TenantTable("inventory.OldGold", export_name="old_gold.csv"),
+    # G4 — a medical store's short book.
+    TenantTable("inventory.ShortBookEntry", export_name="short_book.csv"),
 )
