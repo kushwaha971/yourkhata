@@ -404,3 +404,54 @@ class KarigarLot(TenantModel):
         verbose_name_plural = "karigar lots"
         ordering = ["issued_on", "created_at"]
         constraints = [models.UniqueConstraint(fields=["tenant", "client_key"], name="uq_karigar_lot_client_key")]
+
+
+class RepairJob(TenantModel):
+    """G5 — a mobile shop's repair job card (design G5 `pRepair`, `dRepairs`).
+
+    What came in (the phone, its IMEI, the fault and what came with it), when it
+    is promised, the estimate, and an advance. As with a custom order, the
+    advance is a real payment earmarked to this job, so no other bill takes it;
+    the delivering bill applies it, and cancelling releases it to the customer.
+    A walk-in may leave a phone without an advance; an advance needs a saved
+    customer, because a payment belongs to someone. `client_key` makes a
+    double-tapped Save one job and one receipt.
+    """
+
+    OPEN = "open"
+    WAITING = "waiting"
+    READY = "ready"
+    DELIVERED = "delivered"
+    CANCELLED = "cancelled"
+
+    number = models.CharField(max_length=16)
+    client_key = models.UUIDField()
+    party = models.ForeignKey(
+        "parties.Party", on_delete=models.RESTRICT, null=True, blank=True, related_name="repair_jobs"
+    )
+    walk_in_name = models.CharField(max_length=120, blank=True, default="")
+    walk_in_mobile = models.CharField(max_length=16, blank=True, default="")
+    phone_model = models.CharField(max_length=80)
+    imei = models.CharField(max_length=20, blank=True, default="")
+    fault = models.CharField(max_length=200)
+    #: What came in with the phone ("Phone", "Back cover", "Charger", "SIM", "Memory card").
+    came_with = models.JSONField(default=list, blank=True)
+    estimate = MoneyField(default=0)
+    ready_by = models.DateField()
+    advance = MoneyField(default=0)
+    advance_payment_id = models.UUIDField(null=True, blank=True)
+    #: "Given" or a note — never the code itself.
+    lock_note = models.CharField(max_length=60, blank=True, default="")
+    status = models.CharField(max_length=12, default=OPEN)
+    #: The bill that delivered this job, once there is one.
+    invoice_id = models.UUIDField(null=True, blank=True)
+
+    class Meta:
+        db_table = "sales_repair_job"
+        verbose_name = "repair job"
+        verbose_name_plural = "repair jobs"
+        ordering = ["-created_at"]
+        constraints = [
+            models.UniqueConstraint(fields=["tenant", "number"], name="uq_repair_job_number"),
+            models.UniqueConstraint(fields=["tenant", "client_key"], name="uq_repair_job_client_key"),
+        ]

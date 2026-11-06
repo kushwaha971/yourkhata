@@ -164,6 +164,11 @@ def apply_payload(
         meta = {k: v for k, v in (document.meta or {}).items() if k != "rx"}
         rx = {k: v for k, v in rx.items() if v}
         document.meta = {**meta, **({"rx": rx} if rx else {})}
+    # G5 — the repair job this bill delivers, kept in meta.repair_job.
+    if "repair_job_id" in payload:
+        from apps.sales.services.repairs import link_to_draft as link_repair
+
+        link_repair(tenant=tenant, document=document, job_id=payload.get("repair_job_id"), errors=errors)
     # G3a — the custom order this bill delivers, kept in meta.custom_order.
     if "custom_order_id" in payload:
         from apps.sales.services.custom_orders import link_to_draft

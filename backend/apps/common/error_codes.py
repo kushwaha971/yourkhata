@@ -123,6 +123,8 @@ _REGISTRY: dict[str, tuple[int, bool]] = {
     "serial_not_in_stock": (409, False),
     "old_gold_over_bill": (409, False),
     "custom_order_status": (409, False),
+    # G5 — a repair job in a stage that cannot take this move or this bill.
+    "repair_status": (409, False),
     "karigar_lot_received": (409, False),
     "karigar_lot_not_back": (409, False),
     "karigar_lot_has_tags": (409, False),
