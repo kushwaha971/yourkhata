@@ -68,19 +68,19 @@ export function SubstituteSheet({
       title={t('sales.subst.title', { name: item.name })}
       closeLabel={t('common.action.close')}
       footer={
-        <UbStack direction="row" gap={2} className="w-full [&>*]:flex-1">
-          {picked ? (
-            <>
-              <UbButton variant="secondary" size="lg" onClick={onAnyway}>
-                {t('sales.subst.anyway', { name: item.name })}
-              </UbButton>
-              <UbButton size="lg" onClick={() => onUse(picked.row)} data-testid="subst-use">
-                {t('sales.subst.use', { name: picked.row.name })}
-              </UbButton>
-            </>
-          ) : (
-            <UbButton variant="secondary" size="lg" onClick={onAnyway}>
-              {t('sales.subst.anyway', { name: item.name })}
+        /* The design's footer (pSubst): Cancel and Use …; a long medicine name
+           wraps inside its button instead of running off a 390 px phone. */
+        <UbStack
+          direction="row"
+          gap={2}
+          className="w-full [&>*]:h-auto [&>*]:min-h-[46px] [&>*]:flex-1 [&>*]:whitespace-normal"
+        >
+          <UbButton variant="secondary" size="lg" onClick={onClose}>
+            {t('common.action.cancel')}
+          </UbButton>
+          {picked && (
+            <UbButton size="lg" onClick={() => onUse(picked.row)} data-testid="subst-use">
+              {t('sales.subst.use', { name: picked.row.name })}
             </UbButton>
           )}
         </UbStack>
@@ -130,6 +130,10 @@ export function SubstituteSheet({
           data-testid="subst-short-book"
         >
           {noted ? t('sales.subst.added', { name: item.name }) : t('sales.subst.shortBook', { name: item.name })}
+        </UbButton>
+        {/* Whether stock may go below zero is the shop's rule, not this sheet's. */}
+        <UbButton variant="ghost" className="w-full whitespace-normal" onClick={onAnyway} data-testid="subst-anyway">
+          {t('sales.subst.anyway', { name: item.name })}
         </UbButton>
       </UbStack>
     </UbDialog>
