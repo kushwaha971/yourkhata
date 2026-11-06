@@ -341,6 +341,19 @@ export const SHOP_APP: AppManifest = {
       order: 9,
       tab: 'items',
     },
+    // G4 (design dShortBook) — what ran out or was asked for, per distributor.
+    {
+      key: 'shortBook',
+      icon: ClipboardList,
+      labelId: 'nav.shortBook',
+      href: ROUTES.STOCK_SHORT_BOOK,
+      module: 'inventory',
+      permission: 'inventory.item.read',
+      feature: 'batches',
+      section: 'stock',
+      order: 10,
+      tab: 'items',
+    },
     // D P3 (design D8) — find a phone by its IMEI.
     {
       key: 'findImei',

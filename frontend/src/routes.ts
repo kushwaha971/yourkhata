@@ -84,6 +84,7 @@ export const ROUTES = {
   ITEM_IMEI: '/items/imei',
   /** D P4 — Expiry (design D7). */
   STOCK_EXPIRY: '/stock/expiry',
+  STOCK_SHORT_BOOK: '/stock/short-book',
   /** G1 — today's rate (jewellery). */
   STOCK_RATES: '/stock/rates',
   SALES_INVOICES: '/sales/invoices',

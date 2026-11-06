@@ -87,7 +87,17 @@ def short_book(*, tenant: Any) -> dict:
                 "reason": entry.reason,
                 "asked_count": entry.asked_count,
                 "on_hand": str(on_hand) if on_hand is not None else None,
-                "qty": str(entry.qty) if entry.qty is not None else None,
+                # What Make purchase orders will order: the typed quantity, else
+                # what the reorder level suggests, else one of its unit.
+                "qty": str(
+                    entry.qty
+                    if entry.qty is not None
+                    else (
+                        suggested_qty(on_hand=on_hand or Decimal("0"), reorder_point=item.reorder_point)
+                        if item.reorder_point is not None
+                        else Decimal("1.000")
+                    )
+                ),
                 **last.get(item.id, {"supplier": None, "last_rate": None}),
             }
         )

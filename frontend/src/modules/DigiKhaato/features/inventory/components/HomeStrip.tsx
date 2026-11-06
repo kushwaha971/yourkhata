@@ -14,7 +14,7 @@ const HREF: Record<HomeStripKey, string> = {
   phones: ROUTES.ITEM_IMEI,
   soldOutSizes: ROUTES.STOCK_LOW,
   lowStock: ROUTES.STOCK_LOW,
-  shortBook: ROUTES.STOCK_LOW,
+  shortBook: ROUTES.STOCK_SHORT_BOOK,
   dueWeek: `${ROUTES.SALES_INVOICES}?tab=unpaid`,
 };
 

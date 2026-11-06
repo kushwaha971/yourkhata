@@ -47,6 +47,8 @@ def test_asking_twice_counts_two_asks_on_one_row(owner: Any, medical: Any, make_
     assert ask(owner, crocin).status_code == 200
     rows = book(owner).json()["data"]
     assert [(r["item"]["name"], r["reason"], r["asked_count"]) for r in rows] == [("Crocin 650", "asked", 2)]
+    # The screen shows what an order would carry, never a blank that becomes 1.
+    assert rows[0]["qty"] == "1.000"
     assert book(owner).json()["meta"]["counts"]["asked_today"] == 1
 
 
