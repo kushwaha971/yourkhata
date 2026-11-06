@@ -91,9 +91,14 @@ EDITABLE_FIELDS = (
     "fits_vehicle",
     "tracking",
     "warranty_months",
+    "salt",
+    "schedule",
 )
 
 AUDITED_FIELDS = EDITABLE_FIELDS
+
+#: G4 — the drug schedules a medicine can carry; "" is none.
+SCHEDULES = ("", "H", "H1", "X")
 
 
 # ── BR-2: the auto-SKU algorithm ─────────────────────────────────────────────
@@ -377,6 +382,18 @@ def _validate(*, ctx: Ctx, data: dict, item: Item | None) -> tuple[dict, Errors,
             if text and len(text) > limit:
                 errors.add(key, f"Keep it under {limit} characters.", "max_length")
             cleaned[key] = text
+
+    # G4 — a medicine's salt and its drug schedule.
+    if has("salt"):
+        text = clean_text(data.get("salt") or "") or None
+        if text and len(text) > 160:
+            errors.add("salt", "Keep it under 160 characters.", "max_length")
+        cleaned["salt"] = text
+    if has("schedule"):
+        schedule = str(data.get("schedule") or "").strip().upper()
+        if schedule not in SCHEDULES:
+            errors.add("schedule", "Choose None, H, H1 or X.", "invalid")
+        cleaned["schedule"] = schedule
 
     # Cross-field: selling ≤ MRP, compared tax-inclusive (§10).
     mrp = current("mrp")

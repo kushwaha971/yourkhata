@@ -18,6 +18,7 @@ from apps.inventory.views.items import (
 )
 from apps.inventory.views.metal_rates import RateHistoryView, TodayRateView
 from apps.inventory.views.price_lists import PriceListViewSet
+from apps.inventory.views.short_book import ShortBookOrderedView, ShortBookView, SubstitutesView
 from apps.inventory.views.tags import ItemTagsView, TagLookupView, TagSummaryView
 from apps.inventory.views.stock_counts import StockCountViewSet
 from apps.inventory.views.transfers import LocationViewSet, StockTransferViewSet
@@ -37,6 +38,10 @@ urlpatterns = [
     path("stock/low", LowStockView.as_view(), name="stock-low"),
     path("serials/<str:code>", SerialView.as_view(), name="serial-detail"),
     path("stock/expiry", ExpiryView.as_view(), name="stock-expiry"),
+    # G4 — the medical store's short book and same-salt substitutes.
+    path("stock/short-book", ShortBookView.as_view(), name="short-book"),
+    path("stock/short-book/ordered", ShortBookOrderedView.as_view(), name="short-book-ordered"),
+    path("items/<str:pk>/substitutes", SubstitutesView.as_view(), name="item-substitutes"),
     # G2a — a jeweller's tags (before the router, whose items/<pk>/ owns the rest).
     path("items/<uuid:pk>/tags", ItemTagsView.as_view(), name="item-tags"),
     path("jewel-tags/summary", TagSummaryView.as_view(), name="jewel-tag-summary"),

@@ -187,6 +187,12 @@ class Item(TenantModel, SoftDeleteModel):
     tracking = models.CharField(max_length=8, default="none")
     warranty_months = models.SmallIntegerField(null=True, blank=True)
     fits_vehicle = models.CharField(max_length=120, null=True, blank=True)
+    #: G4 — a medicine's salt / composition ("Paracetamol 650 mg"): what the
+    #: bill's same-salt substitutes match on, compared case- and space-blind.
+    salt = models.CharField(max_length=160, null=True, blank=True)
+    #: G4 — the drug schedule: "" (none), "H", "H1" or "X". A bill carrying a
+    #: scheduled medicine asks the doctor and patient name (Schedule H register).
+    schedule = models.CharField(max_length=2, default="", blank=True)
     hsn_sac = models.CharField(max_length=8, null=True, blank=True)
     tax_code = models.CharField(max_length=16, default=DEFAULT_TAX_CODE)
     tax_inclusive_selling = models.BooleanField(default=False)
@@ -779,3 +785,32 @@ class OldGold(TenantModel):
         verbose_name = "old gold"
         verbose_name_plural = "old gold"
         constraints = [models.UniqueConstraint(fields=["tenant", "document_id"], name="uq_old_gold_document")]
+
+
+class ShortBookEntry(TenantModel):
+    """G4 — a medicine written in the short book: asked for at the counter and
+    not in stock, or added by hand. Items below their reorder level are listed
+    alongside without a row of their own (they are a query, not a decision).
+
+    One open row per item: a second ask bumps `asked_count`. Ordering it closes
+    the row (`ordered_at`), so the book shows only what is still to buy.
+    """
+
+    item = models.ForeignKey(Item, on_delete=models.CASCADE, related_name="short_book_rows")
+    reason = models.CharField(max_length=8, default="asked")
+    asked_count = models.PositiveIntegerField(default=1)
+    qty = QuantityField(null=True, blank=True)
+    created_by = models.ForeignKey(
+        "platform.User", on_delete=models.SET_NULL, null=True, blank=True, related_name="+"
+    )
+    ordered_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        db_table = "inventory_short_book_entry"
+        constraints = [
+            models.UniqueConstraint(
+                fields=["tenant", "item"],
+                condition=models.Q(ordered_at__isnull=True),
+                name="uq_short_book_open_item",
+            ),
+        ]

@@ -706,13 +706,26 @@ class HomeStripView(_InventoryView, APIView):
                 tiles.extend(_shop_due_week_tile(request, tenant, today))
             base = item_selectors.item_list(tenant=tenant, location_id=None, status=ItemStatus.ACTIVE)
             counts = item_selectors.list_meta(base, base)["counts"]
-            short = base.filter(stock_status__in=(StockStatus.LOW, StockStatus.OUT)).order_by("name")
-            tiles.append(
-                {
-                    # A medical store calls this its short book (design D12).
-                    "key": "shortBook" if keeps_batches else "lowStock",
-                    "count": counts["low"] + counts["out"],
-                    "names": [item.name for item in short[:2]],
-                }
-            )
+            if keeps_batches:
+                # G4 — a medical store's tile is its short book: the same rows
+                # the short book screen lists, so the two never disagree.
+                from apps.inventory.services.short_book import short_book
+
+                book = short_book(tenant=tenant)
+                tiles.append(
+                    {
+                        "key": "shortBook",
+                        "count": book["counts"]["items"],
+                        "names": [row["item"]["name"] for row in book["rows"][:2]],
+                    }
+                )
+            else:
+                short = base.filter(stock_status__in=(StockStatus.LOW, StockStatus.OUT)).order_by("name")
+                tiles.append(
+                    {
+                        "key": "lowStock",
+                        "count": counts["low"] + counts["out"],
+                        "names": [item.name for item in short[:2]],
+                    }
+                )
         return StandardResponse.ok(tiles)

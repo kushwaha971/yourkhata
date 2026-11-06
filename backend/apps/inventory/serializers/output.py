@@ -140,6 +140,9 @@ def _item_row(item: Item) -> dict:
         # for the bill line's caption. One query, only for batch-tracked items.
         "next_batch": _next_batch(item) if item.tracking == "batch" else None,
         "fits_vehicle": item.fits_vehicle,
+        # G4 — the medicine's salt and drug schedule.
+        "salt": item.salt,
+        "schedule": item.schedule,
         "updated_at": item.updated_at.isoformat(),
     }
 
