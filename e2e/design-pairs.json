@@ -199,5 +199,37 @@
 {
 "mock": "F-supp-d",
 "route": "/suppliers"
+},
+{
+"mock": "pExpiry",
+"route": "/stock/expiry"
+},
+{
+"mock": "dExpiry",
+"route": "/stock/expiry"
+},
+{
+"mock": "pImei",
+"route": "/items/imei"
+},
+{
+"mock": "dImei",
+"route": "/items/imei"
+},
+{
+"mock": "pLabels",
+"route": "/items/labels"
+},
+{
+"mock": "dLabels",
+"route": "/items/labels"
+},
+{
+"mock": "dTransfer",
+"route": "/stock/transfer"
+},
+{
+"mock": "pOldGold",
+"route": "/sales/old-gold"
 }
 ]

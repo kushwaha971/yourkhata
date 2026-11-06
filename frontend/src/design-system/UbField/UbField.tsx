@@ -149,7 +149,8 @@ export function UbField({
           htmlFor={name}
           data-part="label"
           className={cn(
-            'ds-body-base-medium flex items-baseline gap-2 text-text-primary',
+            // The design's `.lbl`: 13 px semibold ink, on every form.
+            'flex items-baseline gap-2 text-[13px] font-semibold leading-5 text-text-primary',
             labelHidden && 'sr-only'
           )}
         >

@@ -224,7 +224,7 @@ export function PrintLabelsPageContent(): React.JSX.Element {
         </UbStack>
         <UbPanel className="p-4">
           <UbStack gap={3}>
-            <UbText as="p" variant="body-sm-medium">
+            <UbText as="p" variant="inherit" className="text-[13px] font-semibold">
               {t('items.labels.size')}
             </UbText>
             <UbChoiceChips<LabelSize>
@@ -246,7 +246,7 @@ export function PrintLabelsPageContent(): React.JSX.Element {
                   : undefined
               }
             />
-            <UbText as="p" variant="body-sm-medium">
+            <UbText as="p" variant="inherit" className="text-[13px] font-semibold">
               {t('items.labels.preview')}
             </UbText>
             <UbBox

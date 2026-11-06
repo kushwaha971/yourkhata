@@ -273,7 +273,9 @@ const UbMoneyInputInner = forwardRef<HTMLInputElement, UbMoneyInputProps>(
         {currencySymbol && (
           <span
             aria-hidden
-            className="ds-body pointer-events-none absolute left-3 text-text-tertiary"
+            // The design draws ₹ in the field's own ink and size (.inp, 15 px on a
+            // phone, 14 px on a desktop), not as a grey hint.
+            className="pointer-events-none absolute left-3 text-[15px] text-text-primary lg:text-[14px]"
           >
             {currencySymbol}
           </span>
