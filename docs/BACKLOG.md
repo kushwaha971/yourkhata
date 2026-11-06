@@ -11,6 +11,26 @@ until there is a second user.
 
 ---
 
+## Shop UI points held by the owner (25 Oct 2026)
+
+Raised by the owner while testing the Shop, then parked: "just keep all these in
+backlog, once my testing is done will confirm for that shop module". Nothing here
+is on `dev`. Items 1–3 are built and checked on branch `backlog/shop-ui-2026-10-25`
+(59a1eb9); item 4 is not started.
+
+| # | Point | Cause found | State |
+|---|---|---|---|
+| 1 | Add customer and Add supplier open the same form and ask "I sell to them" / "I buy from them", although the list already says which | `PartyFormDrawer` shows both role switches for every caller | Built on the branch: switches hidden in the Shop, one "Also a supplier / customer" switch under More details, supplier form without reminders and consent. Phone-width check not finished. |
+| 2 | First tap on some buttons (e.g. Home's Pay supplier) blanks the whole page | `next/dynamic` without `ssr: false` or `loading` has no Suspense boundary of its own; 32 calls suspended up to the route's `loading.tsx` | Built on the branch, with a guard test. Checked live on Home at 1280. |
+| 3 | Table header not rounded, extra line under the table | Register frame was `overflow-visible`; pager `border-t` drew a second rule | Built on the branch (`overflow-clip`, no pager rule). Checked live on Customers and Suppliers. |
+| 4 | While searching, the count and totals row between the chips and the table disappears and the table jumps | Not investigated yet | Keep the row in place with a loading look; show zeros when there is nothing. Not started. |
+
+Comes back when the owner confirms after their Shop testing. **Brought back on
+25 Oct 2026** (the owner said go): all four are on `dev`, and their status is
+tracked in `docs/FEEDBACK.md` (FB-004 to FB-007) from now on.
+
+---
+
 ## Deferred by DEC-010 — mobile OTP and SMS
 
 | Item | State in the repo | Comes back when |
@@ -157,3 +177,66 @@ from the lockfile, about 6.7 KB gzip on every (app) route, duplicating the app's
 tailwind-merge 2.6. Aliasing or overriding to the app's copy is the largest
 bundle saving available; ml-uikit's class merging would then run on v2 and needs
 a visual check across the gallery before it lands.
+
+## SEO follow-ups (raised 29 Sep 2026, CR-2026-09-29-PLATFORM-C)
+
+* **Per-locale URLs + hreflang.** The language is a cookie (`ub_locale`), so `/` is one URL
+  whose HTML depends on a header crawlers never send: every search engine indexes the English
+  page only, and there is nothing to put in an `hreflang`. The fix is per-locale paths
+  (`/` and `/hi/`, or `?lang=hi` with its own canonical), each with
+  `<link rel="alternate" hreflang="en|hi|x-default">`, the sitemap listing both with
+  `xhtml:link` alternates, and the language toggle navigating instead of setting a cookie.
+  It touches `proxy.ts`, the root layout's `lang`, the sitemap and the landing toggle, so it
+  is a change of its own. Not done in Phase 1 by owner instruction ("don't invent /hi routes").
+* **Server-render Hindi.** Found while checking `lang`: with `ub_locale=hi` the root layout
+  says `<html lang="hi">` but the landing page's server HTML is ENGLISH — the Hindi catalogue
+  halves are client chunks (`catalogueRegistry.ts`), so Hindi arrives after hydration. The
+  first paint is English under a Hindi `lang` (a screen reader reads it with a Hindi voice).
+  Crawlers are unaffected (no cookie: `lang="en"` over English). Loading the page's Hindi
+  catalogue on the server when the cookie says `hi` fixes it; it is the same work the
+  per-locale URLs above need.
+* **Versioned landing media → `immutable`.** `/media/landing/*` and `/brand/*` are served
+  `public, max-age=86400, stale-while-revalidate=604800` because the file names are not
+  hashed and the clips are re-cut under the same names. Adding a content hash to
+  `public/media/landing/manifest.json` and a `?v=<hash>` to every URL `config/media.ts`
+  builds (and to the OG card) would earn `max-age=31536000, immutable`. It changes the files
+  the recording pipeline writes, so it belongs with that pipeline's owner.
+* **`/d/` is both disallowed and noindex.** A disallowed URL is never fetched, so a crawler
+  never SEES its noindex; if a share link is ever posted publicly, a search engine can list
+  the bare URL (no title, no content) from the link alone. The tokens are unguessable and
+  shared one-to-one on WhatsApp, so this is a residue, not a leak. If it ever appears in
+  Search Console, drop `/d/` from robots.txt and rely on the noindex header, which nginx and
+  Next both already send.
+* **Staging must not be indexed.** A staging build with `NEXT_PUBLIC_SITE_URL` left at the
+  default claims yourkhata.com as its canonical, and its robots.txt allows `/`. Either set
+  the variable per environment and add `X-Robots-Tag: noindex` for the staging host in its
+  nginx overlay, or make `app/robots.ts` disallow everything unless `NEXT_PUBLIC_ENV` is
+  `production`.
+* **Lighthouse CI.** Part 19 §19.9.1 targets SEO ≥ 90, checked in CI; there is no CI runner.
+  Lighthouse was run by hand for CR-2026-09-29-PLATFORM-C (SEO 100) from a scratch install,
+  and `e2e/seo.mjs` runs the equivalent checklist on every run (title, description, status,
+  is-crawlable, robots.txt, canonical, image alt, link text, crawlable anchors, legible font
+  sizes, viewport, structured data). A performance score needs a quiet machine: re-run it
+  from the owner's Mac against the live stack before launch.
+* **Pages other than `/` have no titles or descriptions of their own.** `/login`, `/signup`
+  and the legal pages inherit the root layout's `YourKhata` and its platform description.
+  They are client components; each needs a small server `layout.tsx` (as the auth-flow
+  segments now have for `noindex`) to carry a title such as "Sign up free".
+* **A root `.env` can still say `NEXT_PUBLIC_APP_NAME=UdhaarBook`** (this sandbox's does). The compose default was
+  corrected to YourKhata in this CR, but a Docker build reads the root `.env`, so a
+  production image built from this checkout would title every tab "… · UdhaarBook". The
+  landing page's own name is a literal (`BRAND_NAME`) and is not affected; the rest of the
+  app is. `.env` is untracked, so each machine's copy needs checking, the owner's Mac included.
+
+
+## Offline billing (raised 27 Oct 2026, owner: "for an offline application, not for now")
+
+Found by `e2e/a4-edges.mjs offline-add`: when the connection drops, the bill
+already open is kept and Paid cash is switched off with "No internet. Your bill
+is kept…", but **no new item can be added**, because the item search asks the
+server. A shop whose connection drops cannot keep billing. Merchants complain
+of exactly this in other apps (myBillBook reviews, docs/testing/edge-case-catalogue.md
+C4, E4). Doing it means keeping the item list and prices on the device, queueing
+the bill, and issuing it once on reconnect with the existing creation key. That
+is an offline-app design decision, which the owner will take up later. Until
+then the harness reports this case as backlog, not as a pass.

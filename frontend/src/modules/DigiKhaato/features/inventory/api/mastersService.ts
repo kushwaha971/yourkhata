@@ -20,6 +20,8 @@ interface CategoryWire {
   readonly name: string;
   readonly parent_id: string | null;
   readonly item_count: number;
+  readonly stock_value?: string;
+  readonly tax_code?: string | null;
   readonly children?: readonly CategoryWire[];
 }
 
@@ -47,6 +49,8 @@ const toCategory = (row: CategoryWire): Category => ({
   name: row.name,
   parentId: row.parent_id,
   itemCount: row.item_count,
+  stockValue: row.stock_value ?? null,
+  taxCode: row.tax_code ?? null,
   children: (row.children ?? []).map(toCategory),
 });
 
@@ -111,7 +115,12 @@ export const listTaxRates = async (
   }));
 };
 
-export const searchHsn = async (q: string, signal?: AbortSignal): Promise<readonly HsnCode[]> => {
+/** One page of the HSN/SAC schedule: matches for `q`, or every code by code. */
+export const searchHsn = async (
+  q: string,
+  page: number,
+  signal?: AbortSignal
+): Promise<{ readonly rows: readonly HsnCode[]; readonly hasMore: boolean }> => {
   const response = await api.get<{
     data: readonly {
       code: string;
@@ -119,11 +128,15 @@ export const searchHsn = async (q: string, signal?: AbortSignal): Promise<readon
       default_tax_code: string | null;
       is_service: boolean;
     }[];
-  }>(`${API_PATHS.TAX_HSN}${toQueryString({ q })}`, ubConfig({ signal }));
-  return response.data.data.map((row) => ({
-    code: row.code,
-    description: row.description,
-    defaultTaxCode: row.default_tax_code,
-    isService: row.is_service,
-  }));
+    meta?: { has_more?: boolean };
+  }>(`${API_PATHS.TAX_HSN}${toQueryString({ q, page })}`, ubConfig({ signal }));
+  return {
+    rows: response.data.data.map((row) => ({
+      code: row.code,
+      description: row.description,
+      defaultTaxCode: row.default_tax_code,
+      isService: row.is_service,
+    })),
+    hasMore: Boolean(response.data.meta?.has_more),
+  };
 };

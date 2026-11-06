@@ -63,7 +63,7 @@ export function DesignSystemWave3Gallery(): React.JSX.Element {
           <UbSwitch
             checked={withPhone}
             onCheckedChange={setWithPhone}
-            label="Party has a mobile number"
+            label="Contact has a mobile number"
             className="w-auto"
           />
           <UbButton
@@ -93,6 +93,8 @@ export function DesignSystemWave3Gallery(): React.JSX.Element {
             more: 'More…',
             close: 'Close',
             preview: 'Message',
+            reset: 'Use the original message',
+            empty: 'Write a message before sending.',
           }}
           onShared={feedback.onShared}
           onFailed={feedback.onFailed}
@@ -114,7 +116,13 @@ export function DesignSystemWave3Gallery(): React.JSX.Element {
             to={range.to}
             onRangeChange={(from, to) => setRange({ from, to })}
             max="2026-09-23"
-            labels={{ presets: 'Period', from: 'From date', to: 'To date' }}
+            labels={{
+              presets: 'Period',
+              from: 'From date',
+              to: 'To date',
+              apply: 'Apply',
+              close: 'Close',
+            }}
             end={
               <UbSwitch
                 checked={corrections}

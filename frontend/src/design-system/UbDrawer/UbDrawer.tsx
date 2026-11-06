@@ -60,6 +60,8 @@ export interface UbDrawerProps {
    */
   readonly returnFocusRef?: RefObject<HTMLElement | null>;
   readonly className?: string;
+  /** Opt-in keyboard-safe form sheet; other overlays retain their geometry. */
+  readonly keyboardAware?: boolean;
 }
 
 function UbDrawerBase({
@@ -73,6 +75,7 @@ function UbDrawerBase({
   footer,
   returnFocusRef,
   className,
+  keyboardAware,
 }: Readonly<UbDrawerProps>) {
   const id = useId();
   const titleId = `${id}-title`;
@@ -86,6 +89,7 @@ function UbDrawerBase({
       describedBy={description ? descriptionId : undefined}
       dismissOnBackdrop={dismissOnBackdrop}
       placement="drawer"
+      keyboardAware={keyboardAware}
       returnFocusRef={returnFocusRef}
       className={className}
     >
@@ -96,7 +100,12 @@ function UbDrawerBase({
             <MLDialogDescription id={descriptionId}>{description}</MLDialogDescription>
           )}
         </div>
-        <MLIconButton aria-label={closeLabel} onClick={() => onOpenChange(false)} className="-mr-2">
+        {/* `.ib`: 40 × 40, 10 px corners; `ub-hit` keeps 44 px to tap on a phone. */}
+        <MLIconButton
+          aria-label={closeLabel}
+          onClick={() => onOpenChange(false)}
+          className="ub-hit h-10 w-10 shrink-0 rounded-[10px]"
+        >
           <X aria-hidden className="h-4 w-4" />
         </MLIconButton>
       </MLDialogHeader>

@@ -3,6 +3,7 @@ import { api, ubConfig } from 'src/api/AxiosInstances';
 import type { TWriteClass } from 'src/types/api.types';
 
 import type {
+  OfferedApp,
   OnboardingAddressStep,
   OnboardingBusinessStep,
   OnboardingGstStep,
@@ -62,6 +63,7 @@ const toTenant = (row: TenantApiPayload): OnboardingTenant => ({
   id: row.id,
   name: row.name,
   businessType: row.business_type,
+  sellsWholesale: row.sells_wholesale ?? false,
   stateCode: row.state_code,
   gstType: row.gst_type,
   gstin: row.gstin,
@@ -72,6 +74,7 @@ const toTenant = (row: TenantApiPayload): OnboardingTenant => ({
   locale: row.locale,
   onboardingStep: row.onboarding_step,
   enabledModules: row.enabled_modules,
+  apps: row.apps ? [...row.apps] : null,
   address: {
     line1: row.address?.line1 ?? null,
     line2: row.address?.line2 ?? null,
@@ -94,6 +97,37 @@ const toResult = (body: TenantApiResponse): OnboardingResult => ({
   tenant: toTenant(unwrapTenant(body.data)),
   warnings: toWarnings(body),
 });
+
+/**
+ * What the business will run, and — only for one that runs the Shop — what
+ * kind of shop it is. `business_type` configures Shop & billing and nothing
+ * else, so a library is not asked for one and none is sent for it.
+ */
+const businessChoice = (input: OnboardingBusinessStep): Record<string, unknown> => ({
+  ...(input.apps ? { apps: [...input.apps] } : {}),
+  ...(input.businessType ? { business_type: input.businessType } : {}),
+  ...(input.businessType && input.sellsWholesale !== undefined
+    ? { sells_wholesale: input.sellsWholesale }
+    : {}),
+  ...(input.businessType && input.features ? { features: { ...input.features } } : {}),
+});
+
+/**
+ * GET /onboarding/apps — what a NEW business may choose to run.
+ *
+ * The list is the server's registry: an app that is registered, released and
+ * on the plan appears here with no change to this file, and one that is not
+ * can never be picked. A failure is SILENT on purpose: without the list the
+ * step asks no app question and the server gives the Shop, which is exactly
+ * what this wizard did before the choice existed — a worse step 1, not a
+ * broken one.
+ */
+export const fetchOfferedApps = async (): Promise<readonly OfferedApp[]> => {
+  const response = await api.get<{
+    readonly data: readonly { readonly code: string; readonly label_id: string }[];
+  }>(API_PATHS.ONBOARDING_APPS, ubConfig({ suppressErrorSnackbar: true }));
+  return response.data.data.map((row) => ({ code: row.code, labelId: row.label_id }));
+};
 
 /**
  * POST /tenants (CCR-1) — step 1. Creates the tenant, the owner membership and
@@ -119,7 +153,7 @@ export const createTenant = async (
     API_PATHS.TENANTS,
     {
       name: input.name,
-      business_type: input.businessType,
+      ...businessChoice(input),
       state_code: input.stateCode,
       ...(input.ownerName ? { owner_name: input.ownerName } : {}),
     },
@@ -203,7 +237,7 @@ export const updateBusinessStep = async (
     API_PATHS.TENANT_CURRENT,
     {
       name: input.name,
-      business_type: input.businessType,
+      ...businessChoice(input),
       state_code: input.stateCode,
     },
     ubConfig({ suppressErrorSnackbar: true })

@@ -10,6 +10,7 @@ was exactly that bug before Sprint 1 closed it.
 from __future__ import annotations
 
 from datetime import date, timedelta
+from typing import Any
 
 import django_filters
 from django.db.models import Exists, F, OuterRef, Q, QuerySet, Value
@@ -20,6 +21,7 @@ from apps.common.filters import BaseTenantFilterSet
 from apps.parties.constants import PartyStatus
 from apps.parties.models import Party, PartyTag
 from apps.parties.services.credit import NEAR_LIMIT_RATIO
+from apps.parties.services.roles import parse_role_codes, role_predicate
 from apps.parties.services.tags import normalise_tag_name
 
 #: How far ahead "upcoming" looks. Seven days is the FRD's window and matches
@@ -33,6 +35,19 @@ UPCOMING_DAYS = 7
 MOBILE_SUFFIX_MIN_DIGITS = 4
 
 GSTIN_LENGTH = 15
+
+
+def list_balance_field(request: Any) -> str:
+    """DEC-019 — which party column the list's money is: `?book=shop` is the Shop's
+    Customers and Suppliers (bills due, `shop_balance`); anything else is the Udhaar
+    book (`balance`). One function, so the rows, the chips, the header and the sort
+    can never read two different columns."""
+    params = getattr(request, "query_params", None) or {}
+    if params.get("book") != "shop":
+        return "balance"
+    return {"customer": "shop_customer_balance", "supplier": "shop_supplier_list_balance"}.get(
+        params.get("type"), "shop_balance"
+    )
 
 
 class PartyFilterSet(BaseTenantFilterSet):
@@ -53,18 +68,29 @@ class PartyFilterSet(BaseTenantFilterSet):
     )
     balance = django_filters.ChoiceFilter(
         method="filter_balance",
-        choices=(("owes_me", "They owe me"), ("i_owe", "I owe them"), ("settled", "Settled")),
+        choices=(("due", "Due"), ("owes_me", "I will get"), ("i_owe", "I will give"), ("settled", "Settled")),
     )
     status = django_filters.ChoiceFilter(choices=PartyStatus.choices)
     collection = django_filters.ChoiceFilter(
         method="filter_collection",
         choices=(("today", "Today"), ("overdue", "Overdue"), ("upcoming", "Upcoming")),
     )
+    late = django_filters.ChoiceFilter(
+        method="filter_late",
+        choices=(
+            ("overdue", "Overdue"),
+            ("not_due", "Not due yet"),
+            ("1_30", "1–30 days"),
+            ("over_30", "Over 30 days"),
+        ),
+    )
     tag = django_filters.CharFilter(method="filter_tags")
     credit = django_filters.ChoiceFilter(
         method="filter_credit",
         choices=(("over", "Over limit"), ("near", "Near limit"), ("ok", "Within limit")),
     )
+    # ── A6 ── PLT-X04: `?role=gym_member,library_member`, OR within, AND against the rest.
+    role = django_filters.CharFilter(method="filter_roles")
 
     class Meta:
         model = Party
@@ -179,12 +205,22 @@ class PartyFilterSet(BaseTenantFilterSet):
         forty people is owed forty rupees. A "close enough to zero" band would
         hide exactly the rows that a collection round is for.
         """
+        # DEC-019 — the sign of the book the list reads (`?book=shop` → the Shop's bills).
+        field = list_balance_field(self.request)
+        if value == "due":
+            # BP-20: only the main/Udhaar book. The queryset is already scoped to
+            # the signed-in tenant and status before this predicate is applied.
+            if getattr(self.request, "query_params", {}).get("book") == "shop":
+                from django.core.exceptions import ValidationError
+
+                raise ValidationError("Due is only for the Money book")
+            return queryset.exclude(balance=0)
         if value == "owes_me":
-            return queryset.filter(balance__gt=0)
+            return queryset.filter(**{f"{field}__gt": 0})
         if value == "i_owe":
-            return queryset.filter(balance__lt=0)
+            return queryset.filter(**{f"{field}__lt": 0})
         if value == "settled":
-            return queryset.filter(balance=0)
+            return queryset.filter(**{field: 0})
         return queryset
 
     def filter_collection(self, queryset: QuerySet, _name: str, value: str) -> QuerySet:
@@ -201,16 +237,40 @@ class PartyFilterSet(BaseTenantFilterSet):
         # summary's tiles count with the same predicate (`ledger/selectors/
         # collection.py`). Without it here, tapping "Due today · 3" listed a
         # fourth party who had already paid (AC-2: "lists exactly those").
+        # A7 BR-7 — the udhaar book's own figure (DEC-019: `balance` holds no
+        # other app's money), like the ledger summary's tiles it has to agree with.
+        shop_owes = queryset.filter(**{f"{list_balance_field(self.request)}__gt": 0})
         if value == "today":
-            return queryset.filter(collection_date=today, balance__gt=0)
+            return shop_owes.filter(collection_date=today)
         if value == "overdue":
-            return queryset.filter(collection_date__lt=today, balance__gt=0)
+            return shop_owes.filter(collection_date__lt=today)
         if value == "upcoming":
-            return queryset.filter(
+            return shop_owes.filter(
                 collection_date__gt=today,
                 collection_date__lte=today + timedelta(days=UPCOMING_DAYS),
-                balance__gt=0,
             )
+        return queryset
+
+    def filter_late(self, queryset: QuerySet, _name: str, value: str) -> QuerySet:
+        params = getattr(self.request, "query_params", None) or {}
+        if params.get("book") != "shop":
+            return queryset
+        prefix = "shop_supplier" if params.get("type") == "supplier" else "shop_customer"
+        today = self._today()
+        live = queryset.filter(**{f"{prefix}_balance__gt": 0})
+        if value == "overdue":
+            return live.filter(**{f"{prefix}_due_on__lt": today})
+        if value == "not_due":
+            return live.filter(**{f"{prefix}_due_on__gte": today})
+        if value == "1_30":
+            return live.filter(
+                **{
+                    f"{prefix}_due_on__lt": today,
+                    f"{prefix}_due_on__gte": today - timedelta(days=30),
+                }
+            )
+        if value == "over_30":
+            return live.filter(**{f"{prefix}_due_on__lt": today - timedelta(days=30)})
         return queryset
 
     def filter_tags(self, queryset: QuerySet, _name: str, value: str) -> QuerySet:
@@ -308,17 +368,32 @@ class PartyFilterSet(BaseTenantFilterSet):
         `credit_usage` column for tenants above ten thousand parties are
         proposed in CCR-28.
         """
-        has_limit = queryset.filter(credit_limit__isnull=False)
+        # A2 (BR-5) — the udhaar book's own figure, which is what `credit_exposure`
+        # and `limit_status` compare (DEC-019: no loan or bill is in `balance`).
+        has_limit = queryset.filter(credit_limit__isnull=False).alias(trade=F("balance"))
         if value == "over":
-            return has_limit.filter(balance__gt=F("credit_limit"))
+            return has_limit.filter(trade__gt=F("credit_limit"))
         if value == "near":
             return has_limit.filter(
-                balance__gte=F("credit_limit") * NEAR_LIMIT_RATIO,
-                balance__lte=F("credit_limit"),
+                trade__gte=F("credit_limit") * NEAR_LIMIT_RATIO,
+                trade__lte=F("credit_limit"),
             )
         if value == "ok":
-            return has_limit.filter(balance__lt=F("credit_limit") * NEAR_LIMIT_RATIO)
+            return has_limit.filter(trade__lt=F("credit_limit") * NEAR_LIMIT_RATIO)
         return queryset
+
+    def filter_roles(self, queryset: QuerySet, _name: str, value: str) -> QuerySet:
+        """A6 BR-1 — only roles of ENABLED modules; anything else is a 400.
+
+        Not "matches nothing", unlike an unknown tag: a tag is data the merchant
+        can delete while a link is open, a role is a module's contract, and a
+        request naming one that is off (EC-2) is asking about a feature this
+        business does not have. `{role: ["Unknown role."]}` says so.
+        """
+        roles = parse_role_codes(self.tenant, value)
+        if not roles:
+            return queryset
+        return queryset.filter(role_predicate(self.tenant, roles))
 
     def _today(self) -> date:
         """The business date: today on the TENANT's wall clock (Part 20 §20.2.2).

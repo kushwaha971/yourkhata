@@ -1,5 +1,8 @@
 import type { PaymentMode } from 'src/types/domain.types';
 
+import type { SalesDocumentLinks } from './salesFlows.types';
+import type { JewelLine, OldGoldWire } from '../../inventory/api/tagService';
+
 /**
  * SAL-02/03/06/07/08 — the sales document as the client holds it, camelCased
  * from the §22.7 common shape by `api/salesService.ts`. Money is a STRING
@@ -7,7 +10,16 @@ import type { PaymentMode } from 'src/types/domain.types';
  * and never stores its own figure; the server's is the one that is printed.
  */
 
-export const SALES_KINDS = ['invoice', 'bill_of_supply'] as const;
+export const SALES_KINDS = [
+  'invoice',
+  'bill_of_supply',
+  'estimate',
+  'credit_note',
+  // Shop item 3 — a customer's order, converted into an invoice.
+  'sales_order',
+  // Shop item 4 — goods that leave before the bill (SAL-09).
+  'delivery_challan',
+] as const;
 export type SalesKind = (typeof SALES_KINDS)[number];
 
 export const SALES_STATUSES = [
@@ -17,6 +29,17 @@ export const SALES_STATUSES = [
   'paid',
   'overdue',
   'void',
+  // SAL-01 — estimates
+  'sent',
+  'accepted',
+  'rejected',
+  'expired',
+  'converted',
+  // SAL-04 — credit notes
+  'applied',
+  // Shop item 3 — sales orders: draft → open → converted | cancelled
+  'open',
+  'cancelled',
 ] as const;
 export type SalesStatus = (typeof SALES_STATUSES)[number];
 
@@ -88,6 +111,17 @@ export interface IssuePayment {
   readonly note: string;
 }
 
+export type { JewelLine, OldGoldWire };
+
+/** G3a — what a bill keeps of the custom order it delivers (wire keys kept). */
+export interface BillCustomOrder {
+  readonly id: string;
+  readonly number: string;
+  readonly purity: string;
+  readonly fixed_rate: string | null;
+  readonly advance: string;
+}
+
 export interface SalesDocumentLine {
   readonly id: string | null;
   readonly lineNo: number;
@@ -96,6 +130,20 @@ export interface SalesDocumentLine {
   readonly hsnSac: string | null;
   readonly qty: string;
   readonly unitCode: string;
+  /** D P3 — IMEI / serial numbers on the line. */
+  readonly serials?: readonly string[];
+  /** The item needs one IMEI / tag per piece: a saved draft has to remember that. */
+  readonly tracksSerial?: boolean;
+  /** D P4 — the batches an issued line took (earliest expiry first). */
+  readonly batches?: readonly {
+    readonly batchNo: string;
+    readonly expiry: string | null;
+    readonly qty: string;
+  }[];
+  /** D P6 — the add-ons on the line. */
+  readonly addons?: readonly { readonly name: string; readonly price: string }[];
+  /** G2b — a jeweller's piece (null on every other line). */
+  readonly jewel?: JewelLine | null;
   readonly unitPrice: string;
   readonly taxInclusive: boolean;
   readonly discountType: DiscountType | null;
@@ -110,6 +158,9 @@ export interface SalesDocumentLine {
   readonly igst: string;
   readonly cess: string;
   readonly lineTotal: string;
+  /** SAL-04 — on an invoice line, how much credit notes returned; on a note's line, its source. */
+  readonly returnedQty: string;
+  readonly againstLineId: string | null;
 }
 
 export interface SalesDocumentTotals {
@@ -124,7 +175,21 @@ export interface SalesDocumentTotals {
   readonly grandTotal: string;
 }
 
+/**
+ * A5 (FRD 00 PLT-X05 §6) — the module record a document was issued for, through the document
+ * port: "From Gym · Membership M-0042". `null` for every counter document. `label` is the
+ * module's own words (null when it gives none; "Record not found" when the module is gone).
+ */
+export interface DocumentOrigin {
+  readonly module: string;
+  readonly type: string;
+  readonly id: string;
+  readonly label: string | null;
+}
+
 export interface SalesDocument extends SalesDocumentTotals {
+  /** A5 — optional so fixtures written before the port stay valid; the API always sends it. */
+  readonly origin?: DocumentOrigin | null;
   readonly id: string;
   readonly kind: SalesKind;
   readonly number: string | null;
@@ -138,7 +203,20 @@ export interface SalesDocument extends SalesDocumentTotals {
   readonly supplier: SalesSupplier;
   readonly documentDate: string;
   readonly dueOn: string | null;
+  readonly validUntil: string | null;
   readonly placeOfSupplyState: string;
+  /** D P1c — the godown, or null for the business's first place. */
+  readonly location?: { readonly id: string; readonly name: string } | null;
+  /** D P1b — an auto-parts bill's vehicle and mechanic. */
+  readonly vehicle?: { readonly number?: string; readonly mechanic?: string } | null;
+  /** G2c — a jeweller's old gold taken in on this bill (priced by the server). */
+  readonly oldGold?: OldGoldWire | null;
+  /** G2d — the customer's PAN kept with a jeweller's bill. */
+  readonly pan?: string | null;
+  /** G4 — the prescription for a Schedule H medicine on this bill. */
+  readonly rx?: { readonly doctor?: string; readonly patient?: string } | null;
+  /** G3a — the custom order this bill delivers. */
+  readonly customOrder?: BillCustomOrder | null;
   readonly isInterState: boolean;
   readonly reverseCharge: boolean;
   readonly discountType: DiscountType | null;
@@ -147,12 +225,17 @@ export interface SalesDocument extends SalesDocumentTotals {
   readonly amountPaid: string;
   readonly amountDue: string;
   readonly payment: IssuePayment | null;
+  /** PAY-01 — the receipts allocated to this bill, oldest first. */
+  readonly payments: readonly InvoicePaymentRef[];
   readonly lines: readonly SalesDocumentLine[];
   readonly notes: string;
   readonly terms: string;
   readonly docDiscountAllocation: Readonly<Record<string, string>>;
   readonly createdBy: SalesPerson | null;
   readonly issuedAt: string | null;
+  readonly voidedAt: string | null;
+  readonly voidReason: string | null;
+  readonly links: SalesDocumentLinks;
   readonly createdAt: string;
   readonly updatedAt: string;
 }
@@ -178,6 +261,7 @@ export interface Rule46Check {
 }
 
 export interface SalesDocumentEnvelope {
+  readonly draftRecovered?: boolean;
   readonly document: SalesDocument;
   readonly warnings: readonly SalesWarning[];
   readonly rule46: Rule46Check | null;
@@ -186,6 +270,7 @@ export interface SalesDocumentEnvelope {
 }
 
 export interface InvoiceListRow {
+  readonly origin?: DocumentOrigin | null; // A5
   readonly id: string;
   readonly kind: SalesKind;
   readonly number: string | null;
@@ -195,11 +280,15 @@ export interface InvoiceListRow {
   readonly walkInMobileMasked: string | null;
   readonly documentDate: string;
   readonly dueOn: string | null;
+  readonly validUntil: string | null;
   readonly grandTotal: string;
   readonly amountPaid: string;
   readonly amountDue: string;
   readonly isOverdue: boolean;
+  readonly voidReason: string | null;
   readonly createdBy: SalesPerson | null;
+  /** When the document was last saved; tells held drafts apart (Counter Mode). */
+  readonly updatedAt?: string | null;
 }
 
 export interface InvoiceListTotals {
@@ -217,6 +306,12 @@ export interface InvoiceListPage {
   readonly total: number;
   readonly totals: InvoiceListTotals;
   readonly tabs: InvoiceTabCounts;
+  /**
+   * The server's `meta.has_any`: does this kind of document exist at all,
+   * whatever the tab, period or search? `false` is an empty book (one sentence,
+   * one button); absent from an older server, which keeps every control.
+   */
+  readonly hasAny?: boolean;
 }
 
 /** SAL-03 FR-4 — the UPI string and the QR's module matrix (one row per string of 0/1). */
@@ -232,3 +327,13 @@ export interface ShareLink {
 }
 
 export type PrintTemplate = 'a4' | 'thermal80';
+
+/** PAY-01 — a receipt that settled (part of) a bill, as the invoice page lists it. */
+export interface InvoicePaymentRef {
+  readonly id: string;
+  readonly number: string;
+  readonly paymentDate: string;
+  readonly primaryMode: PaymentBreakupRow['mode'];
+  readonly amount: string;
+  readonly status: 'recorded' | 'void';
+}

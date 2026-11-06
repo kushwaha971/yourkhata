@@ -1,0 +1,218 @@
+[
+  {
+    "width": 320,
+    "theme": "light",
+    "state": "header-command",
+    "overflow": 0,
+    "cut": [],
+    "lowContrast": [],
+    "firstRowY": null
+  },
+  {
+    "width": 320,
+    "theme": "light",
+    "state": "name-amount-results",
+    "overflow": 0,
+    "cut": [],
+    "lowContrast": [],
+    "firstRowY": null
+  },
+  {
+    "width": 320,
+    "theme": "light",
+    "state": "name-amount-payment",
+    "overflow": 0,
+    "cut": [],
+    "lowContrast": [],
+    "firstRowY": null
+  },
+  {
+    "width": 320,
+    "theme": "light",
+    "state": "item-bill",
+    "overflow": 0,
+    "cut": [],
+    "lowContrast": [],
+    "firstRowY": null
+  },
+  {
+    "width": 320,
+    "theme": "light",
+    "state": "sale-number",
+    "overflow": 0,
+    "cut": [],
+    "lowContrast": [],
+    "firstRowY": null
+  },
+  {
+    "width": 320,
+    "theme": "light",
+    "state": "purchase-number",
+    "overflow": 0,
+    "cut": [],
+    "lowContrast": [],
+    "firstRowY": null
+  },
+  {
+    "width": 320,
+    "theme": "dark",
+    "state": "header-command",
+    "overflow": 0,
+    "cut": [],
+    "lowContrast": [],
+    "firstRowY": null
+  },
+  {
+    "width": 320,
+    "theme": "dark",
+    "state": "name-amount-results",
+    "overflow": 0,
+    "cut": [],
+    "lowContrast": [],
+    "firstRowY": null
+  },
+  {
+    "width": 320,
+    "theme": "dark",
+    "state": "name-amount-payment",
+    "overflow": 0,
+    "cut": [],
+    "lowContrast": [],
+    "firstRowY": null
+  },
+  {
+    "width": 320,
+    "theme": "dark",
+    "state": "item-bill",
+    "overflow": 0,
+    "cut": [],
+    "lowContrast": [],
+    "firstRowY": null
+  },
+  {
+    "width": 320,
+    "theme": "dark",
+    "state": "sale-number",
+    "overflow": 0,
+    "cut": [],
+    "lowContrast": [],
+    "firstRowY": null
+  },
+  {
+    "width": 320,
+    "theme": "dark",
+    "state": "purchase-number",
+    "overflow": 0,
+    "cut": [],
+    "lowContrast": [],
+    "firstRowY": null
+  },
+  {
+    "width": 1280,
+    "theme": "light",
+    "state": "header-command",
+    "overflow": 0,
+    "cut": [],
+    "lowContrast": [],
+    "firstRowY": null
+  },
+  {
+    "width": 1280,
+    "theme": "light",
+    "state": "name-amount-results",
+    "overflow": 0,
+    "cut": [],
+    "lowContrast": [],
+    "firstRowY": null
+  },
+  {
+    "width": 1280,
+    "theme": "light",
+    "state": "name-amount-payment",
+    "overflow": 0,
+    "cut": [],
+    "lowContrast": [],
+    "firstRowY": null
+  },
+  {
+    "width": 1280,
+    "theme": "light",
+    "state": "item-bill",
+    "overflow": 0,
+    "cut": [],
+    "lowContrast": [],
+    "firstRowY": null
+  },
+  {
+    "width": 1280,
+    "theme": "light",
+    "state": "sale-number",
+    "overflow": 0,
+    "cut": [],
+    "lowContrast": [],
+    "firstRowY": null
+  },
+  {
+    "width": 1280,
+    "theme": "light",
+    "state": "purchase-number",
+    "overflow": 0,
+    "cut": [],
+    "lowContrast": [],
+    "firstRowY": null
+  },
+  {
+    "width": 1280,
+    "theme": "dark",
+    "state": "header-command",
+    "overflow": 0,
+    "cut": [],
+    "lowContrast": [],
+    "firstRowY": null
+  },
+  {
+    "width": 1280,
+    "theme": "dark",
+    "state": "name-amount-results",
+    "overflow": 0,
+    "cut": [],
+    "lowContrast": [],
+    "firstRowY": null
+  },
+  {
+    "width": 1280,
+    "theme": "dark",
+    "state": "name-amount-payment",
+    "overflow": 0,
+    "cut": [],
+    "lowContrast": [],
+    "firstRowY": null
+  },
+  {
+    "width": 1280,
+    "theme": "dark",
+    "state": "item-bill",
+    "overflow": 0,
+    "cut": [],
+    "lowContrast": [],
+    "firstRowY": null
+  },
+  {
+    "width": 1280,
+    "theme": "dark",
+    "state": "sale-number",
+    "overflow": 0,
+    "cut": [],
+    "lowContrast": [],
+    "firstRowY": null
+  },
+  {
+    "width": 1280,
+    "theme": "dark",
+    "state": "purchase-number",
+    "overflow": 0,
+    "cut": [],
+    "lowContrast": [],
+    "firstRowY": null
+  }
+]

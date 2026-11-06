@@ -4,7 +4,7 @@ import userEvent from '@testing-library/user-event';
 import { sessionLoaded } from 'src/redux/slice/sessionSlice';
 import { store } from 'src/redux/store';
 import { renderWithProviders } from 'src/tests/renderWithProviders';
-import type { PermissionCode } from 'src/types/domain.types';
+import type { ModuleCode, PermissionCode } from 'src/types/domain.types';
 
 import { partyEditOpened, resetPartyForm } from '../redux/partyFormSlice';
 import { resetPartyList } from '../redux/partyListSlice';
@@ -36,6 +36,7 @@ const partyService = jest.requireMock('../api/partyService') as {
   listParties: jest.Mock;
   createParty: jest.Mock;
   updateParty: jest.Mock;
+  getParty: jest.Mock;
 };
 
 const EMPTY = {
@@ -77,7 +78,7 @@ const SAVED = {
   warnings: [],
 };
 
-const signIn = (permissions: readonly PermissionCode[]): void => {
+const signIn = (permissions: readonly PermissionCode[], modules: readonly ModuleCode[] = []): void => {
   store.dispatch(
     sessionLoaded({
       user: {
@@ -89,10 +90,10 @@ const signIn = (permissions: readonly PermissionCode[]): void => {
         mustChangePassword: false,
         passwordExpiresAt: null,
       },
-      activeTenant: { id: 't1', name: 'Kumar Stores', timezone: 'Asia/Kolkata' },
+      activeTenant: { id: 't1', name: 'Kumar Stores', timezone: 'Asia/Kolkata', role: 'owner' },
       tenants: [{ id: 't1', name: 'Kumar Stores', timezone: 'Asia/Kolkata' }],
       permissions: [...permissions],
-      enabledModules: [],
+      enabledModules: [...modules],
       version: 1,
     })
   );
@@ -114,10 +115,10 @@ const openForm = async (user: ReturnType<typeof userEvent.setup>) => {
   renderWithProviders(<PartyListPageContent />);
   await screen.findByTestId('ub-grid');
   // Two of them: the header action and the empty state's own call to action.
-  const [addButton] = screen.getAllByRole('button', { name: 'Add party' });
+  const [addButton] = screen.getAllByRole('button', { name: 'Add contact' });
   if (!addButton) throw new Error('the list offered no way to add a party');
   await user.click(addButton);
-  return screen.findByRole('dialog', { name: 'Add party' });
+  return screen.findByRole('dialog', { name: 'Add contact' });
 };
 
 describe('adding a party', () => {
@@ -184,7 +185,7 @@ describe('adding a party', () => {
     expect(within(drawer).getByText('When did they start owing this?')).toBeInTheDocument();
     expect(within(drawer).getByRole('button', { name: 'Year start' })).toBeInTheDocument();
 
-    await user.click(within(drawer).getByRole('radio', { name: 'I owe them' }));
+    await user.click(within(drawer).getByRole('radio', { name: 'I will give' }));
 
     expect(within(drawer).getByText('When did you start owing this?')).toBeInTheDocument();
   });
@@ -195,7 +196,7 @@ describe('adding a party', () => {
 
     await user.type(within(drawer).getByLabelText('Name'), 'Ramesh Traders');
     await user.type(within(drawer).getByLabelText('Mobile number'), '9812345678');
-    await user.click(within(drawer).getByRole('button', { name: 'Save party' }));
+    await user.click(within(drawer).getByRole('button', { name: 'Save contact' }));
 
     await waitFor(() => expect(partyService.createParty).toHaveBeenCalledTimes(1));
     const [values, key] = partyService.createParty.mock.calls[0] as [
@@ -208,7 +209,7 @@ describe('adding a party', () => {
     expect(key).toBeTruthy();
 
     await waitFor(() =>
-      expect(screen.queryByRole('dialog', { name: 'Add party' })).not.toBeInTheDocument()
+      expect(screen.queryByRole('dialog', { name: 'Add contact' })).not.toBeInTheDocument()
     );
   });
 
@@ -218,7 +219,7 @@ describe('adding a party', () => {
 
     await user.type(within(drawer).getByLabelText('Name'), 'Nobody');
     await user.click(within(drawer).getByRole('switch', { name: 'I sell to them' }));
-    await user.click(within(drawer).getByRole('button', { name: 'Save party' }));
+    await user.click(within(drawer).getByRole('button', { name: 'Save contact' }));
 
     // FR-4 — a party this business neither buys from nor sells to is a contact,
     // and this product does not have contacts. Caught here rather than by a
@@ -241,7 +242,7 @@ describe('what the server says back', () => {
 
     const drawer = await openForm(user);
     await user.type(within(drawer).getByLabelText('Name'), 'Ramesh Traders');
-    await user.click(within(drawer).getByRole('button', { name: 'Save party' }));
+    await user.click(within(drawer).getByRole('button', { name: 'Save contact' }));
 
     // An error in a folded-away section is an error nobody can fix. The GST
     // group opens itself and the message is on the field.
@@ -265,7 +266,7 @@ describe('what the server says back', () => {
     const drawer = await openForm(user);
     await user.type(within(drawer).getByLabelText('Name'), 'Second Try');
     await user.type(within(drawer).getByLabelText('Mobile number'), '9812345678');
-    await user.click(within(drawer).getByRole('button', { name: 'Save party' }));
+    await user.click(within(drawer).getByRole('button', { name: 'Save contact' }));
 
     // The server deliberately does not send the other party's NAME — that is
     // another record's data, returned to somebody who asked about neither. So
@@ -285,7 +286,7 @@ describe('what the server says back', () => {
 
     const drawer = await openForm(user);
     await user.type(within(drawer).getByLabelText('Name'), 'Ramesh Traders');
-    await user.click(within(drawer).getByRole('button', { name: 'Save party' }));
+    await user.click(within(drawer).getByRole('button', { name: 'Save contact' }));
 
     // The request was well formed; the record's state said no. There is no
     // field to point at, and the merchant's next move is Restore.
@@ -301,7 +302,7 @@ describe('an accountant', () => {
 
     // Hidden, not disabled (§19.7.5). A disabled button invites a support call
     // about a permission that is never going to change.
-    expect(screen.queryByRole('button', { name: 'Add party' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Add contact' })).not.toBeInTheDocument();
   });
 });
 
@@ -322,7 +323,7 @@ describe('what the merchant is told afterwards', () => {
     const drawer = await openForm(user);
     await user.type(within(drawer).getByLabelText('Name'), 'Second Try');
     await user.type(within(drawer).getByLabelText('Mobile number'), '9812345678');
-    await user.click(within(drawer).getByRole('button', { name: 'Save party' }));
+    await user.click(within(drawer).getByRole('button', { name: 'Save contact' }));
 
     // `details` carries messages AND data. `applyServerErrors` anchors
     // anything it cannot match to a field as a form-level error, so the id and
@@ -349,7 +350,7 @@ describe('what the merchant is told afterwards', () => {
 
     const drawer = await openForm(user);
     await user.type(within(drawer).getByLabelText('Name'), 'Ramesh Traders');
-    await user.click(within(drawer).getByRole('button', { name: 'Save party' }));
+    await user.click(within(drawer).getByRole('button', { name: 'Save contact' }));
 
     // The record SAVED, and the drawer has closed — so the note has to live
     // outside the form. Asserted on the store rather than on the DOM because
@@ -399,7 +400,7 @@ describe('what the merchant is told afterwards', () => {
     await screen.findByTestId('ub-grid');
 
     expect(screen.queryByRole('button', { name: /“/ })).not.toBeInTheDocument();
-    expect(screen.getAllByRole('button', { name: 'Add party' }).length).toBeGreaterThan(0);
+    expect(screen.getAllByRole('button', { name: 'Add contact' }).length).toBeGreaterThan(0);
   });
 
   it('forgets the prefilled name the next time the form is opened blank', async () => {
@@ -419,7 +420,7 @@ describe('what the merchant is told afterwards', () => {
 
     // The drawer has both an X in its header and a Cancel in its footer.
     await user.click(screen.getByRole('button', { name: 'Cancel' }));
-    const [header] = screen.getAllByRole('button', { name: 'Add party' });
+    const [header] = screen.getAllByRole('button', { name: 'Add contact' });
     if (!header) throw new Error('the list offered no way to add a party');
     await user.click(header);
 
@@ -452,7 +453,7 @@ describe('PTY-06 — the credit limit on the form', () => {
     await user.type(limit, '10000');
 
     expect(
-      await screen.findByText('They already owe ₹47,500.00 — this limit is already crossed')
+      await screen.findByText('You already have to get ₹47,500.00 from them — this limit is already crossed')
     ).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Save changes' })).toBeEnabled();
   });
@@ -495,5 +496,305 @@ describe('PTY-06 — the credit limit on the form', () => {
     await user.type(limit, '9');
 
     expect(await screen.findByText(/already crossed/)).toBeInTheDocument();
+  });
+});
+
+describe('a phone contact fills a new party (WP-07, PTY-07 FR-10)', () => {
+  /**
+   * The owner asked for the selected-contact prefill Library and Lending
+   * already have on Customers, Suppliers and the Udhaar book, which share this
+   * form. One contact fills Name and Mobile and nothing more: nothing is saved
+   * until Save, and the server's duplicate check still decides. Where the
+   * browser cannot pick contacts the entry point is absent rather than
+   * disabled (PTY-07 FR-14) — a dead button on every desktop is clutter on
+   * the fifteen-second path.
+   */
+  const supportContacts = (select: jest.Mock) => {
+    Object.defineProperty(window, 'isSecureContext', { configurable: true, value: true });
+    Object.defineProperty(navigator, 'contacts', { configurable: true, value: { select } });
+  };
+  afterEach(() => {
+    Reflect.deleteProperty(navigator, 'contacts');
+    Reflect.deleteProperty(window, 'isSecureContext');
+  });
+
+  it('fills name and mobile from one chosen contact, and saves nothing', async () => {
+    const select = jest.fn().mockResolvedValue([{ name: ['Asha Devi'], tel: ['098765 43210'] }]);
+    supportContacts(select);
+    const user = userEvent.setup();
+    const drawer = await openForm(user);
+
+    await user.click(within(drawer).getByRole('button', { name: 'Choose from phone contacts' }));
+
+    await waitFor(() => expect(within(drawer).getByLabelText('Name')).toHaveValue('Asha Devi'));
+    expect(within(drawer).getByLabelText('Mobile number')).toHaveValue('9876543210');
+    expect(select).toHaveBeenCalledWith(['name', 'tel'], { multiple: false });
+    expect(partyService.createParty).not.toHaveBeenCalled();
+  });
+
+  it('leaves the form as it was when the merchant cancels the picker', async () => {
+    supportContacts(jest.fn().mockResolvedValue([]));
+    const user = userEvent.setup();
+    const drawer = await openForm(user);
+    await user.type(within(drawer).getByLabelText('Name'), 'Typed by hand');
+
+    await user.click(within(drawer).getByRole('button', { name: 'Choose from phone contacts' }));
+
+    expect(within(drawer).getByLabelText('Name')).toHaveValue('Typed by hand');
+  });
+
+  it('is absent where the browser cannot pick contacts, and when editing', async () => {
+    const user = userEvent.setup();
+    const drawer = await openForm(user);
+    expect(
+      within(drawer).queryByRole('button', { name: 'Choose from phone contacts' })
+    ).not.toBeInTheDocument();
+    await user.click(within(drawer).getByRole('button', { name: 'Cancel' }));
+
+    supportContacts(jest.fn());
+    store.dispatch(partyEditOpened(SAVED.party));
+    renderWithProviders(<PartyListPageContent />);
+    await screen.findAllByRole('button', { name: 'Save changes' });
+    expect(
+      screen.queryByRole('button', { name: 'Choose from phone contacts' })
+    ).not.toBeInTheDocument();
+  });
+});
+
+describe('the form speaks for the list that opened it (WP-07)', () => {
+  /**
+   * Customers' "Add customer" opened a drawer titled "Add contact" with "Save
+   * party": the merchant tapped one word and was answered with another, which
+   * on the Suppliers list also hid that the new person would be a supplier.
+   * The drawer now takes its title and its Save from the kind it was opened for.
+   */
+  it('says customer on Customers and supplier on Suppliers', async () => {
+    const user = userEvent.setup();
+    renderWithProviders(<PartyListPageContent kind="customer" />);
+    await screen.findByTestId('ub-grid');
+    const [addCustomer] = screen.getAllByRole('button', { name: 'Add customer' });
+    if (!addCustomer) throw new Error('Customers offered no way to add one');
+    await user.click(addCustomer);
+    const drawer = await screen.findByRole('dialog', { name: 'Add customer' });
+    expect(within(drawer).getByRole('button', { name: 'Save customer' })).toBeInTheDocument();
+    await user.click(within(drawer).getByRole('button', { name: 'Cancel' }));
+
+    store.dispatch(resetPartyForm());
+    renderWithProviders(<PartyListPageContent kind="supplier" />);
+    const [addSupplier] = await screen.findAllByRole('button', { name: 'Add supplier' });
+    if (!addSupplier) throw new Error('Suppliers offered no way to add one');
+    await user.click(addSupplier);
+    const supplier = await screen.findByRole('dialog', { name: 'Add supplier' });
+    expect(within(supplier).getByRole('button', { name: 'Save supplier' })).toBeInTheDocument();
+  });
+});
+
+describe('a number held by an archived party (WP-07)', () => {
+  /**
+   * An archived party still holds its number, so a merchant re-adding someone
+   * they filed away last year was told "That number is already in your book"
+   * about a person their list does not show. The server says the holder is
+   * archived; the banner now says so too and offers the way back, which is
+   * Restore on that party's page, rather than a second record.
+   */
+  it('says the party was archived and that opening it brings them back', async () => {
+    const user = userEvent.setup();
+    partyService.createParty.mockRejectedValue({
+      code: 'validation_error',
+      message: 'Please check the highlighted fields.',
+      details: {
+        mobile: ['This mobile number is already used by another party.'],
+        existing_party_id: 'p-old',
+        existing_status: 'archived',
+      },
+      requestId: 'req_9',
+    });
+    const drawer = await openForm(user);
+    await user.type(within(drawer).getByLabelText('Name'), 'Old Friend');
+    await user.type(within(drawer).getByLabelText('Mobile number'), '9812345678');
+    await user.click(within(drawer).getByRole('button', { name: 'Save contact' }));
+
+    expect(
+      await screen.findByText('You archived the contact with this number')
+    ).toBeInTheDocument();
+    expect(screen.queryByText('That number is already in your book')).not.toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Open it to restore' })).toHaveAttribute(
+      'href',
+      '/parties/p-old'
+    );
+  });
+});
+
+describe('the Shop does not ask for the Udhaar book’s collection date (DEC-019)', () => {
+  /**
+   * The Shop's form opened a "Collection date" section that wrote the Udhaar
+   * book's promise date from a Shop screen — another app's money question on
+   * the wrong page. The Shop keeps its own per-role promises (BP-16), so its
+   * form asks nothing about collection; the Udhaar book's form still does.
+   */
+  it('has no collection date on the Shop form, and keeps it on the Udhaar form', async () => {
+    const user = userEvent.setup();
+    const shop = renderWithProviders(<PartyListPageContent kind="customer" book="shop" />);
+    await screen.findByTestId('ub-grid');
+    const [addCustomer] = screen.getAllByRole('button', { name: 'Add customer' });
+    if (!addCustomer) throw new Error('Customers offered no way to add one');
+    await user.click(addCustomer);
+    const shopDrawer = await screen.findByRole('dialog', { name: 'Add customer' });
+    expect(within(shopDrawer).queryByText('Collection day')).not.toBeInTheDocument();
+    await user.click(within(shopDrawer).getByRole('button', { name: 'Cancel' }));
+    shop.unmount();
+
+    store.dispatch(resetPartyForm());
+    const drawer = await openForm(user);
+    expect(within(drawer).getByText('Credit')).toBeInTheDocument();
+  });
+});
+
+describe('the Shop form does not ask which list the person belongs to (owner, 25 Oct 2026)', () => {
+  /**
+   * Add on Customers and Add on Suppliers opened the same drawer with "I sell
+   * to them" and "I buy from them" at the top, asking a question the list had
+   * already answered — and a merchant who turned the wrong one off saved a
+   * customer that never appeared on Customers. The role is fixed by the list;
+   * the person who is both is one switch under "More details". A supplier is
+   * paid, not reminded, so its form has no reminder or consent fields.
+   */
+  const openShopForm = async (
+    user: ReturnType<typeof userEvent.setup>,
+    kind: 'customer' | 'supplier'
+  ): Promise<HTMLElement> => {
+    const name = kind === 'customer' ? 'Add customer' : 'Add supplier';
+    renderWithProviders(<PartyListPageContent kind={kind} book="shop" />);
+    await screen.findByTestId('ub-grid');
+    const [add] = screen.getAllByRole('button', { name });
+    if (!add) throw new Error(`no ${name} button`);
+    await user.click(add);
+    const drawer = await screen.findByRole('dialog', { name });
+    // R-DEC-61: a busy counter asks a name and a number; everything else,
+    // Credit days and GST included, waits closed under "More details".
+    const more = within(drawer).getByRole('button', { name: /^More details/ });
+    expect(more).toHaveAttribute('aria-expanded', 'false');
+    expect(within(drawer).queryByLabelText('Credit days')).not.toBeInTheDocument();
+    await user.click(more);
+    return drawer;
+  };
+
+  it('saves a customer as a customer, with no role switches and reminders kept', async () => {
+    const user = userEvent.setup();
+    const drawer = await openShopForm(user, 'customer');
+    expect(
+      within(drawer).queryByRole('switch', { name: 'I sell to them' })
+    ).not.toBeInTheDocument();
+    expect(
+      within(drawer).queryByRole('switch', { name: 'I buy from them' })
+    ).not.toBeInTheDocument();
+    // R-DEC-61: no "Also a supplier" switch; the rare both-roles person is picked.
+    expect(within(drawer).queryByRole('switch', { name: /^Also a supplier/ })).not.toBeInTheDocument();
+    expect(
+      within(drawer).getByRole('switch', { name: /^Send them reminders/ })
+    ).toBeInTheDocument();
+    // A6 F1/F2/F4/F8 — the design's words, and Credit days in the top group.
+    expect(within(drawer).getByPlaceholderText('Customer name')).toBeInTheDocument();
+    expect(within(drawer).getByPlaceholderText('Mobile number')).toBeInTheDocument();
+    expect(within(drawer).getByLabelText('Credit days')).toBeInTheDocument();
+    expect(within(drawer).getByText('Code, address, reminders')).toBeInTheDocument();
+
+    await user.type(within(drawer).getByLabelText('Name'), 'Ramesh Traders');
+    // A6 — the Shop's own old balance: still to collect, in the Shop's book.
+    await user.type(within(drawer).getByLabelText('Old balance to collect (optional)'), '1500');
+    await user.click(within(drawer).getByRole('button', { name: 'Add customer' }));
+    await waitFor(() => expect(partyService.createParty).toHaveBeenCalledTimes(1));
+    const [values] = partyService.createParty.mock.calls[0] as [Record<string, unknown>];
+    expect(values.isCustomer).toBe(true);
+    expect(values.isSupplier).toBe(false);
+    expect(values.openingAmount).toBe('1500.00');
+    expect(values.openingDirection).toBe('debit');
+    expect(values.openingBook).toBe('shop');
+  });
+
+  it('saves a supplier as a supplier only, and asks nothing about reminders', async () => {
+    const user = userEvent.setup();
+    const drawer = await openShopForm(user, 'supplier');
+    expect(
+      within(drawer).queryByRole('switch', { name: 'I sell to them' })
+    ).not.toBeInTheDocument();
+    expect(
+      within(drawer).queryByRole('switch', { name: /^Send them reminders/ })
+    ).not.toBeInTheDocument();
+    expect(within(drawer).queryByText('How they agreed')).not.toBeInTheDocument();
+    expect(
+      within(drawer).getByText('So you can send them payment details later.')
+    ).toBeInTheDocument();
+
+    expect(
+      within(drawer).getByText('No reminders: they are for customers who have to pay you')
+    ).toBeInTheDocument();
+    expect(within(drawer).getByPlaceholderText('Supplier or company name')).toBeInTheDocument();
+    expect(within(drawer).getByText('GSTIN, code, address')).toBeInTheDocument();
+    expect(within(drawer).queryByLabelText('Credit days')).not.toBeInTheDocument();
+
+    expect(within(drawer).queryByRole('switch', { name: /^Also a customer/ })).not.toBeInTheDocument();
+
+    await user.type(within(drawer).getByLabelText('Name'), 'Gupta Wholesale');
+    await user.click(within(drawer).getByRole('button', { name: 'Add supplier' }));
+    await waitFor(() => expect(partyService.createParty).toHaveBeenCalledTimes(1));
+    const [values] = partyService.createParty.mock.calls[0] as [Record<string, unknown>];
+    expect(values.isSupplier).toBe(true);
+    expect(values.isCustomer).toBe(false);
+    // A supplier's old balance is still to PAY.
+    expect(values.openingDirection).toBe('credit');
+    expect(values.openingBook).toBe('shop');
+  });
+
+  it('adds an existing supplier as a customer by picking them, keeping their saved details', async () => {
+    /**
+     * R-DEC-61. The rare supplier who also buys is picked, like a phone
+     * contact, and the save must go to THAT record: a create would make a
+     * second "Gupta Wholesale" with the same number, and a PATCH from a blank
+     * form would wipe their tags and notes. So the pick fills the form from
+     * the saved record and Add sends an update to their id with both roles.
+     */
+    const supplier = {
+      ...SAVED.party,
+      id: 's-9',
+      name: 'Gupta Wholesale',
+      mobile: '+919800000009',
+      isCustomer: false,
+      isSupplier: true,
+      notes: 'Pays by cheque',
+      tags: [{ id: 'tg1', name: 'Route 2', color: 'viz-1' }],
+    };
+    partyService.listParties.mockImplementation((query: { type?: string }) =>
+      Promise.resolve(query?.type === 'supplier' ? { ...EMPTY, rows: [supplier] } : EMPTY)
+    );
+    partyService.getParty.mockResolvedValue({ party: supplier, summary: { balance: '0.00' } });
+    signIn(['parties.party.read', 'parties.party.write'], ['parties']);
+    const user = userEvent.setup();
+    renderWithProviders(<PartyListPageContent kind="customer" book="shop" />);
+    await screen.findByTestId('ub-grid');
+    const [add] = screen.getAllByRole('button', { name: 'Add customer' });
+    if (!add) throw new Error('no Add customer button');
+    await user.click(add);
+    const drawer = await screen.findByRole('dialog', { name: 'Add customer' });
+
+    await user.type(within(drawer).getByRole('combobox', { name: /Already your supplier/ }), 'Gup');
+    const option = await within(drawer).findByRole('option', { name: /Gupta Wholesale/ });
+    // A pick is refused while the search is still in flight (the picker's own
+    // rule), so wait for the typed search to settle, as the merchant sees it.
+    await waitFor(() => expect(partyService.listParties).toHaveBeenCalled());
+    await new Promise((resolve) => setTimeout(resolve, 400));
+    await user.click(option);
+    expect(await within(drawer).findByText('Your supplier · will be your customer too')).toBeInTheDocument();
+    expect(within(drawer).getByLabelText('Name')).toHaveValue('Gupta Wholesale');
+
+    await user.click(within(drawer).getByRole('button', { name: 'Add customer' }));
+    await waitFor(() => expect(partyService.updateParty).toHaveBeenCalledTimes(1));
+    expect(partyService.createParty).not.toHaveBeenCalled();
+    const [id, values] = partyService.updateParty.mock.calls[0] as [string, Record<string, unknown>];
+    expect(id).toBe('s-9');
+    expect(values.isCustomer).toBe(true);
+    expect(values.isSupplier).toBe(true);
+    expect(values.notes).toBe('Pays by cheque');
+    expect(values.tags).toEqual(['Route 2']);
   });
 });

@@ -1,0 +1,6430 @@
+{
+  "side": "purchases",
+  "lines": 30,
+  "runs": [
+    {
+      "width": 390,
+      "cpu": 4,
+      "picks": [
+        53,
+        39,
+        36,
+        36,
+        36,
+        33,
+        33,
+        36,
+        34,
+        41,
+        32,
+        33,
+        34,
+        36,
+        36,
+        33,
+        36,
+        35,
+        37,
+        33,
+        33,
+        38,
+        37,
+        34,
+        41,
+        39,
+        36,
+        36,
+        34,
+        40
+      ],
+      "pickMedian": 36,
+      "pickP95": 41,
+      "lastFivePickMedian": 36,
+      "slowestEventWhilePicking": 32,
+      "slowestEventTypingSearch": 56,
+      "enterEvents": [
+        24,
+        32
+      ],
+      "slowestEventTypingQty": 40,
+      "linesOnBill": 30,
+      "lookups": 0,
+      "events": [
+        {
+          "name": "pointerover",
+          "duration": 56,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 56,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 56,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 56,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 56,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 56,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 56,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 56,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 56,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 56,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 56,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 56,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 56,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 56,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 56,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 56,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 56,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 56,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 56,
+          "phase": "type"
+        },
+        {
+          "name": "mouseover",
+          "duration": 56,
+          "phase": "type"
+        },
+        {
+          "name": "pointerdown",
+          "duration": 56,
+          "phase": "type"
+        },
+        {
+          "name": "mousedown",
+          "duration": 56,
+          "phase": "type"
+        },
+        {
+          "name": "pointerup",
+          "duration": 56,
+          "phase": "type"
+        },
+        {
+          "name": "mouseup",
+          "duration": 56,
+          "phase": "type"
+        },
+        {
+          "name": "click",
+          "duration": 56,
+          "phase": "type"
+        },
+        {
+          "name": "keydown",
+          "duration": 24,
+          "phase": "pick"
+        },
+        {
+          "name": "keyup",
+          "duration": 16,
+          "phase": "pick"
+        },
+        {
+          "name": "pointerdown",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "mousedown",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerup",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "mouseup",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "click",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "keydown",
+          "duration": 40,
+          "phase": "type"
+        },
+        {
+          "name": "pointerdown",
+          "duration": 32,
+          "phase": "type"
+        },
+        {
+          "name": "mousedown",
+          "duration": 32,
+          "phase": "type"
+        },
+        {
+          "name": "pointerup",
+          "duration": 32,
+          "phase": "type"
+        },
+        {
+          "name": "mouseup",
+          "duration": 32,
+          "phase": "type"
+        },
+        {
+          "name": "click",
+          "duration": 32,
+          "phase": "type"
+        },
+        {
+          "name": "beforeinput",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "input",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "keydown",
+          "duration": 32,
+          "phase": "type"
+        },
+        {
+          "name": "pointerdown",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "mousedown",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerup",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "mouseup",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "click",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "keydown",
+          "duration": 32,
+          "phase": "type"
+        },
+        {
+          "name": "pointerdown",
+          "duration": 32,
+          "phase": "type"
+        },
+        {
+          "name": "mousedown",
+          "duration": 32,
+          "phase": "type"
+        },
+        {
+          "name": "pointerup",
+          "duration": 32,
+          "phase": "type"
+        },
+        {
+          "name": "mouseup",
+          "duration": 32,
+          "phase": "type"
+        },
+        {
+          "name": "click",
+          "duration": 32,
+          "phase": "type"
+        },
+        {
+          "name": "beforeinput",
+          "duration": 24,
+          "phase": "type"
+        },
+        {
+          "name": "input",
+          "duration": 24,
+          "phase": "type"
+        },
+        {
+          "name": "keydown",
+          "duration": 32,
+          "phase": "type"
+        },
+        {
+          "name": "pointerout",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerover",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "mouseout",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "mouseover",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerdown",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "mousedown",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerup",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "mouseup",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "click",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "keydown",
+          "duration": 32,
+          "phase": "type"
+        },
+        {
+          "name": "pointerout",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerleave",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerleave",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerleave",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerleave",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerleave",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerover",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "mouseout",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "mouseover",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerdown",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "mousedown",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerup",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "mouseup",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "click",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "keydown",
+          "duration": 32,
+          "phase": "type"
+        },
+        {
+          "name": "pointerout",
+          "duration": 32,
+          "phase": "type"
+        },
+        {
+          "name": "pointerleave",
+          "duration": 32,
+          "phase": "type"
+        },
+        {
+          "name": "pointerleave",
+          "duration": 32,
+          "phase": "type"
+        },
+        {
+          "name": "pointerleave",
+          "duration": 32,
+          "phase": "type"
+        },
+        {
+          "name": "pointerleave",
+          "duration": 32,
+          "phase": "type"
+        },
+        {
+          "name": "pointerleave",
+          "duration": 32,
+          "phase": "type"
+        },
+        {
+          "name": "pointerover",
+          "duration": 32,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 32,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 32,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 32,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 32,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 32,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 32,
+          "phase": "type"
+        },
+        {
+          "name": "mouseout",
+          "duration": 32,
+          "phase": "type"
+        },
+        {
+          "name": "mouseover",
+          "duration": 32,
+          "phase": "type"
+        },
+        {
+          "name": "pointerdown",
+          "duration": 32,
+          "phase": "type"
+        },
+        {
+          "name": "mousedown",
+          "duration": 32,
+          "phase": "type"
+        },
+        {
+          "name": "pointerup",
+          "duration": 32,
+          "phase": "type"
+        },
+        {
+          "name": "mouseup",
+          "duration": 32,
+          "phase": "type"
+        },
+        {
+          "name": "click",
+          "duration": 32,
+          "phase": "type"
+        },
+        {
+          "name": "beforeinput",
+          "duration": 24,
+          "phase": "type"
+        },
+        {
+          "name": "input",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "keydown",
+          "duration": 32,
+          "phase": "type"
+        },
+        {
+          "name": "pointerout",
+          "duration": 32,
+          "phase": "type"
+        },
+        {
+          "name": "pointerleave",
+          "duration": 32,
+          "phase": "type"
+        },
+        {
+          "name": "pointerleave",
+          "duration": 32,
+          "phase": "type"
+        },
+        {
+          "name": "pointerleave",
+          "duration": 32,
+          "phase": "type"
+        },
+        {
+          "name": "pointerleave",
+          "duration": 32,
+          "phase": "type"
+        },
+        {
+          "name": "pointerleave",
+          "duration": 32,
+          "phase": "type"
+        },
+        {
+          "name": "pointerover",
+          "duration": 32,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 32,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 32,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 32,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 32,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 32,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 32,
+          "phase": "type"
+        },
+        {
+          "name": "mouseout",
+          "duration": 32,
+          "phase": "type"
+        },
+        {
+          "name": "mouseover",
+          "duration": 32,
+          "phase": "type"
+        },
+        {
+          "name": "pointerdown",
+          "duration": 32,
+          "phase": "type"
+        },
+        {
+          "name": "mousedown",
+          "duration": 32,
+          "phase": "type"
+        },
+        {
+          "name": "pointerup",
+          "duration": 32,
+          "phase": "type"
+        },
+        {
+          "name": "mouseup",
+          "duration": 32,
+          "phase": "type"
+        },
+        {
+          "name": "click",
+          "duration": 32,
+          "phase": "type"
+        },
+        {
+          "name": "beforeinput",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "input",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "keydown",
+          "duration": 32,
+          "phase": "type"
+        },
+        {
+          "name": "pointerout",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerleave",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerleave",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerleave",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerleave",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerleave",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerover",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "mouseout",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "mouseover",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerdown",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "mousedown",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerup",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "mouseup",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "click",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "keydown",
+          "duration": 32,
+          "phase": "type"
+        },
+        {
+          "name": "pointerout",
+          "duration": 32,
+          "phase": "type"
+        },
+        {
+          "name": "pointerleave",
+          "duration": 32,
+          "phase": "type"
+        },
+        {
+          "name": "pointerleave",
+          "duration": 32,
+          "phase": "type"
+        },
+        {
+          "name": "pointerleave",
+          "duration": 32,
+          "phase": "type"
+        },
+        {
+          "name": "pointerleave",
+          "duration": 32,
+          "phase": "type"
+        },
+        {
+          "name": "pointerleave",
+          "duration": 32,
+          "phase": "type"
+        },
+        {
+          "name": "pointerover",
+          "duration": 32,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 32,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 32,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 32,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 32,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 32,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 32,
+          "phase": "type"
+        },
+        {
+          "name": "mouseout",
+          "duration": 32,
+          "phase": "type"
+        },
+        {
+          "name": "mouseover",
+          "duration": 32,
+          "phase": "type"
+        },
+        {
+          "name": "pointerdown",
+          "duration": 32,
+          "phase": "type"
+        },
+        {
+          "name": "mousedown",
+          "duration": 32,
+          "phase": "type"
+        },
+        {
+          "name": "pointerup",
+          "duration": 32,
+          "phase": "type"
+        },
+        {
+          "name": "mouseup",
+          "duration": 32,
+          "phase": "type"
+        },
+        {
+          "name": "click",
+          "duration": 32,
+          "phase": "type"
+        },
+        {
+          "name": "beforeinput",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "input",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "keydown",
+          "duration": 32,
+          "phase": "type"
+        },
+        {
+          "name": "pointerout",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerleave",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerleave",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerleave",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerleave",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerleave",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerover",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "mouseout",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "mouseover",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerdown",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "mousedown",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerup",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "mouseup",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "click",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "keydown",
+          "duration": 32,
+          "phase": "type"
+        },
+        {
+          "name": "pointerout",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerleave",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerleave",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerleave",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerleave",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerleave",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerover",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "mouseout",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "mouseover",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerdown",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "mousedown",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerup",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "mouseup",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "click",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "keydown",
+          "duration": 32,
+          "phase": "type"
+        },
+        {
+          "name": "pointerout",
+          "duration": 24,
+          "phase": "type"
+        },
+        {
+          "name": "pointerleave",
+          "duration": 24,
+          "phase": "type"
+        },
+        {
+          "name": "pointerleave",
+          "duration": 24,
+          "phase": "type"
+        },
+        {
+          "name": "pointerleave",
+          "duration": 24,
+          "phase": "type"
+        },
+        {
+          "name": "pointerleave",
+          "duration": 24,
+          "phase": "type"
+        },
+        {
+          "name": "pointerleave",
+          "duration": 24,
+          "phase": "type"
+        },
+        {
+          "name": "pointerover",
+          "duration": 24,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 24,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 24,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 24,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 24,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 24,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 24,
+          "phase": "type"
+        },
+        {
+          "name": "mouseout",
+          "duration": 24,
+          "phase": "type"
+        },
+        {
+          "name": "mouseover",
+          "duration": 24,
+          "phase": "type"
+        },
+        {
+          "name": "pointerdown",
+          "duration": 24,
+          "phase": "type"
+        },
+        {
+          "name": "mousedown",
+          "duration": 24,
+          "phase": "type"
+        },
+        {
+          "name": "pointerup",
+          "duration": 24,
+          "phase": "type"
+        },
+        {
+          "name": "mouseup",
+          "duration": 24,
+          "phase": "type"
+        },
+        {
+          "name": "click",
+          "duration": 24,
+          "phase": "type"
+        },
+        {
+          "name": "beforeinput",
+          "duration": 24,
+          "phase": "type"
+        },
+        {
+          "name": "input",
+          "duration": 24,
+          "phase": "type"
+        },
+        {
+          "name": "keydown",
+          "duration": 32,
+          "phase": "type"
+        },
+        {
+          "name": "pointerout",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerleave",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerleave",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerleave",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerleave",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerleave",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerover",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "mouseout",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "mouseover",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerdown",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "mousedown",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerup",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "mouseup",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "click",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "keydown",
+          "duration": 32,
+          "phase": "type"
+        },
+        {
+          "name": "pointerout",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerleave",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerleave",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerleave",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerleave",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerleave",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerover",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "mouseout",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "mouseover",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerdown",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "mousedown",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerup",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "mouseup",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "click",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "keydown",
+          "duration": 32,
+          "phase": "type"
+        },
+        {
+          "name": "pointerout",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerleave",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerleave",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerleave",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerleave",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerleave",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerover",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "mouseout",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "mouseover",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerdown",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "mousedown",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerup",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "mouseup",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "click",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "keydown",
+          "duration": 32,
+          "phase": "type"
+        },
+        {
+          "name": "pointerout",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerleave",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerleave",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerleave",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerleave",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerleave",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerover",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "mouseout",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "mouseover",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerdown",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "mousedown",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerup",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "mouseup",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "click",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "keydown",
+          "duration": 32,
+          "phase": "type"
+        },
+        {
+          "name": "pointerout",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerleave",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerleave",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerleave",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerleave",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerleave",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerover",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "mouseout",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "mouseover",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerdown",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "mousedown",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerup",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "mouseup",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "click",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "keydown",
+          "duration": 32,
+          "phase": "type"
+        },
+        {
+          "name": "pointerout",
+          "duration": 32,
+          "phase": "type"
+        },
+        {
+          "name": "pointerleave",
+          "duration": 32,
+          "phase": "type"
+        },
+        {
+          "name": "pointerleave",
+          "duration": 32,
+          "phase": "type"
+        },
+        {
+          "name": "pointerleave",
+          "duration": 32,
+          "phase": "type"
+        },
+        {
+          "name": "pointerleave",
+          "duration": 32,
+          "phase": "type"
+        },
+        {
+          "name": "pointerleave",
+          "duration": 32,
+          "phase": "type"
+        },
+        {
+          "name": "pointerover",
+          "duration": 32,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 32,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 32,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 32,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 32,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 32,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 32,
+          "phase": "type"
+        },
+        {
+          "name": "mouseout",
+          "duration": 32,
+          "phase": "type"
+        },
+        {
+          "name": "mouseover",
+          "duration": 32,
+          "phase": "type"
+        },
+        {
+          "name": "pointerdown",
+          "duration": 32,
+          "phase": "type"
+        },
+        {
+          "name": "mousedown",
+          "duration": 32,
+          "phase": "type"
+        },
+        {
+          "name": "pointerup",
+          "duration": 32,
+          "phase": "type"
+        },
+        {
+          "name": "mouseup",
+          "duration": 32,
+          "phase": "type"
+        },
+        {
+          "name": "click",
+          "duration": 32,
+          "phase": "type"
+        },
+        {
+          "name": "beforeinput",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "input",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "keydown",
+          "duration": 32,
+          "phase": "type"
+        },
+        {
+          "name": "pointerout",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerleave",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerleave",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerleave",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerleave",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerleave",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerover",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "mouseout",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "mouseover",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerdown",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "mousedown",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerup",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "mouseup",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "click",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "keydown",
+          "duration": 32,
+          "phase": "type"
+        },
+        {
+          "name": "pointerout",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerleave",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerleave",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerleave",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerleave",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerleave",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerover",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "mouseout",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "mouseover",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerdown",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "mousedown",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerup",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "mouseup",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "click",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "keydown",
+          "duration": 32,
+          "phase": "type"
+        },
+        {
+          "name": "pointerout",
+          "duration": 32,
+          "phase": "type"
+        },
+        {
+          "name": "pointerleave",
+          "duration": 32,
+          "phase": "type"
+        },
+        {
+          "name": "pointerleave",
+          "duration": 32,
+          "phase": "type"
+        },
+        {
+          "name": "pointerleave",
+          "duration": 32,
+          "phase": "type"
+        },
+        {
+          "name": "pointerleave",
+          "duration": 32,
+          "phase": "type"
+        },
+        {
+          "name": "pointerleave",
+          "duration": 32,
+          "phase": "type"
+        },
+        {
+          "name": "pointerover",
+          "duration": 32,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 32,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 32,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 32,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 32,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 32,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 32,
+          "phase": "type"
+        },
+        {
+          "name": "mouseout",
+          "duration": 32,
+          "phase": "type"
+        },
+        {
+          "name": "mouseover",
+          "duration": 32,
+          "phase": "type"
+        },
+        {
+          "name": "pointerdown",
+          "duration": 32,
+          "phase": "type"
+        },
+        {
+          "name": "mousedown",
+          "duration": 32,
+          "phase": "type"
+        },
+        {
+          "name": "pointerup",
+          "duration": 32,
+          "phase": "type"
+        },
+        {
+          "name": "mouseup",
+          "duration": 32,
+          "phase": "type"
+        },
+        {
+          "name": "click",
+          "duration": 32,
+          "phase": "type"
+        },
+        {
+          "name": "beforeinput",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "input",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "keydown",
+          "duration": 32,
+          "phase": "type"
+        },
+        {
+          "name": "pointerout",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerleave",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerleave",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerleave",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerleave",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerleave",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerover",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "mouseout",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "mouseover",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerdown",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "mousedown",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerup",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "mouseup",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "click",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "keydown",
+          "duration": 32,
+          "phase": "type"
+        },
+        {
+          "name": "pointerout",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerleave",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerleave",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerleave",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerleave",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerleave",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerover",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "mouseout",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "mouseover",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerdown",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "mousedown",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerup",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "mouseup",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "click",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "keydown",
+          "duration": 40,
+          "phase": "type"
+        },
+        {
+          "name": "pointerout",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerleave",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerleave",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerleave",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerleave",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerleave",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerover",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "mouseout",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "mouseover",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerdown",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "mousedown",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerup",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "mouseup",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "click",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "keydown",
+          "duration": 40,
+          "phase": "type"
+        },
+        {
+          "name": "pointerout",
+          "duration": 32,
+          "phase": "type"
+        },
+        {
+          "name": "pointerleave",
+          "duration": 32,
+          "phase": "type"
+        },
+        {
+          "name": "pointerleave",
+          "duration": 32,
+          "phase": "type"
+        },
+        {
+          "name": "pointerleave",
+          "duration": 32,
+          "phase": "type"
+        },
+        {
+          "name": "pointerleave",
+          "duration": 32,
+          "phase": "type"
+        },
+        {
+          "name": "pointerleave",
+          "duration": 32,
+          "phase": "type"
+        },
+        {
+          "name": "pointerover",
+          "duration": 32,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 32,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 32,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 32,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 32,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 32,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 32,
+          "phase": "type"
+        },
+        {
+          "name": "mouseout",
+          "duration": 32,
+          "phase": "type"
+        },
+        {
+          "name": "mouseover",
+          "duration": 32,
+          "phase": "type"
+        },
+        {
+          "name": "pointerdown",
+          "duration": 32,
+          "phase": "type"
+        },
+        {
+          "name": "mousedown",
+          "duration": 32,
+          "phase": "type"
+        },
+        {
+          "name": "pointerup",
+          "duration": 32,
+          "phase": "type"
+        },
+        {
+          "name": "mouseup",
+          "duration": 32,
+          "phase": "type"
+        },
+        {
+          "name": "click",
+          "duration": 32,
+          "phase": "type"
+        },
+        {
+          "name": "beforeinput",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "input",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "keydown",
+          "duration": 32,
+          "phase": "type"
+        },
+        {
+          "name": "pointerout",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerleave",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerleave",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerleave",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerleave",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerleave",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerover",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "mouseout",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "mouseover",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerdown",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "mousedown",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerup",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "mouseup",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "click",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "keydown",
+          "duration": 32,
+          "phase": "pick"
+        },
+        {
+          "name": "pointerout",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerleave",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerleave",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerleave",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerleave",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerleave",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerover",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "mouseout",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "mouseover",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerdown",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "mousedown",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerup",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "mouseup",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "click",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "keydown",
+          "duration": 32,
+          "phase": "type"
+        },
+        {
+          "name": "pointerout",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerleave",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerleave",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerleave",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerleave",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerleave",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerover",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "mouseout",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "mouseover",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerdown",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "mousedown",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerup",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "mouseup",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "click",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "keydown",
+          "duration": 40,
+          "phase": "qty"
+        },
+        {
+          "name": "pointerout",
+          "duration": 32,
+          "phase": "qty"
+        },
+        {
+          "name": "pointerleave",
+          "duration": 32,
+          "phase": "qty"
+        },
+        {
+          "name": "pointerleave",
+          "duration": 32,
+          "phase": "qty"
+        },
+        {
+          "name": "pointerover",
+          "duration": 32,
+          "phase": "qty"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 32,
+          "phase": "qty"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 32,
+          "phase": "qty"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 32,
+          "phase": "qty"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 32,
+          "phase": "qty"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 32,
+          "phase": "qty"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 32,
+          "phase": "qty"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 32,
+          "phase": "qty"
+        },
+        {
+          "name": "mouseout",
+          "duration": 32,
+          "phase": "qty"
+        },
+        {
+          "name": "mouseover",
+          "duration": 32,
+          "phase": "qty"
+        },
+        {
+          "name": "pointerdown",
+          "duration": 32,
+          "phase": "qty"
+        },
+        {
+          "name": "mousedown",
+          "duration": 32,
+          "phase": "qty"
+        },
+        {
+          "name": "pointerup",
+          "duration": 32,
+          "phase": "qty"
+        },
+        {
+          "name": "mouseup",
+          "duration": 32,
+          "phase": "qty"
+        },
+        {
+          "name": "click",
+          "duration": 32,
+          "phase": "qty"
+        },
+        {
+          "name": "keydown",
+          "duration": 24,
+          "phase": "qty"
+        },
+        {
+          "name": "keydown",
+          "duration": 16,
+          "phase": "qty"
+        },
+        {
+          "name": "keyup",
+          "duration": 16,
+          "phase": "qty"
+        },
+        {
+          "name": "keyup",
+          "duration": 16,
+          "phase": "qty"
+        },
+        {
+          "name": "keydown",
+          "duration": 16,
+          "phase": "qty"
+        },
+        {
+          "name": "keypress",
+          "duration": 16,
+          "phase": "qty"
+        },
+        {
+          "name": "beforeinput",
+          "duration": 16,
+          "phase": "qty"
+        },
+        {
+          "name": "input",
+          "duration": 16,
+          "phase": "qty"
+        },
+        {
+          "name": "keydown",
+          "duration": 16,
+          "phase": "qty"
+        },
+        {
+          "name": "keypress",
+          "duration": 16,
+          "phase": "qty"
+        },
+        {
+          "name": "beforeinput",
+          "duration": 16,
+          "phase": "qty"
+        },
+        {
+          "name": "input",
+          "duration": 16,
+          "phase": "qty"
+        },
+        {
+          "name": "keydown",
+          "duration": 16,
+          "phase": "qty"
+        },
+        {
+          "name": "keypress",
+          "duration": 16,
+          "phase": "qty"
+        }
+      ]
+    },
+    {
+      "width": 1280,
+      "cpu": 1,
+      "picks": [
+        14,
+        27,
+        25,
+        25,
+        28,
+        29,
+        31,
+        32,
+        32,
+        40,
+        38,
+        36,
+        27,
+        49,
+        30,
+        36,
+        42,
+        43,
+        41,
+        40,
+        49,
+        46,
+        39,
+        44,
+        37,
+        46,
+        57,
+        49,
+        53,
+        50
+      ],
+      "pickMedian": 38,
+      "pickP95": 50,
+      "lastFivePickMedian": 50,
+      "slowestEventWhilePicking": 40,
+      "slowestEventTypingSearch": 48,
+      "enterEvents": [
+        40
+      ],
+      "slowestEventTypingQty": 48,
+      "linesOnBill": 30,
+      "lookups": 0,
+      "events": [
+        {
+          "name": "pointerover",
+          "duration": 48,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 48,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 48,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 48,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 48,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 48,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 48,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 48,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 48,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 48,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 48,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 48,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 48,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 48,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 48,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 48,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 48,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 48,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 48,
+          "phase": "type"
+        },
+        {
+          "name": "mouseover",
+          "duration": 48,
+          "phase": "type"
+        },
+        {
+          "name": "pointerdown",
+          "duration": 48,
+          "phase": "type"
+        },
+        {
+          "name": "mousedown",
+          "duration": 48,
+          "phase": "type"
+        },
+        {
+          "name": "pointerup",
+          "duration": 48,
+          "phase": "type"
+        },
+        {
+          "name": "mouseup",
+          "duration": 48,
+          "phase": "type"
+        },
+        {
+          "name": "click",
+          "duration": 48,
+          "phase": "type"
+        },
+        {
+          "name": "beforeinput",
+          "duration": 40,
+          "phase": "type"
+        },
+        {
+          "name": "input",
+          "duration": 40,
+          "phase": "type"
+        },
+        {
+          "name": "keyup",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerdown",
+          "duration": 32,
+          "phase": "type"
+        },
+        {
+          "name": "mousedown",
+          "duration": 32,
+          "phase": "type"
+        },
+        {
+          "name": "pointerup",
+          "duration": 32,
+          "phase": "type"
+        },
+        {
+          "name": "mouseup",
+          "duration": 32,
+          "phase": "type"
+        },
+        {
+          "name": "click",
+          "duration": 32,
+          "phase": "type"
+        },
+        {
+          "name": "beforeinput",
+          "duration": 32,
+          "phase": "type"
+        },
+        {
+          "name": "input",
+          "duration": 32,
+          "phase": "type"
+        },
+        {
+          "name": "keydown",
+          "duration": 24,
+          "phase": "type"
+        },
+        {
+          "name": "pointerdown",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "mousedown",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerup",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "mouseup",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "click",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "keydown",
+          "duration": 24,
+          "phase": "type"
+        },
+        {
+          "name": "pointerdown",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "mousedown",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerup",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "mouseup",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "click",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "beforeinput",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "keydown",
+          "duration": 24,
+          "phase": "type"
+        },
+        {
+          "name": "pointerdown",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "mousedown",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerup",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "mouseup",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "click",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "keydown",
+          "duration": 24,
+          "phase": "type"
+        },
+        {
+          "name": "pointerdown",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "mousedown",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerup",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "mouseup",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "click",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "keydown",
+          "duration": 32,
+          "phase": "type"
+        },
+        {
+          "name": "pointerdown",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "mousedown",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerup",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "mouseup",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "click",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "keydown",
+          "duration": 32,
+          "phase": "type"
+        },
+        {
+          "name": "pointerdown",
+          "duration": 32,
+          "phase": "type"
+        },
+        {
+          "name": "mousedown",
+          "duration": 32,
+          "phase": "type"
+        },
+        {
+          "name": "pointerup",
+          "duration": 32,
+          "phase": "type"
+        },
+        {
+          "name": "mouseup",
+          "duration": 32,
+          "phase": "type"
+        },
+        {
+          "name": "click",
+          "duration": 32,
+          "phase": "type"
+        },
+        {
+          "name": "beforeinput",
+          "duration": 24,
+          "phase": "type"
+        },
+        {
+          "name": "input",
+          "duration": 24,
+          "phase": "type"
+        },
+        {
+          "name": "keydown",
+          "duration": 32,
+          "phase": "type"
+        },
+        {
+          "name": "pointerdown",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "mousedown",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerup",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "mouseup",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "click",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "beforeinput",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "input",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "keydown",
+          "duration": 32,
+          "phase": "type"
+        },
+        {
+          "name": "pointerout",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerleave",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerleave",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerleave",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerleave",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerleave",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerleave",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerleave",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerleave",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerleave",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerover",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "mouseout",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "mouseover",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerdown",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "mousedown",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerup",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "mouseup",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "click",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "keydown",
+          "duration": 40,
+          "phase": "type"
+        },
+        {
+          "name": "pointerout",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerleave",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerleave",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerleave",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerleave",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerleave",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerleave",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerleave",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerleave",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerleave",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerover",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "mouseout",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "mouseover",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerdown",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "mousedown",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerup",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "mouseup",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "click",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "keydown",
+          "duration": 40,
+          "phase": "type"
+        },
+        {
+          "name": "pointerout",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerleave",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerleave",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerleave",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerleave",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerleave",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerleave",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerleave",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerleave",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerleave",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerover",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "mouseout",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "mouseover",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerdown",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "mousedown",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerup",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "mouseup",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "click",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "beforeinput",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "keydown",
+          "duration": 32,
+          "phase": "type"
+        },
+        {
+          "name": "pointerout",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerleave",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerleave",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerleave",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerleave",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerleave",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerleave",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerleave",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerleave",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerleave",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerover",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "mouseout",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "mouseover",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerdown",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "mousedown",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerup",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "mouseup",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "click",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "beforeinput",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "keydown",
+          "duration": 24,
+          "phase": "type"
+        },
+        {
+          "name": "pointerout",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerleave",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerleave",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerleave",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerleave",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerleave",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerleave",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerleave",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerleave",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerleave",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerover",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "mouseout",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "mouseover",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerdown",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "mousedown",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerup",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "mouseup",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "click",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "keydown",
+          "duration": 40,
+          "phase": "pick"
+        },
+        {
+          "name": "pointerout",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerleave",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerleave",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerleave",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerover",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "mouseout",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "mouseover",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerdown",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "mousedown",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerup",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "mouseup",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "click",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "keydown",
+          "duration": 32,
+          "phase": "type"
+        },
+        {
+          "name": "pointerout",
+          "duration": 32,
+          "phase": "type"
+        },
+        {
+          "name": "pointerleave",
+          "duration": 32,
+          "phase": "type"
+        },
+        {
+          "name": "pointerleave",
+          "duration": 32,
+          "phase": "type"
+        },
+        {
+          "name": "pointerleave",
+          "duration": 32,
+          "phase": "type"
+        },
+        {
+          "name": "pointerover",
+          "duration": 32,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 32,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 32,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 32,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 32,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 32,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 32,
+          "phase": "type"
+        },
+        {
+          "name": "mouseout",
+          "duration": 32,
+          "phase": "type"
+        },
+        {
+          "name": "mouseover",
+          "duration": 32,
+          "phase": "type"
+        },
+        {
+          "name": "pointerdown",
+          "duration": 32,
+          "phase": "type"
+        },
+        {
+          "name": "mousedown",
+          "duration": 32,
+          "phase": "type"
+        },
+        {
+          "name": "pointerup",
+          "duration": 32,
+          "phase": "type"
+        },
+        {
+          "name": "mouseup",
+          "duration": 32,
+          "phase": "type"
+        },
+        {
+          "name": "click",
+          "duration": 32,
+          "phase": "type"
+        },
+        {
+          "name": "beforeinput",
+          "duration": 24,
+          "phase": "type"
+        },
+        {
+          "name": "input",
+          "duration": 24,
+          "phase": "type"
+        },
+        {
+          "name": "keydown",
+          "duration": 32,
+          "phase": "type"
+        },
+        {
+          "name": "pointerout",
+          "duration": 32,
+          "phase": "type"
+        },
+        {
+          "name": "pointerleave",
+          "duration": 32,
+          "phase": "type"
+        },
+        {
+          "name": "pointerleave",
+          "duration": 32,
+          "phase": "type"
+        },
+        {
+          "name": "pointerleave",
+          "duration": 32,
+          "phase": "type"
+        },
+        {
+          "name": "pointerleave",
+          "duration": 32,
+          "phase": "type"
+        },
+        {
+          "name": "pointerleave",
+          "duration": 32,
+          "phase": "type"
+        },
+        {
+          "name": "pointerleave",
+          "duration": 32,
+          "phase": "type"
+        },
+        {
+          "name": "pointerleave",
+          "duration": 32,
+          "phase": "type"
+        },
+        {
+          "name": "pointerover",
+          "duration": 32,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 32,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 32,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 32,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 32,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 32,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 32,
+          "phase": "type"
+        },
+        {
+          "name": "mouseout",
+          "duration": 32,
+          "phase": "type"
+        },
+        {
+          "name": "mouseover",
+          "duration": 32,
+          "phase": "type"
+        },
+        {
+          "name": "pointerdown",
+          "duration": 32,
+          "phase": "type"
+        },
+        {
+          "name": "mousedown",
+          "duration": 32,
+          "phase": "type"
+        },
+        {
+          "name": "pointerup",
+          "duration": 32,
+          "phase": "type"
+        },
+        {
+          "name": "mouseup",
+          "duration": 32,
+          "phase": "type"
+        },
+        {
+          "name": "click",
+          "duration": 32,
+          "phase": "type"
+        },
+        {
+          "name": "beforeinput",
+          "duration": 24,
+          "phase": "type"
+        },
+        {
+          "name": "input",
+          "duration": 24,
+          "phase": "type"
+        },
+        {
+          "name": "keydown",
+          "duration": 40,
+          "phase": "type"
+        },
+        {
+          "name": "pointerout",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerleave",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerleave",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerleave",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerleave",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerleave",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerleave",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerleave",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerleave",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerleave",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerover",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "mouseout",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "mouseover",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerdown",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "mousedown",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerup",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "mouseup",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "click",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "keydown",
+          "duration": 40,
+          "phase": "type"
+        },
+        {
+          "name": "pointerout",
+          "duration": 32,
+          "phase": "type"
+        },
+        {
+          "name": "pointerleave",
+          "duration": 32,
+          "phase": "type"
+        },
+        {
+          "name": "pointerleave",
+          "duration": 32,
+          "phase": "type"
+        },
+        {
+          "name": "pointerleave",
+          "duration": 32,
+          "phase": "type"
+        },
+        {
+          "name": "pointerleave",
+          "duration": 32,
+          "phase": "type"
+        },
+        {
+          "name": "pointerleave",
+          "duration": 32,
+          "phase": "type"
+        },
+        {
+          "name": "pointerleave",
+          "duration": 32,
+          "phase": "type"
+        },
+        {
+          "name": "pointerleave",
+          "duration": 32,
+          "phase": "type"
+        },
+        {
+          "name": "pointerleave",
+          "duration": 32,
+          "phase": "type"
+        },
+        {
+          "name": "pointerleave",
+          "duration": 32,
+          "phase": "type"
+        },
+        {
+          "name": "pointerover",
+          "duration": 32,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 32,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 32,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 32,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 32,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 32,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 32,
+          "phase": "type"
+        },
+        {
+          "name": "mouseout",
+          "duration": 32,
+          "phase": "type"
+        },
+        {
+          "name": "mouseover",
+          "duration": 32,
+          "phase": "type"
+        },
+        {
+          "name": "pointerdown",
+          "duration": 32,
+          "phase": "type"
+        },
+        {
+          "name": "mousedown",
+          "duration": 32,
+          "phase": "type"
+        },
+        {
+          "name": "pointerup",
+          "duration": 32,
+          "phase": "type"
+        },
+        {
+          "name": "mouseup",
+          "duration": 32,
+          "phase": "type"
+        },
+        {
+          "name": "click",
+          "duration": 32,
+          "phase": "type"
+        },
+        {
+          "name": "beforeinput",
+          "duration": 24,
+          "phase": "type"
+        },
+        {
+          "name": "input",
+          "duration": 24,
+          "phase": "type"
+        },
+        {
+          "name": "keydown",
+          "duration": 40,
+          "phase": "type"
+        },
+        {
+          "name": "pointerout",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerleave",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerleave",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerleave",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerleave",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerleave",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerleave",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerleave",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerleave",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerleave",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerover",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "mouseout",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "mouseover",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerdown",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "mousedown",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerup",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "mouseup",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "click",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "beforeinput",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "keydown",
+          "duration": 40,
+          "phase": "type"
+        },
+        {
+          "name": "pointerout",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerleave",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerleave",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerleave",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerleave",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerleave",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerleave",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerleave",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerleave",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerleave",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerover",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "mouseout",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "mouseover",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerdown",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "mousedown",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerup",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "mouseup",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "click",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "keydown",
+          "duration": 48,
+          "phase": "type"
+        },
+        {
+          "name": "pointerout",
+          "duration": 32,
+          "phase": "type"
+        },
+        {
+          "name": "pointerleave",
+          "duration": 32,
+          "phase": "type"
+        },
+        {
+          "name": "pointerleave",
+          "duration": 32,
+          "phase": "type"
+        },
+        {
+          "name": "pointerleave",
+          "duration": 32,
+          "phase": "type"
+        },
+        {
+          "name": "pointerleave",
+          "duration": 32,
+          "phase": "type"
+        },
+        {
+          "name": "pointerleave",
+          "duration": 32,
+          "phase": "type"
+        },
+        {
+          "name": "pointerleave",
+          "duration": 32,
+          "phase": "type"
+        },
+        {
+          "name": "pointerleave",
+          "duration": 32,
+          "phase": "type"
+        },
+        {
+          "name": "pointerleave",
+          "duration": 32,
+          "phase": "type"
+        },
+        {
+          "name": "pointerleave",
+          "duration": 32,
+          "phase": "type"
+        },
+        {
+          "name": "pointerover",
+          "duration": 32,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 32,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 32,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 32,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 32,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 32,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 32,
+          "phase": "type"
+        },
+        {
+          "name": "mouseout",
+          "duration": 32,
+          "phase": "type"
+        },
+        {
+          "name": "mouseover",
+          "duration": 32,
+          "phase": "type"
+        },
+        {
+          "name": "pointerdown",
+          "duration": 32,
+          "phase": "type"
+        },
+        {
+          "name": "mousedown",
+          "duration": 32,
+          "phase": "type"
+        },
+        {
+          "name": "pointerup",
+          "duration": 32,
+          "phase": "type"
+        },
+        {
+          "name": "mouseup",
+          "duration": 32,
+          "phase": "type"
+        },
+        {
+          "name": "click",
+          "duration": 32,
+          "phase": "type"
+        },
+        {
+          "name": "beforeinput",
+          "duration": 24,
+          "phase": "type"
+        },
+        {
+          "name": "input",
+          "duration": 24,
+          "phase": "type"
+        },
+        {
+          "name": "keydown",
+          "duration": 40,
+          "phase": "type"
+        },
+        {
+          "name": "pointerout",
+          "duration": 32,
+          "phase": "type"
+        },
+        {
+          "name": "pointerleave",
+          "duration": 32,
+          "phase": "type"
+        },
+        {
+          "name": "pointerleave",
+          "duration": 32,
+          "phase": "type"
+        },
+        {
+          "name": "pointerleave",
+          "duration": 32,
+          "phase": "type"
+        },
+        {
+          "name": "pointerleave",
+          "duration": 32,
+          "phase": "type"
+        },
+        {
+          "name": "pointerleave",
+          "duration": 32,
+          "phase": "type"
+        },
+        {
+          "name": "pointerleave",
+          "duration": 32,
+          "phase": "type"
+        },
+        {
+          "name": "pointerleave",
+          "duration": 32,
+          "phase": "type"
+        },
+        {
+          "name": "pointerleave",
+          "duration": 32,
+          "phase": "type"
+        },
+        {
+          "name": "pointerleave",
+          "duration": 32,
+          "phase": "type"
+        },
+        {
+          "name": "pointerover",
+          "duration": 32,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 32,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 32,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 32,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 32,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 32,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 32,
+          "phase": "type"
+        },
+        {
+          "name": "mouseout",
+          "duration": 32,
+          "phase": "type"
+        },
+        {
+          "name": "mouseover",
+          "duration": 32,
+          "phase": "type"
+        },
+        {
+          "name": "pointerdown",
+          "duration": 32,
+          "phase": "type"
+        },
+        {
+          "name": "mousedown",
+          "duration": 32,
+          "phase": "type"
+        },
+        {
+          "name": "pointerup",
+          "duration": 32,
+          "phase": "type"
+        },
+        {
+          "name": "mouseup",
+          "duration": 32,
+          "phase": "type"
+        },
+        {
+          "name": "click",
+          "duration": 32,
+          "phase": "type"
+        },
+        {
+          "name": "beforeinput",
+          "duration": 24,
+          "phase": "type"
+        },
+        {
+          "name": "input",
+          "duration": 24,
+          "phase": "type"
+        },
+        {
+          "name": "keydown",
+          "duration": 40,
+          "phase": "type"
+        },
+        {
+          "name": "pointerout",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerleave",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerleave",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerleave",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerleave",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerleave",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerleave",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerleave",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerleave",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerleave",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerover",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "mouseout",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "mouseover",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerdown",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "mousedown",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerup",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "mouseup",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "click",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "keydown",
+          "duration": 40,
+          "phase": "type"
+        },
+        {
+          "name": "pointerout",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerleave",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerleave",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerleave",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerleave",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerleave",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerleave",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerleave",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerleave",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerleave",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerover",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "mouseout",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "mouseover",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerdown",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "mousedown",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerup",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "mouseup",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "click",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "keydown",
+          "duration": 32,
+          "phase": "type"
+        },
+        {
+          "name": "pointerout",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerleave",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerleave",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerleave",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerleave",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerleave",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerleave",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerleave",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerleave",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerleave",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerover",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "mouseout",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "mouseover",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerdown",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "mousedown",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerup",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "mouseup",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "click",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "keydown",
+          "duration": 48,
+          "phase": "type"
+        },
+        {
+          "name": "pointerout",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerleave",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerleave",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerleave",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerleave",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerleave",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerleave",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerleave",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerleave",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerleave",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerover",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "mouseout",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "mouseover",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerdown",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "mousedown",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerup",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "mouseup",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "click",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "keydown",
+          "duration": 48,
+          "phase": "type"
+        },
+        {
+          "name": "pointerout",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerleave",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerleave",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerleave",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerleave",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerleave",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerleave",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerleave",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerleave",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerleave",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerover",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "mouseout",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "mouseover",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerdown",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "mousedown",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerup",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "mouseup",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "click",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "keydown",
+          "duration": 48,
+          "phase": "type"
+        },
+        {
+          "name": "pointerout",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerleave",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerleave",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerleave",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerleave",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerleave",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerleave",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerleave",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerleave",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerleave",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerover",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "mouseout",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "mouseover",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerdown",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "mousedown",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerup",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "mouseup",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "click",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "keydown",
+          "duration": 48,
+          "phase": "type"
+        },
+        {
+          "name": "pointerout",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerleave",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerleave",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerleave",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerleave",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerleave",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerleave",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerleave",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerleave",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerleave",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerover",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "mouseout",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "mouseover",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerdown",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "mousedown",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "pointerup",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "mouseup",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "click",
+          "duration": 16,
+          "phase": "type"
+        },
+        {
+          "name": "keydown",
+          "duration": 48,
+          "phase": "qty"
+        },
+        {
+          "name": "pointerout",
+          "duration": 32,
+          "phase": "qty"
+        },
+        {
+          "name": "pointerleave",
+          "duration": 32,
+          "phase": "qty"
+        },
+        {
+          "name": "pointerleave",
+          "duration": 32,
+          "phase": "qty"
+        },
+        {
+          "name": "pointerleave",
+          "duration": 32,
+          "phase": "qty"
+        },
+        {
+          "name": "pointerleave",
+          "duration": 32,
+          "phase": "qty"
+        },
+        {
+          "name": "pointerleave",
+          "duration": 32,
+          "phase": "qty"
+        },
+        {
+          "name": "pointerover",
+          "duration": 32,
+          "phase": "qty"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 32,
+          "phase": "qty"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 32,
+          "phase": "qty"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 32,
+          "phase": "qty"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 32,
+          "phase": "qty"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 32,
+          "phase": "qty"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 32,
+          "phase": "qty"
+        },
+        {
+          "name": "pointerenter",
+          "duration": 32,
+          "phase": "qty"
+        },
+        {
+          "name": "mouseout",
+          "duration": 32,
+          "phase": "qty"
+        },
+        {
+          "name": "mouseover",
+          "duration": 32,
+          "phase": "qty"
+        },
+        {
+          "name": "pointerdown",
+          "duration": 32,
+          "phase": "qty"
+        },
+        {
+          "name": "mousedown",
+          "duration": 32,
+          "phase": "qty"
+        },
+        {
+          "name": "pointerup",
+          "duration": 32,
+          "phase": "qty"
+        },
+        {
+          "name": "mouseup",
+          "duration": 32,
+          "phase": "qty"
+        },
+        {
+          "name": "click",
+          "duration": 32,
+          "phase": "qty"
+        },
+        {
+          "name": "keydown",
+          "duration": 24,
+          "phase": "qty"
+        },
+        {
+          "name": "keydown",
+          "duration": 24,
+          "phase": "qty"
+        },
+        {
+          "name": "keyup",
+          "duration": 24,
+          "phase": "qty"
+        },
+        {
+          "name": "keyup",
+          "duration": 24,
+          "phase": "qty"
+        },
+        {
+          "name": "keydown",
+          "duration": 24,
+          "phase": "qty"
+        },
+        {
+          "name": "keypress",
+          "duration": 24,
+          "phase": "qty"
+        },
+        {
+          "name": "beforeinput",
+          "duration": 24,
+          "phase": "qty"
+        },
+        {
+          "name": "input",
+          "duration": 24,
+          "phase": "qty"
+        },
+        {
+          "name": "keydown",
+          "duration": 16,
+          "phase": "qty"
+        },
+        {
+          "name": "keypress",
+          "duration": 16,
+          "phase": "qty"
+        },
+        {
+          "name": "beforeinput",
+          "duration": 16,
+          "phase": "qty"
+        },
+        {
+          "name": "input",
+          "duration": 16,
+          "phase": "qty"
+        },
+        {
+          "name": "keydown",
+          "duration": 24,
+          "phase": "qty"
+        },
+        {
+          "name": "keypress",
+          "duration": 24,
+          "phase": "qty"
+        },
+        {
+          "name": "beforeinput",
+          "duration": 24,
+          "phase": "qty"
+        },
+        {
+          "name": "input",
+          "duration": 24,
+          "phase": "qty"
+        }
+      ]
+    }
+  ]
+}

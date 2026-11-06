@@ -2,10 +2,10 @@
 
 import { useCallback, useMemo, useState } from 'react';
 
-
 import { useAppDispatch, useAppSelector } from 'src/hooks/useAppStore';
 import { useDegradedNetwork } from 'src/hooks/useDegradedNetwork';
 import { useIdempotencyKey } from 'src/hooks/useIdempotencyKey';
+import { useIsOwnerOrAdmin } from 'src/hooks/useIsOwnerOrAdmin';
 import { usePermissions } from 'src/hooks/usePermissions';
 import { showSnackbar } from 'src/redux/slice/snackbarSlice';
 import type { ApiErrorShape } from 'src/types/api.types';
@@ -49,9 +49,20 @@ export interface UsePartyFormResult {
   readonly editing: PartyDetail | null;
   readonly isSaving: boolean;
   readonly canWrite: boolean;
+  /**
+   * May this viewer EDIT an existing party — `canWrite` and the owner or an
+   * admin (owner, 12 Oct 2026). `canWrite` alone still governs creating a
+   * party and the khata page's promise date, which the counter does daily.
+   */
+  readonly canEdit: boolean;
   readonly formErrors: readonly string[];
   /** The id of the party already holding the mobile that was just refused. */
   readonly duplicateOf: string | null;
+  /**
+   * That party is archived: off the list, still holding its number. The banner
+   * says so and offers Restore's page, not "already in your book" (WP-07).
+   */
+  readonly duplicateArchived: boolean;
   readonly warnings: readonly PartyWarning[];
   readonly lastSaved: PartyDetail | null;
   /** `name` starts the form with that name filled in — see `partyCreateOpened`. */
@@ -61,8 +72,14 @@ export interface UsePartyFormResult {
   readonly dismissWarnings: () => void;
   readonly submit: (
     values: PartyFormValues,
-    setError: UseFormSetError<PartyFormValues>
-  ) => Promise<void>;
+    setError: UseFormSetError<PartyFormValues>,
+    personal?: boolean,
+    /**
+     * A6 (R-DEC-61): the merchant picked an existing contact on Add, so the
+     * save goes to THAT record (a PATCH adding the role), not a new one.
+     */
+    existingId?: string
+  ) => Promise<PartyDetail | null>;
 }
 
 export const usePartyForm = (): UsePartyFormResult => {
@@ -79,7 +96,7 @@ export const usePartyForm = (): UsePartyFormResult => {
 
   const { key, rotate } = useIdempotencyKey();
   const [formErrors, setFormErrors] = useState<readonly string[]>([]);
-  const [duplicateOf, setDuplicateOf] = useState<string | null>(null);
+  const [duplicate, setDuplicate] = useState<{ id: string; archived: boolean } | null>(null);
 
   /**
    * Class **B, deferred** (§19.10.4), not class A.
@@ -96,11 +113,13 @@ export const usePartyForm = (): UsePartyFormResult => {
    * the refusal.
    */
   const canWrite = can('parties.party.write') && canWriteIn('deferred');
+  const isManager = useIsOwnerOrAdmin();
+  const canEdit = canWrite && isManager;
 
   const openCreate = useCallback(
     (name?: string) => {
       setFormErrors([]);
-      setDuplicateOf(null);
+      setDuplicate(null);
       dispatch(partyCreateOpened(name));
     },
     [dispatch]
@@ -109,7 +128,7 @@ export const usePartyForm = (): UsePartyFormResult => {
   const openEdit = useCallback(
     (party: PartyDetail) => {
       setFormErrors([]);
-      setDuplicateOf(null);
+      setDuplicate(null);
       dispatch(partyEditOpened(party));
     },
     [dispatch]
@@ -117,7 +136,7 @@ export const usePartyForm = (): UsePartyFormResult => {
 
   const close = useCallback(() => {
     setFormErrors([]);
-    setDuplicateOf(null);
+    setDuplicate(null);
     dispatch(partyFormClosed());
   }, [dispatch]);
 
@@ -126,14 +145,23 @@ export const usePartyForm = (): UsePartyFormResult => {
   }, [dispatch]);
 
   const submit = useCallback(
-    async (values: PartyFormValues, setError: UseFormSetError<PartyFormValues>) => {
+    async (
+      values: PartyFormValues,
+      setError: UseFormSetError<PartyFormValues>,
+      personal = false,
+      existingId?: string
+    ) => {
       setFormErrors([]);
-      setDuplicateOf(null);
+      setDuplicate(null);
       try {
         const saved = await dispatch(
-          saveParty({
+          saveParty(personal && openFor && openFor !== 'new' ? {
+            partyId: openFor,
+            identity: { name: values.name, mobile: values.mobile || null },
+          } : {
             values,
-            partyId: openFor && openFor !== 'new' ? openFor : undefined,
+            ...(personal ? { personal: true } : {}),
+            partyId: existingId ?? (openFor && openFor !== 'new' ? openFor : undefined),
             idempotencyKey: key,
           })
         ).unwrap();
@@ -161,9 +189,14 @@ export const usePartyForm = (): UsePartyFormResult => {
                     state: mismatch.stateCode ?? '',
                   },
                 }
-              : { severity: 'success', id: 'parties.form.saved', params: { name: saved.party.name } }
+              : {
+                  severity: 'success',
+                  id: 'parties.form.saved',
+                  params: { name: saved.party.name },
+                }
           )
         );
+        return saved.party;
       } catch (thrown) {
         const apiError = thrown as ApiErrorShape;
         if (apiError.code === 'validation_error') {
@@ -174,7 +207,9 @@ export const usePartyForm = (): UsePartyFormResult => {
 
           const details = apiError.details as Record<string, unknown> | undefined;
           const existing = details?.existing_party_id;
-          if (typeof existing === 'string') setDuplicateOf(existing);
+          if (typeof existing === 'string') {
+            setDuplicate({ id: existing, archived: details?.existing_status === 'archived' });
+          }
 
           /**
            * `details` carries two kinds of thing and only one of them is a
@@ -200,17 +235,18 @@ export const usePartyForm = (): UsePartyFormResult => {
             ),
           };
           setFormErrors(applyServerErrors(translated, setError, [...PARTY_FIELDS]));
-          return;
+          return null;
         }
         if (apiError.code === 'party_archived') {
           // Not a field error: the request was well formed and the record's
           // state said no. It belongs at form level, where the merchant can
           // read it beside a Restore they will need.
           setFormErrors([apiError.message]);
-          return;
+          return null;
         }
         // Anything else has already surfaced through the global snackbar.
         dispatch(showSnackbar({ severity: 'error', id: 'parties.form.error.title' }));
+        return null;
       }
     },
     [dispatch, key, openFor, rotate]
@@ -224,8 +260,10 @@ export const usePartyForm = (): UsePartyFormResult => {
       editing,
       isSaving: status === 'loading',
       canWrite,
+      canEdit,
       formErrors,
-      duplicateOf,
+      duplicateOf: duplicate?.id ?? null,
+      duplicateArchived: duplicate?.archived ?? false,
       warnings,
       lastSaved,
       openCreate,
@@ -240,8 +278,9 @@ export const usePartyForm = (): UsePartyFormResult => {
       prefillName,
       status,
       canWrite,
+      canEdit,
       formErrors,
-      duplicateOf,
+      duplicate,
       warnings,
       lastSaved,
       openCreate,

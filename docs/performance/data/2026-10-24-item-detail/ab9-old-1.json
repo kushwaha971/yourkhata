@@ -1,0 +1,476 @@
+{
+  "date": "2026-10-24T00:07:56.447Z",
+  "frontend": "http://localhost:3000",
+  "reps": 3,
+  "nav": [
+    {
+      "vp": 390,
+      "profile": "unthrottled",
+      "rep": 1,
+      "id": "shop.item row→detail",
+      "kind": "item register row",
+      "firstChange": 7,
+      "firstChangeWhat": "childList body +div .pointer-events-none.fixed.inset-x-0",
+      "firstPaint": 32,
+      "url": 49,
+      "content": 194,
+      "loadingUi": 7,
+      "loadingWhat": "div",
+      "prefetchedBefore": 0,
+      "rscAfter": 1,
+      "prefetchAfter": 0,
+      "navRsc": {
+        "start": 62,
+        "end": 84
+      },
+      "apiAfter": [
+        "/api/v1/items/:id",
+        "/api/v1/items/:id/movements"
+      ],
+      "jsAfter": 4,
+      "jsAfterLastEnd": 101,
+      "longTasks": 0,
+      "longTaskMax": 0,
+      "interaction": 32,
+      "timedOut": false,
+      "shotAfterTap": null
+    },
+    {
+      "vp": 390,
+      "profile": "unthrottled",
+      "rep": 1,
+      "id": "shop.more→items",
+      "kind": "More row (link)",
+      "firstChange": 69,
+      "firstChangeWhat": "childList body",
+      "firstPaint": 103,
+      "url": 70,
+      "content": 226,
+      "loadingUi": 69,
+      "loadingWhat": "div \"Loading items…\"",
+      "prefetchedBefore": 2,
+      "rscAfter": 1,
+      "prefetchAfter": 0,
+      "navRsc": {
+        "start": 57,
+        "end": 92
+      },
+      "apiAfter": [
+        "/api/v1/items",
+        "/api/v1/units",
+        "/api/v1/categories"
+      ],
+      "jsAfter": 9,
+      "jsAfterLastEnd": 149,
+      "longTasks": 0,
+      "longTaskMax": 0,
+      "interaction": 32,
+      "timedOut": false,
+      "shotAfterTap": null
+    },
+    {
+      "vp": 390,
+      "profile": "unthrottled",
+      "rep": 2,
+      "id": "shop.item row→detail",
+      "kind": "item register row",
+      "firstChange": 4,
+      "firstChangeWhat": "childList body +div .pointer-events-none.fixed.inset-x-0",
+      "firstPaint": 37,
+      "url": 37,
+      "content": 162,
+      "loadingUi": 4,
+      "loadingWhat": "div",
+      "prefetchedBefore": 0,
+      "rscAfter": 1,
+      "prefetchAfter": 0,
+      "navRsc": {
+        "start": 58,
+        "end": 75
+      },
+      "apiAfter": [
+        "/api/v1/items/:id",
+        "/api/v1/items/:id/movements"
+      ],
+      "jsAfter": 4,
+      "jsAfterLastEnd": 75,
+      "longTasks": 0,
+      "longTaskMax": 0,
+      "interaction": 32,
+      "timedOut": false,
+      "shotAfterTap": null
+    },
+    {
+      "vp": 390,
+      "profile": "unthrottled",
+      "rep": 2,
+      "id": "shop.more→items",
+      "kind": "More row (link)",
+      "firstChange": 50,
+      "firstChangeWhat": "childList body",
+      "firstPaint": 79,
+      "url": 52,
+      "content": 227,
+      "loadingUi": 50,
+      "loadingWhat": "div \"Loading items…\"",
+      "prefetchedBefore": 2,
+      "rscAfter": 1,
+      "prefetchAfter": 0,
+      "navRsc": {
+        "start": 57,
+        "end": 78
+      },
+      "apiAfter": [
+        "/api/v1/items",
+        "/api/v1/units",
+        "/api/v1/categories"
+      ],
+      "jsAfter": 9,
+      "jsAfterLastEnd": 137,
+      "longTasks": 0,
+      "longTaskMax": 0,
+      "interaction": 32,
+      "timedOut": false,
+      "shotAfterTap": null
+    },
+    {
+      "vp": 390,
+      "profile": "unthrottled",
+      "rep": 3,
+      "id": "shop.item row→detail",
+      "kind": "item register row",
+      "firstChange": 4,
+      "firstChangeWhat": "childList body +div .pointer-events-none.fixed.inset-x-0",
+      "firstPaint": 34,
+      "url": 34,
+      "content": 177,
+      "loadingUi": 4,
+      "loadingWhat": "div",
+      "prefetchedBefore": 0,
+      "rscAfter": 1,
+      "prefetchAfter": 0,
+      "navRsc": {
+        "start": 57,
+        "end": 72
+      },
+      "apiAfter": [
+        "/api/v1/items/:id",
+        "/api/v1/items/:id/movements"
+      ],
+      "jsAfter": 4,
+      "jsAfterLastEnd": 72,
+      "longTasks": 0,
+      "longTaskMax": 0,
+      "interaction": 32,
+      "timedOut": false,
+      "shotAfterTap": null
+    },
+    {
+      "vp": 390,
+      "profile": "unthrottled",
+      "rep": 3,
+      "id": "shop.more→items",
+      "kind": "More row (link)",
+      "firstChange": 64,
+      "firstChangeWhat": "childList body",
+      "firstPaint": 103,
+      "url": 66,
+      "content": 228,
+      "loadingUi": 64,
+      "loadingWhat": "div \"Loading items…\"",
+      "prefetchedBefore": 2,
+      "rscAfter": 1,
+      "prefetchAfter": 0,
+      "navRsc": {
+        "start": 56,
+        "end": 77
+      },
+      "apiAfter": [
+        "/api/v1/items",
+        "/api/v1/units",
+        "/api/v1/categories"
+      ],
+      "jsAfter": 9,
+      "jsAfterLastEnd": 151,
+      "longTasks": 0,
+      "longTaskMax": 0,
+      "interaction": 32,
+      "timedOut": false,
+      "shotAfterTap": null
+    },
+    {
+      "vp": 390,
+      "profile": "throttled",
+      "rep": 1,
+      "id": "shop.item row→detail",
+      "kind": "item register row",
+      "firstChange": 42,
+      "firstChangeWhat": "childList body +div .pointer-events-none.fixed.inset-x-0",
+      "firstPaint": 85,
+      "url": 384,
+      "content": 1203,
+      "loadingUi": 42,
+      "loadingWhat": "div",
+      "prefetchedBefore": 0,
+      "rscAfter": 1,
+      "prefetchAfter": 0,
+      "navRsc": {
+        "start": 165,
+        "end": 367
+      },
+      "apiAfter": [
+        "/api/v1/items/:id",
+        "/api/v1/items/:id/movements"
+      ],
+      "jsAfter": 4,
+      "jsAfterLastEnd": 707,
+      "longTasks": 3,
+      "longTaskMax": 239,
+      "interaction": 112,
+      "timedOut": false,
+      "shotAfterTap": null
+    },
+    {
+      "vp": 390,
+      "profile": "throttled",
+      "rep": 1,
+      "id": "shop.more→items",
+      "kind": "More row (link)",
+      "firstChange": 117,
+      "firstChangeWhat": "childList body",
+      "firstPaint": 164,
+      "url": 120,
+      "content": 826,
+      "loadingUi": 117,
+      "loadingWhat": "div",
+      "prefetchedBefore": 2,
+      "rscAfter": 1,
+      "prefetchAfter": 0,
+      "navRsc": {
+        "start": 99,
+        "end": 380
+      },
+      "apiAfter": [
+        "/api/v1/items",
+        "/api/v1/units",
+        "/api/v1/categories"
+      ],
+      "jsAfter": 9,
+      "jsAfterLastEnd": 615,
+      "longTasks": 2,
+      "longTaskMax": 116,
+      "interaction": 40,
+      "timedOut": false,
+      "shotAfterTap": null
+    },
+    {
+      "vp": 390,
+      "profile": "throttled",
+      "rep": 2,
+      "id": "shop.item row→detail",
+      "kind": "item register row",
+      "firstChange": 23,
+      "firstChangeWhat": "childList body +div .pointer-events-none.fixed.inset-x-0",
+      "firstPaint": 41,
+      "url": 409,
+      "content": 855,
+      "loadingUi": 23,
+      "loadingWhat": "div",
+      "prefetchedBefore": 0,
+      "rscAfter": 1,
+      "prefetchAfter": 0,
+      "navRsc": {
+        "start": 110,
+        "end": 315
+      },
+      "apiAfter": [
+        "/api/v1/items/:id",
+        "/api/v1/items/:id/movements"
+      ],
+      "jsAfter": 4,
+      "jsAfterLastEnd": 313,
+      "longTasks": 3,
+      "longTaskMax": 123,
+      "interaction": 56,
+      "timedOut": false,
+      "shotAfterTap": null
+    },
+    {
+      "vp": 390,
+      "profile": "throttled",
+      "rep": 2,
+      "id": "shop.more→items",
+      "kind": "More row (link)",
+      "firstChange": 129,
+      "firstChangeWhat": "childList body",
+      "firstPaint": 173,
+      "url": 132,
+      "content": 788,
+      "loadingUi": 129,
+      "loadingWhat": "div",
+      "prefetchedBefore": 2,
+      "rscAfter": 1,
+      "prefetchAfter": 0,
+      "navRsc": {
+        "start": 118,
+        "end": 359
+      },
+      "apiAfter": [
+        "/api/v1/items",
+        "/api/v1/units",
+        "/api/v1/categories"
+      ],
+      "jsAfter": 9,
+      "jsAfterLastEnd": 625,
+      "longTasks": 2,
+      "longTaskMax": 84,
+      "interaction": 64,
+      "timedOut": false,
+      "shotAfterTap": null
+    },
+    {
+      "vp": 390,
+      "profile": "throttled",
+      "rep": 3,
+      "id": "shop.item row→detail",
+      "kind": "item register row",
+      "firstChange": 35,
+      "firstChangeWhat": "childList body +div .pointer-events-none.fixed.inset-x-0",
+      "firstPaint": 60,
+      "url": 367,
+      "content": 911,
+      "loadingUi": 35,
+      "loadingWhat": "div",
+      "prefetchedBefore": 0,
+      "rscAfter": 1,
+      "prefetchAfter": 0,
+      "navRsc": {
+        "start": 138,
+        "end": 314
+      },
+      "apiAfter": [
+        "/api/v1/items/:id",
+        "/api/v1/items/:id/movements"
+      ],
+      "jsAfter": 4,
+      "jsAfterLastEnd": 313,
+      "longTasks": 3,
+      "longTaskMax": 224,
+      "interaction": 80,
+      "timedOut": false,
+      "shotAfterTap": null
+    },
+    {
+      "vp": 390,
+      "profile": "throttled",
+      "rep": 3,
+      "id": "shop.more→items",
+      "kind": "More row (link)",
+      "firstChange": 137,
+      "firstChangeWhat": "childList body",
+      "firstPaint": 186,
+      "url": 139,
+      "content": 776,
+      "loadingUi": 137,
+      "loadingWhat": "div",
+      "prefetchedBefore": 2,
+      "rscAfter": 1,
+      "prefetchAfter": 0,
+      "navRsc": {
+        "start": 102,
+        "end": 343
+      },
+      "apiAfter": [
+        "/api/v1/items",
+        "/api/v1/units",
+        "/api/v1/categories"
+      ],
+      "jsAfter": 9,
+      "jsAfterLastEnd": 562,
+      "longTasks": 1,
+      "longTaskMax": 63,
+      "interaction": 56,
+      "timedOut": false,
+      "shotAfterTap": null
+    },
+    {
+      "vp": 1280,
+      "profile": "unthrottled",
+      "rep": 1,
+      "id": "shop.item row→detail",
+      "error": "locator.waitFor: Timeout 20000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('main tr[data-testid=\"ub-grid-row\"] button:not([role=\"checkbox\"])').filter({ visible: true }).first() to be visible\u001b[22",
+      "at": "http://localhost:3000/items"
+    },
+    {
+      "vp": 1280,
+      "profile": "unthrottled",
+      "rep": 2,
+      "id": "shop.item row→detail",
+      "error": "locator.waitFor: Timeout 20000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('main tr[data-testid=\"ub-grid-row\"] button:not([role=\"checkbox\"])').filter({ visible: true }).first() to be visible\u001b[22",
+      "at": "http://localhost:3000/items"
+    },
+    {
+      "vp": 1280,
+      "profile": "unthrottled",
+      "rep": 3,
+      "id": "shop.item row→detail",
+      "error": "locator.waitFor: Timeout 20000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('main tr[data-testid=\"ub-grid-row\"] button:not([role=\"checkbox\"])').filter({ visible: true }).first() to be visible\u001b[22",
+      "at": "http://localhost:3000/items"
+    },
+    {
+      "vp": 1280,
+      "profile": "throttled",
+      "rep": 1,
+      "id": "shop.item row→detail",
+      "error": "locator.waitFor: Timeout 20000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('main tr[data-testid=\"ub-grid-row\"] button:not([role=\"checkbox\"])').filter({ visible: true }).first() to be visible\u001b[22",
+      "at": "http://localhost:3000/items"
+    },
+    {
+      "vp": 1280,
+      "profile": "throttled",
+      "rep": 2,
+      "id": "shop.item row→detail",
+      "error": "locator.waitFor: Timeout 20000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('main tr[data-testid=\"ub-grid-row\"] button:not([role=\"checkbox\"])').filter({ visible: true }).first() to be visible\u001b[22",
+      "at": "http://localhost:3000/items"
+    },
+    {
+      "vp": 1280,
+      "profile": "throttled",
+      "rep": 3,
+      "id": "shop.item row→detail",
+      "error": "locator.waitFor: Timeout 20000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('main tr[data-testid=\"ub-grid-row\"] button:not([role=\"checkbox\"])').filter({ visible: true }).first() to be visible\u001b[22",
+      "at": "http://localhost:3000/items"
+    }
+  ],
+  "cold": [],
+  "press": [],
+  "lists": [],
+  "summary": [
+    {
+      "vp": 390,
+      "profile": "unthrottled",
+      "n": 6,
+      "firstChange_p50": 7,
+      "firstChange_p95": 69,
+      "content_p50": 194,
+      "content_p95": 228,
+      "inp_max": 32,
+      "inp_p75": 32,
+      "loadingUiSeen": 6,
+      "prefetched": 3
+    },
+    {
+      "vp": 390,
+      "profile": "throttled",
+      "n": 6,
+      "firstChange_p50": 42,
+      "firstChange_p95": 137,
+      "content_p50": 826,
+      "content_p95": 1203,
+      "inp_max": 112,
+      "inp_p75": 80,
+      "loadingUiSeen": 6,
+      "prefetched": 3
+    }
+  ]
+}

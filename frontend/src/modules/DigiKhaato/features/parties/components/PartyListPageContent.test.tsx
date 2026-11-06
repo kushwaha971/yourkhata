@@ -9,10 +9,9 @@ import {
 } from 'src/design-system/UbDataGrid';
 import { sessionLoaded } from 'src/redux/slice/sessionSlice';
 import { store } from 'src/redux/store';
+import { hi } from 'src/tests/allMessages';
 import { renderWithProviders } from 'src/tests/renderWithProviders';
 import type { PermissionCode } from 'src/types/domain.types';
-
-import hi from 'locales/hi.json';
 
 import { resetPartyForm } from '../redux/partyFormSlice';
 import { resetPartyList } from '../redux/partyListSlice';
@@ -136,6 +135,51 @@ const setTier = (tier: UbGridTier): void => {
   });
 };
 
+/* These tests read the figures on the cards. The owner folded the cards into a
+   summary line (6 Oct 2026) that opens with "Details"; open it, as a merchant
+   who wants the cards does once and the screen remembers. */
+beforeEach(() => {
+  window.localStorage.setItem('ub.statSummary.parties', 'open');
+});
+
+/* Owner, 6 Oct 2026 — the approved filter pattern: Balance is the toolbar's
+   one dropdown; credit, role, type, collection and tags live in the Filters
+   sheet, applied once, and come back as pills. These drive the real controls. */
+type User = ReturnType<typeof userEvent.setup>;
+const inFilters = async (user: User, choose: () => Promise<void>): Promise<void> => {
+  await user.click(screen.getByTestId('filters-button'));
+  await choose();
+  await user.click(screen.getByTestId('filters-apply'));
+};
+const chooseRadio = (user: User, group: string, label: string) => async () => {
+  const set = await screen.findByRole('radiogroup', { name: group });
+  await user.click(within(set).getByRole('radio', { name: label }));
+};
+/**
+ * Balance and Show are toolbar dropdowns on a computer and live inside the one
+ * Filters sheet on a phone (approved design, 12 Oct 2026). The tests about
+ * WHAT a filter does pick it wherever this rendering puts it.
+ */
+const pickFilter = async (
+  user: User,
+  dropdown: RegExp,
+  group: string,
+  label: string
+): Promise<void> => {
+  const button = screen.queryByRole('button', { name: dropdown });
+  if (button) {
+    await user.click(button);
+    await user.click(await screen.findByRole('option', { name: label }));
+  } else {
+    await inFilters(user, chooseRadio(user, group, label));
+  }
+};
+const pickBalance = (user: User, label: string): Promise<void> =>
+  pickFilter(user, /^Balance:/, 'Balance', label);
+const pickShow = (user: User, label: string): Promise<void> =>
+  pickFilter(user, /^Show:/, 'Show', label);
+const balanceShows = (label: string) => screen.getByRole('button', { name: `Balance: ${label}` });
+
 describe('PartyListPageContent', () => {
   beforeEach(() => {
     store.dispatch(resetPartyList());
@@ -146,6 +190,90 @@ describe('PartyListPageContent', () => {
        otherwise for itself. */
     tagService.listTags.mockResolvedValue([]);
     setTier('cards');
+  });
+
+  /** R-DEC-10: Shop totals must not consume the phone's first screen as KPI cards. */
+  it('uses a compact Shop summary with scoped totals and keeps the shared book unchanged', async () => {
+    partyService.listParties.mockResolvedValue(loaded([RAMESH]));
+    renderWithProviders(<PartyListPageContent kind="customer" book="shop" />);
+    expect(await screen.findByTestId('count-line')).toBeInTheDocument();
+    // A7 — the design's count line. One row on one page IS the whole match, so
+    // its sum is the filtered total and needs no "on this page" note.
+    await waitFor(() =>
+      expect(screen.getByTestId('count-line')).toHaveTextContent('To collect ₹2,800.00')
+    );
+    expect(screen.getByTestId('count-line')).toHaveTextContent(/1 customer(?!s)/);
+    expect(screen.getByRole('button', { name: 'To collect', pressed: false })).toBeInTheDocument();
+    expect(screen.getByRole('searchbox')).toBeInTheDocument();
+    expect(screen.getByTestId('ub-grid-cards')).toHaveAttribute('data-card-layout', 'stacked');
+    // The selected artifact puts controls first, then the scoped summary, then rows.
+    expect(
+      screen
+        .getByTestId('shop-customer-toolbar')
+        .compareDocumentPosition(screen.getByTestId('count-line')) &
+        Node.DOCUMENT_POSITION_FOLLOWING
+    ).toBeTruthy();
+    expect(
+      screen
+        .getByTestId('count-line')
+        .compareDocumentPosition(screen.getByTestId('ub-grid-cards')) &
+        Node.DOCUMENT_POSITION_FOLLOWING
+    ).toBeTruthy();
+    expect(document.querySelector('[data-ub-fab]')).toBeNull();
+  });
+
+  /** R-DEC-33: a phone joins the next customers under the cards and keeps them when it fails. */
+  it('joins the next page on a phone and keeps the cards when it fails', async () => {
+    const twoPages = (rows: readonly unknown[], page: number) => ({
+      rows,
+      meta: { page, pageSize: 25, total: 26, totalPages: 2 },
+      totals: null,
+    });
+    let secondPageAsks = 0;
+    partyService.listParties.mockImplementation(async ({ page }: { page: number }) => {
+      if (page === 1) return twoPages([RAMESH], 1);
+      secondPageAsks += 1;
+      if (secondPageAsks === 1) throw new Error('offline');
+      return twoPages([SUNITA], 2);
+    });
+    const user = userEvent.setup();
+    renderWithProviders(<PartyListPageContent kind="customer" book="shop" />);
+    await screen.findByText('Ramesh Traders');
+    // No pinned pager or page counter on a phone: the next batch loads under the cards.
+    expect(screen.queryByText(/Page 1 of/)).not.toBeInTheDocument();
+    // Inside the region that scrolls, so it travels with the cards.
+    expect(
+      screen
+        .getByTestId('ub-grid-scroll-region')
+        .contains(screen.getByRole('button', { name: /Show more \(25 left\)/ }))
+    ).toBe(true);
+    await user.click(screen.getByRole('button', { name: /Show more/ }));
+    // The failed batch keeps what the merchant already scrolled through.
+    const retry = await screen.findByRole('button', { name: 'Try again' });
+    expect(screen.getByText('Ramesh Traders')).toBeInTheDocument();
+    expect(screen.queryByText(/could not load/i)).not.toBeInTheDocument();
+    await user.click(retry);
+    expect(await screen.findByText('Sunita Stores')).toBeInTheDocument();
+    expect(screen.getByText('Ramesh Traders')).toBeInTheDocument();
+    expect(partyService.listParties).toHaveBeenLastCalledWith(
+      expect.objectContaining({ page: 2 }),
+      expect.anything()
+    );
+  });
+
+  /** BP-09: the Shop sort label existed but its menu omitted the selected late order. */
+  it('offers the real bill-age order in the Shop sort menu', async () => {
+    setTier('full');
+    partyService.listParties.mockResolvedValue(loaded([RAMESH]));
+    const user = userEvent.setup();
+    renderWithProviders(<PartyListPageContent kind="customer" book="shop" />);
+    await screen.findByText('Ramesh Traders');
+    await user.click(screen.getByRole('button', { name: 'Most late first' }));
+    const dialog = await screen.findByRole('dialog', { name: 'Sort by' });
+    expect(within(dialog).getByRole('radio', { name: 'Most late first' })).toHaveAttribute(
+      'aria-checked',
+      'true'
+    );
   });
 
   it('paints the skeleton first, then the first-use empty state', async () => {
@@ -203,7 +331,7 @@ describe('PartyListPageContent', () => {
     // R-E-4 — the only thing that connects a screenshot to a backend log line.
     // Labelled, not a bare id (QA B5): the merchant has to know it is the
     // thing to quote.
-    expect(screen.getByTestId('request-id')).toHaveTextContent('Reference req_7f3a91');
+    expect(screen.queryByTestId('request-id')).not.toBeInTheDocument(); // owner, 7 Oct 2026: no reference on errors
     expect(screen.getByRole('button', { name: 'Try again' })).toBeInTheDocument();
   });
 
@@ -226,7 +354,7 @@ describe('PartyListPageContent', () => {
     );
     // … and labelled "Reference" (QA B5): D2 put the id on screen but as a
     // bare UUID, because UbEmptyState never printed the label.
-    expect(screen.getByTestId('request-id')).toHaveTextContent('Reference req_abc');
+    expect(screen.queryByTestId('request-id')).not.toBeInTheDocument(); // owner, 7 Oct 2026: no reference on errors
   });
 
   it('offers to CLEAR the search on a filtered-empty result, and says so', async () => {
@@ -419,28 +547,27 @@ describe('the approved responsive rules, on the real screen', () => {
     renderWithProviders(<PartyListPageContent />);
     await screen.findByText('Ramesh Traders');
 
-    await user.click(screen.getByRole('button', { name: 'Overdue' }));
+    await inFilters(user, chooseRadio(user, 'Collection', 'Overdue'));
 
     await waitFor(() => expect(lastParams()?.collection).toBe('overdue'));
-    expect(screen.getByRole('button', { name: 'Overdue', pressed: true })).toBeInTheDocument();
+    expect(screen.getByText('Collection: Overdue')).toBeInTheDocument();
   });
 
-  it('clears a chip when the applied one is tapped again', async () => {
+  it('clears a filter from its pill', async () => {
     partyService.listParties.mockResolvedValue(loaded([RAMESH]));
     const user = userEvent.setup();
 
     renderWithProviders(<PartyListPageContent />);
     await screen.findByText('Ramesh Traders');
 
-    const chip = screen.getByRole('button', { name: 'Suppliers' });
-    await user.click(chip);
+    await inFilters(user, chooseRadio(user, 'Type', 'Suppliers'));
     await waitFor(() => expect(lastParams()?.type).toBe('supplier'));
 
-    await user.click(screen.getByRole('button', { name: 'Suppliers' }));
+    await user.click(screen.getByRole('button', { name: 'Remove Type: Suppliers' }));
     await waitFor(() => expect(lastParams()?.type).toBe(''));
   });
 
-  it('replaces rather than adds when a second chip on the same axis is tapped', async () => {
+  it('replaces rather than adds when a second balance is chosen', async () => {
     /**
      * `balance` is one value on the wire — a `ChoiceFilter`. A chip row that
      * looked multi-select would silently drop one of the two choices, which is
@@ -452,15 +579,15 @@ describe('the approved responsive rules, on the real screen', () => {
     renderWithProviders(<PartyListPageContent />);
     await screen.findByText('Ramesh Traders');
 
-    await user.click(screen.getByRole('button', { name: 'Owes me' }));
+    await pickBalance(user, 'You will get');
     await waitFor(() => expect(lastParams()?.balance).toBe('owes_me'));
 
-    await user.click(screen.getByRole('button', { name: 'I owe them' }));
+    await pickBalance(user, 'You will give');
     await waitFor(() => expect(lastParams()?.balance).toBe('i_owe'));
-    expect(screen.getByRole('button', { name: 'Owes me', pressed: false })).toBeInTheDocument();
+    expect(balanceShows('You will give')).toBeInTheDocument();
   });
 
-  it('filters the list from the receivable tile, and the chip says so', async () => {
+  it('filters the list from the receivable tile, and the Balance dropdown says so', async () => {
     /**
      * FRD §6 Alternate A, the collection round: the merchant reads ₹2,800 and
      * the next thing they want is the list of who it is made of. The chip
@@ -474,12 +601,17 @@ describe('the approved responsive rules, on the real screen', () => {
     renderWithProviders(<PartyListPageContent />);
     await screen.findByText('Ramesh Traders');
 
-    await user.click(screen.getByRole('button', { name: 'Show only who owes me' }));
+    await user.click(
+      screen.getByRole('button', { name: 'Show only people you will get money from' })
+    );
 
     await waitFor(() => expect(lastParams()?.balance).toBe('owes_me'));
-    expect(screen.getByRole('button', { name: 'Owes me', pressed: true })).toBeInTheDocument();
+    expect(balanceShows('You will get')).toBeInTheDocument();
     expect(
-      screen.getByRole('button', { name: 'Show only who owes me', pressed: true })
+      screen.getByRole('button', {
+        name: 'Show only people you will get money from',
+        pressed: true,
+      })
     ).toBeInTheDocument();
   });
 
@@ -490,17 +622,21 @@ describe('the approved responsive rules, on the real screen', () => {
     renderWithProviders(<PartyListPageContent />);
     await screen.findByText('Ramesh Traders');
 
-    await user.click(screen.getByRole('button', { name: 'Show only who I owe' }));
+    await user.click(
+      screen.getByRole('button', { name: 'Show only people you have to give money to' })
+    );
     await waitFor(() => expect(lastParams()?.balance).toBe('i_owe'));
 
-    await user.click(screen.getByRole('button', { name: 'Show only who I owe' }));
+    await user.click(
+      screen.getByRole('button', { name: 'Show only people you have to give money to' })
+    );
     await waitFor(() => expect(lastParams()?.balance).toBe(''));
   });
 
   it('announces the totals when a filter changes them', async () => {
     /**
      * PTY-02's NFR. A filter changes the rows visibly and the totals silently;
-     * without the live region a merchant using a screen reader taps "Owes me"
+     * without the live region a merchant using a screen reader taps "You will get"
      * and is told nothing about the number they tapped it to find out.
      */
     partyService.listParties.mockResolvedValue(loaded([RAMESH]));
@@ -528,7 +664,7 @@ describe('the approved responsive rules, on the real screen', () => {
     await screen.findByText('Ramesh Traders');
 
     partyService.listParties.mockResolvedValue(EMPTY);
-    await user.click(screen.getByRole('button', { name: 'Settled' }));
+    await pickBalance(user, 'Settled');
 
     /* And the words match the way it was reached: no search was typed, so it
        must not tell the merchant to clear one. */
@@ -565,7 +701,7 @@ describe('the approved responsive rules, on the real screen', () => {
 
     expect(screen.queryByRole('button', { name: /Clear filters/ })).not.toBeInTheDocument();
 
-    await user.click(screen.getByRole('button', { name: 'Overdue' }));
+    await inFilters(user, chooseRadio(user, 'Collection', 'Overdue'));
 
     expect(await screen.findByRole('button', { name: 'Clear filters (1)' })).toBeInTheDocument();
   });
@@ -586,12 +722,11 @@ describe('the approved responsive rules, on the real screen', () => {
 
     /* `UbSelect` is a Radix listbox since `ml-uikit` was vendored, not a native
        `<select>` — `selectOptions` finds nothing. */
-    await user.click(screen.getByRole('combobox', { name: 'Show' }));
-    await user.click(await screen.findByRole('option', { name: 'Archived' }));
+    await pickShow(user, 'Archived');
     await waitFor(() => expect(lastParams()?.status).toBe('archived'));
     expect(await screen.findByRole('button', { name: 'Clear filters (1)' })).toBeInTheDocument();
 
-    await user.click(screen.getByRole('button', { name: 'Owes me' }));
+    await pickBalance(user, 'You will get');
     await waitFor(() => expect(lastParams()?.balance).toBe('owes_me'));
 
     await user.click(screen.getByRole('button', { name: 'Clear filters (2)' }));
@@ -627,7 +762,9 @@ describe('the yearly clean-up', () => {
    * selection" — the one thing a merchant can DO with a selection, and the
    * reason the bar exists at all, was missing.
    */
-  const signIn = (permissions: readonly PermissionCode[]): void => {
+  /* `role` defaults to the owner: bulk archive is the owner's or an admin's
+     since 12 Oct 2026, whatever codenames another role holds. */
+  const signIn = (permissions: readonly PermissionCode[], role: string = 'owner'): void => {
     store.dispatch(
       sessionLoaded({
         user: {
@@ -639,7 +776,7 @@ describe('the yearly clean-up', () => {
           mustChangePassword: false,
           passwordExpiresAt: null,
         },
-        activeTenant: { id: 't1', name: 'Kumar Stores', timezone: 'Asia/Kolkata' },
+        activeTenant: { id: 't1', name: 'Kumar Stores', timezone: 'Asia/Kolkata', role },
         tenants: [{ id: 't1', name: 'Kumar Stores', timezone: 'Asia/Kolkata' }],
         permissions: [...permissions],
         enabledModules: [],
@@ -679,6 +816,23 @@ describe('the yearly clean-up', () => {
     expect(within(bar).queryByRole('button', { name: 'Archive' })).not.toBeInTheDocument();
   });
 
+  it('does not offer it to staff, even holding the delete codename', async () => {
+    /** Prevents a bulk Archive the server refuses (`PartyManagerActions`). The
+     *  selection bar is still there — Clear selection proves it opened. */
+    signIn(['parties.party.read', 'parties.party.delete'], 'staff');
+    const user = userEvent.setup();
+    const bar = await selectFirstRow(user);
+    expect(within(bar).getByRole('button', { name: 'Clear selection' })).toBeInTheDocument();
+    expect(within(bar).queryByRole('button', { name: 'Archive' })).not.toBeInTheDocument();
+  });
+
+  it('offers it to an admin', async () => {
+    signIn(['parties.party.read', 'parties.party.delete'], 'admin');
+    const user = userEvent.setup();
+    const bar = await selectFirstRow(user);
+    expect(within(bar).getByRole('button', { name: 'Archive' })).toBeInTheDocument();
+  });
+
   it('says up front that anyone with a balance will be skipped', async () => {
     /**
      * Before the press, not after. A merchant who knows it reads the result as
@@ -689,7 +843,9 @@ describe('the yearly clean-up', () => {
     const bar = await selectFirstRow(user);
     await user.click(within(bar).getByRole('button', { name: 'Archive' }));
 
-    expect(await screen.findByText('Anyone with a balance will be skipped.')).toBeInTheDocument();
+    expect(
+      await screen.findByText('Anyone with a balance or open records will be skipped.')
+    ).toBeInTheDocument();
   });
 
   it('reports who was skipped and what they owe, instead of closing', async () => {
@@ -730,8 +886,7 @@ describe('the yearly clean-up', () => {
     renderWithProviders(<PartyListPageContent />);
     await screen.findByText('Ramesh Traders');
 
-    await user.click(screen.getByRole('combobox', { name: 'Show' }));
-    await user.click(await screen.findByRole('option', { name: 'Archived' }));
+    await pickShow(user, 'Archived');
     await user.click(await screen.findByRole('checkbox', { name: 'Select Ramesh Traders' }));
 
     const bar = await screen.findByTestId('ub-grid-toolbar');
@@ -759,7 +914,7 @@ describe('tags on the party list', () => {
           mustChangePassword: false,
           passwordExpiresAt: null,
         },
-        activeTenant: { id: 't1', name: 'Kumar Stores', timezone: 'Asia/Kolkata' },
+        activeTenant: { id: 't1', name: 'Kumar Stores', timezone: 'Asia/Kolkata', role: 'owner' },
         tenants: [{ id: 't1', name: 'Kumar Stores', timezone: 'Asia/Kolkata' }],
         permissions: [...permissions],
         enabledModules: [],
@@ -838,7 +993,9 @@ describe('tags on the party list', () => {
     renderWithProviders(<PartyListPageContent />);
     await screen.findByText('Ramesh Traders');
 
-    expect(screen.queryByRole('combobox', { name: 'Tag' })).not.toBeInTheDocument();
+    await userEvent.click(screen.getByTestId('filters-button'));
+    expect(screen.queryByRole('group', { name: 'Tag' })).not.toBeInTheDocument();
+    expect(screen.queryByText('Tag')).not.toBeInTheDocument();
   });
 
   it('sends the chosen tag to the server and counts it as a filter', async () => {
@@ -862,8 +1019,9 @@ describe('tags on the party list', () => {
     renderWithProviders(<PartyListPageContent />);
     await screen.findByText('Ramesh Traders');
 
-    await user.click(await screen.findByRole('combobox', { name: 'Tag' }));
-    await user.click(await screen.findByText('Camp Area'));
+    await inFilters(user, async () => {
+      await user.click(await screen.findByRole('checkbox', { name: 'Camp Area (34)' }));
+    });
 
     await waitFor(() => {
       expect(partyService.listParties).toHaveBeenLastCalledWith(
@@ -877,7 +1035,7 @@ describe('tags on the party list', () => {
   it('tags a selection, and reports who was skipped rather than only how many', async () => {
     /**
      * FR-8. The dialog becomes the report for the same reason PTY-04's bulk
-     * archive does: "1 party" with no list sends a merchant back through forty
+     * archive does: "1 contact" with no list sends a merchant back through forty
      * rows to find the one that did not take.
      */
     setTier('full');
@@ -905,7 +1063,7 @@ describe('tags on the party list', () => {
     await user.click(await screen.findByText('Route 2'));
     await user.click(within(dialog).getByRole('button', { name: 'Apply' }));
 
-    expect(await screen.findByText('Tagged 1 party')).toBeInTheDocument();
+    expect(await screen.findByText('Tagged 1 contact')).toBeInTheDocument();
     expect(screen.getByText('already carries 10 tags')).toBeInTheDocument();
   });
 
@@ -967,7 +1125,7 @@ describe('tags on the party list', () => {
     renderWithProviders(<PartyListPageContent />);
     await screen.findByText('Ramesh Traders');
 
-    expect(await screen.findByRole('button', { name: 'Remove tag Camp Area' })).toBeInTheDocument();
+    expect(await screen.findByText('Tag: Camp Area')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /Clear filters/ })).toBeInTheDocument();
   });
 
@@ -1025,8 +1183,9 @@ describe('tags on the party list', () => {
     renderWithProviders(<PartyListPageContent />);
     await screen.findByText('Ramesh Traders');
 
-    await user.click(await screen.findByRole('combobox', { name: 'Tag' }));
-    await user.click(await screen.findByRole('option', { name: 'Camp Area' }));
+    await inFilters(user, async () => {
+      await user.click(await screen.findByRole('checkbox', { name: 'Camp Area (34)' }));
+    });
 
     await waitFor(() => {
       expect(mockReplace).toHaveBeenLastCalledWith('/parties?tag=Camp+Area', { scroll: false });
@@ -1101,7 +1260,7 @@ describe('tags on the party list', () => {
     await user.click(await screen.findByText('Route 2'));
     await user.click(within(dialog).getByRole('button', { name: 'Apply' }));
 
-    expect(await screen.findByText('Tagged 1 party')).toBeInTheDocument();
+    expect(await screen.findByText('Tagged 1 contact')).toBeInTheDocument();
     expect(screen.getByText('Sunita Stores already carries 10 tags')).toBeInTheDocument();
   });
 });
@@ -1162,7 +1321,10 @@ describe('the over-limit chip', () => {
     renderWithProviders(<PartyListPageContent />);
     await screen.findByText('Ramesh Traders');
 
-    expect(await screen.findByRole('button', { name: 'Over limit (7)' })).toBeInTheDocument();
+    await userEvent.click(screen.getByTestId('filters-button'));
+    const credit = await screen.findByRole('radiogroup', { name: 'Credit' });
+    expect(within(credit).getByRole('radio', { name: /Over limit/ })).toBeInTheDocument();
+    expect(within(credit).getByText('7')).toBeInTheDocument();
   });
 
   it('sends the band to the server and counts as a filter', async () => {
@@ -1179,7 +1341,10 @@ describe('the over-limit chip', () => {
     renderWithProviders(<PartyListPageContent />);
     await screen.findByText('Ramesh Traders');
 
-    await user.click(await screen.findByRole('button', { name: 'Over limit (7)' }));
+    await inFilters(user, async () => {
+      const credit = await screen.findByRole('radiogroup', { name: 'Credit' });
+      await user.click(within(credit).getByRole('radio', { name: /Over limit/ }));
+    });
 
     await waitFor(() => {
       expect(partyService.listParties).toHaveBeenLastCalledWith(
@@ -1213,12 +1378,15 @@ describe('the over-limit chip', () => {
     renderWithProviders(<PartyListPageContent />);
     await screen.findByText('Ramesh Traders');
 
-    const near = await screen.findByRole('button', { name: 'Near limit' });
-    expect(near).toHaveAttribute('aria-pressed', 'true');
-    expect(screen.getByRole('button', { name: 'Within limit' })).toBeInTheDocument();
-    // Without a count there is nothing to put in the brackets, and "(0)" is a
-    // worse answer than none: it reads as a tally of the list on screen.
-    expect(screen.getByRole('button', { name: 'Over limit' })).toBeInTheDocument();
+    expect(await screen.findByText('Credit: Near limit')).toBeInTheDocument();
+    await userEvent.click(screen.getByTestId('filters-button'));
+    const credit = await screen.findByRole('radiogroup', { name: 'Credit' });
+    expect(within(credit).getByRole('radio', { name: 'Near limit' })).toBeChecked();
+    expect(within(credit).getByRole('radio', { name: 'Within limit' })).toBeInTheDocument();
+    // Without a count there is nothing to put beside it, and "0" is a worse
+    // answer than none: it reads as a tally of the list on screen.
+    expect(within(credit).getByRole('radio', { name: 'Over limit' })).toBeInTheDocument();
+    expect(within(credit).queryByText('0')).not.toBeInTheDocument();
   });
 
   it('applies a credit band that arrived in the URL', async () => {
@@ -1295,7 +1463,7 @@ describe('PTY-02 §9 — the ten states of the party list', () => {
           mustChangePassword: false,
           passwordExpiresAt: null,
         },
-        activeTenant: { id: 't1', name: 'Kumar Stores', timezone: 'Asia/Kolkata' },
+        activeTenant: { id: 't1', name: 'Kumar Stores', timezone: 'Asia/Kolkata', role: 'owner' },
         tenants: [{ id: 't1', name: 'Kumar Stores', timezone: 'Asia/Kolkata' }],
         permissions: [...permissions],
         enabledModules: [],
@@ -1353,7 +1521,7 @@ describe('PTY-02 §9 — the ten states of the party list', () => {
      * Prevents: a filter change that looked like nothing happened. The slice
      * already kept the old rows during a refresh (`refreshing`), but nothing on
      * screen said a request was in flight — on a 3G phone a merchant tapped
-     * "Owes me", saw the same list for two seconds, and tapped it again, which
+     * "You will get", saw the same list for two seconds, and tapped it again, which
      * CLEARED the filter they had just applied.
      */
     partyService.listParties.mockResolvedValue(loaded([RAMESH]));
@@ -1364,7 +1532,7 @@ describe('PTY-02 §9 — the ten states of the party list', () => {
 
     const inFlight = deferred<ReturnType<typeof loaded>>();
     partyService.listParties.mockReturnValue(inFlight.promise);
-    await user.click(screen.getByRole('button', { name: 'Owes me' }));
+    await pickBalance(user, 'You will get');
 
     expect(await screen.findByTestId('ub-grid-busy')).toBeInTheDocument();
     const row = screen.getByText('Ramesh Traders');
@@ -1419,7 +1587,7 @@ describe('PTY-02 §9 — the ten states of the party list', () => {
     expect(await screen.findByText('No customers yet')).toBeInTheDocument();
     expect(screen.queryByTestId('ub-stat-grid')).not.toBeInTheDocument();
     // Header action + the empty state's own primary action.
-    expect(screen.getAllByRole('button', { name: 'Add party' })).toHaveLength(2);
+    expect(screen.getAllByRole('button', { name: 'Add contact' })).toHaveLength(2);
     expect(screen.queryByRole('button', { name: /import/i })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /contacts/i })).not.toBeInTheDocument();
   });
@@ -1467,8 +1635,7 @@ describe('PTY-02 §9 — the ten states of the party list', () => {
     await screen.findByText('Ramesh Traders');
 
     partyService.listParties.mockResolvedValue(EMPTY);
-    await user.click(screen.getByRole('combobox', { name: 'Show' }));
-    await user.click(await screen.findByRole('option', { name: 'Archived' }));
+    await pickShow(user, 'Archived');
 
     expect(await screen.findByText('No archived customers')).toBeInTheDocument();
     expect(
@@ -1477,7 +1644,7 @@ describe('PTY-02 §9 — the ten states of the party list', () => {
     expect(screen.queryByText('No customers yet')).not.toBeInTheDocument();
     expect(screen.queryByText('No customers match these filters')).not.toBeInTheDocument();
     // Only the header's Add party remains; the empty state offers none.
-    expect(screen.getAllByRole('button', { name: 'Add party' })).toHaveLength(1);
+    expect(screen.getAllByRole('button', { name: 'Add contact' })).toHaveLength(1);
     expect(screen.getByRole('button', { name: 'Clear filters' })).toBeInTheDocument();
   });
 
@@ -1520,7 +1687,7 @@ describe('PTY-02 §9 — the ten states of the party list', () => {
     expect(await screen.findByText('We could not load your customers')).toBeInTheDocument();
     // Labelled, not a bare id (QA B5): the merchant has to know it is the
     // thing to quote.
-    expect(screen.getByTestId('request-id')).toHaveTextContent('Reference req_7f3a91');
+    expect(screen.queryByTestId('request-id')).not.toBeInTheDocument(); // owner, 7 Oct 2026: no reference on errors
     // No figures without an answer: not "You will get ₹0.00" over a failure.
     expect(screen.queryByTestId('ub-stat-grid')).not.toBeInTheDocument();
 
@@ -1577,7 +1744,7 @@ describe('PTY-02 §9 — the ten states of the party list', () => {
     await screen.findByText('Ramesh Traders');
 
     partyService.listParties.mockRejectedValue(API_ERROR);
-    await user.click(screen.getByRole('button', { name: 'Settled' }));
+    await pickBalance(user, 'Settled');
 
     expect(await screen.findByText('We could not load your customers')).toBeInTheDocument();
     expect(screen.queryByText('Ramesh Traders')).not.toBeInTheDocument();
@@ -1613,7 +1780,7 @@ describe('PTY-02 §9 — the ten states of the party list', () => {
 
     expect(await screen.findByText('Ramesh Traders')).toBeInTheDocument();
     expect(screen.getByText('Sunita Stores')).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: 'Add party' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Add contact' })).not.toBeInTheDocument();
     // Reading is what the role is for: the row opens the khata.
     expect(screen.getByRole('button', { name: 'Open Ramesh Traders' })).toBeInTheDocument();
 
@@ -1720,7 +1887,7 @@ describe('PTY-02 §9 — the ten states of the party list', () => {
       ],
       skipped: [],
     });
-    expect(await screen.findByText('Tagged 2 parties')).toBeInTheDocument();
+    expect(await screen.findByText('Tagged 2 contacts')).toBeInTheDocument();
   });
 
   it('§9 Completed — the result says how many were tagged and offers Undo', async () => {
@@ -1742,7 +1909,7 @@ describe('PTY-02 §9 — the ten states of the party list', () => {
 
     await user.click(within(dialog).getByRole('button', { name: 'Apply' }));
 
-    expect(await screen.findByText('Tagged 2 parties')).toBeInTheDocument();
+    expect(await screen.findByText('Tagged 2 contacts')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Undo' })).toBeInTheDocument();
   });
 
@@ -1763,7 +1930,7 @@ describe('PTY-02 §9 — the ten states of the party list', () => {
 
     await user.click(within(dialog).getByRole('button', { name: 'Apply' }));
 
-    expect(await screen.findByText('Tagged 1 party')).toBeInTheDocument();
+    expect(await screen.findByText('Tagged 1 contact')).toBeInTheDocument();
     expect(screen.getByText('Sunita Stores already carries 10 tags')).toBeInTheDocument();
   });
 });
@@ -1792,8 +1959,7 @@ describe('the list comes back on its default view (UAT D7)', () => {
     const user = userEvent.setup();
     const first = renderWithProviders(<PartyListPageContent />);
     await screen.findByText('Ramesh Traders');
-    await user.click(screen.getByRole('combobox', { name: 'Show' }));
-    await user.click(await screen.findByRole('option', { name: 'Archived' }));
+    await pickShow(user, 'Archived');
     await waitFor(() => expect(lastParams()?.status).toBe('archived'));
     first.unmount();
 
@@ -1815,8 +1981,7 @@ describe('the list comes back on its default view (UAT D7)', () => {
     const user = userEvent.setup();
     const first = renderWithProviders(<PartyListPageContent />);
     await screen.findByText('Ramesh Traders');
-    await user.click(screen.getByRole('combobox', { name: 'Show' }));
-    await user.click(await screen.findByRole('option', { name: 'Archived' }));
+    await pickShow(user, 'Archived');
     await waitFor(() => expect(lastParams()?.status).toBe('archived'));
     first.unmount();
 
@@ -1911,5 +2076,172 @@ describe('sorting on a phone (UAT D5)', () => {
     await screen.findAllByText('Ramesh Traders');
 
     expect(screen.queryByRole('button', { name: 'Sort' })).not.toBeInTheDocument();
+  });
+});
+
+/**
+ * docs/platform/14 step 3b — the owner's "not one tab for everything, like
+ * Zoho": the Shop's Customers and Suppliers are this list with its type FIXED.
+ * The defects this guards: a Suppliers page that sends no `type` (and shows
+ * the whole book), a type chip that lets the merchant un-fix it, a Clear that
+ * quietly widens Suppliers back to everyone, and copy that calls a supplier a
+ * customer.
+ */
+describe('one book: Suppliers', () => {
+  const lastParams = () =>
+    partyService.listParties.mock.calls.at(-1)?.[0] as Record<string, unknown>;
+
+  beforeEach(() => {
+    store.dispatch(resetPartyList());
+    store.dispatch(resetPartyTags());
+    jest.clearAllMocks();
+    mockSearch = '';
+    tagService.listTags.mockResolvedValue([]);
+    setTier('cards');
+  });
+
+  it('leads the collapsed Suppliers summary with what must be paid', async () => {
+    window.localStorage.removeItem('ub.statSummary.parties');
+    partyService.listParties.mockResolvedValue(
+      loaded([{ ...RAMESH, isCustomer: false, isSupplier: true, balance: '-2688.00' }])
+    );
+    renderWithProviders(<PartyListPageContent kind="supplier" book="shop" />);
+    await screen.findByText('Ramesh Traders');
+    expect(screen.getByRole('searchbox', { name: 'Search suppliers' })).toBeInTheDocument();
+    expect(
+      screen.getByRole('list', { name: 'Suppliers, what you will pay, and their latest activity' })
+    ).toBeInTheDocument();
+    const summary = screen.getByTestId('count-line');
+    expect(summary).toHaveTextContent('To pay');
+    expect(summary).toHaveTextContent('₹2,688.00');
+    expect(summary).not.toHaveTextContent('customers');
+    expect(summary).toHaveTextContent('supplier');
+    expect(screen.queryByRole('button', { name: 'Details' })).not.toBeInTheDocument();
+  });
+
+  it('keeps supplier names in the loaded footer and failure state', async () => {
+    /** Visual QA found the reused register saying customers on Supplier errors and pagination. */
+    partyService.listParties.mockResolvedValue(loaded([{ ...RAMESH, isSupplier: true, balance: '-2688.00' }]));
+    renderWithProviders(<PartyListPageContent kind="supplier" book="shop" />);
+    expect(await screen.findByText('Showing 1 of 1 suppliers')).toBeInTheDocument();
+  });
+
+  it('names suppliers in a failed register', async () => {
+    /** Supplier load failures must identify the correct business role. */
+    partyService.listParties.mockRejectedValue({code:'server_error',message:'Test failure',status:500});
+    renderWithProviders(<PartyListPageContent kind="supplier" book="shop" />);
+    expect(await screen.findByText('We could not load your suppliers')).toBeInTheDocument();
+  });
+
+  it('names suppliers, not customers, in the select-all box (SH-014)', async () => {
+    // The final supplier check found Suppliers' bulk box still announced as
+    // "Select every customer on this page".
+    setTier('full');
+    partyService.listParties.mockResolvedValue(
+      loaded([{ ...RAMESH, isCustomer: false, isSupplier: true }])
+    );
+    renderWithProviders(<PartyListPageContent kind="supplier" />);
+    await screen.findByRole('table');
+    expect(
+      screen.getByRole('checkbox', { name: 'Select every supplier on this page' })
+    ).toBeInTheDocument();
+    expect(screen.queryByRole('checkbox', { name: /every customer/ })).not.toBeInTheDocument();
+  });
+
+  it('asks only for suppliers, names the page, and offers no type chip', async () => {
+    partyService.listParties.mockResolvedValue(EMPTY);
+    renderWithProviders(<PartyListPageContent kind="supplier" />);
+
+    expect(await screen.findByText('No suppliers yet')).toBeInTheDocument();
+    expect(lastParams().type).toBe('supplier');
+    expect(screen.getByRole('heading', { name: 'Suppliers' })).toBeInTheDocument();
+    expect(screen.queryByRole('group', { name: 'Type' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Suppliers', pressed: false })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Customers', pressed: false })).toBeNull();
+    // The fixed type is the page, not a filter the merchant applied.
+    expect(screen.queryByRole('button', { name: 'Clear filters' })).not.toBeInTheDocument();
+  });
+
+  it('keeps the type when the merchant clears what they applied', async () => {
+    partyService.listParties.mockResolvedValue(loaded([RAMESH]));
+    const user = userEvent.setup();
+    renderWithProviders(<PartyListPageContent kind="supplier" />);
+    await screen.findAllByText('Ramesh Traders');
+
+    partyService.listParties.mockResolvedValue(EMPTY);
+    await pickBalance(user, 'You will get');
+    await waitFor(() => expect(lastParams().balance).toBe('owes_me'));
+    expect(await screen.findByText('No suppliers match these filters')).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'Clear filters' }));
+    await waitFor(() => expect(lastParams().balance ?? '').toBe(''));
+    expect(lastParams().type).toBe('supplier');
+  });
+
+  // ── DEC-019 — the Shop's lists read the Shop's money ──────────────────────
+  it('the Shop’s Customers ask for the Shop’s book and say "To collect"', async () => {
+    // A list whose request named no book would show the Udhaar book's figure on
+    // a Shop screen — exactly what DEC-019 forbids. The NETWORK is asserted, not
+    // the controls (the PTY-02 lesson: a chip that lights is not a chip that filters).
+    partyService.listParties.mockResolvedValue(loaded([RAMESH]));
+    renderWithProviders(<PartyListPageContent kind="customer" book="shop" />);
+    await screen.findByText('Ramesh Traders');
+    expect(lastParams().book).toBe('shop');
+    expect(screen.getAllByText('To collect').length).toBeGreaterThan(0);
+    expect(screen.queryByText('You will get')).not.toBeInTheDocument();
+  });
+
+  it('the Udhaar book’s list asks for its own book, even after the Shop’s', async () => {
+    // The list slice is shared: a `shop` left by the Customers tab must not leak
+    // into the Udhaar book, or it would show bills under You gave / You got.
+    partyService.listParties.mockResolvedValue(loaded([RAMESH]));
+    const { unmount } = renderWithProviders(<PartyListPageContent kind="customer" book="shop" />);
+    await screen.findByText('Ramesh Traders');
+    unmount();
+    renderWithProviders(<PartyListPageContent book="main" />);
+    await waitFor(() => expect(lastParams().book).toBe('main'));
+    // Its people are everyone the merchant gave to or got from, not "Customers" —
+    // those are the Shop's tab (the live look found this page titled Customers).
+    expect(screen.getByRole('heading', { name: 'Money book' })).toBeInTheDocument();
+  });
+
+  // ── The approved list designs (owner, 12 Oct 2026) ─────────────────────────
+  it('an empty book is one sentence and one button: no search, filters or floating Add', async () => {
+    // Owner: "I don't want that type of screen in case of empty" — a search
+    // box, Show/Balance/Filters and a dashed card over nobody.
+    setTier('cards');
+    partyService.listParties.mockResolvedValue({
+      ...EMPTY,
+      meta: { ...EMPTY.meta, hasAny: false },
+    });
+    renderWithProviders(<PartyListPageContent kind="customer" />);
+    expect(await screen.findByText('No customers yet')).toBeInTheDocument();
+    expect(screen.queryByRole('textbox', { name: /Search/ })).not.toBeInTheDocument();
+    expect(screen.queryByTestId('filters-button')).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /^Show:/ })).not.toBeInTheDocument();
+    // The one Add is the empty state's; no header button or floating + beside it.
+    expect(screen.getAllByRole('button', { name: /^Add/ })).toHaveLength(1);
+  });
+
+  it('a filter that found nothing keeps the controls (the server says customers exist)', async () => {
+    setTier('cards');
+    partyService.listParties.mockResolvedValue({
+      ...EMPTY,
+      meta: { ...EMPTY.meta, hasAny: true },
+    });
+    renderWithProviders(<PartyListPageContent kind="customer" />);
+    expect(await screen.findByTestId('filters-button')).toBeInTheDocument();
+  });
+
+  it('on a phone, Show and Balance are inside the one Filters button', async () => {
+    setTier('cards');
+    partyService.listParties.mockResolvedValue(loaded([RAMESH]));
+    const user = userEvent.setup();
+    renderWithProviders(<PartyListPageContent />);
+    await screen.findByText('Ramesh Traders');
+    expect(screen.queryByRole('button', { name: /^Show:/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /^Balance:/ })).not.toBeInTheDocument();
+    await pickShow(user, 'Archived');
+    await waitFor(() => expect(lastParams()?.status).toBe('archived'));
   });
 });

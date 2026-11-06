@@ -1,8 +1,13 @@
 'use client';
 
-import { memo, type ReactNode } from 'react';
+import { memo, useRef, type FormEvent, type ReactNode } from 'react';
 
-import { FormProvider, type FieldValues, type UseFormReturn } from 'react-hook-form';
+import {
+  FormProvider,
+  type FieldValues,
+  type SubmitErrorHandler,
+  type UseFormReturn,
+} from 'react-hook-form';
 
 import { UbFieldError } from 'src/design-system/UbFieldError';
 import { cn } from 'src/utils/cn';
@@ -21,6 +26,12 @@ import { cn } from 'src/utils/cn';
 export interface UbFormProps<T extends FieldValues> {
   readonly form: UseFormReturn<T>;
   readonly onSubmit: (values: T) => void | Promise<void>;
+  /**
+   * Called with the field errors when the resolver refuses a submit. A form
+   * split across tabs uses it to open the tab the first error is on, so the
+   * message is never on a panel the user is not looking at (F02).
+   */
+  readonly onInvalid?: SubmitErrorHandler<T>;
   readonly children: ReactNode;
   /** Form-level messages the server returned against no known field. */
   readonly formErrors?: readonly string[];
@@ -31,19 +42,46 @@ export interface UbFormProps<T extends FieldValues> {
 function UbFormBase<T extends FieldValues>({
   form,
   onSubmit,
+  onInvalid,
   children,
   formErrors,
   className,
   id,
 }: Readonly<UbFormProps<T>>) {
+  /* 05 §4 — one submit at a time. `handleSubmit` awaits the resolver before it
+     calls `onSubmit`, so the caller's `busy` cannot be painted until validation
+     has finished: two taps on Save, or a tap and an Enter, both got through that
+     window and posted twice. A ref, not state, because both events arrive
+     before React re-renders. The browser's own submit is still prevented on the
+     dropped one, or it would fall back to a native POST. */
+  const inFlight = useRef(false);
+  const submit = (event: FormEvent<HTMLFormElement>) => {
+    // A child form rendered through a portal must never submit its opening document.
+    event.stopPropagation();
+    if (inFlight.current) {
+      event.preventDefault();
+      return;
+    }
+    inFlight.current = true;
+    const run = form.handleSubmit(onSubmit, onInvalid);
+    void run(event).finally(() => {
+      inFlight.current = false;
+    });
+  };
   return (
     <FormProvider {...form}>
       <form
         id={id}
+        /* Found in QA (5 Oct 2026): a sign-in submitted before React had
+           hydrated fell back to the browser's default GET and put the email and
+           PASSWORD in the address bar, history and server log. POST keeps a
+           pre-hydration submit's fields in the body. */
+        method="post"
         noValidate
-        onSubmit={form.handleSubmit(onSubmit)}
+        onSubmit={submit}
         /* BrandHub: 24 px between fields = the 20 px reserved message row
            under each field + this 4 px. */
+        data-ub-form=""
         className={cn('flex w-full flex-col gap-1', className)}
       >
         {formErrors && formErrors.length > 0 && (

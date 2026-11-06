@@ -65,6 +65,13 @@ REMINDER_PLACEHOLDERS: tuple[str, ...] = (
     "upi_link",
 )
 REMINDER_REQUIRED_PLACEHOLDER = "amount"
+#: D15: the messages a kind's own features add, and the words each may carry.
+#: Blank means the standard words. The payment reminder is not here: it is
+#: `ledger.reminder_templates`, which the reminder renderer already reads.
+KIND_MESSAGES: dict[str, tuple[str, ...]] = {
+    "order_ready": ("name", "what", "number", "shop"),
+    "todays_rate": ("shop", "rates"),
+}
 REMINDER_MAX_CHARS = 500
 REMINDER_LOCALES: tuple[str, ...] = ("en", "hi")
 
@@ -207,6 +214,31 @@ def _reminder_templates(value: Any, _tenant: Any) -> dict:
     return cleaned
 
 
+def _kind_messages(value: Any, _tenant: Any) -> dict:
+    """`{message: {"en": str, "hi": str}}`; an unknown message or word is refused."""
+    cleaned: dict[str, dict[str, str]] = {}
+    errors: list[str] = []
+    for key, texts in _object(value).items():
+        if key not in KIND_MESSAGES:
+            raise SettingError([f"Unknown message {key!r}."])
+        texts = _object(texts)
+        row: dict[str, str] = {}
+        for locale in REMINDER_LOCALES:
+            text = texts.get(locale, "")
+            if not isinstance(text, str):
+                raise SettingError(["Enter the message as text."])
+            if len(text) > REMINDER_MAX_CHARS:
+                errors.append(f"Keep the message under {REMINDER_MAX_CHARS} characters.")
+            for name in _PLACEHOLDER_RE.findall(text):
+                if name.strip() not in KIND_MESSAGES[key]:
+                    errors.append(f"Unknown placeholder {{{name.strip()}}}")
+            row[locale] = text.strip()
+        cleaned[key] = row
+    if errors:
+        raise SettingError(errors)
+    return cleaned
+
+
 def _party_labels(value: Any, _tenant: Any) -> dict:
     raw = _object(value)
     cleaned: dict[str, str] = {}
@@ -226,6 +258,35 @@ def _number_format(value: Any, _tenant: Any) -> dict:
 
 
 # ── The catalogue ────────────────────────────────────────────────────────────
+
+
+def _jewel(value: Any, _tenant: Any) -> dict:
+    """A jeweller's defaults: blank means none; the PAN figure is always set."""
+    from decimal import Decimal, InvalidOperation
+
+    obj = _object(value)
+    if obj.get("making_type", "pct") not in ("pct", "per_g"):
+        raise SettingError(["Choose percent or rupees per gram."])
+    out: dict[str, str] = {"making_type": obj.get("making_type", "pct")}
+    for field, ceiling in (
+        ("making_value", None if obj.get("making_type") == "per_g" else Decimal(100)),
+        ("wastage_pct", Decimal(100)),
+        ("wastage_limit_pct", Decimal(100)),
+        ("pan_limit", None),
+    ):
+        raw = str(obj.get(field) or "").replace(",", "").strip()
+        if raw:
+            try:
+                number = Decimal(raw)
+            except InvalidOperation:
+                raise SettingError(["Enter a number."]) from None
+            if not number.is_finite() or number < 0 or (ceiling is not None and number > ceiling):
+                raise SettingError(["Enter a percentage up to 100."] if ceiling else ["Enter an amount above zero."])
+            raw = f"{number:.2f}"
+        out[field] = raw
+    if not out["pan_limit"] or Decimal(out["pan_limit"]) <= 0:
+        raise SettingError(["Enter an amount above zero."])
+    return out
 
 
 def _preset(business_type: str) -> presets.Preset:
@@ -294,6 +355,38 @@ SETTINGS: dict[str, SettingSpec] = {
             lambda bt: {"value": False},
             _bool_value,
         ),
+        # R-DEC-64 — "Wholesale of what?": the business is ONE kind, and this
+        # says it sells that kind wholesale. Its defaults join wholesale's
+        # preset to the kind's (`presets.combined`).
+        SettingSpec("shop.messages", SECTION_GENERAL, lambda bt: {}, _kind_messages),
+        SettingSpec(
+            "shop.wholesale",
+            SECTION_GENERAL,
+            lambda bt: {"value": bt in presets.WHOLESALE_TYPES},
+            _bool_value,
+        ),
+        # Design: a jeweller's "making default · wastage limit · PAN limit".
+        SettingSpec(
+            "shop.jewel",
+            SECTION_GENERAL,
+            lambda bt: {
+                "making_type": "pct",
+                "making_value": "",
+                "wastage_pct": "",
+                "wastage_limit_pct": "",
+                "pan_limit": "200000.00",
+            },
+            _jewel,
+        ),
+        *(
+            SettingSpec(
+                f"shop.features.{key}",
+                SECTION_GENERAL,
+                (lambda k: lambda bt: {"value": k in _preset(bt).features})(key),
+                _bool_value,
+            )
+            for key in (*presets.SIGNUP_FEATURES, "orders", "part_numbers", "godowns", "addons", "serials", "rates", "jewellery")
+        ),
         SettingSpec(
             "parties.labels",
             SECTION_PARTIES,
@@ -307,6 +400,95 @@ SETTINGS: dict[str, SettingSpec] = {
 }
 
 NUMBERING_KEY = "numbering"
+
+
+# ── A10 ── `register_setting_spec` (R43, contracts §1.9) ─────────────────────
+#
+# `SETTINGS` above is core's catalogue and stays a literal. A module registers
+# its `<module>.*` keys from its own `AppConfig.ready()`; its section is its
+# module code, its validators are pure, and its keys exist for a tenant only
+# while that module is effectively on — `specs_for(tenant)` is the catalogue a
+# settings read shows and `spec_for(tenant, key)` the one a write validates
+# against, so a switched-off module's key is neither shown nor writable.
+#
+# A module may claim only its own namespace: not a core key, not a core
+# section, and not a prefix any core key already uses (`ledger.*` is core's).
+# Idempotent for an equal spec; a different spec under a used key raises.
+
+_MODULE_KEY = re.compile(r"^(?P<module>[a-z][a-z0-9_]*)\.[a-z0-9][a-z0-9_.]*$")
+_MODULE_SETTINGS: dict[str, SettingSpec] = {}
+_MODULE_SETTINGS_BASELINE: dict[str, SettingSpec] | None = None
+
+
+def _core_prefixes() -> frozenset[str]:
+    return frozenset(key.split(".", 1)[0] for key in SETTINGS) | {NUMBERING_KEY}
+
+
+def module_of(key: str) -> str | None:
+    """The module a registered key belongs to; `None` for a core key."""
+    if key in _MODULE_SETTINGS:
+        return key.split(".", 1)[0]
+    return None
+
+
+def register_setting_spec(spec: SettingSpec) -> None:
+    from django.core.exceptions import ImproperlyConfigured
+
+    match = _MODULE_KEY.match(spec.key)
+    if match is None:
+        raise ImproperlyConfigured(f"setting {spec.key!r} must be '<module>.<name>' (R43)")
+    module = match.group("module")
+    if module in _core_prefixes() or spec.key in SETTINGS:
+        raise ImproperlyConfigured(f"setting {spec.key!r} is in a core namespace")
+    if spec.section != module:
+        raise ImproperlyConfigured(
+            f"setting {spec.key!r} must be in its module's own section {module!r}"
+        )
+    existing = _MODULE_SETTINGS.get(spec.key)
+    if existing is not None and existing != spec:
+        raise ImproperlyConfigured(f"setting {spec.key!r} is registered twice")
+    _MODULE_SETTINGS[spec.key] = spec
+
+
+def _enabled_modules(tenant: Any) -> frozenset[str]:
+    from apps.platform_app.services.entitlements import effective_modules
+
+    return effective_modules(tenant)
+
+
+def specs_for(tenant: Any) -> dict[str, SettingSpec]:
+    """Core's catalogue plus the keys of every module this tenant has on."""
+    if not _MODULE_SETTINGS:
+        return dict(SETTINGS)
+    modules = _enabled_modules(tenant)
+    return {
+        **SETTINGS,
+        **{
+            key: spec
+            for key, spec in _MODULE_SETTINGS.items()
+            if key.split(".", 1)[0] in modules
+        },
+    }
+
+
+def spec_for(tenant: Any, key: str) -> SettingSpec | None:
+    """The spec a write of `key` validates against, or `None` if it is not a
+    setting for THIS tenant (unknown, or its module is off)."""
+    if key in SETTINGS:
+        return SETTINGS[key]
+    spec = _MODULE_SETTINGS.get(key)
+    if spec is None or key.split(".", 1)[0] not in _enabled_modules(tenant):
+        return None
+    return spec
+
+
+def _reset_for_tests() -> None:  # pragma: no cover - test helper
+    """Back to the start-up registrations (every `ready()` has run by the first call)."""
+    global _MODULE_SETTINGS_BASELINE
+    if _MODULE_SETTINGS_BASELINE is None:
+        _MODULE_SETTINGS_BASELINE = dict(_MODULE_SETTINGS)
+    _MODULE_SETTINGS.clear()
+    _MODULE_SETTINGS.update(_MODULE_SETTINGS_BASELINE)
 
 
 def migrate_value(key: str, value: Any, schema_version: int) -> Any:

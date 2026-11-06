@@ -4,12 +4,15 @@ import { useCallback, useMemo } from 'react';
 
 import {
   Building2,
+  CalendarDays,
   ChevronRight,
   CreditCard,
   DatabaseBackup,
   History,
+  MessageSquare,
   MonitorSmartphone,
   Palette,
+  Store,
   Users,
   type LucideIcon,
 } from 'lucide-react';
@@ -28,7 +31,9 @@ import {
   UbStack,
   UbText,
 } from 'src/design-system';
+import { useAppSelector } from 'src/hooks/useAppStore';
 import { useTranslation } from 'src/hooks/useTranslation';
+import { selectActiveTenant } from 'src/redux/slice/sessionSlice';
 import { ROUTES } from 'src/routes';
 
 import { useSettingsAccess } from '../hooks/useSettingsAccess';
@@ -64,6 +69,11 @@ export function SettingsPageContent(): React.JSX.Element {
   const settings = useTenantSettings(access.canView);
   const { data, status, error, refetch } = settings;
 
+  const runsShop = data?.modules.enabled.includes('sales') ?? false;
+  const calendarReaders = data?.calendarReaders;
+  const hasOwnMessages = Boolean(
+    useAppSelector(selectActiveTenant)?.features?.includes('jewellery')
+  );
   const links = useMemo<readonly HubLink[]>(
     () => [
       { key: 'profile', href: ROUTES.SETTINGS_PROFILE, icon: Building2, show: access.canView },
@@ -72,9 +82,32 @@ export function SettingsPageContent(): React.JSX.Element {
       { key: 'plan', href: ROUTES.SETTINGS_PLAN, icon: CreditCard, show: access.canView },
       { key: 'activity', href: ROUTES.SETTINGS_ACTIVITY, icon: History, show: access.canReadAudit },
       { key: 'devices', href: ROUTES.SETTINGS_DEVICES, icon: MonitorSmartphone, show: true },
+      // B3 — the Shop's own features, for a business that runs the Shop.
+      {
+        key: 'shopFeatures',
+        href: ROUTES.SETTINGS_SHOP_FEATURES,
+        icon: Store,
+        show: access.canView && runsShop,
+      },
+      // D15 — only a kind whose features add messages of their own.
+      {
+        key: 'messages',
+        href: ROUTES.SETTINGS_MESSAGES,
+        icon: MessageSquare,
+        show: access.canView && hasOwnMessages,
+      },
       { key: 'data', href: ROUTES.SETTINGS_DATA, icon: DatabaseBackup, show: access.isOwner },
+      // A9b (PLT-X08 §7) — only while an enabled feature reads the calendar:
+      // business days for a shop with nothing that counts days would be a
+      // setting whose effect nobody can see.
+      {
+        key: 'businessDays',
+        href: ROUTES.SETTINGS_BUSINESS_DAYS,
+        icon: CalendarDays,
+        show: access.canView && (calendarReaders?.length ?? 0) > 0,
+      },
     ],
-    [access]
+    [access, calendarReaders, hasOwnMessages, runsShop]
   );
 
   const handleConflictOpenChange = useCallback(
@@ -119,6 +152,7 @@ export function SettingsPageContent(): React.JSX.Element {
           canEdit={access.canEdit}
           busy={settings.isTogglingModules || !settings.canWrite}
           onChange={handleModules}
+          refusal={settings.moduleRefusal}
         />
       </UbStack>
     );

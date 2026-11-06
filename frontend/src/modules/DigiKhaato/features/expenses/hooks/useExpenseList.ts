@@ -2,8 +2,9 @@
 
 import { useCallback, useEffect, useMemo } from 'react';
 
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
 
+import { useAppRouter } from 'src/hooks/useAppRouter';
 import { useAppDispatch, useAppSelector } from 'src/hooks/useAppStore';
 import { usePermissions } from 'src/hooks/usePermissions';
 import { selectNetworkImpaired } from 'src/redux/slice/networkSlice';
@@ -12,9 +13,13 @@ import type { ApiErrorShape, RequestStatus } from 'src/types/api.types';
 import type { PaymentMode } from 'src/types/domain.types';
 import { todayInTenantTz } from 'src/utils/dates';
 
+import { useNavigation } from 'modules/DigiKhaato/features/navigation/useNavigation';
+
+import { expenseAppOf } from '../constants/expenseApps';
 import {
   expenseFiltersChanged,
   selectExpenseError,
+  selectExpenseHasAny,
   selectExpenseListStale,
   selectExpensePage,
   selectExpensePageSize,
@@ -33,6 +38,7 @@ import {
 import type {
   Expense,
   ExpenseFilters,
+  ExpenseListArg,
   ExpensePreset,
   ExpenseTab,
   ExpenseTotals,
@@ -46,6 +52,7 @@ import type {
 export interface UseExpenseListResult {
   readonly rows: readonly Expense[];
   readonly totals: ExpenseTotals | null;
+  readonly hasAny: boolean | null;
   readonly filters: ExpenseFilters;
   readonly today: string;
   readonly status: RequestStatus;
@@ -61,13 +68,21 @@ export interface UseExpenseListResult {
   readonly setMode: (mode: PaymentMode | null) => void;
   readonly setQuery: (q: string) => void;
   readonly setPage: (page: number) => void;
+  /** The phone's Filters sheet: everything but the search in ONE address-bar update. */
+  readonly applyFilters: (next: ExpenseFilters) => void;
   readonly clearFilters: () => void;
   readonly refetch: () => void;
 }
 
-export const useExpenseList = (): UseExpenseListResult => {
+/**
+ * `append` is a phone's card list (R-DEC-33): the next page joins the cards
+ * already shown instead of replacing them. A desktop table pages by replacement.
+ */
+export const useExpenseList = (
+  listMode: 'replace' | 'append' = 'replace'
+): UseExpenseListResult => {
   const dispatch = useAppDispatch();
-  const router = useRouter();
+  const router = useAppRouter();
   const search = useSearchParams();
   const { can, hasModule } = usePermissions();
   const timezone = useAppSelector(selectTenantTimezone);
@@ -81,6 +96,7 @@ export const useExpenseList = (): UseExpenseListResult => {
   const pageSize = useAppSelector(selectExpensePageSize);
   const total = useAppSelector(selectExpenseTotal);
   const stale = useAppSelector(selectExpenseListStale);
+  const hasAny = useAppSelector(selectExpenseHasAny);
 
   const canRead = hasModule('expenses') && can('expenses.expense.read');
   const today = useMemo(() => todayInTenantTz(timezone ?? undefined), [timezone]);
@@ -89,23 +105,30 @@ export const useExpenseList = (): UseExpenseListResult => {
      render, and a memo on it re-dispatches forever (LED-04's "Maximum update
      depth exceeded"). */
   const queryString = search?.toString() ?? '';
+  /* DEC-019 (QA B10) — each app's Expenses page lists its own expenses. */
+  const expenseApp = expenseAppOf(useNavigation().app);
   const filters = useMemo(
-    () => expenseFiltersFromQuery(new URLSearchParams(queryString), today),
-    [queryString, today]
+    () => ({
+      ...expenseFiltersFromQuery(new URLSearchParams(queryString), today),
+      ...(expenseApp ? { app: expenseApp } : {}),
+    }),
+    [queryString, today, expenseApp]
   );
+
+  const query = useMemo<ExpenseListArg>(() => ({ ...filters, listMode }), [filters, listMode]);
 
   useEffect(() => {
     if (!canRead) return undefined;
-    dispatch(expenseFiltersChanged(filters));
-    const promise = dispatch(fetchExpenses(filters));
+    dispatch(expenseFiltersChanged(query));
+    const promise = dispatch(fetchExpenses(query));
     return () => promise.abort();
-  }, [dispatch, canRead, filters]);
+  }, [dispatch, canRead, query]);
 
   useEffect(() => {
     if (!stale || isImpaired || !canRead) return undefined;
-    const promise = dispatch(fetchExpenses(filters));
+    const promise = dispatch(fetchExpenses(query));
     return () => promise.abort();
-  }, [stale, isImpaired, canRead, dispatch, filters]);
+  }, [stale, isImpaired, canRead, dispatch, query]);
 
   const push = useCallback(
     (next: ExpenseFilters) => {
@@ -154,18 +177,31 @@ export const useExpenseList = (): UseExpenseListResult => {
   );
   const setQuery = useCallback((q: string) => push({ ...filters, q, page: 1 }), [push, filters]);
   const setPage = useCallback((next: number) => push({ ...filters, page: next }), [push, filters]);
+  const applyFilters = useCallback(
+    (next: ExpenseFilters) => {
+      const resolved = next.preset === 'custom' ? null : resolveExpensePreset(next.preset, today);
+      push({
+        ...next,
+        dateFrom: resolved?.dateFrom ?? next.dateFrom,
+        dateTo: resolved?.dateTo ?? next.dateTo,
+        page: 1,
+      });
+    },
+    [push, today]
+  );
   const clearFilters = useCallback(
     () => push({ ...filters, tab: 'all', categoryId: null, mode: null, q: '', page: 1 }),
     [push, filters]
   );
   const refetch = useCallback(() => {
-    void dispatch(fetchExpenses(filters));
-  }, [dispatch, filters]);
+    void dispatch(fetchExpenses(query));
+  }, [dispatch, query]);
 
   return useMemo(
     () => ({
       rows,
       totals,
+      hasAny,
       filters,
       today,
       status,
@@ -181,12 +217,14 @@ export const useExpenseList = (): UseExpenseListResult => {
       setMode,
       setQuery,
       setPage,
+      applyFilters,
       clearFilters,
       refetch,
     }),
     [
       rows,
       totals,
+      hasAny,
       filters,
       today,
       status,
@@ -202,6 +240,7 @@ export const useExpenseList = (): UseExpenseListResult => {
       setMode,
       setQuery,
       setPage,
+      applyFilters,
       clearFilters,
       refetch,
     ]

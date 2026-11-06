@@ -1,0 +1,364 @@
+import type { PaymentMode, UpiApp } from 'src/types/domain.types';
+import { discountWire } from 'src/utils/discountWire';
+import { draftSnapshot } from 'src/utils/draftCreation';
+import { compareMoney, toDecimal, toMoneyString } from 'src/utils/money';
+import { formQty } from 'src/utils/quantity';
+
+import type { ItemListRow } from '../../inventory/types/item.types';
+import type { EngineDocumentInput, EngineResult } from '../../sales/view-model/taxEngine';
+import type { PurchaseBill, PurchaseDiscountType } from '../types/purchase.types';
+
+/**
+ * The purchase bill editor's form ⇄ the wire (PUR-01 §14) ⇄ the tax preview.
+ *
+ * The form owns every editable value; the server owns every figure. A line is
+ * SENT only once it is a line — it names an item or a description and has a
+ * quantity above zero — so an autosave in the middle of typing a row never
+ * trips the server's `qty > 0` check (FR-8: a half-entered bill is kept; a
+ * half-typed ROW is simply not part of the draft yet). The same rule as the
+ * invoice editor's `invoiceForm.ts`, for the same reason.
+ */
+
+export interface PurchaseLineForm {
+  itemId: string | null;
+  description: string;
+  qty: string;
+  unitCode: string;
+  allowDecimal: boolean;
+  /** D P3 — the IMEI / serial numbers of a tracked item, one per piece. */
+  serials?: string[];
+  /** D P4 — a medicine's batch, expiry (YYYY-MM-DD) and MRP. */
+  batch?: { batchNo: string; expiry: string; mrp: string };
+  unitCost: string;
+  /** FR-12 / Alternate E — the item's last cost when it was picked, for the hint. */
+  lastCost: string;
+  /** §8 — the item's own code, for "differs from item (GST5)". */
+  itemTaxCode: string;
+  discountType: '' | PurchaseDiscountType;
+  discountValue: string;
+  taxCode: string;
+}
+
+export interface PurchaseBillFormValues {
+  partyId: string | null;
+  partyName: string;
+  partyStateCode: string | null;
+  partyCreditDays: number | null;
+  supplierInvoiceNumber: string;
+  supplierInvoiceDate: string;
+  documentDate: string;
+  dueOn: string;
+  reverseCharge: boolean;
+  itcEligible: boolean;
+  roundOffEnabled: boolean;
+  discountType: '' | PurchaseDiscountType;
+  discountValue: string;
+  notes: string;
+  /** D P1c — the godown the goods arrive at; '' is the business's first place. */
+  locationId?: string;
+  lines: PurchaseLineForm[];
+}
+
+export const emptyPurchaseLine = (): PurchaseLineForm => ({
+  itemId: null,
+  description: '',
+  qty: '1',
+  unitCode: 'NOS',
+  allowDecimal: false,
+  unitCost: '',
+  lastCost: '',
+  itemTaxCode: '',
+  discountType: '',
+  discountValue: '',
+  taxCode: 'GST0',
+});
+
+/** What a line needs from an item: the list row and the item page both carry it. */
+export type PurchasableItem = Pick<
+  ItemListRow,
+  'id' | 'name' | 'unit' | 'purchasePrice' | 'taxCode'
+>;
+
+/**
+ * FR-3 — the item's defaults a line takes when the item is PICKED (and when a
+ * low-stock Order opens the editor with it). `purchasePrice` is null for a role
+ * without cost visibility (INV-01), so the line starts empty rather than
+ * carrying "null"; a zero price is no price either.
+ */
+export const purchaseLineFromItem = (
+  item: PurchasableItem
+): Pick<
+  PurchaseLineForm,
+  | 'itemId'
+  | 'description'
+  | 'unitCode'
+  | 'allowDecimal'
+  | 'unitCost'
+  | 'lastCost'
+  | 'taxCode'
+  | 'itemTaxCode'
+> => {
+  const cost = item.purchasePrice ?? '';
+  return {
+    itemId: item.id,
+    description: item.name,
+    unitCode: item.unit.code,
+    allowDecimal: item.unit.allowDecimal,
+    unitCost: cost === '0.00' ? '' : cost,
+    lastCost: cost,
+    taxCode: item.taxCode,
+    itemTaxCode: item.taxCode,
+  };
+};
+
+export const emptyPurchaseForm = (today: string, itcDefault: boolean): PurchaseBillFormValues => ({
+  partyId: null,
+  partyName: '',
+  partyStateCode: null,
+  partyCreditDays: null,
+  supplierInvoiceNumber: '',
+  supplierInvoiceDate: '',
+  documentDate: today,
+  dueOn: '',
+  reverseCharge: false,
+  itcEligible: itcDefault,
+  roundOffEnabled: true,
+  discountType: '',
+  discountValue: '',
+  notes: '',
+  lines: [],
+});
+
+const isNumber = (value: string): boolean => /^\d+(\.\d+)?$/.test(value.trim());
+
+/** Is this row part of the draft yet? (see the module note) */
+export const isCompletePurchaseLine = (line: PurchaseLineForm): boolean =>
+  (!!line.itemId || line.description.trim() !== '') &&
+  isNumber(line.qty) &&
+  Number(line.qty) > 0 &&
+  (line.unitCost.trim() === '' || isNumber(line.unitCost));
+
+/** Drafts may omit incomplete input; Record must never silently omit it. */
+export const hasIncompletePurchaseInput = (line: PurchaseLineForm): boolean => {
+  if (isCompletePurchaseLine(line)) return false;
+  const empty = emptyPurchaseLine();
+  return (
+    !!line.itemId ||
+    !!line.description.trim() ||
+    !!line.unitCost ||
+    !!line.discountValue ||
+    line.qty !== empty.qty ||
+    line.taxCode !== empty.taxCode ||
+    line.unitCode !== empty.unitCode ||
+    line.discountType !== empty.discountType
+  );
+};
+
+export const toPurchaseWireBody = (values: PurchaseBillFormValues): Record<string, unknown> => ({
+  party_id: values.partyId,
+  supplier_invoice_number: values.supplierInvoiceNumber.trim() || null,
+  supplier_invoice_date: values.supplierInvoiceDate || null,
+  document_date: values.documentDate || null,
+  due_on: values.dueOn || null,
+  reverse_charge: values.reverseCharge,
+  itc_eligible: values.itcEligible,
+  round_off_enabled: values.roundOffEnabled,
+  ...discountWire(values.discountType, values.discountValue),
+  notes: values.notes,
+  location_id: values.locationId || null,
+  lines: values.lines.filter(isCompletePurchaseLine).map((line) => ({
+    item_id: line.itemId,
+    description: line.description.trim() || null,
+    qty: line.qty.trim(),
+    unit_code: line.unitCode || null,
+    ...(line.serials?.length ? { serials: line.serials } : {}),
+    ...(line.batch?.batchNo || line.batch?.expiry
+      ? {
+          batches: [
+            {
+              batch_no: line.batch.batchNo,
+              expiry: line.batch.expiry || null,
+              mrp: line.batch.mrp || null,
+            },
+          ],
+        }
+      : {}),
+    unit_cost: line.unitCost.trim() || null,
+    ...discountWire(line.discountType, line.discountValue),
+    tax_code: line.taxCode || null,
+  })),
+});
+
+/** Comparison only: formatting a decimal does not change what the server saved. */
+export const purchaseWireSnapshot = (body: Record<string, unknown>): string => {
+  const canonical = (value: unknown): unknown =>
+    typeof value === 'string' && isNumber(value) ? toDecimal(value).toString() : value;
+  return draftSnapshot({
+    ...body,
+    discount_value: canonical(body.discount_value),
+    lines: Array.isArray(body.lines)
+      ? body.lines.map((raw: unknown) => {
+          if (!raw || typeof raw !== 'object') return raw;
+          const line = raw as Record<string, unknown>;
+          return {
+            ...line,
+            qty: canonical(line.qty),
+            unit_cost: canonical(line.unit_cost),
+            discount_value: canonical(line.discount_value),
+          };
+        })
+      : body.lines,
+  });
+};
+
+/** The server's draft back into the form — for "edit" and a reload. */
+export const fromPurchaseBill = (bill: PurchaseBill): PurchaseBillFormValues => ({
+  partyId: bill.party?.id ?? null,
+  partyName: bill.party?.name ?? '',
+  partyStateCode: bill.party?.stateCode ?? null,
+  partyCreditDays: bill.party?.creditDays ?? null,
+  supplierInvoiceNumber: bill.supplierInvoiceNumber ?? '',
+  supplierInvoiceDate: bill.supplierInvoiceDate ?? '',
+  documentDate: bill.documentDate,
+  dueOn: bill.dueOn ?? '',
+  reverseCharge: bill.reverseCharge,
+  itcEligible: bill.itcEligible,
+  roundOffEnabled: bill.roundOffEnabled,
+  discountType: bill.discountType ?? '',
+  discountValue: bill.discountValue ?? '',
+  notes: bill.notes,
+  locationId: bill.location?.id ?? '',
+  lines: bill.lines.length
+    ? bill.lines.map((line) => ({
+        itemId: line.itemId,
+        description: line.description,
+        qty: formQty(line.qty, !/^(NOS|PCS)$/.test(line.unitCode)),
+        unitCode: line.unitCode,
+        serials: [...(line.serials ?? [])],
+        ...(line.batches?.[0]
+          ? {
+              batch: {
+                batchNo: line.batches[0].batchNo,
+                expiry: line.batches[0].expiry ?? '',
+                mrp: line.batches[0].mrp ?? '',
+              },
+            }
+          : {}),
+        allowDecimal: !/^(NOS|PCS)$/.test(line.unitCode),
+        unitCost: line.unitCost,
+        lastCost: '',
+        itemTaxCode: '',
+        discountType: line.discountType ?? '',
+        discountValue: line.discountValue ?? '',
+        taxCode: line.taxCode,
+      }))
+    : [emptyPurchaseLine()],
+});
+
+export interface PurchaseRateLookup {
+  readonly rate: string;
+  readonly cessRate: string;
+}
+
+/**
+ * The preview's input. `gstType: 'regular'` ALWAYS — a supplier charges GST to
+ * a composition or unregistered shop too (FR-11), and the sales engine would
+ * zero every rate for those. `placeOfSupply` is the SUPPLIER's state: a
+ * purchase is inter-state when the goods come from elsewhere (§17.7.0), and an
+ * unknown state previews as intra-state, as the server assumes (EC-13).
+ */
+export const purchasePreviewInput = (
+  values: PurchaseBillFormValues,
+  rates: Readonly<Record<string, PurchaseRateLookup>>,
+  tenantState: string
+): EngineDocumentInput => ({
+  lines: values.lines.map((line) => ({
+    qty: line.qty,
+    unitPrice: line.unitCost,
+    taxInclusive: false,
+    discountType: line.discountType || null,
+    discountValue: line.discountValue || null,
+    rate: rates[line.taxCode]?.rate ?? '0',
+    cessRate: rates[line.taxCode]?.cessRate ?? '0',
+  })),
+  gstType: 'regular',
+  tenantState,
+  placeOfSupply: values.partyStateCode || tenantState,
+  roundOffEnabled: values.roundOffEnabled,
+  discountType: values.discountType || null,
+  discountValue: values.discountValue || null,
+});
+
+/** "To supplier khata ₹X" and the Record button's readiness, from the preview. */
+export const hasRecordableLines = (
+  values: PurchaseBillFormValues,
+  preview: EngineResult
+): boolean => preview.lines.length > 0 && values.lines.some(isCompletePurchaseLine);
+
+/** Exact comparison for the cost note; a zero previous cost is still meaningful. */
+export const purchaseCostChanged = (unitCost: string, lastCost: string): boolean =>
+  isNumber(unitCost) && isNumber(lastCost) && compareMoney(unitCost, lastCost) !== 0;
+
+/** FR-2 — due date = bill date + the supplier's credit days (the bill date itself when none). */
+export const defaultDueOn = (documentDate: string, creditDays: number | null): string => {
+  if (!documentDate) return '';
+  const date = new Date(`${documentDate}T00:00:00Z`);
+  date.setUTCDate(date.getUTCDate() + (creditDays ?? 0));
+  return date.toISOString().slice(0, 10);
+};
+
+// ── "Paid now" (PUR-01 FR-6h) ────────────────────────────────────────────────
+
+/**
+ * One "Paid now" line. It carries the UPI app beside the mode, in the value
+ * shape `PaymentMethodField` writes, because the server keeps `payment_mode`
+ * and `upi_app` apart. QA P-D4: the drawer used to pass `app=""` and drop the
+ * app the chip reported, so PhonePe was saved as "Other UPI".
+ */
+export interface PurchasePaymentRow {
+  mode: PaymentMode;
+  upiApp: UpiApp | '';
+  amount: string;
+  reference: string;
+}
+
+export const fullCashPurchasePayment = (grandTotal: string): PurchasePaymentRow[] => [
+  { mode: 'cash', upiApp: '', amount: grandTotal, reference: '' },
+];
+
+const positive = (amount: string): string | null => {
+  try {
+    const value = toMoneyString(toDecimal(amount.trim()));
+    return compareMoney(value, '0.00') > 0 ? value : null;
+  } catch {
+    return null;
+  }
+};
+
+/** The record call's `payment`: PAY-01's `mode_breakup`, with `upi_app` on a UPI line. */
+export const purchasePaymentWireBody = (
+  rows: readonly PurchasePaymentRow[],
+  date: string
+): {
+  readonly payment_date: string;
+  readonly mode_breakup: readonly {
+    mode: PaymentMode;
+    amount: string;
+    reference: string;
+    upi_app?: UpiApp;
+  }[];
+} => ({
+  payment_date: date,
+  mode_breakup: rows.flatMap((row) => {
+    const amount = positive(row.amount || '');
+    if (!amount) return [];
+    return [
+      {
+        mode: row.mode,
+        amount,
+        reference: row.reference.trim(),
+        ...(row.mode === 'upi' && row.upiApp ? { upi_app: row.upiApp } : {}),
+      },
+    ];
+  }),
+});

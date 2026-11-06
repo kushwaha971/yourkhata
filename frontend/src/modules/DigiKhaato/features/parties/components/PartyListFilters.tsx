@@ -1,10 +1,15 @@
 'use client';
 
-import { memo, useCallback } from 'react';
+import { memo } from 'react';
 
-import dynamic from 'next/dynamic';
-
-import { UbButton, UbFilterBar, UbFilterChip, UbFilterChipGroup } from 'src/design-system';
+import {
+  UbActiveFilters,
+  UbButton,
+  UbFilterSelect,
+  UbFilterSheet,
+  type UbFilterSpec,
+  type UbFilterValues,
+} from 'src/design-system';
 import type { TranslateFn } from 'src/hooks/useTranslation';
 
 import {
@@ -17,6 +22,9 @@ import {
   type PartyCreditFilter,
   type PartyTypeFilter,
 } from '../constants/partyFilters';
+import { DEFAULT_ORDERING } from '../constants/partyListDefaults';
+import { PHONE_SORT_CHOICES } from '../view-model/partyListSort';
+import { roleChipLabel } from '../view-model/partyRoleDisplay';
 
 /**
  * Split out of the route chunk, and the split is unusually well aimed.
@@ -31,13 +39,8 @@ import {
  * `ssr: false` because the decision to show it depends on a client fetch: the
  * server pass never has the tag list, so it would render nothing either way.
  */
-const PartyTagFilterLazy = dynamic(
-  () => import('./PartyTagFilter').then((m) => m.PartyTagFilter),
-  { ssr: false }
-);
 
-import type { PartyTagWithCount } from '../types/party.types';
-
+import type { PartyRole, PartyTagWithCount } from '../types/party.types';
 
 /**
  * PTY-02 §7's chips row: the three questions a merchant narrows the book by,
@@ -61,8 +64,11 @@ export interface PartyListFiltersProps {
   readonly t: TranslateFn;
   readonly type: PartyTypeFilter;
   readonly balance: PartyBalanceFilter;
+  readonly defaultBalance?: PartyBalanceFilter;
   readonly collection: PartyCollectionFilter;
   readonly onTypeChange: (value: PartyTypeFilter) => void;
+  /** The page itself is Customers or Suppliers, so the type is not a choice. */
+  readonly typeFixed?: boolean;
   readonly onBalanceChange: (value: PartyBalanceFilter) => void;
   readonly onCollectionChange: (value: PartyCollectionFilter) => void;
   /** PTY-06 FR-12 — over, near, or within the credit limit. */
@@ -79,16 +85,48 @@ export interface PartyListFiltersProps {
   readonly tag: string;
   readonly onTagChange: (value: string) => void;
   readonly tags: readonly PartyTagWithCount[];
+  /**
+   * A6 (PLT-X04 §2 flow 1) — the enabled modules' roles ("Members",
+   * "Borrowers") and the applied comma list of codes, OR'd within the group.
+   */
+  readonly roles?: readonly PartyRole[];
+  readonly role?: string;
+  readonly onRoleChange?: (value: string) => void;
   readonly activeFilterCount: number;
   readonly onClear: () => void;
+  /**
+   * The controls sit in the grid's toolbar beside the search (owner, 6 Oct
+   * 2026: one toolbar, not a row above the card); the pills for what is on sit
+   * above the card. One component, two places, the same specs.
+   */
+  readonly part?: 'controls' | 'pills';
+  /**
+   * The approved design (12 Oct 2026): on a phone the list's toolbar is the
+   * search and ONE Filters button. With `compact`, Show (active/archived) and
+   * Balance move into the sheet instead of sitting beside it as two more
+   * buttons. Each default reads as "no filter", so the badge counts only what
+   * the merchant changed. (Sort can ride in too through `onOrderingChange`;
+   * the party list keeps its one-tap sort sheet instead, UAT D5.)
+   */
+  readonly compact?: boolean;
+  /** Personal Udhaar needs balance and ordering, not business/credit/tag axes. */
+  readonly personal?: boolean;
+  readonly controlClassName?: string;
+  readonly showClear?: boolean;
+  readonly status?: string;
+  readonly onStatusChange?: (value: string) => void;
+  readonly ordering?: string;
+  readonly onOrderingChange?: (value: string) => void;
 }
 
 function PartyListFiltersBase({
   t,
   type,
   balance,
+  defaultBalance = '',
   collection,
   onTypeChange,
+  typeFixed = false,
   onBalanceChange,
   onCollectionChange,
   credit,
@@ -97,148 +135,231 @@ function PartyListFiltersBase({
   tag,
   onTagChange,
   tags,
+  roles = [],
+  role = '',
+  onRoleChange,
   activeFilterCount,
   onClear,
+  part = 'controls',
+  compact = false,
+  personal = false,
+  controlClassName,
+  showClear = true,
+  status = 'active',
+  onStatusChange,
+  ordering = DEFAULT_ORDERING,
+  onOrderingChange,
 }: Readonly<PartyListFiltersProps>) {
-  /* One handler shape for all three axes: a chip reports the state it is
-     moving TO, so applying is "this value" and un-applying is "nothing". */
-  const handleType = useCallback(
-    (value: Exclude<PartyTypeFilter, ''>, next: boolean) => onTypeChange(next ? value : ''),
-    [onTypeChange]
-  );
-  const handleBalance = useCallback(
-    (value: Exclude<PartyBalanceFilter, ''>, next: boolean) => onBalanceChange(next ? value : ''),
-    [onBalanceChange]
-  );
-  const handleCollection = useCallback(
-    (value: Exclude<PartyCollectionFilter, ''>, next: boolean) =>
-      onCollectionChange(next ? value : ''),
-    [onCollectionChange]
-  );
-  const handleCredit = useCallback(
-    (value: Exclude<PartyCreditFilter, ''>, next: boolean) => onCreditChange(next ? value : ''),
-    [onCreditChange]
-  );
+  const appliedRoles = role ? role.split(',').filter(Boolean) : [];
+
+  /* Owner, 6 Oct 2026 — the approved filter pattern. Balance is the axis a
+     merchant changes most ("who owes me"), so it is the one dropdown in the
+     toolbar. Credit, role, type, collection and tags — up to five more rows of
+     chips that took the first screen of a phone — live behind ONE Filters
+     button and come back as pills only when they are on.
+
+     The credit group keeps its rule: it is offered only when somebody is over
+     their limit or a band is already applied, with the count on "Over limit". */
+  const showCredit = (overLimitCount !== null && overLimitCount > 0) || credit !== '';
+  const showRoles = Boolean(onRoleChange) && (roles.length > 0 || appliedRoles.length > 0);
+  const specs: UbFilterSpec[] = [
+    ...(showCredit
+      ? [
+          {
+            kind: 'single' as const,
+            key: 'credit',
+            label: t('parties.credit.filter.label'),
+            anyLabel: t('parties.list.filter.any'),
+            options: CREDIT_FILTERS.map((value) => ({
+              value,
+              label: t(`parties.credit.filter.${value}`),
+              hint:
+                value === 'over' && overLimitCount !== null && overLimitCount > 0
+                  ? String(overLimitCount)
+                  : undefined,
+            })),
+          },
+        ]
+      : []),
+    ...(showRoles
+      ? [
+          {
+            kind: 'multi' as const,
+            key: 'role',
+            label: t('parties.list.filter.role.label'),
+            options: [
+              ...roles.map((option) => {
+                /* Two roles whose words are not loaded here both fall back to
+                   "Role" — two identical checkboxes. The code tells them apart. */
+                const label = roleChipLabel(t, option);
+                const twin = roles.some(
+                  (other) => other.code !== option.code && roleChipLabel(t, other) === label
+                );
+                return {
+                  value: option.code,
+                  label: twin ? `${label} (${option.code.replace(/_/g, ' ')})` : label,
+                };
+              }),
+              ...appliedRoles
+                .filter((code) => !roles.some((option) => option.code === code))
+                .map((code) => ({ value: code, label: t('parties.role.generic') })),
+            ],
+          },
+        ]
+      : []),
+    ...(!typeFixed
+      ? [
+          {
+            kind: 'single' as const,
+            key: 'type',
+            label: t('parties.list.filter.type.label'),
+            anyLabel: t('parties.list.filter.any'),
+            options: TYPE_FILTERS.map((value) => ({
+              value,
+              label: t(`parties.list.filter.type.${value}`),
+            })),
+          },
+        ]
+      : []),
+    {
+      kind: 'single',
+      key: 'collection',
+      label: t('parties.list.filter.collection.label'),
+      anyLabel: t('parties.list.filter.any'),
+      options: COLLECTION_FILTERS.map((value) => ({
+        value,
+        label: t(`parties.list.filter.collection.${value}`),
+      })),
+    },
+    ...(tags.length > 0 || tag
+      ? [
+          {
+            kind: 'multi' as const,
+            key: 'tag',
+            label: t('parties.tags.filter.label'),
+            options: tags.map((option) => ({
+              value: option.name,
+              label: option.name,
+              hint: String(option.partyCount),
+            })),
+          },
+        ]
+      : []),
+  ];
+  const balanceSpec: UbFilterSpec = {
+    kind: 'single',
+    key: 'balance',
+    label: t('parties.list.filter.balance.label'),
+      anyLabel: defaultBalance === 'due' ? t('parties.khata.filter.due') : t('parties.list.filter.any'),
+    options: [
+      ...(defaultBalance === 'due' ? [{ value: 'all', label: t('parties.khata.filter.all') }] : []),
+      ...BALANCE_FILTERS.filter((value) => value !== defaultBalance && (!personal || value !== 'due')).map((value) => ({
+      value,
+      label: t(`parties.list.filter.balance.${value}`),
+    })),
+    ],
+  };
+  const defaultSort = PHONE_SORT_CHOICES.find((c) => c.ordering === DEFAULT_ORDERING);
+  const compactSpecs: UbFilterSpec[] = compact
+    ? [
+        ...(onStatusChange
+          ? [
+              {
+                kind: 'single' as const,
+                key: 'status',
+                label: t('parties.list.filter.status.label'),
+                anyLabel: t('parties.list.status.active'),
+                options: [{ value: 'archived', label: t('parties.list.status.archived') }],
+              },
+            ]
+          : []),
+        balanceSpec,
+        ...(onOrderingChange
+          ? [
+              {
+                kind: 'single' as const,
+                key: 'ordering',
+                label: t('parties.list.sort.label'),
+                anyLabel: defaultSort ? t(defaultSort.labelKey) : undefined,
+                options: PHONE_SORT_CHOICES.filter((c) => c.ordering !== DEFAULT_ORDERING).map(
+                  (c) => ({ value: c.ordering, label: t(c.labelKey) })
+                ),
+              },
+            ]
+          : []),
+      ]
+    : [];
+  const values: UbFilterValues = {
+    status: status === 'archived' ? 'archived' : '',
+    balance: defaultBalance === 'due' ? (balance === 'due' ? '' : balance || 'all') : balance,
+    ordering: ordering === DEFAULT_ORDERING ? '' : ordering,
+    credit,
+    role: appliedRoles.join(','),
+    type,
+    collection,
+    tag,
+  };
+  const apply = (next: UbFilterValues) => {
+    if (compact) {
+      const nextStatus = next.status === 'archived' ? 'archived' : 'active';
+      if (onStatusChange && nextStatus !== status) onStatusChange(nextStatus);
+      const nextBalance = next.balance === 'all' ? '' : next.balance || defaultBalance;
+      if (nextBalance !== balance) onBalanceChange(nextBalance as PartyBalanceFilter);
+      const nextOrdering = next.ordering || DEFAULT_ORDERING;
+      if (onOrderingChange && nextOrdering !== ordering) onOrderingChange(nextOrdering);
+    }
+    if ((next.credit ?? '') !== credit) onCreditChange((next.credit ?? '') as PartyCreditFilter);
+    if ((next.role ?? '') !== values.role) onRoleChange?.(next.role ?? '');
+    if (!typeFixed && (next.type ?? '') !== type)
+      onTypeChange((next.type ?? '') as PartyTypeFilter);
+    if ((next.collection ?? '') !== collection)
+      onCollectionChange((next.collection ?? '') as PartyCollectionFilter);
+    if ((next.tag ?? '') !== tag) onTagChange(next.tag ?? '');
+  };
+
+  if (part === 'pills') {
+    return (
+      <UbActiveFilters
+        specs={specs}
+        values={values}
+        onChange={apply}
+        labels={{
+          remove: (pill) => t('common.filters.remove', { filter: pill }),
+          clearAll: t('common.filters.clearAll'),
+        }}
+      />
+    );
+  }
 
   return (
-    <UbFilterBar
-      trailing={
-        /* Present only when there is something to clear. A permanently visible
-           "Clear filters" on an unfiltered list is a control that does nothing,
-           and it takes the width the chips need on a phone. The count is in the
-           label because the chips can be scrolled out of sight in this very
-           row — a merchant who cannot see an applied chip can still see that
-           two things are applied. */
-        activeFilterCount > 0 ? (
-          <UbButton variant="ghost" size="sm" onClick={onClear} className="shrink-0">
-            {t('parties.list.filter.clear', { count: activeFilterCount })}
-          </UbButton>
-        ) : undefined
-      }
-    >
-      {/* PTY-06 FR-12. FIRST in the bar, and that is the point of it.
-
-          The track scrolls sideways on a phone, so whatever is last is off the
-          screen — and this is the one group a merchant should see before they
-          see anything else, because it is the only one that says somebody's
-          money is at risk right now. The three fixed axes are always available
-          and always answerable; this one appears only when there is something
-          to act on.
-
-          The whole group appears when somebody is over, OR when one of its own
-          bands is already applied. A merchant who has set no limits, or whose
-          customers are all well inside theirs, gets no chips here at all,
-          because three controls whose every outcome is an empty list are three
-          controls in the way.
-
-          The second half of that condition is not a refinement, it is the bug.
-          `overLimitCount` describes the FILTERED set — it rides in the same
-          aggregate as the money totals so that it costs nothing — so narrowing
-          to "Near limit" leaves nobody over, the count comes back zero, and the
-          first half of this condition then took away the three chips the
-          merchant had just used, pressed one and all. The band stayed applied
-          with no control left to change it; only Clear filters, which drops
-          everything else too. A group that is currently filtering the list is
-          in use, whatever the count says.
-
-          The count is on the chip because it is the number that decides whether
-          to tap it: "Over limit (7)" is a morning's work and "Over limit" is a
-          question. When there is no count there are no brackets either — "(0)"
-          beside a list of near-limit parties reads as a tally of what is on the
-          screen. */}
-      {((overLimitCount !== null && overLimitCount > 0) || credit !== '') && (
-        <UbFilterChipGroup label={t('parties.credit.filter.label')}>
-          {CREDIT_FILTERS.map((value) => (
-            <UbFilterChip
-              key={value}
-              label={
-                value === 'over' && overLimitCount !== null && overLimitCount > 0
-                  ? `${t('parties.credit.filter.over')} (${overLimitCount})`
-                  : t(`parties.credit.filter.${value}`)
-              }
-              pressed={credit === value}
-              onToggle={(next) => handleCredit(value, next)}
-            />
-          ))}
-        </UbFilterChipGroup>
-      )}
-
-
-      <UbFilterChipGroup label={t('parties.list.filter.balance.label')}>
-        {BALANCE_FILTERS.map((value) => (
-          <UbFilterChip
-            key={value}
-            label={t(`parties.list.filter.balance.${value}`)}
-            pressed={balance === value}
-            onToggle={(next) => handleBalance(value, next)}
-          />
-        ))}
-      </UbFilterChipGroup>
-
-      <UbFilterChipGroup label={t('parties.list.filter.type.label')}>
-        {TYPE_FILTERS.map((value) => (
-          <UbFilterChip
-            key={value}
-            label={t(`parties.list.filter.type.${value}`)}
-            pressed={type === value}
-            onToggle={(next) => handleType(value, next)}
-          />
-        ))}
-      </UbFilterChipGroup>
-
-      <UbFilterChipGroup label={t('parties.list.filter.collection.label')}>
-        {COLLECTION_FILTERS.map((value) => (
-          <UbFilterChip
-            key={value}
-            label={t(`parties.list.filter.collection.${value}`)}
-            pressed={collection === value}
-            onToggle={(next) => handleCollection(value, next)}
-          />
-        ))}
-      </UbFilterChipGroup>
-
-      {/* A picker rather than chips, and it is the one axis where that is
-          right. The other three have two or three fixed answers that fit in the
-          row; tags are a merchant's own set and there can be two hundred of
-          them, so a chip per tag would be a filter bar longer than the list.
-          It is multi-select because the tag group ORs within itself (BR-4) —
-          "Camp Area or Deccan" is one question with two answers, unlike the
-          three axes beside it, each of which takes one.
-
-          Last in the bar, after the three fixed axes, because it is the only
-          one whose contents a merchant has to have set up first. On a new
-          install it is an empty picker, and an empty picker at the START of the
-          row would be the first thing they met. */}
-      {tags.length > 0 && (
-        <PartyTagFilterLazy
-          t={t}
-          value={tag}
-          onChange={onTagChange}
-          tags={tags}
-          className="w-48 shrink-0"
+    <>
+      {!compact && (
+        <UbFilterSelect
+          spec={balanceSpec}
+          value={balance}
+          onChange={(next) => onBalanceChange(next as PartyBalanceFilter)}
+          closeLabel={t('common.action.close')}
         />
       )}
-    </UbFilterBar>
+      <UbFilterSheet
+        className={controlClassName}
+        compact
+        specs={personal ? compactSpecs : [...compactSpecs, ...specs]}
+        values={values}
+        onApply={apply}
+        labels={{
+          title: t('common.filters.title'),
+          apply: t('common.action.apply'),
+          reset: t('common.action.reset'),
+          close: t('common.action.close'),
+        }}
+      />
+      {showClear && activeFilterCount > 0 && (
+        <UbButton variant="ghost" size="sm" onClick={onClear} className="shrink-0">
+          {t('parties.list.filter.clear', { count: activeFilterCount })}
+        </UbButton>
+      )}
+    </>
   );
 }
 

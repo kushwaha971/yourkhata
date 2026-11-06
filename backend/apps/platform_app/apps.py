@@ -19,7 +19,56 @@ class PlatformConfig(AppConfig):
     verbose_name = "Platform"
 
     def ready(self) -> None:
+        from apps.common.throttling import register_durable_throttle
         from apps.platform_app import signals, tasks  # noqa: F401
+        from apps.platform_app.throttling import durable_factory
+
+        register_durable_throttle(durable_factory)
+
+        # docs/platform/14 §4.2 — the Shop is an app like the others, registered
+        # here because its capabilities are the core ones, not a vertical's.
+        from apps.platform_app.apps_registry import AppSpec, register_app
+
+        register_app(AppSpec(
+            code="shop",
+            label_id="nav.workspace.shop",
+            anchor="sales",
+            capabilities=frozenset(
+                {
+                    "parties",
+                    "ledger",
+                    "inventory",
+                    "sales",
+                    "purchases",
+                    "payments",
+                    "expenses",
+                    "reports",
+                    "import_export",
+                }
+                ),  # fmt: skip
+                entry_permission="parties.party.read",
+                home_path="/dashboard",
+                order=90,
+            ),
+        )
+
+        # DEC-019 (owner, 12 Oct 2026) — the Udhaar book: You gave / You got with a
+        # person, standalone like Khatabook. It shares the person (parties) and the
+        # ledger engine with the Shop and nothing else: its money is the `main`
+        # bucket, which no Shop screen reads.
+        register_app(
+            AppSpec(
+                code="khata",
+                label_id="nav.workspace.khata",
+                anchor="khata",
+                capabilities=frozenset({"khata", "parties", "ledger"}),
+                entry_permission="parties.party.read",
+                home_path="/khata",
+                # After the Shop (90): a business that ran the Shop before this app
+                # existed keeps landing where it always did.
+                order=95,
+            )
+        )
 
         register(Tags.security, deploy=True)(check_console_sms_backend)
 
@@ -44,17 +93,19 @@ def check_console_sms_backend(app_configs: object = None, **kwargs: object) -> l
     if not getattr(settings, "UB_AUTH_OTP_ENABLED", False):
         return []
 
-    backend = getattr(settings, "UB_SMS_BACKEND", "") or ""
-    if settings.DEBUG or not backend.endswith("ConsoleSmsBackend"):
+    # DEC-014: the code is Message Central's to send. `console` means it is
+    # only printed in this server's log.
+    provider = getattr(settings, "UB_OTP_PROVIDER", "console") or "console"
+    if settings.DEBUG or provider != "console":
         return []
     if getattr(settings, "UB_ALLOW_CONSOLE_SMS", False):
         return []
     return [
         Error(
-            "UB_SMS_BACKEND is the console backend and DEBUG is off: no OTP would "
+            "The OTP provider is the console and DEBUG is off: no sign-in code would "
             "be delivered to any merchant.",
-            hint="Configure a real SMS provider, or set UB_ALLOW_CONSOLE_SMS=1 "
-            "for a single-user local deployment.",
+            hint="Set FAST2SMS_API_KEY and UB_OTP_PROVIDER=fast2sms, or set "
+            "UB_ALLOW_CONSOLE_SMS=1 for a single-user local deployment.",
             id="platform.E001",
         )
     ]

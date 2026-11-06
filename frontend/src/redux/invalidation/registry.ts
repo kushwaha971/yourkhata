@@ -1,190 +1,3 @@
-import {
-  cancelDeletion,
-  decideSupportAccess,
-  fetchAccountData,
-  pollExport,
-  refreshDeletion,
-  requestDeletion,
-  requestExport,
-} from 'modules/DigiKhaato/features/account-data/redux/accountDataThunk';
-import {
-  endImpersonation,
-  fetchHealth,
-  fetchOverview,
-  fetchPartners,
-  fetchPlans,
-  fetchTenantDetail,
-  fetchTenants,
-  requestSupportAccess,
-  startImpersonation,
-  updateTenant,
-} from 'modules/DigiKhaato/features/admin/redux/adminThunk';
-import {
-  fetchActors,
-  fetchAuditRows,
-} from 'modules/DigiKhaato/features/audit-log/redux/auditLogThunk';
-import {
-  confirmPasswordReset,
-  passwordLogin,
-  registerAccount,
-  requestPasswordReset,
-  setPassword,
-} from 'modules/DigiKhaato/features/auth/redux/authThunk';
-import {
-  fetchSession,
-  logout,
-  switchTenant,
-} from 'modules/DigiKhaato/features/auth/redux/sessionThunk';
-import {
-  fetchBranding,
-  saveBranding,
-} from 'modules/DigiKhaato/features/branding/redux/brandingThunk';
-import {
-  fetchBusinessProfile,
-  saveBusinessProfile,
-} from 'modules/DigiKhaato/features/business-profile/redux/businessProfileThunk';
-import { fetchCashbook } from 'modules/DigiKhaato/features/expenses/redux/cashbookThunk';
-import {
-  createExpense,
-  createExpenseCategory,
-  fetchExpenseCategories,
-  fetchExpenses,
-  voidExpense,
-} from 'modules/DigiKhaato/features/expenses/redux/expenseThunk';
-import {
-  exportListCsv,
-  fetchExportJob,
-} from 'modules/DigiKhaato/features/imports/redux/exportThunk';
-import {
-  cancelImportJob,
-  commitImportJob,
-  fetchImportJob,
-  uploadImportFile,
-} from 'modules/DigiKhaato/features/imports/redux/importThunk';
-import {
-  archiveItem,
-  fetchItemDetail,
-  fetchItemList,
-  fetchItemMovements,
-  restoreItem,
-  saveItem,
-} from 'modules/DigiKhaato/features/inventory/redux/itemThunk';
-import {
-  createCategory,
-  createUnit,
-  fetchCategories,
-  fetchTaxRates,
-  fetchUnits,
-} from 'modules/DigiKhaato/features/inventory/redux/mastersThunk';
-import {
-  fetchLowStock,
-  fetchStockAdjustment,
-  fetchStockSummary,
-  postStockAdjustment,
-} from 'modules/DigiKhaato/features/inventory/redux/stockThunk';
-import {
-  fetchLedgerAging,
-  fetchLedgerSummary,
-} from 'modules/DigiKhaato/features/ledger/redux/agingThunk';
-import {
-  correctEntry,
-  fetchEntryHistory,
-  fetchPartyEntries,
-  postEntry,
-  postOpeningBalance,
-  reverseEntry,
-} from 'modules/DigiKhaato/features/ledger/redux/ledgerEntryThunk';
-import {
-  fetchPartyStatement,
-  fetchStatementAllRows,
-  fetchStatementShop,
-} from 'modules/DigiKhaato/features/ledger/redux/statementThunk';
-import {
-  fetchNotifications,
-  fetchUnreadCount,
-  readAllNotifications,
-  readNotification,
-} from 'modules/DigiKhaato/features/notifications/redux/notificationThunk';
-import {
-  completeOnboarding,
-  createTenant,
-  findResumableBusiness,
-  resumeOnboarding,
-  saveAddressStep,
-  saveBusinessStep,
-  saveGstStep,
-} from 'modules/DigiKhaato/features/onboarding/redux/onboardingThunk';
-import {
-  archiveParty,
-  bulkArchiveParties,
-  restoreParty,
-} from 'modules/DigiKhaato/features/parties/redux/partyArchiveThunk';
-import {
-  fetchPartyDetail,
-  saveCollectionDate,
-} from 'modules/DigiKhaato/features/parties/redux/partyDetailThunk';
-import { saveParty } from 'modules/DigiKhaato/features/parties/redux/partyFormThunk';
-import { fetchPartyList } from 'modules/DigiKhaato/features/parties/redux/partyListThunk';
-import {
-  bulkTagPartiesThunk,
-  createPartyTag,
-  deletePartyTag,
-  fetchPartyTags,
-  mergePartyTags,
-  updatePartyTag,
-} from 'modules/DigiKhaato/features/parties/redux/partyTagThunk';
-import { fetchPlanLimits } from 'modules/DigiKhaato/features/plan/redux/planThunk';
-import {
-  fetchCollectionSummary,
-  fetchDueParties,
-  fetchPartyReminders,
-  fetchReminderHistory,
-  fetchReminderPreview,
-  fetchReminderSettings,
-  markReminderStatus,
-  saveReminderSettings,
-  sendBulkStep,
-  sendManualReminder,
-  startBulkReminders,
-} from 'modules/DigiKhaato/features/reminders/redux/reminderThunk';
-import {
-  createInvoiceShareLink,
-  deleteInvoiceDraft,
-  fetchInvoice,
-  fetchInvoices,
-  fetchPrintBranding,
-  fetchSalesContext,
-  fetchUpiIntent,
-  issueInvoice,
-  saveInvoiceDraft,
-} from 'modules/DigiKhaato/features/sales/redux/salesThunk';
-import {
-  fetchDevices,
-  logoutEverywhere,
-  renameDevice,
-  revokeDevice,
-} from 'modules/DigiKhaato/features/sessions/redux/sessionsThunk';
-import {
-  fetchSettings,
-  fetchSettingsDefaults,
-  saveSettingsSection,
-  toggleModules,
-} from 'modules/DigiKhaato/features/settings/redux/settingsThunk';
-import {
-  fetchInvitations,
-  inviteMember,
-  revokeInvitation,
-} from 'modules/DigiKhaato/features/team/redux/invitationThunk';
-import {
-  addMember,
-  fetchMembers,
-  regenerateCredentials,
-} from 'modules/DigiKhaato/features/team/redux/memberThunk';
-import {
-  leaveTenant,
-  setDefaultTenant,
-} from 'modules/DigiKhaato/features/tenant-switcher/redux/tenantSwitcherThunk';
-
 /**
  * Part 19 §19.3.6 — every async thunk in the codebase is registered exactly
  * once, as a QUERY or a MUTATION. This is what makes completeness CHECKABLE
@@ -192,201 +5,331 @@ import {
  * `features/**\/redux/*Thunk.ts`, collects every `createAsyncThunk(` call and
  * fails CI naming any thunk that is in neither list.
  *
- * Sprint 0 has exactly the thunks the chassis and the walking skeleton need.
- * The lists grow one line per thunk; the machinery does not.
+ * ── Why the values are STRINGS (W4-P, 28 Sep 2026) ──────────────────────────
+ * Each entry maps the thunk's name to its `typePrefix` — the first argument of
+ * its `createAsyncThunk` — and not to the thunk itself. The listener needs
+ * nothing more: a mutation is recognised by `${typePrefix}/fulfilled`, which
+ * is a string. Importing the thunks here put every one of them, their services
+ * and the message ids they fall back to into the chunk `app/layout` loads —
+ * the store imports the listener, the listener imported this file — so the
+ * login screen downloaded 145 thunks it can never dispatch. Measured, the
+ * thunk modules were ~20 KB gz of the 144.8 KB app shell.
+ *
+ * A string can drift from the thunk it names, which an import could not. So
+ * `invalidation.registry.test.ts` imports every thunk module (tests may) and
+ * fails on any entry whose string is not that thunk's `typePrefix`, and on any
+ * thunk whose prefix is not here — the same guarantee, checked in CI instead of
+ * paid for on every route.
  */
 export const QUERIES = {
   // session
-  fetchSession,
+  fetchSession: 'session/fetchSession',
   // PLT-15 — the plan's modules and member count, read from /auth/me
-  fetchPlanLimits,
+  fetchPlanLimits: 'plan/fetchPlanLimits',
   // parties (the walking skeleton, Part 32 S0-71)
-  fetchPartyList,
+  fetchPartyList: 'partyList/fetchPartyList',
+  fetchPartyFilterCount: 'partyList/filterCount',
   // PTY-03 — the khata page's header and info panel
-  fetchPartyDetail,
+  fetchPartyDetail: 'partyDetail/fetchPartyDetail',
   // PTY-05 — every tag in the tenant, held once for the session
-  fetchPartyTags,
+  fetchPartyTags: 'partyTag/fetchPartyTags',
   // PLT-05 — the team screen's invitation list
-  fetchInvitations,
+  fetchInvitations: 'invitation/fetchInvitations',
   // DEC-012 — the team screen's member list
-  fetchMembers,
+  fetchMembers: 'member/fetchMembers',
   // LED-01 — one page of a party's khata
-  fetchPartyEntries,
+  fetchPartyEntries: 'ledgerEntry/fetchPartyEntries',
   // LED-03 — the correction chain behind ONE entry, for the history sheet
-  fetchEntryHistory,
+  fetchEntryHistory: 'ledgerEntry/fetchEntryHistory',
   // LED-04 — one page of a statement, and the whole period for print
-  fetchPartyStatement,
-  fetchStatementAllRows,
+  fetchPartyStatement: 'statement/fetchPartyStatement',
+  fetchStatementAllRows: 'statement/fetchStatementAllRows',
   // UAT D3 — the print sheet's letterhead (GET /tenants/current)
-  fetchStatementShop,
+  fetchStatementShop: 'statement/fetchStatementShop',
   // LED-09 — the aging report, and the two figures above it
-  fetchLedgerAging,
-  fetchLedgerSummary,
+  fetchLedgerAging: 'ledgerAging/fetchLedgerAging',
+  fetchLedgerSummary: 'ledgerAging/fetchLedgerSummary',
   // PLT-03 FR-9 / NEW-1 — the wizard reads its business back after a reload
-  resumeOnboarding,
+  resumeOnboarding: 'onboarding/resume',
   // M2 — which unfinished business "Add a business" would continue
-  findResumableBusiness,
+  findResumableBusiness: 'onboarding/findResumable',
+  // 11 Oct 2026 — the apps a new business may choose on step 1
+  loadOfferedApps: 'onboarding/loadOfferedApps',
   // PLT-06 — the settings screen, and the product defaults "Reset" offers
-  fetchSettings,
-  fetchSettingsDefaults,
+  fetchSettings: 'settings/fetch',
+  fetchSettingsDefaults: 'settings/fetchDefaults',
   // PLT-07 — the business profile (GET /tenants/current)
-  fetchBusinessProfile,
+  fetchBusinessProfile: 'businessProfile/fetch',
   // WLB-01 — the resolved branding with each value's source
-  fetchBranding,
+  fetchBranding: 'branding/fetch',
   // PLT-08 — one page of the activity log, and its member filter
-  fetchAuditRows,
-  fetchActors,
+  fetchAuditRows: 'auditLog/fetchRows',
+  fetchActors: 'auditLog/fetchActors',
   // PLT-09 — the caller's own live sessions
-  fetchDevices,
+  fetchDevices: 'sessions/fetchDevices',
   // INV-02 / INV-03 — the item list, one item, its movement history
-  fetchItemList,
-  fetchItemDetail,
-  fetchItemMovements,
+  fetchItemList: 'itemList/fetchItemList',
+  fetchItemDetail: 'itemDetail/fetchItemDetail',
+  fetchItemMovements: 'itemDetail/fetchItemMovements',
   // INV-04 — the masters, held once per session
-  fetchUnits,
-  fetchCategories,
-  fetchTaxRates,
+  fetchUnits: 'inventoryMasters/fetchUnits',
+  fetchCategories: 'inventoryMasters/fetchCategories',
+  fetchTaxRates: 'inventoryMasters/fetchTaxRates',
   // INV-06 / INV-07 / INV-08
-  fetchStockAdjustment,
-  fetchStockSummary,
-  fetchLowStock,
+  fetchStockAdjustment: 'stockAdjustment/fetchStockAdjustment',
+  fetchStockSummary: 'stockSummary/fetchStockSummary',
+  fetchLowStock: 'stockSummary/fetchLowStock',
+  // C3 — the stock count. Opening starts or joins a count on the server, but
+  // nothing another screen shows changes until it is saved.
+  openStockCount: 'stockCount/open',
+  fetchStockCountLines: 'stockCount/lines',
   // EXP-01 / EXP-02 — the expense list and the category picker
-  fetchExpenses,
-  fetchExpenseCategories,
+  fetchExpenses: 'expenseList/fetchExpenses',
+  fetchExpense: 'expenseForm/fetchExpense',
+  fetchExpenseCategories: 'expenseForm/fetchExpenseCategories',
   // EXP-03 — the cashbook
-  fetchCashbook,
+  fetchCashbook: 'cashbook/fetchCashbook',
   // LED-05/06/07 — the reminders screen, the khata's strip, the sheet's text
-  fetchCollectionSummary,
-  fetchDueParties,
-  fetchReminderHistory,
-  fetchPartyReminders,
-  fetchReminderPreview,
-  fetchReminderSettings,
+  fetchCollectionSummary: 'reminders/fetchCollectionSummary',
+  fetchDueParties: 'reminders/fetchDueParties',
+  fetchReminderHistory: 'reminders/fetchReminderHistory',
+  fetchPartyReminders: 'reminders/fetchPartyReminders',
+  fetchReminderPreview: 'reminders/fetchReminderPreview',
+  fetchReminderSettings: 'reminders/fetchReminderSettings',
   // NTF-01 — the bell's count and the inbox panel
-  fetchUnreadCount,
-  fetchNotifications,
+  fetchUnreadCount: 'notifications/fetchUnreadCount',
+  fetchNotifications: 'notifications/fetchNotifications',
   // SAL-02/03/06/08 — the bills list, the editor's context, the print sheet
-  fetchInvoices,
-  fetchInvoice,
-  fetchSalesContext,
-  fetchUpiIntent,
-  fetchPrintBranding,
+  fetchInvoices: 'invoiceList/fetchInvoices',
+  fetchInvoice: 'invoice/fetchInvoice',
+  fetchSalesContext: 'invoiceEditor/fetchSalesContext',
+  fetchUpiIntent: 'invoice/fetchUpiIntent',
+  // PUR-01/03 — the bills list, one bill, the editor's context, the duplicate pre-check
+  fetchPurchaseBillList: 'purchaseBillList/fetchPurchaseBillList',
+  fetchPurchaseBill: 'purchaseBill/fetchPurchaseBill',
+  fetchPurchaseContext: 'purchaseBillEditor/fetchPurchaseContext',
+  checkDuplicateSupplierInvoice: 'purchaseBillEditor/checkDuplicateSupplierInvoice',
   // IMP-01 — the job the wizard polls; IMP-02 — a list's CSV and a stored export
-  fetchImportJob,
-  exportListCsv,
-  fetchExportJob,
+  // PAY-01 … PAY-05 — the list, the receipt, the open bills, the Collect QR
+  fetchPayments: 'paymentList/fetchPayments',
+  fetchPayment: 'paymentReceipt/fetchPayment',
+  fetchOpenDocuments: 'paymentForm/fetchOpenDocuments',
+  // 08 §6 P-08-04 — the drawer's quiet re-read of the dues; reads only.
+  checkOpenDocuments: 'paymentForm/checkOpenDocuments',
+  fetchCollectQr: 'paymentForm/fetchCollectQr',
+  fetchImportJob: 'importJob/fetchImportJob',
+  // QA B34 — the review's paged rows; reads only.
+  fetchImportRows: 'importJob/fetchImportRows',
+  exportListCsv: 'listExport/exportListCsv',
+  fetchExportJob: 'listExport/fetchExportJob',
   // PLT-10 — "Your data": the page, one export's poll, the gate's re-read
-  fetchAccountData,
-  pollExport,
-  refreshDeletion,
+  fetchAccountData: 'accountData/fetch',
+  pollExport: 'accountData/pollExport',
+  refreshDeletion: 'accountData/refreshDeletion',
   // PLT-14 — the console's reads
-  fetchOverview,
-  fetchTenants,
-  fetchTenantDetail,
-  fetchPartners,
-  fetchPlans,
-  fetchHealth,
+  fetchOverview: 'admin/fetchOverview',
+  fetchTenants: 'admin/fetchTenants',
+  fetchTenantDetail: 'admin/fetchTenantDetail',
+  fetchPartners: 'admin/fetchPartners',
+  fetchPlans: 'admin/fetchPlans',
+  fetchHealth: 'admin/fetchHealth',
+  // SAL-01/04/05 — estimates, credit notes, void (merged after W4-P)
+  fetchFlowDocuments: 'salesDocList/fetchFlowDocuments',
+  fetchFlowDocument: 'invoice/fetchFlowDocument',
+  fetchCreditSource: 'creditNoteEditor/fetchCreditSource',
+  fetchOpenInvoices: 'invoice/fetchOpenInvoices',
+  // RPT-01/02/05/06/08 — dashboard, day book, reports
+  fetchDashboard: 'reportDashboard/fetchDashboard',
+  fetchDayBook: 'reportDayBook/fetchDayBook',
+  // RPT-03/04/07 — registers and GST summary
+  fetchGstSummary: 'taxReports/fetchGstSummary',
+  fetchRegister: 'taxReports/fetchRegister',
+  // Shop item 2 — the GST portal's JSON (a read: the server writes only its audit row)
+  downloadGstReturnJson: 'taxReports/downloadGstReturnJson',
+  // Shop item 1 — profit by item, customer, category or bill
+  fetchProfitReport: 'profitReport/fetch',
+  // SAL-03 FR-5 — the customer share page's one read (no session)
+  fetchPublicDocument: 'publicDocument/fetch',
+  // Shop P0 — the UPI pay link: the desk's QR and the payer's page
+  createPayLink: 'payLink/createPayLink',
+  fetchPublicPayLink: 'payLink/fetchPublicPayLink',
+  // Library P0 — QR self check-in: the student's page (core; the poster is the library's)
+  fetchSelfCheckIn: 'selfCheckin/fetchPage',
+  // A POST, registered as a query on purpose: it is idempotent (a second scan says
+  // "already checked in") and the student's phone holds no state it could make stale.
+  submitSelfCheckIn: 'selfCheckin/submit',
+  // ── A16 ── R33: the print letterhead moved to `src/print` (was sales').
+  fetchPrintBranding: 'printBranding/fetchPrintBranding',
+  // ── A4a ── Apply to bills: the payment's own bucket's open documents
+  fetchApplyCandidates: 'paymentReceipt/fetchApplyCandidates',
+  // ── A13 ── PLT-X12: the roles the team dialogs offer (GET /roles).
+  fetchRoles: 'role/fetchRoles',
+  // ── A9b ── PLT-X08: the Business days screen.
+  fetchBusinessDays: 'calendar/fetch',
+  // ── A6 ── PLT-X04: the list's role chips and the khata's guardian/payer links.
+  fetchPartyRoles: 'partyRole/fetch',
+  fetchPartyRelations: 'partyRelation/fetch',
+  // ── A7 ── PLT-X06: a module's reminder tab and the source sheet's text.
+  fetchModuleReminders: 'moduleReminders/fetch',
+  fetchSourcePreview: 'moduleReminders/preview',
+  // ── A4b ── held deposits: a party's deposits (PLT-X02 §6)
+  fetchPartyDeposits: 'deposit/fetchPartyDeposits',
+  fetchDeposit: 'deposit/fetchDeposit',
+  // ── dues ── DUE-01: the engine's two reads (it has no mutations, ADR-041)
+  fetchDues: 'dues/fetchDues',
+  fetchSchedule: 'dues/fetchSchedule',
 } as const;
 
 export const MUTATIONS = {
   // platform & settings
-  switchTenant,
-  logout,
-  // CR-2026-09-19-A — email + password sign-up replaces the OTP pair
-  registerAccount,
+  switchTenant: 'session/switchTenant',
+  // docs/platform/14 §4.2 — open another app of the same business
+  switchApp: 'session/switchApp',
+  // docs/platform/14 §6 — add / turn off an app (owner), leave an app (member)
+  setAppRunning: 'session/setAppRunning',
+  leaveApp: 'session/leaveApp',
+  logout: 'session/logout',
+  // Owner, 9 Oct 2026 — mobile + OTP sign-up and sign-in
+  requestOtp: 'auth/requestOtp',
+  verifyOtp: 'auth/verifyOtp',
   // DEC-012 — owner-issued credentials
-  addMember,
-  regenerateCredentials,
+  addMember: 'member/addMember',
+  regenerateCredentials: 'member/regenerateCredentials',
+  editMember: 'member/editMember',
+  blockMember: 'member/blockMember',
+  unblockMember: 'member/unblockMember',
+  removeMember: 'member/removeMember',
   // PLT-02 — password login, set and reset
-  passwordLogin,
-  setPassword,
-  requestPasswordReset,
-  confirmPasswordReset,
+  passwordLogin: 'auth/passwordLogin',
+  setPassword: 'auth/setPassword',
+  requestPasswordReset: 'auth/requestPasswordReset',
+  confirmPasswordReset: 'auth/confirmPasswordReset',
   // PLT-03 — the onboarding wizard, one mutation per step
-  createTenant,
-  saveBusinessStep,
-  saveGstStep,
-  saveAddressStep,
-  completeOnboarding,
+  createTenant: 'onboarding/createTenant',
+  saveBusinessStep: 'onboarding/saveBusinessStep',
+  saveGstStep: 'onboarding/saveGstStep',
+  saveAddressStep: 'onboarding/saveAddressStep',
+  completeOnboarding: 'onboarding/completeOnboarding',
   // PLT-04 — multiple businesses
-  setDefaultTenant,
-  leaveTenant,
+  setDefaultTenant: 'tenantSwitcher/setDefaultTenant',
+  leaveTenant: 'tenantSwitcher/leaveTenant',
   // PLT-05 — the team screen
-  inviteMember,
-  revokeInvitation,
+  inviteMember: 'invitation/inviteMember',
+  revokeInvitation: 'invitation/revokeInvitation',
   // PTY-01 — create and edit a party
-  saveParty,
+  saveParty: 'partyForm/save',
   // PTY-03 — the khata page's one editable control
-  saveCollectionDate,
+  saveCollectionDate: 'partyDetail/saveCollectionDate',
   // LED-01 — the write everything else in the ledger is downstream of
-  postEntry,
+  postEntry: 'ledgerEntry/postEntry',
   // LED-02 — the first row of a khata migrated from paper
-  postOpeningBalance,
+  postOpeningBalance: 'ledgerEntry/postOpeningBalance',
   // LED-03 — the two writes that change a line already in the book
-  reverseEntry,
-  correctEntry,
+  reverseEntry: 'ledgerEntry/reverseEntry',
+  correctEntry: 'ledgerEntry/correctEntry',
   // PTY-04 — archive and restore
-  archiveParty,
-  restoreParty,
-  bulkArchiveParties,
+  archiveParty: 'partyArchive/archiveParty',
+  restoreParty: 'partyArchive/restoreParty',
+  bulkArchiveParties: 'partyArchive/bulkArchive',
   // PTY-05 — tags
-  createPartyTag,
-  updatePartyTag,
-  deletePartyTag,
-  mergePartyTags,
-  bulkTagPartiesThunk,
+  createPartyTag: 'partyTag/createPartyTag',
+  updatePartyTag: 'partyTag/updatePartyTag',
+  deletePartyTag: 'partyTag/deletePartyTag',
+  mergePartyTags: 'partyTag/mergePartyTags',
+  bulkTagPartiesThunk: 'partyTag/bulkTagParties',
   // PLT-06 — a settings section, and the module switches
-  saveSettingsSection,
-  toggleModules,
+  saveSettingsSection: 'settings/saveSection',
+  toggleModules: 'settings/toggleModules',
   // PLT-07 — the business profile
-  saveBusinessProfile,
+  saveBusinessProfile: 'businessProfile/save',
   // WLB-01 — branding, and PLT-07's signature through the same endpoint
-  saveBranding,
+  saveBranding: 'branding/save',
   // PLT-09 — devices
-  renameDevice,
-  revokeDevice,
-  logoutEverywhere,
+  renameDevice: 'sessions/renameDevice',
+  revokeDevice: 'sessions/revokeDevice',
+  logoutEverywhere: 'sessions/logoutEverywhere',
   // INV-01 / INV-02 — the item master
-  saveItem,
-  archiveItem,
-  restoreItem,
+  saveItem: 'itemForm/saveItem',
+  archiveItem: 'itemForm/archiveItem',
+  restoreItem: 'itemForm/restoreItem',
   // INV-04 — inline and settings-page creates
-  createUnit,
-  createCategory,
+  createUnit: 'inventoryMasters/createUnit',
+  createCategory: 'inventoryMasters/createCategory',
   // INV-06 — the write every stock screen is downstream of
-  postStockAdjustment,
+  postStockAdjustment: 'stockAdjustment/postStockAdjustment',
+  // C3 — counting one item, and saving the count
+  countStockItem: 'stockCount/count',
+  saveStockCount: 'stockCount/save',
   // EXP-01 / EXP-02 — record, void, and the inline category create
-  createExpense,
-  voidExpense,
-  createExpenseCategory,
+  createExpense: 'expenseForm/createExpense',
+  voidExpense: 'expenseForm/voidExpense',
+  createExpenseCategory: 'expenseForm/createExpenseCategory',
   // LED-06/07/08 — reminders and the two SMS switches
-  sendManualReminder,
-  startBulkReminders,
-  sendBulkStep,
-  markReminderStatus,
-  saveReminderSettings,
+  sendManualReminder: 'reminders/sendManualReminder',
+  startBulkReminders: 'reminders/startBulkReminders',
+  sendBulkStep: 'reminders/sendBulkStep',
+  markReminderStatus: 'reminders/markReminderStatus',
+  saveReminderSettings: 'reminders/saveReminderSettings',
   // NTF-01 — read state
-  readNotification,
-  readAllNotifications,
+  readNotification: 'notifications/readNotification',
+  readAllNotifications: 'notifications/readAllNotifications',
   // SAL-02/03/06 — drafts, the issue, the share link
-  saveInvoiceDraft,
-  issueInvoice,
-  deleteInvoiceDraft,
-  createInvoiceShareLink,
+  saveInvoiceDraft: 'invoiceEditor/saveInvoiceDraft',
+  issueInvoice: 'invoiceEditor/issueInvoice',
+  deleteInvoiceDraft: 'invoiceEditor/deleteInvoiceDraft',
+  createInvoiceShareLink: 'invoice/createInvoiceShareLink',
+  revokeInvoiceShareLink: 'invoice/revokeInvoiceShareLink',
+  recordPayment: 'paymentForm/recordPayment',
+  voidPayment: 'paymentReceipt/voidPayment',
+  shareReceipt: 'paymentReceipt/shareReceipt',
+  // PUR-01/04 — bill drafts, record and void
+  savePurchaseBillDraft: 'purchaseBillEditor/savePurchaseBillDraft',
+  deletePurchaseBillDraft: 'purchaseBillEditor/deletePurchaseBillDraft',
+  recordPurchaseBill: 'purchaseBillEditor/recordPurchaseBill',
+  voidPurchaseBill: 'purchaseBill/voidPurchaseBill',
+  // Shop item 3 — an order sent, cancelled or turned into a draft bill
+  movePurchaseOrder: 'purchaseBill/movePurchaseOrder',
+  // Shop P0 — a debit note issued or voided
+  issueDebitNote: 'purchaseBill/issueDebitNote',
+  voidDebitNote: 'purchaseBill/voidDebitNote',
   // IMP-01 — upload, commit and cancel an import
-  uploadImportFile,
-  commitImportJob,
-  cancelImportJob,
+  uploadImportFile: 'importJob/uploadImportFile',
+  commitImportJob: 'importJob/commitImportJob',
+  cancelImportJob: 'importJob/cancelImportJob',
   // PLT-10 — export, deletion and its cancel, and the owner's consent
-  requestExport,
-  requestDeletion,
-  cancelDeletion,
-  decideSupportAccess,
+  requestExport: 'accountData/requestExport',
+  requestDeletion: 'accountData/requestDeletion',
+  cancelDeletion: 'accountData/cancelDeletion',
+  decideSupportAccess: 'accountData/decideSupport',
   // PLT-14 — the console's writes
-  updateTenant,
-  requestSupportAccess,
-  startImpersonation,
-  endImpersonation,
+  updateTenant: 'admin/updateTenant',
+  requestSupportAccess: 'admin/requestAccess',
+  startImpersonation: 'admin/startImpersonation',
+  endImpersonation: 'admin/endImpersonation',
+  // SAL-01/04/05 — estimates, credit notes, void (merged after W4-P)
+  saveEstimateDraft: 'invoiceEditor/saveEstimateDraft',
+  deleteEstimateDraft: 'invoiceEditor/deleteEstimateDraft',
+  moveEstimate: 'invoice/moveEstimate',
+  convertEstimate: 'invoice/convertEstimate',
+  issueCreditNote: 'creditNoteEditor/issueCreditNote',
+  applyCreditNote: 'invoice/applyCreditNote',
+  voidInvoice: 'invoice/voidInvoice',
+  voidCreditNote: 'invoice/voidCreditNote',
+  // ── A4a ── apply an advance to later bills (POST /payments/{id}/allocations)
+  allocateExistingPayment: 'paymentReceipt/allocateExisting',
+  // ── A9b ── PLT-X08: weekday rules and closures.
+  saveWeekdays: 'calendar/saveWeekdays',
+  addClosedDays: 'calendar/add',
+  deleteClosedDay: 'calendar/delete',
+  // ── A6 ── PLT-X04: guardian and payer links.
+  createPartyRelation: 'partyRelation/create',
+  deletePartyRelation: 'partyRelation/delete',
+  // ── A7 ── PLT-X06: a reminder about one module record (create + send).
+  sendSourceReminder: 'moduleReminders/send',
+  // ── A4b ── held deposits: take, adjust against charges, return
+  receiveDeposit: 'deposit/receiveDeposit',
+  applyDeposit: 'deposit/applyDeposit',
+  refundDeposit: 'deposit/refundDeposit',
 } as const;
 
 export type TQueryName = keyof typeof QUERIES;

@@ -69,7 +69,7 @@ describe('PlanPageContent — the four states of the card', () => {
     expect(screen.getByRole('status')).toBeInTheDocument();
     expect(await screen.findByText('1 of 3 team members used')).toBeInTheDocument();
     // DEC-001 — the one promise this screen exists to make.
-    expect(screen.getAllByText('Udhaar entries are never limited.').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('Money book entries are never limited.').length).toBeGreaterThan(0);
   });
 
   it('meters the member count and NOTHING else (DEC-001)', async () => {
@@ -121,7 +121,7 @@ describe('PlanPageContent — the four states of the card', () => {
     renderWithProviders(<PlanPageContent />);
 
     expect(await screen.findByText('We could not load your plan')).toBeInTheDocument();
-    expect(screen.getByTestId('request-id')).toHaveTextContent('Reference req_8');
+    expect(screen.queryByTestId('request-id')).not.toBeInTheDocument(); // owner, 7 Oct 2026: no reference on errors
 
     planService.getPlanEntitlements.mockResolvedValue(entitlements());
     await user.click(screen.getByRole('button', { name: 'Try again' }));
@@ -207,13 +207,13 @@ describe('PlanLimitDialog — FR-4 / FR-6', () => {
     expect(screen.getByRole('button', { name: 'Contact Metis' })).toBeInTheDocument();
     // R-E-4 — the reference the merchant quotes to support.
     // Labelled, as every error surface labels it (QA B5).
-    expect(screen.getByTestId('request-id')).toHaveTextContent('Reference req_9');
+    expect(screen.queryByTestId('request-id')).not.toBeInTheDocument(); // owner, 7 Oct 2026: no reference on errors
   });
 
   it('restates that the ledger is never capped, where the fear is (DEC-001)', () => {
     open403({ limit_key: 'max_users', limit: 3, used: 3 });
     renderWithProviders(<PlanLimitDialog />);
-    expect(screen.getByText('Udhaar entries are never limited.')).toBeInTheDocument();
+    expect(screen.getByText('Money book entries are never limited.')).toBeInTheDocument();
   });
 
   it('offers no dead link when the partner has no support contact (§9 Failed)', () => {

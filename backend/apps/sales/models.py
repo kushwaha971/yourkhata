@@ -1,7 +1,7 @@
 """Sales documents and their lines (Part 21 §21.3.7, SAL-02).
 
-One table for every sales document kind; this wave writes `invoice` and
-`bill_of_supply`. Every money column is exactly what `compute_document_totals`
+One table for every sales document kind: `invoice` and `bill_of_supply`
+(SAL-02), `estimate` (SAL-01) and `credit_note` (SAL-04). Every money column is exactly what `compute_document_totals`
 produced — the server never stores a client figure (FR-3, canon §0.11-3).
 
 ── Columns beyond §21.3.7, and why ──────────────────────────────────────────
@@ -16,8 +16,8 @@ from __future__ import annotations
 from django.db import models
 
 from apps.common.db.fields import MoneyField, QuantityField, RateField, UnitCostField, uuid7_pk
-from apps.common.models import TenantModel
-from apps.sales.constants import DiscountType, DocumentKind, DocumentStatus
+from apps.common.models import DraftCreationBase, TenantModel
+from apps.sales.constants import CreditMode, DiscountType, DocumentKind, DocumentStatus
 
 
 class SalesDocument(TenantModel):
@@ -38,6 +38,24 @@ class SalesDocument(TenantModel):
     walk_in_mobile = models.CharField(max_length=15, null=True, blank=True)
     document_date = models.DateField()
     due_on = models.DateField(null=True, blank=True)
+    valid_until = models.DateField(null=True, blank=True)
+    # Credit note → the invoice it credits (SAL-04). RESTRICT: an invoice with
+    # a credit note is never deleted (only drafts are, and drafts have none).
+    against = models.ForeignKey(
+        "self",
+        on_delete=models.RESTRICT,
+        null=True,
+        blank=True,
+        related_name="credit_notes",
+    )
+    # Estimate ↔ invoice (SAL-01 FR-6). SET_NULL: discarding the converted
+    # DRAFT invoice frees the estimate to be converted again (SAL-05 EC-9).
+    converted_to = models.ForeignKey(
+        "self", on_delete=models.SET_NULL, null=True, blank=True, related_name="+"
+    )
+    converted_from = models.ForeignKey(
+        "self", on_delete=models.SET_NULL, null=True, blank=True, related_name="+"
+    )
     place_of_supply_state = models.CharField(max_length=2)
     is_inter_state = models.BooleanField(default=False)
     reverse_charge = models.BooleanField(default=False)
@@ -61,6 +79,11 @@ class SalesDocument(TenantModel):
     amount_paid = MoneyField(default=0)
     amount_due = MoneyField(default=0)
     notes = models.TextField(blank=True, default="")
+    #: D P1c — the godown the goods leave from / arrive at; NULL is the
+    #: business's first place (MAIN), which is every document before godowns.
+    location = models.ForeignKey(
+        "inventory.Location", on_delete=models.RESTRICT, null=True, blank=True, related_name="+"
+    )
     terms = models.TextField(blank=True, default="")
     issued_at = models.DateTimeField(null=True, blank=True)
     voided_at = models.DateTimeField(null=True, blank=True)
@@ -68,6 +91,12 @@ class SalesDocument(TenantModel):
     public_token_hash = models.CharField(max_length=64, null=True, blank=True, unique=True)
     version = models.IntegerField(default=1)
     meta = models.JSONField(default=dict, blank=True)
+    # ── A5 ── PLT-X05 §5: the module row a document was issued for, through the document port
+    # (`apps/common/seams/documents.py`). A polymorphic pointer, never an FK: sales never imports
+    # the module. Written once by the port (BR-4); null for every counter document.
+    origin_module = models.CharField(max_length=32, null=True, blank=True)
+    origin_type = models.CharField(max_length=48, null=True, blank=True)
+    origin_id = models.UUIDField(null=True, blank=True)
 
     class Meta:
         db_table = "sales_document"
@@ -96,6 +125,20 @@ class SalesDocument(TenantModel):
                 condition=models.Q(amount_paid__gte=0) & models.Q(amount_due__gte=0),
                 name="ck_sales_document_amounts_non_negative",
             ),
+            # ── A5 ── all three origin columns or none.
+            models.CheckConstraint(
+                condition=(
+                    models.Q(
+                        origin_type__isnull=True, origin_id__isnull=True, origin_module__isnull=True
+                    )
+                    | models.Q(
+                        origin_type__isnull=False,
+                        origin_id__isnull=False,
+                        origin_module__isnull=False,
+                    )
+                ),
+                name="ck_sales_document_origin_complete",
+            ),
         ]
         indexes = [
             models.Index(
@@ -109,10 +152,47 @@ class SalesDocument(TenantModel):
                 name="ix_sales_doc_open_due",
             ),
             models.Index(fields=["tenant", "number"], name="ix_sales_doc_number"),
+            # H3 scale run: the list's own order, and the date range every register,
+            # the GST summary and the day book read. Without it a page of 25 read and
+            # top-N sorted every document of the tenant (the kind/status index cannot
+            # give one order across IN-lists), and a month's register filtered the
+            # tenant's whole history through the bare tenant_id index.
+            models.Index(
+                fields=["tenant", "-document_date", "-created_at", "-id"],
+                name="ix_sales_doc_tenant_date",
+            ),
+            # SAL-04 §15 / CR-SAL-3 — "credit notes of this invoice".
+            models.Index(
+                fields=["tenant", "against"],
+                condition=models.Q(against__isnull=False),
+                name="ix_sales_doc_against",
+            ),
+            # ── A5 ── BR-6's lookup and a module reading its own invoices back.
+            models.Index(
+                fields=["tenant", "origin_type", "origin_id"],
+                condition=models.Q(origin_type__isnull=False),
+                name="ix_sales_doc_origin",
+            ),
         ]
 
     def __str__(self) -> str:  # pragma: no cover - admin convenience
         return self.number or f"draft {self.id}"
+
+
+class DraftCreation(DraftCreationBase):
+    """Sales' claim table (ADR-063); invoice and bill of supply share one family."""
+
+    document = models.OneToOneField(
+        SalesDocument, on_delete=models.SET_NULL, null=True, related_name="draft_creation"
+    )
+
+    class Meta:
+        db_table = "sales_draft_creation"
+        constraints = [
+            models.UniqueConstraint(
+                fields=["tenant", "actor_key", "family", "key"], name="uq_sales_draft_creation"
+            ),
+        ]
 
 
 class SalesDocumentLine(models.Model):
@@ -132,6 +212,19 @@ class SalesDocumentLine(models.Model):
     hsn_sac = models.CharField(max_length=8, null=True, blank=True)
     qty = QuantityField()
     unit_code = models.CharField(max_length=8)
+    #: D P1a — how many base units one of `unit_code` is (1 for the item's own
+    #: unit). Stock moves by `qty × unit_factor`, always in the base unit.
+    unit_factor = QuantityField(default=1)
+    #: D P3 — the IMEIs / serials of a tracked item on this line, one per piece.
+    serials = models.JSONField(default=list, blank=True)
+    #: D P4 — the batches on this line: [{batch_no, expiry, mrp?, qty}].
+    batches = models.JSONField(default=list, blank=True)
+    #: D P6 — the add-ons chosen for each piece: [{name, price}] (a snapshot).
+    addons = models.JSONField(default=list, blank=True)
+    #: G2b — a jeweller's piece: the tag's weights, the rate per gram written
+    #: on the line, and the parts of its price (metal, making, wastage, stone).
+    #: The rate stays as written: an issued bill is never repriced.
+    jewel = models.JSONField(default=dict, blank=True)
     unit_price = UnitCostField(default=0)
     tax_inclusive = models.BooleanField(default=False)
     discount_type = models.CharField(
@@ -150,6 +243,16 @@ class SalesDocumentLine(models.Model):
     line_total = MoneyField(default=0)
     unit_cost_snapshot = UnitCostField(null=True, blank=True)
     returned_qty = QuantityField(default=0)
+    # A credit-note line → the invoice line it returns (SAL-04 FR-2), so the
+    # cap and the `returned_qty` cache are per line, not per item.
+    against_line = models.ForeignKey(
+        "self", on_delete=models.RESTRICT, null=True, blank=True, related_name="return_lines"
+    )
+    # R51 / ADR-057 (A15): a `value` line credits `taxable_value` of its
+    # `against_line` exactly, with the invoice line's tax, and moves neither
+    # `returned_qty` nor stock. Its `qty` is 1 (the line is one credit); the
+    # GST summary and the register count it as no quantity.
+    credit_mode = models.CharField(max_length=8, choices=CreditMode.choices, default=CreditMode.QTY)
 
     class Meta:
         db_table = "sales_document_line"
@@ -161,7 +264,143 @@ class SalesDocumentLine(models.Model):
             models.CheckConstraint(
                 condition=models.Q(qty__gt=0), name="ck_sales_line_qty_positive"
             ),
+            # ── A15 ── a value credit is always against an invoice line.
+            models.CheckConstraint(
+                condition=models.Q(credit_mode="qty")
+                | models.Q(credit_mode="value", against_line__isnull=False),
+                name="ck_sales_line_value_credit_against",
+            ),
         ]
 
     def __str__(self) -> str:  # pragma: no cover
         return f"{self.line_no}: {self.description}"
+
+
+class SalesCreditApplication(TenantModel):
+    """Open credit from a credit note, used against an invoice (Part 21 §21.3.9 decision).
+
+    Its own table rather than a `payments_allocation` row with a NULL payment,
+    so a credit is never mistaken for money received. One row per pair; a
+    second application of the same note to the same invoice adds to `amount`.
+    A void deletes the row (SAL-04 FR-10, SAL-05 FR-2) and the audit log keeps
+    what it was.
+    """
+
+    credit_note = models.ForeignKey(
+        SalesDocument, on_delete=models.RESTRICT, related_name="applications"
+    )
+    invoice = models.ForeignKey(
+        SalesDocument, on_delete=models.RESTRICT, related_name="credit_applications"
+    )
+    amount = MoneyField()
+
+    class Meta:
+        db_table = "sales_credit_application"
+        verbose_name = "credit application"
+        verbose_name_plural = "credit applications"
+        constraints = [
+            models.UniqueConstraint(
+                fields=["credit_note", "invoice"], name="uq_sales_credit_application_pair"
+            ),
+            models.CheckConstraint(
+                condition=models.Q(amount__gt=0), name="ck_sales_credit_application_positive"
+            ),
+        ]
+        indexes = [
+            models.Index(fields=["tenant", "invoice"], name="ix_sales_credit_app_invoice"),
+        ]
+
+    def __str__(self) -> str:  # pragma: no cover
+        return f"{self.credit_note_id} → {self.invoice_id}: {self.amount}"
+
+
+class CustomOrder(TenantModel):
+    """G3a — a jeweller's custom order (design G3 `pJOrder`, `dJOrders`).
+
+    What to make, for whom, by when, with an advance that may fix the rate. The
+    advance is a real payment earmarked to this order, so no other bill can use
+    it automatically; delivering or cancelling releases it to the customer's
+    open advances, where the final bill can apply it. `client_key` makes a
+    double-tapped Save one order and one receipt.
+    """
+
+    OPEN = "open"
+    READY = "ready"
+    DELIVERED = "delivered"
+    CANCELLED = "cancelled"
+
+    number = models.CharField(max_length=16)
+    client_key = models.UUIDField()
+    party = models.ForeignKey("parties.Party", on_delete=models.RESTRICT, related_name="custom_orders")
+    what = models.CharField(max_length=200)
+    approx_weight_g = QuantityField(null=True, blank=True)
+    purity = models.CharField(max_length=12)
+    deliver_on = models.DateField()
+    advance = MoneyField(default=0)
+    advance_payment_id = models.UUIDField(null=True, blank=True)
+    #: The rate per gram fixed against the advance, or null when it is not fixed.
+    fixed_rate = MoneyField(null=True, blank=True)
+    status = models.CharField(max_length=12, default=OPEN)
+    #: Who will make it, chosen on the form; gold issued says who holds gold.
+    karigar = models.ForeignKey("sales.Karigar", on_delete=models.SET_NULL, null=True, blank=True, related_name="orders")
+    #: G3's design photo (a `files_attachment`).
+    photo_id = models.UUIDField(null=True, blank=True)
+    #: The bill that delivered this order, once there is one.
+    invoice_id = models.UUIDField(null=True, blank=True)
+
+    class Meta:
+        db_table = "sales_custom_order"
+        verbose_name = "custom order"
+        verbose_name_plural = "custom orders"
+        ordering = ["-created_at"]
+        constraints = [
+            models.UniqueConstraint(fields=["tenant", "number"], name="uq_custom_order_number"),
+            models.UniqueConstraint(fields=["tenant", "client_key"], name="uq_custom_order_client_key"),
+        ]
+
+
+class Karigar(TenantModel):
+    """G3b — a craftsman a jeweller gives gold to (design G3 "Karigars"), with
+    the wastage allowed. Going over it is shown, never refused."""
+
+    name = models.CharField(max_length=120)
+    mobile = models.CharField(max_length=15, blank=True, default="")
+    wastage_limit_pct = MoneyField(default=0)
+
+    class Meta:
+        db_table = "sales_karigar"
+        verbose_name = "karigar"
+        verbose_name_plural = "karigars"
+        ordering = ["name"]
+        constraints = [models.UniqueConstraint(fields=["tenant", "name"], name="uq_karigar_name")]
+
+
+class KarigarLot(TenantModel):
+    """G3b — one lot of gold weighed out to a karigar and, later, weighed back.
+
+    With the karigar until `received_g` is set; wastage is issued − received, known only
+    once the lot is back. Recording only: there is no raw-gold stock for it to
+    move. `client_key` makes a double-tapped Issue one lot.
+    """
+
+    karigar = models.ForeignKey(Karigar, on_delete=models.RESTRICT, related_name="lots")
+    order = models.ForeignKey(CustomOrder, on_delete=models.SET_NULL, null=True, blank=True, related_name="lots")
+    client_key = models.UUIDField()
+    purity = models.CharField(max_length=12)
+    issued_g = QuantityField()
+    issued_on = models.DateField()
+    received_g = QuantityField(null=True, blank=True)
+    received_on = models.DateField(null=True, blank=True)
+    #: G3c — the net weight and pieces tagged from this lot so far, the item of
+    #: the last piece (for its labels), and whether the counter is done tagging.
+    tagged_g = QuantityField(default=0)
+    tag_count = models.IntegerField(default=0)
+    last_item_id = models.UUIDField(null=True, blank=True)
+    tags_done = models.BooleanField(default=False)
+
+    class Meta:
+        db_table = "sales_karigar_lot"
+        verbose_name = "karigar lot"
+        verbose_name_plural = "karigar lots"
+        ordering = ["issued_on", "created_at"]
+        constraints = [models.UniqueConstraint(fields=["tenant", "client_key"], name="uq_karigar_lot_client_key")]

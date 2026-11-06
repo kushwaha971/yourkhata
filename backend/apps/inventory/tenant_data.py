@@ -22,4 +22,23 @@ register(
     ),
     TenantTable("inventory.StockAdjustment", export_name="stock_adjustments.csv"),
     TenantTable("inventory.LowStockAlert"),
+    # Shop gap §1.6 — price lists, their pinned rates, and who is on which.
+    TenantTable("inventory.PriceList", export_name="price_lists.csv"),
+    TenantTable("inventory.PriceListRate", export_name="price_list_rates.csv"),
+    TenantTable("inventory.PriceListParty", export_name="price_list_parties.csv"),
+    # C3 — shelf counts and their lines; D P1a/P1b — an item's boxes and part numbers.
+    TenantTable("inventory.StockCount", export_name="stock_counts.csv"),
+    TenantTable("inventory.StockCountLine", export_name="stock_count_lines.csv"),
+    TenantTable("inventory.ItemUnit", export_name="item_units.csv"),
+    TenantTable("inventory.ItemCode", export_name="item_codes.csv"),
+    TenantTable("inventory.StockTransfer", export_name="stock_transfers.csv"),
+    TenantTable("inventory.Product", export_name="products.csv"),
+    TenantTable("inventory.Serial", export_name="serials.csv"),
+    TenantTable("inventory.Batch", export_name="batches.csv"),
+    TenantTable("inventory.ItemAddon", export_name="item_addons.csv"),
+    TenantTable("inventory.MetalRate", export_name="metal_rates.csv"),
+    TenantTable("inventory.TagDetail", export_name="tag_details.csv"),
+    TenantTable("inventory.OldGold", export_name="old_gold.csv"),
+    # G4 — a medical store's short book.
+    TenantTable("inventory.ShortBookEntry", export_name="short_book.csv"),
 )

@@ -56,6 +56,8 @@ _REGISTRY: dict[str, tuple[int, bool]] = {
     "tenant_suspended": (403, False),
     "partner_suspended": (403, False),
     "tenant_pending_deletion": (409, False),
+    "session_context_changed": (409, False),
+    "tenant_context_changed": (409, False),
     "plan_in_use": (409, False),
     "module_has_data": (409, False),
     "gst_type_locked": (409, False),
@@ -77,6 +79,13 @@ _REGISTRY: dict[str, tuple[int, bool]] = {
     "party_already_archived": (409, False),
     "party_not_archived": (409, False),
     "party_balance_nonzero": (409, False),
+    # BP-16 — one open Shop promise per contact and role; change that one.
+    "promise_already_open": (409, False),
+    "promise_closed": (409, False),
+    # BP-08 — an explicit customer–supplier settlement, judged at confirm.
+    "settlement_not_dual_role": (409, False),
+    "settlement_over_balance": (409, False),
+    "settlement_balances_changed": (409, False),
     # PTY-04 FR-3's write-off escape — beyond §22.1.1, carried in `CR-LOG`
     # (CR-2026-09-23-A). `nothing_to_write_off` is a client bug made visible (a
     # write-off sent for a party who owes nothing); `balance_changed` is the
@@ -106,6 +115,18 @@ _REGISTRY: dict[str, tuple[int, bool]] = {
     "item_has_movements": (409, False),
     "item_type_locked": (409, False),
     "track_stock_not_allowed": (400, False),
+    # C3 stock count (R-DEC-67): a saved count is final; an empty one saves nothing.
+    "count_saved": (409, False),
+    "count_empty": (409, False),
+    # D P3 — IMEI / serials: a phone in stock twice, or sold that is not in stock.
+    "serial_in_stock": (409, False),
+    "serial_not_in_stock": (409, False),
+    "old_gold_over_bill": (409, False),
+    "custom_order_status": (409, False),
+    "karigar_lot_received": (409, False),
+    "karigar_lot_not_back": (409, False),
+    "karigar_lot_has_tags": (409, False),
+    "eway_not_issued": (409, False),
     "opening_stock_required": (409, False),
     "opening_exists": (409, False),
     "duplicate_sku": (400, False),
@@ -188,6 +209,87 @@ _REGISTRY: dict[str, tuple[int, bool]] = {
     "gstr1_warnings_unacknowledged": (409, False),
     "schema_validation_failed": (400, False),
     "confirmation_required": (409, False),
+    # ── A5 ── contracts §4, R55: a module document's origin refuses its void, or asks first.
+    "document_origin_locked": (409, False),
+    "document_origin_confirm": (409, False),
+    # ── A6 ── contracts §4: archive refused by a module's guard (PLT-X04)
+    "party_has_open_records": (409, False),
+    # ── A7 ── contracts §4 (PLT-X06): a module's reminder policy refuses, and a
+    # record that is no longer due (EC-1; the dues engine raises it too).
+    "reminder_outside_window": (409, False),
+    "reminder_cap_reached": (409, False),
+    "due_not_open": (409, False),
+    # ── A4b ── held deposits (contracts §4, FRD 00 PLT-X02 §6) ───────────────
+    "deposit_insufficient": (409, False),  # D held_amount
+    "deposit_released": (409, False),
+    # ── DUE-01 ── contracts §4: a schedule with past dues needs confirmation.
+    "schedule_backdated_unconfirmed": (409, False),  # D dues, total
+    # ── B02 ── library (LIB-14) ── FRD library Appendix A; Part 22 §22.1.1 table L.
+    # Every one is a state the member must change, so none is retryable.
+    "library_accession_taken": (409, False),  # D number, copy_id, title
+    "library_accession_frozen": (409, False),  # D copy_id
+    "library_code_ambiguous": (409, False),  # D code, matches
+    "library_copy_on_loan": (409, False),  # D loan_id
+    "library_copy_unavailable": (409, False),  # D status, with?, held_for?
+    "library_title_has_copies": (409, False),  # D count
+    "library_category_in_use": (409, False),  # D count
+    "library_location_in_use": (409, False),  # D count
+    "library_membership_exists": (409, False),  # D membership_id, status
+    # QA B5 — Renew on a plan with no end date; the way on is Change plan.
+    "library_plan_no_end": (409, False),  # D membership_type_id
+    "library_member_number_taken": (409, False),  # D number, membership_id
+    "library_membership_closed": (409, False),  # D closed_on
+    "library_membership_has_loans": (409, False),  # D count
+    "library_membership_inactive": (409, False),  # D effective_status, valid_until
+    "library_member_blocked": (409, False),  # D blocks, override_permission
+    "library_copy_not_loanable": (409, False),  # D material_type, overridable
+    "library_copy_not_on_loan": (409, False),  # D status, offer_found
+    "library_renewal_refused": (409, False),  # D reason, overridable
+    "library_cancel_window_passed": (409, False),  # D issued_on
+    "library_calendar_all_closed": (409, False),
+    "library_loan_not_open": (409, False),  # D status
+    "library_charge_not_open": (409, False),  # D status
+    "library_charge_has_payments": (409, False),  # D payment_ids
+    # 403, not 409: LIB-07 §8 shows it inline in the waive dialog with who can
+    # do it; it is a role ceiling (D27), not a conflict with the row's state.
+    "library_waiver_over_ceiling": (403, False),  # D ceiling
+    "library_hold_refused": (409, False),  # D reason
+    "library_hold_not_open": (409, False),  # D status
+    "library_nothing_overdue": (409, False),
+    "library_verification_closed": (409, False),
+    "library_verification_open": (409, False),
+    "library_verification_reopen_used": (409, False),
+    "library_print_too_large": (409, False),  # D count, max
+    # W02 — a seat already held in an overlapping shift (owner, 4 Oct 2026).
+    "library_seat_taken": (409, False),  # D seat, holder
+    # LEN (FRD lending §0.7) — the codes the built features raise.
+    "loan_not_active": (409, False),  # D status
+    "loan_disbursal_locked": (409, False),  # D loan_id
+    "collection_over_payoff": (409, False),  # D payoff, amount
+    "route_has_loans": (409, False),  # D count
+    # L03 — a Remind on a loan with nothing due today, tomorrow or late.
+    "lending_nothing_due": (409, False),  # D loan_id
+    # LEN-09 — a late fee on a loan whose terms have none; nothing more under the rule.
+    "late_fee_not_in_terms": (409, False),
+    "penalty_cap_reached": (409, False),  # D cap
+    # LEN-10 — a loan with money collected is written off or closed, never cancelled.
+    "loan_has_collections": (409, False),  # D count
+    # Owner, 12 Oct 2026 — a blocked borrower is given no new loan (collections go on).
+    "borrower_blocked": (409, False),  # D borrower_id
+    # Library P0 — QR self check-in: no student matches; the policy wants the desk.
+    "checkin_not_found": (404, False),
+    "checkin_see_desk": (409, False),
+    # ── ATT ── contracts §4: the attendance engine (FRD 00 ATT-02, ATT-04).
+    "attendance_blocked": (409, False),  # D reason, override_permission
+    "attendance_duplicate": (409, False),  # D mark_id
+    "entitlement_exhausted": (409, False),  # D total, used (+ expired)
+    # ── B05 ── a perpetual counter at its last value (A8 `allocate_counter`): the
+    # integer column cannot hold the next one, so the series refuses rather than 500s.
+    "sequence_exhausted": (409, False),  # D kind, max
+    # docs/platform/14 §6 decision 2 — a business runs at least one app, and a
+    # member is in at least one; the owner is in every app and turns one off.
+    "app_last_one": (409, False),  # D app, of (business|member)
+    "owner_in_every_app": (409, False),  # D app
 }
 
 # `unauthenticated` is emitted by the exception handler for DRF's

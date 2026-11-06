@@ -1,5 +1,7 @@
 import type { PageMeta } from 'src/types/api.types';
-import type { TenantRole } from 'src/types/domain.types';
+import type { ModuleCode } from 'src/types/domain.types';
+
+import type { MemberRoleCode } from './role.types';
 
 /**
  * Part 19 §19.2.3 — the team feature's member types (DEC-012).
@@ -27,8 +29,17 @@ export interface MemberApiRow {
    */
   readonly full_name: string | null;
   readonly mobile: string | null;
-  readonly role: TenantRole;
-  /** `active | invited | suspended`. `removed` rows are never listed. */
+  readonly role: MemberRoleCode;
+  /** A13 (PLT-X12 BR-6): a module role's module, or null for the canon roles. */
+  readonly role_module?: ModuleCode | null;
+  /** A13: false while that module is switched off. */
+  readonly role_active?: boolean;
+  /** A13: the catalogue key the role's name is drawn with. */
+  readonly role_label_id?: string;
+  /**
+   * `active | invited | suspended`. `removed` rows are never listed.
+   * `suspended` is what the team screen calls BLOCKED (owner, 12 Oct 2026).
+   */
   readonly status: string;
   readonly joined_at: string | null;
   readonly last_login_at: string | null;
@@ -43,7 +54,10 @@ export interface Member {
   /** `''` for an invited row, whose profile the server withholds. */
   readonly fullName: string;
   readonly mobile: string | null;
-  readonly role: TenantRole;
+  readonly role: MemberRoleCode;
+  readonly roleLabelId: string;
+  readonly roleModule: ModuleCode | null;
+  readonly roleActive: boolean;
   readonly status: string;
   readonly joinedAt: string | null;
   readonly lastLoginAt: string | null;
@@ -60,7 +74,21 @@ export interface Member {
 export interface MemberListParams {
   readonly page: number;
   readonly pageSize: number;
+  /** `GET /members?status=` — absent means every listed status. */
+  readonly status?: 'active' | 'invited' | 'suspended';
 }
+
+/**
+ * What the edit dialog sends (owner, 12 Oct 2026). Each field is present only
+ * when it CHANGED — see `memberService.updateMember` for why that matters.
+ */
+export interface MemberEdit {
+  readonly fullName?: string;
+  readonly role?: MemberRoleCode;
+}
+
+/** The two confirmations a member row can open. Unblock needs none. */
+export type MemberConfirmKind = 'block' | 'remove';
 
 export interface MemberListResult {
   readonly rows: readonly Member[];
@@ -69,9 +97,10 @@ export interface MemberListResult {
 
 /** What the add-member form collects. `mobile` is a channel, never an identity. */
 export interface MemberDraft {
-  readonly email: string;
+  /** Optional since 9 Oct 2026: staff are added by mobile and sign in with an OTP. */
+  readonly email?: string;
   readonly fullName: string;
-  readonly role: TenantRole;
+  readonly role: MemberRoleCode;
   readonly mobile?: string | null;
 }
 
@@ -82,7 +111,7 @@ export interface MemberDraft {
  * has cost the merchant a working login and the only way back is to regenerate.
  *
  * `password` is `null` when `createdUser` is false: that address already had a
- * DigiKhaato account and keeps the password its owner chose. Issuing a new one
+ * YourKhata account and keeps the password its owner chose. Issuing a new one
  * would be an account takeover wearing an onboarding costume, so the dialog has
  * to say the true thing instead of showing a credential that would not work.
  */
@@ -93,4 +122,8 @@ export interface IssuedCredentials {
   readonly passwordExpiresAt: string | null;
   readonly createdUser: boolean;
   readonly loginUrl: string;
+  /** The number they sign in with, when they were added by mobile. */
+  readonly mobile: string | null;
+  /** `otp` — no password exists; they sign in with `mobile` and a code. */
+  readonly signIn: 'otp' | 'password';
 }

@@ -1,0 +1,87 @@
+{
+  "results": [
+    {
+      "tag": "390-light-en",
+      "name": "part-upi",
+      "overflow": 0,
+      "cut": [],
+      "lowContrast": [],
+      "firstRowY": null
+    },
+    {
+      "tag": "390-light-en",
+      "name": "advance-cash",
+      "overflow": 0,
+      "cut": [],
+      "lowContrast": [],
+      "firstRowY": null
+    },
+    {
+      "tag": "1280-light-en",
+      "name": "part-upi",
+      "overflow": 0,
+      "cut": [],
+      "lowContrast": [],
+      "firstRowY": null
+    },
+    {
+      "tag": "1280-light-en",
+      "name": "advance-cash",
+      "overflow": 0,
+      "cut": [],
+      "lowContrast": [],
+      "firstRowY": null
+    }
+  ],
+  "facts": [
+    {
+      "width": 390,
+      "part": {
+        "status": "partially_paid",
+        "paid": "20.00",
+        "due": "133.00"
+      },
+      "credit": {
+        "paid": "0.00",
+        "due": "150.00"
+      },
+      "advance": {
+        "paid": "153.00",
+        "due": "0.00",
+        "payout": "200.00"
+      },
+      "zero": {
+        "status": "paid",
+        "total": "0.00"
+      },
+      "twoSuppliersTwoProducts": true,
+      "stockEach": "4.000",
+      "paymentRows": 2
+    },
+    {
+      "width": 1280,
+      "part": {
+        "status": "partially_paid",
+        "paid": "20.00",
+        "due": "133.00"
+      },
+      "credit": {
+        "paid": "0.00",
+        "due": "150.00"
+      },
+      "advance": {
+        "paid": "153.00",
+        "due": "0.00",
+        "payout": "200.00"
+      },
+      "zero": {
+        "status": "paid",
+        "total": "0.00"
+      },
+      "twoSuppliersTwoProducts": true,
+      "stockEach": "4.000",
+      "paymentRows": 2
+    }
+  ],
+  "failures": []
+}

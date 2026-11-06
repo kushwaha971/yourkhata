@@ -1,4 +1,13 @@
-# DigiKhaato — working notes for Claude
+# YourKhata — working notes for Claude
+
+**Product name: YourKhata** (one word, capital Y and K, Latin script in every
+locale — a brand name is not translated). **Domain: yourkhata.com.** It was
+DigiKhaato until 29 Sep 2026 (CR-2026-09-29-BRAND-A). The repo folder stays
+`ims-platform` and the code namespace stays `modules/DigiKhaato/…`, the `UB_`
+env prefix and the `ub_*` cookies — only user-visible surfaces carry the name.
+**Nothing a merchant's customer receives names the product or its domain**:
+prints, PDFs, the `/d/<token>` share page and message texts are signed with the
+tenant's business name only (`src/tests/customerDocumentsCarryNoProductName.test.tsx`).
 
 Read this before changing anything. It records decisions that have already been
 made and paid for; re-litigating them costs a rewrite.
@@ -18,18 +27,28 @@ Django 5 + DRF on PostgreSQL 16, Next.js 16 + React 19 + TypeScript strict.
 **Minimal third-party dependencies (ADR-021).** No Celery, no Redis: background
 work is `platform_job` rows drained by a cron-driven `manage.py run_scheduler`
 using `FOR UPDATE SKIP LOCKED`. No S3/MinIO (local `MEDIA_ROOT`), no
-Sentry/OTel/Prometheus, client-side PDF via `window.print()`, adapter-only
+Sentry/OTel/Prometheus (PostHog is the one exception, DEC-017: read
+`frontend/src/analytics/analyticsRules.ts` before sending it anything), client-side PDF via `window.print()`, adapter-only
 messaging, local UPI QR. Anything else needs a new ADR. If a fix seems to need a
 package, say so instead of adding one.
 
-**Identity is email and password (DEC-010).** The mobile-OTP flow was removed.
-Anything still mentioning OTP or SMS is stale documentation or backlogged work,
-not a gap to fill. Do not build OTP.
+**Identity is a mobile number and an OTP (DEC-013, DEC-014; they reverse
+DEC-010).** `/login` and `/signup` are one flow — an Indian mobile, then a
+four-digit code. **Message Central VerifyNow generates, sends and validates the
+code**, called only from Django (`services/message_central.py`, credentials
+`MC_CUSTOMER_ID` / `MC_PASSWORD` from the environment); nothing of theirs
+reaches the browser. Without credentials the `console` provider prints the code
+in the API log — which is what tests and `e2e/serve-api.sh` always use. Resend
+waits sixty seconds, enforced by the server; sessions slide for ninety days. The
+email + password screen survives only at the unlinked `/login/email`, for the
+platform console and pre-change accounts, and the e2e harnesses sign in there.
+Never commit Message Central credentials. Fast2SMS is gone; do not bring it back.
 
 **Nothing is emailed (DEC-012).** `UB_EMAIL_BACKEND` is the console backend and
-no provider is being paid for until the platform earns. So an owner adds staff by
-creating the account — the server mints a temporary password, returns it once,
-and the owner sends it by hand, which is WhatsApp in practice. The invitation
+no provider is being paid for until the platform earns. An owner adds staff by
+name, mobile and role, and the member signs in with that number (DEC-013); the
+older path — a temporary password returned once and sent by hand — remains on
+the server for accounts made with an email. The invitation
 token flow is kept, untouched, because it *is* the email flow the day email
 lands. Do not write copy that implies a message was sent.
 
@@ -44,19 +63,207 @@ not used** — this overrides any earlier suggestion to the contrary. TanStack
 `react/forbid-elements` enforces it. Central utils and enums, no duplication —
 if you write something twice, extract it.
 
-**Errors surface through the global snackbar**, mounted once in `AppProviders`,
-never per page.
+**Plain labels (owner,20 Oct2026):** billing says Quick Sale / Saved customer.
+Sales says Customer, purchases Supplier; shared identity/pickers/history say
+Contact. Replace visible Party/Parties and Walk-in copy throughout the app,
+including Hindi and server presentation messages. Keep model names, request and
+response keys, route/permission identifiers, import headers and saved user data
+unchanged. The new labels do not change business rules or app/book ownership.
 
-**Product name is DigiKhaato; the folder stays `ims-platform`** so the name can
-change later without a repo move.
+**Errors surface through the global snackbar**, mounted once in `AppProviders`,
+never per page. **No error shows a "Reference <request id>" line** (owner, 7 Oct
+2026): `UbRequestId` draws nothing, so every snackbar, empty state and dialog
+obeys at once. The id is still sent, logged and kept on audit rows for support.
+
+**Product name is YourKhata (yourkhata.com); the folder stays `ims-platform`**
+and the code namespace stays `DigiKhaato`, so the name can change again without
+a repo move. The mark and its rules are `docs/DESIGN-SYSTEM.md` §7.
 
 ## How to work here
+
+**Step by step, one worktree (owner, 27 Oct 2026):** work one piece at a time
+in this single worktree; do NOT start parallel sessions. Parallel sessions
+spend usage several times as fast and each stops mid-task at the limit, so the
+owner stopped them. `docs/team/SHOP-PARALLEL-WORK.md` still records each
+piece's state (branch, last commit, next step, findings) so anyone, another
+AI tool included, can resume a piece. Keep it current after every step.
+
+**Testing is P0 (owner, 27 Oct 2026, R-DEC-57).** Every piece runs
+`docs/testing/P0-testing-standard.md` in full — business read-back by the
+document's own id with a self-test, design after errors too, functional
+states on purpose, a distracted-user monkey (`e2e/monkey.mjs`, 3 seeds × 2
+sizes) and the edge cases in `docs/testing/edge-case-catalogue.md` (researched
+from competitors' user complaints) — before anything is called closed. A3/A4
+were called done while six data and layout defects remained; the owner rated
+that testing 3/10. **The bar is 9/10 on the standard's §8 score sheet, with
+evidence for every point, §9 is the module round (every piece's harness again, a module-wide monkey,
+whole-day journeys, the full catalogue column and a manual pass once a module's
+last piece is in), §10 is feature-by-feature delivery (each feature at 9/10, the owner's check,
+a regression of every delivered feature, then it ships on its own, the same
+level as A4), and §11 is the go-live gate for a whole module.** Read the standard at the start of
+every session that builds or fixes anything, **and `docs/testing/tester-learning-log.md`
+(P0): its habits apply to every piece, and after every feature a lesson is
+added there with the check that enforces it.**
+
+
+### Mandatory revamp acceptance gates — owner, 21 October 2026 (R-DEC-32)
+
+These are hard requirements, not optional guidelines. Apply them to every future
+piece. Do not make the owner discover deviations already specified in the docs.
+
+1. Before coding, read the screen spec, approved visual reference and actual
+   component contracts. Write a short spec-to-check mapping in the existing
+   piece report: composition, dimensions, typography, spacing, states and
+   interactions, with their source and verification. Do not substitute a new
+   interpretation for an explicit reference value. Latest owner instructions
+   override earlier references; record genuine conflicts rather than guessing.
+2. Build the complete approved composition, not minor changes to an old design.
+   R-DEC-31's explicitly requested shared viewport rollout is a scoped exception;
+   it does not certify those modules' entire redesigns.
+3. Preserve documented visible sizes separately from hit areas. Chips have32px
+   visible faces and44px mobile targets through the existing hit-area mechanism.
+   Do not inflate visible controls to obtain accessibility. Other components
+   follow their own documented sizes;32px is not a universal control height.
+4. Prioritize mobile users throughout. Registers fit the available viewport:
+   rows/list content scroll internally; pagination and key actions stay usable,
+   including under notices/toasts. Track every module's rollout explicitly;
+   a shared component existing does not mean every screen uses it.
+5. Reuse existing components, hooks and business engines. Preserve separate
+   app/book/role/user data, permissions, internal cost privacy, financial rules
+   and frozen Library/Lending contracts. Never invent absent source facts.
+6. Verify real local frontend/backend journeys, business rules, busy-counter
+   interactions, error/pending/offline/recovery states and meaningful edge cases.
+   Check phone/desktop, themes and required locales. Reproduce defects before
+   fixing them and retain meaningful regression evidence.
+7. LOOK at the final rendered results and measure computed dimensions, contrast,
+   text bounds, viewport overflow and real hit targets. Compare the full screen
+   with the approved reference. Tests passing alone are not visual acceptance.
+   Measure performance against a valid baseline; no unsupported speed claims.
+8. A piece is not delivered until its required gates, reference checks, final
+   LOOK and evidence report are complete. Ratings must describe verified scope
+   and unresolved limits honestly; the target above8.5 is not permission to
+   inflate a score. Update tracking/handoff and, when authorized, commit/push
+   and verify the remote SHA. Never imply partial or pending modules are done.
+
+
+9. **Functional correctness is a separate hard gate.** Verify each required
+   workflow from UI through the real local API and persisted/read-back result:
+   calculations, stock/money effects, history, permissions, tenant/app/book/role
+   isolation, validation, repeated actions and failure/recovery. A good-looking
+   screen or passing component test is not proof that the business task works.
+10. **Prove end-user value and necessity.** For every feature/action explain who
+    needs it, the real business problem, why it belongs on this screen, and how
+    it reduces effort, errors or uncertainty. Review from shopkeeper/operator,
+    owner/product-manager, designer and engineer perspectives. Consider mobile,
+    busy-counter use, feasibility and ongoing maintenance. Do not add clicks,
+    data or features merely to appear feature-rich; do not remove an existing
+    required capability without authorization.
+11. **Use evidence-based competitive comparison.** Identify relevant competitors
+    and compare the same actual user task: required capability, steps, clarity,
+    mobile usability, feedback/recovery, speed and business fit. Verify current
+    competitor facts with dated primary evidence or clearly labelled hands-on
+    observations. Record where we are better, equal or worse and the trade-offs.
+    Do not invent competitor limitations or claim superiority from appearance,
+    a self-rating or marketing copy. Distinguish proposed advantage from tested
+    advantage; missing research means unproven, not better.
+12. **Trace every necessary requirement to evidence.** In the existing piece
+    report map user needs and must-keep contracts to implementation, meaningful
+    tests/real journeys and explicit status: passed, missing, deferred with
+    reason, or unproven. Include user-relevant edge cases and source/backend
+    gaps, not an impossible promise that all imaginable cases are covered.
+    Required acceptance checks must pass before declaring that scope complete.
+    No aggregate rating can compensate for incorrect money/stock, unauthorized
+    access, lost work or an essential broken/unavailable workflow. New features
+    and backend changes still respect their approval/frozen-contract boundaries.
+13. **P0 — pixel-exact and functionally identical to the approved design, for
+    every screen in every case (owner, 26 Oct 2026, R-DEC-50).** This applies to
+    everything, not only Shop. "Close" is a failure.
+    - **The design:** https://claude.ai/artifact/RsYjPpq2t3zCTMu5iUSvNm, copied
+      at `docs/revamp/design/shop-fixes-and-business-types.html`. The copy was
+      checked identical to the live page on 26 Oct 2026. Re-check before each
+      piece; if they differ, the live page wins and the copy is refreshed.
+      Every fix, build and redesign starts from its section. Section E1
+      ("Every Shop screen") is the checklist, so no page is skipped.
+    - **UI and behaviour, phone and desktop, for every feature, component,
+      modal and page** (owner: "same UI and behaviour as there … 100% pixel
+      perfect and functional"). Behaviour means what each tap opens, what moves
+      where, what each state says, and how phone and desktop differ, exactly as
+      the section's "What changes" list and mocks describe. Each item is checked
+      on the running app, not assumed from the code.
+    - **Scope: every screen, every module, everything** (owner, same day).
+      That covers Shop, Udhaar, Lending, Library and every later app, plus
+      drawers, sheets, dialogs, prints/PDFs, and the empty, loading and error
+      states. A screen with an approved design (this artifact, or the module's
+      own, such as `docs/revamp/design/counter-mode.html`) is matched exactly. A
+      screen with none is designed first and shown to the owner for approval
+      before it is built. Never invent a look and call it matched.
+    - **Pixels are measured, not eyeballed.** Each element's computed size,
+      padding, gap, radius, font size and weight, and colour (pixel-sampled) is
+      compared on the running app with the design's CSS numbers.
+    - **Side by side, per case.** The design's own mocks (`[data-mock=…]`,
+      `e2e/design-compare.mjs`) are photographed and paired with the built
+      screen. Cover phone 390 and 320, desktop 1280, light and dark, EN and HI,
+      and the empty, loading, error, long-text and no-match states. Every pair
+      is LOOKED at.
+    - **Data, not only pixels.** Every figure a screen shows is read back from
+      the API it uses, and the read-back is proved able to fail with a skewed
+      self-test.
+    - **Behaviour.** The busy-counter checks run on every piece: double taps,
+      fast switching, slow network, reload and typing during load. React
+      commits and requests are counted while typing.
+    - **Test like a user and a QA engineer, every piece.** Three kinds, each
+      required:
+      - *manual exploratory* — drive the app by hand in a browser, tap by tap,
+        on phone and desktop sizes;
+      - *monkey* — a seeded random run of taps, typing and keys, failing on a
+        crash, console error, overflow or lost data, with the seed reported
+        so a failure reproduces;
+      - *functional end to end* — complete the real business task (issue the
+        bill, take the payment), read the result back from the API, and check
+        every other screen showing that data updated without a refresh
+        (FB-010).
+    - **Conflicts are listed, never chosen silently.** Where the design
+      contradicts an earlier owner rule (unbuilt features hidden, today's
+      tokens, dd/mm/yyyy in rows), list the conflict for the owner.
+    - **Multiple business types from the start.** Words go through
+      `useAppWords().w`, and features and menu come from the server (BP-22,
+      `docs/platform/17-business-model-map.md`), never discovered afterwards.
+
 
 The owner asked for a specific loop, in these words: **review, build, look,
 report** — design review *before* implementing, not screenshots afterwards. And
 after each feature: **bring the stack up, test it like a tester, fix what you
 find, then move on.** The step most often skipped is *look*: actually run it and
 look at the result.
+
+Owner quality standard, 20 Oct 2026: this responsibility applies to every future
+module and change. Treat an approved artifact as the acceptance reference, not
+loose inspiration. Compare complete phone and desktop compositions, components,
+typography, spacing, density, data placement and interactions before delivery.
+Exercise the real business flows and edge cases, reuse the existing system, and
+state missing source data or unsupported behavior explicitly. Do not make the
+owner discover preventable inconsistencies, inflate ratings, or call a partial
+implementation complete. New owner instructions supersede a specific reference
+(e.g. Home's daily/weekly/monthly/yearly graph and header command search).
+
+**Mobile-first registers (owner,21Oct2026,R-DEC-30):** about80% of users are on
+phones. Redesign complete workflows, not old styling. Tables/mobile lists fit
+the available visual viewport: only rows scroll, pagination/actions remain in
+reach. Prefer shared opt-in page/grid sizing, measured header/navigation space
+and dynamic viewport height over copied fixed offsets. Verify phone readability,
+44px hit targets, keyboard/short-height behavior and real scroll measurements.
+Do not claim all older registers migrated when only the current piece is done.
+
+**Feature by feature (owner, 23 Oct 2026, R-DEC-34):** finish one feature
+completely (gates, LOOK, phone and desktop acceptance, performance, docs, push)
+before starting the next; never leave several modules half-verified.
+
+**Revamp, do not patch (owner, 20 Oct 2026, R-DEC-29):** do not rework the
+existing design of any module; build its approved revamp composition
+(`docs/revamp/07-screens/`, `design/counter-mode.html` for editors) instead of
+adjusting the old screens. The scoring standard (design, busy shop,
+performance, and how each is measured) is in
+`docs/revamp/START-NEXT-SESSION-PROMPT.txt`.
 
 This has repeatedly paid off. Five separate defects shipped green tests because
 nothing exercised the real path: `seed_all`, `seed_demo` and `seed_e2e` were
@@ -87,7 +294,8 @@ There is no seeded merchant — sign up at `/signup`.
 ```bash
 cd backend  && python3 -m pytest -q          # 1121 passing
 cd frontend && npm run type-check && npm run lint && npm test   # 1235 passing
-cd frontend && npm run build && npm run bundle:check            # 235.5 KB gz baseline
+cd frontend && npm run build && npm run bundle:check            # 229.2 KB gz baseline
+cd frontend && npm run i18n:split && npm run i18n:check         # after any merge touching locales/
 
 # The e2e harnesses run against a LIVE stack, which has to be served the way
 # `output: standalone` requires — `next start` cannot serve this build and
@@ -254,6 +462,54 @@ that every merchant opening the list to READ it would pay), and its field-name
 constants live in a module that imports nothing, because importing them from
 the file that also holds the Yup schema dragged Yup into the route for another
 17 KB. Module-level imports tree-shake between modules, not within one.
+
+## Each app keeps only its own money; plain words (DEC-019, 12 Oct 2026)
+
+The owner, answering the 12 Oct QA report: the **Udhaar book** (You gave / You got) is
+its own standalone app, like Khatabook; the **Shop** keeps its own Customers and
+Suppliers (two separate tabs, bills due); **Library** and **Lending** keep theirs. Never
+combine them. Each app's money is its own ledger bucket and party cache (`main` →
+`balance`, `shop` → `shop_balance`, `loan`, `library`, `deposit`); no screen subtracts
+one from another, and no screen shows another app's figure. The person's name and
+mobile are the one shared record. Read DEC-019 before touching a balance.
+
+The Udhaar book is the `khata` app (module `khata`, `/khata`, `features/khata/app.ts`).
+The shared person page and the party list read ONE book per request — `?book=shop` is
+the Shop's, anything else the Udhaar book's — and the page takes it from the open app's
+manifest (`AppManifest.book`). A new screen that shows a person's money must say which
+book it is reading; a screen that reads `balance` on a Shop page is the bug DEC-019 ended.
+
+**Words:** the users are rural shopkeepers who know basic English. Every label is plain
+everyday English (and simple Hindi) — no jargon, no rule codes, no word cut by an
+ellipsis. Lending says Lent / Collected, Library says Fee / Paid, only the Udhaar book
+says You gave / You got.
+
+## A business chooses its apps at sign-up (DEC-016, 11 Oct 2026)
+
+Step 1 of the wizard asks "What do you want to use?" and the list is the
+SERVER's (`GET /onboarding/apps`: registered ∩ released ∩ plan ∩ partner).
+`POST /tenants {apps}` switches each one on through
+`business_apps.set_app_running`, the business menu's own service; no `apps`
+means the Shop, as it always did. `business_type` is the Shop's question and is
+asked only with the Shop. `apply_preset` governs the shop's capabilities only.
+Do not give a new business a module it did not choose, and do not add an app
+to the choice in the frontend — register it and release it, and it appears.
+
+`node e2e/onboarding-apps.mjs` (demo stack only: `E2E_BACKEND` on :8100 and
+`DEMO_API_LOG`) signs up five ways on a desktop and a 360 px phone and reads
+what the merchant GOT from the server's session: 186 checks.
+
+## The demo film (11 Oct 2026)
+
+One narration, Hindi with English subtitles, in a desktop and a phone cut.
+Each feature is told as problem → a real moment → the steps on real screens →
+the benefit. Read `e2e/demo/README.md` before touching it. The lesson that cost
+most: **Playwright's `recordVideo` cannot be used for narrated film** — it runs
+4–9% long against the clock, and the published films had the picture 12–14 s
+behind the voice by the end. The recorder keeps the screencast's own
+timestamped frames instead, and a line of narration starts when its step does.
+To check a cut, take a frame at 80% of every caption and read it against the
+words.
 
 ## State
 

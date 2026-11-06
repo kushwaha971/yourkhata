@@ -22,6 +22,8 @@ from django.db import transaction
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.views import APIView
 
+from apps.common.context import Ctx
+from apps.common.exceptions import PermissionDenied, ValidationFailed
 from apps.common.responses import StandardResponse
 from apps.common.tenancy import get_effective_tenant
 from apps.platform_app import tokens
@@ -38,9 +40,11 @@ from apps.platform_app.serializers.auth import (
     SwitchTenantSerializer,
 )
 from apps.platform_app.services import auth as auth_service
+from apps.platform_app.services import business_apps as business_apps_service
 from apps.platform_app.services import memberships as membership_service
 from apps.platform_app.services import passwords as password_service
 from apps.platform_app.services import sessions as session_service
+from apps.platform_app.services import throttle
 
 
 def _client_meta(request: Any) -> dict:
@@ -238,6 +242,34 @@ class MeView(APIView):
         return StandardResponse.ok(session_payload.build(user=request.user, membership=membership))
 
 
+class SwitchAppView(APIView):
+    """`POST /auth/switch-app {app}` — the app switcher (docs/platform/14 §4.2).
+
+    The same body as `/auth/me`, so the client swaps its menu, words and home
+    from one response. No new tokens: the business and the permissions version
+    are unchanged, and permissions come from the membership's grants, not the app.
+    """
+
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request: Any) -> Any:
+        claims = getattr(request, "auth_claims", {}) or {}
+        membership = (
+            active_membership(user=request.user, tenant_id=claims.get("tid"))
+            if claims.get("tid") and not claims.get("imp")
+            else None
+        )
+        if membership is None:
+            raise PermissionDenied("Open a business first.")
+        data = request.data if isinstance(request.data, dict) else {}
+        membership_service.switch_app(
+            membership=membership,
+            app=data.get("app"),
+            request_id=getattr(request, "request_id", None),
+        )
+        return StandardResponse.ok(session_payload.build(user=request.user, membership=membership))
+
+
 class SwitchTenantView(APIView):
     """`POST /auth/switch-tenant` (PLT-04 FR-2, BR-1, BR-2)."""
 
@@ -372,11 +404,31 @@ class PasswordResetConfirmView(APIView):
         data = serializer.validated_data
         meta = _client_meta(request)
 
+        if meta["ip"]:
+            per_ip = throttle.consume(
+                scope=throttle.SCOPE_RESET_CONFIRM_IP,
+                identifier=meta["ip"],
+                limit=throttle.RESET_CONFIRMS_PER_IP,
+                window_seconds=throttle.RESET_CONFIRM_IP_WINDOW_SECONDS,
+            )
+            if not per_ip.allowed:
+                raise password_service.RequestThrottled(
+                    per_ip.retry_after, throttle.RESET_CONFIRMS_PER_IP
+                )
+        # The hash is computed HERE, with no transaction open (see
+        # `passwords.hash_outside_transaction`); the atomic block below only
+        # spends the link and writes the finished string.
+        prepared_user, encoded = password_service.prepare_reset(
+            token=data["token"], new_password=data["new_password"]
+        )
         with transaction.atomic():
             user = password_service.consume_reset_token(token=data["token"])
+            if user.pk != prepared_user.pk:  # pragma: no cover - one token, one user
+                raise ValidationFailed({"token": ["This reset link is no longer valid."]})
             revoked = password_service.reset_password(
                 user=user,
                 new_password=data["new_password"],
+                encoded_password=encoded,
                 request_id=meta["request_id"],
                 ip=meta["ip"],
                 user_agent=meta["user_agent"],
@@ -436,3 +488,82 @@ class EmailVerifyConfirmView(APIView):
             ip=meta["ip"],
         )
         return StandardResponse.ok({"email_verified": bool(user.email_verified_at)})
+
+
+def _current_membership(request: Any) -> Any:
+    """The membership this request acts in — never an impersonated one."""
+    claims = getattr(request, "auth_claims", {}) or {}
+    membership = (
+        active_membership(user=request.user, tenant_id=claims.get("tid"))
+        if claims.get("tid") and not claims.get("imp")
+        else None
+    )
+    if membership is None:
+        raise PermissionDenied("Open a business first.")
+    return membership
+
+
+class LeaveAppView(APIView):
+    """`POST /auth/leave-app {app}` — take yourself out of one app (docs/platform/14 §6.2).
+
+    The session body comes back, so the switcher and the menu follow at once.
+    """
+
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request: Any) -> Any:
+        membership = _current_membership(request)
+        data = request.data if isinstance(request.data, dict) else {}
+        business_apps_service.leave_app(
+            membership=membership, app=data.get("app"), ctx=Ctx.from_request(request)
+        )
+        return StandardResponse.ok(session_payload.build(user=request.user, membership=membership))
+
+
+class BusinessAppsView(APIView):
+    """`POST /tenants/current/apps {app, running}` — the owner adds or turns off an app.
+
+    Owner decision 2 (docs/platform/14 §6): the data stays, the menu goes for
+    everyone. The session body comes back for the owner's own switcher.
+    """
+
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request: Any) -> Any:
+        membership = _current_membership(request)
+        data = request.data if isinstance(request.data, dict) else {}
+        business_apps_service.set_app_running(
+            membership=membership,
+            app=data.get("app"),
+            running=data.get("running"),
+            ctx=Ctx.from_request(request),
+        )
+        membership.tenant.refresh_from_db()
+        return StandardResponse.ok(session_payload.build(user=request.user, membership=membership))
+
+
+class AppSetupView(APIView):
+    """`GET /apps/{code}/setup` — the app's setup checklist for this person (step 5)."""
+
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request: Any, code: str) -> Any:
+        from apps.platform_app.selectors.app_setup import setup_payload
+
+        return StandardResponse.ok(
+            setup_payload(membership=_current_membership(request), code=code)
+        )
+
+
+class AppSetupHideView(APIView):
+    """`POST /apps/{code}/setup/hide` — the owner or an admin hides it for the business."""
+
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request: Any, code: str) -> Any:
+        from apps.platform_app.selectors.app_setup import setup_payload
+        from apps.platform_app.services.app_setup import hide_setup
+
+        membership = _current_membership(request)
+        hide_setup(membership=membership, code=code, ctx=Ctx.from_request(request))
+        return StandardResponse.ok(setup_payload(membership=membership, code=code))

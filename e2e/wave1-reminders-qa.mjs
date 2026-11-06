@@ -5,12 +5,14 @@
  *   node e2e/wave1-reminders-qa.mjs
  * Env: E2E_FRONTEND, E2E_BACKEND, E2E_SHOTS (default /tmp/e2e-shots/wave1/reminders-expenses)
  */
-import { chromium } from 'playwright';
+import { createRequire } from 'node:module';
+const { chromium } = createRequire(import.meta.url)('playwright');
+import { PYTHON, psql as localPsql } from './lib/local.mjs';
 import { mkdirSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
 import { newOwner, addParty, api, must, uniq, uniqMobile, PASSWORD } from './lib/fixtures.mjs';
 
-const FRONTEND = process.env.E2E_FRONTEND ?? 'http://localhost:3000';
+const FRONTEND = process.env.E2E_FRONTEND ?? (process.env.E2E_BASE ?? 'http://localhost:3000');
 const SHOTS = process.env.E2E_SHOTS ?? '/tmp/e2e-shots/wave1/reminders-expenses';
 const BACKEND_DIR = new URL('../backend', import.meta.url).pathname;
 for (const d of ['phone', 'desktop']) mkdirSync(`${SHOTS}/${d}`, { recursive: true });
@@ -20,8 +22,8 @@ const record = (id, check, ok, detail = '') => {
   results.push({ id, check, ok, detail });
   console.log(`${ok ? 'ok  ' : 'FAIL'} [${id}] ${check}${detail ? ` — ${String(detail).slice(0, 300)}` : ''}`);
 };
-const psql = (sql) => execFileSync('psql', ['-h', '127.0.0.1', '-U', 'udhaarbook', 'udhaarbook', '-tAq', '-c', sql], { env: { ...process.env, PGPASSWORD: 'udhaarbook' } }).toString().trim();
-const djangoShell = (code) => execFileSync('python3', ['manage.py', 'shell', '-c', code], { cwd: BACKEND_DIR }).toString().trim();
+const psql = localPsql;
+const djangoShell = (code) => execFileSync(PYTHON, ['manage.py', 'shell', '-c', code], { cwd: BACKEND_DIR }).toString().trim();
 const ist = (n = 0) => new Date(Date.now() + n * 86400000 + 5.5 * 3600000).toISOString().slice(0, 10);
 const SIZES = [{ id: 'phone', width: 390, height: 844 }, { id: 'desktop', width: 1280, height: 860 }];
 const shot = async (page, size, name, full = false) => page.screenshot({ path: `${SHOTS}/${size}/${name}.png`, fullPage: full }).catch((e) => console.log('shot fail', name, e.message));
@@ -108,9 +110,9 @@ record('EXP-03', 'staff: today cashbook readable', rs.status === 200, rs.status)
 console.log('SEED', owner.email, owner.tenantId);
 
 // ───────────────────────── browser ─────────────────────────
-const browser = await chromium.launch();
+const browser = await chromium.launch({ executablePath: process.env.CHROME });
 const signIn = async (page, email, password = PASSWORD) => {
-  await page.goto(`${FRONTEND}/login`, { waitUntil: 'networkidle', timeout: 180000 });
+  await page.goto(`${FRONTEND}/login/email`, { waitUntil: 'networkidle', timeout: 180000 });
   await page.fill('input[type="email"], input[name="email"]', email);
   await page.fill('input[type="password"], input[name="password"]', password);
   await page.waitForTimeout(1500);
@@ -355,7 +357,7 @@ for (const size of SIZES) {
       await dr.getByPlaceholder('Search a customer or supplier').fill('Gupta'); await page.waitForTimeout(1500);
       await page.getByRole('option', { name: /Gupta Wholesale/ }).first().click().catch(async () => page.getByText('Gupta Wholesale').last().click());
       await page.waitForTimeout(500);
-      await dr.getByPlaceholder('e.g. Tea and snacks for staff').fill('Loading charges — unpaid').catch(() => {});
+      await dr.getByPlaceholder('Enter a note').fill('Loading charges — unpaid').catch(() => {});
       await dr.getByRole('button', { name: /Pick a date/ }).or(dr.getByText('Pick a date')).first().click();
       await page.waitForTimeout(700);
       const cal = page.locator('[role="grid"]').last();
@@ -394,7 +396,7 @@ for (const size of SIZES) {
     await vd.getByRole('button', { name: 'Void expense' }).click(); await page.waitForTimeout(600);
     const needReason = /Give a short reason/.test(await vd.innerText());
     record('EXP-02', 'void without reason blocked', needReason, '');
-    await vd.getByPlaceholder('e.g. Wrong amount').fill('Hamali was already paid in cash');
+    await vd.getByPlaceholder('Enter the reason').fill('Hamali was already paid in cash');
     await vd.getByRole('button', { name: 'Void expense' }).click(); await page.waitForTimeout(1800);
     const g = await must('GET', `/parties/${gupta.id}`, null, T);
     record('EXP-02', 'void reverses the khata (Gupta back to -1500)', g.balance === '-1500.00', g.balance);

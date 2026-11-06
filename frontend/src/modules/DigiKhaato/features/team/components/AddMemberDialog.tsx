@@ -16,11 +16,18 @@ import {
 } from 'src/design-system';
 import { useTranslation } from 'src/hooks/useTranslation';
 
-import { DEFAULT_INVITE_ROLE, INVITABLE_ROLES } from '../constants/teamDefaults';
+import { DEFAULT_INVITE_ROLE } from '../constants/teamDefaults';
+import { useRoles } from '../hooks/useRoles';
 import { useMemberSchemas } from '../validation/memberSchemas';
+import { roleOptionLabel } from '../view-model/roleDisplay';
 
 import type { UseMembersResult } from '../hooks/useMembers';
 import type { AddMemberFormValues } from '../validation/memberSchemas';
+
+// Loaded with dynamic(), so its own words come with its own chunk rather than
+// with the screen that opens it (src/i18n/catalogueRegistry.ts).
+import 'src/i18n/catalogues/team';
+import 'src/i18n/catalogues/validation';
 
 /**
  * The add-member form (DEC-012).
@@ -43,13 +50,14 @@ export function AddMemberDialog({
   members,
 }: Readonly<{ members: UseMembersResult }>): React.JSX.Element {
   const { t } = useTranslation();
-  const { addMemberSchema } = useMemberSchemas();
+  // A13: roles from `GET /roles` (module roles of enabled modules included),
+  // fetched when the dialog first opens.
+  const roles = useRoles(members.addOpen);
+  const roleCodes = useMemo(() => roles.assignable.map((role) => role.code), [roles.assignable]);
+  const { addMemberSchema } = useMemberSchemas(roleCodes);
   const formId = useId();
 
-  const defaults = useMemo(
-    () => ({ fullName: '', email: '', role: DEFAULT_INVITE_ROLE, mobile: '' }),
-    []
-  );
+  const defaults = useMemo(() => ({ fullName: '', role: DEFAULT_INVITE_ROLE, mobile: '' }), []);
 
   const form = useForm<AddMemberFormValues>({
     resolver: yupResolver(addMemberSchema),
@@ -75,8 +83,8 @@ export function AddMemberDialog({
   );
 
   const roleOptions = useMemo(
-    () => INVITABLE_ROLES.map((role) => ({ value: role, label: t(`tenant.role.${role}`) })),
-    [t]
+    () => roles.assignable.map((role) => ({ value: role.code, label: roleOptionLabel(t, role) })),
+    [roles.assignable, t]
   );
 
   const handleOpenChange = useCallback(
@@ -121,14 +129,18 @@ export function AddMemberDialog({
           {(field) => <UbTextInput {...field} autoComplete="off" />}
         </UbField>
 
+        {/* The way they sign in (owner, 9 Oct 2026): a code is texted to this
+            number, so it is required and Indian — the sign-in code is sent in India
+            only, hence `lockCountry`. `UbPhoneInput`, as on the party form:
+            the merchant types ten digits and the schema wants E.164 (UAT D4). */}
         <UbField
-          name="email"
-          label={t('team.member.email.label')}
-          placeholder={t('team.member.email.placeholder')}
-          hint={t('team.member.email.hint')}
+          name="mobile"
+          label={t('team.member.mobile.label')}
+          placeholder={t('team.member.mobile.placeholder')}
+          hint={t('team.member.mobile.hint')}
           required
         >
-          {(field) => <UbTextInput {...field} type="email" autoComplete="off" />}
+          {(field) => <UbPhoneInput {...field} lockCountry autoComplete="off" />}
         </UbField>
 
         <UbField
@@ -144,18 +156,6 @@ export function AddMemberDialog({
               placeholder={t('team.member.role.placeholder')}
             />
           )}
-        </UbField>
-
-        {/* `UbPhoneInput`, as on the party form: the merchant types ten digits
-            and the schema wants E.164, so a plain `type="tel"` box refused
-            "9890011223" with a format error (UAT D4). */}
-        <UbField
-          name="mobile"
-          label={t('team.member.mobile.label')}
-          placeholder={t('team.member.mobile.placeholder')}
-          hint={t('team.member.mobile.hint')}
-        >
-          {(field) => <UbPhoneInput {...field} autoComplete="off" />}
         </UbField>
       </UbForm>
     </UbDialog>

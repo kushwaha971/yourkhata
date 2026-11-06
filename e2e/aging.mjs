@@ -36,13 +36,15 @@
  *
  * Exits non-zero on any failure.
  */
-import { chromium } from 'playwright';
+import { createRequire } from 'node:module';
+const { chromium } = createRequire(import.meta.url)('playwright');
+import { BACKEND_DIR as LOCAL_BACKEND_DIR, PYTHON } from './lib/local.mjs';
 import { execFileSync } from 'node:child_process';
 import { mkdirSync, readFileSync } from 'node:fs';
 
-const FRONTEND = process.env.E2E_FRONTEND ?? 'http://localhost:3000';
+const FRONTEND = process.env.E2E_FRONTEND ?? (process.env.E2E_BASE ?? 'http://localhost:3000');
 const BACKEND = process.env.E2E_BACKEND ?? 'http://localhost:8000/api/v1';
-const BACKEND_DIR = process.env.E2E_BACKEND_DIR ?? '/home/claude/repo/backend';
+const BACKEND_DIR = LOCAL_BACKEND_DIR;
 const SHOT_DIR = `${process.env.E2E_SHOTS ?? '/tmp/e2e-shots'}/aging`;
 const EXPORT_LIMIT = Number(process.env.E2E_EXPORT_LIMIT ?? 10); // UB_RATE_LIMIT_EXPORT, 10/hour
 const wantShots = process.argv.includes('--shots');
@@ -250,7 +252,7 @@ async function seed() {
 // ── Browser helpers ─────────────────────────────────────────────────────────
 
 const signIn = async (page) => {
-  await page.goto(`${FRONTEND}/login`, { waitUntil: 'networkidle', timeout: 180000 });
+  await page.goto(`${FRONTEND}/login/email`, { waitUntil: 'networkidle', timeout: 180000 });
   await page.waitForTimeout(1500);
   await page.fill('input[type="email"]', OWNER.email);
   await page.fill('input[type="password"]', OWNER.password);
@@ -261,7 +263,7 @@ const signIn = async (page) => {
 
 const isAgingRead = (request) => {
   const url = new URL(request.url());
-  return `${url.origin}${url.pathname}` === `${BACKEND}/ledger/aging` && url.searchParams.get('format') !== 'csv';
+  return url.pathname === `${new URL(BACKEND).pathname}/ledger/aging` && url.searchParams.get('format') !== 'csv';
 };
 const paramsOf = (request) => Object.fromEntries(new URL(request.url()).searchParams);
 
@@ -283,7 +285,9 @@ const readTiles = (page) =>
   page.evaluate((labels) => {
     const out = {};
     for (const [bucket, label] of Object.entries(labels)) {
-      const el = [...document.querySelectorAll('[data-testid="aging-screen"] span')].find(
+      // `dt` too: the figures collapse to a summary line (UbStatSummary, a
+      // `dl`) unless the merchant opened the cards, and the label is a `dt` there.
+      const el = [...document.querySelectorAll('[data-testid="aging-screen"] span, [data-testid="aging-screen"] dt')].find(
         (s) => s.textContent.trim() === label && !s.closest('table, th, [data-testid="ub-grid-card"]')
       );
       let node = el;
@@ -497,7 +501,7 @@ const main = async () => {
       `rows = AuditLog.objects.filter(action="ledger.aging.exported", actor__email=${JSON.stringify(OWNER.email)}).order_by("created_at")`,
       'print(json.dumps([dict(entity_type=r.entity_type, tenant=str(r.tenant_id), metadata=r.metadata) for r in rows]))',
     ].join('\n');
-    const out = execFileSync('python3', ['manage.py', 'shell', '-c', code], {
+    const out = execFileSync(PYTHON, ['manage.py', 'shell', '-c', code], {
       cwd: BACKEND_DIR, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'], timeout: 60000,
     });
     const rows = JSON.parse(out.trim().split('\n').pop());
@@ -514,12 +518,16 @@ const main = async () => {
   }
 
   // ── 5. The browser ───────────────────────────────────────────────────────
-  const browser = await chromium.launch();
+  const browser = await chromium.launch({ executablePath: process.env.CHROME });
   const context = await browser.newContext({ viewport: { width: 1280, height: 800 }, acceptDownloads: true });
   // Any export the browser gets through to the API spends the same budget.
   context.on('response', (response) => {
     const url = new URL(response.url());
-    if (`${url.origin}${url.pathname}` === `${BACKEND}/ledger/aging` && url.searchParams.get('format') === 'csv' &&
+    // RPT-05: with Reports enabled the button downloads /reports/receivables-aging
+    // (or payables-aging) instead. It is charged to the same "export" scope, so it
+    // is counted here too, or the 429 check below lands one export late.
+    const exportPaths = [`${BACKEND}/ledger/aging`, `${BACKEND}/reports/receivables-aging`, `${BACKEND}/reports/payables-aging`];
+    if (exportPaths.some((path) => new URL(path).pathname === url.pathname) && url.searchParams.get('format') === 'csv' &&
         response.status() === 200) exportsSpent += 1;
   });
   const page = await context.newPage();
@@ -565,7 +573,7 @@ const main = async () => {
       `got ${JSON.stringify(pickTiles)} want ${JSON.stringify(expectedTiles(pickTotals))}`);
 
     // Drill-down from the party cell (a link on a table).
-    const statementReq = page.waitForRequest((r) => r.url().startsWith(`${BACKEND}/parties/${ids.C}/statement`), { timeout: 60000 }).catch(() => null);
+    const statementReq = page.waitForRequest((r) => new URL(r.url()).pathname === `${new URL(BACKEND).pathname}/parties/${ids.C}/statement`, { timeout: 60000 }).catch(() => null);
     await page.getByRole('link', { name: nameOf.C, exact: true }).click();
     await page.waitForURL((url) => url.pathname === `/parties/${ids.C}/statement`, { timeout: 60000 }).catch(() => {});
     const landed = new URL(page.url());
@@ -608,8 +616,12 @@ const main = async () => {
     const file = await download;
     let content = '';
     if (file) content = readFileSync(await file.path(), 'utf8');
+    // RPT-05 / RPT-08: the button now downloads the Reports file: FR-5's columns,
+    // starting party_name,mobile,party_type,tags, with a UTF-8 BOM so Excel reads ₹.
+    const REPORT_HEADER = 'party_name,mobile,party_type,tags,collection_date,credit_limit,';
+    const firstLine = content.split(/\r?\n/)[0] ?? '';
     record('browser: Export CSV downloads the CSV (header row first)',
-      Boolean(file) && content.split(/\r?\n/)[0] === 'party,0_30,31_60,61_90,90_plus,total',
+      Boolean(file) && firstLine.startsWith(`\uFEFF${REPORT_HEADER}`),
       file
         ? `href ${href} → saved "${file.suggestedFilename()}" from ${file.url()}, starts "${content.slice(0, 60).replace(/\n/g, '\\n')}"`
         : `href ${href}; no download`);
@@ -623,7 +635,7 @@ const main = async () => {
     record('browser (phone): the tiles show the same figures', tilesMatch(tiles, HAND_RECEIVABLE_TOTALS), JSON.stringify(tiles));
     const cards = await page.getByTestId('ub-grid-card').count();
     record('browser (phone): one card per party', cards === 6, `${cards} cards`);
-    const statementReq = page.waitForRequest((r) => r.url().startsWith(`${BACKEND}/parties/${ids.G}/statement`), { timeout: 60000 }).catch(() => null);
+    const statementReq = page.waitForRequest((r) => new URL(r.url()).pathname === `${new URL(BACKEND).pathname}/parties/${ids.G}/statement`, { timeout: 60000 }).catch(() => null);
     await page.getByRole('button', { name: `Open the statement for ${nameOf.G}` }).click();
     await page.waitForURL((url) => url.pathname === `/parties/${ids.G}/statement`, { timeout: 60000 }).catch(() => {});
     const landed = new URL(page.url());

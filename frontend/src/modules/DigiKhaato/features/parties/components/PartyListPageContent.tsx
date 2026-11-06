@@ -1,21 +1,28 @@
 'use client';
 
-import { useCallback, useMemo } from 'react';
+import { useCallback, useMemo, useRef, useState } from 'react';
 
 import dynamic from 'next/dynamic';
-import { useRouter } from 'next/navigation';
 
 import { Plus, Tags } from 'lucide-react';
 
 import {
   UbActionLink,
   UbButton,
+  UbDialogLoading,
+  UbDrawerLoading,
+  UbEmptyState,
+  UbFab,
+  UbFilterSelect,
+  UbLoadMore,
   UbPageHeader,
+  UbPageHeaderMobileActions,
   UbPageShell,
-  UbSelect,
   UbStack,
   UbStatusBanner,
+  UbText,
   UbTextInput,
+  UbViewportPageShell,
 } from 'src/design-system';
 import {
   UbDataGrid,
@@ -25,33 +32,48 @@ import {
   type UbGridSort,
   type UbGridState,
 } from 'src/design-system/UbDataGrid';
+import { useAppRouter } from 'src/hooks/useAppRouter';
 import { useNowMs } from 'src/hooks/useNowMs';
-import { useTranslation } from 'src/hooks/useTranslation';
+import { usePermissions } from 'src/hooks/usePermissions';
+import { useTranslation, type TranslateFn } from 'src/hooks/useTranslation';
 import { ROUTES, partyPath } from 'src/routes';
-import type { PartyStatus } from 'src/types/domain.types';
+import type { LedgerBook, PartyStatus } from 'src/types/domain.types';
 
 import {
   ImportActionLink,
   ListExportButton,
 } from 'modules/DigiKhaato/features/imports/components/ListHeaderActions';
+import { useAppWords } from 'modules/DigiKhaato/features/navigation/useAppWords';
 
 import { partyExportPath } from '../api/partyService';
+import { KHATA_BOOK_WORDS, SHOP_BOOK_WORDS } from '../constants/partyFilters';
 import { PAGE_SIZE_OPTIONS } from '../constants/partyListDefaults';
 import { TAG_CHIPS_PER_ROW } from '../constants/partyTags';
 import { useBulkArchive } from '../hooks/usePartyArchive';
 import { usePartyBulkTag } from '../hooks/usePartyBulkTag';
 import { usePartyForm } from '../hooks/usePartyForm';
 import { usePartyList } from '../hooks/usePartyList';
+import { usePartyRoles } from '../hooks/usePartyRoles';
 import { usePartyTags } from '../hooks/usePartyTags';
-import { orderingFor, sortFromOrdering } from '../view-model/partyListSort';
+import {
+  orderingFor,
+  sortFromOrdering,
+  supplierBalanceOrdering,
+} from '../view-model/partyListSort';
 
-import { PartyBulkArchiveDialog } from './PartyBulkArchiveDialog';
+import { KhataPeopleSummary } from './KhataPeopleSummary';
+import { KhataPeopleToolbar } from './KhataPeopleToolbar';
 import { createPartyColumns } from './PartyListColumns';
 import { PartyListFilters } from './PartyListFilters';
+import { ShopPartyRowActions } from './PartyListRow';
 import { PartyListSortSheet } from './PartyListSortSheet';
 import { PartyListStats } from './PartyListStats';
+import { ShopPartyFilters } from './ShopPartyFilters';
+import { ShopPartySummary } from './ShopPartySummary';
+import { ShopPartyToolbar } from './ShopPartyToolbar';
 
 import type {
+  PartyKind,
   PartyBalanceFilter,
   PartyCollectionFilter,
   PartyCreditFilter,
@@ -64,9 +86,32 @@ import type { Party } from '../types/party.types';
  * an interaction, so `open` is false in every server pass and there is no
  * hydration mismatch to avoid.
  */
+const SupplierPaymentLazy = dynamic(
+  () => import('../../payments/components/PaymentFormDrawer').then((m) => m.PaymentFormDrawer),
+  { ssr: false,
+  loading: () => <UbDrawerLoading /> }
+);
+
+// BP-08 — the settle dialog loads with its own words when a merchant taps Settle….
+const SettleBalancesLazy = dynamic(
+  () =>
+    import('../../payments/settlement/components/SettleBalancesDialog').then(
+      (m) => m.SettleBalancesDialog
+    ),
+  { ssr: false,
+  loading: () => <UbDialogLoading /> }
+);
+
+const ShopCustomerReminderLazy = dynamic(
+  () => import('./ShopCustomerReminder').then((m) => m.ShopCustomerReminder),
+  { ssr: false, loading: () => <UbDialogLoading /> }
+);
+
+
 const PartyFormDrawerLazy = dynamic(
   () => import('./PartyFormDrawer').then((m) => m.PartyFormDrawer),
-  { ssr: false }
+  { ssr: false,
+  loading: () => <UbDrawerLoading /> }
 );
 
 /**
@@ -82,7 +127,22 @@ const PartyFormDrawerLazy = dynamic(
  */
 const PartyBulkTagDialogLazy = dynamic(
   () => import('./PartyBulkTagDialog').then((m) => m.PartyBulkTagDialog),
-  { ssr: false }
+  { ssr: false,
+  loading: () => <UbDialogLoading /> }
+);
+
+/**
+ * PTY-04 FR-9's bulk archive dialog, split out by the same measure (Wave A
+ * gate, 30 Sep 2026). A6 taught it to report the modules' open records beside
+ * the balances, and it is opened only from the selection bar, once a year for
+ * most merchants; every merchant who opens the list to READ it was paying for
+ * the report's code on the route. Mounted only while open, so the chunk is
+ * fetched on the press. `listWeight.test.ts` holds it out of the route.
+ */
+const PartyBulkArchiveDialogLazy = dynamic(
+  () => import('./PartyBulkArchiveDialog').then((m) => m.PartyBulkArchiveDialog),
+  { ssr: false,
+  loading: () => <UbDialogLoading /> }
 );
 
 /**
@@ -117,12 +177,75 @@ const PartyBulkTagDialogLazy = dynamic(
 
 const STATUS_OPTIONS: readonly PartyStatus[] = ['active', 'archived'];
 
-export function PartyListPageContent(): React.JSX.Element {
-  const { t, n } = useTranslation();
-  const router = useRouter();
+export function PartyListPageContent({
+  kind,
+  book,
+}: Readonly<{
+  /**
+   * docs/platform/14 step 3b — the Shop's Customers and Suppliers pages are
+   * this list with its type FIXED, the way Zoho and Vyapar keep the two books
+   * apart. A party who is both is in both (BR-5). Without it, `/parties` is
+   * the whole book, which is what the Library and shared links still open.
+   */
+  kind?: PartyKind;
+  /**
+   * DEC-019 — which app's money the rows, chips and tiles show: `shop` on the
+   * Shop's Customers and Suppliers (what is due on bills), the Udhaar book's
+   * on `/khata` and `/parties`.
+   */
+  book?: LedgerBook;
+}> = {}): React.JSX.Element {
+  const { t: plainT, n, d } = useTranslation();
+  // B2: on the Shop's lists the people are the business's own (a medical
+  // store's Distributors, a wholesaler's Retailers and Companies).
+  const { w } = useAppWords();
+  const baseT = book === 'shop' ? w : plainT;
+  /* DEC-019 — on the Shop's lists the money words are the Shop's ("To collect",
+     "To pay"); the Udhaar book's own list (`book="main"`, `/khata`) is "People";
+     `/parties`, which passes no book, is untouched. */
+  const t = useCallback<TranslateFn>(
+    (id, values) =>
+      baseT(
+        book === 'shop' && kind === 'customer' && id === 'parties.list.empty.firstUse.body'
+          ? 'parties.list.shop.empty.body'
+          : book === 'shop'
+            ? (SHOP_BOOK_WORDS[id] ?? id)
+            : book === 'main'
+              ? (KHATA_BOOK_WORDS[id] ?? id)
+              : id,
+        values
+      ),
+    [baseT, book, kind]
+  );
+  const compactShop = book === 'shop' && Boolean(kind);
+  const compactKhata = book === 'main' && !kind;
+  const compactRegister = compactShop || compactKhata;
+  const PageShell = compactRegister ? UbViewportPageShell : UbPageShell;
+  const supplier = kind === 'supplier';
+  const [payingSupplier, setPayingSupplier] = useState<Party | null>(null);
+  const openSupplierPayment = useCallback((party: Party) => setPayingSupplier(party), []);
+  const tier = useGridTier();
+  const { can, hasModule } = usePermissions();
+  const [reminding, setReminding] = useState<Party | null>(null);
+  const [settling, setSettling] = useState<Party | null>(null);
+  const settledNow = useRef(false);
+  /* BP-08 — the same gate as the person page's ⋯: Shop book, may record payments,
+     and sales and purchases both on (a settlement settles an invoice against a bill). */
+  const canSettle =
+    book === 'shop' &&
+    can('payments.payment.write') &&
+    can('parties.party.read') &&
+    hasModule('payments') &&
+    hasModule('sales') &&
+    hasModule('purchases');
+  const openSettle = useCallback((party: Party) => setSettling(party), []);
+  const openReminder = useCallback((party: Party) => setReminding(party), []);
+  const canRemind = can('ledger.entry.read') && can('ledger.reminder.write');
+  const router = useAppRouter();
   const partyForm = usePartyForm();
   const {
     rows,
+    shopCounts,
     meta,
     filters,
     status,
@@ -130,6 +253,7 @@ export function PartyListPageContent(): React.JSX.Element {
     totals,
     totalsScope,
     overLimit,
+    rolesOn,
     selectedIds,
     setSelectedIds,
     setOrdering,
@@ -144,12 +268,16 @@ export function PartyListPageContent(): React.JSX.Element {
     refetch,
     isRefreshing,
     showingSaved,
-  } = usePartyList();
+    appendFailed,
+  } = usePartyList(compactRegister && tier === 'cards' ? 'append' : 'replace', kind, book);
 
   /** Read outside render, so the column array's memo key is stable. */
   const nowMs = useNowMs();
 
   const { tags, byUsage: tagOptions } = usePartyTags();
+  /* A6 — asked only while a module with roles is on, or while a role filter is
+     applied (so the pressed chip survives a filter that matched nobody). */
+  const roles = usePartyRoles(rolesOn || Boolean(filters.role));
 
   /**
    * Whether the CHIP LANE is reserved on every row.
@@ -165,27 +293,78 @@ export function PartyListPageContent(): React.JSX.Element {
   // Resolved once so a memoised cell never has to reach for `react-intl`.
   const balanceLabels = useMemo(
     () => ({
-      'parties.list.balance.receivable': t('parties.list.balance.receivable'),
+      'parties.list.balance.receivable': t(
+        supplier ? 'parties.list.supplier.advance' : 'parties.list.balance.receivable'
+      ),
       'parties.list.balance.payable': t('parties.list.balance.payable'),
       'parties.list.balance.settled': t('parties.list.balance.settled'),
     }),
-    [t]
+    [t, supplier]
   );
 
   /* The grid's own tier, read by the screen so the column model can be built
      for the rendering it is about to be painted at. `UbDataGrid` resolves this
      identically for itself, from the same media queries. */
-  const tier = useGridTier();
   const tagChipsPerRow = TAG_CHIPS_PER_ROW[tier];
 
+  const openParty = useCallback(
+    (party: Party) =>
+      router.push(
+        kind === 'supplier' && book === 'shop'
+          ? partyPath(party.id, 'supplier')
+          : partyPath(party.id)
+      ),
+    [router, kind, book]
+  );
+
   const columns = useMemo(
-    () => createPartyColumns({ t, nowMs, balanceLabels, hasTags, tagChipsPerRow }),
-    [t, nowMs, balanceLabels, hasTags, tagChipsPerRow]
+    () =>
+      createPartyColumns({
+        t,
+        compactShop,
+        compactKhata,
+        supplier,
+        onPay: can('payments.payment.write') ? openSupplierPayment : undefined,
+        phoneCards: tier === 'cards',
+        onRemind: !supplier && canRemind ? openReminder : undefined,
+        onSettle: compactShop && canSettle ? openSettle : undefined,
+        formatActivity: (at) =>
+          d(at, { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }),
+        hideBalanceLabel: compactShop && filters.balance === (supplier ? 'i_owe' : 'owes_me'),
+        onOpen: openParty,
+        nowMs,
+        balanceLabels,
+        hasTags,
+        tagChipsPerRow,
+        nameHeader: kind === 'supplier' ? t('parties.list.supplier.column.name') : undefined,
+      }),
+    [
+      t,
+      nowMs,
+      balanceLabels,
+      hasTags,
+      tagChipsPerRow,
+      kind,
+      supplier,
+      can,
+      openSupplierPayment,
+      compactShop,
+      compactKhata,
+      filters.balance,
+      tier,
+      canRemind,
+      openReminder,
+      canSettle,
+      openSettle,
+      openParty,
+      d,
+    ]
   );
 
   const labels = useMemo<UbDataGridLabels>(
     () => ({
-      loading: t('parties.list.loading'),
+      // A8: a Suppliers list said "Loading customers" while it loaded.
+      loading: t(supplier ? 'parties.list.supplier.loading' : 'parties.list.loading'),
       /**
        * `{page}` and `{pages}` are passed through as literal text: the grid
        * substitutes them itself, because it is the only thing that knows the
@@ -211,7 +390,14 @@ export function PartyListPageContent(): React.JSX.Element {
       // the plural and the grid paints what it is given.
       selectedCount: t('common.grid.selectedCount', { count: selectedIds.length }),
 
-      selectAll: t('parties.list.select.all'),
+      // Suppliers' box said "every customer" (SH-014); each list says its own.
+      selectAll: t(
+        kind === 'supplier'
+          ? 'parties.list.select.all.supplier'
+          : kind === 'customer'
+            ? 'parties.list.select.all'
+            : 'parties.list.select.all.everyone'
+      ),
       selectRow: t('parties.list.select.row', { name: '{name}' }),
       showing: t('common.grid.showing'),
       columns: t('common.grid.columns'),
@@ -225,7 +411,7 @@ export function PartyListPageContent(): React.JSX.Element {
     // here. It rebuilds this object while the merchant is ticking rows, which
     // is a handful of renders of a toolbar that is re-rendering anyway — the
     // alternative was a label that said NaN.
-    [t, selectedIds.length]
+    [t, selectedIds.length, kind, supplier]
   );
 
   /* NOT `onClick={partyForm.openCreate}`. The moment `openCreate` took an
@@ -234,9 +420,24 @@ export function PartyListPageContent(): React.JSX.Element {
      rendered as a string. TypeScript caught it here; a `() => void` signature
      would not have. */
   const openBlankCreate = useCallback(() => partyForm.openCreate(), [partyForm]);
+  const addLabel =
+    kind === 'supplier'
+      ? t('parties.list.supplier.add')
+      : kind === 'customer'
+        ? t('parties.list.customer.add')
+        : t('parties.list.add');
   /** The committed term, trimmed once — the empty state quotes it and the Add
    *  action prefills the form with it, and they must be the same string. */
   const searchTerm = searchInput.trim();
+  /* A7 — the count line's "of 1,760" is everyone in this list, before the
+     search: the chips' counts follow the search ("All · 0" for no match), so
+     the total seen with no search typed is kept and shown while one is.
+     Opened straight onto a search, there is none yet, and the line says
+     "6 customers" rather than "6 of 6". */
+  const [bookAll, setBookAll] = useState<number | undefined>(undefined);
+  const unsearchedAll = shopCounts && !filters.q ? shopCounts.all : undefined;
+  if (unsearchedAll !== undefined && unsearchedAll !== bookAll) setBookAll(unsearchedAll);
+  const dueIsEmpty = compactKhata && filters.balance === 'due' && !searchTerm;
   const addSearchedName = useCallback(
     () => partyForm.openCreate(searchTerm),
     [partyForm, searchTerm]
@@ -264,8 +465,14 @@ export function PartyListPageContent(): React.JSX.Element {
             description: t('parties.list.empty.archived.body'),
           }
         : {
-            title: t('parties.list.empty.firstUse.title'),
-            description: t('parties.list.empty.firstUse.body'),
+            title:
+              kind === 'supplier'
+                ? t('parties.list.supplier.empty.title')
+                : t('parties.list.empty.firstUse.title'),
+            description:
+              kind === 'supplier'
+                ? t('parties.list.supplier.empty.body')
+                : t('parties.list.empty.firstUse.body'),
             // The empty state's whole job is to offer the one move that closes
             // it. Before PTY-01 it described a screen and left the merchant to
             // find the way out themselves. FR-13's secondary "Import from CSV"
@@ -273,10 +480,20 @@ export function PartyListPageContent(): React.JSX.Element {
             // is built, and a control for an unbuilt feature is not rendered
             // (docs/DESIGN-SYSTEM.md §5).
             action: partyForm.canWrite ? (
-              <UbButton onClick={openBlankCreate}>{t('parties.list.add')}</UbButton>
+              <UbButton onClick={openBlankCreate}>{addLabel}</UbButton>
             ) : undefined,
           },
-      filtered: archivedOnly
+      filtered: dueIsEmpty
+        ? {
+            title: t('parties.khata.emptyDue.title'),
+            description: t('parties.khata.emptyDue.body'),
+            action: (
+              <UbButton variant="secondary" onClick={() => setFilters({ balance: '' })}>
+                {t('parties.khata.showAll')}
+              </UbButton>
+            ),
+          }
+        : archivedOnly
         ? {
             /* UAT D7 made Archived count as a filter, so an empty Archived
                tab now arrives HERE rather than at first-use. It keeps its own
@@ -300,8 +517,12 @@ export function PartyListPageContent(): React.JSX.Element {
                they had not made. The search wording also gets to quote the term,
                which is the thing they will want to check for a typo. */
             title: searchTerm
-              ? t('parties.list.empty.filtered.searchTitle', { q: searchTerm })
-              : t('parties.list.empty.filtered.chipsTitle'),
+              ? kind === 'supplier'
+                ? t('parties.list.supplier.empty.searchTitle', { q: searchTerm })
+                : t('parties.list.empty.filtered.searchTitle', { q: searchTerm })
+              : kind === 'supplier'
+                ? t('parties.list.supplier.empty.chipsTitle')
+                : t('parties.list.empty.filtered.chipsTitle'),
             description: searchTerm
               ? t('parties.list.empty.filtered.searchBody')
               : t('parties.list.empty.filtered.chipsBody'),
@@ -325,7 +546,7 @@ export function PartyListPageContent(): React.JSX.Element {
             ),
           },
       error: {
-        title: t('parties.list.error.title'),
+        title: t(supplier ? 'parties.list.supplier.error' : 'parties.list.error.title'),
         description: error?.message ?? t('parties.list.error.body'),
         requestId: error?.requestId ?? null,
         requestIdLabel: t('common.error.reference'),
@@ -338,6 +559,9 @@ export function PartyListPageContent(): React.JSX.Element {
     }),
     [
       t,
+      kind,
+      supplier,
+      addLabel,
       clearFilters,
       refetch,
       error,
@@ -347,6 +571,8 @@ export function PartyListPageContent(): React.JSX.Element {
       searchTerm,
       isArchivedTab,
       archivedOnly,
+      dueIsEmpty,
+      setFilters,
     ]
   );
 
@@ -356,10 +582,10 @@ export function PartyListPageContent(): React.JSX.Element {
   const gridState: UbGridState =
     status === 'loading'
       ? 'loading'
-      : status === 'failed' && !showingSaved
+      : status === 'failed' && !showingSaved && !appendFailed
         ? 'error'
         : rows.length === 0
-          ? isFiltered
+          ? isFiltered || (compactKhata && meta.hasAny === true)
             ? 'filtered-empty'
             : 'empty'
           : 'rows';
@@ -380,20 +606,30 @@ export function PartyListPageContent(): React.JSX.Element {
      lie the error state exists to avoid telling with rows. The stale-cache
      variant keeps them, because there the rows and totals ARE this query's. */
   const showStats = gridState !== 'empty' && gridState !== 'error';
+  /** Nobody of this kind in the book at all, archived included (server's `hasAny`). */
+  const emptyBook = status === 'succeeded' && rows.length === 0 && meta.hasAny === false;
 
-  const sort = useMemo(() => sortFromOrdering(filters.ordering), [filters.ordering]);
+  const sort = useMemo(
+    () => sortFromOrdering(supplier ? supplierBalanceOrdering(filters.ordering) : filters.ordering),
+    [filters.ordering, supplier]
+  );
 
   const handleSort = useCallback(
     (next: UbGridSort) => {
-      const ordering = orderingFor(next);
+      const raw = orderingFor(next);
+      const ordering = supplier ? supplierBalanceOrdering(raw) : raw;
       if (ordering) setOrdering(ordering);
     },
-    [setOrdering]
+    [setOrdering, supplier]
   );
 
   const handleStatus = useCallback(
-    (value: string) => setFilters({ status: value as PartyStatus }),
-    [setFilters]
+    (value: string) =>
+      setFilters({
+        status: value as PartyStatus,
+        ...(compactKhata ? { balance: '', collection: '' } : {}),
+      }),
+    [setFilters, compactKhata]
   );
 
   const handleType = useCallback((type: PartyTypeFilter) => setFilters({ type }), [setFilters]);
@@ -406,6 +642,7 @@ export function PartyListPageContent(): React.JSX.Element {
     [setFilters]
   );
   const handleTag = useCallback((tag: string) => setFilters({ tag }), [setFilters]);
+  const handleRole = useCallback((role: string) => setFilters({ role }), [setFilters]);
   const handleCredit = useCallback(
     (credit: PartyCreditFilter) => setFilters({ credit }),
     [setFilters]
@@ -425,23 +662,147 @@ export function PartyListPageContent(): React.JSX.Element {
      to go to, so the grid's row-open affordance was left unwired — a chevron
      that navigated to a 404 would have been worse than a row that plainly does
      not move. */
-  const openParty = useCallback((party: Party) => router.push(partyPath(party.id)), [router]);
 
   const rowId = useCallback((party: Party) => party.id, []);
   const rowName = useCallback((party: Party) => party.name, []);
+
+  const renderCustomerActions = useCallback(
+    (party: Party) => (
+      <ShopPartyRowActions
+        party={party}
+        t={t}
+        onOpen={openParty}
+        supplier={supplier}
+        onPay={can('payments.payment.write') ? openSupplierPayment : undefined}
+        onRemind={!supplier && canRemind ? openReminder : undefined}
+        onSettle={canSettle ? openSettle : undefined}
+      />
+    ),
+    [
+      t,
+      openParty,
+      canRemind,
+      openReminder,
+      supplier,
+      can,
+      openSupplierPayment,
+      canSettle,
+      openSettle,
+    ]
+  );
+
+  const filterControls = emptyBook ? undefined : tier === 'cards' || compactShop ? (
+    /* On a phone: the search, ONE Filters button (Show and Balance are
+                 inside it), and the one-tap Sort sheet UAT D5 asked for — a sort
+                 is not a filter, and burying it behind Apply would undo D5. */
+    <>
+      <PartyListFilters
+        t={t}
+        compact
+        controlClassName={compactShop ? 'h-10' : undefined}
+        showClear={!compactShop}
+        status={filters.status}
+        onStatusChange={handleStatus}
+        type={filters.type}
+        typeFixed={Boolean(kind)}
+        balance={filters.balance}
+        collection={filters.collection}
+        onTypeChange={handleType}
+        onBalanceChange={handleBalance}
+        onCollectionChange={handleCollection}
+        credit={filters.credit}
+        onCreditChange={handleCredit}
+        overLimitCount={book === 'shop' ? null : overLimit}
+        tag={filters.tag}
+        onTagChange={handleTag}
+        tags={tagOptions}
+        role={filters.role ?? ''}
+        onRoleChange={handleRole}
+        roles={roles}
+        activeFilterCount={activeFilterCount}
+        onClear={clearFilters}
+      />
+      <PartyListSortSheet t={t} ordering={filters.ordering} onOrderingChange={setOrdering} />
+    </>
+  ) : (
+    <>
+      <UbFilterSelect
+        spec={{
+          kind: 'single',
+          key: 'status',
+          label: t('parties.list.filter.status.label'),
+          options: STATUS_OPTIONS.map((value) => ({
+            value,
+            label: t(`parties.list.status.${value}`),
+          })),
+        }}
+        value={filters.status}
+        onChange={(value) => handleStatus(value)}
+        closeLabel={t('common.action.close')}
+      />
+      <PartyListFilters
+        t={t}
+        type={filters.type}
+        typeFixed={Boolean(kind)}
+        balance={filters.balance}
+        collection={filters.collection}
+        onTypeChange={handleType}
+        onBalanceChange={handleBalance}
+        onCollectionChange={handleCollection}
+        credit={filters.credit}
+        onCreditChange={handleCredit}
+        /* The count is the UNFILTERED one when nothing is applied, which is
+                   the number the chip is for. Once a filter narrows the list it
+                   narrows with it, so the chip answers the question the merchant just
+                   asked rather than one about a set they are not looking at. */
+        overLimitCount={book === 'shop' ? null : overLimit}
+        tag={filters.tag}
+        onTagChange={handleTag}
+        tags={tagOptions}
+        role={filters.role ?? ''}
+        onRoleChange={handleRole}
+        roles={roles}
+        activeFilterCount={activeFilterCount}
+        onClear={clearFilters}
+      />
+    </>
+  );
 
   return (
     // `full` rather than the default `measure`: this is the data-grid opt-out
     // the shell documents. A 1120 px column on a 1440 px screen left a band of
     // empty canvas down the right of a table that had columns truncating in it.
-    <UbPageShell
+    <PageShell
       width="full"
       header={
         <UbPageHeader
-          title={t('parties.list.title')}
-          subtitle={t('parties.list.subtitle')}
+          className={
+            compactKhata
+              ? 'max-md:hidden'
+              : compactRegister
+              ? // R-DEC-33: a phone's header is the title and its actions; the
+                // book's name stays for screen readers.
+                'max-md:[&_[data-ub-page-subtitle]]:sr-only'
+              : undefined
+          }
+          title={
+            kind === 'supplier'
+              ? t('parties.list.supplier.title')
+              : kind === 'customer'
+                ? t('parties.list.customer.title')
+                : t('parties.list.title')
+          }
+          subtitle={
+            compactKhata
+              ? t('parties.khata.subtitle')
+              : kind === 'supplier'
+                ? t('parties.list.supplier.subtitle')
+                : kind === 'customer'
+                  ? t('parties.list.customer.subtitle')
+                  : t('parties.list.subtitle')
+          }
           actions={
-            <>
+            compactKhata ? null : <>
               {/* FR-7 reaches the manager from an overflow menu on this header.
                   This screen's header has no overflow menu, and inventing one
                   for a single item would be a menu that exists to hide one
@@ -450,36 +811,64 @@ export function PartyListPageContent(): React.JSX.Element {
                   manager is useful read-only — the counts are the fastest way
                   to see which tag holds which part of the book — and the
                   destructive actions inside it are permission-gated there. */}
-              <UbActionLink
-                href={ROUTES.PARTY_TAGS}
-                icon={<Tags className="h-4 w-4" aria-hidden />}
-                iconOnly="mobile"
-              >
-                {t('parties.tags.filter.manage')}
-              </UbActionLink>
+              {/* F-supp-d draws Export and Add supplier only; tags and import
+                  stay on Customers, where dCustomers draws them. */}
+              {!supplier && (
+                <UbActionLink
+                  href={ROUTES.PARTY_TAGS}
+                  icon={<Tags className="h-4 w-4" aria-hidden />}
+                  iconOnly="mobile"
+                >
+                  {t('parties.tags.filter.manage')}
+                </UbActionLink>
+              )}
               {/* IMP-01 FR-14 / IMP-02 FR-13 — bring a sheet in, take this
                   list out. Each hides itself for a role that may not use it,
                   and the export carries the list's own filters (BR-1). */}
-              <ImportActionLink kind="parties" />
+              {!supplier && <ImportActionLink kind="parties" />}
               <ListExportButton
                 listPath={partyExportPath(filters)}
                 permission="parties.party.export"
                 empty={status === 'succeeded' && meta.total === 0}
               />
-              {/* Hidden rather than disabled when the role cannot write
-                  (§19.7.5). A disabled Add button invites a support call; an
-                  absent one says nothing a merchant has to interpret. */}
-              {partyForm.canWrite && (
-                <UbButton
-                  icon={<Plus className="h-4 w-4" aria-hidden />}
-                  iconOnly="mobile"
-                  onClick={openBlankCreate}
-                >
-                  {t('parties.list.add')}
-                </UbButton>
-              )}
             </>
           }
+          /* Hidden rather than disabled when the role cannot write (§19.7.5).
+             A disabled Add button invites a support call; an absent one says
+             nothing a merchant has to interpret. */
+          primaryAction={
+            partyForm.canWrite && !emptyBook ? (
+              <UbButton
+                icon={<Plus className="h-4 w-4" aria-hidden />}
+                iconOnly="mobile"
+                onClick={openBlankCreate}
+              >
+                {addLabel}
+              </UbButton>
+            ) : undefined
+          }
+          /* docs/mobile-redesign — on a phone the header's three icon squares
+             become a worded ⋯ sheet, and Add is the floating button. */
+          renderMobileActions={(actions) => compactKhata ? null : (
+            <UbPageHeaderMobileActions
+              actions={compactKhata ? null : actions}
+              mobile={{
+                primaryPlacement: compactRegister ? 'header' : 'floating',
+                menuLabel: t('common.action.moreActions'),
+                closeLabel: t('common.action.close'),
+                // An empty book's one button is in the middle of the screen; a
+                // floating + over it would be the same action twice.
+                primary:
+                  partyForm.canWrite && !emptyBook
+                    ? {
+                        label: addLabel,
+                        icon: <Plus className="h-6 w-6" aria-hidden />,
+                        onClick: openBlankCreate,
+                      }
+                    : undefined,
+              }}
+            />
+          )}
         />
       }
     >
@@ -487,16 +876,36 @@ export function PartyListPageContent(): React.JSX.Element {
           16 px apart (tightened from 24 at the owner's request, 23 Sep). The
           count that used to sit here in grey label type is the third card
           now — it was the same job said in a different voice. */}
-      <UbStack gap={4}>
-        {showStats && (
+      {payingSupplier && (
+        <SupplierPaymentLazy
+          context={{
+            direction: 'out',
+            bucket: 'shop',
+            entry: 'party',
+            partyId: payingSupplier.id,
+            partyName: payingSupplier.name,
+            receivable:
+              payingSupplier.shop?.supplierBalance ?? payingSupplier.balance.replace('-', ''),
+          }}
+          onClose={() => setPayingSupplier(null)}
+          onSaved={refetch}
+        />
+      )}
+      <UbStack gap={compactRegister ? 3 : 4} className={compactRegister ? 'min-h-0 flex-1 !shrink' : undefined}>
+        {showStats && !compactRegister && (
           <PartyListStats
+            payableFirst={kind === 'supplier'}
             loading={statsLoading}
             loadingLabel={t('parties.list.totals.loading')}
             totals={totals}
             total={meta.total}
             receivableLabel={t('parties.list.totals.receivable')}
             payableLabel={t('parties.list.totals.payable')}
-            countLabel={t('parties.list.stats.customers')}
+            countLabel={
+              kind === 'supplier'
+                ? t('parties.list.supplier.title')
+                : t('parties.list.stats.customers')
+            }
             countValue={n(meta.total)}
             regionLabel={t('parties.list.totals.region')}
             appliedBalance={filters.balance}
@@ -516,32 +925,36 @@ export function PartyListPageContent(): React.JSX.Element {
           />
         )}
 
-        {/* Between the figures and the list, which is the order the FRD sets
-            and the order the eye takes: how much, then who. Not in the grid's
-            toolbar — its filter slot is a `shrink-0` group that deliberately
-            does not wrap, and seven chips in it would squeeze the search box
-            to nothing. */}
-        <PartyListFilters
-          t={t}
-          type={filters.type}
-          balance={filters.balance}
-          collection={filters.collection}
-          onTypeChange={handleType}
-          onBalanceChange={handleBalance}
-          onCollectionChange={handleCollection}
-          credit={filters.credit}
-          onCreditChange={handleCredit}
-          /* The count is the UNFILTERED one when nothing is applied, which is
+        {/* What is on, once, as pills above the card (owner, 6 Oct 2026);
+            the controls themselves are in the grid's toolbar below. */}
+        {!emptyBook && !compactRegister && (
+          <PartyListFilters
+            t={t}
+            type={filters.type}
+            typeFixed={Boolean(kind)}
+            balance={filters.balance}
+            collection={filters.collection}
+            onTypeChange={handleType}
+            onBalanceChange={handleBalance}
+            onCollectionChange={handleCollection}
+            credit={filters.credit}
+            onCreditChange={handleCredit}
+            /* The count is the UNFILTERED one when nothing is applied, which is
              the number the chip is for. Once a filter narrows the list it
              narrows with it, so the chip answers the question the merchant just
              asked rather than one about a set they are not looking at. */
-          overLimitCount={overLimit}
-          tag={filters.tag}
-          onTagChange={handleTag}
-          tags={tagOptions}
-          activeFilterCount={activeFilterCount}
-          onClear={clearFilters}
-        />
+            overLimitCount={book === 'shop' ? null : overLimit}
+            tag={filters.tag}
+            onTagChange={handleTag}
+            tags={tagOptions}
+            role={filters.role ?? ''}
+            onRoleChange={handleRole}
+            roles={roles}
+            activeFilterCount={activeFilterCount}
+            onClear={clearFilters}
+            part="pills"
+          />
+        )}
 
         {/* FR-15 / §9 Error, stale-cache variant: the refresh failed, the rows
             below are the last good answer to this same query, and the banner
@@ -566,94 +979,308 @@ export function PartyListPageContent(): React.JSX.Element {
             setting — putting it on the server means an endpoint and a
             migration for something the merchant expects to undo by closing
             the tab. */}
-        <UbDataGrid
-          rows={rows}
-          columns={columns}
-          rowId={rowId}
-          rowName={rowName}
-          state={gridState}
-          /* §9 Loading: a later load keeps the rows it has, dimmed under a
+        {emptyBook ? (
+          /* Approved design (12 Oct 2026; owner: "I don't want that type of
+             screen in case of empty"): the empty book is one sentence and one
+             button on the page itself — not a dashed box inside a card under a
+             search box and filters. */
+          <UbEmptyState
+            variant="firstUse"
+            title={emptyStates.firstUse.title}
+            description={emptyStates.firstUse.description}
+            action={emptyStates.firstUse.action}
+          />
+        ) : (
+          <UbDataGrid
+            fillHeight={compactRegister}
+            scrollResetKey={
+              compactRegister
+                ? JSON.stringify([book, kind, { ...filters, page: undefined, pageSize: undefined }])
+                : undefined
+            }
+            resetScrollOnPageChange={!(compactRegister && tier === 'cards')}
+            rows={rows}
+            variant={compactRegister ? 'register' : 'panel'}
+            className={
+              compactKhata
+                ? '[&_th]:whitespace-normal [&_th_button]:whitespace-normal max-md:pb-16'
+                : compactRegister
+                  ? '[&_th]:whitespace-normal [&_th_button]:whitespace-normal'
+                  : undefined
+            }
+            columnMenu={compactRegister ? false : undefined}
+            toolbar={
+              compactKhata ? (
+                <KhataPeopleToolbar
+                  t={t}
+                  search={searchInput}
+                  onSearch={setSearchInput}
+                  filters={
+                    <PartyListFilters
+                      t={t}
+                      compact
+                      personal
+                      showClear={false}
+                      status={filters.status}
+                      onStatusChange={handleStatus}
+                      ordering={filters.ordering}
+                      onOrderingChange={setOrdering}
+                      type={filters.type}
+                      balance={filters.balance}
+                      collection={filters.collection}
+                      onTypeChange={handleType}
+                      onBalanceChange={handleBalance}
+                      onCollectionChange={handleCollection}
+                      credit={filters.credit}
+                      onCreditChange={handleCredit}
+                      overLimitCount={overLimit}
+                      tag={filters.tag}
+                      onTagChange={handleTag}
+                      tags={tagOptions}
+                      role={filters.role ?? ''}
+                      onRoleChange={handleRole}
+                      roles={roles}
+                      activeFilterCount={activeFilterCount}
+                      onClear={clearFilters}
+                      controlClassName="h-10"
+                    />
+                  }
+                />
+              ) : compactShop ? (
+                <ShopPartyToolbar
+                  supplier={supplier}
+                  t={t}
+                  count={statsLoading ? undefined : n(meta.total)}
+                  counts={shopCounts}
+                  late={filters.late ?? ''}
+                  onLate={(late) => setFilters({ late })}
+                  onAll={() => setFilters({ balance: '', late: '' })}
+                  search={searchInput}
+                  onSearch={setSearchInput}
+                  balance={filters.balance}
+                  onBalance={handleBalance}
+                  filters={
+                    <>
+                      {/* The design's desktop toolbar: Show and Balance beside
+                          the search; a phone keeps its one-tap chips. */}
+                      <UbStack direction="row" gap={2} className="hidden lg:flex">
+                        <UbFilterSelect
+                          spec={{
+                            kind: 'single',
+                            key: 'status',
+                            label: t('parties.list.filter.status.label'),
+                            options: STATUS_OPTIONS.map((value) => ({
+                              value,
+                              label: t(`parties.list.status.${value}`),
+                            })),
+                          }}
+                          value={filters.status}
+                          onChange={(value) => handleStatus(value)}
+                          closeLabel={t('common.action.close')}
+                        />
+                        <UbFilterSelect
+                          spec={{
+                            kind: 'single',
+                            key: 'balance',
+                            label: t('parties.list.column.balance'),
+                            options: [
+                              { value: '', label: t('parties.list.filter.any') },
+                              {
+                                value: supplier ? 'i_owe' : 'owes_me',
+                                label: t(
+                                  supplier ? 'parties.list.supplier.owes' : 'parties.list.shop.owes'
+                                ),
+                              },
+                              { value: 'late', label: t('parties.list.shop.late') },
+                              {
+                                value: supplier ? 'owes_me' : 'i_owe',
+                                label: t(
+                                  supplier
+                                    ? 'parties.list.supplier.advance'
+                                    : 'parties.list.shop.credit'
+                                ),
+                              },
+                              { value: 'settled', label: t('parties.list.balance.settled') },
+                            ],
+                          }}
+                          value={filters.late ? 'late' : filters.balance}
+                          onChange={(value) =>
+                            value === 'late'
+                              ? setFilters({ balance: '', late: 'overdue' })
+                              : setFilters({ balance: value as typeof filters.balance, late: '' })
+                          }
+                          closeLabel={t('common.action.close')}
+                        />
+                      </UbStack>
+                      <PartyListSortSheet
+                        t={t}
+                        ordering={filters.ordering}
+                        onOrderingChange={setOrdering}
+                        labelled
+                        shop
+                        supplier={supplier}
+                        className="hidden lg:inline-flex"
+                      />
+                      <ShopPartyFilters
+                        supplier={supplier}
+                        t={t}
+                        filters={filters}
+                        tags={tagOptions}
+                        onApply={setFilters}
+                      />
+                    </>
+                  }
+                />
+              ) : undefined
+            }
+            beforeRows={
+              compactKhata && showStats ? (
+                <KhataPeopleSummary
+                  t={t}
+                  count={meta.total}
+                  rowCount={rows.length}
+                  totals={totals}
+                  scope={totalsScope}
+                  loading={statsLoading}
+                  balance={filters.balance}
+                />
+              ) : compactShop && showStats ? (
+                <ShopPartySummary
+                  supplier={supplier}
+                  t={t}
+                  total={meta.total}
+                  all={filters.q ? bookAll : shopCounts?.all}
+                  totals={totals}
+                  scope={totalsScope}
+                  rowCount={rows.length}
+                  loading={statsLoading || isRefreshing}
+                />
+              ) : undefined
+            }
+            cardLayout={compactKhata ? 'compact' : compactRegister ? 'stacked' : 'inline'}
+            cardAvatar={compactKhata || !compactRegister}
+            /* R-DEC-33: a phone joins the next page under the cards as the
+               merchant scrolls, with a retry in place when it fails; the
+               pinned "Show more" button sat outside the scroll region and
+               took a row's height from every screen. */
+            footer={compactRegister && tier === 'cards' ? null : undefined}
+            afterRows={
+              compactRegister && tier === 'cards' && gridState === 'rows' ? (
+                rows.length < meta.total ? (
+                  <UbLoadMore
+                    loading={isRefreshing}
+                    automatic={status !== 'failed'}
+                    repeatWhileVisible={false}
+                    loadingLabel={t('common.search.loadingMore')}
+                    moreLabel={
+                      status === 'failed'
+                        ? t('common.action.retry')
+                        : compactKhata
+                          ? t('parties.khata.loadMore')
+                          : t('parties.list.shop.more', { count: meta.total - rows.length })
+                    }
+                    className={compactKhata || status === 'failed' ? 'pb-20' : undefined}
+                    onLoadMore={() => {
+                      if (status === 'failed') refetch();
+                      else if (status === 'succeeded') setPage(meta.page + 1);
+                    }}
+                  />
+                ) : compactKhata ? <UbStack aria-hidden className="h-20 shrink-0" /> : (
+                  <UbText variant="caption" tone="tertiary" className={compactKhata ? 'pt-3 pb-20 text-center' : 'py-3 text-center'}>
+                    {t(compactKhata ? 'parties.khata.loaded' : supplier ? 'parties.list.supplier.loaded' : 'parties.list.shop.loaded', {
+                      count: rows.length,
+                      total: meta.total,
+                    })}
+                  </UbText>
+                )
+              ) : undefined
+            }
+            cardActions={compactShop ? renderCustomerActions : undefined}
+            columns={columns}
+            rowId={rowId}
+            rowName={rowName}
+            state={gridState}
+            /* §9 Loading: a later load keeps the rows it has, dimmed under a
              progress bar; the slice turns a page change into `loading` (the
              skeleton) instead, because page 2 is not page 1 dimmed. */
-          busy={isRefreshing}
-          /* §9 Initial: eight skeleton rows, never a full-page spinner. */
-          skeletonRows={8}
-          labels={labels}
-          emptyStates={emptyStates}
-          caption={t('parties.list.caption')}
-          storageId="parties.list"
-          page={meta}
-          onPageChange={setPage}
-          onPageSizeChange={handlePageSize}
-          pageSizeOptions={PAGE_SIZE_OPTIONS}
-          sort={sort}
-          onSortChange={handleSort}
-          onRowOpen={openParty}
-          selectable
-          selectedIds={selectedIds}
-          onSelectionChange={setSelectedIds}
-          /* The count is NOT repeated here. The selection bar paints
+            busy={isRefreshing}
+            /* §9 Initial: eight skeleton rows, never a full-page spinner. */
+            skeletonRows={8}
+            labels={labels}
+            emptyStates={emptyStates}
+            caption={t(
+              kind === 'supplier' ? 'parties.list.supplier.caption' : 'parties.list.caption'
+            )}
+            storageId="parties.list"
+            page={meta}
+            onPageChange={setPage}
+            onPageSizeChange={handlePageSize}
+            pageSizeOptions={PAGE_SIZE_OPTIONS}
+            sort={sort}
+            onSortChange={handleSort}
+            onRowOpen={openParty}
+            selectable
+            selectedIds={selectedIds}
+            onSelectionChange={setSelectedIds}
+            /* The count is NOT repeated here. The selection bar paints
              "{n} selected" on its left now (BrandHub's arrangement), and this
              slot used to carry the same sentence again three inches to the
              right — so a merchant who ticked one row was told twice. What
              belongs here is what they can DO about the selection. */
-          bulkActions={
-            <>
-              {/* Archived rows are already archived; offering it on that tab
+            bulkActions={
+              <>
+                {/* Archived rows are already archived; offering it on that tab
                   would be a button whose every row comes back skipped. */}
-              {/* Tagging comes FIRST, and the order is the point: it is the
+                {/* Tagging comes FIRST, and the order is the point: it is the
                   everyday move on a selection and archiving is the yearly one,
                   so the destructive button must not be the one a thumb lands on
                   by default. */}
-              {bulkTag.canTag && (
-                <UbButton variant="secondary" size="sm" onClick={bulkTag.start}>
-                  {t('parties.tags.bulk.action')}
+                {bulkTag.canTag && (
+                  <UbButton variant="secondary" size="sm" onClick={bulkTag.start}>
+                    {t('parties.tags.bulk.action')}
+                  </UbButton>
+                )}
+                {bulk.canArchive && filters.status === 'active' && (
+                  <UbButton variant="destructive" size="sm" onClick={bulk.start}>
+                    {t('parties.archive.action')}
+                  </UbButton>
+                )}
+                <UbButton variant="secondary" size="sm" onClick={clearSelection}>
+                  {t('parties.list.bulk.clearSelection')}
                 </UbButton>
-              )}
-              {bulk.canArchive && filters.status === 'active' && (
-                <UbButton variant="destructive" size="sm" onClick={bulk.start}>
-                  {t('parties.archive.action')}
-                </UbButton>
-              )}
-              <UbButton variant="secondary" size="sm" onClick={clearSelection}>
-                {t('parties.list.bulk.clearSelection')}
-              </UbButton>
-            </>
-          }
-          search={
-            <UbTextInput
-              value={searchInput}
-              onChange={setSearchInput}
-              type="text"
-              aria-label={t('parties.list.search.label')}
-              placeholder={t('parties.list.search.placeholder')}
-            />
-          }
-          filters={
-            <>
-              <UbSelect
-                value={filters.status}
-                onChange={handleStatus}
-                aria-label={t('parties.list.filter.status.label')}
-                options={STATUS_OPTIONS.map((value) => ({
-                  value,
-                  label: t(`parties.list.status.${value}`),
-                }))}
-              />
-              {/* UAT D5 — the cards have no column headers to sort by, so the
-                  phone gets the same orderings from a sheet. Not drawn from
-                  `md` up, where the headers ARE the sort control and a second
-                  one would be the same action twice. */}
-              {tier === 'cards' && (
-                <PartyListSortSheet
-                  t={t}
-                  ordering={filters.ordering}
-                  onOrderingChange={setOrdering}
+              </>
+            }
+            /* Approved design (12 Oct 2026): an empty book has nothing to search
+             or filter, so the card is the empty state alone. `hasAny` is the
+             server's — a filter that found nothing keeps every control. */
+            search={
+              compactRegister ? undefined : (
+                <UbTextInput
+                  value={searchInput}
+                  onChange={setSearchInput}
+                  type="text"
+                  aria-label={t(
+                    kind === 'supplier'
+                      ? 'parties.list.supplier.searchLabel'
+                      : 'parties.list.search.label'
+                  )}
+                  placeholder={t('parties.list.search.placeholder')}
                 />
-              )}
-            </>
-          }
-        />
+              )
+            }
+
+            filters={compactRegister ? undefined : filterControls}
+          />
+        )}
+        {compactKhata && partyForm.canWrite && !emptyBook && (
+          <UbFab
+            mobileOnly
+            extended
+            label={addLabel}
+            icon={<Plus className="h-5 w-5" aria-hidden />}
+            onClick={openBlankCreate}
+          />
+        )}
         {/* Loaded when the merchant asks for it, not when the list loads.
             Measured: the form carries React Hook Form's resolver, the Yup
             schema, a Radix switch and the three new inputs, and putting it in
@@ -661,7 +1288,28 @@ export function PartyListPageContent(): React.JSX.Element {
             merchant who opens the list to READ it, which is almost all of
             them. `openFor` is the only thing the page needs eagerly, and that
             lives in the slice. */}
-        {partyForm.open && <PartyFormDrawerLazy form={partyForm} />}
+        {partyForm.open && (
+          <PartyFormDrawerLazy form={partyForm} kind={kind} shop={book === 'shop'} quickKhata={compactKhata} />
+        )}
+        {compactShop && settling && (
+          <SettleBalancesLazy
+            partyId={settling.id}
+            onSettled={() => {
+              settledNow.current = true;
+            }}
+            onClose={() => {
+              setSettling(null);
+              /* Re-read once the message sheet closes, so both lists show the new figures. */
+              if (settledNow.current) {
+                settledNow.current = false;
+                refetch();
+              }
+            }}
+          />
+        )}
+        {compactShop && reminding && (
+          <ShopCustomerReminderLazy party={reminding} onClose={() => setReminding(null)} />
+        )}
 
         {/* Mounted only once it is open, so the chunk is fetched on the press
             rather than on the route. */}
@@ -682,16 +1330,18 @@ export function PartyListPageContent(): React.JSX.Element {
           />
         )}
 
-        <PartyBulkArchiveDialog
-          t={t}
-          open={bulk.open}
-          count={selectedIds.length}
-          saving={bulk.saving}
-          result={bulk.result}
-          onConfirm={bulk.confirm}
-          onClose={bulk.close}
-        />
+        {bulk.open && (
+          <PartyBulkArchiveDialogLazy
+            t={t}
+            open={bulk.open}
+            count={selectedIds.length}
+            saving={bulk.saving}
+            result={bulk.result}
+            onConfirm={bulk.confirm}
+            onClose={bulk.close}
+          />
+        )}
       </UbStack>
-    </UbPageShell>
+    </PageShell>
   );
 }

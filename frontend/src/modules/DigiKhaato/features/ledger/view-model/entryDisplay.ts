@@ -1,10 +1,16 @@
 import type { UbAmountSign, UbAmountTone } from 'src/design-system';
 import type { TranslateFn } from 'src/hooks/useTranslation';
+import { daysBetweenIso } from 'src/utils/calendarDays';
 import { formatInr, isZeroAmount } from 'src/utils/money';
 
 import { balanceDirection, unsigned } from './balanceSide';
 
-import type { LedgerDirection, LedgerEntry, WrittenOffTotals } from '../types/ledger.types';
+import type {
+  LedgerBucket,
+  LedgerDirection,
+  LedgerEntry,
+  WrittenOffTotals,
+} from '../types/ledger.types';
 
 /**
  * Part 19 §19.2.5 — pure presentation decisions, shared by every surface that
@@ -38,8 +44,31 @@ export interface EntryAmountView {
  */
 export const entryAmountView = (
   direction: LedgerDirection,
-  entryType?: LedgerEntry['entryType']
+  entryType?: LedgerEntry['entryType'],
+  bucket?: LedgerBucket,
+  /** A4b — the line belongs to a deposit ADJUSTMENT (`source.adjustment`). */
+  adjustment = false
 ): EntryAmountView => {
+  /* A2 (PLT-X01 §8) — a deposit is neither "you gave" nor "you got" in the khata
+     sense: it is money HELD for the party and returnable, outside the balance. So it
+     is neutral in tone, never red or green, and says what it is. Checked first,
+     because a deposit is a `payment_in` / `payment_out` like any other receipt. */
+  if (bucket === 'deposit') {
+    return {
+      tone: 'neutral',
+      sign: 'none',
+      /* Money leaving the deposit is either handed back or ADJUSTED against a
+         charge; "Deposit returned" on an adjustment told a customer, on their
+         own statement, that ₹120 applied to their fine had been given back
+         (Wave A gate). */
+      labelId:
+        direction === 'credit'
+          ? 'ledger.entry.depositIn'
+          : adjustment
+            ? 'ledger.entry.depositAdjusted'
+            : 'ledger.entry.depositOut',
+    };
+  }
   /* An opening balance is not something that happened today, so "You gave" is
      the wrong tense and the wrong claim: nothing was given, the party already
      owed it when the book started. The opening FORM asks the question in the
@@ -68,10 +97,44 @@ export const entryAmountView = (
   if (entryType === 'expense' && direction === 'credit') {
     return { tone: 'payable', sign: 'none', labelId: 'ledger.entry.expenseOwed' };
   }
+  /* A2 (ADR-048) — every entry type has a label, or a row prints a raw message id
+     (the LED-04 sweep's first finding). A charge is money owed — a fine, a fee —
+     and was not "given"; a credit reduces what is owed with no money moving, and
+     was not "got". Their tones are their directions'. */
+  if (entryType === 'charge') {
+    return { tone: 'receivable', sign: 'none', labelId: 'ledger.entry.type.charge' };
+  }
+  if (entryType === 'adjustment_credit') {
+    return { tone: 'payable', sign: 'none', labelId: 'ledger.entry.type.adjustment_credit' };
+  }
+  /* DEC-019 — only the Udhaar book says "You gave / You got". A bill or a return
+     is the Shop's and says what it is, in plain words; a payment says "Payment
+     received / made" everywhere but the Udhaar book, where it is "You got". */
+  const typed =
+    entryType !== undefined &&
+    (DOCUMENT_ENTRY_TYPES.has(entryType) ||
+      (PAYMENT_ENTRY_TYPES.has(entryType) && bucket !== undefined && bucket !== 'main'));
+  if (typed) {
+    return {
+      tone: direction === 'debit' ? 'receivable' : 'payable',
+      sign: 'none',
+      labelId: `ledger.entry.type.${entryType}`,
+    };
+  }
   return direction === 'debit'
     ? { tone: 'receivable', sign: 'none', labelId: 'ledger.entry.gave' }
     : { tone: 'payable', sign: 'none', labelId: 'ledger.entry.got' };
 };
+
+/** DEC-019 — the Shop's bills and returns, each with its own plain label. */
+const DOCUMENT_ENTRY_TYPES: ReadonlySet<string> = new Set([
+  'invoice',
+  'credit_note',
+  'purchase_bill',
+  'debit_note',
+]);
+/** Payments: "Payment received / made" outside the Udhaar book. */
+const PAYMENT_ENTRY_TYPES: ReadonlySet<string> = new Set(['payment_in', 'payment_out']);
 
 /**
  * What the row says on its first line.
@@ -110,8 +173,21 @@ export const entryTitle = (entry: LedgerEntry, t: TranslateFn): string => {
     return entry.reason?.trim() || t('ledger.entry.type.reversal');
   }
   if (entry.note.trim()) return entry.note.trim();
-  return t(entryAmountView(entry.direction, entry.entryType).labelId);
+  return t(
+    entryAmountView(entry.direction, entry.entryType, entry.bucket, !!entry.source?.adjustment)
+      .labelId
+  );
 };
+
+/**
+ * A2 — the badge a line in another bucket wears on the khata: "Loan" or "Deposit".
+ *
+ * `null` for the trade khata, which is every line a shop writes, so today's khata is
+ * unchanged. A loan line reads "You gave ₹50,000" like any disbursal and the badge
+ * says it was a loan; a deposit line is neutral and the badge says it is held.
+ */
+export const bucketBadgeId = (bucket: LedgerBucket | undefined): string | null =>
+  bucket === 'loan' || bucket === 'deposit' ? `ledger.bucket.${bucket}` : null;
 
 /**
  * Does the row's title already say what the amount's label would say?
@@ -269,8 +345,7 @@ export const entryReason = (entry: LedgerEntry): string => {
 export const isBackdated = (entry: LedgerEntry): boolean => {
   const written = entry.createdAt.slice(0, 10);
   if (!written || !entry.entryDate) return false;
-  const gapDays =
-    (Date.parse(`${written}T00:00:00Z`) - Date.parse(`${entry.entryDate}T00:00:00Z`)) / 86_400_000;
+  const gapDays = daysBetweenIso(entry.entryDate, written);
   return gapDays > 1;
 };
 

@@ -1,6 +1,6 @@
 import { AxiosError, AxiosHeaders, type InternalAxiosRequestConfig } from 'axios';
 
-import { toApiError } from './apiError';
+import { errorMessageId, shouldToast, toApiError } from './apiError';
 
 /**
  * QA defect D2 (Sprint 3): a failure with no response at all — the server is
@@ -70,5 +70,116 @@ describe('toApiError — the request id when the server did not answer (D2)', ()
   it('is still null when nothing minted an id', () => {
     const error = new AxiosError('Network Error', 'ERR_NETWORK', configWith({}));
     expect(toApiError(error).requestId).toBeNull();
+  });
+});
+
+/**
+ * Sprint 12 i18n sweep: a response with no error body (a proxy's 502 page, an
+ * HTML 404) carried the client's own English fallback sentence as its
+ * `message`, and `errorMessageId` passed it through as though the server had
+ * localised it — so a Hindi merchant's snackbar read "Request failed." A
+ * server-sent sentence still passes through untouched.
+ */
+describe('errorMessageId — the client-minted fallbacks resolve to a key', () => {
+  const config = configWith({});
+  const reply = (status: number, data: unknown) =>
+    new AxiosError('x', 'ERR_BAD_RESPONSE', config, undefined, {
+      status,
+      statusText: '',
+      headers: {},
+      config,
+      data,
+    });
+
+  it.each([502, 404])('maps a body-less %i to error.generic', (status) => {
+    expect(errorMessageId(toApiError(reply(status, '<html></html>')))).toBe('error.generic');
+  });
+
+  it("keeps the server's own (already localised) sentence", () => {
+    const shape = toApiError(
+      reply(400, { error: { code: 'validation_failed', message: 'राशि दर्ज करें।' } })
+    );
+    expect(errorMessageId(shape)).toBeNull();
+    expect(shape.message).toBe('राशि दर्ज करें।');
+  });
+
+  it('reads a support-session refusal as "view only", in the reader\'s language', () => {
+    /* CR-2026-09-29-SEC-A: the server has no Hindi catalogue, and a support
+       operator meets this on every write. It must not read as "ask your owner
+       for permission", which no owner can grant. */
+    const shape = toApiError(
+      reply(403, {
+        error: {
+          code: 'impersonation_forbidden',
+          message: 'This is a view-only support session. Nothing can be changed.',
+        },
+      })
+    );
+    expect(shape.code).toBe('impersonation_forbidden');
+    expect(errorMessageId(shape)).toBe('errors.impersonation_forbidden');
+  });
+});
+
+describe('shouldToast — refusals a dialog already explains stay out of the snackbar', () => {
+  it('keeps both archive refusals in their dialog (A6)', () => {
+    /* The A6 look pass caught `party_has_open_records` toasting the server's
+       English fallback and a request id over the dialog that named the module,
+       the count and the next step. */
+    for (const code of ['party_balance_nonzero', 'party_has_open_records'] as const) {
+      expect(
+        shouldToast({ code, message: 'x', details: {}, requestId: 'r', status: 409, warnings: [] })
+      ).toBe(false);
+    }
+  });
+
+  it("keeps the issuing module's void question and lock in the void dialog (A5, Wave A gate)", () => {
+    /* The gate's look pass: voiding a module's invoice put the module's question
+       in the dialog, with "Void anyway" — and the same sentence in an error-red
+       toast above it, with a request id, at both widths and in both languages.
+       A question is not a failure. */
+    for (const code of ['document_origin_confirm', 'document_origin_locked'] as const) {
+      expect(
+        shouldToast({ code, message: 'x', details: {}, requestId: 'r', status: 409, warnings: [] })
+      ).toBe(false);
+    }
+  });
+
+  it('keeps a refused module switch in its banner when the server said what is open (A12, Wave A gate)', () => {
+    /* The gate's look pass: "Close them first · 1 deposit still holds money" under
+       the Payments switch, and "This feature still has records that need
+       attention" in an error toast with a request id above it — one refusal,
+       reported twice. The banner is drawn from `details.breakdown`, so only a
+       refusal that carries one stays out of the snackbar; one without it has no
+       other surface and still toasts. */
+    const refusal = (details: Record<string, unknown>) => ({
+      code: 'module_has_data' as const,
+      message: 'x',
+      details,
+      requestId: 'r',
+      status: 409,
+      warnings: [],
+    });
+    expect(
+      shouldToast(refusal({ module: 'payments', breakdown: [{ label_id: 'l', count: 1 }] }))
+    ).toBe(false);
+    expect(shouldToast(refusal({ module: 'payments' }))).toBe(true);
+    expect(shouldToast(refusal({ module: 'payments', breakdown: [] }))).toBe(true);
+  });
+});
+
+describe('shouldToast — a wrong sign-in code (DEC-013)', () => {
+  // The code cells say "Wrong code. 3 tries left."; the toast said it again,
+  // and stayed up on onboarding after the right code went in.
+  it('is not toasted: the code step reports it', () => {
+    expect(
+      shouldToast({
+        code: 'otp_invalid',
+        message: 'Incorrect or expired code.',
+        details: { reason: 'incorrect', attempts_left: 3 },
+        requestId: 'r',
+        status: 400,
+        warnings: [],
+      })
+    ).toBe(false);
   });
 });

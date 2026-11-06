@@ -66,9 +66,10 @@ def summary_queryset(
             )
         )
 
-    scoped = StockMovement.objects.filter(
-        item=OuterRef("pk"), location_id=location_id, movement_date__lte=as_of
-    )
+    scoped = StockMovement.objects.filter(item=OuterRef("pk"), movement_date__lte=as_of)
+    # D P1c — one place, or (None) the whole business.
+    if location_id is not None:
+        scoped = scoped.filter(location_id=location_id)
     qty_asof = Subquery(
         scoped.values("item").annotate(total=Sum("qty")).values("total")[:1], output_field=QTY
     )
@@ -106,6 +107,60 @@ SUMMARY_STATUS = {
     "out": Q(stock_status=StockStatus.OUT),
     "negative": Q(on_hand__lt=0),
 }
+
+
+def has_tracked_items(*, tenant: Any) -> bool:
+    """Whether the stock summary has anything to list, whatever its filters say.
+
+    The same item set as `summary_queryset` (BR-1: tracked goods, archived
+    excluded) with no search, category, status, zero-stock or date applied.
+    False is an empty book — the screen shows one empty state and none of its
+    controls; True with no rows is a filter that found nothing, which keeps
+    them, because "Hide zero stock" off is how a merchant finds a sold-out item.
+    """
+    return Item.objects.filter(
+        tenant=tenant, item_type=ItemType.GOODS, track_stock=True, status=ItemStatus.ACTIVE
+    ).exists()
+
+
+def filtered_summary(
+    *,
+    tenant: Any,
+    location_id: Any,
+    as_of: dt.date | None,
+    today: dt.date,
+    q: str = "",
+    category_id: Any = None,
+    status: str | None = None,
+    hide_zero: bool = True,
+    ordering: str = "name",
+) -> tuple[QuerySet, bool]:
+    """INV-08's list exactly as `/stock/summary` shows it: filtered and ordered.
+
+    Returns `(queryset, historical)`. One function for both entry points — the
+    screen (`StockSummaryView`) and RPT-06's file (`/reports/stock-summary`) —
+    so the export is the screen (RPT-08 BR-1) by construction rather than by
+    two copies of the same six filters agreeing.
+    """
+    historical = as_of is not None and as_of < today
+    qs = summary_queryset(
+        tenant=tenant,
+        location_id=location_id,
+        as_of=as_of if historical else None,
+        q=q,
+        category_id=category_id,
+    )
+    if status in SUMMARY_STATUS:
+        qs = qs.filter(SUMMARY_STATUS[status])
+    if hide_zero:
+        qs = qs.exclude(on_hand=0)
+    field = {"value": "stock_value"}.get(ordering.lstrip("-"), ordering.lstrip("-"))
+    expr = (
+        F(field).desc(nulls_last=True)
+        if ordering.startswith("-")
+        else F(field).asc(nulls_last=True)
+    )
+    return qs.order_by(expr, "name", "id"), historical
 
 
 def summary_totals(qs: QuerySet) -> dict:

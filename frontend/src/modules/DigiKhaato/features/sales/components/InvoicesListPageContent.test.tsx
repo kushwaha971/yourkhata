@@ -1,8 +1,9 @@
 import type * as ReactModule from 'react';
 
-import { screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
+import { UbButton } from 'src/design-system';
 import { resetAllFeatureState } from 'src/redux/actions';
 import { sessionLoaded } from 'src/redux/slice/sessionSlice';
 import { store } from 'src/redux/store';
@@ -23,6 +24,7 @@ import type { InvoiceListPage, InvoiceListRow } from '../types/sales.types';
 jest.mock('../api/salesService');
 
 const mockReplace = jest.fn();
+const mockPush = jest.fn();
 let mockSearch = '';
 const mockUrlListeners = new Set<() => void>();
 jest.mock('next/navigation', () => {
@@ -36,7 +38,7 @@ jest.mock('next/navigation', () => {
   const read = () => mockSearch;
   return {
     useRouter: () => ({
-      push: jest.fn(),
+      push: mockPush,
       replace: mockReplace,
       back: jest.fn(),
       prefetch: jest.fn(),
@@ -130,13 +132,35 @@ it('lists this financial year and shows the server totals', async () => {
   expect(lastAsked()).toMatchObject({ tab: 'all', dateFrom: expect.stringMatching(/-04-01$/) });
 });
 
-it('asks the server for paid bills when the Paid tab is chosen', async () => {
+/** Counter register: the common status question must not require opening Filters. */
+it('asks the server for paid bills directly from the visible status choices', async () => {
   signIn(['sales.invoice.read']);
+  const user = userEvent.setup();
   renderWithProviders(<InvoicesListPageContent />);
   await screen.findAllByText(/Ramesh Traders/);
-  await userEvent.click(screen.getByRole('tab', { name: /Paid/ }));
+  const group = screen.getByRole('radiogroup', { name: 'Bill status' });
+  await user.click(within(group).getByRole('radio', { name: /^Paid/ }));
   await waitFor(() => expect(lastAsked().tab).toBe('paid'));
   expect(mockSearch).toBe('tab=paid');
+});
+
+it('a shop with no bill at all sees one sentence and one button (owner, 12 Oct 2026)', async () => {
+  service.listInvoices.mockImplementation(async () => ({ ...page([]), hasAny: false }));
+  signIn(['sales.invoice.read', 'sales.invoice.write']);
+  renderWithProviders(<InvoicesListPageContent />);
+  expect(await screen.findByText('No bills yet')).toBeInTheDocument();
+  expect(screen.queryByText('Billed')).not.toBeInTheDocument();
+  expect(screen.queryByRole('searchbox')).not.toBeInTheDocument();
+  expect(screen.queryByTestId('filters-button')).not.toBeInTheDocument();
+  expect(screen.getAllByRole('button', { name: /New bill/ })).toHaveLength(1);
+  expect(screen.queryByRole('link', { name: /New bill/ })).not.toBeInTheDocument();
+});
+
+it('keeps the filters when This FY is empty but older bills exist', async () => {
+  service.listInvoices.mockImplementation(async () => ({ ...page([]), hasAny: true }));
+  signIn(['sales.invoice.read']);
+  renderWithProviders(<InvoicesListPageContent />);
+  expect(await screen.findByTestId('filters-button')).toBeInTheDocument();
 });
 
 it('offers New bill only to a role that can write', async () => {
@@ -152,4 +176,126 @@ it('tells a member without access so, and asks nothing', () => {
   renderWithProviders(<InvoicesListPageContent />);
   expect(screen.getByText('Bills are not available')).toBeInTheDocument();
   expect(service.listInvoices).not.toHaveBeenCalled();
+});
+
+/** The N shortcut must not steal typing from the global command trigger. */
+it('does not navigate to a new bill when typing n into the global combobox', async () => {
+  signIn(['sales.invoice.read', 'sales.invoice.write']);
+  renderWithProviders(
+    <>
+      <UbButton role="combobox" aria-label="Shop command">
+        Find or start
+      </UbButton>
+      <InvoicesListPageContent />
+    </>
+  );
+  await screen.findAllByText(/Ramesh Traders/);
+  fireEvent.keyDown(screen.getByRole('combobox', { name: 'Shop command' }), { key: 'n' });
+  expect(mockPush).not.toHaveBeenCalled();
+});
+
+/** A header-placed primary action must navigate, not become an inert plus icon. */
+it('opens the new bill editor from the phone header action', async () => {
+  const media = jest.spyOn(window, 'matchMedia').mockImplementation((query) => ({
+    matches: query.includes('max-width'),
+    media: query,
+    onchange: null,
+    addEventListener: () => undefined,
+    removeEventListener: () => undefined,
+    addListener: () => undefined,
+    removeListener: () => undefined,
+    dispatchEvent: () => false,
+  }));
+  signIn(['sales.invoice.read', 'sales.invoice.write']);
+  const view = renderWithProviders(<InvoicesListPageContent />);
+  await screen.findAllByText(/Ramesh Traders/);
+  await userEvent.click(screen.getByRole('button', { name: 'New bill' }));
+  expect(mockPush).toHaveBeenCalledWith('/sales/invoices/new');
+  view.unmount();
+  media.mockRestore();
+});
+
+/** Advanced filters must retain the status selected in the visible row. */
+it('preserves the chosen status when applying the advanced filter drawer', async () => {
+  signIn(['sales.invoice.read']);
+  const user = userEvent.setup();
+  renderWithProviders(<InvoicesListPageContent />);
+  await screen.findAllByText(/Ramesh Traders/);
+  await user.click(screen.getByRole('radio', { name: /^Paid/ }));
+  await waitFor(() => expect(lastAsked().tab).toBe('paid'));
+  await user.click(screen.getByTestId('filters-button'));
+  await user.click(await screen.findByTestId('filters-apply'));
+  expect(lastAsked().tab).toBe('paid');
+});
+
+/** Back/deep-link search must not be overwritten by the previous input debounce. */
+it('follows an external search URL while the register stays mounted', async () => {
+  signIn(['sales.invoice.read']);
+  renderWithProviders(<InvoicesListPageContent />);
+  await screen.findAllByText(/Ramesh Traders/);
+  act(() => {
+    mockSearch = 'q=Radhe';
+    mockUrlListeners.forEach((notify) => notify());
+  });
+  await waitFor(() => expect(screen.getByRole('searchbox')).toHaveValue('Radhe'));
+  await act(async () => {
+    await new Promise((resolve) => setTimeout(resolve, 350));
+  });
+  expect(mockSearch).toBe('q=Radhe');
+  expect(lastAsked().q).toBe('Radhe');
+});
+
+/** R-DEC-33: a phone scrolls one joined card list; there are no page arrows to aim at. */
+it('joins the next page of bills under the phone cards instead of paging', async () => {
+  const media = jest.spyOn(window, 'matchMedia').mockImplementation((query) => ({
+    matches: query.includes('max-width'),
+    media: query,
+    onchange: null,
+    addEventListener: () => undefined,
+    removeEventListener: () => undefined,
+    addListener: () => undefined,
+    removeListener: () => undefined,
+    dispatchEvent: () => false,
+  }));
+  const bills = Array.from({ length: 30 }, (_, i) => ({
+    ...RAMESH,
+    id: `bill-${i + 1}`,
+    number: `INV/26-27/${String(i + 1).padStart(4, '0')}`,
+  }));
+  service.listInvoices.mockImplementation(async (query: InvoiceListQuery) => ({
+    ...page(query.page === 2 ? bills.slice(25) : bills.slice(0, 25)),
+    page: query.page,
+    total: 30,
+  }));
+  signIn(['sales.invoice.read']);
+  const view = renderWithProviders(<InvoicesListPageContent />);
+  expect(await screen.findAllByTestId('ub-grid-card')).toHaveLength(25);
+  expect(screen.queryByText(/Page 1 of/)).not.toBeInTheDocument();
+  await userEvent.click(screen.getByRole('button', { name: 'Show more' }));
+  await waitFor(() => expect(screen.getAllByTestId('ub-grid-card')).toHaveLength(30));
+  expect(lastAsked().page).toBe(2);
+  expect(screen.queryByRole('button', { name: 'Show more' })).not.toBeInTheDocument();
+  view.unmount();
+  media.mockRestore();
+});
+
+/** At 1024 px a full Date column beside the sidebar cut long bill numbers mid-character. */
+it('joins the date under the bill number below 1280 px', async () => {
+  const media = jest.spyOn(window, 'matchMedia').mockImplementation((query) => ({
+    matches: query === '(min-width: 768px)' || query === '(min-width: 1024px)',
+    media: query,
+    onchange: null,
+    addEventListener: () => undefined,
+    removeEventListener: () => undefined,
+    addListener: () => undefined,
+    removeListener: () => undefined,
+    dispatchEvent: () => false,
+  }));
+  signIn(['sales.invoice.read']);
+  const view = renderWithProviders(<InvoicesListPageContent />);
+  await screen.findByRole('columnheader', { name: 'Customer' });
+  expect(screen.queryByRole('columnheader', { name: 'Date' })).not.toBeInTheDocument();
+  expect(screen.getByText('INV/26-27/0002 · 24/09/2026')).toBeInTheDocument();
+  view.unmount();
+  media.mockRestore();
 });

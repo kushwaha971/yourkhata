@@ -1,12 +1,21 @@
 'use client';
 
-import { useCallback, useState, type Ref } from 'react';
+import { type Ref } from 'react';
 
-import { useRouter } from 'next/navigation';
+import {
+  Archive,
+  ArrowLeftRight,
+  BellRing,
+  BookOpen,
+  FileText,
+  HandCoins,
+  Pencil,
+  QrCode,
+  Wallet,
+} from 'lucide-react';
 
-import { Archive, BellRing, BookOpen, FileText, MoreHorizontal, Pencil } from 'lucide-react';
-
-import { UbButton, UbDialog, UbStack } from 'src/design-system';
+import { UbMoreActions, type UbMenuListRow } from 'src/design-system';
+import { useAppRouter } from 'src/hooks/useAppRouter';
 import type { TranslateFn } from 'src/hooks/useTranslation';
 
 /**
@@ -65,6 +74,20 @@ export interface PartyHeaderMenuProps {
    * (`usePartyReminder` decides); absent, the item is not drawn.
    */
   readonly onRemind?: () => void;
+  /** PAY-01 FR-1 — record a payment against this party's bills (the drawer). */
+  readonly onRecordPayment?: () => void;
+  /**
+   * PUR-02 FR-4 — pay this SUPPLIER against their purchase bills: the same
+   * drawer, money out. Passed only for a party marked as a supplier.
+   */
+  readonly onPaySupplier?: () => void;
+  /** PAY-03 FR-7 — show the shop's UPI QR for this party's amount. */
+  readonly onCollect?: () => void;
+  /**
+   * BP-08 — settle this person's customer balance against their supplier balance.
+   * Passed only for a Shop contact in both roles, to a member who may record both.
+   */
+  readonly onSettle?: () => void;
   /**
    * The ⋯ button, for the page to hand to every dialog this menu opens as its
    * `returnFocusRef`. Each item closes this sheet as it opens the next one, so
@@ -81,20 +104,18 @@ export function PartyHeaderMenu({
   onArchive,
   statementHref,
   onRemind,
+  onRecordPayment,
+  onPaySupplier,
+  onCollect,
+  onSettle,
   triggerRef,
 }: Readonly<PartyHeaderMenuProps>): React.JSX.Element | null {
-  const [open, setOpen] = useState(false);
-  const router = useRouter();
+  const router = useAppRouter();
 
-  /* Every item closes the menu before it acts, and the order matters: an item
-     that opens a drawer while its own popover is still mounted leaves two
-     overlays on screen, and Escape then closes the wrong one. */
-  const run = useCallback((action?: () => void) => {
-    setOpen(false);
-    action?.();
-  }, []);
-
-  const items = [
+  /* Each row closes the sheet before it acts; `UbActionSheet` owns that order
+     (WP-03 D-04a), because a drawer opened under a still-mounted sheet leaves
+     two overlays and Escape closes the wrong one. */
+  const rows: UbMenuListRow[] = [
     /* LED-04, first in the list and not last: it is the only thing in this menu
        a merchant does FOR a customer rather than to a record, and it is the one
        they reach for while somebody is standing at the counter disputing a
@@ -102,61 +123,77 @@ export function PartyHeaderMenu({
     {
       key: 'statement',
       label: t('ledger.statement.title'),
-      icon: FileText,
-      action: statementHref ? () => router.push(statementHref) : undefined,
+      icon: <FileText className="h-5 w-5" />,
+      onSelect: statementHref ? () => router.push(statementHref) : undefined,
     },
     /* LED-06, beside the statement and for the same reason: it is done FOR a
        customer, usually with them in mind at the counter. In the menu rather
        than on the header row, because the row is You gave / You got and at
        five buttons it ran off a 360 px phone (see above). */
-    { key: 'remind', label: t('ledger.remind.action'), icon: BellRing, action: onRemind },
-    { key: 'edit', label: t('parties.detail.edit'), icon: Pencil, action: onEdit },
-    { key: 'opening', label: t('ledger.opening.action'), icon: BookOpen, action: onAddOpening },
-    { key: 'archive', label: t('parties.archive.action'), icon: Archive, action: onArchive },
-  ].filter((item) => item.action !== undefined);
+    {
+      key: 'remind',
+      label: t('ledger.remind.action'),
+      icon: <BellRing className="h-5 w-5" />,
+      onSelect: onRemind,
+    },
+    /* PAY-01 / PAY-03 — money against BILLS, beside the reminder that asks for
+       it. The plain "You got" stays on the header row for ledger-only shops
+       (FR-1); these two open the payments drawer and the Collect QR. */
+    {
+      key: 'payment',
+      label: t('payments.record.title'),
+      icon: <Wallet className="h-5 w-5" />,
+      onSelect: onRecordPayment,
+    },
+    /* PUR-02 — money OUT against a supplier's purchase bills, beside money in. */
+    {
+      key: 'paySupplier',
+      label: t('payments.record.titleOut'),
+      icon: <HandCoins className="h-5 w-5" />,
+      onSelect: onPaySupplier,
+    },
+    {
+      key: 'collect',
+      label: t('payments.upi.collect'),
+      icon: <QrCode className="h-5 w-5" />,
+      onSelect: onCollect,
+    },
+    /* BP-08 — beside the money it settles: the one explicit way the two balances meet. */
+    {
+      key: 'settle',
+      label: t('parties.detail.settle'),
+      icon: <ArrowLeftRight className="h-5 w-5" />,
+      onSelect: onSettle,
+    },
+    {
+      key: 'edit',
+      label: t('parties.detail.edit'),
+      icon: <Pencil className="h-5 w-5" />,
+      onSelect: onEdit,
+    },
+    {
+      key: 'opening',
+      label: t('ledger.opening.action'),
+      icon: <BookOpen className="h-5 w-5" />,
+      onSelect: onAddOpening,
+    },
+    {
+      key: 'archive',
+      label: t('parties.archive.action'),
+      icon: <Archive className="h-5 w-5" />,
+      onSelect: onArchive,
+    },
+  ];
 
-  /* Nothing to offer, no button. A ⋯ that opens an empty panel is worse than
-     no ⋯ — it is a control that teaches a merchant the app is broken. This is
-     the accountant's khata page, where every write is hidden (§19.7.5). */
-  if (items.length === 0) return null;
-
+  /* Nothing to offer, no button (`UbMoreActions` draws none). This is the
+     accountant's khata page, where every write is hidden (§19.7.5). */
   return (
-    <>
-      {/* "More" on screen, "More actions" to a screen reader. WCAG 2.5.3 asks
-          that the accessible name CONTAIN the visible text, which it does — and
-          a button announced as just "More" tells somebody navigating by control
-          nothing about what it is more of. */}
-      <UbButton
-        ref={triggerRef}
-        variant="outlineNeutral"
-        icon={<MoreHorizontal className="h-4 w-4" aria-hidden />}
-        iconOnly="mobile"
-        aria-label={t('parties.detail.moreActions')}
-        onClick={() => setOpen(true)}
-      >
-        {t('parties.detail.more')}
-      </UbButton>
-      <UbDialog
-        open={open}
-        onOpenChange={setOpen}
-        title={t('parties.detail.moreActions')}
-        closeLabel={t('common.action.close')}
-      >
-        <UbStack gap={1}>
-          {items.map((item) => (
-            <UbButton
-              key={item.key}
-              variant="ghost"
-              fullWidth
-              className="justify-start"
-              icon={<item.icon className="h-4 w-4" aria-hidden />}
-              onClick={() => run(item.action)}
-            >
-              {item.label}
-            </UbButton>
-          ))}
-        </UbStack>
-      </UbDialog>
-    </>
+    <UbMoreActions
+      label={t('parties.detail.more')}
+      title={t('parties.detail.moreActions')}
+      closeLabel={t('common.action.close')}
+      rows={rows}
+      triggerRef={triggerRef}
+    />
   );
 }

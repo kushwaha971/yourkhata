@@ -20,7 +20,13 @@ from django.contrib.postgres.indexes import GinIndex, OpClass
 from django.db import models
 from django.db.models.functions import Lower, Upper
 
-from apps.common.db.fields import MoneyField, QuantityField, UnitCostField, uuid7_pk
+from apps.common.db.fields import (
+    MoneyField,
+    QuantityField,
+    StockValueField,
+    UnitCostField,
+    uuid7_pk,
+)
 from apps.common.managers import AllObjectsManager, SoftDeleteManager
 from apps.common.models import ImmutableModel, SoftDeleteModel, TenantModel, TimeStampedModel
 from apps.inventory.constants import (
@@ -38,6 +44,7 @@ from apps.inventory.constants import (
     ItemType,
     MovementSource,
     MovementType,
+    StockCountStatus,
 )
 
 
@@ -167,6 +174,25 @@ class Item(TenantModel, SoftDeleteModel):
         Category, on_delete=models.RESTRICT, null=True, blank=True, related_name="items"
     )
     unit = models.ForeignKey(Unit, on_delete=models.RESTRICT, related_name="items")
+    #: D P1b — where it sits ("B-4"), printed on the bill line so the boy knows
+    #: where to pick from; and the vehicles it fits, as the shop writes them.
+    rack = models.CharField(max_length=16, null=True, blank=True)
+    #: D P2 — the garment this size × colour belongs to, and which one it is.
+    product = models.ForeignKey(
+        "inventory.Product", on_delete=models.RESTRICT, null=True, blank=True, related_name="variants"
+    )
+    attributes = models.JSONField(default=dict, blank=True)
+    #: D P3 — "serial": every piece has its own IMEI / serial, entered when it
+    #: is bought and picked when it is sold. Stock stays a quantity.
+    tracking = models.CharField(max_length=8, default="none")
+    warranty_months = models.SmallIntegerField(null=True, blank=True)
+    fits_vehicle = models.CharField(max_length=120, null=True, blank=True)
+    #: G4 — a medicine's salt / composition ("Paracetamol 650 mg"): what the
+    #: bill's same-salt substitutes match on, compared case- and space-blind.
+    salt = models.CharField(max_length=160, null=True, blank=True)
+    #: G4 — the drug schedule: "" (none), "H", "H1" or "X". A bill carrying a
+    #: scheduled medicine asks the doctor and patient name (Schedule H register).
+    schedule = models.CharField(max_length=2, default="", blank=True)
     hsn_sac = models.CharField(max_length=8, null=True, blank=True)
     tax_code = models.CharField(max_length=16, default=DEFAULT_TAX_CODE)
     tax_inclusive_selling = models.BooleanField(default=False)
@@ -243,6 +269,9 @@ class ItemStock(TenantModel):
     location = models.ForeignKey(Location, on_delete=models.RESTRICT, related_name="+")
     on_hand = QuantityField(default=0)
     avg_cost = UnitCostField(default=0)
+    #: The exact value on hand, carried so the average can be derived from it
+    #: rather than rebuilt from its own rounding (H3; `services/costing.py`).
+    stock_value = StockValueField(default=0)
     last_movement_at = models.DateTimeField(null=True, blank=True)
     #: High-water mark that allocates `StockMovement.sequence_no`.
     last_sequence_no = models.IntegerField(default=0)
@@ -283,6 +312,9 @@ class StockMovement(TenantModel, ImmutableModel):
     unit_cost = UnitCostField(null=True, blank=True)
     avg_cost_after = UnitCostField()
     on_hand_after = QuantityField()
+    #: The exact stock value after this row. NULL only on rows written before
+    #: value carrying, which the replay folds with `on_hand × avg` as they were.
+    value_after = StockValueField(null=True, blank=True)
     reason = models.CharField(max_length=32, null=True, blank=True)
     source_type = models.CharField(max_length=32, choices=MovementSource.choices)
     source_id = models.UUIDField(null=True, blank=True)
@@ -381,3 +413,404 @@ class LowStockAlert(TenantModel):
 
     def __str__(self) -> str:  # pragma: no cover
         return f"{self.level} {self.item_id}"
+
+
+class PriceList(TenantModel, SoftDeleteModel):
+    """Shop gap §1.6 — a named rate card ("Wholesale", "Dealer") for a group of parties.
+
+    A list is a RULE plus OVERRIDES. `adjust_percent` moves every item's selling
+    price (−5 is "5% off list"), so a list is useful the moment it is named,
+    without the merchant typing two hundred rates; a `PriceListRate` pins one
+    item's rate exactly and wins over the rule. A party carries at most one list
+    (`PriceListParty`), and its bills start from that list's rate at the moment
+    an item is picked — the same rule as the list price (SAL-02 FR-15).
+    """
+
+    name = models.CharField(max_length=60)
+    adjust_percent = models.DecimalField(max_digits=6, decimal_places=2, default=0)
+
+    objects = SoftDeleteManager()
+    all_objects = AllObjectsManager()
+
+    class Meta:
+        db_table = "inventory_price_list"
+        constraints = [
+            models.UniqueConstraint(
+                "tenant",
+                Lower("name"),
+                condition=models.Q(deleted_at__isnull=True),
+                name="uq_price_list_tenant_name",
+            ),
+            # Below −100% a rate is negative; above +1000% it is a typo.
+            models.CheckConstraint(
+                condition=models.Q(adjust_percent__gte=-100, adjust_percent__lte=1000),
+                name="ck_price_list_adjust_range",
+            ),
+        ]
+
+    def __str__(self) -> str:
+        return self.name
+
+
+class PriceListRate(TenantModel):
+    """One item's exact rate on one list — wins over the list's percentage."""
+
+    price_list = models.ForeignKey(PriceList, on_delete=models.CASCADE, related_name="rates")
+    item = models.ForeignKey(Item, on_delete=models.CASCADE, related_name="price_list_rates")
+    rate = MoneyField()
+
+    class Meta:
+        db_table = "inventory_price_list_rate"
+        constraints = [
+            models.UniqueConstraint(fields=["price_list", "item"], name="uq_price_list_rate_item"),
+            models.CheckConstraint(
+                condition=models.Q(rate__gte=0), name="ck_price_list_rate_nonneg"
+            ),
+        ]
+
+
+class PriceListParty(TenantModel):
+    """Which list a party buys (or sells) on. One row per party, at most.
+
+    Kept here rather than as a column on `parties_party`: price lists are an
+    inventory concern and a business without the module never sees one.
+    """
+
+    party = models.OneToOneField(
+        "parties.Party", on_delete=models.CASCADE, related_name="price_list_link"
+    )
+    price_list = models.ForeignKey(PriceList, on_delete=models.CASCADE, related_name="parties")
+
+    class Meta:
+        db_table = "inventory_price_list_party"
+        indexes = [models.Index(fields=["price_list"], name="ix_price_list_party_list")]
+
+
+class StockCount(TenantModel):
+    """C3 — a shelf count (R-DEC-68).
+
+    Kept on the server while it is open, so an hour's counting survives a dead
+    phone and continues on the laptop; two people counting at once count into
+    the same open count (one per location). Saving posts every difference as
+    `stocktake_in` / `stocktake_out` movements with this `source_id`, all or
+    nothing, and the count becomes read-only.
+    """
+
+    location = models.ForeignKey(Location, on_delete=models.RESTRICT, related_name="+")
+    status = models.CharField(
+        max_length=8, choices=StockCountStatus.choices, default=StockCountStatus.OPEN
+    )
+    saved_at = models.DateTimeField(null=True, blank=True)
+    saved_by = models.ForeignKey(
+        "platform.User", on_delete=models.SET_NULL, null=True, blank=True, related_name="+"
+    )
+
+    class Meta:
+        db_table = "inventory_stock_count"
+        verbose_name = "stock count"
+        verbose_name_plural = "stock counts"
+        constraints = [
+            # One open count per shop location: a second phone joins it.
+            models.UniqueConstraint(
+                fields=["tenant", "location"],
+                condition=models.Q(status="open"),
+                name="uq_stock_count_one_open",
+            ),
+        ]
+
+    def __str__(self) -> str:  # pragma: no cover - admin convenience
+        return f"count {self.id} ({self.status})"
+
+
+class StockCountLine(TenantModel):
+    """One counted item. `books_qty` is the book stock AT THE MOMENT it was
+    counted (R-DEC-68 #2): the correction is `counted − books_qty`, so a sale
+    made after the shelf was counted never shows as a shortage."""
+
+    count = models.ForeignKey(StockCount, on_delete=models.CASCADE, related_name="lines")
+    item = models.ForeignKey(Item, on_delete=models.RESTRICT, related_name="+")
+    counted_qty = QuantityField()
+    books_qty = QuantityField()
+    counted_at = models.DateTimeField()
+    counted_by = models.ForeignKey(
+        "platform.User", on_delete=models.SET_NULL, null=True, blank=True, related_name="+"
+    )
+
+    class Meta:
+        db_table = "inventory_stock_count_line"
+        verbose_name = "stock count line"
+        verbose_name_plural = "stock count lines"
+        constraints = [
+            models.UniqueConstraint(fields=["count", "item"], name="uq_stock_count_line_item"),
+        ]
+
+
+class ItemUnit(TenantModel):
+    """D P1a — another unit an item is sold or bought in (design D3 "Also sold
+    as"): 1 Box = 20 PCS. Always a multiple of the item's own unit, which stays
+    the smallest; stock is kept and posted in that base unit only.
+
+    `barcode` lets a box carry its own code (a scan adds 1 box); a box with no
+    `selling_price` sells at the item's price × `factor`.
+    """
+
+    item = models.ForeignKey(Item, on_delete=models.CASCADE, related_name="extra_units")
+    unit = models.ForeignKey(Unit, on_delete=models.RESTRICT, related_name="+")
+    factor = QuantityField()
+    barcode = models.CharField(max_length=BARCODE_MAX_LENGTH, null=True, blank=True)
+    selling_price = MoneyField(null=True, blank=True)
+
+    class Meta:
+        db_table = "inventory_item_unit"
+        verbose_name = "item unit"
+        verbose_name_plural = "item units"
+        constraints = [
+            models.UniqueConstraint(fields=["item", "unit"], name="uq_item_unit"),
+            models.UniqueConstraint(
+                fields=["tenant", "barcode"],
+                condition=models.Q(barcode__isnull=False),
+                name="uq_item_unit_barcode",
+            ),
+            models.CheckConstraint(condition=models.Q(factor__gt=1), name="ck_item_unit_factor"),
+        ]
+
+
+class ItemCode(TenantModel):
+    """D P1b — another number the same part is known by (design D3 "Other part
+    numbers": the maker's 06430-KTE-305, a brand's BS-SPL-01). Search and the
+    scanner find the item by any of them; one code names one item in a shop."""
+
+    item = models.ForeignKey(Item, on_delete=models.CASCADE, related_name="codes")
+    code = models.CharField(max_length=40)
+
+    class Meta:
+        db_table = "inventory_item_code"
+        verbose_name = "item code"
+        verbose_name_plural = "item codes"
+        constraints = [
+            models.UniqueConstraint(fields=["tenant", "code"], name="uq_item_code_tenant_code"),
+        ]
+        indexes = [
+            models.Index(Upper("code"), name="ix_item_code_upper"),
+        ]
+
+
+class StockTransfer(TenantModel):
+    """D P1c — goods moved between two of the shop's places (design D10 "Move
+    stock": Godown → Shop). The lines are the `transfer_out` / `transfer_in`
+    movement pairs with this `source_id`; total stock and its value are unchanged."""
+
+    number = models.CharField(max_length=32)
+    transfer_date = models.DateField()
+    from_location = models.ForeignKey(Location, on_delete=models.RESTRICT, related_name="+")
+    to_location = models.ForeignKey(Location, on_delete=models.RESTRICT, related_name="+")
+    note = models.CharField(max_length=200, blank=True, default="")
+
+    class Meta:
+        db_table = "inventory_stock_transfer"
+        verbose_name = "stock transfer"
+        verbose_name_plural = "stock transfers"
+        constraints = [
+            models.UniqueConstraint(fields=["tenant", "number"], name="uq_stock_transfer_number"),
+        ]
+
+    def __str__(self) -> str:  # pragma: no cover - admin convenience
+        return self.number
+
+
+class Product(TenantModel):
+    """D P2 — one garment in its sizes and colours (design D3 "SIZES AND
+    COLOURS"). Each size × colour is a normal Item pointing here (plan §P2:
+    "each variant is a normal item"), so stock, bills, GST, returns and reports
+    work unchanged; this row only groups them and remembers the choices."""
+
+    name = models.CharField(max_length=NAME_MAX_LENGTH)
+    #: {"size": ["S", "M"], "colour": ["Blue"]} — the order the shop typed.
+    attributes = models.JSONField(default=dict, blank=True)
+
+    class Meta:
+        db_table = "inventory_product"
+        verbose_name = "product"
+        verbose_name_plural = "products"
+
+    def __str__(self) -> str:  # pragma: no cover - admin convenience
+        return self.name
+
+
+class Serial(TenantModel):
+    """D P3 — one phone's IMEI (or any serial): bought on a purchase line, sold
+    on a bill line, back in stock on a return. The count of `in_stock` serials
+    of a tracked item equals its stock (plan §P3)."""
+
+    IN_STOCK = "in_stock"
+    SOLD = "sold"
+    #: Sent back to the supplier on a debit note (the note keeps which).
+    RETURNED = "returned"
+
+    item = models.ForeignKey(Item, on_delete=models.RESTRICT, related_name="serials")
+    serial = models.CharField(max_length=40)
+    status = models.CharField(max_length=12, default=IN_STOCK)
+    #: The purchase that brought it in and the bill that sold it (document ids:
+    #: the line rows are replaced on every draft save, the documents are not).
+    purchase_document_id = models.UUIDField(null=True, blank=True)
+    sales_document_id = models.UUIDField(null=True, blank=True)
+    sold_on = models.DateField(null=True, blank=True)
+    warranty_until = models.DateField(null=True, blank=True)
+
+    class Meta:
+        db_table = "inventory_serial"
+        verbose_name = "serial"
+        verbose_name_plural = "serials"
+        constraints = [
+            models.UniqueConstraint(fields=["tenant", "item", "serial"], name="uq_serial_item"),
+        ]
+        indexes = [models.Index(fields=["tenant", "serial"], name="ix_serial_tenant_serial")]
+
+
+class Batch(TenantModel):
+    """D P4 — one batch of a medicine: its number, expiry, MRP and how many
+    pieces of it are left (design D6 / D7). Kept beside the stock engine, as
+    IMEIs are: the item's quantity and average cost stay where they are, and
+    a batch only says which strips are which. See services/batches.py."""
+
+    item = models.ForeignKey(Item, on_delete=models.RESTRICT, related_name="batches")
+    batch_no = models.CharField(max_length=32)
+    expiry = models.DateField()
+    mrp = MoneyField(null=True, blank=True)
+    qty = QuantityField(default=0)
+    supplier_id = models.UUIDField(null=True, blank=True)
+
+    class Meta:
+        db_table = "inventory_batch"
+        verbose_name = "batch"
+        verbose_name_plural = "batches"
+        constraints = [
+            models.UniqueConstraint(fields=["tenant", "item", "batch_no"], name="uq_batch_item_no"),
+        ]
+        indexes = [models.Index(fields=["tenant", "expiry"], name="ix_batch_tenant_expiry")]
+
+
+class ItemAddon(TenantModel):
+    """D P6 — an extra on a café item (design D11): "Ice cream +₹30", "Less
+    sugar" free. The bill line keeps a snapshot of the ones chosen."""
+
+    item = models.ForeignKey(Item, on_delete=models.CASCADE, related_name="addons")
+    name = models.CharField(max_length=60)
+    price = MoneyField(default=0)
+    position = models.SmallIntegerField(default=0)
+
+    class Meta:
+        db_table = "inventory_item_addon"
+        verbose_name = "item add-on"
+        verbose_name_plural = "item add-ons"
+        constraints = [models.UniqueConstraint(fields=["item", "name"], name="uq_item_addon_name")]
+
+
+class MetalRate(TenantModel):
+    """G1 — a jeweller's rate per gram for one day (design §G1 "Today's rate").
+
+    Typed each morning from the association board; there is no rate feed
+    (ADR-021). One row per business per day: saving again the same day replaces
+    that day's figures, and earlier days are the read-only history. A bill
+    copies the rate it was issued at (G2), so changing today's rate never
+    reprices a bill already made. A blank purity is one the shop doesn't sell.
+    """
+
+    day = models.DateField()
+    gold_24k = MoneyField(null=True, blank=True)
+    gold_22k = MoneyField(null=True, blank=True)
+    gold_18k = MoneyField(null=True, blank=True)
+    silver = MoneyField(null=True, blank=True)
+    set_by_name = models.CharField(max_length=120, blank=True, default="")
+
+    class Meta:
+        db_table = "inventory_metal_rate"
+        verbose_name = "metal rate"
+        verbose_name_plural = "metal rates"
+        constraints = [models.UniqueConstraint(fields=["tenant", "day"], name="uq_metal_rate_day")]
+
+
+class TagDetail(TenantModel):
+    """G2a — what a jeweller's tag says about one piece (design D3 "Tag details").
+
+    The tag itself is a `Serial` (its `serial` is the tag no.), so a piece is in
+    stock, sold on a bill or returned through the IMEI engine; this row holds
+    the weights and charges the bill prices it by (G2b): net weight × the day's
+    rate for its purity, plus making, wastage and the stone charge.
+    """
+
+    serial = models.OneToOneField(Serial, on_delete=models.CASCADE, related_name="tag")
+    #: One of the G1 purities (`services.metal_rates.PURITIES`).
+    purity = models.CharField(max_length=12)
+    gross_g = QuantityField()
+    stone_g = QuantityField(default=0)
+    net_g = QuantityField()
+    #: "pct" (of the metal value) or "per_g" (₹ per net gram).
+    making_type = models.CharField(max_length=8, default="pct")
+    making_value = MoneyField(default=0)
+    wastage_pct = MoneyField(default=0)
+    stone_charge = MoneyField(default=0)
+    huid = models.CharField(max_length=6, blank=True, default="")
+
+    class Meta:
+        db_table = "inventory_tag_detail"
+        verbose_name = "tag detail"
+        verbose_name_plural = "tag details"
+
+
+class OldGold(TenantModel):
+    """G2c — old gold a jeweller takes in against a bill (design G2 "Old gold
+    taken in"). It is a purchase from the customer, kept in its own old-gold
+    stock by purity and never mixed with tags (it is not a sellable piece).
+
+    The weight is what was weighed; the purity is the tested one; the rate per
+    gram and the melting deduction are the counter's, written here as they
+    were used, so the bill's figure can always be explained. Its value came
+    off the bill as a no-money settlement (`payment_id`), never as cash.
+    """
+
+    #: The bill it came in against (a sales document id).
+    document_id = models.UUIDField()
+    party_id = models.UUIDField(null=True, blank=True)
+    taken_on = models.DateField()
+    purity = models.CharField(max_length=12)
+    weight_g = QuantityField()
+    rate = MoneyField()
+    less_pct = MoneyField(default=0)
+    value = MoneyField()
+    payment_id = models.UUIDField(null=True, blank=True)
+
+    class Meta:
+        db_table = "inventory_old_gold"
+        verbose_name = "old gold"
+        verbose_name_plural = "old gold"
+        constraints = [models.UniqueConstraint(fields=["tenant", "document_id"], name="uq_old_gold_document")]
+
+
+class ShortBookEntry(TenantModel):
+    """G4 — a medicine written in the short book: asked for at the counter and
+    not in stock, or added by hand. Items below their reorder level are listed
+    alongside without a row of their own (they are a query, not a decision).
+
+    One open row per item: a second ask bumps `asked_count`. Ordering it closes
+    the row (`ordered_at`), so the book shows only what is still to buy.
+    """
+
+    item = models.ForeignKey(Item, on_delete=models.CASCADE, related_name="short_book_rows")
+    reason = models.CharField(max_length=8, default="asked")
+    asked_count = models.PositiveIntegerField(default=1)
+    qty = QuantityField(null=True, blank=True)
+    created_by = models.ForeignKey(
+        "platform.User", on_delete=models.SET_NULL, null=True, blank=True, related_name="+"
+    )
+    ordered_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        db_table = "inventory_short_book_entry"
+        constraints = [
+            models.UniqueConstraint(
+                fields=["tenant", "item"],
+                condition=models.Q(ordered_at__isnull=True),
+                name="uq_short_book_open_item",
+            ),
+        ]

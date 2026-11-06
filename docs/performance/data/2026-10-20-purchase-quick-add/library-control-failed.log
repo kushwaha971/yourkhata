@@ -1,0 +1,11 @@
+
+=== 390px — signing in as scale@digikhaato.test
+nav   390 unthrottled r1 shop.home→customers: first change 21 (childList body) · url 33 · content 253 · loading UI 21 · prefetched 2 · nav RSC 58→71 · js done 76 · after: rsc 1 (+1 prefetch), api 2, js 4 · long 0/0 · inp 32
+nav   390 unthrottled r1 library.home→members: ERROR locator.waitFor: Timeout 20000ms exceeded.
+Call log:
+[2m  - waiting for locator('nav a[href="/library/members"]').filter({ visible: true }).first() to be visib
+nav   390 unthrottled r2 shop.home→customers: first change 25 (childList body) · url 33 · content 195 · loading UI 25 · prefetched 2 · nav RSC 53→71 · js done 70 · after: rsc 1 (+1 prefetch), api 2, js 4 · long 0/0 · inp 32
+nav   390 unthrottled r2 library.home→members: ERROR locator.waitFor: Timeout 20000ms exceeded.
+Call log:
+[2m  - waiting for locator('nav a[href="/library/members"]').filter({ visible: true }).first() to be visib
+nav   390 unthrottled r3 shop.home→customers: first change 30 (childList body) · url 36 · content 235 · loading UI 30 · prefetched 2 · nav RSC 56→73 · js done 73 · after: rsc 1 (+1 prefetch), api 2, js 4 · long 0/0 · inp 32

@@ -19,14 +19,14 @@ FR-1 names four sources. Three exist on this branch, as two sources:
   lets a "cash given" carry its mode, it appears as money out with no change
   here.
 
-`payments_payment` is the missing one: `apps/payments` has no tables. Each
-source is an object with two methods — the rows in a range and the net before
-a date — and `CASHBOOK_SOURCES` is the tuple the projection walks. PAY-01 adds
-a third object (one row per `mode_breakup` entry, BR-3) and nothing else in
-this module changes. Part 20 §20.1.4 forbids `expenses` importing `payments`,
-so when that source exists this composition moves to `apps/reports`, which may
-read every app's selectors (rule D4) — the two sources below move with it
-unchanged, which is why they are self-contained.
+`payments_payment` is the third, and it is not in this module. Each source is
+an object with two methods — the rows in a range and the net before a date —
+and `cashbook_sources()` is what the projection walks: the two below plus any
+another app registers. Part 20 §20.1.4 forbids `expenses` importing
+`payments`, so the payments source (one row per `mode_breakup` entry, BR-3)
+lives in `apps.reports.selectors.cash_sources` and is registered from the
+reports app's `ready()` (RPT-02, Track W4-A) — which is what makes this
+closing cash, the day book's and the dashboard's Cash in hand one figure.
 
 ── The opening is everything before the range (FR-5, partially) ────────────
 FR-5's one-time anchor ("I had ₹25,000 in the drawer on 1 April") is a tenant
@@ -49,7 +49,7 @@ from typing import Any, Protocol
 
 from django.db.models import Count, Sum
 
-from apps.common.constants import Direction, PaymentMode
+from apps.common.constants import Direction, LedgerBucket, PaymentMode
 from apps.common.money import ZERO
 from apps.expenses.constants import BANK_BUCKET, BUCKETS, CASH_BUCKET, ExpenseStatus
 from apps.expenses.models import Expense
@@ -89,9 +89,17 @@ class CashRow:
 
 
 class CashbookSource(Protocol):
-    """One kind of money event. Both methods are read-only and tenant-scoped."""
+    """One kind of money event. Every method is read-only and tenant-scoped."""
 
     name: str
+
+    def exists(self, *, tenant: Any) -> bool:
+        """Whether this source has ever produced a row, in any bucket, on any date.
+
+        `meta.has_any` (approved designs, 12 Oct 2026): a business that has never
+        moved money sees one empty state instead of a period picker over ₹0.00.
+        """
+        ...
 
     def rows(self, *, tenant: Any, date_from: dt.date, date_to: dt.date) -> Iterable[CashRow]: ...
 
@@ -107,7 +115,13 @@ class ExpenseSource:
 
     @staticmethod
     def _base(tenant: Any) -> Any:
-        return Expense.objects.for_tenant(tenant).filter(status=ExpenseStatus.RECORDED, paid=True)
+        # DEC-019 (QA B10) — the cashbook is the Shop's till: the Shop's expenses only.
+        return Expense.objects.for_tenant(tenant).filter(
+            status=ExpenseStatus.RECORDED, paid=True, app="shop"
+        )
+
+    def exists(self, *, tenant: Any) -> bool:
+        return self._base(tenant).exists()
 
     def rows(self, *, tenant: Any, date_from: dt.date, date_to: dt.date) -> Iterable[CashRow]:
         queryset = (
@@ -161,12 +175,18 @@ class LedgerCashSource:
 
     @staticmethod
     def _base(tenant: Any) -> Any:
+        # DEC-019 / WP-06 Finding 4 — the Shop's till: the Shop's own khata
+        # lines, never the Udhaar book's "You got ₹300, cash".
         return LedgerEntry.objects.filter(
             tenant=tenant,
+            bucket=LedgerBucket.SHOP,
             status=EntryStatus.POSTED,
             entry_type__in=(EntryType.MANUAL_GOT, EntryType.MANUAL_GAVE),
             payment_mode__isnull=False,
         )
+
+    def exists(self, *, tenant: Any) -> bool:
+        return self._base(tenant).exists()
 
     def rows(self, *, tenant: Any, date_from: dt.date, date_to: dt.date) -> Iterable[CashRow]:
         queryset = (
@@ -209,6 +229,37 @@ class LedgerCashSource:
 #: The projection's inputs, in the order ties within one second are broken.
 CASHBOOK_SOURCES: tuple[CashbookSource, ...] = (LedgerCashSource(), ExpenseSource())
 
+#: Sources another app adds (the CR-2026-09-24-T1-E pattern: a registry other
+#: apps fill). `expenses` may not import `payments` (Part 20 §20.1.4), so the
+#: payments source — money in and out by each `mode_breakup` share, BR-3 — is
+#: registered by `apps.reports`, which may read every app, from its `ready()`.
+#: Without it the cashbook's closing cash would disagree with the day book's
+#: and with the dashboard's Cash in hand the moment a payment was recorded.
+_REGISTERED: list[CashbookSource] = []
+
+
+def register_cashbook_source(source: CashbookSource) -> None:
+    """Add a source once; a second registration of the same name is ignored."""
+    if all(existing.name != source.name for existing in _REGISTERED):
+        _REGISTERED.append(source)
+
+
+def cashbook_sources() -> tuple[CashbookSource, ...]:
+    return (*CASHBOOK_SOURCES, *_REGISTERED)
+
+
+def has_any_money(*, tenant: Any, sources: tuple[CashbookSource, ...] | None = None) -> bool:
+    """`meta.has_any` — has this business EVER recorded a money event, whatever the range?
+
+    The cashbook screen needs to tell two empties apart: a business with nothing
+    to show (one plain empty state, no period picker, no ₹0.00 tiles) and a range
+    that happens to be quiet (keep every control, so the merchant can move it).
+    Only the server can say which, because the client holds one range at a time.
+    One `EXISTS` per source, stopping at the first that answers yes.
+    """
+    sources = cashbook_sources() if sources is None else sources
+    return any(source.exists(tenant=tenant) for source in sources)
+
 
 def _money(value: Decimal) -> str:
     return str(value.quantize(Decimal("0.01")))
@@ -234,6 +285,7 @@ def _voided_counts(*, tenant: Any, date_from: dt.date, date_to: dt.date) -> dict
         .filter(
             status=ExpenseStatus.VOID,
             paid=True,
+            app="shop",
             expense_date__gte=date_from,
             expense_date__lte=date_to,
         )
@@ -250,7 +302,7 @@ def build_cashbook(
     date_from: dt.date,
     date_to: dt.date,
     buckets: tuple[str, ...] = BUCKETS,
-    sources: tuple[CashbookSource, ...] = CASHBOOK_SOURCES,
+    sources: tuple[CashbookSource, ...] | None = None,
 ) -> dict:
     """The whole response body for one range. Read-only; five queries for two sources.
 
@@ -262,6 +314,7 @@ def build_cashbook(
     Days come back newest first (FR-3); rows within a day oldest first, with a
     `running_after` per bucket, so a day reads like a passbook (FR-4, BR-11).
     """
+    sources = cashbook_sources() if sources is None else sources
     opening: dict[str, Decimal] = defaultdict(lambda: ZERO)
     for source in sources:
         for bucket, value in source.net_before(tenant=tenant, before=date_from).items():

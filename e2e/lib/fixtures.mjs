@@ -25,6 +25,21 @@ let seq = 0;
 export const uniq = () => `${Date.now().toString(36)}${(seq++).toString(36)}${Math.random().toString(36).slice(2, 6)}`;
 /** A ten-digit Indian mobile nobody else holds (starts 6–9, as the validator wants). */
 export const uniqMobile = () => `9${String(Date.now()).slice(-5)}${String(Math.floor(Math.random() * 1e4)).padStart(4, '0')}`;
+/** A fresh, locally checked GSTIN for fixture businesses; never a real business identifier. */
+export const fixtureGstin = () => {
+  const alphabet = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+  // The former last-five timestamp digits repeated every100 seconds and
+  // collided between parallel harnesses. Fresh entropy keeps test identities separate.
+  const entropy = crypto.randomUUID().replace(/-/g, '');
+  const letters = [...entropy.slice(0, 5)].map(char => String.fromCharCode(65 + parseInt(char, 16))).join('');
+  const digits = [...entropy.slice(5, 9)].map(char => String(parseInt(char, 16) % 10)).join('');
+  const body = `27${letters}${digits}F1Z`;
+  const sum = [...body].reduce((total, char, index) => {
+    const product = alphabet.indexOf(char) * (index % 2 ? 2 : 1);
+    return total + Math.floor(product / 36) + product % 36;
+  }, 0);
+  return body + alphabet[(36 - sum % 36) % 36];
+};
 const daysAgo = (n) => new Date(Date.now() - n * 86_400_000).toISOString().slice(0, 10);
 
 export async function api(method, path, body, token, extra = {}) {

@@ -1,0 +1,288 @@
+'use client';
+
+import { useCallback, useMemo, useState } from 'react';
+
+import dynamic from 'next/dynamic';
+
+import {
+  UbActionLink,
+  UbDialogLoading,
+  UbDivider,
+  UbFilterSelect,
+  UbSearchInput,
+  UbStack,
+} from 'src/design-system';
+import {
+  UbDataGrid,
+  useGridTier,
+  type UbDataGridEmptyStates,
+  type UbGridState,
+} from 'src/design-system/UbDataGrid';
+import { useAppRouter } from 'src/hooks/useAppRouter';
+import { useCommittedSearch } from 'src/hooks/useCommittedSearch';
+import { usePermissions } from 'src/hooks/usePermissions';
+import { useTranslation } from 'src/hooks/useTranslation';
+import { ROUTES } from 'src/routes';
+
+import { PROFIT_GROUPS } from '../constants/profitReportConstants';
+import { TAX_PERIOD_PRESETS } from '../constants/taxReportConstants';
+import { useProfitReport } from '../hooks/useProfitReport';
+import { useReportGridLabels } from '../hooks/useReportGridLabels';
+import { profitCard } from '../view-model/profitCards';
+import { orderingOf, profitRowHref, sortOf } from '../view-model/profitDisplay';
+
+import { createProfitColumns, profitRowName } from './ProfitColumns';
+import { ProfitSummary } from './ProfitSummary';
+import { ReportCardRow } from './ReportCardRow';
+import { ReportPager } from './ReportPager';
+import { ReportPageShell } from './ReportPageShell';
+
+import type { ProfitGroup, ProfitRow } from '../types/profitReport.types';
+import type { TaxPeriodPreset } from '../types/taxReports.types';
+
+// The row sheet opens from a phone card; a visit that only reads never loads it.
+const ProfitRowSheetLazy = dynamic(() => import('./ProfitRowSheet').then((m) => m.ProfitRowSheet), {
+  ssr: false,
+  loading: () => <UbDialogLoading />,
+});
+
+/** Where a bill is made — the empty book's one action. */
+const NEW_BILL = `${ROUTES.SALES_INVOICES}/new`;
+
+/** Matches the other lists' search: a keystroke is not a request. */
+const SEARCH_DEBOUNCE_MS = 300;
+
+/**
+ * Shop item 1 — `/reports/profit`: what the shop made, by item, customer,
+ * category or bill, with the period's P&L on top.
+ *
+ * The approved filter pattern (owner, 6 Oct 2026): the period presets, then ONE
+ * dropdown for the view, because it is one choice from four; the grid's own
+ * header sorts, and one tap on Profit puts the loss-makers on top. A row opens
+ * the item, the customer's khata or the bill.
+ */
+export function ProfitReportPageContent(): React.JSX.Element {
+  const { t } = useTranslation();
+  const router = useAppRouter();
+  const tier = useGridTier();
+  const labels = useReportGridLabels();
+  const report = useProfitReport();
+  const { filters, update, refetch, error } = report;
+  const { group } = filters;
+  const { can, hasModule } = usePermissions();
+  const canBill = hasModule('sales') && can('sales.invoice.write');
+
+  const phone = tier === 'cards';
+  const [sheetRow, setSheetRow] = useState<ProfitRow | null>(null);
+  const closeSheet = useCallback(() => setSheetRow(null), []);
+
+  const commitSearch = useCallback((q: string) => update({ q }), [update]);
+  const [search, setSearch] = useCommittedSearch(filters.q, commitSearch, SEARCH_DEBOUNCE_MS);
+
+  const columns = useMemo(
+    () => createProfitColumns({ t, group, isCards: tier === 'cards' }),
+    [t, group, tier]
+  );
+  const emptyStates = useMemo<UbDataGridEmptyStates>(
+    () => ({
+      firstUse: {
+        title: t('reports.profit.empty.title'),
+        description: t('reports.profit.empty.body'),
+      },
+      filtered: {
+        title: t('reports.profit.filtered.title'),
+        description: t('reports.profit.filtered.body'),
+      },
+      error: {
+        title: t('reports.profit.error.title'),
+        description: error?.message ?? t('reports.profit.error.body'),
+        requestId: error?.requestId ?? null,
+        requestIdLabel: t('common.error.reference'),
+      },
+    }),
+    [t, error]
+  );
+
+  const rows = report.data?.rows ?? [];
+  const gridState: UbGridState =
+    report.status === 'failed'
+      ? 'error'
+      : !report.data
+        ? 'loading'
+        : rows.length === 0
+          ? filters.q
+            ? 'filtered-empty'
+            : 'empty'
+          : 'rows';
+
+  /* Approved designs (12 Oct 2026): `hasAny` is the server's, over every bill
+     ever. A quiet month keeps the period and view pickers (moving them is how
+     the merchant finds the bills); only a business that has never billed gets
+     the single empty state. `undefined` (an older server) never hides anything. */
+  const emptyBook =
+    report.status === 'succeeded' && rows.length === 0 && report.data?.hasAny === false;
+
+  const rowId = useCallback((row: ProfitRow) => row.id ?? `none-${group}`, [group]);
+  const rowName = useCallback((row: ProfitRow) => profitRowName(t, group, row), [t, group]);
+  const card = useMemo(() => profitCard(t, group, rowName), [t, group, rowName]);
+  const pages = Math.max(
+    Math.ceil((report.data?.total ?? 0) / Math.max(report.data?.pageSize ?? 50, 1)),
+    1
+  );
+  const searchInput = (
+    <UbSearchInput
+      value={search}
+      onChange={setSearch}
+      placeholder={t(`reports.profit.search.${group}`)}
+      aria-label={t(`reports.profit.search.${group}`)}
+    />
+  );
+  const openRow = useCallback(
+    (row: ProfitRow) => {
+      const href = profitRowHref(group, row);
+      if (href) router.push(href);
+    },
+    [router, group]
+  );
+
+  return (
+    <ReportPageShell<TaxPeriodPreset>
+      title={t('reports.profit.title')}
+      testId="profit-report"
+      emptyBook={
+        emptyBook
+          ? {
+              title: t('reports.profit.emptyBook.title'),
+              description: t('reports.profit.emptyBook.body'),
+              action: canBill ? (
+                <UbActionLink href={NEW_BILL} variant="secondary">
+                  {t('reports.emptyBook.newSale')}
+                </UbActionLink>
+              ) : undefined,
+            }
+          : null
+      }
+      noAccess={
+        report.canRead
+          ? null
+          : {
+              title: t('reports.profit.noAccess.title'),
+              description: t('reports.profit.noAccess.body'),
+            }
+      }
+      period={{
+        presets: TAX_PERIOD_PRESETS.map((value) => ({
+          value,
+          label: t(`reports.period.${value}`),
+        })),
+        preset: filters.preset,
+        onPresetChange: report.setPreset,
+        customPreset: 'custom',
+        from: filters.dateFrom,
+        to: filters.dateTo,
+        onRangeChange: report.setRange,
+        max: report.today,
+        name: 'profit-period',
+        labels: {
+          presets: t('reports.period.label'),
+          from: t('reports.period.from'),
+          to: t('reports.period.to'),
+          apply: t('common.action.apply'),
+          close: t('common.action.close'),
+        },
+      }}
+      filters={
+        <UbFilterSelect
+          spec={{
+            kind: 'single',
+            key: 'by',
+            label: t('reports.profit.by.label'),
+            options: PROFIT_GROUPS.map((value) => ({
+              value,
+              label: t(`reports.profit.by.${value}`),
+            })),
+          }}
+          value={group}
+          onChange={(next) => {
+            const value = PROFIT_GROUPS.find((candidate) => candidate === next);
+            if (value) update({ group: value as ProfitGroup, q: '' });
+          }}
+          closeLabel={t('common.action.close')}
+        />
+      }
+      exportAction={{
+        path: report.exportPath,
+        empty: report.data !== null && report.data.total === 0,
+      }}
+      /* The grid draws its own loading, error and empty states; the shell's body is always ready. */
+      state="ready"
+      onRetry={refetch}
+      loadingLabel={t('reports.grid.loading')}
+    >
+      {report.data && report.data.totals.bills > 0 && <ProfitSummary totals={report.data.totals} />}
+      {/* 09 §10.6 on a phone: the search stays put (one input, so typing into
+          a search that finds nothing keeps focus), the rows are cards and a
+          tap opens the whole row; the grid draws loading, error and empty. */}
+      {phone && !emptyBook && searchInput}
+      {phone && gridState === 'rows' ? (
+        <>
+          <UbStack
+            as="ul"
+            gap={0}
+            aria-label={t(`reports.profit.caption.${group}`)}
+            data-testid="profit-cards"
+          >
+            {rows.map((row, index) => (
+              <UbStack as="li" key={rowId(row)} gap={0}>
+                {index > 0 && <UbDivider />}
+                <ReportCardRow
+                  view={card(row)}
+                  onOpen={() => setSheetRow(row)}
+                  testId="profit-row"
+                />
+              </UbStack>
+            ))}
+          </UbStack>
+          <ReportPager
+            page={report.data?.page ?? filters.page}
+            pages={pages}
+            onPage={report.setPage}
+            label={t('reports.profit.pageOf', { page: report.data?.page ?? filters.page, pages })}
+          />
+        </>
+      ) : (
+        <UbDataGrid
+          rows={rows}
+          columns={columns}
+          rowId={rowId}
+          rowName={rowName}
+          state={gridState}
+          labels={labels}
+          emptyStates={emptyStates}
+          caption={t(`reports.profit.caption.${group}`)}
+          storageId={`reports.profit.${group}`}
+          page={{
+            page: report.data?.page ?? filters.page,
+            pageSize: report.data?.pageSize ?? 50,
+            total: report.data?.total ?? 0,
+            totalPages: pages,
+          }}
+          onPageChange={report.setPage}
+          sort={sortOf(filters.ordering)}
+          onSortChange={(next) => update({ ordering: orderingOf(next.columnId, next.direction) })}
+          onRowOpen={group === 'category' ? undefined : openRow}
+          search={phone ? undefined : searchInput}
+          cardAvatar={false}
+        />
+      )}
+      {sheetRow && (
+        <ProfitRowSheetLazy
+          row={sheetRow}
+          group={group}
+          name={rowName(sheetRow)}
+          onClose={closeSheet}
+        />
+      )}
+    </ReportPageShell>
+  );
+}

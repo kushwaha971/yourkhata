@@ -1,11 +1,21 @@
 'use client';
 
-import { useCallback, useEffect, useId, useMemo, useRef, type ReactNode } from 'react';
+import {
+  useCallback,
+  useEffect,
+  useId,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ReactNode,
+} from 'react';
 
 import { Plus, Trash2 } from 'lucide-react';
 import {
   Controller,
   useWatch,
+  useFormState,
   type ArrayPath,
   type Control,
   type ControllerRenderProps,
@@ -15,7 +25,7 @@ import {
   type UseFieldArrayReturn,
 } from 'react-hook-form';
 
-import { useGridTier } from 'src/design-system/UbDataGrid/useGridTier';
+import { useMediaQuery } from 'src/design-system/motion/useMediaQuery';
 import { cn } from 'src/utils/cn';
 
 /**
@@ -105,8 +115,77 @@ export interface UbLineItemsEditorProps<TForm extends FieldValues, TName extends
   readonly footer?: ReactNode;
   /** Force a layout (tests, a print preview); otherwise from the viewport. */
   readonly layout?: UbLineCellLayout;
+  /** Wide forms keep labelled cards until their columns have room. */
+  readonly tableFrom?: number;
+  /**
+   * `'fits'` — draw the table whenever the editor's OWN width holds every
+   * column's minimum track (`minimumTableWidth`), cards otherwise. The screen
+   * width says nothing about the space a form's lines get beside a sidebar or
+   * a totals panel. Until the editor has been measured (and in jsdom, which
+   * measures nothing) it falls back to `tableFrom`.
+   */
+  readonly tableWhen?: 'viewport' | 'fits';
+  /** Opt-in compact cards. Existing callers retain their full cards. */
+  readonly renderCardSummary?: (index: number, expanded: boolean) => ReactNode;
+  /**
+   * Put the caret in a cell from OUTSIDE the grid — the bill editor's
+   * always-open item search fills a line and asks for its Qty. A new `seq`
+   * is a new request; a compact card is expanded first so the cell exists.
+   */
+  readonly focusRequest?: UbLineFocusRequest | null;
   readonly className?: string;
 }
+
+export interface UbLineFocusRequest {
+  readonly row: number;
+  /** Index among the EDITABLE columns (those with a `field`). */
+  readonly col: number;
+  readonly seq: number;
+}
+
+const REM_PX = 16;
+/* Layout constants of the table below, in rem: the remove button's track, the
+   0.5rem gap after every column, and the row's 0.75rem padding each side. */
+const REMOVE_TRACK_REM = 2.5;
+const GAP_REM = 0.5;
+const ROW_PADDING_REM = 1.5;
+
+const trackMinimumPx = (track: string): number => {
+  const min =
+    /^\s*minmax\(\s*([\d.]+)(rem|px)?/.exec(track) ?? /^\s*([\d.]+)(rem|px)\s*$/.exec(track);
+  if (!min) return 0;
+  const value = Number(min[1]);
+  return min[2] === 'px' ? value : value * REM_PX;
+};
+
+/**
+ * WP-05 — the narrowest the table can be drawn without a column going below
+ * its minimum: the tracks' minimums, the remove button, the gaps and the row
+ * padding. Below it the table would scroll sideways or clip Qty and Total,
+ * which is what the spec forbids.
+ */
+export const minimumTableWidth = (tracks: readonly string[]): number =>
+  tracks.reduce((sum, track) => sum + trackMinimumPx(track), 0) +
+  (REMOVE_TRACK_REM + GAP_REM * tracks.length + ROW_PADDING_REM) * REM_PX;
+
+/** The editor's own width, or null before it is measured (and in jsdom). */
+const useOwnWidth = (ref: React.RefObject<HTMLElement | null>, active: boolean): number | null => {
+  const [width, setWidth] = useState<number | null>(null);
+  useLayoutEffect(() => {
+    const el = ref.current;
+    if (!active || !el) return undefined;
+    const read = () => {
+      const measured = el.getBoundingClientRect().width;
+      setWidth(measured > 0 ? measured : null);
+    };
+    read();
+    if (typeof ResizeObserver === 'undefined') return undefined;
+    const observer = new ResizeObserver(read);
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [ref, active]);
+  return width;
+};
 
 const FOCUSABLE =
   'input:not([disabled]), button:not([disabled]), textarea:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])';
@@ -137,13 +216,56 @@ export function UbLineItemsEditor<TForm extends FieldValues, TName extends Array
   disabled = false,
   footer,
   layout: forcedLayout,
+  tableFrom = 768,
+  tableWhen = 'viewport',
+  renderCardSummary,
+  focusRequest = null,
   className,
 }: UbLineItemsEditorProps<TForm, TName>): React.JSX.Element {
-  const tier = useGridTier();
-  const layout: UbLineCellLayout = forcedLayout ?? (tier === 'cards' ? 'card' : 'table');
   const containerRef = useRef<HTMLDivElement>(null);
+  const screenFits = useMediaQuery(`(min-width: ${tableFrom}px)`);
+  const ownWidth = useOwnWidth(containerRef, tableWhen === 'fits' && !forcedLayout);
+  const minimum = useMemo(
+    () => minimumTableWidth(columns.map((column) => column.track ?? 'minmax(0,1fr)')),
+    [columns]
+  );
+  const tableFits = ownWidth === null ? screenFits : ownWidth >= minimum;
+  const layout: UbLineCellLayout = forcedLayout ?? (tableFits ? 'table' : 'card');
   const baseId = useId();
   const { fields, append, remove } = fieldArray;
+  const { submitCount, errors } = useFormState({ control });
+  const keys = fields.map((line) => line.key).join(',');
+  const [expansion, setExpansion] = useState(() => ({
+    keys,
+    key: fields[0]?.key ?? null,
+    submitCount,
+  }));
+  // Derive the row selection before commit when the field array or submit changes.
+  // No effect-driven second paint and no index identity after removing a row.
+  if (renderCardSummary && (expansion.keys !== keys || expansion.submitCount !== submitCount)) {
+    const oldKeys = new Set(expansion.keys.split(','));
+    const added = fields.filter((line) => !oldKeys.has(line.key));
+    let key = fields.some((line) => line.key === expansion.key)
+      ? expansion.key
+      : (fields[0]?.key ?? null);
+    if (added.length) key = added[added.length - 1]?.key ?? null;
+    if (expansion.submitCount !== submitCount) {
+      const invalid = fields.findIndex((_, index) =>
+        columns.some(
+          (column) => column.field && readError(errors, `${name}.${index}.${column.field}`)
+        )
+      );
+      if (invalid >= 0) key = fields[invalid]?.key ?? null;
+    }
+    setExpansion({ keys, key, submitCount });
+  }
+  // An outside focus request expands its row the same way, before commit.
+  const [focusSeq, setFocusSeq] = useState(focusRequest?.seq ?? 0);
+  if (focusRequest && focusRequest.seq !== focusSeq) {
+    setFocusSeq(focusRequest.seq);
+    const key = fields[focusRequest.row]?.key;
+    if (renderCardSummary && key) setExpansion({ keys, key, submitCount });
+  }
   /* Where the caret goes once the lines the last action changed are in the
      DOM. A ref, not state: it is consumed by the next commit and never drawn. */
   const pendingFocus = useRef<{ row: number; col: number } | null>(null);
@@ -170,9 +292,32 @@ export function UbLineItemsEditor<TForm extends FieldValues, TName extends Array
   );
 
   useEffect(() => {
+    if (focusRequest) pendingFocus.current = { row: focusRequest.row, col: focusRequest.col };
+    // The caller keeps the request in state, so a re-render is not a new one.
+  }, [focusRequest]);
+
+  useEffect(() => {
     const pending = pendingFocus.current;
     if (pending && focusCell(pending.row, pending.col)) pendingFocus.current = null;
   });
+
+  const focusedSubmit = useRef(0);
+  useEffect(() => {
+    if (!renderCardSummary || !submitCount || focusedSubmit.current === submitCount) return;
+    const row = fields.findIndex((_, index) =>
+      editable.some(
+        (column) => column.field && readError(errors, `${name}.${index}.${column.field}`)
+      )
+    );
+    if (row < 0) {
+      focusedSubmit.current = submitCount;
+      return;
+    }
+    const col = editable.findIndex(
+      (column) => column.field && readError(errors, `${name}.${row}.${column.field}`)
+    );
+    if (focusCell(row, col)) focusedSubmit.current = submitCount;
+  }, [renderCardSummary, submitCount, fields, editable, errors, name, focusCell, expansion.key]);
 
   const addLine = useCallback(() => {
     if (atMax || disabled) return;
@@ -281,6 +426,7 @@ export function UbLineItemsEditor<TForm extends FieldValues, TName extends Array
               data-line-cell=""
               data-row={index}
               data-col={col}
+              data-field={String(column.field)}
               className="flex min-w-0 flex-col gap-1"
             >
               {column.render({
@@ -315,7 +461,10 @@ export function UbLineItemsEditor<TForm extends FieldValues, TName extends Array
       {layout === 'table' ? (
         /* Scrolls sideways rather than clipping when the columns' minimum
            widths exceed the space — a clipped last column hides the remove
-           button, which is how the first look at INV-06 found it. */
+           button, which is how the first look at INV-06 found it. That is the
+           last resort: callers size their tracks to fit (QA S-D5), and the
+           gap is 0.5rem so six tracks and the remove button fit a bill editor
+           at 1280. */
         <div
           role="table"
           aria-rowcount={fields.length + 1}
@@ -323,7 +472,7 @@ export function UbLineItemsEditor<TForm extends FieldValues, TName extends Array
         >
           <div
             role="row"
-            className="ds-body-s-medium grid items-center gap-3 border-b border-border-hairline bg-surface-sunken px-3 py-2 text-text-tertiary"
+            className="ds-body-s-medium grid items-center gap-2 border-b border-border-hairline bg-surface-sunken px-3 py-2 text-text-tertiary"
             style={{ gridTemplateColumns: template }}
           >
             {columns.map((column) => (
@@ -335,13 +484,23 @@ export function UbLineItemsEditor<TForm extends FieldValues, TName extends Array
                 {column.header}
               </span>
             ))}
-            <span role="columnheader" className="sr-only">
-              {labels.removeLine(0)}
-            </span>
+            {/* QA S-D8 — the remove column's header is unnamed: it used to read
+                `removeLine(0)`, "Remove line 0", a line that does not exist.
+                Each row's button carries its own 1-based name. */}
+            <span role="columnheader" className="sr-only" />
           </div>
+          {/* ARIA table ownership (axe aria-required-children, Sprint 12): a
+              `table` owns only `row`s and a `row` only cells, so the empty
+              message, the remove button and the line note each sit in a cell. */}
           {fields.length === 0 && (
-            <div className="ds-body-sm px-3 py-6 text-center text-text-tertiary">
-              {labels.empty}
+            <div role="row">
+              <div
+                role="cell"
+                aria-colspan={columns.length + 1}
+                className="ds-body-sm px-3 py-6 text-center text-text-tertiary"
+              >
+                {labels.empty}
+              </div>
             </div>
           )}
           {fields.map((line, index) => (
@@ -354,7 +513,7 @@ export function UbLineItemsEditor<TForm extends FieldValues, TName extends Array
                 lineInvalid?.(index) && 'bg-formError-dim'
               )}
             >
-              <div className="grid items-start gap-3" style={{ gridTemplateColumns: template }}>
+              <div className="grid items-start gap-2" style={{ gridTemplateColumns: template }}>
                 {columns.map((column) => (
                   <div
                     key={column.id}
@@ -364,17 +523,19 @@ export function UbLineItemsEditor<TForm extends FieldValues, TName extends Array
                     {renderCell(column, index, 'table')}
                   </div>
                 ))}
-                <button
-                  type="button"
-                  onClick={() => remove(index)}
-                  disabled={disabled}
-                  aria-label={labels.removeLine(index + 1)}
-                  className="flex h-10 w-10 items-center justify-center rounded-control text-text-tertiary hover:bg-surface-sunken hover:text-formError disabled:opacity-50"
-                >
-                  <Trash2 aria-hidden className="h-4 w-4" />
-                </button>
+                <div role="cell">
+                  <button
+                    type="button"
+                    onClick={() => remove(index)}
+                    disabled={disabled}
+                    aria-label={labels.removeLine(index + 1)}
+                    className="ub-hit flex h-10 w-10 items-center justify-center rounded-control text-text-tertiary hover:bg-surface-sunken hover:text-formError disabled:opacity-50"
+                  >
+                    <Trash2 aria-hidden className="h-4 w-4" />
+                  </button>
+                </div>
               </div>
-              {renderLineNote?.(index)}
+              <LineNoteCell note={renderLineNote?.(index)} span={columns.length + 1} />
             </div>
           ))}
         </div>
@@ -387,61 +548,104 @@ export function UbLineItemsEditor<TForm extends FieldValues, TName extends Array
           )}
           {fields.map((line, index) => {
             const title = columns.find((column) => column.card === 'title');
+            const expanded = !renderCardSummary || expansion.key === line.key;
             return (
               <section
                 key={line.key}
                 aria-label={labels.lineLabel(index + 1)}
                 className={cn(
-                  'flex flex-col gap-3 rounded-card border border-border-hairline p-3',
-                  lineInvalid?.(index) && 'border-formError'
+                  'flex flex-col rounded-card border border-border-hairline',
+                  expanded && 'gap-3 p-3',
+                  (lineInvalid?.(index) ||
+                    columns.some(
+                      (column) =>
+                        column.field && readError(errors, `${name}.${index}.${column.field}`)
+                    )) &&
+                    'border-formError'
                 )}
               >
-                <div className="flex items-start gap-2">
-                  <div className="min-w-0 flex-1">{title && renderCell(title, index, 'card')}</div>
+                {renderCardSummary && (
                   <button
                     type="button"
-                    onClick={() => remove(index)}
+                    aria-label={labels.lineLabel(index + 1)}
+                    aria-expanded={expanded}
+                    aria-controls={expanded ? `${baseId}-${line.key}-fields` : undefined}
+                    aria-describedby={`${baseId}-${line.key}-summary`}
                     disabled={disabled}
-                    aria-label={labels.removeLine(index + 1)}
-                    className="flex h-10 w-10 shrink-0 items-center justify-center rounded-control text-text-tertiary hover:bg-surface-sunken hover:text-formError disabled:opacity-50"
+                    onClick={() =>
+                      setExpansion({ keys, submitCount, key: expanded ? null : line.key })
+                    }
+                    className={cn(
+                      'ub-hit min-h-16 w-full rounded-card text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent',
+                      !expanded && 'p-3'
+                    )}
                   >
-                    <Trash2 aria-hidden className="h-4 w-4" />
+                    <span id={`${baseId}-${line.key}-summary`} className="block min-w-0">
+                      <ComputedCell
+                        control={control}
+                        name={`${name}.${index}` as Path<TForm>}
+                        render={() => renderCardSummary(index, expanded)}
+                      />
+                    </span>
                   </button>
-                </div>
-                <div className="grid grid-cols-2 gap-3">
-                  {columns
-                    .filter(
-                      (column) =>
-                        column !== title &&
-                        (column.card ?? (column.field ? 'field' : 'inline')) === 'field'
-                    )
-                    .map((column) => (
-                      <label key={column.id} className="flex min-w-0 flex-col gap-1">
-                        <span className="ds-body-s-medium text-text-secondary">
-                          {column.header}
-                        </span>
-                        {renderCell(column, index, 'card')}
-                      </label>
-                    ))}
-                </div>
-                {columns
-                  .filter(
-                    (column) =>
-                      column !== title &&
-                      (column.card ?? (column.field ? 'field' : 'inline')) === 'inline'
-                  )
-                  .map((column) => (
-                    <div
-                      key={column.id}
-                      className="ds-body-s-regular flex items-center justify-between gap-3"
-                    >
-                      <span className="text-text-tertiary">{column.header}</span>
-                      <span className="min-w-0 text-right">
-                        {renderCell(column, index, 'card')}
-                      </span>
+                )}
+                {expanded && (
+                  <div id={`${baseId}-${line.key}-fields`} className="flex flex-col gap-3">
+                    <div className="flex items-start gap-2">
+                      <div className="min-w-0 flex-1">
+                        {title && renderCell(title, index, 'card')}
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => remove(index)}
+                        disabled={disabled}
+                        aria-label={labels.removeLine(index + 1)}
+                        className="ub-hit flex h-10 w-10 shrink-0 items-center justify-center rounded-control text-text-tertiary hover:bg-surface-sunken hover:text-formError disabled:opacity-50"
+                      >
+                        <Trash2 aria-hidden className="h-4 w-4" />
+                      </button>
                     </div>
-                  ))}
-                {renderLineNote?.(index)}
+                    <div
+                      className={cn(
+                        'grid gap-3',
+                        renderCardSummary ? 'grid-cols-1 min-[360px]:grid-cols-2' : 'grid-cols-2'
+                      )}
+                    >
+                      {columns
+                        .filter(
+                          (column) =>
+                            column !== title &&
+                            (column.card ?? (column.field ? 'field' : 'inline')) === 'field'
+                        )
+                        .map((column) => (
+                          <label key={column.id} className="flex min-w-0 flex-col gap-1">
+                            <span className="ds-body-s-medium text-text-secondary">
+                              {column.header}
+                            </span>
+                            {renderCell(column, index, 'card')}
+                          </label>
+                        ))}
+                    </div>
+                    {columns
+                      .filter(
+                        (column) =>
+                          column !== title &&
+                          (column.card ?? (column.field ? 'field' : 'inline')) === 'inline'
+                      )
+                      .map((column) => (
+                        <div
+                          key={column.id}
+                          className="ds-body-s-regular flex items-center justify-between gap-3"
+                        >
+                          <span className="text-text-tertiary">{column.header}</span>
+                          <span className="min-w-0 text-right">
+                            {renderCell(column, index, 'card')}
+                          </span>
+                        </div>
+                      ))}
+                    {renderLineNote?.(index)}
+                  </div>
+                )}
               </section>
             );
           })}
@@ -453,7 +657,7 @@ export function UbLineItemsEditor<TForm extends FieldValues, TName extends Array
           type="button"
           onClick={addLine}
           disabled={atMax || disabled}
-          className="ds-body-sm-medium inline-flex h-10 items-center gap-2 rounded-control border border-border-hairline px-3 text-accent hover:bg-surface-sunken disabled:cursor-not-allowed disabled:opacity-50"
+          className="ub-hit ds-body-sm-medium inline-flex h-10 items-center gap-2 rounded-control border border-border-hairline px-3 text-text-accent hover:bg-surface-sunken disabled:cursor-not-allowed disabled:opacity-50"
         >
           <Plus aria-hidden className="h-4 w-4" />
           {labels.addLine}
@@ -463,6 +667,26 @@ export function UbLineItemsEditor<TForm extends FieldValues, TName extends Array
         )}
       </div>
       {footer}
+    </div>
+  );
+}
+
+/**
+ * A line's note (stock left, a price warning) under its cells. A `row` may own
+ * only cells, so the note is one spanning the row; `empty:hidden` keeps a line
+ * with no note from gaining the row's 4 px gap for an empty box.
+ */
+function LineNoteCell({
+  note,
+  span,
+}: {
+  readonly note: ReactNode;
+  readonly span: number;
+}): React.JSX.Element | null {
+  if (note === null || note === undefined || note === false) return null;
+  return (
+    <div role="cell" aria-colspan={span} className="empty:hidden">
+      {note}
     </div>
   );
 }

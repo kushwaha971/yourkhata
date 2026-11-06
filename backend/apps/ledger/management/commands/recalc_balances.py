@@ -15,31 +15,44 @@ The formula is `ledger.selectors.entry.SIGNED_AMOUNT`, imported rather than
 restated. A replay written from the same prose as the thing it checks is not a
 check; it is a second chance to make the same mistake.
 
+Since DEC-019 it replays all FIVE party caches — `balance` (the udhaar book's
+`main` bucket), `shop_balance`, `loan_balance`, `library_balance` and
+`deposit_held` — through `ledger.selectors.drift`, so a party whose balance
+agrees but whose shop, loan, library or deposit figure does not is still
+reported, and `--apply` writes them all.
+
 ── Why this command lives in `ledger` and not in `parties` ──────────────────
 It was in `common` while there was nothing to replay, which was fine for a shell
 and wrong the moment it had a body: `common` depends on nothing (rule D1) and
 this reads two apps' tables. `parties` cannot hold it either — Part 20 §20.1.4
 has `ledger` depending on `parties` and not the reverse. The ledger is the side
 that may know about both, and replaying the ledger into a cache is ledger work.
+
+── `--check` (H3) ─────────────────────────────────────────────────────────────
+The CI / cron form: never writes, prints the same drift lines, and exits 1 when
+anything drifted (0 when clean), so a pipeline can gate on it. The comparison
+is `ledger.selectors.drift`, shared with the nightly job's
+`apps.ledger.services.integrity.check_balances`.
 """
 
 from __future__ import annotations
 
+import sys
 from typing import Any
 
-from django.core.management.base import BaseCommand
+from django.core.management.base import BaseCommand, CommandError
 from django.db import transaction
-from django.db.models import OuterRef, Subquery
-from django.db.models.functions import Coalesce
 
 from apps.common.money import ZERO
-from apps.ledger.models import LedgerEntry
-from apps.ledger.selectors.entry import SIGNED_AMOUNT
+from apps.ledger.selectors.drift import OTHER_CACHES, drift_of, iter_balances
 from apps.parties.models import Party
 
 
 class Command(BaseCommand):
-    help = "Recompute party balances from ledger_entry. Report-only unless --apply."
+    help = (
+        "Recompute party balances from ledger_entry. Report-only unless --apply; "
+        "--check exits 1 on drift."
+    )
 
     def add_arguments(self, parser: Any) -> None:
         parser.add_argument("--tenant", default=None, help="Restrict to one tenant id.")
@@ -48,60 +61,57 @@ class Command(BaseCommand):
             action="store_true",
             help="Write the recomputed values. Without it the command only reports drift.",
         )
+        parser.add_argument(
+            "--check",
+            action="store_true",
+            help="Report only, never write, and exit 1 when any party drifted.",
+        )
         parser.add_argument("--chunk", type=int, default=1000)
 
     def handle(self, *args: Any, **opts: Any) -> None:
-        parties = Party.all_objects.all().order_by("id")
-        if opts["tenant"]:
-            parties = parties.filter(tenant_id=opts["tenant"])
-
-        # One correlated subquery rather than a query per party. A tenant with
-        # 100,000 parties would otherwise be 100,000 round trips, which is the
-        # difference between a nightly job and a nightly outage.
-        ledger_total = (
-            LedgerEntry.objects.filter(party=OuterRef("pk"))
-            .values("party")
-            .annotate(total=SIGNED_AMOUNT)
-            .values("total")[:1]
-        )
-        parties = parties.annotate(computed=Coalesce(Subquery(ledger_total), ZERO))
-
+        if opts["apply"] and opts["check"]:
+            raise CommandError("--check never writes; it cannot be combined with --apply.")
+        apply = opts["apply"]
         checked = drifted = 0
-        chunk = max(1, int(opts["chunk"]))
-        for party in parties.iterator(chunk_size=chunk):
+        for party, computed in iter_balances(tenant_id=opts["tenant"], chunk=opts["chunk"]):
             checked += 1
-            computed = party.computed or ZERO
-            if computed == (party.balance or ZERO):
+            drift = drift_of(party, computed)
+            if drift is None:
                 continue
             drifted += 1
-            self.stdout.write(
+            line = (
                 f"drift  {party.id}  {party.name[:40]:<40}  "
-                f"cached {party.balance}  ledger {computed}"
+                f"cached {party.balance}  ledger {computed.balance}"
             )
-            if not opts["apply"]:
+            for name, cached, ledger in drift.others:
+                line += f"  {name} cached {cached} ledger {ledger}"
+            self.stdout.write(line)
+            if not apply:
                 continue
             with transaction.atomic():
                 # Re-read under a lock: the report above ran outside one, and a
                 # party that took an entry between the read and this write would
                 # otherwise be "corrected" to a figure that is already stale.
                 locked = Party.all_objects.select_for_update().get(pk=party.pk)
-                locked.balance = computed
-                locked.receivable_total = max(computed, ZERO)
-                locked.payable_total = max(-computed, ZERO)
+                locked.balance = computed.balance
+                locked.receivable_total = max(computed.balance, ZERO)
+                locked.payable_total = max(-computed.balance, ZERO)
+                for name in OTHER_CACHES:
+                    setattr(locked, name, getattr(computed, name))
                 locked.save(
                     update_fields=[
                         "balance",
                         "receivable_total",
                         "payable_total",
+                        *OTHER_CACHES,
                         "updated_at",
                     ]
                 )
 
-        verb = "corrected" if opts["apply"] else "found"
+        verb = "corrected" if apply else "found"
+        message = f"recalc_balances: {checked} parties checked, {drifted} {verb}."
         self.stdout.write(
-            self.style.SUCCESS(f"recalc_balances: {checked} parties checked, {drifted} {verb}.")
-            if not drifted
-            else self.style.WARNING(
-                f"recalc_balances: {checked} parties checked, {drifted} {verb}."
-            )
+            self.style.SUCCESS(message) if not drifted else self.style.WARNING(message)
         )
+        if opts["check"] and drifted:
+            sys.exit(1)

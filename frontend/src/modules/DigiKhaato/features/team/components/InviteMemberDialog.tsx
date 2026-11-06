@@ -8,11 +8,18 @@ import { useForm } from 'react-hook-form';
 import { UbButton, UbDialog, UbField, UbForm, UbSelect, UbTextInput } from 'src/design-system';
 import { useTranslation } from 'src/hooks/useTranslation';
 
-import { DEFAULT_INVITE_ROLE, INVITABLE_ROLES } from '../constants/teamDefaults';
+import { DEFAULT_INVITE_ROLE } from '../constants/teamDefaults';
+import { useRoles } from '../hooks/useRoles';
 import { useInvitationSchemas } from '../validation/invitationSchemas';
+import { roleOptionLabel } from '../view-model/roleDisplay';
 
 import type { UseInvitationsResult } from '../hooks/useInvitations';
 import type { InviteFormValues } from '../validation/invitationSchemas';
+
+// Loaded with dynamic(), so its own words come with its own chunk rather than
+// with the screen that opens it (src/i18n/catalogueRegistry.ts).
+import 'src/i18n/catalogues/team';
+import 'src/i18n/catalogues/validation';
 
 /**
  * The invite form, in a `UbDialog` — a 480 px card on a desktop and a bottom
@@ -32,7 +39,11 @@ export function InviteMemberDialog({
   invitations,
 }: Readonly<{ invitations: UseInvitationsResult }>): React.JSX.Element {
   const { t } = useTranslation();
-  const { inviteSchema } = useInvitationSchemas();
+  // A13: roles from `GET /roles` (module roles of enabled modules included),
+  // fetched when the dialog first opens.
+  const roles = useRoles(invitations.inviteOpen);
+  const roleCodes = useMemo(() => roles.assignable.map((role) => role.code), [roles.assignable]);
+  const { inviteSchema } = useInvitationSchemas(roleCodes);
   const formId = useId();
 
   const form = useForm<InviteFormValues>({
@@ -62,8 +73,8 @@ export function InviteMemberDialog({
   );
 
   const roleOptions = useMemo(
-    () => INVITABLE_ROLES.map((role) => ({ value: role, label: t(`tenant.role.${role}`) })),
-    [t]
+    () => roles.assignable.map((role) => ({ value: role.code, label: roleOptionLabel(t, role) })),
+    [roles.assignable, t]
   );
 
   const handleOpenChange = useCallback(

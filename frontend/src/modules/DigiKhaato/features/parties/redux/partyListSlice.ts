@@ -4,6 +4,7 @@ import { resetAllFeatureState } from 'src/redux/actions';
 import { acceptInvalidation } from 'src/redux/invalidation/listener';
 import type { RootState } from 'src/redux/store';
 import type { ApiErrorShape, PageMeta, RequestStatus } from 'src/types/api.types';
+import { mergePageRows } from 'src/utils/mergePageRows';
 
 import { DEFAULT_ORDERING, DEFAULT_PAGE_SIZE, SELECTION_CAP } from '../constants/partyListDefaults';
 
@@ -14,7 +15,7 @@ import { DEFAULT_ORDERING, DEFAULT_PAGE_SIZE, SELECTION_CAP } from '../constants
 import { fetchPartyList } from './partyListThunk';
 
 import type { PartyListTotals } from '../constants/partyListDefaults';
-import type { Party, PartyListFilters } from '../types/party.types';
+import type { Party, PartyListFilters, ShopPartyCounts } from '../types/party.types';
 
 /**
  * Part 19 §19.3.2 Shape A — a list slice. Slice name = file name = store key
@@ -23,6 +24,7 @@ import type { Party, PartyListFilters } from '../types/party.types';
  * `error` the normalised serialisable `ApiErrorShape` (R-RX-10).
  */
 export interface PartyListState {
+  shopCounts: ShopPartyCounts | null;
   rows: Party[];
   meta: PageMeta;
   filters: PartyListFilters;
@@ -50,6 +52,8 @@ export interface PartyListState {
    * whose only outcome is an empty list, on a screen that already has seven.
    */
   overLimit: number | null;
+  /** A6 — the last page carried role codes, so a module with roles is on. */
+  rolesOn: boolean;
   lastFetchedAt: number | null;
   /**
    * The query `rows` answer — the params of the request that last SUCCEEDED.
@@ -69,6 +73,12 @@ export interface PartyListState {
    * under a "Showing saved list · Try again" banner rather than the error state.
    */
   showingSaved: boolean;
+  /**
+   * R-DEC-33: a phone's NEXT page failed. The cards already loaded are still
+   * the right answer to the query, so they stay and the list offers Try again
+   * at its foot instead of the whole-list error.
+   */
+  appendFailed: boolean;
   /** Set by the invalidation listener (§19.3.6); the hook refetches on it. */
   stale: boolean;
   staleUrgency: 'now' | 'next-mount' | null;
@@ -90,6 +100,10 @@ export const DEFAULT_PARTY_FILTERS: PartyListFilters = {
   collection: '',
   tag: '',
   credit: '',
+  role: '',
+  // DEC-019 — the Udhaar book unless the page says otherwise; spelled out so a
+  // seed from these defaults resets a `shop` left by the Shop's Customers tab.
+  book: 'main',
   ordering: DEFAULT_ORDERING,
   page: 1,
   pageSize: DEFAULT_PAGE_SIZE,
@@ -97,6 +111,7 @@ export const DEFAULT_PARTY_FILTERS: PartyListFilters = {
 
 const initialState: PartyListState = {
   rows: [],
+  shopCounts: null,
   meta: { page: 1, pageSize: DEFAULT_PAGE_SIZE, total: 0, totalPages: 0 },
   filters: DEFAULT_PARTY_FILTERS,
   // Start in 'loading' so the grid paints its skeleton on first render rather
@@ -107,9 +122,11 @@ const initialState: PartyListState = {
   totals: null,
   totalsScope: 'page',
   overLimit: null,
+  rolesOn: false,
   lastFetchedAt: null,
   rowsQuery: null,
   showingSaved: false,
+  appendFailed: false,
   stale: false,
   staleUrgency: null,
 };
@@ -187,6 +204,7 @@ const partyListSlice = createSlice({
               : 'refreshing';
         state.error = null;
         state.showingSaved = false;
+        state.appendFailed = false;
       })
       .addCase(fetchPartyList.fulfilled, (state, action) => {
         state.status = 'succeeded';
@@ -196,8 +214,10 @@ const partyListSlice = createSlice({
         // and never mutated in place, so nothing is being smuggled past the
         // type system — the array the reducer assigns was built one line above.
         state.rows = (
-          action.payload.mode === 'append'
-            ? [...state.rows, ...action.payload.rows]
+          action.payload.mode === 'append' &&
+          state.rowsQuery &&
+          sameQuery(state.rowsQuery, action.meta.arg.params, { ignorePage: true })
+            ? mergePageRows(state.rows, action.payload.rows)
             : [...action.payload.rows]
         ) as Draft<Party>[];
         state.meta = action.payload.meta;
@@ -214,9 +234,12 @@ const partyListSlice = createSlice({
         state.totals = action.payload.totals;
         state.totalsScope = action.payload.totalsScope;
         state.overLimit = action.payload.overLimit;
+        state.rolesOn = action.payload.rolesOn ?? false;
+        state.shopCounts = action.payload.shopCounts ?? null;
         state.lastFetchedAt = Date.now();
         state.rowsQuery = { ...action.meta.arg.params };
         state.showingSaved = false;
+        state.appendFailed = false;
         state.stale = false;
         state.staleUrgency = null;
       })
@@ -228,6 +251,13 @@ const partyListSlice = createSlice({
         // `details` is readonly by contract (R-TS-5). The object is frozen by
         // `toApiError` and never mutated in the store, so the cast is safe.
         state.error = (action.payload ?? null) as Draft<ApiErrorShape> | null;
+        const { params, mode } = action.meta.arg;
+        state.appendFailed =
+          mode === 'append' &&
+          state.rows.length > 0 &&
+          state.rowsQuery !== null &&
+          state.rowsQuery.page !== params.page &&
+          sameQuery(state.rowsQuery, params, { ignorePage: true });
         // FR-15 — keep the saved rows only when they answer the query that failed.
         state.showingSaved =
           state.rows.length > 0 &&
@@ -247,6 +277,7 @@ export default partyListSlice.reducer;
 // ── Selectors ────────────────────────────────────────────────────────────────
 
 export const selectPartyRows = (state: RootState): readonly Party[] => state.partyList.rows;
+export const selectPartyRowsQuery = (state: RootState): PartyListFilters | null => state.partyList.rowsQuery;
 export const selectPartyListMeta = (state: RootState): PageMeta => state.partyList.meta;
 export const selectPartyFilters = (state: RootState): PartyListFilters => state.partyList.filters;
 export const selectPartyListStatus = (state: RootState): RequestStatus => state.partyList.status;
@@ -260,5 +291,12 @@ export const selectPartyListTotals = (state: RootState): PartyListTotals | null 
 export const selectPartyListTotalsScope = (state: RootState): 'filtered' | 'page' =>
   state.partyList.totalsScope;
 export const selectPartyOverLimit = (state: RootState): number | null => state.partyList.overLimit;
+/** A6 — whether the list may offer role chips (a module with roles is on). */
+export const selectPartyRolesOn = (state: RootState): boolean => state.partyList.rolesOn;
 export const selectPartyListShowingSaved = (state: RootState): boolean =>
   state.partyList.showingSaved;
+export const selectPartyListAppendFailed = (state: RootState): boolean =>
+  state.partyList.appendFailed;
+
+export const selectShopPartyCounts = (state: RootState): ShopPartyCounts | null =>
+  state.partyList.shopCounts;

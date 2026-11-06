@@ -59,6 +59,14 @@ INSTALLED_APPS = [
     "apps.imports",
     "apps.reports",
     "apps.help",
+    # ── B01 ── library (Wave B Track L) ──
+    "apps.library",
+    # ── dues ── DUE-01: the recurring dues engine (ADR-041, contracts §2.1)
+    "apps.dues",
+    # ── ATT ── ATT-01…05: the check-ins and attendance engine (ADR-041, contracts §2.3)
+    "apps.attendance",
+    # ── LEN ── lending & collections (FRD lending.md; the owner's go-ahead, 4 Oct 2026)
+    "apps.lending",
 ]
 
 AUTH_USER_MODEL = "platform.User"
@@ -67,6 +75,9 @@ AUTH_USER_MODEL = "platform.User"
 MIDDLEWARE = [
     "apps.common.middleware.RequestIdMiddleware",
     "django.middleware.security.SecurityMiddleware",
+    # Sprint 12 — a `default-src 'none'` CSP on every /api/ response (Part 27
+    # §27.6.4). Beside SecurityMiddleware, whose headers it complements.
+    "apps.common.middleware.ApiSecurityHeadersMiddleware",
     "corsheaders.middleware.CorsMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
@@ -118,7 +129,10 @@ DATABASES = {
             "options": (
                 f"-c statement_timeout={env.int('UB_DB_STATEMENT_TIMEOUT_MS', 15000)} "
                 f"-c lock_timeout={env.int('UB_DB_LOCK_TIMEOUT_MS', 5000)} "
-                f"-c idle_in_transaction_session_timeout=30000"
+                f"-c idle_in_transaction_session_timeout=30000 "
+                # JIT compiles for 0.6 s to save microseconds on correlated
+                # subqueries: tests/performance/test_no_jit.py.
+                f"-c jit=off"
             ),
         },
     }
@@ -187,7 +201,10 @@ REST_FRAMEWORK = {
         "otp": env.str("UB_RATE_LIMIT_OTP", "5/10min"),
         "otp_ip": "20/hour",
         "export": env.str("UB_RATE_LIMIT_EXPORT", "10/hour"),
+        # Part 27 §27.12: per IP, and per TOKEN a day — both durable
+        # (`apps.platform_app.throttling`), both on `GET /public/d/{token}`.
         "public_link": "60/min",
+        "public_link_token": "600/day",
         # PLT-10 FR-3: re-typing the password to delete a business. A stolen
         # session guessing the owner's password here gets ten tries an hour.
         "reverify": "10/hour",
@@ -212,6 +229,8 @@ REST_FRAMEWORK = {
         # queues a job that reads all of it; a loop of them is the one way a
         # stolen token fills a tenant's disk.
         "import_upload": "20/hour",
+        # Part 27 §27.11 — per TENANT, durable (`imports.views.job`).
+        "import_commit": "5/hour",
     },
     "UNAUTHENTICATED_USER": None,
     "COERCE_DECIMAL_TO_STRING": True,
@@ -225,16 +244,19 @@ REST_FRAMEWORK = {
 UB_INVITATION_DAYS = env.int("UB_INVITATION_DAYS", 7)
 
 UB_ACCESS_TOKEN_MINUTES = env.int("UB_ACCESS_TOKEN_MINUTES", 15)
-UB_REFRESH_TOKEN_DAYS = env.int("UB_REFRESH_TOKEN_DAYS", 30)
-# DEC-010: identity at MVP is email + password. Mobile OTP, the SMS adapters and
-# everything that needs a telecom provider sit behind this flag, which is off.
-# With it off the OTP routes are not registered at all, so they 404, and no
-# module on the default path imports the OTP service.
-UB_AUTH_OTP_ENABLED = env.bool("UB_AUTH_OTP_ENABLED", False)
+# Stay signed in "just like other mobile apps" (owner, 9 Oct 2026): every
+# refresh rotates the token and restarts this clock, so a session ends only on
+# sign-out or after this many days WITHOUT opening the app — on a phone and on
+# a desktop alike.
+UB_REFRESH_TOKEN_DAYS = env.int("UB_REFRESH_TOKEN_DAYS", 90)
+# Owner, 9 Oct 2026 — sign-up and sign-in are mobile number + OTP, and this
+# reverses DEC-010's email + password. The routes were retired behind this flag
+# with their service and tests intact; they are on by default now.
+UB_AUTH_OTP_ENABLED = env.bool("UB_AUTH_OTP_ENABLED", True)
 
-# The OTP settings below are read only when that flag is on.
 UB_OTP_PEPPER = env.str("UB_OTP_PEPPER", "dev-otp-pepper")
-UB_OTP_TTL_SECONDS = env.int("UB_OTP_TTL_SECONDS", 300)
+# Ten minutes: a code that arrives late on a weak network must still work.
+UB_OTP_TTL_SECONDS = env.int("UB_OTP_TTL_SECONDS", 600)
 UB_OTP_MAX_ATTEMPTS = env.int("UB_OTP_MAX_ATTEMPTS", 5)
 
 # Password reset: single-use, 15-minute, hashed at rest (Part 27 §27.4.2).
@@ -285,6 +307,8 @@ CORS_EXPOSE_HEADERS = [
     "X-Request-Id",
     "X-Tenant-Id",
     "X-Tenant-Scope",
+    "X-User-Id",
+    "X-Membership-Version",
     "Idempotent-Replayed",
     "Retry-After",
     # IMP-02 — a list export is FETCHED (it may answer 202 with a job instead
@@ -320,6 +344,8 @@ CORS_ALLOW_HEADERS = (
     "X-CSRF-Token",  # double-submit cookie guard (§20.4.6)
     "Idempotency-Key",  # replay-safe writes (§22.3)
     "X-Client",  # `web` | `api`, read by throttling and audit
+    "X-Expected-User-Id",  # browser intent precondition, never authentication
+    "X-Expected-Tenant-Id",  # stale-tab write guard, never tenant selection
     # PLT-06 FR-8 / CR-011 — the settings PUT's optimistic lock. Without it the
     # settings page's every save fails preflight in dev (the X-Request-Id
     # defect above, again) and passes every Django-test-client test.
@@ -333,7 +359,38 @@ UB_SCHEDULER_BATCH = env.int("UB_SCHEDULER_BATCH", 50)
 UB_SCHEDULER_ENQUEUE_LOCK_ID = env.int("UB_SCHEDULER_ENQUEUE_LOCK_ID", 918273645)
 
 # ── Integrations (ADR-015/016) ───────────────────────────────────────────────
-UB_SMS_BACKEND = env.str("UB_SMS_BACKEND", "apps.common.integrations.sms.console.ConsoleSmsBackend")
+# Message Central VerifyNow (DEC-014, owner 10 Oct 2026) sends, and validates,
+# the sign-in OTP. Credentials come from the environment only and never leave
+# Django. `MC_*` are the names Message Central's own guides use, so they are
+# not `UB_`-prefixed.
+META_WHATSAPP_ACCESS_TOKEN = env.str("META_WHATSAPP_ACCESS_TOKEN", "")
+META_WHATSAPP_APP_SECRET = env.str("META_WHATSAPP_APP_SECRET", "")
+META_WHATSAPP_WEBHOOK_VERIFY_TOKEN = env.str("META_WHATSAPP_WEBHOOK_VERIFY_TOKEN", "")
+META_WHATSAPP_PHONE_NUMBER_ID = env.str("META_WHATSAPP_PHONE_NUMBER_ID", "")
+META_WHATSAPP_WABA_ID = env.str("META_WHATSAPP_WABA_ID", "")
+META_WHATSAPP_TEMPLATE = env.str("META_WHATSAPP_TEMPLATE", "yourkhata_login_otp")
+FAST2SMS_API_KEY = env.str("FAST2SMS_API_KEY", "")
+MC_CUSTOMER_ID = env.str("MC_CUSTOMER_ID", "")
+MC_PASSWORD = env.str("MC_PASSWORD", "")
+MC_AUTH_TOKEN = env.str("MC_AUTH_TOKEN", "")
+# `cpaas` is the host their API page documents. The brief this was built from
+# said `cxapi.messagecentral.com`, which has no DNS record: every send failed
+# as "unreachable" until this was corrected (10 Oct 2026).
+MC_BASE_URL = env.str("MC_BASE_URL", "https://cpaas.messagecentral.com")
+# Who issues and checks the code: `message_central` whenever both credentials
+# are set, else `console` -- the code is made here and printed in the API log,
+# which is how a local run, the test suite and the e2e harnesses sign in
+# without texting anybody. Set it explicitly only to force `console`.
+UB_OTP_PROVIDER = env.str("UB_OTP_PROVIDER", "") or (
+    "fast2sms"
+    if FAST2SMS_API_KEY
+    else ("message_central" if MC_CUSTOMER_ID and (MC_PASSWORD or MC_AUTH_TOKEN) else "console")
+)
+# Reminders and other texts are adapter-only (ADR-015): the console backend
+# until a provider is chosen for them. The sign-in OTP does not go through it.
+UB_SMS_BACKEND = env.str("UB_SMS_BACKEND", "") or (
+    "apps.common.integrations.sms.console.ConsoleSmsBackend"
+)
 UB_SMS_SENDER_ID = env.str("UB_SMS_SENDER_ID", "UDHAAR")
 UB_WHATSAPP_BACKEND = env.str(
     "UB_WHATSAPP_BACKEND", "apps.common.integrations.whatsapp.deep_link.WaMeBackend"
@@ -346,13 +403,18 @@ EMAIL_BACKEND = UB_EMAIL_BACKEND
 UB_EMAIL_ADAPTER = env.str(
     "UB_EMAIL_ADAPTER", "apps.common.integrations.email.console.ConsoleEmailBackend"
 )
-UB_EMAIL_FROM = env.str("UB_EMAIL_FROM", "no-reply@digikhaato.local")
+UB_EMAIL_FROM = env.str("UB_EMAIL_FROM", "no-reply@yourkhata.local")
 
 # ── Misc feature flags / ops ─────────────────────────────────────────────────
 UB_SUPER_ADMIN_MOBILES = env.list("UB_SUPER_ADMIN_MOBILES", [])
 UB_FEATURE_FLAGS = env.json("UB_FEATURE_FLAGS", "{}")
 UB_E2E_MODE = env.bool("UB_E2E_MODE", False)
 UB_ALLOW_PARTNER_HEADER = env.bool("UB_ALLOW_PARTNER_HEADER", False)
+# A1 (ADR-041, PLT-X11): show modules that are built but not yet released. For
+# development, CI and the e2e stack only — `prod.py` refuses it at start-up
+# outside the `ci` and `e2e` environments. Read at call time by
+# `apps.platform_app.services.entitlements.hidden_modules`.
+UB_UNRELEASED_MODULES = env.bool("UB_UNRELEASED_MODULES", False)
 # PLT-01 EC-6: `ConsoleSmsBackend` with DEBUG=False is a deployment defect
 # unless the operator says otherwise (the single-user local deployment).
 UB_ALLOW_CONSOLE_SMS = env.bool("UB_ALLOW_CONSOLE_SMS", False)

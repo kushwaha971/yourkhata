@@ -41,20 +41,23 @@
  * lacks it and there is no API for overrides).
  */
 import { chromium } from 'playwright';
+import { BACKEND_DIR as LOCAL_BACKEND_DIR, PYTHON, psql as localPsql } from './lib/local.mjs';
 import { execFileSync } from 'node:child_process';
 import { existsSync, mkdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
 
-const FRONTEND = process.env.E2E_FRONTEND ?? 'http://localhost:3000';
+const FRONTEND = process.env.E2E_FRONTEND ?? (process.env.E2E_BASE ?? 'http://localhost:3000');
 const BACKEND = process.env.E2E_BACKEND ?? 'http://localhost:8000/api/v1';
-const BACKEND_DIR = '/home/claude/repo/backend';
+const BACKEND_DIR = LOCAL_BACKEND_DIR;
 // Every path below can be pointed elsewhere, which is what lets
 // `run-regression.mjs` run each phase in its own directory, against its own
 // freshly seeded accounts, concurrently with every other phase. The defaults
 // are the historical single-run locations.
 const SHOT_ROOT = process.env.E2E_SPRINT3_DIR ?? '/tmp/e2e-shots/sprint3-qa';
 const STATE_FILE = `${SHOT_ROOT}/state.json`;
-const BE_LOG = process.env.E2E_BE_LOG ?? '/tmp/claude-0/be-run.log';
-const FE_LOG = process.env.E2E_FE_LOG ?? '/tmp/claude-0/fe-run.log';
+// The serve scripts write their logs to $UB_E2E_LOGS (default /tmp/claude-0); read them from there.
+const LOG_DIR = process.env.UB_E2E_LOGS ?? '/tmp/claude-0';
+const BE_LOG = process.env.E2E_BE_LOG ?? `${LOG_DIR}/be-run.log`;
+const FE_LOG = process.env.E2E_FE_LOG ?? `${LOG_DIR}/fe-run.log`;
 
 const argOnly = process.argv.find((a) => a.startsWith('--only='));
 const PHASES = argOnly ? argOnly.slice(7).split(',') : ['A', 'B', 'C'];
@@ -114,12 +117,9 @@ const must = async (...args) => {
   if (r.status >= 400) throw new Error(`${args[0]} ${args[1]} ${r.status}: ${JSON.stringify(r.body)}`);
   return r;
 };
-const psql = (sql) =>
-  execFileSync('psql', ['-h', '127.0.0.1', '-U', 'udhaarbook', 'udhaarbook', '-tAq', '-c', sql], {
-    env: { ...process.env, PGPASSWORD: 'udhaarbook' },
-  }).toString().trim();
+const psql = localPsql;
 const djangoShell = (code) =>
-  execFileSync('python3', ['manage.py', 'shell', '-c', code], { cwd: BACKEND_DIR }).toString().trim();
+  execFileSync(PYTHON, ['manage.py', 'shell', '-c', code], { cwd: BACKEND_DIR }).toString().trim();
 
 const daysAgo = (n) => new Date(Date.now() - n * 86_400_000).toISOString().slice(0, 10);
 const todayIst = () => {
@@ -235,7 +235,7 @@ async function seed() {
 const signIn = async (page, who) => {
   for (let attempt = 1; attempt <= 3; attempt += 1) {
     try {
-      await page.goto(`${FRONTEND}/login`, { waitUntil: 'networkidle', timeout: 120000 });
+      await page.goto(`${FRONTEND}/login/email`, { waitUntil: 'networkidle', timeout: 120000 });
       await page.waitForTimeout(1500);
       await page.fill('input[type="email"]', who.email);
       await page.fill('input[type="password"]', who.password);
@@ -580,7 +580,9 @@ const LIST_OBSERVER = () => {
   window.__qa = { stats: [], zeroSeen: [], statSkeleton: 0, rowSkeletonMax: 0, seq: [], t0: performance.now() };
   const scan = () => {
     const q = window.__qa;
-    const grid = document.querySelector('[data-testid="ub-stat-grid"]');
+    // The figures are cards when open and a summary line when collapsed (the
+    // default); read whichever is on screen.
+    const grid = document.querySelector('[data-testid="ub-stat-grid"]') ?? document.querySelector('[data-testid="stat-summary"]');
     if (grid) {
       const text = grid.innerText.replace(/\s+/g, ' ').trim();
       if (q.stats[q.stats.length - 1] !== text) q.stats.push(text);
@@ -688,7 +690,13 @@ async function listStatesFor(browser, state, size) {
     await route.continue();
   });
   const before = await partyNamesOnScreen(page);
-  await page.getByRole('button', { name: /^Owes me/ }).first().click();
+  // The balance chips became a filter select (owner, 6 Oct 2026): open it and
+  // pick the option, which issues the same request the chip did.
+  const pickBalance = async (option) => {
+    await page.getByRole('button', { name: /^Balance/ }).filter({ visible: true }).first().click();
+    await page.getByRole('option', { name: option }).filter({ visible: true }).first().click();
+  };
+  await pickBalance(/^Owes me/);
   await page.waitForTimeout(900);
   const busyBar = await page.locator('[data-testid="ub-grid-busy"]').count();
   const dim = await page.evaluate(() => {
@@ -704,7 +712,7 @@ async function listStatesFor(browser, state, size) {
   record('B2', `${tag}: then the filtered rows replace them (no payable/settled party left)`,
     after.includes('Ramesh Traders') && !after.includes('Mahesh Suppliers') && !after.includes('Suresh Settled Stores') && (await page.locator('[data-testid="ub-grid-busy"]').count()) === 0, JSON.stringify(after));
   await page.unroute(/\/api\/v1\/parties\?.*balance=owes_me/);
-  await page.getByRole('button', { name: /^Owes me/ }).first().click(); // back to everyone
+  await pickBalance(/^(All|Any)/); // back to everyone
   await page.getByText('Mahesh Suppliers').first().waitFor({ timeout: 30000 });
   await page.waitForTimeout(1000);
 
@@ -724,7 +732,7 @@ async function listStatesFor(browser, state, size) {
   await page.waitForTimeout(800);
   const staleBanner = await page.getByText('Showing saved list').count();
   const staleRows = await partyNamesOnScreen(page);
-  const staleTiles = await page.locator('[data-testid="ub-stat-grid"]').count();
+  const staleTiles = await page.locator('[data-testid="ub-stat-grid"], [data-testid="stat-summary"]').count();
   await page.screenshot({ path: shotPath(tag, 'B5-stale-saved-list') });
   record('B5', `${tag}: a failed same-query refresh was actually attempted (GET /parties aborted)`, blocked > 0, `blocked GETs=${blocked}`);
   record('B5', `${tag}: rows stay under the "Showing saved list" banner`, staleBanner > 0 && staleRows.length >= 10, `banner=${staleBanner} rows=${staleRows.length}`);
@@ -733,16 +741,17 @@ async function listStatesFor(browser, state, size) {
 
   // different query while still blocked → full error state
   const errBefore = blocked;
-  await page.getByRole('button', { name: /^I owe/ }).first().click();
+  await pickBalance(/^I owe/);
   await page.getByText('We could not load your customers').first().waitFor({ timeout: 30000 }).catch(() => {});
   await page.waitForTimeout(800);
   const errText = await page.locator('[data-testid="ub-grid"]').innerText().catch(() => '');
   const errRows = await partyNamesOnScreen(page);
-  const errTiles = await page.locator('[data-testid="ub-stat-grid"]').count();
+  const errTiles = await page.locator('[data-testid="ub-stat-grid"], [data-testid="stat-summary"]').count();
   const errBanner = await page.getByText('Showing saved list').count();
   await page.screenshot({ path: shotPath(tag, 'B5-error-different-query') });
   record('B5', `${tag}: a DIFFERENT query while blocked shows the full error state`, errText.includes('We could not load your customers') && blocked > errBefore, errText.replace(/\n/g, ' | ').slice(0, 200));
-  record('B5', `${tag}: the error carries a request id (Reference …)`, /Reference\s*[:·]?\s*\S{6,}/.test(errText), errText.replace(/\n/g, ' | ').slice(0, 300));
+  // Owner, 7 Oct 2026: no error shows a "Reference <id>" line any more.
+  record('B5', `${tag}: the error shows no "Reference" line (owner, 7 Oct)`, !/Reference/.test(errText), errText.replace(/\n/g, ' | ').slice(0, 300));
   record('B5', `${tag}: no tiles, no saved rows and no stale banner in the error state`, errTiles === 0 && errRows.length === 0 && errBanner === 0, `tiles=${errTiles} rows=${errRows.length} banner=${errBanner}`);
   record('B7', `${tag}: error state fits the viewport`, (await overflowPx(page)) <= 0, `overflow ${await overflowPx(page)}px`);
 
@@ -755,13 +764,13 @@ async function listStatesFor(browser, state, size) {
   await page.waitForTimeout(1000);
   const recovered = await partyNamesOnScreen(page);
   record('B5', `${tag}: Try again re-sends the SAME (I owe) query and recovers`,
-    Boolean(rq) && /balance=i_owe/.test(rq.url()) && recovered.includes('Mahesh Suppliers') && !recovered.includes('Ramesh Traders') && (await page.getByText('We could not load your customers').count()) === 0 && (await page.locator('[data-testid="ub-stat-grid"]').count()) === 1,
+    Boolean(rq) && /balance=i_owe/.test(rq.url()) && recovered.includes('Mahesh Suppliers') && !recovered.includes('Ramesh Traders') && (await page.getByText('We could not load your customers').count()) === 0 && (await page.locator('[data-testid="ub-stat-grid"], [data-testid="stat-summary"]').count()) === 1,
     `${rq?.url().split('/api/v1')[1]} → ${JSON.stringify(recovered)}`);
   await page.screenshot({ path: shotPath(tag, 'B5-recovered') });
   if (size.id === 'desktop') {
     // Control for B6: the OWNER's selection bar does carry Archive, so its
     // absence for the accountant is about the role and not the bar.
-    await page.getByRole('button', { name: /^I owe/ }).first().click();
+    await pickBalance(/^(All|Any)/);
     await page.getByText('Ramesh Traders').first().waitFor({ timeout: 30000 });
     await page.waitForTimeout(800);
     const boxes = page.locator('[data-testid="ub-grid"] [role="checkbox"]');
@@ -776,12 +785,16 @@ async function listStatesFor(browser, state, size) {
     ? route.fulfill({ status: 500, contentType: 'application/json', headers: { 'X-Request-Id': 'qa-req-5f2e9a71', 'Access-Control-Allow-Origin': FRONTEND, 'Access-Control-Allow-Credentials': 'true', 'Access-Control-Expose-Headers': 'X-Request-Id' }, body: JSON.stringify({ success: false, error: { code: 'server_error', message: 'Something went wrong on our side.', request_id: 'qa-req-5f2e9a71' } }) })
     : route.continue();
   await page.route(listUrl, serverErr);
-  await page.getByRole('button', { name: /^Settled/ }).first().click();
+  // The desktop control above left two rows ticked; the selection bar replaces
+  // the toolbar (and its Balance filter) until it is cleared.
+  await page.getByRole('button', { name: /^Clear selection/ }).first().click({ timeout: 2000 }).catch(() => {});
+  await pickBalance(/^Settled/);
   await page.getByText('We could not load your customers').first().waitFor({ timeout: 30000 }).catch(() => {});
   await page.waitForTimeout(800);
   const err500 = await page.locator('[data-testid="ub-grid"]').innerText().catch(() => '');
   await page.screenshot({ path: shotPath(tag, 'B5-error-server-500') });
-  record('B5', `${tag}: control — a SERVER error (500 + X-Request-Id) does show the reference`, err500.includes('qa-req-5f2e9a71'), err500.replace(/\n/g, ' | ').slice(0, 300));
+  // Owner, 7 Oct 2026: a server error does not print its request id either.
+  record('B5', `${tag}: a SERVER error (500 + X-Request-Id) shows the error, not the request id (owner, 7 Oct)`, err500.includes('We could not load your customers') && !err500.includes('qa-req-5f2e9a71'), err500.replace(/\n/g, ' | ').slice(0, 300));
   await page.unroute(listUrl, serverErr);
   await ctx.close();
 }
@@ -807,14 +820,17 @@ async function phaseB(browser, state) {
       await page.waitForTimeout(1500);
       const tiles = await page.locator('[data-testid="ub-stat-grid"]').count();
       const gridAdd = await page.locator('[data-testid="ub-grid"]').getByRole('button', { name: /Add/ }).allInnerTexts();
-      const pageAdd = await page.getByRole('button', { name: 'Add party' }).evaluateAll((els) => els.filter((e) => e.getBoundingClientRect().width > 0).length);
-      const importish = await page.getByText(/Import|Contacts|CSV/i).count();
+      const pageAdd = await page.getByRole('button', { name: 'Add contact' }).evaluateAll((els) => els.filter((e) => e.getBoundingClientRect().width > 0).length);
+      // The parties list now carries Import / Export (IMP-01, EXP-01) for every
+      // tenant, so the old "no Import" rule is gone. What must still be absent on
+      // an empty book is a phone-contacts import, which this product does not have.
+      const importish = await page.getByText(/Contacts/i).count();
       const body = await page.locator('[data-testid="ub-grid"]').innerText().catch(() => '');
       await page.screenshot({ path: shotPath(tag, 'B3-new-tenant-empty') });
       record('B3', `${tag}: new tenant — no money tiles`, tiles === 0, `tiles=${tiles}`);
-      record('B3', `${tag}: new tenant — the empty state offers a single "Add party"`, gridAdd.length === 1 && gridAdd[0].trim() === 'Add party', JSON.stringify(gridAdd));
-      note(`${tag}: visible "Add party" controls on the whole page = ${pageAdd} (header + empty state)`);
-      record('B3', `${tag}: new tenant — no Import / Contacts`, importish === 0, `matches=${importish}`);
+      record('B3', `${tag}: new tenant — the empty state offers a single "Add contact"`, gridAdd.length === 1 && gridAdd[0].trim() === 'Add contact', JSON.stringify(gridAdd));
+      note(`${tag}: visible "Add contact" controls on the whole page = ${pageAdd} (header + empty state)`);
+      record('B3', `${tag}: new tenant — no phone-contacts import`, importish === 0, `matches=${importish}`);
       record('B3', `${tag}: new tenant — first-use copy "No customers yet"`, /No customers yet/i.test(body), body.replace(/\n/g, ' | ').slice(-160));
       record('B7', `${tag}: new-tenant state fits the viewport`, (await overflowPx(page)) <= 0, `overflow ${await overflowPx(page)}px`);
       await ctx.close();
@@ -855,7 +871,7 @@ async function phaseB(browser, state) {
   // ── B1/B2/B5 on the owner's populated book, phone + desktop ───────────────
   for (const size of [PHONE, DESKTOP]) await listStatesFor(browser, state, size);
 
-  // ── B6 accountant: no Add party, no Archive in the selection bar ──────────
+  // ── B6 accountant: no Add contact, no Archive in the selection bar ──────────
   for (const size of [PHONE, DESKTOP]) {
     const tag = size.id;
     const ctx = await browser.newContext({ viewport: { width: size.width, height: size.height } });
@@ -866,8 +882,8 @@ async function phaseB(browser, state) {
     await page.goto(`${FRONTEND}/parties`, { waitUntil: 'networkidle', timeout: 120000 });
     await page.getByText('Ramesh Traders').first().waitFor({ timeout: 60000 });
     await page.waitForTimeout(1000);
-    const add = await page.getByRole('button', { name: /Add party/ }).count();
-    record('B6', `${tag}: accountant — no "Add party"`, add === 0, `count=${add}`);
+    const add = await page.getByRole('button', { name: /Add contact/ }).count();
+    record('B6', `${tag}: accountant — no "Add contact"`, add === 0, `count=${add}`);
     if (size.id === 'desktop') {
       const boxes = page.locator('[data-testid="ub-grid"] [role="checkbox"]');
       const n = await boxes.count();
@@ -1309,8 +1325,10 @@ async function phaseR(browser, state) {
       note(`${size.id}: error-state id=${shown} (labelled "Reference": ${labelled}); snackbar id=${snackId} belongs to ${JSON.stringify(sent.find((x) => x.id === snackId) ?? 'no /parties* request')}; all /parties* requests: ${JSON.stringify(sent)}`);
       const listReqs = sent.filter((s) => /^\/parties(\?|$)/.test(s.url) && s.method === 'GET');
       const last = listReqs[listReqs.length - 1];
-      record('D2', `${size.id}: the network-failure error state shows a reference`, Boolean(shown), errText.replace(/\n/g, ' | ').slice(0, 300));
-      record('D2', `${size.id}: the reference EQUALS the X-Request-Id the failed list request carried`, Boolean(shown) && shown === last?.id,
+      // Owner, 7 Oct 2026: no error shows a "Reference <id>" line. The id is
+      // still sent (and logged) for support; the screen no longer prints it.
+      record('D2', `${size.id}: the network-failure error state shows NO reference line (owner, 7 Oct)`, !shown && !labelled, errText.replace(/\n/g, ' | ').slice(0, 300));
+      record('D2', `${size.id}: the failed list request still carried an X-Request-Id`, Boolean(last?.id),
         `shown=${shown} lastListRequest=${JSON.stringify(last)} allListRequests=${JSON.stringify(listReqs.map((s) => s.id))}`);
       await ctx.close();
     }
@@ -1625,6 +1643,28 @@ const postViaDrawer = async (page, which, amount, noteText, { windowMs = 3500, w
   return { t0, reqs: reqs.map((r) => `+${r.t - t0}ms ${r.m} ${r.u}`) };
 };
 
+
+/** DEC-013 — /login is the mobile + OTP screen now; a redirect to it is followed
+ *  on to the kept email screen, with its `next`, before the harness signs in.
+ *
+ *  CLIENT-SIDE, through Next's own router: F3 and N1 are about what a sign-in
+ *  does in a document that already held a session (it must end in exactly one
+ *  document load), and a `page.goto` would hand them a fresh document and turn
+ *  the very path they test into the first-session one. */
+const toEmailLogin = async (page) => {
+  const u = new URL(page.url());
+  if (u.pathname !== '/login') return;
+  const target = `/login/email${u.search}`;
+  const routed = await page.evaluate((t) => {
+    const router = window.next?.router;
+    if (!router?.push) return false;
+    router.push(t);
+    return true;
+  }, target);
+  if (!routed) await page.goto(`${u.origin}${target}`, { waitUntil: 'networkidle' });
+  await page.waitForURL((x) => x.pathname === '/login/email', { timeout: 30000 });
+};
+
 // ─── N3 ──────────────────────────────────────────────────────────────────────
 async function phaseN3(browser, state, token) {
   const P = state.parties;
@@ -1638,8 +1678,15 @@ async function phaseN3(browser, state, token) {
   // Fixtures: Vijay due on the IST date, Sunita (₹0) and Kavita (₹300) due on the UTC date, Lakshmi tomorrow (IST).
   const tomorrowIst = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kolkata' }).format(new Date(Date.now() + 86_400_000));
   const fix = { vijay: ist, sunita: utc, kavita: utc, lakshmi: tomorrowIst };
-  for (const [k, d] of Object.entries(fix)) await must('PATCH', `/parties/${P[k]}`, { collection_date: d }, token);
-  note(`FIXTURE (API): collection_date Vijay=${ist} (IST today), Sunita=${utc} & Kavita=${utc} (UTC today = IST yesterday), Lakshmi=${tomorrowIst}`);
+  // The two UTC-dated promises are IST YESTERDAY, which the API rightly
+  // refuses (a promise is never set in the past: "Choose a date within the next
+  // year."). They are the overdue rows this phase exists to read, so they are
+  // written with psql, as the header says such fixtures are.
+  for (const [k, d] of Object.entries(fix)) {
+    if (d < ist) psql(`UPDATE parties_party SET collection_date = '${d}' WHERE id = '${P[k]}'`);
+    else await must('PATCH', `/parties/${P[k]}`, { collection_date: d }, token);
+  }
+  note(`FIXTURE (API; psql for the past dates): collection_date Vijay=${ist} (IST today), Sunita=${utc} & Kavita=${utc} (UTC today = IST yesterday), Lakshmi=${tomorrowIst}`);
   try {
     for (const c of ['today', 'overdue', 'upcoming']) {
       const r = await must('GET', `/parties?collection=${c}`, null, token);
@@ -1693,7 +1740,7 @@ async function phaseN1(browser, state) {
   // /onboarding by design. R1's "Retest Budget Stores" finished onboarding.
   const tenantA = { email: rt.R1.email, password: RT_PASSWORD, shop: 'Retest Budget Stores' };
   // /dashboard is a redirect to /parties until RPT-01 (app/(app)/dashboard/page.tsx).
-  const landed = (u) => ['/dashboard', '/parties'].includes(new URL(u).pathname);
+  const landed = (u) => ['/dashboard', '/parties', '/customers'].includes(new URL(u).pathname);
   for (const size of [DESKTOP, PHONE]) {
     const ctx = await browser.newContext({ viewport: { width: size.width, height: size.height } });
     let armed = false; const leaks = []; const snacks = []; let docLoads = 0; const docUrls = [];
@@ -1729,8 +1776,9 @@ async function phaseN1(browser, state) {
     await ctx.clearCookies({ name: 'ub_refresh' });
     const l0 = docLoads; const v0 = navs.length; const n0 = net.length;
     // Customers link (Dashboard was removed from the sidebar in the UAT-fix
-    // batch) — on the phone it sits in the navigation drawer.
-    let dash = page.getByRole('link', { name: /^Customers/ }).filter({ visible: true });
+    // batch) — on a phone it is the Parties tab of the bottom nav
+    // (docs/mobile-redesign), which replaced the navigation drawer.
+    let dash = page.getByRole('link', { name: /^(Customers|Parties)/ }).filter({ visible: true });
     if ((await dash.count()) === 0) {
       const menu = page.getByRole('button', { name: /menu|navigation/i }).first();
       if (await menu.count()) { await menu.click(); await page.waitForTimeout(600); }
@@ -1742,9 +1790,11 @@ async function phaseN1(browser, state) {
     await page.waitForTimeout(2500);
     const loginUrl = page.url().replace(FRONTEND, '');
     await page.screenshot({ path: nShot(size.id, 'N1-1-login-after-expiry') });
-    record('N1', `${size.id}: cookies deleted, Customers click → /login?next=%2Fparties in the same runtime`, loginUrl === '/login?next=%2Fparties' && docLoads === l0, `${loginUrl} docLoads+${docLoads - l0} navs=${JSON.stringify(navs.slice(v0))}`);
+    // Customers lives at /customers since step 3b (Customers and Suppliers apart).
+    record('N1', `${size.id}: cookies deleted, Customers click → /login?next=%2Fcustomers in the same runtime`, loginUrl === '/login?next=%2Fcustomers' && docLoads === l0, `${loginUrl} docLoads+${docLoads - l0} navs=${JSON.stringify(navs.slice(v0))}`);
     // One sign-in as tenant A, slowed tenant reads so any stale frame is held on screen.
     await ctx.route(/\/api\/v1\/(ledger\/summary|ledger\/aging|parties(\?|$))/, async (route) => { await sleep(1500); await route.continue(); });
+    await toEmailLogin(page);
     const l1 = docLoads; const v1 = navs.length; const n1 = net.length;
     nLogins += 1;
     await page.fill('input[type="email"]', tenantA.email);
@@ -1833,11 +1883,12 @@ async function phaseN1(browser, state) {
     await page.waitForTimeout(2500);
     // Client-side navigation to /login (same JS runtime): push via history + popstate is not Next's router, so click a link if one exists, else use the Next router global.
     const viaRouter = await page.evaluate(() => { const r = window.next?.router; if (r?.push) { r.push('/login'); return 'next.router.push'; } return null; });
-    if (!viaRouter) await page.goto(`${FRONTEND}/login`, { waitUntil: 'domcontentloaded' });
+    if (!viaRouter) await page.goto(`${FRONTEND}/login/email`, { waitUntil: 'domcontentloaded' });
     await page.waitForTimeout(3000);
     const urlAfter = page.url().replace(FRONTEND, '');
     const shellAfter = await page.getByText(state.shop).count();
-    const formShown = await page.locator('input[type="email"]').count();
+    // DEC-013 — /login's form is the mobile number now.
+    const formShown = await page.locator('input[type="tel"], input[type="email"]').count();
     await page.screenshot({ path: nShot('desktop', 'N1-6-deliberate-login') });
     record('N1', 'signed-in user opening /login: the login form is shown and the shell no longer shows their business (signed out in that tab)', formShown > 0 && shellAfter === 0, `${viaRouter ?? 'page.goto'} → ${urlAfter} form=${formShown} shopNodes=${shellAfter}`);
     const cookiesKept = (await ctx.cookies()).filter((c) => c.name.startsWith('ub_')).map((c) => c.name);
@@ -2215,8 +2266,10 @@ async function phaseF1(browser, state) {
     const label = hi ? 'संदर्भ' : 'Reference';
     const last = aborted[aborted.length - 1]?.id;
     const mm = shown?.match(/^(\S+)\s+([0-9a-f-]{36})$/i);
-    record('F1', `${tag}: list error reads "${label} <uuid>" and the uuid is the aborted request's X-Request-Id`,
-      Boolean(mm) && mm[1] === label && mm[2] === last,
+    // Owner, 7 Oct 2026: no "Reference <id>" line on any error; the aborted
+    // request still carries its X-Request-Id for the logs.
+    record('F1', `${tag}: list error shows no "${label}" line, and the aborted request carried an X-Request-Id`,
+      !mm && !mainText.includes(`${label} `) && Boolean(last),
       `shown="${shown}" aborted=${JSON.stringify(aborted.map((a) => a.id))} (last ${last}) main="${mainText.slice(0, 220)}"`);
     await ctx.close();
   }
@@ -2253,7 +2306,8 @@ async function phaseF1(browser, state) {
     await page.waitForTimeout(400);
     const all = await page.locator('[data-testid="request-id"]').allInnerTexts();
     await page.screenshot({ path: fShot(dir, 'F1-server-error-snackbar') });
-    record('F1', `${size.id}: the server-error snackbar reads "Reference <id>" with the request's X-Request-Id`, all.some((t) => t.trim() === `Reference ${sentId}`), `request-id nodes=${JSON.stringify(all)} sent=${sentId}`);
+    // Owner, 7 Oct 2026: the snackbar shows no "Reference <id>"; the request still carries it.
+    record('F1', `${size.id}: the server-error snackbar shows no "Reference" line, and the request carried an X-Request-Id`, all.length === 0 && Boolean(sentId), `request-id nodes=${JSON.stringify(all)} sent=${sentId}`);
     await page.keyboard.press('Escape').catch(() => {});
     await ctx.close();
   }
@@ -2510,6 +2564,7 @@ async function phaseF3(browser, state) {
     { w: 1440, h: 900, dir: 'desktop' },
   ];
   const submit = async (page, who) => {
+    await toEmailLogin(page);
     await page.locator('input[type="email"]').waitFor({ timeout: 30000 });
     await page.fill('input[type="email"]', who.email);
     await page.fill('input[type="password"]', who.password);
@@ -2544,7 +2599,7 @@ async function phaseF3(browser, state) {
     page.on('framenavigated', (f) => { if (f === page.mainFrame()) navs.push(f.url().replace(FRONTEND, '')); });
 
     // 1. Fresh sign-in as B on a newly loaded /login: zero document loads.
-    await page.goto(`${FRONTEND}/login`, { waitUntil: 'networkidle', timeout: 120000 });
+    await page.goto(`${FRONTEND}/login/email`, { waitUntil: 'networkidle', timeout: 120000 });
     await page.waitForTimeout(1500);
     const d0 = docs.length;
     await submit(page, B);
@@ -2563,8 +2618,10 @@ async function phaseF3(browser, state) {
     armed = true;
     const d1 = docs.length; const v1 = navs.length;
     const how = W.w < 1024 ? 'logo' : 'sidebar Customers link';
-    if (W.w < 1024) await page.getByRole('link', { name: /go to Customers/i }).first().click();
-    else await page.locator('nav a[href="/parties"]').first().click();
+    // The logo's name is "<app> — go to home" now, and Customers lives at
+    // /customers since step 3b (Customers and Suppliers apart).
+    if (W.w < 1024) await page.getByRole('link', { name: /go to (home|Dashboard)/i }).first().click();
+    else await page.locator('nav a[href="/customers"]').first().click();
     await page.waitForURL((u) => u.pathname.startsWith('/login'), { timeout: 30000 }).catch(() => {});
     await page.waitForTimeout(1500);
     const loginUrl = page.url().replace(FRONTEND, '');
@@ -2580,16 +2637,20 @@ async function phaseF3(browser, state) {
     const shopA = await page.getByText(A.shop).filter({ visible: true }).count();
     await page.screenshot({ path: fShot(W.dir, `F3-${tag}-2-landed-as-A`) });
     const afterNavs = navs.slice(v2);
-    record('F3', `${tag}: ONE submit as A lands on A's /parties — exactly one document load, never back to /login`,
-      new URL(page.url()).pathname === '/parties' && me.email === A.email && shopA > 0 && docs.slice(d2).length === 1 && !docs.slice(d2)[0].startsWith('/login') && !afterNavs.slice(1).some((u) => u.startsWith('/login')),
+    // The phone path now goes through the logo, which is "Go to Dashboard" (the
+    // landing page is /dashboard), so A may land on either of A's own pages.
+    record('F3', `${tag}: ONE submit as A lands on A's /parties or /dashboard — exactly one document load, never back to /login`,
+      ['/parties', '/customers', '/dashboard'].includes(new URL(page.url()).pathname) && me.email === A.email && shopA > 0 && docs.slice(d2).length === 1 && !docs.slice(d2)[0].startsWith('/login') && !afterNavs.slice(1).some((u) => u.startsWith('/login')),
       `url=${page.url().replace(FRONTEND, '')} me=${me.email} shopA=${shopA} docs=${JSON.stringify(docs.slice(d2))} navs=${JSON.stringify(afterNavs)}`);
     record('F3', `${tag}: B's shop name / parties never rendered after expiry`, leaks.length === 0, JSON.stringify(leaks.slice(0, 3)));
 
     // 4. Logo (or the sidebar Customers link — Dashboard left the sidebar in
     //    the UAT-fix batch) afterwards stays signed in.
     const v3 = navs.length;
-    if (W.w < 1024) await page.getByRole('link', { name: /go to Customers/i }).first().click();
-    else await page.locator('nav a[href="/parties"]').first().click();
+    // The logo's name is "<app> — go to home" now, and Customers lives at
+    // /customers since step 3b (Customers and Suppliers apart).
+    if (W.w < 1024) await page.getByRole('link', { name: /go to (home|Dashboard)/i }).first().click();
+    else await page.locator('nav a[href="/customers"]').first().click();
     await page.waitForTimeout(3000);
     const me2 = await whoAmI(page);
     await page.screenshot({ path: fShot(W.dir, `F3-${tag}-3-logo-after`) });
@@ -2597,20 +2658,17 @@ async function phaseF3(browser, state) {
 
     // 5. Sign-out control below lg (observation), then sign out and in again.
     if (W.w < 1024) {
-      const burger = page.getByRole('button', { name: /open navigation|menu/i }).first();
+      // docs/mobile-redesign — the phone's account (and Sign out) is on the More
+      // tab of the bottom nav; the ☰ drawer and the header avatar are gone.
       let found = 0;
-      if (await burger.count()) {
-        await burger.click(); await page.waitForTimeout(700);
-        found = await page.getByText(/^Sign out$/).filter({ visible: true }).count();
-        await page.screenshot({ path: fShot(W.dir, `F3-${tag}-4-drawer`) });
-        await page.keyboard.press('Escape'); await page.waitForTimeout(400);
-        // The drawer's close transition outlasts 400 ms; while it is still
-        // mounted the header behind it is inert and its account button is not
-        // "visible" to getByRole. Wait for it to go before counting.
-        await page.getByRole('dialog').first().waitFor({ state: 'detached', timeout: 5000 }).catch(() => {});
+      const more = page.getByRole('navigation').getByRole('link', { name: 'More' });
+      if (await more.count()) {
+        await more.first().click(); await page.waitForTimeout(900);
+        found = await page.getByRole('button', { name: 'Sign out' }).filter({ visible: true }).count();
+        await page.screenshot({ path: fShot(W.dir, `F3-${tag}-4-more`) });
+        await page.goBack(); await page.waitForTimeout(600);
       }
-      found += await page.getByRole('button', { name: /^Account menu for/ }).filter({ visible: true }).count();
-      record('F3', `${tag}: a Sign out control is reachable below 1024 px (drawer or account menu)`, found > 0, `visible sign-out/account controls: ${found}`);
+      record('F3', `${tag}: a Sign out control is reachable below 1024 px (More tab)`, found > 0, `visible sign-out/account controls: ${found}`);
     }
     await signOut(page, W);
     const d4 = docs.length;

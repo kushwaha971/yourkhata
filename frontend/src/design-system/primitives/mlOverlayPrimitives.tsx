@@ -19,16 +19,18 @@
  * KNOWN GAPS versus Radix, and why they are acceptable at MVP:
  *  - no `aria-hidden` / `inert` on the background tree (the trap is complete,
  *    so keyboard and screen-reader focus cannot leave the dialog anyway);
- *  - no nested-overlay stack (nothing in Sprints 1–3 opens a dialog from a
- *    dialog; a second one would need a depth counter for the scroll lock);
- *  - the menu closes on outside pointerdown and Escape, and does not implement
- *    typeahead.
+ *  - nested dialogs share a reference-counted scroll lock;
+ *  - the menu closes on choosing an item unless its selection is cancelled,
+ *    on outside pointerdown and on Escape, and does not implement typeahead.
  */
 
 import {
+  createContext,
   useCallback,
+  useContext,
   useEffect,
   useId,
+  useLayoutEffect,
   useRef,
   useState,
   type KeyboardEvent,
@@ -38,6 +40,7 @@ import {
 
 import { createPortal } from 'react-dom';
 
+import { useBottomInset } from 'src/hooks/useBottomInset';
 import { cn } from 'src/utils/cn';
 
 /** Everything focusable, in DOM order, that is not disabled or hidden. */
@@ -55,6 +58,25 @@ const focusableWithin = (root: HTMLElement): readonly HTMLElement[] =>
   Array.from(root.querySelectorAll<HTMLElement>(FOCUSABLE)).filter(
     (node) => !node.hasAttribute('hidden') && node.getAttribute('aria-hidden') !== 'true'
   );
+
+/** Dialogs share a lock: route cleanup may release parent before child. */
+const bodyScrollLocks = new WeakMap<HTMLElement, { count: number; previous: string }>();
+const acquireBodyScrollLock = (body: HTMLElement): (() => void) => {
+  const lock = bodyScrollLocks.get(body) ?? { count: 0, previous: body.style.overflow };
+  lock.count += 1;
+  bodyScrollLocks.set(body, lock);
+  body.style.overflow = 'hidden';
+  let released = false;
+  return () => {
+    if (released) return;
+    released = true;
+    lock.count -= 1;
+    if (lock.count === 0) {
+      body.style.overflow = lock.previous;
+      bodyScrollLocks.delete(body);
+    }
+  };
+};
 
 // ── Dialog ───────────────────────────────────────────────────────────────────
 
@@ -77,6 +99,7 @@ export interface MLDialogProps {
    * which is a class name.
    */
   readonly placement?: 'center' | 'drawer';
+  readonly keyboardAware?: boolean;
   /**
    * Where focus goes on close when the element that opened the dialog is no
    * longer in the document (WCAG 2.4.3). The case is a dialog opened from
@@ -119,9 +142,49 @@ export function MLDialog({
   returnFocusRef,
   children,
   className,
+  keyboardAware = false,
 }: Readonly<MLDialogProps>): React.JSX.Element | null {
   const panelRef = useRef<HTMLDivElement | null>(null);
   const openerRef = useRef<HTMLElement | null>(null);
+
+  // Counter Mode: the footer belongs to the visible sheet, above a phone keyboard.
+  // Opt-in keeps Library/Lending and other shared overlay consumers unchanged.
+  useEffect(() => {
+    const viewport = window.visualViewport;
+    const panel = panelRef.current;
+    const frame = panel?.parentElement;
+    if (!open || !keyboardAware || !viewport || !panel || !frame) return;
+    const reset = () => {
+      frame.style.removeProperty('top');
+      frame.style.removeProperty('bottom');
+      frame.style.removeProperty('height');
+      panel.style.removeProperty('max-height');
+    };
+    const update = () => {
+      if (
+        window.innerWidth >= 1024 ||
+        viewport.scale !== 1 ||
+        window.innerHeight - viewport.height < 150
+      ) {
+        reset();
+        return;
+      }
+      frame.style.top = `${viewport.offsetTop}px`;
+      frame.style.bottom = 'auto';
+      frame.style.height = `${viewport.height}px`;
+      panel.style.maxHeight = `${Math.max(0, viewport.height - 8)}px`;
+    };
+    update();
+    viewport.addEventListener('resize', update);
+    viewport.addEventListener('scroll', update);
+    window.addEventListener('resize', update);
+    return () => {
+      viewport.removeEventListener('resize', update);
+      viewport.removeEventListener('scroll', update);
+      window.removeEventListener('resize', update);
+      reset();
+    };
+  }, [open, keyboardAware]);
 
   /* A dialog MOUNTED open never sees its opener take focus. Every lazily
      loaded dialog in this product is rendered as `{open && <LazyDialog open />}`,
@@ -174,8 +237,7 @@ export function MLDialog({
   // Move focus in, lock scroll — and undo both.
   useEffect(() => {
     if (!open || typeof document === 'undefined') return undefined;
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
+    const releaseScrollLock = acquireBodyScrollLock(document.body);
 
     const panel = panelRef.current;
     /* Read once, on open: the caller's control (the khata's ⋯) is mounted by
@@ -221,7 +283,7 @@ export function MLDialog({
     }
 
     return () => {
-      document.body.style.overflow = previousOverflow;
+      releaseScrollLock();
       restoreTarget(openerRef.current, fallback)?.focus();
     };
     /* Both extra deps are stable for the dialog's life — a state value set
@@ -311,11 +373,24 @@ export function MLDialog({
                  rather than behind it. `rounded-l-xl` only — the panel is
                  flush with three edges, which is what makes it read as
                  attached to the side rather than floating. */
-              'max-h-[92dvh] rounded-t-xl lg:h-full lg:max-h-none lg:w-[520px] lg:max-w-[calc(100vw-2rem)] lg:rounded-none lg:rounded-l-xl'
+              /* Design §A5: the phone sheet's 18 px top corners and a grab
+                 handle; the desktop drawer is 480 px (`.sheet`, `.drawer`). */
+              'max-h-[92dvh] rounded-t-[18px] lg:h-full lg:max-h-none lg:w-[480px] lg:max-w-[calc(100vw-2rem)] lg:rounded-none lg:rounded-l-xl'
             : 'max-h-[90dvh] rounded-t-xl sm:w-[420px] sm:max-w-[calc(100vw-2rem)] sm:rounded-xl',
           className
         )}
       >
+        {/* `.grab`: 36 × 4, 8 px from the top, on the phone sheet only. The
+            design's `sheet()` draws it on every phone sheet, the short ones
+            too (C2 pScanNF), so a dialog has it while it is a bottom sheet. */}
+        <div
+          aria-hidden
+          data-ub-grab=""
+          className={cn(
+            'mx-auto mt-[8px] h-[4px] w-[36px] shrink-0 rounded-[2px] bg-border-strong',
+            isDrawer ? 'lg:hidden' : 'sm:hidden'
+          )}
+        />
         {children}
       </div>
     </div>,
@@ -341,7 +416,17 @@ export function MLDialogHeader({
   className,
 }: Readonly<{ children: ReactNode; className?: string }>): React.JSX.Element {
   return (
-    <div className={cn('flex items-start gap-2 border-b border-border-hairline p-6', className)}>
+    /* Design §A5 `.shead`: a 56 px row padded 0 8 0 16 on a phone, 60 px
+       padded 0 12 0 24 on desktop (`.dk .shead`). A description makes it
+       taller, never shorter. */
+    <div
+      data-ub-dialog-header=""
+      className={cn(
+        'flex min-h-[56px] items-center gap-2 border-b border-border-hairline py-2 pl-4 pr-2',
+        'lg:min-h-[60px] lg:pl-6 lg:pr-3',
+        className
+      )}
+    >
       {children}
     </div>
   );
@@ -352,7 +437,15 @@ export function MLDialogBody({
   className,
 }: Readonly<{ children: ReactNode; className?: string }>): React.JSX.Element {
   return (
-    <div className={cn('flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto p-6', className)}>
+    /* `.sbody`: 16 px from the edge on a phone, 20 / 24 on desktop
+       (`.drawer .sbody`), 24 px between groups. */
+    <div
+      data-ub-dialog-body=""
+      className={cn(
+        'flex min-h-0 flex-1 flex-col gap-6 overflow-y-auto p-4 lg:px-6 lg:py-5',
+        className
+      )}
+    >
       {children}
     </div>
   );
@@ -370,7 +463,11 @@ export function MLDialogTitle({
   className,
 }: Readonly<MLDialogTitleProps>): React.JSX.Element {
   return (
-    <h2 id={id} className={cn('ds-title-sm text-text-primary', className)}>
+    // `.shead b`: 17 px, weight 600.
+    <h2
+      id={id}
+      className={cn('text-[17px] font-semibold leading-[1.25] text-text-primary', className)}
+    >
       {children}
     </h2>
   );
@@ -382,7 +479,8 @@ export function MLDialogDescription({
   className,
 }: Readonly<MLDialogTitleProps>): React.JSX.Element {
   return (
-    <p id={id} className={cn('ds-body-sm text-text-tertiary', className)}>
+    // `.shead small`: 12.5 px, ink-3.
+    <p id={id} className={cn('text-[12.5px] leading-[1.35] text-text-tertiary', className)}>
       {children}
     </p>
   );
@@ -409,6 +507,7 @@ export function MLDialogFooter({
   readonly className?: string;
   readonly order?: MLDialogFooterOrder;
 }>): React.JSX.Element {
+  const footerRef = useBottomInset<HTMLDivElement>();
   return (
     /* `border-t` and its own 24px, matching `MLDialogHeader`: BrandHub's
        footer is `flex items-center gap-4 border-t border-border p-6`. The
@@ -418,10 +517,25 @@ export function MLDialogFooter({
        actions (PTY-04's blocked archive: Cancel, Record payment, Write off)
        and a 480 px dialog clipped the first one to "cel" rather than wrap. */
     <div
+      ref={footerRef}
+      data-ub-overlay-footer=""
       className={cn(
-        'flex gap-3 border-t border-border-hairline p-6',
-        order === 'as-written' ? 'flex-col' : 'flex-col-reverse',
-        'sm:flex-row sm:flex-wrap sm:justify-end sm:gap-3',
+        /* Design §A5 `.sfoot`: on a phone Cancel and Save side by side, Save
+           twice as wide (1fr 2fr), 8 px apart, padded 12 16 14, 46 px
+           buttons (`.btn.lg`). One action takes the row; three or more stack
+           as before, the primary first on screen. On desktop (`.dk .sfoot`)
+           they sit at the right, padded 14 24, at 40 px. */
+        'border-t border-border-hairline px-4 pb-[max(14px,env(safe-area-inset-bottom,0px))] pt-3',
+        // Buttons are counted, not children: a note beside them (the stock
+        // drawer's "1 item · ₹0") takes the whole row above them instead.
+        'grid grid-cols-[1fr_2fr] gap-2 [&:has(>button:only-of-type)]:grid-cols-1',
+        '[&>:not(button)]:col-span-full',
+        order === 'as-written'
+          ? '[&:has(>button:nth-of-type(3))]:flex [&:has(>button:nth-of-type(3))]:flex-col'
+          : '[&:has(>button:nth-of-type(3))]:flex [&:has(>button:nth-of-type(3))]:flex-col-reverse',
+        '[&>button]:h-[46px] [&>button]:text-[15px]',
+        'lg:flex lg:flex-row lg:flex-wrap lg:justify-end lg:px-6 lg:py-[14px]',
+        'lg:[&>button]:h-10 lg:[&>button]:text-sm',
         className
       )}
     >
@@ -445,13 +559,58 @@ export interface MLMenuProps {
   readonly children: ReactNode;
   readonly align?: 'start' | 'end';
   readonly className?: string;
+  readonly open?: boolean;
+  readonly onOpenChange?: (open: boolean) => void;
 }
+
+/** The gutter a menu keeps from every edge of the screen. */
+const MENU_GUTTER = 16;
+const MENU_WIDTH = 320;
+
+interface MenuPlace {
+  readonly top: number;
+  readonly left: number;
+  readonly width: number;
+  readonly maxHeight: number;
+}
+
+/**
+ * Where the panel goes: under its trigger, as wide as `MENU_WIDTH` allows, slid
+ * back inside the screen when the trigger sits near an edge, and no taller than
+ * the room below it (the panel scrolls inside itself beyond that).
+ */
+export const placeMenu = (
+  trigger: { left: number; right: number; bottom: number },
+  viewport: { width: number; height: number },
+  align: 'start' | 'end'
+): MenuPlace => {
+  const width = Math.min(MENU_WIDTH, viewport.width - MENU_GUTTER * 2);
+  const wanted = align === 'end' ? trigger.right - width : trigger.left;
+  const left = Math.max(MENU_GUTTER, Math.min(wanted, viewport.width - MENU_GUTTER - width));
+  const top = trigger.bottom + 4;
+  const maxHeight = Math.max(160, viewport.height - top - MENU_GUTTER);
+  return { top, left, width, maxHeight };
+};
 
 /**
  * The WAI-ARIA menu-button pattern: ArrowDown/ArrowUp move between items, Home
  * and End jump, Escape closes and returns focus to the trigger, and a pointer
  * outside closes it. Items are `MLMenuItem`.
+ *
+ * The panel is PORTALLED to `document.body` and placed `fixed` from the
+ * trigger's box (docs/platform/14 R7). It used to be `absolute` inside its
+ * trigger's wrapper, so in the sidebar it was clipped by a 180 px rail and made
+ * the rail's own scroll container grow and scroll; on a phone the 320 px panel
+ * ran off the right edge from a trigger in the middle of the top bar.
  */
+/**
+ * How an item closes its menu. A menu is a list of commands: choosing one is
+ * the end of the menu's job, as in every native menu (owner, 12 Oct 2026 — the
+ * apps menu stayed open over the screen it had just switched to). Outside a
+ * menu the context is a no-op, so an item rendered alone still works.
+ */
+const MenuCloseContext = createContext<(() => void) | null>(null);
+
 export function MLMenu({
   trigger,
   triggerClassName,
@@ -460,11 +619,39 @@ export function MLMenu({
   children,
   align = 'start',
   className,
+  open: controlledOpen,
+  onOpenChange,
 }: Readonly<MLMenuProps>): React.JSX.Element {
   const id = useId();
-  const [open, setOpen] = useState(false);
+  const [internalOpen, setInternalOpen] = useState(false);
+  const open = controlledOpen ?? internalOpen;
+  const setOpen = useCallback(
+    (next: boolean) => {
+      if (controlledOpen === undefined) setInternalOpen(next);
+      onOpenChange?.(next);
+    },
+    [controlledOpen, onOpenChange]
+  );
   const triggerRef = useRef<HTMLButtonElement | null>(null);
   const listRef = useRef<HTMLDivElement | null>(null);
+  const [place, setPlace] = useState<MenuPlace | null>(null);
+
+  useLayoutEffect(() => {
+    if (!open || typeof window === 'undefined') return undefined;
+    const measure = () => {
+      const box = triggerRef.current?.getBoundingClientRect();
+      if (!box) return;
+      setPlace(placeMenu(box, { width: window.innerWidth, height: window.innerHeight }, align));
+    };
+    measure();
+    // The page or the rail scrolling under an open menu moves its trigger.
+    window.addEventListener('resize', measure);
+    window.addEventListener('scroll', measure, true);
+    return () => {
+      window.removeEventListener('resize', measure);
+      window.removeEventListener('scroll', measure, true);
+    };
+  }, [open, align]);
 
   useEffect(() => {
     if (!open || typeof document === 'undefined') return undefined;
@@ -476,7 +663,7 @@ export function MLMenu({
     };
     document.addEventListener('pointerdown', onPointerDown);
     return () => document.removeEventListener('pointerdown', onPointerDown);
-  }, [open]);
+  }, [open, setOpen]);
 
   useEffect(() => {
     if (!open) return;
@@ -484,30 +671,37 @@ export function MLMenu({
     items[0]?.focus();
   }, [open]);
 
-  const onKeyDown = useCallback((event: KeyboardEvent<HTMLDivElement>) => {
-    const list = listRef.current;
-    if (!list) return;
-    if (event.key === 'Escape' || event.key === 'Tab') {
-      setOpen(false);
-      triggerRef.current?.focus();
-      if (event.key === 'Escape') event.preventDefault();
-      return;
-    }
-    const items = focusableWithin(list);
-    if (items.length === 0) return;
-    const index = items.findIndex((node) => node === document.activeElement);
-    const last = items.length - 1;
-    let next = index;
-    if (event.key === 'ArrowDown') next = index >= last ? 0 : index + 1;
-    else if (event.key === 'ArrowUp') next = index <= 0 ? last : index - 1;
-    else if (event.key === 'Home') next = 0;
-    else if (event.key === 'End') next = last;
-    else return;
-    event.preventDefault();
-    items[next]?.focus();
-  }, []);
+  const onKeyDown = useCallback(
+    (event: KeyboardEvent<HTMLDivElement>) => {
+      const list = listRef.current;
+      if (!list) return;
+      if (event.key === 'Escape' || event.key === 'Tab') {
+        setOpen(false);
+        triggerRef.current?.focus();
+        if (event.key === 'Escape') event.preventDefault();
+        return;
+      }
+      const items = focusableWithin(list);
+      if (items.length === 0) return;
+      const index = items.findIndex((node) => node === document.activeElement);
+      const last = items.length - 1;
+      let next = index;
+      if (event.key === 'ArrowDown') next = index >= last ? 0 : index + 1;
+      else if (event.key === 'ArrowUp') next = index <= 0 ? last : index - 1;
+      else if (event.key === 'Home') next = 0;
+      else if (event.key === 'End') next = last;
+      else return;
+      event.preventDefault();
+      items[next]?.focus();
+    },
+    [setOpen]
+  );
 
-  const onToggle = useCallback(() => setOpen((value) => !value), []);
+  const onToggle = useCallback(() => setOpen(!open), [open, setOpen]);
+  const close = useCallback(() => {
+    setOpen(false);
+    triggerRef.current?.focus();
+  }, [setOpen]);
 
   return (
     <div className={cn('relative', className)}>
@@ -527,33 +721,48 @@ export function MLMenu({
       >
         {trigger}
       </button>
-      {open && (
-        <div
-          ref={listRef}
-          role="menu"
-          aria-label={ariaLabel}
-          aria-labelledby={`${id}-trigger`}
-          onKeyDown={onKeyDown}
-          className={cn(
-            /* `z-[60]` and `shadow-ub-popover`, so a menu matches every other
+      {open &&
+        typeof document !== 'undefined' &&
+        createPortal(
+          <div
+            ref={listRef}
+            role="menu"
+            aria-label={ariaLabel}
+            aria-labelledby={`${id}-trigger`}
+            onKeyDown={onKeyDown}
+            className={cn(
+              /* `z-[60]` and `shadow-ub-popover`, so a menu matches every other
                floating surface in the kit and can open inside a dialog. It was
                `z-40` — BELOW the dialog's own `z-50` — so a menu opened from
                inside a modal rendered behind it. Same class of bug as the Radix
                popper wrapper, and fixed the same way. */
-            'absolute z-[60] mt-1 flex w-[min(320px,calc(100vw-32px))] flex-col gap-0.5',
-            'rounded-card border border-border-hairline bg-surface-raised p-1.5 shadow-ub-popover',
-            align === 'end' ? 'right-0' : 'left-0'
-          )}
-        >
-          {children}
-        </div>
-      )}
+              'fixed z-[60] flex flex-col gap-0.5 overflow-y-auto overscroll-contain',
+              'rounded-card border border-border-hairline bg-surface-raised p-1.5 shadow-ub-popover',
+              !place && 'invisible'
+            )}
+            style={
+              place
+                ? {
+                    top: place.top,
+                    left: place.left,
+                    width: place.width,
+                    maxHeight: place.maxHeight,
+                  }
+                : undefined
+            }
+          >
+            <MenuCloseContext.Provider value={close}>{children}</MenuCloseContext.Provider>
+          </div>,
+          document.body
+        )}
     </div>
   );
 }
 
 export interface MLMenuItemProps {
-  readonly onSelect: () => void;
+  /** Cancel default closing while an asynchronous command shows progress. */
+  readonly onSelect: (event: Event) => void;
+  readonly 'aria-busy'?: boolean;
   readonly disabled?: boolean;
   readonly selected?: boolean;
   readonly children: ReactNode;
@@ -566,14 +775,21 @@ export function MLMenuItem({
   selected,
   children,
   className,
+  'aria-busy': busy,
 }: Readonly<MLMenuItemProps>): React.JSX.Element {
+  const closeMenu = useContext(MenuCloseContext);
   return (
     <button
       type="button"
       role="menuitem"
       disabled={disabled}
       aria-current={selected ? 'true' : undefined}
-      onClick={onSelect}
+      aria-busy={busy}
+      onClick={() => {
+        const event = new Event('menuitemselect', { cancelable: true });
+        onSelect(event);
+        if (!event.defaultPrevented) closeMenu?.();
+      }}
       className={cn(
         'ds-body-base-regular flex min-h-9 w-full items-center gap-3 rounded-control px-3 py-2 text-left',
         'ds-body-sm text-text-primary transition-colors duration-fast ease-standard',

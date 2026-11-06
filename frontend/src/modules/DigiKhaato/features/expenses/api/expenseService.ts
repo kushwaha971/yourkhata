@@ -66,6 +66,7 @@ interface ExpenseListApiResponse {
         amount: string;
       }[];
     };
+    readonly has_any?: boolean;
   };
 }
 
@@ -138,6 +139,7 @@ export const expenseListQuery = (filters: ExpenseFilters): string =>
     status: filters.tab === 'void' ? 'void' : undefined,
     paid: filters.tab === 'unpaid' ? 'false' : undefined,
     q: filters.q.trim() || undefined,
+    app: filters.app || undefined,
     page: filters.page > 1 ? filters.page : undefined,
   });
 
@@ -171,7 +173,17 @@ export const listExpenses = async (
     page: meta.page,
     pageSize: meta.page_size,
     total: meta.total,
+    ...(typeof meta.has_any === 'boolean' ? { hasAny: meta.has_any } : {}),
   };
+};
+
+/** One expense by id — the cash book opens a row's detail from it (08 §11). */
+export const getExpense = async (id: string, signal?: AbortSignal): Promise<Expense> => {
+  const response = await api.get<{ data: ExpenseApiRow }>(
+    `${API_PATHS.EXPENSES}/${encodeURIComponent(id)}`,
+    ubConfig({ signal })
+  );
+  return toExpense(response.data.data);
 };
 
 /**
@@ -205,11 +217,13 @@ export const createExpenseCategory = async (name: string): Promise<ExpenseCatego
  */
 export const createExpense = async (
   values: ExpenseFormValues,
-  idempotencyKey: string
+  idempotencyKey: string,
+  /** DEC-019 (QA B10) — the app it is recorded in; absent, the server decides. */
+  app?: string
 ): Promise<ExpenseSaveResult> => {
   const response = await api.post<ExpenseWriteApiResponse>(
     API_PATHS.EXPENSES,
-    toWireBody(values),
+    { ...toWireBody(values), ...(app ? { app } : {}) },
     ubConfig({ headers: { 'Idempotency-Key': idempotencyKey } })
   );
   return {

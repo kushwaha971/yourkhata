@@ -36,10 +36,12 @@
  *
  * Exits non-zero on any failure.
  */
-import { chromium } from 'playwright';
+import { createRequire } from 'node:module';
+const { chromium } = createRequire(import.meta.url)('playwright');
+import { BACKEND_DIR as LOCAL_BACKEND_DIR, PYTHON } from './lib/local.mjs';
 import { mkdirSync, writeFileSync } from 'node:fs';
 
-const FRONTEND = process.env.E2E_FRONTEND ?? 'http://localhost:3000';
+const FRONTEND = process.env.E2E_FRONTEND ?? (process.env.E2E_BASE ?? 'http://localhost:3000');
 const BACKEND = process.env.E2E_BACKEND ?? 'http://localhost:8000/api/v1';
 const SHOT_DIR = process.env.E2E_SHOTS ?? '/tmp/e2e-shots/credit';
 const wantShots = process.argv.includes('--shots');
@@ -168,7 +170,7 @@ const signIn = async (page) => {
    * and a harness that gives up on it reports a product defect that is not one.
    */
   for (const attempt of [1, 2]) {
-    await page.goto(`${FRONTEND}/login`, { waitUntil: 'domcontentloaded', timeout: 45000 });
+    await page.goto(`${FRONTEND}/login/email`, { waitUntil: 'domcontentloaded', timeout: 45000 });
     await page.fill('input[type="email"], input[name="email"]', OWNER.email);
     await page.fill('input[type="password"], input[name="password"]', OWNER.password);
     await page.click('button[type="submit"]');
@@ -178,7 +180,9 @@ const signIn = async (page) => {
     // `load` is a state this app can legitimately never reach.
     await page.waitForURL((u) => !u.pathname.startsWith('/login'), { waitUntil: 'commit', timeout: 45000 }).catch(() => {});
     await page.waitForTimeout(600);
-    await page.goto(`${FRONTEND}/parties`, {
+    // DEC-019 — the khata page is the Udhaar book's: open its list first, as a merchant
+    // does, so the session is in that app (from the Shop the page shows bills instead).
+    await page.goto(`${FRONTEND}/khata`, {
       waitUntil: 'domcontentloaded',
       timeout: 45000,
     });
@@ -346,17 +350,28 @@ async function checks(browser, token, parties) {
   await signIn(page);
   await openList(page);
 
-  // 1. The chip exists, and it carries the count from `meta.totals`.
+  // 1. The band exists in the Filters sheet (owner, 6 Oct 2026), and "Over
+  //    limit" carries the count from `meta.totals`.
   {
-    const chip = page.getByRole('button', { name: /^Over limit \(/ });
-    const label = (await chip.count()) > 0 ? await chip.first().innerText() : '(absent)';
-    record('the over-limit chip carries the server’s count', label === 'Over limit (2)', label);
+    await page.getByTestId('filters-button').click();
+    await settle(page, 800);
+    const credit = page.getByRole('radiogroup', { name: 'Credit' });
+    const text = (await credit.count()) > 0 ? await credit.innerText() : '(absent)';
+    record(
+      'the over-limit choice carries the server’s count',
+      /Over limit\s*2/.test(text),
+      text.replace(/\n/g, ' | ')
+    );
   }
 
   // 2. Tapping it reaches the wire and narrows the list.
   {
     const before = listRequests.length;
-    await page.getByRole('button', { name: /^Over limit \(/ }).first().click();
+    await page
+      .getByRole('radiogroup', { name: 'Credit' })
+      .getByRole('radio', { name: /^Over limit/ })
+      .click();
+    await page.getByTestId('filters-apply').click();
     await settle(page, 1500);
     const issued = listRequests.slice(before);
     record(
@@ -388,20 +403,27 @@ async function checks(browser, token, parties) {
   // produces that zero; every component test hands the count in by hand.
   {
     await openList(page, '?credit=near');
-    const near = page.getByRole('button', { name: 'Near limit' });
-    const present = (await near.count()) > 0;
     record(
-      'narrowing to Near limit leaves its own chips on screen',
-      present && (await near.first().getAttribute('aria-pressed')) === 'true',
-      present ? 'pressed' : '(the whole credit group disappeared)'
+      'narrowing to Near limit shows it as a pill',
+      (await page.getByText('Credit: Near limit').count()) > 0,
+      ''
     );
+    await page.getByTestId('filters-button').click();
+    await settle(page, 800);
+    const credit = page.getByRole('radiogroup', { name: 'Credit' });
+    const present = (await credit.count()) > 0;
     record(
-      'and the chip beside it has no "(0)" on a list it does not count',
-      (await page.getByRole('button', { name: 'Over limit' }).count()) > 0,
-      (await page.getByRole('button', { name: /^Over limit/ }).count()) > 0
-        ? await page.getByRole('button', { name: /^Over limit/ }).first().innerText()
-        : '(absent)'
+      'and its own band is still offered, chosen',
+      present && (await credit.getByRole('radio', { name: 'Near limit' }).isChecked()),
+      present ? 'checked' : '(the whole credit group disappeared)'
     );
+    const text = present ? await credit.innerText() : '';
+    record(
+      'and "Over limit" beside it has no 0 on a list it does not count',
+      present && !/Over limit\s*0/.test(text),
+      text.replace(/\n/g, ' | ')
+    );
+    await page.keyboard.press('Escape');
   }
 
   // 3. The bar on the khata page reads the SERVER's percentage.
@@ -559,17 +581,17 @@ async function run() {
     )
     .join('\n');
   execFileSync(
-    'python',
+    PYTHON,
     [
       'manage.py',
       'shell',
       '-c',
       `from decimal import Decimal\nfrom apps.parties.models import Party\n${script}`,
     ],
-    { cwd: '/home/claude/repo/backend', env: { ...process.env, DJANGO_SETTINGS_MODULE: 'config.settings.local' } }
+    { cwd: LOCAL_BACKEND_DIR, env: { ...process.env, DJANGO_SETTINGS_MODULE: 'config.settings.local' } }
   );
 
-  const browser = await chromium.launch();
+  const browser = await chromium.launch({ executablePath: process.env.CHROME || process.env.PW_CHROME });
   await checks(browser, token, parties);
 
   if (wantShots) {

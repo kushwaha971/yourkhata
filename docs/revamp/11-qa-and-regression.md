@@ -1,0 +1,513 @@
+# 11 · QA, regression and rollout checks
+
+Status: **plan**, 17 Oct 2026. Uses the existing gates in CLAUDE.md; adds only what the revamp needs.
+
+## Existing gates (must stay green every phase)
+- `backend`: `python3 -m pytest -q`.
+- `frontend`: `type-check`, `lint`, `npm test`, `build`, `bundle:check`, `i18n:split`, `i18n:check`.
+- e2e against a live stack served by `e2e/serve-api.sh` and `e2e/serve.sh`: journey, security, credentials, parties, tags, credit, ledger, statement; onboarding-apps; offline; desktop-unchanged; the `--shots` sweeps.
+
+## Added for the revamp
+
+| Check | What it proves | Phase |
+|---|---|---|
+| `e2e/perf-app.mjs` | 05 §5 metrics, before and after | 1, 7 |
+| Double-tap script | every money form (receive payment, bill save, purchase record, Udhaar entry, Library fee/deposit, Lending collect, loan create) fires exactly one write when tapped twice fast and when retried after a forced failure | 4 |
+| Navigation feedback check | every bottom tab, sidebar row and list row shows a pressed state within one frame and a pending state within 150 ms on a throttled profile | 4 |
+| Keyboard overlap check | on 360 × 640 with the keyboard open, no docked bar is covered and the bottom nav is hidden | 4 |
+| Measuring checks | `scrollWidth` vs viewport and every text node vs its box at 320/360/390/768/1280, both themes, English and Hindi (the LED-02 lesson) | every UI phase |
+| Contract snapshot | Library and Lending request/response shapes unchanged | 6 |
+| Figure parity | every figure on old and new Library/Lending screens equal on a seeded book | 6 |
+| App switching | 1-app, 2-app and 4-app people; switch with unsaved form; deep link to an app you don't have; place kept per app | 4 |
+| Notifications | popover and page; unread count; mark all; open cross-app item | 4 |
+| Session expiry mid-form | sign in again returns to the screen; draft kept where drafts exist | 4 |
+| Accessibility | axe at 390 and 1280 both themes; TalkBack pass on Android; large text 200% at 320 px | 3, 8 |
+| Devices | one low-end Android (D-06), one iPhone, installed PWA, weak signal; 9-task script timed | 1, 8 |
+| Data volume | 2k parties / 100k entries (existing scale seed); Library 2k members; Lending 3k loans | 1, 7 |
+
+## Screenshots after each piece (R-DEC-07, owner, 17 Oct 2026)
+
+Every UI piece that is built, whether a form, card, drawer, sheet, dialog, list or a whole screen, is photographed on the running app before the next piece starts, and the pictures go to the owner with the report for that piece.
+
+- **Sizes:** phone 390 × 844 (plus 320 × 640 when the piece holds text that can wrap) and desktop 1280 × 800.
+- **States:** each state the spec lists for that piece that can be reached on a seeded stack: empty, filled, loading, error, refused by validation, success, and long name / large amount (₹12,40,378.00). Light theme always; dark theme and Hindi for any piece with text.
+- **How:** Playwright against the live stack served by `e2e/serve-api.sh` and `e2e/serve.sh` (never `next start`), the same way the existing `--shots` sweeps work, saved under `/tmp/e2e-shots/revamp/<piece>/` and copied to `/mnt/project-files/revamp/shots/<piece>/` so the owner can open them.
+- **Read them before sending:** look at each picture against the spec, and run the measuring checks on the same pages. A screenshot nobody looked at proves nothing.
+- Library and Lending pieces are photographed beside the current screen with the same data, so the figures can be compared (figure parity).
+- The harness is `e2e/revamp-shots.mjs --piece=<loading|press|lock|apps>`. `lock` is also the double-tap check: it holds the save's POST, taps twice and presses Enter, counts the requests that left (must be 1), and replays a lost answer to prove the retry carries the same key and comes back `Idempotent-Replayed`. `apps` switches app and back on the phone sheet and the desktop tree and asserts the return lands where it left; it MEASURES rather than reads: the page and rail colours from the computed style, each rail label's contrast against the colour it sits on (≥ 4.5:1), and every text node against its own box (no cut or clamped word). Add `--locale=hi` for Hindi and `--widths=1024` for the narrowest desktop. A check that reads tokens passed while the light-theme rail drew dark ink on dark teal at 1.4:1.
+
+## Exit criteria for rollout (Phase 8)
+1. Every existing gate green.
+2. Every added check green, or a written exception the owner accepted.
+3. Contract diff empty and figure parity 100% for Library and Lending.
+4. Performance targets met or the gap shown with numbers.
+5. Rollback drill done on staging: flag off restores the old screens with no data change.
+6. Staged rollout per app: internal → one friendly customer per app → all, with a watch period between.
+
+## R-DEC-31 · Viewport behavior across all modules (21 Oct)
+
+Owner explicitly wants this in every module, not only Purchases. Track the
+rollout within this existing revamp; this is not a new redesign plan. Purchases and the already-redesigned Shop Customers/Suppliers/Bills registers
+have been implemented/verified. Next: remaining sales-document lists. Then apply
+and verify the same behavior on each remaining module's real list composition.
+This shared behavior rollout does not certify or replace their full revamps.
+
+| Surface group | Status | Guard |
+|---|---|---|
+| Purchases / shared orders and returns register | Verified in Purchases only;32px/44px correction passes |32px face,44px mobile hit area; pinned pager/toast clearance |
+| Shop Customers, Suppliers, Bills | Verified:522 final frames,4,648 frontend tests;21Oct viewport-shop report | Preserve separate roles/books, filtering and row actions |
+| Remaining sales documents | Pending | Shared list kinds, permissions and links unchanged |
+| Items, stock, payments, expenses | Pending | No stock/pricing/payment calculations changed |
+| Personal Udhaar people, aging, reminders | Pending | Independent personal book; no mixed Shop balances |
+| Library members, catalogue, copies and other collection views | Pending | Presentation only; exact endpoints/bodies/calculations frozen |
+| Lending borrowers, loans and Today collections | Pending | Preserve schedules/collections; inspect custom list/paging first |
+| Reports and other register views | Pending | Keep exports/prints and report-specific horizontal-scroll exceptions |
+| Embedded import/admin/team tables | Inventory separately | Bound their own container; do not turn a form or detail page into a register |
+
+For each actual page: use UbViewportPageShell + UbDataGrid fillHeight where it
+fits; keep existing paging APIs. Inspect custom/load-more/infinite lists first:
+a pinned auto-load sentinel must not fetch every page merely because it stays
+visible. Do not invent totals, pagination endpoints or new Library/Lending
+workflows. Preserve current filters, context fences, financial facts and access.
+Measure document height, rows-only scrolling, unchanged pager position, real
+button hit-testing with toasts, short height and reference32px chip faces with
+44px mobile targets. Run the standing gates/LOOK/performance/report loop per
+verified group. An unchecked row remains pending, never implied complete.
+
+
+## R-DEC-32 · Functional value, competition and requirement coverage
+
+For each piece, put the following in its existing evidence report before
+claiming completion. Reuse this structure rather than starting another plan.
+
+| Required question | Evidence to record |
+|---|---|
+| Who needs this and why? | Role, business task, necessity and placement rationale |
+| Does it work end to end? | Actual local UI/API/persisted readback, business effects and recovery |
+| Does it make the user's work better? | Fewer steps/errors, clearer decisions; distinguish measured from assumed benefit |
+| Is it feasible and maintainable? | Existing engines/components, data availability, performance/cost and boundaries |
+| How does it compare? | Same task against relevant competitors; dated verified sources/observations; better/equal/worse and trade-offs |
+| Are necessary requirements fulfilled? | Requirement → implementation → test/journey → passed/missing/deferred/unproven |
+
+Research not yet performed is unproven. Requirements not implemented are not
+passed. Preserve critical correctness/access/data-recovery gates independently
+of ratings. Competition does not justify unnecessary features or copying another
+product's appearance. No claim here that all modules have met these gates.
+
+
+### R-DEC-33 amendment ·22Oct2026
+
+Earlier mobile manual/arrow-pager matrix acceptance is superseded. Existing desktop verification remains; Customers/Suppliers/Bills/Purchases mobile follow-up is pending. Phone acceptance: joined cards, scroll-next with accessible fallback, one list-search field and compact global search icon. Measure header height, card-area share, offset preservation, no eager fetch-all, duplicate IDs, failed-append retry and filter/context reset. Desktop remains a table with reachable pagination. This is not a whole-module completion claim.
+
+
+### Sales-document lists · 23 Oct 2026 (R-DEC-33, R-DEC-34)
+
+| Requirement | Evidence | Status |
+|---|---|---|
+| Phone joined cards, no table/pager/FAB | mobile-sales-contract, 4 kinds × 320/390 × 2 themes | passed |
+| Scroll-next, no eager page 2 | same | passed |
+| Failed append keeps cards, 44 px retry, keeps scroll | same, real page-2 count | passed |
+| New query resets | same | passed |
+| One list search, 44 px global icon, active chip visible | same | passed |
+| Cards ≥ 60% of a normal phone | 62.0% at 844 px | passed |
+| Desktop table + visible pager | 1024/1280 | passed |
+| No cut text/contrast/overflow EN/HI light/dark | revamp-bills, 4 kinds | passed |
+| 1024 header density | rows 45% of viewport | weak, recorded |
+| Phone nav speed vs 477916b | +50 ms median at 4x CPU | regression, unprofiled |
+| Competitor comparison | none this session | unproven |
+
+### Bills register on a phone · 23 Oct 2026 (R-DEC-33, R-DEC-34)
+
+| Requirement | Evidence | Status |
+|---|---|---|
+| Phone joined cards, scroll-next, no pager/FAB | mobile-sales-contract invoices, 390/320 × 2 themes | passed |
+| Failed append keeps cards, retry 44 px, keeps scroll; new query resets | same | passed |
+| Cards ≥ 60% of phone | 390: 62.0%; 320: 58.5% with crore totals | weak at 320 |
+| 1024 long numbers whole | revamp-bills invoice 1024 light/dark | passed |
+| EN/HI, light/dark, all states | revamp-bills invoice | passed |
+| Phone open speed vs 7b27948 | −200 ms median at 4x CPU, both rounds (n=6) | passed, small sample |
+| Competitor comparison | none this session | unproven |
+
+### Purchase registers on a phone · 23 Oct 2026 (R-DEC-33, R-DEC-34)
+
+| Requirement | Evidence | Status |
+|---|---|---|
+| Phone joined cards, scroll-next, no pager | contract purchase-bills/orders/debit-notes 390/320 × 2 themes, EN and HI | passed |
+| Failed append keeps cards; new query resets | same, plus slice/page tests | passed |
+| Cards ≥ 60% of phone | 47.0% before → 64.6% (390), 61.5% (320) | passed |
+| Debit note card wording | LOOK: "to pay" → "open credit" | fixed |
+| Speed vs 5714a94 | phone −58 ms; desktop 4x CPU +75/+129 ms, unexplained | open |
+| Competitor comparison | none this session | unproven |
+
+### Purchase detail §6 · 23 Oct 2026 (R-DEC-34)
+
+| Requirement | Evidence | Status |
+|---|---|---|
+| Money first, Pay supplier, chooser, links, lines | e2e/purchase-detail.mjs 390/320/1280 EN/HI | passed |
+| Pay, refused void, void→advance, order→bill, delete draft | same, read back from the local API | passed |
+| Archived supplier refusal | unit test only | partial |
+| Speed vs 216d456 | phone −93 ms both rounds; desktop mixed | passed, small sample |
+| Competitor comparison | none | unproven |
+
+### Items list on a phone · 24 Oct 2026 (R-DEC-33, R-DEC-34)
+
+| Requirement | Evidence | Status |
+|---|---|---|
+| Joined cards, chips, no pager/FAB, page fits | contract items 390/320/1280 × 2 themes, EN and HI | passed |
+| Low chip, open item, code + Enter, unknown code | e2e/items-phone.mjs 6/6 | passed |
+| Desktop pager in reach | contract 1280 | passed (regression fixed) |
+| Speed vs 925b2b3 | 4x CPU list open slower, round 1 heavy | open |
+| Competitor comparison | none | unproven |
+
+### Item detail · 24 Oct 2026 (09 §8.2, R-DEC-34)
+
+| Requirement | Evidence | Status |
+|---|---|---|
+| Phone order, no cut text, 44 px actions, EN and HI | e2e/item-detail.mjs at 390/320/1280 × goods/service/archived | passed |
+| Adjust stock from the page; server on-hand and the page agree | e2e/item-detail.mjs journey | passed |
+| ⋯ → Edit opens its drawer (17 Oct capture-phase defect) | e2e/item-detail.mjs journey | passed |
+| Margin permission-gated; below cost in words | ItemDetailPageContent.test.tsx | passed |
+| A tab failing alone offers Try again | ItemDetailPageContent.test.tsx | passed (was a defect) |
+| Rows name and link their bill | needs BP-19, not on dev | awaiting approval |
+| Several stock locations | QA tenant has one | unproven |
+| Offline state | code path only | unproven |
+| Speed vs 0dea7c1 | page open 933 → 904 ms at 4x CPU | unchanged |
+| Competitor comparison | none | unproven |
+
+### Item form · 24 Oct 2026 (09 §8.3, R-DEC-34)
+
+| Requirement | Evidence | Status |
+|---|---|---|
+| Fast path order; Includes GST beside the price | e2e/item-form.mjs; ItemPriceFields.test.tsx | passed |
+| Cost and margin, Category folded; no cost fold without permission | e2e/item-form.mjs; ItemPriceFields.test.tsx | passed |
+| Margin from cost; 100% refused in words | e2e/item-form.mjs | passed |
+| Used barcode links to its item | e2e/item-form.mjs | passed |
+| Leave without saving on a dirty Cancel | e2e/item-form.mjs | passed (new) |
+| Save creates the item on the server | e2e/item-form.mjs read-back | passed |
+| No sideways scroll or cut text, Save target ≥ 44 px, EN and HI | e2e/item-form.mjs at 390/320/1280 | passed |
+| Drawer-open speed | no harness | unproven |
+| Competitor comparison | none | unproven |
+
+### Stock adjustment · 24 Oct 2026 (09 §8.4, R-DEC-34)
+
+| Requirement | Evidence | Status |
+|---|---|---|
+| Reason chips; Counted makes lines Set to, a loss makes them Remove | StockAdjustmentDrawer.test.tsx; e2e/stock-adjust.mjs | passed |
+| Add / Remove / Set to, no typed sign; server on-hand matches | e2e/stock-adjust.mjs (17, then 20) | passed |
+| Value only with cost permission; units otherwise | StockAdjustmentDrawer.test.tsx | passed |
+| Saved → snackbar View → the adjustment | unit test; e2e/stock-adjust.mjs | passed (new) |
+| 409 short line says what is available, nothing posted | e2e/stock-adjust.mjs | passed |
+| Offline: Save disabled with a reason | e2e/stock-adjust.mjs | passed (new) |
+| No sideways scroll or cut text; chips 32 px with ≥ 44 px target | e2e/stock-adjust.mjs at 390/320/1280 × EN/HI | passed |
+| Desktop drawer shows the line table | e2e/stock-adjust.mjs (900 px, table layout) | passed (decided 24 Oct: 900 px, not 640) |
+| After announced to a screen reader | aria-live only | unproven |
+| Speed vs dcaddbc | drawer open 738 → 680 ms phone, 715 → 665 desktop, 4x CPU | unchanged (within noise) |
+| Competitor comparison | none | unproven |
+
+### Low stock and Stock summary · 24 Oct 2026 (09 §8.7, R-DEC-34)
+
+| Requirement | Evidence | Status |
+|---|---|---|
+| Low card in words: "3 NOS left · reorder at 10 NOS", Purchase price with permission | e2e/stock-reports.mjs; inventoryViewModel.test.ts | passed |
+| Order opens a new purchase order with the item and the suggested quantity | e2e/stock-reports.mjs (17 = 10 × 2 − 3) | passed (new) |
+| That order saves: server holds a draft with the item and 17 | e2e/stock-reports.mjs read-back by id | passed (new) |
+| Order selected opens ONE order with every selected item | e2e/stock-reports.mjs at 1280 | passed (no supplier split: recorded) |
+| `?items=` survives a malformed or zero pair | routes.test.ts | passed |
+| Summary: Adjust stock in the header; no SKU/category line on a card | e2e/stock-reports.mjs | passed |
+| Stock off: both pages say so; Settings link only for Settings readers | StockSummaryPageContent.test.tsx | passed (unit); not switched off live |
+| "Nothing is low" | words only | unproven live |
+| No sideways scroll, no cut text, no button cut by the table frame, Order ≥ 44 px | e2e/stock-reports.mjs at 390/320/1280 × EN/HI | passed |
+| Speed vs dcaddbc | Low stock open, 4x CPU | 1,073 → 1,104 ms phone, 746 → 761 desktop; within noise |
+| Competitor comparison | none | unproven |
+
+### Categories and units · 24 Oct 2026 (09 §8.5, R-DEC-34)
+
+| Requirement | Evidence | Status |
+|---|---|---|
+| Find → add: no match offers to add, dialog opens with the text | InventoryMastersPageContent.test.tsx; e2e/masters.mjs read-back | passed (new) |
+| "Already exists" for a category (per parent) and a unit code, before sending | unit tests; e2e/masters.mjs (server still holds one) | passed (new) |
+| Double tap on Add makes one row | e2e/masters.mjs, two clicks in one task | passed |
+| Standard units first, locked, read as "Standard unit, can't be changed" | unit test; e2e/masters.mjs EN/HI | passed |
+| Phone chips 32 px face, 44 px target; desktop panels side by side | e2e/masters.mjs at 390/320/1280 | passed |
+| No sideways scroll or cut text, including a 60-character search at 320 | e2e/masters.mjs | passed |
+| Speed vs dcaddbc | page open 988 → 1,067 ms phone, 1,013 → 1,088 desktop, 4x CPU | slower (recorded) |
+| Competitor comparison | none | unproven |
+
+### Price lists · 24 Oct 2026 (09 §8.6, R-DEC-34)
+
+| Requirement | Evidence | Status |
+|---|---|---|
+| List: name · rule · customers on a phone, a table on a desktop with row links | PriceLists.test.tsx; e2e/price-lists.mjs | passed |
+| Detail: rule card with Edit, then Pin a rate, then pinned rates (usual price beside the list rate) | unit tests; e2e/price-lists.mjs reads -10% back | passed |
+| Pin, change by tapping the row, remove; the server holds one pin, then none | e2e/price-lists.mjs | passed |
+| A customer on the list gets the pinned rate and the rule's rate on other items | e2e/price-lists.mjs reads /price-lists/for-party | passed |
+| Read only without write permission | unit test | passed |
+| No sideways scroll or cut text, targets ≥ 44 px, at 390/320/1280 × EN/HI | e2e/price-lists.mjs | passed |
+| Desktop tables no longer wait 300 ms behind the skeleton (shared grid) | paint trace and A/B in data/2026-10-24-price-lists/ | passed (price lists measured only) |
+| Speed vs dcaddbc | 4x CPU: phone list 1,004 → 939 ms, phone detail 1,042 → 1,188, desktop list 978 → 975, desktop detail 1,175 → 1,131 | phone detail slower (recorded) |
+| Bill lines start from the list's rate | unchanged bill editor | kept, not re-run |
+| Competitor comparison | none | unproven |
+
+### Payments register · 24 Oct 2026 (08 §9, R-DEC-34)
+
+| Requirement | Evidence | Status |
+|---|---|---|
+| Shop money only (C-3: Library fees and Lending money were listed) | PaymentsPageContent.test.tsx; e2e/payments-register.mjs asserts `bucket=shop` on every request | passed (fixed) |
+| Received and Paid out figures equal the server's Shop totals | e2e/payments-register.mjs | passed |
+| Phone joins the next page; desktop pages; page itself never scrolls | page test; e2e at 390/320/1024/1280 | passed |
+| Cancelled chip asks for cancelled Shop payments; each card says Cancelled | e2e (records and cancels a ₹1 QA receipt) | passed |
+| Receipt number search finds it; card and row open the receipt | e2e | passed |
+| No clipped, split or cut text, chips 32/44 px, EN/HI | e2e (now measures text against its clipping box) | passed |
+| Money in green, money out plain ink | page test | passed (fixed) |
+| Speed vs dcaddbc | 4x CPU, n=24: phone 1,218 → 1,248 ms, desktop 918 → 1,028 | desktop slower (recorded) |
+| Stale, offline, no-permission states | unchanged, not re-run | not re-proven |
+| Competitor comparison | none | unproven |
+
+### Receive payment drawer · 24 Oct 2026 (08 §6, §0.2, R-DEC-34)
+
+| Requirement | Evidence | Status |
+|---|---|---|
+| Header owes figure, unpaid-bill count, "will still be due" under the amount | PaymentFormDrawer.test.tsx; e2e/receive-payment.mjs at 390/320/1024/1280 EN/HI | passed (fixed: the line sat under Paid by) |
+| Each bill's share ("clears it" / "₹X left") and the advance as a row before saving | drawer test; e2e | passed |
+| Over-allocation named with both figures beside the held Save | drawer test; e2e | passed (fixed: it was below the fold) |
+| Bills unread: Save allowed with Auto, footer says how; one-bill payments still wait | drawer tests; e2e (503 on the bill list) | passed |
+| Slow save, refused save, lost save: Still working, red banner, Try again on the SAME key | drawer tests; e2e compares the Idempotency-Key header across tries | passed |
+| Changed on another device: found on focus, Save held, Use the new figures | drawer test; e2e (a ₹1 receipt from the API while the drawer is open) | passed (fixed: banner squeezed at 390) |
+| Double tap posts once; saved panel says it once; Share asks once; message names no product | e2e real ₹1 receipt, read back from the server | passed |
+| Speed vs dcaddbc | 4x CPU, n=24: phone 961 → 985 ms, desktop 737 → 751 ms | level |
+| Offline, expired session, Ctrl ↵, 20+ bills | unchanged or no QA data | not re-proven |
+| Competitor comparison | none | unproven |
+
+### Payment receipt · 24 Oct 2026 (08 §10, §10.1, §10.2, R-DEC-34)
+
+| Requirement | Evidence | Status |
+|---|---|---|
+| Amount, mode lines and settled bills with what is still due now equal the server's | PaymentReceiptPageContent.test.tsx; e2e/payment-receipt.mjs records a ₹2 split receipt against an open bill | passed |
+| Share · Print · ⋯ docked above the phone menu, 44 px, nothing on top of them | e2e at 390/320 EN/HI (asks what is under each button's centre) | passed (fixed: the dock was under the menu) |
+| Header actions and panel-left / print-right on a desktop | e2e at 1024/1280 | passed (side by side from 1280) |
+| Cancel receipt: consequences in Shop words, quick reasons, Keep receipt keeps it, cancel reaches the server and the bill's due returns | e2e (cancels the receipt it recorded) | passed |
+| Snackbar after a cancel clears the dock | e2e centre check | passed (fixed) |
+| Double tap on Share sends one request; message and print never name the product | e2e | passed |
+| Receipt and bill numbers never split; the preview keeps A5 width | e2e incl. `emulateMedia print` | passed (fixed) |
+| Offline: Share held back, Print works, Cancel not offered | page test; e2e with the browser offline | passed |
+| Speed vs dcaddbc | 4x CPU, n=24: phone 1,716 → 1,750 ms, desktop 1,657 → 1,780 | desktop slower (recorded) |
+| Loading, not found, no permission, `?print=1`, share-text failure | unchanged, not re-run | not re-proven |
+| Competitor comparison | none | unproven |
+
+### Expenses · 24 Oct 2026 (08 §12, §12.1, §12.2, R-DEC-34)
+
+| Requirement | Evidence | Status |
+|---|---|---|
+| The Shop's page lists the Shop's expenses | ExpensesPageContent.test.tsx; e2e/expenses-register.mjs asserts `app=shop` on every request | passed |
+| Total and count equal the server's; top 3 categories on one line | page test; e2e at 390/320/1024/1280 EN/HI | passed (fixed: wrapped to 2–3 lines on phones) |
+| Phone joins the next page; desktop pages; page itself never scrolls | page test; e2e | passed |
+| All · Unpaid · Cancelled chips, 32 px faces and 44 px targets | e2e measures faces and targets | passed |
+| Add: caret in Amount, nothing red until Save, one-tap category, "Saved ₹1.00 · cat · EXP/…" | ExpenseFormDrawer.test.tsx; e2e | passed (fixed) |
+| Save and add another: one expense per double tap, caret back in Amount | drawer test (fails without the guard); e2e counts requests and rows | passed (fixed: caret never came back) |
+| Unpaid expense moves the supplier's Shop balance by exactly the amount, and cancelling puts it back | e2e reads `shop_balance` before and after | passed |
+| Cancel expense: consequence in Shop words, quick reasons, Keep, caret in the reason, badge swaps in place | VoidExpenseDialog.test.tsx; e2e | passed |
+| Speed vs dcaddbc | 4x CPU, n=24: phone 1,336 → 1,357 ms, desktop 975 → 1,060 | desktop slower (recorded) |
+| Error, stale, offline queue | unchanged, not re-run | not re-proven |
+| Competitor comparison | none | unproven |
+
+### Cash book · 24 Oct 2026 (08 §11, R-DEC-34)
+
+| Requirement | Evidence | Status |
+|---|---|---|
+| The four figures equal the server's, for Both and for Cash | e2e/cashbook.mjs reads `GET /cashbook` with the screen's own query | passed |
+| 2 × 2 on a phone, one line of four from 1024; nothing cut, no split amounts, at 390/320/1024/1280 EN/HI | e2e | passed (fixed: minus split at 320) |
+| Cash · Bank · Both chips 32 px with 44 px targets | e2e | passed (fixed: clipped in the period row) |
+| Close the day: Short → expense drawer with the shortfall in cash; closed unsaved → next Add expense empty | CashbookPageContent.test.tsx; e2e | passed |
+| Close the day: Extra ₹1 → Receive with ₹1 cash; real receipt moves expected cash +₹1 on the server; same count reads Matches | page test (fails without the re-read); e2e | passed (fixed: the screen never re-read) |
+| Payment row opens its receipt; expense row its detail sheet; khata line not a button | page test; e2e | passed |
+| Hindi weekday in the day header | e2e | passed (fixed) |
+| Speed vs dcaddbc | 4x CPU, n=24: phone 1,533 → 1,497 ms, desktop 1,637 → 1,606 | level |
+| Partial source failure | server has no per-source failure | not supported |
+| Offline cached, error state | unchanged, not re-run | not re-proven |
+| Competitor comparison | none | unproven |
+
+### Reports hub · 24 Oct 2026 (09 §10.1, R-DEC-34)
+
+| Requirement | Evidence | Status |
+|---|---|---|
+| Groups and question titles with the report name under each, EN/HI | ReportPageShell.test.tsx; e2e/reports-hub.mjs at 390/320/1024/1280 | passed |
+| One column on a phone, two on a desktop; rows 44 px+ and tappable at the edge | e2e | passed |
+| Every row opens a real screen; role gates unchanged | e2e; page tests | passed |
+| Speed | no request; copy and columns only | not measured |
+| Competitor comparison | none | unproven |
+
+### Home 3 of 3 · customer–supplier settlement · 25 Oct 2026 (BP-08, R-DEC-26, R-DEC-34)
+
+| Requirement | Evidence | Status |
+|---|---|---|
+| Lists are never netted; only an explicit step settles | role selectors unchanged; Home note and dialog only | passed |
+| Atomic, audited, idempotent non-cash settlement through existing allocation rules | test_shop_settlement.py (two adjustment payments, FIFO on invoices and bills, audit before/after, idempotent replay) | passed |
+| Smaller balance prefilled and capped; over, zero, negative refused | settlementFacts.test.ts; dialog test; server 409 `settlement_over_balance`; e2e | passed |
+| Balances moved on another device: refused with the new figures | server 409 `settlement_balances_changed` with details; dialog swaps figures; e2e | passed |
+| Two devices at once settle no more than the smaller | threaded concurrency test under row locks | passed |
+| Double tap / retry settles once | idempotency replay test; e2e double tap (one settlement) | passed |
+| Customer-only, archived, other business, module off, no permission | tests (`settlement_not_dual_role`, `party_archived`, 404, 403) ; e2e customer-only not offered | passed |
+| Both role balances move by the amount; lists and person page agree | e2e server read-back via `/parties/{id}?book=shop` and To collect / To pay | passed |
+| No cash: received today, period received and Shop cash unchanged | dashboard selectors exclude adjustment; e2e before/after | passed |
+| Cancel either half cancels both and restores both balances | void pairing tests; e2e through Cancel receipt, both voided, balances back | passed |
+| Receipt and lists say "Settled, no cash"; cancel dialog names the other half | paymentDisplay tests; e2e | passed |
+| Message signed only by the shop | backend test; e2e reads the message | passed |
+| 44 px, no cut text, no broken figure, EN/HI 320–1280 (Home note, dialog) | e2e/settlement.mjs 83/83 | passed |
+| Customers/Suppliers row "Settle…" | ShopCustomerRowActions.test.tsx; e2e | passed |
+| Dialog names the bills settled, in the server's order | backend test; dialog test; e2e | passed |
+| Shop form and filter no longer use the Udhaar collection date | PartyFormDrawer.test.tsx | passed |
+| Bill "Something's wrong" entry | — | not built (deviation) |
+| Day book still lists the two halves as payments with no cash | — | open (deviation) |
+| Competitor comparison | documented behaviour of Sage 200, Zoho Books, ERPNext, Khatabook, Vyapar (report) | done from documentation; not hands-on |
+
+### Home 2 of 3 · Shop promises · 25 Oct 2026 (BP-16, R-DEC-26, R-DEC-34)
+
+| Requirement | Evidence | Status |
+|---|---|---|
+| Own Shop record per contact and role; not Party.collection_date, not Udhaar | test_shop_promises.py (Udhaar date untouched; both roles) | passed |
+| Record, change, keep, cancel; no bill, due date, payment or balance moves | test_shop_promises.py; e2e reads Home's figures before and after | passed |
+| One open promise per contact and role, also under a race | partial unique index; test (409 `promise_already_open`) | passed |
+| Concurrent edit from an old screen is refused, the screen reloads | test (stale_version); ShopPromiseControl.test.tsx | passed |
+| Retry or double tap records one promise / one close | idempotency replay test; control test (same key, one call); e2e double taps | passed |
+| Past date refused; late counted on the business's clock | tests (past date, late by tenant today); schema test | passed |
+| Home and the person page read the same source; Home shows today's balance | open_promises selector test (3100.00, 42 days); e2e against /parties/{id}?book=shop | passed |
+| No Remind or Pay once nothing is due (partial/full payment before reminder) | HomePromises.test.tsx | passed (unit; not reproduced live) |
+| Internal note on no customer-facing surface | e2e: not on Home, not in the reminder message | passed |
+| Counter staff write, accountant reads only, deny-override, other business | test_shop_promises.py | passed |
+| Archived contact takes no new promise | test | passed |
+| Data export and deletion | tenant_data registry (`shop_promises.csv`); registry test | passed |
+| Audit history with before and after | test | passed |
+| 44 px targets, no cut text, no broken figure, EN/HI 320–1280 | e2e/shop-promises.mjs 70/70 | passed (tap areas short at first; fixed) |
+| Automatic close on payment | — | not built (deviation) |
+| Shop form field and list filter still read the Udhaar date | PartyFormDrawer, ShopPartyFilterDrawer | open (deviation) |
+| Notification recipients | no notification is sent for a promise | not applicable |
+| Competitor comparison | none | unproven |
+
+### Home 1 of 3 · cash count · 25 Oct 2026 (BP-17, R-DEC-26, R-DEC-34)
+
+| Requirement | Evidence | Status |
+|---|---|---|
+| Append-only count: actor, time, counted, server's expected figure, difference | test_cash_count.py (model, trigger, audit) | passed |
+| Expected figure is the server's at the save, never the browser's | test_cash_count.py; CashCountDrawer.test.tsx; e2e/cash-count.mjs | passed |
+| A count posts nothing; the records' figure is unchanged after it | test_cash_count.py; e2e reads the dashboard before and after | passed |
+| Retry or double tap records one count | test_cash_count.py (idempotent replay); drawer test (same key); e2e double tap | passed |
+| Only a reader of the Shop's cash; other businesses see none | test_cash_count.py (staff 403, replay refused, tenant) | passed |
+| Home: when it was counted and how it compared, "Not counted · Count cash" | DashboardPageContent.test.tsx; e2e EN/HI 320–1280 | passed |
+| Later cash activity distinguished from the snapshot | `moved_since` on the newest count; drawer test | passed |
+| Negative records figure, zero count | backend tests; live QA book is negative | passed |
+| Counts in the data export; deletion removes them through the trigger | test_tenant_data.py | passed |
+| Offline: no count against a stale figure | drawer test | passed |
+| 44 px target, no cut text, no broken figure, EN/HI 320–1280 | e2e measuring checks | passed (broken minus on desktop fixed) |
+| Split cash/UPI, backdated records, cancellations | the records' figure is the existing cash book's `money_position`, unchanged | kept, not re-tested here |
+| Competitor comparison | none | unproven |
+
+### Old dues · 24 Oct 2026 (09 §10.7, R-DEC-34)
+
+| Requirement | Evidence | Status |
+|---|---|---|
+| Customers owe you / You owe suppliers, separate, with the server's totals | AgingPageContent.test.tsx; e2e/old-dues.mjs | passed |
+| Age bars carry the server's buckets, with a table view | page test; e2e | passed |
+| Phone cards: name, oldest bucket in words (red past 90), total with its word | page tests; e2e at 390 | passed |
+| Row sheet: every bucket; Remind + Receive payment or Pay; only for roles that may | page tests; e2e opens each flow, saves nothing | passed |
+| Desktop table with a ⋯ per row opening the same sheet | page test; e2e at 1024/1280 | passed |
+| Settled Shop book says so in the Shop's words | page test | passed |
+| No sideways scroll, no cut text, EN/HI 320–1280, both sides | e2e measuring checks | passed (the second tab ran off the phone; fixed) |
+| Tap a bar to filter; oldest days | — | missing (server has neither) |
+| Udhaar book aging unchanged | page test | kept |
+| Competitor comparison | none | unproven |
+
+### Profit · 24 Oct 2026 (09 §10.6, R-DEC-34)
+
+| Requirement | Evidence | Status |
+|---|---|---|
+| Sales, Cost, Profit/Loss, Margin equal the server's; loss in words | ProfitReportPageContent.test.tsx; e2e/profit.mjs | passed |
+| Phone cards: one per server row, Sold and Profit/Loss the server's | e2e at 390 | passed |
+| Row sheet figures; Open reaches the item | page tests; e2e | passed |
+| Desktop table, no cards | e2e at 1024/1280 | passed |
+| No sideways scroll, no cut text, item and bill, EN/HI 320–1280 | e2e measuring checks | passed (a long item name was clamped; fixed) |
+| By day; link to fix costs; Print | — | missing (server / decision / no report has Print) |
+| Speed | pfab.sh, n = 24 | phone level, desktop −21.7% (cause not traced) |
+| Competitor comparison | none | unproven |
+
+### GST summary · 24 Oct 2026 (09 §10.5, R-DEC-34)
+
+| Requirement | Evidence | Status |
+|---|---|---|
+| Net to pay first; four figures equal the server's | GstSummaryPageContent.test.tsx; e2e/gst-summary.mjs | passed |
+| Phone section rows as cards with taxable and GST; 3B as a stacked list | page tests; e2e at 320/360/390 EN/HI | passed |
+| Desktop tables and the official 3B grid, last columns reachable | e2e at 1024/1280 | passed |
+| JSON labelled; disabled for an open month; downloads for a closed one | page tests; e2e | passed |
+| No sideways scroll, no cut text in all three views, EN/HI | e2e measuring checks | passed (3B titles were cut at 320/360; fixed) |
+| Print | — | missing (no report has it) |
+| Speed | gsab.sh, n = 24 | level |
+| Competitor comparison | none | unproven |
+
+### Sales and Purchase registers · 24 Oct 2026 (09 §10.3/§10.4, R-DEC-34)
+
+| Requirement | Evidence | Status |
+|---|---|---|
+| Figure line equals the server's Bills · Taxable · GST · Total, both books | RegisterPages.test.tsx; e2e/registers.mjs | passed |
+| Phone cards under date bands, each band's total recomputed from the server's live bills | page tests; e2e at 390 | passed |
+| By item cards titled by the server's item names | page test; e2e both books | passed |
+| Row sheet with the tax breakup and Open to the bill | page tests; e2e both books | passed |
+| No sideways scroll, no cut text, no broken number at 320–1280 EN/HI; desktop last column reachable | e2e measuring checks | passed (desktop hid Total/Due; fixed in UbDataGridTable) |
+| Totals as `dl`; Print | — | not met; missing |
+| Speed | rgab.sh, n = 24 | phone level to slightly faster; desktop median −20.6%, cause not traced |
+| Competitor comparison | none | unproven |
+
+### Day book · 24 Oct 2026 (09 §10.2, R-DEC-34)
+
+| Requirement | Evidence | Status |
+|---|---|---|
+| Figure line equals the server's four figures; two without the drawer permission | DayBookPageContent.test.tsx; e2e/day-book.mjs | passed |
+| Date bands with each day's in/out, recomputed from the server's rows | page test; e2e | passed |
+| Phone cards of three things, 44 px+, no running cash; row sheet with every column and Open | page tests; e2e at 320/360/390 EN/HI | passed |
+| No sideways scroll, no cut text, no broken number or figure at 320–1280 EN/HI | e2e measuring checks | passed (desktop table was cutting every figure; fixed) |
+| Shop book only (DEC-019): a Udhaar-book cash entry is not in the Shop's day book | e2e, live, then reversed | passed |
+| Print | — | missing (not built for any report) |
+| Speed | dbab.sh, n = 24 | phone level to slightly faster, desktop level |
+| Competitor comparison | none | unproven |
+
+
+## Udhaar people checkpoint ·25Oct2026
+
+R-DEC-35–40: avatar/full name/directional balance row with chevron; phone title
+hidden, choices inside Filters, worded floating Add; quick Add uses existing
+opening balance and shared phone contacts. Current full frontend437 suites /
+4,848tests green; earlier one billing timeout is retained in the dated report.
+Parties backend group green; no Library/Lending application or API contract
+change. Browser38frames pass own-box, contrast, page width, append and phone
+contact prefill (simulated OS picker). Quiet old/new/old/new navigation recorded.
+Mandatory journey results: ledger54/54, statement24/24, credit19/19, tags13/13,
+people30/30, write-off11/11; Old dues52/54 and wave1 reminder/expense omnibus are not green.
+Do not call this a whole-Udhaar release. Details, ratings and unresolved
+ownership/legacy journey gaps: performance/2026-10-25-udhaar-people.md.
+BP-21 is approved next, after the current UI checkpoint is committed/pushed.
+
+Udhaar person25Oct2026 (R-DEC-42–44): no backend changes.32 measured final
+EN/HI frames cover overview, direct editable reminder, full long name and large
+money at390/320/1024/1280. All pass width/text/contrast/global-search absence/
+icon alignment. History internal scroll is computed. Full suite439/4,858 passed
+before final owner icon/search follow-up; final106focused tests and production
+checks green, final full rerun pending completion. Mixed quiet A/B: phone
+687→618ms throttled, desktop796→916ms; desktop score remains below8.5.
+
+Personal Udhaar core final25Oct2026, R-DEC-45/46: canonical evidence is
+../performance/2026-10-25-personal-udhaar-core.md.440suites/4,865frontendtests;
+443ledger/contracts tests pass,4skipped. All standard production gates green;
+70measured EN/HIframes,21real-local-QAchecks including3fast taps→1write and
+SMS/WhatsApp editable text pass. Quiet old/new/old/new final personal page
+phone633→426ms anddesktop920.5→428ms throttle,n=6each. Old business prototype
+ratings/results are superseded. No Shop feature changes; no physical-device,
+OS contact-permission or independently private per-user book certification.
+
+## 25 October: R-DEC-48 personal book boundary
+
+`apps/parties/tests/test_personal_book.py` covers business-contact exclusion,
+owner/staff isolation with duplicate phones, direct record/history/statement/
+reminder access, business switching, book parameter refusal, non-switchable
+private storage, optional-note entries, retry idempotency and server balances.
+The legacy business API remains intact; this is not an all-API privacy
+certificate. Additive migration only; existing shared records remain unchanged.
+Browser harnesses: `personal-udhaar-journey.mjs`, `revamp-private-udhaar.mjs`,
+`revamp-udhaar-person.mjs`. Report: performance/2026-10-25-private-udhaar-fix.md.

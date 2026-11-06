@@ -38,6 +38,14 @@ This is a deliberate departure from FRD EC-2, which accepts an over-credited
 archived party as the outcome of that race; with the lock and the pin, the race
 cannot produce one.
 
+── The udhaar book's own figure, never another app's (R23, DEC-019) ─────────
+The amount defaults to, and is capped at, `balance`: what the party owes in the
+udhaar book. A loan is forgiven only through lending's own write-off, a bill
+only by the Shop's credit note, so one tap here can never forgive either; they
+are not in `balance` at all. With one of them still owed, the archive that
+follows is refused by that app's own guard (`APP_BALANCE_GUARDS`). A party
+with nothing in the udhaar book has nothing for this write-off to do.
+
 ── What is deliberately not here ────────────────────────────────────────────
 The credit-limit check (PTY-06 BR-7 / FRD EC-14): a write-off only ever moves
 the balance TO zero, so it cannot take a party past any limit, and the block
@@ -66,7 +74,7 @@ from apps.ledger.services.entries import (
     _parse_date,
     validate_entry_payload,
 )
-from apps.parties.services.balance import apply_entry
+from apps.parties.services.balance import apply_entry, trade_balance
 
 #: The key every field error is nested under, so the client finds it where FRD
 #: §10 says it is — `details.write_off.reason`, `details.write_off.entry_date`.
@@ -136,11 +144,12 @@ def write_off_party_balance(*, ctx: Ctx, party: Any, request: dict) -> dict:
     """
     cleaned = _clean_request(ctx=ctx, party=party, request=request)
 
-    balance = party.balance or ZERO
+    # R23 — the trade figure, not the whole balance (the module docstring says why).
+    balance = trade_balance(party)
     if balance == ZERO:
         raise BusinessRuleViolation(
             "nothing_to_write_off",
-            "This party's balance is already zero — there is nothing to write off.",
+            "This contact's balance is already zero — there is nothing to write off.",
             details={"balance": str(balance)},
         )
 

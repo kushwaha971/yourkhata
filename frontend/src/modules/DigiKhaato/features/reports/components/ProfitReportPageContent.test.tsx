@@ -1,0 +1,273 @@
+import type * as ReactModule from 'react';
+
+import { screen, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+
+import { resetAllFeatureState } from 'src/redux/actions';
+import { sessionLoaded } from 'src/redux/slice/sessionSlice';
+import { store } from 'src/redux/store';
+import { renderWithProviders } from 'src/tests/renderWithProviders';
+import type { ModuleCode, PermissionCode } from 'src/types/domain.types';
+
+import { ProfitReportPageContent } from './ProfitReportPageContent';
+
+import type {
+  ProfitFilters,
+  ProfitPage,
+  ProfitRow,
+  ProfitTotals,
+} from '../types/profitReport.types';
+
+/**
+ * Shop item 1 on screen: content → hook → thunk → service, the service stubbed
+ * at the module boundary. What is asserted: the P&L is the SERVER's over the
+ * whole period (not the page's sum), a loss is a word and not only a colour,
+ * switching the view is a request asked, the lines with no cost are owned up
+ * to, and a member without the financial read is told so and nothing is fetched.
+ */
+jest.mock('../api/profitReportService');
+
+const mockReplace = jest.fn();
+const mockPush = jest.fn();
+let mockSearch = '';
+const mockUrlListeners = new Set<() => void>();
+jest.mock('next/navigation', () => {
+  const { useSyncExternalStore } = jest.requireActual<typeof ReactModule>('react');
+  const subscribe = (listener: () => void) => {
+    mockUrlListeners.add(listener);
+    return () => {
+      mockUrlListeners.delete(listener);
+    };
+  };
+  const read = () => mockSearch;
+  return {
+    useRouter: () => ({
+      push: mockPush,
+      replace: mockReplace,
+      back: jest.fn(),
+      prefetch: jest.fn(),
+    }),
+    useSearchParams: () => new URLSearchParams(useSyncExternalStore(subscribe, read, read)),
+    usePathname: () => '/reports/profit',
+  };
+});
+
+const service = jest.requireMock('../api/profitReportService') as {
+  getProfitReport: jest.Mock;
+};
+
+const row = (over: Partial<ProfitRow>): ProfitRow => ({
+  id: 'i1',
+  name: 'Rice 5 kg',
+  qty: '28.000',
+  unit: 'NOS',
+  date: null,
+  party: null,
+  bills: 3,
+  saleValue: '1400.00',
+  cost: '1120.00',
+  profit: '280.00',
+  marginPct: '20.0',
+  uncostedLines: 0,
+  ...over,
+});
+
+const TOTALS: ProfitTotals = {
+  bills: 12,
+  saleValue: '98765.00',
+  cost: '80000.00',
+  profit: '18765.00',
+  marginPct: '19.0',
+  uncostedLines: 2,
+  expenses: '25000.00',
+  netProfit: '-6235.00',
+};
+
+const page = (rows: readonly ProfitRow[], totals = TOTALS): ProfitPage => ({
+  rows,
+  totals,
+  page: 1,
+  pageSize: 50,
+  total: rows.length,
+});
+
+const signIn = (permissions: readonly PermissionCode[], modules: readonly ModuleCode[]): void => {
+  store.dispatch(
+    sessionLoaded({
+      user: {
+        id: 'u1',
+        name: 'Owner',
+        email: 'owner@shop.test',
+        mobile: null,
+        locale: 'en',
+        mustChangePassword: false,
+        passwordExpiresAt: null,
+      },
+      activeTenant: { id: 't1', name: 'Sharma General Store', timezone: 'Asia/Kolkata' },
+      tenants: [{ id: 't1', name: 'Sharma General Store', timezone: 'Asia/Kolkata' }],
+      permissions: [...permissions],
+      enabledModules: [...modules],
+      version: 1,
+    })
+  );
+};
+
+const lastAsked = (): ProfitFilters => {
+  const calls = service.getProfitReport.mock.calls as [ProfitFilters][];
+  const last = calls[calls.length - 1];
+  if (!last) throw new Error('no profit request was made');
+  return last[0];
+};
+
+const OWNER: PermissionCode[] = [
+  'reports.basic.read',
+  'sales.invoice.read',
+  'reports.financial.read',
+];
+const MODULES: ModuleCode[] = ['reports', 'sales'];
+
+beforeEach(() => {
+  jest.clearAllMocks();
+  mockSearch = '';
+  mockReplace.mockImplementation((url: string) => {
+    mockSearch = url.replace(/^\?/, '');
+    mockUrlListeners.forEach((listener) => listener());
+  });
+  store.dispatch(resetAllFeatureState());
+  service.getProfitReport.mockImplementation(async () =>
+    page([
+      row({}),
+      row({ id: 'i2', name: 'Mustard oil', profit: '-20.00', marginPct: '-11.1' }),
+      row({ id: null, name: null, profit: '0.00', marginPct: null, uncostedLines: 1 }),
+    ])
+  );
+});
+
+it('shows the period P&L from the server and says a net loss in words', async () => {
+  signIn(OWNER, MODULES);
+  renderWithProviders(<ProfitReportPageContent />);
+  // 09 §10.6: Sales · Cost · Profit · Margin, always in view.
+  const figures = await screen.findByTestId('profit-figures');
+  expect(screen.getByTestId('profit-figure-sales')).toHaveTextContent('₹98,765.00');
+  expect(screen.getByTestId('profit-figure-cost')).toHaveTextContent('₹80,000.00');
+  expect(screen.getByTestId('profit-figure-profit')).toHaveTextContent('₹18,765.00');
+  expect(screen.getByTestId('profit-figure-margin')).toHaveTextContent('19.0%');
+  expect(figures).toHaveTextContent('12 bills');
+  expect(screen.getByTestId('profit-basis')).toHaveTextContent(
+    'Cost is what each item cost when it was sold.'
+  );
+  // A loss is a word, and its figure is not also signed.
+  const after = screen.getByTestId('profit-after-expenses');
+  expect(after).toHaveTextContent('Loss after expenses');
+  expect(after).toHaveTextContent('₹6,235.00');
+  expect(after).not.toHaveTextContent('-₹6,235.00');
+  expect(screen.getByText('2 lines have no cost recorded')).toBeInTheDocument();
+  expect(lastAsked()).toMatchObject({ preset: 'thisMonth', group: 'item', ordering: '-profit' });
+});
+
+it('draws a card per row: name, what it covers, what sold, and the profit or loss in words', async () => {
+  signIn(OWNER, MODULES);
+  renderWithProviders(<ProfitReportPageContent />);
+  const cards = await screen.findAllByTestId('profit-row');
+  expect(cards).toHaveLength(3);
+  expect(cards[0]).toHaveAccessibleName('Open Rice 5 kg · Sold ₹1,400.00 · Profit ₹280.00');
+  expect(cards[0]).toHaveTextContent('28 NOS');
+  expect(cards[0]).toHaveTextContent('20.0% margin');
+  // A loss carries the word, never colour alone.
+  expect(cards[1]).toHaveAccessibleName('Open Mustard oil · Sold ₹1,400.00 · Loss ₹20.00');
+  // The catch-all row is named, and owns up to the line it could not cost.
+  expect(cards[2]).toHaveTextContent('Lines without an item');
+  expect(cards[2]).toHaveTextContent('1 line has no cost');
+  expect(screen.queryByRole('table')).not.toBeInTheDocument();
+});
+
+it('opens the whole row in a sheet, and the item from it', async () => {
+  signIn(OWNER, MODULES);
+  renderWithProviders(<ProfitReportPageContent />);
+  await userEvent.click(await screen.findByRole('button', { name: /^Open Mustard oil/ }));
+  const sheet = await screen.findByTestId('profit-row-sheet');
+  expect(sheet).toHaveTextContent('Quantity sold');
+  expect(sheet).toHaveTextContent('₹1,120.00');
+  expect(sheet).toHaveTextContent('Loss₹20.00');
+  expect(sheet).toHaveTextContent('-11.1%');
+  expect(screen.getByRole('link', { name: 'Open Mustard oil' })).toHaveAttribute(
+    'href',
+    '/items/i2'
+  );
+});
+
+it('asks the server again when the view changes to customers, and opens the khata', async () => {
+  signIn(OWNER, MODULES);
+  renderWithProviders(<ProfitReportPageContent />);
+  await screen.findAllByTestId('profit-row');
+  await userEvent.click(screen.getByRole('button', { name: /^View:/ }));
+  await userEvent.click(await screen.findByRole('option', { name: 'By customer' }));
+  await waitFor(() => expect(lastAsked().group).toBe('party'));
+  expect(mockSearch).toBe('by=party');
+  await userEvent.click(await screen.findByRole('button', { name: /^Open Rice 5 kg/ }));
+  expect(screen.getByRole('link', { name: 'Open Rice 5 kg' })).toHaveAttribute(
+    'href',
+    '/parties/i1'
+  );
+});
+
+it('tells a member without the financial read, and asks nothing', async () => {
+  signIn(['reports.basic.read', 'sales.invoice.read'], MODULES);
+  renderWithProviders(<ProfitReportPageContent />);
+  expect(await screen.findByText('Profit is for the owner and the accountant')).toBeInTheDocument();
+  expect(service.getProfitReport).not.toHaveBeenCalled();
+});
+
+/**
+ * Approved designs (12 Oct 2026): a business that has never billed sees ONE
+ * empty state — no period, "View: By item", search, Export or ₹0 P&L. A quiet
+ * month in a business that HAS billed keeps every control: moving the period
+ * is how the bills are found.
+ */
+const ZERO: ProfitTotals = {
+  bills: 0,
+  saleValue: '0.00',
+  cost: '0.00',
+  profit: '0.00',
+  marginPct: null,
+  uncostedLines: 0,
+  expenses: '0.00',
+  netProfit: '0.00',
+};
+const emptyPage = (hasAny: boolean | undefined): ProfitPage => ({
+  ...page([], ZERO),
+  ...(hasAny === undefined ? {} : { hasAny }),
+});
+const EXPORTING_OWNER: PermissionCode[] = [...OWNER, 'reports.export', 'sales.invoice.write'];
+
+it('reduces a business that has never billed to one empty state and a way to bill', async () => {
+  signIn(EXPORTING_OWNER, MODULES);
+  service.getProfitReport.mockImplementation(async () => emptyPage(false));
+  renderWithProviders(<ProfitReportPageContent />);
+  expect(await screen.findByText('Profit appears here once you make bills.')).toBeInTheDocument();
+  expect(screen.getByRole('link', { name: 'New bill' })).toHaveAttribute(
+    'href',
+    '/sales/invoices/new'
+  );
+  expect(screen.queryByRole('button', { name: /^View:/ })).not.toBeInTheDocument();
+  expect(screen.queryByRole('searchbox')).not.toBeInTheDocument();
+  expect(screen.queryByRole('button', { name: /Export/ })).not.toBeInTheDocument();
+  expect(screen.queryByText('This month')).not.toBeInTheDocument();
+  expect(screen.queryByText('₹0.00')).not.toBeInTheDocument();
+});
+
+it.each([
+  ['a quiet month in a business that has billed', true],
+  ['an older server that does not say', undefined],
+])('keeps every control for %s', async (_label, hasAny) => {
+  signIn(EXPORTING_OWNER, MODULES);
+  service.getProfitReport.mockImplementation(async () => emptyPage(hasAny));
+  renderWithProviders(<ProfitReportPageContent />);
+  expect(await screen.findByText('No sales in this period')).toBeInTheDocument();
+  // The same controls the empty book asserts ABSENT, so neither test is vacuous.
+  expect(screen.getByRole('button', { name: /^View:/ })).toBeInTheDocument();
+  expect(screen.getByRole('searchbox')).toBeInTheDocument();
+  expect(screen.getByRole('button', { name: /Export/ })).toBeInTheDocument();
+  expect(screen.getAllByText('This month').length).toBeGreaterThan(0);
+  expect(screen.queryByRole('link', { name: 'New bill' })).not.toBeInTheDocument();
+});

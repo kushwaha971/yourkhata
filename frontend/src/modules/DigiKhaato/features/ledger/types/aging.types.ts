@@ -43,6 +43,11 @@ export interface AgingPage {
   readonly page: number;
   readonly pageSize: number;
   readonly total: number;
+  /**
+   * The server's `meta.has_any`: has this business EVER recorded a ledger
+   * entry? Absent from an older server, which must then hide nothing.
+   */
+  readonly hasAny?: boolean;
 }
 
 /** FR-1 / BR-1 — the tenant's position, in two numbers. */
@@ -52,6 +57,7 @@ export interface LedgerSummary {
 }
 
 export interface AgingFilters {
+  readonly book?: 'main' | 'shop';
   readonly kind: AgingKind;
   /** ISO `YYYY-MM-DD`. Defaults to the TENANT's today, never the device's. */
   readonly asOf: string;

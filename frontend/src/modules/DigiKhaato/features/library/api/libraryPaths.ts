@@ -1,0 +1,58 @@
+/**
+ * F03 — the library's endpoints, kept in the feature rather than in core's
+ * `API_PATHS`: that object ships to every route, and the Wave B gate holds the
+ * shell unchanged for a module most businesses never switch on.
+ */
+const seg = (id: string): string => encodeURIComponent(id);
+
+export const LIBRARY_PATHS = {
+  TITLES: '/library/titles',
+  TITLE: (id: string) => `/library/titles/${seg(id)}`,
+  TITLE_COPIES: (id: string) => `/library/titles/${seg(id)}/copies`,
+  TITLE_ARCHIVE: (id: string) => `/library/titles/${seg(id)}/archive`,
+  TITLE_RESTORE: (id: string) => `/library/titles/${seg(id)}/restore`,
+  COPIES: '/library/copies',
+  COPY: (id: string) => `/library/copies/${seg(id)}`,
+  COPY_WITHDRAW: (id: string) => `/library/copies/${seg(id)}/withdraw`,
+  COPY_REPAIR: (id: string) => `/library/copies/${seg(id)}/repair`,
+  COPY_BACK_TO_SHELF: (id: string) => `/library/copies/${seg(id)}/back-to-shelf`,
+  LOOKUP: '/library/lookup',
+  CATEGORIES: '/library/categories',
+  CATEGORY: (id: string) => `/library/categories/${seg(id)}`,
+  CATEGORY_MERGE: (id: string) => `/library/categories/${seg(id)}/merge`,
+  LOCATIONS: '/library/locations',
+  LOCATION: (id: string) => `/library/locations/${seg(id)}`,
+  SETTINGS: '/library/settings',
+  MEMBERS: '/library/members',
+  MEMBER: (id: string) => `/library/members/${seg(id)}`,
+  MEMBER_ACTION: (id: string, action: string) => `/library/members/${seg(id)}/${action}`,
+  MEMBERSHIP_TYPES: '/library/membership-types',
+  LOANS: '/library/loans',
+  LOAN_ACTION: (id: string, action: string) => `/library/loans/${seg(id)}/${action}`,
+  RETURNS: '/library/returns',
+  CHARGES: '/library/charges',
+  CHARGE_ACTION: (id: string, action: string) => `/library/charges/${seg(id)}/${action}`,
+  SETTINGS_NUMBERING: '/library/settings/numbering',
+  MEMBERSHIP_TYPE: (id: string) => `/library/membership-types/${seg(id)}`,
+  SHIFTS: '/library/shifts',
+  SHIFT: (id: string) => `/library/shifts/${seg(id)}`,
+  SEATS: '/library/seats',
+  SEAT: (id: string) => `/library/seats/${seg(id)}`,
+  SEAT_ROW: '/library/seats/row',
+  SEAT_MAP: '/library/seat-map',
+  HOME: '/library/home',
+  FEES_BOARD: '/library/fees/board',
+  ATTENDANCE: '/library/attendance',
+  // Library P0 — the door's QR for self check-in.
+  CHECKIN_POSTER: '/library/checkin-poster',
+  // Library P0 — the month's money: fees in, expenses out.
+  PROFIT: '/library/profit',
+  ATTENDANCE_OUT: (id: string) => `/library/attendance/${seg(id)}/out`,
+  MEMBER_ATTENDANCE: (id: string) => `/library/members/${seg(id)}/attendance`,
+  MEMBER_MESSAGE: (id: string, kind: string) =>
+    `/library/members/${seg(id)}/message/${encodeURIComponent(kind)}`,
+  FEE_REMINDERS: '/library/fee-reminders',
+  // QA F4 / B51 — a group message, and one student's message log.
+  BULK_MESSAGES: '/library/messages/bulk',
+  MEMBER_MESSAGES: (id: string) => `/library/members/${seg(id)}/messages`,
+} as const;

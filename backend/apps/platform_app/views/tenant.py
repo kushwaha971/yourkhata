@@ -17,6 +17,7 @@ from apps.common.context import Ctx
 from apps.common.exceptions import NoActiveTenant, NotFound, ValidationFailed
 from apps.common.idempotency import idempotent
 from apps.common.pagination import PagePagination
+from apps.common.permissions import OwnerOrAdmin
 from apps.common.responses import StandardResponse
 from apps.common.tenancy import get_effective_tenant
 from apps.platform_app import tokens
@@ -37,8 +38,10 @@ from apps.platform_app.serializers.tenant import (
     InvitationCreateSerializer,
     InvitationListQuerySerializer,
     InvitationReadSerializer,
+    MEMBER_LIST_STATUSES,
     MemberCreateSerializer,
     MemberReadSerializer,
+    MemberUpdateSerializer,
     MembershipPatchSerializer,
     MembershipReadSerializer,
     TenantCreateSerializer,
@@ -47,6 +50,8 @@ from apps.platform_app.serializers.tenant import (
     tenant_read_payload,
 )
 from apps.platform_app.services import credentials as credentials_service
+from apps.platform_app.services import entitlements
+from apps.platform_app.services import member_admin
 from apps.platform_app.services import memberships as membership_service
 from apps.platform_app.services import onboarding as onboarding_service
 from apps.platform_app.services import sessions as session_service
@@ -96,6 +101,26 @@ def _tenant_or_refuse(request: Any) -> Any:
     return tenant
 
 
+class OnboardingAppsView(APIView):
+    """`GET /onboarding/apps` — what a NEW business can choose to run.
+
+    For somebody signed in who has no business yet, so it takes no tenant: the
+    answer is the registry's released apps on the plan a new business gets.
+    The client draws its step-1 choice from this and nothing else, so an app
+    that is registered and released appears there without a frontend release,
+    and one that is not can never be picked.
+    """
+
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request: Any) -> Any:
+        from apps.platform_app import apps_registry
+
+        return StandardResponse.ok(
+            [apps_registry.app_json(app) for app in onboarding_service.offerable_apps()]
+        )
+
+
 class TenantCreateView(APIView):
     """`POST /tenants` — onboarding step 1 (PLT-03 FR-2, §12, EC-7).
 
@@ -134,7 +159,22 @@ class TenantCreateView(APIView):
             request_id=meta["request_id"],
             ip=meta["ip"],
             user_agent=meta["user_agent"],
+            apps=data.get("apps"),
         )
+        shop_values = _shop_choice_values(data)
+        if shop_values:
+            settings_service.set_shop_choices(
+                tenant=membership.tenant,
+                values=shop_values,
+                ctx=Ctx(
+                    tenant=membership.tenant,
+                    actor=request.user,
+                    actor_type="user",
+                    request_id=meta["request_id"] or "",
+                    ip=meta["ip"],
+                    user_agent=meta["user_agent"],
+                ),
+            )
         # FR-2: "then returns new tokens with `tid`" — the wizard's next step is
         # already tenant-scoped, so the token must be too before it is taken.
         issued = session_service.issue(
@@ -252,8 +292,16 @@ class TenantCurrentView(APIView):
         meta = _meta(request)
         changes = dict(serializer.validated_data)
         modules = changes.pop("enabled_modules", None)
+        apps = changes.pop("apps", None)
+        shop_values = _shop_choice_values(
+            {k: changes.pop(k) for k in ("sells_wholesale", "features") if k in changes}
+        )
 
         warnings: list = []
+        if apps is not None:
+            tenant = onboarding_service.choose_apps(
+                tenant=tenant, user=request.user, apps=apps, ctx=Ctx.from_request(request)
+            )
         # PLT-06 FR-4: the module switches have their own rules and their own
         # audit event, so they go to their own service. A request carrying only
         # `enabled_modules` never touches the profile (and never re-runs its GST
@@ -271,9 +319,23 @@ class TenantCurrentView(APIView):
                 ip=meta["ip"],
                 user_agent=meta["user_agent"],
             )
+        if shop_values:
+            settings_service.set_shop_choices(
+                tenant=tenant, values=shop_values, ctx=Ctx.from_request(request)
+            )
         return StandardResponse.ok(
             tenant_read_payload(tenant, unmasked=_sees_pii(tenant)), meta={"warnings": warnings}
         )
+
+
+def _shop_choice_values(data: Any) -> dict[str, Any]:
+    """Step 1's Shop answers as setting values (R-DEC-64, R-DEC-66)."""
+    values: dict[str, Any] = {}
+    if "sells_wholesale" in data:
+        values["shop.wholesale"] = {"value": data["sells_wholesale"]}
+    for key, on in (data.get("features") or {}).items():
+        values[f"shop.features.{key}"] = {"value": on}
+    return values
 
 
 class MembershipDetailView(APIView):
@@ -393,6 +455,10 @@ class InvitationListCreateView(APIView):
             # A typo in a client is a bad field, not a server fault. Letting the
             # lookup raise would answer 500 to `{"role": "stafff"}`.
             raise ValidationFailed({"role": ["That is not a role in this business."]})
+        # A13 (PLT-X12 §6): a module role only while its module is on.
+        refusal = membership_service.role_assignment_error(tenant=tenant, role=role)
+        if refusal:
+            raise ValidationFailed({"role": [refusal]})
 
         invitation, raw_token = membership_service.invite(
             tenant=tenant,
@@ -468,6 +534,10 @@ def _credentials_payload(issued: Any) -> dict:
         "password_expires_at": issued.expires_at,
         "created_user": issued.created_user,
         "email": issued.user.email,
+        # Owner, 9 Oct 2026 — a member added by mobile has no password: they
+        # sign in with this number and an OTP, and the dialog says exactly that.
+        "mobile": issued.user.mobile,
+        "sign_in": "password" if issued.password else "otp",
         "login_url": f"{(settings.UB_PUBLIC_BASE_URL or '').rstrip('/')}/login",
     }
 
@@ -488,10 +558,25 @@ class MemberListCreateView(APIView):
     permission_classes = [IsAuthenticated, MembersManagePermission]
 
     def get(self, request: Any) -> Any:
-        queryset = members_of(tenant=_tenant_or_refuse(request))
+        tenant = _tenant_or_refuse(request)
+        queryset = members_of(tenant=tenant)
+        # `?status=suspended` lists the blocked, so a long team can be asked
+        # "who have I locked out?". Anything else — `removed` included — is a
+        # field error rather than silently the whole list.
+        status = request.query_params.get("status")
+        if status:
+            if status not in MEMBER_LIST_STATUSES:
+                raise ValidationFailed(
+                    {"status": [f"Choose one of: {', '.join(MEMBER_LIST_STATUSES)}."]}
+                )
+            queryset = queryset.filter(status=status)
         paginator = PagePagination()
         page = paginator.paginate_queryset(queryset, request, view=self)
-        return StandardResponse.paginated(paginator, MemberReadSerializer(page, many=True).data)
+        # A13: one `effective_modules` per page, not per row (`role_active`).
+        context = {"effective_modules": entitlements.effective_modules(tenant)}
+        return StandardResponse.paginated(
+            paginator, MemberReadSerializer(page, many=True, context=context).data
+        )
 
     @idempotent("member_create")
     def post(self, request: Any) -> Any:
@@ -504,11 +589,15 @@ class MemberListCreateView(APIView):
         role = role_by_code(tenant=tenant, code=data["role"])
         if role is None:
             raise ValidationFailed({"role": ["That is not a role in this business."]})
+        # A13 (PLT-X12 §6): a module role only while its module is on.
+        refusal = membership_service.role_assignment_error(tenant=tenant, role=role)
+        if refusal:
+            raise ValidationFailed({"role": [refusal]})
 
         issued = credentials_service.create_member(
             tenant=tenant,
             role=role,
-            email=data["email"],
+            email=data.get("email") or "",
             full_name=data["full_name"],
             mobile=data.get("mobile") or None,
             actor=request.user,
@@ -531,6 +620,130 @@ class MemberListCreateView(APIView):
         data["password"] = None
         body["data"] = data
         return body
+
+
+class MemberAppsView(APIView):
+    """`GET`/`PUT /members/{id}/apps` — which apps a member is in, and as what.
+
+    docs/platform/14 §6 decision 1: the owner assigns apps per person. Same
+    guard as the rest of the team screen (`platform.members.manage`), and 404
+    for a membership of another business.
+    """
+
+    permission_classes = [IsAuthenticated, MembersManagePermission]
+
+    def get(self, request: Any, membership_id: Any) -> Any:
+        membership = member_of_tenant(
+            tenant=_tenant_or_refuse(request), membership_id=membership_id
+        )
+        if membership is None:
+            raise NotFound()
+        return StandardResponse.ok({"grants": membership_service.app_grants_json(membership)})
+
+    def put(self, request: Any, membership_id: Any) -> Any:
+        tenant = _tenant_or_refuse(request)
+        data = request.data if isinstance(request.data, dict) else {}
+        membership = membership_service.set_app_grants(
+            tenant=tenant,
+            membership_id=membership_id,
+            grants=data.get("grants"),
+            actor=request.user,
+            ctx=Ctx.from_request(request),
+        )
+        return StandardResponse.ok({"grants": membership_service.app_grants_json(membership)})
+
+
+#: Owner, 12 Oct 2026: acting on a PERSON is the owner's or an admin's act.
+#: `MembersManagePermission` says the action; `OwnerOrAdmin` says the actor's
+#: standing, so a custom role granted the codename still cannot reach these.
+MEMBER_ADMIN_PERMISSIONS = [IsAuthenticated, MembersManagePermission, OwnerOrAdmin]
+
+
+def _member_body(membership: Any) -> dict:
+    return MemberReadSerializer(membership).data
+
+
+class MemberDetailView(APIView):
+    """`PATCH /members/{id}` — correct a member's name or change their role.
+
+    The self-service `PATCH /memberships/{id}` is a different resource (the
+    caller's own default business); this one is a manager acting on somebody
+    else, under the rules `member_admin` sets out.
+    """
+
+    permission_classes = MEMBER_ADMIN_PERMISSIONS
+
+    def patch(self, request: Any, membership_id: Any) -> Any:
+        serializer = MemberUpdateSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        data = serializer.validated_data
+        membership = member_admin.update_member(
+            tenant=_tenant_or_refuse(request),
+            membership_id=membership_id,
+            actor=request.user,
+            ctx=Ctx.from_request(request),
+            full_name=data.get("full_name"),
+            role_code=data.get("role"),
+        )
+        return StandardResponse.ok(_member_body(membership))
+
+
+class MemberBlockView(APIView):
+    """`POST /members/{id}/block` — suspend, and sign them out here on every device.
+
+    Keyed like PTY-04's archive: a lost response on a 2G connection must
+    replay the 200 rather than leave the merchant unsure whether the person at
+    the till is still signed in.
+    """
+
+    permission_classes = MEMBER_ADMIN_PERMISSIONS
+
+    @idempotent("member_block")
+    def post(self, request: Any, membership_id: Any) -> Any:
+        membership = member_admin.block_member(
+            tenant=_tenant_or_refuse(request),
+            membership_id=membership_id,
+            actor=request.user,
+            ctx=Ctx.from_request(request),
+        )
+        return StandardResponse.ok(_member_body(membership))
+
+
+class MemberUnblockView(APIView):
+    """`POST /members/{id}/unblock` — active again, subject to the seat limit."""
+
+    permission_classes = MEMBER_ADMIN_PERMISSIONS
+
+    @idempotent("member_unblock")
+    def post(self, request: Any, membership_id: Any) -> Any:
+        membership = member_admin.unblock_member(
+            tenant=_tenant_or_refuse(request),
+            membership_id=membership_id,
+            actor=request.user,
+            ctx=Ctx.from_request(request),
+        )
+        return StandardResponse.ok(_member_body(membership))
+
+
+class MemberRemoveView(APIView):
+    """`POST /members/{id}/remove` — off the team; the row is kept, never deleted.
+
+    A POST on a sub-path rather than `DELETE /members/{id}`, for the reason
+    PTY-04 gives for archive: the membership is not destroyed, and a verb that
+    reads "delete" would promise something the server does not do.
+    """
+
+    permission_classes = MEMBER_ADMIN_PERMISSIONS
+
+    @idempotent("member_remove")
+    def post(self, request: Any, membership_id: Any) -> Any:
+        membership = member_admin.remove_member(
+            tenant=_tenant_or_refuse(request),
+            membership_id=membership_id,
+            actor=request.user,
+            ctx=Ctx.from_request(request),
+        )
+        return StandardResponse.ok(_member_body(membership))
 
 
 class MemberCredentialsView(APIView):
@@ -557,3 +770,18 @@ class MemberCredentialsView(APIView):
             membership=membership, actor=request.user, ctx=Ctx.from_request(request)
         )
         return StandardResponse.ok(_credentials_payload(issued))
+
+
+class RoleListView(APIView):
+    """`GET /roles` (A13, FRD 00 PLT-X12 §6-§7) — what the team screen offers.
+
+    The four canon roles, then the module roles of the modules that are
+    effective right now, so a role for a switched-off (or unreleased) feature
+    is never offered. `platform.members.manage`: only the people who hand
+    roles out need the list.
+    """
+
+    permission_classes = [IsAuthenticated, MembersManagePermission]
+
+    def get(self, request: Any) -> Any:
+        return StandardResponse.ok(membership_service.roles_payload(_tenant_or_refuse(request)))

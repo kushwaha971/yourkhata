@@ -1,0 +1,316 @@
+import { API_PATHS } from 'src/api/APIPaths';
+import { api, ubConfig } from 'src/api/AxiosInstances';
+import { toQueryString } from 'src/utils/queryString';
+
+import { toCashCount, type CashCountWire } from './cashCountService';
+
+import type {
+  ActivityItem,
+  AgedCountAmount,
+  DashboardPeriod,
+  PeriodFigures,
+  CountAmount,
+  DashboardData,
+  DashboardSection,
+  DashboardTiles,
+  SourceRef,
+} from '../types/reports.types';
+
+/** RPT-01 FR-1 — the one read the dashboard makes. */
+
+interface CountAmountWire {
+  readonly count: number;
+  readonly amount: string;
+}
+
+interface AgedWire extends CountAmountWire {
+  readonly oldest_days_late?: number;
+  readonly oldest_bill_date?: string;
+}
+
+interface WaitingWire extends CountAmountWire {
+  readonly oldest_days?: number;
+  readonly oldest_date?: string;
+}
+
+interface DashboardWire {
+  readonly data: {
+    readonly as_of: string;
+    readonly generated_at: string;
+    readonly tiles: {
+      readonly to_collect?: { readonly amount: string; readonly advances?: string };
+      readonly to_pay?: { readonly amount: string; readonly advances?: string };
+      readonly due_today?: CountAmountWire;
+      readonly overdue?: CountAmountWire & { readonly invoices?: AgedWire };
+      readonly upcoming_7d?: CountAmountWire;
+      readonly today_sales?: {
+        readonly amount: string;
+        readonly count: number;
+        readonly yesterday_amount: string;
+      };
+      readonly cash_in_hand?: { readonly amount: string };
+      /** WP-06 — the Shop's own drawer; `cash_in_hand` is every book's (DEC-019). */
+      readonly shop_cash_in_hand?: {
+        readonly amount: string;
+        readonly since?: string | null;
+        readonly last_count?: CashCountWire | null;
+      };
+      readonly today_received?: CountAmountWire;
+      readonly supplier_bills?: { readonly overdue: AgedWire; readonly due_week: AgedWire };
+      /** WP-06 — the period chips' figures, keyed today/yesterday/week/month. */
+      readonly periods?: Record<
+        string,
+        {
+          readonly from: string;
+          readonly to: string;
+          readonly sales?: CountAmountWire;
+          readonly received?: CountAmountWire;
+        }
+      >;
+      /** WP-06 — orders waiting on someone, each only for a reader of its list. */
+      readonly open_orders?: {
+        readonly sales_orders?: WaitingWire;
+        readonly challans?: WaitingWire;
+        readonly purchase_orders?: WaitingWire;
+      };
+      readonly low_stock?: { readonly count: number; readonly out_count: number };
+    };
+    readonly recent_activity: readonly {
+      readonly id: string;
+      readonly type: string;
+      readonly at: string;
+      readonly business_date?: string;
+      readonly number: string | null;
+      readonly amount: string | null;
+      readonly direction: 'debit' | 'credit' | null;
+      readonly party: { readonly id: string; readonly name: string } | null;
+      readonly source: {
+        readonly kind: SourceRef['kind'];
+        readonly id: string;
+        readonly party_id: string | null;
+      };
+    }[];
+    readonly top_debtors: readonly {
+      readonly id: string;
+      readonly name: string;
+      readonly balance: string;
+      readonly collection_date: string | null;
+      readonly mobile_masked: string | null;
+      readonly mobile: string | null;
+    }[];
+    /** WP-06 — absent from a server older than layout A. */
+    readonly top_creditors?: readonly {
+      readonly id: string;
+      readonly name: string;
+      readonly balance: string;
+    }[];
+    readonly low_stock_items: readonly {
+      readonly id: string;
+      readonly name: string;
+      readonly on_hand: string;
+      readonly reorder_point: string | null;
+      readonly unit: string;
+      readonly stock_status: 'low' | 'out';
+    }[];
+    readonly first_use: {
+      readonly has_party: boolean;
+      readonly has_item: boolean;
+      readonly has_document: boolean;
+      readonly has_upi: boolean;
+    };
+    /** WP-06 DASH-04 — the parts that failed; absent when none did. */
+    readonly unavailable?: readonly string[];
+    /** A10 — absent from a server older than the module registries. */
+    readonly sections?: readonly {
+      readonly key: string;
+      readonly module: string;
+      readonly order: number;
+      readonly data?: unknown;
+      readonly error?: 'unavailable';
+    }[];
+  };
+  readonly meta?: { readonly cached?: boolean };
+}
+
+const countAmount = (wire: CountAmountWire): CountAmount => ({
+  count: wire.count,
+  amount: wire.amount,
+});
+
+const aged = (wire: AgedWire): AgedCountAmount => ({
+  ...countAmount(wire),
+  ...(wire.oldest_days_late === undefined ? {} : { oldestDays: wire.oldest_days_late }),
+  ...(wire.oldest_bill_date ? { firstBillDate: wire.oldest_bill_date } : {}),
+});
+
+const waiting = (wire: WaitingWire): AgedCountAmount => ({
+  ...countAmount(wire),
+  ...(wire.oldest_days === undefined ? {} : { oldestDays: wire.oldest_days }),
+  ...(wire.oldest_date ? { firstBillDate: wire.oldest_date } : {}),
+});
+
+const openOrders = (wire: NonNullable<DashboardWire['data']['tiles']['open_orders']>) => ({
+  ...(wire.sales_orders ? { salesOrders: waiting(wire.sales_orders) } : {}),
+  ...(wire.challans ? { challans: waiting(wire.challans) } : {}),
+  ...(wire.purchase_orders ? { purchaseOrders: waiting(wire.purchase_orders) } : {}),
+});
+
+const PERIODS: readonly DashboardPeriod[] = ['today', 'yesterday', 'week', 'month'];
+
+const periods = (wire: NonNullable<DashboardWire['data']['tiles']['periods']>) =>
+  Object.fromEntries(
+    PERIODS.flatMap((key) => {
+      const figure = wire[key];
+      if (!figure) return [];
+      const value: PeriodFigures = {
+        from: figure.from,
+        to: figure.to,
+        ...(figure.sales ? { sales: countAmount(figure.sales) } : {}),
+        ...(figure.received ? { received: countAmount(figure.received) } : {}),
+      };
+      return [[key, value] as const];
+    })
+  ) as Partial<Record<DashboardPeriod, PeriodFigures>>;
+
+const dues = (wire: { readonly amount: string; readonly advances?: string }) => ({
+  amount: wire.amount,
+  ...(wire.advances ? { advances: wire.advances } : {}),
+});
+
+const cashInHand = (
+  wire:
+    | {
+        readonly amount: string;
+        readonly since?: string | null;
+        readonly last_count?: CashCountWire | null;
+      }
+    | undefined
+) =>
+  wire
+    ? {
+        cashInHand: {
+          amount: wire.amount,
+          ...(wire.since === undefined ? {} : { since: wire.since }),
+          ...(wire.last_count === undefined
+            ? {}
+            : { lastCount: wire.last_count ? toCashCount(wire.last_count) : null }),
+        },
+      }
+    : {};
+
+/** Every key copied only when present: an omitted tile stays omitted (FR-6). */
+const toTiles = (wire: DashboardWire['data']['tiles']): DashboardTiles => ({
+  ...(wire.to_collect ? { toCollect: dues(wire.to_collect) } : {}),
+  ...(wire.to_pay ? { toPay: dues(wire.to_pay) } : {}),
+  ...(wire.due_today ? { dueToday: countAmount(wire.due_today) } : {}),
+  ...(wire.overdue
+    ? {
+        overdue: {
+          count: wire.overdue.count,
+          amount: wire.overdue.amount,
+          ...(wire.overdue.invoices ? { invoices: aged(wire.overdue.invoices) } : {}),
+        },
+      }
+    : {}),
+  ...(wire.upcoming_7d ? { upcoming7d: countAmount(wire.upcoming_7d) } : {}),
+  ...(wire.today_sales
+    ? {
+        todaySales: {
+          amount: wire.today_sales.amount,
+          count: wire.today_sales.count,
+          yesterdayAmount: wire.today_sales.yesterday_amount,
+        },
+      }
+    : {}),
+  // DEC-019 / WP-06 Finding 4 — the Shop's home shows the Shop's drawer. A
+  // server older than the split sends only the every-book figure.
+  ...cashInHand(wire.shop_cash_in_hand ?? wire.cash_in_hand),
+  ...(wire.today_received ? { todayReceived: countAmount(wire.today_received) } : {}),
+  ...(wire.supplier_bills
+    ? {
+        supplierBills: {
+          overdue: aged(wire.supplier_bills.overdue),
+          dueWeek: aged(wire.supplier_bills.due_week),
+        },
+      }
+    : {}),
+  ...(wire.open_orders ? { openOrders: openOrders(wire.open_orders) } : {}),
+  ...(wire.periods ? { periods: periods(wire.periods) } : {}),
+  ...(wire.low_stock
+    ? { lowStock: { count: wire.low_stock.count, outCount: wire.low_stock.out_count } }
+    : {}),
+});
+
+const toSection = (
+  wire: NonNullable<DashboardWire['data']['sections']>[number]
+): DashboardSection => ({
+  key: wire.key,
+  module: wire.module,
+  order: wire.order,
+  data: wire.data ?? null,
+  unavailable: wire.error === 'unavailable',
+});
+
+const toActivity = (row: DashboardWire['data']['recent_activity'][number]): ActivityItem => ({
+  id: row.id,
+  type: row.type,
+  at: row.at,
+  ...(row.business_date ? { businessDate: row.business_date } : {}),
+  number: row.number,
+  amount: row.amount,
+  direction: row.direction,
+  party: row.party,
+  source: { kind: row.source.kind, id: row.source.id, partyId: row.source.party_id },
+});
+
+/**
+ * `refresh` is FR-8's refresh icon: the server recomputes rather than serving
+ * its sixty-second snapshot.
+ */
+export const getDashboard = async (
+  options: { readonly refresh?: boolean } = {},
+  signal?: AbortSignal
+): Promise<DashboardData> => {
+  const query = toQueryString({ refresh: options.refresh ? 'true' : null });
+  const response = await api.get<DashboardWire>(
+    `${API_PATHS.REPORT_DASHBOARD}${query}`,
+    ubConfig({ signal })
+  );
+  const { data, meta } = response.data;
+  return {
+    asOf: data.as_of,
+    generatedAt: data.generated_at,
+    cached: Boolean(meta?.cached),
+    tiles: toTiles(data.tiles),
+    recentActivity: data.recent_activity.map(toActivity),
+    topDebtors: data.top_debtors.map((row) => ({
+      id: row.id,
+      name: row.name,
+      balance: row.balance,
+      collectionDate: row.collection_date,
+      mobileMasked: row.mobile_masked,
+      mobile: row.mobile,
+    })),
+    topCreditors: (data.top_creditors ?? []).map((row) => ({
+      id: row.id,
+      name: row.name,
+      balance: row.balance,
+    })),
+    lowStockItems: data.low_stock_items.map((row) => ({
+      id: row.id,
+      name: row.name,
+      onHand: row.on_hand,
+      reorderPoint: row.reorder_point,
+      unit: row.unit,
+      stockStatus: row.stock_status,
+    })),
+    firstUse: {
+      hasParty: data.first_use.has_party,
+      hasItem: data.first_use.has_item,
+      hasDocument: data.first_use.has_document,
+      hasUpi: data.first_use.has_upi,
+    },
+    sections: (data.sections ?? []).map(toSection),
+    unavailable: data.unavailable ?? [],
+  };
+};

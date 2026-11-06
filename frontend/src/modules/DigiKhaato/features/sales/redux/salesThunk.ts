@@ -23,7 +23,12 @@ const service = () => import('../api/salesService');
 
 type Reject = { rejectValue: ApiErrorShape };
 
-export const fetchInvoices = createAsyncThunk<InvoiceListPage, InvoiceListQuery, Reject>(
+export interface InvoiceListArg extends InvoiceListQuery {
+  /** Client presentation mode; invoiceListQuery whitelists wire parameters. */
+  readonly mode?: 'replace' | 'append';
+}
+
+export const fetchInvoices = createAsyncThunk<InvoiceListPage, InvoiceListArg, Reject>(
   'invoiceList/fetchInvoices',
   async (filters, { signal, rejectWithValue }) => {
     try {
@@ -141,43 +146,34 @@ export const fetchUpiIntent = createAsyncThunk<UpiIntent | null, string, Reject>
   async (id) => (await service()).getUpiIntent(id)
 );
 
-export interface PrintBranding {
-  readonly logoUrl: string | null;
-  readonly signatureUrl: string | null;
-  readonly docHeader: string;
-  readonly docFooter: string;
-  readonly appName: string;
-  readonly primaryHex: string | null;
-}
-
-/** QUERY. T1's `GET /tenants/current/branding`, for the A4 letterhead (FR-12). */
-export const fetchPrintBranding = createAsyncThunk<PrintBranding, void, Reject>(
-  'invoice/fetchPrintBranding',
-  async (_arg, { signal, rejectWithValue }) => {
-    try {
-      const { fetchBranding } = await import('../../branding/api/brandingService');
-      const branding = await fetchBranding(signal);
-      return {
-        logoUrl: branding.logoUrl,
-        signatureUrl: branding.signatureUrl,
-        docHeader: branding.docHeader,
-        docFooter: branding.docFooter,
-        appName: branding.appName,
-        primaryHex: branding.primaryHex,
-      };
-    } catch (error) {
-      return rejectWithValue(toApiError(error, 'sales.detail.error.title'));
-    }
+/** UAT D1 — kill the live link so the next share mints a new one (owner/admin). */
+export const revokeInvoiceShareLink = createAsyncThunk<
+  boolean,
+  {
+    readonly id: string;
+    readonly kind?: 'invoice' | 'estimate' | 'credit_note' | 'sales_order' | 'delivery_challan';
+  },
+  Reject
+>('invoice/revokeInvoiceShareLink', async ({ id, kind }, { rejectWithValue }) => {
+  try {
+    return await (await service()).revokeShareLink(id, kind);
+  } catch (error) {
+    return rejectWithValue(toApiError(error, 'sales.share.error'));
   }
-);
+});
 
 export const createInvoiceShareLink = createAsyncThunk<
   ShareLink,
-  { readonly id: string; readonly channel: 'link' | 'whatsapp' },
+  {
+    readonly id: string;
+    readonly channel: 'link' | 'whatsapp';
+    /** SAL-01 / SAL-04 — estimates and credit notes share through their own routes. */
+    readonly kind?: 'invoice' | 'estimate' | 'credit_note' | 'sales_order' | 'delivery_challan';
+  },
   Reject
->('invoice/createInvoiceShareLink', async ({ id, channel }, { rejectWithValue }) => {
+>('invoice/createInvoiceShareLink', async ({ id, channel, kind }, { rejectWithValue }) => {
   try {
-    return await (await service()).createShareLink(id, channel);
+    return await (await service()).createShareLink(id, channel, kind);
   } catch (error) {
     return rejectWithValue(toApiError(error, 'sales.share.error'));
   }

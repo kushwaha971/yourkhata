@@ -1,6 +1,6 @@
 'use client';
 
-import { forwardRef, memo, useCallback, type InputHTMLAttributes } from 'react';
+import { forwardRef, memo, useCallback, useRef, type InputHTMLAttributes } from 'react';
 
 import { MLInput } from 'src/design-system/primitives';
 import { cn } from 'src/utils/cn';
@@ -8,10 +8,14 @@ import { cn } from 'src/utils/cn';
 /**
  * Part 17 §17.6.0 "Quantity input rules" — a quantity with the unit as addon.
  *
- * `decimals` is `unit.allow_decimal ? 3 : 0`: a whole-number unit (NOS, BOX)
- * refuses the decimal point AT THE KEYBOARD, so "1.5 pieces" cannot be typed
- * rather than being typed and then refused by the server's `qty_must_be_whole`.
- * `signed` admits one leading minus, for the adjustment editor's "Adjust by".
+ * `decimals` follows unit.allow_decimal. A whole-number unit (`decimals={0}`)
+ * does not take a point at all (owner, 27 Oct 2026: "don't allow the float"
+ * rather than accept it and print an error): it keeps what is before the
+ * point, and the digits typed straight after a refused point are dropped
+ * too — refusing only the point turned "3.141" into 3141 NOS. Deleting,
+ * leaving the field or coming back to it ends that. A leading minus is
+ * preserved so the form/API can refuse it: dropping it made -5 into 5. `signed` selects the keyboard
+ * for a signed adjustment; the caller's validator decides which signs are valid.
  *
  * The value is the sanitised string the merchant typed — never a number, for
  * the reason money is never a number here (canon rule 3).
@@ -30,13 +34,14 @@ export interface UbQuantityInputProps extends Omit<
   readonly className?: string;
 }
 
-/** Keep digits, one point (if decimals allow) within `decimals` places, one leading minus. */
-export const sanitiseQuantity = (raw: string, decimals: number, signed: boolean): string => {
-  const negative = signed && raw.trim().startsWith('-');
-  const kept = raw.replace(decimals > 0 ? /[^\d.]/g : /[^\d]/g, '');
+/** Preserve numeric intent; the legacy signed argument stays compatible while callers validate direction. */
+export const sanitiseQuantity = (raw: string, decimals: number, _signed: boolean): string => {
+  const negative = raw.trim().replace(/−/g, '-').startsWith('-');
+  const places = decimals === 0 ? 3 : decimals;
+  const kept = raw.replace(/[^\d.]/g, '');
   const [whole = '', ...rest] = kept.split('.');
-  const fraction = rest.join('').slice(0, decimals);
-  const body = rest.length > 0 && decimals > 0 ? `${whole}.${fraction}` : whole;
+  const fraction = rest.join('').slice(0, places);
+  const body = rest.length > 0 && places > 0 ? `${whole}.${fraction}` : whole;
   return negative ? `-${body}` : body;
 };
 
@@ -45,10 +50,38 @@ const UbQuantityInputInner = forwardRef<HTMLInputElement, UbQuantityInputProps>(
     { value, onChange, decimals = 3, signed = false, unit, invalid, className, ...rest },
     ref
   ) {
+    const afterPoint = useRef(false);
+    const shown = value ?? '';
     const handleChange = useCallback(
-      (event: React.ChangeEvent<HTMLInputElement>) =>
-        onChange(sanitiseQuantity(event.target.value, decimals, signed)),
-      [onChange, decimals, signed]
+      (event: React.ChangeEvent<HTMLInputElement>) => {
+        const raw = event.target.value;
+        if (decimals === 0) {
+          if (/[.,]/.test(raw)) {
+            afterPoint.current = true;
+            onChange(sanitiseQuantity(raw.split(/[.,]/)[0] ?? '', 0, signed));
+            return;
+          }
+          if (afterPoint.current && raw.length > shown.length && raw.startsWith(shown)) return;
+          afterPoint.current = false;
+        }
+        onChange(sanitiseQuantity(raw, decimals, signed));
+      },
+      [onChange, decimals, signed, shown]
+    );
+    const { onFocus, onBlur } = rest;
+    const handleFocus = useCallback(
+      (event: React.FocusEvent<HTMLInputElement>) => {
+        afterPoint.current = false;
+        onFocus?.(event);
+      },
+      [onFocus]
+    );
+    const handleBlur = useCallback(
+      (event: React.FocusEvent<HTMLInputElement>) => {
+        afterPoint.current = false;
+        onBlur?.(event);
+      },
+      [onBlur]
     );
 
     return (
@@ -61,8 +94,17 @@ const UbQuantityInputInner = forwardRef<HTMLInputElement, UbQuantityInputProps>(
           value={value ?? ''}
           onChange={handleChange}
           invalid={invalid}
-          className={cn('ds-num text-right', unit && 'pr-14', invalid && 'border-formError')}
+          // A one- or two-character unit (g, %) needs 32 px, not the 56 a
+          // three-letter code (KGS) does: "12.900 g" was cut in a phone's third
+          // of a row (G2a).
+          className={cn(
+            'ds-num text-right',
+            unit && (unit.length <= 2 ? 'pr-8' : 'pr-14'),
+            invalid && 'border-formError'
+          )}
           {...rest}
+          onFocus={handleFocus}
+          onBlur={handleBlur}
         />
         {unit && (
           <span

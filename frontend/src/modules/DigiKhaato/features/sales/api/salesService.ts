@@ -2,13 +2,17 @@ import { API_PATHS } from 'src/api/APIPaths';
 import { api, ubConfig } from 'src/api/AxiosInstances';
 import { toQueryString } from 'src/utils/queryString';
 
+import { toFlowFields, toListPage } from './salesMapping';
+
 import type {
   InvoiceListPage,
-  InvoiceListRow,
   InvoiceTab,
   PaymentBreakupRow,
   SalesDocument,
   SalesDocumentEnvelope,
+  BillCustomOrder,
+  JewelLine,
+  OldGoldWire,
   SalesDocumentLine,
   ShareLink,
   UpiIntent,
@@ -33,6 +37,25 @@ const toLine = (row: Wire): SalesDocumentLine => ({
   hsnSac: sn(row.hsn_sac),
   qty: s(row.qty),
   unitCode: s(row.unit_code),
+  serials: Array.isArray(row.serials) ? (row.serials as unknown[]).map(String) : [],
+  tracksSerial: row.tracks_serial === true,
+  batches: Array.isArray(row.batches)
+    ? (row.batches as Record<string, unknown>[]).map((b) => ({
+        batchNo: String(b.batch_no ?? ''),
+        expiry: b.expiry ? String(b.expiry) : null,
+        qty: String(b.qty ?? ''),
+      }))
+    : [],
+  addons: Array.isArray(row.addons)
+    ? (row.addons as Record<string, unknown>[]).map((a) => ({
+        name: String(a.name ?? ''),
+        price: String(a.price ?? '0'),
+      }))
+    : [],
+  jewel:
+    row.jewel && typeof row.jewel === 'object' && Object.keys(row.jewel).length
+      ? (row.jewel as JewelLine)
+      : null,
   unitPrice: s(row.unit_price),
   taxInclusive: Boolean(row.tax_inclusive),
   discountType: (row.discount_type as SalesDocumentLine['discountType']) ?? null,
@@ -47,6 +70,8 @@ const toLine = (row: Wire): SalesDocumentLine => ({
   igst: s(row.igst),
   cess: s(row.cess),
   lineTotal: s(row.line_total),
+  returnedQty: s(row.returned_qty ?? '0'),
+  againstLineId: sn(row.against_line_id),
 });
 
 const toAddress = (raw: unknown) => (raw && typeof raw === 'object' ? (raw as Wire) : {});
@@ -98,6 +123,17 @@ export const toDocument = (row: Wire): SalesDocument => {
     documentDate: s(row.document_date),
     dueOn: sn(row.due_on),
     placeOfSupplyState: s(row.place_of_supply_state),
+    vehicle: (row.vehicle as { number?: string; mechanic?: string } | null) ?? null,
+    oldGold: (row.old_gold as OldGoldWire | null) ?? null,
+    pan: (row.pan as string | null) ?? null,
+    rx: (row.rx as { doctor?: string; patient?: string } | null) ?? null,
+    customOrder: (row.custom_order as BillCustomOrder | null) ?? null,
+    location: row.location
+      ? {
+          id: s((row.location as Record<string, unknown>).id),
+          name: s((row.location as Record<string, unknown>).name),
+        }
+      : null,
     isInterState: Boolean(row.is_inter_state),
     reverseCharge: Boolean(row.reverse_charge),
     discountType: (row.discount_type as SalesDocument['discountType']) ?? null,
@@ -125,12 +161,21 @@ export const toDocument = (row: Wire): SalesDocument => {
           note: s(payment.note),
         }
       : null,
+    payments: ((row.payments ?? []) as Wire[]).map((r) => ({
+      id: s(r.id),
+      number: s(r.number),
+      paymentDate: s(r.payment_date),
+      primaryMode: r.primary_mode as PaymentBreakupRow['mode'],
+      amount: s(r.amount),
+      status: r.status === 'void' ? ('void' as const) : ('recorded' as const),
+    })),
     lines: ((row.lines ?? []) as Wire[]).map(toLine),
     notes: s(row.notes),
     terms: s(row.terms),
     docDiscountAllocation: (row.doc_discount_allocation ?? {}) as Record<string, string>,
     createdBy: (row.created_by as SalesDocument['createdBy']) ?? null,
     issuedAt: sn(row.issued_at),
+    ...toFlowFields(row),
     createdAt: s(row.created_at),
     updatedAt: s(row.updated_at),
   };
@@ -145,6 +190,7 @@ export const toEnvelope = (body: EnvelopeWire): SalesDocumentEnvelope => {
   const meta = body.meta ?? {};
   return {
     document: toDocument(body.data),
+    draftRecovered: meta.draft_recovered === true,
     warnings: (meta.warnings ?? []) as SalesDocumentEnvelope['warnings'],
     rule46: (meta.rule46 ?? null) as SalesDocumentEnvelope['rule46'],
     partyBalance: sn(meta.party_balance),
@@ -152,43 +198,34 @@ export const toEnvelope = (body: EnvelopeWire): SalesDocumentEnvelope => {
   };
 };
 
-const toListRow = (row: Wire): InvoiceListRow => ({
-  id: s(row.id),
-  kind: row.kind as InvoiceListRow['kind'],
-  number: sn(row.number),
-  status: row.status as InvoiceListRow['status'],
-  party: (row.party as InvoiceListRow['party']) ?? null,
-  walkInName: sn(row.walk_in_name),
-  walkInMobileMasked: sn(row.walk_in_mobile_masked),
-  documentDate: s(row.document_date),
-  dueOn: sn(row.due_on),
-  grandTotal: s(row.grand_total),
-  amountPaid: s(row.amount_paid),
-  amountDue: s(row.amount_due),
-  isOverdue: Boolean(row.is_overdue),
-  createdBy: (row.created_by as InvoiceListRow['createdBy']) ?? null,
-});
-
 // ── Endpoints ───────────────────────────────────────────────────────────────
 
 export interface InvoiceListQuery {
+  readonly book?: 'shop';
   readonly tab: InvoiceTab;
   readonly dateFrom: string;
   readonly dateTo: string;
   readonly partyId: string | null;
   readonly q: string;
   readonly page: number;
+  /** A5 — `?origin_module=` for the list's origin chip. */
+  readonly originModule?: string | null;
 }
 
 export const invoiceListQuery = (filters: InvoiceListQuery): string =>
   toQueryString({
+    book: filters.book,
     tab: filters.tab !== 'all' ? filters.tab : undefined,
     date_from: filters.dateFrom || undefined,
     date_to: filters.dateTo || undefined,
     party_id: filters.partyId || undefined,
     q: filters.q.trim() || undefined,
+    origin_module: filters.originModule || undefined,
     page: filters.page > 1 ? filters.page : undefined,
   });
+
+export const invoiceExportPath = (filters: InvoiceListQuery): string =>
+  `${API_PATHS.SALES_INVOICES}${invoiceListQuery({ ...filters, page: 1 })}`;
 
 export const listInvoices = async (
   filters: InvoiceListQuery,
@@ -198,20 +235,7 @@ export const listInvoices = async (
     `${API_PATHS.SALES_INVOICES}${invoiceListQuery(filters)}`,
     ubConfig({ signal })
   );
-  const { data, meta } = response.data;
-  const totals = (meta.totals ?? {}) as Wire;
-  return {
-    rows: data.map(toListRow),
-    page: Number(meta.page ?? 1),
-    pageSize: Number(meta.page_size ?? 25),
-    total: Number(meta.total ?? data.length),
-    totals: {
-      count: Number(totals.count ?? 0),
-      grandTotal: s(totals.grand_total ?? '0.00'),
-      amountDue: s(totals.amount_due ?? '0.00'),
-    },
-    tabs: meta.tabs as InvoiceListPage['tabs'],
-  };
+  return toListPage<InvoiceListPage['tabs']>(response.data.data, response.data.meta);
 };
 
 export const getInvoice = async (
@@ -273,15 +297,41 @@ export const issueInvoice = async (
     ).data
   );
 
+const SHARE_PATH = {
+  invoice: API_PATHS.SALES_INVOICE_SHARE_LINKS,
+  estimate: API_PATHS.SALES_ESTIMATE_SHARE_LINKS,
+  credit_note: API_PATHS.SALES_CREDIT_NOTE_SHARE_LINKS,
+  sales_order: API_PATHS.SALES_ORDER_SHARE_LINKS,
+  delivery_challan: API_PATHS.SALES_CHALLAN_SHARE_LINKS,
+} as const;
+
+/** SAL-03 FR-5 — one link per document; each kind has its own route (CR-SAL-1). */
 export const createShareLink = async (
   id: string,
-  channel: 'link' | 'whatsapp'
+  channel: 'link' | 'whatsapp',
+  kind: keyof typeof SHARE_PATH = 'invoice'
 ): Promise<ShareLink> => {
   const response = await api.post<{ data: { url: string; expires_at: string } }>(
-    API_PATHS.SALES_INVOICE_SHARE_LINKS(id),
+    SHARE_PATH[kind](id),
     { channel }
   );
   return { url: response.data.data.url, expiresAt: response.data.data.expires_at };
+};
+
+/**
+ * UAT D1 — "Reset link" (owner/admin): the live link stops working. Sharing is
+ * otherwise idempotent (the server hands back the live link), so this is the
+ * only way to rotate one; the caller shares again for the new URL.
+ */
+export const revokeShareLink = async (
+  id: string,
+  kind: keyof typeof SHARE_PATH = 'invoice'
+): Promise<boolean> => {
+  const response = await api.post<{ data: { revoked: boolean } }>(
+    `${SHARE_PATH[kind](id)}/revoke`,
+    {}
+  );
+  return response.data.data.revoked;
 };
 
 /** SAL-03 FR-4 — quiet: a shop with no UPI ID simply prints no QR. */

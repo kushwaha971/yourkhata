@@ -35,7 +35,7 @@ const toExportJob = (wire: ExportJobWire): ExportJob => ({
   downloadPath: wire.download_path,
 });
 
-const FILENAME = /filename="?([^";]+)"?/i;
+export const FILENAME = /filename="?([^";]+)"?/i;
 
 /**
  * A Blob's text. `Blob.text()` is in every browser this product supports; the
@@ -56,7 +56,7 @@ const blobText = (blob: Blob): Promise<string> =>
  * the error normaliser reads `response.data.error` — so the envelope is parsed
  * back into JSON here, before anything above the service sees the error.
  */
-const unwrapBlobError = async (error: unknown): Promise<never> => {
+export const unwrapBlobError = async (error: unknown): Promise<never> => {
   if (axios.isAxiosError(error) && error.response?.data instanceof Blob) {
     try {
       error.response.data = JSON.parse(await blobText(error.response.data)) as unknown;
@@ -102,7 +102,7 @@ export const requestListExport = async (listPath: string): Promise<ListExportRes
       return { kind: 'queued', exportId: body.data.export_id, rowCount: body.data.row_count };
     }
     const disposition = String(response.headers['content-disposition'] ?? '');
-    const filename = FILENAME.exec(disposition)?.[1] ?? 'digikhaato-export.csv';
+    const filename = FILENAME.exec(disposition)?.[1] ?? 'yourkhata-export.csv';
     return { kind: 'file', blob: response.data, filename };
   } catch (error) {
     return unwrapBlobError(error);

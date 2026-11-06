@@ -1,0 +1,13 @@
+PASS src/design-system/UbDataGrid/UbDataGrid.test.tsx
+PASS src/modules/DigiKhaato/features/sales/components/SalesFlowListPageContent.test.tsx
+PASS src/modules/DigiKhaato/features/sales/components/FlowColumns.test.tsx
+PASS src/design-system/UbChoiceChips/UbChoiceChips.test.tsx
+PASS src/modules/DigiKhaato/features/sales/hooks/useSalesFlowList.test.tsx
+PASS src/design-system/UbLoadMore/UbLoadMore.test.tsx
+PASS src/modules/DigiKhaato/features/sales/redux/salesDocListSlice.test.ts
+
+Test Suites: 7 passed, 7 total
+Tests:       84 passed, 84 total
+Snapshots:   0 total
+Time:        3.864 s
+Ran all test suites matching /src\/modules\/DigiKhaato\/features\/sales\/components\/SalesFlowListPageContent.test.tsx|src\/modules\/DigiKhaato\/features\/sales\/components\/FlowColumns.test.tsx|src\/modules\/DigiKhaato\/features\/sales\/redux\/salesDocListSlice.test.ts|src\/modules\/DigiKhaato\/features\/sales\/hooks\/useSalesFlowList.test.tsx|src\/design-system\/UbChoiceChips\/UbChoiceChips.test.tsx|src\/design-system\/UbLoadMore\/UbLoadMore.test.tsx|src\/design-system\/UbDataGrid\/UbDataGrid.test.tsx/i.

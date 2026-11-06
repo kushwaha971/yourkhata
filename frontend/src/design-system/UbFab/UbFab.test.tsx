@@ -36,6 +36,12 @@ const renderFab = (props: Partial<React.ComponentProps<typeof UbFab>> = {}) => {
 };
 
 describe('UbFab', () => {
+  it('shows an opt-in action word without changing the default icon-only button', () => {
+    /** Udhaar's floating Add must say what it does for first-time phone users. */
+    const { button } = renderFab({ extended: true });
+    expect(button).toHaveClass('w-auto', 'px-4');
+    expect(screen.getByText('Add party')).not.toHaveClass('sr-only');
+  });
   it('is a 56 px button named by its label, with the label visually hidden', () => {
     /* Prevents: an icon-only control announced as "button" and nothing else,
        and a FAB that grows a visible caption and stops being a FAB. */
@@ -63,7 +69,11 @@ describe('UbFab', () => {
     const wrapper = button.parentElement as HTMLElement;
     expect(wrapper).toHaveAttribute('data-ub-fab');
     expect(wrapper).toHaveClass('fixed', 'pointer-events-none');
-    expect(wrapper.className).toContain('bottom-[env(safe-area-inset-bottom,0px)]');
+    expect(wrapper.className).toContain('bottom-0');
+    // Above the safe area, or above the phone's nav bar when one is on screen.
+    expect(wrapper.className).toContain(
+      'pb-[calc(1rem+max(var(--ub-nav-offset),env(safe-area-inset-bottom,0px)))]'
+    );
     expect(wrapper.className).toContain('right-[env(safe-area-inset-right,0px)]');
     expect(button).toHaveClass('pointer-events-auto');
   });

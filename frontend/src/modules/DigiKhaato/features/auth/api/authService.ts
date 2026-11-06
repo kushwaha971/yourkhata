@@ -5,14 +5,17 @@ import { DEFAULT_TENANT_TIMEZONE } from 'src/constants';
 import type { SessionBranding, SessionPayload, SessionTenant } from 'src/redux/slice/sessionSlice';
 import type { TWriteClass } from 'src/types/api.types';
 import type { Locale, ModuleCode, PermissionCode } from 'src/types/domain.types';
+import { toLanding } from 'src/types/landing.types';
 
 import type {
   AuthResult,
   AuthTenant,
+  OtpChallenge,
+  OtpRequestInput,
+  OtpVerifyInput,
   PasswordLoginInput,
   PasswordResetConfirmInput,
   PasswordSetInput,
-  RegisterInput,
   RoleCode,
   TenantApiRow,
 } from '../types/auth.types';
@@ -81,6 +84,13 @@ interface ActiveTenantApiRow {
   readonly branding?: BrandingApiBlock | null;
   readonly partner_suspended?: boolean;
   readonly deletion_scheduled_for?: string | null;
+  /** B2 / BP-22 #1 — the business's own words, in the person's language. */
+  readonly words?: Record<string, Record<string, string>> | null;
+  /** B2 / BP-22 #2 — the feature keys that are on for this business. */
+  readonly features?: string[] | null;
+  readonly messages?: Readonly<Record<string, Readonly<Record<string, string>>>> | null;
+  /** B3 — the design's picture for this business's kind. */
+  readonly kind_picture?: string | null;
 }
 
 interface BrandingApiBlock {
@@ -119,6 +129,8 @@ interface AuthApiResponse {
     readonly active_tenant_id: string | null;
     readonly active_tenant?: ActiveTenantApiRow | null;
     readonly permissions: readonly PermissionCode[];
+    /** docs/platform/14 §4.1 — the server's decision; see `src/types/landing.types.ts`. */
+    readonly landing?: unknown;
   };
 }
 
@@ -158,6 +170,21 @@ interface SessionApiResponse {
      * indexed, unlike `enabled_modules` was.
      */
     readonly ver?: number | null;
+    readonly landing?: unknown;
+    readonly apps?: readonly {
+      readonly code: string;
+      readonly label_id: string;
+      readonly home_path: string;
+      readonly order: number;
+    }[];
+    readonly active_app?: string | null;
+    readonly blocked_from?: readonly string[];
+    readonly apps_addable?: readonly {
+      readonly code: string;
+      readonly label_id: string;
+      readonly home_path: string;
+      readonly order: number;
+    }[];
   };
 }
 
@@ -208,38 +235,54 @@ const toAuthResult = (body: AuthApiResponse): AuthResult => {
     // sent; the `?? []` meant it degraded to "no modules" instead of throwing,
     // which is why only `getSession` (below) blew up.
     enabledModules: data.active_tenant?.enabled_modules ?? [],
+    landing: toLanding(data.landing),
   };
 };
 
-// ── CR-2026-09-19-A FR-S1 — registration ─────────────────────────────────────
+// ── Owner, 9 Oct 2026 — mobile number + OTP ─────────────────────────────────
 
 /**
- * POST /auth/register — `{ email, password, full_name? }` → the `/auth/me`
- * body, with the session cookies set as a side effect.
- *
- * CR-2026-09-19-E — this call used to pass `suppressErrorSnackbar: true`, and
- * so did every other call in this file. The reason given was sound but the
- * mechanism was too broad: the two failures it named — a 400 whose
- * `details.email` says the address is taken, and a 400 whose `details.password`
- * carries the server's policy — are both `validation_error`, which
- * `shouldToast` already excludes BY CODE for the whole application. Opting the
- * request out as well ALSO silenced the 500s, the 503s and the timeouts, which
- * is why every auth screen had grown an error banner of its own. The flag is
- * gone; the exceptions are decided once, by code, in src/utils/apiError.ts.
+ * POST /auth/otp/request — `{ mobile }` → the challenge. The response is the
+ * same for a number with an account and one without (no enumeration), which is
+ * why one screen serves sign-up and sign-in: the verify creates the account
+ * when the number is new, and `isNew` on its result says so.
  */
-export const register = async (input: RegisterInput): Promise<AuthResult> => {
-  const response = await api.post<AuthApiResponse>(API_PATHS.AUTH_REGISTER, {
-    email: input.email,
-    password: input.password,
-    ...(input.name ? { full_name: input.name } : {}),
-    // Sent only when the user gave one: the serializer takes `allow_blank`,
-    // but an empty string in the body would claim they answered.
-    ...(input.mobile ? { mobile: input.mobile } : {}),
+export const requestOtp = async (input: OtpRequestInput): Promise<OtpChallenge> => {
+  const response = await api.post<{
+    data: {
+      challenge_id: string;
+      expires_in: number;
+      retry_after: number;
+      code_length?: number;
+      channel?: string;
+    };
+  }>(API_PATHS.AUTH_OTP_REQUEST, {
+    mobile: input.mobile,
+    ...(input.locale ? { locale: input.locale } : {}),
+  });
+  const data = response.data.data;
+  return {
+    challengeId: data.challenge_id,
+    expiresIn: data.expires_in,
+    retryAfter: data.retry_after,
+    // An older server sends neither; it only ever sent four digits by SMS.
+    codeLength: data.code_length === 6 ? 6 : 4,
+    channel: data.channel === 'whatsapp' ? 'whatsapp' : 'sms',
+  };
+};
+export const requestOtpWriteClass: TWriteClass = 'online-only';
+
+/** POST /auth/otp/verify — the `/auth/me` body, with the session cookies set. */
+export const verifyOtp = async (input: OtpVerifyInput): Promise<AuthResult> => {
+  const response = await api.post<AuthApiResponse>(API_PATHS.AUTH_OTP_VERIFY, {
+    challenge_id: input.challengeId,
+    code: input.code,
     ...(input.deviceLabel ? { device_label: input.deviceLabel } : {}),
+    ...(input.locale ? { locale: input.locale } : {}),
   });
   return toAuthResult(response.data);
 };
-export const registerWriteClass: TWriteClass = 'online-only';
+export const verifyOtpWriteClass: TWriteClass = 'online-only';
 
 // ── PLT-02 — password ────────────────────────────────────────────────────────
 
@@ -346,6 +389,10 @@ export const getSession = async (signal?: AbortSignal): Promise<SessionPayload> 
         branding: toSessionBranding(activeRow.branding),
         partnerSuspended: activeRow.partner_suspended ?? false,
         deletionScheduledFor: activeRow.deletion_scheduled_for ?? null,
+        words: activeRow.words ?? null,
+        features: activeRow.features ?? null,
+        messages: activeRow.messages ?? null,
+        kindPicture: activeRow.kind_picture ?? null,
       }
     : null;
   const support = data.impersonation;
@@ -375,6 +422,23 @@ export const getSession = async (signal?: AbortSignal): Promise<SessionPayload> 
     // legitimately has no modules, which is what `[]` says.
     enabledModules: activeRow?.enabled_modules ?? [],
     version: data.ver ?? null,
+    landing: toLanding(data.landing),
+    apps: data.apps
+      ? data.apps.map((app) => ({
+          code: app.code,
+          labelId: app.label_id,
+          homePath: app.home_path,
+          order: app.order,
+        }))
+      : null,
+    activeApp: data.active_app ?? null,
+    blockedFrom: [...(data.blocked_from ?? [])],
+    appsAddable: (data.apps_addable ?? []).map((app) => ({
+      code: app.code,
+      labelId: app.label_id,
+      homePath: app.home_path,
+      order: app.order,
+    })),
     impersonation: support
       ? {
           id: support.id,
@@ -406,6 +470,35 @@ export const switchTenant = async (tenantId: string): Promise<SessionPayload> =>
   }
 };
 export const switchTenantWriteClass: TWriteClass = 'online-only';
+
+/**
+ * POST /auth/switch-app — docs/platform/14 §4.2. The server remembers the app per
+ * person per business, so the session is re-read rather than patched locally:
+ * the menu, the landing and the switcher all come from the same answer.
+ */
+export const switchApp = async (app: string): Promise<SessionPayload> => {
+  await api.post(API_PATHS.AUTH_SWITCH_APP, { app });
+  return getSession();
+};
+export const switchAppWriteClass: TWriteClass = 'online-only';
+
+/**
+ * POST /tenants/current/apps — the owner adds an app, or turns one off for the
+ * business (docs/platform/14 §6 decision 2: the data stays, the menu goes for
+ * everyone). The session is re-read: apps, modules and menu all move.
+ */
+export const setAppRunning = async (app: string, running: boolean): Promise<SessionPayload> => {
+  await api.post(API_PATHS.TENANT_APPS, { app, running });
+  return getSession();
+};
+export const setAppRunningWriteClass: TWriteClass = 'online-only';
+
+/** POST /auth/leave-app — anyone but the owner takes themselves out of one app. */
+export const leaveApp = async (app: string): Promise<SessionPayload> => {
+  await api.post(API_PATHS.AUTH_LEAVE_APP, { app });
+  return getSession();
+};
+export const leaveAppWriteClass: TWriteClass = 'online-only';
 
 /** POST /auth/logout — the teardown order is the caller's (§19.7.4). */
 export const logout = async (): Promise<void> => {

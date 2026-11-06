@@ -12,20 +12,24 @@ builds each fragment in the message's language or leaves it empty. The template
 stays a sentence with holes in it and the decisions stay in Python.
 
 ── The UPI line ──────────────────────────────────────────────────────────────
-Only when the tenant has a VPA (NTF-03 / LED-06 EC-7). It is the NPCI intent
-URL with the balance as the amount (LED-06 BR-8); on a phone WhatsApp renders
-`upi://` as tappable and the customer's UPI app opens with the figure filled in.
+Only when the tenant has a VPA (NTF-03 / LED-06 EC-7), with the balance as the
+amount (LED-06 BR-8). Since 7 Oct 2026 (Shop P0; the owner asked for the QR in
+every payment reminder) it is the https PAY LINK, not the bare `upi://` intent:
+WhatsApp does not make `upi://` tappable on every phone and cannot attach an
+image to a prefilled message, while the pay page shows the QR, the amount and a
+button that opens the payer's UPI app (`apps.payments.services.pay_link`).
 """
 
 from __future__ import annotations
 
 import datetime as dt
-from dataclasses import dataclass
+from dataclasses import dataclass, is_dataclass, replace
 from decimal import Decimal
+from types import SimpleNamespace
 from typing import Any
 from urllib.parse import quote
 
-from apps.common.integrations.upi.intent import build_upi_url
+from apps.common.exceptions import ValidationFailed
 from apps.common.integrations.whatsapp.deep_link import WaMeBackend
 from apps.notifications.constants import TEMPLATE_REMINDER_MANUAL, TEMPLATE_REMINDER_MANUAL_SMS
 from apps.notifications.services.dispatch import whatsapp_digits
@@ -38,19 +42,25 @@ MAX_SHARE_TEXT = 900
 FRAGMENTS: dict[str, dict[str, str]] = {
     "en": {
         "due_line": " (collection date {date})",
-        "upi_line": "Pay via UPI: {link}\n",
+        "upi_line": "Pay by UPI or scan the QR: {link}\n",
         "pay_line": "Pay: {link} ",
         "pay_at_shop": "Please pay at the shop. ",
         "note_line": "{note}\n",
         "sms_note": "{note} ",
+        # Design D15 (owner's choice, 31 Oct): the Business book's reminder says
+        # what the money is for, in the business's own words.
+        "for_medical": ", dawaiyon ka",
+        "for_auto_parts": ", parts ka",
     },
     "hi": {
         "due_line": " (वसूली तारीख {date})",
-        "upi_line": "UPI से भुगतान: {link}\n",
+        "upi_line": "UPI से भुगतान करें या QR स्कैन करें: {link}\n",
         "pay_line": "भुगतान: {link} ",
         "pay_at_shop": "कृपया दुकान पर भुगतान करें। ",
         "note_line": "{note}\n",
         "sms_note": "{note} ",
+        "for_medical": ", दवाइयों का",
+        "for_auto_parts": ", पार्ट्स का",
     },
 }
 
@@ -68,13 +78,10 @@ def shop_name(tenant: Any, limit: int = 30) -> str:
 
 
 def upi_link(*, tenant: Any, amount: Decimal, reference: str | None = None) -> str | None:
-    vpa = (getattr(tenant, "upi_vpa", None) or "").strip()
-    if not vpa or amount <= 0:
-        return None
-    shop = shop_name(tenant)
-    return build_upi_url(
-        vpa=vpa, payee_name=shop, amount=amount, note=f"Payment to {shop}", reference=reference
-    )
+    """The pay page's https link for `amount`, or None without a valid UPI ID."""
+    from apps.payments.services.pay_link import pay_url
+
+    return pay_url(tenant=tenant, amount=amount, reference=reference or "")
 
 
 def wa_url(digits: str | None, text: str) -> str:
@@ -89,6 +96,44 @@ def sms_url(digits: str | None, text: str) -> str:
 
 def tel_url(digits: str | None) -> str | None:
     return f"tel:+{digits}" if digits else None
+
+
+def final_text(text: Any) -> str:
+    """WP-04 — the merchant's own words for a message, checked once for everyone.
+
+    Blank, not a string, longer than a `wa.me` prefill carries, or holding a NUL
+    byte is a field error on `text`. Leading and trailing space is trimmed; the
+    words inside are the merchant's and are not touched.
+    """
+    if not isinstance(text, str) or not text.strip():
+        raise ValidationFailed({"text": ["Enter a message."]})
+    words = text.strip()
+    if len(words) > MAX_SHARE_TEXT:
+        raise ValidationFailed({"text": [f"Keep the message under {MAX_SHARE_TEXT} characters."]})
+    if "\x00" in words:
+        raise ValidationFailed({"text": ["Enter plain text."]})
+    return words
+
+
+def with_final_text(composed: Any, text: Any) -> Any:
+    """The composed message with the merchant's edited words in place (MSG-10).
+
+    `None` means "unchanged" and returns `composed` as it is. Otherwise both the
+    WhatsApp and the SMS text become the edit and both links are rebuilt from
+    it, so the log, the link and what the customer reads are one string.
+    """
+    if text is None:
+        return composed
+    words = final_text(text)
+    changes = {
+        "text": words,
+        "sms_text": words,
+        "wa_url": wa_url(composed.digits, words),
+        "sms_url": sms_url(composed.digits, words),
+    }
+    if is_dataclass(composed):
+        return replace(composed, **changes)
+    return SimpleNamespace(**{**vars(composed), **changes})
 
 
 @dataclass(frozen=True, slots=True)
@@ -113,6 +158,7 @@ def compose_reminder(
     note: str = "",
     reference: str | None = None,
     today: dt.date | None = None,
+    business_book: bool = False,
 ) -> ComposedReminder:
     """The WhatsApp text and the SMS-app text for one manual reminder (LED-06 §17)."""
     locale = message_locale(tenant)
@@ -130,6 +176,9 @@ def compose_reminder(
         "due_line": due_line,
         "upi_line": frag["upi_line"].format(link=link) if link else "",
         "note_line": frag["note_line"].format(note=note) if note else "",
+        "for_line": (
+            frag.get(f"for_{getattr(tenant, 'business_type', '')}", "") if business_book else ""
+        ),
     }
     wa_template = resolve_template(
         tenant=tenant, code=TEMPLATE_REMINDER_MANUAL, channel="whatsapp", locale=locale
@@ -171,3 +220,12 @@ def pay_line(*, tenant: Any, amount: Decimal, reference: str | None = None) -> s
     frag = FRAGMENTS[message_locale(tenant)]
     link = upi_link(tenant=tenant, amount=amount, reference=reference)
     return frag["pay_line"].format(link=link) if link else frag["pay_at_shop"]
+
+
+def pay_fragment(*, tenant: Any, amount: Decimal, reference: str | None = None) -> str:
+    """Shop P0 — "\nPay by UPI or scan the QR: <link>" for any module's payment
+    message, in the business's language, or "" without a UPI ID (the line collapses)."""
+    link = upi_link(tenant=tenant, amount=amount, reference=reference)
+    if not link:
+        return ""
+    return "\n" + FRAGMENTS[message_locale(tenant)]["upi_line"].format(link=link).rstrip("\n")

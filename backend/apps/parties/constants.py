@@ -39,8 +39,8 @@ class OpeningDirection(models.TextChoices):
     know. The sign is the database's problem, not the shopkeeper's.
     """
 
-    DEBIT = "debit", _("They owe me")
-    CREDIT = "credit", _("I owe them")
+    DEBIT = "debit", _("I will get")
+    CREDIT = "credit", _("I will give")
 
 
 #: Where a single-party archive came from, as `party.archived`'s audit row
@@ -59,3 +59,41 @@ ARCHIVE_VIA_VALUES = frozenset({"detail", "list", "form", ARCHIVE_VIA_DEFAULT})
 def archive_via(raw: object) -> str:
     """`raw` if it is one of `ARCHIVE_VIA_VALUES`, otherwise `"api"`."""
     return raw if isinstance(raw, str) and raw in ARCHIVE_VIA_VALUES else ARCHIVE_VIA_DEFAULT
+
+
+# ── A6 ── PLT-X04: party relations (ADR-046) ──────────────────────────────────
+
+
+class RelationKind(models.TextChoices):
+    """`parties_relation.kind` — who the related party is to the person.
+
+    A closed pair at Wave A (FRD 00 PLT-X04 §3): a guardian ("Rahul's father")
+    and a payer ("the company pays for Sita's membership"). An emergency contact
+    is Phase 2 and gets its own value, never a free-text kind.
+    """
+
+    GUARDIAN = "guardian", _("Guardian")
+    PAYER = "payer", _("Pays for")
+
+
+class ShopPromiseRole(models.TextChoices):
+    """BP-16 — which side of the Shop a promise is about (DEC-019).
+
+    A customer promises to pay the shop; the shop promises to pay a supplier.
+    The same person can hold both, and the two are never one promise.
+    """
+
+    CUSTOMER = "customer", _("Customer")
+    SUPPLIER = "supplier", _("Supplier")
+
+
+class ShopPromiseState(models.TextChoices):
+    """BP-16 — open until somebody says it was kept or is off.
+
+    "Late" is not a state: it is an open promise whose date has passed, and it
+    is computed on the business's clock when it is read.
+    """
+
+    OPEN = "open", _("Open")
+    KEPT = "kept", _("Kept")
+    CANCELLED = "cancelled", _("Cancelled")

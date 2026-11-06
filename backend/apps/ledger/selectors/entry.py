@@ -13,7 +13,7 @@ from uuid import UUID
 from django.db.models import Case, Count, DecimalField, F, Q, QuerySet, Sum, When
 from django.db.models.functions import Coalesce
 
-from apps.common.constants import Direction
+from apps.common.constants import BALANCE_BUCKET_VALUES, Direction, LedgerBucket
 from apps.common.money import ZERO
 from apps.ledger.constants import EntryType
 from apps.ledger.models import LedgerEntry
@@ -54,16 +54,60 @@ MONEY = DecimalField(max_digits=14, decimal_places=2)
 #: cannot drift apart.
 LIVE_ENTRIES = Q(status="posted", reversed_by__isnull=True, reverses__isnull=True)
 
-#: `Σ debit − Σ credit`, as a database expression over `LIVE_ENTRIES`.
-SIGNED_AMOUNT = Sum(
-    Case(
-        When(direction=Direction.DEBIT, then=F("amount")),
-        When(direction=Direction.CREDIT, then=-F("amount")),
-        default=Decimal("0.00"),
-        output_field=MONEY,
-    ),
-    filter=LIVE_ENTRIES,
+# ── Buckets (A2, ADR-043, FRD 00 PLT-X01 BR-1 and BR-4) ──────────────────────
+#
+# `party.balance` is Σ signed over the `main` bucket (DEC-019); a `deposit` line is
+# money HELD for the party and is never in it. Every reader of the balance — this
+# module's aggregates, the statement's window and carry, the timeline's running
+# balance, the drift check and `recalc_balances` — narrows by the ONE constant below,
+# imported rather than restated (the LED-04 rule: a replay written from the same prose
+# is not a check). For a tenant whose every row is `main` the narrowing changes no row.
+
+#: The rows `party.balance` is summed over, beside `LIVE_ENTRIES`.
+BALANCE_BUCKETS = Q(bucket__in=BALANCE_BUCKET_VALUES)
+#: DEC-019 — each app's own bucket, beside the udhaar book's.
+SHOP_BUCKET = Q(bucket=LedgerBucket.SHOP)
+LIBRARY_BUCKET = Q(bucket=LedgerBucket.LIBRARY)
+#: The loan bucket (`party.loan_balance`).
+LOAN_BUCKET = Q(bucket=LedgerBucket.LOAN)
+#: Deposits held (`party.deposit_held`), outside the balance.
+DEPOSIT_BUCKET = Q(bucket=LedgerBucket.DEPOSIT)
+
+#: DEC-019 — the two apps whose people have a khata-shaped page (a timeline, a statement,
+#: a running balance): the Udhaar book reads `main`, the Shop reads `shop`. Lending and
+#: the library have their own pages and are not here. Anything else falls back to the
+#: Udhaar book, so a stray `?book=` can never reveal a third app's rows.
+BOOK_BUCKETS: dict[str, Q] = {"main": BALANCE_BUCKETS, "shop": SHOP_BUCKET}
+#: The party column each book's figures must agree with (BR-3).
+BOOK_BALANCE_FIELD: dict[str, str] = {"main": "balance", "shop": "shop_balance"}
+
+
+def book_of(raw: Any) -> str:
+    """`?book=` as one of `BOOK_BUCKETS`' keys; anything else is the Udhaar book."""
+    return raw if raw in BOOK_BUCKETS else "main"
+
+
+_SIGNED = Case(
+    When(direction=Direction.DEBIT, then=F("amount")),
+    When(direction=Direction.CREDIT, then=-F("amount")),
+    default=Decimal("0.00"),
+    output_field=MONEY,
 )
+
+#: `Σ debit − Σ credit`, as a database expression over `LIVE_ENTRIES` in the balance
+#: buckets — `party.balance`.
+SIGNED_AMOUNT = Sum(_SIGNED, filter=LIVE_ENTRIES & BALANCE_BUCKETS)
+
+#: The same over the `loan` bucket alone — `party.loan_balance`.
+LOAN_SIGNED_AMOUNT = Sum(_SIGNED, filter=LIVE_ENTRIES & LOAN_BUCKET)
+#: … the `shop` bucket — `party.shop_balance`; the `library` bucket — `party.library_balance`.
+SHOP_SIGNED_AMOUNT = Sum(_SIGNED, filter=LIVE_ENTRIES & SHOP_BUCKET)
+LIBRARY_SIGNED_AMOUNT = Sum(_SIGNED, filter=LIVE_ENTRIES & LIBRARY_BUCKET)
+
+#: `Σ credit − Σ debit` over the `deposit` bucket — `party.deposit_held`. The opposite
+#: sign to the balance on purpose: a deposit received is a credit, and it INCREASES
+#: what is held (BR-1).
+DEPOSIT_HELD_AMOUNT = Sum(-_SIGNED, filter=LIVE_ENTRIES & DEPOSIT_BUCKET)
 
 
 def computed_balance(*, tenant: Any, party_id: Any) -> Decimal:
@@ -77,6 +121,30 @@ def computed_balance(*, tenant: Any, party_id: Any) -> Decimal:
     total = LedgerEntry.objects.filter(tenant=tenant, party_id=party_id).aggregate(
         balance=Coalesce(SIGNED_AMOUNT, Decimal("0.00"), output_field=MONEY)
     )["balance"]
+    return total or ZERO
+
+
+def computed_loan_balance(*, tenant: Any, party_id: Any) -> Decimal:
+    """`party.loan_balance` re-derived from the ledger — the loan bucket's ground truth."""
+    total = LedgerEntry.objects.filter(tenant=tenant, party_id=party_id).aggregate(
+        loan=Coalesce(LOAN_SIGNED_AMOUNT, Decimal("0.00"), output_field=MONEY)
+    )["loan"]
+    return total or ZERO
+
+
+def computed_shop_balance(*, tenant: Any, party_id: Any) -> Decimal:
+    """`party.shop_balance` re-derived from the ledger — the Shop's ground truth (DEC-019)."""
+    total = LedgerEntry.objects.filter(tenant=tenant, party_id=party_id).aggregate(
+        shop=Coalesce(SHOP_SIGNED_AMOUNT, Decimal("0.00"), output_field=MONEY)
+    )["shop"]
+    return total or ZERO
+
+
+def computed_deposit_held(*, tenant: Any, party_id: Any) -> Decimal:
+    """`party.deposit_held` re-derived from the ledger — the deposit bucket's ground truth."""
+    total = LedgerEntry.objects.filter(tenant=tenant, party_id=party_id).aggregate(
+        held=Coalesce(DEPOSIT_HELD_AMOUNT, Decimal("0.00"), output_field=MONEY)
+    )["held"]
     return total or ZERO
 
 
@@ -95,7 +163,11 @@ TIMELINE_ORDERING: tuple[str, ...] = ("-entry_date", "-created_at", "-id")
 
 
 def party_entries(
-    *, tenant: Any, party_id: UUID | str, include_reversed: bool = False
+    *,
+    tenant: Any,
+    party_id: UUID | str,
+    include_reversed: bool = False,
+    buckets: Q = BALANCE_BUCKETS,
 ) -> QuerySet[LedgerEntry]:
     """One party's khata, newest first, ready for the cursor paginator.
 
@@ -121,7 +193,9 @@ def party_entries(
     """
     if tenant is None:
         return LedgerEntry.objects.none()
-    queryset = LedgerEntry.objects.filter(tenant=tenant, party_id=party_id)
+    # DEC-019 — a book lists its OWN lines (`buckets`, the udhaar book's by default): a
+    # bill, a loan, a library fee or a security deposit is another app's.
+    queryset = LedgerEntry.objects.filter(tenant=tenant, party_id=party_id).filter(buckets)
     if not include_reversed:
         queryset = queryset.filter(LIVE_ENTRIES)
     return queryset.select_related("created_by").order_by(*TIMELINE_ORDERING)
@@ -178,7 +252,9 @@ def _money_sum(condition: Q) -> Coalesce:
     return Coalesce(Sum("amount", filter=condition), Decimal("0.00"), output_field=MONEY)
 
 
-def split_total_expressions(within: Q | None = None) -> dict[str, Coalesce]:
+def split_total_expressions(
+    within: Q | None = None, buckets: Q = BALANCE_BUCKETS
+) -> dict[str, Coalesce]:
     """The four conditional sums behind every gave / got / written-off figure.
 
     `within` narrows the rows (the timeline passes `LIVE_ENTRIES`; the statement
@@ -186,7 +262,10 @@ def split_total_expressions(within: Q | None = None) -> dict[str, Coalesce]:
     result so a caller can add its own aggregate — `entry_count` — to the SAME
     query instead of making a second trip.
     """
-    base = within if within is not None else Q()
+    # A2 BR-4 — gave, got and written-off are figures about what is OWED, so a deposit
+    # line is in none of them; it is reported in its own block (the statement's
+    # "Deposit held") and by `party.deposit_held`.
+    base = (within if within is not None else Q()) & buckets
     debit, credit = Q(direction=Direction.DEBIT), Q(direction=Direction.CREDIT)
     return {
         "debit": _money_sum(base & debit & ~WRITE_OFF_ENTRIES),
@@ -208,7 +287,9 @@ def split_totals(aggregate: dict) -> dict:
     }
 
 
-def party_ledger_summary(*, tenant: Any, party_id: UUID | str) -> dict:
+def party_ledger_summary(
+    *, tenant: Any, party_id: UUID | str, buckets: Q = BALANCE_BUCKETS
+) -> dict:
     """The khata header's figures that come from the LEDGER rather than the party row.
 
     Three of PTY-03 §14's seven. The other four — invoiced, paid against
@@ -231,8 +312,10 @@ def party_ledger_summary(*, tenant: Any, party_id: UUID | str) -> dict:
             "entry_count": 0,
         }
     aggregate = LedgerEntry.objects.filter(tenant=tenant, party_id=party_id).aggregate(
-        **split_total_expressions(LIVE_ENTRIES),
-        entry_count=Count("id", filter=LIVE_ENTRIES),
+        **split_total_expressions(LIVE_ENTRIES, buckets),
+        # The book's own live lines (DEC-019): the count decides whether the page shows a
+        # timeline or a first-use empty state, so another app's lines must not count.
+        entry_count=Count("id", filter=LIVE_ENTRIES & buckets),
     )
     totals = split_totals(aggregate)
     return {

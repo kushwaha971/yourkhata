@@ -6,3 +6,6 @@ coverage
 next-env.d.ts
 *.tsbuildinfo
 bundle-report.json
+
+# ADR-064: copied from node_modules by scripts/copy-zxing-wasm.mjs before each build
+public/vendor/zxing_reader-*.wasm

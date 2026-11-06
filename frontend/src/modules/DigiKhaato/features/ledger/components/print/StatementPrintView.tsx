@@ -6,13 +6,14 @@ import { formatInr } from 'src/utils/money';
 import { formatPhoneForDisplay } from 'src/utils/share';
 
 import { writtenOffLines } from '../../view-model/entryDisplay';
+import { statementRowTitle } from '../../view-model/narration';
 import {
   balanceDirection,
   balanceLabelId,
   isStruckThrough,
-  rowTitleId,
   unsigned,
 } from '../../view-model/statementDisplay';
+import { DepositHeldBlock } from '../DepositHeldBlock';
 
 import type {
   StatementParty,
@@ -196,8 +197,14 @@ export function StatementPrintView({
           />
         </UbBox>
 
-        <UbText variant="caption" tone="tertiary">
-          {t('ledger.statement.generatedBy', { app: 'DigiKhaato' })}
+        {/* A2 — the "Deposit held" block, after the closing it is not part of. */}
+        {summary.deposit && <DepositHeldBlock deposit={summary.deposit} />}
+
+        {/* CR-2026-09-29-BRAND-A: the statement a customer is handed is the
+            shop's document. It is signed with the shop's name and carries no
+            product name or domain. */}
+        <UbText variant="caption" tone="tertiary" data-testid="statement-issued-by">
+          {t('ledger.statement.issuedBy', { business: shopName })}
         </UbText>
       </UbStack>
     </UbBox>
@@ -283,8 +290,7 @@ function StatementPrintTable({
  * not printed twice (CR-2026-09-24-A).
  */
 function printParticulars(row: StatementRow, t: (id: string) => string): string {
-  const titleId = rowTitleId(row);
-  const title = titleId ? t(titleId) : row.note.trim();
+  const title = statementRowTitle(row, t);
   const reason = row.reason && row.reason.trim() !== row.note.trim() ? ` · ${row.reason}` : '';
   if (row.entryType === 'write_off') {
     const label = t('ledger.entry.type.write_off');

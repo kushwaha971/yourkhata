@@ -80,8 +80,12 @@ export interface OnboardingShellProps {
 /**
  * Wide enough for a three-column tile grid at 1024 px and still a readable
  * measure for a label and a field. Capped, never stretched (§23.3).
+ *
+ * B1 (design dPick): from `lg` the step is the design's 820 px card, so the
+ * five-across tiles have ~140 px each and their hints sit on one line; at
+ * 560 px they had 88 px and "General store" broke in two.
  */
-const MEASURE = 'w-full max-w-[560px]';
+const MEASURE = 'w-full max-w-[560px] lg:max-w-[820px]';
 
 function OnboardingShellBase({
   steps,

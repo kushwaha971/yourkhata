@@ -16,7 +16,7 @@
 import { chromium } from 'playwright';
 import { mkdirSync } from 'node:fs';
 
-const FRONTEND = process.env.E2E_FRONTEND ?? 'http://localhost:3000';
+const FRONTEND = process.env.E2E_FRONTEND ?? (process.env.E2E_BASE ?? 'http://localhost:3000');
 const BACKEND = process.env.E2E_BACKEND ?? 'http://localhost:8000/api/v1';
 const SHOT_DIR = process.env.E2E_SHOTS ?? '/tmp/e2e-shots/expenses';
 const wantShots = process.argv.includes('--shots');
@@ -152,7 +152,7 @@ async function apiChecks({ token, landlordId }) {
 }
 
 const signIn = async (page) => {
-  await page.goto(`${FRONTEND}/login`, { waitUntil: 'networkidle', timeout: 180000 });
+  await page.goto(`${FRONTEND}/login/email`, { waitUntil: 'networkidle', timeout: 180000 });
   await page.waitForTimeout(2000);
   await page.fill('input[type="email"], input[name="email"]', OWNER.email);
   await page.fill('input[type="password"], input[name="password"]', OWNER.password);

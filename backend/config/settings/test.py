@@ -23,7 +23,8 @@ MEDIA_ROOT = tempfile.mkdtemp(prefix="ub-test-media-")
 
 DATABASES["default"]["ATOMIC_REQUESTS"] = False  # noqa: F405
 # `lock_timeout` must stay short so the concurrency tests fail fast rather than hang.
-DATABASES["default"]["OPTIONS"] = {"options": "-c lock_timeout=5000"}  # noqa: F405
+# JIT stays off here as everywhere else (tests/performance/test_no_jit.py).
+DATABASES["default"]["OPTIONS"] = {"options": "-c lock_timeout=5000 -c jit=off"}  # noqa: F405
 
 LOGGING = build_logging_config(level="CRITICAL", fmt="console")  # noqa: F405
 
@@ -32,3 +33,18 @@ LOGGING = build_logging_config(level="CRITICAL", fmt="console")  # noqa: F405
 DATABASES["default"]["TEST"] = {  # noqa: F405
     "NAME": env.str("UB_TEST_DB_NAME", "test_udhaarbook")  # noqa: F405
 }
+
+# DEC-014 — never a real SMS from the suite. `base` reads backend/.env, where
+# the owner's Message Central credentials live, so without this every OTP test
+# would text a made-up number on a paid account. Tests of the Message Central
+# service set the credentials themselves and stub the network.
+FAST2SMS_API_KEY = ""
+MC_CUSTOMER_ID = ""
+MC_PASSWORD = ""
+MC_AUTH_TOKEN = ""
+UB_OTP_PROVIDER = "console"
+UB_SMS_BACKEND = "apps.common.integrations.sms.console.ConsoleSmsBackend"
+
+META_WHATSAPP_ACCESS_TOKEN = ""
+META_WHATSAPP_APP_SECRET = ""
+META_WHATSAPP_WEBHOOK_VERIFY_TOKEN = ""

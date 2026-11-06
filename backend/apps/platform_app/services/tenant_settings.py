@@ -43,9 +43,44 @@ CORE_MODULES: frozenset[str] = frozenset({"platform", "parties", "ledger"})
 #: PLT-06 §10: "dependency `sales` requires `parties`,`ledger`". Both are core,
 #: so the rule can never fire today; it is stated so a future non-core
 #: dependency is one line here rather than an `if` in the service.
-MODULE_DEPENDENCIES: dict[str, frozenset[str]] = {"sales": frozenset({"parties", "ledger"})}
+MODULE_DEPENDENCIES: dict[str, frozenset[str]] = {
+    "sales": frozenset({"parties", "ledger"}),
+    "khata": frozenset({"parties", "ledger"}),  # DEC-019 — the Udhaar book
+    # ── A12 ── 10-architecture §2.3. Gym and hospitality need the sales MODULE
+    # because their money is tax invoices — a runtime dependency, not an import.
+    "lending": frozenset({"parties", "ledger", "payments"}),
+    "library": frozenset({"parties", "ledger", "payments"}),
+    "gym": frozenset({"parties", "ledger", "payments", "sales"}),
+    "hospitality": frozenset({"parties", "ledger", "payments", "sales"}),
+}
+
+#: A12 (ADR-041, contracts §1.1) — which shared engines each module uses.
+#: Engines have no module code and no switch: an engine is on exactly when an
+#: effective module lists it here (`entitlements.engine_enabled`). Strings only
+#: (L4); the engines' apps are never imported from here.
+ENGINES_USED_BY: dict[str, frozenset[str]] = {
+    "lending": frozenset({"dues"}),
+    "library": frozenset({"dues"}),  # recurring fees; seats and visits come later
+    "gym": frozenset({"dues", "attendance"}),
+    "hospitality": frozenset({"bookings", "dues"}),  # dues only for long stays (later)
+}
 
 PUT_TOP_LEVEL_KEYS = frozenset({"values", "numbering"})
+
+#: ── A8 ── owner Q14 (default adopted): settings the code stores but never reads
+#: are removed from the settings payload until they are wired — a switch whose
+#: effect nobody can see teaches a merchant the product is broken. The rows
+#: stay where onboarding wrote them; a PUT still carrying one (an old client)
+#: leaves it alone rather than refusing the whole save. `reset_fy` on the
+#: numbering rows is the other half: every series resets each year whatever it
+#: says (ADR-051), so it is neither shown nor written.
+UNWIRED_KEYS: frozenset[str] = frozenset({"sales.default_kind"})
+
+
+def _shown_specs(tenant: Any) -> dict[str, Any]:
+    """Core keys and the keys of the tenant's effective modules (A10's
+    `specs_for`), minus the unwired ones."""
+    return {k: s for k, s in schema.specs_for(tenant).items() if k not in UNWIRED_KEYS}
 
 
 class PreconditionFailed(BusinessRuleViolation):
@@ -70,25 +105,40 @@ def _current_fy(tenant: Any) -> str:
 
 
 def _sequences(tenant: Any, fy_label: str, *, lock: bool = False) -> dict[str, Any]:
-    from apps.platform_app.models import DocumentSequence
+    """The current year's rows, and (A8) the perpetual `'*'` rows, by kind.
 
-    qs = DocumentSequence.objects.filter(tenant=tenant, fy_label=fy_label)
+    A kind is either `fy` or `perpetual`, never both, so one key per kind holds.
+    """
+    from apps.platform_app.models import DocumentSequence
+    from apps.platform_app.services.sequences import PERPETUAL, number_kind
+
+    qs = DocumentSequence.objects.filter(tenant=tenant, fy_label__in=(fy_label, PERPETUAL))
     if lock:
         qs = qs.select_for_update()
-    return {row.kind: row for row in qs}
+    rows: dict[str, Any] = {}
+    for row in qs:
+        spec = number_kind(row.kind)
+        perpetual = spec is not None and spec.mode == "perpetual"
+        if (row.fy_label == PERPETUAL) == perpetual:
+            rows[row.kind] = row
+    return rows
 
 
-def _reset_fy_map(rows: dict[str, Any]) -> dict[str, bool]:
-    row = rows.get(schema.NUMBERING_KEY)
-    stored = row.value if row is not None and isinstance(row.value, dict) else {}
-    return {
-        kind: bool((stored.get(kind) or {}).get("reset_fy", True))
-        for kind in schema.NUMBERING_KINDS
-    }
+def _shown_kinds(tenant: Any) -> list[Any]:
+    """A8 (FRD §2 flow 1): the registered number kinds of effective modules."""
+    from apps.platform_app.services.entitlements import effective_modules
+    from apps.platform_app.services.sequences import number_kinds
+
+    kinds = number_kinds()
+    if not kinds:
+        return []
+    effective = effective_modules(tenant)
+    return [spec for spec in kinds if spec.module in effective]
 
 
 def _numbering_view(tenant: Any, rows: dict[str, Any], sequences: dict[str, Any], fy: str) -> dict:
-    reset = _reset_fy_map(rows)
+    from apps.platform_app.services.sequences import format_counter
+
     default_prefix = dict(presets.NUMBERING_PREFIXES)
     view: dict[str, dict] = {}
     for kind in schema.NUMBERING_KINDS:
@@ -97,13 +147,36 @@ def _numbering_view(tenant: Any, rows: dict[str, Any], sequences: dict[str, Any]
         padding = seq.padding if seq is not None else presets.NUMBER_PADDING
         next_number = seq.next_number if seq is not None else 1
         view[kind] = {
+            "mode": "fy",
             "prefix": prefix,
             "next_number": next_number,
             "padding": padding,
-            "reset_fy": reset[kind],
             "preview": schema.format_number(
                 prefix=prefix, fy_label=fy, number=next_number, padding=padding
             ),
+        }
+    # A8: a module's kinds, only while the module is on (FRD §6).
+    for spec in _shown_kinds(tenant):
+        seq = sequences.get(spec.kind)
+        prefix = seq.prefix if seq is not None else spec.default_prefix
+        padding = seq.padding if seq is not None else spec.padding
+        next_number = seq.next_number if seq is not None else 1
+        preview = (
+            format_counter(prefix=prefix, number=next_number, padding=padding)
+            if spec.mode == "perpetual"
+            else schema.format_number(
+                prefix=prefix, fy_label=fy, number=next_number, padding=padding
+            )
+        )
+        view[spec.kind] = {
+            "kind": spec.kind,
+            "module": spec.module,
+            "mode": spec.mode,
+            "label_id": spec.label_id,
+            "prefix": prefix,
+            "padding": padding,
+            "next_number": next_number,
+            "preview": preview,
         }
     return view
 
@@ -111,7 +184,7 @@ def _numbering_view(tenant: Any, rows: dict[str, Any], sequences: dict[str, Any]
 def _values_view(tenant: Any, rows: dict[str, Any]) -> tuple[dict, dict]:
     values: dict[str, Any] = {}
     versions: dict[str, int] = {}
-    for key, spec in schema.SETTINGS.items():
+    for key, spec in _shown_specs(tenant).items():
         row = rows.get(key)
         if row is None:
             values[key] = spec.default(tenant.business_type)
@@ -139,16 +212,25 @@ def modules_view(tenant: Any) -> dict:
     your plan", never offered.
     """
     from apps.common.constants import ModuleCode
-    from apps.platform_app.services.entitlements import for_tenant
+    from apps.platform_app.services.entitlements import for_tenant, hidden_modules
 
-    available = set(for_tenant(tenant).modules)
-    universe = [m.value for m in ModuleCode if m.value not in ("help",)]
+    # A1 (PLT-X11 BR-1): an unreleased module is neither available nor locked —
+    # a locked "Gym" row is still an unbuilt feature on screen (vision §4).
+    hidden = hidden_modules()
+    available = set(for_tenant(tenant).modules) - hidden
+    universe = [m.value for m in ModuleCode if m.value not in ("help",) and m.value not in hidden]
     return {
         "enabled": sorted(set(tenant.enabled_modules or []) & available | {"platform"}),
         "available": [m for m in universe if m in available],
         "locked": [m for m in universe if m not in available],
         "core": sorted(CORE_MODULES),
     }
+
+
+def _calendar_readers(tenant: Any) -> list[str]:
+    from apps.platform_app.services.calendar import readers_for
+
+    return readers_for(tenant)
 
 
 def settings_payload(tenant: Any) -> dict:
@@ -162,8 +244,11 @@ def settings_payload(tenant: Any) -> dict:
         "schema_versions": versions,
         "numbering": numbering,
         "fy_label": fy,
-        "sections": {key: spec.section for key, spec in schema.SETTINGS.items()},
+        "sections": {key: spec.section for key, spec in _shown_specs(tenant).items()},
         "modules": modules_view(tenant),
+        # A9b (PLT-X08 §7): the enabled modules that read the business-days
+        # calendar — the Settings hub shows "Business days" only when non-empty.
+        "calendar_readers": _calendar_readers(tenant),
         "etag": compute_etag(values, numbering),
     }
 
@@ -176,9 +261,9 @@ def preset_payload(tenant: Any) -> dict:
     Numbering's preset is the prefix, padding and `reset_fy`; the next number
     is never "reset", because that would be BR-1's forbidden renumbering.
     """
-    values = {key: spec.default(tenant.business_type) for key, spec in schema.SETTINGS.items()}
+    values = {key: spec.default(tenant.business_type) for key, spec in _shown_specs(tenant).items()}
     numbering = {
-        kind: {"prefix": prefix, "padding": presets.NUMBER_PADDING, "reset_fy": True}
+        kind: {"prefix": prefix, "padding": presets.NUMBER_PADDING}
         for kind, prefix in presets.NUMBERING_PREFIXES
     }
     return {"values": values, "numbering": numbering, "business_type": tenant.business_type}
@@ -194,7 +279,9 @@ def _validate_values(tenant: Any, incoming: Any) -> dict[str, Any]:
     cleaned: dict[str, Any] = {}
     kind_refused: str | None = None
     for key, value in incoming.items():
-        spec = schema.SETTINGS.get(key)
+        if key in UNWIRED_KEYS:
+            continue  # owner Q14: not shown, so not written; an old client is not refused
+        spec = schema.spec_for(tenant, key)
         if spec is None:
             errors[key] = ["This is not a setting."]
             continue
@@ -215,7 +302,34 @@ def _validate_values(tenant: Any, incoming: Any) -> dict[str, Any]:
     return cleaned
 
 
+def _numbering_row_errors(*, kind: str, row: dict, fy: str) -> list[str]:
+    """FR-3's rules for an FY series; A8's for a perpetual one (no year, so no
+    Rule 46 length, and padding may be 0 — an accession number is `1024`)."""
+    from apps.platform_app.services.sequences import MAX_NEXT_NUMBER, number_kind
+
+    spec = number_kind(kind)
+    if spec is None or spec.mode == "fy":
+        return schema.numbering_row_errors(
+            fy_label=fy, **{k: row[k] for k in ("prefix", "padding", "next_number")}
+        )
+    prefix, padding, next_number = row["prefix"], row["padding"], row["next_number"]
+    if not isinstance(prefix, str) or not schema.NUMBERING_PREFIX_RE.match(prefix):
+        return ["Use capital letters, numbers, / or - (max 12)."]
+    if isinstance(padding, bool) or not isinstance(padding, int) or not 0 <= padding <= 10:
+        return ["Choose 0–10 digits."]
+    if (
+        isinstance(next_number, bool)
+        or not isinstance(next_number, int)
+        or not 1 <= next_number <= MAX_NEXT_NUMBER
+    ):
+        return ["Enter a whole number of 1 or more."]
+    return []
+
+
 def _validate_numbering(incoming: Any, current: dict, fy: str) -> dict[str, dict]:
+    """`current` is the numbering view: the core series plus the registered kinds
+    of effective modules (A8), so a switched-off module's series is refused as
+    "not a document series" like any unknown one. `reset_fy` is ignored (Q14)."""
     if not isinstance(incoming, dict):
         raise ValidationFailed({"numbering": ["Expected an object keyed by document kind."]})
     errors: dict[str, list[str]] = {}
@@ -223,7 +337,7 @@ def _validate_numbering(incoming: Any, current: dict, fy: str) -> dict[str, dict
     backwards: dict[str, int] = {}
     for kind, row in incoming.items():
         field = f"numbering.{kind}"
-        if kind not in schema.NUMBERING_KINDS or not isinstance(row, dict):
+        if kind not in current or not isinstance(row, dict):
             errors[field] = ["This is not a document series."]
             continue
         now = current[kind]
@@ -231,19 +345,13 @@ def _validate_numbering(incoming: Any, current: dict, fy: str) -> dict[str, dict
             "prefix": str(row.get("prefix", now["prefix"]) or "").strip().upper(),
             "next_number": row.get("next_number", now["next_number"]),
             "padding": row.get("padding", now["padding"]),
-            "reset_fy": row.get("reset_fy", now["reset_fy"]),
         }
-        if not isinstance(wanted["reset_fy"], bool):
-            errors[field] = ["Choose on or off for the yearly restart."]
-            continue
         changed = any(wanted[k] != now[k] for k in ("prefix", "next_number", "padding"))
         if changed:
             # A row is re-validated only when it changes: a preset that already
             # breaks the 16-character rule (PAYOUT/26-27/0001) must not make every
             # unrelated save of the page fail.
-            row_errors = schema.numbering_row_errors(
-                fy_label=fy, **{k: wanted[k] for k in ("prefix", "padding", "next_number")}
-            )
+            row_errors = _numbering_row_errors(kind=kind, row=wanted, fy=fy)
             if row_errors:
                 errors[field] = row_errors
                 continue
@@ -305,48 +413,40 @@ def save_settings(*, tenant: Any, body: Any, if_match: str | None, ctx: Ctx) -> 
             TenantSetting.objects.update_or_create(
                 tenant=tenant,
                 key=key,
-                defaults={"value": value, "schema_version": schema.SETTINGS[key].schema_version},
+                defaults={
+                    "value": value,
+                    "schema_version": schema.spec_for(tenant, key).schema_version,
+                },
             )
 
         numbering_changed_before: dict[str, Any] = {}
         numbering_changed_after: dict[str, Any] = {}
-        reset_map = _reset_fy_map(rows)
-        reset_dirty = False
+        from apps.platform_app.services.sequences import PERPETUAL
+
         for kind, wanted in cleaned_numbering.items():
             now = numbering_before[kind]
-            if all(wanted[k] == now[k] for k in ("prefix", "next_number", "padding", "reset_fy")):
+            if all(wanted[k] == now[k] for k in ("prefix", "next_number", "padding")):
                 continue
-            numbering_changed_before[kind] = {k: v for k, v in now.items() if k != "preview"}
+            numbering_changed_before[kind] = {
+                k: now[k] for k in ("prefix", "next_number", "padding")
+            }
             numbering_changed_after[kind] = dict(wanted)
-            if any(wanted[k] != now[k] for k in ("prefix", "next_number", "padding")):
-                seq = sequences.get(kind)
-                if seq is None:
-                    DocumentSequence.objects.create(
-                        tenant=tenant,
-                        kind=kind,
-                        fy_label=fy,
-                        prefix=wanted["prefix"],
-                        next_number=wanted["next_number"],
-                        padding=wanted["padding"],
-                    )
-                else:
-                    seq.prefix = wanted["prefix"]
-                    seq.next_number = wanted["next_number"]
-                    seq.padding = wanted["padding"]
-                    seq.save(update_fields=["prefix", "next_number", "padding", "updated_at"])
-            if wanted["reset_fy"] != reset_map[kind]:
-                reset_map[kind] = wanted["reset_fy"]
-                reset_dirty = True
-        if reset_dirty:
-            row = rows.get(schema.NUMBERING_KEY)
-            stored = dict(row.value) if row is not None and isinstance(row.value, dict) else {}
-            for kind, flag in reset_map.items():
-                entry = dict(stored.get(kind) or {})
-                entry["reset_fy"] = flag
-                stored[kind] = entry
-            TenantSetting.objects.update_or_create(
-                tenant=tenant, key=schema.NUMBERING_KEY, defaults={"value": stored}
-            )
+            seq = sequences.get(kind)
+            if seq is None:
+                DocumentSequence.objects.create(
+                    tenant=tenant,
+                    kind=kind,
+                    # A8: a perpetual kind's one row is `'*'`, never the year.
+                    fy_label=PERPETUAL if now["mode"] == "perpetual" else fy,
+                    prefix=wanted["prefix"],
+                    next_number=wanted["next_number"],
+                    padding=wanted["padding"],
+                )
+            else:
+                seq.prefix = wanted["prefix"]
+                seq.next_number = wanted["next_number"]
+                seq.padding = wanted["padding"]
+                seq.save(update_fields=["prefix", "next_number", "padding", "updated_at"])
 
         if changed_after:
             write_audit(
@@ -371,6 +471,52 @@ def save_settings(*, tenant: Any, body: Any, if_match: str | None, ctx: Ctx) -> 
     return settings_payload(tenant)
 
 
+def set_shop_choices(*, tenant: Any, values: dict[str, Any], ctx: Ctx) -> None:
+    """Sign-up step 1's Shop answers, written with the business (R-DEC-64/66).
+
+    `shop.wholesale` ("Wholesale of what?") and `shop.features.*` ("Anything
+    your shop needs?"). Written in the same request that creates or edits the
+    business, so a failure cannot leave it half set up. Each value goes
+    through its own spec; audited like any settings write; a no-op when
+    nothing changes.
+    """
+    from apps.platform_app.models import TenantSetting
+
+    with transaction.atomic():
+        before: dict[str, Any] = {}
+        after: dict[str, Any] = {}
+        for key, raw in values.items():
+            spec = schema.spec_for(tenant, key)
+            if spec is None:
+                raise ValidationFailed({key: ["This is not a setting."]})
+            try:
+                value = spec.validate(raw, tenant)
+            except schema.SettingError as exc:
+                raise ValidationFailed({key: exc.messages}) from exc
+            row = TenantSetting.objects.filter(tenant=tenant, key=key).first()
+            old = row.value if row else spec.default(tenant.business_type)
+            if row is not None and row.value == value:
+                continue
+            TenantSetting.objects.update_or_create(
+                tenant=tenant,
+                key=key,
+                defaults={"value": value, "schema_version": spec.schema_version},
+            )
+            if old != value:
+                before[key] = old
+                after[key] = value
+        if after:
+            write_audit(
+                ctx=ctx,
+                action=AuditAction.SETTINGS_UPDATED,
+                entity_type="platform_tenant",
+                entity_id=tenant.id,
+                before=before,
+                after=after,
+                metadata={"keys": sorted(after)},
+            )
+
+
 def update_enabled_modules(*, tenant: Any, modules: Any, ctx: Ctx) -> Any:
     """FR-4 — `PATCH /tenants/current {enabled_modules}`.
 
@@ -380,7 +526,7 @@ def update_enabled_modules(*, tenant: Any, modules: Any, ctx: Ctx) -> Any:
     module with live data cannot be switched off (409 `module_has_data`, with
     the count). Switching off deletes nothing (BR-4).
     """
-    from apps.platform_app.services.guards import blocking_rows_for_module_off
+    from apps.platform_app.services.guards import module_off_blockers, run_module_enable_hooks
 
     if not isinstance(modules, list) or not all(isinstance(m, str) for m in modules):
         raise ValidationFailed({"enabled_modules": ["Expected a list of features."]})
@@ -398,9 +544,20 @@ def update_enabled_modules(*, tenant: Any, modules: Any, ctx: Ctx) -> Any:
             )
 
     before = sorted(set(tenant.enabled_modules or []))
+    # A1 (PLT-X11 EC-1): a hidden module the tenant row already carries (a dev
+    # database from a flagged run) is carried through untouched. The client
+    # cannot send what it was never shown, so without this every ordinary
+    # switch flip would silently switch that module off for good.
+    from apps.platform_app.services.entitlements import hidden_modules
+
+    wanted |= set(before) & hidden_modules()
     turning_off = sorted(set(before) - wanted)
     for module in turning_off:
-        count = blocking_rows_for_module_off(tenant, module)
+        # A12 (R14): the breakdown names each open thing and its count, so the
+        # screen can say "3 books out and 2 deposits held" rather than "still
+        # has records". `count` stays the sum, as it always was.
+        breakdown = module_off_blockers(tenant, module)
+        count = sum(row["count"] for row in breakdown)
         if count:
             raise BusinessRuleViolation(
                 "module_has_data",
@@ -409,15 +566,24 @@ def update_enabled_modules(*, tenant: Any, modules: Any, ctx: Ctx) -> Any:
                     if module == "inventory"
                     else str(_("This feature still has records that need attention."))
                 ),
-                details={"module": module, "count": count},
+                details={"module": module, "count": count, "breakdown": breakdown},
             )
 
     after = sorted(wanted)
     if after == before:
         return tenant
+    turning_on = sorted(set(after) - set(before))
     with transaction.atomic():
         tenant.enabled_modules = after
         tenant.save(update_fields=["enabled_modules", "updated_at"])
+        # The entitlement cache on the instance is keyed to the old switches,
+        # and an enable hook may well ask `effective_modules` about the new one.
+        if hasattr(tenant, "_ub_entitlement"):
+            delattr(tenant, "_ub_entitlement")
+        # A12 (R15, BR-6): each newly enabled module seeds its presets inside
+        # this transaction, after the dependency check, so a failing seed
+        # leaves the module off rather than on and half-seeded.
+        run_module_enable_hooks(ctx=ctx, tenant=tenant, modules=turning_on)
         write_audit(
             ctx=ctx,
             action=AuditAction.TENANT_MODULES_CHANGED,

@@ -1,9 +1,17 @@
-import { createSlice, type Draft, type PayloadAction, type WithSlice } from '@reduxjs/toolkit';
+import {
+  createSlice,
+  isAnyOf,
+  type Draft,
+  type PayloadAction,
+  type WithSlice,
+} from '@reduxjs/toolkit';
 
 import { resetAllFeatureState } from 'src/redux/actions';
 import { rootReducer, type RootState } from 'src/redux/store';
 import type { ApiErrorShape, RequestStatus } from 'src/types/api.types';
+import { draftReplyOutcome, type DraftReply } from 'src/utils/draftCreation';
 
+import { fetchFlowDocument, moveEstimate, saveEstimateDraft } from './salesFlowThunk';
 import {
   deleteInvoiceDraft,
   fetchInvoice,
@@ -29,12 +37,20 @@ import type {
 export type SaveState = 'idle' | 'saving' | 'saved' | 'error' | 'conflict';
 
 export interface InvoiceEditorState {
+  /**
+   * "Undo" was tapped on the "<item> removed" snackbar: the token of the line
+   * to put back. The snackbar can only dispatch a plain action, so the open
+   * bill watches this, restores the line it kept under that token, and clears it.
+   */
+  undoLine: string | null;
   documentId: string | null;
   version: number | null;
   serverUpdatedAt: string | null;
   /** The document as the server last returned it (drives form init on edit). */
   document: SalesDocument | null;
   loadStatus: RequestStatus;
+  loadRequestId: string | null;
+  saveRequestId: string | null;
   context: SalesContext | null;
   saveState: SaveState;
   savedAt: string | null;
@@ -46,11 +62,14 @@ export interface InvoiceEditorState {
 }
 
 const initialState: InvoiceEditorState = {
+  undoLine: null,
   documentId: null,
   version: null,
   serverUpdatedAt: null,
   document: null,
   loadStatus: 'idle',
+  loadRequestId: null,
+  saveRequestId: null,
   context: null,
   saveState: 'idle',
   savedAt: null,
@@ -70,6 +89,20 @@ const accept = (state: Draft<InvoiceEditorState>, envelope: SalesDocumentEnvelop
   state.rule46 = envelope.rule46 as Draft<Rule46Check> | null;
 };
 
+/** ADR-063 — a sales envelope in the shared recovery decision's terms. */
+export const salesDraftReply = (envelope: SalesDocumentEnvelope): DraftReply => ({
+  recovered: envelope.draftRecovered === true,
+  isDraft: envelope.document.status === 'draft',
+  version: envelope.document.version,
+});
+
+const markConflict = (state: Draft<InvoiceEditorState>) => {
+  state.saveState = 'conflict';
+  // The current version is already in state; the localized conflict dialog
+  // reads it directly when this conflict did not come from an API rejection.
+  state.error = null;
+};
+
 const invoiceEditorSlice = createSlice({
   name: 'invoiceEditor',
   initialState,
@@ -77,6 +110,18 @@ const invoiceEditorSlice = createSlice({
     /** A fresh editor (new bill, or leaving one): everything but the loaded context goes. */
     editorReset(state) {
       return { ...initialState, context: state.context };
+    },
+    lineRemovalUndone(state, action: PayloadAction<string>) {
+      state.undoLine = action.payload;
+    },
+    lineRestored(state) {
+      state.undoLine = null;
+    },
+    saveUnavailable(state) {
+      state.saveState = 'error';
+    },
+    restoreConflict(state) {
+      markConflict(state);
     },
     /** SAL-06 FR-9 — "Use server version": the conflict is resolved by reloading it. */
     conflictResolved(state, action: PayloadAction<{ version: number }>) {
@@ -88,32 +133,6 @@ const invoiceEditorSlice = createSlice({
     builder
       .addCase(fetchSalesContext.fulfilled, (state, action) => {
         state.context = action.payload as Draft<SalesContext>;
-      })
-      .addCase(fetchInvoice.pending, (state) => {
-        state.loadStatus = 'loading';
-        state.error = null;
-      })
-      .addCase(fetchInvoice.fulfilled, (state, action) => {
-        accept(state, action.payload);
-        state.loadStatus = 'succeeded';
-      })
-      .addCase(fetchInvoice.rejected, (state, action) => {
-        if (action.meta.aborted) return;
-        state.loadStatus = 'failed';
-        state.error = (action.payload ?? null) as Draft<ApiErrorShape> | null;
-      })
-      .addCase(saveInvoiceDraft.pending, (state) => {
-        state.saveState = 'saving';
-      })
-      .addCase(saveInvoiceDraft.fulfilled, (state, action) => {
-        accept(state, action.payload);
-        state.saveState = 'saved';
-        state.savedAt = action.payload.document.updatedAt;
-      })
-      .addCase(saveInvoiceDraft.rejected, (state, action) => {
-        const code = action.payload?.code;
-        state.saveState = code === 'stale_version' ? 'conflict' : 'error';
-        state.error = (action.payload ?? null) as Draft<ApiErrorShape> | null;
       })
       .addCase(issueInvoice.pending, (state) => {
         state.issuing = true;
@@ -132,11 +151,77 @@ const invoiceEditorSlice = createSlice({
         ...initialState,
         context: state.context,
       }))
-      .addCase(resetAllFeatureState, () => initialState);
+      .addCase(resetAllFeatureState, () => initialState)
+      // SAL-01 — the estimate editor is this editor with another kind: the
+      // same load, the same save states, and `mark-sent` as its "issue".
+      .addCase(moveEstimate.pending, (state) => {
+        state.issuing = true;
+        state.error = null;
+      })
+      .addCase(moveEstimate.fulfilled, (state, action) => {
+        accept(state, action.payload);
+        state.issuing = false;
+      })
+      .addCase(moveEstimate.rejected, (state, action) => {
+        state.issuing = false;
+        state.error = (action.payload ?? null) as Draft<ApiErrorShape> | null;
+      })
+      .addMatcher(isAnyOf(fetchInvoice.pending, fetchFlowDocument.pending), (state, action) => {
+        state.loadRequestId = action.meta.requestId;
+        state.loadStatus = 'loading';
+        state.error = null;
+      })
+      .addMatcher(isAnyOf(fetchInvoice.fulfilled, fetchFlowDocument.fulfilled), (state, action) => {
+        if (state.loadRequestId !== action.meta.requestId) return;
+        accept(state, action.payload);
+        state.loadStatus = 'succeeded';
+      })
+      .addMatcher(isAnyOf(fetchInvoice.rejected, fetchFlowDocument.rejected), (state, action) => {
+        if (action.meta.aborted || state.loadRequestId !== action.meta.requestId) return;
+        state.loadStatus = 'failed';
+        state.error = (action.payload ?? null) as Draft<ApiErrorShape> | null;
+      })
+      .addMatcher(isAnyOf(saveInvoiceDraft.pending, saveEstimateDraft.pending), (state, action) => {
+        state.saveRequestId = action.meta.requestId;
+        state.saveState = 'saving';
+      })
+      .addMatcher(
+        isAnyOf(saveInvoiceDraft.fulfilled, saveEstimateDraft.fulfilled),
+        (state, action) => {
+          if (state.saveRequestId !== action.meta.requestId) return;
+          accept(state, action.payload);
+          const outcome = draftReplyOutcome(salesDraftReply(action.payload));
+          if (outcome === 'posted') {
+            state.issued = action.payload as Draft<SalesDocumentEnvelope>;
+          }
+          if (outcome === 'conflict') {
+            markConflict(state);
+            return;
+          }
+          state.saveState = 'saved';
+          state.savedAt = action.payload.document.updatedAt;
+        }
+      )
+      .addMatcher(
+        isAnyOf(saveInvoiceDraft.rejected, saveEstimateDraft.rejected),
+        (state, action) => {
+          if (state.saveRequestId !== action.meta.requestId) return;
+          const code = action.payload?.code;
+          state.saveState = code === 'stale_version' ? 'conflict' : 'error';
+          state.error = (action.payload ?? null) as Draft<ApiErrorShape> | null;
+        }
+      );
   },
 });
 
-export const { editorReset, conflictResolved } = invoiceEditorSlice.actions;
+export const {
+  editorReset,
+  conflictResolved,
+  restoreConflict,
+  saveUnavailable,
+  lineRemovalUndone,
+  lineRestored,
+} = invoiceEditorSlice.actions;
 export const invoiceEditorReducer = invoiceEditorSlice.reducer;
 
 declare module 'src/redux/store' {

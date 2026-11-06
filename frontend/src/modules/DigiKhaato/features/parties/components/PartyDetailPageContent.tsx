@@ -3,7 +3,9 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import dynamic from 'next/dynamic';
-import { useRouter } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
+
+import { Minus, Plus } from 'lucide-react';
 
 import {
   UbBottomBar,
@@ -11,32 +13,43 @@ import {
   UbButton,
   UbCard,
   UbDisclosure,
+  UbDrawerLoading,
   UbEmptyState,
+  UbLink,
   UbPageHeader,
   UbPageShell,
   UbSkeleton,
   UbStack,
   UbStatusBanner,
+  useIsMobileLayer,
 } from 'src/design-system';
+import { useAppRouter } from 'src/hooks/useAppRouter';
 import { usePermissions } from 'src/hooks/usePermissions';
 import { useScrolledPast } from 'src/hooks/useScrolledPast';
-import { useTranslation } from 'src/hooks/useTranslation';
+import { useTranslation, type TranslateFn } from 'src/hooks/useTranslation';
 import { ROUTES, partyStatementPath } from 'src/routes';
 import { copyText } from 'src/utils/clipboard';
+import { subtractMoney, compareMoney } from 'src/utils/money';
 
 import { PartyLedgerTimeline } from 'modules/DigiKhaato/features/ledger/components/PartyLedgerTimeline';
 import { useLedgerEntryForm } from 'modules/DigiKhaato/features/ledger/hooks/useLedgerEntryForm';
 import { useOpeningBalance } from 'modules/DigiKhaato/features/ledger/hooks/useOpeningBalance';
 import { usePartyReminder } from 'modules/DigiKhaato/features/ledger/hooks/usePartyReminder';
+import { useAppWords } from 'modules/DigiKhaato/features/navigation/useAppWords';
 
+import { SHOP_BOOK_WORDS } from '../constants/partyFilters';
 import { usePartyArchive } from '../hooks/usePartyArchive';
 import { usePartyDetail } from '../hooks/usePartyDetail';
 import { usePartyForm } from '../hooks/usePartyForm';
+import { roleBadgeLabel } from '../view-model/partyRoleDisplay';
 
 import { PartyCollectionDate } from './PartyCollectionDate';
 import { PartyDetailHeader } from './PartyDetailHeader';
 import { PartyHeaderMenu } from './PartyHeaderMenu';
 import { PartyInfoPanel } from './PartyInfoPanel';
+import { PartyModulePanels } from './PartyModulePanels';
+import { ShopPersonActions } from './ShopPersonActions';
+import { ShopPersonOverview } from './ShopPersonOverview';
 
 import type { PartyDetail } from '../types/party.types';
 
@@ -70,9 +83,15 @@ import type { PartyDetail } from '../types/party.types';
  * an interaction, so `open` is false in every server pass and there is no
  * hydration mismatch to avoid.
  */
+const ShopPersonRecordsLazy = dynamic(
+  () => import('./ShopPersonRecords').then((m) => m.ShopPersonRecords),
+  { ssr: false }
+);
+
 const PartyFormDrawerLazy = dynamic(
   () => import('./PartyFormDrawer').then((m) => m.PartyFormDrawer),
-  { ssr: false }
+  { ssr: false,
+  loading: () => <UbDrawerLoading /> }
 );
 
 /**
@@ -86,6 +105,16 @@ const LedgerEntryDrawerLazy = dynamic(
   () =>
     import('modules/DigiKhaato/features/ledger/components/LedgerEntryDrawer').then(
       (m) => m.LedgerEntryDrawer
+    ),
+  { ssr: false,
+  loading: () => <UbDrawerLoading /> }
+);
+
+/** Shop gap §1.6 — loaded only for a customer of a business with inventory. */
+const PartyPriceListControl = dynamic(
+  () =>
+    import('modules/DigiKhaato/features/inventory/components/PartyPriceListControl').then(
+      (m) => m.PartyPriceListControl
     ),
   { ssr: false }
 );
@@ -103,7 +132,8 @@ const OpeningBalanceDrawerLazy = dynamic(
     import('modules/DigiKhaato/features/ledger/components/OpeningBalanceDrawer').then(
       (m) => m.OpeningBalanceDrawer
     ),
-  { ssr: false }
+  { ssr: false,
+  loading: () => <UbDrawerLoading /> }
 );
 
 export interface PartyDetailPageContentProps {
@@ -117,27 +147,103 @@ export interface PartyDetailPageContentProps {
 /* The reminder sheet loads when it opens, like the archive dialog: carried
    statically, the sheet, its link builders, the clipboard path and now the
    reminders slice cost the khata route on every visit to read a balance. */
-const PartyReminderSheetLazy = /* @__PURE__ */ dynamic(() =>
-  import('modules/DigiKhaato/features/reminders/components/PartyReminderSheet').then(
-    (m) => m.PartyReminderSheet
-  )
+const PartyReminderSheetLazy = /* @__PURE__ */ dynamic(
+  () =>
+    import('modules/DigiKhaato/features/reminders/components/PartyReminderSheet').then(
+      (m) => m.PartyReminderSheet
+    ),
+  { ssr: false }
 );
 
-const PartyReminderStripLazy = /* @__PURE__ */ dynamic(() =>
-  import('modules/DigiKhaato/features/reminders/components/PartyReminderStrip').then(
-    (m) => m.PartyReminderStrip
-  )
+const PartyReminderStripLazy = /* @__PURE__ */ dynamic(
+  () =>
+    import('modules/DigiKhaato/features/reminders/components/PartyReminderStrip').then(
+      (m) => m.PartyReminderStrip
+    ),
+  { ssr: false }
 );
 
-const PartyArchiveDialogLazy = /* @__PURE__ */ dynamic(() =>
-  import('./PartyArchiveDialog').then((m) => m.PartyArchiveDialog)
+/* BP-16 — the Shop promise card, in its own chunk with its words: it reads
+   its own record after the page has painted, and its 27 strings in two
+   languages cost the read screen 4 KB when carried statically. */
+const ShopPromiseControlLazy = /* @__PURE__ */ dynamic(
+  () => import('./ShopPromiseControl').then((m) => m.ShopPromiseControl),
+  // Holds the card's place so the page does not jump when it arrives.
+  { loading: () => <UbSkeleton className="h-28 w-full rounded-card sm:max-w-sm" /> }
 );
 
-export function PartyDetailPageContent({
+const PartyArchiveDialogLazy = /* @__PURE__ */ dynamic(
+  () => import('./PartyArchiveDialog').then((m) => m.PartyArchiveDialog),
+  { ssr: false }
+);
+
+/* PAY-01 / PAY-03 — the payments drawer and the Collect QR, each in its own
+   chunk with the payments slices inside it: a khata opened to READ a balance
+   downloads neither. */
+const PaymentFormDrawerLazy = /* @__PURE__ */ dynamic(
+  () =>
+    import('modules/DigiKhaato/features/payments/components/PaymentFormDrawer').then(
+      (m) => m.PaymentFormDrawer
+    ),
+  { ssr: false }
+);
+// ── A6 ── PLT-X04: the guardian/payer section and module panels, in their own
+// chunk and only for a business with a module that has roles.
+const PartyRelationsSectionLazy = /* @__PURE__ */ dynamic(
+  () => import('./PartyRelationsSection').then((m) => m.PartyRelationsSection),
+  { ssr: false }
+);
+
+// BP-08 — the settle dialog loads with its own words when a merchant opens it.
+const SettleBalancesDialogLazy = /* @__PURE__ */ dynamic(
+  () =>
+    import('modules/DigiKhaato/features/payments/settlement/components/SettleBalancesDialog').then(
+      (m) => m.SettleBalancesDialog
+    ),
+  { ssr: false }
+);
+
+const CollectQrSheetLazy = /* @__PURE__ */ dynamic(
+  () =>
+    import('modules/DigiKhaato/features/payments/components/CollectQrSheet').then(
+      (m) => m.CollectQrSheet
+    ),
+  { ssr: false }
+);
+
+/** PAY-01 FR-1 — the drawer's preset from the khata (a local mirror of `PaymentContext`). */
+interface KhataPaymentPreset {
+  readonly presetMode?: 'upi';
+  readonly presetAmount?: string;
+  /** PUR-02 — "Pay supplier": money out against the supplier's purchase bills. */
+  readonly direction?: 'out';
+}
+
+export function ExistingPartyDetailPageContent({
   id,
 }: Readonly<PartyDetailPageContentProps>): React.JSX.Element {
   const { t, d } = useTranslation();
-  const router = useRouter();
+  // docs/platform/14 step 6 — a library's student, a lender's borrower: the
+  // open app's words for this person, and its own list to go back to.
+  const { w, peopleHref, book, app } = useAppWords();
+  /* DEC-019 — each app shows only its own money. Opened from the Shop this page
+     is the person's bills and payments (`shopBook`); opened from the Udhaar book
+     it is You gave / You got. The udhaar book's own tools (the pair, the opening
+     balance, the credit limit) are not offered on the Shop's page,
+     and the Shop's payment tools are not offered in the Udhaar book. */
+  const shopBook = book === 'shop';
+  const search = useSearchParams();
+  const udhaarApp = app === 'khata';
+  /* The header's money words follow the book: "To collect / To pay" on the Shop's
+     page, "You will get / You will give" in the Udhaar book. */
+  const headerT = useCallback<TranslateFn>(
+    (key, values) =>
+      key === 'parties.detail.badge.customer' || key === 'parties.detail.badge.supplier'
+        ? t(key, values)
+        : w(shopBook ? (SHOP_BOOK_WORDS[key] ?? key) : key, values),
+    [t, w, shopBook]
+  );
+  const router = useAppRouter();
   const partyForm = usePartyForm();
   const entryForm = useLedgerEntryForm();
   const opening = useOpeningBalance(id);
@@ -154,7 +260,12 @@ export function PartyDetailPageContent({
     collectionStatus,
     setCollectionDate,
     refetch,
-  } = usePartyDetail(id);
+  } = usePartyDetail(id, shopBook ? 'shop' : undefined);
+  const supplierView =
+    shopBook &&
+    Boolean((party ?? cachedRow)?.isSupplier) &&
+    (search.get('from') === 'suppliers' || !(party ?? cachedRow)?.isCustomer);
+  const origin = supplierView ? ROUTES.SUPPLIERS : ROUTES.CUSTOMERS;
 
   const archive = usePartyArchive(id);
   /* The header's ⋯. Every dialog it opens returns focus here when it closes,
@@ -172,8 +283,16 @@ export function PartyDetailPageContent({
      up the pair sits beside the title and a laptop's khata rarely scrolls it
      away from a reachable place. */
   const [pairRef, pairScrolledPast] = useScrolledPast<HTMLDivElement>();
+  const isMobileLayer = useIsMobileLayer();
 
   const [copied, setCopied] = useState(false);
+  const [paying, setPaying] = useState<KhataPaymentPreset | null>(null);
+  const [settling, setSettling] = useState(false);
+  /* Bumped when a settlement's sheet closes: the bills and payments below are
+     re-read, because both of this person's roles just moved (BP-08). */
+  const [settleRound, setSettleRound] = useState(0);
+  const settledNow = useRef(false);
+  const [collecting, setCollecting] = useState(false);
   const handleCopyMobile = useCallback(async (mobile: string) => {
     setCopied(await copyText(mobile));
   }, []);
@@ -186,7 +305,10 @@ export function PartyDetailPageContent({
     return () => window.clearTimeout(timer);
   }, [copied]);
 
-  const backToList = useCallback(() => router.push(ROUTES.PARTIES), [router]);
+  const backToList = useCallback(
+    () => router.push(shopBook ? origin : (peopleHref ?? ROUTES.CUSTOMERS)),
+    [router, peopleHref, shopBook, origin]
+  );
   const openEdit = useCallback(() => {
     if (party) partyForm.openEdit(party as PartyDetail);
   }, [partyForm, party]);
@@ -201,7 +323,17 @@ export function PartyDetailPageContent({
      `shown?.lastActivityAt`: the React compiler cannot preserve a memo whose
      dependency is an optional chain, and it says so rather than silently
      dropping the memoisation. */
-  const lastActivityAt = shown?.lastActivityAt ?? null;
+  const lastActivityAt = (shopBook ? shown?.shop?.lastActivityAt : shown?.lastActivityAt) ?? null;
+  /* A6 — the roles worded once, from each module's catalogue (singular). */
+  const roleBadges = party?.roleBadges;
+  const roleLabels = useMemo(
+    () =>
+      roleBadges?.flatMap((role) => {
+        const label = roleBadgeLabel(t, role);
+        return label ? [{ code: role.code, label }] : [];
+      }),
+    [roleBadges, t]
+  );
   const asOf = useMemo(() => (lastActivityAt ? d(lastActivityAt) : null), [lastActivityAt, d]);
 
   /* LED-06 — the SAME balance the header prints (`summary` when the detail has
@@ -214,7 +346,9 @@ export function PartyDetailPageContent({
       ? {
           id,
           name: party.name,
-          balance: summary?.balance ?? party.balance,
+          balance: shopBook
+            ? (party.shop?.customerBalance ?? '0.00')
+            : (summary?.balance ?? party.balance),
           mobile: party.mobile,
           isArchived,
         }
@@ -226,11 +360,11 @@ export function PartyDetailPageContent({
       <UbPageShell>
         <UbEmptyState
           variant="error"
-          title={t('parties.detail.notFound')}
+          title={w('parties.detail.notFound')}
           description={t('parties.detail.notFound.body')}
           action={
             <UbButton variant="secondary" onClick={backToList}>
-              {t('parties.detail.backToList')}
+              {w('parties.detail.backToList')}
             </UbButton>
           }
         />
@@ -243,7 +377,7 @@ export function PartyDetailPageContent({
       <UbPageShell>
         <UbEmptyState
           variant="error"
-          title={t('parties.detail.error.title')}
+          title={w('parties.detail.error.title')}
           description={error?.message ?? t('parties.detail.error.body')}
           requestId={error?.requestId ?? null}
           requestIdLabel={t('common.error.reference')}
@@ -265,33 +399,121 @@ export function PartyDetailPageContent({
     );
   }
 
-  const infoPanel = party ? (
-    <PartyInfoPanel
+  // Shop gap §1.6 — price lists are for the customers a shop bills.
+  const showPriceList =
+    !!party &&
+    hasModule('inventory') &&
+    can('inventory.item.read') &&
+    shown.isCustomer &&
+    (!shopBook || !supplierView);
+  const collectionControl = party ? (
+    <PartyCollectionDate
       t={t}
-      party={party}
-      addedOn={party.createdAt ? d(party.createdAt) : null}
-      lastActivity={asOf}
-      collectionControl={
-        <PartyCollectionDate
-          t={t}
-          value={party.collectionDate}
-          onChange={setCollectionDate}
-          saving={collectionStatus === 'loading'}
-          /* Archived is read-only (FR-14), and so is a role that cannot write
+      value={party.collectionDate}
+      onChange={setCollectionDate}
+      saving={collectionStatus === 'loading'}
+      /* Archived is read-only (FR-14), and so is a role that cannot write
              a party. Both are shown as text rather than as a disabled picker:
              a greyed-out control invites a merchant to work out why. */
-          disabled={isArchived || !partyForm.canWrite}
-          formatted={party.collectionDate ? d(party.collectionDate) : null}
-        />
-      }
+      disabled={isArchived || !partyForm.canWrite}
+      formatted={party.collectionDate ? d(party.collectionDate) : null}
     />
-  ) : (
-    <UbSkeleton variant="card" />
+  ) : null;
+  // Drawn bare inside the Details disclosure (FB-012): the disclosure is the
+  // card, so a second bordered panel inside it was a box within a box.
+  const renderInfoPanel = (bare: boolean) =>
+    party ? (
+      <PartyInfoPanel
+        bare={bare}
+        t={t}
+        shop={shopBook}
+        party={party}
+        addedOn={party.createdAt ? d(party.createdAt) : null}
+        lastActivity={asOf}
+        collectionControl={shopBook ? undefined : collectionControl}
+        priceListControl={
+          showPriceList ? (
+            <PartyPriceListControl
+              partyId={party.id}
+              canWrite={!isArchived && can('inventory.item.write')}
+            />
+          ) : undefined
+        }
+      />
+    ) : (
+      <UbSkeleton variant="card" />
+    );
+  const infoPanel = renderInfoPanel(false);
+  const detailsDisclosure = (
+    <UbDisclosure label={t('parties.detail.details')} hint={t('parties.detail.detailsHint')} flush>
+      {renderInfoPanel(true)}
+    </UbDisclosure>
   );
 
   /* The khata's everyday pair. Hidden rather than disabled when the role
      cannot write (§19.7.5 / R-SEC-2), and absent for an archived party. */
-  const canRecord = Boolean(party) && !isArchived && entryForm.canWrite;
+  const canRecord = Boolean(party) && !isArchived && entryForm.canWrite && !shopBook;
+  /* PAY-01 — against bills, for a role that records payments; PAY-03's QR is a
+     read (§12), offered while the party owes the shop something. */
+  const canPay =
+    Boolean(party) &&
+    !isArchived &&
+    !udhaarApp &&
+    hasModule('payments') &&
+    can('payments.payment.write');
+  /* The figure of the book this page reads: the Shop's from the detail once it has
+     landed (a cached list row is the list's own book until then). */
+  const shopFacts = shown.shop;
+  const balanceNow = shopBook
+    ? shopFacts
+      ? supplierView
+        ? subtractMoney('0.00', shopFacts.supplierBalance)
+        : shopFacts.customerBalance
+      : party
+        ? (party.shopBalance ?? '0.00')
+        : shown.balance
+    : (summary?.balance ?? shown.balance);
+  const receivable =
+    shopBook && shopFacts
+      ? compareMoney(shopFacts.customerBalance, '0') > 0
+        ? shopFacts.customerBalance
+        : ''
+      : balanceNow && !balanceNow.startsWith('-')
+        ? balanceNow
+        : '';
+  /* PUR-02 — what the shop owes this supplier, as a magnitude: the default
+     amount of "Pay supplier". A negative balance is "You will give". */
+  const payable =
+    shopBook && shopFacts
+      ? compareMoney(shopFacts.supplierBalance, '0') > 0
+        ? shopFacts.supplierBalance
+        : ''
+      : balanceNow?.startsWith('-')
+        ? balanceNow.slice(1)
+        : '';
+  const canCollect =
+    Boolean(party) &&
+    !isArchived &&
+    !udhaarApp &&
+    hasModule('payments') &&
+    can('payments.payment.read');
+  const canSell = hasModule('sales') && can('sales.invoice.write');
+  const canPurchase = hasModule('purchases') && can('purchases.bill.write');
+  const shopActions =
+    party && !isArchived && (canPay || (supplierView ? canPurchase : canSell)) ? (
+      <ShopPersonActions
+        t={t}
+        id={id}
+        name={shown.name}
+        kind={supplierView ? 'supplier' : 'customer'}
+        canPay={canPay}
+        opening={paying !== null}
+        canSell={canSell}
+        canPurchase={canPurchase}
+        receive={() => setPaying({})}
+        pay={() => setPaying({ direction: 'out' })}
+      />
+    ) : null;
   const entryPair = (
     <>
       <UbButton variant="primary" onClick={() => entryForm.openEntry(id, 'debit')}>
@@ -305,10 +527,22 @@ export function PartyDetailPageContent({
 
   return (
     <UbPageShell
+      className={shopBook && shopActions ? 'pb-[var(--ub-bottom-inset)] lg:pb-0' : undefined}
       header={
-        <UbPageHeader
-          title={shown.name}
-          /* LED-01 FR-1 — the two actions this page exists for, and the most
+        <>
+          {shopBook && (
+            <UbLink href={origin} variant="caption" className="self-start">
+              {t(
+                origin === ROUTES.SUPPLIERS
+                  ? 'parties.detail.backToSuppliers'
+                  : 'parties.detail.backToList'
+              )}
+            </UbLink>
+          )}
+          <UbPageHeader
+            title={shown.name}
+            wrapTitle={shopBook}
+            /* LED-01 FR-1 — the two actions this page exists for, and the most
              frequent thing anybody does in this product. They stay as BUTTONS
              while everything else moved behind the menu, because the target
              is eight seconds from tapping the party to the entry being saved
@@ -318,36 +552,65 @@ export function PartyDetailPageContent({
 
              Hidden rather than disabled when the role cannot write (§19.7.5 /
              R-SEC-2): a greyed button with a tooltip is a support call. */
-          primaryActions={canRecord ? entryPair : undefined}
-          primaryActionsRef={pairRef}
-          actions={
-            /* Edit, Add opening balance and Archive. All three are things done
+            primaryActions={shopBook ? shopActions : canRecord ? entryPair : undefined}
+            primaryActionsRef={pairRef}
+            /* docs/mobile-redesign (A9) — on a phone the pair lives in the dock
+             at the bottom from the first moment, not only after scrolling. */
+            dockPrimaryActions
+            actions={
+              /* Edit, Add opening balance and Archive. All three are things done
                once a month or once in a party's life, and at five buttons the
                row ran 275 px off the right edge of a 360 px phone — see
                `PartyHeaderMenu` for the whole story. Archive is still on THIS
                screen, which was PTY-04's argument: a merchant filing somebody
                away is looking at the balance while they decide. Hidden for an
                archived party, whose flow is PTY-04's Restore. */
-            party && !isArchived ? (
-              <PartyHeaderMenu
-                t={t}
-                triggerRef={moreRef}
-                statementHref={canReadLedger ? partyStatementPath(id) : undefined}
-                onRemind={reminder.canRemind ? reminder.openSheet : undefined}
-                onEdit={partyForm.canWrite ? openEdit : undefined}
-                onAddOpening={opening.canAdd ? opening.openDrawer : undefined}
-                onArchive={archive.canArchive ? archive.open : undefined}
-              />
-            ) : undefined
-          }
-        />
+              party && !isArchived ? (
+                <PartyHeaderMenu
+                  t={t}
+                  triggerRef={moreRef}
+                  statementHref={
+                    canReadLedger && !shopBook ? partyStatementPath(id, book) : undefined
+                  }
+                  onRemind={reminder.canRemind && !supplierView ? reminder.openSheet : undefined}
+                  /* Money in for a customer (or a party marked as neither);
+                   money out for a supplier. A party that is both gets both. */
+                  onRecordPayment={
+                    canPay && (!shopBook ? shown.isCustomer || !shown.isSupplier : !supplierView)
+                      ? () => setPaying({})
+                      : undefined
+                  }
+                  onPaySupplier={
+                    canPay && (!shopBook ? shown.isSupplier : supplierView)
+                      ? () => setPaying({ direction: 'out' })
+                      : undefined
+                  }
+                  onCollect={canCollect && !supplierView ? () => setCollecting(true) : undefined}
+                  onSettle={
+                    canPay &&
+                    shopBook &&
+                    shown.isCustomer &&
+                    shown.isSupplier &&
+                    hasModule('sales') &&
+                    hasModule('purchases')
+                      ? () => setSettling(true)
+                      : undefined
+                  }
+                  onEdit={partyForm.canEdit ? openEdit : undefined}
+                  onAddOpening={opening.canAdd && !shopBook ? opening.openDrawer : undefined}
+                  onArchive={archive.canArchive ? archive.open : undefined}
+                />
+              ) : undefined
+            }
+          />
+        </>
       }
     >
       <UbStack gap={4}>
         {isArchived && (
           <UbStatusBanner
             tone="warning"
-            title={t('parties.detail.archivedBanner')}
+            title={w('parties.detail.archivedBanner')}
             description={t('parties.detail.archivedBanner.body')}
             action={
               /* Hidden rather than disabled for a role that cannot restore
@@ -369,54 +632,134 @@ export function PartyDetailPageContent({
           />
         )}
 
-        <UbCard>
-          <UbBox>
-            <PartyDetailHeader
+        {shopBook ? (
+          <UbStack gap={2}>
+            <ShopPersonOverview
+              party={shown}
+              supplier={supplierView}
+              fallbackBalance={balanceNow}
+              roleLabels={roleLabels}
               t={t}
-              name={shown.name}
-              balance={summary?.balance ?? shown.balance}
-              displayCode={shown.displayCode}
-              mobile={shown.mobile}
-              isCustomer={shown.isCustomer}
-              isSupplier={shown.isSupplier}
-              asOf={asOf}
-              credit={credit}
-              tags={shown.tags}
               pending={status === 'loading' || status === 'refreshing'}
-              onCopyMobile={handleCopyMobile}
+              onCopy={handleCopyMobile}
               copied={copied}
             />
-            {/* LED-06 FR-6 — "did I already ask?", answered where the balance
+            <UbStack direction="row" wrap gap={4} align="start" justify="between">
+              {party && canReadLedger && !supplierView && (
+                <PartyReminderStripLazy partyId={id} book="shop" />
+              )}
+              {/* BP-16 — the Shop's own promise, per role. The Udhaar book's
+                  collection date is that book's, and is not shown here (DEC-019). */}
+              {party && (
+                <ShopPromiseControlLazy
+                  key={supplierView ? 'supplier' : 'customer'}
+                  partyId={id}
+                  role={supplierView ? 'supplier' : 'customer'}
+                  canWrite={!isArchived && can('parties.party.write')}
+                />
+              )}
+            </UbStack>
+          </UbStack>
+        ) : (
+          <UbCard>
+            <UbBox>
+              <PartyDetailHeader
+                t={headerT}
+                name={shown.name}
+                balance={balanceNow}
+                displayCode={shown.displayCode}
+                mobile={shown.mobile}
+                isCustomer={shown.isCustomer}
+                isSupplier={shown.isSupplier}
+                asOf={asOf}
+                credit={shopBook ? null : credit}
+                tags={shown.tags}
+                pending={status === 'loading' || status === 'refreshing'}
+                onCopyMobile={handleCopyMobile}
+                copied={copied}
+                roleLabels={roleLabels}
+              />
+              {/* LED-06 FR-6 — "did I already ask?", answered where the balance
                 is. Its own chunk: it carries the reminders slice, and a khata
                 that is only read should not wait on it to paint. */}
-            {party && canReadLedger && (
-              <UbBox className="mt-3 border-t border-border-hairline pt-3">
-                <PartyReminderStripLazy partyId={id} />
-              </UbBox>
-            )}
-          </UbBox>
-        </UbCard>
+              {party && canReadLedger && (
+                <UbBox className="mt-3 border-t border-border-hairline pt-3">
+                  <PartyReminderStripLazy partyId={id} book={shopBook ? 'shop' : 'main'} />
+                </UbBox>
+              )}
+            </UbBox>
+          </UbCard>
+        )}
 
         {/* Two columns from `lg`, one below it, with the rail on the right and
             sticky — FRD §7's desktop layout. On a phone the same content is a
             collapsible under the header, collapsed by default, because the
             merchant came here for the balance and the transactions and not for
             the GSTIN. */}
-        <UbBox className="flex flex-col gap-4 lg:flex-row lg:items-start">
+        <UbBox
+          className={
+            shopBook ? 'flex flex-col gap-4' : 'flex flex-col gap-4 lg:flex-row lg:items-start'
+          }
+        >
+          {shopBook && detailsDisclosure}
           <UbStack gap={4} className="min-w-0 flex-1">
             {/* The ledger feature's own component, and deliberately not a
                 generic one lifted into the design system: it knows what a debit
                 reads like and when an author is worth naming, neither of which
                 a `UbTimeline` could know. It renders nothing at all when the
                 tenant has not enabled the ledger module. */}
-            <PartyLedgerTimeline partyId={id} readOnly={isArchived} />
+            {shopBook && !supplierView && hasModule('sales') && can('sales.invoice.read') && (
+              <ShopPersonRecordsLazy key={`${id}:customer:${settleRound}`} partyId={id} />
+            )}
+            {shopBook && supplierView && hasModule('purchases') && can('purchases.bill.read') && (
+              <ShopPersonRecordsLazy key={`${id}:supplier:${settleRound}`} partyId={id} supplier />
+            )}
+            {shopBook && hasModule('payments') && can('payments.payment.read') && (
+              <ShopPersonRecordsLazy
+                key={`${id}:${supplierView}:payments:${settleRound}`}
+                partyId={id}
+                supplier={supplierView}
+                payments
+              />
+            )}
+            {!shopBook && (
+              <PartyLedgerTimeline
+                emptyTitle={shopBook ? t('parties.person.noActivity') : undefined}
+                emptyBody={shopBook ? t('parties.person.activityHint') : undefined}
+                partyId={id}
+                readOnly={isArchived}
+                book={book}
+                title={shopBook ? t('parties.person.activityTitle') : undefined}
+              />
+            )}
           </UbStack>
 
-          <UbBox className="w-full lg:sticky lg:top-6 lg:w-[320px] lg:shrink-0">
-            <UbBox className="hidden lg:block">{infoPanel}</UbBox>
-            <UbBox className="lg:hidden">
-              <UbDisclosure label={t('parties.detail.details')}>{infoPanel}</UbDisclosure>
-            </UbBox>
+          <UbBox
+            className={shopBook ? 'w-full' : 'w-full lg:sticky lg:top-6 lg:w-[320px] lg:shrink-0'}
+          >
+            {!shopBook && (
+              <>
+                <UbBox className="hidden lg:block">{infoPanel}</UbBox>
+                <UbBox className="lg:hidden">{detailsDisclosure}</UbBox>
+              </>
+            )}
+            {/* A6 — below the info panel at every width: the relations section
+                exists only while a module with roles is on (the detail's
+                `roles` key). */}
+            {party && party.roleBadges !== undefined && (
+              <UbStack gap={4} className="mt-4">
+                <PartyRelationsSectionLazy
+                  partyId={id}
+                  partyName={party.name}
+                  readOnly={isArchived}
+                />
+              </UbStack>
+            )}
+            {/* The module panels do not wait for roles: each belongs to its
+                module and says which parties it is for. Inside the roles block,
+                a held deposit on a shop with no module roles had no panel (and
+                no Return) anywhere — found at the Wave A gate. */}
+            {party && <PartyModulePanels party={party} readOnly={isArchived} className="mt-4" />}
           </UbBox>
         </UbBox>
 
@@ -431,12 +774,52 @@ export function PartyDetailPageContent({
             viewport: it publishes its height so the snackbar lifts above it
             (CR-2026-09-19-G). Sticky in the page column, edge to edge (`-mx-4`
             undoes the column's inset) and clear of the iOS home indicator. */}
-        {canRecord && pairScrolledPast && (
+        {/* docs/mobile-redesign (A9, A11) — below `lg` the dock IS the pair:
+            always there, under the thumb, the header's copy hidden, and the
+            two choices coloured by what they do to the balance (red raises
+            what they owe, green lowers it) like every khata a merchant has
+            used. On a desktop nothing changed: the dock still only follows a
+            scrolled-away pair, and it is `lg:hidden` there anyway. */}
+        {shopBook && shopActions && (
+          <UbBottomBar
+            sticky={false}
+            role="region"
+            aria-label={t('parties.person.actions', { name: shown.name })}
+            data-testid="shop-person-dock"
+            className="fixed inset-x-0 bottom-0 z-20 border-t border-border-hairline bg-surface-card px-4 pb-[calc(0.75rem+env(safe-area-inset-bottom,0px))] pt-3 lg:hidden"
+          >
+            {shopActions}
+          </UbBottomBar>
+        )}
+        {canRecord && (isMobileLayer || pairScrolledPast) && (
           <UbBottomBar
             data-testid="khata-dock"
-            className="-mx-4 grid grid-cols-2 gap-2 border-t border-border-hairline bg-surface-card px-4 pb-[calc(0.75rem+env(safe-area-inset-bottom,0px))] pt-3 sm:hidden"
+            className="-mx-4 grid grid-cols-2 gap-2 border-t border-border-hairline bg-surface-card px-4 pb-[calc(0.75rem+env(safe-area-inset-bottom,0px))] pt-3 lg:hidden"
           >
-            {entryPair}
+            {isMobileLayer ? (
+              <>
+                <UbButton
+                  variant="primary"
+                  size="lg"
+                  className="bg-error hover:bg-error active:bg-error"
+                  icon={<Minus className="h-5 w-5" aria-hidden />}
+                  onClick={() => entryForm.openEntry(id, 'debit')}
+                >
+                  {t('ledger.entry.gaveAction')}
+                </UbButton>
+                <UbButton
+                  variant="primary"
+                  size="lg"
+                  className="bg-success hover:bg-success active:bg-success"
+                  icon={<Plus className="h-5 w-5" aria-hidden />}
+                  onClick={() => entryForm.openEntry(id, 'credit')}
+                >
+                  {t('ledger.entry.gotAction')}
+                </UbButton>
+              </>
+            ) : (
+              entryPair
+            )}
           </UbBottomBar>
         )}
       </UbStack>
@@ -450,13 +833,66 @@ export function PartyDetailPageContent({
           save path were all fine; what was absent was six lines of JSX on the
           screen the FRD puts Edit on.
  
-          `dynamic()` for the same measured reason the list has it: the form
+          `dynamic(, { ssr: false })` for the same measured reason the list has it: the form
           carries React Hook Form's resolver, the Yup schema and the controls,
           and putting it in the route's own chunk charges every merchant who
           opened this page to READ it. */}
-      {partyForm.open && <PartyFormDrawerLazy form={partyForm} returnFocusRef={moreRef} />}
+      {partyForm.open && (
+        <PartyFormDrawerLazy
+          form={partyForm}
+          shop={shopBook}
+          // A6: a Shop edit is the customer or supplier form, by the view.
+          kind={shopBook ? (supplierView ? 'supplier' : 'customer') : undefined}
+          returnFocusRef={moreRef}
+        />
+      )}
 
       {entryForm.open && <LedgerEntryDrawerLazy form={entryForm} partyName={shown.name} />}
+
+      {paying && (
+        <PaymentFormDrawerLazy
+          context={{
+            direction: paying.direction ?? 'in',
+            bucket: shopBook ? 'shop' : undefined,
+            partyId: id,
+            partyName: shown.name,
+            receivable: paying.direction === 'out' ? payable : receivable,
+            entry: paying.presetMode ? 'collect' : 'party',
+            presetMode: paying.presetMode,
+            presetAmount: paying.presetAmount,
+          }}
+          onClose={() => setPaying(null)}
+        />
+      )}
+      {settling && (
+        <SettleBalancesDialogLazy
+          partyId={id}
+          returnFocusRef={moreRef}
+          onSettled={() => {
+            settledNow.current = true;
+          }}
+          onClose={() => {
+            setSettling(false);
+            if (settledNow.current) {
+              settledNow.current = false;
+              refetch();
+              setSettleRound((n) => n + 1);
+            }
+          }}
+        />
+      )}
+      {collecting && (
+        <CollectQrSheetLazy
+          partyId={id}
+          partyName={shown.name}
+          receivable={receivable}
+          onClose={() => setCollecting(false)}
+          onMarkReceived={(amount) => {
+            setCollecting(false);
+            setPaying({ presetMode: 'upi', presetAmount: amount });
+          }}
+        />
+      )}
 
       {/* LED-06. The merchant sends it from their own WhatsApp or SMS app
           (DEC-012) — the feedback says "WhatsApp opened", never "Reminder
@@ -465,6 +901,8 @@ export function PartyDetailPageContent({
       {reminder.canRemind && reminder.open && (
         <PartyReminderSheetLazy
           partyId={reminder.partyId}
+          partyName={shopBook ? party?.name : undefined}
+          book={shopBook ? 'shop' : 'main'}
           open={reminder.open}
           onOpenChange={reminder.setOpen}
           title={reminder.title}
@@ -497,33 +935,67 @@ export function PartyDetailPageContent({
           name={shown.name}
           stage={archive.stage}
           blocked={archive.blocked}
+          openRecords={archive.openRecords}
           error={archive.error}
           onConfirm={archive.confirm}
           onClose={archive.close}
           returnFocusRef={moreRef}
           savingFrom={archive.savingFrom}
-          canWriteOff={archive.canWriteOff}
+          shop={shopBook}
+          canWriteOff={!shopBook && archive.canWriteOff}
           onStartWriteOff={archive.startWriteOff}
           onCancelWriteOff={archive.cancelWriteOff}
           onConfirmWriteOff={archive.confirmWriteOff}
           onRecordPayment={
-            entryForm.canWrite
-              ? () => {
-                  /* The direction that SETTLES the balance: they owe you, so
+            shopBook
+              ? canPay && archive.openRecords?.module === 'sales'
+                ? () => {
+                    archive.close();
+                    setPaying({
+                      direction: supplierView ? 'out' : undefined,
+                    });
+                  }
+                : undefined
+              : entryForm.canWrite
+                ? () => {
+                    /* The direction that SETTLES the balance: they owe you, so
                    money comes in (You got); you owe them, so it goes out. */
-                  const direction = archive.blocked?.label === 'payable' ? 'debit' : 'credit';
-                  /* The magnitude the dialog just showed, prefilled and still
+                    const direction = archive.blocked?.label === 'payable' ? 'debit' : 'credit';
+                    /* The magnitude the dialog just showed, prefilled and still
                      editable — a part payment is the common case, but typing
                      back a figure the merchant was shown a second ago is the
                      uncommon kind of work (UAT). */
-                  const amount = archive.blocked?.magnitude ?? null;
-                  archive.close();
-                  entryForm.openEntry(id, direction, { amount });
-                }
-              : undefined
+                    const amount = archive.blocked?.magnitude ?? null;
+                    archive.close();
+                    entryForm.openEntry(id, direction, { amount });
+                  }
+                : undefined
           }
         />
       )}
     </UbPageShell>
+  );
+}
+
+const PersonalUdhaarPage = dynamic(
+  () => import('./PersonalUdhaarPage').then((module) => module.PersonalUdhaarPage),
+  {
+    loading: () => (
+      <UbPageShell>
+        <UbSkeleton variant="card" />
+      </UbPageShell>
+    ),
+  }
+);
+
+/** Personal Udhaar has a minimal page; preserve the other apps' existing page. */
+export function PartyDetailPageContent(
+  props: Readonly<PartyDetailPageContentProps>
+): React.JSX.Element {
+  const { app } = useAppWords();
+  return app === 'khata' ? (
+    <PersonalUdhaarPage {...props} />
+  ) : (
+    <ExistingPartyDetailPageContent {...props} />
   );
 }

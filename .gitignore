@@ -4,6 +4,9 @@ dist/
 .next/
 out/
 node_modules/
+# A symlink named node_modules (worktrees link to the main checkout's) is a file, not a
+# directory, so the pattern above misses it; this one catches both.
+node_modules
 __pycache__/
 *.py[cod]
 .venv/
@@ -21,6 +24,15 @@ htmlcov/
 # Local media & backups
 media/
 backups/
+
+# The landing page's silent loops, their posters and manifest.json are part of
+# the page and ARE tracked, so `media/` above is undone for exactly that one
+# folder (git cannot re-include a file under an excluded directory, hence the
+# three steps: the folder, nothing else in it, then landing/).
+!/frontend/public/media/
+/frontend/public/media/*
+!/frontend/public/media/landing/
+# Narrated demo videos, captions and posters are tracked for deployment.
 *.dump
 
 # OS / editor

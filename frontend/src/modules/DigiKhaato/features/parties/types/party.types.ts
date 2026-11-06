@@ -1,5 +1,5 @@
 import type { PageMeta } from 'src/types/api.types';
-import type { PartyStatus } from 'src/types/domain.types';
+import type { LedgerBook, PartyStatus } from 'src/types/domain.types';
 
 import type {
   PartyBalanceFilter,
@@ -19,7 +19,47 @@ import type { PartyListTotals, PartyTotalsScope } from '../constants/partyListDe
  */
 
 /** The wire row, snake_case, exactly as Part 22 §22.4 documents it. */
+export interface ShopPartyFactsWire {
+  readonly customer_balance: string;
+  readonly customer_due: string;
+  readonly customer_credit: string;
+  readonly supplier_balance: string;
+  readonly supplier_due: string;
+  readonly supplier_credit: string;
+  /** A6 — the old balance from before the app, already inside the balances. */
+  readonly customer_opening?: string;
+  readonly supplier_opening?: string;
+  readonly oldest_due_on: string | null;
+  readonly days_overdue: number | null;
+  readonly last_activity_at: string | null;
+  readonly last_activity_kind: string | null;
+}
+
+export interface ShopPartyFacts {
+  readonly customerBalance: string;
+  readonly customerDue: string;
+  readonly customerCredit: string;
+  readonly supplierBalance: string;
+  readonly supplierDue: string;
+  readonly supplierCredit: string;
+  /** A6 — absent from a server older than this client: read as nothing carried in. */
+  readonly customerOpening?: string;
+  readonly supplierOpening?: string;
+  readonly oldestDueOn: string | null;
+  readonly daysOverdue: number | null;
+  readonly lastActivityAt: string | null;
+  readonly lastActivityKind: string | null;
+}
+export interface ShopPartyCounts {
+  readonly all: number;
+  readonly owes: number;
+  readonly advance: number;
+  readonly late: number;
+}
+export type ShopLateFilter = '' | 'overdue' | 'not_due' | '1_30' | 'over_30';
+
 export interface PartyApiRow {
+  readonly shop?: ShopPartyFactsWire;
   readonly id: string;
   readonly name: string;
   readonly display_code: string | null;
@@ -35,7 +75,17 @@ export interface PartyApiRow {
    * and `toParty` turns that into an empty array so nothing downstream has to
    * ask whether the absence means "untagged" or "unknown". It means untagged.
    */
-  readonly tags?: readonly { readonly id: string; readonly name: string; readonly color: string | null }[];
+  readonly tags?: readonly {
+    readonly id: string;
+    readonly name: string;
+    readonly color: string | null;
+  }[];
+  /**
+   * A6 (PLT-X04 §6) — role codes (`gym_member`…). Sent only while a module with
+   * roles is on; absent otherwise, so its ABSENCE is how the list knows there
+   * are no role chips to offer.
+   */
+  readonly roles?: readonly string[];
 }
 
 /**
@@ -58,7 +108,13 @@ export interface PartyTagWithCount extends PartyTag {
   readonly partyCount: number;
 }
 
+export interface PartyIdentityValues {
+  name: string;
+  mobile: string | null;
+}
+
 export interface Party {
+  readonly shop?: ShopPartyFacts;
   readonly id: string;
   readonly name: string;
   readonly displayCode: string | null;
@@ -70,9 +126,12 @@ export interface Party {
   readonly status: PartyStatus;
   readonly lastActivityAt: string | null;
   readonly tags: readonly PartyTag[];
+  /** A6 — role codes; `[]` or absent when the party has none or no role module is on. */
+  readonly roles?: readonly string[];
 }
 
 export interface PartyListParams {
+  readonly late?: ShopLateFilter;
   readonly q: string;
   readonly status: PartyStatus;
   /**
@@ -98,6 +157,17 @@ export interface PartyListParams {
   readonly tag: string;
   /** PTY-06 FR-12 — `over`, `near`, `ok`, or '' for every party. */
   readonly credit: PartyCreditFilter;
+  /**
+   * A6 (PLT-X04 BR-1) — a comma list of role CODES, OR'd within the group.
+   * An unknown or switched-off code is a 400, not "matches nothing".
+   */
+  readonly role?: string;
+  /**
+   * DEC-019 — which app's money the list shows: `shop` on the Shop's Customers
+   * and Suppliers (bills due), the Udhaar book's otherwise. Fixed by the page,
+   * like `type` on those two, and never written to the address bar.
+   */
+  readonly book?: LedgerBook;
   readonly ordering: string;
   readonly page: number;
   readonly pageSize: number;
@@ -107,6 +177,7 @@ export interface PartyListParams {
 export type PartyListFilters = PartyListParams;
 
 export interface PartyListResult {
+  readonly shopCounts?: ShopPartyCounts | null;
   readonly rows: readonly Party[];
   readonly meta: PageMeta;
   /**
@@ -133,6 +204,8 @@ export interface PartyListResult {
    * empty list.
    */
   readonly overLimit: number | null;
+  /** A6 — the rows carried `roles`, i.e. a module with roles is on. */
+  readonly rolesOn?: boolean;
 }
 
 // ── PTY-01 — what a create or an edit sends ─────────────────────────────────
@@ -183,6 +256,8 @@ export interface PartyFormValues {
   readonly openingAmount: string | null;
   readonly openingDirection: 'debit' | 'credit';
   readonly openingAsOf: string;
+  /** A6 — `shop` posts the opening in the Shop's own book (DEC-019). */
+  readonly openingBook?: 'main' | 'shop';
   /**
    * PTY-05 — tag NAMES, not ids, and the set is REPLACED on save.
    *
@@ -223,6 +298,20 @@ export interface PartyDetail extends Party {
   readonly openingAsOf: string | null;
   /** ISO timestamp. PTY-03 FR-11's "added on" in the info panel's Meta block. */
   readonly createdAt: string;
+  /**
+   * DEC-019 — what the person owes on Shop bills, SIGNED like the balance. `balance` is
+   * the udhaar book's own; neither includes the other, a loan or a library fee. ABSENT —
+   * not "0.00" — unless it is not zero or the Shop is on (the PTY-03 rule).
+   */
+  readonly shopBalance?: string;
+  /** Held deposits are never on this payload since DEC-019; kept optional for its readers. */
+  readonly depositHeld?: string;
+  /**
+   * A6 (PLT-X04 §6) — the party's roles with the module that owns each. ABSENT
+   * unless a module with roles is on, which is also what decides whether the
+   * khata shows the guardian and payer section.
+   */
+  readonly roleBadges?: readonly PartyRoleBadge[];
 }
 
 /**
@@ -243,7 +332,6 @@ export interface PartySaveResult {
   readonly party: PartyDetail;
   readonly warnings: readonly PartyWarning[];
 }
-
 
 // ── PTY-03 — the khata page ─────────────────────────────────────────────────
 
@@ -329,3 +417,65 @@ export interface PartyDetailResult {
   readonly credit: PartyCredit | null;
 }
 
+// ── A6 — PLT-X04: roles and relations ────────────────────────────────────────
+
+/** One of a party's roles, as the khata header draws it. */
+export interface PartyRoleBadge {
+  readonly code: string;
+  readonly module: string;
+  /** The module's message id — an ICU plural taking `{count}` ("Member"/"Members"). */
+  readonly labelId: string;
+}
+
+/** `GET /parties/roles` — an enabled module's role, and how many active parties hold it. */
+export interface PartyRole extends PartyRoleBadge {
+  readonly count: number;
+}
+
+export type PartyRelationKind = 'guardian' | 'payer';
+
+/** One end of a relation, as small as the row needs. */
+export interface PartyRelationEnd {
+  readonly id: string;
+  readonly name: string;
+  readonly mobileMasked: string | null;
+  readonly status: 'active' | 'archived';
+}
+
+export interface PartyRelation {
+  readonly id: string;
+  readonly kind: PartyRelationKind;
+  readonly receivesMessages: boolean;
+  readonly fromOn: string;
+  readonly toOn: string | null;
+  /** The server's reading against the tenant's today; ended relations stay listed. */
+  readonly active: boolean;
+  /** The person. */
+  readonly party: PartyRelationEnd;
+  /** Their guardian or payer. */
+  readonly relatedParty: PartyRelationEnd;
+}
+
+/** `GET /parties/{id}/relations` — both directions. */
+export interface PartyRelations {
+  readonly asPerson: readonly PartyRelation[];
+  readonly asRelated: readonly PartyRelation[];
+}
+
+export interface PartyRelationDraft {
+  readonly relatedPartyId: string;
+  readonly kind: PartyRelationKind;
+  readonly receivesMessages: boolean;
+}
+
+/** `DELETE` either deletes (nothing comes back) or ends the relation (the ended row). */
+export type PartyRelationRemoval =
+  | { readonly outcome: 'deleted'; readonly id: string }
+  | { readonly outcome: 'ended'; readonly relation: PartyRelation };
+
+/** 409 `party_has_open_records` — the module, the number, the module's own sentence. */
+export interface PartyOpenRecords {
+  readonly module: string;
+  readonly count: number;
+  readonly labelId: string;
+}

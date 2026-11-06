@@ -4,10 +4,9 @@ import userEvent from '@testing-library/user-event';
 import type { UbGridTier } from 'src/design-system/UbDataGrid';
 import { sessionLoaded } from 'src/redux/slice/sessionSlice';
 import { store } from 'src/redux/store';
+import { hi } from 'src/tests/allMessages';
 import { renderWithProviders } from 'src/tests/renderWithProviders';
 import type { PermissionCode } from 'src/types/domain.types';
-
-import hi from 'locales/hi.json';
 
 import { resetInvitations } from '../redux/invitationSlice';
 import { resetMembers } from '../redux/memberSlice';
@@ -31,6 +30,13 @@ jest.mock('../api/invitationService');
 // member fetch would reject through axios and paint a second error panel for a
 // failure that is not what any assertion here is checking.
 jest.mock('../api/memberService');
+// A13 — the screen asks GET /roles for the add-member picker. Left unmocked the
+// request fails in jsdom as a TRANSPORT error, the network slice goes
+// `degraded`, and every stale refetch after it is withheld — which is how the
+// revoke test's "refetch happened" assertion started failing (fixed in A6).
+jest.mock('../api/roleService');
+
+const roleService = jest.requireMock('../api/roleService') as { fetchRoles: jest.Mock };
 
 const invitationService = jest.requireMock('../api/invitationService') as {
   listInvitations: jest.Mock;
@@ -117,6 +123,7 @@ beforeEach(() => {
   store.dispatch(resetMembers());
   jest.clearAllMocks();
   setTier('cards');
+  roleService.fetchRoles.mockResolvedValue([]);
   signIn(['platform.members.manage']);
   // The members list is a real fetch on this screen now. Left as the bare
   // automock it resolves `undefined`, the slice reads `.rows` off it and every
@@ -205,7 +212,7 @@ describe('TeamPageContent — the list states', () => {
     renderWithProviders(<TeamPageContent />);
 
     expect(await screen.findByText('We could not load your team')).toBeInTheDocument();
-    expect(screen.getByTestId('request-id')).toHaveTextContent('req_42');
+    expect(screen.queryByTestId('request-id')).not.toBeInTheDocument(); // owner, 7 Oct 2026: no reference on errors
 
     invitationService.listInvitations.mockResolvedValue(page([PENDING]));
     await user.click(screen.getByRole('button', { name: 'Try again' }));

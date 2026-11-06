@@ -1,0 +1,8 @@
+ok   Low chip: cards match the server count — 10 vs 10
+ok   Low chip: every card says Low or Out of stock in words
+ok   a card opens its item — Dal 2968 5kg
+ok   a code + Enter opens that item — SKU-001004
+ok   an unknown code says so on the page
+ok   320 px: no card text outside its box
+
+6/6 passed

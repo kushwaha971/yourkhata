@@ -1,0 +1,9 @@
+1024-light-en paid-now 0 0 0
+1024-light-en record-busy 0 0 0
+1024-light-en reply-lost 0 1 0
+1024-light-en uncertain-leave 0 0 0
+1024-light-en payment-refused 0 1 0
+[
+  "1024-light-en reply-lost: {\"overflow\":0,\"cut\":[\"Recovery explanation covered: The reply did not arrive. This bill may already be recorded. Check it before changing anyt\"],\"lowContrast\":[],\"firstRowY\":null}",
+  "1024-light-en payment-refused: {\"overflow\":0,\"cut\":[\"Recovery explanation covered: You can record bills but not pay suppliers. Record it as Pay later, or ask the owner.\"],\"lowContrast\":[],\"firstRowY\":null}"
+]

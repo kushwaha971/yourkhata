@@ -1,0 +1,436 @@
+{
+  "date": "2026-10-19T22:22:01.224Z",
+  "frontend": "http://localhost:3000",
+  "reps": 3,
+  "nav": [
+    {
+      "vp": 390,
+      "profile": "unthrottled",
+      "rep": 1,
+      "id": "shop.customers→bills",
+      "kind": "bottom tab",
+      "firstChange": 19,
+      "firstChangeWhat": "childList body",
+      "firstPaint": 44,
+      "url": 28,
+      "content": 91,
+      "loadingUi": 19,
+      "loadingWhat": "div",
+      "prefetchedBefore": 2,
+      "rscAfter": 1,
+      "prefetchAfter": 1,
+      "navRsc": {
+        "start": 61,
+        "end": 71
+      },
+      "apiAfter": [
+        "/api/v1/sales/invoices"
+      ],
+      "jsAfter": 9,
+      "jsAfterLastEnd": 98,
+      "longTasks": 0,
+      "longTaskMax": 0,
+      "interaction": 32,
+      "timedOut": false,
+      "shotAfterTap": null
+    },
+    {
+      "vp": 390,
+      "profile": "unthrottled",
+      "rep": 2,
+      "id": "shop.customers→bills",
+      "kind": "bottom tab",
+      "firstChange": 31,
+      "firstChangeWhat": "childList body",
+      "firstPaint": 49,
+      "url": 38,
+      "content": 93,
+      "loadingUi": 31,
+      "loadingWhat": "div \"Loading bills…\"",
+      "prefetchedBefore": 2,
+      "rscAfter": 1,
+      "prefetchAfter": 1,
+      "navRsc": {
+        "start": 55,
+        "end": 74
+      },
+      "apiAfter": [
+        "/api/v1/sales/invoices"
+      ],
+      "jsAfter": 9,
+      "jsAfterLastEnd": 95,
+      "longTasks": 0,
+      "longTaskMax": 0,
+      "interaction": 32,
+      "timedOut": false,
+      "shotAfterTap": null
+    },
+    {
+      "vp": 390,
+      "profile": "unthrottled",
+      "rep": 3,
+      "id": "shop.customers→bills",
+      "kind": "bottom tab",
+      "firstChange": 29,
+      "firstChangeWhat": "childList body",
+      "firstPaint": 49,
+      "url": 37,
+      "content": 91,
+      "loadingUi": 29,
+      "loadingWhat": "div \"Loading bills…\"",
+      "prefetchedBefore": 2,
+      "rscAfter": 1,
+      "prefetchAfter": 1,
+      "navRsc": {
+        "start": 55,
+        "end": 73
+      },
+      "apiAfter": [
+        "/api/v1/sales/invoices"
+      ],
+      "jsAfter": 9,
+      "jsAfterLastEnd": 97,
+      "longTasks": 0,
+      "longTaskMax": 0,
+      "interaction": 32,
+      "timedOut": false,
+      "shotAfterTap": null
+    },
+    {
+      "vp": 390,
+      "profile": "throttled",
+      "rep": 1,
+      "id": "shop.customers→bills",
+      "kind": "bottom tab",
+      "firstChange": 32,
+      "firstChangeWhat": "childList body",
+      "firstPaint": 50,
+      "url": 33,
+      "content": 979,
+      "loadingUi": 32,
+      "loadingWhat": "div",
+      "prefetchedBefore": 2,
+      "rscAfter": 1,
+      "prefetchAfter": 1,
+      "navRsc": {
+        "start": 63,
+        "end": 238
+      },
+      "apiAfter": [
+        "/api/v1/sales/invoices"
+      ],
+      "jsAfter": 9,
+      "jsAfterLastEnd": 955,
+      "longTasks": 0,
+      "longTaskMax": 0,
+      "interaction": 32,
+      "timedOut": false,
+      "shotAfterTap": null
+    },
+    {
+      "vp": 390,
+      "profile": "throttled",
+      "rep": 2,
+      "id": "shop.customers→bills",
+      "kind": "bottom tab",
+      "firstChange": 29,
+      "firstChangeWhat": "childList body",
+      "firstPaint": 50,
+      "url": 42,
+      "content": 528,
+      "loadingUi": 29,
+      "loadingWhat": "div",
+      "prefetchedBefore": 2,
+      "rscAfter": 1,
+      "prefetchAfter": 1,
+      "navRsc": {
+        "start": 59,
+        "end": 233
+      },
+      "apiAfter": [
+        "/api/v1/sales/invoices"
+      ],
+      "jsAfter": 9,
+      "jsAfterLastEnd": 391,
+      "longTasks": 0,
+      "longTaskMax": 0,
+      "interaction": 32,
+      "timedOut": false,
+      "shotAfterTap": null
+    },
+    {
+      "vp": 390,
+      "profile": "throttled",
+      "rep": 3,
+      "id": "shop.customers→bills",
+      "kind": "bottom tab",
+      "firstChange": 27,
+      "firstChangeWhat": "childList body",
+      "firstPaint": 49,
+      "url": 38,
+      "content": 525,
+      "loadingUi": 27,
+      "loadingWhat": "div",
+      "prefetchedBefore": 2,
+      "rscAfter": 1,
+      "prefetchAfter": 1,
+      "navRsc": {
+        "start": 59,
+        "end": 233
+      },
+      "apiAfter": [
+        "/api/v1/sales/invoices"
+      ],
+      "jsAfter": 9,
+      "jsAfterLastEnd": 388,
+      "longTasks": 0,
+      "longTaskMax": 0,
+      "interaction": 32,
+      "timedOut": false,
+      "shotAfterTap": null
+    },
+    {
+      "vp": 1280,
+      "profile": "unthrottled",
+      "rep": 1,
+      "id": "shop.customers→bills",
+      "kind": "sidebar row",
+      "firstChange": 25,
+      "firstChangeWhat": "childList body",
+      "firstPaint": 69,
+      "url": 62,
+      "content": 121,
+      "loadingUi": 25,
+      "loadingWhat": "div",
+      "prefetchedBefore": 2,
+      "rscAfter": 1,
+      "prefetchAfter": 3,
+      "navRsc": {
+        "start": 43,
+        "end": 56
+      },
+      "apiAfter": [
+        "/api/v1/sales/invoices"
+      ],
+      "jsAfter": 9,
+      "jsAfterLastEnd": 112,
+      "longTasks": 0,
+      "longTaskMax": 0,
+      "interaction": 16,
+      "timedOut": false,
+      "shotAfterTap": null
+    },
+    {
+      "vp": 1280,
+      "profile": "unthrottled",
+      "rep": 2,
+      "id": "shop.customers→bills",
+      "kind": "sidebar row",
+      "firstChange": 35,
+      "firstChangeWhat": "childList body",
+      "firstPaint": 48,
+      "url": 37,
+      "content": 88,
+      "loadingUi": 35,
+      "loadingWhat": "div \"Loading bills…\"",
+      "prefetchedBefore": 2,
+      "rscAfter": 1,
+      "prefetchAfter": 3,
+      "navRsc": {
+        "start": 36,
+        "end": 55
+      },
+      "apiAfter": [
+        "/api/v1/sales/invoices"
+      ],
+      "jsAfter": 9,
+      "jsAfterLastEnd": 76,
+      "longTasks": 0,
+      "longTaskMax": 0,
+      "interaction": 16,
+      "timedOut": false,
+      "shotAfterTap": null
+    },
+    {
+      "vp": 1280,
+      "profile": "unthrottled",
+      "rep": 3,
+      "id": "shop.customers→bills",
+      "kind": "sidebar row",
+      "firstChange": 32,
+      "firstChangeWhat": "childList body",
+      "firstPaint": 46,
+      "url": 35,
+      "content": 87,
+      "loadingUi": 32,
+      "loadingWhat": "div \"Loading bills…\"",
+      "prefetchedBefore": 2,
+      "rscAfter": 1,
+      "prefetchAfter": 3,
+      "navRsc": {
+        "start": 39,
+        "end": 56
+      },
+      "apiAfter": [
+        "/api/v1/sales/invoices"
+      ],
+      "jsAfter": 9,
+      "jsAfterLastEnd": 76,
+      "longTasks": 0,
+      "longTaskMax": 0,
+      "interaction": 16,
+      "timedOut": false,
+      "shotAfterTap": null
+    },
+    {
+      "vp": 1280,
+      "profile": "throttled",
+      "rep": 1,
+      "id": "shop.customers→bills",
+      "kind": "sidebar row",
+      "firstChange": 38,
+      "firstChangeWhat": "childList body",
+      "firstPaint": 70,
+      "url": 66,
+      "content": 970,
+      "loadingUi": 38,
+      "loadingWhat": "div",
+      "prefetchedBefore": 2,
+      "rscAfter": 1,
+      "prefetchAfter": 3,
+      "navRsc": {
+        "start": 48,
+        "end": 215
+      },
+      "apiAfter": [
+        "/api/v1/sales/invoices"
+      ],
+      "jsAfter": 9,
+      "jsAfterLastEnd": 939,
+      "longTasks": 0,
+      "longTaskMax": 0,
+      "interaction": 16,
+      "timedOut": false,
+      "shotAfterTap": null
+    },
+    {
+      "vp": 1280,
+      "profile": "throttled",
+      "rep": 2,
+      "id": "shop.customers→bills",
+      "kind": "sidebar row",
+      "firstChange": 37,
+      "firstChangeWhat": "childList body",
+      "firstPaint": 49,
+      "url": 41,
+      "content": 550,
+      "loadingUi": 37,
+      "loadingWhat": "div",
+      "prefetchedBefore": 2,
+      "rscAfter": 1,
+      "prefetchAfter": 3,
+      "navRsc": {
+        "start": 40,
+        "end": 216
+      },
+      "apiAfter": [
+        "/api/v1/sales/invoices"
+      ],
+      "jsAfter": 9,
+      "jsAfterLastEnd": 376,
+      "longTasks": 0,
+      "longTaskMax": 0,
+      "interaction": 16,
+      "timedOut": false,
+      "shotAfterTap": null
+    },
+    {
+      "vp": 1280,
+      "profile": "throttled",
+      "rep": 3,
+      "id": "shop.customers→bills",
+      "kind": "sidebar row",
+      "firstChange": 37,
+      "firstChangeWhat": "childList body",
+      "firstPaint": 48,
+      "url": 40,
+      "content": 544,
+      "loadingUi": 37,
+      "loadingWhat": "div",
+      "prefetchedBefore": 2,
+      "rscAfter": 1,
+      "prefetchAfter": 3,
+      "navRsc": {
+        "start": 41,
+        "end": 210
+      },
+      "apiAfter": [
+        "/api/v1/sales/invoices"
+      ],
+      "jsAfter": 9,
+      "jsAfterLastEnd": 378,
+      "longTasks": 0,
+      "longTaskMax": 0,
+      "interaction": 16,
+      "timedOut": false,
+      "shotAfterTap": null
+    }
+  ],
+  "cold": [],
+  "press": [],
+  "lists": [],
+  "summary": [
+    {
+      "vp": 390,
+      "profile": "unthrottled",
+      "n": 3,
+      "firstChange_p50": 29,
+      "firstChange_p95": 31,
+      "content_p50": 91,
+      "content_p95": 93,
+      "inp_max": 32,
+      "inp_p75": 32,
+      "loadingUiSeen": 3,
+      "prefetched": 3
+    },
+    {
+      "vp": 390,
+      "profile": "throttled",
+      "n": 3,
+      "firstChange_p50": 29,
+      "firstChange_p95": 32,
+      "content_p50": 528,
+      "content_p95": 979,
+      "inp_max": 32,
+      "inp_p75": 32,
+      "loadingUiSeen": 3,
+      "prefetched": 3
+    },
+    {
+      "vp": 1280,
+      "profile": "unthrottled",
+      "n": 3,
+      "firstChange_p50": 32,
+      "firstChange_p95": 35,
+      "content_p50": 88,
+      "content_p95": 121,
+      "inp_max": 16,
+      "inp_p75": 16,
+      "loadingUiSeen": 3,
+      "prefetched": 3
+    },
+    {
+      "vp": 1280,
+      "profile": "throttled",
+      "n": 3,
+      "firstChange_p50": 37,
+      "firstChange_p95": 38,
+      "content_p50": 550,
+      "content_p95": 970,
+      "inp_max": 16,
+      "inp_p75": 16,
+      "loadingUiSeen": 3,
+      "prefetched": 3
+    }
+  ]
+}

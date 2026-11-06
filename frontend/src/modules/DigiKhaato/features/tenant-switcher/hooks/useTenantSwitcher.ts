@@ -2,8 +2,7 @@
 
 import { useCallback, useMemo, useState } from 'react';
 
-import { useRouter } from 'next/navigation';
-
+import { useAppRouter } from 'src/hooks/useAppRouter';
 import { useAppDispatch, useAppSelector } from 'src/hooks/useAppStore';
 import { useDegradedNetwork } from 'src/hooks/useDegradedNetwork';
 import {
@@ -12,10 +11,11 @@ import {
   type SessionTenant,
 } from 'src/redux/slice/sessionSlice';
 import { showSnackbar } from 'src/redux/slice/snackbarSlice';
-import { ROUTES, addBusinessPath } from 'src/routes';
+import { addBusinessPath } from 'src/routes';
 import type { ApiErrorShape } from 'src/types/api.types';
 import { clearLocalExceptDrafts } from 'src/utils/storage';
 
+import { useGoToLanding } from '../../auth/hooks/useGoToLanding';
 import { switchTenant } from '../../auth/redux/sessionThunk';
 import { resetOnboarding } from '../../onboarding/redux/onboardingSlice';
 import { leaveTenant, setDefaultTenant } from '../redux/tenantSwitcherThunk';
@@ -59,7 +59,8 @@ export interface UseTenantSwitcherResult {
 
 export const useTenantSwitcher = (): UseTenantSwitcherResult => {
   const dispatch = useAppDispatch();
-  const router = useRouter();
+  const router = useAppRouter();
+  const goToLanding = useGoToLanding();
   const activeTenant = useAppSelector(selectActiveTenant);
   const tenants = useAppSelector(selectSessionTenants);
   const { canWrite } = useDegradedNetwork();
@@ -86,8 +87,10 @@ export const useTenantSwitcher = (): UseTenantSwitcherResult => {
             params: { name: session.activeTenant?.name ?? '' },
           })
         );
-        // §19.6.5 step 5 — never stay on a record id from the old tenant.
-        router.replace(ROUTES.DASHBOARD);
+        // §19.6.5 step 5 — never stay on a record id from the old tenant. Go
+        // where the NEW session belongs (docs/platform/14 §4.1): the business's
+        // app, or — for an owner's own half-made side business — its setup.
+        goToLanding();
       } catch (thrown) {
         // §9 "Error" — a 403 means the membership was suspended meanwhile; the
         // refreshed list no longer contains it, and the menu says so.
@@ -96,7 +99,7 @@ export const useTenantSwitcher = (): UseTenantSwitcherResult => {
         setSwitchingTenantId(null);
       }
     },
-    [activeTenant?.id, dispatch, router]
+    [activeTenant?.id, dispatch, goToLanding]
   );
 
   const makeDefault = useCallback(

@@ -81,7 +81,7 @@ def test_state_code_99_is_refused_and_97_is_accepted() -> None:
 
 
 def test_every_business_type_has_a_preset() -> None:
-    """T-PLT-03-2 / FR-7: nine types, nine rows."""
+    """T-PLT-03-2 / FR-7, R-DEC-63: one preset row per stored type, the shop kinds included."""
     from apps.platform_app.constants import BusinessType
     from apps.platform_app.services.presets import PRESETS
 
@@ -92,14 +92,25 @@ def test_every_business_type_has_a_preset() -> None:
     ("business_type", "inventory", "labels", "due_days"),
     [
         ("retail", True, ("Customer", "Supplier"), 7),
-        ("wholesale", True, ("Party", "Supplier"), 15),
+        # Design B2 (30 Oct 2026): a wholesaler's people are Retailers and Companies.
+        ("wholesale", True, ("Retailer", "Company"), 15),
         ("distribution", True, ("Retailer", "Company"), 15),
         ("services", False, ("Client", "Vendor"), 30),
-        ("trader", True, ("Party", "Supplier"), 15),
+        ("trader", True, ("Customer", "Supplier"), 15),
         ("manufacturer", True, ("Customer", "Supplier"), 15),
         ("professional", False, ("Client", "Vendor"), 30),
         ("food", True, ("Customer", "Supplier"), 7),
-        ("other", True, ("Party", "Supplier"), 30),
+        ("other", True, ("Customer", "Supplier"), 30),
+        ("hardware", True, ("Customer", "Supplier"), 15),
+        ("kirana", True, ("Customer", "Supplier"), 7),
+        ("medical", True, ("Customer", "Distributor"), 7),
+        ("electronics", True, ("Customer", "Supplier"), 7),
+        ("garments", True, ("Customer", "Supplier"), 7),
+        ("auto_parts", True, ("Customer", "Supplier"), 15),
+        ("jewellery", True, ("Customer", "Supplier"), 7),
+        ("stationery", True, ("Customer", "Supplier"), 7),
+        ("agri", True, ("Customer", "Supplier"), 30),
+        ("furniture", True, ("Customer", "Supplier"), 15),
     ],
 )
 def test_the_preset_table_matches_the_frd(
@@ -444,13 +455,20 @@ def test_completing_the_wizard_seeds_every_default(
         "ledger.credit_limit_mode",
         "ledger.reminder_templates",
         "documents.show_upi_qr",
+        "shop.wholesale",
+        "shop.features.service_items",
+        "shop.features.alt_units",
+        "shop.features.batches",
+        "shop.features.variants",
+        "shop.features.orders",
         "parties.labels",
     }
     labels = TenantSetting.objects.get(tenant=new_tenant, key="parties.labels").value
     assert labels == {"customer": "Customer", "supplier": "Supplier"}
 
     sequences = DocumentSequence.objects.filter(tenant=new_tenant)
-    assert sequences.count() == len(NUMBERING_PREFIXES) == 12
+    # Twelve core kinds, plus sales orders (Shop item 3, 7 Oct 2026).
+    assert sequences.count() == len(NUMBERING_PREFIXES) == 13
     invoice = sequences.get(kind="invoice")
     assert (invoice.prefix, invoice.next_number, invoice.padding) == ("INV", 1, 4)
 
@@ -1214,3 +1232,101 @@ def test_resumable_reports_the_business_step_one_would_resume(
 def test_resumable_needs_authentication(client: Any) -> None:
     """M2: the read describes the caller's own memberships; anonymous is 401."""
     assert client.get(reverse(RESUMABLE_URL)).status_code == 401
+
+
+def test_every_preset_unit_is_a_seeded_unit() -> None:
+    """R-DEC-63: a shop kind's favourite units must exist in the unit list.
+
+    A preset naming a code the reference data never seeds (TBS was the first
+    draft for medical) would put a favourite on the item form that no item can
+    be given.
+    """
+    from apps.common.management.commands.seed_reference_data import UNITS
+    from apps.platform_app.services.presets import PRESETS
+
+    seeded = {row[0] for row in UNITS}
+    for business_type, preset in PRESETS.items():
+        assert set(preset.favourite_units) <= seeded, business_type
+
+
+def test_wholesale_of_a_kind_gets_both_presets() -> None:
+    """R-DEC-64: "Wholesale of kirana" is kirana's preset joined to wholesale's.
+
+    Prevents a wholesaler losing either half: kirana's words and units come
+    first, wholesale's bulk units and expense heads are added, and the credit
+    period is the longer of the two. A kind not sold wholesale is unchanged.
+    """
+    from apps.platform_app.services.presets import PRESETS, combined
+
+    kirana, bulk = PRESETS["kirana"], PRESETS["wholesale"]
+    both = combined("kirana", wholesale=True)
+    assert both.party_labels == bulk.party_labels  # Retailers and Companies
+    assert both.favourite_units[: len(kirana.favourite_units)] == kirana.favourite_units
+    assert {"BOX", "BAG", "QTL"} <= set(both.favourite_units)
+    assert len(both.favourite_units) <= 8
+    assert set(bulk.extra_expense_categories) <= set(both.extra_expense_categories)
+    assert both.default_due_days == 15
+    assert combined("kirana", wholesale=False) == kirana
+    assert combined("wholesale", wholesale=True) == bulk
+
+
+def test_shop_wholesale_defaults_on_only_for_the_wholesale_types() -> None:
+    """R-DEC-64: an old wholesale/distribution business reads as wholesale."""
+    from apps.platform_app.settings_schema import SETTINGS
+
+    spec = SETTINGS["shop.wholesale"]
+    assert spec.default("wholesale") == {"value": True}
+    assert spec.default("distribution") == {"value": True}
+    assert spec.default("kirana") == {"value": False}
+    assert "shop.extra_types" not in SETTINGS
+
+
+@pytest.mark.parametrize(
+    ("kind", "on"),
+    [
+        ("stationery", {"service_items"}),
+        ("agri", {"batches"}),
+        ("services", {"service_items"}),
+        ("furniture", {"variants"}),
+        ("other", set()),
+        ("kirana", set()),
+    ],
+)
+def test_other_kinds_start_with_their_switches(kind: str, on: set) -> None:
+    """R-DEC-66 / G12: "Anything your shop needs?" starts from the kind.
+
+    Prevents a stationery shop starting with no service items (photocopy has
+    no stock) or a seed shop without batch and expiry; "Something else" and
+    the named kinds start with all four off.
+    """
+    from apps.platform_app.services.presets import SIGNUP_FEATURES
+    from apps.platform_app.settings_schema import SETTINGS
+
+    got = {k for k in SIGNUP_FEATURES if SETTINGS[f"shop.features.{k}"].default(kind)["value"]}
+    assert got == on
+
+
+@pytest.mark.parametrize(
+    ("kind", "wholesale", "orders"),
+    [
+        ("hardware", False, True),
+        ("auto_parts", False, True),
+        ("electronics", False, True),
+        ("wholesale", False, True),
+        ("kirana", False, False),
+        ("medical", False, False),
+        ("garments", False, False),
+        ("food", False, False),
+        ("jewellery", False, False),
+        ("other", False, False),
+        ("kirana", True, True),
+        ("retail", False, True),
+    ],
+)
+def test_orders_rows_belong_to_the_kinds_that_use_them(kind, wholesale, orders) -> None:
+    """E2 #6 (owner, 30 Oct 2026): Sales orders, challans and purchase orders
+    only for wholesale, hardware, auto parts and mobile; a kirana that sells
+    wholesale gets them through wholesale; older broad types keep them."""
+    from apps.platform_app.services.presets import combined
+
+    assert ("orders" in combined(kind, wholesale=wholesale).features) is orders

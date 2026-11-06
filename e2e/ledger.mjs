@@ -38,10 +38,12 @@
  *
  * Exits non-zero on any failure.
  */
-import { chromium } from 'playwright';
+import { createRequire } from 'node:module';
+const { chromium } = createRequire(import.meta.url)('playwright');
+import { BACKEND_DIR as LOCAL_BACKEND_DIR, PYTHON } from './lib/local.mjs';
 import { mkdirSync, writeFileSync } from 'node:fs';
 
-const FRONTEND = process.env.E2E_FRONTEND ?? 'http://localhost:3000';
+const FRONTEND = process.env.E2E_FRONTEND ?? (process.env.E2E_BASE ?? 'http://localhost:3000');
 const BACKEND = process.env.E2E_BACKEND ?? 'http://localhost:8000/api/v1';
 const SHOT_DIR = process.env.E2E_SHOTS ?? '/tmp/e2e-shots/ledger';
 const wantShots = process.argv.includes('--shots');
@@ -127,7 +129,7 @@ const today = () => new Date().toISOString().slice(0, 10);
 const setCreditMode = async (mode, partyId) => {
   const { execFileSync } = await import('node:child_process');
   execFileSync(
-    'python',
+    PYTHON,
     [
       'manage.py',
       'shell',
@@ -139,7 +141,7 @@ const setCreditMode = async (mode, partyId) => {
         "key='ledger.credit_limit_mode', defaults={'value': {'mode': '" + mode + "'}})",
     ],
     {
-      cwd: '/home/claude/repo/backend',
+      cwd: LOCAL_BACKEND_DIR,
       env: { ...process.env, DJANGO_SETTINGS_MODULE: 'config.settings.local' },
     }
   );
@@ -338,7 +340,7 @@ const settle = (page, ms = 900) => page.waitForTimeout(ms);
 
 const signIn = async (page, who = OWNER) => {
   for (const attempt of [1, 2]) {
-    await page.goto(`${FRONTEND}/login`, { waitUntil: 'domcontentloaded', timeout: 45000 });
+    await page.goto(`${FRONTEND}/login/email`, { waitUntil: 'domcontentloaded', timeout: 45000 });
     await page.fill('input[type="email"], input[name="email"]', who.email);
     await page.fill('input[type="password"], input[name="password"]', who.password);
     await page.click('button[type="submit"]');
@@ -348,7 +350,9 @@ const signIn = async (page, who = OWNER) => {
     // `load` is a state this app can legitimately never reach.
     await page.waitForURL((u) => !u.pathname.startsWith('/login'), { waitUntil: 'commit', timeout: 45000 }).catch(() => {});
     await page.waitForTimeout(600);
-    await page.goto(`${FRONTEND}/parties`, { waitUntil: 'domcontentloaded', timeout: 45000 });
+    // DEC-019 — the khata page is the Udhaar book's: open its list first, as a merchant
+    // does, so the session is in that app (from the Shop the page shows bills instead).
+    await page.goto(`${FRONTEND}/khata`, { waitUntil: 'domcontentloaded', timeout: 45000 });
     try {
       await page.waitForSelector('[data-testid="ub-grid"]', { timeout: 20000 });
       await page.waitForTimeout(600);
@@ -364,7 +368,7 @@ const openKhata = async (page, party) => {
     waitUntil: 'domcontentloaded',
     timeout: 45000,
   });
-  await page.waitForSelector('text=Transactions', { timeout: 45000 });
+  await page.getByRole('heading', { name: /Entry history|Transactions/ }).waitFor({ timeout: 45000 });
   await settle(page, 1200);
 };
 
@@ -453,7 +457,7 @@ async function sweep(ctx, size, parties) {
   /* Nothing on this page is clipped mid-word.
  
      Measured rather than read: `innerText` returns the full string whatever the
-     pixels do, which is exactly how LED-01's duplicated "You gave" survived
+     pixels do, which is exactly how LED-01's duplicated "Gave money" survived
      every unit test and how the opening row came to read "Opening…" beside a
      badge that repeats the word it cut off.
  
@@ -499,14 +503,14 @@ async function sweep(ctx, size, parties) {
 
   await at('05-drawer-you-gave', async () => {
     await openKhata(page, parties.plain);
-    await openDrawer(page, /You gave/);
+    await openDrawer(page, /Gave money/);
     await capture(page, size, '05-drawer-you-gave');
   });
 
   await at('06-drawer-you-got', async () => {
     await page.keyboard.press('Escape');
     await settle(page, 600);
-    await openDrawer(page, /You got/);
+    await openDrawer(page, /Got money/);
     await capture(page, size, '06-drawer-you-got');
   });
 
@@ -520,7 +524,7 @@ async function sweep(ctx, size, parties) {
   await at('08-drawer-validation', async () => {
     await page.keyboard.press('Escape');
     await settle(page, 600);
-    await openDrawer(page, /You gave/);
+    await openDrawer(page, /Gave money/);
     await page.getByRole('button', { name: 'Save' }).click();
     await settle(page, 900);
     await capture(page, size, '08-drawer-validation');
@@ -530,7 +534,7 @@ async function sweep(ctx, size, parties) {
     await page.keyboard.press('Escape');
     await settle(page, 600);
     await openKhata(page, parties.near);
-    await openDrawer(page, /You gave/);
+    await openDrawer(page, /Gave money/);
     await fillAmount(page, '20000');
     await page.getByRole('button', { name: 'Save' }).click();
     /* Scroll the BANNER into view before photographing it, and fail the step if
@@ -583,7 +587,7 @@ async function sweep(ctx, size, parties) {
     await page.keyboard.press('Escape');
     await settle(page, 600);
     await openKhata(page, parties.plain);
-    await openDrawer(page, /You gave/);
+    await openDrawer(page, /Gave money/);
     await fillAmount(page, '450');
     await page.getByLabel(/^Note/).fill(`Swept at ${size.width}px`);
     await page.getByRole('button', { name: 'Save' }).click();
@@ -728,7 +732,7 @@ async function checks(browser, token, parties) {
     );
     record(
       'and the header agrees with it',
-      body.includes('You will get'),
+      body.includes('To get'),
       ''
     );
   }
@@ -736,7 +740,7 @@ async function checks(browser, token, parties) {
   // 2. The write reaches the wire — the defect `tags.mjs` exists for.
   {
     const before = posts.length;
-    await openDrawer(page, /You gave/);
+    await openDrawer(page, /Gave money/);
     await fillAmount(page, '500');
     await page.getByLabel(/^Note/).fill('Rice 5 kg');
     await page.getByRole('button', { name: 'Save' }).click();
@@ -778,7 +782,7 @@ async function checks(browser, token, parties) {
 
   // 5. A credit reduces it, and carries how the money arrived.
   {
-    await openDrawer(page, /You got/);
+    await openDrawer(page, /Got money/);
     await fillAmount(page, '300');
     await page.getByRole('button', { name: 'Save' }).click();
     await settle(page, 2000);
@@ -835,7 +839,7 @@ async function checks(browser, token, parties) {
   // nobody chose should never cost somebody a sale.
   {
     await openKhata(page, parties.near);
-    await openDrawer(page, /You gave/);
+    await openDrawer(page, /Gave money/);
     await fillAmount(page, '15000');
     await page.getByRole('button', { name: 'Save' }).click();
     await settle(page, 2500);
@@ -856,7 +860,7 @@ async function checks(browser, token, parties) {
   {
     await setCreditMode('block', parties.near.id);
     await openKhata(page, parties.near);
-    await openDrawer(page, /You gave/);
+    await openDrawer(page, /Gave money/);
     await fillAmount(page, '20000');
     await page.getByRole('button', { name: 'Save' }).click();
     await settle(page, 2000);
@@ -1037,8 +1041,8 @@ async function checks(browser, token, parties) {
     await page.waitForSelector('role=dialog', { timeout: 15000 });
     await settle(page, 700);
     record(
-      'a supplier-only party starts on "I owe them"',
-      await page.getByRole('radio', { name: 'I owe them' }).isChecked(),
+      'a supplier-only party starts on "I will give"',
+      await page.getByRole('radio', { name: 'I will give' }).isChecked(),
       ''
     );
     await page.keyboard.press('Escape');
@@ -1408,7 +1412,7 @@ async function checks(browser, token, parties) {
     record(
       'and the khata offers them no ⋯ at all',
       menus === 0,
-      `${menus} menus; entries visible: ${/You gave/.test(shown)}`
+      `${menus} menus; entries visible: ${/Gave money/.test(shown)}`
     );
     record(
       'nor the switch that reveals corrections',
@@ -1458,7 +1462,7 @@ async function checks(browser, token, parties) {
 async function run() {
   const { token, parties } = await seed();
 
-  const browser = await chromium.launch();
+  const browser = await chromium.launch({ executablePath: process.env.CHROME || process.env.PW_CHROME });
   await checks(browser, token, parties);
 
   if (wantShots) {

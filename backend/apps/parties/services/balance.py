@@ -21,9 +21,10 @@ from __future__ import annotations
 from decimal import Decimal
 from typing import Any, Callable
 
+from django.core.exceptions import ValidationError as DjangoValidationError
 from django.utils import timezone
 
-from apps.common.constants import Direction
+from apps.common.constants import Direction, LedgerBucket
 from apps.common.money import ZERO
 from apps.parties.models import Party
 
@@ -50,8 +51,56 @@ def lock_party(*, tenant: Any, party_id: Any) -> Party | None:
     return Party.objects.for_tenant(tenant).select_for_update().filter(pk=party_id).first()
 
 
-def apply_entry(*, party: Party, direction: str, amount: Decimal) -> Decimal:
-    """Move the cache by one entry and write the row. Returns the new balance.
+def lock_party_of(*, tenant: Any, rows: Any, pk: Any) -> Party | None:
+    """Lock the party a document (or payment) belongs to BEFORE locking the row itself.
+
+    ── The lock order every money path follows ───────────────────────────────
+    1. the party (`lock_party`);
+    2. documents, several at once in `(document_date, number, id)` order;
+    3. payments and their allocations;
+    4. stock rows by `item_id` (`inventory.services.stock`);
+    5. number sequences (`allocate_number`).
+
+    Invoice void used to lock the INVOICE and then the party, while payment
+    void locked the PAYMENT, then the party, then the invoice. Voiding an
+    invoice and its payment at the same moment held one lock each and waited on
+    the other's: a PostgreSQL deadlock, answered as a 500 on one side. With the
+    party first in both, the second transaction waits at step 1 holding
+    nothing, and the two simply run one after the other.
+
+    `rows` is the model's tenant-scoped queryset; the party id is read without a
+    lock (it cannot change on an issued document or a payment, and a draft's
+    caller re-checks it after locking the document). Returns `None` for a row
+    with no party — a walk-in bill — or an id this tenant cannot see; the
+    caller's own document lock then produces the 404.
+    """
+    try:
+        party_id = rows.filter(pk=pk).values_list("party_id", flat=True).first()
+    except (ValueError, TypeError, DjangoValidationError):
+        return None
+    if party_id is None:
+        return None
+    return lock_party(tenant=tenant, party_id=party_id)
+
+
+def relock_if_moved(*, tenant: Any, party: Party | None, party_id: Any) -> Party | None:
+    """After the document lock: the party that document ACTUALLY has, locked.
+
+    Only a draft can change party between the unlocked read and the lock, and
+    nothing that locks drafts also holds another party's documents, so taking
+    the second party here cannot close a cycle.
+    """
+    if party_id is None:
+        return None
+    if party is not None and party.pk == party_id:
+        return party
+    return lock_party(tenant=tenant, party_id=party_id)
+
+
+def apply_entry(
+    *, party: Party, direction: str, amount: Decimal, bucket: str = LedgerBucket.MAIN
+) -> Decimal:
+    """Move the caches by one entry and write the row. Returns the new balance.
 
     Called with the party ALREADY LOCKED by `lock_party`. It does not lock, and
     it does not open a transaction: both belong to the caller, because the
@@ -63,9 +112,54 @@ def apply_entry(*, party: Party, direction: str, amount: Decimal) -> Decimal:
     make every new entry cost a scan of all of them. `recalc_balances` is the
     aggregate, run nightly, and the drift between the two is the thing it
     reports.
+
+    ── By bucket (A2, ADR-043; owner 12 Oct 2026) ───────────────────────────
+    DEC-019 — each bucket moves its OWN cache and nothing else: `main` (the
+    udhaar book) moves `balance` (and its receivable/payable split, the
+    collection date and `last_activity_at` — the khata list's "Last entry");
+    `shop` moves `shop_balance`; `loan` moves `loan_balance`; `library` moves
+    `library_balance`; a `deposit` moves
+    `deposit_held` in the opposite sense (a deposit received is a credit and
+    INCREASES what is held). Returns the cache this entry moved.
+    Callers written before buckets pass none and get `main` (EC-4).
     """
     delta = amount if direction == Direction.DEBIT else -amount
+    return move_bucket_balance(party=party, delta=delta, bucket=bucket)
+
+
+def move_bucket_balance(*, party: Party, delta: Decimal, bucket: str) -> Decimal:
+    """Move ONE bucket's cache by a signed `delta` on a LOCKED party (DEC-019).
+
+    `apply_entry`'s arithmetic, for callers that hold a delta rather than an
+    entry — a correction, whose net effect is `−signed(original) +
+    signed(replacement)`. A2: a Shop opening corrected through LED-03 must move
+    the Shop's cache and never the Udhaar book's.
+    """
+    if bucket not in LedgerBucket.values:
+        raise ValueError(f"unknown ledger bucket {bucket!r}")
+    other = None if bucket == LedgerBucket.MAIN else BUCKET_CACHE[bucket]
+    if other is not None:
+        moved = -delta if bucket == LedgerBucket.DEPOSIT else delta
+        setattr(party, other, (getattr(party, other) or ZERO) + moved)
+        party.save(update_fields=[other, "updated_at"])
+        return getattr(party, other)
+    return move_main_balance(party=party, delta=delta)
+
+
+def move_main_balance(*, party: Party, delta: Decimal) -> Decimal:
+    """Move the udhaar book (`main`) by a signed `delta` on a LOCKED party. Returns the balance.
+
+    The ONE writer of `balance`, its receivable/payable split, `last_activity_at`
+    and the settled-clears-the-collection-date rule. `apply_entry` calls it with an
+    entry's signed amount; LED-03's corrections call it with
+    `−signed(original) + signed(replacement)`, which can be any sign. They used to
+    carry a copy each (WP-03 R-05, `tests/architecture/test_shared_owners.py`).
+    `recalc_balances` deliberately does not: it is the independent replay this
+    cache is checked against.
+    """
+    party.last_activity_at = timezone.now()
     party.balance = (party.balance or ZERO) + delta
+    fields = ["balance", "receivable_total", "payable_total", "last_activity_at", "updated_at"]
     # BR-3. Two caches of one number, kept here rather than computed on read,
     # because the reports that want them want them summed across parties.
     party.receivable_total = max(party.balance, ZERO)
@@ -75,18 +169,80 @@ def apply_entry(*, party: Party, direction: str, amount: Decimal) -> Decimal:
     # is something happening. Sorting the list by the business date of the
     # oldest thing somebody remembered would put the party they just touched at
     # the bottom.
-    party.last_activity_at = timezone.now()
-    party.save(
-        update_fields=[
-            "balance",
-            "receivable_total",
-            "payable_total",
-            "last_activity_at",
-            "updated_at",
-        ]
-    )
+    party.save(update_fields=fields)
     clear_collection_date_if_settled(party=party)
     return party.balance
+
+
+#: DEC-019 — the cache each bucket moves.
+BUCKET_CACHE: dict[str, str] = {
+    LedgerBucket.MAIN: "balance",
+    LedgerBucket.SHOP: "shop_balance",
+    LedgerBucket.LOAN: "loan_balance",
+    LedgerBucket.LIBRARY: "library_balance",
+    LedgerBucket.DEPOSIT: "deposit_held",
+}
+
+
+def balance_of(party: Party, bucket: str) -> Decimal:
+    """The party's figure for one bucket — what that app shows as owed (DEC-019)."""
+    return getattr(party, BUCKET_CACHE[bucket]) or ZERO
+
+
+def trade_balance(party: Party) -> Decimal:
+    """BR-5 — what the party owes in the udhaar book. Since DEC-019 that is `balance` itself:
+    no other app's money is in it, so nothing has to be subtracted (it used to be
+    `balance − loan_balance`, and the screens that forgot the subtraction showed a loan as
+    credit — QA B3)."""
+    return party.balance or ZERO
+
+
+#: Which modules can write a line in a bucket other than `main` (contracts §1.2 and §1.4: the
+#: `loan` sources and targets are lending's; the deposit targets serve library, gym and
+#: hospitality). Module CODES, not imports (10-architecture §3 rule L4). The party detail uses
+#: it to decide whether a zero figure is worth sending (PTY-03's rule, below).
+BUCKET_WRITER_MODULES: dict[str, frozenset[str]] = {
+    LedgerBucket.SHOP: frozenset({"sales", "purchases", "expenses", "payments"}),
+    LedgerBucket.LOAN: frozenset({"lending"}),
+    LedgerBucket.LIBRARY: frozenset({"library"}),
+    LedgerBucket.DEPOSIT: frozenset({"library", "gym", "hospitality"}),
+}
+
+
+def _tenant_of(party: Party) -> Any:
+    """The party's tenant, from the request context when it is the same one (no query)."""
+    from apps.common.tenancy import current_tenant
+
+    bound = current_tenant()
+    if bound is not None and getattr(bound, "pk", None) == party.tenant_id:
+        return bound
+    return party.tenant
+
+
+def bucket_figures(party: Party) -> dict[str, str]:
+    """`shop_balance` for the party detail — what the person owes on Shop bills (DEC-019).
+
+    The party detail is read by the udhaar book's page and by the Shop's customer page, and
+    each shows only its own figure: `balance` is the udhaar book's, `shop_balance` the Shop's.
+    A loan, a library fee or a security deposit is never sent here — those are read on their
+    own app's pages (QA B3/B9: they appeared on a Shop page as "Loan left" and "You gave").
+
+    Sent when it is not zero, OR when the Shop is switched on (so a zero there is a verified
+    zero); omitted otherwise — the PTY-03 rule CLAUDE.md records: a key that is always empty
+    is a claim the code cannot verify, and the client cannot tell it apart from a real zero.
+    """
+    shop = party.shop_balance or ZERO
+    if shop != ZERO:
+        return {"shop_balance": str(shop)}
+    # Zero queries for a tenant without a Shop module enabled: the request's own tenant is
+    # used when it is this party's, and `enabled_modules` is on that row.
+    tenant = _tenant_of(party)
+    writers = BUCKET_WRITER_MODULES[LedgerBucket.SHOP]
+    if not writers & set(tenant.enabled_modules or []):
+        return {}
+    from apps.platform_app.services.entitlements import effective_modules
+
+    return {"shop_balance": str(shop)} if writers & effective_modules(tenant) else {}
 
 
 # ── LED-05 BR-2 — a settled party has nothing left to collect ────────────────

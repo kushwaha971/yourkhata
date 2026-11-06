@@ -10,6 +10,7 @@ import type {
   Member,
   MemberApiRow,
   MemberDraft,
+  MemberEdit,
   MemberListParams,
   MemberListResult,
 } from '../types/member.types';
@@ -39,6 +40,8 @@ interface CredentialsApiResponse {
     readonly password_expires_at: string | null;
     readonly created_user: boolean;
     readonly login_url: string;
+    readonly mobile?: string | null;
+    readonly sign_in?: 'otp' | 'password';
   };
 }
 
@@ -49,6 +52,13 @@ const toMember = (row: MemberApiRow): Member => ({
   fullName: row.full_name ?? '',
   mobile: row.mobile ?? null,
   role: row.role,
+  // A13: servers before module roles sent none of these; "active" is what
+  // those rows always meant, and an empty label id is resolved to the canon
+  // key by `roleDisplay` (never here: this module is in the app shell's import
+  // graph, and a `tenant.role.*` template here pins those words to every route).
+  roleLabelId: row.role_label_id ?? '',
+  roleModule: row.role_module ?? null,
+  roleActive: row.role_active ?? true,
   status: row.status,
   joinedAt: row.joined_at ?? null,
   lastLoginAt: row.last_login_at ?? null,
@@ -66,6 +76,8 @@ const toCredentials = (data: CredentialsApiResponse['data']): IssuedCredentials 
   passwordExpiresAt: data.password_expires_at ?? null,
   createdUser: Boolean(data.created_user),
   loginUrl: data.login_url,
+  mobile: data.mobile ?? null,
+  signIn: data.sign_in ?? (data.password ? 'password' : 'otp'),
 });
 
 /**
@@ -80,7 +92,11 @@ export const listMembers = async (
   params: MemberListParams,
   signal?: AbortSignal
 ): Promise<MemberListResult> => {
-  const query = toQueryString({ page: params.page, page_size: params.pageSize });
+  const query = toQueryString({
+    page: params.page,
+    page_size: params.pageSize,
+    status: params.status,
+  });
 
   const response = await api.get<MemberListApiResponse>(
     `${API_PATHS.MEMBERS}${query}`,
@@ -125,7 +141,9 @@ export const createMember = async (
   const response = await api.post<CredentialsApiResponse>(
     API_PATHS.MEMBERS,
     {
-      email: input.email,
+      // No email: the member is identified by the mobile and signs in with an
+      // OTP (owner, 9 Oct 2026). Sent only when somebody supplied one.
+      ...(input.email ? { email: input.email } : {}),
       full_name: input.fullName,
       role: input.role,
       ...(input.mobile ? { mobile: input.mobile } : {}),
@@ -159,3 +177,55 @@ export const regenerateCredentials = async (
   return toCredentials(response.data.data);
 };
 export const regenerateCredentialsWriteClass: TWriteClass = 'online-only';
+
+interface MemberApiResponse {
+  readonly data: MemberApiRow;
+}
+
+/**
+ * PATCH /members/{id} — a manager corrects a name or changes a role (owner,
+ * 12 Oct 2026). Only the fields the form CHANGED are sent: an unchanged name
+ * on somebody who also works elsewhere is refused by the server (it is their
+ * platform-wide name), and sending it back untouched would fail a role change
+ * the owner was entitled to make.
+ *
+ * Class C, online-only: a role is a permission set, and queuing one offline
+ * would leave the person holding the old rights for however long the queue
+ * took to drain.
+ */
+export const updateMember = async (membershipId: string, input: MemberEdit): Promise<Member> => {
+  const response = await api.patch<MemberApiResponse>(API_PATHS.MEMBER(membershipId), {
+    ...(input.fullName !== undefined ? { full_name: input.fullName } : {}),
+    ...(input.role !== undefined ? { role: input.role } : {}),
+  });
+  return toMember(response.data.data);
+};
+export const updateMemberWriteClass: TWriteClass = 'online-only';
+
+const postMemberAction = async (path: string, idempotencyKey: string): Promise<Member> => {
+  const response = await api.post<MemberApiResponse>(
+    path,
+    undefined,
+    ubConfig({ headers: { 'Idempotency-Key': idempotencyKey } })
+  );
+  return toMember(response.data.data);
+};
+
+/**
+ * POST /members/{id}/block — suspended, and signed out of THIS business on
+ * every device. Keyed: on a lost response the merchant must be told it worked,
+ * not shown a failure for a person who is in fact locked out.
+ */
+export const blockMember = (membershipId: string, idempotencyKey: string): Promise<Member> =>
+  postMemberAction(API_PATHS.MEMBER_BLOCK(membershipId), idempotencyKey);
+export const blockMemberWriteClass: TWriteClass = 'online-only';
+
+/** POST /members/{id}/unblock — active again; spends a seat, checked by the server. */
+export const unblockMember = (membershipId: string, idempotencyKey: string): Promise<Member> =>
+  postMemberAction(API_PATHS.MEMBER_UNBLOCK(membershipId), idempotencyKey);
+export const unblockMemberWriteClass: TWriteClass = 'online-only';
+
+/** POST /members/{id}/remove — off the team; the server keeps the row for the record. */
+export const removeMember = (membershipId: string, idempotencyKey: string): Promise<Member> =>
+  postMemberAction(API_PATHS.MEMBER_REMOVE(membershipId), idempotencyKey);
+export const removeMemberWriteClass: TWriteClass = 'online-only';

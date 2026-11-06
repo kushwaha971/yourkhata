@@ -119,8 +119,15 @@ def create_tenant(
     request_id: str | None = None,
     ip: str | None = None,
     user_agent: str | None = None,
+    apps: Any = None,
 ) -> Any:
     """Step 1 (FR-2). Creates the tenant and the owner membership in one transaction.
+
+    `apps` is what the business will run (owner, 11 Oct 2026): any of the apps
+    `offerable_apps()` lists, one or several. `None` keeps the behaviour every
+    existing caller relies on — the Shop — and anything else is honoured
+    exactly: a library that asked only for Library is not given Shop & billing
+    to switch off afterwards.
 
     BR-5: the creating user's membership is `owner`. BR-6: `phone` defaults to
     the owner's mobile. BR-7: `owner_name` fills `platform_user.full_name` when
@@ -130,6 +137,7 @@ def create_tenant(
 
     partner = resolve_partner()
     plan = resolve_plan(partner)
+    chosen = chosen_apps(apps, partner=partner, plan=plan)
 
     owner_role = Role.objects.filter(tenant__isnull=True, code=RoleCode.OWNER.value).first()
     if owner_role is None:
@@ -147,7 +155,11 @@ def create_tenant(
             # owner may not have one, and `platform_tenant.phone` is NOT NULL.
             phone=user.mobile or "",
             locale=locale or "en",
-            enabled_modules=_seed_modules(partner=partner, plan=plan, business_type=business_type),
+            enabled_modules=(
+                _seed_modules(partner=partner, plan=plan, business_type=business_type)
+                if SHOP_APP in chosen
+                else _business_modules(partner=partner, plan=plan)
+            ),
             status=TenantStatus.ACTIVE,
             onboarding_step=1,
         )
@@ -189,7 +201,143 @@ def create_tenant(
             entity_id=membership.id,
             after={"role": owner_role.code, "status": membership.status},
         )
+        run_apps(membership=membership, apps=chosen, ctx=ctx)
     return membership
+
+
+# ── Which apps a new business runs (owner, 11 Oct 2026) ──────────────────────
+
+#: The app every business was given before there was a choice. Its capabilities
+#: are the business-type preset's (`presets.BASE_MODULES`), which is why it is
+#: named here and the others are not.
+SHOP_APP = "shop"
+
+
+def offerable_apps(*, partner: Any = None, plan: Any = None) -> tuple[Any, ...]:
+    """The apps a NEW business may choose from, in the switcher's order.
+
+    Registered, released, and on the plan and the partner a new business gets.
+    An unreleased app (`UNRELEASED_MODULES`) is never offered, exactly as
+    `addable_apps` never offers one to an existing business — this is the same
+    question asked before the business exists.
+    """
+    from apps.platform_app import apps_registry
+    from apps.platform_app.services.entitlements import released_modules
+
+    partner = partner or resolve_partner()
+    plan = plan or resolve_plan(partner)
+    allowed = set(partner.allowed_modules or []) & set(plan.modules or []) & released_modules()
+    return tuple(a for a in apps_registry.registered_apps() if a.anchor in allowed)
+
+
+#: DEC-019 — the Udhaar book, which every Shop business had inside the Shop until it
+#: became an app of its own (`platform/0018_release_khata` gives it to them too).
+KHATA_APP = "khata"
+
+
+def chosen_apps(apps: Any, *, partner: Any, plan: Any) -> tuple[str, ...]:
+    """Validate the step-1 choice. `None` means the Shop, as it always has.
+
+    "As it always has" includes the udhaar book (You gave / You got), which was part
+    of the Shop until DEC-019 made it an app of its own: a client that names no apps
+    gets both, when the plan offers the Udhaar book, exactly as the release migration
+    gave both to every Shop business that already existed.
+    """
+    if apps is None:
+        offered = {a.code for a in offerable_apps(partner=partner, plan=plan)}
+        return (SHOP_APP, KHATA_APP) if KHATA_APP in offered else (SHOP_APP,)
+    offered = {a.code for a in offerable_apps(partner=partner, plan=plan)}
+    wanted = [str(code) for code in apps] if isinstance(apps, (list, tuple)) else []
+    if not wanted:
+        raise ValidationFailed({"apps": ["Choose at least one thing to use."]})
+    unknown = [code for code in wanted if code not in offered]
+    if unknown:
+        raise ValidationFailed({"apps": ["That is not available. Choose from the list."]})
+    return tuple(dict.fromkeys(wanted))
+
+
+def run_apps(*, membership: Any, apps: tuple[str, ...], ctx: Any) -> None:
+    """Make the business run exactly `apps`, through the path Settings uses.
+
+    Adding goes first and turning off second, so "a business runs at least one
+    app" holds at every step. Both go through `business_apps.set_app_running`:
+    the plan check, the dependency rules, each module's enable hook and the
+    audit row are the ones an owner adding an app later gets — an app chosen at
+    sign-up and an app added a month on are the same act.
+    """
+    from apps.platform_app import apps_registry
+    from apps.platform_app.services import business_apps
+
+    for code in apps:
+        business_apps.set_app_running(membership=membership, app=code, running=True, ctx=ctx)
+        membership.tenant.refresh_from_db()
+    running = [a.code for a in apps_registry.apps_of_business(membership.tenant)]
+    for code in running:
+        if code not in apps:
+            business_apps.set_app_running(membership=membership, app=code, running=False, ctx=ctx)
+            membership.tenant.refresh_from_db()
+    _drop_unchosen_capabilities(membership=membership, apps=apps, ctx=ctx)
+
+
+def choose_apps(*, tenant: Any, user: Any, apps: Any, ctx: Any) -> Any:
+    """`PATCH /tenants/current {apps}` — step 1 edited before setup is finished.
+
+    Only during setup: a finished business has people and books in its apps,
+    and turning one off there is the switcher's job, with its refusal while
+    work is still open. Only the owner, as for every other app change.
+    """
+    from apps.platform_app.models import Membership
+
+    if int(tenant.onboarding_step) >= WIZARD_LAST_STEP:
+        raise ValidationFailed(
+            {"apps": ["Setup is finished. Add or turn off an app from the business menu."]}
+        )
+    membership = (
+        Membership.objects.select_related("tenant", "role")
+        .filter(tenant=tenant, user=user, status=MembershipStatus.ACTIVE)
+        .first()
+    )
+    if membership is None:
+        raise NotFound("Business not found.")
+    with transaction.atomic():
+        run_apps(
+            membership=membership,
+            apps=chosen_apps(apps, partner=tenant.partner, plan=tenant.plan),
+            ctx=ctx,
+        )
+    tenant.refresh_from_db()
+    return tenant
+
+
+def _drop_unchosen_capabilities(*, membership: Any, apps: tuple[str, ...], ctx: Any) -> None:
+    """Turning an app off removes its anchor and leaves the rest, which is right
+    for a business with a year of purchases behind it and wrong for one that
+    changed its mind on the first screen: a reading room that first ticked the
+    Shop would keep Purchases and Expenses for ever. During setup the business
+    has exactly what its chosen apps need."""
+    from apps.platform_app import apps_registry
+    from apps.platform_app.services.tenant_settings import (
+        MODULE_DEPENDENCIES,
+        modules_view,
+        update_enabled_modules,
+    )
+
+    tenant = membership.tenant
+    keep = set(apps_registry.BUSINESS_CAPABILITIES)
+    for code in apps:
+        spec = apps_registry.app_spec(code)
+        keep |= spec.capabilities | {spec.anchor}
+    for module in list(keep):
+        keep |= MODULE_DEPENDENCIES.get(module, frozenset())
+    every_app = set()
+    for spec in apps_registry.registered_apps():
+        every_app |= spec.capabilities
+    current = set(tenant.enabled_modules or [])
+    wanted = current - (every_app - keep)
+    if wanted != current:
+        switchable = set(modules_view(tenant)["available"])
+        update_enabled_modules(tenant=tenant, modules=sorted(wanted & switchable), ctx=ctx)
+        tenant.refresh_from_db()
 
 
 def resumable_onboarding(*, user: Any) -> Any:
@@ -287,6 +435,7 @@ def start_tenant(
     request_id: str | None = None,
     ip: str | None = None,
     user_agent: str | None = None,
+    apps: Any = None,
 ) -> tuple[Any, bool]:
     """Step 1 submitted: create the business, or RESUME the unfinished one.
 
@@ -336,6 +485,7 @@ def start_tenant(
                 request_id=request_id,
                 ip=ip,
                 user_agent=user_agent,
+                apps=apps,
             )
             return membership, True
 
@@ -352,6 +502,22 @@ def start_tenant(
             user_agent=user_agent,
         )
         _fill_blank_full_name(user, owner_name)
+        if apps is not None:
+            # Step 1 resubmitted with a different choice: the unfinished
+            # business runs what was chosen THIS time.
+            tenant = existing.tenant
+            run_apps(
+                membership=existing,
+                apps=chosen_apps(apps, partner=tenant.partner, plan=tenant.plan),
+                ctx=Ctx(
+                    tenant=tenant,
+                    actor=user,
+                    actor_type="user",
+                    request_id=request_id or "",
+                    ip=ip,
+                    user_agent=user_agent,
+                ),
+            )
         return existing, False
 
 
@@ -459,13 +625,30 @@ def apply_preset(*, tenant: Any, actor: Any = None, ctx: Any = None) -> dict:
     from apps.common.management.commands.seed_reference_data import seed_expense_categories
     from apps.platform_app.models import DocumentSequence, TenantSetting
 
-    preset = presets.preset_for(tenant.business_type)
-    modules = _seed_modules(
+    # R-DEC-64 — "Wholesale of kirana" seeds kirana's defaults joined to
+    # wholesale's. Read before the seed below writes the setting's default.
+    wholesale_row = TenantSetting.objects.filter(tenant=tenant, key="shop.wholesale").first()
+    wholesale = (
+        bool(wholesale_row.value.get("value"))
+        if wholesale_row
+        else tenant.business_type in presets.WHOLESALE_TYPES
+    )
+    preset = presets.combined(tenant.business_type, wholesale=wholesale)
+    preset_modules = _seed_modules(
         partner=tenant.partner, plan=tenant.plan, business_type=tenant.business_type
     )
+    # The preset is the SHOP's (11 Oct 2026). It used to be written over the
+    # whole of `enabled_modules`, which was right while every business was a
+    # shop and would now switch a library off at the last step of its own
+    # setup. So: it governs only the shop's capabilities, and only for a
+    # business that runs the shop; everything else that is on stays on.
+    current = set(tenant.enabled_modules or [])
+    governed = set(presets.BASE_MODULES) | {"inventory"}
+    runs_shop = "sales" in current
+    modules = sorted(set(preset_modules) | (current - governed)) if runs_shop else sorted(current)
     inventory_available = "inventory" in modules
 
-    if sorted(tenant.enabled_modules or []) != sorted(modules):
+    if sorted(current) != modules:
         tenant.enabled_modules = modules
         tenant.save(update_fields=["enabled_modules", "updated_at"])
 
@@ -482,6 +665,13 @@ def apply_preset(*, tenant: Any, actor: Any = None, ctx: Any = None) -> dict:
         "ledger.credit_limit_mode": {"mode": "warn"},
         "ledger.reminder_templates": dict(presets.REMINDER_TEMPLATES),
         "documents.show_upi_qr": {"value": True},
+        "shop.wholesale": {"value": wholesale},
+        # R-DEC-66: a switch the owner set at sign-up exists already and
+        # `get_or_create` keeps it; the rest start from the kind's preset.
+        **{
+            f"shop.features.{key}": {"value": key in preset.features}
+            for key in (*presets.SIGNUP_FEATURES, "orders")
+        },
         "parties.labels": {
             "customer": preset.party_labels[0],
             "supplier": preset.party_labels[1],
@@ -512,6 +702,8 @@ def apply_preset(*, tenant: Any, actor: Any = None, ctx: Any = None) -> dict:
     created["categories"] = seed_expense_categories(tenant)
     created["categories"] += _seed_extra_categories(tenant, preset.extra_expense_categories)
     created["locations"] = _seed_main_location(tenant)
+    if "jewellery" in preset.features:
+        created["item_categories"] = _seed_jewel_categories(tenant)
 
     write_audit(
         ctx=ctx or Ctx(tenant=tenant, actor=actor, actor_type="user" if actor else "system"),
@@ -542,6 +734,16 @@ def _seed_modules(*, partner: Any, plan: Any, business_type: str) -> list[str]:
         wanted.add("inventory")
     allowed = set(partner.allowed_modules or []) & set(plan.modules or [])
     return sorted(wanted & allowed)
+
+
+def _business_modules(*, partner: Any, plan: Any) -> list[str]:
+    """What a business has whichever apps it runs: its own settings, its team
+    and its inbox (`apps_registry.BUSINESS_CAPABILITIES`), where the plan and
+    the partner allow. The apps add theirs through `run_apps`."""
+    from apps.platform_app.apps_registry import BUSINESS_CAPABILITIES
+
+    allowed = set(partner.allowed_modules or []) & set(plan.modules or [])
+    return sorted((BUSINESS_CAPABILITIES - {"help"}) & allowed)
 
 
 def _advance_step(current: int, requested: Any) -> int:
@@ -582,6 +784,29 @@ def _seed_extra_categories(tenant: Any, names: tuple[str, ...]) -> int:
             tenant=tenant,
             name=name,
             defaults={"is_system": False, "sort_order": order},
+        )
+        created += int(was_created)
+    return created
+
+
+#: Design `STARTCAT.jewel`: what a new jeweller's Add item offers on day one.
+JEWEL_CATEGORIES = (
+    "Gold · chains",
+    "Gold · rings",
+    "Gold · bangles",
+    "Silver · payal and anklets",
+    "Silver · utensils and coins",
+    "Diamond and stone",
+)
+
+
+def _seed_jewel_categories(tenant: Any) -> int:
+    from apps.inventory.models import Category
+
+    created = 0
+    for order, name in enumerate(JEWEL_CATEGORIES):
+        _row, was_created = Category.objects.get_or_create(
+            tenant=tenant, name=name, parent=None, defaults={"sort_order": order}
         )
         created += int(was_created)
     return created

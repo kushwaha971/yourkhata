@@ -15,6 +15,8 @@ from apps.platform_app import branding as branding_rules
 from apps.platform_app.selectors.memberships import live_sessions_of, memberships_of
 
 
+from apps.platform_app.selectors.business_words import business_block
+
 def user_block(user: Any, *, is_new: bool = False) -> dict:
     """PLT-01 FR-5. `has_password` exists so the client knows to offer "set one".
 
@@ -98,6 +100,9 @@ def active_tenant_block(tenant: Any) -> dict:
         "deletion_scheduled_for": _deletion_date(tenant),
         "onboarding_step": tenant.onboarding_step,
         "enabled_modules": sorted(effective_modules(tenant)),
+        # A9b (PLT-X08 §7): the enabled modules that read the business-days
+        # calendar; the Business days screen is shown only when this is non-empty.
+        "calendar_readers": calendar_readers_of(tenant),
         # WLB-01 FR-2/FR-4: the RESOLVED branding (tenant → partner → default),
         # which is what the theme and the header render. Zero extra queries —
         # the partner rides on the membership's `select_related`.
@@ -105,7 +110,16 @@ def active_tenant_block(tenant: Any) -> dict:
         # WLB-02 FR-5: the client shows a read-only banner with the partner's
         # support contact; the server refuses the writes.
         "partner_suspended": tenant.partner.status == "suspended",
+        # B2 / BP-22 #1–#2: the business's own words (in the person's language)
+        # and the features that are on. Screens never read `business_type`.
+        **business_block(tenant),
     }
+
+
+def calendar_readers_of(tenant: Any) -> list[str]:
+    from apps.platform_app.services.calendar import readers_for
+
+    return readers_for(tenant)
 
 
 def _deletion_date(tenant: Any) -> Any:
@@ -145,6 +159,17 @@ def session_rows(user: Any) -> list[dict]:
     ]
 
 
+def blocked_business_names(user: Any) -> list[str]:
+    """Names of the businesses whose owner or admin blocked this person."""
+    from apps.platform_app.models import Membership, MembershipStatus
+
+    return list(
+        Membership.objects.filter(user=user, status=MembershipStatus.SUSPENDED)
+        .order_by("tenant__name")
+        .values_list("tenant__name", flat=True)
+    )
+
+
 def build(
     *,
     user: Any,
@@ -158,12 +183,37 @@ def build(
 
     from apps.platform_app.services.entitlements import plan_limits_payload
 
+    from apps.platform_app import apps_registry
+    from apps.platform_app.selectors.landing import resolve_landing
+
+    tenants = tenant_rows(user)
+    permissions = sorted(permissions_for(membership)) if membership is not None else []
+    # docs/platform/14 §4.2 — the apps this person can open in the active
+    # business, and the one they are in (the last used here, else the first).
+    apps = apps_registry.accessible_apps(membership, permissions)
+    current = apps_registry.active_app(membership, apps)
     payload: dict[str, Any] = {
         "user": user_block(user, is_new=is_new),
-        "tenants": tenant_rows(user),
+        "tenants": tenants,
+        # Owner, 12 Oct 2026: a member the owner BLOCKED keeps their account but
+        # not the business. Name it, so a blocked person who signs in is told
+        # why rather than dropped into setting up a business of their own.
+        "blocked_from": blocked_business_names(user),
+        # docs/platform/14 §4.1 — where this session goes next, decided here so
+        # sign-in, refresh, a deep link and a password reset cannot disagree.
+        "landing": resolve_landing(user=user, membership=membership, tenants=tenants, app=current),
+        "apps": [apps_registry.app_json(a) for a in apps],
+        "active_app": current.code if current is not None else None,
+        # §6 decision 3 — the owner adds apps from the switcher: the ones this
+        # business could run and does not. Nobody else is offered any.
+        "apps_addable": (
+            [apps_registry.app_json(a) for a in apps_registry.addable_apps(membership.tenant)]
+            if membership is not None and apps_registry.is_business_owner(membership)
+            else []
+        ),
         "active_tenant_id": str(membership.tenant_id) if membership is not None else None,
         "active_tenant": active_tenant_block(membership.tenant) if membership else None,
-        "permissions": sorted(permissions_for(membership)) if membership is not None else [],
+        "permissions": permissions,
         "plan_limits": plan_limits_payload(membership.tenant) if membership else None,
         "feature_flags": dict(settings.UB_FEATURE_FLAGS or {}),
         "sessions": session_rows(user),

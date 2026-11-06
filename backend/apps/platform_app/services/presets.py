@@ -25,6 +25,9 @@ class Preset:
     extra_expense_categories: tuple[str, ...]
     default_due_days: int
     items_track_stock_default: bool = True
+    #: BP-22 §5 feature keys this kind starts with on (`shop.features.<key>`).
+    #: Every one is an editable setting afterwards; none gates by type.
+    features: frozenset[str] = frozenset()
     default_kinds: dict[str, str] = field(
         default_factory=lambda: {
             "unregistered": "estimate",
@@ -35,19 +38,108 @@ class Preset:
 
 
 PRESETS: dict[str, Preset] = {
-    BusinessType.RETAIL.value: Preset(
+    # R-DEC-63 — the shop kinds. Hardware first (R-DEC-51 #4). Every value is
+    # a starting default the owner can change in Settings (FR-8).
+    BusinessType.HARDWARE.value: Preset(
+        inventory_enabled=True,
+        party_labels=("Customer", "Supplier"),
+        favourite_units=("NOS", "PCS", "BOX", "KGS", "MTR", "LTR"),
+        extra_expense_categories=("Loading & unloading", "Transport"),
+        default_due_days=15,
+        features=frozenset({"orders"}),
+    ),
+    BusinessType.KIRANA.value: Preset(
         inventory_enabled=True,
         party_labels=("Customer", "Supplier"),
         favourite_units=("NOS", "KGS", "GMS", "LTR", "PAC"),
         extra_expense_categories=("Packaging", "Shop maintenance"),
         default_due_days=7,
     ),
+    BusinessType.MEDICAL.value: Preset(
+        inventory_enabled=True,
+        party_labels=("Customer", "Distributor"),
+        favourite_units=("NOS", "BOX", "BTL", "PAC", "MLT"),
+        extra_expense_categories=("Packaging", "Shop maintenance"),
+        default_due_days=7,
+        # A–D certification: a medical store keeps batch and expiry (D6/D7).
+        features=frozenset({"batches"}),
+    ),
+    BusinessType.ELECTRONICS.value: Preset(
+        inventory_enabled=True,
+        party_labels=("Customer", "Supplier"),
+        favourite_units=("NOS", "PCS", "SET", "BOX", "MTR"),
+        extra_expense_categories=("Repairs & service", "Shop maintenance"),
+        default_due_days=7,
+        # D8: a mobile shop asks one IMEI for each phone.
+        features=frozenset({"orders", "serials"}),
+    ),
+    BusinessType.GARMENTS.value: Preset(
+        inventory_enabled=True,
+        party_labels=("Customer", "Supplier"),
+        favourite_units=("NOS", "PCS", "PRS", "SET", "MTR"),
+        extra_expense_categories=("Packaging", "Shop maintenance"),
+        default_due_days=7,
+        # D2: a clothes shop sells in sizes and colours.
+        features=frozenset({"variants"}),
+    ),
+    BusinessType.AUTO_PARTS.value: Preset(
+        inventory_enabled=True,
+        party_labels=("Customer", "Supplier"),
+        favourite_units=("NOS", "PCS", "SET", "LTR", "BOX"),
+        extra_expense_categories=("Transport", "Shop maintenance"),
+        default_due_days=15,
+        # D P1b — other part numbers, fits vehicle and rack on the item.
+        features=frozenset({"orders", "part_numbers"}),
+    ),
+    BusinessType.JEWELLERY.value: Preset(
+        inventory_enabled=True,
+        party_labels=("Customer", "Supplier"),
+        favourite_units=("GMS", "NOS", "PCS"),
+        extra_expense_categories=("Making charges", "Shop maintenance"),
+        default_due_days=7,
+        # G1 today's rate (`rates`) and G2 tags priced by weight (`jewellery`), Part H keys.
+        features=frozenset({"rates", "jewellery"}),
+    ),
+    # R-DEC-66 / G12 — Other's kinds. "Something else" stays `other`.
+    BusinessType.STATIONERY.value: Preset(
+        inventory_enabled=True,
+        party_labels=("Customer", "Supplier"),
+        favourite_units=("NOS", "PCS", "PAC", "BOX", "SET", "DOZ"),
+        extra_expense_categories=("Packaging", "Shop maintenance"),
+        default_due_days=7,
+        features=frozenset({"service_items"}),
+    ),
+    BusinessType.AGRI.value: Preset(
+        inventory_enabled=True,
+        party_labels=("Customer", "Supplier"),
+        favourite_units=("KGS", "BAG", "LTR", "NOS", "PAC"),
+        extra_expense_categories=("Loading & unloading", "Transport"),
+        default_due_days=30,
+        features=frozenset({"batches"}),
+    ),
+    BusinessType.FURNITURE.value: Preset(
+        inventory_enabled=True,
+        party_labels=("Customer", "Supplier"),
+        favourite_units=("NOS", "PCS", "SET", "SQF"),
+        extra_expense_categories=("Transport", "Shop maintenance"),
+        default_due_days=15,
+        features=frozenset({"variants"}),
+    ),
+    BusinessType.RETAIL.value: Preset(
+        inventory_enabled=True,
+        party_labels=("Customer", "Supplier"),
+        favourite_units=("NOS", "KGS", "GMS", "LTR", "PAC"),
+        extra_expense_categories=("Packaging", "Shop maintenance"),
+        default_due_days=7,
+        features=frozenset({"orders"}),
+    ),
     BusinessType.WHOLESALE.value: Preset(
         inventory_enabled=True,
-        party_labels=("Party", "Supplier"),
+        party_labels=("Retailer", "Company"),
         favourite_units=("NOS", "BOX", "BAG", "KGS", "QTL", "DOZ"),
         extra_expense_categories=("Loading & unloading", "Godown rent"),
         default_due_days=15,
+        features=frozenset({"orders"}),
     ),
     BusinessType.DISTRIBUTION.value: Preset(
         inventory_enabled=True,
@@ -55,6 +147,7 @@ PRESETS: dict[str, Preset] = {
         favourite_units=("BOX", "PAC", "NOS", "BAG", "DOZ"),
         extra_expense_categories=("Fuel", "Vehicle maintenance", "Scheme discounts"),
         default_due_days=15,
+        features=frozenset({"orders"}),
     ),
     BusinessType.SERVICES.value: Preset(
         inventory_enabled=False,
@@ -62,13 +155,15 @@ PRESETS: dict[str, Preset] = {
         favourite_units=("NOS",),
         extra_expense_categories=("Tools & equipment", "Travel"),
         default_due_days=30,
+        features=frozenset({"service_items", "orders"}),
     ),
     BusinessType.TRADER.value: Preset(
         inventory_enabled=True,
-        party_labels=("Party", "Supplier"),
+        party_labels=("Customer", "Supplier"),
         favourite_units=("KGS", "QTL", "TON", "BAG", "NOS"),
         extra_expense_categories=("Commission", "Mandi charges"),
         default_due_days=15,
+        features=frozenset({"orders"}),
     ),
     BusinessType.MANUFACTURER.value: Preset(
         inventory_enabled=True,
@@ -76,6 +171,7 @@ PRESETS: dict[str, Preset] = {
         favourite_units=("KGS", "NOS", "MTR", "SET", "LTR"),
         extra_expense_categories=("Raw material", "Job work", "Machine maintenance"),
         default_due_days=15,
+        features=frozenset({"orders"}),
     ),
     BusinessType.PROFESSIONAL.value: Preset(
         inventory_enabled=False,
@@ -87,6 +183,7 @@ PRESETS: dict[str, Preset] = {
             "Travel",
         ),
         default_due_days=30,
+        features=frozenset({"orders"}),
     ),
     BusinessType.FOOD.value: Preset(
         inventory_enabled=True,
@@ -95,10 +192,12 @@ PRESETS: dict[str, Preset] = {
         extra_expense_categories=("Gas & fuel", "Raw material", "Delivery charges"),
         default_due_days=7,
         items_track_stock_default=False,  # FR-7: food items default `track_stock=false`
+        # D P6 — sweets, bakery and café: add-ons on items (design D11).
+        features=frozenset({"addons"}),
     ),
     BusinessType.OTHER.value: Preset(
         inventory_enabled=True,
-        party_labels=("Party", "Supplier"),
+        party_labels=("Customer", "Supplier"),
         favourite_units=("NOS", "KGS", "LTR"),
         extra_expense_categories=(),
         default_due_days=30,
@@ -136,6 +235,8 @@ NUMBERING_PREFIXES: tuple[tuple[str, str], ...] = (
     ("delivery_challan", "DC"),
     ("stock_adjustment", "ADJ"),
     ("stock_transfer", "TRF"),
+    # Shop item 3 (7 Oct 2026) — sales orders, `SO/26-27/0001`.
+    ("sales_order", "SO"),
 )
 
 NUMBER_PADDING = 4
@@ -151,6 +252,55 @@ REMINDER_TEMPLATES: dict[str, str] = {
         "कृपया सुविधानुसार भुगतान करें। धन्यवाद।"
     ),
 }
+
+
+#: R-DEC-64 — the older types that ARE wholesale, so `shop.wholesale` defaults on.
+WHOLESALE_TYPES: frozenset[str] = frozenset(
+    {BusinessType.WHOLESALE.value, BusinessType.DISTRIBUTION.value}
+)
+
+#: Settings → favourite units holds at most this many (settings_schema).
+_MAX_UNITS = 8
+
+
+def combined(business_type: str, *, wholesale: bool) -> Preset:
+    """R-DEC-64 — a kind sold wholesale gets BOTH presets' defaults.
+
+    "Wholesale of kirana" is the kirana preset (its words, its units first)
+    with wholesale's added: its bulk units after the kind's, its expense
+    categories, and the longer of the two credit periods, because a shop
+    selling to other shops gives them time to pay. Without `wholesale`, or for
+    a type that already is wholesale, it is simply that type's preset.
+    """
+    preset = preset_for(business_type)
+    if not wholesale or business_type in WHOLESALE_TYPES:
+        return preset
+    bulk = PRESETS[BusinessType.WHOLESALE.value]
+    return Preset(
+        inventory_enabled=preset.inventory_enabled or bulk.inventory_enabled,
+        # Design B2: a wholesaler's people are Retailers and Companies.
+        party_labels=bulk.party_labels,
+        favourite_units=tuple(dict.fromkeys(preset.favourite_units + bulk.favourite_units))[
+            :_MAX_UNITS
+        ],
+        extra_expense_categories=tuple(
+            dict.fromkeys(preset.extra_expense_categories + bulk.extra_expense_categories)
+        ),
+        default_due_days=max(preset.default_due_days, bulk.default_due_days),
+        items_track_stock_default=preset.items_track_stock_default,
+        default_kinds=dict(preset.default_kinds),
+        features=preset.features | bulk.features,
+    )
+
+
+#: E2 #6 (owner, 30 Oct 2026): Sales orders, Delivery challans and Purchase
+#: orders are the `orders` feature, on for wholesale, hardware, auto parts and
+#: mobile & electronics (and the older broad types, so no existing business
+#: loses a menu row), off for kirana, medical, clothes, café, jewellery and
+#: Other's kinds.
+#: R-DEC-66 / G12 "Anything your shop needs?" — the four switches asked at
+#: sign-up for "Other" kinds, stored as `shop.features.<key>`.
+SIGNUP_FEATURES: tuple[str, ...] = ("service_items", "alt_units", "batches", "variants")
 
 
 def preset_for(business_type: str) -> Preset:

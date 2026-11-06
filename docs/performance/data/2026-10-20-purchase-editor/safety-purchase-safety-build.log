@@ -1,0 +1,149 @@
+
+> digikhaato-frontend@0.1.0 build
+> next build
+
+▲ Next.js 16.3.8 (Turbopack)
+- Environments: .env.local
+✓ Running next.config.js took 5ms
+
+  Creating an optimized production build ...
+✓ Compiled successfully in 3.0s
+  Running TypeScript ...
+  Finished TypeScript in 2.3s ...
+  Collecting page data using 9 workers ...
+  Generating static pages using 9 workers (0/93) ...
+  Generating static pages using 9 workers (23/93) 
+  Generating static pages using 9 workers (46/93) 
+  Generating static pages using 9 workers (69/93) 
+✓ Generating static pages using 9 workers (93/93) in 227ms
+  Finalizing page optimization ...
+
+Route (app)
+┌ ƒ /
+├ ƒ /_not-found
+├ ƒ /accept-invite/[token]
+├ ƒ /admin
+├ ƒ /admin/health
+├ ƒ /admin/partners
+├ ƒ /admin/tenants
+├ ƒ /admin/tenants/[id]
+├ ƒ /api/healthz
+├ ƒ /apps
+├ ƒ /cashbook
+├ ƒ /customers
+├ ƒ /d/[token]
+├ ƒ /dashboard
+├ ƒ /design-system
+├ ƒ /expenses
+├ ƒ /forgot-password
+├ ƒ /imports
+├ ƒ /imports/[id]
+├ ƒ /in/[token]
+├ ƒ /items
+├ ƒ /items/[id]
+├ ƒ /items/masters
+├ ƒ /items/price-lists
+├ ƒ /items/price-lists/[id]
+├ ƒ /khata
+├ ƒ /ledger/aging
+├ ƒ /ledger/reminders
+├ ƒ /legal/privacy
+├ ƒ /legal/terms
+├ ƒ /lending
+├ ƒ /lending/borrowers
+├ ƒ /lending/loans
+├ ƒ /lending/loans/[loanId]
+├ ƒ /lending/loans/new
+├ ƒ /lending/messages
+├ ƒ /lending/routes
+├ ƒ /library
+├ ƒ /library/attendance
+├ ƒ /library/catalogue
+├ ƒ /library/catalogue/[titleId]
+├ ƒ /library/catalogue/categories
+├ ƒ /library/catalogue/locations
+├ ƒ /library/copies
+├ ƒ /library/copies/[copyId]
+├ ƒ /library/counter
+├ ƒ /library/fees
+├ ƒ /library/members
+├ ƒ /library/members/[membershipId]
+├ ƒ /library/messages
+├ ƒ /library/money
+├ ƒ /library/seats
+├ ƒ /library/settings
+├ ƒ /login
+├ ƒ /login/email
+├ ƒ /more
+├ ƒ /onboarding
+├ ƒ /onboarding/step/[n]
+├ ƒ /parties
+├ ƒ /parties/[id]
+├ ƒ /parties/[id]/statement
+├ ƒ /parties/tags
+├ ƒ /pay/[token]
+├ ƒ /payments
+├ ƒ /payments/[id]
+├ ƒ /purchases/bills
+├ ƒ /purchases/bills/[id]
+├ ƒ /purchases/bills/[id]/edit
+├ ƒ /purchases/bills/new
+├ ƒ /purchases/debit-notes
+├ ƒ /purchases/debit-notes/[id]
+├ ƒ /purchases/orders
+├ ƒ /purchases/orders/[id]
+├ ƒ /purchases/orders/[id]/edit
+├ ƒ /purchases/orders/new
+├ ƒ /reports
+├ ƒ /reports/aging
+├ ƒ /reports/day-book
+├ ƒ /reports/gst-summary
+├ ƒ /reports/profit
+├ ƒ /reports/purchase-register
+├ ƒ /reports/sales-register
+├ ƒ /reset-password
+├ ○ /robots.txt
+├ ƒ /sales/challans
+├ ƒ /sales/challans/[id]
+├ ƒ /sales/challans/[id]/edit
+├ ƒ /sales/challans/new
+├ ƒ /sales/credit-notes
+├ ƒ /sales/credit-notes/[id]
+├ ƒ /sales/credit-notes/new
+├ ƒ /sales/estimates
+├ ƒ /sales/estimates/[id]
+├ ƒ /sales/estimates/[id]/edit
+├ ƒ /sales/estimates/new
+├ ƒ /sales/invoices
+├ ƒ /sales/invoices/[id]
+├ ƒ /sales/invoices/[id]/edit
+├ ƒ /sales/invoices/new
+├ ƒ /sales/orders
+├ ƒ /sales/orders/[id]
+├ ƒ /sales/orders/[id]/edit
+├ ƒ /sales/orders/new
+├ ƒ /set-password
+├ ƒ /settings
+├ ƒ /settings/activity
+├ ƒ /settings/branding
+├ ƒ /settings/business-days
+├ ƒ /settings/data
+├ ƒ /settings/devices
+├ ƒ /settings/plan
+├ ƒ /settings/profile
+├ ƒ /settings/team
+├ ƒ /signup
+├ ○ /sitemap.xml
+├ ƒ /solutions
+├ ƒ /solutions/[slug]
+├ ƒ /stock/low
+├ ƒ /stock/summary
+├ ƒ /suppliers
+└ ƒ /switch
+
+
+ƒ Proxy (Middleware)
+
+○  (Static)   prerendered as static content
+ƒ  (Dynamic)  server-rendered on demand
+

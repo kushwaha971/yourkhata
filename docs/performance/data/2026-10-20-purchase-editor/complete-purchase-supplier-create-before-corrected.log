@@ -1,0 +1,30 @@
+FAIL src/modules/DigiKhaato/features/purchases/components/PurchaseSupplierField.test.tsx
+  ✓ does not strand a no-match supplier search; create permission=false (90 ms)
+  ✕ does not strand a no-match supplier search; create permission=true (58 ms)
+  ○ skipped P-D6: supplier matches are a listbox of options, pickable with the arrow keys
+  ○ skipped opens recent supplier matches in the Shop book for Shop-only staff
+
+  ● does not strand a no-match supplier search; create permission=true
+
+    expect(received).toBeVisible()
+
+    received value must be an HTMLElement or an SVGElement.
+    Received has value: null
+
+      122 |       name: 'Add “Radhe Krishna Electricals” as a new supplier',
+      123 |     });
+    > 124 |     if (mayCreate) expect(add).toBeVisible();
+          |                                ^
+      125 |     else expect(add).not.toBeInTheDocument();
+      126 |   }
+      127 | );
+
+      at __EXTERNAL_MATCHER_TRAP__ (node_modules/expect/build/index.js:325:30)
+      at Object.toBeVisible (node_modules/expect/build/index.js:326:15)
+      at src/modules/DigiKhaato/features/purchases/components/PurchaseSupplierField.test.tsx:124:32
+
+Test Suites: 1 failed, 1 total
+Tests:       1 failed, 2 skipped, 1 passed, 4 total
+Snapshots:   0 total
+Time:        0.92 s, estimated 1 s
+Ran all test suites matching /PurchaseSupplierField.test.tsx/i with tests matching "does not strand".

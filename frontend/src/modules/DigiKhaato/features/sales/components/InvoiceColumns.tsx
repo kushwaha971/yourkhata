@@ -2,8 +2,12 @@ import { UbAmount, UbStack, UbStatusBadge, UbText } from 'src/design-system';
 import type { UbDataGridColumn } from 'src/design-system/UbDataGrid';
 import type { TranslateFn } from 'src/hooks/useTranslation';
 import { formatBusinessDate } from 'src/utils/dates';
+import { formatInr } from 'src/utils/money';
 
 import { STATUS_TONE, daysOverdue } from '../view-model/invoiceDisplay';
+import { originWords } from '../view-model/originDisplay';
+
+import { OriginBadge } from './OriginBadge';
 
 import type { InvoiceListRow } from '../types/sales.types';
 
@@ -17,16 +21,70 @@ import type { InvoiceListRow } from '../types/sales.types';
  * | Date   | 1 | meta     | dd/mm/yyyy (owner's rule). |
  * | Status | 1 | meta     | Draft / Issued / Part paid / Paid / Overdue / Void. |
  * | Due    | 2 | none     | Amount still owed; "Overdue 3 d" in error tone (§8). |
+ *
+ * Below 1280 px (`isCompact`) the date joins the number under the party and
+ * the Date column goes, as on the other sales lists: a 1024 px table beside the
+ * sidebar has no room for a full date column and a long bill number together.
+ *
+ * A5 (PLT-X05 §7) — a document another module issued says so under its number
+ * ("From Gym · Membership M-0042"); on a card, after the date.
  */
 export const createInvoiceColumns = ({
   t,
   today,
   isCards,
+  isCompact = false,
 }: {
   readonly t: TranslateFn;
   readonly today: string;
   readonly isCards: boolean;
+  readonly isCompact?: boolean;
 }): readonly UbDataGridColumn<InvoiceListRow>[] => [
+  ...(isCards || isCompact
+    ? []
+    : ([
+        {
+          id: 'number',
+          header: t('sales.column.bill'),
+          priority: 1,
+          cardSlot: 'none',
+          widthShare: 20,
+          cell: (row) => (
+            <UbText as="span" variant="body-sm" className="ds-num whitespace-normal break-words">
+              {row.number ?? t('sales.status.draft')}
+            </UbText>
+          ),
+        },
+      ] satisfies UbDataGridColumn<InvoiceListRow>[])),
+  ...(isCompact
+    ? []
+    : ([
+        {
+          id: 'date',
+          header: t('sales.column.date'),
+          priority: 1,
+          cardSlot: 'meta',
+          widthShare: 16,
+          cell: (row) => {
+            const date = formatBusinessDate(row.documentDate);
+            if (!isCards)
+              return (
+                <UbText as="span" variant="body-sm" className="block whitespace-normal break-words">
+                  {date}
+                </UbText>
+              );
+            const who = row.party?.name ?? row.walkInName ?? t('sales.walkIn.label');
+            const caption = `${date} · ${who} · ${formatInr(row.grandTotal)}`;
+            if (!row.origin) return caption;
+            const words = originWords(row.origin);
+            const from = t(words.id, {
+              module: words.moduleId ? t(words.moduleId) : words.module,
+              label: words.label ?? '',
+            });
+            return `${caption} · ${from}`;
+          },
+        },
+      ] satisfies UbDataGridColumn<InvoiceListRow>[])),
   {
     id: 'party',
     header: t('sales.column.party'),
@@ -37,46 +95,45 @@ export const createInvoiceColumns = ({
       const walkIn = !row.party;
       const name = row.party?.name ?? row.walkInName ?? t('sales.walkIn.label');
       const number = row.number ?? t('sales.status.draft');
-      if (isCards) return `${name} · ${number}`;
+      // The phone row leads with the bill number; who and how much sit under it (design F-bills-p).
+      if (isCards) return number;
       return (
         <UbStack gap={0} className="min-w-0">
           <UbText
             as="span"
             variant="body-sm"
             tone={walkIn ? 'tertiary' : undefined}
-            className="line-clamp-2"
+            className="whitespace-normal break-words"
           >
             {walkIn && row.walkInName ? `${t('sales.walkIn.label')} · ${name}` : name}
           </UbText>
-          <UbText as="span" variant="caption" tone="tertiary" className="ds-num">
-            {number}
+          <UbText
+            as="span"
+            variant="caption"
+            tone="tertiary"
+            className="ds-num whitespace-normal break-words"
+          >
+            {isCompact ? `${number} · ${formatBusinessDate(row.documentDate)}` : null}
           </UbText>
+          {row.origin && <OriginBadge origin={row.origin} />}
         </UbStack>
       );
     },
   },
   {
-    id: 'date',
-    header: t('sales.column.date'),
+    id: 'total',
+    header: t('sales.column.total'),
     priority: 1,
-    cardSlot: 'meta',
-    widthShare: 12,
-    cell: (row) => formatBusinessDate(row.documentDate),
-  },
-  {
-    id: 'status',
-    header: t('sales.column.status'),
-    priority: 1,
-    cardSlot: 'meta',
-    widthShare: 14,
-    cell: (row) => {
-      const overdue = row.isOverdue ? 'overdue' : row.status;
-      return isCards ? (
-        t(`sales.status.${overdue}`)
-      ) : (
-        <UbStatusBadge tone={STATUS_TONE[overdue]} label={t(`sales.status.${overdue}`)} />
-      );
-    },
+    align: 'end',
+    cardSlot: 'none',
+    widthShare: 16,
+    cell: (row) => (
+      <UbAmount
+        value={row.grandTotal}
+        size="sm"
+        className={row.status === 'void' ? 'line-through opacity-60' : undefined}
+      />
+    ),
   },
   {
     id: 'due',
@@ -88,7 +145,7 @@ export const createInvoiceColumns = ({
     cell: (row) => {
       const days = daysOverdue(row.dueOn, today);
       return (
-        <UbStack gap={0} className="items-end">
+        <UbStack direction="row" gap={2} className="flex-wrap items-baseline justify-end">
           <UbAmount value={row.amountDue} size="sm" />
           {row.amountDue !== '0.00' && row.dueOn && (
             <UbText as="span" variant="caption" tone={days > 0 ? 'error' : 'tertiary'}>
@@ -102,18 +159,18 @@ export const createInvoiceColumns = ({
     },
   },
   {
-    id: 'total',
-    header: t('sales.column.total'),
+    id: 'status',
+    header: t('sales.column.status'),
     priority: 1,
-    align: 'end',
     cardSlot: 'trailing',
-    widthShare: 16,
-    cell: (row) => (
-      <UbAmount
-        value={row.grandTotal}
-        size="sm"
-        className={row.status === 'void' ? 'line-through opacity-60' : undefined}
-      />
-    ),
+    widthShare: 14,
+    cell: (row) => {
+      const overdue = row.isOverdue ? 'overdue' : row.status;
+      const label =
+        overdue === 'issued' && row.amountDue !== '0.00'
+          ? t('sales.tab.unpaid')
+          : t(`sales.status.${overdue}`);
+      return <UbStatusBadge tone={STATUS_TONE[overdue]} label={label} />;
+    },
   },
 ];

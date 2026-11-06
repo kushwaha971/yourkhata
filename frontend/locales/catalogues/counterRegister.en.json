@@ -1,0 +1,11 @@
+{
+  "counterRegister.items": "{count, plural, one {# item} other {# items}}",
+  "counterRegister.status.applied": "Credit used",
+  "counterRegister.status.cancelled": "Cancelled",
+  "counterRegister.status.draft": "Draft",
+  "counterRegister.status.issued": "Issued",
+  "counterRegister.status.overdue": "Late",
+  "counterRegister.status.paid": "Paid",
+  "counterRegister.status.partially_paid": "Part paid",
+  "counterRegister.status.unpaid": "Not paid"
+}

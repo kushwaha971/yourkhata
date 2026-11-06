@@ -18,11 +18,18 @@
 7. Snapshot the party and supplier GSTIN, set amounts and status (BR-17).
 8. Ledger debit for a party sale with a non-zero total (BR-18, EC-5).
 9. Audit `invoice.issued`, and the override as its own row.
+
+── A5 ── the document port's keywords (FRD 00 PLT-X05 §6; all default to the counter's
+behaviour): `credit_check="skip"` (ADR-048) warns and never refuses; `apply_credit_note_ids`,
+`apply_payment_ids` and `apply_open_advances` are LOCKED between step 5 and the number (R61:
+party → documents → payments → sequence) and applied after the payment taken at issue
+(`issue_apply.py`).
 """
 
 from __future__ import annotations
 
 import datetime as dt
+from decimal import Decimal
 from typing import Any
 
 from django.db import transaction
@@ -35,10 +42,11 @@ from apps.common.exceptions import BusinessRuleViolation, ValidationFailed
 from apps.sales.constants import B2C_LARGE_THRESHOLD, DocumentStatus
 from apps.sales.services import settings as sales_settings
 from apps.sales.services.documents import check_version, lock_document, replace_lines
-from apps.sales.services.issue_parts import credit_check, party_snapshot, post_stock, rule46_for
+from apps.sales.services.issue_parts import credit_check as check_party_credit
+from apps.sales.services.issue_parts import party_snapshot, post_stock, rule46_for
 from apps.sales.services.ledger_link import post_invoice_debit
 from apps.sales.services.payload import apply_payload
-from apps.sales.services.payment_seam import record_issue_payment, validate_payment
+from apps.sales.services.payment_seam import paid_at_issue, record_issue_payment, validate_payment
 
 
 def _validate_issuable(ctx: Ctx, document: Any, rows: list[dict]) -> None:
@@ -62,12 +70,25 @@ def issue_invoice(
     payment: dict | None = None,
     override: bool = False,
     version: Any = None,
+    credit_check: str = "enforce",
+    apply_credit_note_ids: Any = (),
+    apply_payment_ids: Any = (),
+    apply_open_advances: bool = False,
 ) -> dict:
-    """Issue a draft. Returns `{document, warnings, ledger_entry_id, party_balance}`."""
-    from apps.parties.services.balance import lock_party
+    """Issue a draft. Returns `{document, warnings, ledger_entry_id, party_balance, applied}`."""
+    from apps.parties.services.balance import lock_party_of, relock_if_moved
     from apps.platform_app.services.sequences import allocate_number
+    from apps.sales.models import SalesDocument
+    from apps.sales.services.issue_apply import apply_held_money, lock_held_money
 
+    if credit_check not in ("enforce", "skip"):
+        raise ValueError(f"credit_check must be 'enforce' or 'skip', not {credit_check!r}")
     tenant = ctx.tenant
+    # L1 before the draft (`parties.services.balance.lock_party_of`), the order
+    # every money path follows.
+    early_party = lock_party_of(
+        tenant=tenant, rows=SalesDocument.objects.filter(tenant=tenant), pk=document_id
+    )
     document = lock_document(tenant, document_id)
     if document.status != DocumentStatus.DRAFT:
         raise BusinessRuleViolation(
@@ -95,38 +116,82 @@ def issue_invoice(
             details={"issues": hard},
         )
     walk_in = document.party_id is None
+    # G2c — old gold taken in comes off what the customer pays (never more
+    # than the bill); the rest is paid, or owed, as on any bill.
+    from apps.inventory.services.old_gold import take_in as take_in_old_gold
+    from apps.inventory.services.old_gold import value_of as old_gold_value
+
+    old_gold = old_gold_value(document)
+    if old_gold > document.grand_total and walk_in:
+        raise BusinessRuleViolation(
+            "old_gold_over_bill",
+            "The old gold is worth more than this bill. Choose a saved customer to keep the rest as their advance.",
+            details={"old_gold": f"{old_gold:.2f}", "grand_total": f"{document.grand_total:.2f}"},
+        )
+    old_gold = min(old_gold, document.grand_total)  # any rest is the customer's advance
     cleaned_payment = validate_payment(
-        payment=payment, grand_total=document.grand_total, walk_in=walk_in
+        payment=payment, grand_total=document.grand_total - old_gold, walk_in=walk_in
     )
+    # G3a — a bill that delivers a custom order applies its advance.
+    from apps.sales.services.custom_orders import advance_for_issue, mark_delivered_by
+
+    custom_order, advance_ids = advance_for_issue(ctx=ctx, document=document)
+    # G2d — a PAN the customer's GSTIN carries; neither PAN nor cash ever stops a bill.
+    from apps.sales.services.jewel_rules import fill_pan_from_gstin
+
+    fill_pan_from_gstin(tenant=tenant, document=document, party=early_party)
 
     party = None
     if not walk_in:
-        party = lock_party(tenant=tenant, party_id=document.party_id)
+        party = relock_if_moved(tenant=tenant, party=early_party, party_id=document.party_id)
         if party is None or party.status == "archived":
             raise BusinessRuleViolation(
                 "party_archived",
-                "This party is archived. Restore them or choose another party.",
+                "This customer is archived. Restore them or choose another customer.",
                 details={"party_id": str(document.party_id)},
             )
 
-    unit_costs = post_stock(ctx, document, rows)
+    # Shop item 4 — an invoice made from a delivery challan does not take out of stock
+    # again what the challan already took (SAL-09 BR-2); those lines carry the cost
+    # the challan froze, which is what the goods really cost.
+    from apps.sales.services.challans import delivered_quantities, split_delivered
 
-    amount_paid = record_issue_payment(document=document, payment=cleaned_payment)
-    amount_due = document.grand_total - amount_paid
+    to_move, covered_costs = split_delivered(rows, delivered_quantities(document))
     warnings = list(outcome["warnings"])
+    unit_costs = {**post_stock(ctx, document, to_move, warnings=warnings), **covered_costs}
+
+    # What the invoice will have received once the payment below is recorded.
+    # The credit check reads the part going on CREDIT (BR-13), so it is decided
+    # now, before anything is written; the payment itself is recorded after the
+    # invoice exists, through PAY-01 (see `payment_seam`).
+    amount_paid = paid_at_issue(cleaned_payment, document.grand_total - old_gold) + old_gold
+    amount_due = document.grand_total - amount_paid
+    if custom_order is not None:  # the advance is applied below; only the rest goes on credit
+        amount_due = max(amount_due - custom_order.advance, Decimal("0"))
     overridden = False
     if party is not None and amount_due > 0:
-        warning, overridden = credit_check(ctx, party, amount_due, override=override)
+        warning, overridden = check_party_credit(
+            ctx, party, amount_due, override=override, enforce=credit_check == "enforce"
+        )
         if warning:
             warnings.append(warning)
     if walk_in and document.is_inter_state and document.grand_total > _dec(B2C_LARGE_THRESHOLD):
         warnings.append(
             {
                 "code": "b2c_large_needs_party",
-                "message": "Enter customer name and address (use a party) for inter-state sales above ₹2.5 lakh.",
+                "message": "Enter customer name and address (choose a saved customer) for inter-state sales above ₹2.5 lakh.",
                 "details": {},
             }
         )
+
+    # R61 — every credit note and payment applied below is locked BEFORE the sequence row.
+    held = lock_held_money(
+        ctx,
+        document,
+        credit_note_ids=apply_credit_note_ids,
+        payment_ids=[*(str(i) for i in (apply_payment_ids or ())), *advance_ids],
+        open_advances=apply_open_advances,
+    )
 
     document.number = allocate_number(
         tenant=tenant, kind=document.kind, on_date=document.document_date
@@ -134,13 +199,13 @@ def issue_invoice(
     document.party_snapshot = party_snapshot(party, document)
     document.party_gstin_snapshot = (party.gstin if party is not None else None) or None
     document.supplier_gstin_snapshot = tenant.gstin or None
-    document.amount_paid = amount_paid
-    document.amount_due = amount_due
-    document.status = (
-        DocumentStatus.PAID
-        if amount_due == 0
-        else DocumentStatus.PARTIALLY_PAID if amount_paid > 0 else DocumentStatus.ISSUED
-    )
+    # Written as issued-with-nothing-paid; `record_issue_payment` below moves it
+    # to partially paid / paid through the payment's allocation. A walk-in
+    # bill's due is held at zero (`ck_sales_document_walk_in_paid`) — see the
+    # sales allocation target in `apps/sales/services/payment_target.py`.
+    document.amount_paid = 0
+    document.amount_due = document.grand_total if not walk_in else 0
+    document.status = DocumentStatus.PAID if document.grand_total == 0 else DocumentStatus.ISSUED
     if amount_due == 0:
         document.due_on = None  # FR-11 / EC-12
     elif document.due_on is None and party is not None:
@@ -155,6 +220,12 @@ def issue_invoice(
     document.save()
     for row in rows:
         row["unit_cost_snapshot"] = unit_costs.get(row["line_no"])
+        # An item that keeps no stock has no moving average; its purchase price
+        # NOW is its cost on this bill (Vyapar's bill-wise profit does the
+        # same), frozen like the average is. No price, no cost: never zero.
+        item = row.get("item")
+        if row["unit_cost_snapshot"] is None and item is not None and item.purchase_price > 0:
+            row["unit_cost_snapshot"] = item.purchase_price * row.get("unit_factor", 1)
     replace_lines(document, rows)
 
     ledger_entry_id = None
@@ -162,6 +233,18 @@ def issue_invoice(
     if party is not None and document.grand_total > 0:
         entry, balance = post_invoice_debit(ctx=ctx, document=document, party=party)
         ledger_entry_id = str(entry.id)
+
+    # Old gold first: on a quick sale the customer's payment then settles
+    # exactly what is left, as a quick sale's payment always must.
+    if take_in_old_gold(ctx=ctx, document=document) is not None:
+        document.refresh_from_db()
+    receipt = record_issue_payment(ctx=ctx, document=document, payment=cleaned_payment)
+    if receipt is not None:
+        document.refresh_from_db()
+        if receipt["party_balance"] is not None:
+            balance = receipt["party_balance"]
+    applied = apply_held_money(ctx, document, held)
+    mark_delivered_by(order=custom_order, document=document)
 
     write_audit(
         ctx=ctx,
@@ -175,7 +258,9 @@ def issue_invoice(
             "amount_paid": str(amount_paid),
             "amount_due": str(amount_due),
             "credit_limit_override": overridden,
+            "payment_id": receipt["payment_id"] if receipt else None,
             "warnings": [w["code"] for w in warnings],
+            **({"applied": applied} if applied else {}),
         },
         metadata={
             "idempotency_key": ctx.idempotency_key,
@@ -197,6 +282,7 @@ def issue_invoice(
         "warnings": warnings,
         "ledger_entry_id": ledger_entry_id,
         "party_balance": balance,
+        "applied": applied,
     }
 
 

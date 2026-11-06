@@ -15,6 +15,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.views import APIView
 
 from apps.common.audit import AuditAction
+from apps.common.book_access import BookAccessMixin, require_book
 from apps.common.constants import ModuleCode
 from apps.common.exceptions import ValidationFailed
 from apps.common.permissions import HasPermission, ModuleEnabled
@@ -22,7 +23,9 @@ from apps.common.renderers import EnvelopeJSONRenderer, PassthroughCsvRenderer
 from apps.common.responses import StandardResponse
 from apps.common.throttling import ScopedUserRateThrottle
 from apps.common.viewsets import TenantScopeMixin
+from apps.ledger.models import LedgerEntry
 from apps.ledger.selectors.aging import BUCKET_KEYS, aging_rows, aging_totals, ledger_summary
+from apps.ledger.selectors.entry import BOOK_BALANCE_FIELD, book_of
 from apps.ledger.services.statement_csv import neutralise
 from apps.ledger.views.exports import audit_export, authorise_export
 
@@ -38,7 +41,22 @@ DEFAULT_ORDERING = "-90_plus"
 ALLOWED_ORDERING = {"-90_plus", "90_plus", "-total", "total", "name", "-name"}
 
 
-class LedgerSummaryView(TenantScopeMixin, APIView):
+def book_has_any(tenant: Any, book: str | None = None) -> bool:
+    """`meta.has_any` (owner, 12 Oct 2026): has this business EVER recorded a
+    ledger entry?
+
+    It decides whether a ledger screen shows its controls or one plain empty
+    state, and it cannot be inferred from the figures: a settled book and an
+    empty one both total ₹0.00, and only the empty one should lose its tabs.
+    Every row counts — reversed and superseded ones too — because a merchant
+    who has corrected an entry has a book, and the screen that hides a
+    correction behind a toggle still needs the toggle.
+    """
+    entries = LedgerEntry.objects.filter(tenant=tenant)
+    return (entries.filter(bucket=book) if book else entries).exists()
+
+
+class LedgerSummaryView(BookAccessMixin, TenantScopeMixin, APIView):
     """FR-1 / BR-1 — the tenant's position, in two numbers."""
 
     permission_classes = [
@@ -53,11 +71,12 @@ class LedgerSummaryView(TenantScopeMixin, APIView):
         from apps.ledger.selectors.collection import collection_buckets
 
         tenant = self.get_tenant()
-        totals = ledger_summary(tenant=tenant)
+        book = book_of(request.query_params.get("book"))
+        totals = ledger_summary(tenant=tenant, field=BOOK_BALANCE_FIELD[book])
         # LED-05 FR-3 — the three collection buckets ride on the same response,
         # each `{count, amount}`, against the tenant's today (`as_of`).
         today = tenant_today(tenant)
-        buckets = collection_buckets(tenant=tenant, today=today)
+        buckets = collection_buckets(tenant=tenant, today=today, field=BOOK_BALANCE_FIELD[book])
         return StandardResponse.ok(
             {
                 **{key: str(value) for key, value in totals.items()},
@@ -66,11 +85,14 @@ class LedgerSummaryView(TenantScopeMixin, APIView):
                     for key, bucket in buckets.items()
                 },
                 "as_of": today.isoformat(),
-            }
+            },
+            # The reminders screen reads its tab counts from here, so the
+            # empty-book decision rides on the same response (`book_has_any`).
+            meta={"has_any": book_has_any(tenant, book)},
         )
 
 
-class LedgerAgingView(TenantScopeMixin, APIView):
+class LedgerAgingView(BookAccessMixin, TenantScopeMixin, APIView):
     """FR-2 — every party with something outstanding, bucketed by age.
 
     ── Why the paging happens in Python and not in the query ────────────────
@@ -146,7 +168,9 @@ class LedgerAgingView(TenantScopeMixin, APIView):
         """The report, named, filtered, ordered — before paging."""
         tenant = self.get_tenant()
         as_of, kind, ordering = self._validate_params(request)
-        raw = aging_rows(tenant=tenant, as_of=as_of, kind=kind)
+        raw = aging_rows(
+            tenant=tenant, as_of=as_of, kind=kind, bucket=book_of(request.query_params.get("book"))
+        )
 
         names = self._party_names(tenant, list(raw), request.query_params.get("tag"))
         rows = [
@@ -204,6 +228,7 @@ class LedgerAgingView(TenantScopeMixin, APIView):
     def get(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         is_csv = request.query_params.get("format") == "csv"
         if is_csv:
+            require_book(request, book_of(request.query_params.get("book")), "reports.export")
             self._validate_params(request)
             # BEFORE the report is computed (security review I-5). The FIFO walk
             # over every party is the expensive part of this view; a caller who
@@ -237,6 +262,11 @@ class LedgerAgingView(TenantScopeMixin, APIView):
                 "page": page,
                 "page_size": page_size,
                 "total": len(rows),
+                # Whole-book, never filtered: a tag or an as-of date that finds
+                # nobody keeps its controls; only a business with no entry at
+                # all is reduced to the empty state (`book_has_any`).
+                "has_any": bool(rows)
+                or book_has_any(self.get_tenant(), book_of(request.query_params.get("book"))),
             },
         )
 

@@ -1,39 +1,39 @@
 'use client';
 
-import { useCallback, useEffect, useId, type RefObject } from 'react';
+import { type RefObject } from 'react';
 
-import { yupResolver } from '@hookform/resolvers/yup';
-import { useForm } from 'react-hook-form';
-
-import {
-  UbAmount,
-  UbButton,
-  UbDialog,
-  UbField,
-  UbForm,
-  UbStack,
-  UbText,
-  UbTextInput,
-} from 'src/design-system';
+import { ReasonConfirmDialog } from 'src/components/records/ReasonConfirmDialog';
+import { UbAmount, UbStack, UbText } from 'src/design-system';
 import { useTranslation } from 'src/hooks/useTranslation';
 import { formatBusinessDate } from 'src/utils/dates';
 import { formatAmount } from 'src/utils/money';
 
-import { useExpenseSchemas } from '../validation/expenseSchemas';
 import { expenseTitle } from '../view-model/expenseDisplay';
 
 import type { UseExpenseFormResult } from '../hooks/useExpenseForm';
 
+/** Quick reasons, so the counter rarely types one. */
+const REASON_IDS = [
+  'expenses.void.reason.wrongAmount',
+  'expenses.void.reason.twice',
+  'expenses.void.reason.wrongCategory',
+  'expenses.void.reason.notSpent',
+] as const;
+
 /**
- * EXP-01 FR-12 — "Void EXP/26-27/0031?", with a reason, and the consequence
- * said before it happens.
+ * 08 §12.2 / EXP-01 FR-12 — "Cancel EXP/26-27/0031?", with a reason, and the
+ * consequence said before it happens.
  *
  * The expense is restated inside the dialog for the reason LED-03's reverse
- * dialog gives: a merchant confirming "void ₹12,000 rent" is confirming
- * something; one confirming "void this" is confirming a button press. The
- * consequence line differs by kind — a paid expense leaves the cashbook, an
- * unpaid one also takes its line out of the party's khata — because those are
- * the two different things that will change.
+ * dialog gives: a merchant confirming "cancel ₹12,000 rent" is confirming
+ * something; one confirming "cancel this" is confirming a button press. The
+ * consequence differs by kind: a paid Shop expense leaves the cash book, an
+ * unpaid one comes off the supplier's Shop balance (it was never in the cash
+ * book, EXP-03 BR-4). The Library and Lending keep no cash book, so theirs
+ * says it comes off their expenses. The caret starts in the reason, as in
+ * every cancel dialog (owner, 24 Oct 2026).
+ *
+ * The dialog is `ReasonConfirmDialog` (WP-03 D-04c).
  */
 export function VoidExpenseDialog({
   form,
@@ -43,94 +43,53 @@ export function VoidExpenseDialog({
   returnFocusRef?: RefObject<HTMLElement | null>;
 }>): React.JSX.Element | null {
   const { t } = useTranslation();
-  const { voidReasonSchema } = useExpenseSchemas();
-  const formId = useId();
   const { voiding, isVoiding, voidErrors, closeVoid, submitVoid } = form;
-
-  const rhf = useForm<{ reason: string }>({
-    resolver: yupResolver(voidReasonSchema),
-    mode: 'onTouched',
-    defaultValues: { reason: '' },
-  });
-  const { reset } = rhf;
-
-  useEffect(() => {
-    reset({ reason: '' });
-  }, [voiding?.id, reset]);
-
-  const handleSubmit = useCallback(
-    async (values: { reason: string }) => {
-      await submitVoid(values.reason);
-    },
-    [submitVoid]
-  );
-  const handleOpenChange = useCallback(
-    (next: boolean) => {
-      if (!next) closeVoid();
-    },
-    [closeVoid]
-  );
 
   if (!voiding) return null;
 
-  const consequence = voiding.paid
-    ? t('expenses.void.consequence.paid', {
-        amount: formatAmount(voiding.amount),
-        date: formatBusinessDate(voiding.expenseDate),
-      })
-    : t('expenses.void.consequence.unpaid', {
+  /* Only the Shop may leave an expense unpaid, and only the Shop keeps a cash
+     book: `canOwe` is that same question. */
+  const consequence = !voiding.paid
+    ? t('expenses.void.consequence.unpaid', {
         amount: formatAmount(voiding.amount),
         name: voiding.party?.name ?? '',
+      })
+    : t(form.canOwe ? 'expenses.void.consequence.paid' : 'expenses.void.consequence.paidOther', {
+        date: formatBusinessDate(voiding.expenseDate),
       });
 
   return (
-    <UbDialog
-      open
-      onOpenChange={handleOpenChange}
+    <ReasonConfirmDialog
       title={t('expenses.void.title', { number: voiding.number })}
-      closeLabel={t('common.action.close')}
+      confirmLabel={t('expenses.void.confirm')}
+      workingLabel={t('expenses.void.working')}
+      keepLabel={t('expenses.void.keep')}
+      suggestions={REASON_IDS.map((id) => t(id))}
+      suggestionsLabel={t('expenses.void.quick')}
+      confirmTestId="expense-void-confirm"
+      reasonLabel={t('expenses.void.reason')}
+      reasonPlaceholder={t('expenses.void.reason.placeholder')}
+      requiredMessageId="expenses.void.reason.required"
+      busy={isVoiding}
+      onConfirm={submitVoid}
+      onClose={closeVoid}
+      formErrors={voidErrors}
       returnFocusRef={returnFocusRef}
-      footer={
-        <>
-          <UbButton variant="secondary" onClick={closeVoid} disabled={isVoiding}>
-            {t('common.action.cancel')}
-          </UbButton>
-          <UbButton
-            type="submit"
-            form={formId}
-            variant="destructive"
-            busy={isVoiding}
-            busyLabel={t('expenses.void.working')}
-          >
-            {t('expenses.void.confirm')}
-          </UbButton>
-        </>
-      }
     >
-      <UbForm id={formId} form={rhf} onSubmit={handleSubmit} formErrors={voidErrors}>
-        <UbStack direction="row" justify="between" align="start" className="gap-3">
-          <UbStack gap={1} className="min-w-0 flex-1">
-            <UbText variant="body" className="line-clamp-2">
-              {expenseTitle(voiding)}
-            </UbText>
-            <UbText variant="caption" tone="tertiary">
-              {formatBusinessDate(voiding.expenseDate)}
-            </UbText>
-          </UbStack>
-          <UbAmount value={voiding.amount} size="sm" />
+      <UbStack direction="row" justify="between" align="start" className="gap-3">
+        <UbStack gap={1} className="min-w-0 flex-1">
+          <UbText variant="body" className="line-clamp-2">
+            {expenseTitle(voiding)}
+          </UbText>
+          <UbText variant="caption" tone="tertiary">
+            {formatBusinessDate(voiding.expenseDate)}
+          </UbText>
         </UbStack>
-        <UbText variant="caption" tone="tertiary">
-          {consequence}
-        </UbText>
-        <UbField
-          name="reason"
-          label={t('expenses.void.reason')}
-          placeholder={t('expenses.void.reason.placeholder')}
-          required
-        >
-          {(field) => <UbTextInput {...field} maxLength={160} autoComplete="off" autoFocus />}
-        </UbField>
-      </UbForm>
-    </UbDialog>
+        <UbAmount value={voiding.amount} size="sm" />
+      </UbStack>
+      <UbText variant="caption" tone="tertiary">
+        {consequence}
+      </UbText>
+    </ReasonConfirmDialog>
   );
 }

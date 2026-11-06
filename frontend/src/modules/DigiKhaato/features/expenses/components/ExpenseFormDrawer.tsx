@@ -1,14 +1,14 @@
 'use client';
 
-import { useCallback, useEffect, useId, useMemo } from 'react';
+import { useCallback, useEffect, useId, useMemo, useRef } from 'react';
 
 import { yupResolver } from '@hookform/resolvers/yup';
 import { useForm, useWatch } from 'react-hook-form';
 
+import { CompactDrawer as UbDrawer } from 'src/components/records/CompactOverlays';
 import {
   UbButton,
   UbDateInput,
-  UbDrawer,
   UbField,
   UbForm,
   UbMoneyInput,
@@ -20,7 +20,7 @@ import { useAppSelector } from 'src/hooks/useAppStore';
 import { useTranslation } from 'src/hooks/useTranslation';
 import { selectTenantTimezone } from 'src/redux/slice/sessionSlice';
 import { PAYMENT_MODES, UPI_APPS } from 'src/types/domain.types';
-import { todayInTenantTz } from 'src/utils/dates';
+import { addDaysIso, todayInTenantTz } from 'src/utils/dates';
 
 import { PaymentMethodField } from '../../ledger/components/PaymentMethodField';
 import { useExpenseSchemas } from '../validation/expenseSchemas';
@@ -31,6 +31,14 @@ import { ExpensePartyField } from './ExpensePartyField';
 import type { UseExpenseFormResult } from '../hooks/useExpenseForm';
 import type { ExpenseFormValues } from '../types/expense.types';
 
+// Loaded with dynamic(), so its own words come with its own chunk rather than
+// with the screen that opens it (src/i18n/catalogueRegistry.ts).
+import 'src/i18n/catalogues/expenses';
+import 'src/i18n/catalogues/ledger';
+import 'src/i18n/catalogues/money';
+import 'src/i18n/catalogues/partyPicker';
+import 'src/i18n/catalogues/validation';
+
 /**
  * EXP-01 FR-2 — "₹500 tea and snacks, cash, today" in three taps.
  *
@@ -38,7 +46,8 @@ import type { ExpenseFormValues } from '../types/expense.types';
  * (the mode this device used last). Everything else is optional and below.
  * "Paid now" is on by default; turning it off is "I still owe this", which
  * asks who to and by when, hides "Paid by" (money that has not moved has no
- * "how"), and posts a credit on that party's khata when saved.
+ * "how"), and adds it to that supplier's Shop balance when saved (the
+ * expense ledger source posts only in the Shop book, DEC-019).
  *
  * Lazily loaded (`dynamic()` by its openers): it carries React Hook Form's
  * resolver, the Yup schema and nine controls, and a merchant opening the list
@@ -49,8 +58,6 @@ import type { ExpenseFormValues } from '../types/expense.types';
  * this branch; a photo tile that cannot store a photo teaches the merchant the
  * product is broken. The GST section (FR-5) is not in this wave either.
  */
-const DAY_MS = 86_400_000;
-
 export function ExpenseFormDrawer({
   form: expenseForm,
 }: Readonly<{ form: UseExpenseFormResult }>): React.JSX.Element {
@@ -72,10 +79,7 @@ export function ExpenseFormDrawer({
   } = expenseForm;
 
   const today = useMemo(() => todayInTenantTz(timezone ?? undefined), [timezone]);
-  const yesterday = useMemo(
-    () => new Date(Date.parse(`${today}T00:00:00Z`) - DAY_MS).toISOString().slice(0, 10),
-    [today]
-  );
+  const yesterday = useMemo(() => addDaysIso(today, -1), [today]);
 
   /* A failed save's draft wins over the defaults (FR-13): reopening brings
      back what was typed rather than an empty form. */
@@ -97,9 +101,12 @@ export function ExpenseFormDrawer({
     [draft, today]
   );
 
+  /* 08 §12.1 — "Amount missing" only after Save. `onTouched` marked the
+     amount wrong the moment focus left it on the way to the category. */
   const form = useForm<ExpenseFormValues>({
     resolver: yupResolver(expenseSchema),
-    mode: 'onTouched',
+    mode: 'onSubmit',
+    reValidateMode: 'onChange',
     defaultValues: defaults,
   });
   const { reset, setError, setValue, formState } = form;
@@ -113,18 +120,30 @@ export function ExpenseFormDrawer({
   const upiApp = useWatch({ control: form.control, name: 'upiApp' });
   const partyName = useWatch({ control: form.control, name: 'partyName' });
 
+  /* One save at a time. `UbForm` ignores a second submit, but "Save and add
+     another" calls `handleSubmit` itself, so without this a double tap sent
+     a second request before the first answered (08 §12 asks for one). */
+  const inFlight = useRef(false);
+  const amountId = useRef('');
   const save = useCallback(
     async (values: ExpenseFormValues, keepOpen: boolean) => {
+      if (inFlight.current) return;
+      inFlight.current = true;
       if (values.paid && values.mode) rememberMode(values.mode, values.upiApp);
-      const saved = await submit(values, setError, { keepOpen });
+      const saved = await submit(values, setError, { keepOpen }).finally(() => {
+        inFlight.current = false;
+      });
       if (saved && keepOpen) {
-        /* FR-2 "Save & add another" — keeps category, date and mode, clears
+        /* FR-2 "Save and add another" — keeps category, date and mode, clears
            the amount and the note, and lands back on the amount. */
         reset({ ...values, amount: '', note: '', reference: '' });
-        form.setFocus('amount');
+        /* By id, not `form.setFocus`: `UbField` hands its input no ref, so
+           setFocus found nothing and the caret never came back (found by the
+           live run of 08 §12, not by any unit test). */
+        requestAnimationFrame(() => document.getElementById(amountId.current)?.focus());
       }
     },
-    [submit, setError, reset, form]
+    [submit, setError, reset]
   );
 
   const handleSubmit = useCallback((values: ExpenseFormValues) => save(values, false), [save]);
@@ -173,7 +192,10 @@ export function ExpenseFormDrawer({
           placeholder={t('expenses.amount.placeholder')}
           required
         >
-          {(field) => <UbMoneyInput {...field} autoFocus inputMode="decimal" />}
+          {(field) => {
+            amountId.current = field.id;
+            return <UbMoneyInput {...field} autoFocus inputMode="decimal" />;
+          }}
         </UbField>
 
         <UbField
@@ -213,12 +235,14 @@ export function ExpenseFormDrawer({
           )}
         </UbField>
 
-        <UbSwitch
-          checked={paid}
-          onCheckedChange={(next) => setValue('paid', next, { shouldDirty: true })}
-          label={t('expenses.paidNow')}
-          description={t('expenses.paidNowHint')}
-        />
+        {expenseForm.canOwe && (
+          <UbSwitch
+            checked={paid}
+            onCheckedChange={(next) => setValue('paid', next, { shouldDirty: true })}
+            label={t('expenses.paidNow')}
+            description={t('expenses.paidNowHint')}
+          />
+        )}
 
         {paid && (
           <UbField name="mode" label={t('expenses.mode')} required>
@@ -256,7 +280,13 @@ export function ExpenseFormDrawer({
           name="partyId"
           label={paid ? t('expenses.paidTo') : t('expenses.owedTo')}
           placeholder={t('expenses.paidTo.placeholder')}
-          hint={paid ? t('expenses.paidToHint') : t('expenses.owedToHint')}
+          hint={
+            paid
+              ? t('expenses.paidToHint')
+              : partyName
+                ? t('expenses.owedToHintName', { name: partyName })
+                : t('expenses.owedToHint')
+          }
           required={!paid}
           optionalLabel={paid ? t('common.field.optional') : undefined}
         >

@@ -63,13 +63,14 @@ function UbFilterChipBase({
       aria-pressed={pressed}
       onClick={() => onToggle(!pressed)}
       className={cn(
-        'ds-body-s-regular inline-flex h-8 shrink-0 items-center gap-1.5 rounded-pill px-3',
+        // 32 px pill; `.ub-hit` makes the tap target 44 px on a phone (R-A-3).
+        'ub-hit inline-flex h-7 shrink-0 items-center gap-1.5 rounded-pill px-2.5 text-[12.5px]',
         'border transition-colors duration-fast ease-standard motion-reduce:transition-none',
         'outline-none focus-visible:shadow-focus',
         'disabled:cursor-not-allowed disabled:opacity-60',
         pressed
-          ? 'border-transparent bg-accent-quiet text-text-accent'
-          : 'border-border text-text-tertiary hover:bg-surface-hover hover:text-text-primary',
+          ? 'border-[hsl(var(--primary-500))] bg-accent-quiet text-text-accent'
+          : 'border-border-hairline bg-surface-card text-text-secondary hover:bg-surface-hover hover:text-text-primary',
         className
       )}
     >

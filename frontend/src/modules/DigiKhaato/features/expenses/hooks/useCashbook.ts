@@ -2,8 +2,9 @@
 
 import { useCallback, useEffect, useMemo } from 'react';
 
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
 
+import { useAppRouter } from 'src/hooks/useAppRouter';
 import { useAppDispatch, useAppSelector } from 'src/hooks/useAppStore';
 import { usePermissions } from 'src/hooks/usePermissions';
 import { selectNetworkImpaired } from 'src/redux/slice/networkSlice';
@@ -15,6 +16,7 @@ import {
   cashbookAsked,
   selectCashbookData,
   selectCashbookError,
+  selectCashbookHasAny,
   selectCashbookStale,
   selectCashbookStatus,
 } from '../redux/cashbookSlice';
@@ -43,6 +45,8 @@ export interface UseCashbookResult {
   readonly data: CashbookData | null;
   readonly status: RequestStatus;
   readonly error: ApiErrorShape | null;
+  /** The server's `meta.has_any`; `null` until it says, so nothing hides early. */
+  readonly hasAny: boolean | null;
   readonly filters: CashbookFilters;
   readonly today: string;
   readonly canRead: boolean;
@@ -57,7 +61,7 @@ export interface UseCashbookResult {
 
 export const useCashbook = (): UseCashbookResult => {
   const dispatch = useAppDispatch();
-  const router = useRouter();
+  const router = useAppRouter();
   const search = useSearchParams();
   const { can, hasModule } = usePermissions();
   const timezone = useAppSelector(selectTenantTimezone);
@@ -66,6 +70,7 @@ export const useCashbook = (): UseCashbookResult => {
   const status = useAppSelector(selectCashbookStatus);
   const error = useAppSelector(selectCashbookError);
   const stale = useAppSelector(selectCashbookStale);
+  const hasAny = useAppSelector(selectCashbookHasAny);
 
   const canRead = hasModule('expenses') && can('expenses.expense.read');
   const fullScope = canRead && can('reports.financial.read');
@@ -136,6 +141,7 @@ export const useCashbook = (): UseCashbookResult => {
       data,
       status,
       error,
+      hasAny,
       filters,
       today,
       canRead,
@@ -150,6 +156,7 @@ export const useCashbook = (): UseCashbookResult => {
       data,
       status,
       error,
+      hasAny,
       filters,
       today,
       canRead,

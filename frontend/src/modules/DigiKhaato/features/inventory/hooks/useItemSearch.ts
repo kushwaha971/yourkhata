@@ -1,13 +1,17 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useMemo } from 'react';
 
 import type { UbAsyncComboboxOption } from 'src/design-system';
+import { useAppSelector } from 'src/hooks/useAppStore';
+import { usePagedSearch, type PagedSearchStatus } from 'src/hooks/usePagedSearch';
 import { usePermissions } from 'src/hooks/usePermissions';
-import { formatQuantity } from 'src/utils/quantity';
+import { useTranslation } from 'src/hooks/useTranslation';
+import { selectRequestScopeKey } from 'src/redux/slice/sessionSlice';
 
 import { lookupItemByBarcode, searchItems } from '../api/itemService';
-import { ITEM_SEARCH_DEBOUNCE_MS, ITEM_SEARCH_MIN_CHARS } from '../constants/inventoryConstants';
+import { ITEM_SEARCH_DEBOUNCE_MS } from '../constants/inventoryConstants';
+import { itemPriceNote, itemStockNote } from '../view-model/itemPriceNote';
 
 import type { ItemListRow } from '../types/item.types';
 
@@ -24,7 +28,9 @@ import type { ItemListRow } from '../types/item.types';
  *   request, `null` for "no such item" — a HID scanner types the code and
  *   presses Enter faster than any search can answer, and the Enter is the cue
  *   (`UbAsyncCombobox.onSubmitQuery`).
- * - `options` are ready for `UbAsyncCombobox`: name, then "SKU · on hand".
+ * - `options` are ready for `UbAsyncCombobox`: name, then "SKU · on hand",
+ *   and a wrapping line with the usual price — and cost and margin for whoever
+ *   may see costs (WP-07).
  */
 export interface UseItemSearchOptions {
   readonly trackedOnly?: boolean;
@@ -35,68 +41,62 @@ export interface UseItemSearchResult {
   readonly setQuery: (next: string) => void;
   readonly results: readonly ItemListRow[];
   readonly options: readonly UbAsyncComboboxOption[];
-  readonly status: 'idle' | 'loading' | 'succeeded' | 'failed';
+  readonly status: PagedSearchStatus;
+  /** The options on screen answer an earlier term (see `usePagedSearch`). */
+  readonly pending: boolean;
   readonly canSearch: boolean;
+  /** Start listing — the picker's `onOpen`. */
+  readonly activate: () => void;
+  /** Listing has started (an always-open search draws its list only then). */
+  readonly active: boolean;
+  /** The last answer for the current term was an empty page. */
+  readonly isEmpty: boolean;
+  readonly hasMore: boolean;
+  readonly loadMore: () => void;
   readonly find: (id: string) => ItemListRow | undefined;
   readonly lookup: (code: string) => Promise<ItemListRow | null>;
   readonly clear: () => void;
 }
 
-const EMPTY: readonly ItemListRow[] = [];
+const itemId = (row: ItemListRow): string => row.id;
 
+/**
+ * Owner, 5 Oct 2026 — the picker lists every active item (by name) the moment
+ * it opens, pages as the list scrolls, and narrows as the merchant types
+ * (`src/hooks/usePagedSearch`). A line's "which item?" is often answered by
+ * looking, not by remembering how it was spelt.
+ */
 export function useItemSearch(options: UseItemSearchOptions = {}): UseItemSearchResult {
   const { can, hasModule } = usePermissions();
+  const scopeKey = useAppSelector(selectRequestScopeKey);
+  const { t } = useTranslation();
   const canSearch = hasModule('inventory') && can('inventory.item.read');
   const { trackedOnly = false } = options;
 
-  const [query, setQuery] = useState('');
-  const [results, setResults] = useState<readonly ItemListRow[]>([]);
-  const [status, setStatus] = useState<UseItemSearchResult['status']>('idle');
-  const controller = useRef<AbortController | null>(null);
-
-  const term = query.trim();
-  const searching = canSearch && term.length >= ITEM_SEARCH_MIN_CHARS;
-
-  useEffect(() => {
-    if (!searching) {
-      controller.current?.abort();
-      return undefined;
-    }
-    const timer = window.setTimeout(() => {
-      controller.current?.abort();
-      const next = new AbortController();
-      controller.current = next;
-      setStatus('loading');
-      searchItems(term, next.signal, { trackedOnly })
-        .then((rows) => {
-          if (next.signal.aborted) return;
-          setResults(rows);
-          setStatus('succeeded');
-        })
-        .catch(() => {
-          if (next.signal.aborted) return;
-          setResults([]);
-          setStatus('failed');
-        });
-    }, ITEM_SEARCH_DEBOUNCE_MS);
-    return () => window.clearTimeout(timer);
-  }, [term, searching, trackedOnly]);
-
-  useEffect(() => () => controller.current?.abort(), []);
-
-  const visible = searching ? results : EMPTY;
+  const fetchPage = useCallback(
+    (term: string, page: number, signal: AbortSignal) =>
+      searchItems(term, page, signal, { trackedOnly }),
+    [trackedOnly]
+  );
+  const search = usePagedSearch<ItemListRow>({
+    enabled: canSearch,
+    fetchPage,
+    key: `${scopeKey}:${trackedOnly ? 'tracked' : 'all'}`,
+    debounceMs: ITEM_SEARCH_DEBOUNCE_MS,
+    idOf: itemId,
+  });
+  const visible = search.results;
 
   const comboOptions = useMemo(
     () =>
       visible.map((row) => ({
         value: row.id,
         label: row.name,
-        description:
-          row.onHand !== null
-            ? `${row.sku} · ${formatQuantity(row.onHand, row.unit.code)}`
-            : row.sku,
+        description: itemStockNote(row, t),
+        // Its own wrapping line: cut by an ellipsis, the margin never showed.
+        detail: itemPriceNote(row, t) ?? undefined,
       })),
-    [visible]
+    [visible, t]
   );
 
   const find = useCallback((id: string) => visible.find((row) => row.id === id), [visible]);
@@ -110,20 +110,24 @@ export function useItemSearch(options: UseItemSearchOptions = {}): UseItemSearch
     [trackedOnly]
   );
 
-  const clear = useCallback(() => setQuery(''), []);
-
   return useMemo(
     () => ({
-      query,
-      setQuery,
+      query: search.query,
+      setQuery: search.setQuery,
       results: visible,
       options: comboOptions,
-      status: searching ? status : 'idle',
+      status: search.status,
+      pending: search.pending,
       canSearch,
+      activate: search.activate,
+      active: search.active,
+      isEmpty: search.isEmpty,
+      hasMore: search.hasMore,
+      loadMore: search.loadMore,
       find,
       lookup,
-      clear,
+      clear: search.clear,
     }),
-    [query, visible, comboOptions, searching, status, canSearch, find, lookup, clear]
+    [search, visible, comboOptions, canSearch, find, lookup]
   );
 }

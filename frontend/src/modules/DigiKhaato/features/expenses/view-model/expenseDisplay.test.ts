@@ -91,7 +91,7 @@ describe('the list filters in the address bar', () => {
       TODAY
     );
     expect(filters).toEqual({ preset: 'today', dateFrom: TODAY, dateTo: TODAY, bucket: 'cash' });
-    expect(cashbookQueryFromFilters(filters)).toBe('period=today&bucket=cash');
+    expect(cashbookQueryFromFilters(filters)).toBe('period=today');
   });
 });
 

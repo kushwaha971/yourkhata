@@ -1,81 +1,177 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 
 import dynamic from 'next/dynamic';
 
-import { ArrowDownLeft, ArrowUpRight, Plus, Wallet } from 'lucide-react';
+import { Plus } from 'lucide-react';
 
 import {
   UbButton,
-  UbCard,
   UbChoiceChips,
+  UbCountLine,
   UbDateRangePicker,
+  UbDisclosure,
+  UbDrawerLoading,
   UbEmptyState,
-  UbMoneyInput,
   UbPageHeader,
   UbPageShell,
   UbProgress,
-  UbSectionHeading,
+  UbSearchInput,
   UbSkeleton,
   UbStack,
-  UbStatCard,
-  UbStatGrid,
-  UbStatusBadge,
   UbStatusBanner,
   UbText,
 } from 'src/design-system';
-import { useTranslation } from 'src/hooks/useTranslation';
-import { formatBusinessDate } from 'src/utils/dates';
-import { formatAmount, formatInr } from 'src/utils/money';
+import { useIsMobileLayer } from 'src/design-system/motion/useMediaQuery';
+import { UbPageHeaderMobileActions } from 'src/design-system/UbPageHeader/UbPageHeaderMobileActions';
+import { useAppRouter } from 'src/hooks/useAppRouter';
+import { usePermissions } from 'src/hooks/usePermissions';
+import { useTranslation, type TranslateFn } from 'src/hooks/useTranslation';
+import { ROUTES } from 'src/routes';
+import { formatShopTime } from 'src/utils/dates';
+import { formatInr, sumMoney } from 'src/utils/money';
 
+import type { PaymentContext } from 'modules/DigiKhaato/features/payments/types/payment.types';
+
+import { saveBlob } from '../../imports/api/fileDownload';
 import { CASHBOOK_PRESETS } from '../constants/expensePeriod';
 import { useCashbook } from '../hooks/useCashbook';
 import { useExpenseForm } from '../hooks/useExpenseForm';
-import { countDifference, isNegative, shareOf } from '../view-model/expenseDisplay';
+import { isNegative, shareOf } from '../view-model/expenseDisplay';
 
-import { CashbookDayCard } from './CashbookDayCard';
+import { CashbookClosePanel } from './CashbookClosePanel';
+import { CASHBOOK_ROW_GRID, CashbookRows, cashRowLabel } from './CashbookDayCard';
 
-import type { CashbookBucketFilter, CashFigures } from '../types/cashbook.types';
+import type { CashbookBucketFilter, CashbookData, CashFigures, CashRow } from '../types/cashbook.types';
 import type { ExpensePreset } from '../types/expense.types';
 
+/* Every overlay loads with the tap that opens it (CLAUDE.md: a form belongs
+   in the chunk that OPENS it, not in the chunk that renders the screen). */
 const ExpenseFormDrawerLazy = dynamic(
   () => import('./ExpenseFormDrawer').then((m) => m.ExpenseFormDrawer),
-  { ssr: false }
+  { ssr: false,
+  loading: () => <UbDrawerLoading /> }
+);
+const ExpenseDetailDrawerLazy = dynamic(
+  () => import('./ExpenseDetailDrawer').then((m) => m.ExpenseDetailDrawer),
+  { ssr: false,
+  loading: () => <UbDrawerLoading /> }
+);
+const CashCountDrawerLazy = dynamic(
+  () => import('../../reports/components/CashCountDrawer').then((m) => m.CashCountDrawer),
+  { ssr: false, loading: () => <UbDrawerLoading /> }
+);
+const PaymentFormDrawerLazy = dynamic(
+  () =>
+    import('modules/DigiKhaato/features/payments/components/PaymentFormDrawer').then(
+      (m) => m.PaymentFormDrawer
+    ),
+  { ssr: false,
+  loading: () => <UbDrawerLoading /> }
 );
 
+/** The design's Export: the rows the merchant is reading, as read. */
+const cashbookCsv = (days: CashbookData['days'], t: TranslateFn): Blob => {
+  const cell = (value: string) => `"${value.replace(/"/g, '""')}"`;
+  const head = ['time', 'what', 'in', 'out'].map((key) => t(`cashbook.column.${key}`));
+  const body = days.flatMap((day) =>
+    day.rows.map((row) => [
+      `${day.date} ${formatShopTime(row.at)}`,
+      cashRowLabel(row, t),
+      row.direction === 'in' ? row.amount : '',
+      row.direction === 'out' ? row.amount : '',
+    ])
+  );
+  return new Blob([[head, ...body].map((line) => line.map(cell).join(',')).join('\r\n')], {
+    type: 'text/csv;charset=utf-8',
+  });
+};
+
+/** 08 §11 — Cash · Bank · Both, in that order. */
+const BUCKETS: readonly CashbookBucketFilter[] = ['cash', 'bank', 'all'];
+
 /**
- * EXP-03 — `/cashbook`: "how much cash should be in the drawer, and how much in
- * the bank?"
+ * EXP-03, 08 §11 — `/cashbook`: "how much cash should be in the drawer, and
+ * how much in the bank?", for the Shop.
  *
- * Four figures over the range (opening, in, out, closing), then the days,
- * newest first, today's open. When the range is exactly today the close-the-day
- * panel asks for the counted cash and says "Short by ₹120" or "Matches" — on
- * the client, stored nowhere (FR-8) — and offers the fix it can actually
- * perform: add the expense that was forgotten. "Record a payment" is not
- * offered, because payments are not built.
+ * The four figures (opening, in, out, closing) are always in view, then the
+ * days, newest first, today's open. When the range is exactly today the
+ * close-the-day panel asks for the counted cash and offers the fix the
+ * difference points at: the forgotten expense when the drawer is short, the
+ * forgotten payment when it holds more. On a desktop the panel and "where the
+ * money went" sit in a rail beside the days; on a phone the panel comes first,
+ * because closing time is when the screen is opened.
  *
  * The opening is everything recorded before the range. The one-time opening
  * cash anchor (FR-5) is a tenant setting whose screen is not built, so the page
  * says where its opening comes from instead of offering a control for it.
  */
 export function CashbookPageContent(): React.JSX.Element {
-  const { t, locale } = useTranslation();
+  const { t } = useTranslation();
+  const router = useAppRouter();
+  const { can, hasModule } = usePermissions();
   const book = useCashbook();
   const form = useExpenseForm();
-  const [counted, setCounted] = useState('');
+  const [payment, setPayment] = useState<PaymentContext | null>(null);
+  const [counting, setCounting] = useState(false);
+  const [search, setSearch] = useState('');
+  const isPhone = useIsMobileLayer();
+  const canCount = hasModule('reports') && can('reports.financial.read');
+  const canReceive = hasModule('payments') && can('payments.payment.write');
 
   const presets = useMemo(
-    () => CASHBOOK_PRESETS.map((value) => ({ value, label: t(`expenses.period.${value}`) })),
-    [t]
+    () => CASHBOOK_PRESETS.map((value) => {
+        const label = t(`expenses.period.${value}`);
+        return { value, label: isPhone ? label : t('cashbook.datePrefix', { label }) };
+      }),
+    [t, isPhone]
   );
   const bucketOptions = useMemo(
-    () =>
-      (['all', 'cash', 'bank'] as const).map((value) => ({
-        value,
-        label: t(`cashbook.bucket.${value}`),
-      })),
+    () => BUCKETS.map((value) => ({ value, label: t(`cashbook.bucket.${value}`) })),
     [t]
+  );
+
+  const { openPrefilled, openDetailById } = form;
+  const { today } = book;
+  const addMissing = useCallback(
+    (amount: string) =>
+      openPrefilled({
+        amount,
+        categoryId: '',
+        expenseDate: today,
+        paid: true,
+        mode: 'cash',
+        upiApp: '',
+        reference: '',
+        partyId: '',
+        partyName: '',
+        dueOn: '',
+        note: '',
+      }),
+    [openPrefilled, today]
+  );
+  const receiveForgot = useCallback(
+    (amount: string) =>
+      setPayment({
+        direction: 'in',
+        entry: 'list',
+        presetMode: 'cash',
+        presetAmount: amount,
+        bucket: 'shop',
+      }),
+    []
+  );
+  const openRow = useCallback(
+    (row: CashRow) => {
+      if (row.sourceType === 'payment') {
+        /* One row per mode line: "<payment id>:<line>" (BR-3). */
+        router.push(`${ROUTES.PAYMENTS}/${row.sourceId.split(':')[0]}`);
+        return;
+      }
+      if (row.sourceType === 'expense') void openDetailById(row.sourceId);
+    },
+    [router, openDetailById]
   );
 
   if (!book.canRead) {
@@ -91,63 +187,138 @@ export function CashbookPageContent(): React.JSX.Element {
   }
 
   const { data, filters } = book;
-  const figure = (values: CashFigures | undefined): string => {
-    if (!values) return '—';
-    const bucket = filters.bucket === 'all' ? 'total' : filters.bucket;
-    return formatInr(values[bucket] ?? values.total);
-  };
-  const closingValue = data
-    ? (data.range.closing[filters.bucket === 'all' ? 'total' : filters.bucket] ??
-      data.range.closing.total)
-    : '0.00';
+  const bucketKey = filters.bucket === 'all' ? 'total' : filters.bucket;
+  const value = (values: CashFigures): string => values[bucketKey] ?? values.total;
   const expectedCash = data?.range.closing.cash ?? null;
-  const difference = expectedCash !== null ? countDifference(expectedCash, counted) : null;
-  const outTotal = data?.range.out.total ?? '0.00';
+  /* The share of what was SPENT, not of all money out: supplier payments are
+     money out too, and against them every category read "1%". */
+  const spent = sumMoney((data?.byCategory ?? []).map((row) => row.amount));
+  /* Owner, 12 Oct 2026: a business that has never moved money is shown one
+     sentence and one button — no period picker, bucket switch, ₹0.00 tiles or
+     "Days 0". `hasAny` is the server's (any source, any bucket, ever), so a
+     quiet range in a busy book keeps every control and the merchant can move
+     it; `null` (an older server) never hides anything. */
+  const emptyBook = book.status === 'succeeded' && book.hasAny === false && !data?.days.length;
+
+  /* The design's count line carries the four figures; the search only narrows
+     the rows already read, so these stay the period's whole totals. */
+  const below = data ? isNegative(value(data.range.closing)) : false;
+  const needle = search.trim().toLowerCase();
+  const days = (data?.days ?? [])
+    .map((day) => ({
+      day,
+      rows: needle
+        ? day.rows.filter((row) =>
+            [cashRowLabel(row, t), row.number, row.reference, row.party?.name]
+              .filter(Boolean)
+              .join(' ')
+              .toLowerCase()
+              .includes(needle)
+          )
+        : day.rows,
+    }))
+    .filter(({ rows }) => rows.length > 0);
+
+  const closePanel = book.isToday && expectedCash !== null && (
+    <CashbookClosePanel
+      expectedCash={expectedCash}
+      t={t}
+      onAddExpense={form.canWrite ? addMissing : undefined}
+      onReceivePayment={canReceive ? receiveForgot : undefined}
+    />
+  );
+
+  const exportButton = data ? (
+    <UbButton
+      variant="secondary"
+      onClick={() =>
+        saveBlob(cashbookCsv(data.days, t), `cashbook-${filters.dateFrom}-${filters.dateTo}.csv`)
+      }
+    >
+      {t('cashbook.export')}
+    </UbButton>
+  ) : null;
+  const period = (
+    <UbDateRangePicker<ExpensePreset>
+              presets={presets}
+              preset={filters.preset}
+              onPresetChange={book.setPreset}
+              customPreset="custom"
+              from={filters.dateFrom}
+              to={filters.dateTo}
+              onRangeChange={book.setRange}
+              max={book.today}
+              name="cashbook-period"
+              labels={{
+                presets: t('expenses.period.label'),
+                from: t('expenses.period.from'),
+                to: t('expenses.period.to'),
+                apply: t('common.action.apply'),
+                close: t('common.action.close'),
+              }}
+            />
+  );
+  const searchBox = (
+    <UbSearchInput
+      value={search}
+      onChange={setSearch}
+      placeholder={t('cashbook.search')}
+      aria-label={t('cashbook.search')}
+    />
+  );
 
   return (
     <UbPageShell>
       <UbPageHeader
         title={t('cashbook.title')}
-        actions={
-          form.canWrite ? (
-            <UbButton
-              icon={<Plus className="h-4 w-4" aria-hidden />}
-              iconOnly="mobile"
-              onClick={form.openDrawer}
-            >
-              {t('expenses.add')}
+        subtitle={isPhone ? undefined : t('cashbook.subtitle')}
+        actions={emptyBook || isPhone || !data ? undefined : exportButton}
+        primaryAction={
+          !emptyBook && canCount ? (
+            <UbButton onClick={() => setCounting(true)} data-testid="cashbook-count">
+              {t('reports.cashCount.action')}
             </UbButton>
           ) : undefined
         }
+        renderMobileActions={() =>
+          emptyBook ? null : (
+            <UbPageHeaderMobileActions
+              actions={undefined}
+              mobile={{
+                menuLabel: t('common.action.moreActions'),
+                closeLabel: t('common.action.close'),
+                primaryPlacement: 'header',
+                primary: canCount
+                  ? {
+                      label: t('reports.cashCount.action'),
+                      icon: <Plus className="h-6 w-6" aria-hidden />,
+                      onClick: () => setCounting(true),
+                    }
+                  : undefined,
+              }}
+            />
+          )
+        }
       />
 
+      {counting && (
+        <CashCountDrawerLazy open onClose={() => setCounting(false)} onSaved={book.refetch} />
+      )}
       <UbStack gap={4} data-testid="cashbook-screen">
-        {book.fullScope ? (
-          <UbDateRangePicker<ExpensePreset>
-            presets={presets}
-            preset={filters.preset}
-            onPresetChange={book.setPreset}
-            customPreset="custom"
-            from={filters.dateFrom}
-            to={filters.dateTo}
-            onRangeChange={book.setRange}
-            max={book.today}
-            name="cashbook-period"
-            labels={{
-              presets: t('expenses.period.label'),
-              from: t('expenses.period.from'),
-              to: t('expenses.period.to'),
-            }}
-            end={
-              <UbChoiceChips<CashbookBucketFilter>
-                ariaLabel={t('cashbook.bucket.label')}
-                value={filters.bucket}
-                options={bucketOptions}
-                onChange={book.setBucket}
-              />
+        {emptyBook ? (
+          <UbEmptyState
+            variant="firstUse"
+            title={t('cashbook.empty.firstUse.title')}
+            description={t('cashbook.empty.firstUse.body')}
+            action={
+              form.canWrite ? (
+                <UbButton icon={<Plus className="h-4 w-4" aria-hidden />} onClick={form.openDrawer}>
+                  {t('cashbook.addExpense')}
+                </UbButton>
+              ) : undefined
             }
           />
-        ) : (
+        ) : book.fullScope ? null : (
           <UbStatusBanner tone="info" title={t('cashbook.staffScope')} />
         )}
 
@@ -156,8 +327,6 @@ export function CashbookPageContent(): React.JSX.Element {
             variant="error"
             title={t('cashbook.error.title')}
             description={book.error?.message ?? t('cashbook.error.body')}
-            requestId={book.error?.requestId ?? null}
-            requestIdLabel={t('common.error.reference')}
             action={
               <UbButton variant="secondary" onClick={book.refetch}>
                 {t('common.action.retry')}
@@ -168,120 +337,135 @@ export function CashbookPageContent(): React.JSX.Element {
 
         {!data && book.status !== 'failed' && (
           <UbStack gap={3} aria-busy="true" aria-label={t('cashbook.loading')}>
-            <UbSkeleton className="h-24 w-full" />
-            <UbSkeleton className="h-16 w-full" />
-            <UbSkeleton className="h-16 w-full" />
+            <UbSkeleton className="h-36 w-full lg:h-20" />
+            <UbSkeleton className="h-14 w-full" />
+            <UbSkeleton className="h-14 w-full" />
           </UbStack>
         )}
 
-        {data && (
+        {data && !emptyBook && (
           <>
-            <UbStatGrid>
-              <UbStatCard
-                icon={<Wallet className="h-4 w-4" aria-hidden />}
-                label={t('cashbook.opening')}
-                value={figure(data.range.opening)}
-                subtext={t('cashbook.asOn', { date: formatBusinessDate(filters.dateFrom) })}
-              />
-              <UbStatCard
-                icon={<ArrowDownLeft className="h-4 w-4" aria-hidden />}
-                label={t('cashbook.in')}
-                value={figure(data.range.in)}
-                subtext={t('cashbook.inRange')}
-              />
-              <UbStatCard
-                icon={<ArrowUpRight className="h-4 w-4" aria-hidden />}
-                label={t('cashbook.out')}
-                value={figure(data.range.out)}
-                subtext={t('cashbook.inRange')}
-              />
-              <UbStatCard
-                icon={<Wallet className="h-4 w-4" aria-hidden />}
-                label={t('cashbook.closing')}
-                value={figure(data.range.closing)}
-                subtext={
-                  isNegative(closingValue)
-                    ? t('cashbook.negative')
-                    : t('cashbook.asOn', { date: formatBusinessDate(filters.dateTo) })
-                }
-                tone={isNegative(closingValue) ? 'danger' : 'success'}
-              />
-            </UbStatGrid>
-
-            <UbText variant="caption" tone="tertiary">
-              {t('cashbook.openingSource')}
-            </UbText>
-
-            {book.isToday && expectedCash !== null && (
-              <UbCard title={t('cashbook.closeDay')} padded>
-                <UbStack gap={3} data-testid="close-the-day">
-                  <UbText variant="body">
-                    {t('cashbook.expectedCash', { amount: formatInr(expectedCash) })}
-                  </UbText>
-                  <UbMoneyInput
-                    name="counted-cash"
-                    aria-label={t('cashbook.countedCash')}
-                    placeholder={t('cashbook.countedCash.placeholder')}
-                    value={counted}
-                    onChange={setCounted}
-                    inputMode="decimal"
-                  />
-                  {difference && (
-                    <UbStack direction="row" align="center" className="flex-wrap gap-2">
-                      <UbStatusBadge
-                        tone={
-                          difference.kind === 'matches'
-                            ? 'success'
-                            : difference.kind === 'short'
-                              ? 'warning'
-                              : 'info'
-                        }
-                        label={t(`cashbook.${difference.kind}`, {
-                          amount: formatAmount(difference.amount),
-                        })}
-                      />
-                      {difference.kind === 'short' && form.canWrite && (
-                        <UbButton variant="ghost" size="sm" onClick={form.openDrawer}>
-                          {t('cashbook.addExpense')}
-                        </UbButton>
-                      )}
-                    </UbStack>
-                  )}
-                </UbStack>
-              </UbCard>
+            {isPhone && searchBox}
+            <UbCountLine
+              items={[
+                {
+                  id: 'closing',
+                  template: t(`cashbook.records.${filters.bucket}`),
+                  values: { amount: { text: formatInr(value(data.range.closing)) } },
+                },
+              ]}
+            />
+            {below && (
+              <UbText variant="caption" tone="error">
+                {t('cashbook.negative')}
+              </UbText>
             )}
 
-            <UbSectionHeading title={t('cashbook.days')} meta={String(data.days.length)} />
-            {data.days.length === 0 ? (
-              <UbEmptyState
-                variant="filtered"
-                title={t('cashbook.empty.filtered')}
-                description={t('cashbook.empty.body')}
-              />
-            ) : (
-              <UbStack gap={3}>
-                {data.days.map((day, index) => (
-                  <CashbookDayCard
-                    key={day.date}
-                    day={day}
-                    defaultOpen={index === 0 && day.date === book.today}
-                    t={t}
-                    locale={locale}
-                  />
+            {/* Closing time is why the screen is opened on Today, so it is not folded. */}
+            {closePanel}
+
+            <UbStack
+              gap={0}
+              data-ub-register-frame=""
+              className="overflow-hidden rounded-card border border-border-hairline bg-surface-card"
+            >
+              {!isPhone && (
+                <UbStack direction="row" align="center" className="gap-2 border-b border-border-hairline p-3">
+                  <UbStack className="min-w-0 flex-1">{searchBox}</UbStack>
+                  {book.fullScope && period}
+                </UbStack>
+              )}
+              <UbStack
+                direction="row"
+                className={`hidden bg-surface-sunken px-4 py-2 lg:grid ${CASHBOOK_ROW_GRID}`}
+                aria-hidden
+              >
+                {(['time', 'what'] as const).map((key) => (
+                  <UbText as="span" key={key} variant="caption" tone="secondary" className="text-[13px] font-semibold">
+                    {t(`cashbook.column.${key}`)}
+                  </UbText>
+                ))}
+                {(['in', 'out'] as const).map((key) => (
+                  <UbText as="span" key={key} variant="caption" tone="secondary" className="text-right text-[13px] font-semibold">
+                    {t(`cashbook.column.${key}`)}
+                  </UbText>
                 ))}
               </UbStack>
-            )}
+              {days.length === 0 ? (
+                <UbEmptyState
+                  variant="filtered"
+                  title={t('cashbook.empty.filtered')}
+                  description={t('cashbook.empty.body')}
+                />
+              ) : (
+                <CashbookRows days={days} today={book.today} t={t} onOpenRow={openRow} />
+              )}
+            </UbStack>
 
-            {book.fullScope && data.byCategory.length > 0 && (
-              <UbCard title={t('cashbook.whereMoneyWent')} padded>
-                <UbStack gap={3}>
-                  {data.byCategory.map((row) => {
-                    const percent = shareOf(row.amount, outTotal);
+            {/* What the design's composition does not draw stays one tap away. */}
+            <UbDisclosure label={t('cashbook.more')}>
+              <UbStack gap={4} data-testid="cashbook-more">
+                <UbStack direction="row" align="center" className="flex-wrap gap-2 p-1.5">
+                  {isPhone && exportButton}
+                  {form.canWrite && (
+                    <UbButton variant="secondary" onClick={form.openDrawer}>
+                      {t('cashbook.addExpense')}
+                    </UbButton>
+                  )}
+                  {book.fullScope && isPhone && period}
+                  {book.fullScope && (
+                    <UbChoiceChips<CashbookBucketFilter>
+              value={filters.bucket}
+              onChange={book.setBucket}
+              options={bucketOptions}
+              ariaLabel={t('cashbook.bucket.label')}
+              className="flex-nowrap"
+            />
+                  )}
+                </UbStack>
+                <UbStack role="group" aria-label={t('cashbook.figures')} data-testid="cashbook-figures">
+                  <UbCountLine
+                    items={[
+                      {
+                        id: 'opening',
+                        template: `${t('cashbook.opening')} {amount}`,
+                        values: { amount: { text: formatInr(value(data.range.opening)) } },
+                      },
+                      {
+                        id: 'in',
+                        template: `${t('cashbook.in')} {amount}`,
+                        values: { amount: { text: formatInr(value(data.range.in)), tone: 'receivable' } },
+                      },
+                      {
+                        id: 'out',
+                        template: `${t('cashbook.out')} {amount}`,
+                        values: { amount: { text: formatInr(value(data.range.out)) } },
+                      },
+                      {
+                        id: 'closing',
+                        template: `${t('cashbook.closing')} {amount}`,
+                        values: { amount: { text: formatInr(value(data.range.closing)) } },
+                      },
+                    ]}
+                  />
+                </UbStack>
+                {data.days.some((day) => day.voidedCount > 0) && (
+                  <UbText variant="caption" tone="tertiary">
+                    {t('cashbook.voidedNote', {
+                      count: data.days.reduce((total, day) => total + day.voidedCount, 0),
+                    })}
+                  </UbText>
+                )}
+                {book.fullScope &&
+                  data.byCategory.map((row) => {
+                    const percent = shareOf(row.amount, spent);
                     return (
                       <UbStack key={row.id} gap={1}>
                         <UbStack direction="row" justify="between" className="gap-3">
-                          <UbText variant="body-sm">{row.name}</UbText>
-                          <UbText variant="body-sm" className="ds-num">
+                          <UbText variant="body-sm" className="min-w-0 break-words">
+                            {row.name}
+                          </UbText>
+                          <UbText variant="body-sm" className="ds-num shrink-0">
                             {`${formatInr(row.amount)} · ${percent}%`}
                           </UbText>
                         </UbStack>
@@ -296,14 +480,25 @@ export function CashbookPageContent(): React.JSX.Element {
                       </UbStack>
                     );
                   })}
-                </UbStack>
-              </UbCard>
-            )}
+              </UbStack>
+            </UbDisclosure>
           </>
         )}
       </UbStack>
 
       {form.open && <ExpenseFormDrawerLazy form={form} />}
+      {form.detail && <ExpenseDetailDrawerLazy form={form} />}
+      {/* The payment's own invalidation does not touch the cash book (adding
+          it there grew the app shell past seven budgets), so the screen the
+          payment was recorded FROM re-reads itself: the expected cash moves
+          and the same count reads "Matches". */}
+      {payment && (
+        <PaymentFormDrawerLazy
+          context={payment}
+          onClose={() => setPayment(null)}
+          onSaved={book.refetch}
+        />
+      )}
     </UbPageShell>
   );
 }

@@ -2,7 +2,7 @@
 import { chromium } from 'playwright';
 import { writeFileSync, readFileSync, existsSync } from 'node:fs';
 import { newOwner, must, api, PASSWORD, uniq, addParty } from './lib/fixtures.mjs';
-const FE = 'http://localhost:3000';
+const FE = (process.env.E2E_BASE ?? 'http://localhost:3000');
 const OUT = '/tmp/e2e-shots/wave1/settings';
 const STATE = `${OUT}/state.json`;
 const phase = process.argv[2] ?? 'X';
@@ -28,7 +28,7 @@ export async function login(browser, email, { width = 1280, height = 800, hi = f
   if (hi) await ctx.addCookies([{ name: 'ub_locale', value: 'hi', url: FE }]);
   const page = await ctx.newPage();
   page.on('pageerror', (e) => console.log('PAGEERROR', e.message));
-  await page.goto(`${FE}/login`, { waitUntil: 'networkidle' });
+  await page.goto(`${FE}/login/email`, { waitUntil: 'networkidle' });
   await page.fill('input[type="email"]', email);
   await page.fill('input[type="password"]', PASSWORD);
   await page.keyboard.press('Enter');

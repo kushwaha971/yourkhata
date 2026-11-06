@@ -3,7 +3,12 @@ import { join } from 'node:path';
 
 import { screen, waitFor, act } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { AxiosError, AxiosHeaders, type AxiosResponse, type InternalAxiosRequestConfig } from 'axios';
+import {
+  AxiosError,
+  AxiosHeaders,
+  type AxiosResponse,
+  type InternalAxiosRequestConfig,
+} from 'axios';
 
 import { api, ubConfig, __resetTransportState } from 'src/api/AxiosInstances';
 import { SnackbarHost } from 'src/components/layout/SnackbarHost';
@@ -126,8 +131,7 @@ const submitLogin = async (user: ReturnType<typeof userEvent.setup>): Promise<vo
   await user.click(screen.getByRole('button', { name: 'Log in' }));
 };
 
-const SOURCE = (relative: string): string =>
-  readFileSync(join(process.cwd(), relative), 'utf8');
+const SOURCE = (relative: string): string => readFileSync(join(process.cwd(), relative), 'utf8');
 
 // ── The rule ─────────────────────────────────────────────────────────────────
 
@@ -148,10 +152,10 @@ describe('the rule: an API failure surfaces centrally, through the snackbar', ()
 
     const toast = await screen.findByTestId('snackbar');
     expect(toast).toHaveTextContent('The books are briefly unavailable.');
-    // R-E-4 — the trace id travels with the failure, as the banner used to do.
-    expect(toast).toHaveTextContent('req_channel');
-    // Labelled as the thing to quote, as every error surface labels it (QA B5).
-    expect(toast).toHaveTextContent('Reference req_channel');
+    // Owner, 7 Oct 2026: no "Reference <id>" on any error. The id still travels
+    // in the store (and the server's log), just not onto the merchant's screen.
+    expect(toast).not.toHaveTextContent('req_channel');
+    expect(store.getState().snackbar.requestId).toBe('req_channel');
     // It reached the store's single channel, not some component's local state.
     expect(store.getState().snackbar.snackbarSeverity).toBe('error');
   });
@@ -192,7 +196,7 @@ describe('the rule: an API failure surfaces centrally, through the snackbar', ()
     // host resolves it — BrandHub's `id`/`params` mechanism.
     await waitFor(() => expect(store.getState().snackbar.id).toBe('error.network'));
     expect(await screen.findByTestId('snackbar')).toHaveTextContent(
-      'Could not reach the server. Check your connection and try again.'
+      'No internet. Check it and try again.'
     );
   });
 });
@@ -255,8 +259,8 @@ describe('EXCEPTION 2 — a whole-page failure keeps its in-page state', () => {
     );
 
     // The screen says what happened and offers the way back …
-    expect(await screen.findByText('req_channel')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Try again' })).toBeInTheDocument();
+    expect(await screen.findByRole('button', { name: 'Try again' })).toBeInTheDocument();
+    expect(screen.queryByText('req_channel')).not.toBeInTheDocument(); // owner, 7 Oct 2026
     // … and the channel stays quiet, because a toast here would disappear and
     // leave an empty screen with no explanation of why it is empty.
     expect(screen.queryByTestId('snackbar')).not.toBeInTheDocument();
@@ -268,7 +272,13 @@ describe('EXCEPTION 3 — a 401 whose refresh failed is a session expiry, report
   it('redirects to login and raises no toast', async () => {
     const assign = jest.fn();
     Object.defineProperty(window, 'location', {
-      value: { ...realLocation, pathname: '/parties', search: '', origin: 'http://localhost', assign },
+      value: {
+        ...realLocation,
+        pathname: '/parties',
+        search: '',
+        origin: 'http://localhost',
+        assign,
+      },
       writable: true,
     });
 
@@ -404,5 +414,30 @@ describe('the toast is announced, dismissible and reachable', () => {
     // The newest failure is the one the merchant just caused.
     expect(toast).toHaveTextContent('Second.');
     expect(toast).not.toHaveTextContent('First.');
+  });
+});
+
+describe('a file request refused by the server', () => {
+  /**
+   * GST portal file pass, 7 Oct 2026: a `responseType: 'blob'` request gets its
+   * refusal as a Blob, and the interceptor normalised it unread — so every
+   * export's refusal reached the merchant as "Request failed." instead of the
+   * server's sentence. The service-level unwrap ran too late to help.
+   */
+  it('reads the refusal out of the Blob and says the server’s own sentence', async () => {
+    const json = JSON.stringify(
+      errorBody('period_not_closed', 'You can make this file once the month has ended.')
+    );
+    const blob = new Blob([json], { type: 'application/json' });
+    if (typeof blob.text !== 'function') {
+      Object.defineProperty(blob, 'text', { value: async () => json });
+    }
+    replies = [{ status: 409, data: blob }];
+    await expect(
+      api.get('/reports/gst-returns/gstr1', ubConfig({ responseType: 'blob' }))
+    ).rejects.toMatchObject({
+      code: 'period_not_closed',
+      message: 'You can make this file once the month has ended.',
+    });
   });
 });

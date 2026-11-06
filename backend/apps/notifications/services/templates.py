@@ -28,6 +28,8 @@ from dataclasses import dataclass
 from decimal import ROUND_HALF_UP, Decimal
 from typing import Any, Mapping
 
+from django.core.exceptions import ImproperlyConfigured
+
 from apps.notifications.constants import (
     TEMPLATE_FALLBACK_LOCALE,
     TEMPLATE_LEDGER_ENTRY_GAVE,
@@ -54,20 +56,20 @@ WHATSAPP = MessageChannel.WHATSAPP.value
 DEFAULT_TEMPLATES: dict[tuple[str, str, str], str] = {
     # LED-06 — the WhatsApp reminder. Polite Hinglish in `en` (§8), Hindi in `hi`.
     (TEMPLATE_REMINDER_MANUAL, WHATSAPP, "en"): (
-        "Namaste {{party_name}} ji, {{shop}} ka Rs {{balance}} baaki hai{{due_line}}. "
+        "Namaste {{party_name}} ji, {{shop}} ka Rs {{balance}} baaki hai{{for_line}}{{due_line}}. "
         "Kripya bhugtan karein.\n{{upi_line}}{{note_line}}— {{shop}}"
     ),
     (TEMPLATE_REMINDER_MANUAL, WHATSAPP, "hi"): (
-        "नमस्ते {{party_name}} जी, {{shop}} का Rs {{balance}} बाकी है{{due_line}}। "
+        "नमस्ते {{party_name}} जी, {{shop}} का Rs {{balance}} बाकी है{{for_line}}{{due_line}}। "
         "कृपया भुगतान करें।\n{{upi_line}}{{note_line}}— {{shop}}"
     ),
     # The same words through the merchant's own SMS app (`sms:` link) and through
     # a provider. Shorter: SMS is billed per segment.
     (TEMPLATE_REMINDER_MANUAL_SMS, SMS, "en"): (
-        "{{shop}}: Rs {{balance}} is due{{due_line}}. {{pay_line}}{{note_line}}-{{shop}}"
+        "{{shop}}: Rs {{balance}} is due{{for_line}}{{due_line}}. {{pay_line}}{{note_line}}-{{shop}}"
     ),
     (TEMPLATE_REMINDER_MANUAL_SMS, SMS, "hi"): (
-        "{{shop}}: Rs {{balance}} बाकी है{{due_line}}। {{pay_line}}{{note_line}}-{{shop}}"
+        "{{shop}}: Rs {{balance}} बाकी है{{for_line}}{{due_line}}। {{pay_line}}{{note_line}}-{{shop}}"
     ),
     # LED-07 — the automated D-1 / D0 SMS.
     (TEMPLATE_REMINDER_D1, SMS, "en"): (
@@ -116,6 +118,59 @@ DEFAULT_TEMPLATES: dict[tuple[str, str, str], str] = {
         "बाकी Rs {{balance}} ({{label}})। -{{shop}}{{notice}}"
     ),
 }
+
+
+# ── A10 ── `register_default_templates` (contracts §1.9, R29) ───────────────
+#
+# A module's message bodies join `DEFAULT_TEMPLATES` from its `ready()`, so they
+# resolve through the same tenant → partner → global → code-default chain and
+# `seed_message_templates` copies them like core's. Keys are
+# `<module>_<purpose>` (≤ 48, the column), bodies per channel × locale, and
+# every channel must carry `en` — the resolver's fallback. A registration never
+# REPLACES a body: an equal one is a no-op, a different one raises, so a module
+# can never rewrite the words of a core template every shop sends. The whole
+# mapping is validated before anything is stored.
+
+_MODULE_TEMPLATE_CODE = re.compile(r"^[a-z][a-z0-9]*_[a-z0-9_]+$")
+TEMPLATE_CODE_MAX = 48
+TEMPLATE_LOCALES = ("en", "hi")
+_TEMPLATES_BASELINE: dict[tuple[str, str, str], str] | None = None
+
+
+def register_default_templates(mapping: Mapping[str, Mapping[str, Mapping[str, str]]]) -> None:
+    channels = {choice.value for choice in MessageChannel}
+    staged: dict[tuple[str, str, str], str] = {}
+    for code, by_channel in mapping.items():
+        if not _MODULE_TEMPLATE_CODE.match(code) or len(code) > TEMPLATE_CODE_MAX:
+            raise ImproperlyConfigured(
+                f"template code {code!r} must be '<module>_<purpose>', at most "
+                f"{TEMPLATE_CODE_MAX} characters"
+            )
+        for channel, by_locale in by_channel.items():
+            if channel not in channels:
+                raise ImproperlyConfigured(f"{code}: {channel!r} is not a message channel")
+            if TEMPLATE_FALLBACK_LOCALE not in by_locale:
+                raise ImproperlyConfigured(f"{code}/{channel}: an English body is required")
+            for locale, body in by_locale.items():
+                if locale not in TEMPLATE_LOCALES:
+                    raise ImproperlyConfigured(f"{code}/{channel}: {locale!r} is not a locale")
+                if not isinstance(body, str) or not body.strip():
+                    raise ImproperlyConfigured(f"{code}/{channel}/{locale}: the body is empty")
+                key = (code, channel, locale)
+                existing = DEFAULT_TEMPLATES.get(key)
+                if existing is not None and existing != body:
+                    raise ImproperlyConfigured(f"template {key} is already registered")
+                staged[key] = body
+    DEFAULT_TEMPLATES.update(staged)
+
+
+def _reset_for_tests() -> None:  # pragma: no cover - test helper
+    """Back to the start-up bodies (core's literal plus every `ready()`)."""
+    global _TEMPLATES_BASELINE
+    if _TEMPLATES_BASELINE is None:
+        _TEMPLATES_BASELINE = dict(DEFAULT_TEMPLATES)
+    DEFAULT_TEMPLATES.clear()
+    DEFAULT_TEMPLATES.update(_TEMPLATES_BASELINE)
 
 
 class TemplateRenderError(ValueError):

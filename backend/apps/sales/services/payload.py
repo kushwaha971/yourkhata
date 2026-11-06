@@ -14,11 +14,12 @@ from apps.common.context import Ctx
 from apps.common.dates import fy_label_for, tenant_today
 from apps.common.exceptions import BusinessRuleViolation, ValidationFailed
 from apps.common.money import D
+from apps.platform_app.mobile import InvalidMobile, normalise_mobile
 from apps.sales.constants import KIND_FOR_GST_TYPE, NOTES_MAX, WALK_IN_NAME_MAX
 from apps.sales.models import SalesDocument, SalesDocumentLine
 from apps.sales.services import settings as sales_settings
-from apps.sales.services.lines import build_lines
-from apps.sales.services.tax_engine import EngineDocument, compute_document_totals
+from apps.sales.services.lines import BuiltLines, build_lines
+from apps.tax.services.tax_engine import EngineDocument, compute_document_totals
 
 HEADER_FIELDS = (
     "party_id",
@@ -55,7 +56,7 @@ def resolve_party(tenant: Any, party_id: Any, errors: dict) -> Any:
         return None
     party = Party.objects.filter(tenant=tenant, pk=party_id).first()
     if party is None:
-        errors["party_id"] = ["Choose a party from your list."]
+        errors["party_id"] = ["Choose a saved customer from your list."]
     return party
 
 
@@ -82,10 +83,20 @@ def _parse_date(raw: Any, name: str, errors: dict) -> dt.date | None:
         return None
 
 
-def apply_payload(ctx: Ctx, document: SalesDocument, payload: dict, *, strict: bool) -> dict:
+def apply_payload(
+    ctx: Ctx,
+    document: SalesDocument,
+    payload: dict,
+    *,
+    strict: bool,
+    built: BuiltLines | None = None,
+) -> dict:
     """Validate the header and lines, compute totals, write them onto `document`.
 
-    Returns `{rows, warnings, items}`. Raises 400 with every field error at once.
+    `built` is a caller's own lines (a credit note's return lines, priced at
+    the invoice's snapshot rates — SAL-04 BR-1); otherwise `payload["lines"]`
+    is built at the document date's rates. Returns `{rows, warnings, items}`.
+    Raises 400 with every field error at once.
     """
     tenant = ctx.tenant
     errors: dict[str, list[str]] = {}
@@ -118,8 +129,54 @@ def apply_payload(ctx: Ctx, document: SalesDocument, payload: dict, *, strict: b
     else:
         document.walk_in_name = (document.walk_in_name or "").strip()[:WALK_IN_NAME_MAX] or None
         document.walk_in_mobile = (document.walk_in_mobile or "").strip() or None
-    if document.walk_in_mobile and not _valid_mobile(document.walk_in_mobile):
-        errors["walk_in_mobile"] = ["Enter a valid 10-digit mobile."]
+    if document.walk_in_mobile:
+        try:
+            document.walk_in_mobile = normalise_mobile(document.walk_in_mobile)
+        except InvalidMobile as exc:
+            errors["walk_in_mobile"] = [str(exc)]
+    apply_location(tenant, document, payload, errors)
+    # D P1b — the vehicle and its mechanic (auto parts), kept in meta.vehicle.
+    if "vehicle_number" in payload or "mechanic" in payload:
+        vehicle = dict((document.meta or {}).get("vehicle") or {})
+        if "vehicle_number" in payload:
+            vehicle["number"] = "".join(str(payload.get("vehicle_number") or "").split()).upper()[:20]
+        if "mechanic" in payload:
+            vehicle["mechanic"] = " ".join(str(payload.get("mechanic") or "").split())[:60]
+        document.meta = {**(document.meta or {}), "vehicle": {k: v for k, v in vehicle.items() if v}}
+    # G2d — the customer's PAN, asked on a jeweller's bill of ₹2 lakh or more
+    # (Rule 114B), kept with the bill in meta.pan.
+    if "pan" in payload:
+        from apps.tax.validators import is_valid_pan
+
+        pan = "".join(str(payload.get("pan") or "").split()).upper()
+        meta = {k: v for k, v in (document.meta or {}).items() if k != "pan"}
+        if pan and not is_valid_pan(pan):
+            errors["pan"] = ["Enter the 10-character PAN, like ABCPK1234L."]
+        document.meta = {**meta, **({"pan": pan} if pan else {})}
+    # G4 — a Schedule H / H1 / X medicine's prescription: the doctor and the
+    # patient, kept with the bill in meta.rx for the Schedule H register. Asked
+    # by the bill when such a medicine is on it; like the PAN, never a block.
+    if "rx_doctor" in payload or "rx_patient" in payload:
+        rx = dict((document.meta or {}).get("rx") or {})
+        for key, field in (("doctor", "rx_doctor"), ("patient", "rx_patient")):
+            if field in payload:
+                rx[key] = " ".join(str(payload.get(field) or "").split())[:80]
+        meta = {k: v for k, v in (document.meta or {}).items() if k != "rx"}
+        rx = {k: v for k, v in rx.items() if v}
+        document.meta = {**meta, **({"rx": rx} if rx else {})}
+    # G3a — the custom order this bill delivers, kept in meta.custom_order.
+    if "custom_order_id" in payload:
+        from apps.sales.services.custom_orders import link_to_draft
+
+        link_to_draft(tenant=tenant, document=document, order_id=payload.get("custom_order_id"), errors=errors)
+    # G2c — a jeweller's old gold taken in, priced by the server, kept in
+    # meta.old_gold until issue settles it (`inventory.services.old_gold`).
+    if "old_gold" in payload:
+        from apps.inventory.services.old_gold import price as price_old_gold
+
+        priced = price_old_gold(tenant=tenant, raw=payload.get("old_gold"), errors=errors)
+        meta = {k: v for k, v in (document.meta or {}).items() if k != "old_gold"}
+        document.meta = {**meta, **({"old_gold": priced} if priced else {})}
     for text in ("notes", "terms"):
         if len(getattr(document, text) or "") > NOTES_MAX:
             errors[text] = ["Keep this under 2,000 characters."]
@@ -133,17 +190,24 @@ def apply_payload(ctx: Ctx, document: SalesDocument, payload: dict, *, strict: b
     elif document.discount_type == "percent" and D(document.discount_value) > 100:
         errors["discount_value"] = ["Discount must be between 0 and 100 %."]
 
-    raw_lines = payload.get("lines")
-    if raw_lines is None:
-        raw_lines = [_line_as_payload(line) for line in document.lines.all()] if document.pk else []
-    built = build_lines(
-        tenant=tenant,
-        document_date=doc_date,
-        raw_lines=list(raw_lines),
-        strict=strict,
-        allow_free_text=sales_settings.allow_free_text_lines(tenant),
-        errors=errors,
-    )
+    if built is None:
+        raw_lines = payload.get("lines")
+        if raw_lines is None:
+            raw_lines = (
+                [_line_as_payload(line) for line in document.lines.all()] if document.pk else []
+            )
+        built = build_lines(
+            tenant=tenant,
+            document_date=doc_date,
+            raw_lines=list(raw_lines),
+            strict=strict,
+            # ── A5 ── a module's document describes its supply ("Quarterly membership, 1 Oct –
+            # 31 Dec 2026", PLT-X05 §8): the counter's free-text switch does not apply to it.
+            allow_free_text=(
+                sales_settings.allow_free_text_lines(tenant) or bool(document.origin_type)
+            ),
+            errors=errors,
+        )
     if errors:
         raise ValidationFailed(errors)
 
@@ -200,11 +264,6 @@ def apply_payload(ctx: Ctx, document: SalesDocument, payload: dict, *, strict: b
     return {"rows": rows, "warnings": built.warnings, "items": built.items}
 
 
-def _valid_mobile(value: str) -> bool:
-    digits = value.replace("+91", "", 1) if value.startswith("+91") else value
-    return len(digits) == 10 and digits.isdigit() and digits[0] in "6789"
-
-
 def _line_as_payload(line: SalesDocumentLine) -> dict:
     return {
         "item_id": line.item_id,
@@ -212,9 +271,35 @@ def _line_as_payload(line: SalesDocumentLine) -> dict:
         "hsn_sac": line.hsn_sac,
         "qty": line.qty,
         "unit_code": line.unit_code,
+        "serials": list(line.serials or []),
+        "batches": list(line.batches or []),
+        "addons": list(line.addons or []),
+        "jewel": dict(line.jewel) if line.jewel else None,
         "unit_price": line.unit_price,
         "tax_inclusive": line.tax_inclusive,
         "discount_type": line.discount_type,
         "discount_value": line.discount_value,
         "tax_code": line.tax_code,
     }
+
+
+def apply_location(tenant: Any, document: Any, payload: dict, errors: dict) -> None:
+    """D P1c — `location_id` names one of the business's places; blank is MAIN."""
+    if "location_id" not in payload:
+        return
+    raw = payload.get("location_id")
+    if not raw:
+        document.location = None
+        return
+    from django.core.exceptions import ValidationError as DjangoValidationError
+
+    from apps.inventory.models import Location
+
+    try:
+        place = Location.objects.filter(tenant=tenant, pk=raw, is_active=True).first()
+    except (ValueError, TypeError, DjangoValidationError):
+        place = None
+    if place is None:
+        errors["location_id"] = ["Choose one of your godowns."]
+    else:
+        document.location = place

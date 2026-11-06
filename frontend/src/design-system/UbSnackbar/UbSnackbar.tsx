@@ -97,7 +97,17 @@ function UbSnackbarBase({
             ) : null}
           </div>
           {actionLabel && onAction ? (
-            <MLButton variant="ghost" size="sm" onClick={onAction}>
+            // On the message's line, in its size and tone: as a stock small
+            // ghost button it sat lower, larger and black beside the blue
+            // message (owner's screenshot, 27 Oct 2026). Both it and × are the
+            // message's 20 px line, so all three centre on it (measured: a 24 px
+            // box pulled up 4 px sat 2 px high); `ub-hit` gives each 44 px on a phone.
+            <MLButton
+              variant="ghost"
+              size="sm"
+              onClick={onAction}
+              className="ds-fixed-base-regular ub-hit h-5 shrink-0 px-2 !text-[0.875rem] font-semibold !leading-5 text-current underline-offset-2 hover:bg-transparent hover:underline"
+            >
               {actionLabel}
             </MLButton>
           ) : null}
@@ -106,7 +116,7 @@ function UbSnackbarBase({
             size="sm"
             aria-label={dismissLabel}
             onClick={onDismiss}
-            className="-my-1 h-6 w-6 px-0 text-current"
+            className="ub-hit h-5 w-6 px-0 text-current"
           >
             <X aria-hidden className="h-4 w-4" />
           </MLButton>

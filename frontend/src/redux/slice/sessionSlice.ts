@@ -1,18 +1,29 @@
-import { createSlice, type Draft, type PayloadAction, type UnknownAction } from '@reduxjs/toolkit';
+import {
+  createSelector,
+  createSlice,
+  type Draft,
+  type PayloadAction,
+  type UnknownAction,
+} from '@reduxjs/toolkit';
 
+import type { RequestIdentity } from 'src/api/transportBridge';
 import { resetAllFeatureState } from 'src/redux/actions';
 import type { RootState } from 'src/redux/store';
 import type { ApiErrorShape } from 'src/types/api.types';
 import type { Locale, ModuleCode, PermissionCode } from 'src/types/domain.types';
+import { landingFromFacts, type Landing } from 'src/types/landing.types';
 
 import {
   confirmPasswordReset,
   passwordLogin,
-  registerAccount,
+  verifyOtp,
 } from 'modules/DigiKhaato/features/auth/redux/authThunk';
 import {
   fetchSession,
+  leaveApp,
   logout,
+  setAppRunning,
+  switchApp,
   switchTenant,
 } from 'modules/DigiKhaato/features/auth/redux/sessionThunk';
 import { completeOnboarding } from 'modules/DigiKhaato/features/onboarding/redux/onboardingThunk';
@@ -107,6 +118,22 @@ export interface SessionTenant {
   readonly partnerSuspended?: boolean;
   /** PLT-10 BR-1 — when a `pending_deletion` business is deleted (ISO), else null. */
   readonly deletionScheduledFor?: string | null;
+  /**
+   * B2 / BP-22 #1 — the business's own words by language, then message id (a
+   * medical store's `en["nav.suppliers"]` is "Distributors", `hi` "वितरक"),
+   * resolved by the server from `parties.labels`. Read only through
+   * `useAppWords().w`.
+   */
+  readonly words?: Readonly<Record<string, Readonly<Record<string, string>>>> | null;
+  /**
+   * B2 / BP-22 #2 — the features that are on (`orders`, `batches`, …). Read
+   * only through `useFeature`; no screen reads a business type (R-DEC-65).
+   */
+  readonly features?: string[] | null;
+  /** D15: the words the business saved for its own messages, by message and language. */
+  readonly messages?: Readonly<Record<string, Readonly<Record<string, string>>>> | null;
+  /** B3 — the kind's picture (`UbShopKind`), drawn on Settings › Shop features. */
+  readonly kindPicture?: string | null;
 }
 
 /** The branding the shell renders; `primarySource` says whose colour it is. */
@@ -121,6 +148,14 @@ export interface SessionBranding {
 }
 
 export interface SessionState {
+  /**
+   * A8 P5 — how many times every feature's state has been wiped
+   * (`resetAllFeatureState`). The session slice keeps itself through a reset,
+   * so it can count them; the signed-in page is keyed by this count and
+   * remounts, because a page that was on screen when its state was wiped
+   * otherwise waits for ever on a fetch nothing repeats.
+   */
+  resetGeneration: number;
   status: SessionStatus;
   user: SessionUser | null;
   activeTenant: SessionTenant | null;
@@ -131,6 +166,15 @@ export interface SessionState {
   error: ApiErrorShape | null;
   /** The token's `ver` claim; a change forces a re-read (Part 22 §22.2). */
   version: number | null;
+  /** docs/platform/14 §4.1 — the server's `landing`; read through `selectLanding`. */
+  landing: Landing | null;
+  /** docs/platform/14 §4.2 — `null` until a server body says (old fixtures). */
+  apps: SessionApp[] | null;
+  activeApp: string | null;
+  /** The apps the OWNER could add here (empty for everyone else). */
+  appsAddable: SessionApp[];
+  /** Businesses whose owner or admin blocked this person (owner, 12 Oct 2026). */
+  blockedFrom: string[];
   lastFetchedAt: number | null;
   /**
    * N1-P1 — has THIS DOCUMENT (this JS runtime) held a session before?
@@ -145,6 +189,7 @@ export interface SessionState {
 }
 
 const initialState: SessionState = {
+  resetGeneration: 0,
   status: 'idle',
   user: null,
   activeTenant: null,
@@ -154,6 +199,11 @@ const initialState: SessionState = {
   impersonation: null,
   error: null,
   version: null,
+  landing: null,
+  apps: null,
+  activeApp: null,
+  appsAddable: [],
+  blockedFrom: [],
   lastFetchedAt: null,
   heldInThisDocument: false,
 };
@@ -169,6 +219,14 @@ const endedSession = (state: SessionState): SessionState => ({
   heldInThisDocument: state.heldInThisDocument,
 });
 
+/** docs/platform/14 §4.2 — one app this person can open in the active business. */
+export interface SessionApp {
+  readonly code: string;
+  readonly labelId: string;
+  readonly homePath: string;
+  readonly order: number;
+}
+
 export interface SessionPayload {
   readonly user: SessionUser;
   readonly activeTenant: SessionTenant | null;
@@ -177,6 +235,13 @@ export interface SessionPayload {
   readonly enabledModules: readonly ModuleCode[];
   readonly version: number | null;
   readonly impersonation?: SessionImpersonation | null;
+  /** docs/platform/14 §4.1 — the server's decision; absent only in test fixtures. */
+  readonly landing?: Landing | null;
+  /** docs/platform/14 §4.2 — the apps this person can open here; absent in old fixtures. */
+  readonly apps?: readonly SessionApp[] | null;
+  readonly activeApp?: string | null;
+  readonly appsAddable?: readonly SessionApp[];
+  readonly blockedFrom?: readonly string[];
 }
 
 const sessionSlice = createSlice({
@@ -196,6 +261,11 @@ const sessionSlice = createSlice({
       state.enabledModules = [...payload.enabledModules];
       state.impersonation = payload.impersonation ?? null;
       state.version = payload.version;
+      state.landing = (payload.landing ?? null) as Draft<Landing> | null;
+      state.apps = payload.apps ? [...payload.apps] : null;
+      state.activeApp = payload.activeApp ?? null;
+      state.appsAddable = payload.appsAddable ? [...payload.appsAddable] : [];
+      state.blockedFrom = payload.blockedFrom ? [...payload.blockedFrom] : [];
       state.lastFetchedAt = Date.now();
       state.error = null;
       state.status = payload.activeTenant ? 'authenticated' : 'no_tenant';
@@ -231,6 +301,15 @@ const sessionSlice = createSlice({
       .addCase(fetchSession.rejected, (state, action) => {
         // An aborted bootstrap is a remount, not a logout.
         if (action.meta.aborted) return;
+        /* QA B47 — a re-check that got no verdict (offline, a 503) says nothing
+           about a session this tab already holds; only the server saying 401 or
+           403 ends it. Without a held session there is nothing to keep. */
+        const verdict = action.payload?.status;
+        const held = state.status === 'authenticated' || state.status === 'no_tenant';
+        if (held && verdict !== 401 && verdict !== 403) {
+          state.error = (action.payload ?? null) as Draft<ApiErrorShape> | null;
+          return;
+        }
         Object.assign(state, endedSession(state));
         state.error = (action.payload ?? null) as Draft<ApiErrorShape> | null;
       })
@@ -255,6 +334,24 @@ const sessionSlice = createSlice({
         sessionSlice.caseReducers.sessionLoaded(state, {
           type: 'session/sessionLoaded',
           payload: action.payload.session,
+        });
+      })
+      .addCase(setAppRunning.fulfilled, (state, action) => {
+        sessionSlice.caseReducers.sessionLoaded(state, {
+          type: 'session/sessionLoaded',
+          payload: action.payload,
+        });
+      })
+      .addCase(leaveApp.fulfilled, (state, action) => {
+        sessionSlice.caseReducers.sessionLoaded(state, {
+          type: 'session/sessionLoaded',
+          payload: action.payload,
+        });
+      })
+      .addCase(switchApp.fulfilled, (state, action) => {
+        sessionSlice.caseReducers.sessionLoaded(state, {
+          type: 'session/sessionLoaded',
+          payload: action.payload,
         });
       })
       .addCase(switchTenant.fulfilled, (state, action) => {
@@ -283,12 +380,13 @@ const sessionSlice = createSlice({
          `fetchSession.pending` moves it to `loading` in the same tick
          `useAuthRedirect` dispatches it. */
       .addCase(passwordLogin.fulfilled, (state) => endedSession(state))
-      .addCase(registerAccount.fulfilled, (state) => endedSession(state))
+      .addCase(verifyOtp.fulfilled, (state) => endedSession(state))
       .addCase(confirmPasswordReset.fulfilled, (state) => endedSession(state))
       // A tenant switch keeps the session and clears everything else; the
       // session itself is refetched immediately afterwards (§19.6.5 step 2).
       .addCase(resetAllFeatureState, (state) => {
         state.error = null;
+        state.resetGeneration += 1;
       });
   },
 });
@@ -327,11 +425,56 @@ export const selectSessionStatus = (state: RootState): SessionStatus => state.se
 /** N1-P1 — see `SessionState.heldInThisDocument`. */
 export const selectSessionHeldInThisDocument = (state: RootState): boolean =>
   state.session.heldInThisDocument;
+/**
+ * docs/platform/14 §4.1 — the server's `landing`. A fixture without one is read
+ * as "the active business's app", or "create a business" without one: the
+ * honest reading of the facts, never a rule of its own.
+ */
+// Memoised by hand on the four inputs: `createSelector` would bring reselect
+// into the shell, which every route pays for (it measured +0.8 KB), to cache one
+// object for a fixture-only path.
+let lastLandingInputs: readonly unknown[] = [];
+let lastLanding: Landing = { kind: 'no_business' };
+export const selectLanding = (state: RootState): Landing => {
+  const { landing, user, activeTenant, tenants } = state.session;
+  if (landing) return landing;
+  const inputs = [user, activeTenant, tenants];
+  if (inputs.every((value, index) => value === lastLandingInputs[index])) return lastLanding;
+  lastLandingInputs = inputs;
+  lastLanding = landingFromFacts({
+    mustChangePassword: user?.mustChangePassword ?? false,
+    activeTenantId: activeTenant?.id ?? null,
+    tenantStatuses: tenants.map((t) => t.status),
+    isSuperAdmin: user?.isSuperAdmin ?? false,
+  });
+  return lastLanding;
+};
+
+export const selectSessionApps = (state: RootState): readonly SessionApp[] | null =>
+  state.session.apps;
+export const selectActiveApp = (state: RootState): string | null => state.session.activeApp;
+export const selectBlockedFrom = (state: RootState): readonly string[] => state.session.blockedFrom;
+
+export const selectAppsAddable = (state: RootState): readonly SessionApp[] =>
+  state.session.appsAddable;
+
 export const selectMustChangePassword = (state: RootState): boolean =>
   state.session.user?.mustChangePassword ?? false;
 export const selectSessionUser = (state: RootState): SessionUser | null => state.session.user;
+/** A8 P5 — see `SessionState.resetGeneration`. */
+export const selectResetGeneration = (state: RootState): number => state.session.resetGeneration;
 export const selectActiveTenant = (state: RootState): SessionTenant | null =>
   state.session.activeTenant;
+/** One identity key for transport and transient search sources; phone numbers never participate. */
+export const selectRequestIdentity = createSelector(
+  [selectSessionUser, selectActiveTenant, (state: RootState) => state.session.version],
+  (user, tenant, version): RequestIdentity | null =>
+    user ? { userId: user.id, tenantId: tenant?.id ?? null, version } : null
+);
+export const selectRequestScopeKey = createSelector(selectRequestIdentity, (identity) =>
+  JSON.stringify(identity)
+);
+
 export const selectPermissions = (state: RootState): readonly PermissionCode[] =>
   state.session.permissions;
 export const selectEnabledModules = (state: RootState): readonly ModuleCode[] =>
@@ -359,6 +502,18 @@ export const selectTenantTimezone = (state: RootState): string | null =>
  */
 export const selectActiveRole = (state: RootState): string | null =>
   state.session.activeTenant?.role ?? null;
+
+/**
+ * The roles that may go over a party's credit limit — the client's copy of
+ * `OVERRIDE_ROLES` in `apps/parties/services/credit.py`, kept equal to it by
+ * `src/tests/sharedOwners.test.ts`. A ROLE and not a codename, for the reason
+ * above: granting the counter a permission must not hand it the owner's cap.
+ */
+export const CREDIT_OVERRIDE_ROLES: readonly string[] = ['owner', 'admin'];
+
+/** Whether to draw "Save anyway" / "Issue anyway" (LED-01 BR-8). The server re-checks. */
+export const selectMayOverrideCreditLimit = (state: RootState): boolean =>
+  CREDIT_OVERRIDE_ROLES.includes(selectActiveRole(state) ?? '');
 
 export const selectSessionTenants = (state: RootState): readonly SessionTenant[] =>
   state.session.tenants;

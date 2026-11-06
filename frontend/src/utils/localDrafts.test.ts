@@ -13,9 +13,12 @@ describe('localDrafts', () => {
 
   it('round-trips a draft under the tenant/kind namespace', () => {
     const key = localDraftKey('t1', 'invoice', 'abc');
-    writeLocalDraft(key, { lines: 2 }, 3, new Date('2026-09-24T10:00:00Z'));
+    // Read on the day it was written: with the real clock this test began failing on 1 Oct 2026,
+    // a week after its fixed write date, because a seven-day-old draft is (rightly) purged.
+    const writtenAt = new Date('2026-09-24T10:00:00Z');
+    writeLocalDraft(key, { lines: 2 }, 3, writtenAt);
     expect(window.localStorage.getItem('ub.sales.draft.t1.invoice.abc')).not.toBeNull();
-    expect(readLocalDraft<{ lines: number }>(key)?.form.lines).toBe(2);
+    expect(readLocalDraft<{ lines: number }>(key, writtenAt)?.form.lines).toBe(2);
     removeLocalDraft(key);
     expect(readLocalDraft(key)).toBeNull();
   });
@@ -32,6 +35,15 @@ describe('localDrafts', () => {
     writeLocalDraft(localDraftKey('t2', 'invoice', 'b'), {}, null);
     writeLocalDraft(localDraftKey('t1', 'estimate', 'c'), {}, null);
     expect(listLocalDrafts('t1', 'invoice').map((d) => d.draftId)).toEqual(['a']);
+  });
+
+  it('does not offer another user or unowned legacy copy to the current user', () => {
+    writeLocalDraft(localDraftKey('t1', 'invoice', 'new', 'u1'), { clientDraftKey: 'a' }, null);
+    writeLocalDraft(localDraftKey('t1', 'invoice', 'new'), { clientDraftKey: 'legacy' }, null);
+    expect(readLocalDraft(localDraftKey('t1', 'invoice', 'new', 'u2'))).toBeNull();
+    expect(listLocalDrafts('t1', 'invoice', new Date(), 'u1').map((d) => d.draftId)).toEqual([
+      'new',
+    ]);
   });
 
   it('offers a restore only when the local copy is newer than the server', () => {

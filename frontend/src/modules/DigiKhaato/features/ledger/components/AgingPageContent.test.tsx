@@ -74,9 +74,10 @@ const agingService = jest.requireMock('../api/agingService') as {
   getLedgerAging: jest.Mock;
   getLedgerSummary: jest.Mock;
   agingCsvUrl: jest.Mock;
+  agingReportCsvUrl: jest.Mock;
 };
 const tagService = jest.requireMock('../../parties/api/tagService') as { listTags: jest.Mock };
-const { agingCsvUrl: realAgingCsvUrl } =
+const { agingCsvUrl: realAgingCsvUrl, agingReportCsvUrl: realAgingReportCsvUrl } =
   jest.requireActual<typeof AgingServiceModule>('../api/agingService');
 
 /**
@@ -215,6 +216,13 @@ const tableHead = async () => {
   return within(head);
 };
 
+/* These tests read the figures on the cards. The owner folded the cards into a
+   summary line (6 Oct 2026) that opens with "Details"; open it, as a merchant
+   who wants the cards does once and the screen remembers. */
+beforeEach(() => {
+  window.localStorage.setItem('ub.statSummary.aging', 'open');
+});
+
 beforeEach(() => {
   /* Only `Date` is faked. The popover, the lazy calendar and user-event all
      run on real timers, and faking those too is how a test hangs on a
@@ -260,6 +268,18 @@ afterEach(() => {
 });
 
 describe('the report a merchant opens', () => {
+  it.each(['as_of=2026-09-01', 'tag=Camp+Area', 'type=payable&tag=Camp+Area'])(
+    'B36 keeps the selected headline scoped to the report: %s',
+    async (query) => {
+      // A whole-book position must not head a filtered/date-scoped table.
+      mockSearch = query;
+      agingService.getLedgerAging.mockImplementation(answer([RAMESH], RAMESH.amounts));
+      renderWithProviders(<AgingPageContent />);
+      const label = query.startsWith('type=payable') ? /You will give/ : /You will get/;
+      const tab = await screen.findByRole('tab', { name: label });
+      await waitFor(() => expect(tab).toHaveTextContent('₹1,600.00'));
+    }
+  );
   it("asks for today's receivables in the tenant's zone and shows the four buckets", async () => {
     /* The defaults are the report: "who owes me, and how old is it, as of
        now", oldest money first (§8). A default that asked for the payable
@@ -293,8 +313,8 @@ describe('the report a merchant opens', () => {
     expect(tileFigure('90+ days')).toHaveTextContent('₹1,200.00');
   });
 
-  it('puts the two positions on the tabs, and the other tab asks for payables', async () => {
-    /* The tabs ARE the position (the component's own docstring): "You will
+  it('puts the scoped position on the selected tab, and switching asks for payables', async () => {
+    /* The selected tab IS the scoped position: "You will
        get ₹4,900.00" is read and chosen in one glance. The defect this pins is
        the half-wired tab — a label that changes colour while the list keeps
        showing customers under the heading "You will give". */
@@ -304,10 +324,14 @@ describe('the report a merchant opens', () => {
     const get = await screen.findByRole('tab', { name: /You will get/ });
     const give = screen.getByRole('tab', { name: /You will give/ });
     await waitFor(() => expect(get).toHaveTextContent('₹4,900.00'));
-    expect(give).toHaveTextContent('₹1,850.50');
+    expect(give).not.toHaveTextContent('₹');
     expect(get).toHaveAttribute('aria-selected', 'true');
 
     await user.click(give);
+
+    // The selected side receives the scoped report's figure, not the summary cache.
+    await waitFor(() => expect(give).toHaveTextContent('₹4,900.00'));
+    expect(get).not.toHaveTextContent('₹');
 
     // `replace`, not `push`: switching sides is looking at one screen.
     expect(mockReplace).toHaveBeenCalledWith('?type=payable', { scroll: false });
@@ -380,11 +404,11 @@ describe('sorting', () => {
     await waitFor(() => expect(lastAsked().ordering).toBe('-total'));
 
     head = await tableHead();
-    await user.click(head.getByRole('button', { name: /Party/ }));
+    await user.click(head.getByRole('button', { name: /Contact/ }));
     await waitFor(() => expect(lastAsked().ordering).toBe('-name'));
 
     head = await tableHead();
-    await user.click(head.getByRole('button', { name: /Party/ }));
+    await user.click(head.getByRole('button', { name: /Contact/ }));
     await waitFor(() => expect(lastAsked().ordering).toBe('name'));
 
     // A sort is a new question: it starts again at page one.
@@ -417,6 +441,21 @@ describe('the export', () => {
     });
   });
 
+  it("is the REPORT's file when Reports is on (RPT-05 FR-9)", async () => {
+    /* FR-5's collection-sheet columns and TOTAL row come from
+       /reports/payables-aging; LED-09's own file stays for a tenant with the
+       reports module off (the test above). Same side, date, tag and order. */
+    agingService.agingReportCsvUrl.mockImplementation(realAgingReportCsvUrl);
+    signIn([...OWNER_PERMISSIONS, 'reports.basic.read'], ['parties', 'ledger', 'reports']);
+    mockSearch = 'type=payable&as_of=2026-03-31&tag=Camp Area';
+    renderWithProviders(<AgingPageContent />);
+
+    const link = await screen.findByTestId('aging-export');
+    expect(link.getAttribute('href')).toMatch(
+      /^https?:\/\/[^/]+\/.*\/reports\/payables-aging\?as_of=2026-03-31&tag=Camp\+Area&ordering=-90_plus&format=csv$/
+    );
+  });
+
   it('is absent, not disabled, for a role that may not export', async () => {
     /* §12 — staff chase collections from this screen and may not leave with
        the book in a file. A control that refuses on tap is a support call. */
@@ -440,6 +479,41 @@ describe('the states that are not a list', () => {
     expect(screen.getByText('Nothing outstanding — everyone is settled.')).toBeInTheDocument();
     expect(screen.queryByText('0–30 days')).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Clear filters' })).not.toBeInTheDocument();
+  });
+
+  it('gives a business with no entry at all one sentence and nothing else', async () => {
+    /* Owner, 12 Oct 2026. Prevents: a new shop's Old dues showing "As of
+       12/10/2026", an export, and "You will get ₹0.00 · You will give ₹0.00"
+       tabs over "All settled" — a report about a book that does not exist. */
+    agingService.getLedgerAging.mockImplementation(async (filters: AgingFilters) => ({
+      ...(await answer([], { ...TOTALS, ...ZERO })(filters)),
+      hasAny: false,
+    }));
+    agingService.getLedgerSummary.mockResolvedValue({ receivable: '0.00', payable: '0.00' });
+    renderWithProviders(<AgingPageContent />);
+
+    expect(await screen.findByText('Nothing to collect yet')).toBeInTheDocument();
+    expect(screen.queryByText('All settled')).not.toBeInTheDocument();
+    expect(screen.queryByRole('tablist')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('aging-export')).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /As of/ })).not.toBeInTheDocument();
+    expect(screen.queryByText(/₹0\.00/)).not.toBeInTheDocument();
+  });
+
+  it('keeps every control for a settled book, because that empty list is an answer', async () => {
+    /* Prevents: the collapse firing on "nobody owes anything" rather than on
+       "nothing was ever written" — a settled merchant still needs the as-of
+       date to look back and the Payable tab to see their suppliers. */
+    agingService.getLedgerAging.mockImplementation(async (filters: AgingFilters) => ({
+      ...(await answer([], { ...TOTALS, ...ZERO })(filters)),
+      hasAny: true,
+    }));
+    renderWithProviders(<AgingPageContent />);
+
+    expect(await screen.findByText('All settled')).toBeInTheDocument();
+    expect(screen.getByRole('tablist')).toBeInTheDocument();
+    expect(screen.getByTestId('aging-export')).toBeInTheDocument();
+    expect(screen.queryByText('Nothing to collect yet')).not.toBeInTheDocument();
   });
 
   it('tells a merchant who narrowed to a tag that the TAG is empty, and clears it', async () => {
@@ -476,8 +550,8 @@ describe('the states that are not a list', () => {
     const user = userEvent.setup();
     renderWithProviders(<AgingPageContent />);
 
-    expect(await screen.findByText('Couldn’t load aging')).toBeInTheDocument();
-    expect(screen.getByTestId('request-id')).toHaveTextContent('req_9c41e2');
+    expect(await screen.findByText('Couldn’t load old dues')).toBeInTheDocument();
+    expect(screen.queryByTestId('request-id')).not.toBeInTheDocument(); // owner, 7 Oct 2026: no reference on errors
     const before = agingService.getLedgerAging.mock.calls.length;
 
     agingService.getLedgerAging.mockImplementation(answer());
@@ -499,8 +573,8 @@ describe('the states that are not a list', () => {
     signIn(['parties.party.read' as PermissionCode]);
     renderWithProviders(<AgingPageContent />);
 
-    expect(await screen.findByText('You can’t see the ledger')).toBeInTheDocument();
-    expect(screen.getByText('Ask the owner for access to the ledger.')).toBeInTheDocument();
+    expect(await screen.findByText('You can’t see the khata')).toBeInTheDocument();
+    expect(screen.getByText('Ask the owner to let you see the khata.')).toBeInTheDocument();
     expect(agingService.getLedgerAging).not.toHaveBeenCalled();
     expect(agingService.getLedgerSummary).not.toHaveBeenCalled();
     expect(screen.queryByTestId('aging-export')).not.toBeInTheDocument();
@@ -513,7 +587,7 @@ describe('the states that are not a list', () => {
     signIn(OWNER_PERMISSIONS, ['parties']);
     renderWithProviders(<AgingPageContent />);
 
-    expect(await screen.findByText('You can’t see the ledger')).toBeInTheDocument();
+    expect(await screen.findByText('You can’t see the khata')).toBeInTheDocument();
     expect(agingService.getLedgerAging).not.toHaveBeenCalled();
   });
 });
@@ -582,7 +656,7 @@ describe('every figure is a way in (FR-4)', () => {
 
     const bar = await screen.findByRole('img', { name: /Ramesh Traders/ });
     expect(bar).toHaveAccessibleName(
-      'Age of what Ramesh Traders owes: 0–30 days, ₹400.00; 31–60 days, ₹0.00; ' +
+      'Dues by age for Ramesh Traders: 0–30 days, ₹400.00; 31–60 days, ₹0.00; ' +
         '61–90 days, ₹0.00; 90+ days, ₹1,200.00'
     );
     // Only the buckets with money get a segment, and they fill the track.
@@ -617,4 +691,130 @@ describe('every figure is a way in (FR-4)', () => {
       ).not.toBeInTheDocument();
     }
   );
+});
+
+it('keeps Shop aging requests, exports and statement links in the Shop book', async () => {
+  signIn([...OWNER_PERMISSIONS, 'reports.basic.read'], ['ledger', 'reports', 'parties']);
+  setTier('full');
+  renderWithProviders(<AgingPageContent book="shop" />);
+  await screen.findByRole('link', { name: 'Ramesh Traders' });
+  expect(lastAsked().book).toBe('shop');
+  expect(agingService.getLedgerSummary).toHaveBeenCalledWith(expect.anything(), 'shop');
+  expect(screen.getByRole('link', { name: 'Ramesh Traders' })).toHaveAttribute(
+    'href',
+    expect.stringContaining('book=shop')
+  );
+  expect(screen.getByRole('link', { name: 'Export CSV' })).toHaveAttribute(
+    'href',
+    expect.stringContaining('book=shop')
+  );
+});
+
+describe("the Shop's Old dues (09 §10.7)", () => {
+  const SHOP_PERMISSIONS: readonly PermissionCode[] = [
+    ...OWNER_PERMISSIONS,
+    'reports.basic.read',
+    'ledger.reminder.write',
+    'payments.payment.write',
+  ];
+  const SHOP_MODULES: readonly ModuleCode[] = ['ledger', 'reports', 'parties', 'payments'];
+
+  it('says the side in the Shop\'s words and draws the buckets as age bars, not tiles', async () => {
+    /* "You will get" is the Udhaar book's phrase; the Shop's customers and
+       suppliers are separate and never netted, so each side says whose. */
+    signIn(SHOP_PERMISSIONS, SHOP_MODULES);
+    renderWithProviders(<AgingPageContent book="shop" />);
+    const tab = await screen.findByRole('tab', { name: /To collect from customers/ });
+    await waitFor(() => expect(tab).toHaveTextContent('₹4,900.00'));
+    expect(screen.getByRole('tab', { name: /To pay suppliers/ })).toBeInTheDocument();
+    const bars = screen.getByTestId('aging-bars');
+    expect(await within(bars).findByText('How old the dues are')).toBeInTheDocument();
+    // Every bar is labelled with its bucket and the server's amount.
+    expect(within(bars).getByText('90+ days')).toBeInTheDocument();
+    expect(within(bars).getByText('₹1,200.00')).toBeInTheDocument();
+    expect(within(bars).getByText('₹2,900.00')).toBeInTheDocument();
+  });
+
+  it('shows each contact as a card with the oldest bucket in words and the total', async () => {
+    signIn(SHOP_PERMISSIONS, SHOP_MODULES);
+    renderWithProviders(<AgingPageContent book="shop" />);
+    const cards = await screen.findAllByTestId('aging-row');
+    expect(cards).toHaveLength(2);
+    expect(screen.queryByTestId('ub-grid-table')).not.toBeInTheDocument();
+    const ramesh = cards[0] as HTMLElement;
+    expect(ramesh).toHaveAccessibleName(
+      'Open Ramesh Traders · ₹1,200.00 · 90+ days · You will get ₹1,600.00'
+    );
+    // Past 90 days is the bucket a merchant rings about, so it is red.
+    expect(within(ramesh).getByTestId('aging-card-bucket')).toHaveClass('text-error');
+    expect(within(cards[1] as HTMLElement).getByTestId('aging-card-bucket')).not.toHaveClass(
+      'text-error'
+    );
+  });
+
+  it('opens a sheet with every bucket, and Remind + Receive for money to collect', async () => {
+    signIn(SHOP_PERMISSIONS, SHOP_MODULES);
+    const user = userEvent.setup();
+    renderWithProviders(<AgingPageContent book="shop" />);
+    await user.click((await screen.findAllByTestId('aging-row'))[0] as HTMLElement);
+    const sheet = await screen.findByTestId('aging-row-sheet');
+    for (const figure of ['₹400.00', '₹0.00', '₹1,200.00', '₹1,600.00'])
+      expect(within(sheet).getAllByText(figure).length).toBeGreaterThan(0);
+    expect(screen.getByTestId('aging-action-remind')).toBeInTheDocument();
+    expect(screen.getByTestId('aging-action-receive')).toBeInTheDocument();
+    expect(screen.queryByTestId('aging-action-pay')).not.toBeInTheDocument();
+    expect(screen.getByTestId('aging-action-statement')).toHaveAttribute(
+      'href',
+      `/parties/${RAMESH_ID}/statement?preset=custom&to=${TODAY}&book=shop`
+    );
+  });
+
+  it('offers only Pay for money to pay, and nothing a role may not do', async () => {
+    mockSearch = 'type=payable';
+    signIn(SHOP_PERMISSIONS, SHOP_MODULES);
+    const user = userEvent.setup();
+    const { unmount } = renderWithProviders(<AgingPageContent book="shop" />);
+    await user.click((await screen.findAllByTestId('aging-row'))[0] as HTMLElement);
+    await screen.findByTestId('aging-row-sheet');
+    expect(screen.getByTestId('aging-action-pay')).toBeInTheDocument();
+    expect(screen.queryByTestId('aging-action-remind')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('aging-action-receive')).not.toBeInTheDocument();
+    unmount();
+
+    // A role that reads the report but records no payment sees only the statement.
+    signIn([...OWNER_PERMISSIONS, 'reports.basic.read'], SHOP_MODULES);
+    renderWithProviders(<AgingPageContent book="shop" />);
+    await user.click((await screen.findAllByTestId('aging-row'))[0] as HTMLElement);
+    await screen.findByTestId('aging-row-sheet');
+    expect(screen.queryByTestId('aging-action-pay')).not.toBeInTheDocument();
+    expect(screen.getByTestId('aging-action-statement')).toBeInTheDocument();
+  });
+
+  it('says a settled Shop book is settled, in the Shop\'s words', async () => {
+    signIn(SHOP_PERMISSIONS, SHOP_MODULES);
+    agingService.getLedgerAging.mockImplementation(async (filters: AgingFilters) => ({
+      ...(await answer([], ZERO)(filters)),
+      hasAny: true,
+    }));
+    renderWithProviders(<AgingPageContent book="shop" />);
+    expect(await screen.findByText('Nothing to collect in the Business')).toBeInTheDocument();
+    expect(screen.queryByTestId('aging-bars')).not.toBeInTheDocument();
+  });
+
+  it('on a desktop table, a ⋯ per row opens the same sheet and the party stays a link', async () => {
+    signIn(SHOP_PERMISSIONS, SHOP_MODULES);
+    setTier('full');
+    const user = userEvent.setup();
+    renderWithProviders(<AgingPageContent book="shop" />);
+    expect(await screen.findByRole('link', { name: 'Ramesh Traders' })).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'More for Ramesh Traders' }));
+    expect(await screen.findByTestId('aging-row-sheet')).toBeInTheDocument();
+  });
+
+  it('leaves the Udhaar book as it was: tiles, its own words, no sheet', async () => {
+    renderWithProviders(<AgingPageContent />);
+    expect(await screen.findByRole('tab', { name: /You will get/ })).toBeInTheDocument();
+    expect(screen.queryByTestId('aging-bars')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('aging-row')).not.toBeInTheDocument();
+  });
 });

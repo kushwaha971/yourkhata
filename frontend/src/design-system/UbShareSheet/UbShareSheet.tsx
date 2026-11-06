@@ -1,6 +1,13 @@
 'use client';
 
-import { memo, useCallback, useSyncExternalStore, type ReactNode, type RefObject } from 'react';
+import {
+  memo,
+  useCallback,
+  useState,
+  useSyncExternalStore,
+  type ReactNode,
+  type RefObject,
+} from 'react';
 
 import { Copy, MessageCircle, MessageSquare, Phone, Share2 } from 'lucide-react';
 
@@ -10,6 +17,13 @@ import { UbDialog } from 'src/design-system/UbDialog';
 import { copyText } from 'src/utils/clipboard';
 import { cn } from 'src/utils/cn';
 import { buildSmsUrl, buildWhatsAppUrl, canUseNativeShare, isShareAbort } from 'src/utils/share';
+
+import {
+  finalMessage,
+  isBlankMessage,
+  UbMessageBox,
+  type UbMessageBoxLabels,
+} from './UbMessageBox';
 
 /**
  * Part 23 §23.3 / NTF-03 FR-1 — the one share surface.
@@ -42,6 +56,17 @@ import { buildSmsUrl, buildWhatsAppUrl, canUseNativeShare, isShareAbort } from '
  * outcomes are reported through `onShared` / `onFailed` and the caller routes
  * them to the global snackbar — `useShareFeedback` does that in one line.
  *
+ * ── The merchant edits the words (MSG-01..05, WP-04) ──────────────────────
+ * `message` is the DEFAULT, not the final text. It sits in an editable box,
+ * and every channel — WhatsApp, SMS, copy, More… — carries exactly what the box
+ * holds, so the preview and what is sent cannot differ. While nothing has been
+ * typed the box follows the default (a refetch may improve it); once the
+ * merchant types, a refetch never replaces their words, and "Reset to default"
+ * is the deliberate way back. A new opening or a different recipient starts
+ * from the default again: one person's message must never reach another's
+ * chat. An empty or whitespace-only message opens nothing and says why. The
+ * edit lives in memory only — nothing about it is stored.
+ *
  * ── "More…" only where it exists ──────────────────────────────────────────
  * `navigator.share` is on phones and some desktops and absent on others. A row
  * that throws on click is the unbuilt-feature rule broken by the platform, so
@@ -51,15 +76,13 @@ import { buildSmsUrl, buildWhatsAppUrl, canUseNativeShare, isShareAbort } from '
  */
 export type UbShareChannel = 'whatsapp' | 'sms' | 'copy' | 'native' | 'call';
 
-export interface UbShareSheetLabels {
+export interface UbShareSheetLabels extends UbMessageBoxLabels {
   readonly whatsapp: string;
   readonly sms: string;
   readonly copy: string;
   /** The platform share sheet — "More…". */
   readonly more: string;
   readonly close: string;
-  /** The caption over the message preview — "Message". */
-  readonly preview: string;
   /** The dial row, drawn only when `callHref` is given (LED-06 FR-4). */
   readonly call?: string;
 }
@@ -99,8 +122,26 @@ export interface UbShareSheetProps {
   /** Any spelling; normalised by `toWhatsAppDigits`. Absent → pick the chat. */
   readonly phone?: string | null;
   readonly labels: UbShareSheetLabels;
-  /** A channel was opened (or the text copied). Never evidence of delivery. */
-  readonly onShared?: (channel: UbShareChannel) => void;
+  readonly whatsappIcon?: ReactNode;
+  /** A different message in the same opening: its edit starts over. */
+  readonly draftKey?: string;
+  /** A focused personal reminder can open only the channel the user selected. */
+  readonly onlyChannel?: 'whatsapp' | 'sms';
+  /**
+   * Design `pRemind`: the words as a WhatsApp bubble, with Edit text beside
+   * Share on WhatsApp and the note under them, instead of the box and rows.
+   */
+  readonly conversation?: {
+    readonly editText: string;
+    readonly share: string;
+    readonly note: string;
+  };
+  /**
+   * A channel was opened (or the text copied). Never evidence of delivery.
+   * `text` is the words that left with it, after any edit — what a caller
+   * records (MSG-10); empty for a call, which carries none.
+   */
+  readonly onShared?: (channel: UbShareChannel, text: string) => void;
   /** The clipboard refused, or the platform sheet failed for a reason other than dismissal. */
   readonly onFailed?: (channel: UbShareChannel) => void;
   /**
@@ -129,14 +170,40 @@ function UbShareSheetBase({
   pending,
   phone,
   labels,
+  whatsappIcon,
+  onlyChannel,
+  draftKey,
+  conversation,
   onShared,
   onFailed,
   returnFocusRef,
   className,
 }: Readonly<UbShareSheetProps>) {
+  /* `null` = untouched, so the box follows the default. The edit belongs to one
+     opening for one recipient; adjusting state during render (not in an effect)
+     means the old words are never drawn against the new recipient. */
+  const session = open ? `${phone ?? ''}|${draftKey ?? ''}` : null;
+  const [edit, setEdit] = useState<{ session: string | null; text: string | null }>({
+    session,
+    text: null,
+  });
+  const [editing, setEditing] = useState(false);
+  if (edit.session !== session) {
+    setEdit({ session, text: null });
+    setEditing(false);
+  }
+  const draft = edit.session === session ? edit.text : null;
+  const text = finalMessage(message, draft);
+  const smsText = draft ?? smsMessage ?? message;
+  const blank = isBlankMessage(text);
+  const setDraft = useCallback(
+    (next: string | null) => setEdit((current) => ({ ...current, text: next })),
+    []
+  );
+
   const nativeShare = useSyncExternalStore(
     noopSubscribe,
-    () => canUseNativeShare({ title, text: message }),
+    () => canUseNativeShare({ title, text }),
     () => false
   );
 
@@ -146,32 +213,49 @@ function UbShareSheetBase({
      closes the sheet once the browser has followed the link. */
   const openedVia = useCallback(
     (channel: UbShareChannel) => () => {
-      onShared?.(channel);
+      onShared?.(channel, channel === 'sms' ? smsText : channel === 'call' ? '' : text);
       window.setTimeout(close, 0);
     },
-    [onShared, close]
+    [onShared, close, text, smsText]
   );
 
   const handleCopy = useCallback(async () => {
-    if (await copyText(message)) {
-      onShared?.('copy');
+    if (await copyText(text)) {
+      onShared?.('copy', text);
       close();
     } else {
       /* The sheet stays open on a failed copy: the preview is right there and
          selectable, which is the merchant's way through. */
       onFailed?.('copy');
     }
-  }, [message, onShared, onFailed, close]);
+  }, [text, onShared, onFailed, close]);
 
   const handleNative = useCallback(async () => {
     try {
-      await navigator.share({ title, text: message });
-      onShared?.('native');
+      await navigator.share({ title, text });
+      onShared?.('native', text);
       close();
     } catch (error) {
       if (!isShareAbort(error)) onFailed?.('native');
     }
-  }, [title, message, onShared, onFailed, close]);
+  }, [title, text, onShared, onFailed, close]);
+
+  /* A call needs no text, so it stays offered while the message is blank. */
+  const callRow =
+    callHref && labels.call ? (
+      <a
+        href={callHref}
+        onClick={openedVia('call')}
+        className={mlButtonClasses(
+          'ghost',
+          'lg',
+          cn(ROW, 'outline-none focus-visible:shadow-focus')
+        )}
+      >
+        <Phone aria-hidden className="h-4 w-4" />
+        <span>{labels.call}</span>
+      </a>
+    ) : null;
 
   return (
     <UbDialog
@@ -185,84 +269,119 @@ function UbShareSheetBase({
     >
       {pending ? (
         <div className="flex flex-col gap-4">{pending}</div>
-      ) : (
-        <div className="flex flex-col gap-4">
+      ) : conversation && !editing && !blank ? (
+        <div className="flex flex-col gap-3">
           {notice}
-          <div className="flex flex-col gap-1">
-            <span className="ds-body-s-medium text-text-tertiary">{labels.preview}</span>
-            {/* Read-only and selectable: it is also the fallback when the
-              clipboard refuses. `whitespace-pre-line` keeps the message's own
-              line breaks, which are part of what the customer will read. */}
-            <p
-              data-ub-share-preview=""
-              className="ds-body-s-regular max-h-40 overflow-y-auto whitespace-pre-line break-words rounded-control bg-surface-sunken px-3 py-2 text-text-primary"
-            >
-              {message}
+          {/* WhatsApp's own wallpaper and bubble, as drawn in the design. */}
+          <div className="grid rounded-xl bg-[#ECE5DD] p-3">
+            <p className="ds-body-s-regular justify-self-start whitespace-pre-wrap break-words rounded-lg bg-white p-2.5 text-[#111]">
+              {text}
             </p>
           </div>
-
-          <div className="flex flex-col gap-1">
+          <p className="ds-body-s-regular text-text-tertiary">{conversation.note}</p>
+          <div className="grid grid-cols-[auto_minmax(0,1fr)] gap-2">
+            <UbButton variant="secondary" size="lg" onClick={() => setEditing(true)}>
+              {conversation.editText}
+            </UbButton>
             <a
-              href={buildWhatsAppUrl(message, phone)}
+              href={buildWhatsAppUrl(text, phone)}
               target="_blank"
               rel="noopener noreferrer"
               onClick={openedVia('whatsapp')}
-              className={mlButtonClasses(
-                'primary',
-                'lg',
-                'w-full outline-none focus-visible:shadow-focus'
-              )}
+              className={mlButtonClasses('primary', 'lg', 'outline-none focus-visible:shadow-focus')}
             >
-              <MessageCircle aria-hidden className="h-4 w-4" />
-              <span>{labels.whatsapp}</span>
+              {whatsappIcon ?? <MessageCircle aria-hidden className="h-4 w-4" />}
+              <span>{conversation.share}</span>
             </a>
-            <a
-              href={buildSmsUrl(smsMessage ?? message, phone)}
-              onClick={openedVia('sms')}
-              className={mlButtonClasses(
-                'ghost',
-                'lg',
-                cn(ROW, 'outline-none focus-visible:shadow-focus')
-              )}
-            >
-              <MessageSquare aria-hidden className="h-4 w-4" />
-              <span>{labels.sms}</span>
-            </a>
-            {callHref && labels.call && (
-              <a
-                href={callHref}
-                onClick={openedVia('call')}
-                className={mlButtonClasses(
-                  'ghost',
-                  'lg',
-                  cn(ROW, 'outline-none focus-visible:shadow-focus')
-                )}
+          </div>
+        </div>
+      ) : (
+        <div className="flex flex-col gap-4">
+          {notice}
+          <UbMessageBox message={message} draft={draft} onDraftChange={setDraft} labels={labels} />
+
+          {blank ? (
+            <div className="flex flex-col gap-1">
+              {onlyChannel !== 'sms' && <UbButton
+                variant="primary"
+                size="lg"
+                className="w-full"
+                disabled
+                icon={whatsappIcon ?? <MessageCircle aria-hidden className="h-4 w-4" />}
               >
-                <Phone aria-hidden className="h-4 w-4" />
-                <span>{labels.call}</span>
-              </a>
-            )}
-            <UbButton
-              variant="ghost"
-              size="lg"
-              className={ROW}
-              icon={<Copy aria-hidden className="h-4 w-4" />}
-              onClick={() => void handleCopy()}
-            >
-              {labels.copy}
-            </UbButton>
-            {nativeShare && (
-              <UbButton
+                {labels.whatsapp}
+              </UbButton>}
+              {onlyChannel !== 'whatsapp' && <UbButton
+                variant={onlyChannel === 'sms' ? 'primary' : 'ghost'}
+                size="lg"
+                className={onlyChannel === 'sms' ? 'w-full' : ROW}
+                disabled
+                icon={<MessageSquare aria-hidden className="h-4 w-4" />}
+              >
+                {labels.sms}
+              </UbButton>}
+              {!onlyChannel && callRow}
+              {!onlyChannel && <UbButton
                 variant="ghost"
                 size="lg"
                 className={ROW}
-                icon={<Share2 aria-hidden className="h-4 w-4" />}
-                onClick={() => void handleNative()}
+                disabled
+                icon={<Copy aria-hidden className="h-4 w-4" />}
               >
-                {labels.more}
-              </UbButton>
-            )}
-          </div>
+                {labels.copy}
+              </UbButton>}
+            </div>
+          ) : (
+            <div className="flex flex-col gap-1">
+              {onlyChannel !== 'sms' && <a
+                href={buildWhatsAppUrl(text, phone)}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={openedVia('whatsapp')}
+                className={mlButtonClasses(
+                  'primary',
+                  'lg',
+                  'w-full outline-none focus-visible:shadow-focus'
+                )}
+              >
+                {whatsappIcon ?? <MessageCircle aria-hidden className="h-4 w-4" />}
+                <span>{labels.whatsapp}</span>
+              </a>}
+              {onlyChannel !== 'whatsapp' && <a
+                href={buildSmsUrl(smsText, phone)}
+                onClick={openedVia('sms')}
+                className={mlButtonClasses(
+                  onlyChannel === 'sms' ? 'primary' : 'ghost',
+                  'lg',
+                  cn(onlyChannel === 'sms' ? 'w-full' : ROW, 'outline-none focus-visible:shadow-focus')
+                )}
+              >
+                <MessageSquare aria-hidden className="h-4 w-4" />
+                <span>{labels.sms}</span>
+              </a>}
+              {!onlyChannel && callRow}
+              {!onlyChannel && <UbButton
+                variant="ghost"
+                size="lg"
+                className={ROW}
+                icon={<Copy aria-hidden className="h-4 w-4" />}
+                onClick={() => void handleCopy()}
+              >
+                {labels.copy}
+              </UbButton>}
+              {!onlyChannel && nativeShare && (
+                <UbButton
+                  variant="ghost"
+                  size="lg"
+                  className={ROW}
+                  icon={<Share2 aria-hidden className="h-4 w-4" />}
+                  onClick={() => void handleNative()}
+                >
+                  {labels.more}
+                </UbButton>
+              )}
+            </div>
+          )}
         </div>
       )}
     </UbDialog>

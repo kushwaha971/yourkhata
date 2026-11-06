@@ -126,6 +126,21 @@ export const getAdjustment = async (id: string, signal?: AbortSignal): Promise<S
   return toAdjustment(response.data.data);
 };
 
+/**
+ * RPT-06 — the screen's own filters as the REPORT's file (`/reports/stock-
+ * summary`, RPT-06 §14's columns and a TOTAL row), with no paging: the file is
+ * the screen (RPT-08 BR-1). `ListExportButton` appends `format=csv`.
+ */
+export const stockSummaryExportPath = (filters: StockSummaryFilters): string =>
+  `${API_PATHS.REPORT_STOCK_SUMMARY}${toQueryString({
+    q: filters.q || undefined,
+    category_id: filters.categoryId || undefined,
+    status: filters.status || undefined,
+    hide_zero: filters.hideZero ? undefined : 'false',
+    as_of: filters.asOf ?? undefined,
+    ordering: filters.ordering,
+  })}`;
+
 export const getStockSummary = async (
   filters: StockSummaryFilters,
   signal?: AbortSignal
@@ -133,6 +148,7 @@ export const getStockSummary = async (
   const query = toQueryString({
     q: filters.q || undefined,
     category_id: filters.categoryId || undefined,
+    location_id: filters.locationId || undefined,
     status: filters.status || undefined,
     hide_zero: filters.hideZero ? undefined : 'false',
     as_of: filters.asOf ?? undefined,
@@ -159,6 +175,7 @@ export const getStockSummary = async (
       as_of: string | null;
       historical: boolean;
       valuation_visible: boolean;
+      has_any?: boolean;
     };
   }>(`${API_PATHS.STOCK_SUMMARY}${query}`, ubConfig({ signal, suppressErrorSnackbar: true }));
   const { meta } = response.data;
@@ -185,6 +202,7 @@ export const getStockSummary = async (
     asOf: meta.as_of,
     historical: meta.historical,
     valuationVisible: meta.valuation_visible,
+    ...(typeof meta.has_any === 'boolean' ? { hasAny: meta.has_any } : {}),
   };
 };
 

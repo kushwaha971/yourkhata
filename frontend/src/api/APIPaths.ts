@@ -24,10 +24,17 @@ export const API_PATHS = {
    */
   AUTH_REGISTER: '/auth/register',
   AUTH_LOGIN: '/auth/login',
+  // Owner, 9 Oct 2026 — sign-up and sign-in are mobile + OTP.
+  AUTH_OTP_REQUEST: '/auth/otp/request',
+  AUTH_OTP_VERIFY: '/auth/otp/verify',
   AUTH_REFRESH: '/auth/refresh',
   AUTH_LOGOUT: '/auth/logout',
   AUTH_ME: '/auth/me',
   AUTH_SWITCH_TENANT: '/auth/switch-tenant',
+  AUTH_SWITCH_APP: '/auth/switch-app',
+  AUTH_LEAVE_APP: '/auth/leave-app',
+  TENANT_APPS: '/tenants/current/apps',
+  ONBOARDING_APPS: '/onboarding/apps',
   AUTH_PASSWORD_SET: '/auth/password/set',
   AUTH_PASSWORD_RESET_REQUEST: '/auth/password/reset/request',
   AUTH_PASSWORD_RESET_CONFIRM: '/auth/password/reset/confirm',
@@ -53,10 +60,28 @@ export const API_PATHS = {
   /** DEC-012 — the team, and adding to it with owner-issued credentials. */
   MEMBERS: '/members',
   MEMBER_CREDENTIALS: (membershipId: string) => `/members/${seg(membershipId)}/credentials`,
+  /**
+   * Owner, 12 Oct 2026 — a manager acting on somebody else: edit (PATCH),
+   * block, unblock, remove. The three POSTs inherit `/members`' mandatory
+   * `Idempotency-Key` by prefix, which they want: a lost 200 must replay.
+   */
+  MEMBER: (membershipId: string) => `/members/${seg(membershipId)}`,
+  MEMBER_BLOCK: (membershipId: string) => `/members/${seg(membershipId)}/block`,
+  MEMBER_UNBLOCK: (membershipId: string) => `/members/${seg(membershipId)}/unblock`,
+  MEMBER_REMOVE: (membershipId: string) => `/members/${seg(membershipId)}/remove`,
   INVITATIONS: '/invitations',
   INVITATION: (id: string) => `/invitations/${seg(id)}`,
   /** PLT-05 FR-10 — the seat-consuming accept. */
   INVITATION_ACCEPT: (token: string) => `/invitations/${seg(token)}/accept`,
+  /**
+   * A13 (PLT-X12) — the roles the team screen may offer: the canon four, then
+   * the module roles of the modules that are on right now.
+   */
+  ROLES: '/roles',
+  // ── A9b ── PLT-X08: the tenant's business-days calendar.
+  CALENDAR_CLOSED_DAYS: '/calendar/closed-days',
+  CALENDAR_CLOSED_DAY: (id: string) => `/calendar/closed-days/${seg(id)}`,
+  CALENDAR_WEEKDAYS: '/calendar/weekdays',
   PERMISSIONS_ME: '/permissions/me',
   AUDIT_LOGS: '/audit-logs',
   // ── Track T1: PLT-06, PLT-08, PLT-09 ──────────────────────────────────────
@@ -90,6 +115,11 @@ export const API_PATHS = {
   PARTY_TAGS: '/parties/tags',
   PARTY_TAG: (id: string) => `/parties/tags/${seg(id)}`,
   PARTY_TAG_MERGE: (id: string) => `/parties/tags/${seg(id)}/merge`,
+  // ── A6 ── PLT-X04: the roles modules give parties, and guardian/payer links.
+  PARTY_ROLES: '/parties/roles',
+  PARTY_RELATIONS: (id: string) => `/parties/${seg(id)}/relations`,
+  PARTY_RELATION: (id: string, relationId: string) =>
+    `/parties/${seg(id)}/relations/${seg(relationId)}`,
 
   // ── ledger ────────────────────────────────────────────────────────────────
   LEDGER_ENTRIES: '/ledger-entries',
@@ -123,23 +153,97 @@ export const API_PATHS = {
   STOCK_ADJUSTMENT: (id: string) => `/stock-adjustments/${seg(id)}`,
   STOCK_SUMMARY: '/stock/summary',
   STOCK_LOW: '/stock/low',
+  /** C3 — stock count (R-DEC-67). */
+  /** D P1c — the shop's places and moving stock between them. */
+  LOCATIONS: '/locations',
+  /** D P3 — find by IMEI. */
+  SERIAL: (code: string) => `/serials/${seg(code)}`,
+  /** D P4 — batches expired or expiring soon. */
+  STOCK_EXPIRY: '/stock/expiry',
+  REPORT_SCHEDULE_H: '/sales/reports/schedule-h',
+  // G4 — a medical store's short book and same-salt substitutes.
+  STOCK_SHORT_BOOK: '/stock/short-book',
+  STOCK_SHORT_BOOK_ORDERED: '/stock/short-book/ordered',
+  ITEM_SUBSTITUTES: (id: string) => `/items/${seg(id)}/substitutes`,
+  /** G1 — a jeweller's rate per gram, today and by month. */
+  METAL_RATES_TODAY: '/metal-rates/today',
+  METAL_RATES: '/metal-rates',
+  /** D12 — the business's own figures on Home. */
+  STOCK_HOME_STRIP: '/stock/home-strip',
+  STOCK_TRANSFERS: '/stock-transfers',
+  STOCK_TRANSFER_STOCK: '/stock-transfers/stock',
+  STOCK_COUNT_OPEN: '/stock-counts/open',
+  STOCK_COUNT: (id: string) => `/stock-counts/${seg(id)}`,
+  STOCK_COUNT_LINES: (id: string) => `/stock-counts/${seg(id)}/lines`,
+  STOCK_COUNT_LINE: (id: string, itemId: string) => `/stock-counts/${seg(id)}/lines/${seg(itemId)}`,
+  STOCK_COUNT_SAVE: (id: string) => `/stock-counts/${seg(id)}/save`,
 
   // ── sales ─────────────────────────────────────────────────────────────────
   SALES_INVOICES: '/sales/invoices',
   SALES_INVOICE: (id: string) => `/sales/invoices/${seg(id)}`,
+  /** D P5 — transport details and the GST portal's e-way bill file. */
+  SALES_INVOICE_EWAY: (id: string) => `/sales/invoices/${seg(id)}/eway`,
   SALES_INVOICE_ISSUE: (id: string) => `/sales/invoices/${seg(id)}/issue`,
   SALES_INVOICE_VOID: (id: string) => `/sales/invoices/${seg(id)}/void`,
   SALES_INVOICE_SHARE_LINKS: (id: string) => `/sales/invoices/${seg(id)}/share-links`,
   SALES_INVOICE_UPI_INTENT: (id: string) => `/sales/invoices/${seg(id)}/upi-intent`,
   SALES_ESTIMATES: '/sales/estimates',
+  SALES_ESTIMATE: (id: string) => `/sales/estimates/${seg(id)}`,
+  // SAL-01 §14 / CR-SAL-1 — the status moves are actions, never PATCH status.
+  SALES_ESTIMATE_MOVE: (id: string, move: 'sent' | 'accepted' | 'rejected') =>
+    `/sales/estimates/${seg(id)}/mark-${move}`,
   SALES_ESTIMATE_CONVERT: (id: string) => `/sales/estimates/${seg(id)}/convert`,
+  SALES_ESTIMATE_SHARE_LINKS: (id: string) => `/sales/estimates/${seg(id)}/share-links`,
+  // Shop item 3 — sales orders: the estimate's routes, with confirm / cancel / convert.
+  SALES_ORDERS: '/sales/orders',
+  SALES_ORDER: (id: string) => `/sales/orders/${seg(id)}`,
+  SALES_ORDER_ACTION: (id: string, verb: 'confirm' | 'cancel' | 'convert') =>
+    `/sales/orders/${seg(id)}/${verb}`,
+  SALES_ORDER_SHARE_LINKS: (id: string) => `/sales/orders/${seg(id)}/share-links`,
+  // Shop item 4 — delivery challans (SAL-09 §14): issue / void / convert.
+  SALES_CHALLANS: '/sales/delivery-challans',
+  SALES_CHALLAN: (id: string) => `/sales/delivery-challans/${seg(id)}`,
+  SALES_CHALLAN_ACTION: (id: string, verb: 'issue' | 'void' | 'convert') =>
+    `/sales/delivery-challans/${seg(id)}/${verb}`,
+  SALES_CHALLAN_SHARE_LINKS: (id: string) => `/sales/delivery-challans/${seg(id)}/share-links`,
   SALES_CREDIT_NOTES: '/sales/credit-notes',
+  SALES_CREDIT_NOTE: (id: string) => `/sales/credit-notes/${seg(id)}`,
+  SALES_CREDIT_NOTE_APPLY: (id: string) => `/sales/credit-notes/${seg(id)}/apply`,
+  SALES_CREDIT_NOTE_VOID: (id: string) => `/sales/credit-notes/${seg(id)}/void`,
+  SALES_CREDIT_NOTE_SHARE_LINKS: (id: string) => `/sales/credit-notes/${seg(id)}/share-links`,
 
   // ── purchases, payments, expenses, reports, misc ──────────────────────────
   PURCHASE_BILLS: '/purchases/bills',
+  PURCHASE_BILL: (id: string) => `/purchases/bills/${seg(id)}`,
   PURCHASE_BILL_RECORD: (id: string) => `/purchases/bills/${seg(id)}/record`,
+  PURCHASE_BILL_VOID: (id: string) => `/purchases/bills/${seg(id)}/void`,
+  // Shop item 3 — purchase orders: the bill's routes, with send / cancel / create-bill.
+  PURCHASE_ORDERS: '/purchases/orders',
+  PURCHASE_ORDER: (id: string) => `/purchases/orders/${seg(id)}`,
+  PURCHASE_ORDER_ACTION: (id: string, verb: 'send' | 'cancel' | 'create-bill') =>
+    `/purchases/orders/${seg(id)}/${verb}`,
+  // Shop P0 — goods sent back to a supplier (PUR-07)
+  DEBIT_NOTES: '/purchases/debit-notes',
+  DEBIT_NOTE: (id: string) => `/purchases/debit-notes/${seg(id)}`,
+  DEBIT_NOTE_VOID: (id: string) => `/purchases/debit-notes/${seg(id)}/void`,
   PAYMENTS: '/payments',
+  PAYMENT: (id: string) => `/payments/${seg(id)}`,
   PAYMENT_VOID: (id: string) => `/payments/${seg(id)}/void`,
+  /** A4a (PLT-X03) — apply what is not yet applied to open documents. */
+  PAYMENT_ALLOCATIONS: (id: string) => `/payments/${seg(id)}/allocations`,
+  // ── A4b ── held deposits (FRD 00 PLT-X02 §6)
+  DEPOSITS: '/deposits',
+  DEPOSIT: (id: string) => `/deposits/${seg(id)}`,
+  DEPOSIT_RECEIVE: (id: string) => `/deposits/${seg(id)}/receive`,
+  DEPOSIT_APPLY: (id: string) => `/deposits/${seg(id)}/apply`,
+  DEPOSIT_REFUND: (id: string) => `/deposits/${seg(id)}/refund`,
+  // ── dues ── DUE-01: the dues engine's read endpoints (FRD 00 DUE-01 §6; GET only)
+  DUES: '/dues/dues',
+  DUES_SCHEDULE: (id: string) => `/dues/schedules/${seg(id)}`,
+  /** PAY-04 BR-4 — the receipt's WhatsApp text, rendered by the server. */
+  PAYMENT_SHARE: (id: string) => `/payments/${seg(id)}/share`,
+  /** PAY-01 FR-2 — the allocation panel's open bills, oldest first. */
+  PAYMENTS_OPEN_DOCUMENTS: '/payments/open-documents',
   PAYMENTS_UPI_INTENT: '/payments/upi-intent',
   PAYMENTS_QR: '/payments/qr.svg',
   EXPENSES: '/expenses',
@@ -148,12 +252,33 @@ export const API_PATHS = {
   EXPENSE_CATEGORIES: '/expense-categories',
   /** EXP-03 — served by the expenses app for now (see its urls.py). */
   CASHBOOK: '/cashbook',
+  /** BP-17 — the Shop's counted-drawer observations. */
+  REPORT_CASH_COUNTS: '/reports/cash-counts',
   REPORT_DASHBOARD: '/reports/dashboard',
+  REPORT_DASHBOARD_CHARTS: '/reports/dashboard/charts',
+  REPORT_ITEM_TRADE: (id: string) => `/reports/items/${seg(id)}/trade`,
+  PRICE_LISTS: '/price-lists',
+  PRICE_LIST: (id: string) => `/price-lists/${seg(id)}`,
+  PRICE_LIST_RATES: (id: string) => `/price-lists/${seg(id)}/rates`,
+  PRICE_LIST_RATE: (id: string) => `/price-lists/${seg(id)}/rate`,
+  PRICE_LIST_ASSIGN: '/price-lists/assign',
+  PRICE_LIST_FOR_PARTY: '/price-lists/for-party',
+  REPORT_ITEM_LAST_RATE: (id: string) => `/reports/items/${seg(id)}/last-rate`,
+  /** A10 — the reports modules registered (`apps.reports.registry`). */
+  REPORTS: '/reports',
   REPORT_DAY_BOOK: '/reports/day-book',
   REPORT_SALES_REGISTER: '/reports/sales-register',
+  /** RPT-04. */
+  REPORT_PURCHASE_REGISTER: '/reports/purchase-register',
   REPORT_GST_SUMMARY: '/reports/gst-summary',
+  /** Shop item 2 — GSTR-1 / GSTR-3B as the GST offline tool's JSON, one closed month. */
+  REPORT_GST_RETURN_JSON: (kind: string) => `/reports/gst-returns/${seg(kind)}`,
+  /** Shop item 1 — profit by item, customer, category or bill, and the P&L. */
+  REPORT_PROFIT: '/reports/profit',
   REPORT_STOCK_SUMMARY: '/reports/stock-summary',
   REPORT_RECEIVABLES_AGING: '/reports/receivables-aging',
+  /** RPT-05 — the payable side of the same report (W4-A). */
+  REPORT_PAYABLES_AGING: '/reports/payables-aging',
   REPORT_EXPORT: (id: string) => `/reports/exports/${seg(id)}`,
   /** IMP-02 FR-8 — the stored file of an export too big to stream. */
   REPORT_EXPORT_DOWNLOAD: (id: string) => `/reports/exports/${seg(id)}/download`,
@@ -167,6 +292,8 @@ export const API_PATHS = {
   IMPORT: (id: string) => `/imports/${seg(id)}`,
   IMPORT_COMMIT: (id: string) => `/imports/${seg(id)}/commit`,
   IMPORT_CANCEL: (id: string) => `/imports/${seg(id)}/cancel`,
+  // QA B34 — every row, paged, with "only problems".
+  IMPORT_ROWS: (id: string) => `/imports/${seg(id)}/rows`,
   /** IMP-01 FR-9 — the file with problems; a download link, not a fetch. */
   IMPORT_ERRORS_CSV: (id: string) => `/imports/${seg(id)}/errors.csv`,
   /** IMP-01 FR-2 — the template for a kind; a download link, not a fetch. */
@@ -175,6 +302,11 @@ export const API_PATHS = {
   TAX_HSN: '/taxes/hsn',
   SYSTEM_HEALTH: '/system/health',
   PUBLIC_DOCUMENT: (token: string) => `/public/d/${seg(token)}`,
+  // Shop P0 — the UPI pay link's page (no session) and the desk's QR for any amount.
+  PUBLIC_PAY: (token: string) => `/public/pay/${seg(token)}`,
+  PAY_LINKS: '/payments/pay-links',
+  // Library P0 — a student's self check-in from the door's QR (no session).
+  PUBLIC_CHECKIN: (token: string) => `/public/in/${seg(token)}`,
 
   // ── PLT-10 — "Your data" (owner only) ─────────────────────────────────────
   TENANT_EXPORT: '/tenants/current/export',
@@ -205,10 +337,17 @@ export const IDEMPOTENT_POST_PATHS: readonly string[] = [
   API_PATHS.LEDGER_ENTRIES,
   API_PATHS.SALES_INVOICES,
   API_PATHS.SALES_ESTIMATES,
+  API_PATHS.SALES_ORDERS,
+  API_PATHS.SALES_CHALLANS,
   API_PATHS.SALES_CREDIT_NOTES,
   API_PATHS.PURCHASE_BILLS,
+  API_PATHS.DEBIT_NOTES,
   API_PATHS.PAYMENTS,
   API_PATHS.STOCK_ADJUSTMENTS,
+  // D P1c — a retried move must not move the goods twice.
+  API_PATHS.STOCK_TRANSFERS,
+  // BP-17 — a retried count must not record the drawer twice.
+  API_PATHS.REPORT_CASH_COUNTS,
   // INV-01 — a retried item create must not mint a second SKU for one item.
   API_PATHS.ITEMS,
   API_PATHS.EXPENSES,
@@ -265,6 +404,12 @@ export const IDEMPOTENCY_EXEMPT_PATHS: readonly string[] = [
    * `tenant_pending_deletion`, and a repeated `delete-cancel` meets 412.
    */
   API_PATHS.TENANT_CURRENT,
+  /*
+   * PAY-03 — `upi-intent` computes a QR and writes nothing. (The receipt's
+   * `/share` is a POST under `/payments/{id}`, which the prefix rule covers;
+   * its caller mints the key itself.)
+   */
+  API_PATHS.PAYMENTS_UPI_INTENT,
 ];
 
 /** True when a POST to this url is on the mandatory-idempotency list. */

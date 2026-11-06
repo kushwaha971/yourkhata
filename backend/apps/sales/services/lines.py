@@ -15,8 +15,9 @@ from dataclasses import dataclass, field
 from decimal import Decimal, InvalidOperation
 from typing import Any
 
+from apps.common.limits import line_limit_errors
 from apps.common.money import D, q2
-from apps.sales.services.tax_engine import EngineLine
+from apps.tax.services.tax_engine import EngineLine
 
 HSN_RE = re.compile(r"^(\d{4}|\d{6}|\d{8})$")
 ZERO_RATE = Decimal("0.000")
@@ -74,6 +75,10 @@ def build_lines(
         for item in Item.objects.filter(tenant=tenant, pk__in=item_ids).select_related("unit")
     }
     rate_cache: dict[str, Any] = {}
+    from apps.inventory.services.serials import parse as line_serials
+    from apps.inventory.services.units import extra_units, resolve
+
+    extras = extra_units(list(items.values()))
 
     for index, raw in enumerate(raw_lines):
         prefix = f"lines.{index}"
@@ -94,11 +99,49 @@ def build_lines(
 
         description = str(pick("description", item.name if item else "")).strip()[:255]
         hsn = pick("hsn_sac", item.hsn_sac if item else None) or None
-        unit_code = str(pick("unit_code", item.unit.code if item else "NOS"))[:8]
+        # D P1a — a box line: its code, how many base units it is, its price.
+        unit = resolve(item, raw.get("unit_code"), extras)
+        unit_code = unit.code
         tax_code = str(pick("tax_code", item.tax_code if item else "GST0"))
         inclusive = bool(pick("tax_inclusive", item.tax_inclusive_selling if item else False))
         qty = _decimal(raw.get("qty"), 3)
-        price = _decimal(pick("unit_price", item.selling_price if item else None), 4)
+        default_price = None
+        if item is not None:
+            default_price = (
+                unit.price if unit.price is not None else item.selling_price * unit.factor
+            ).quantize(Decimal("0.0001"))
+        # D P6 — the café item's add-ons chosen for each piece, priced from the
+        # item (a snapshot on the line); a default price includes them.
+        chosen_addons: list = []
+        if item is not None and raw.get("addons"):
+            offered = {a.name.lower(): a for a in item.addons.all()}
+            for entry in raw.get("addons") or []:
+                name = str((entry or {}).get("name") if isinstance(entry, dict) else entry or "").strip()
+                found = offered.get(name.lower())
+                if found is None:
+                    errors[f"{prefix}.addons"] = [f"{name} is not an add-on of this item."]
+                    continue
+                chosen_addons.append({"name": found.name, "price": str(found.price)})
+            if default_price is not None:
+                default_price = default_price + sum(Decimal(a["price"]) for a in chosen_addons)
+        price = _decimal(pick("unit_price", default_price), 4)
+        # G2b — a jeweller's tag line is priced by its weight at the day's rate
+        # (the snapshot is the price); GST is added on the bill, never inside.
+        jewel = None
+        if item is not None and raw.get("jewel") is not None:
+            from apps.inventory.services.tags import line_jewel
+
+            jewel = line_jewel(
+                tenant=tenant,
+                item=item,
+                serials=["".join(str(v or "").split()).upper() for v in (raw.get("serials") or [])],
+                raw=raw.get("jewel"),
+                path=prefix,
+                errors=errors,
+            )
+            if jewel is not None and "total" in jewel:
+                price = Decimal(jewel["total"])
+                inclusive = False
         d_type = raw.get("discount_type") or None
         d_value = _decimal(raw.get("discount_value"), 2) if d_type else None
 
@@ -106,10 +149,20 @@ def build_lines(
             errors[f"{prefix}.description"] = ["Describe the item."]
         if qty is None or qty <= 0:
             errors[f"{prefix}.qty"] = ["Enter a quantity above zero, up to 3 decimals."]
-        elif item is not None and not item.unit.allow_decimal and qty != qty.to_integral_value():
+        elif item is not None and not unit.allow_decimal and qty != qty.to_integral_value():
             errors[f"{prefix}.qty"] = [f"Quantity must be a whole number for {unit_code}."]
         if price is None or price < 0:
             errors[f"{prefix}.unit_price"] = ["Price cannot be negative (up to 4 decimals)."]
+        # FB-020: the absurd is refused here, not only by the column's limit.
+        over = line_limit_errors(
+            qty if qty and qty > 0 else None, price if price and price >= 0 else None
+        )
+        if "qty" in over and f"{prefix}.qty" not in errors:
+            errors[f"{prefix}.qty"] = [over["qty"]]
+        if "rate" in over:
+            errors[f"{prefix}.unit_price"] = [over["rate"]]
+        if "amount" in over:
+            errors[f"{prefix}.qty"] = [over["amount"]]
         if hsn is not None and not HSN_RE.match(str(hsn)):
             errors[f"{prefix}.hsn_sac"] = ["HSN must be 4, 6 or 8 digits."]
         if d_type not in (None, "percent", "amount"):
@@ -153,6 +206,24 @@ def build_lines(
                 "hsn_sac": hsn,
                 "qty": qty,
                 "unit_code": unit_code,
+                "unit_factor": unit.factor,
+                # D P4 — a batch the counter chose; otherwise FEFO picks at issue.
+                "addons": chosen_addons,
+                "jewel": jewel or {},
+                "batches": [
+                    {"batch_no": str(b.get("batch_no") or "").upper()}
+                    for b in (raw.get("batches") or [])
+                    if isinstance(b, dict) and b.get("batch_no")
+                ][:5],
+                # D P3 — a tracked item's IMEIs, one per piece on a strict save.
+                "serials": line_serials(
+                    raw.get("serials"),
+                    item=item,
+                    base_qty=qty * unit.factor if qty else None,
+                    path=prefix,
+                    errors=errors,
+                    strict=strict,
+                ),
                 "unit_price": price,
                 "tax_inclusive": inclusive,
                 "discount_type": d_type,

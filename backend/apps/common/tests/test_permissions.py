@@ -60,6 +60,44 @@ CANON_PERMISSIONS = {
     "reports.financial.read",
     "reports.export",
     "notifications.settings.manage",
+    # A9b — R26, owner Q2; canon §0.9 amended by the module-roles CR.
+    "platform.calendar.manage",
+    # ── B02 ── library (LIB-14) ── FRD LIB-14 §9; canon §0.9 CR drafted in the
+    # Track L progress file (CR-PLATFORM-ROLES item 2 widened the action set).
+    "library.catalogue.read",
+    "library.catalogue.write",
+    "library.copy.withdraw",
+    "library.member.read",
+    "library.member.write",
+    "library.member.close",
+    "library.loan.read",
+    "library.loan.write",
+    "library.loan.override",
+    "library.loan.adjust",
+    # ── LEN ── lending (FRD lending §0.8), the codenames the built features use.
+    "lending.loan.read",
+    "lending.loan.read_all",
+    "lending.loan.create",
+    "lending.loan.close",
+    "lending.borrower.read",
+    "lending.borrower.write",
+    "lending.collection.create",
+    "lending.collection.read",
+    "lending.collection.void",
+    "lending.charge.create",
+    "lending.waiver.create",
+    "lending.visit.write",
+    "lending.route.read",
+    "lending.route.manage",
+    "lending.today.read",
+    "lending.reminder.send",
+    "lending.report.read",
+    "library.charge.waive",
+    "library.charge.write",
+    "library.verification.run",
+    "library.verification.close",
+    "library.reports.read",
+    "library.settings.manage",
 }
 
 
@@ -86,6 +124,20 @@ def test_every_codename_is_module_resource_action() -> None:
         "correct",
         "adjust",
         "void",
+        # ── B02 ── library (LIB-14): the per-module verbs its FRD lists
+        # (CR-2026-09-30-PLATFORM-ROLES item 2). Each is named, so an invented
+        # verb such as `library.copy.retire` still fails here.
+        "withdraw",
+        "close",
+        "override",
+        "waive",
+        "run",
+        # ── LEN ── lending's verbs (FRD lending §0.8): a loan is CREATED (not
+        # merely written: giving money is its own act), a reminder is SENT, and
+        # the whole book is read with `read_all` beside the scoped `read`.
+        "create",
+        "send",
+        "read_all",
     }
     for codename in PERMISSIONS - CANON_FORMAT_EXCEPTIONS:
         parts = codename.split(".")

@@ -19,6 +19,14 @@
  */
 
 export const ROUTES = {
+  /**
+   * The public front page — the landing page for a visitor with no session.
+   * A browser that carries a session cookie never sees it: `proxy.ts` sends
+   * it straight to the dashboard, so a merchant's bookmark of the bare domain
+   * still opens their book.
+   */
+  HOME: '/',
+
   // ── (auth) ────────────────────────────────────────────────────────────────
   LOGIN: '/login',
   SIGNUP: '/signup',
@@ -34,10 +42,21 @@ export const ROUTES = {
   //    be four words of prose with nothing behind them.
   LEGAL_TERMS: '/legal/terms',
   LEGAL_PRIVACY: '/legal/privacy',
+  /** SAL-03 FR-5 — the customer's copy of a shared bill, `/d/<token>`. */
+  PUBLIC_DOCUMENT: '/d',
+  /** Shop P0 — the UPI pay page a payment reminder's link opens, without an account. */
+  PUBLIC_PAY: '/pay',
+  /** Library P0 — the page a reading room's door QR opens: self check-in, no account. */
+  SELF_CHECKIN: '/in',
 
   // ── (app) ─────────────────────────────────────────────────────────────────
   DASHBOARD: '/dashboard',
   PARTIES: '/parties',
+  // docs/platform/14 step 3b — the Shop's two books; `/parties` is the whole one.
+  CUSTOMERS: '/customers',
+  SUPPLIERS: '/suppliers',
+  /** DEC-019 — the Udhaar book's own list of people (You gave / You got), an app of its own. */
+  KHATA: '/khata',
   /** PTY-05 FR-7 — the tag manager. A sibling of the list rather than a
    *  settings page: tags are a way of working through the book, and a merchant
    *  renaming one is in the middle of using the list, not configuring the
@@ -51,16 +70,53 @@ export const ROUTES = {
    *  is of parties: the masters are part of keeping the catalogue, not a
    *  settings chore (and `/settings` is not built). */
   ITEM_MASTERS: '/items/masters',
+  ITEM_PRICE_LISTS: '/items/price-lists',
   /** INV-08 / INV-07. */
   STOCK_SUMMARY: '/stock/summary',
   STOCK_LOW: '/stock/low',
+  /** C3 — walk the shelves, scan, save the differences. */
+  STOCK_COUNT: '/stock/count',
+  /** D P1c — Move stock between the shop and a godown (design D10). */
+  STOCK_TRANSFER: '/stock/transfer',
+  /** D P2 — Print barcode labels (design D9). */
+  ITEM_LABELS: '/items/labels',
+  /** D P3 — Find by IMEI (design D8). */
+  ITEM_IMEI: '/items/imei',
+  /** D P4 — Expiry (design D7). */
+  STOCK_EXPIRY: '/stock/expiry',
+  STOCK_SHORT_BOOK: '/stock/short-book',
+  /** G1 — today's rate (jewellery). */
+  STOCK_RATES: '/stock/rates',
   SALES_INVOICES: '/sales/invoices',
+  /** SAL-01 — quotations (kachha bill); SAL-04 — returns against a bill. */
+  SALES_ESTIMATES: '/sales/estimates',
+  /** Shop item 3 — a customer's order, before it is billed. */
+  SALES_ORDERS: '/sales/orders',
+  /** G3a — a jeweller's custom orders (design §G3). */
+  SALES_CUSTOM_ORDERS: '/sales/custom-orders',
+  SALES_OLD_GOLD: '/sales/old-gold',
+  SALES_KARIGARS: '/sales/karigars',
+  /** Shop item 4 — goods that left before the bill. */
+  SALES_CHALLANS: '/sales/challans',
+  SALES_CREDIT_NOTES: '/sales/credit-notes',
   PURCHASE_BILLS: '/purchases/bills',
+  /** Shop item 3 — what was asked of a supplier, before the bill. */
+  PURCHASE_ORDERS: '/purchases/orders',
+  DEBIT_NOTES: '/purchases/debit-notes',
   PAYMENTS: '/payments',
   EXPENSES: '/expenses',
   /** EXP-03 — money in and out, day by day, beside Expenses in the menu. */
   CASHBOOK: '/cashbook',
   REPORTS: '/reports',
+  /** RPT-02 — everything that happened, in order, with the drawer beside it. */
+  REPORT_AGING: '/reports/aging',
+  REPORT_DAY_BOOK: '/reports/day-book',
+  /** RPT-03 / RPT-04 / RPT-07 — the tax-document reports (Track W4-B). */
+  REPORTS_SALES_REGISTER: '/reports/sales-register',
+  REPORTS_PURCHASE_REGISTER: '/reports/purchase-register',
+  REPORTS_GST_SUMMARY: '/reports/gst-summary',
+  REPORTS_PROFIT: '/reports/profit',
+  REPORTS_SCHEDULE_H: '/reports/schedule-h',
   SETTINGS: '/settings',
   SETTINGS_PLAN: '/settings/plan',
   SETTINGS_TEAM: '/settings/team',
@@ -71,11 +127,53 @@ export const ROUTES = {
   SETTINGS_BRANDING: '/settings/branding',
   SETTINGS_ACTIVITY: '/settings/activity',
   SETTINGS_DEVICES: '/settings/devices',
+  /** B3 — Settings › Shop features (design dFeatures / pFeatures). */
+  SETTINGS_SHOP_FEATURES: '/settings/shop-features',
+  SETTINGS_MESSAGES: '/settings/messages',
   /** PLT-10 — "Your data": export, deletion, support consent. Owner only. */
   SETTINGS_DATA: '/settings/data',
+  // ── A9b ── PLT-X08: the business-days calendar (closed weekdays, holidays).
+  // Reached from Settings only while an enabled module reads the calendar.
+  SETTINGS_BUSINESS_DAYS: '/settings/business-days',
   SWITCH_TENANT: '/switch',
+  /** docs/mobile-redesign — the phone's More tab: every destination that is not a tab. */
+  MORE: '/more',
+  /** R-DEC-09 — every app this person can open, and the ones to add. */
+  APPS: '/apps',
   /** IMP-01 — the import wizard; `?kind=` skips the kind picker (FR-14). */
   IMPORTS: '/imports',
+
+  // ── library ── F01: the library vertical (FRD library §7). Flat keys, as
+  // every other address here: `Route` is a union of strings, which a nested
+  // `ROUTES.library.*` object would break (G3). Each page arrives with its
+  // F-task; until then only the module gate exists under `/library`.
+  LIBRARY_HOME: '/library',
+  LIBRARY_COUNTER: '/library/counter',
+  LIBRARY_MEMBERS: '/library/members',
+  LIBRARY_CATALOGUE: '/library/catalogue',
+  LIBRARY_COPIES: '/library/copies',
+  LIBRARY_HOLDS: '/library/holds',
+  LIBRARY_VERIFICATION: '/library/verification',
+  LIBRARY_REPORTS: '/library/reports',
+  LIBRARY_SETTINGS: '/library/settings',
+  // W03 — a study library's desks, by shift.
+  LIBRARY_SEATS: '/library/seats',
+  // W03 — who has to pay, and the fee plans.
+  LIBRARY_FEES: '/library/fees',
+  // W05 — the reading room's day register: who came in, who is in now.
+  LIBRARY_ATTENDANCE: '/library/attendance',
+  // W06 — today's fee messages, sent by hand like reminders.
+  LIBRARY_MESSAGES: '/library/messages',
+  /** Library P0 — fees in, expenses out, what is left. */
+  LIBRARY_MONEY: '/library/money',
+
+  // ── lending ── L02: the lending vertical's screens (FRD lending §0.2).
+  LENDING_HOME: '/lending',
+  LENDING_LOANS: '/lending/loans',
+  LENDING_NEW_LOAN: '/lending/loans/new',
+  LENDING_BORROWERS: '/lending/borrowers',
+  LENDING_ROUTES: '/lending/routes',
+  LENDING_MESSAGES: '/lending/messages',
 
   // ── (admin) — PLT-14's console. Needs a session, not a tenant: an operator
   //    usually belongs to no business at all.
@@ -96,7 +194,8 @@ export type RouteKey = keyof typeof ROUTES;
  * a path segment built by concatenation is a path segment somebody can put a
  * slash in.
  */
-export const partyPath = (id: string): string => `${ROUTES.PARTIES}/${encodeURIComponent(id)}`;
+export const partyPath = (id: string, kind?: 'customer' | 'supplier'): string =>
+  `${ROUTES.PARTIES}/${encodeURIComponent(id)}${kind === 'supplier' ? '?from=suppliers' : ''}`;
 
 /**
  * PTY-05 — the party list, filtered to one tag.
@@ -118,7 +217,9 @@ export const partiesByTagPath = (name: string): string =>
  * corrections toggle ride in the query string for the same reason (FR-8), which
  * is also what makes the browser's back button and a bookmark both work.
  */
-export const partyStatementPath = (id: string): string => `${partyPath(id)}/statement`;
+/** DEC-019 — `book` is the open app's: the Shop's statement carries `?book=shop`. */
+export const partyStatementPath = (id: string, book: 'main' | 'shop' = 'main'): string =>
+  `${partyPath(id)}/statement${book === 'shop' ? '?book=shop' : ''}`;
 export type Route = (typeof ROUTES)[RouteKey];
 
 /**
@@ -194,6 +295,11 @@ export const SESSION_ONLY_ROUTE_PREFIXES: readonly string[] = [
 export const APP_ROUTE_PREFIXES: readonly string[] = [
   ROUTES.DASHBOARD,
   ROUTES.PARTIES,
+  // Step 3b split the party list into these two; they were never added here,
+  // so the proxy did not guard them and robots.txt did not disallow them.
+  ROUTES.CUSTOMERS,
+  ROUTES.SUPPLIERS,
+  ROUTES.KHATA,
   '/ledger',
   ROUTES.ITEMS,
   '/stock',
@@ -205,8 +311,14 @@ export const APP_ROUTE_PREFIXES: readonly string[] = [
   ROUTES.REPORTS,
   ROUTES.SETTINGS,
   ROUTES.SWITCH_TENANT,
+  ROUTES.MORE,
+  ROUTES.APPS,
   '/notifications',
   ROUTES.IMPORTS,
+  // ── library ── F01 (and so in CRAWL_DISALLOW, which derives from this list).
+  ROUTES.LIBRARY_HOME,
+  // ── lending ── L02, likewise.
+  ROUTES.LENDING_HOME,
 ];
 
 /** Everything the proxy guards: a session is required for all of it. */
@@ -232,15 +344,39 @@ export const GUARDED_ROUTE_PREFIXES: readonly string[] = [
  * is: so there is one list, not one per guard.
  */
 export const PUBLIC_ROUTE_PREFIXES: readonly string[] = [
+  '/solutions',
+  // The landing page. A signed-out visitor is the whole audience, and without
+  // this entry the bootstrap's `/auth/me` 401 sent them to `/login?next=/`
+  // before they had read a word. It matches ONLY itself — see `isPublicPath`:
+  // as a prefix, `/` would make every address in the product public.
+  ROUTES.HOME,
   ROUTES.LOGIN,
   ROUTES.SIGNUP,
   ROUTES.FORGOT_PASSWORD,
   ROUTES.RESET_PASSWORD,
   ROUTES.SET_PASSWORD,
+  // The share page is opened by a CUSTOMER, who has no account: the root
+  // layout's `GET /auth/me` 401s for them too, and without this entry the
+  // failed refresh sent them to `/login?next=/d/<token>` — the bill never
+  // showed, and the credential in the path moved into a query string.
+  ROUTES.PUBLIC_DOCUMENT,
+  // Shop P0 — the same trap, found by looking: the UPI pay page bounced the payer to
+  // `/login?next=/pay/<token>` before it could show the QR.
+  ROUTES.PUBLIC_PAY,
+  // Library P0 — the student scanning the door's QR has no account either.
+  ROUTES.SELF_CHECKIN,
+  // The same trap, found by the same probe: the sign-up screen links to these
+  // BEFORE an account exists, and an anonymous visitor was bounced to login.
+  ROUTES.LEGAL_TERMS,
+  ROUTES.LEGAL_PRIVACY,
 ];
 
 export const isPublicPath = (pathname: string): boolean =>
-  PUBLIC_ROUTE_PREFIXES.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`));
+  PUBLIC_ROUTE_PREFIXES.some((prefix) =>
+    prefix === ROUTES.HOME
+      ? pathname === prefix
+      : pathname === prefix || pathname.startsWith(`${prefix}/`)
+  );
 
 /**
  * CR-2026-09-19-A — addresses that used to exist. `/otp` was the six-digit code
@@ -254,8 +390,36 @@ export const RETIRED_ROUTES: Readonly<Record<string, string>> = {
 export const adminTenantPath = (id: string): string =>
   `${ROUTES.ADMIN_TENANTS}/${encodeURIComponent(id)}`;
 
+/** Shop gap §1.6 — one price list, `/items/price-lists/{id}`. */
+export const priceListPath = (id: string): string =>
+  `${ROUTES.ITEM_PRICE_LISTS}/${encodeURIComponent(id)}`;
+
 /** INV-03's item page — `/items/{id}`, one encoded segment, like `partyPath`. */
 export const itemPath = (id: string): string => `${ROUTES.ITEMS}/${encodeURIComponent(id)}`;
+
+/**
+ * 09 §8.7 — a new purchase order with these items on it ("Order" from Low
+ * stock). `?items=<id>:<qty>,…` is read by the purchase editor, which fetches
+ * each item and fills its lines; the merchant still picks the supplier.
+ */
+export const purchaseOrderForItemsPath = (
+  lines: readonly { readonly itemId: string; readonly qty: string }[]
+): string =>
+  `${ROUTES.PURCHASE_ORDERS}/new?items=${lines
+    .map((line) => `${encodeURIComponent(line.itemId)}:${encodeURIComponent(line.qty)}`)
+    .join(',')}`;
+
+/** Reads `purchaseOrderForItemsPath`'s query back; malformed pairs are dropped. */
+export const readOrderItems = (
+  value: string | null | undefined
+): { readonly itemId: string; readonly qty: string }[] =>
+  (value ?? '')
+    .split(',')
+    .map((pair) => pair.split(':').map((part) => decodeURIComponent(part)))
+    .filter((parts): parts is [string, string] => parts.length === 2 && Boolean(parts[0]))
+    .filter(([, qty]) => /^\d+(\.\d{1,3})?$/.test(qty) && Number(qty) > 0)
+    .slice(0, 50)
+    .map(([itemId, qty]) => ({ itemId, qty }));
 
 /**
  * IMP-01 FR-14 — the wizard opened from a module page with its kind chosen,
@@ -265,3 +429,7 @@ export const itemPath = (id: string): string => `${ROUTES.ITEMS}/${encodeURIComp
 export const importKindPath = (kind: string): string =>
   `${ROUTES.IMPORTS}?kind=${encodeURIComponent(kind)}`;
 export const importJobPath = (id: string): string => `${ROUTES.IMPORTS}/${encodeURIComponent(id)}`;
+
+/** Public acquisition pages; no tenant, token or authentication URLs. */
+export const isMarketingPath = (path: string | null): boolean =>
+  path === ROUTES.HOME || path === '/solutions' || Boolean(path?.startsWith('/solutions/'));

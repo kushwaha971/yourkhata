@@ -31,7 +31,7 @@ from typing import Any
 
 from django.db import connection
 
-from apps.common.constants import Direction
+from apps.common.constants import Direction, LedgerBucket
 from apps.common.money import ZERO
 
 #: The four buckets, their upper edges in days, and the order they are read in.
@@ -76,6 +76,7 @@ WITH scoped AS (
     FROM ledger_entry
     WHERE tenant_id = %(tenant)s
       AND entry_date <= %(as_of)s
+      AND bucket = %(bucket)s
       AND status = 'posted'
       AND reversed_by_id IS NULL
       AND reverses_id IS NULL
@@ -94,7 +95,7 @@ owed AS (
     FROM scoped WHERE direction = %(owed_side)s
 ),
 still_open AS (
-    SELECT o.party_id,
+    SELECT o.party_id, o.entry_date,
            (%(as_of)s::date - o.entry_date) AS age_days,
            GREATEST(0::numeric, LEAST(o.amount, o.cum - COALESCE(p.total, 0))) AS open_amt
     FROM owed o LEFT JOIN paid p ON p.party_id = o.party_id
@@ -104,7 +105,8 @@ SELECT party_id,
        SUM(CASE WHEN age_days > 30 AND age_days <= 60 THEN open_amt ELSE 0 END) AS b_31_60,
        SUM(CASE WHEN age_days > 60 AND age_days <= 90 THEN open_amt ELSE 0 END) AS b_61_90,
        SUM(CASE WHEN age_days > 90 THEN open_amt ELSE 0 END) AS b_90_plus,
-       SUM(open_amt) AS total
+       SUM(open_amt) AS total,
+       MIN(entry_date) AS oldest_entry_date
 FROM still_open
 WHERE open_amt > 0
 GROUP BY party_id
@@ -117,8 +119,13 @@ def aging_rows(
     tenant: Any,
     as_of: dt.date,
     kind: str = "receivable",
+    bucket: str = LedgerBucket.MAIN,
 ) -> dict[str, dict[str, Decimal]]:
     """Every party with something outstanding, bucketed. Keyed by party id.
+
+    `bucket` (A2, BR-6) is a bound parameter and `main` by default: a disbursal is not trade
+    credit that ages, a loan collection is not a payment that settles the oldest invoice, and
+    a deposit is neither. Lending's arrears come from the dues engine, not from here.
 
     Returns the raw arithmetic and nothing about presentation — no names, no
     ordering, no paging. The view joins the names and the caller decides the
@@ -139,6 +146,7 @@ def aging_rows(
                 "as_of": as_of,
                 "owed_side": owed_side,
                 "paid_side": paid_side,
+                "bucket": str(bucket),
             },
         )
         rows = cursor.fetchall()
@@ -149,6 +157,9 @@ def aging_rows(
             "61_90": row[3] or ZERO,
             "90_plus": row[4] or ZERO,
             "total": row[5] or ZERO,
+            # RPT-05 FR-2 — the date of the oldest entry still (partly) open,
+            # which the FIFO walk already knows; the report prints it and its age.
+            "oldest_entry_date": row[6],
         }
         for row in rows
     }
@@ -188,7 +199,7 @@ def bucket_window(bucket: str, as_of: dt.date) -> tuple[dt.date | None, dt.date]
     return date_from, date_to
 
 
-def ledger_summary(*, tenant: Any) -> dict[str, Decimal]:
+def ledger_summary(*, tenant: Any, field: str = "balance") -> dict[str, Decimal]:
     """BR-1 / FR-1 — the tenant's position, in two numbers.
 
     `Σ max(balance, 0)` and `Σ max(−balance, 0)` over ACTIVE parties. Read from
@@ -201,6 +212,9 @@ def ledger_summary(*, tenant: Any) -> dict[str, Decimal]:
     Archived parties are excluded because PTY-04 only lets a party be archived
     at a zero balance, so they contribute nothing — but saying so in the query
     is what keeps that true if the archive rule ever softens.
+
+    DEC-019 — `field` is the app's own column: `balance` for the Udhaar book (the
+    default, and what `/ledger/aging` reads), `shop_balance` for the Shop's home.
     """
     from django.db.models import Case, DecimalField, F, Sum, When
     from django.db.models.functions import Coalesce
@@ -215,7 +229,7 @@ def ledger_summary(*, tenant: Any) -> dict[str, Decimal]:
         receivable=Coalesce(
             Sum(
                 Case(
-                    When(balance__gt=0, then=F("balance")),
+                    When(**{f"{field}__gt": 0}, then=F(field)),
                     default=Decimal("0.00"),
                     output_field=money,
                 )
@@ -226,7 +240,7 @@ def ledger_summary(*, tenant: Any) -> dict[str, Decimal]:
         payable=Coalesce(
             Sum(
                 Case(
-                    When(balance__lt=0, then=-F("balance")),
+                    When(**{f"{field}__lt": 0}, then=-F(field)),
                     default=Decimal("0.00"),
                     output_field=money,
                 )

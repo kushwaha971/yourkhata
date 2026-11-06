@@ -22,6 +22,12 @@ interface UbAmountBaseProps {
   readonly size?: 'sm' | 'md' | 'lg';
   /** Hides the label visually; it stays in the accessible name. */
   readonly labelHidden?: boolean;
+  /**
+   * Inline in a sentence-like strip rather than in a column of amounts: an
+   * unsigned figure drops the sign slot, which only exists to line decimals up
+   * down a column and otherwise spends 0.6em before every ₹.
+   */
+  readonly inline?: boolean;
   readonly className?: string;
 }
 
@@ -44,16 +50,15 @@ export type UbAmountProps =
 
 const TONE: Record<UbAmountTone, string> = {
   neutral: 'text-text-primary',
-  receivable: 'text-error', // ledger debit only — never --form-error (§23.2.4)
-  payable: 'text-success',
+  receivable: 'text-get', // Money owed to the user, independent of brand colours.
+  payable: 'text-give',
 };
 
 const SIZE: Record<NonNullable<UbAmountBaseProps['size']>, string> = {
-  /* BrandHub sets every figure in Inter (`ds-num-*`): 12/16 medium in a row,
-     16/24 medium in a total cell, 20/32 semibold as a headline balance. */
-  sm: 'ds-num-s-medium',
-  md: 'ds-num-l-medium',
-  lg: 'ds-num-xl-semibold',
+  /* Shared money type scale, with tabular figures in both languages. */
+  sm: 'ds-num text-body-sm font-bold',
+  md: 'ds-num text-amount',
+  lg: 'ds-num text-amount-lg',
 };
 
 /** U+2212 MINUS SIGN, not a hyphen, so it aligns with `ds-num`'s figures. */
@@ -66,6 +71,7 @@ function UbAmountBase({
   label,
   labelHidden,
   size = 'md',
+  inline = false,
   className,
 }: Readonly<UbAmountProps>) {
   // An absent value is neutral and unsigned; the caller's label carries the
@@ -101,10 +107,16 @@ function UbAmountBase({
         lang="en-IN"
         dir="ltr"
         aria-hidden
-        className={cn('whitespace-nowrap', SIZE[size], TONE[effectiveTone])}
+        className={cn(
+          'whitespace-nowrap',
+          SIZE[size],
+          TONE[effectiveTone]
+        )}
       >
         {/* fixed slot so signed and unsigned rows keep one decimal column */}
-        <span className="inline-block min-w-[0.6em] text-right">{GLYPH[effectiveSign]}</span>
+        {!(inline && effectiveSign === 'none') && (
+          <span className="inline-block min-w-[0.6em] text-right">{GLYPH[effectiveSign]}</span>
+        )}
         {formatted}
       </span>
       {/* The sign word is never spoken: the label already states the direction,

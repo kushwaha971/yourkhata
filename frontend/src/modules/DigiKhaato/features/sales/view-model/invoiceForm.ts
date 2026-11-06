@@ -1,7 +1,10 @@
 import type { PaymentMode } from 'src/types/domain.types';
+import { discountWire } from 'src/utils/discountWire';
+import { formQty } from 'src/utils/quantity';
 
 import type { EngineDocumentInput, EngineGstType } from './taxEngine';
-import type { DiscountType, SalesDocument } from '../types/sales.types';
+import type { BillCustomOrder, DiscountType, JewelLine, SalesDocument } from '../types/sales.types';
+import type { ChallanType } from '../types/salesFlows.types';
 
 /**
  * The invoice editor's form ⇄ the wire (SAL-02 §14) ⇄ the tax preview.
@@ -22,6 +25,16 @@ export interface InvoiceLineForm {
   qty: string;
   unitCode: string;
   allowDecimal: boolean;
+  /** D P3 — the IMEI / serial numbers of a tracked item, one per piece. */
+  serials?: string[];
+  /** Needs one per piece before the bill can be issued. */
+  tracksSerial?: boolean;
+  /** G4 — the picked medicine's drug schedule; local, never sent. */
+  schedule?: string;
+  /** D P6 — a café item's add-ons on this line (priced into unitPrice). */
+  addons?: { name: string; price: string }[];
+  /** G2b — a jeweller's piece: priced by the server from this snapshot. */
+  jewel?: JewelLine | null;
   unitPrice: string;
   taxInclusive: boolean;
   discountType: '' | DiscountType;
@@ -29,7 +42,18 @@ export interface InvoiceLineForm {
   taxCode: string;
 }
 
+/** G2c — what the counter types for old gold; the server prices it. */
+export interface OldGoldForm {
+  weightG: string;
+  purity: string;
+  rate: string;
+  lessPct: string;
+  cashBack?: boolean;
+}
+
 export interface InvoiceFormValues {
+  /** Internal first-create identity, persisted with the local copy; never printed. */
+  clientDraftKey?: string;
   mode: BillingMode;
   partyId: string | null;
   partyName: string;
@@ -38,7 +62,23 @@ export interface InvoiceFormValues {
   walkInMobile: string;
   documentDate: string;
   dueOn: string;
+  /** SAL-01 FR-4 — estimates only; empty means "the default, counted by the server". */
+  validUntil: string;
   placeOfSupplyState: string;
+  /** D P1c — the godown the goods leave from; '' is the business's first place. */
+  locationId: string;
+  /** D P1b — design D1 auto parts: the vehicle and its mechanic. */
+  vehicleNo?: string;
+  /** G2c — a jeweller's old gold taken in (null: none; undefined: not a jeweller's bill). */
+  oldGold?: OldGoldForm | null;
+  /** G2d — the customer's PAN on a jeweller's bill of ₹2 lakh or more. */
+  pan?: string;
+  /** G3a — the custom order this bill delivers. */
+  customOrder?: BillCustomOrder | null;
+  mechanic?: string;
+  /** G4 — a Schedule H medicine's prescription: the doctor and the patient. */
+  rxDoctor?: string;
+  rxPatient?: string;
   reverseCharge: boolean;
   roundOffEnabled: boolean;
   discountType: '' | DiscountType;
@@ -46,6 +86,13 @@ export interface InvoiceFormValues {
   notes: string;
   terms: string;
   lines: InvoiceLineForm[];
+  /** Shop item 4 — a delivery challan's type and transport (SAL-09 FR-2); unused otherwise. */
+  challanType: ChallanType;
+  transporter: string;
+  vehicleNumber: string;
+  ewayBillNumber: string;
+  driver: string;
+  deliverTo: string;
 }
 
 /** SAL-07 FR-1 — counters bill walk-ins; everybody else bills a party. */
@@ -81,14 +128,23 @@ export const emptyInvoiceForm = (
   walkInMobile: '',
   documentDate: today,
   dueOn: '',
+  validUntil: '',
   placeOfSupplyState: tenantState,
+  locationId: '',
   reverseCharge: false,
   roundOffEnabled: true,
   discountType: '',
   discountValue: '',
   notes: '',
   terms: '',
-  lines: [emptyLine()],
+  // A4: a new bill starts with no line; the search is the only way in.
+  lines: [],
+  challanType: 'other',
+  transporter: '',
+  vehicleNumber: '',
+  ewayBillNumber: '',
+  driver: '',
+  deliverTo: '',
 });
 
 const isNumber = (value: string): boolean => /^\d+(\.\d+)?$/.test(value.trim());
@@ -117,26 +173,60 @@ export const toWireBody = (values: InvoiceFormValues): Record<string, unknown> =
   document_date: values.documentDate || null,
   due_on: values.mode === 'party' && values.dueOn ? values.dueOn : null,
   place_of_supply_state: values.placeOfSupplyState || null,
+  location_id: values.locationId || null,
+  ...(values.vehicleNo !== undefined ? { vehicle_number: values.vehicleNo } : {}),
+  ...(values.customOrder !== undefined ? { custom_order_id: values.customOrder?.id ?? null } : {}),
+  ...(values.pan !== undefined ? { pan: values.pan.trim().toUpperCase() } : {}),
+  ...(values.oldGold !== undefined
+    ? {
+        // The cash-back switch alone makes this object: no weight or purity is no old gold.
+        old_gold:
+          values.oldGold && (values.oldGold.weightG || values.oldGold.purity)
+            ? {
+                weight_g: values.oldGold.weightG,
+                purity: values.oldGold.purity,
+                rate: values.oldGold.rate,
+                less_pct: values.oldGold.lessPct,
+                cash_back: Boolean(values.oldGold.cashBack),
+              }
+            : null,
+      }
+    : {}),
+  ...(values.mechanic !== undefined ? { mechanic: values.mechanic } : {}),
+  ...(values.rxDoctor !== undefined
+    ? { rx_doctor: values.rxDoctor.trim(), rx_patient: (values.rxPatient ?? '').trim() }
+    : {}),
   reverse_charge: values.reverseCharge,
   round_off_enabled: values.roundOffEnabled,
-  discount_type: values.discountType || null,
-  discount_value:
-    values.discountType && isNumber(values.discountValue) ? values.discountValue : null,
+  ...discountWire(values.discountType, values.discountValue),
   notes: values.notes,
-  terms: values.terms,
+  // Blank is not sent: the server fills the shop's own terms line on a new bill.
+  ...(values.terms ? { terms: values.terms } : {}),
   lines: values.lines.filter(isCompleteLine).map((line) => ({
     item_id: line.itemId,
     description: line.description.trim() || null,
     hsn_sac: line.hsnSac.trim() || null,
     qty: line.qty.trim(),
     unit_code: line.unitCode || null,
+    ...(line.serials?.length ? { serials: line.serials } : {}),
+    ...(line.addons?.length ? { addons: line.addons.map((a) => ({ name: a.name })) } : {}),
+    ...(line.jewel ? { jewel: line.jewel } : {}),
     unit_price: line.unitPrice.trim() || null,
     tax_inclusive: line.taxInclusive,
-    discount_type: line.discountType || null,
-    discount_value: line.discountType && isNumber(line.discountValue) ? line.discountValue : null,
+    ...discountWire(line.discountType, line.discountValue),
     tax_code: line.taxCode || null,
   })),
 });
+
+/**
+ * Whether a saved line's unit takes decimals. A document line carries its
+ * unit CODE, not the unit's `allow_decimal`, so this is the client's best
+ * reading: counted units are whole, everything else may be weighed. It errs
+ * lenient — the server, which has the unit, refuses what this lets through.
+ */
+export { formQty };
+
+export const unitAllowsDecimal = (unitCode: string): boolean => !/^(NOS|PCS)$/.test(unitCode);
 
 /** The server's draft back into the form — for "edit", "restore" and a reload. */
 export const fromDocument = (doc: SalesDocument): InvoiceFormValues => ({
@@ -148,7 +238,24 @@ export const fromDocument = (doc: SalesDocument): InvoiceFormValues => ({
   walkInMobile: doc.walkInMobile ?? '',
   documentDate: doc.documentDate,
   dueOn: doc.dueOn ?? '',
+  validUntil: doc.validUntil ?? '',
   placeOfSupplyState: doc.placeOfSupplyState,
+  locationId: doc.location?.id ?? '',
+  vehicleNo: doc.vehicle?.number ?? '',
+  pan: doc.pan ?? '',
+  customOrder: doc.customOrder ?? null,
+  oldGold: doc.oldGold
+    ? {
+        weightG: doc.oldGold.weight_g,
+        purity: doc.oldGold.purity,
+        rate: doc.oldGold.rate,
+        lessPct: doc.oldGold.less_pct,
+        cashBack: Boolean(doc.oldGold.cash_back),
+      }
+    : null,
+  mechanic: doc.vehicle?.mechanic ?? '',
+  rxDoctor: doc.rx?.doctor ?? '',
+  rxPatient: doc.rx?.patient ?? '',
   reverseCharge: doc.reverseCharge,
   roundOffEnabled: doc.roundOffEnabled,
   discountType: doc.discountType ?? '',
@@ -160,9 +267,13 @@ export const fromDocument = (doc: SalesDocument): InvoiceFormValues => ({
         itemId: line.itemId,
         description: line.description,
         hsnSac: line.hsnSac ?? '',
-        qty: line.qty,
+        qty: formQty(line.qty, unitAllowsDecimal(line.unitCode)),
         unitCode: line.unitCode,
-        allowDecimal: !/^(NOS|PCS)$/.test(line.unitCode),
+        serials: [...(line.serials ?? [])],
+        tracksSerial: line.tracksSerial === true,
+        addons: [...(line.addons ?? [])],
+        jewel: line.jewel ?? null,
+        allowDecimal: unitAllowsDecimal(line.unitCode),
         unitPrice: line.unitPrice,
         taxInclusive: line.taxInclusive,
         discountType: line.discountType ?? '',
@@ -170,12 +281,41 @@ export const fromDocument = (doc: SalesDocument): InvoiceFormValues => ({
         taxCode: line.taxCode,
       }))
     : [emptyLine()],
+  challanType: doc.links.challan?.type ?? 'other',
+  transporter: doc.links.challan?.transporter ?? '',
+  vehicleNumber: doc.links.challan?.vehicleNumber ?? '',
+  ewayBillNumber: doc.links.challan?.ewayBillNumber ?? '',
+  driver: doc.links.challan?.driver ?? '',
+  deliverTo: doc.links.challan?.deliverTo ?? '',
 });
 
 export interface RateLookup {
   readonly rate: string;
   readonly cessRate: string;
 }
+
+/**
+ * SAL-02 FR-5 — the place of supply a freshly picked party defaults to, in the
+ * SAME order the server's `default_pos` resolves it: the party's state, then
+ * its billing-address state, then the shop's own. The preview must never
+ * guess the shop's state for a party in another one (QA S-D1: the editor
+ * showed CGST + SGST for a Karnataka party of a Maharashtra shop while the
+ * issued bill, resolved on the server, correctly carried IGST).
+ */
+export const defaultPlaceOfSupply = (
+  party: Readonly<{
+    stateCode: string | null;
+    billingAddress: Readonly<Record<string, string>>;
+  }> | null,
+  tenantState: string
+): string => {
+  if (party) {
+    if (party.stateCode) return party.stateCode;
+    const billing = party.billingAddress?.state_code;
+    if (billing) return billing;
+  }
+  return tenantState;
+};
 
 /** The preview's input; an unknown code previews at 0 until the rates arrive. */
 export const previewInput = (
@@ -211,6 +351,26 @@ export interface PaymentRowForm {
 export const fullCashPayment = (grandTotal: string): PaymentRowForm[] => [
   { mode: 'cash', amount: grandTotal, reference: '' },
 ];
+
+/** PAY-02 §10 — the server takes at most four modes, each once. */
+export const MAX_PAYMENT_ROWS = 4;
+
+export type PaymentRowProblem = 'amount' | 'duplicate' | 'reference' | null;
+
+/**
+ * What is wrong with each row of the payment sheet, in the server's own order
+ * (`validate_mode_breakup`): an amount above zero at two decimals, each mode
+ * once, and a cheque's number. Before this the sheet greyed its button for a
+ * missing cheque number and said nothing, and let two UPI rows through to a
+ * 400 the merchant saw as a snackbar after the tap.
+ */
+export const paymentRowProblems = (rows: readonly PaymentRowForm[]): PaymentRowProblem[] =>
+  rows.map((row, index) => {
+    if (!/^\d+(\.\d{1,2})?$/.test(row.amount.trim()) || Number(row.amount) <= 0) return 'amount';
+    if (rows.findIndex((other) => other.mode === row.mode) !== index) return 'duplicate';
+    if (row.mode === 'cheque' && !row.reference.trim()) return 'reference';
+    return null;
+  });
 
 export interface PaymentWireBody {
   readonly payment_date: string;

@@ -4,6 +4,7 @@ import { forwardRef, memo, type ButtonHTMLAttributes, type ReactNode } from 'rea
 
 import { mlButtonClasses } from 'src/design-system/primitives';
 import { UbBottomBar } from 'src/design-system/UbBottomBar';
+import { useUbViewOnly } from 'src/design-system/UbViewOnly';
 import { cn } from 'src/utils/cn';
 
 /**
@@ -53,20 +54,29 @@ export interface UbFabProps extends Omit<
   readonly icon: ReactNode;
   /** Hide from `lg` up, where the page header has room for the real button. */
   readonly mobileOnly?: boolean;
+  /** Optional worded pill when the action needs to be understood at a glance. */
+  readonly extended?: boolean;
   readonly className?: string;
 }
 
 const UbFabInner = forwardRef<HTMLButtonElement, UbFabProps>(function UbFabInner(
-  { label, icon, mobileOnly = false, className, type = 'button', ...rest },
+  { label, icon, mobileOnly = false, extended = false, className, type = 'button', disabled, title, ...rest },
   ref
 ) {
+  // CR-2026-09-29-SEC-A — a FAB is always a primary write ("Add party").
+  const viewOnly = useUbViewOnly();
+  const locked = viewOnly !== null;
   return (
     <UbBottomBar
       sticky={false}
       data-ub-fab=""
       className={cn(
-        'pointer-events-none fixed z-30 pb-4 pr-4',
-        'bottom-[env(safe-area-inset-bottom,0px)] right-[env(safe-area-inset-right,0px)]',
+        // The wrapper reaches the bottom edge and pads up past the safe area or,
+        // on a phone with `UbBottomNav`, past the nav — so the button rides
+        // above the bar and the measured wrapper still spans to the edge.
+        'pointer-events-none fixed bottom-0 z-30 pr-4',
+        'pb-[calc(1rem+max(var(--ub-nav-offset),env(safe-area-inset-bottom,0px)))]',
+        'right-[env(safe-area-inset-right,0px)]',
         mobileOnly && 'lg:hidden'
       )}
     >
@@ -77,15 +87,21 @@ const UbFabInner = forwardRef<HTMLButtonElement, UbFabProps>(function UbFabInner
           'primary',
           'lg',
           cn(
-            'pointer-events-auto h-14 w-14 rounded-pill p-0 shadow-3',
+            'pointer-events-auto h-14 rounded-pill shadow-3',
+            extended ? 'w-auto gap-2 px-4' : 'w-14 p-0',
             'outline-none focus-visible:shadow-focus',
+            locked && 'opacity-50',
             className
           )
         )}
         {...rest}
+        disabled={disabled || locked}
+        aria-disabled={disabled || locked || undefined}
+        title={locked ? viewOnly : title}
+        data-view-only={locked || undefined}
       >
         {icon}
-        <span className="sr-only">{label}</span>
+        <span className={extended ? 'ds-label' : 'sr-only'}>{label}</span>
       </button>
     </UbBottomBar>
   );

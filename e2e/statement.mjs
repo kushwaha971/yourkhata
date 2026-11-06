@@ -42,10 +42,11 @@
  *
  * Exits non-zero on any failure.
  */
-import { chromium } from 'playwright';
+import { createRequire } from 'node:module';
+const { chromium } = createRequire(import.meta.url)('playwright');
 import { mkdirSync, writeFileSync } from 'node:fs';
 
-const FRONTEND = process.env.E2E_FRONTEND ?? 'http://localhost:3000';
+const FRONTEND = process.env.E2E_FRONTEND ?? (process.env.E2E_BASE ?? 'http://localhost:3000');
 const BACKEND = process.env.E2E_BACKEND ?? 'http://localhost:8000/api/v1';
 const SHOT_DIR = process.env.E2E_SHOTS ?? '/tmp/e2e-shots/statement';
 const wantShots = process.argv.includes('--shots');
@@ -218,7 +219,7 @@ const settle = (page, ms = 900) => page.waitForTimeout(ms);
 
 const signIn = async (page, who = OWNER) => {
   for (const attempt of [1, 2]) {
-    await page.goto(`${FRONTEND}/login`, { waitUntil: 'domcontentloaded', timeout: 45000 });
+    await page.goto(`${FRONTEND}/login/email`, { waitUntil: 'domcontentloaded', timeout: 45000 });
     await page.fill('input[type="email"], input[name="email"]', who.email);
     await page.fill('input[type="password"], input[name="password"]', who.password);
     await page.click('button[type="submit"]');
@@ -228,7 +229,9 @@ const signIn = async (page, who = OWNER) => {
     // `load` is a state this app can legitimately never reach.
     await page.waitForURL((u) => !u.pathname.startsWith('/login'), { waitUntil: 'commit', timeout: 45000 }).catch(() => {});
     await page.waitForTimeout(600);
-    await page.goto(`${FRONTEND}/parties`, { waitUntil: 'domcontentloaded', timeout: 45000 });
+    // DEC-019 — the khata page is the Udhaar book's: open its list first, as a merchant
+    // does, so the session is in that app (from the Shop the page shows bills instead).
+    await page.goto(`${FRONTEND}/khata`, { waitUntil: 'domcontentloaded', timeout: 45000 });
     try {
       await page.waitForSelector('[data-testid="ub-grid"]', { timeout: 20000 });
       await page.waitForTimeout(600);
@@ -339,7 +342,8 @@ async function sweep(ctx, size, parties) {
 
   await at('05-period-custom', async () => {
     await openStatement(page, parties.passbook);
-    await page.getByRole('button', { name: 'Custom' }).first().click();
+    // The period is one dropdown (owner, 6 Oct 2026); its custom range is at the foot.
+    await page.getByTestId('period-select').first().click();
     await settle(page, 900);
     await capture(page, size, '05-period-custom');
   });
@@ -521,7 +525,8 @@ async function checks(browser, token, parties) {
     });
     await signIn(page);
     await openStatement(page, parties.passbook);
-    await page.getByRole('button', { name: 'All time' }).first().click();
+    await page.getByTestId('period-select').first().click();
+    await page.getByRole('option', { name: 'All time' }).first().click();
     await settle(page, 1800);
 
     record(
@@ -775,7 +780,7 @@ const staffSession = async (token) => {
 async function run() {
   const { token, parties } = await seed();
 
-  const browser = await chromium.launch();
+  const browser = await chromium.launch({ executablePath: process.env.CHROME || process.env.PW_CHROME });
   await checks(browser, token, parties);
 
   if (wantShots) {
