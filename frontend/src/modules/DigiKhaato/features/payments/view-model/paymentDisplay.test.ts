@@ -1,5 +1,6 @@
 import { allocationHref } from './allocationLinks';
 import {
+  afterHeldAdvance,
   allocationRowsFor,
   defaultAmount,
   fifoPreview,
@@ -233,5 +234,25 @@ describe('where a receipt row links (PUR-02)', () => {
       allocations: [{ ...adjustmentOut.allocations[0], documentType: 'held_deposit' }],
     } as unknown as Payment;
     expect(voidConsequences(receipt)).toEqual([{ kind: 'depositGone', amount: '500.00' }]);
+  });
+});
+
+describe('afterHeldAdvance', () => {
+  /* Owner, 6 Nov 2026 — "use advance first": the preview must say what the
+     server will do, or the drawer shows a bill part-paid that Save clears. */
+  const docs = [
+    { documentId: 'a', amountDue: '3142.60' },
+    { documentId: 'b', amountDue: '3606.00' },
+  ];
+  it('takes the held advance off the oldest bill first', () => {
+    expect(afterHeldAdvance(docs, '6048.60')).toEqual([
+      { documentId: 'a', amountDue: '2442.60' },
+      { documentId: 'b', amountDue: '3606.00' },
+    ]);
+  });
+  it('drops a bill the advance clears and leaves the bills alone without a balance', () => {
+    expect(afterHeldAdvance(docs, '3000.00')).toEqual([{ documentId: 'b', amountDue: '3000.00' }]);
+    expect(afterHeldAdvance(docs, undefined)).toBe(docs);
+    expect(afterHeldAdvance(docs, '6748.60')).toBe(docs);
   });
 });

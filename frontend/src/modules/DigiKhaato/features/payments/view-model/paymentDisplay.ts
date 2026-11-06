@@ -119,6 +119,37 @@ export const fifoPreview = (
   return { allocations, advance: remaining };
 };
 
+/**
+ * Owner, 6 Nov 2026 — an advance already held settles the oldest bills before
+ * new money does (the server's `_apply_held_advances`). The drawer knows the
+ * held amount only as "the bills' total minus what is owed"; given it, each
+ * bill shows what is left after the advance, oldest first, and a bill the
+ * advance clears drops out. Without a known balance the bills stay as listed.
+ */
+export const afterHeldAdvance = <T extends Pick<OpenDocument, 'amountDue'>>(
+  documents: readonly T[],
+  owed: string | undefined
+): readonly T[] => {
+  if (owed === undefined) return documents;
+  let held = subtractMoney(sumMoney(documents.map((doc) => clean(doc.amountDue))), clean(owed));
+  if (compareMoney(held, '0.00') <= 0) return documents;
+  const out: T[] = [];
+  for (const doc of documents) {
+    const due = clean(doc.amountDue);
+    if (compareMoney(held, '0.00') <= 0) {
+      out.push(doc);
+      continue;
+    }
+    if (compareMoney(held, due) >= 0) {
+      held = subtractMoney(held, due);
+      continue;
+    }
+    out.push({ ...doc, amountDue: subtractMoney(due, held) });
+    held = '0.00';
+  }
+  return out;
+};
+
 /** The manual panel's footer: Σ allocated and what is left as advance. */
 export const manualTotals = (
   amount: string,

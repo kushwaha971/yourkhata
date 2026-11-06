@@ -41,6 +41,7 @@ import {
   allocationRowsFor,
   defaultAmount,
   dueTotal,
+  afterHeldAdvance,
   fifoPreview,
   linesTotal,
   manualTotals,
@@ -194,6 +195,18 @@ export function PaymentFormDrawer({
       : counter && partyId && docsReady
         ? dueTotal(openDocuments)
         : undefined;
+  /* Owner, 6 Nov 2026 — auto uses a held advance on the oldest bills first, on
+     the server. The preview follows it when the drawer knows what is owed (the
+     customer's or supplier's balance), so a bill the advance clears is not
+     shown taking new money. A manual split lists the bills as they stand. */
+  const owedNow =
+    counter && !context.documentId && context.receivable !== undefined
+      ? addMoney(context.receivable, dueShift)
+      : undefined;
+  const autoDocuments = useMemo(
+    () => afterHeldAdvance(openDocuments, owedNow),
+    [openDocuments, owedNow]
+  );
   const againstOld =
     counter &&
     docsReady &&
@@ -290,7 +303,7 @@ export function PaymentFormDrawer({
       // P-08-04 — the dues changed elsewhere: the merchant looks before it saves.
       if (counter && (dueChange || !(await checkDues()))) return;
       const amounts = values.autoAllocate
-        ? fifoPreview(linesTotal(values.lines), openDocuments).allocations
+        ? fifoPreview(linesTotal(values.lines), autoDocuments).allocations
         : Object.fromEntries(values.allocations.map((row) => [row.documentId, row.amount]));
       if (
         !values.confirmEarlyAllocation &&
@@ -319,6 +332,7 @@ export function PaymentFormDrawer({
       setError,
       onSaved,
       openDocuments,
+      autoDocuments,
       againstOld,
       counter,
       partyId,
@@ -763,7 +777,7 @@ export function PaymentFormDrawer({
             {!counter && <UbSectionHeading title={t('payments.alloc.heading')} />}
             <PaymentAllocationPicker
               form={form}
-              documents={openDocuments}
+              documents={autoAllocate ? autoDocuments : openDocuments}
               status={openStatus}
               t={t}
               disabled={locked}

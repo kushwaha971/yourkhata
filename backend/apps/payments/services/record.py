@@ -364,6 +364,40 @@ def _auto(
     return choose_oldest_first(candidates, amount)
 
 
+def _apply_held_advances(ctx: Ctx, *, direction: str, party_id: Any, bucket: str) -> None:
+    """Apply the party's earlier unallocated payments to open bills, oldest first.
+
+    Only money that may be applied later: not void, not a quick sale, not a
+    credit note's refund, and not earmarked (R61 — reserved money waits for its
+    subject). Runs inside the caller's transaction, under its party lock.
+    """
+    from apps.payments.services.allocate import allocate_existing
+
+    held = (
+        Payment.objects.for_tenant(ctx.tenant)
+        .filter(
+            party_id=party_id,
+            direction=direction,
+            bucket=bucket,
+            unallocated_amount__gt=0,
+        )
+        .exclude(status=PaymentStatus.VOID)
+        .order_by("payment_date", "created_at")
+    )
+    for payment in held:
+        meta = payment.meta or {}
+        if meta.get("earmark") is not None or meta.get("credit_note_id"):
+            continue
+        if not auto_candidates(ctx, direction=direction, party_id=party_id, bucket=bucket):
+            return
+        allocate_existing(
+            ctx=ctx,
+            payment_id=payment.id,
+            allocations="auto",
+            reason="Held advance applied before a new payment",
+        )
+
+
 ONE_BUCKET_MESSAGE = "One payment settles one kind of balance."
 
 
@@ -559,6 +593,12 @@ def _record(
             # R61 — reserved money is never applied by FIFO; it waits for its subject.
             chosen, mode = [], AllocationMode.NONE
         elif allocations == "auto":
+            # Owner, 6 Nov 2026: an advance already held settles open bills
+            # BEFORE new money does, so the bill list, the advance and "still
+            # due" tell one story at the counter.
+            _apply_held_advances(
+                ctx, direction=direction, party_id=party.id, bucket=cleaned["bucket"]
+            )
             chosen = _auto(
                 ctx, direction=direction, party_id=party.id, amount=amount, bucket=cleaned["bucket"]
             )

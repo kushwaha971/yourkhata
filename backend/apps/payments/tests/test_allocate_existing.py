@@ -420,3 +420,48 @@ def test_an_earmarked_advance_is_applied_by_an_explicit_request(
     response = allocate(owner, payment.id, rows(invoice, "1000.00"))
     assert response.status_code == 200, response.json()
     assert SalesDocument.objects.get(pk=invoice["id"]).status == "paid"
+
+
+def test_a_new_auto_payment_uses_the_held_advance_on_open_bills_first(
+    owner: Any, make_party: Any, invoice_for: Any
+) -> None:
+    """Owner, 6 Nov 2026 — "use advance first". ₹700 held, bills of ₹3,142 and
+    ₹3,606, then ₹6,203 received with auto: the ₹700 settles the oldest bill
+    first and the new money clears both bills, leaving ₹155.00 as advance. Without
+    this the drawer said "₹155 stays as advance" while a bill still showed ₹545
+    left, because the new money filled the bills and the old ₹700 sat apart."""
+    party = make_party(name="Held Advance")
+    held = pay(owner, party_id=str(party.id), mode_breakup=cash_lines("700.00"))
+    assert held.status_code == 201, held.json()
+    older = invoice_for(party, "3142.00", days_ago=10)
+    newer = invoice_for(party, "3606.00", days_ago=1)
+
+    response = pay(
+        owner, party_id=str(party.id), mode_breakup=cash_lines("6203.00"), allocations="auto"
+    )
+
+    assert response.status_code == 201, response.json()
+    assert SalesDocument.objects.get(pk=older["id"]).status == "paid"
+    assert SalesDocument.objects.get(pk=newer["id"]).status == "paid"
+    assert Payment.objects.get(pk=held.json()["data"]["id"]).unallocated_amount == D("0.00")
+    assert Payment.objects.get(pk=response.json()["data"]["id"]).unallocated_amount == D("155.00")
+    party.refresh_from_db()
+    assert party.shop_balance == D("-155.00")
+
+
+def test_an_earmarked_advance_is_not_spent_on_other_bills(
+    owner: Any, make_party: Any, invoice_for: Any
+) -> None:
+    """R61 — money reserved for one subject waits for it, even when new money arrives."""
+    party = make_party(name="Earmarked Advance")
+    held = pay(owner, party_id=str(party.id), mode_breakup=cash_lines("700.00"))
+    assert held.status_code == 201, held.json()
+    Payment.objects.filter(pk=held.json()["data"]["id"]).update(meta={"earmark": {"kind": "order"}})
+    invoice_for(party, "1000.00", days_ago=2)
+
+    response = pay(
+        owner, party_id=str(party.id), mode_breakup=cash_lines("1000.00"), allocations="auto"
+    )
+
+    assert response.status_code == 201, response.json()
+    assert Payment.objects.get(pk=held.json()["data"]["id"]).unallocated_amount == D("700.00")
