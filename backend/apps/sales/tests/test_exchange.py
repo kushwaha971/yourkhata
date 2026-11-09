@@ -1,0 +1,139 @@
+"""G6 — exchange at the counter: one credit note and one bill, together or not at all."""
+
+from __future__ import annotations
+
+import uuid
+from decimal import Decimal
+from typing import Any
+
+import pytest
+from django.urls import reverse
+
+from apps.inventory.models import ItemStock
+from apps.sales.models import SalesDocument
+from apps.sales.tests.conftest import cash, draft, issue, line, recalc_clean
+
+pytestmark = pytest.mark.django_db
+URL = "v1:exchanges"
+
+
+@pytest.fixture
+def clothes(shop: Any) -> Any:
+    from apps.platform_app.models import TenantSetting
+
+    TenantSetting.objects.update_or_create(
+        tenant=shop, key="shop.features.variants", defaults={"value": {"value": True}}
+    )
+    return shop
+
+
+def _post(client: Any, body: dict, key: str | None = None) -> Any:
+    return client.post(
+        reverse(URL), body, format="json", HTTP_IDEMPOTENCY_KEY=key or str(uuid.uuid4())
+    )
+
+
+def _sold(owner: Any, make_item: Any, make_party: Any, rate: str = "500") -> tuple[Any, Any, dict]:
+    party = make_party()
+    item = make_item("Cotton shirt M", rate, stock="10")
+    total = draft(owner, party_id=str(party.id), lines=[line(item, "2")]).json()["data"]
+    paid = cash(total["grand_total"])
+    bill = issue(owner, total["id"], version=total["version"], payment=paid).json()["data"]
+    return party, item, bill
+
+
+def _stock(item: Any) -> Decimal:
+    return ItemStock.objects.filter(item=item).first().on_hand
+
+
+def test_a_shop_without_sizes_has_no_exchange(owner: Any) -> None:
+    assert _post(owner, {}).status_code == 404
+
+
+def test_a_same_price_swap_makes_both_documents_and_leaves_nothing_to_pay(
+    clothes: Any, owner: Any, make_item: Any, make_party: Any
+) -> None:
+    """Design "Nothing to pay": the note pays the new bill, stock moves both ways."""
+    party, item, bill = _sold(owner, make_item, make_party)
+    other = make_item("Cotton shirt L", "500", stock="5")
+    before = _stock(item)
+    made = _post(owner, {
+        "against_id": bill["id"],
+        "returns": [{"against_line_id": bill["lines"][0]["id"], "qty": "1"}],
+        "lines": [line(other, "1")],
+    })
+    assert made.status_code == 201, made.json()
+    data = made.json()["data"]
+    assert Decimal(data["invoice"]["amount_due"]) == 0
+    assert Decimal(data["credit_note"]["open_credit"]) == 0
+    assert _stock(item) == before + 1
+    assert _stock(other) == Decimal("4")
+    recalc_clean()
+
+
+def test_taking_less_leaves_open_credit_never_cash(
+    clothes: Any, owner: Any, make_item: Any, make_party: Any
+) -> None:
+    party, item, bill = _sold(owner, make_item, make_party)
+    cheap = make_item("Socks", "100", stock="5")
+    data = _post(owner, {
+        "against_id": bill["id"],
+        "returns": [{"against_line_id": bill["lines"][0]["id"], "qty": "1"}],
+        "lines": [line(cheap, "1")],
+    }).json()["data"]
+    assert Decimal(data["invoice"]["amount_due"]) == 0
+    note = SalesDocument.objects.get(pk=data["credit_note"]["id"])
+    assert note.amount_due == Decimal(data["credit_note"]["open_credit"])
+    assert (note.meta or {}).get("settlement") == "hold_advance"
+
+
+def test_a_refused_new_bill_leaves_no_credit_note(
+    clothes: Any, owner: Any, make_item: Any, make_party: Any
+) -> None:
+    """Both or neither: a bad going-out line must not strand a credit note."""
+    party, item, bill = _sold(owner, make_item, make_party)
+    notes = SalesDocument.objects.filter(kind="credit_note").count()
+    before = _stock(item)
+    bad = _post(owner, {
+        "against_id": bill["id"],
+        "returns": [{"against_line_id": bill["lines"][0]["id"], "qty": "1"}],
+        "lines": [{"item_id": str(uuid.uuid4()), "qty": "1"}],
+    })
+    assert bad.status_code >= 400
+    assert SalesDocument.objects.filter(kind="credit_note").count() == notes
+    assert _stock(item) == before
+
+
+def test_returning_more_than_was_sold_is_refused(
+    clothes: Any, owner: Any, make_item: Any, make_party: Any
+) -> None:
+    party, item, bill = _sold(owner, make_item, make_party)
+    other = make_item("Cotton shirt L", "500", stock="5")
+    bad = _post(owner, {
+        "against_id": bill["id"],
+        "returns": [{"against_line_id": bill["lines"][0]["id"], "qty": "3"}],
+        "lines": [line(other, "1")],
+    })
+    assert bad.status_code >= 400
+
+
+def test_a_double_tap_is_one_exchange(
+    clothes: Any, owner: Any, make_item: Any, make_party: Any
+) -> None:
+    party, item, bill = _sold(owner, make_item, make_party)
+    other = make_item("Cotton shirt L", "500", stock="5")
+    body = {
+        "against_id": bill["id"],
+        "returns": [{"against_line_id": bill["lines"][0]["id"], "qty": "1"}],
+        "lines": [line(other, "1")],
+    }
+    key = str(uuid.uuid4())
+    first, second = _post(owner, body, key), _post(owner, body, key)
+    assert first.json()["data"]["invoice"]["id"] == second.json()["data"]["invoice"]["id"]
+    assert SalesDocument.objects.filter(kind="credit_note").count() == 1
+
+
+def test_nothing_ticked_is_refused(clothes: Any, owner: Any) -> None:
+    bad = _post(owner, {"against_id": str(uuid.uuid4()), "returns": [], "lines": []})
+    assert bad.status_code == 400 or bad.status_code == 422
+
