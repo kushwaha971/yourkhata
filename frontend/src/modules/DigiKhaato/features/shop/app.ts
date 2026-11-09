@@ -27,6 +27,7 @@ import {
   Truck,
   Undo2,
   Store,
+  Building2,
   Wrench,
 } from 'lucide-react';
 
@@ -156,6 +157,19 @@ export const SHOP_APP: AppManifest = {
       feature: 'jewellery',
       section: 'sales',
       order: 1.5,
+      tab: 'invoices',
+    },
+    // G7 (design dSite) — a contractor's sites, under Sales.
+    {
+      key: 'sites',
+      icon: Building2,
+      labelId: 'nav.sites',
+      href: ROUTES.SALES_SITES,
+      module: 'sales',
+      permission: 'sales.invoice.read',
+      feature: 'sites',
+      section: 'sales',
+      order: 1.7,
       tab: 'invoices',
     },
     // G5 (design dRepairs) — a mobile shop's repair jobs, under Sales.

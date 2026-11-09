@@ -67,6 +67,11 @@ try {
     await page.keyboard.type(`QA96 Socks ${stamp}`);
     await page.getByRole('option', { name: new RegExp(`Socks ${stamp}`) }).first().click();
     await page.waitForFunction(() => !document.querySelector('[data-testid=exchange-done]').disabled, null, { timeout: 10000 });
+    if (width >= 1024) {
+      const back = await page.getByTestId('exchange-back').innerText();
+      const oneShirt = Number(bill.lines?.[0]?.line_total ?? bill.grand_total) / 2;
+      check(`${width}: a returned line shows the pieces coming back, not the whole line`, back.replace(/,/g, '').includes(oneShirt.toFixed(2)), back.replace(/\n/g, ' '));
+    }
     const dock = await page.getByTestId('exchange-dock').innerText();
     const totals = await page.getByTestId('exchange-totals').innerText();
     if (SHOTS) await page.screenshot({ path: `${SHOTS}/exchange-${width}.png`, fullPage: true });

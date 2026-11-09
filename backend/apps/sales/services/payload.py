@@ -164,6 +164,10 @@ def apply_payload(
         meta = {k: v for k, v in (document.meta or {}).items() if k != "rx"}
         rx = {k: v for k, v in rx.items() if v}
         document.meta = {**meta, **({"rx": rx} if rx else {})}
+    # G7 — which of the contractor's sites this bill is for.
+    from apps.sales.services.sites import place_on_site
+
+    place_on_site(tenant=tenant, document=document, payload=payload, errors=errors)
     # G5 — the repair job this bill delivers, kept in meta.repair_job.
     if "repair_job_id" in payload:
         from apps.sales.services.repairs import link_to_draft as link_repair

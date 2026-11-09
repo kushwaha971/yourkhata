@@ -78,6 +78,8 @@ export interface InvoiceFormValues {
   mechanic?: string;
   /** G5 — the repair job this bill delivers. */
   repairJob?: BillRepairJob | null;
+  /** G7 — which of the contractor's sites; unset lets the server take an only site. */
+  siteId?: string;
   /** G4 — a Schedule H medicine's prescription: the doctor and the patient. */
   rxDoctor?: string;
   rxPatient?: string;
@@ -178,6 +180,7 @@ export const toWireBody = (values: InvoiceFormValues): Record<string, unknown> =
   location_id: values.locationId || null,
   ...(values.vehicleNo !== undefined ? { vehicle_number: values.vehicleNo } : {}),
   ...(values.customOrder !== undefined ? { custom_order_id: values.customOrder?.id ?? null } : {}),
+  ...(values.siteId ? { site_id: values.siteId } : {}),
   ...(values.repairJob !== undefined ? { repair_job_id: values.repairJob?.id ?? null } : {}),
   ...(values.pan !== undefined ? { pan: values.pan.trim().toUpperCase() } : {}),
   ...(values.oldGold !== undefined
@@ -248,6 +251,7 @@ export const fromDocument = (doc: SalesDocument): InvoiceFormValues => ({
   pan: doc.pan ?? '',
   customOrder: doc.customOrder ?? null,
   repairJob: doc.repairJob ?? null,
+  siteId: doc.site?.id,
   oldGold: doc.oldGold
     ? {
         weightG: doc.oldGold.weight_g,

@@ -97,6 +97,8 @@ export const useInvoiceEditor = (
   const initialOrder = search.get('custom_order');
   // G5 — `?repair=` opens the bill that delivers a repair job.
   const initialRepair = search.get('repair');
+  // G7 — `?site=` opens a bill for that site, from its page.
+  const initialSite = search.get('site');
   const { partyId: initialParty, partyName: initialPartyName } = usePartyEditorSeed();
   const dispatch = useAppDispatch();
   const store = useStore<RootState>();
@@ -233,6 +235,10 @@ export const useInvoiceEditor = (
       .catch(() => undefined);
     return () => controller.abort();
   }, [documentId, initialRepair, context, form]);
+  useEffect(() => {
+    if (documentId || !initialSite || !context || seeded.current !== 'new') return;
+    form.setValue('siteId', initialSite, { shouldDirty: true });
+  }, [documentId, initialSite, context, form]);
 
   // A Home handoff is a proposed line in a NEW editor only; existing drafts,
   // manual changes and revoked/switching contexts always win over a late read.

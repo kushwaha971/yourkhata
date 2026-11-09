@@ -14,6 +14,7 @@ brings `payments_payment` (see services/payment_seam.py).
 from __future__ import annotations
 
 from django.db import models
+from django.db.models.functions import Lower
 
 from apps.common.db.fields import MoneyField, QuantityField, RateField, UnitCostField, uuid7_pk
 from apps.common.models import DraftCreationBase, TenantModel
@@ -26,6 +27,10 @@ class SalesDocument(TenantModel):
     fy_label = models.CharField(max_length=9)
     status = models.CharField(
         max_length=16, choices=DocumentStatus.choices, default=DocumentStatus.DRAFT
+    )
+    #: G7 — the contractor's site this bill is for.
+    site = models.ForeignKey(
+        "sales.ContractorSite", on_delete=models.RESTRICT, null=True, blank=True, related_name="documents"
     )
     party = models.ForeignKey(
         "parties.Party",
@@ -404,6 +409,30 @@ class KarigarLot(TenantModel):
         verbose_name_plural = "karigar lots"
         ordering = ["issued_on", "created_at"]
         constraints = [models.UniqueConstraint(fields=["tenant", "client_key"], name="uq_karigar_lot_client_key")]
+
+
+class ContractorSite(TenantModel):
+    """G7 — one place a contractor buys for (design `pSite`, `dSite`).
+
+    It holds a name only. What the site owes is always added up from its bills,
+    so there is no second balance to fall out of step with the ledger.
+    """
+
+    party = models.ForeignKey("parties.Party", on_delete=models.RESTRICT, related_name="sites")
+    name = models.CharField(max_length=120)
+    client_key = models.UUIDField()
+
+    class Meta:
+        db_table = "sales_contractor_site"
+        verbose_name = "contractor site"
+        verbose_name_plural = "contractor sites"
+        ordering = ["name"]
+        constraints = [
+            models.UniqueConstraint(fields=["tenant", "client_key"], name="uq_site_client_key"),
+            models.UniqueConstraint(
+                models.F("tenant"), models.F("party"), Lower("name"), name="uq_site_party_name"
+            ),
+        ]
 
 
 class RepairJob(TenantModel):

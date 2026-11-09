@@ -24,6 +24,7 @@ from apps.sales.views.custom_orders import (
     KarigarTagsDoneView,
 )
 from apps.sales.views.invoices import InvoiceViewSet
+from apps.sales.views.sites import SiteDetailView, SitePaymentView, SitesView
 from apps.sales.views.exchange import ExchangePreviewView, ExchangeView
 from apps.sales.views.repairs import RepairJobDetailView, RepairJobStageView, RepairJobsView
 from apps.sales.views.schedule_h import ScheduleHRegisterView
@@ -41,6 +42,9 @@ urlpatterns = [
     # G4 — a medical store's Schedule H register.
     path("reports/schedule-h", ScheduleHRegisterView.as_view(), name="schedule-h-register"),
     # G5 — a mobile shop's repair jobs.
+    path("sites", SitesView.as_view(), name="sites"),
+    path("sites/payment", SitePaymentView.as_view(), name="site-payment"),
+    path("sites/<uuid:pk>", SiteDetailView.as_view(), name="site-detail"),
     path("exchanges/preview", ExchangePreviewView.as_view(), name="exchange-preview"),
     path("exchanges", ExchangeView.as_view(), name="exchanges"),
     path("repairs", RepairJobsView.as_view(), name="repairs"),

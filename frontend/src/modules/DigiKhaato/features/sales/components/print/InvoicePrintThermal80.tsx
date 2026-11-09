@@ -91,6 +91,11 @@ export function InvoicePrintThermal80({
       <p>
         {t('sales.print.to')}: {thermalName(who)}
       </p>
+      {doc.site && (
+        <p>
+          {t('sales.print.site')}: {thermalName(doc.site.name)}
+        </p>
+      )}
       <p className="border-b border-dashed border-black" />
       {doc.vehicle?.number && <p>{`${t('sales.editor.vehicleNo')}: ${doc.vehicle.number}`}</p>}
       {doc.lines.map((line) => (

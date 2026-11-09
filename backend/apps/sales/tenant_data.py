@@ -25,6 +25,8 @@ register(
     TenantTable("sales.SalesCreditApplication", export_name="sales_credit_applications.csv"),
     TenantTable("sales.DraftCreation", export_name="sales_draft_creations.csv"),
     TenantTable("sales.CustomOrder", export_name="custom_orders.csv"),
+    # G7 — a contractor's sites.
+    TenantTable("sales.ContractorSite", export_name="contractor_sites.csv"),
     # G5 — a mobile shop's repair jobs.
     TenantTable("sales.RepairJob", export_name="repair_jobs.csv"),
     TenantTable("sales.Karigar", export_name="karigars.csv"),

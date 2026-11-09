@@ -46,7 +46,8 @@ PRESETS: dict[str, Preset] = {
         favourite_units=("NOS", "PCS", "BOX", "KGS", "MTR", "LTR"),
         extra_expense_categories=("Loading & unloading", "Transport"),
         default_due_days=15,
-        features=frozenset({"orders"}),
+        # G7 — a contractor's sites, a Part H key.
+        features=frozenset({"orders", "sites"}),
     ),
     BusinessType.KIRANA.value: Preset(
         inventory_enabled=True,

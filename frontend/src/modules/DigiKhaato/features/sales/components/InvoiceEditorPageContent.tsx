@@ -55,6 +55,7 @@ import { fullCashPayment, type PaymentRowForm } from '../view-model/invoiceForm'
 import { JEWEL_LIMIT, priceOldGold } from '../view-model/jewelPrice';
 import { serverReason } from '../view-model/serverReason';
 
+import { BillSitePicker } from './BillSitePicker';
 import { InvoiceBillAdjustments } from './InvoiceBillAdjustments';
 import { InvoiceEditorDialogs } from './InvoiceEditorDialogs';
 import { InvoiceHeldBills } from './InvoiceHeldBills';
@@ -111,6 +112,7 @@ export function InvoiceEditorPageContent({
   const editor = useInvoiceEditor(documentId, kind);
   const autosave = useDraftAutosave(editor, documentId);
   const { form, preview, editor: server, canWrite, save, issue, values, today } = editor;
+  const sellsToSites = Boolean(useAppSelector(selectActiveTenant)?.features?.includes('sites'));
   const [paying, setPaying] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   /* C1 (design dScan): once a code has been scanned onto this bill, the desktop
@@ -770,6 +772,14 @@ export function InvoiceEditorPageContent({
                   { number: billOrder.number, rate: formatInr(billOrder.fixed_rate ?? '0') }
                 )}
               </UbText>
+            )}
+            {/* G7 — "Which site?", only for a contractor with more than one. */}
+            {sellsToSites && values.partyId && (
+              <BillSitePicker
+                partyId={values.partyId}
+                value={values.siteId ?? ''}
+                onChange={(siteId) => form.setValue('siteId', siteId, { shouldDirty: true })}
+              />
             )}
             {/* G5 — the repair this bill delivers, and its advance taken off. */}
             {values.repairJob && (

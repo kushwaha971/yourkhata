@@ -299,6 +299,11 @@ export function InvoicePrintA4({
               {stateName(party.stateCode, locale)} ({party.stateCode})
             </p>
           )}
+          {doc.site && (
+            <p>
+              <span className="font-semibold">{t('sales.print.site')}:</span> {doc.site.name}
+            </p>
+          )}
           {buyerMobile && (
             <p>
               <span className="font-semibold">{t('sales.print.phone')}:</span>{' '}

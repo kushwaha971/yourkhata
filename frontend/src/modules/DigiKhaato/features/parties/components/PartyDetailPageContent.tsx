@@ -24,9 +24,11 @@ import {
   useIsMobileLayer,
 } from 'src/design-system';
 import { useAppRouter } from 'src/hooks/useAppRouter';
+import { useAppSelector } from 'src/hooks/useAppStore';
 import { usePermissions } from 'src/hooks/usePermissions';
 import { useScrolledPast } from 'src/hooks/useScrolledPast';
 import { useTranslation, type TranslateFn } from 'src/hooks/useTranslation';
+import { selectActiveTenant } from 'src/redux/slice/sessionSlice';
 import { ROUTES, partyStatementPath } from 'src/routes';
 import { copyText } from 'src/utils/clipboard';
 import { subtractMoney, compareMoney } from 'src/utils/money';
@@ -83,6 +85,13 @@ import type { PartyDetail } from '../types/party.types';
  * an interaction, so `open` is false in every server pass and there is no
  * hydration mismatch to avoid.
  */
+const ContractorSitesPanelLazy = dynamic(
+  () =>
+    import('modules/DigiKhaato/features/sales/components/ContractorSitesPanel').then(
+      (m) => m.ContractorSitesPanel
+    ),
+  { ssr: false }
+);
 const ShopPersonRecordsLazy = dynamic(
   () => import('./ShopPersonRecords').then((m) => m.ShopPersonRecords),
   { ssr: false }
@@ -232,6 +241,7 @@ export function ExistingPartyDetailPageContent({
      balance, the credit limit) are not offered on the Shop's page,
      and the Shop's payment tools are not offered in the Udhaar book. */
   const shopBook = book === 'shop';
+  const sellsToSites = Boolean(useAppSelector(selectActiveTenant)?.features?.includes('sites'));
   const search = useSearchParams();
   const udhaarApp = app === 'khata';
   /* The header's money words follow the book: "To collect / To pay" on the Shop's
@@ -759,6 +769,9 @@ export function ExistingPartyDetailPageContent({
                 module and says which parties it is for. Inside the roles block,
                 a held deposit on a shop with no module roles had no panel (and
                 no Return) anywhere — found at the Wave A gate. */}
+            {party && shopBook && sellsToSites && (
+              <ContractorSitesPanelLazy party={{ id: party.id, name: party.name }} onPaid={() => window.location.reload()} />
+            )}
             {party && <PartyModulePanels party={party} readOnly={isArchived} className="mt-4" />}
           </UbBox>
         </UbBox>

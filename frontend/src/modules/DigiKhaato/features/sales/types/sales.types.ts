@@ -214,6 +214,8 @@ export interface SalesDocument extends SalesDocumentTotals {
   /** G2d — the customer's PAN kept with a jeweller's bill. */
   readonly pan?: string | null;
   /** G5 — the repair job this bill delivers. */
+  /** G7 — the contractor's site this bill is for. */
+  readonly site?: { readonly id: string; readonly name: string } | null;
   readonly repairJob?: { readonly id: string; readonly number: string; readonly advance: string } | null;
   /** G4 — the prescription for a Schedule H medicine on this bill. */
   readonly rx?: { readonly doctor?: string; readonly patient?: string } | null;
