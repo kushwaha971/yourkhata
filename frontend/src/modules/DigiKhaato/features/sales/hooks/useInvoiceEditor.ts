@@ -26,6 +26,7 @@ import { mayHaveBeenSaved } from 'src/utils/requestKey';
 
 import { getItem } from '../../inventory/api/itemService';
 import { getCustomOrder } from '../api/customOrderService';
+import { getRepair } from '../api/repairService';
 import { getInvoice } from '../api/salesService';
 import {
   editorReset,
@@ -94,6 +95,8 @@ export const useInvoiceEditor = (
   const search = useSearchParams();
   const initialItem = search.get('item');
   const initialOrder = search.get('custom_order');
+  // G5 — `?repair=` opens the bill that delivers a repair job.
+  const initialRepair = search.get('repair');
   const { partyId: initialParty, partyName: initialPartyName } = usePartyEditorSeed();
   const dispatch = useAppDispatch();
   const store = useStore<RootState>();
@@ -215,6 +218,21 @@ export const useInvoiceEditor = (
       .catch(() => undefined);
     return () => controller.abort();
   }, [documentId, initialOrder, context, form]);
+
+  useEffect(() => {
+    if (documentId || !initialRepair || !context || seeded.current !== 'new') return undefined;
+    const controller = new AbortController();
+    void getRepair(initialRepair, controller.signal)
+      .then((job) =>
+        form.setValue(
+          'repairJob',
+          { id: job.id, number: job.number, advance: job.advance },
+          { shouldDirty: true }
+        )
+      )
+      .catch(() => undefined);
+    return () => controller.abort();
+  }, [documentId, initialRepair, context, form]);
 
   // A Home handoff is a proposed line in a NEW editor only; existing drafts,
   // manual changes and revoked/switching contexts always win over a late read.

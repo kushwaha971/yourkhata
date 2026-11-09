@@ -76,6 +76,8 @@ export interface InvoiceFormValues {
   /** G3a — the custom order this bill delivers. */
   customOrder?: BillCustomOrder | null;
   mechanic?: string;
+  /** G5 — the repair job this bill delivers. */
+  repairJob?: BillRepairJob | null;
   /** G4 — a Schedule H medicine's prescription: the doctor and the patient. */
   rxDoctor?: string;
   rxPatient?: string;
@@ -176,6 +178,7 @@ export const toWireBody = (values: InvoiceFormValues): Record<string, unknown> =
   location_id: values.locationId || null,
   ...(values.vehicleNo !== undefined ? { vehicle_number: values.vehicleNo } : {}),
   ...(values.customOrder !== undefined ? { custom_order_id: values.customOrder?.id ?? null } : {}),
+  ...(values.repairJob !== undefined ? { repair_job_id: values.repairJob?.id ?? null } : {}),
   ...(values.pan !== undefined ? { pan: values.pan.trim().toUpperCase() } : {}),
   ...(values.oldGold !== undefined
     ? {
@@ -244,6 +247,7 @@ export const fromDocument = (doc: SalesDocument): InvoiceFormValues => ({
   vehicleNo: doc.vehicle?.number ?? '',
   pan: doc.pan ?? '',
   customOrder: doc.customOrder ?? null,
+  repairJob: doc.repairJob ?? null,
   oldGold: doc.oldGold
     ? {
         weightG: doc.oldGold.weight_g,
@@ -386,3 +390,10 @@ export const paymentWireBody = (
     .filter((row) => isNumber(row.amount) && Number(row.amount) > 0)
     .map((row) => ({ mode: row.mode, amount: row.amount, reference: row.reference.trim() })),
 });
+
+/** G5 — the repair job a bill delivers: its number and the advance it applies. */
+export interface BillRepairJob {
+  readonly id: string;
+  readonly number: string;
+  readonly advance: string;
+}

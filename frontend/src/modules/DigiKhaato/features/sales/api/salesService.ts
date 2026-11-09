@@ -127,6 +127,7 @@ export const toDocument = (row: Wire): SalesDocument => {
     oldGold: (row.old_gold as OldGoldWire | null) ?? null,
     pan: (row.pan as string | null) ?? null,
     rx: (row.rx as { doctor?: string; patient?: string } | null) ?? null,
+    repairJob: (row.repair_job as { id: string; number: string; advance: string } | null) ?? null,
     customOrder: (row.custom_order as BillCustomOrder | null) ?? null,
     location: row.location
       ? {

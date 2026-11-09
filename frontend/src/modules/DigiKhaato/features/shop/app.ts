@@ -27,6 +27,7 @@ import {
   Truck,
   Undo2,
   Store,
+  Wrench,
 } from 'lucide-react';
 
 import { ROUTES } from 'src/routes';
@@ -155,6 +156,19 @@ export const SHOP_APP: AppManifest = {
       feature: 'jewellery',
       section: 'sales',
       order: 1.5,
+      tab: 'invoices',
+    },
+    // G5 (design dRepairs) — a mobile shop's repair jobs, under Sales.
+    {
+      key: 'repairs',
+      icon: Wrench,
+      labelId: 'nav.repairs',
+      href: ROUTES.SALES_REPAIRS,
+      module: 'sales',
+      permission: 'sales.invoice.read',
+      feature: 'serials',
+      section: 'sales',
+      order: 1.6,
       tab: 'invoices',
     },
     {

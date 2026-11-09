@@ -771,6 +771,15 @@ export function InvoiceEditorPageContent({
                 )}
               </UbText>
             )}
+            {/* G5 — the repair this bill delivers, and its advance taken off. */}
+            {values.repairJob && (
+              <UbText variant="body-sm" tone="secondary" data-testid="bill-repair-note">
+                {t('sales.repair.billNote', {
+                  number: values.repairJob.number,
+                  advance: formatInr(values.repairJob.advance),
+                })}
+              </UbText>
+            )}
             {jeweller && bill && !estimate && (
               <OldGoldSection form={form} disabled={locked} t={t} />
             )}

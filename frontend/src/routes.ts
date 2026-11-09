@@ -94,6 +94,7 @@ export const ROUTES = {
   SALES_ORDERS: '/sales/orders',
   /** G3a — a jeweller's custom orders (design §G3). */
   SALES_CUSTOM_ORDERS: '/sales/custom-orders',
+  SALES_REPAIRS: '/sales/repairs',
   SALES_OLD_GOLD: '/sales/old-gold',
   SALES_KARIGARS: '/sales/karigars',
   /** Shop item 4 — goods that left before the bill. */
