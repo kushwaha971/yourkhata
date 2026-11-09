@@ -18,7 +18,7 @@ from apps.common.tenancy import get_effective_tenant
 from apps.sales.services import exchange
 
 
-class ExchangeView(APIView):
+class _View(APIView):
     def get_permissions(self) -> list[Any]:
         return [
             IsAuthenticated(),
@@ -34,7 +34,16 @@ class ExchangeView(APIView):
         if "variants" not in features_of(get_effective_tenant(request)):
             raise NotFound("Exchange is kept by shops that sell in sizes.")
 
+
+class ExchangeView(_View):
     @idempotent("sales_exchange")
     def post(self, request: Any) -> Any:
         result = exchange.make_exchange(ctx=Ctx.from_request(request), data=request.data)
         return StandardResponse.created(exchange.view(result))
+
+
+class ExchangePreviewView(_View):
+    def post(self, request: Any) -> Any:
+        return StandardResponse.ok(
+            exchange.preview_exchange(ctx=Ctx.from_request(request), data=request.data)
+        )

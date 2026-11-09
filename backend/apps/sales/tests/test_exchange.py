@@ -137,3 +137,22 @@ def test_nothing_ticked_is_refused(clothes: Any, owner: Any) -> None:
     bad = _post(owner, {"against_id": str(uuid.uuid4()), "returns": [], "lines": []})
     assert bad.status_code == 400 or bad.status_code == 422
 
+
+def test_the_preview_tells_the_truth_and_leaves_nothing_behind(
+    clothes: Any, owner: Any, make_item: Any, make_party: Any
+) -> None:
+    """The dock's figures must equal what Done then makes, and looking changes nothing."""
+    party, item, bill = _sold(owner, make_item, make_party)
+    cheap = make_item("Socks", "100", stock="5")
+    body = {
+        "against_id": bill["id"],
+        "returns": [{"against_line_id": bill["lines"][0]["id"], "qty": "1"}],
+        "lines": [line(cheap, "1")],
+    }
+    count = SalesDocument.objects.count()
+    seen = owner.post(reverse("v1:exchange-preview"), body, format="json").json()["data"]
+    assert SalesDocument.objects.count() == count
+    assert _stock(cheap) == Decimal("5")
+    made = _post(owner, body).json()["data"]
+    assert Decimal(seen["to_pay"]) == Decimal(made["invoice"]["amount_due"])
+    assert Decimal(seen["credit_left"]) == Decimal(made["credit_note"]["open_credit"])

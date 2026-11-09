@@ -65,6 +65,20 @@ def make_exchange(*, ctx: Ctx, data: dict) -> dict:
     return {"credit_note": note, "invoice": outcome["document"]}
 
 
+def preview_exchange(*, ctx: Ctx, data: dict) -> dict:
+    """The real figures, with GST and rounding, from the real issue paths, then
+    rolled back: the screen shows what Done will do and keeps no second tax sum."""
+    with transaction.atomic():
+        body = view(make_exchange(ctx=ctx, data=data))
+        transaction.set_rollback(True)
+    return {
+        "goes_out": body["invoice"]["grand_total"],
+        "comes_back": body["credit_note"]["grand_total"],
+        "to_pay": body["invoice"]["amount_due"],
+        "credit_left": body["credit_note"]["open_credit"],
+    }
+
+
 def view(result: dict[str, Any]) -> dict:
     note, invoice = result["credit_note"], result["invoice"]
     return {

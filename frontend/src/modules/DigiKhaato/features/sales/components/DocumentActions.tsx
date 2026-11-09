@@ -13,6 +13,7 @@ import {
   Pencil,
   Undo2,
   XCircle,
+  ArrowLeftRight,
 } from 'lucide-react';
 
 import {
@@ -30,6 +31,7 @@ import { usePermissions } from 'src/hooks/usePermissions';
 import { useTranslation } from 'src/hooks/useTranslation';
 import { selectNetworkImpaired } from 'src/redux/slice/networkSlice';
 import { showSnackbar } from 'src/redux/slice/snackbarSlice';
+import { selectActiveTenant } from 'src/redux/slice/sessionSlice';
 import { ROUTES } from 'src/routes';
 
 import { convertEstimate, moveEstimate } from '../redux/salesFlowThunk';
@@ -99,6 +101,9 @@ export function DocumentActions({
     },
     [dispatch, doc.id]
   );
+  const sellsSizes = Boolean(useAppSelector(selectActiveTenant)?.features?.includes('variants'));
+  const canExchange =
+    canReturn(doc) && sellsSizes && Boolean(doc.party) && can('sales.credit_note.write') && can('sales.invoice.write');
   const convert = useCallback(async () => {
     setBusy(true);
     const result = await dispatch(
@@ -264,6 +269,17 @@ export function DocumentActions({
             {t('sales.estimate.convert.action')}
           </UbButton>
         )}
+      {canExchange && (
+        <UbActionLink
+          href={`${ROUTES.SALES_EXCHANGE}?against=${encodeURIComponent(doc.id)}`}
+          variant="secondary"
+          iconOnly="mobile"
+          icon={icon(ArrowLeftRight)}
+          data-testid="invoice-exchange"
+        >
+          {t('sales.exchange.action')}
+        </UbActionLink>
+      )}
       {canReturn(doc) && can('sales.credit_note.write') && (
         <UbActionLink
           href={`${ROUTES.SALES_CREDIT_NOTES}/new?against=${encodeURIComponent(doc.id)}`}
@@ -334,6 +350,16 @@ export function DocumentActions({
                             label: t('billDetail.mistake'),
                             caption: t('billDetail.mistakeHint'),
                             onSelect: () => void checkedVoid(),
+                          },
+                        ]
+                      : []),
+                    ...(canExchange
+                      ? [
+                          {
+                            key: 'exchange',
+                            label: t('sales.exchange.action'),
+                            caption: t('sales.exchange.actionHint'),
+                            href: `${ROUTES.SALES_EXCHANGE}?against=${encodeURIComponent(doc.id)}`,
                           },
                         ]
                       : []),
