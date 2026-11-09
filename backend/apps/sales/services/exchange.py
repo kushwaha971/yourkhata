@@ -5,6 +5,10 @@ against the old bill (stock back, credit on the customer's book, any due on the
 old bill settled first), and the new sale is an ordinary bill that takes that
 note's credit. Whatever the bill leaves over stays open on the note to use
 later; it is never paid out as cash. Either both documents exist or neither.
+
+A quick-sale bill has nobody to hold a credit, so the customer is saved first
+and the bill is linked to them (SAL-04 EC-7), inside the same transaction. The
+bill was paid in full and posted no ledger line, so linking moves no balance.
 """
 
 from __future__ import annotations
@@ -15,11 +19,49 @@ from django.db import transaction
 
 from apps.common.context import Ctx
 from apps.common.exceptions import ValidationFailed
-from apps.sales.constants import CreditNoteReason, Settlement
+from apps.sales.constants import (
+    CREDITABLE_STATUSES,
+    INVOICE_KINDS,
+    CreditNoteReason,
+    Settlement,
+)
+from apps.sales.models import SalesDocument
 from apps.sales.services import documents as drafts
 from apps.sales.services.credit_note_issue import issue_credit_note
 from apps.sales.services.credit_notes import create_credit_note, invoice_for_credit
 from apps.sales.services.issue import issue_invoice
+
+
+def _save_quick_sale_customer(*, ctx: Ctx, bill_id: Any, data: dict) -> None:
+    """Link a quick-sale bill to the customer standing at the counter."""
+    from apps.parties.models import Party
+    from apps.parties.services.crud import create_party
+
+    bill = SalesDocument.objects.select_for_update().get(tenant=ctx.tenant, pk=bill_id)
+    if bill.party_id is not None:
+        return
+    customer = data.get("customer") if isinstance(data.get("customer"), dict) else {}
+    name = str(customer.get("name") or bill.walk_in_name or "").strip()
+    mobile = str(customer.get("mobile") or bill.walk_in_mobile or "").strip()
+    errors: dict[str, list[str]] = {}
+    if not name:
+        errors["customer.name"] = ["Enter the customer's name."]
+    if not mobile:
+        errors["customer.mobile"] = ["Enter the customer's mobile."]
+    if errors:
+        raise ValidationFailed(errors)
+    party = Party.objects.filter(
+        tenant=ctx.tenant, mobile__endswith=mobile[-10:], deleted_at__isnull=True, status="active"
+    ).first()
+    if party is None:
+        party, _warnings = create_party(
+            ctx=ctx, payload={"name": name, "mobile": mobile, "type": "customer"}
+        )
+    snapshot = dict(bill.party_snapshot or {})
+    snapshot.update(name=snapshot.get("name") or party.name, mobile=party.mobile)
+    SalesDocument.objects.filter(pk=bill.pk).update(
+        party=party, walk_in_name=None, walk_in_mobile=None, party_snapshot=snapshot
+    )
 
 
 @transaction.atomic
@@ -35,9 +77,16 @@ def make_exchange(*, ctx: Ctx, data: dict) -> dict:
     if errors:
         raise ValidationFailed(errors)
 
-    old_bill = invoice_for_credit(ctx.tenant, data.get("against_id"))
-    if old_bill.party_id is None:
-        raise ValidationFailed({"against_id": ["Exchange needs a bill with a saved customer."]})
+    against_id = data.get("against_id")
+    if (
+        SalesDocument.objects.filter(
+            tenant=ctx.tenant, pk=against_id, kind__in=INVOICE_KINDS, status__in=CREDITABLE_STATUSES
+        )
+        .filter(party__isnull=True)
+        .exists()
+    ):
+        _save_quick_sale_customer(ctx=ctx, bill_id=against_id, data=data)
+    old_bill = invoice_for_credit(ctx.tenant, against_id)
 
     note = create_credit_note(
         ctx=ctx,

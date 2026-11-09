@@ -3,6 +3,8 @@ import { api, ubConfig } from 'src/api/AxiosInstances';
 /** G6 — exchange at the counter (design `pExchange`, `dExchange`). */
 export interface ExchangeRequest {
   readonly against_id: string;
+  /** A quick-sale bill only: who holds the credit. */
+  readonly customer?: { readonly name: string; readonly mobile: string };
   readonly returns: readonly { readonly against_line_id: string; readonly qty: string }[];
   readonly lines: readonly { readonly item_id: string; readonly qty: string }[];
 }

@@ -89,6 +89,31 @@ try {
     check(`${width}: self-test — ₹50 more would fail`, Math.abs(left + 50 - expected) > 1);
     check(`${width}: the screen said the same credit`, totals.replace(/,/g, '').includes(String(Math.round(left))) , totals.split('\n').join(' ').slice(0, 90));
     check(`${width}: the shirt came back and the socks went out`, (await stockOf(shirt.id)) === s0 + 1 && (await stockOf(socks.id)) === k0 - 1);
+
+    // A quick-sale bill: the screen asks who holds the credit, and Done saves them.
+    const walkDraft = (await api('POST', '/sales/invoices', { walk_in_name: 'QA96 Sita', lines: [{ item_id: shirt.id, qty: '1' }] })).data;
+    const walkBill = (await api('POST', `/sales/invoices/${walkDraft.id}/issue`, { version: walkDraft.version, payment: { mode_breakup: [{ mode: 'cash', amount: walkDraft.grand_total }] } })).data;
+    const walkMobile = `9${String(Date.now()).slice(-9)}`;
+    await page.goto(`${base}/sales/invoices/${walkBill.id}`, { waitUntil: 'networkidle' });
+    await page.getByRole('button', { name: 'More actions' }).first().click();
+    check(`${width}: a quick-sale bill offers Exchange`, (await page.getByRole('dialog').last().getByText('Exchange', { exact: true }).count()) > 0);
+    await page.goto(`${base}/sales/exchange?against=${walkBill.id}`, { waitUntil: 'networkidle' });
+    await page.getByTestId('exchange-back').getByRole('checkbox').first().click();
+    await box.click();
+    await page.keyboard.type(`QA96 Socks ${stamp}`);
+    await page.getByRole('option', { name: new RegExp(`Socks ${stamp}`) }).first().click();
+    await page.waitForTimeout(800);
+    check(`${width}: Done waits for the customer's mobile`, await done.isDisabled());
+    check(`${width}: the bill's name is filled in`, (await page.getByLabel('Customer name').inputValue()) === 'QA96 Sita');
+    await page.getByLabel('Customer mobile').fill(walkMobile);
+    await page.waitForFunction(() => !document.querySelector('[data-testid=exchange-done]').disabled, null, { timeout: 10000 });
+    if (SHOTS) await page.screenshot({ path: `${SHOTS}/walk-in-${width}.png`, fullPage: true });
+    await done.click();
+    await page.waitForURL((u) => /\/sales\/invoices\/[0-9a-f-]{36}$/.test(u.pathname) && !u.pathname.includes(walkBill.id), { timeout: 15000 });
+    const saved = (await api('GET', `/parties?q=${walkMobile}`)).data ?? [];
+    check(`${width}: one customer was saved`, saved.length === 1 && saved[0].name === 'QA96 Sita', String(saved.length));
+    const walkNotes = ((await api('GET', '/sales/credit-notes?page_size=50')).data ?? []).filter((n) => n.against_id === walkBill.id || n.against?.id === walkBill.id);
+    check(`${width}: the leftover credit is in their name`, walkNotes.length === 1 && Number(walkNotes[0].amount_due) > 0, walkNotes[0]?.amount_due);
     check(`${width}: no page errors`, errors.length === 0, errors[0] ?? '');
     await ctx.close();
   }

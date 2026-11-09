@@ -92,10 +92,12 @@ export const isVoidable = (doc: Pick<SalesDocument, 'kind' | 'status'>): boolean
   ).includes(doc.status);
 
 /** SAL-04 §10 / EC-7 — a return needs an issued, non-void bill with a party and a line left. */
-export const canReturn = (doc: SalesDocument): boolean =>
+export const canReturn = (doc: SalesDocument): boolean => doc.party !== null && hasGoodsToTakeBack(doc);
+
+/** G6 — a quick-sale bill can exchange too: the exchange saves the customer first. */
+export const hasGoodsToTakeBack = (doc: SalesDocument): boolean =>
   (doc.kind === 'invoice' || doc.kind === 'bill_of_supply') &&
   ['issued', 'partially_paid', 'paid', 'overdue'].includes(doc.status) &&
-  doc.party !== null &&
   doc.lines.some((line) => compareQuantity(remainingQuantity(line.qty, line.returnedQty), '0') > 0);
 
 /** SAL-04 FR-9 — a note with open credit can be applied to another bill. */

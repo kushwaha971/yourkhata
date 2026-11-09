@@ -39,6 +39,7 @@ import { fetchInvoice } from '../redux/salesThunk';
 import {
   canApply,
   canReturn,
+  hasGoodsToTakeBack,
   challanActions,
   estimateActions,
   isVoidable,
@@ -103,7 +104,7 @@ export function DocumentActions({
   );
   const sellsSizes = Boolean(useAppSelector(selectActiveTenant)?.features?.includes('variants'));
   const canExchange =
-    canReturn(doc) && sellsSizes && Boolean(doc.party) && can('sales.credit_note.write') && can('sales.invoice.write');
+    hasGoodsToTakeBack(doc) && sellsSizes && can('sales.credit_note.write') && can('sales.invoice.write');
   const convert = useCallback(async () => {
     setBusy(true);
     const result = await dispatch(
@@ -320,7 +321,7 @@ export function DocumentActions({
       {menu &&
       isBill &&
       !voidable &&
-      !(canReturn(doc) && can('sales.credit_note.write')) ? null : menu ? (
+      !(canReturn(doc) && can('sales.credit_note.write')) && !canExchange ? null : menu ? (
         <>
           <UbButton
             variant="secondary"

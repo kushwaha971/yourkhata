@@ -17,7 +17,9 @@ import {
   UbQuantityInput,
   UbSkeleton,
   UbStack,
+  UbPhoneInput,
   UbText,
+  UbTextInput,
   UbTotalDock,
 } from 'src/design-system';
 import { useAppRouter } from 'src/hooks/useAppRouter';
@@ -47,6 +49,7 @@ interface OutLine {
 }
 
 const PREVIEW_WAIT_MS = 250;
+const INDIAN_MOBILE = /^\+91[6-9]\d{9}$/;
 
 /**
  * G6 (design `pExchange`, `dExchange`) — tick what comes back from the old bill,
@@ -66,6 +69,8 @@ export function ExchangePageContent(): React.JSX.Element {
   const [out, setOut] = useState<readonly OutLine[]>([]);
   const [seen, setSeen] = useState<{ for: ExchangeRequest; figures: ExchangeFigures } | null>(null);
   const [busy, setBusy] = useState(false);
+  const [customerName, setCustomerName] = useState('');
+  const [customerMobile, setCustomerMobile] = useState('');
   const search = useItemSearch({});
   const key = useRef<{ body: string; value: string } | null>(null);
 
@@ -74,6 +79,7 @@ export function ExchangePageContent(): React.JSX.Element {
     getInvoice(against, controller.signal)
       .then((envelope) => {
         setBill(envelope.document);
+        setCustomerName(envelope.document.walkInName ?? '');
         setFailed(false);
       })
       .catch(() => {
@@ -89,16 +95,24 @@ export function ExchangePageContent(): React.JSX.Element {
         .filter((row) => row.line.id && row.left > 0),
     [bill]
   );
+  // A quick sale has nobody to hold a credit, so the customer is asked for here.
+  const quickSale = Boolean(bill) && !bill?.party;
+  const mobileOnBill = Boolean(bill?.walkInMobile);
+  const customerReady =
+    !quickSale || (customerName.trim() !== '' && (mobileOnBill || INDIAN_MOBILE.test(customerMobile)));
   const request = useMemo<ExchangeRequest | null>(() => {
-    if (!ticked.size || !out.length) return null;
+    if (!ticked.size || !out.length || !customerReady) return null;
     return {
       against_id: against,
+      ...(quickSale
+        ? { customer: { name: customerName.trim(), mobile: mobileOnBill ? '' : customerMobile } }
+        : {}),
       returns: open
         .filter((row) => ticked.has(row.line.id as string))
         .map((row) => ({ against_line_id: row.line.id as string, qty: ticked.get(row.line.id as string) ?? '1' })),
       lines: out.map((line) => ({ item_id: line.itemId, qty: String(line.qty) })),
     };
-  }, [against, open, out, ticked]);
+  }, [against, customerMobile, customerName, customerReady, mobileOnBill, open, out, quickSale, ticked]);
 
   useEffect(() => {
     if (!request) return undefined;
@@ -177,6 +191,30 @@ export function ExchangePageContent(): React.JSX.Element {
       />
       <UbBox className="grid items-start gap-4 lg:grid-cols-[minmax(0,1fr)_340px]">
         <UbStack gap={4}>
+          {quickSale && (
+            <UbStack gap={2}>
+              <UbText variant="body-sm" className="font-semibold">{t('sales.exchange.customer')}</UbText>
+              <UbCard>
+                <UbStack gap={3} data-testid="exchange-customer">
+                  <UbTextInput
+                    aria-label={t('sales.exchange.customerName')}
+                    placeholder={t('sales.exchange.customerName')}
+                    maxLength={120}
+                    value={customerName}
+                    onChange={setCustomerName}
+                  />
+                  {!mobileOnBill && (
+                    <UbPhoneInput
+                      aria-label={t('sales.exchange.customerMobile')}
+                      value={customerMobile}
+                      onChange={setCustomerMobile}
+                    />
+                  )}
+                  <UbText variant="caption" tone="secondary">{t('sales.exchange.customerHint')}</UbText>
+                </UbStack>
+              </UbCard>
+            </UbStack>
+          )}
           <UbStack gap={2}>
             <UbText variant="body-sm" className="font-semibold">
               {t('sales.exchange.back')} · {t('sales.exchange.backHint')}

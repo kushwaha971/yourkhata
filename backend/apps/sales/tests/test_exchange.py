@@ -156,3 +156,73 @@ def test_the_preview_tells_the_truth_and_leaves_nothing_behind(
     made = _post(owner, body).json()["data"]
     assert Decimal(seen["to_pay"]) == Decimal(made["invoice"]["amount_due"])
     assert Decimal(seen["credit_left"]) == Decimal(made["credit_note"]["open_credit"])
+
+
+def _quick_sale(owner: Any, make_item: Any, **walk_in: Any) -> tuple[Any, dict]:
+    item = make_item("Cotton shirt M", "500", stock="10")
+    made = draft(owner, lines=[line(item, "2")], **walk_in).json()["data"]
+    paid = cash(made["grand_total"])
+    return item, issue(owner, made["id"], version=made["version"], payment=paid).json()["data"]
+
+
+def _swap(bill: dict, other: Any, **extra: Any) -> dict:
+    full = SalesDocument.objects.get(pk=bill["id"]).lines.first()
+    return {
+        "against_id": bill["id"],
+        "returns": [{"against_line_id": str(full.id), "qty": "1"}],
+        "lines": [line(other, "1")],
+        **extra,
+    }
+
+
+def test_a_quick_sale_exchange_saves_the_customer_and_links_the_bill(
+    clothes: Any, owner: Any, make_item: Any
+) -> None:
+    """A walk-in's leftover credit must belong to somebody, or it is lost."""
+    item, bill = _quick_sale(owner, make_item, walk_in_name="Sita")
+    other = make_item("Socks", "100", stock="5")
+    made = _post(owner, _swap(bill, other, customer={"name": "Sita", "mobile": "9876500011"}))
+    assert made.status_code == 201, made.content
+    old = SalesDocument.objects.get(pk=bill["id"])
+    assert old.party.mobile == "9876500011" and old.walk_in_name is None
+    data = made.json()["data"]
+    assert Decimal(data["credit_note"]["open_credit"]) > 0
+    recalc_clean()
+
+
+def test_a_quick_sale_exchange_uses_the_customer_already_saved_on_that_mobile(
+    clothes: Any, owner: Any, make_item: Any, make_party: Any
+) -> None:
+    """The same mobile twice is one customer, not a refused exchange."""
+    party = make_party(mobile="9876500012")
+    _item, bill = _quick_sale(owner, make_item, walk_in_name="Sita")
+    other = make_item("Socks", "100", stock="5")
+    made = _post(owner, _swap(bill, other, customer={"name": "Sita", "mobile": "9876500012"}))
+    assert made.status_code == 201, made.content
+    assert SalesDocument.objects.get(pk=bill["id"]).party_id == party.id
+
+
+def test_a_quick_sale_exchange_needs_a_mobile_and_a_refusal_links_nothing(
+    clothes: Any, owner: Any, make_item: Any
+) -> None:
+    """No mobile, no exchange; the bill stays a quick sale."""
+    _item, bill = _quick_sale(owner, make_item, walk_in_name="Sita")
+    other = make_item("Socks", "100", stock="5")
+    assert _post(owner, _swap(bill, other)).status_code == 400
+    assert SalesDocument.objects.get(pk=bill["id"]).party_id is None
+
+
+def test_the_preview_of_a_quick_sale_saves_nobody(clothes: Any, owner: Any, make_item: Any) -> None:
+    """Typing a mobile on the screen must not make a customer."""
+    from apps.parties.models import Party
+
+    _item, bill = _quick_sale(owner, make_item, walk_in_name="Sita")
+    other = make_item("Socks", "100", stock="5")
+    seen = owner.post(
+        reverse("v1:exchange-preview"),
+        _swap(bill, other, customer={"name": "Sita", "mobile": "9876500013"}),
+        format="json",
+    )
+    assert seen.status_code == 200, seen.content
+    assert not Party.objects.filter(mobile="9876500013").exists()
+    assert SalesDocument.objects.get(pk=bill["id"]).party_id is None
