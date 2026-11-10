@@ -223,8 +223,10 @@ idle, so do not message sessions the owner has stopped.
 
 ## Waiting to start
 
-- **A6 · Separate customer and supplier forms — READY FOR THE OWNER'S CHECK,
-  9.0/10 (28 Oct 2026), main worktree.** Report:
+- **A6 · Separate customer and supplier forms — APPROVED BY THE OWNER
+  (10 Nov 2026: "checked A6 from my side and good to go"), 9.0/10, on `dev`
+  (754e627 and follow-ups). Re-run on the 10 Nov build: `e2e/a6-forms.mjs`
+  24 views, 0 failures.** Built 28 Oct 2026, main worktree. Report:
   `docs/performance/2026-10-28-shop-a6-customer-supplier-forms.md`; harness
   `e2e/a6-forms.mjs`. Built to R-DEC-61:
   - a name and a number at the counter;

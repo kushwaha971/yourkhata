@@ -190,3 +190,9 @@ is designed from the artifact's own references.
 2. **A first tap waits.** On a phone, the first "+" took 1–3 s to show the
    form while the machine was busy, the first download of its code. It goes to
    A8, together with the seed-64 slow return.
+
+## Owner's check — 10 Nov 2026
+
+Approved: "checked A6 from my side and good to go". Re-run before recording it,
+on the build that carries Part G: `e2e/a6-forms.mjs` 24 views, 0 failures, 0
+console errors.
