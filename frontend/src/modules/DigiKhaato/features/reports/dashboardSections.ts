@@ -26,7 +26,16 @@ import dynamic from 'next/dynamic';
 export interface DashboardSectionProps {
   /** The section's `data` exactly as the module's server selector returned it. */
   readonly data: unknown;
+  /** Drawn inside Home's Follow-ups panel: rows only, no card of its own. */
+  readonly embedded?: boolean;
 }
+
+/**
+ * Sections that are things to do today, drawn inside Home's Follow-ups panel
+ * rather than below the register (G10: an advance order due tomorrow sat under
+ * the day book while Follow-ups said "Nothing needs you right now").
+ */
+export const FOLLOWUP_SECTIONS: ReadonlySet<string> = new Set(['sales.advance_orders']);
 
 export type DashboardSectionComponent = ComponentType<DashboardSectionProps>;
 

@@ -3,7 +3,7 @@
 import { UbButton, UbCard, UbStack, UbText } from 'src/design-system';
 import type { TranslateFn } from 'src/hooks/useTranslation';
 
-import { dashboardSectionComponent } from '../dashboardSections';
+import { dashboardSectionComponent, FOLLOWUP_SECTIONS } from '../dashboardSections';
 
 // ADR-061 — this component READS a registry verticals write to; their
 // registrations run when this bare import is evaluated. It looks redundant
@@ -34,7 +34,10 @@ export function DashboardModuleSections({
   onRetry,
   t,
 }: DashboardModuleSectionsProps): React.JSX.Element | null {
-  const drawn = sections.filter((section) => dashboardSectionComponent(section.key) !== null);
+  const drawn = sections.filter(
+    (section) =>
+      dashboardSectionComponent(section.key) !== null && !FOLLOWUP_SECTIONS.has(section.key)
+  );
   if (drawn.length === 0) return null;
 
   const modules = [...new Set(drawn.map((section) => section.module))];

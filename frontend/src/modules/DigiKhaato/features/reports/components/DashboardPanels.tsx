@@ -484,12 +484,15 @@ export function NeedsAttention({
   onRetry,
   t,
   embedded = false,
+  alsoShown = false,
 }: Readonly<{
   data: DashboardData;
   onRetry: () => void;
   t: TranslateFn;
   /** Rows only, inside Home's Follow-ups panel. */
   embedded?: boolean;
+  /** Something else in the same panel needs the merchant: no "Nothing needs you". */
+  alsoShown?: boolean;
 }>): React.JSX.Element {
   const broken = failed(data, PARTS.attention);
   const { tiles } = data;
@@ -606,7 +609,8 @@ export function NeedsAttention({
         {broken ? (
           <PartUnavailable onRetry={onRetry} t={t} className="p-4" />
         ) : (
-          items.length === 0 && (
+          items.length === 0 &&
+          !alsoShown && (
             <UbText variant="body-sm" tone="tertiary" className="p-4">
               {t('reports.dashboard.attention.none')}
             </UbText>

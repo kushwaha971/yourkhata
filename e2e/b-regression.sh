@@ -68,3 +68,4 @@ run g9-schemes schemes.mjs
 run g10-cafe-orders cafe-orders.mjs
 run g11-phone-orders phone-orders.mjs
 run g12-other-look g12-other-look.mjs
+run g-day g-day.mjs

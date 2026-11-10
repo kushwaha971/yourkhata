@@ -785,3 +785,38 @@ it('keeps the money loading skeleton outside paragraphs to avoid hydration repai
   const figures = await screen.findByTestId('home-figures');
   expect(figures.querySelector('p div')).toBeNull();
 });
+
+it('draws an advance order due tomorrow in Follow-ups, not under the register (G10)', async () => {
+  /** G round, 10 Nov: the block sat below the day book while Follow-ups said "Nothing needs you right now". */
+  service.getDashboard.mockResolvedValue(
+    DATA({
+      sections: [
+        {
+          key: 'sales.advance_orders',
+          module: 'sales',
+          order: 15,
+          data: {
+            orders: [
+              {
+                id: 'o1',
+                number: 'ADV-0001',
+                party: { name: 'Sunita Yadav' },
+                ready_at: '2026-11-11T05:30:00Z',
+                status: 'preparing',
+                balance: '10100.00',
+                lines: [{ name: 'Mixed sweets box', qty: '20' }],
+              },
+            ],
+          },
+          unavailable: false,
+        },
+      ],
+    })
+  );
+  signIn(OWNER);
+  renderWithProviders(<DashboardPageContent />);
+  const followUps = await screen.findByTestId('home-followups');
+  expect(await within(followUps).findByText(/ADV-0001 · Sunita Yadav/)).toBeInTheDocument();
+  expect(within(followUps).queryByText('Nothing needs you right now.')).not.toBeInTheDocument();
+  expect(screen.queryByTestId('dashboard-module-sections')).not.toBeInTheDocument();
+});

@@ -38,6 +38,7 @@ import { formatInrUnbroken } from 'src/utils/moneyUnbroken';
 import { HomeStrip } from '../../inventory/components/HomeStrip';
 import { useAppWords } from '../../navigation/useAppWords';
 import { PROMISE_DATE_FORMAT } from '../../parties/view-model/shopPromiseFacts';
+import { dashboardSectionComponent, FOLLOWUP_SECTIONS } from '../dashboardSections';
 import { useCounter } from '../hooks/useCounter';
 import { useHomeCharts } from '../hooks/useHomeCharts';
 import { useHomePromises } from '../hooks/useHomePromises';
@@ -72,8 +73,7 @@ const Charts = dynamic(() => import('./DashboardCharts').then((m) => m.Dashboard
 });
 const Payment = dynamic(
   () => import('../../payments/components/PaymentFormDrawer').then((m) => m.PaymentFormDrawer),
-  { ssr: false,
-  loading: () => <UbDrawerLoading /> }
+  { ssr: false, loading: () => <UbDrawerLoading /> }
 );
 const CashCount = dynamic(() => import('./CashCountDrawer').then((m) => m.CashCountDrawer), {
   ssr: false,
@@ -119,6 +119,14 @@ export function ShopHomeWorkspace({
   const [reminder, setReminder] = useState<LanePerson | null>(null);
   const [counting, setCounting] = useState(false);
   const timezone = useAppSelector(selectTenantTimezone) ?? DEFAULT_TENANT_TIMEZONE;
+  // G10 — module sections that are today's follow-ups (an advance order due
+  // tomorrow) are drawn in Follow-ups, near the top, not below the register.
+  const followUps = (data.sections ?? [])
+    .filter((section) => FOLLOWUP_SECTIONS.has(section.key) && !section.unavailable && section.data)
+    .flatMap((section) => {
+      const Section = dashboardSectionComponent(section.key);
+      return Section ? [{ key: section.key, Section, data: section.data }] : [];
+    });
   const counter = useCounter(data.generatedAt, data.recentActivity);
   const overview = useHomeCharts(true, data.generatedAt);
   const canPay = hasModule('payments') && can('payments.payment.write');
@@ -215,9 +223,7 @@ export function ShopHomeWorkspace({
   ];
   /* The design's day line: two figures on a phone, four on a desktop. What it
      does not draw stays on the page, under the first view. */
-  const dayKeys = mobile
-    ? ['billed', 'received']
-    : ['billed', 'received', 'paidOut', 'toCollect'];
+  const dayKeys = mobile ? ['billed', 'received'] : ['billed', 'received', 'paidOut', 'toCollect'];
   const moreKeys = mobile ? ['paidOut', 'cash'] : ['cash'];
   const figureCell = (figure: (typeof figures)[number]) => (
     <UbStack
@@ -258,52 +264,50 @@ export function ShopHomeWorkspace({
             ? t('reports.home.cashPhoneBasis')
             : figure.caption}
       </UbText>
-            {figure.key === 'cash' && data.tiles.cashInHand?.lastCount !== undefined && (
-              /* The reference's "Not counted · Count cash": the count's state and
+      {figure.key === 'cash' && data.tiles.cashInHand?.lastCount !== undefined && (
+        /* The reference's "Not counted · Count cash": the count's state and
                  the act share one caption line (Counter Mode, rev 3). */
-              <UbText variant="caption" className="ds-num" data-testid="home-cash-count">
-                <UbText as="span" variant="inherit" data-testid="home-cash-count-last">
-                  {data.tiles.cashInHand.lastCount ? (
-                    <>
-                      <UbText as="span" variant="inherit" tone="secondary">
-                        {countedWhen(t, data.tiles.cashInHand.lastCount, data.asOf, timezone)}
-                      </UbText>
-                      {' · '}
-                      <UbText
-                        as="span"
-                        variant="inherit"
-                        className="font-semibold"
-                        tone={
-                          VARIANCE_TONE[
-                            varianceWords(t, data.tiles.cashInHand.lastCount.variance).kind
-                          ]
-                        }
-                      >
-                        {varianceWords(t, data.tiles.cashInHand.lastCount.variance).text}
-                      </UbText>
-                    </>
-                  ) : (
-                    <UbText as="span" variant="inherit" tone="secondary">
-                      {t('reports.cashCount.notCounted')}
-                    </UbText>
-                  )}
+        <UbText variant="caption" className="ds-num" data-testid="home-cash-count">
+          <UbText as="span" variant="inherit" data-testid="home-cash-count-last">
+            {data.tiles.cashInHand.lastCount ? (
+              <>
+                <UbText as="span" variant="inherit" tone="secondary">
+                  {countedWhen(t, data.tiles.cashInHand.lastCount, data.asOf, timezone)}
                 </UbText>
-                {/* A phone's half-width cell puts the act on its own line, with
-                    room below it for the 44 px target inside the rounded card. */}
-                <UbText as="span" variant="inherit" tone="secondary" className="max-sm:hidden">
-                  {' · '}
-                </UbText>
-                <UbButton
-                  variant="link"
-                  size="sm"
-                  className="ub-hit inline h-auto px-0 align-baseline text-caption font-semibold max-sm:mb-1.5 max-sm:mt-1 max-sm:flex [&>span]:underline [&>span]:underline-offset-2"
-                  onClick={() => setCounting(true)}
-                  data-testid="home-cash-count-open"
+                {' · '}
+                <UbText
+                  as="span"
+                  variant="inherit"
+                  className="font-semibold"
+                  tone={
+                    VARIANCE_TONE[varianceWords(t, data.tiles.cashInHand.lastCount.variance).kind]
+                  }
                 >
-                  {t('reports.cashCount.action')}
-                </UbButton>
+                  {varianceWords(t, data.tiles.cashInHand.lastCount.variance).text}
+                </UbText>
+              </>
+            ) : (
+              <UbText as="span" variant="inherit" tone="secondary">
+                {t('reports.cashCount.notCounted')}
               </UbText>
             )}
+          </UbText>
+          {/* A phone's half-width cell puts the act on its own line, with
+                    room below it for the 44 px target inside the rounded card. */}
+          <UbText as="span" variant="inherit" tone="secondary" className="max-sm:hidden">
+            {' · '}
+          </UbText>
+          <UbButton
+            variant="link"
+            size="sm"
+            className="ub-hit inline h-auto px-0 align-baseline text-caption font-semibold max-sm:mb-1.5 max-sm:mt-1 max-sm:flex [&>span]:underline [&>span]:underline-offset-2"
+            onClick={() => setCounting(true)}
+            data-testid="home-cash-count-open"
+          >
+            {t('reports.cashCount.action')}
+          </UbButton>
+        </UbText>
+      )}
     </UbStack>
   );
   const openPayment = (direction: 'in' | 'out', party?: LanePerson) =>
@@ -390,7 +394,7 @@ export function ShopHomeWorkspace({
     <UbStack gap={3} className="lg:gap-4" data-testid="shop-home-workspace">
       <UbStack direction="row" justify="between" align="start" className="flex-wrap gap-4">
         <UbStack gap={1} className="min-w-0 flex-1">
-          <UbText as="h1" variant="h1" >
+          <UbText as="h1" variant="h1">
             {t('reports.home.title')}
           </UbText>
           <UbText variant="body-sm" tone="secondary" className="hidden lg:block">
@@ -495,32 +499,41 @@ export function ShopHomeWorkspace({
             </UbText>
           </UbStack>
           <UbStack gap={3} className="pb-3">
-                  <HomePromises
-                    embedded
-                    state={promises}
-                    today={data.asOf}
-                    formatDate={promiseDay}
-                    canRemind={canRemind}
-                    canPay={canPay}
-                    onRemind={(promise) =>
-                      setReminder({
-                        id: promise.party.id,
-                        name: promise.party.name,
-                        balance: promise.balance ?? '0.00',
-                        mobile: promise.party.mobile ?? null,
-                      })
-                    }
-                    onPay={(promise) =>
-                      openPayment('out', {
-                        id: promise.party.id,
-                        name: promise.party.name,
-                        balance: promise.balance ?? '0.00',
-                      })
-                    }
-                    onRetry={refresh}
-                    t={t}
-                  />
-                  <NeedsAttention embedded data={data} onRetry={refresh} t={t} />
+            <HomePromises
+              embedded
+              state={promises}
+              today={data.asOf}
+              formatDate={promiseDay}
+              canRemind={canRemind}
+              canPay={canPay}
+              onRemind={(promise) =>
+                setReminder({
+                  id: promise.party.id,
+                  name: promise.party.name,
+                  balance: promise.balance ?? '0.00',
+                  mobile: promise.party.mobile ?? null,
+                })
+              }
+              onPay={(promise) =>
+                openPayment('out', {
+                  id: promise.party.id,
+                  name: promise.party.name,
+                  balance: promise.balance ?? '0.00',
+                })
+              }
+              onRetry={refresh}
+              t={t}
+            />
+            {followUps.map(({ key, Section, data: sectionData }) => (
+              <Section key={key} data={sectionData} embedded />
+            ))}
+            <NeedsAttention
+              embedded
+              data={data}
+              onRetry={refresh}
+              t={t}
+              alsoShown={followUps.length > 0}
+            />
           </UbStack>
         </UbPanel>
         {lane(false)}
@@ -534,11 +547,13 @@ export function ShopHomeWorkspace({
           const figure = figures.find((row) => row.key === key);
           return figure ? figureCell(figure) : null;
         })}
-        {!mobile && overview.status === 'ready' && overview.charts.trend?.series.includes('sales') && (
-          <UbBox className="min-w-0 border-l border-border-hairline p-3">
-            <HomeDaily data={overview.charts} today={data.asOf} refreshKey={data.generatedAt} />
-          </UbBox>
-        )}
+        {!mobile &&
+          overview.status === 'ready' &&
+          overview.charts.trend?.series.includes('sales') && (
+            <UbBox className="min-w-0 border-l border-border-hairline p-3">
+              <HomeDaily data={overview.charts} today={data.asOf} refreshKey={data.generatedAt} />
+            </UbBox>
+          )}
       </UbBox>
       <UbStack direction="row" align="center" justify="end" className="flex-wrap gap-2">
         <UbText variant="caption" tone="secondary" className="min-w-0 flex-1">
@@ -546,57 +561,57 @@ export function ShopHomeWorkspace({
             ? t('reports.dashboard.updated.seconds', { seconds: secondsAgo })
             : t('reports.dashboard.updated.minutes', { minutes: Math.floor(secondsAgo / 60) })}
         </UbText>
-          <UbMoreActions
-            label={t('reports.dashboard.quick.more')}
-            title={t('reports.dashboard.quick.moreTitle')}
-            closeLabel={t('common.action.close')}
-            size="md"
-            rows={[
-              ...(canPay
-                ? [
-                    {
-                      key: 'receive',
-                      label: t('reports.home.receive'),
-                      onSelect: () => openPayment('in'),
-                    },
-                    {
-                      key: 'pay',
-                      label: w('reports.home.paySupplier'),
-                      onSelect: () => openPayment('out'),
-                    },
-                  ]
-                : []),
-              ...(hasModule('inventory') && can('inventory.item.read')
-                ? [{ key: 'items', label: t('reports.home.items'), href: ROUTES.ITEMS }]
-                : []),
-              ...(hasModule('purchases') && can('purchases.bill.write')
-                ? [
-                    {
-                      key: 'purchase',
-                      label: t('reports.dashboard.quick.newPurchase'),
-                      href: `${ROUTES.PURCHASE_BILLS}/new`,
-                    },
-                  ]
-                : []),
-              ...(hasModule('expenses') && can('expenses.expense.write')
-                ? [
-                    {
-                      key: 'expense',
-                      label: t('reports.dashboard.quick.addExpense'),
-                      href: `${ROUTES.EXPENSES}?add=1`,
-                    },
-                  ]
-                : []),
-            ]}
-          />
-          <UbButton
-            variant="ghost"
-            iconOnly
-            icon={<RefreshCw aria-hidden className="h-4 w-4" />}
-            onClick={refresh}
-          >
-            {t('reports.dashboard.refresh')}
-          </UbButton>
+        <UbMoreActions
+          label={t('reports.dashboard.quick.more')}
+          title={t('reports.dashboard.quick.moreTitle')}
+          closeLabel={t('common.action.close')}
+          size="md"
+          rows={[
+            ...(canPay
+              ? [
+                  {
+                    key: 'receive',
+                    label: t('reports.home.receive'),
+                    onSelect: () => openPayment('in'),
+                  },
+                  {
+                    key: 'pay',
+                    label: w('reports.home.paySupplier'),
+                    onSelect: () => openPayment('out'),
+                  },
+                ]
+              : []),
+            ...(hasModule('inventory') && can('inventory.item.read')
+              ? [{ key: 'items', label: t('reports.home.items'), href: ROUTES.ITEMS }]
+              : []),
+            ...(hasModule('purchases') && can('purchases.bill.write')
+              ? [
+                  {
+                    key: 'purchase',
+                    label: t('reports.dashboard.quick.newPurchase'),
+                    href: `${ROUTES.PURCHASE_BILLS}/new`,
+                  },
+                ]
+              : []),
+            ...(hasModule('expenses') && can('expenses.expense.write')
+              ? [
+                  {
+                    key: 'expense',
+                    label: t('reports.dashboard.quick.addExpense'),
+                    href: `${ROUTES.EXPENSES}?add=1`,
+                  },
+                ]
+              : []),
+          ]}
+        />
+        <UbButton
+          variant="ghost"
+          iconOnly
+          icon={<RefreshCw aria-hidden className="h-4 w-4" />}
+          onClick={refresh}
+        >
+          {t('reports.dashboard.refresh')}
+        </UbButton>
       </UbStack>
       {counter.data?.repeat && <HomeRepeats sources={counter.data.repeat} />}
       <UbBox className="grid grid-cols-1 items-start gap-3 lg:grid-cols-[1.2fr_1fr] lg:gap-4">
@@ -679,7 +694,9 @@ export function ShopHomeWorkspace({
         </UbStack>
         <UbStack gap={3} className="min-w-0">
           {lane(true)}
-                  {data.tiles.lowStock && data.lowStockItems.length > 0 && <LowStockCard items={data.lowStockItems} t={t} />}
+          {data.tiles.lowStock && data.lowStockItems.length > 0 && (
+            <LowStockCard items={data.lowStockItems} t={t} />
+          )}
           {settlements && settlements.count > 0 && (
             <HomeSettlementNote candidates={settlements} canSettle={canPay} onSettled={refresh} />
           )}
