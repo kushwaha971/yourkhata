@@ -28,10 +28,11 @@ import {
   type UbGridTier,
 } from 'src/design-system/UbDataGrid';
 import { UbPageHeaderMobileActions } from 'src/design-system/UbPageHeader/UbPageHeaderMobileActions';
-import { useAppDispatch } from 'src/hooks/useAppStore';
+import { useAppDispatch, useAppSelector } from 'src/hooks/useAppStore';
 import { useDebounce } from 'src/hooks/useDebounce';
 import { usePermissions } from 'src/hooks/usePermissions';
 import { useTranslation, type TranslateFn } from 'src/hooks/useTranslation';
+import { selectActiveTenant } from 'src/redux/slice/sessionSlice';
 import { showSnackbar } from 'src/redux/slice/snackbarSlice';
 import { ROUTES } from 'src/routes';
 import { formatBusinessDate } from 'src/utils/dates';
@@ -72,6 +73,22 @@ const billHref = (job: RepairJob): string =>
   job.party
     ? `${ROUTES.SALES_INVOICES}/new?repair=${job.id}&party=${job.party.id}&partyName=${encodeURIComponent(job.party.name)}`
     : `${ROUTES.SALES_INVOICES}/new?repair=${job.id}`;
+
+/** Design pRepair's "send slip": the job card on WhatsApp, to the number the job carries. */
+const slipLink = (job: RepairJob, t: TranslateFn, shop: string): string | null => {
+  const mobile = mobileOf(job)?.replace(/\D/g, '').slice(-10);
+  if (!mobile) return null;
+  const text = t('sales.repair.slipMessage', {
+    number: job.number,
+    phone: job.phoneModel,
+    fault: job.fault,
+    date: formatBusinessDate(job.readyBy),
+    estimate: formatInr(job.estimate),
+    advance: formatInr(job.advance),
+    shop,
+  });
+  return `https://wa.me/91${mobile}?text=${encodeURIComponent(text)}`;
+};
 
 /** "Your Redmi Note 12 is ready" on WhatsApp, to the number the job carries. */
 const readyLink = (job: RepairJob, t: TranslateFn): string | null => {
@@ -124,6 +141,9 @@ export function RepairsPageContent(): React.JSX.Element {
   const [attempt, setAttempt] = useState(0);
   const [adding, setAdding] = useState(false);
   const [acting, setActing] = useState<RepairJob | null>(null);
+  // The job just saved with "Save and send slip": its sheet leads with the slip.
+  const [slipFor, setSlipFor] = useState<string | null>(null);
+  const shop = useAppSelector(selectActiveTenant)?.name ?? '';
 
   useEffect(() => {
     const controller = new AbortController();
@@ -172,6 +192,7 @@ export function RepairsPageContent(): React.JSX.Element {
     </UbButton>
   );
   const ready = acting ? readyLink(acting, t) : null;
+  const slip = acting && slipFor === acting.id ? slipLink(acting, t, shop) : null;
 
   return (
     <UbPageShell>
@@ -246,7 +267,11 @@ export function RepairsPageContent(): React.JSX.Element {
       {acting && (
         <UbActionSheet
           open
-          onOpenChange={(open) => !open && setActing(null)}
+          onOpenChange={(open) => {
+            if (open) return;
+            setActing(null);
+            setSlipFor(null);
+          }}
           title={`${acting.number} · ${acting.phoneModel}`}
           closeLabel={t('common.action.close')}
         >
@@ -259,9 +284,20 @@ export function RepairsPageContent(): React.JSX.Element {
                 advance: formatInr(acting.advance),
               })}
             </UbText>
+            {/* Nothing is sent by the product (DEC-012): this opens WhatsApp with the slip written. */}
+            {slip && (
+              <UbActionLink href={slip} target="_blank" rel="noopener noreferrer" variant="primary" data-testid="repair-send-slip">
+                {t('sales.repair.sendSlip')}
+              </UbActionLink>
+            )}
+            {acting && slipFor === acting.id && !slip && (
+              <UbText variant="body-sm" tone="secondary" data-testid="repair-no-mobile">
+                {t('sales.repair.noMobileForSlip')}
+              </UbText>
+            )}
             {canWrite && LIVE.includes(acting.status) && (
               <>
-                <UbActionLink href={billHref(acting)} variant="primary" data-testid="repair-bill">
+                <UbActionLink href={billHref(acting)} variant={slipFor === acting.id ? 'secondary' : 'primary'} data-testid="repair-bill">
                   {t('sales.repair.makeBill')}
                 </UbActionLink>
                 {acting.status !== 'ready' && (
@@ -295,9 +331,15 @@ export function RepairsPageContent(): React.JSX.Element {
       {adding && (
         <RepairDrawer
           onClose={() => setAdding(false)}
-          onSaved={(job) => {
+          onSaved={(job, sendSlip) => {
             setAdding(false);
-            dispatch(showSnackbar({ severity: 'success', id: 'sales.repair.saved', params: { number: job.number } }));
+            if (sendSlip) {
+              // The sheet's title names the saved job; a toast here sat over its rows.
+              setSlipFor(job.id);
+              setActing(job);
+            } else {
+              dispatch(showSnackbar({ severity: 'success', id: 'sales.repair.saved', params: { number: job.number } }));
+            }
             setAttempt((n) => n + 1);
           }}
         />

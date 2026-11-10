@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useId, useMemo, useState } from 'react';
+import { useCallback, useId, useMemo, useRef, useState } from 'react';
 
 import { useForm, useWatch } from 'react-hook-form';
 
@@ -50,12 +50,20 @@ const MODES = ['cash', 'upi', 'bank', 'card'] as const;
 export function RepairDrawer({
   onClose,
   onSaved,
-}: Readonly<{ onClose: () => void; onSaved: (job: RepairJob) => void }>): React.JSX.Element {
+}: Readonly<{
+  onClose: () => void;
+  /** `sendSlip`: "Save and send slip" — the page offers the slip on WhatsApp next. */
+  onSaved: (job: RepairJob, sendSlip: boolean) => void;
+}>): React.JSX.Element {
   const { t } = useTranslation();
   const formId = useId();
   const timezone = useAppSelector(selectTenantTimezone);
   const today = useMemo(() => todayInTenantTz(timezone ?? undefined), [timezone]);
   const [errors, setErrors] = useState<readonly string[]>([]);
+  // Which of the two dock buttons submitted the form.
+  const sendSlip = useRef(false);
+  // The same choice for rendering: which button shows the spinner.
+  const [slipMode, setSlipMode] = useState(false);
   const form = useForm<RepairFormValues>({
     defaultValues: {
       partyId: '',
@@ -86,7 +94,7 @@ export function RepairDrawer({
       try {
         const job = await createRepair(values, copy.clientKey);
         copy.clear();
-        onSaved(job);
+        onSaved(job, sendSlip.current);
       } catch (thrown) {
         const error = thrown as ApiErrorShape;
         const details = Object.fromEntries(
@@ -118,9 +126,38 @@ export function RepairDrawer({
       closeLabel={t('common.action.close')}
       dismissOnBackdrop={!form.formState.isDirty}
       footer={
-        <UbButton type="submit" form={formId} busy={busy} data-testid="repair-save">
-          {t('sales.repair.save')}
-        </UbButton>
+        // Design pRepair's dock: Save (soft) beside "Save and send slip" (the CTA), both lg.
+        <UbBox className="grid w-full grid-cols-2 gap-2">
+          <UbButton
+            type="submit"
+            form={formId}
+            variant="secondary"
+            size="lg"
+            busy={busy && !slipMode}
+            disabled={busy}
+            onClick={() => {
+              sendSlip.current = false;
+              setSlipMode(false);
+            }}
+            data-testid="repair-save"
+          >
+            {t('sales.repair.save')}
+          </UbButton>
+          <UbButton
+            type="submit"
+            form={formId}
+            size="lg"
+            busy={busy && slipMode}
+            disabled={busy}
+            onClick={() => {
+              sendSlip.current = true;
+              setSlipMode(true);
+            }}
+            data-testid="repair-save-send"
+          >
+            {t('sales.repair.saveAndSend')}
+          </UbButton>
+        </UbBox>
       }
     >
       <UbForm id={formId} form={form} onSubmit={submit} formErrors={errors}>

@@ -72,6 +72,29 @@ try {
     await page.waitForTimeout(500);
     check(`${width}: the list shows it`, (await page.locator('main').innerText()).includes(`QA95 Redmi ${stamp}`));
 
+    // Design pRepair's dock: "Save and send slip" saves, then leads with the slip on WhatsApp.
+    await add.click();
+    await drawer.waitFor();
+    const dock = await drawer.locator('[data-testid=repair-save], [data-testid=repair-save-send]').evaluateAll((els) =>
+      els.map((e) => ({ h: Math.round(e.getBoundingClientRect().height), top: Math.round(e.getBoundingClientRect().top) }))
+    );
+    check(`${width}: Save and Save and send slip sit side by side, 46 px`, dock.length === 2 && dock.every((d) => d.h === 46) && dock[0].top === dock[1].top, JSON.stringify(dock));
+    await drawer.getByLabel('Mobile').fill(mobile);
+    await drawer.getByLabel('Phone', { exact: true }).fill(`QA95 Vivo ${stamp}`);
+    await drawer.getByLabel('Fault').fill('Charging port');
+    await page.getByTestId('repair-save-send').click();
+    const slip = page.getByTestId('repair-send-slip');
+    await slip.waitFor({ timeout: 15000 });
+    const href = decodeURIComponent((await slip.getAttribute('href')) ?? '');
+    const made = ((await api('GET', `/sales/repairs?q=${encodeURIComponent(`Vivo ${stamp}`)}`)).data ?? [])[0];
+    check(`${width}: the slip goes to the job's mobile with its number and fault`, !!made && href.startsWith(`https://wa.me/91${mobile.slice(-10)}`) && href.includes(made.number) && href.includes('Charging port'), href.slice(0, 120));
+    check(`${width}: the sheet shows no raw message key`, !/\b(common|sales)\.[a-zA-Z.]+/.test(await page.getByTestId('repair-actions').innerText()));
+    // A toast for THIS job (the earlier plain Save's toast may still be fading).
+    const toasts = await page.locator('[role=status], [role=alert]').allInnerTexts();
+    check(`${width}: no toast for the new job covers the sheet's actions`, !toasts.some((x) => made && x.includes(made.number)), toasts.join(' | ').slice(0, 120));
+    if (SHOTS) await page.screenshot({ path: `${SHOTS}/slip-${width}.png` });
+    await page.keyboard.press('Escape');
+
     // A saved customer's job with an advance, made through the API the form uses.
     const party = (await api('POST', '/parties', { name: `QA95 Customer ${stamp}`, mobile, type: 'customer' })).data;
     const before = Number((await api('GET', `/parties/${party.id}?book=shop`)).data.shop_balance ?? 0);
