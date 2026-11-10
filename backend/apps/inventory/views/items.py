@@ -200,6 +200,7 @@ class ItemViewSet(CsvExportMixin, _InventoryView, viewsets.ViewSet):
             status=None if status == "all" else status,
             product_id=params.get("product_id") or None,
             fits=params.get("fits", ""),
+            fits_year=params.get("fits_year"),
         )
         filtered = item_selectors.filter_stock(base, params.get("stock"))
         field = ordering.lstrip("-")

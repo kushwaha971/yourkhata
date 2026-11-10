@@ -8,6 +8,7 @@ single-location (INV-11 is Phase 2), so "the item's stock" is its `MAIN` row.
 from __future__ import annotations
 
 import datetime as dt
+import re
 from decimal import Decimal
 from typing import Any
 
@@ -147,6 +148,23 @@ def search(qs: QuerySet, q: str) -> QuerySet:
     )
 
 
+_YEARS = re.compile(r"\b((?:19|20)\d\d)(?:\s*[-–]\s*((?:19|20)\d\d))?\b")
+
+
+def _year(raw: Any) -> int | None:
+    try:
+        year = int(str(raw).strip())
+    except (TypeError, ValueError):
+        return None
+    return year if 1950 <= year <= 2100 else None
+
+
+def fits_year_ok(text: str, year: int) -> bool:
+    """"Splendor+ 2019–2024" fits 2021; "Splendor+ 2015" fits 2015 only; "Splendor+" fits any year."""
+    spans = [(int(a), int(b or a)) for a, b in _YEARS.findall(text or "")]
+    return not spans or any(low <= year <= high for low, high in spans)
+
+
 def item_list(
     *,
     tenant: Any,
@@ -157,6 +175,7 @@ def item_list(
     status: str | None = ItemStatus.ACTIVE,
     product_id: Any = None,
     fits: str = "",
+    fits_year: Any = None,
 ) -> QuerySet:
     """Every filter except `stock` — which `counts` must ignore (FR-4 delta)."""
     qs = Item.objects.filter(tenant=tenant).select_related("unit", "category")
@@ -176,6 +195,12 @@ def item_list(
     # G8 — "Parts that fit": every word typed must be in the item's fits.
     for word in (fits or "").split()[:6]:
         qs = qs.filter(fits_vehicle__icontains=word[:40])
+    # G8 design pVehicle "Year 2019–2024": a part fits a year when its fits name
+    # it, a range holds it, or the fits name no year at all (fits every year).
+    year = _year(fits_year)
+    if year is not None:
+        rows = qs.exclude(fits_vehicle="").values_list("id", "fits_vehicle")[:5000]
+        qs = qs.filter(id__in=[pk for pk, text in rows if fits_year_ok(text, year)])
     qs = search(qs, q)
     return with_stock(qs, location_id=location_id)
 

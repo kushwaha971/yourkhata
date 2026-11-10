@@ -108,8 +108,12 @@ const measure = () => {
 
 /** The design's numbers (S1–S16): what a measurement must be, or why it fails. */
 const near = (a, b, tol = 1) => typeof a === 'number' && Math.abs(a - b) <= tol;
-const verdict = (m, phone) => {
+// D3/D5 (2 Nov) rebuilt Add item to its own design: a 560 px drawer
+// (`.drawer.w560`) with pairs side by side (Barcode | Category, Selling price |
+// GST, Unit | Opening stock), so two label edges there are the design.
+const verdict = (m, phone, form = '') => {
   const f = [];
+  const item = form === 'item';
   if (!m.labelGap.every((g) => near(g, 6))) f.push(`S1 label → box ${m.labelGap} (6)`);
   if (m.errorGap.length && !m.errorGap.every((g) => near(g, 4))) f.push(`S2 box → error ${m.errorGap} (4)`);
   if (m.fieldGap.length && !m.fieldGap.every((g) => near(g, 16))) f.push(`S3 field → field ${m.fieldGap} (16)`);
@@ -120,10 +124,10 @@ const verdict = (m, phone) => {
   if (phone) {
     if (!m.footerSide) f.push('S13 footer stacked (side by side)');
     else if (!near(m.footerBtnW[1] / m.footerBtnW[0], 2, 0.15)) f.push(`S13 footer ${m.footerBtnW.join(':')} (1:2)`);
-  } else if (!near(m.panelW, 480)) f.push(`S16 drawer ${m.panelW} (480)`);
+  } else if (!near(m.panelW, item ? 560 : 480)) f.push(`S16 drawer ${m.panelW} (${item ? 560 : 480})`);
   if (m.hintFont.length && !m.hintFont.every((x) => x === '12.5px')) f.push(`S14b hint ${m.hintFont} (12.5px)`);
   if (!m.labelFont.every((x) => x === '13px/600')) f.push(`S6 label ${m.labelFont} (13px/600)`);
-  if (m.leftEdges.length > 1) f.push(`H19 labels on ${m.leftEdges.length} left edges`);
+  if (m.leftEdges.length > (item ? 2 : 1)) f.push(`H19 labels on ${m.leftEdges.length} left edges`);
   if (m.innerEdges?.length > 1) f.push(`H19 inner labels on ${m.innerEdges.length} left edges`);
   if (m.cut) f.push(`H18 ${m.cut} box(es) cut`);
   return f;
@@ -186,7 +190,7 @@ try {
         }).filter((x) => x !== null);
       });
       out[key].errorGap = [...new Set(withErr)];
-      for (const f of verdict(out[key], width < 1024)) {
+      for (const f of verdict(out[key], width < 1024, key.split('-').pop())) {
         const id = f.split(' ')[0];
         const lk = `${width}-${dr.name}`;
         if (LISTED[lk]?.[id]) listed.push(`${key}: ${f} — ${LISTED[lk][id]}`);
@@ -250,11 +254,12 @@ try {
     await page.getByRole('button', { name: /^Add item/ }).first().click();
     dlg = page.getByRole('dialog').last();
     await dlg.waitFor({ timeout: 8000 });
-    // The drawer focuses the name; tapping a switch first must not paint it red.
-    await dlg.getByRole('switch').first().click();
+    // The drawer focuses the name; tapping another control first must not paint
+    // it red. The five-field form has no switch any more, so the control is the
+    // folded "More details" (G round, 10 Nov: the switch wait timed out).
+    await dlg.getByRole('button', { name: /More details/ }).first().click();
     await page.waitForTimeout(300);
-    if (await dlg.getByText('Enter an item name.').count()) failures.push(`${width}: tapping a switch painted the untouched name red`);
-    await dlg.getByRole('switch').first().click();
+    if (await dlg.getByText('Enter an item name.').count()) failures.push(`${width}: tapping More details painted the untouched name red`);
     await dlg.getByLabel('Name', { exact: true }).fill(itemName);
     await dlg.locator('#sellingPrice').fill('25');
     await page.locator('[data-ub-overlay-footer] button').last().click();

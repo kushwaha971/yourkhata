@@ -96,6 +96,8 @@ try {
     check(`${width}: the editor shows the free case at ₹0`, (await page.getByTestId('scheme-free-line').count()) === 1 && freeText.includes(`QA99 Parle ${stamp}`) && freeText.includes('₹0'), freeText.replace(/\n/g, ' | '));
     check(`${width}: …and the offer for the percent scheme not reached`, (await page.getByTestId('scheme-offer').count()) === 1 && freeText.includes('2,000'), freeText.replace(/\n/g, ' | '));
     check(`${width}: a line says its scheme`, (await page.getByTestId('line-scheme').count()) >= 1);
+    const dockText = await page.getByTestId('invoice-dock').innerText().catch(() => '');
+    check(`${width}: the dock says "1 free" (design pScheme)`, /1 free|1 मुफ़्त/.test(dockText), dockText.replace(/\n/g, ' | ').slice(0, 120));
     const shown = money(await page.getByTestId('invoice-grand-total').first().innerText());
     check(`${width}: the editor's total equals the server's`, Math.abs(shown - Number(d.grand_total)) < 0.001, `${shown} vs ${d.grand_total}`);
     check(`${width}: self-test — ₹1 off would fail`, Math.abs(shown - (Number(d.grand_total) + 1)) >= 0.001);

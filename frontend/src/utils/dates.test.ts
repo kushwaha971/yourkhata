@@ -1,4 +1,4 @@
-import { addDaysIso, daysBetweenIso } from './dates';
+import { addDaysIso, daysBetweenIso, formatShopHour } from './dates';
 import { formatTimestampInTz } from './zonedTime';
 
 /**
@@ -33,4 +33,9 @@ describe('formatTimestampInTz', () => {
     expect(formatTimestampInTz('2026-10-16T18:41:00Z', 'UTC')).toBe('16/10/2026, 18:41');
     expect(formatTimestampInTz(null, 'UTC')).toBe('—');
   });
+});
+
+it('says a time on the hour without ":00" (G10 "Ready 11 am", G11 "By 6 pm")', () => {
+  expect(formatShopHour('2026-11-10T18:00:00')).toBe('6 pm');
+  expect(formatShopHour('2026-11-10T18:30:00')).toBe('6:30 pm');
 });

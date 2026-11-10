@@ -60,7 +60,11 @@ try {
       const made = await api('POST', '/items', { name, unit_id: nos, selling_price: price, purchase_price: '10', tax_code: 'GST18', fits_vehicle: fits, rack, opening_stock: { qty: '9', unit_cost: '10' } });
       return made.data.item ?? made.data;
     };
-    const shoe = await mkItem(`QA98 Brake shoe ${stamp}`, `Hero Splendor+ ${stamp}`, 'B-4', '320');
+    const shoe = await mkItem(`QA98 Brake shoe ${stamp}`, `Hero Splendor+ ${stamp} 2019–2024`, 'B-4', '320');
+    // Design pVehicle's Year: an older Splendor's part must drop out for 2021.
+    await mkItem(`QA98 Old shoe ${stamp}`, `Hero Splendor+ ${stamp} 2010–2014`, 'B-2', '280');
+    // Design dVehicle's "Last oil change": engine oil named by grade, as it is sold.
+    const oil = await mkItem(`QA98 Castrol 20W-40 ${stamp}`, '', 'O-1', '380');
     await mkItem(`QA98 Brake shoe Pulsar ${stamp}`, `Bajaj Pulsar ${stamp}`, 'B-6', '300');
     const party = (await api('POST', '/parties', { name: `QA98 Ramesh ${stamp}`, mobile: `97${String(Date.now()).slice(-8)}`, type: 'customer' })).data;
     const bill = async (vehicle, extra = {}) => {
@@ -68,7 +72,7 @@ try {
       return (await api('POST', `/sales/invoices/${d.id}/issue`, { version: d.version })).data;
     };
     const one = await bill(`mh 12 kt ${digits}`, { vehicle_model: `Hero Splendor+ ${stamp}`, mechanic: 'Raju Garage' });
-    const two = await bill(plate);
+    const two = await bill(plate, { lines: [{ item_id: shoe.id, qty: '1' }, { item_id: oil.id, qty: '1' }] });
     await bill(`MH14ZZ${digits}`);
     const read = (await api('GET', `/sales/vehicles/${plate}`)).data;
     const want = Number(one.grand_total) + Number(two.grand_total);
@@ -89,6 +93,7 @@ try {
     const tiles = await page.getByTestId('vehicle-tiles').innerText();
     const grouped = new Intl.NumberFormat('en-IN', { minimumFractionDigits: 2 }).format(want);
     check(`${width}: the page shows 2 bills and the spent`, /\b2\b/.test(tiles) && tiles.includes(grouped), tiles.replace(/\n/g, ' | '));
+    check(`${width}: Last oil change names the oil from its bill`, tiles.includes(`QA98 Castrol 20W-40 ${stamp}`), tiles.replace(/\n/g, ' | '));
     check(`${width}: the page lists two bills`, (await page.getByTestId('vehicle-bill').count()) === 2);
     const words = await page.locator('main').innerText();
     check(`${width}: the page names model and mechanic`, words.includes(`Hero Splendor+ ${stamp}`) && words.includes('Raju Garage'));
@@ -119,6 +124,12 @@ try {
     const parts = await page.getByTestId('fits-parts').innerText();
     check(`${width}: Parts that fit lists the Splendor part with rack and price`, parts.includes(`QA98 Brake shoe ${stamp}`) && parts.includes('B-4') && parts.includes('320'), parts.replace(/\n/g, ' | '));
     check(`${width}: …and not the Pulsar part`, !parts.includes('Pulsar'));
+    check(`${width}: with no year, the old Splendor's part shows too`, parts.includes(`QA98 Old shoe ${stamp}`));
+    await page.getByTestId('fits-year').fill('2021');
+    await page.waitForResponse((r) => r.url().includes('fits_year=2021'), { timeout: 10000 }).catch(() => undefined);
+    await page.waitForTimeout(400);
+    const in2021 = await page.getByTestId('fits-parts').innerText();
+    check(`${width}: Year 2021 keeps the 2019–2024 part and drops the 2010–2014 one`, in2021.includes(`QA98 Brake shoe ${stamp}`) && !in2021.includes(`QA98 Old shoe ${stamp}`), in2021.replace(/\n/g, ' | '));
     if (SHOTS) await page.screenshot({ path: `${SHOTS}/parts-${width}.png` });
     const partsOver = await page.evaluate(() => document.documentElement.scrollWidth - innerWidth);
     check(`${width}: Parts that fit does not scroll sideways`, partsOver <= 0, `${partsOver}px`);

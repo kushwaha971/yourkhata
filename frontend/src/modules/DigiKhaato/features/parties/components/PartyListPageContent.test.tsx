@@ -486,6 +486,21 @@ describe('the approved responsive rules, on the real screen', () => {
     expect(headers.some((text) => text.includes('Status'))).toBe(false);
   });
 
+  it('a Shop table under 1280 leaves out Status, so six columns and Pay fit a 1024 laptop', async () => {
+    /** G round, 10 Nov: at 1024 "Active" was cut to "Active…" and ₹1,15,081.32 spilled out of its cell. */
+    setTier('full');
+    const wide = window.matchMedia;
+    Object.defineProperty(window, 'matchMedia', {
+      writable: true,
+      value: (query: string) => ({ ...wide(query), matches: !query.includes('1280') }),
+    });
+    renderWithProviders(<PartyListPageContent kind="customer" book="shop" />);
+    await screen.findByRole('table');
+    const headers = screen.getAllByRole('columnheader').map((cell) => cell.textContent ?? '');
+    expect(headers.some((text) => text.includes('Status'))).toBe(false);
+    expect(headers.some((text) => text.includes('Balance'))).toBe(true);
+  });
+
   it('at lg it is the full table, with bulk selection', async () => {
     setTier('full');
     renderWithProviders(<PartyListPageContent />);

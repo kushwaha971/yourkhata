@@ -5,6 +5,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 
 import {
+  UbBox,
   UbButton,
   UbCard,
   UbChoiceChips,
@@ -37,6 +38,9 @@ export function PartsFitPageContent(): React.JSX.Element {
   const { t } = useTranslation();
   const [fitsText, setFitsText] = useState(useSearchParams().get('fits') ?? '');
   const [search, setSearch] = useState('');
+  // Design pVehicle's Year: a part whose fits give years shows only when one holds it.
+  const [yearText, setYearText] = useState('');
+  const year = useDebounce(/^\d{4}$/.test(yearText.trim()) ? yearText.trim() : '', 300);
   const fits = useDebounce(fitsText.trim(), 300);
   const q = useDebounce(search.trim(), 300);
   const [parts, setParts] = useState<readonly FitPart[] | null>(null);
@@ -47,7 +51,7 @@ export function PartsFitPageContent(): React.JSX.Element {
   useEffect(() => {
     if (!fits) return undefined;
     const controller = new AbortController();
-    listFittingParts({ fits, q }, controller.signal)
+    listFittingParts({ fits, q, ...(year ? { fits_year: year } : {}) }, controller.signal)
       .then((next) => {
         setParts(next);
         setFailed(false);
@@ -56,7 +60,7 @@ export function PartsFitPageContent(): React.JSX.Element {
         if (!controller.signal.aborted) setFailed(true);
       });
     return () => controller.abort();
-  }, [fits, q, attempt]);
+  }, [fits, q, year, attempt]);
 
   // The groups are the categories of what fits, never a fixed list.
   const groups = useMemo(() => {
@@ -105,14 +109,25 @@ export function PartsFitPageContent(): React.JSX.Element {
     <UbPageShell>
       <UbPageHeader title={t('sales.fits.title')} />
       <UbStack gap={3} className="lg:max-w-2xl" data-testid="fits-screen">
-        <UbTextInput
-          aria-label={t('sales.fits.vehicle')}
-          placeholder={t('sales.fits.vehiclePlaceholder')}
-          value={fitsText}
-          onChange={setFitsText}
-          maxLength={80}
-          data-testid="fits-vehicle"
-        />
+        <UbBox className="grid grid-cols-[minmax(0,1fr)_96px] gap-3">
+          <UbTextInput
+            aria-label={t('sales.fits.vehicle')}
+            placeholder={t('sales.fits.vehiclePlaceholder')}
+            value={fitsText}
+            onChange={setFitsText}
+            maxLength={80}
+            data-testid="fits-vehicle"
+          />
+          <UbTextInput
+            aria-label={t('sales.fits.year')}
+            placeholder={t('sales.fits.year')}
+            value={yearText}
+            onChange={(next) => setYearText(next.replace(/\D/g, '').slice(0, 4))}
+            inputMode="numeric"
+            maxLength={4}
+            data-testid="fits-year"
+          />
+        </UbBox>
         {fits && <UbSearchInput value={search} onChange={setSearch} placeholder={t('sales.fits.search')} aria-label={t('sales.fits.search')} />}
         {groups.length > 1 && (
           <UbChoiceChips

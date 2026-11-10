@@ -494,6 +494,8 @@ export function InvoiceEditorPageContent({
   const dockCaption = itemCount
     ? [
         t('sales.dock.items', { count: itemCount }),
+        // G9 — design pScheme's dock: "3 lines · 1 free".
+        schemes.free.length ? t('sales.scheme.dockFree', { count: schemes.free.length }) : null,
         taxFree || gst === '0.00' ? null : t('sales.dock.includesGst', { amount: formatInr(gst) }),
       ]
         .filter(Boolean)

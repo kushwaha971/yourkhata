@@ -75,3 +75,31 @@ def test_parts_that_fit_match_every_word(auto: Any, owner: Any, make_item: Any) 
     Item.objects.filter(pk=other.pk).update(fits_vehicle="Bajaj Pulsar 150")
     rows = owner.get(reverse("v1:item-list") + "?fits=hero splendor").json()["data"]
     assert [row["id"] for row in rows] == [str(fits.id)]
+
+
+def test_the_last_oil_change_is_the_newest_bill_with_engine_oil(
+    auto: Any, owner: Any, make_item: Any, make_party: Any
+) -> None:
+    """Design dVehicle "Last oil change": an oil filter is not an oil change, and a later bill without oil keeps it."""
+    party = make_party()
+    oil = make_item("Castrol Activ 20W-40 1 L", "380.00", "GST0", stock="10")
+    filt = make_item("Oil filter Splendor", "140.00", "GST0", stock="10")
+    shoe = make_item("Brake shoe", "320.00", "GST0", stock="10")
+    for lines in ([line(filt, "1")], [line(oil, "1"), line(filt, "1")], [line(shoe, "1")]):
+        made = draft(owner, party_id=str(party.id), lines=lines, vehicle_number="MH12KT4471").json()["data"]
+        assert issue(owner, made["id"], version=made["version"]).status_code == 200
+    got = owner.get(reverse("v1:vehicle-detail", args=["MH12KT4471"])).json()["data"]
+    assert got["last_oil"]["item"] == "Castrol Activ 20W-40 1 L"
+
+
+def test_parts_that_fit_a_year(auto: Any, owner: Any, make_item: Any) -> None:
+    """Design pVehicle "Make · model / Year": a range holds the year; fits with no year fit any."""
+    from apps.inventory.models import Item
+
+    for name, fits in (("Shoe A", "Hero Splendor+ 2019–2024"), ("Shoe B", "Hero Splendor+ 2015"), ("Shoe C", "Hero Splendor+")):
+        item = make_item(name, "100.00", "GST0", stock="5")
+        Item.objects.filter(pk=item.pk).update(fits_vehicle=fits)
+    names = lambda year: sorted(r["name"] for r in owner.get(reverse("v1:item-list"), {"fits": "splendor", "fits_year": year}).json()["data"])  # noqa: E731
+    assert names("2021") == ["Shoe A", "Shoe C"]
+    assert names("2015") == ["Shoe B", "Shoe C"]
+    assert names("") == ["Shoe A", "Shoe B", "Shoe C"]

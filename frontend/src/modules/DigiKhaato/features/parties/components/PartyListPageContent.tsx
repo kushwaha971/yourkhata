@@ -24,6 +24,7 @@ import {
   UbTextInput,
   UbViewportPageShell,
 } from 'src/design-system';
+import { useMediaQuery } from 'src/design-system/motion/useMediaQuery';
 import {
   UbDataGrid,
   useGridTier,
@@ -317,6 +318,7 @@ export function PartyListPageContent({
     [router, kind, book]
   );
 
+  const wideTable = useMediaQuery('(min-width: 1280px)');
   const columns = useMemo(
     () =>
       createPartyColumns({
@@ -326,6 +328,7 @@ export function PartyListPageContent({
         supplier,
         onPay: can('payments.payment.write') ? openSupplierPayment : undefined,
         phoneCards: tier === 'cards',
+        narrowTable: tier === 'full' && !wideTable,
         onRemind: !supplier && canRemind ? openReminder : undefined,
         onSettle: compactShop && canSettle ? openSettle : undefined,
         formatActivity: (at) =>
@@ -339,6 +342,7 @@ export function PartyListPageContent({
         nameHeader: kind === 'supplier' ? t('parties.list.supplier.column.name') : undefined,
       }),
     [
+      wideTable,
       t,
       nowMs,
       balanceLabels,

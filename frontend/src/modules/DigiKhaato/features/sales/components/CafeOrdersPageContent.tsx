@@ -31,6 +31,7 @@ import { usePermissions } from 'src/hooks/usePermissions';
 import { useTranslation, type TranslateFn } from 'src/hooks/useTranslation';
 import { showSnackbar } from 'src/redux/slice/snackbarSlice';
 import { ROUTES } from 'src/routes';
+import { formatBusinessDate, formatShopHour } from 'src/utils/dates';
 import { formatInr } from 'src/utils/money';
 
 import {
@@ -61,10 +62,9 @@ const TONE: Record<CafeOrderStatus, 'warning' | 'success' | 'info' | 'neutral'> 
 /** "8 min" since the token was taken, or the advance order's ready time. */
 const when = (o: CafeOrder, now: number, t: TranslateFn): string => {
   if (o.kind === 'advance' && o.readyAt) {
-    const at = new Date(o.readyAt);
     return t('sales.cafe.readyWhen', {
-      date: at.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' }),
-      time: at.toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit' }),
+      date: formatBusinessDate(o.readyAt),
+      time: formatShopHour(o.readyAt),
     });
   }
   return t('sales.cafe.minutes', {

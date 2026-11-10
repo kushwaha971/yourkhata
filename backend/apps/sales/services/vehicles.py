@@ -9,6 +9,7 @@ vehicle, never mixed into what the vehicle spent.
 
 from __future__ import annotations
 
+import re
 from decimal import Decimal
 from typing import Any
 
@@ -20,6 +21,11 @@ from apps.sales.constants import INVOICE_KINDS, DocumentStatus
 from apps.sales.models import SalesDocument
 
 NUMBER_MAX = 20
+#: An engine-oil line: the word "oil" (or तेल), or a grade like 20W-40 / 10W30,
+#: which is how engine oil is usually named ("Castrol Activ 20W-40 1 L") — and
+#: not an oil filter or seal.
+_OIL = re.compile(r"\b(oil|तेल|\d{1,2}w[- ]?\d{2})\b", re.IGNORECASE)
+_NOT_OIL = re.compile(r"\b(filter|seal|pump|cap)\b", re.IGNORECASE)
 
 
 def clean_number(raw: Any) -> str:
@@ -78,6 +84,16 @@ def list_vehicles(*, tenant: Any, q: str = "", limit: int = 200) -> dict:
     return {"vehicles": vehicles}
 
 
+def _last_oil(bills: list) -> dict | None:
+    """Design dVehicle "Last oil change · 12 Aug · Castrol 20W-40 1 L": the
+    newest of this vehicle's bills with an engine-oil line, read from the bills."""
+    for bill in bills:
+        for line in bill.lines.all():
+            if _OIL.search(line.description) and not _NOT_OIL.search(line.description):
+                return {"date": bill.document_date.isoformat(), "item": line.description}
+    return None
+
+
 def vehicle_detail(*, tenant: Any, number: Any, limit: int = 100) -> dict:
     """One vehicle's figures and bills. A number with no bill is not a vehicle here."""
     from apps.parties.models import Party
@@ -110,6 +126,7 @@ def vehicle_detail(*, tenant: Any, number: Any, limit: int = 100) -> dict:
         "bills": figures["bills"],
         "spent": str(figures["spent"] or Decimal("0.00")),
         "since": figures["since"].isoformat(),
+        "last_oil": _last_oil(ordered),
         "bill_rows": [
             {
                 "id": str(bill.id),

@@ -243,7 +243,8 @@ for (const width of widths) {
           // Design .btn.lg is 46 / 15 px; the design system's lg is 44 px with the shared
           // button type (DESIGN-SYSTEM.md). Listed for the owner; checked against the system.
           // Owner, 1 Nov: the design's type on every button (.btn.lg 15 px / 600).
-          if (width >= 360 && m.btn && (m.btn.h !== 44 || m.btn.font !== 15 || m.btn.weight !== '600')) fail(key, `dock button ${m.btn.h}px / ${m.btn.font}px / ${m.btn.weight} (44 / 15 / 600)`);
+          // Since "Forms take the design's total dock" the dock button IS the design's .btn.lg, 46 px.
+          if (width >= 360 && m.btn && (m.btn.h !== 46 || m.btn.font !== 15 || m.btn.weight !== '600')) fail(key, `dock button ${m.btn.h}px / ${m.btn.font}px / ${m.btn.weight} (46 / 15 / 600)`);
           if (m.row && m.row.h < 56) fail(key, `rate row ${m.row.h}px (design ≥ 56)`);
           if (!m.back || m.back[0] < 40 || m.back[1] < 40) fail(key, `Back ${JSON.stringify(m.back)} (design: the bar's 40 px arrow with a 44 px hit area)`);
           if (/\/ g/.test(m.boxText)) fail(key, 'phone box shows "/ g" (design: ₹ 12,710 only)');

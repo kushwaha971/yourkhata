@@ -97,6 +97,13 @@ export interface PartyColumnDeps {
   readonly onSettle?: (party: Party) => void;
   readonly formatActivity?: (at: string) => string;
   readonly phoneCards?: boolean;
+  /**
+   * A full table narrower than 1280 (a 1024 laptop beside the menu, ~740 px):
+   * the Shop's six columns and Pay do not fit there, so Status, the lowest
+   * priority and the same word on every active row, steps out (G round,
+   * 10 Nov: "Active…" was cut and ₹1,15,081.32 spilled out of its cell).
+   */
+  readonly narrowTable?: boolean;
 }
 
 export const createPartyColumns = ({
@@ -116,6 +123,7 @@ export const createPartyColumns = ({
   onSettle,
   formatActivity,
   phoneCards,
+  narrowTable = false,
 }: PartyColumnDeps): readonly UbDataGridColumn<Party>[] => {
   const columns: readonly UbDataGridColumn<Party>[] = [
     {
@@ -285,7 +293,7 @@ compactShop && phoneCards ? shopAgeView(party, t, supplier).label : undefined
   return [
     ...columns.filter((column) => column.id === 'name' || column.id === 'balance'),
     late,
-    ...columns.filter((column) => column.id === 'contact' || column.id === 'status'),
+    ...columns.filter((column) => column.id === 'contact' || (column.id === 'status' && !narrowTable)),
     actions,
   ];
 };

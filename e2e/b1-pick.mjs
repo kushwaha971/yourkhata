@@ -130,6 +130,12 @@ for (const width of widths) {
           const btn = [...document.querySelectorAll('button')].find((b) => /Continue|आगे/.test(b.textContent));
           if (!grid || !btn) return null;
           const last = [...grid.querySelectorAll('[role=radio]')].pop();
+          // Scroll what actually scrolls: on a desktop the wizard's column has
+          // its own scroll (lg:h-dvh overflow-y-auto), so scrolling the window
+          // moved nothing and read a reachable tile as covered (G round, 10 Nov).
+          let box = last.parentElement;
+          while (box && !(box.scrollHeight > box.clientHeight + 2 && /(auto|scroll)/.test(getComputedStyle(box).overflowY))) box = box.parentElement;
+          if (box) box.scrollTop = box.scrollHeight;
           window.scrollTo(0, document.documentElement.scrollHeight);
           const d = btn.getBoundingClientRect();
           const t = last.getBoundingClientRect();

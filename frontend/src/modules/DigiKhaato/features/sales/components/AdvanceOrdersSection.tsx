@@ -3,6 +3,7 @@
 import { UbActionLink, UbBox, UbCard, UbStack, UbStatusBadge, UbText } from 'src/design-system';
 import { useTranslation } from 'src/hooks/useTranslation';
 import { ROUTES } from 'src/routes';
+import { formatBusinessDate, formatShopHour } from 'src/utils/dates';
 import { formatInr } from 'src/utils/money';
 
 import 'src/i18n/catalogues/sales';
@@ -41,7 +42,6 @@ export function AdvanceOrdersSection({ data }: DashboardSectionProps): React.JSX
             </UbActionLink>
           </UbStack>
           {orders.map((o) => {
-            const at = new Date(o.ready_at ?? '');
             return (
               <UbStack
                 key={o.id}
@@ -53,12 +53,7 @@ export function AdvanceOrdersSection({ data }: DashboardSectionProps): React.JSX
                     {t('sales.cafe.home.item', {
                       number: o.number,
                       who: o.party?.name ?? '',
-                      when: at.toLocaleString('en-IN', {
-                        day: 'numeric',
-                        month: 'short',
-                        hour: 'numeric',
-                        minute: '2-digit',
-                      }),
+                      when: `${formatBusinessDate(o.ready_at)}, ${formatShopHour(o.ready_at)}`,
                     })}
                   </UbText>
                   <UbStatusBadge

@@ -34,6 +34,7 @@ import { usePermissions } from 'src/hooks/usePermissions';
 import { useTranslation, type TranslateFn } from 'src/hooks/useTranslation';
 import { showSnackbar } from 'src/redux/slice/snackbarSlice';
 import { ROUTES } from 'src/routes';
+import { formatShopHour } from 'src/utils/dates';
 import { formatInr } from 'src/utils/money';
 
 import { inventoryGridLabels } from 'modules/DigiKhaato/features/inventory/view-model/gridLabels';
@@ -60,10 +61,7 @@ const PAY_TONE = { udhaar: 'warning', upi: 'info', cash: 'neutral' } as const;
 const deliverText = (o: PhoneOrder, t: TranslateFn): string => {
   if (o.fulfil === 'pickup') return t('sales.phone.picksUp');
   if (!o.deliverBy) return t('sales.phone.fulfil.home');
-  const at = new Date(o.deliverBy);
-  return t('sales.phone.byWhen', {
-    time: at.toLocaleTimeString('en-IN', { hour: 'numeric', minute: at.getMinutes() ? '2-digit' : undefined }),
-  });
+  return t('sales.phone.byWhen', { time: formatShopHour(o.deliverBy) });
 };
 
 const payBadge = (o: PhoneOrder, t: TranslateFn): React.ReactNode => (

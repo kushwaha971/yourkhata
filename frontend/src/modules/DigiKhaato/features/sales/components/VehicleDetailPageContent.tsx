@@ -92,6 +92,12 @@ export function VehicleDetailPageContent({ number }: Readonly<{ number: string }
   const tiles = [
     { label: t('sales.vehicle.bills'), value: String(vehicle.bills), note: t('sales.vehicle.since', { date: formatBusinessDate(vehicle.since) }) },
     { label: t('sales.vehicle.spent'), value: formatInr(vehicle.spent), note: t('sales.vehicle.spentNote') },
+    // Design dVehicle: "Last oil change · 12 Aug · Castrol 20W-40 1 L", from its own bills.
+    {
+      label: t('sales.vehicle.lastOil'),
+      value: vehicle.last_oil ? formatBusinessDate(vehicle.last_oil.date) : '—',
+      note: vehicle.last_oil?.item ?? t('sales.vehicle.noOil'),
+    },
     ...(vehicle.garage
       ? [{ label: t('sales.vehicle.mechanicDues'), value: formatInr(vehicle.garage.due), note: vehicle.garage.name, tone: 'get' as const }]
       : []),
@@ -140,7 +146,7 @@ export function VehicleDetailPageContent({ number }: Readonly<{ number: string }
       />
       <UbStack gap={3} data-testid="vehicle-screen">
         {isPhone && actions}
-        <UbBox className={`grid grid-cols-2 gap-2 ${tiles.length === 3 ? 'lg:grid-cols-3' : 'lg:grid-cols-2'}`} data-testid="vehicle-tiles">
+        <UbBox className={`grid grid-cols-2 gap-2 ${tiles.length === 4 ? 'lg:grid-cols-4' : 'lg:grid-cols-3'}`} data-testid="vehicle-tiles">
           {tiles.map((tile) => (
             <UbCard key={tile.label}>
               <UbStack gap={0}>

@@ -218,3 +218,25 @@ it('opens Add item when the address asks for it with add=1', async () => {
   renderWithProviders(<ItemListPageContent />);
   expect(await screen.findByRole('dialog', { name: /Add item/ })).toBeInTheDocument();
 });
+
+it('on a desktop, an item opens from its name (a named control in the first cell)', async () => {
+  /** G round, 10 Nov: the 6 Nov register rebuild left a desktop no way to open an item from Items. */
+  Object.defineProperty(window, 'matchMedia', {
+    writable: true,
+    value: (query: string) => ({
+      matches: true,
+      media: query,
+      onchange: null,
+      addEventListener: () => undefined,
+      removeEventListener: () => undefined,
+      addListener: () => undefined,
+      removeListener: () => undefined,
+      dispatchEvent: () => false,
+    }),
+  });
+  jest.mocked(service.listItems).mockResolvedValue({ ...PAGE, rows: [ROW], total: 1, hasAny: true });
+  signIn(['inventory.item.read']);
+  renderWithProviders(<ItemListPageContent />);
+  await screen.findByRole('table');
+  expect(screen.getByRole('button', { name: /Lifebuoy Soap 100g/ })).toBeInTheDocument();
+});

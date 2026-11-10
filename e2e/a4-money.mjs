@@ -209,7 +209,13 @@ try {
     await page.waitForURL(/\/items/, { timeout: 8000 });
     await page.locator('main').getByRole('searchbox').first().fill(item.name).catch(() => {});
     await page.waitForTimeout(1500);
-    await page.getByRole('link', { name: new RegExp(esc(item.name)) }).first().click({ timeout: 8000 }).catch(() => fail(`could not open ${item.name} from the items list`));
+    // The grid's open control on the name (a button since the 6 Nov register), or a link.
+    await page
+      .getByRole('button', { name: new RegExp(esc(item.name)) })
+      .or(page.getByRole('link', { name: new RegExp(esc(item.name)) }))
+      .first()
+      .click({ timeout: 8000 })
+      .catch(() => fail(`could not open ${item.name} from the items list`));
   }
   await page.waitForTimeout(2000);
   const itemText = await page.locator('main').innerText();

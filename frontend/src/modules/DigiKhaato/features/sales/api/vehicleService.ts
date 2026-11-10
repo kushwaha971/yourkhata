@@ -30,6 +30,8 @@ export interface VehicleDetail {
   readonly bills: number;
   readonly spent: string;
   readonly since: string;
+  /** The newest bill with engine oil on it, or null. */
+  readonly last_oil: { readonly date: string; readonly item: string } | null;
   readonly bill_rows: readonly VehicleBill[];
 }
 
@@ -61,7 +63,7 @@ export const getVehicle = async (number: string, signal?: AbortSignal): Promise<
   ).data.data;
 
 export const listFittingParts = async (
-  params: { readonly fits: string; readonly q?: string },
+  params: { readonly fits: string; readonly q?: string; readonly fits_year?: string },
   signal?: AbortSignal
 ): Promise<readonly FitPart[]> =>
   (

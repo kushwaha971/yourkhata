@@ -485,7 +485,11 @@ export function ItemListPageContent(): React.JSX.Element {
       onPageChange={(page) => update({ page })}
       sort={sort}
       onSortChange={handleSort}
-      onRowOpen={tier === 'cards' ? handleOpen : undefined}
+      /* Every width: on a desktop the grid puts its open control on the name
+         (the first cell). The 6 Nov register rebuild removed the name's link and
+         kept this for cards only, so a desktop could not open an item from Items
+         at all (G round, 10 Nov; a4-money "could not open … from the items list"). */
+      onRowOpen={handleOpen}
       /* R-DEC-33: a phone joins the next page under the cards as the merchant
          scrolls, with Try again in place when it fails; a desktop pages. */
       resetScrollOnPageChange={!phone}

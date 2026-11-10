@@ -63,6 +63,10 @@ export const formatShopTime = (value: string | null | undefined): string => {
   return parsed.isValid() ? parsed.format('h:mm a') : '';
 };
 
+/** `formatShopTime` without a bare ":00" — "By 6 pm", "Ready 11 am" (designs G10, G11). */
+export const formatShopHour = (value: string | null | undefined): string =>
+  formatShopTime(value).replace(':00 ', ' ');
+
 /**
  * Milliseconds from now until an RFC 3339 instant, never negative — the cool-off
  * countdown (PLT-10) and a support session's end (PLT-14) both read it. Lives
