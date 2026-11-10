@@ -129,7 +129,9 @@ export function UbChoiceChips<T extends string>({
             disabled={disabled}
             onClick={() => onChange(option.value)}
             className={cn(
-              'ub-hit ds-body-s-medium inline-flex h-8 items-center gap-1.5 rounded-pill border px-3',
+              // The design's `.chp`: 14 px sides and regular weight (owner, 10 Nov 2026,
+              // "match design"); the 32 px face and 44 px phone target stay (R-DEC-32 #3).
+              'ub-hit ds-body-s-regular inline-flex h-8 items-center gap-1.5 rounded-pill border px-[14px]',
               'outline-none transition-colors duration-fast ease-standard focus-visible:shadow-focus',
               'disabled:cursor-not-allowed disabled:opacity-60',
               checked
