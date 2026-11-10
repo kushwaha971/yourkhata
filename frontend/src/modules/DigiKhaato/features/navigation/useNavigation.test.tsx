@@ -138,7 +138,7 @@ describe('one menu per app', () => {
     const sales = nav.sections.find((s) => s.key === 'sales')?.items.map((i) => i.key);
     // Part G's kind-only screens (feature-gated; this session names no features, so all show).
     expect(sales).toEqual([
-      'invoices', 'openOrders', 'customOrders', 'repairs', 'oldGold', 'sites', 'vehicles', 'schemes',
+      'invoices', 'openOrders', 'phoneOrders', 'customOrders', 'repairs', 'oldGold', 'sites', 'vehicles', 'schemes',
       'estimates', 'salesOrders', 'challans', 'creditNotes',
     ]);
     expect(nav.shell.partySearch).toBe(true);

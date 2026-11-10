@@ -129,6 +129,7 @@ export const toDocument = (row: Wire): SalesDocument => {
     pan: (row.pan as string | null) ?? null,
     rx: (row.rx as { doctor?: string; patient?: string } | null) ?? null,
     site: (row.site as { id: string; name: string } | null) ?? null,
+    phoneOrder: (row.phone_order as SalesDocument['phoneOrder']) ?? null,
     cafeOrder: (row.cafe_order as SalesDocument['cafeOrder']) ?? null,
     repairJob: (row.repair_job as { id: string; number: string; advance: string } | null) ?? null,
     customOrder: (row.custom_order as BillCustomOrder | null) ?? null,

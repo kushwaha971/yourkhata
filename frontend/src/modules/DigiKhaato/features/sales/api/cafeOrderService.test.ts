@@ -30,3 +30,11 @@ it('opens the bill for the order, with its customer when it has one', () => {
   );
   expect(billHref('/sales/invoices', order(null))).toBe('/sales/invoices/new?cafe_order=o1');
 });
+
+it('names a phone order’s items in full, not by a brand word (G11)', async () => {
+  const { itemsSummary } = await import('./phoneOrderService');
+  const line = (name: string) => ({ item_id: name, name, qty: '1', rate: '1.00' });
+  expect(
+    itemsSummary([line('Aashirvaad Atta'), line('Fortune Oil'), line('Toor Dal'), line('Salt')], (n) => `${n} items`)
+  ).toBe('4 items · aashirvaad atta, fortune oil, toor dal…');
+});

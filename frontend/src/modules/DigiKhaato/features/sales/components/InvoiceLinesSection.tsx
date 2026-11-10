@@ -40,6 +40,7 @@ import { lineUnitCaption, lineUnitChoices, type LineUnitChoice } from '../view-m
 import { AddonSheet } from './AddonSheet';
 import { InvoiceLineList, InvoiceLineTable, lineName } from './InvoiceLineEditor';
 import { LineVariantPicker } from './LineVariantPicker';
+import { LooseSheet } from './LooseSheet';
 import { SchemeFreeLines, schemeLineText, type SchemePreview } from './SchemeFreeLines';
 import { SubstituteSheet } from './SubstituteSheet';
 
@@ -156,6 +157,9 @@ export function InvoiceLinesSection({
   const [unitChoices, setUnitChoices] = useState<Record<string, readonly LineUnitChoice[]>>({});
   /** D P6 — the café item whose add-on sheet is open, and its line. */
   const [addonFor, setAddonFor] = useState<{ index: number; row: ItemListRow } | null>(null);
+  /** G11 — the loose item (kg or litre) whose by-amount sheet is open, and its line. */
+  const [looseFor, setLooseFor] = useState<{ index: number; row: ItemListRow } | null>(null);
+  const sellsLoose = Boolean(useAppSelector(selectActiveTenant)?.features?.includes('loose_amount'));
   /** D P4 — the batch a sale of each medicine would take ("DL3990 · exp 03/27"). */
   const [nextBatch, setNextBatch] = useState<Record<string, { batchNo: string; expiry: string }>>(
     {}
@@ -208,6 +212,8 @@ export function InvoiceLinesSection({
       if (row.tracking === 'batch') setBatchItems((current) => ({ ...current, [row.id]: true }));
       // D P6 — design D11: the add-on sheet opens only for an item that has add-ons.
       if (row.addons?.length) setAddonFor({ index, row });
+      // G11 — design pLoose: a kirana's loose item asks by weight or by amount.
+      else if (sellsLoose && row.unit.allowDecimal && Number(row.sellingPrice) > 0) setLooseFor({ index, row });
       const coming = row.nextBatch;
       if (coming) setNextBatch((current) => ({ ...current, [row.id]: coming }));
       const choices = lineUnitChoices(row);
@@ -250,7 +256,7 @@ export function InvoiceLinesSection({
         })
         .catch(() => undefined);
     },
-    [setValue, getValues, partyId]
+    [setValue, getValues, partyId, sellsLoose]
   );
 
   /*
@@ -764,6 +770,16 @@ export function InvoiceLinesSection({
           onUse={(row) => {
             pickItem(row, substituteFor.via);
             closeSubstitutes();
+          }}
+        />
+      )}
+      {looseFor && (
+        <LooseSheet
+          item={looseFor.row}
+          onClose={() => setLooseFor(null)}
+          onAdd={(qty) => {
+            setValue(`lines.${looseFor.index}.qty`, qty, { shouldDirty: true });
+            setLooseFor(null);
           }}
         />
       )}

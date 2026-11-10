@@ -782,6 +782,12 @@ export function InvoiceEditorPageContent({
                 onChange={(siteId) => form.setValue('siteId', siteId, { shouldDirty: true })}
               />
             )}
+            {/* G11 — the phone order this bill is for. */}
+            {values.phoneOrder && (
+              <UbText variant="body-sm" tone="secondary" data-testid="bill-phone-note">
+                {t('sales.phone.billNote', { number: values.phoneOrder.number })}
+              </UbText>
+            )}
             {/* G10 — the café order this bill settles, and any advance taken off. */}
             {values.cafeOrder && (
               <UbText variant="body-sm" tone="secondary" data-testid="bill-cafe-note">

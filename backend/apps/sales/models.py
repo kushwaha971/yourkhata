@@ -580,3 +580,46 @@ class CafeOrder(TenantModel):
         constraints = [
             models.UniqueConstraint(fields=["tenant", "client_key"], name="uq_cafe_order_client_key"),
         ]
+
+
+class PhoneOrder(TenantModel):
+    """G11 — a kirana's phone or WhatsApp order (design G11 `dPhoneOrders`).
+
+    A list a customer sent: what to pack, by when, home delivery or pick up, and
+    how they mean to pay. It is not a bill: "Make bill" opens one from these
+    lines, so stock, tax and udhaar are decided there as for any bill. Nothing is
+    sent to the customer automatically. `client_key` makes a double-tapped Save
+    one order.
+    """
+
+    TO_PACK = "to_pack"
+    OUT = "out"
+    DELIVERED = "delivered"
+    CANCELLED = "cancelled"
+
+    number = models.CharField(max_length=16)
+    client_key = models.UUIDField()
+    party = models.ForeignKey("parties.Party", on_delete=models.RESTRICT, related_name="phone_orders")
+    #: [{item_id, name, qty, rate, unit}] — what to pack, priced when taken.
+    lines = models.JSONField(default=list, blank=True)
+    #: The list as the customer wrote it, kept so nothing they asked for is lost.
+    list_text = models.TextField(blank=True, default="")
+    total = MoneyField(default=0)
+    status = models.CharField(max_length=12, default=TO_PACK)
+    deliver_by = models.DateTimeField(null=True, blank=True)
+    #: "home" or "pickup".
+    fulfil = models.CharField(max_length=8, default="home")
+    #: How the customer means to pay: "udhaar", "upi", "cash".
+    pay = models.CharField(max_length=8, default="cash")
+    invoice_id = models.UUIDField(null=True, blank=True)
+    delivered_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        db_table = "sales_phone_order"
+        verbose_name = "phone order"
+        verbose_name_plural = "phone orders"
+        ordering = ["-created_at"]
+        constraints = [
+            models.UniqueConstraint(fields=["tenant", "number"], name="uq_phone_order_number"),
+            models.UniqueConstraint(fields=["tenant", "client_key"], name="uq_phone_order_client_key"),
+        ]

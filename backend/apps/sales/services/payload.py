@@ -171,6 +171,11 @@ def apply_payload(
     from apps.sales.services.sites import place_on_site
 
     place_on_site(tenant=tenant, document=document, payload=payload, errors=errors)
+    # G11 — the phone order this bill is for, kept in meta.phone_order.
+    if "phone_order_id" in payload:
+        from apps.sales.services.phone_orders import link_to_draft as link_phone
+
+        link_phone(tenant=tenant, document=document, order_id=payload.get("phone_order_id"), errors=errors)
     # G10 — the café order this bill settles, kept in meta.cafe_order.
     if "cafe_order_id" in payload:
         from apps.sales.services.cafe_orders import link_to_draft as link_cafe

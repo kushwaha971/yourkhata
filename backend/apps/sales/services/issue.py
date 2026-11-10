@@ -146,6 +146,10 @@ def issue_invoice(
 
     cafe_order, cafe_advance_ids = cafe_orders.advance_for_issue(ctx=ctx, document=document)
     advance_ids = [*advance_ids, *cafe_advance_ids]
+    # G11 — a bill made for a phone order sends it out (or hands it over).
+    from apps.sales.services import phone_orders
+
+    phone_order = phone_orders.order_for_issue(ctx=ctx, document=document)
     # G2d — a PAN the customer's GSTIN carries; neither PAN nor cash ever stops a bill.
     from apps.sales.services.jewel_rules import fill_pan_from_gstin
 
@@ -261,6 +265,7 @@ def issue_invoice(
     mark_delivered_by(order=custom_order, document=document)
     repairs.mark_delivered_by(job=repair_job, document=document)
     cafe_orders.mark_billed_by(order=cafe_order, document=document)
+    phone_orders.mark_billed_by(order=phone_order, document=document)
 
     write_audit(
         ctx=ctx,

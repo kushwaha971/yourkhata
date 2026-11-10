@@ -27,6 +27,7 @@ import { mayHaveBeenSaved } from 'src/utils/requestKey';
 import { getItem } from '../../inventory/api/itemService';
 import { getCafeOrder } from '../api/cafeOrderService';
 import { getCustomOrder } from '../api/customOrderService';
+import { getPhoneOrder } from '../api/phoneOrderService';
 import { getRepair } from '../api/repairService';
 import { getInvoice } from '../api/salesService';
 import { runningSchemes, type SchemeRow } from '../api/schemeService';
@@ -53,7 +54,7 @@ import {
   type InvoiceFormValues,
   type PaymentRowForm,
 } from '../view-model/invoiceForm';
-import { emptyLine } from '../view-model/invoiceForm';
+import { emptyLine, type InvoiceLineForm } from '../view-model/invoiceForm';
 import { itemLineDefaults } from '../view-model/itemLineDefaults';
 import { applySchemes, nearestOffer } from '../view-model/schemes';
 import { computeDocumentTotals, type EngineResult } from '../view-model/taxEngine';
@@ -94,6 +95,27 @@ export interface UseInvoiceEditorResult {
   readonly restart: () => void;
 }
 
+/**
+ * G10 / G11 — an order's lines (café or phone) as bill lines: each item's own
+ * defaults (unit, tax, HSN), at the quantity and rate the order took.
+ */
+const orderLinesToBill = async (
+  lines: readonly { item_id: string; name: string; qty: string; rate: string; note?: string }[],
+  signal: AbortSignal
+): Promise<InvoiceLineForm[]> => {
+  const items = await Promise.all(lines.map((l) => getItem(l.item_id, signal)));
+  return lines.map((l, i) => {
+    const item = items[i];
+    return {
+      ...emptyLine(),
+      ...(item ? itemLineDefaults(item) : { itemId: l.item_id, description: l.name }),
+      ...(l.note ? { description: `${l.name} · ${l.note}` } : {}),
+      qty: l.qty,
+      unitPrice: l.rate,
+    };
+  });
+};
+
 export const useInvoiceEditor = (
   documentId: string | null,
   kind: EditorKind = 'invoice'
@@ -105,6 +127,7 @@ export const useInvoiceEditor = (
   const initialRepair = search.get('repair');
   // G10 — `?cafe_order=` opens the bill that settles a café order, with its lines.
   const initialCafe = search.get('cafe_order');
+  const initialPhone = search.get('phone_order');
   // G7 — `?site=` opens a bill for that site, from its page.
   const initialSite = search.get('site');
   // G8 — `?vehicle=` opens a bill for that vehicle, from its page.
@@ -252,19 +275,9 @@ export const useInvoiceEditor = (
     const controller = new AbortController();
     void getCafeOrder(initialCafe, controller.signal)
       .then(async (order) => {
-        const items = await Promise.all(order.lines.map((l) => getItem(l.item_id, controller.signal)));
+        const lines = await orderLinesToBill(order.lines, controller.signal);
         if (controller.signal.aborted) return;
-        form.setValue(
-          'lines',
-          order.lines.map((l, i) => ({
-            ...emptyLine(),
-            ...(items[i] ? itemLineDefaults(items[i]) : { itemId: l.item_id, description: l.name }),
-            ...(l.note ? { description: `${l.name} · ${l.note}` } : {}),
-            qty: l.qty,
-            unitPrice: l.rate,
-          })),
-          { shouldDirty: true }
-        );
+        form.setValue('lines', lines, { shouldDirty: true });
         form.setValue(
           'cafeOrder',
           { id: order.id, kind: order.kind, number: order.number, advance: order.advance },
@@ -277,6 +290,23 @@ export const useInvoiceEditor = (
       });
     return () => controller.abort();
   }, [documentId, initialCafe, context, form, dispatch]);
+  // G11 — `?phone_order=` opens the bill for a phone order, with its lines.
+  useEffect(() => {
+    if (documentId || !initialPhone || !context || seeded.current !== 'new') return undefined;
+    const controller = new AbortController();
+    void getPhoneOrder(initialPhone, controller.signal)
+      .then(async (order) => {
+        const lines = await orderLinesToBill(order.lines, controller.signal);
+        if (controller.signal.aborted) return;
+        form.setValue('lines', lines, { shouldDirty: true });
+        form.setValue('phoneOrder', { id: order.id, number: order.number }, { shouldDirty: true });
+      })
+      .catch(() => {
+        if (!controller.signal.aborted)
+          dispatch(showSnackbar({ severity: 'error', id: 'sales.editor.error.context' }));
+      });
+    return () => controller.abort();
+  }, [documentId, initialPhone, context, form, dispatch]);
   useEffect(() => {
     if (documentId || !initialSite || !context || seeded.current !== 'new') return;
     form.setValue('siteId', initialSite, { shouldDirty: true });

@@ -126,6 +126,7 @@ _REGISTRY: dict[str, tuple[int, bool]] = {
     # G5 — a repair job in a stage that cannot take this move or this bill.
     "repair_status": (409, False),
     "cafe_order_status": (409, False),
+    "phone_order_status": (409, False),
     "karigar_lot_received": (409, False),
     "karigar_lot_not_back": (409, False),
     "karigar_lot_has_tags": (409, False),

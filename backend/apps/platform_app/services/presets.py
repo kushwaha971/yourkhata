@@ -55,6 +55,8 @@ PRESETS: dict[str, Preset] = {
         favourite_units=("NOS", "KGS", "GMS", "LTR", "PAC"),
         extra_expense_categories=("Packaging", "Shop maintenance"),
         default_due_days=7,
+        # G11 — phone and WhatsApp orders, and loose goods sold by amount.
+        features=frozenset({"phone_orders", "loose_amount"}),
     ),
     BusinessType.MEDICAL.value: Preset(
         inventory_enabled=True,

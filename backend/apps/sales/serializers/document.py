@@ -104,6 +104,8 @@ class InvoiceWriteSerializer(serializers.Serializer):
     custom_order_id = serializers.UUIDField(required=False, allow_null=True)
     #: G7 — the contractor's site this bill is for.
     site_id = serializers.UUIDField(required=False, allow_null=True)
+    #: G11 — the phone order this bill is for.
+    phone_order_id = serializers.UUIDField(required=False, allow_null=True)
     #: G10 — the café order this bill settles.
     cafe_order_id = serializers.UUIDField(required=False, allow_null=True)
     #: G5 — the repair job this bill delivers.
@@ -204,6 +206,7 @@ class DocumentReadSerializer(serializers.ModelSerializer):
     rx = serializers.SerializerMethodField()
     repair_job = serializers.SerializerMethodField()
     cafe_order = serializers.SerializerMethodField()
+    phone_order = serializers.SerializerMethodField()
     site = serializers.SerializerMethodField()
     custom_order = serializers.SerializerMethodField()
     party = serializers.SerializerMethodField()
@@ -262,6 +265,7 @@ class DocumentReadSerializer(serializers.ModelSerializer):
             "rx",
             "repair_job",
             "cafe_order",
+            "phone_order",
             "site",
             "custom_order",
             "terms",
@@ -295,6 +299,10 @@ class DocumentReadSerializer(serializers.ModelSerializer):
     def get_site(self, obj: Any) -> dict | None:
         """G7 — the site this bill is for, or null."""
         return {"id": str(obj.site_id), "name": obj.site.name} if obj.site_id else None
+
+    def get_phone_order(self, obj: Any) -> dict | None:
+        """G11 — the phone order this bill is for, or null."""
+        return (obj.meta or {}).get("phone_order") or None
 
     def get_cafe_order(self, obj: Any) -> dict | None:
         """G10 — the café order this bill settles, or null."""

@@ -219,6 +219,8 @@ export interface SalesDocument extends SalesDocumentTotals {
   /** G7 — the contractor's site this bill is for. */
   readonly site?: { readonly id: string; readonly name: string } | null;
   readonly repairJob?: { readonly id: string; readonly number: string; readonly advance: string } | null;
+  /** G11 — the phone order this bill is for. */
+  readonly phoneOrder?: { readonly id: string; readonly number: string } | null;
   /** G10 — the café order this bill settles. */
   readonly cafeOrder?: {
     readonly id: string;

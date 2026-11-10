@@ -82,6 +82,8 @@ export interface InvoiceFormValues {
   repairJob?: BillRepairJob | null;
   /** G10 — the café order this bill settles. */
   cafeOrder?: BillCafeOrder | null;
+  /** G11 — the phone order this bill is for. */
+  phoneOrder?: { readonly id: string; readonly number: string } | null;
   /** G7 — which of the contractor's sites; unset lets the server take an only site. */
   siteId?: string;
   /** G4 — a Schedule H medicine's prescription: the doctor and the patient. */
@@ -188,6 +190,7 @@ export const toWireBody = (values: InvoiceFormValues): Record<string, unknown> =
   ...(values.siteId ? { site_id: values.siteId } : {}),
   ...(values.repairJob !== undefined ? { repair_job_id: values.repairJob?.id ?? null } : {}),
   ...(values.cafeOrder !== undefined ? { cafe_order_id: values.cafeOrder?.id ?? null } : {}),
+  ...(values.phoneOrder !== undefined ? { phone_order_id: values.phoneOrder?.id ?? null } : {}),
   ...(values.pan !== undefined ? { pan: values.pan.trim().toUpperCase() } : {}),
   ...(values.oldGold !== undefined
     ? {
@@ -259,6 +262,7 @@ export const fromDocument = (doc: SalesDocument): InvoiceFormValues => ({
   customOrder: doc.customOrder ?? null,
   repairJob: doc.repairJob ?? null,
   cafeOrder: doc.cafeOrder ?? null,
+  phoneOrder: doc.phoneOrder ?? null,
   siteId: doc.site?.id,
   oldGold: doc.oldGold
     ? {

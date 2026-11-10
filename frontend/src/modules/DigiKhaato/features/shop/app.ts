@@ -31,6 +31,7 @@ import {
   Car,
   Gift,
   UtensilsCrossed,
+  PhoneCall,
   Wrench,
 } from 'lucide-react';
 
@@ -173,6 +174,19 @@ export const SHOP_APP: AppManifest = {
       feature: 'sites',
       section: 'sales',
       order: 1.7,
+      tab: 'invoices',
+    },
+    // G11 (design dPhoneOrders) — a kirana's phone and WhatsApp orders, under Sales.
+    {
+      key: 'phoneOrders',
+      icon: PhoneCall,
+      labelId: 'nav.phoneOrders',
+      href: ROUTES.SALES_PHONE_ORDERS,
+      module: 'sales',
+      permission: 'sales.invoice.read',
+      feature: 'phone_orders',
+      section: 'sales',
+      order: 1.06,
       tab: 'invoices',
     },
     // G10 (design dOpenOrders) — a café's tokens, tables and advance orders, under Sales.

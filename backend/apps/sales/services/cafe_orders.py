@@ -13,7 +13,7 @@ from __future__ import annotations
 
 import datetime as dt
 import uuid
-from decimal import Decimal, InvalidOperation
+from decimal import Decimal
 from typing import Any
 
 from django.core.exceptions import ValidationError
@@ -24,6 +24,7 @@ from apps.common.context import Ctx
 from apps.common.dates import tenant_timezone, tenant_today
 from apps.common.exceptions import BusinessRuleViolation, NotFound, ValidationFailed
 from apps.sales.models import CafeOrder
+from apps.sales.services.order_lines import clean_lines as _clean_lines, dec as _dec
 
 MONEY_MODES = ("cash", "upi", "bank", "cheque", "card")
 KINDS = (CafeOrder.TOKEN, CafeOrder.TABLE, CafeOrder.ADVANCE)
@@ -35,8 +36,6 @@ NEXT = {
     CafeOrder.READY: (CafeOrder.PREPARING, CafeOrder.SERVED, CafeOrder.CANCELLED),
     CafeOrder.SERVED: (CafeOrder.READY, CafeOrder.CANCELLED),
 }
-MAX_LINES = 50
-NOTE_MAX = 60
 
 
 def view(order: CafeOrder) -> dict:
@@ -59,66 +58,6 @@ def view(order: CafeOrder) -> dict:
         "invoice_id": str(order.invoice_id) if order.invoice_id else None,
         "created_at": order.created_at.isoformat(),
     }
-
-
-def _dec(raw: Any) -> Decimal | None:
-    try:
-        return Decimal(str(raw).replace(",", "").strip())
-    except (InvalidOperation, ValueError):
-        return None
-
-
-def _clean_lines(tenant: Any, raw: Any, errors: dict) -> tuple[list[dict], Decimal]:
-    """Each line names an item of this business; its rate is the item's price
-    unless the counter typed one. The total is what the lines add up to."""
-    from apps.inventory.models import Item
-
-    rows = raw if isinstance(raw, list) else []
-    if not rows:
-        errors["lines"] = ["Add at least one item."]
-        return [], Decimal("0")
-    if len(rows) > MAX_LINES:
-        errors["lines"] = [f"Keep an order under {MAX_LINES} items."]
-        return [], Decimal("0")
-    ids = []
-    for row in rows:
-        try:
-            ids.append(uuid.UUID(str((row or {}).get("item_id"))))
-        except (TypeError, ValueError, AttributeError):
-            ids.append(None)
-    items = {
-        item.id: item
-        for item in Item.objects.filter(tenant=tenant, pk__in=[i for i in ids if i], status="active", deleted_at__isnull=True)
-    }
-    lines: list[dict] = []
-    total = Decimal("0")
-    for index, (row, pk) in enumerate(zip(rows, ids)):
-        item = items.get(pk)
-        if item is None:
-            errors[f"lines.{index}.item_id"] = ["Choose an item from your list."]
-            continue
-        qty = _dec(row.get("qty"))
-        if qty is None or qty <= 0 or qty > Decimal("100000"):
-            errors[f"lines.{index}.qty"] = ["Enter how many."]
-            continue
-        rate = item.selling_price if row.get("rate") in (None, "") else _dec(row.get("rate"))
-        if rate is None or rate < 0:
-            errors[f"lines.{index}.rate"] = ["Enter the rate."]
-            continue
-        qty = qty.quantize(Decimal("0.001"))
-        rate = Decimal(rate).quantize(Decimal("0.01"))
-        note = " ".join(str(row.get("note") or "").split())[:NOTE_MAX]
-        lines.append(
-            {
-                "item_id": str(item.id),
-                "name": item.name,
-                "qty": f"{qty.normalize():f}",
-                "rate": f"{rate:.2f}",
-                "note": note,
-            }
-        )
-        total += (qty * rate).quantize(Decimal("0.01"))
-    return lines, total
 
 
 def _clean(*, ctx: Ctx, data: dict) -> dict:
