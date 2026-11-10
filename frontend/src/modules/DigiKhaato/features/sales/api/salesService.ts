@@ -123,7 +123,7 @@ export const toDocument = (row: Wire): SalesDocument => {
     documentDate: s(row.document_date),
     dueOn: sn(row.due_on),
     placeOfSupplyState: s(row.place_of_supply_state),
-    vehicle: (row.vehicle as { number?: string; mechanic?: string } | null) ?? null,
+    vehicle: (row.vehicle as { number?: string; model?: string; mechanic?: string } | null) ?? null,
     oldGold: (row.old_gold as OldGoldWire | null) ?? null,
     pan: (row.pan as string | null) ?? null,
     rx: (row.rx as { doctor?: string; patient?: string } | null) ?? null,

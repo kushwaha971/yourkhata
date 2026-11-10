@@ -28,6 +28,7 @@ import {
   Undo2,
   Store,
   Building2,
+  Car,
   Wrench,
 } from 'lucide-react';
 
@@ -170,6 +171,19 @@ export const SHOP_APP: AppManifest = {
       feature: 'sites',
       section: 'sales',
       order: 1.7,
+      tab: 'invoices',
+    },
+    // G8 (design dVehicle) — an auto parts shop's vehicles, under Sales.
+    {
+      key: 'vehicles',
+      icon: Car,
+      labelId: 'nav.vehicles',
+      href: ROUTES.SALES_VEHICLES,
+      module: 'sales',
+      permission: 'sales.invoice.read',
+      feature: 'part_numbers',
+      section: 'sales',
+      order: 1.8,
       tab: 'invoices',
     },
     // G5 (design dRepairs) — a mobile shop's repair jobs, under Sales.

@@ -253,7 +253,7 @@ export function InvoicePartySection({
         </UbGrid>
         {/* D P1b — design D1 auto parts: Vehicle no. and Mechanic. */}
         {keepsVehicles && (
-          <UbGrid columns={{ base: 1, sm: 2 }} gap={3}>
+          <UbGrid columns={{ base: 1, sm: 3 }} gap={3}>
             <UbField name="vehicleNo" label={t('sales.editor.vehicleNo')} hint={t('sales.editor.vehicleHint')}>
               {(field) => (
                 <UbTextInput
@@ -263,6 +263,11 @@ export function InvoicePartySection({
                   maxLength={20}
                   disabled={disabled}
                 />
+              )}
+            </UbField>
+            <UbField name="vehicleModel" label={t('sales.editor.vehicleModel')}>
+              {(field) => (
+                <UbTextInput {...field} value={(field.value as string) ?? ''} maxLength={60} disabled={disabled} />
               )}
             </UbField>
             <UbField name="mechanic" label={t('sales.editor.mechanic')}>
@@ -318,6 +323,8 @@ export function InvoicePartySection({
           formatBusinessDate(documentDate),
           dueOn && `${t('sales.editor.dueOn')} ${formatBusinessDate(dueOn)}`,
           posLabel,
+          // G8 — the vehicle shows while the fold is closed (a bill opened from its page).
+          keepsVehicles ? (watch('vehicleNo') as string | undefined) : undefined,
         ]
           .filter(Boolean)
           .join(' · ')}

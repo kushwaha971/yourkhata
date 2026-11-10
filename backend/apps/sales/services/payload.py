@@ -136,12 +136,14 @@ def apply_payload(
             errors["walk_in_mobile"] = [str(exc)]
     apply_location(tenant, document, payload, errors)
     # D P1b — the vehicle and its mechanic (auto parts), kept in meta.vehicle.
-    if "vehicle_number" in payload or "mechanic" in payload:
+    if "vehicle_number" in payload or "mechanic" in payload or "vehicle_model" in payload:
         vehicle = dict((document.meta or {}).get("vehicle") or {})
         if "vehicle_number" in payload:
             vehicle["number"] = "".join(str(payload.get("vehicle_number") or "").split()).upper()[:20]
         if "mechanic" in payload:
             vehicle["mechanic"] = " ".join(str(payload.get("mechanic") or "").split())[:60]
+        if "vehicle_model" in payload:
+            vehicle["model"] = " ".join(str(payload.get("vehicle_model") or "").split())[:60]
         document.meta = {**(document.meta or {}), "vehicle": {k: v for k, v in vehicle.items() if v}}
     # G2d — the customer's PAN, asked on a jeweller's bill of ₹2 lakh or more
     # (Rule 114B), kept with the bill in meta.pan.

@@ -91,6 +91,8 @@ class InvoiceWriteSerializer(serializers.Serializer):
     #: D P1b — design D1 auto parts: the vehicle and the mechanic, printed on the bill.
     vehicle_number = serializers.CharField(required=False, allow_blank=True, max_length=20)
     mechanic = serializers.CharField(required=False, allow_blank=True, max_length=60)
+    #: G8 — make and model, so the vehicle page can name it.
+    vehicle_model = serializers.CharField(required=False, allow_blank=True, max_length=60)
     #: G2c — a jeweller's old gold taken in: {weight_g, purity, rate?, less_pct}.
     old_gold = serializers.DictField(required=False, allow_null=True)
     #: G2d — the customer's PAN on a jeweller's bill of ₹2 lakh or more.

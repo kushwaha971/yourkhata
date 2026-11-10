@@ -99,6 +99,10 @@ export const useInvoiceEditor = (
   const initialRepair = search.get('repair');
   // G7 — `?site=` opens a bill for that site, from its page.
   const initialSite = search.get('site');
+  // G8 — `?vehicle=` opens a bill for that vehicle, from its page.
+  const initialVehicle = search.get('vehicle');
+  const initialModel = search.get('model');
+  const initialMechanic = search.get('mechanic');
   const { partyId: initialParty, partyName: initialPartyName } = usePartyEditorSeed();
   const dispatch = useAppDispatch();
   const store = useStore<RootState>();
@@ -239,6 +243,12 @@ export const useInvoiceEditor = (
     if (documentId || !initialSite || !context || seeded.current !== 'new') return;
     form.setValue('siteId', initialSite, { shouldDirty: true });
   }, [documentId, initialSite, context, form]);
+  useEffect(() => {
+    if (documentId || !initialVehicle || !context || seeded.current !== 'new') return;
+    form.setValue('vehicleNo', initialVehicle, { shouldDirty: true });
+    if (initialModel) form.setValue('vehicleModel', initialModel, { shouldDirty: true });
+    if (initialMechanic) form.setValue('mechanic', initialMechanic, { shouldDirty: true });
+  }, [documentId, initialVehicle, initialModel, initialMechanic, context, form]);
 
   // A Home handoff is a proposed line in a NEW editor only; existing drafts,
   // manual changes and revoked/switching contexts always win over a late read.

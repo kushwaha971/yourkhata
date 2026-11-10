@@ -69,6 +69,8 @@ export interface InvoiceFormValues {
   locationId: string;
   /** D P1b — design D1 auto parts: the vehicle and its mechanic. */
   vehicleNo?: string;
+  /** G8 — make and model, named on the vehicle page. */
+  vehicleModel?: string;
   /** G2c — a jeweller's old gold taken in (null: none; undefined: not a jeweller's bill). */
   oldGold?: OldGoldForm | null;
   /** G2d — the customer's PAN on a jeweller's bill of ₹2 lakh or more. */
@@ -179,6 +181,7 @@ export const toWireBody = (values: InvoiceFormValues): Record<string, unknown> =
   place_of_supply_state: values.placeOfSupplyState || null,
   location_id: values.locationId || null,
   ...(values.vehicleNo !== undefined ? { vehicle_number: values.vehicleNo } : {}),
+  ...(values.vehicleModel !== undefined ? { vehicle_model: values.vehicleModel } : {}),
   ...(values.customOrder !== undefined ? { custom_order_id: values.customOrder?.id ?? null } : {}),
   ...(values.siteId ? { site_id: values.siteId } : {}),
   ...(values.repairJob !== undefined ? { repair_job_id: values.repairJob?.id ?? null } : {}),
@@ -248,6 +251,7 @@ export const fromDocument = (doc: SalesDocument): InvoiceFormValues => ({
   placeOfSupplyState: doc.placeOfSupplyState,
   locationId: doc.location?.id ?? '',
   vehicleNo: doc.vehicle?.number ?? '',
+  vehicleModel: doc.vehicle?.model ?? '',
   pan: doc.pan ?? '',
   customOrder: doc.customOrder ?? null,
   repairJob: doc.repairJob ?? null,

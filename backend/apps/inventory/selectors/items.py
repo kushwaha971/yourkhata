@@ -156,6 +156,7 @@ def item_list(
     category_id: Any = None,
     status: str | None = ItemStatus.ACTIVE,
     product_id: Any = None,
+    fits: str = "",
 ) -> QuerySet:
     """Every filter except `stock` — which `counts` must ignore (FR-4 delta)."""
     qs = Item.objects.filter(tenant=tenant).select_related("unit", "category")
@@ -172,6 +173,9 @@ def item_list(
             qs = qs.filter(product_id=product_id)
         except (ValueError, TypeError):
             qs = qs.none()
+    # G8 — "Parts that fit": every word typed must be in the item's fits.
+    for word in (fits or "").split()[:6]:
+        qs = qs.filter(fits_vehicle__icontains=word[:40])
     qs = search(qs, q)
     return with_stock(qs, location_id=location_id)
 
