@@ -1107,6 +1107,7 @@
   "sales.site.oneBill": "{count} bill",
   "sales.site.open": "Open site",
   "sales.site.openCount": "Sites {count} open",
+  "sales.site.openLine": "Sites {n} open",
   "sales.site.paid": "Paid",
   "sales.site.paidSaved": "{amount} received",
   "sales.site.payFor": "Payment for {name}",

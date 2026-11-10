@@ -253,14 +253,15 @@ export function PhoneOrderDrawer({
       footer={
         <UbStack gap={2} className="w-full">
           <UbStack direction="row" className="items-baseline justify-between">
-            <UbText variant="caption" tone="secondary">
+            {/* Design pAdvance `.pdock`: the total's label 13 px, the action `.btn.cta.lg` (46 px, 15 px). */}
+            <UbText variant="inherit" tone="secondary" className="text-[13px]">
               {t('sales.phone.itemsCount', { count: lines.length })}
             </UbText>
             <UbText variant="h3" className="font-semibold tabular-nums" data-testid="phone-dock-total">
               {formatInr(total.toFixed(2))}
             </UbText>
           </UbStack>
-          <UbButton type="submit" form={formId} busy={busy} className="w-full" data-testid="phone-save">
+          <UbButton type="submit" form={formId} busy={busy} size="lg" className="w-full" data-testid="phone-save">
             {t('sales.phone.save')}
           </UbButton>
         </UbStack>

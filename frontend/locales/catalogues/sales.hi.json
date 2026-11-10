@@ -1107,6 +1107,7 @@
   "sales.site.oneBill": "{count} बिल",
   "sales.site.open": "साइट खोलें",
   "sales.site.openCount": "{count} साइट बाकी",
+  "sales.site.openLine": "{n} साइट खुली",
   "sales.site.paid": "चुकाया",
   "sales.site.paidSaved": "{amount} मिले",
   "sales.site.payFor": "{name} का पैसा",

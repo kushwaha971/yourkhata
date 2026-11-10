@@ -7,6 +7,7 @@ import dynamic from 'next/dynamic';
 import { Plus } from 'lucide-react';
 
 import {
+  UbCountLine,
   UbButton,
   UbDrawerLoading,
   UbPageHeader,
@@ -14,7 +15,6 @@ import {
   UbSearchInput,
   UbStack,
   UbStatusBadge,
-  UbText,
 } from 'src/design-system';
 import { useIsMobileLayer } from 'src/design-system/motion/useMediaQuery';
 import {
@@ -153,12 +153,22 @@ export function SitesPageContent(): React.JSX.Element {
       <UbStack gap={3} data-testid="sites-screen">
         {isPhone && searchBox}
         {list && (
-          <UbStack direction="row" gap={4} data-testid="sites-count">
-            <UbText variant="body-sm" tone="secondary">
-              {t('sales.site.toCollect')} <UbText as="span" variant="body-sm" className="font-semibold">{formatInr(list.to_collect)}</UbText>
-            </UbText>
-            <UbText variant="body-sm" tone="secondary">{t('sales.site.openCount', { count: list.open })}</UbText>
-          </UbStack>
+          // Design dSite's `.countline`: the registers' shared count line (13.5 px), not body text.
+          <UbCountLine
+            data-testid="sites-count"
+            items={[
+              {
+                id: 'collect',
+                template: `${t('sales.site.toCollect')} {amount}`,
+                values: { amount: { text: formatInr(list.to_collect), tone: 'receivable' } },
+              },
+              {
+                id: 'open',
+                template: t('sales.site.openLine'),
+                values: { n: { text: String(list.open) } },
+              },
+            ]}
+          />
         )}
         <UbDataGrid
           variant="register"

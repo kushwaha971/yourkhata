@@ -13,7 +13,6 @@ import {
   UbPageShell,
   UbSkeleton,
   UbStack,
-  UbStatusBadge,
   UbText,
 } from 'src/design-system';
 import { useAppSelector } from 'src/hooks/useAppStore';
@@ -85,26 +84,30 @@ export function SiteDetailPageContent({ id }: Readonly<{ id: string }>): React.J
       <UbStack gap={3} data-testid="site-screen">
         <UbCard>
           <UbStack gap={1}>
-            <UbText variant="body-sm" tone="secondary">{t('sales.site.toCollectHere')}</UbText>
+            {/* Design pSite: `.small.mute` captions (12.5 px, tertiary). */}
+            <UbText variant="inherit" className="text-[12.5px] text-text-tertiary">{t('sales.site.toCollectHere')}</UbText>
             <UbText className="text-[26px] font-bold leading-tight" data-testid="site-due">{formatInr(site.due)}</UbText>
-            <UbText variant="body-sm" tone="secondary">{facts.join(' · ')}</UbText>
+            <UbText variant="inherit" className="text-[12.5px] text-text-tertiary">{facts.join(' · ')}</UbText>
           </UbStack>
         </UbCard>
         <UbBox className="grid grid-cols-2 gap-2 lg:max-w-md">
           {remind ? (
-            <UbActionLink href={remind} target="_blank" rel="noopener noreferrer" variant="secondary">
+            <UbActionLink href={remind} target="_blank" rel="noopener noreferrer" variant="outlineNeutral" size="lg">
               {t('sales.site.remind')}
             </UbActionLink>
           ) : (
-            <UbButton variant="secondary" disabled>{t('sales.site.remind')}</UbButton>
+            <UbButton variant="outlineNeutral" size="lg" disabled>{t('sales.site.remind')}</UbButton>
           )}
           {can('sales.invoice.write') && (
-            <UbActionLink href={newBill} variant="primary" icon={<Plus className="h-4 w-4" aria-hidden />} data-testid="site-new-bill">
+            <UbActionLink href={newBill} variant="primary" size="lg" icon={<Plus className="h-4 w-4" aria-hidden />} data-testid="site-new-bill">
               {t('sales.site.newBill')}
             </UbActionLink>
           )}
         </UbBox>
-        <UbText variant="body-sm" className="font-semibold">{t('sales.site.billsHere')}</UbText>
+        {/* Design `.sechd`: 12 px, bold, spaced capitals, tertiary. */}
+        <UbText as="h2" variant="inherit" className="text-[12px] font-bold uppercase tracking-[0.06em] text-text-tertiary">
+          {t('sales.site.billsHere')}
+        </UbText>
         <UbCard>
           <UbStack gap={3} data-testid="site-bills">
             {site.bill_rows.length === 0 && <UbText tone="secondary">{t('sales.site.noBills')}</UbText>}
@@ -116,11 +119,18 @@ export function SiteDetailPageContent({ id }: Readonly<{ id: string }>): React.J
                   <UbText variant="caption" tone="secondary">{formatBusinessDate(bill.date)}</UbText>
                 </UbStack>
                 <UbStack gap={0} className="items-end">
-                  <UbText variant="body-sm" className="font-semibold">{formatInr(Number(bill.due) > 0 ? bill.due : bill.total)}</UbText>
-                  <UbStatusBadge
-                    tone={Number(bill.due) > 0 ? 'warning' : 'success'}
-                    label={t(Number(bill.due) > 0 ? 'sales.site.notPaid' : 'sales.site.paid')}
-                  />
+                  {/* Design pSite: money still to get in green (`.amt.get`), and the
+                      state as a small grey word under it, not a badge. */}
+                  <UbText
+                    variant="body-sm"
+                    className={`font-semibold tabular-nums ${Number(bill.due) > 0 ? 'text-success-700 dark:text-success-400' : ''}`}
+                  >
+                    {formatInr(Number(bill.due) > 0 ? bill.due : bill.total)}
+                  </UbText>
+                  {/* font-normal: the row is a link, whose semibold every child inherits. */}
+                  <UbText variant="inherit" className="text-[12px] font-normal text-text-tertiary">
+                    {t(Number(bill.due) > 0 ? 'sales.site.notPaid' : 'sales.site.paid')}
+                  </UbText>
                 </UbStack>
                 </UbStack>
               </UbActionLink>

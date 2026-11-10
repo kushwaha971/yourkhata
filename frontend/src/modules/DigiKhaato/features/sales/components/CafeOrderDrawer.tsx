@@ -226,14 +226,15 @@ export function CafeOrderDrawer({
       footer={
         <UbStack gap={2} className="w-full">
           <UbStack direction="row" className="items-baseline justify-between">
-            <UbText variant="caption" tone="secondary">
+            {/* Design pAdvance `.pdock`: the total's label 13 px, the action `.btn.cta.lg` (46 px, 15 px). */}
+            <UbText variant="inherit" tone="secondary" className="text-[13px]">
               {isAdvance && !adding ? t('sales.cafe.balanceOnDelivery') : t('sales.cafe.total')}
             </UbText>
             <UbText variant="h3" className="font-semibold tabular-nums" data-testid="cafe-dock-total">
               {formatInr((isAdvance && !adding ? balance : total).toFixed(2))}
             </UbText>
           </UbStack>
-          <UbButton type="submit" form={formId} busy={busy} className="w-full" data-testid="cafe-save">
+          <UbButton type="submit" form={formId} busy={busy} size="lg" className="w-full" data-testid="cafe-save">
             {adding ? t('sales.cafe.saveItems') : isAdvance ? t('sales.cafe.saveAdvance') : t('sales.cafe.save')}
           </UbButton>
         </UbStack>

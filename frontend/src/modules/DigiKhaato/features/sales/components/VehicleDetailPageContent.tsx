@@ -105,7 +105,7 @@ export function VehicleDetailPageContent({ number }: Readonly<{ number: string }
 
   const actions = isPhone ? (
     <UbBox className="grid grid-cols-2 gap-2">
-          <UbActionLink href={partsHref} variant="secondary" icon={<Wrench className="h-4 w-4" aria-hidden />} data-testid="vehicle-parts">
+          <UbActionLink href={partsHref} variant="outlineNeutral" icon={<Wrench className="h-4 w-4" aria-hidden />} data-testid="vehicle-parts">
             {t('sales.vehicle.partsFit')}
           </UbActionLink>
           {can('sales.invoice.write') && (
@@ -121,7 +121,7 @@ export function VehicleDetailPageContent({ number }: Readonly<{ number: string }
     </UbBox>
   ) : (
     <UbStack direction="row" gap={2}>
-          <UbActionLink href={partsHref} variant="secondary" icon={<Wrench className="h-4 w-4" aria-hidden />} data-testid="vehicle-parts">
+          <UbActionLink href={partsHref} variant="outlineNeutral" icon={<Wrench className="h-4 w-4" aria-hidden />} data-testid="vehicle-parts">
             {t('sales.vehicle.partsFit')}
           </UbActionLink>
           {can('sales.invoice.write') && (
@@ -146,17 +146,31 @@ export function VehicleDetailPageContent({ number }: Readonly<{ number: string }
       />
       <UbStack gap={3} data-testid="vehicle-screen">
         {isPhone && actions}
-        <UbBox className={`grid grid-cols-2 gap-2 ${tiles.length === 4 ? 'lg:grid-cols-4' : 'lg:grid-cols-3'}`} data-testid="vehicle-tiles">
-          {tiles.map((tile) => (
-            <UbCard key={tile.label}>
-              <UbStack gap={0}>
-                <UbText variant="caption" tone="secondary">{tile.label}</UbText>
-                <UbText className={`text-[20px] font-bold leading-tight ${'tone' in tile ? 'text-success-700 dark:text-success-400' : ''}`}>
-                  {tile.value}
-                </UbText>
-                <UbText variant="caption" tone="secondary" className="truncate">{tile.note}</UbText>
-              </UbStack>
-            </UbCard>
+        {/* Design dVehicle's `.dayl`: one ruled strip (1.5 px ink rule over a
+            hairline, dividers between cells), not four cards. */}
+        <UbBox
+          className={`grid grid-cols-2 border-b border-t-[1.5px] border-b-border-hairline border-t-text-primary ${tiles.length === 4 ? 'lg:grid-cols-4' : 'lg:grid-cols-3'}`}
+          data-testid="vehicle-tiles"
+        >
+          {tiles.map((tile, index) => (
+            <UbStack
+              key={tile.label}
+              gap={0}
+              className={`min-w-0 gap-px px-[14px] py-[10px] ${index % 2 ? 'border-l border-border-hairline' : ''} ${index > 0 ? 'lg:border-l lg:border-border-hairline' : ''} ${index > 1 ? 'max-lg:border-t max-lg:border-border-hairline' : ''}`}
+            >
+              <UbText variant="inherit" className="text-[12px] font-semibold text-text-tertiary">
+                {tile.label}
+              </UbText>
+              <UbText
+                variant="inherit"
+                className={`text-[22px] font-extrabold tabular-nums leading-tight ${'tone' in tile ? 'text-success-700 dark:text-success-400' : ''}`}
+              >
+                {tile.value}
+              </UbText>
+              <UbText variant="inherit" className="truncate text-[12px] text-text-tertiary">
+                {tile.note}
+              </UbText>
+            </UbStack>
           ))}
         </UbBox>
         <UbSearchInput value={search} onChange={setSearch} placeholder={t('sales.vehicle.searchBills')} aria-label={t('sales.vehicle.searchBills')} />

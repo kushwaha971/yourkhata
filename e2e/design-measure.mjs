@@ -1,7 +1,7 @@
 // Measures the running app against the artifact's own mock: every text the two share is
 // found on both sides and its computed box and type are compared, so a button 4 px short
 // or a word 1 px large fails here where a side-by-side screenshot would not show it.
-//   node e2e/design-measure.mjs --mock=pHome --kind=kirana [--email= --password= --route=]
+//   node e2e/design-measure.mjs --mock=pHome --kind=kirana [--email= --password= --route= --open='sel|sel']
 import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { chromium } from 'playwright';
@@ -21,7 +21,12 @@ const collect = (root) => {
   for (let n = walk.nextNode(); n; n = walk.nextNode()) {
     const text = n.textContent.replace(/\s+/g, ' ').trim();
     const el = n.parentElement;
-    if (!text || text.length > 60 || out.has(text) || el.closest('nav,aside,header,[data-testid=ub-bottom-nav]')) continue;
+    // A heading wins over an earlier node with the same words (a table caption,
+    // a count line): the design's text is the heading (G round, 10 Nov).
+    if (!text || text.length > 60 || el.closest('nav,aside,[data-testid=ub-bottom-nav]')) continue;
+    // The app header is chrome, except the page's own title.
+    if (el.closest('header') && el.tagName !== 'H1') continue;
+    if (out.has(text) && !/^H[1-3]$/.test(el.tagName)) continue;
     const r = el.getBoundingClientRect();
     if (!r.width || !r.height) continue;
     // The control the words sit in, when there is one: its box is what the design sizes.
@@ -91,6 +96,12 @@ await p.keyboard.press('Enter');
 await p.waitForURL((u) => !u.pathname.startsWith('/login'));
 await p.goto(base + arg('route', pair.route));
 await p.waitForTimeout(3000);
+// --open=a|b|c: Playwright selectors tapped in order to reach a drawer or sheet
+// the design draws open (pRepair, pAdvance, pLoose…). `|` because selectors hold commas.
+for (const sel of (arg('open', '') || '').split('|').filter(Boolean)) {
+  await p.locator(sel).first().click({ timeout: 10000 });
+  await p.waitForTimeout(1200);
+}
 if (dark) { await p.evaluate(() => document.documentElement.setAttribute('data-theme', 'dark')); await p.waitForTimeout(400); }
 const over = await p.evaluate(() => document.documentElement.scrollWidth - innerWidth);
 if (over > 0) console.log('OVERFLOW', over);

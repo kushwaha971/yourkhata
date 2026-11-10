@@ -151,7 +151,7 @@ export function SchemesPageContent(): React.JSX.Element {
     </UbButton>
   );
   const claimsButton = (
-    <UbButton variant="secondary" onClick={() => setClaims(true)} data-testid="scheme-claims">
+    <UbButton variant="outlineNeutral" onClick={() => setClaims(true)} data-testid="scheme-claims">
       {t('sales.scheme.claims')}
     </UbButton>
   );

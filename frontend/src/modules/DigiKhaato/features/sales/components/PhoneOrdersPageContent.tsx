@@ -55,7 +55,8 @@ const PhoneOrderDrawer = dynamic(() => import('./PhoneOrderDrawer').then((m) => 
   loading: () => <UbDrawerLoading />,
 });
 
-const PAY_TONE = { udhaar: 'warning', upi: 'info', cash: 'neutral' } as const;
+// Design dPhoneOrders: Udhaar amber, UPI on delivery teal, Cash the plain green badge.
+const PAY_TONE = { udhaar: 'warning', upi: 'info', cash: 'success' } as const;
 
 /** "By 6 pm · home", "Picks up". */
 const deliverText = (o: PhoneOrder, t: TranslateFn): string => {
@@ -173,7 +174,8 @@ export function PhoneOrdersPageContent(): React.JSX.Element {
     </UbButton>
   );
   const pasteButton = canWrite && (
-    <UbButton variant="secondary" icon={<ClipboardPaste className="h-4 w-4" aria-hidden />} onClick={() => setDrawer({ paste: true })} data-testid="phone-paste">
+    // Design dPhoneOrders: the header's second button is the white, bordered .btn.
+    <UbButton variant="outlineNeutral" icon={<ClipboardPaste className="h-4 w-4" aria-hidden />} onClick={() => setDrawer({ paste: true })} data-testid="phone-paste">
       {t('sales.phone.paste')}
     </UbButton>
   );
