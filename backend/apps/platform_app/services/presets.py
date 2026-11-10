@@ -140,7 +140,7 @@ PRESETS: dict[str, Preset] = {
         favourite_units=("NOS", "BOX", "BAG", "KGS", "QTL", "DOZ"),
         extra_expense_categories=("Loading & unloading", "Godown rent"),
         default_due_days=15,
-        features=frozenset({"orders"}),
+        features=frozenset({"orders", "schemes"}),
     ),
     BusinessType.DISTRIBUTION.value: Preset(
         inventory_enabled=True,
@@ -148,7 +148,7 @@ PRESETS: dict[str, Preset] = {
         favourite_units=("BOX", "PAC", "NOS", "BAG", "DOZ"),
         extra_expense_categories=("Fuel", "Vehicle maintenance", "Scheme discounts"),
         default_due_days=15,
-        features=frozenset({"orders"}),
+        features=frozenset({"orders", "schemes"}),
     ),
     BusinessType.SERVICES.value: Preset(
         inventory_enabled=False,

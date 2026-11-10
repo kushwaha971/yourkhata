@@ -173,6 +173,8 @@ class LineReadSerializer(serializers.ModelSerializer):
             "line_total",
             "returned_qty",
             "against_line_id",
+            "scheme_code",
+            "scheme_claim",
         )
 
 

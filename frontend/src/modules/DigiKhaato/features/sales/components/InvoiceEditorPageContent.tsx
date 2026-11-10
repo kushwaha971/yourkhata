@@ -111,7 +111,7 @@ export function InvoiceEditorPageContent({
   const locale = useAppSelector(selectLocale);
   const editor = useInvoiceEditor(documentId, kind);
   const autosave = useDraftAutosave(editor, documentId);
-  const { form, preview, editor: server, canWrite, save, issue, values, today } = editor;
+  const { form, preview, schemes, editor: server, canWrite, save, issue, values, today } = editor;
   const sellsToSites = Boolean(useAppSelector(selectActiveTenant)?.features?.includes('sites'));
   const [paying, setPaying] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
@@ -762,6 +762,7 @@ export function InvoiceEditorPageContent({
               openLine={openLine}
               onScanned={markScanned}
               stockRule={order ? 'order' : estimate && !challan ? 'estimate' : 'takes'}
+              schemes={schemes.running.length ? schemes : undefined}
             />
             {billOrder && (
               <UbText variant="body-sm" tone="secondary" data-testid="bill-order-note">

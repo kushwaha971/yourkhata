@@ -29,6 +29,7 @@ import {
   Store,
   Building2,
   Car,
+  Gift,
   Wrench,
 } from 'lucide-react';
 
@@ -171,6 +172,19 @@ export const SHOP_APP: AppManifest = {
       feature: 'sites',
       section: 'sales',
       order: 1.7,
+      tab: 'invoices',
+    },
+    // G9 (design dSchemes) — a distributor's company schemes, under Sales.
+    {
+      key: 'schemes',
+      icon: Gift,
+      labelId: 'nav.schemes',
+      href: ROUTES.SALES_SCHEMES,
+      module: 'sales',
+      permission: 'sales.invoice.read',
+      feature: 'schemes',
+      section: 'sales',
+      order: 1.9,
       tab: 'invoices',
     },
     // G8 (design dVehicle) — an auto parts shop's vehicles, under Sales.

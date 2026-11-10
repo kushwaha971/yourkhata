@@ -258,6 +258,10 @@ class SalesDocumentLine(models.Model):
     # `returned_qty` nor stock. Its `qty` is 1 (the line is one credit); the
     # GST summary and the register count it as no quantity.
     credit_mode = models.CharField(max_length=8, choices=CreditMode.choices, default=CreditMode.QTY)
+    #: G9 — the company scheme that made this line (a free line) or its discount,
+    #: and what the shop asks the company back for it.
+    scheme_code = models.CharField(max_length=24, null=True, blank=True)
+    scheme_claim = MoneyField(default=0)
 
     class Meta:
         db_table = "sales_document_line"
@@ -409,6 +413,47 @@ class KarigarLot(TenantModel):
         verbose_name_plural = "karigar lots"
         ordering = ["issued_on", "created_at"]
         constraints = [models.UniqueConstraint(fields=["tenant", "client_key"], name="uq_karigar_lot_client_key")]
+
+
+class Scheme(TenantModel):
+    """G9 — a company's offer to a distributor (design `dSchemes`, `pScheme`).
+
+    It applies on the bill by itself: `free` gives `free_qty` of the item for
+    every `buy_qty` bought, as a ₹0 line; `per_unit` takes `amount` rupees off
+    each unit of the item; `percent` takes `amount` % off when the bill's goods
+    (the item's, or all) come to `min_bill` or more. What was given is read
+    from the bill lines that carry its code, so there is no second count.
+    """
+
+    FREE = "free"
+    PER_UNIT = "per_unit"
+    PERCENT = "percent"
+    RULES = ((FREE, "Free goods"), (PER_UNIT, "Off per unit"), (PERCENT, "Percent off"))
+
+    code = models.CharField(max_length=24)
+    company = models.CharField(max_length=120)
+    rule = models.CharField(max_length=8, choices=RULES)
+    item = models.ForeignKey(
+        "inventory.Item", on_delete=models.RESTRICT, null=True, blank=True, related_name="schemes"
+    )
+    buy_qty = QuantityField(null=True, blank=True)
+    free_qty = QuantityField(null=True, blank=True)
+    amount = MoneyField(null=True, blank=True)
+    min_bill = MoneyField(null=True, blank=True)
+    valid_from = models.DateField()
+    valid_till = models.DateField()
+    active = models.BooleanField(default=True)
+    client_key = models.UUIDField()
+
+    class Meta:
+        db_table = "sales_scheme"
+        verbose_name = "scheme"
+        verbose_name_plural = "schemes"
+        ordering = ["-valid_till", "code"]
+        constraints = [
+            models.UniqueConstraint(fields=["tenant", "client_key"], name="uq_scheme_client_key"),
+            models.UniqueConstraint(models.F("tenant"), Lower("code"), name="uq_scheme_code"),
+        ]
 
 
 class ContractorSite(TenantModel):

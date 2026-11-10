@@ -161,6 +161,8 @@ export interface SalesDocumentLine {
   /** SAL-04 — on an invoice line, how much credit notes returned; on a note's line, its source. */
   readonly returnedQty: string;
   readonly againstLineId: string | null;
+  /** G9 — the company scheme that made this line or its discount. */
+  readonly schemeCode?: string | null;
 }
 
 export interface SalesDocumentTotals {

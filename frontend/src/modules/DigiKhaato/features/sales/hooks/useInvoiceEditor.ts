@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useRef } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { useSearchParams } from 'next/navigation';
 
@@ -28,6 +28,7 @@ import { getItem } from '../../inventory/api/itemService';
 import { getCustomOrder } from '../api/customOrderService';
 import { getRepair } from '../api/repairService';
 import { getInvoice } from '../api/salesService';
+import { runningSchemes, type SchemeRow } from '../api/schemeService';
 import {
   editorReset,
   saveUnavailable,
@@ -53,8 +54,10 @@ import {
 } from '../view-model/invoiceForm';
 import { emptyLine } from '../view-model/invoiceForm';
 import { itemLineDefaults } from '../view-model/itemLineDefaults';
+import { applySchemes, nearestOffer } from '../view-model/schemes';
 import { computeDocumentTotals, type EngineResult } from '../view-model/taxEngine';
 
+import type { SchemePreview } from '../components/SchemeFreeLines';
 import type { SalesDocumentEnvelope } from '../types/sales.types';
 
 /**
@@ -77,6 +80,8 @@ export interface UseInvoiceEditorResult {
   readonly form: UseFormReturn<InvoiceFormValues>;
   readonly values: InvoiceFormValues;
   readonly preview: EngineResult;
+  /** G9 — the running schemes and what they do to this bill. */
+  readonly schemes: SchemePreview;
   readonly editor: InvoiceEditorState;
   readonly today: string;
   readonly canWrite: boolean;
@@ -318,6 +323,34 @@ export const useInvoiceEditor = (
     return () => promise.abort();
   }, [dispatch, context, documentDate]);
 
+  // G9 — a wholesale bill applies the running company schemes by itself; the
+  // screen previews them, and the server applies them again on every save.
+  const keepsSchemes = kind === 'invoice' && Boolean(tenant?.features?.includes('schemes'));
+  const [running, setRunning] = useState<readonly SchemeRow[]>([]);
+  useEffect(() => {
+    if (!keepsSchemes || !documentDate) return undefined;
+    const controller = new AbortController();
+    runningSchemes(documentDate, controller.signal)
+      .then(setRunning)
+      .catch(() => undefined);
+    return () => controller.abort();
+  }, [keepsSchemes, documentDate]);
+  const schemes = useMemo(() => {
+    // Only whether the merchant discounted the line; the wire pair is discountWire's.
+    const lines = values.lines.map(({ discountType: handDiscount, ...line }) => ({
+      item_id: line.itemId,
+      qty: line.qty,
+      unit_price: line.unitPrice,
+      unit_code: line.unitCode,
+      discount_type: handDiscount || null,
+    }));
+    return {
+      running,
+      ...applySchemes(lines, running),
+      offer: nearestOffer(lines, running),
+    };
+  }, [values.lines, running]);
+
   const preview: EngineResult = useMemo(
     () =>
       computeDocumentTotals(
@@ -325,10 +358,11 @@ export const useInvoiceEditor = (
           values,
           context?.rates ?? {},
           context?.gstType ?? 'regular',
-          context?.stateCode ?? ''
+          context?.stateCode ?? '',
+          schemes.discounts
         )
       ),
-    [values, context]
+    [values, context, schemes]
   );
 
   const save = useCallback(
@@ -434,5 +468,5 @@ export const useInvoiceEditor = (
     idempotency.rotate();
   }, [dispatch, form, today, context, idempotency, kind, saves]);
 
-  return { kind, form, values, preview, editor, today, canWrite, save, issue, restart };
+  return { kind, form, values, preview, schemes, editor, today, canWrite, save, issue, restart };
 };

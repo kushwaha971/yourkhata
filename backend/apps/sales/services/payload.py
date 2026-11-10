@@ -15,8 +15,9 @@ from apps.common.dates import fy_label_for, tenant_today
 from apps.common.exceptions import BusinessRuleViolation, ValidationFailed
 from apps.common.money import D
 from apps.platform_app.mobile import InvalidMobile, normalise_mobile
-from apps.sales.constants import KIND_FOR_GST_TYPE, NOTES_MAX, WALK_IN_NAME_MAX
+from apps.sales.constants import INVOICE_KINDS, KIND_FOR_GST_TYPE, NOTES_MAX, WALK_IN_NAME_MAX
 from apps.sales.models import SalesDocument, SalesDocumentLine
+from apps.sales.services import schemes
 from apps.sales.services import settings as sales_settings
 from apps.sales.services.lines import BuiltLines, build_lines
 from apps.tax.services.tax_engine import EngineDocument, compute_document_totals
@@ -201,12 +202,20 @@ def apply_payload(
     elif document.discount_type == "percent" and D(document.discount_value) > 100:
         errors["discount_value"] = ["Discount must be between 0 and 100 %."]
 
+    built_here = built is None
+    scheme_raw: list[dict] = []
     if built is None:
         raw_lines = payload.get("lines")
         if raw_lines is None:
             raw_lines = (
                 [_line_as_payload(line) for line in document.lines.all()] if document.pk else []
             )
+        # G9 — running company schemes apply on a bill by themselves.
+        from apps.platform_app.selectors.business_words import features_of
+
+        if document.kind in INVOICE_KINDS and doc_date and "schemes" in features_of(tenant):
+            raw_lines = schemes.expand_lines(tenant=tenant, on=doc_date, raw_lines=list(raw_lines))
+        scheme_raw = list(raw_lines)
         built = build_lines(
             tenant=tenant,
             document_date=doc_date,
@@ -256,7 +265,10 @@ def apply_payload(
         "doc_discount_allocation": result.doc_discount_allocation,
     }
     rows = []
+    raws = scheme_raw if built_here else []
+    prices = schemes.list_prices(tenant, raws)
     for number, (row, line) in enumerate(zip(built.rows, result.lines), start=1):
+        raw = raws[number - 1] if len(raws) == len(built.rows) else {}
         rows.append(
             {
                 **row,
@@ -270,6 +282,8 @@ def apply_payload(
                 "igst": line.igst,
                 "cess": line.cess,
                 "line_total": line.line_total,
+                "scheme_code": raw.get("scheme_code") or None,
+                "scheme_claim": schemes.claim_for(raw, line, prices),
             }
         )
     return {"rows": rows, "warnings": built.warnings, "items": built.items}
@@ -291,6 +305,8 @@ def _line_as_payload(line: SalesDocumentLine) -> dict:
         "discount_type": line.discount_type,
         "discount_value": line.discount_value,
         "tax_code": line.tax_code,
+        "scheme_code": line.scheme_code,
+        "scheme_free": bool(line.scheme_code) and line.unit_price == 0,
     }
 
 

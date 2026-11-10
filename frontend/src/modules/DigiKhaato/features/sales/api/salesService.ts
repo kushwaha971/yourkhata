@@ -72,6 +72,7 @@ const toLine = (row: Wire): SalesDocumentLine => ({
   lineTotal: s(row.line_total),
   returnedQty: s(row.returned_qty ?? '0'),
   againstLineId: sn(row.against_line_id),
+  schemeCode: sn(row.scheme_code),
 });
 
 const toAddress = (raw: unknown) => (raw && typeof raw === 'object' ? (raw as Wire) : {});

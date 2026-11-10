@@ -274,8 +274,10 @@ export const fromDocument = (doc: SalesDocument): InvoiceFormValues => ({
   discountValue: doc.discountValue ?? '',
   notes: doc.notes,
   terms: doc.terms,
-  lines: doc.lines.length
-    ? doc.lines.map((line) => ({
+  // G9 — a scheme's free line and discount are the server's, made again on
+  // every save; the form holds only what the merchant typed.
+  lines: doc.lines.some((line) => !(line.schemeCode && Number(line.unitPrice) === 0))
+    ? doc.lines.filter((line) => !(line.schemeCode && Number(line.unitPrice) === 0)).map((line) => ({
         itemId: line.itemId,
         description: line.description,
         hsnSac: line.hsnSac ?? '',
@@ -288,8 +290,8 @@ export const fromDocument = (doc: SalesDocument): InvoiceFormValues => ({
         allowDecimal: unitAllowsDecimal(line.unitCode),
         unitPrice: line.unitPrice,
         taxInclusive: line.taxInclusive,
-        discountType: line.discountType ?? '',
-        discountValue: line.discountValue ?? '',
+        discountType: line.schemeCode ? '' : (line.discountType ?? ''),
+        discountValue: line.schemeCode ? '' : (line.discountValue ?? ''),
         taxCode: line.taxCode,
       }))
     : [emptyLine()],
@@ -334,14 +336,16 @@ export const previewInput = (
   values: InvoiceFormValues,
   rates: Readonly<Record<string, RateLookup>>,
   gstType: EngineGstType,
-  tenantState: string
+  tenantState: string,
+  /** G9 — a running scheme's discount on a line the merchant did not discount. */
+  schemeDiscounts: readonly ({ type: 'amount' | 'percent'; value: string } | null)[] = []
 ): EngineDocumentInput => ({
-  lines: values.lines.map((line) => ({
+  lines: values.lines.map((line, index) => ({
     qty: line.qty,
     unitPrice: line.unitPrice,
     taxInclusive: line.taxInclusive,
-    discountType: line.discountType || null,
-    discountValue: line.discountValue || null,
+    discountType: schemeDiscounts[index]?.type ?? (line.discountType || null),
+    discountValue: schemeDiscounts[index]?.value ?? (line.discountValue || null),
     rate: rates[line.taxCode]?.rate ?? '0',
     cessRate: rates[line.taxCode]?.cessRate ?? '0',
   })),

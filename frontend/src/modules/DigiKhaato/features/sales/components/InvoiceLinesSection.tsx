@@ -40,6 +40,7 @@ import { lineUnitCaption, lineUnitChoices, type LineUnitChoice } from '../view-m
 import { AddonSheet } from './AddonSheet';
 import { InvoiceLineList, InvoiceLineTable, lineName } from './InvoiceLineEditor';
 import { LineVariantPicker } from './LineVariantPicker';
+import { SchemeFreeLines, schemeLineText, type SchemePreview } from './SchemeFreeLines';
 import { SubstituteSheet } from './SubstituteSheet';
 
 import type { ItemListRow } from '../../inventory/types/item.types';
@@ -72,11 +73,14 @@ export function InvoiceLinesSection({
   openLine = null,
   onScanned,
   stockRule = 'takes',
+  schemes,
 }: Readonly<{
   form: UseFormReturn<InvoiceFormValues>;
   preview: EngineResult;
   rateOptions: readonly { code: string; name: string }[];
   taxFree: boolean;
+  /** G9 — the running schemes and what they do to this bill (the editor's preview). */
+  schemes?: SchemePreview;
   disabled: boolean;
   /** Ctrl+Enter is handled page-wide (useDocumentEditorWindowEffects); kept for callers. */
   onSubmitShortcut?: () => void;
@@ -581,6 +585,13 @@ export function InvoiceLinesSection({
         !onList &&
         /^\d+(\.\d+)?$/.test((line.unitPrice ?? '').trim()) &&
         (Number(line.unitPrice) !== Number(known.price) || line.taxInclusive !== known.inclusive);
+      // G9 — design pScheme: "Scheme 10 + 1 free" under the line it counts.
+      const schemeText = schemes ? schemeLineText(schemes, index, line.itemId, t) : '';
+      const schemeNote = schemeText ? (
+        <UbText variant="caption" tone="accent" data-testid="line-scheme">
+          {schemeText}
+        </UbText>
+      ) : null;
       const changedNote = rateChanged ? (
         <UbText variant="caption" tone="secondary" data-testid="line-rate-changed">
           {t('sales.line.rateThisBill', { amount: formatInr(known.price) })}
@@ -595,6 +606,7 @@ export function InvoiceLinesSection({
           partNote ||
           unitNote ||
           stockNote ||
+          schemeNote ||
           changedNote ? (
           <UbStack gap={0}>
             {jewelNote}
@@ -605,6 +617,7 @@ export function InvoiceLinesSection({
             {partNote}
             {unitNote}
             {stockNote}
+            {schemeNote}
             {changedNote}
           </UbStack>
         ) : null;
@@ -618,6 +631,7 @@ export function InvoiceLinesSection({
           {partNote}
           {unitNote}
           {stockNote}
+          {schemeNote}
           {changedNote}
           {onList && (
             <UbText variant="caption" tone="secondary" data-testid="price-list-applied">
@@ -640,6 +654,7 @@ export function InvoiceLinesSection({
       );
     },
     [
+      schemes,
       keepsTags,
       lines,
       partyId,
@@ -813,6 +828,7 @@ export function InvoiceLinesSection({
           </UbText>
         </UbStack>
       )}
+      {schemes && hasItems && <SchemeFreeLines schemes={schemes} lines={lines ?? []} />}
       {stockRule !== 'takes' && hasItems && (
         <UbText variant="caption" tone="secondary" data-testid="lines-stock-note">
           {stockRule === 'order'
