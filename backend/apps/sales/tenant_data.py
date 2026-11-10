@@ -28,6 +28,8 @@ register(
     # G7 — a contractor's sites.
     TenantTable("sales.ContractorSite", export_name="contractor_sites.csv"),
     TenantTable("sales.Scheme", export_name="schemes.csv"),
+    # G10 — a café's open and advance orders.
+    TenantTable("sales.CafeOrder", export_name="cafe_orders.csv"),
     # G5 — a mobile shop's repair jobs.
     TenantTable("sales.RepairJob", export_name="repair_jobs.csv"),
     TenantTable("sales.Karigar", export_name="karigars.csv"),

@@ -80,6 +80,8 @@ export interface InvoiceFormValues {
   mechanic?: string;
   /** G5 — the repair job this bill delivers. */
   repairJob?: BillRepairJob | null;
+  /** G10 — the café order this bill settles. */
+  cafeOrder?: BillCafeOrder | null;
   /** G7 — which of the contractor's sites; unset lets the server take an only site. */
   siteId?: string;
   /** G4 — a Schedule H medicine's prescription: the doctor and the patient. */
@@ -185,6 +187,7 @@ export const toWireBody = (values: InvoiceFormValues): Record<string, unknown> =
   ...(values.customOrder !== undefined ? { custom_order_id: values.customOrder?.id ?? null } : {}),
   ...(values.siteId ? { site_id: values.siteId } : {}),
   ...(values.repairJob !== undefined ? { repair_job_id: values.repairJob?.id ?? null } : {}),
+  ...(values.cafeOrder !== undefined ? { cafe_order_id: values.cafeOrder?.id ?? null } : {}),
   ...(values.pan !== undefined ? { pan: values.pan.trim().toUpperCase() } : {}),
   ...(values.oldGold !== undefined
     ? {
@@ -255,6 +258,7 @@ export const fromDocument = (doc: SalesDocument): InvoiceFormValues => ({
   pan: doc.pan ?? '',
   customOrder: doc.customOrder ?? null,
   repairJob: doc.repairJob ?? null,
+  cafeOrder: doc.cafeOrder ?? null,
   siteId: doc.site?.id,
   oldGold: doc.oldGold
     ? {
@@ -402,6 +406,14 @@ export const paymentWireBody = (
     .filter((row) => isNumber(row.amount) && Number(row.amount) > 0)
     .map((row) => ({ mode: row.mode, amount: row.amount, reference: row.reference.trim() })),
 });
+
+/** G10 — the café order a bill settles: which one, and the advance it applies. */
+export interface BillCafeOrder {
+  readonly id: string;
+  readonly kind: 'token' | 'table' | 'advance';
+  readonly number: string;
+  readonly advance: string;
+}
 
 /** G5 — the repair job a bill delivers: its number and the advance it applies. */
 export interface BillRepairJob {

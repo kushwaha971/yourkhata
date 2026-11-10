@@ -92,6 +92,8 @@ def module_sections(tenant: Any, today: date, *, granted: frozenset[str]) -> lis
             )
             sections.append({**head, "error": "unavailable"})
             continue
+        if data is None:  # the section has nothing for this business today (G10)
+            continue
         if section.redact is not None:
             data = section.redact(data, granted)
         sections.append({**head, "data": data})

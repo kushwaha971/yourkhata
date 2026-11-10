@@ -28,6 +28,7 @@ from apps.sales.views.schemes import RunningSchemesView, SchemeDetailView, Schem
 from apps.sales.views.vehicles import VehicleDetailView, VehiclesView
 from apps.sales.views.sites import SiteDetailView, SitePaymentView, SitesView
 from apps.sales.views.exchange import ExchangePreviewView, ExchangeView
+from apps.sales.views.cafe_orders import CafeOrderDetailView, CafeOrdersView
 from apps.sales.views.repairs import RepairJobDetailView, RepairJobStageView, RepairJobsView
 from apps.sales.views.schedule_h import ScheduleHRegisterView
 from apps.sales.views.orders import SalesOrderViewSet
@@ -44,6 +45,9 @@ urlpatterns = [
     # G4 — a medical store's Schedule H register.
     path("reports/schedule-h", ScheduleHRegisterView.as_view(), name="schedule-h-register"),
     # G5 — a mobile shop's repair jobs.
+    # G10 — a café's open and advance orders.
+    path("cafe-orders", CafeOrdersView.as_view(), name="cafe-orders"),
+    path("cafe-orders/<uuid:pk>", CafeOrderDetailView.as_view(), name="cafe-order-detail"),
     path("schemes", SchemesView.as_view(), name="schemes"),
     path("schemes/running", RunningSchemesView.as_view(), name="schemes-running"),
     path("schemes/<uuid:pk>", SchemeDetailView.as_view(), name="scheme-detail"),

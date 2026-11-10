@@ -74,3 +74,9 @@ export const resetDashboardSectionsForTests = (): void => {
   registry.clear();
   baseline.forEach((value, key) => registry.set(key, value));
 };
+
+// G10 — a café's advance orders, the day before (`sales.advance_orders`, server `apps/sales/apps.py`).
+registerDashboardSection('sales.advance_orders', {
+  module: 'sales',
+  load: () => import('../sales/components/AdvanceOrdersSection').then((m) => m.AdvanceOrdersSection),
+});

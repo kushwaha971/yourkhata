@@ -782,6 +782,15 @@ export function InvoiceEditorPageContent({
                 onChange={(siteId) => form.setValue('siteId', siteId, { shouldDirty: true })}
               />
             )}
+            {/* G10 — the café order this bill settles, and any advance taken off. */}
+            {values.cafeOrder && (
+              <UbText variant="body-sm" tone="secondary" data-testid="bill-cafe-note">
+                {t('sales.cafe.billNote', {
+                  name: t(`sales.cafe.name.${values.cafeOrder.kind}`, { number: values.cafeOrder.number }),
+                  advance: formatInr(values.cafeOrder.advance),
+                })}
+              </UbText>
+            )}
             {/* G5 — the repair this bill delivers, and its advance taken off. */}
             {values.repairJob && (
               <UbText variant="body-sm" tone="secondary" data-testid="bill-repair-note">

@@ -63,7 +63,8 @@ def test_registry_is_closed_and_complete() -> None:
     # BP-16 (R-DEC-26) — +2: `promise_already_open`, `promise_closed` (Shop promises).
     # BP-08 (R-DEC-26) — +3: `settlement_not_dual_role`, `settlement_over_balance`,
     #           `settlement_balances_changed` (explicit customer–supplier settlement).
-    assert len(REGISTRY) == 233
+    # G5 / G10 — +2: `repair_status`, `cafe_order_status` (a job or order moved out of turn).
+    assert len(REGISTRY) == 235
     assert REGISTRY["settlement_balances_changed"] == (409, False)
     assert REGISTRY["promise_already_open"] == (409, False)
     assert REGISTRY["promise_closed"] == (409, False)

@@ -529,3 +529,54 @@ class RepairJob(TenantModel):
             models.UniqueConstraint(fields=["tenant", "number"], name="uq_repair_job_number"),
             models.UniqueConstraint(fields=["tenant", "client_key"], name="uq_repair_job_client_key"),
         ]
+
+
+class CafeOrder(TenantModel):
+    """G10 — a café's open order or advance order (design G10 `dOpenOrders`, `pAdvance`).
+
+    A token or a table is food being made and served before it is paid: its
+    lines wait here and become a bill when the customer pays. An advance order
+    is a festival box or a cake for a day ahead, with a ready time and an
+    advance that is a real payment earmarked to this order, as a repair job's
+    is: only the bill that delivers it applies the advance. `client_key` makes a
+    double-tapped Save one order and one receipt.
+    """
+
+    TOKEN = "token"
+    TABLE = "table"
+    ADVANCE = "advance"
+
+    PREPARING = "preparing"
+    READY = "ready"
+    SERVED = "served"
+    BILLED = "billed"
+    CANCELLED = "cancelled"
+
+    client_key = models.UUIDField()
+    kind = models.CharField(max_length=8)
+    #: "12" for Token 12 (counted from 1 each day), the table's name, or ADV-0001.
+    number = models.CharField(max_length=16)
+    party = models.ForeignKey(
+        "parties.Party", on_delete=models.RESTRICT, null=True, blank=True, related_name="cafe_orders"
+    )
+    #: [{item_id, name, qty, rate, note}] — what was asked for, priced when taken.
+    lines = models.JSONField(default=list, blank=True)
+    total = MoneyField(default=0)
+    status = models.CharField(max_length=12, default=PREPARING)
+    #: An advance order's ready time; null for a token or a table.
+    ready_at = models.DateTimeField(null=True, blank=True)
+    #: "pickup" or "deliver" for an advance order.
+    fulfil = models.CharField(max_length=8, blank=True, default="")
+    advance = MoneyField(default=0)
+    advance_payment_id = models.UUIDField(null=True, blank=True)
+    #: The bill that settled this order, once there is one.
+    invoice_id = models.UUIDField(null=True, blank=True)
+
+    class Meta:
+        db_table = "sales_cafe_order"
+        verbose_name = "cafe order"
+        verbose_name_plural = "cafe orders"
+        ordering = ["created_at"]
+        constraints = [
+            models.UniqueConstraint(fields=["tenant", "client_key"], name="uq_cafe_order_client_key"),
+        ]

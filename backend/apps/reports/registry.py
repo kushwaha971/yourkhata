@@ -18,7 +18,7 @@ Rules (ADR-042, FRD 00 PLT-X13):
   own module (BR-2). A second registration of an EQUAL entry is a no-op (a
   second `ready()` is harmless); a different entry under a used key raises
   `ImproperlyConfigured` at start-up.
-* A section's `selector(tenant, today) -> dict` runs at most
+* A section's `selector(tenant, today) -> dict | None` runs at most
   `SECTION_QUERY_BUDGET` queries (T-PLT-X13-3). A report's
   `selector(tenant, params) -> Any` answers the JSON; its optional
   `csv(tenant, params) -> Iterable[Sequence]` yields the header row first,
@@ -42,7 +42,8 @@ from django.core.exceptions import ImproperlyConfigured
 SECTION_QUERY_BUDGET = 3
 _KEY = re.compile(r"^(?P<module>[a-z][a-z0-9_]*)\.[a-z0-9][a-z0-9_]*$")
 
-SectionSelector = Callable[[Any, date], dict]
+#: None means "nothing to show for this business today": the section is left out.
+SectionSelector = Callable[[Any, date], dict | None]
 #: `(data, granted) -> data` — what this reader may see of a computed section.
 SectionRedact = Callable[[dict, frozenset], dict]
 ReportSelector = Callable[[Any, dict], Any]

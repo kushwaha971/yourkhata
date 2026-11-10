@@ -17,6 +17,14 @@ class SalesConfig(AppConfig):
 
         register_guards()
 
+        # G10 — a café's advance orders on Home the day before (design pAdvance).
+        from apps.reports.registry import register_dashboard_section
+        from apps.sales.services.cafe_orders import due_soon
+
+        register_dashboard_section(
+            "sales.advance_orders", module="sales", permission="sales.invoice.read", selector=due_soon, order=15
+        )
+
         # LED-10 FR-5 — the khata names an invoice by its number.
         from apps.ledger.constants import SourceType
         from apps.ledger.selectors.sources import register_source_resolver

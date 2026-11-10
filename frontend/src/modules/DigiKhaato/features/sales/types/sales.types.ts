@@ -219,6 +219,13 @@ export interface SalesDocument extends SalesDocumentTotals {
   /** G7 — the contractor's site this bill is for. */
   readonly site?: { readonly id: string; readonly name: string } | null;
   readonly repairJob?: { readonly id: string; readonly number: string; readonly advance: string } | null;
+  /** G10 — the café order this bill settles. */
+  readonly cafeOrder?: {
+    readonly id: string;
+    readonly kind: 'token' | 'table' | 'advance';
+    readonly number: string;
+    readonly advance: string;
+  } | null;
   /** G4 — the prescription for a Schedule H medicine on this bill. */
   readonly rx?: { readonly doctor?: string; readonly patient?: string } | null;
   /** G3a — the custom order this bill delivers. */

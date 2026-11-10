@@ -194,7 +194,7 @@ PRESETS: dict[str, Preset] = {
         default_due_days=7,
         items_track_stock_default=False,  # FR-7: food items default `track_stock=false`
         # D P6 — sweets, bakery and café: add-ons on items (design D11).
-        features=frozenset({"addons"}),
+        features=frozenset({"addons", "cafe_orders"}),
     ),
     BusinessType.OTHER.value: Preset(
         inventory_enabled=True,

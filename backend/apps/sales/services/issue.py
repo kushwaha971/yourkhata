@@ -141,6 +141,11 @@ def issue_invoice(
 
     repair_job, repair_advance_ids = repairs.advance_for_issue(ctx=ctx, document=document)
     advance_ids = [*advance_ids, *repair_advance_ids]
+    # G10 — a bill that settles a café advance order applies its advance too.
+    from apps.sales.services import cafe_orders
+
+    cafe_order, cafe_advance_ids = cafe_orders.advance_for_issue(ctx=ctx, document=document)
+    advance_ids = [*advance_ids, *cafe_advance_ids]
     # G2d — a PAN the customer's GSTIN carries; neither PAN nor cash ever stops a bill.
     from apps.sales.services.jewel_rules import fill_pan_from_gstin
 
@@ -175,6 +180,8 @@ def issue_invoice(
         amount_due = max(amount_due - custom_order.advance, Decimal("0"))
     if repair_job is not None:
         amount_due = max(amount_due - repair_job.advance, Decimal("0"))
+    if cafe_order is not None:
+        amount_due = max(amount_due - cafe_order.advance, Decimal("0"))
     overridden = False
     if party is not None and amount_due > 0:
         warning, overridden = check_party_credit(
@@ -253,6 +260,7 @@ def issue_invoice(
     applied = apply_held_money(ctx, document, held)
     mark_delivered_by(order=custom_order, document=document)
     repairs.mark_delivered_by(job=repair_job, document=document)
+    cafe_orders.mark_billed_by(order=cafe_order, document=document)
 
     write_audit(
         ctx=ctx,

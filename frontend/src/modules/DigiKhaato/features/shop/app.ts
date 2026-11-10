@@ -30,6 +30,7 @@ import {
   Building2,
   Car,
   Gift,
+  UtensilsCrossed,
   Wrench,
 } from 'lucide-react';
 
@@ -172,6 +173,19 @@ export const SHOP_APP: AppManifest = {
       feature: 'sites',
       section: 'sales',
       order: 1.7,
+      tab: 'invoices',
+    },
+    // G10 (design dOpenOrders) — a café's tokens, tables and advance orders, under Sales.
+    {
+      key: 'openOrders',
+      icon: UtensilsCrossed,
+      labelId: 'nav.openOrders',
+      href: ROUTES.SALES_OPEN_ORDERS,
+      module: 'sales',
+      permission: 'sales.invoice.read',
+      feature: 'cafe_orders',
+      section: 'sales',
+      order: 1.05,
       tab: 'invoices',
     },
     // G9 (design dSchemes) — a distributor's company schemes, under Sales.

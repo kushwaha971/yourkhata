@@ -98,6 +98,7 @@ export const ROUTES = {
   SALES_SITES: '/sales/sites',
   SALES_VEHICLES: '/sales/vehicles',
   SALES_SCHEMES: '/sales/schemes',
+  SALES_OPEN_ORDERS: '/sales/open-orders',
   SALES_PARTS_FIT: '/sales/vehicles/parts',
   SALES_EXCHANGE: '/sales/exchange',
   SALES_OLD_GOLD: '/sales/old-gold',

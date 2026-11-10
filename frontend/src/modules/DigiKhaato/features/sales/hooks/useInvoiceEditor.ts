@@ -25,6 +25,7 @@ import { todayInTenantTz } from 'src/utils/dates';
 import { mayHaveBeenSaved } from 'src/utils/requestKey';
 
 import { getItem } from '../../inventory/api/itemService';
+import { getCafeOrder } from '../api/cafeOrderService';
 import { getCustomOrder } from '../api/customOrderService';
 import { getRepair } from '../api/repairService';
 import { getInvoice } from '../api/salesService';
@@ -102,6 +103,8 @@ export const useInvoiceEditor = (
   const initialOrder = search.get('custom_order');
   // G5 — `?repair=` opens the bill that delivers a repair job.
   const initialRepair = search.get('repair');
+  // G10 — `?cafe_order=` opens the bill that settles a café order, with its lines.
+  const initialCafe = search.get('cafe_order');
   // G7 — `?site=` opens a bill for that site, from its page.
   const initialSite = search.get('site');
   // G8 — `?vehicle=` opens a bill for that vehicle, from its page.
@@ -244,6 +247,36 @@ export const useInvoiceEditor = (
       .catch(() => undefined);
     return () => controller.abort();
   }, [documentId, initialRepair, context, form]);
+  useEffect(() => {
+    if (documentId || !initialCafe || !context || seeded.current !== 'new') return undefined;
+    const controller = new AbortController();
+    void getCafeOrder(initialCafe, controller.signal)
+      .then(async (order) => {
+        const items = await Promise.all(order.lines.map((l) => getItem(l.item_id, controller.signal)));
+        if (controller.signal.aborted) return;
+        form.setValue(
+          'lines',
+          order.lines.map((l, i) => ({
+            ...emptyLine(),
+            ...(items[i] ? itemLineDefaults(items[i]) : { itemId: l.item_id, description: l.name }),
+            ...(l.note ? { description: `${l.name} · ${l.note}` } : {}),
+            qty: l.qty,
+            unitPrice: l.rate,
+          })),
+          { shouldDirty: true }
+        );
+        form.setValue(
+          'cafeOrder',
+          { id: order.id, kind: order.kind, number: order.number, advance: order.advance },
+          { shouldDirty: true }
+        );
+      })
+      .catch(() => {
+        if (!controller.signal.aborted)
+          dispatch(showSnackbar({ severity: 'error', id: 'sales.editor.error.context' }));
+      });
+    return () => controller.abort();
+  }, [documentId, initialCafe, context, form, dispatch]);
   useEffect(() => {
     if (documentId || !initialSite || !context || seeded.current !== 'new') return;
     form.setValue('siteId', initialSite, { shouldDirty: true });

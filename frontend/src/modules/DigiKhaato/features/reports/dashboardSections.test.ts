@@ -23,7 +23,8 @@ it('is idempotent for the same entry and hands back one component', () => {
   const entry = { module: 'library', load };
   registerDashboardSection('library.overdue', entry);
   registerDashboardSection('library.overdue', { module: 'library', load });
-  expect(registeredDashboardSectionKeys()).toEqual(['library.overdue']);
+  // G10's Home block is registered at start-up, so it is always first.
+  expect(registeredDashboardSectionKeys()).toEqual(['sales.advance_orders', 'library.overdue']);
   expect(dashboardSectionComponent('library.overdue')).not.toBeNull();
   expect(dashboardSectionComponent('library.unknown')).toBeNull();
 });
@@ -45,5 +46,5 @@ it.each(['overdue', 'gym.overdue', 'Library.Overdue', 'library.'])(
 it('resets to the start-up registrations', () => {
   registerDashboardSection('library.overdue', { module: 'library', load });
   resetDashboardSectionsForTests();
-  expect(registeredDashboardSectionKeys()).toEqual([]);
+  expect(registeredDashboardSectionKeys()).toEqual(['sales.advance_orders']);
 });

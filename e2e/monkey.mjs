@@ -346,7 +346,9 @@ const checkAgrees = async (i, how) => {
 const checkKept = async (i, before, how, leftFrom) => {
   if (!before.length || !page.url().startsWith(`${base}/sales/invoices`)) return;
   await page.waitForTimeout(2500);
-  const restore = page.getByRole("button", { name: /^(Restore|Keep|Continue|Use this)/i });
+  // In both languages: the monkey switches to Hindi, and an English-only name
+  // left a restorable bill unrestored and reported it lost (G10, seed 3 / 1280).
+  const restore = page.getByRole("button", { name: /^(Restore|Keep|Continue|Use this|वापस लाएँ)/i });
   if (await restore.count().catch(() => 0)) await restore.first().click().catch(() => {});
   await page.waitForTimeout(600);
   keptChecks += 1;
