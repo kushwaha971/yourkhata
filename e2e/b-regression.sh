@@ -69,3 +69,7 @@ run g10-cafe-orders cafe-orders.mjs
 run g11-phone-orders phone-orders.mjs
 run g12-other-look g12-other-look.mjs
 run g-day g-day.mjs
+# Shop round (11 Nov): the day book and the jewellery day were outside the
+# regression and went stale unseen; they run with every piece now.
+run day-book day-book.mjs
+run jewel-day jewel-day.mjs

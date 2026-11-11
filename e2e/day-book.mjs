@@ -43,7 +43,12 @@ const measure = () => {
     if (el.scrollWidth > el.clientWidth + 1 && el.clientWidth > 0 && s.overflow !== 'visible')
       cut.push(el.textContent.trim().slice(0, 30));
     if (clamped && el.scrollHeight > el.clientHeight + 1) cut.push(`clamped:${el.textContent.trim().slice(0, 30)}`);
-    if (r.right > innerWidth + 1) cut.push(`offscreen:${el.textContent.trim().slice(0, 30)}`);
+    // A phone toolbar row scrolls sideways by the owner's rule (globals.css,
+    // 12 Oct): past the edge there is reachable, so only count it when the row
+    // cannot scroll to it.
+    const row = el.closest('.ub-toolbar-row');
+    const reachable = row && row.scrollWidth > row.clientWidth && getComputedStyle(row).overflowX === 'auto';
+    if (r.right > innerWidth + 1 && !reachable) cut.push(`offscreen:${el.textContent.trim().slice(0, 30)}`);
   }
   // A figure or an amount split over two lines ("₹" on one, the digits on the next).
   const split = [...document.querySelectorAll('[data-testid^="day-book-figure-"], [data-testid="day-book-row"] .ds-num')]
@@ -140,7 +145,10 @@ try {
         check(`${tag}: cards, no table`, m.cards.length > 0 && !m.table, `${m.cards.length} cards`);
         check(`${tag}: every card is 44 px or more`, m.cards.every((c) => c.h >= 44), JSON.stringify([...new Set(m.cards.map((c) => c.h))]));
         check(`${tag}: no running cash on a card`, m.cards.every((c) => !/after|बाद/i.test(c.text)));
-        check(`${tag}: a band per date, each a heading`, m.bands.length > 1 && m.bands.every((b) => b.heading && b.rows > 0), `${m.bands.length} bands`);
+        // One band per date on the page: a busy day can fill a whole page,
+        // so the count is the server's distinct dates, not "more than one".
+        const dates = new Set(server.rows.map((row) => row.date)).size;
+        check(`${tag}: a band per date, each a heading`, m.bands.length === dates && m.bands.every((b) => b.heading && b.rows > 0), `${m.bands.length} bands for ${dates} dates`);
       } else {
         check(`${tag}: the table, no cards`, m.table && m.cards.length === 0);
       }
@@ -177,21 +185,26 @@ try {
   check('a band on a paged range says it is this page only', server.total_pages <= 1 || /On this page/.test(bands.at(-1).money), bands.at(-1)?.money);
 
   // A tap opens the row sheet with everything the card leaves out.
-  const card = page.getByTestId('day-book-row').first();
+  // The first row with a page to open: a stock adjustment has a number but no
+  // page of its own (drillThrough.sourceHref returns null for it).
+  const OPENS = ['sales_document', 'purchase_document', 'payment', 'expense'];
+  const docAt = Math.max(0, server.rows.findIndex((row) => row.number && OPENS.includes(row.source?.kind)));
+  const docRow = server.rows[docAt];
+  const card = page.getByTestId('day-book-row').nth(docAt);
   await card.click();
   const sheet = page.getByTestId('day-book-row-sheet');
   await sheet.waitFor();
   const sheetText = await sheet.innerText();
   check('the sheet has the running cash and bank', /Cash after this/.test(sheetText) && /Bank after this/.test(sheetText));
   check('the sheet has the number, mode and who recorded it', /Number/.test(sheetText) && /Mode/.test(sheetText) && /By/.test(sheetText));
-  const docLink = page.getByRole('link', { name: new RegExp(`^Open ${server.rows[0].number?.replace(/[/]/g, '\\/') ?? ''}`) });
+  const docLink = page.getByRole('link', { name: new RegExp(`^Open ${docRow.number?.replace(/[/]/g, '\\/') ?? ''}`) });
   const href = await docLink.first().getAttribute('href');
   check('the sheet offers the document', Boolean(href), href ?? 'none');
   await docLink.first().click();
   await page.waitForURL((u) => u.pathname !== '/reports/day-book', { timeout: 15000 }).catch(() => undefined);
   const shown = await page
     .locator('main')
-    .getByText(server.rows[0].number ?? '@@')
+    .getByText(docRow.number ?? '@@')
     .first()
     .waitFor({ timeout: 20000 })
     .then(() => true, () => false);
