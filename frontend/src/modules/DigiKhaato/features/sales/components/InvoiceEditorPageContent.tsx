@@ -55,7 +55,6 @@ import { fullCashPayment, type PaymentRowForm } from '../view-model/invoiceForm'
 import { JEWEL_LIMIT, priceOldGold } from '../view-model/jewelPrice';
 import { serverReason } from '../view-model/serverReason';
 
-import { BillSitePicker } from './BillSitePicker';
 import { InvoiceBillAdjustments } from './InvoiceBillAdjustments';
 import { InvoiceEditorDialogs } from './InvoiceEditorDialogs';
 import { InvoiceHeldBills } from './InvoiceHeldBills';
@@ -68,6 +67,9 @@ import type { InvoiceListRow } from '../types/sales.types';
 
 /* The payment sheet and the success sheet load with the tap that opens them. */
 // Jewellers only; no other shop pays for these on the bill.
+const BillSitePicker = dynamic(() => import('./BillSitePicker').then((m) => m.BillSitePicker), {
+  ssr: false,
+});
 const OldGoldSection = dynamic(() => import('./OldGoldSection').then((m) => m.OldGoldSection), {
   ssr: false,
 });
@@ -224,11 +226,7 @@ export function InvoiceEditorPageContent({
     if (estimate) return false;
     const short = form
       .getValues('lines')
-      .find(
-        (line) =>
-          line.tracksSerial &&
-          (line.serials?.length ?? 0) !== (Number(line.qty) || 0)
-      );
+      .find((line) => line.tracksSerial && (line.serials?.length ?? 0) !== (Number(line.qty) || 0));
     if (!short) return false;
     dispatch(
       showSnackbar({
@@ -269,8 +267,7 @@ export function InvoiceEditorPageContent({
   // schema first, so a half-filled row stops the issue with its reason under
   // the cell instead of being left off the bill.
   const requestIssue = useCallback(
-    () =>
-      void form.handleSubmit(() => startIssue())(),
+    () => void form.handleSubmit(() => startIssue())(),
     [form, startIssue]
   );
   /*
@@ -794,7 +791,9 @@ export function InvoiceEditorPageContent({
             {values.cafeOrder && (
               <UbText variant="body-sm" tone="secondary" data-testid="bill-cafe-note">
                 {t('sales.cafe.billNote', {
-                  name: t(`sales.cafe.name.${values.cafeOrder.kind}`, { number: values.cafeOrder.number }),
+                  name: t(`sales.cafe.name.${values.cafeOrder.kind}`, {
+                    number: values.cafeOrder.number,
+                  }),
                   advance: formatInr(values.cafeOrder.advance),
                 })}
               </UbText>

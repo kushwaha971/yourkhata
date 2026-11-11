@@ -37,12 +37,9 @@ import { itemLineDefaults } from '../view-model/itemLineDefaults';
 import { priceJewel } from '../view-model/jewelPrice';
 import { lineUnitCaption, lineUnitChoices, type LineUnitChoice } from '../view-model/lineUnits';
 
-import { AddonSheet } from './AddonSheet';
 import { InvoiceLineList, InvoiceLineTable, lineName } from './InvoiceLineEditor';
 import { LineVariantPicker } from './LineVariantPicker';
-import { LooseSheet } from './LooseSheet';
 import { SchemeFreeLines, schemeLineText, type SchemePreview } from './SchemeFreeLines';
-import { SubstituteSheet } from './SubstituteSheet';
 
 import type { ItemListRow } from '../../inventory/types/item.types';
 import type { EngineResult } from '../view-model/taxEngine';
@@ -51,6 +48,13 @@ const LineFinder = dynamic(
   () => import('../../inventory/components/LineFinder').then((m) => m.LineFinder),
   { ssr: false }
 );
+
+// Sheets open on a tap, so their code loads with the tap, not with the editor.
+const AddonSheet = dynamic(() => import('./AddonSheet').then((m) => m.AddonSheet), { ssr: false });
+const LooseSheet = dynamic(() => import('./LooseSheet').then((m) => m.LooseSheet), { ssr: false });
+const SubstituteSheet = dynamic(() => import('./SubstituteSheet').then((m) => m.SubstituteSheet), {
+  ssr: false,
+});
 
 const MAX_LINES = 100;
 
@@ -159,7 +163,9 @@ export function InvoiceLinesSection({
   const [addonFor, setAddonFor] = useState<{ index: number; row: ItemListRow } | null>(null);
   /** G11 — the loose item (kg or litre) whose by-amount sheet is open, and its line. */
   const [looseFor, setLooseFor] = useState<{ index: number; row: ItemListRow } | null>(null);
-  const sellsLoose = Boolean(useAppSelector(selectActiveTenant)?.features?.includes('loose_amount'));
+  const sellsLoose = Boolean(
+    useAppSelector(selectActiveTenant)?.features?.includes('loose_amount')
+  );
   /** D P4 — the batch a sale of each medicine would take ("DL3990 · exp 03/27"). */
   const [nextBatch, setNextBatch] = useState<Record<string, { batchNo: string; expiry: string }>>(
     {}
@@ -213,7 +219,8 @@ export function InvoiceLinesSection({
       // D P6 — design D11: the add-on sheet opens only for an item that has add-ons.
       if (row.addons?.length) setAddonFor({ index, row });
       // G11 — design pLoose: a kirana's loose item asks by weight or by amount.
-      else if (sellsLoose && row.unit.allowDecimal && Number(row.sellingPrice) > 0) setLooseFor({ index, row });
+      else if (sellsLoose && row.unit.allowDecimal && Number(row.sellingPrice) > 0)
+        setLooseFor({ index, row });
       const coming = row.nextBatch;
       if (coming) setNextBatch((current) => ({ ...current, [row.id]: coming }));
       const choices = lineUnitChoices(row);
@@ -390,7 +397,8 @@ export function InvoiceLinesSection({
     setSubstituteFor(null);
     window.setTimeout(() => {
       const active = document.activeElement;
-      if (active instanceof HTMLElement && active.getAttribute('role') === 'combobox') active.blur();
+      if (active instanceof HTMLElement && active.getAttribute('role') === 'combobox')
+        active.blur();
     }, 0);
   }, []);
   const pickOrChooseTag = useCallback(
@@ -552,7 +560,10 @@ export function InvoiceLinesSection({
       ) : null;
       // D P3 — one IMEI per phone on the line (a jeweller's tag is its own).
       const serialNote =
-        !jewel && !keepsTags && stockRule === 'takes' && (serialItems[line.itemId] || line.tracksSerial) ? (
+        !jewel &&
+        !keepsTags &&
+        stockRule === 'takes' &&
+        (serialItems[line.itemId] || line.tracksSerial) ? (
           <LineSerialsField
             serials={line.serials ?? []}
             qty={Math.max(Math.round(Number(line.qty) || 0), 0)}
