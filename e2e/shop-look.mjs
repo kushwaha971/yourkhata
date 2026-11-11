@@ -19,7 +19,12 @@ const arg = (n, d) => process.argv.find((a) => a.startsWith(`--${n}=`))?.slice(n
 const SHOTS = arg('shots', '');
 const ONLY = arg('only', '');
 const base = process.env.E2E_BASE ?? 'http://localhost:3005';
-const shop = JSON.parse(readFileSync('/tmp/e2e-shots/kind-shops.json', 'utf8')).kirana;
+// Money book round (11 Nov): `--app=khata` sweeps the Money book (list, a person,
+// their statement) as the scale owner, whose private book has people in it.
+const MONEY_BOOK = arg('app', '') === 'khata';
+const shop = MONEY_BOOK
+  ? { email: 'scale@digikhaato.test', password: process.env.E2E_SCALE_PASSWORD ?? 'Scale-Run-2026!' }
+  : JSON.parse(readFileSync('/tmp/e2e-shots/kind-shops.json', 'utf8')).kirana;
 const ALL = [
   '/dashboard', '/sales/invoices', '/sales/invoices/new', '/sales/estimates', '/customers', '/suppliers',
   '/items', '/stock/summary', '/stock/low', '/stock/count', '/stock/transfer',
@@ -27,7 +32,7 @@ const ALL = [
   '/reports', '/reports/day-book', '/reports/aging', '/reports/sales-register',
   '/reports/purchase-register', '/reports/gst-summary', '/reports/profit',
 ];
-const SCREENS = ONLY ? ONLY.split(',') : ALL;
+let SCREENS = ONLY ? ONLY.split(',') : ALL;
 const RAW = /\b(common|sales|stock|items|inventory|reports|payments|purchases|parties|expenses|shell|ledger)\.[a-z][A-Za-z]+\.[A-Za-z.]+/;
 // The requests that keep a person signed in and the shell drawn; everything
 // else is "the screen's data", which the error case answers with a 500.
@@ -78,6 +83,10 @@ try {
     await page.fill('input[type=password]', shop.password);
     await page.keyboard.press('Enter');
     await page.waitForURL((u) => !u.pathname.startsWith('/login'));
+    if (MONEY_BOOK) {
+      const person = (await (await ctx.request.get(`${base}/api/v1/personal/parties?status=active&balance=owes_me&page_size=1`)).json()).data[0];
+      SCREENS = ['/khata', `/parties/${person.id}`, `/parties/${person.id}/statement`];
+    }
     const cases = [];
     for (const theme of ['light', 'dark'])
       for (const locale of ['en', 'hi'])

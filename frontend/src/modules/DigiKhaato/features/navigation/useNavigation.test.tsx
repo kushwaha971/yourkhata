@@ -157,15 +157,16 @@ describe('one menu per app', () => {
     expect(listed().shell.commandSearch).not.toBe(true);
   });
 
-  it('personal Udhaar shows people without a collection-round menu', () => {
-    load({ apps: [...SERVER_APPS, {code:'khata',labelId:'nav.workspace.khata',homePath:'/khata',order:95}], activeApp:'khata' });
-    mockPath = '/khata';
+  it('the Money Book shows its own menu and nothing of the Shop', () => {
+    /* Rebuilt 11 Nov 2026 to the design (Part I): People · Reminders · Report ·
+       Old dues, and no Shop row — the owner: "no relation with shop". */
+    load({ apps: [...SERVER_APPS, {code:'khata',labelId:'nav.workspace.khata',homePath:'/money-book',order:95}], activeApp:'khata' });
+    mockPath = '/money-book';
     const nav = listed();
     expect(nav.app).toBe('khata');
-    const keys = keysOf(nav);
-    expect(keys).toContain('people');
-    expect(keys).not.toContain('aging');
-    expect(keys).not.toContain('reminders');
+    expect(keysOf(nav).slice(0, 4)).toEqual(['moneybookPeople', 'moneybookReminders', 'moneybookReport', 'moneybookOldDues']);
+    expect(keysOf(nav)).not.toContain('aging');
+    expect(keysOf(nav)).not.toContain('customers');
   });
 
   it('keeps the menu of the app the person is in on a page every app shares', () => {

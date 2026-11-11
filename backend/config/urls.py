@@ -12,7 +12,6 @@ from apps.common.views import HealthView, ReadinessView, VersionView
 from apps.platform_app.views.meta_webhook import meta_webhook
 
 api_v1 = [
-    path("personal/", include("apps.ledger.urls_personal")),
     path("integrations/meta/whatsapp/webhook", meta_webhook, name="meta-whatsapp-webhook"),
     path("auth/", include("apps.platform_app.urls_auth")),
     path("", include("apps.platform_app.urls")),
@@ -35,6 +34,7 @@ api_v1 = [
     # ── B01 ── library (Wave B Track L) ──
     path("library/", include("apps.library.urls")),
     path("lending/", include("apps.lending.urls")),
+    path("moneybook/", include("apps.moneybook.urls")),
     # ── dues ── DUE-01: the engine's read endpoints (GET only, ADR-041)
     path("dues/", include("apps.dues.urls")),
     # ── ATT ── ATT-01…05: the engine's read endpoints (GET only, ADR-041)

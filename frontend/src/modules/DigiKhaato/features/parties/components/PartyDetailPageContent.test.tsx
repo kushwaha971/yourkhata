@@ -16,7 +16,7 @@ import { resetPartyForm } from '../redux/partyFormSlice';
 import { resetPartyList } from '../redux/partyListSlice';
 
 // Preserve the existing shared-page contracts; personal Udhaar has its own replacement suite.
-import { ExistingPartyDetailPageContent as PartyDetailPageContent } from './PartyDetailPageContent';
+import { PartyDetailPageContent } from './PartyDetailPageContent';
 
 /**
  * PTY-03's khata page, end to end inside the client: content → hook → thunk →
@@ -160,7 +160,9 @@ const signIn = (
       },
       activeTenant: { id: 't1', name: 'Kumar Stores', timezone: 'Asia/Kolkata', role },
       tenants: [{ id: 't1', name: 'Kumar Stores', timezone: 'Asia/Kolkata' }],
-      permissions: [...permissions],
+      // The khata app needs its own way in since the Money Book rebuild (11 Nov);
+      // the `main`-book page these tests cover is still Library's and Lending's.
+      permissions: [...permissions, 'khata.book.read'],
       // `ledger` among them, because the khata page's transactions card and its
       // two quick actions are gated on the module (§19.7.5): a tenant that has
       // not enabled it sees no card at all, which is a different screen and is

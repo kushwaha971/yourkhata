@@ -28,9 +28,12 @@ def test_the_udhaar_book_is_registered_as_its_own_app() -> None:
     spec = apps_registry.app_spec("khata")
     assert spec is not None
     assert spec.anchor == "khata"
-    assert spec.home_path == "/khata"
-    # It uses the person and the ledger engine, and nothing of the Shop's.
-    assert spec.capabilities == frozenset({"khata", "parties", "ledger"})
+    # Rebuilt 11 Nov 2026 as the Money Book: its own screens and its own tables
+    # (`apps/moneybook`). Owner: "I don't want any relation with shop" — so it
+    # holds no `parties` or `ledger` capability, and a grant to it opens nothing
+    # of the business's.
+    assert spec.home_path == "/money-book"
+    assert spec.capabilities == frozenset({"khata"})
 
 
 def test_a_business_running_both_still_lands_in_the_shop() -> None:

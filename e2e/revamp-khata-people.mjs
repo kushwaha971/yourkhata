@@ -11,6 +11,9 @@ if (!['localhost', '127.0.0.1'].includes(new URL(base).hostname)) throw Error('L
 const out = process.env.E2E_SHOTS ?? '/tmp/udhaar-people';
 mkdirSync(out, { recursive: true });
 const browser = await chromium.launch({ executablePath: process.env.CHROME });
+// The Money book is a private book (/api/v1/personal/…, 11 Nov round): the list
+// reads it, not the business /parties, so the harness watches the same address.
+const PEOPLE = '/api/v1/personal/parties';
 const results = [], failures = [];
 try {
   const loginContext = await browser.newContext();
@@ -20,6 +23,14 @@ try {
   await login.fill('input[type=password]', 'Scale-Run-2026!');
   await login.click('button[type=submit]');
   await login.waitForURL((url) => !url.pathname.startsWith('/login'));
+  // A second page needs more people than one page holds (25); a private book
+  // with seven never pages, and the paging check would never run. Top it up
+  // with QA people once, so the check is real.
+  const seen = await (await login.request.get(`${base}${PEOPLE}?status=active&page_size=1`)).json();
+  const csrf = (await loginContext.cookies()).find((c) => c.name === 'ub_csrf')?.value ?? '';
+  for (let n = seen.meta.total; n < 30; n++) {
+    await login.request.post(`${base}${PEOPLE}`, { data: { name: `Paging QA ${String(n + 1).padStart(2, '0')}` }, headers: { 'Idempotency-Key': crypto.randomUUID(), 'X-CSRF-Token': csrf } });
+  }
   const storageState = await loginContext.storageState();
   await loginContext.close();
   for (const width of widths) for (const theme of ['light', 'dark']) {
@@ -64,18 +75,23 @@ try {
     const qs = new URL(page.url()).searchParams;
     if (qs.get('balance') !== 'all' || qs.get('status') !== 'active') failures.push(`${tag}: missing explicit All URL ${page.url()}`);
     await check('ready');
-    const body = await (await ctx.request.get(`${base}/api/v1/parties?book=main&status=active&page=1`)).json();
+    const body = await (await ctx.request.get(`${base}${PEOPLE}?status=active&page=1`)).json();
     if (await page.locator('[data-testid=khata-people-summary]').count()) {
       const text = await page.getByTestId('khata-people-summary').innerText();
-      if (!text.replace(/,/g, '').includes(String(body.meta.total))) failures.push(`${tag}: total does not match server`);
+      // The revamped summary is two figures, To get and To give, and no count:
+      // each must be the server's total over the whole book, not this page's.
+      const plain = text.replace(/,/g, '');
+      for (const side of ['receivable', 'payable']) {
+        if (!plain.includes(body.meta.totals[side])) failures.push(`${tag}: ${side} ${body.meta.totals[side]} not on the summary (${plain.replace(/\s+/g, ' ')})`);
+      }
     }
     if (width < 768) {
       const region = page.getByTestId('ub-grid-scroll-region');
       let secondPages = 0;
-      page.on('request', (request) => { const url = new URL(request.url()); if (url.pathname === '/api/v1/parties' && url.searchParams.get('page') === '2') secondPages++; });
+      page.on('request', (request) => { const url = new URL(request.url()); if (url.pathname === PEOPLE && url.searchParams.get('page') === '2') secondPages++; });
       if (secondPages) failures.push(`${tag}: page2 requested before scroll`);
       const before = await page.getByTestId('ub-grid-card').count();
-      const answer = page.waitForResponse((response) => { const url = new URL(response.url()); return url.pathname === '/api/v1/parties' && url.searchParams.get('page') === '2'; });
+      const answer = page.waitForResponse((response) => { const url = new URL(response.url()); return url.pathname === PEOPLE && url.searchParams.get('page') === '2'; });
       await region.evaluate((node) => { node.scrollTop = node.scrollHeight; });
       await answer;
       await page.waitForLoadState('networkidle');
@@ -94,12 +110,12 @@ try {
     if (locale === 'en') {
       await page.getByTestId('filters-button').click();
       await page.getByRole('radiogroup', { name: 'Balance' }).getByRole('radio', { name: 'To get' }).click();
-      const directionResponse = page.waitForResponse((response) => { const url = new URL(response.url()); return url.pathname === '/api/v1/parties' && url.searchParams.get('balance') === 'owes_me'; });
+      const directionResponse = page.waitForResponse((response) => { const url = new URL(response.url()); return url.pathname === PEOPLE && url.searchParams.get('balance') === 'owes_me'; });
       await page.getByTestId('filters-apply').click();
       await directionResponse;
       await page.getByTestId('filters-button').click();
       await page.getByRole('radiogroup', { name: 'Balance' }).getByRole('radio', { name: 'All' }).click();
-      const allResponse = page.waitForResponse((response) => { const url = new URL(response.url()); return url.pathname === '/api/v1/parties' && !url.searchParams.has('balance'); });
+      const allResponse = page.waitForResponse((response) => { const url = new URL(response.url()); return url.pathname === PEOPLE && !url.searchParams.has('balance'); });
       await page.getByTestId('filters-apply').click();
       await allResponse;
       await page.waitForURL((url) => url.searchParams.get('balance') === 'all');
@@ -127,29 +143,29 @@ try {
       const empty = structuredClone(body);
       empty.data = [];
       empty.meta = { ...empty.meta, total: 0, total_pages: 0, has_any: true, totals: { ...empty.meta.totals, receivable: '0.00', payable: '0.00', count: 0 } };
-      const scope = (route) => { const url = new URL(route.request().url()); return url.pathname === '/api/v1/parties' && url.searchParams.get('balance') === 'due'; };
+      const scope = (route) => { const url = new URL(route.request().url()); return url.pathname === PEOPLE && url.searchParams.get('balance') === 'due'; };
       const emptyRoute = (route) => scope(route) ? route.fulfill({ status: 200, json: empty }) : route.continue();
-      await page.route('**/api/v1/parties?**', emptyRoute);
+      await page.route('**/api/v1/personal/parties?**', emptyRoute);
       await page.goto(`${base}/khata?balance=due&status=active`, { waitUntil: 'networkidle' });
       await page.getByRole('button', { name: 'Show all people' }).waitFor();
       await check('empty-due');
-      await page.unroute('**/api/v1/parties?**', emptyRoute);
+      await page.unroute('**/api/v1/personal/parties?**', emptyRoute);
 
       const stress = structuredClone(body);
       stress.data = [{ ...body.data[0], name: 'Radhe Krishna Enterprises — Electrical and Electronics Wholesale Division', balance: '1240378.00', tags: [] }];
       stress.meta = { ...stress.meta, total: 1, total_pages: 1, has_any: true, totals: { ...stress.meta.totals, receivable: '1240378.00', payable: '0.00', count: 1 } };
       const stressRoute = (route) => scope(route) ? route.fulfill({ status: 200, json: stress }) : route.continue();
-      await page.route('**/api/v1/parties?**', stressRoute);
+      await page.route('**/api/v1/personal/parties?**', stressRoute);
       await page.reload({ waitUntil: 'networkidle' });
       await page.getByText('Radhe Krishna Enterprises — Electrical and Electronics Wholesale Division').waitFor();
       await check('long-name-money');
-      await page.unroute('**/api/v1/parties?**', stressRoute);
+      await page.unroute('**/api/v1/personal/parties?**', stressRoute);
 
       const errorRoute = (route) => scope(route) ? route.fulfill({ status: 500, json: { error: { code: 'internal_error', message: 'Could not load' } } }) : route.continue();
-      await page.route('**/api/v1/parties?**', errorRoute);
+      await page.route('**/api/v1/personal/parties?**', errorRoute);
       await page.reload({ waitUntil: 'networkidle' });
       await check('error');
-      await page.unroute('**/api/v1/parties?**', errorRoute);
+      await page.unroute('**/api/v1/personal/parties?**', errorRoute);
     }
     await ctx.close();
   }

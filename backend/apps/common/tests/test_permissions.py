@@ -92,6 +92,7 @@ CANON_PERMISSIONS = {
     "lending.today.read",
     "lending.reminder.send",
     "lending.report.read",
+    "khata.book.read",
     "library.charge.waive",
     "library.charge.write",
     "library.verification.run",

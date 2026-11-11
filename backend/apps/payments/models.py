@@ -129,10 +129,13 @@ class Payment(TenantModel):
             # PUR-02 BR-5 — money out always has somebody it went to, except a
             # quick-sale return's refund (owner, 11 Nov 2026): the till paid a
             # walk-in back against the bill, and there is nobody to name.
+            # `has_key` first: with no `context` at all the comparison is NULL,
+            # and a CHECK passes on NULL — so every money-out with nobody named
+            # got through (test_constraints caught it, 11 Nov).
             models.CheckConstraint(
                 condition=models.Q(direction=PaymentDirection.IN)
                 | models.Q(party__isnull=False)
-                | models.Q(meta__context="refund"),
+                | models.Q(meta__has_key="context", meta__context="refund"),
                 name="ck_payment_out_has_party",
             ),
             # A4a (R5) — the ledger's CHECK, the ledger's three buckets.

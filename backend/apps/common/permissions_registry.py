@@ -98,6 +98,9 @@ PERMISSIONS: frozenset[str] = frozenset(
         "lending.today.read",
         "lending.reminder.send",
         "lending.report.read",
+        # The Money Book (rebuilt 11 Nov 2026): its own way in, so no Shop permission
+        # decides who can open their own book. Every role holds it; each book is private.
+        "khata.book.read",
     }
 )
 
@@ -127,6 +130,7 @@ _OWNER = set(PERMISSIONS)  # everything
 _ADMIN = _OWNER - {"platform.tenant.manage"}  # not tenant deletion/ownership/billing
 
 _STAFF = {
+    "khata.book.read",
     "parties.party.read",
     "parties.party.write",
     "ledger.entry.read",

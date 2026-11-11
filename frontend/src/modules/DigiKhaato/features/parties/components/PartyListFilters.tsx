@@ -109,8 +109,6 @@ export interface PartyListFiltersProps {
    * the party list keeps its one-tap sort sheet instead, UAT D5.)
    */
   readonly compact?: boolean;
-  /** Personal Udhaar needs balance and ordering, not business/credit/tag axes. */
-  readonly personal?: boolean;
   readonly controlClassName?: string;
   readonly showClear?: boolean;
   readonly status?: string;
@@ -142,7 +140,6 @@ function PartyListFiltersBase({
   onClear,
   part = 'controls',
   compact = false,
-  personal = false,
   controlClassName,
   showClear = true,
   status = 'active',
@@ -253,7 +250,7 @@ function PartyListFiltersBase({
       anyLabel: defaultBalance === 'due' ? t('parties.khata.filter.due') : t('parties.list.filter.any'),
     options: [
       ...(defaultBalance === 'due' ? [{ value: 'all', label: t('parties.khata.filter.all') }] : []),
-      ...BALANCE_FILTERS.filter((value) => value !== defaultBalance && (!personal || value !== 'due')).map((value) => ({
+      ...BALANCE_FILTERS.filter((value) => value !== defaultBalance).map((value) => ({
       value,
       label: t(`parties.list.filter.balance.${value}`),
     })),
@@ -344,7 +341,7 @@ function PartyListFiltersBase({
       <UbFilterSheet
         className={controlClassName}
         compact
-        specs={personal ? compactSpecs : [...compactSpecs, ...specs]}
+        specs={[...compactSpecs, ...specs]}
         values={values}
         onApply={apply}
         labels={{

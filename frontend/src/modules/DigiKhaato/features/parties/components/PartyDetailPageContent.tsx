@@ -228,13 +228,13 @@ interface KhataPaymentPreset {
   readonly direction?: 'out';
 }
 
-export function ExistingPartyDetailPageContent({
+export function PartyDetailPageContent({
   id,
 }: Readonly<PartyDetailPageContentProps>): React.JSX.Element {
   const { t, d } = useTranslation();
   // docs/platform/14 step 6 — a library's student, a lender's borrower: the
   // open app's words for this person, and its own list to go back to.
-  const { w, peopleHref, book, app } = useAppWords();
+  const { w, peopleHref, book } = useAppWords();
   /* DEC-019 — each app shows only its own money. Opened from the Shop this page
      is the person's bills and payments (`shopBook`); opened from the Udhaar book
      it is You gave / You got. The udhaar book's own tools (the pair, the opening
@@ -243,7 +243,6 @@ export function ExistingPartyDetailPageContent({
   const shopBook = book === 'shop';
   const sellsToSites = Boolean(useAppSelector(selectActiveTenant)?.features?.includes('sites'));
   const search = useSearchParams();
-  const udhaarApp = app === 'khata';
   /* The header's money words follow the book: "To collect / To pay" on the Shop's
      page, "You will get / You will give" in the Udhaar book. */
   const headerT = useCallback<TranslateFn>(
@@ -468,7 +467,6 @@ export function ExistingPartyDetailPageContent({
   const canPay =
     Boolean(party) &&
     !isArchived &&
-    !udhaarApp &&
     hasModule('payments') &&
     can('payments.payment.write');
   /* The figure of the book this page reads: the Shop's from the detail once it has
@@ -504,7 +502,6 @@ export function ExistingPartyDetailPageContent({
   const canCollect =
     Boolean(party) &&
     !isArchived &&
-    !udhaarApp &&
     hasModule('payments') &&
     can('payments.payment.read');
   const canSell = hasModule('sales') && can('sales.invoice.write');
@@ -987,28 +984,5 @@ export function ExistingPartyDetailPageContent({
         />
       )}
     </UbPageShell>
-  );
-}
-
-const PersonalUdhaarPage = dynamic(
-  () => import('./PersonalUdhaarPage').then((module) => module.PersonalUdhaarPage),
-  {
-    loading: () => (
-      <UbPageShell>
-        <UbSkeleton variant="card" />
-      </UbPageShell>
-    ),
-  }
-);
-
-/** Personal Udhaar has a minimal page; preserve the other apps' existing page. */
-export function PartyDetailPageContent(
-  props: Readonly<PartyDetailPageContentProps>
-): React.JSX.Element {
-  const { app } = useAppWords();
-  return app === 'khata' ? (
-    <PersonalUdhaarPage {...props} />
-  ) : (
-    <ExistingPartyDetailPageContent {...props} />
   );
 }

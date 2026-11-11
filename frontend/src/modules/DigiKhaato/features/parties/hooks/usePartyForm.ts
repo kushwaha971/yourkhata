@@ -73,7 +73,6 @@ export interface UsePartyFormResult {
   readonly submit: (
     values: PartyFormValues,
     setError: UseFormSetError<PartyFormValues>,
-    personal?: boolean,
     /**
      * A6 (R-DEC-61): the merchant picked an existing contact on Add, so the
      * save goes to THAT record (a PATCH adding the role), not a new one.
@@ -148,19 +147,14 @@ export const usePartyForm = (): UsePartyFormResult => {
     async (
       values: PartyFormValues,
       setError: UseFormSetError<PartyFormValues>,
-      personal = false,
       existingId?: string
     ) => {
       setFormErrors([]);
       setDuplicate(null);
       try {
         const saved = await dispatch(
-          saveParty(personal && openFor && openFor !== 'new' ? {
-            partyId: openFor,
-            identity: { name: values.name, mobile: values.mobile || null },
-          } : {
+          saveParty({
             values,
-            ...(personal ? { personal: true } : {}),
             partyId: existingId ?? (openFor && openFor !== 'new' ? openFor : undefined),
             idempotencyKey: key,
           })

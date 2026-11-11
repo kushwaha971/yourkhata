@@ -12,7 +12,6 @@ import {
   UbDialogLoading,
   UbDrawerLoading,
   UbEmptyState,
-  UbFab,
   UbFilterSelect,
   UbLoadMore,
   UbPageHeader,
@@ -47,7 +46,7 @@ import {
 import { useAppWords } from 'modules/DigiKhaato/features/navigation/useAppWords';
 
 import { partyExportPath } from '../api/partyService';
-import { KHATA_BOOK_WORDS, SHOP_BOOK_WORDS } from '../constants/partyFilters';
+import { SHOP_BOOK_WORDS } from '../constants/partyFilters';
 import { PAGE_SIZE_OPTIONS } from '../constants/partyListDefaults';
 import { TAG_CHIPS_PER_ROW } from '../constants/partyTags';
 import { useBulkArchive } from '../hooks/usePartyArchive';
@@ -62,8 +61,6 @@ import {
   supplierBalanceOrdering,
 } from '../view-model/partyListSort';
 
-import { KhataPeopleSummary } from './KhataPeopleSummary';
-import { KhataPeopleToolbar } from './KhataPeopleToolbar';
 import { createPartyColumns } from './PartyListColumns';
 import { PartyListFilters } from './PartyListFilters';
 import { ShopPartyRowActions } from './PartyListRow';
@@ -191,8 +188,8 @@ export function PartyListPageContent({
   kind?: PartyKind;
   /**
    * DEC-019 — which app's money the rows, chips and tiles show: `shop` on the
-   * Shop's Customers and Suppliers (what is due on bills), the Udhaar book's
-   * on `/khata` and `/parties`.
+   * Shop's Customers and Suppliers (what is due on bills); `/parties` passes none.
+   * The Money Book has its own screens and tables (`features/moneybook`).
    */
   book?: LedgerBook;
 }> = {}): React.JSX.Element {
@@ -202,8 +199,7 @@ export function PartyListPageContent({
   const { w } = useAppWords();
   const baseT = book === 'shop' ? w : plainT;
   /* DEC-019 — on the Shop's lists the money words are the Shop's ("To collect",
-     "To pay"); the Udhaar book's own list (`book="main"`, `/khata`) is "People";
-     `/parties`, which passes no book, is untouched. */
+     "To pay"); `/parties`, which passes no book, is untouched. */
   const t = useCallback<TranslateFn>(
     (id, values) =>
       baseT(
@@ -211,16 +207,13 @@ export function PartyListPageContent({
           ? 'parties.list.shop.empty.body'
           : book === 'shop'
             ? (SHOP_BOOK_WORDS[id] ?? id)
-            : book === 'main'
-              ? (KHATA_BOOK_WORDS[id] ?? id)
-              : id,
+            : id,
         values
       ),
     [baseT, book, kind]
   );
   const compactShop = book === 'shop' && Boolean(kind);
-  const compactKhata = book === 'main' && !kind;
-  const compactRegister = compactShop || compactKhata;
+  const compactRegister = compactShop;
   const PageShell = compactRegister ? UbViewportPageShell : UbPageShell;
   const supplier = kind === 'supplier';
   const [payingSupplier, setPayingSupplier] = useState<Party | null>(null);
@@ -324,7 +317,6 @@ export function PartyListPageContent({
       createPartyColumns({
         t,
         compactShop,
-        compactKhata,
         supplier,
         onPay: can('payments.payment.write') ? openSupplierPayment : undefined,
         phoneCards: tier === 'cards',
@@ -353,7 +345,6 @@ export function PartyListPageContent({
       can,
       openSupplierPayment,
       compactShop,
-      compactKhata,
       filters.balance,
       tier,
       canRemind,
@@ -441,7 +432,6 @@ export function PartyListPageContent({
   const [bookAll, setBookAll] = useState<number | undefined>(undefined);
   const unsearchedAll = shopCounts && !filters.q ? shopCounts.all : undefined;
   if (unsearchedAll !== undefined && unsearchedAll !== bookAll) setBookAll(unsearchedAll);
-  const dueIsEmpty = compactKhata && filters.balance === 'due' && !searchTerm;
   const addSearchedName = useCallback(
     () => partyForm.openCreate(searchTerm),
     [partyForm, searchTerm]
@@ -487,17 +477,7 @@ export function PartyListPageContent({
               <UbButton onClick={openBlankCreate}>{addLabel}</UbButton>
             ) : undefined,
           },
-      filtered: dueIsEmpty
-        ? {
-            title: t('parties.khata.emptyDue.title'),
-            description: t('parties.khata.emptyDue.body'),
-            action: (
-              <UbButton variant="secondary" onClick={() => setFilters({ balance: '' })}>
-                {t('parties.khata.showAll')}
-              </UbButton>
-            ),
-          }
-        : archivedOnly
+      filtered: archivedOnly
         ? {
             /* UAT D7 made Archived count as a filter, so an empty Archived
                tab now arrives HERE rather than at first-use. It keeps its own
@@ -575,8 +555,6 @@ export function PartyListPageContent({
       searchTerm,
       isArchivedTab,
       archivedOnly,
-      dueIsEmpty,
-      setFilters,
     ]
   );
 
@@ -589,7 +567,7 @@ export function PartyListPageContent({
       : status === 'failed' && !showingSaved && !appendFailed
         ? 'error'
         : rows.length === 0
-          ? isFiltered || (compactKhata && meta.hasAny === true)
+          ? isFiltered
             ? 'filtered-empty'
             : 'empty'
           : 'rows';
@@ -631,9 +609,8 @@ export function PartyListPageContent({
     (value: string) =>
       setFilters({
         status: value as PartyStatus,
-        ...(compactKhata ? { balance: '', collection: '' } : {}),
       }),
-    [setFilters, compactKhata]
+    [setFilters]
   );
 
   const handleType = useCallback((type: PartyTypeFilter) => setFilters({ type }), [setFilters]);
@@ -781,9 +758,7 @@ export function PartyListPageContent({
       header={
         <UbPageHeader
           className={
-            compactKhata
-              ? 'max-md:hidden'
-              : compactRegister
+            compactRegister
               ? // R-DEC-33: a phone's header is the title and its actions; the
                 // book's name stays for screen readers.
                 'max-md:[&_[data-ub-page-subtitle]]:sr-only'
@@ -797,16 +772,14 @@ export function PartyListPageContent({
                 : t('parties.list.title')
           }
           subtitle={
-            compactKhata
-              ? t('parties.khata.subtitle')
-              : kind === 'supplier'
+            kind === 'supplier'
                 ? t('parties.list.supplier.subtitle')
                 : kind === 'customer'
                   ? t('parties.list.customer.subtitle')
                   : t('parties.list.subtitle')
           }
           actions={
-            compactKhata ? null : <>
+            <>
               {/* FR-7 reaches the manager from an overflow menu on this header.
                   This screen's header has no overflow menu, and inventing one
                   for a single item would be a menu that exists to hide one
@@ -853,9 +826,9 @@ export function PartyListPageContent({
           }
           /* docs/mobile-redesign — on a phone the header's three icon squares
              become a worded ⋯ sheet, and Add is the floating button. */
-          renderMobileActions={(actions) => compactKhata ? null : (
+          renderMobileActions={(actions) => (
             <UbPageHeaderMobileActions
-              actions={compactKhata ? null : actions}
+              actions={actions}
               mobile={{
                 primaryPlacement: compactRegister ? 'header' : 'floating',
                 menuLabel: t('common.action.moreActions'),
@@ -1006,51 +979,13 @@ export function PartyListPageContent({
             rows={rows}
             variant={compactRegister ? 'register' : 'panel'}
             className={
-              compactKhata
-                ? '[&_th]:whitespace-normal [&_th_button]:whitespace-normal max-md:pb-16'
-                : compactRegister
+              compactRegister
                   ? '[&_th]:whitespace-normal [&_th_button]:whitespace-normal'
                   : undefined
             }
             columnMenu={compactRegister ? false : undefined}
             toolbar={
-              compactKhata ? (
-                <KhataPeopleToolbar
-                  t={t}
-                  search={searchInput}
-                  onSearch={setSearchInput}
-                  filters={
-                    <PartyListFilters
-                      t={t}
-                      compact
-                      personal
-                      showClear={false}
-                      status={filters.status}
-                      onStatusChange={handleStatus}
-                      ordering={filters.ordering}
-                      onOrderingChange={setOrdering}
-                      type={filters.type}
-                      balance={filters.balance}
-                      collection={filters.collection}
-                      onTypeChange={handleType}
-                      onBalanceChange={handleBalance}
-                      onCollectionChange={handleCollection}
-                      credit={filters.credit}
-                      onCreditChange={handleCredit}
-                      overLimitCount={overLimit}
-                      tag={filters.tag}
-                      onTagChange={handleTag}
-                      tags={tagOptions}
-                      role={filters.role ?? ''}
-                      onRoleChange={handleRole}
-                      roles={roles}
-                      activeFilterCount={activeFilterCount}
-                      onClear={clearFilters}
-                      controlClassName="h-10"
-                    />
-                  }
-                />
-              ) : compactShop ? (
+              compactShop ? (
                 <ShopPartyToolbar
                   supplier={supplier}
                   t={t}
@@ -1142,17 +1077,7 @@ export function PartyListPageContent({
               ) : undefined
             }
             beforeRows={
-              compactKhata && showStats ? (
-                <KhataPeopleSummary
-                  t={t}
-                  count={meta.total}
-                  rowCount={rows.length}
-                  totals={totals}
-                  scope={totalsScope}
-                  loading={statsLoading}
-                  balance={filters.balance}
-                />
-              ) : compactShop && showStats ? (
+              compactShop && showStats ? (
                 <ShopPartySummary
                   supplier={supplier}
                   t={t}
@@ -1165,8 +1090,8 @@ export function PartyListPageContent({
                 />
               ) : undefined
             }
-            cardLayout={compactKhata ? 'compact' : compactRegister ? 'stacked' : 'inline'}
-            cardAvatar={compactKhata || !compactRegister}
+            cardLayout={compactRegister ? 'stacked' : 'inline'}
+            cardAvatar={!compactRegister}
             /* R-DEC-33: a phone joins the next page under the cards as the
                merchant scrolls, with a retry in place when it fails; the
                pinned "Show more" button sat outside the scroll region and
@@ -1183,19 +1108,17 @@ export function PartyListPageContent({
                     moreLabel={
                       status === 'failed'
                         ? t('common.action.retry')
-                        : compactKhata
-                          ? t('parties.khata.loadMore')
-                          : t('parties.list.shop.more', { count: meta.total - rows.length })
+                        : t('parties.list.shop.more', { count: meta.total - rows.length })
                     }
-                    className={compactKhata || status === 'failed' ? 'pb-20' : undefined}
+                    className={status === 'failed' ? 'pb-20' : undefined}
                     onLoadMore={() => {
                       if (status === 'failed') refetch();
                       else if (status === 'succeeded') setPage(meta.page + 1);
                     }}
                   />
-                ) : compactKhata ? <UbStack aria-hidden className="h-20 shrink-0" /> : (
-                  <UbText variant="caption" tone="tertiary" className={compactKhata ? 'pt-3 pb-20 text-center' : 'py-3 text-center'}>
-                    {t(compactKhata ? 'parties.khata.loaded' : supplier ? 'parties.list.supplier.loaded' : 'parties.list.shop.loaded', {
+                ) : (
+                  <UbText variant="caption" tone="tertiary" className="py-3 text-center">
+                    {t(supplier ? 'parties.list.supplier.loaded' : 'parties.list.shop.loaded', {
                       count: rows.length,
                       total: meta.total,
                     })}
@@ -1280,15 +1203,6 @@ export function PartyListPageContent({
             filters={compactRegister ? undefined : filterControls}
           />
         )}
-        {compactKhata && partyForm.canWrite && !emptyBook && (
-          <UbFab
-            mobileOnly
-            extended
-            label={addLabel}
-            icon={<Plus className="h-5 w-5" aria-hidden />}
-            onClick={openBlankCreate}
-          />
-        )}
         {/* Loaded when the merchant asks for it, not when the list loads.
             Measured: the form carries React Hook Form's resolver, the Yup
             schema, a Radix switch and the three new inputs, and putting it in
@@ -1297,7 +1211,7 @@ export function PartyListPageContent({
             them. `openFor` is the only thing the page needs eagerly, and that
             lives in the slice. */}
         {partyForm.open && (
-          <PartyFormDrawerLazy form={partyForm} kind={kind} shop={book === 'shop'} quickKhata={compactKhata} />
+          <PartyFormDrawerLazy form={partyForm} kind={kind} shop={book === 'shop'} />
         )}
         {compactShop && settling && (
           <SettleBalancesLazy

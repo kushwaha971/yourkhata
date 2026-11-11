@@ -56,7 +56,11 @@ export const ROUTES = {
   CUSTOMERS: '/customers',
   SUPPLIERS: '/suppliers',
   /** DEC-019 — the Udhaar book's own list of people (You gave / You got), an app of its own. */
-  KHATA: '/khata',
+  KHATA: '/money-book',
+  // The Money Book's own screens (rebuilt 11 Nov 2026; `features/moneybook`).
+  MONEYBOOK_REMINDERS: '/money-book/reminders',
+  MONEYBOOK_REPORT: '/money-book/report',
+  MONEYBOOK_OLD_DUES: '/money-book/old-dues',
   /** PTY-05 FR-7 — the tag manager. A sibling of the list rather than a
    *  settings page: tags are a way of working through the book, and a merchant
    *  renaming one is in the middle of using the list, not configuring the

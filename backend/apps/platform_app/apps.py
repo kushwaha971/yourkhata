@@ -52,18 +52,17 @@ class PlatformConfig(AppConfig):
             ),
         )
 
-        # DEC-019 (owner, 12 Oct 2026) — the Udhaar book: You gave / You got with a
-        # person, standalone like Khatabook. It shares the person (parties) and the
-        # ledger engine with the Shop and nothing else: its money is the `main`
-        # bucket, which no Shop screen reads.
+        # The Money Book (code name `khata`), rebuilt 11 Nov 2026 as an app that
+        # stands alone: its own tables (`apps/moneybook`), owned by the signed-in
+        # person, and nothing of the Shop's — no parties, no ledger.
         register_app(
             AppSpec(
                 code="khata",
                 label_id="nav.workspace.khata",
                 anchor="khata",
-                capabilities=frozenset({"khata", "parties", "ledger"}),
-                entry_permission="parties.party.read",
-                home_path="/khata",
+                capabilities=frozenset({"khata"}),
+                entry_permission="khata.book.read",
+                home_path="/money-book",
                 # After the Shop (90): a business that ran the Shop before this app
                 # existed keeps landing where it always did.
                 order=95,

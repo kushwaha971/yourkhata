@@ -81,7 +81,8 @@ const inflight = new Map();
 const lastErrors = [];
 // Shop round (11 Nov): every screen every kind of shop has, so a module-wide
 // run (--wander=N) visits the whole Shop and not seven pages of it.
-const WANDER = [
+const MONEY_BOOK = process.argv.includes("--app=khata");
+let WANDER = [
   "/dashboard", "/sales/invoices", "/sales/estimates", "/customers", "/suppliers",
   "/items", "/stock/summary", "/stock/low", "/stock/count", "/stock/transfer",
   "/purchases/bills", "/purchases/orders", "/payments", "/expenses",
@@ -329,6 +330,34 @@ const checkAgrees = async (i, how) => {
         failures.push(`step ${i}: after ${how} the switches show ${shown} but the server has ${want}`);
     }
   }
+  // Money book round (11 Nov): a person's balance and the book's "To get" are
+  // the server's, after every reload and return. Read from the private book
+  // (`/personal/…`), which is what these screens read.
+  if (me.active_app === "khata") {
+    const plain = (s) => s.replace(/[₹,\s]/g, "");
+    const person = new URL(url).pathname.match(/^\/parties\/([0-9a-f-]{36})$/)?.[1];
+    if (person) {
+      const balance = (await (await ctx.request.get(`${base}/api/v1/personal/parties/${person}`)).json().catch(() => ({}))).data?.balance;
+      const shown = await page.getByTestId("udhaar-person-overview").innerText({ timeout: 4000 }).catch(() => "");
+      if (balance !== undefined && shown) {
+        agreeChecks += 1;
+        // MONKEY_SKEW=1 shifts the expected figure by ₹1: the check must then fail (P0 §1).
+        const want = Math.abs(Number(balance)) + (process.env.MONKEY_SKEW ? 1 : 0);
+        if (!plain(shown).includes(want.toFixed(2)))
+          failures.push(`step ${i}: after ${how} the person page does not show the server's balance ${balance} (${shown.replace(/\s+/g, " ").slice(0, 80)})`);
+      }
+    }
+    if (new URL(url).pathname === "/khata" && !new URL(url).search.includes("q=")) {
+      const query = new URL(url).search.replace(/^\?/, "");
+      const totals = (await (await ctx.request.get(`${base}/api/v1/personal/parties?${query}${query ? "&" : ""}page_size=1`)).json().catch(() => ({}))).meta?.totals;
+      const shown = await page.getByTestId("khata-people-summary").innerText({ timeout: 4000 }).catch(() => "");
+      if (totals && shown) {
+        agreeChecks += 1;
+        if (!plain(shown).includes(totals.receivable))
+          failures.push(`step ${i}: after ${how} "To get" is not the server's ${totals.receivable} (${shown.replace(/\s+/g, " ")})`);
+      }
+    }
+  }
   const nav = await page.evaluate(() => document.querySelector("nav[aria-label]")?.innerText ?? "").catch(() => "");
   // The words and orders rows are the SHOP's: when the monkey has wandered
   // into another app (the Udhaar book, from Apps) its menu has neither.
@@ -410,6 +439,12 @@ try {
   await page.fill("input[type=password]", login.slice(1).join(":"));
   await page.keyboard.press("Enter");
   await page.waitForURL((u) => !u.pathname.startsWith("/login"));
+  // Money book round (11 Nov): `--app=khata` wanders the Money book instead —
+  // its list, real people's pages and their statements, from the private book.
+  if (arg("app", "") === "khata") {
+    const people = ((await (await ctx.request.get(`${base}/api/v1/personal/parties?status=active&page_size=8`)).json().catch(() => ({}))).data ?? []).slice(0, 4);
+    WANDER = ["/khata", "/khata?balance=owes_me", ...people.flatMap((p) => [`/parties/${p.id}`, `/parties/${p.id}/statement`])];
+  }
   // Real item names, so "add item" types what a merchant would.
   const itemNames = (
     (await (await ctx.request.get(`${base}/api/v1/items?page_size=60&ordering=name`)).json().catch(() => ({}))).data ?? []
@@ -574,6 +609,7 @@ try {
           lastT0 = Date.now();
           await page.goto(`${base}${to}`, { waitUntil: "load", timeout: 20000 });
           await pageSpeed(`wander ${to}`);
+          if (MONEY_BOOK) await checkAgrees(i, `opening ${to}`);
           for (let k = 0; k < 1 + Math.floor(rand() * 3); k += 1) {
             const there = await page.locator("button:visible, [role=tab]:visible").all();
             const safe = [];
@@ -587,7 +623,14 @@ try {
           }
           // Back the way a user comes back: Back, or the sidebar's Bills then New bill.
           if (rand() < 0.5) await page.goBack({ timeout: 8000 }).catch(() => {});
-          else {
+          else if (MONEY_BOOK) {
+            // The Money book's way home is People in its own menu.
+            lastT0 = Date.now();
+            const people = page.locator(`a[href^="/khata"]:visible`).first();
+            if (!(await people.click({ timeout: 3000 }).then(() => true).catch(() => false))) await page.goto(`${base}/khata`, { waitUntil: "load" });
+            await page.waitForURL(/\/khata/, { timeout: 8000 }).catch(() => {});
+            await pageSpeed("People");
+          } else {
             lastT0 = Date.now();
             await page.goto(`${base}/sales/invoices`, { waitUntil: "load", timeout: 20000 });
             await pageSpeed("Bills list");
@@ -598,7 +641,7 @@ try {
             if (moved) await pageSpeed("New bill from the list");
             else log.push(`${i} (New bill could not be tapped on the list; came back by address)`);
           }
-          if (!page.url().startsWith(`${base}/sales/invoices/`)) {
+          if (MONEY_BOOK ? !/\/(khata|parties)/.test(page.url()) : !page.url().startsWith(`${base}/sales/invoices/`)) {
             lastT0 = Date.now();
             await page.goto(url, { waitUntil: "load", timeout: 20000 });
             await pageSpeed("return");

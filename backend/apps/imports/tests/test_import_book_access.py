@@ -66,10 +66,11 @@ def test_shop_only_grant_cannot_import_main_book_opening_balances(
     assert not LedgerEntry.objects.filter(tenant=tenant).exists()
 
 
-def test_khata_grant_keeps_party_import(granted):
+def test_khata_grant_cannot_import_business_contacts(granted):
+    """Owner, 11 Nov 2026: a Money Book grant reaches no business data, imports included."""
     _, make = granted
     client = make(khata="admin")
-    assert upload(client, "parties", f"{PARTY_HEADER}\n{ROW}\n").status_code == 201
+    assert upload(client, "parties", f"{PARTY_HEADER}\n{ROW}\n").status_code == 403
 
 
 def test_shop_only_reader_cannot_see_main_book_openings_in_import_jobs(
@@ -91,11 +92,11 @@ def test_shop_only_reader_cannot_see_main_book_openings_in_import_jobs(
     assert reader.get(reverse("v1:import-list")).json()["data"] == []
 
 
-def test_khata_reader_still_sees_party_import_jobs(
+def test_khata_reader_cannot_see_business_import_jobs(
     granted, owner_of, django_capture_on_commit_callbacks
 ):
     _, make = granted
     job = upload(
         owner_of, "parties", f"{PARTY_HEADER}\n{ROW}\n", capture=django_capture_on_commit_callbacks
     ).json()["data"]["id"]
-    assert make(khata="admin").get(reverse("v1:import-detail", args=[job])).status_code == 200
+    assert make(khata="admin").get(reverse("v1:import-detail", args=[job])).status_code == 404

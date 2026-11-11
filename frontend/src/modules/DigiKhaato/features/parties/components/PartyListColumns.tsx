@@ -88,7 +88,6 @@ export interface PartyColumnDeps {
   /** The first column's heading when the page is one book (Suppliers). */
   readonly nameHeader?: string;
   readonly compactShop?: boolean;
-  readonly compactKhata?: boolean;
   readonly supplier?: boolean;
   readonly onPay?: (party: Party) => void;
   readonly hideBalanceLabel?: boolean;
@@ -114,7 +113,6 @@ export const createPartyColumns = ({
   tagChipsPerRow,
   nameHeader,
   compactShop = false,
-  compactKhata = false,
   supplier = false,
   onPay,
   hideBalanceLabel,
@@ -134,11 +132,11 @@ export const createPartyColumns = ({
       cardSlot: 'title',
       // A7: 24 / 20 in the Shop (was 26 / 22), the 4 % given to the actions
       // column so Hindi's "भुगतान करें" and its ⋯ fit at 1024.
-      widthShare: compactKhata ? 68 : compactShop ? 24 : 34,
+      widthShare: compactShop ? 24 : 34,
       cell: (party) => (
         <PartyNameCell
           name={party.name}
-          wrap={compactShop || compactKhata}
+          wrap={compactShop}
           roleLabel={
             compactShop && (supplier ? party.isCustomer : party.isSupplier)
               ? t(
@@ -154,8 +152,8 @@ export const createPartyColumns = ({
           contact={
 compactShop && phoneCards ? shopAgeView(party, t, supplier).label : undefined
           }
-          tags={compactKhata ? [] : party.tags}
-          reserveTagLane={!compactShop && !compactKhata && hasTags}
+          tags={party.tags}
+          reserveTagLane={!compactShop && hasTags}
           maxTags={tagChipsPerRow}
           /* Named after the party, because a row's chip list sits beside
            twenty-four other chip lists and "Tags" alone announces as one of
@@ -172,7 +170,7 @@ compactShop && phoneCards ? shopAgeView(party, t, supplier).label : undefined
       align: 'end',
       sortField: PARTY_SORT_FIELDS.balance,
       cardSlot: 'trailing',
-      widthShare: compactKhata ? 32 : compactShop ? 18 : 20,
+      widthShare: compactShop ? 18 : 20,
       cell: (party) => (
         <PartyBalanceCell
           balance={party.balance}
@@ -253,7 +251,6 @@ compactShop && phoneCards ? shopAgeView(party, t, supplier).label : undefined
       ),
     },
   ];
-  if (compactKhata) return columns.slice(0, 2);
   if (!compactShop) return columns;
   const late: UbDataGridColumn<Party> = {
     id: 'late',

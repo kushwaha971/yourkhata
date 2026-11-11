@@ -232,13 +232,6 @@ describe('partyService.listParties', () => {
 describe('partyService write path', () => {
   afterEach(() => jest.restoreAllMocks());
 
-  it('personal Udhaar sends only name and mobile, never hidden business fields or money', async () => {
-    /** Name/mobile-only must be a wire contract, not just fields hidden in the drawer. */
-    const post = jest.spyOn(api, 'post').mockResolvedValue({data:{data:DETAIL_ROW,meta:{}}});
-    await createParty(FORM_VALUES, 'personal-key', true);
-    expect(post.mock.calls[0]?.[1]).toEqual({name:FORM_VALUES.name.trim(),mobile:FORM_VALUES.mobile?.trim() || null});
-  });
-
   it('sends the Shop book with a Shop old balance, and no book for the Udhaar one', async () => {
     /**
      * A6 / DEC-019. Without `opening_book` the server posts the opening in the

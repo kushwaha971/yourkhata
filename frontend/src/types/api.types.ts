@@ -26,6 +26,11 @@ export type ApiErrorCode =
   | 'service_busy'
   | 'rate_limited'
   | 'server_error'
+  // the Money Book (rebuilt 11 Nov 2026)
+  | 'person_exists'
+  | 'balance_not_settled'
+  | 'person_archived'
+  | 'nothing_to_remind'
   // auth and session
   | 'invalid_credentials'
   /**

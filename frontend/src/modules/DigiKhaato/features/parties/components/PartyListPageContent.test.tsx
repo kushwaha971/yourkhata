@@ -2206,18 +2206,15 @@ describe('one book: Suppliers', () => {
     expect(screen.queryByText('You will get')).not.toBeInTheDocument();
   });
 
-  it('the Udhaar book’s list asks for its own book, even after the Shop’s', async () => {
+  it('a main-book list asks for its own book, even after the Shop’s', async () => {
     // The list slice is shared: a `shop` left by the Customers tab must not leak
-    // into the Udhaar book, or it would show bills under You gave / You got.
+    // into another book's list (Library and Lending still read `main`).
     partyService.listParties.mockResolvedValue(loaded([RAMESH]));
     const { unmount } = renderWithProviders(<PartyListPageContent kind="customer" book="shop" />);
     await screen.findByText('Ramesh Traders');
     unmount();
     renderWithProviders(<PartyListPageContent book="main" />);
     await waitFor(() => expect(lastParams().book).toBe('main'));
-    // Its people are everyone the merchant gave to or got from, not "Customers" —
-    // those are the Shop's tab (the live look found this page titled Customers).
-    expect(screen.getByRole('heading', { name: 'Money book' })).toBeInTheDocument();
   });
 
   // ── The approved list designs (owner, 12 Oct 2026) ─────────────────────────

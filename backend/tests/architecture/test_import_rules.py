@@ -48,6 +48,8 @@ EXISTING_APPS = frozenset(
         "imports",
         "reports",
         "help",
+        # The Money Book, rebuilt 11 Nov 2026 as an app that stands alone.
+        "moneybook",
     }
 )
 
@@ -121,6 +123,10 @@ ALLOWED: dict[str, frozenset[str] | set[str]] = {
     "imports": {"common", "platform_app", "files", "parties", "inventory", "ledger"},
     "reports": REPORTS_ALLOWED,
     "help": {"common", "platform_app"},
+    # Owner, 11 Nov 2026: "I don't want any relation with shop". The Money Book
+    # imports the platform and nothing else — no parties, ledger or payments —
+    # so a future import of a Shop app fails here instead of quietly coupling it.
+    "moneybook": {"common", "platform_app"},
     # ── A11 ── 10-architecture §10.1, verbatim ────────────────────────────────
     "dues": {
         "common",
@@ -310,7 +316,9 @@ def test_the_matrix_covers_every_app_on_disk() -> None:
     """A folder under `apps/` that the matrix has never heard of is unchecked
     code; an existing app missing from disk means the matrix is stale. The seven
     planned apps are the only ones allowed to be declared and absent."""
-    on_disk = {p.name for p in APPS_ROOT.iterdir() if p.is_dir() and not p.name.startswith("_")}
+    on_disk = {
+        p.name for p in APPS_ROOT.iterdir() if p.is_dir() and not p.name.startswith(("_", "."))
+    }
     assert set(ALLOWED) == ALL_APPS
     assert on_disk <= ALL_APPS, f"apps with no matrix row: {sorted(on_disk - ALL_APPS)}"
     missing = sorted(EXISTING_APPS - on_disk)
@@ -408,7 +416,7 @@ def test_reports_does_not_gain_the_new_apps() -> None:
     could read a vertical's, the vertical could never be switched off without
     `reports` breaking. The set is a literal for exactly this reason."""
     assert not ALLOWED["reports"] & NEW_APPS
-    assert ALLOWED["reports"] == EXISTING_APPS - {"reports", "help"}
+    assert ALLOWED["reports"] == EXISTING_APPS - {"reports", "help", "moneybook"}
 
 
 @pytest.mark.parametrize("app", sorted(NEW_APPS))

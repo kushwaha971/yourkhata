@@ -28,7 +28,6 @@ import {
   isoFinancialYearStart,
   isoToday,
 } from 'src/design-system';
-import { useAppRouter } from 'src/hooks/useAppRouter';
 import { useTranslation } from 'src/hooks/useTranslation';
 import type { TranslateFn } from 'src/hooks/useTranslation';
 import { partyPath } from 'src/routes';
@@ -121,19 +120,15 @@ export function PartyFormDrawer({
   returnFocusRef,
   kind,
   shop = false,
-  quickKhata = false,
 }: Readonly<{
   form: UsePartyFormResult;
   shop?: boolean;
-  /** Personal Udhaar: name/mobile only, then open the person's history. */
-  quickKhata?: boolean;
   /** Opened from Suppliers: a new party is a supplier unless the merchant says otherwise. */
   kind?: PartyKind;
   /** Focus target on close when the opener is gone (QA D1) — the khata's ⋯. */
   returnFocusRef?: RefObject<HTMLElement | null>;
 }>): React.JSX.Element {
   const { t } = useTranslation();
-  const router = useAppRouter();
   const { partySchema } = usePartySchemas();
   const formId = useId();
   /* Unconditional: the thunk's own `condition` decides whether a request goes
@@ -269,15 +264,9 @@ export function PartyFormDrawer({
 
   const handleSubmit = useCallback(
     async (values: PartyFormValues) => {
-      const saved = await submit(
-        values,
-        setError,
-        quickKhata,
-        linked && !linked.already ? linked.id : undefined
-      );
-      if (quickKhata && !isEdit && saved) router.push(partyPath(saved.id));
+      await submit(values, setError, linked && !linked.already ? linked.id : undefined);
     },
-    [submit, setError, quickKhata, isEdit, router, linked]
+    [submit, setError, linked]
   );
 
   /**
@@ -303,14 +292,14 @@ export function PartyFormDrawer({
     () => [
       {
         value: 'debit',
-        label: t(quickKhata ? 'parties.khata.opening.youGave' : 'parties.form.opening.debit'),
+        label: t('parties.form.opening.debit'),
       },
       {
         value: 'credit',
-        label: t(quickKhata ? 'parties.khata.opening.youGot' : 'parties.form.opening.credit'),
+        label: t('parties.form.opening.credit'),
       },
     ],
-    [t, quickKhata]
+    [t]
   );
 
   /**
@@ -385,9 +374,7 @@ export function PartyFormDrawer({
         fixedRole ? 'parties.form.shop.mobile.placeholder' : 'parties.form.mobile.placeholder'
       )}
       hint={t(
-        quickKhata
-          ? 'parties.khata.mobileHint'
-          : fixedRole === 'supplier'
+        fixedRole === 'supplier'
             ? 'parties.form.mobile.hintSupplier'
             : 'parties.form.mobile.hint'
       )}
@@ -401,7 +388,6 @@ export function PartyFormDrawer({
         <UbRadioGroup
           {...field}
           options={directionOptions}
-          className={quickKhata && !isEdit ? 'grid grid-cols-2 gap-2' : undefined}
         />
       )}
     </UbField>
@@ -614,22 +600,15 @@ export function PartyFormDrawer({
 
   return (
     <UbDrawer
-      className={
-        quickKhata
-          ? 'max-lg:[&>div:last-child]:grid max-lg:[&>div:last-child]:grid-cols-[1fr_1.5fr] max-lg:[&_input]:h-11'
-          : undefined
-      }
       open={open}
       onOpenChange={handleOpenChange}
       title={
-        quickKhata
-          ? t(isEdit ? 'parties.khata.edit' : 'parties.khata.add')
-          : isEdit
+        isEdit
             ? t(fixedRole ? `parties.form.shop.title.edit.${fixedRole}` : 'parties.form.title.edit')
             : t(`parties.form.title.create${byKind}`)
       }
       description={
-        isEdit || quickKhata
+        isEdit
           ? undefined
           : fixedRole
             ? fixedRole === 'supplier'
@@ -655,9 +634,7 @@ export function PartyFormDrawer({
           >
             {isEdit
               ? t('parties.form.submit.edit')
-              : quickKhata
-                ? t('parties.khata.saveAndOpen')
-                : fixedRole
+              : fixedRole
                   ? t(`parties.form.shop.submit.${fixedRole}`)
                   : t(`parties.form.submit.create${byKind}`)}
           </UbButton>
@@ -699,14 +676,7 @@ export function PartyFormDrawer({
           />
         )}
 
-        {quickKhata ? (
-          <>
-            {contactPickButton}
-            <PartyNameInput t={t} />
-            {mobileInput}
-          </>
-        ) : (
-          <>
+        <>
             {/* ── The fifteen-second path ─────────────────────────────────────── */}
             {/* One contact from the phone fills Name and Mobile, and saves nothing:
             Save does, and the server's duplicate check still decides (PTY-07
@@ -919,8 +889,7 @@ export function PartyFormDrawer({
               supplier is paid, not reminded. */}
               {!fixedRole && remindersFields}
             </UbDisclosure>
-          </>
-        )}
+        </>
       </UbForm>
     </UbDrawer>
   );

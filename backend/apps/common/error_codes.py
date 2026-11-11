@@ -100,6 +100,11 @@ _REGISTRY: dict[str, tuple[int, bool]] = {
     "use_document_void": (409, False),
     # A quick-sale return's refund is undone by cancelling the return (11 Nov 2026).
     "cancel_the_return": (409, False),
+    # The Money Book, rebuilt as its own app (11 Nov 2026).
+    "person_exists": (409, False),
+    "balance_not_settled": (409, False),
+    "person_archived": (409, False),
+    "nothing_to_remind": (409, False),
     "merge_self": (409, False),
     "merge_in_progress": (409, False),
     "merge_balance_mismatch": (409, False),

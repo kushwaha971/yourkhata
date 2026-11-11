@@ -22,7 +22,6 @@ import { readCsrfToken } from 'src/utils/cookieUtils';
 import { newRequestId } from 'src/utils/requestId';
 
 import { API_PATHS, isTenantTransitionPath, requiresIdempotency } from './APIPaths';
-import { personalBookUrl } from './personalBookScope';
 import { __resetTenantTransition, adoptTenant, effectiveTenantId } from './tenantTransition';
 import { transportHost, type RequestIdentity } from './transportBridge';
 
@@ -45,7 +44,6 @@ const AUTH_FREE_PATHS: readonly string[] = [
 
 /** The per-request extras the interceptors and the services agree on. */
 export interface UbRequestConfig extends InternalAxiosRequestConfig {
-  _bookAppAtIssue?: string | null;
   meta?: { requestId: string; startedAt: number };
   /** `/auth/refresh` itself sets this so a 401 cannot recurse. */
   _skipAuthRetry?: boolean;
@@ -109,7 +107,6 @@ const staleIdentity = (request?: UbRequestConfig): boolean => {
 };
 const staleRequestContext = (request?: UbRequestConfig): boolean => {
   if (staleIdentity(request)) return true;
-  if (request?._bookAppAtIssue !== undefined && request._bookAppAtIssue !== (transportHost()?.getActiveApp?.() ?? null)) return true;
   if (!request || accountTransition(request.url) || !request._tenantAtIssue) return false;
   return request._tenantAtIssue !== effectiveTenantId(transportHost()?.getActiveTenantId() ?? null);
 };
@@ -128,10 +125,6 @@ const accountMismatch = (): void => {
 api.interceptors.request.use((config: InternalAxiosRequestConfig) => {
   const request = config as UbRequestConfig;
   if (staleRequestContext(request)) return Promise.reject(cancelledContext(request));
-  if (/^\/(?:personal\/)?(?:parties|ledger-entries|ledger|reminders)(?:\/|\?|$)/.test(request.url ?? '')) {
-    if (request._bookAppAtIssue === undefined) request._bookAppAtIssue = transportHost()?.getActiveApp?.() ?? null;
-    request.url = personalBookUrl(request.url, request._bookAppAtIssue);
-  }
   if (request._identityAtIssue === undefined)
     request._identityAtIssue = transportHost()?.getRequestIdentity?.() ?? null;
 
@@ -170,7 +163,7 @@ api.interceptors.request.use((config: InternalAxiosRequestConfig) => {
   //    substitute for the caller minting one.
   if (
     request.method?.toLowerCase() === 'post' &&
-    requiresIdempotency(request.url?.replace(/^\/personal(?=\/)/, '')) &&
+    requiresIdempotency(request.url) &&
     !request.headers.has('Idempotency-Key')
   ) {
     request.headers.set('Idempotency-Key', newRequestId());

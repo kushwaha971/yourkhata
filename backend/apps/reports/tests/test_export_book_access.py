@@ -34,7 +34,11 @@ def setup(tenant, api_as, system_roles, monkeypatch):
     tenant.partner.save(update_fields=["allowed_modules"])
     for n in range(2):
         PartyFactory(
-            tenant=tenant, name=f"Radhe Krishna Enterprises {n}", balance=Decimal("4321.00")
+            tenant=tenant,
+            name=f"Radhe Krishna Enterprises {n}",
+            is_customer=True,
+            balance=Decimal("4321.00"),
+            shop_balance=Decimal("4321.00"),
         )
     client, member = api_as(tenant, role="admin")
     for app in ("khata", "shop"):
@@ -45,22 +49,24 @@ def setup(tenant, api_as, system_roles, monkeypatch):
 
 def _queue(client, capture):
     with capture(execute=True):
-        response = client.get("/api/v1/parties", {"format": "csv"})
+        response = client.get("/api/v1/parties", {"format": "csv", "book": "shop"})
     assert response.status_code == 202, response.content
     export_id = response.json()["data"]["export_id"]
     assert Export.objects.get(pk=export_id).status == "ready"
     return export_id
 
 
-def test_revoked_main_book_grant_cannot_download_earlier_export(
+def test_revoked_book_grant_cannot_download_earlier_export(
     setup, django_capture_on_commit_callbacks
 ):
     client, member = setup
     export_id = _queue(client, django_capture_on_commit_callbacks)
-    MembershipAppGrant.objects.filter(membership=member, app="khata").delete()
+    MembershipAppGrant.objects.filter(membership=member, app="shop").delete()
     response = client.get(f"/api/v1/reports/exports/{export_id}/download")
     body = b"".join(response.streaming_content) if hasattr(response, "streaming_content") else b""
-    assert response.status_code == 404, body[:200]
+    # Refused either way: with no app left that grants Reports it is a 403 before
+    # the file is looked up; what matters is that no figure leaves.
+    assert response.status_code in (403, 404), body[:200]
     assert b"4321" not in body
 
 
@@ -72,15 +78,15 @@ def test_unchanged_grants_still_download(setup, django_capture_on_commit_callbac
     assert b"4321" in b"".join(response.streaming_content)
 
 
-def test_legacy_export_still_checks_its_main_book(setup, django_capture_on_commit_callbacks):
-    """R-DEC-18 review: missing new metadata must not grandfather private main-book files."""
+def test_legacy_export_still_checks_its_book(setup, django_capture_on_commit_callbacks):
+    """R-DEC-18 review: missing new metadata must not grandfather a file past its book."""
     client, member = setup
     export_id = _queue(client, django_capture_on_commit_callbacks)
     export = Export.objects.get(pk=export_id)
     export.params.pop("books", None)
     export.save(update_fields=["params"])
-    MembershipAppGrant.objects.filter(membership=member, app="khata").delete()
-    assert client.get(f"/api/v1/reports/exports/{export_id}/download").status_code == 404
+    MembershipAppGrant.objects.filter(membership=member, app="shop").delete()
+    assert client.get(f"/api/v1/reports/exports/{export_id}/download").status_code in (403, 404)
 
 
 def test_unrelated_grant_revocation_does_not_block_shop_file(
@@ -132,11 +138,10 @@ def test_item_cost_export_is_denied_after_cost_permission_removed(
 def test_aging_report_requires_the_selected_book(setup, slug, format):
     """The report route must not bypass the per-book guard on the ledger aging route."""
     client, member = setup
-    assert client.get(f"/api/v1/reports/{slug}", {"format": format}).status_code == 200
-    MembershipAppGrant.objects.filter(membership=member, app="khata").delete()
-    assert client.get(f"/api/v1/reports/{slug}", {"format": format}).status_code == 403
-    response = client.get(f"/api/v1/reports/{slug}", {"format": format, "book": "shop"})
-    assert response.status_code == 200, response.content
+    shop = {"format": format, "book": "shop"}
+    assert client.get(f"/api/v1/reports/{slug}", shop).status_code == 200
+    MembershipAppGrant.objects.filter(membership=member, app="shop").delete()
+    assert client.get(f"/api/v1/reports/{slug}", shop).status_code == 403
 
 
 def test_stored_day_book_rechecks_source_read_rights(
@@ -232,3 +237,14 @@ def test_shop_aging_does_not_expose_udhaar_promise_or_limit(setup, tenant, forma
         body = b"".join(response.streaming_content)
         assert b"98765" not in body
         assert b"2026-10-25" not in body
+
+
+def test_a_money_book_grant_opens_no_business_book(setup):
+    """Owner, 11 Nov 2026: the Money Book stands alone. Its grant used to read the
+    business's `main` book (people, balances, aging, exports); now it reads
+    nothing of the business — the Money Book has its own tables."""
+    client, member = setup
+    MembershipAppGrant.objects.filter(membership=member, app="shop").delete()
+    assert client.get("/api/v1/parties").status_code == 403
+    assert client.get("/api/v1/reports/receivables-aging").status_code == 403
+    assert client.get("/api/v1/parties", {"format": "csv"}).status_code == 403

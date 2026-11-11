@@ -67,6 +67,7 @@ INSTALLED_APPS = [
     "apps.attendance",
     # ── LEN ── lending & collections (FRD lending.md; the owner's go-ahead, 4 Oct 2026)
     "apps.lending",
+    "apps.moneybook",
 ]
 
 AUTH_USER_MODEL = "platform.User"

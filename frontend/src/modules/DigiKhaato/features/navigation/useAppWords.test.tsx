@@ -26,7 +26,7 @@ const APPS: SessionApp[] = [
   { code: 'library', labelId: 'nav.workspace.library', homePath: '/library', order: 10 },
   { code: 'lending', labelId: 'nav.workspace.lending', homePath: '/lending', order: 20 },
   { code: 'shop', labelId: 'nav.workspace.shop', homePath: '/dashboard', order: 90 },
-  { code: 'khata', labelId: 'nav.workspace.khata', homePath: '/khata', order: 95 },
+  { code: 'khata', labelId: 'nav.workspace.khata', homePath: '/money-book', order: 95 },
 ];
 
 const load = (activeApp: string, businessWords?: Record<string, Record<string, string>>) =>
@@ -73,7 +73,7 @@ it.each([
   ['lending', 'Borrower', 'Back to borrowers', '/lending/borrowers'],
   // DEC-019 — the Shop's people are its Customers tab; the Udhaar book has its own list.
   ['shop', 'Customer', 'Back to customers', '/customers'],
-  ['khata', 'Customer', 'Back to customers', '/khata'],
+  ['khata', 'Customer', 'Back to customers', '/money-book'],
 ])('in the %s, a khata says %s', (app, badge, back, href) => {
   load(app);
   const { w, peopleHref } = words();

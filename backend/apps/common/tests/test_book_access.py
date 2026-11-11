@@ -65,14 +65,12 @@ def test_contact_identity_does_not_include_other_book_money(books):
 
 
 def test_khata_cannot_receive_shop_contact_figures(books):
-    """Shared contact-read did not enforce Shop financial projection."""
+    """Owner, 11 Nov 2026: the Money Book stands alone. Its grant used to read the
+    business's people and their main-book balance; now it reads no business
+    contact at all, in either book."""
     _, party, make = books
     client, _ = make(khata="staff")
-    response = client.get(f"/api/v1/parties/{party.id}")
-    assert response.status_code == 200
-    data = response.json()["data"]
-    assert data["balance"] == "1234.56"
-    assert "shop_balance" not in data
+    assert client.get(f"/api/v1/parties/{party.id}").status_code == 403
     assert client.get("/api/v1/parties", {"book": "shop"}).status_code == 403
 
 
@@ -185,9 +183,10 @@ def test_denied_or_revoked_app_grant_cannot_use_another_app(books, system_roles)
     """A changed grant must affect the next request, even with an existing token."""
     _, _, make = books
     client, member = make(shop="staff", khata="staff")
-    assert client.get("/api/v1/ledger/summary").status_code == 200
-    MembershipAppGrant.objects.filter(membership=member, app="khata").delete()
-    assert client.get("/api/v1/ledger/summary").status_code == 403
+    shop = {"book": "shop"}
+    assert client.get("/api/v1/ledger/summary", shop).status_code == 200
+    MembershipAppGrant.objects.filter(membership=member, app="shop").delete()
+    assert client.get("/api/v1/ledger/summary", shop).status_code == 403
 
 
 def test_shop_role_cannot_write_another_apps_read_only_grant(books):

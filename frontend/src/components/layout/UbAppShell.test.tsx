@@ -135,21 +135,21 @@ beforeEach(() => {
 });
 
 describe('UAT D2 — the phone and tablet chrome', () => {
-  it('does not duplicate Back in the header when the personal page owns it', () => {
-    /** A second Back arrow and Back-to-people row wasted the personal page header. */
-    mockPath = '/parties/p1';
+  it('does not duplicate Back in the header when the Money Book person owns it', () => {
+    /** A second Back arrow wasted the person page's header (the page draws its own). */
+    mockPath = '/money-book/p1';
     window.history.replaceState(null, '', mockPath);
-    signIn(['parties.party.read', 'ledger.entry.read'], 'khata');
+    signIn(['khata.book.read'], 'khata');
     renderShell();
     expect(within(mobileHeader()).queryByRole('button', { name: 'Back' })).not.toBeInTheDocument();
   });
 
-  it('retains header Back on the personal statement which does not own an inline arrow', () => {
-    mockPath = '/parties/p1/statement';
+  it('keeps header Back off the Money Book menu screens (Report is a menu row)', () => {
+    mockPath = '/money-book/report';
     window.history.replaceState(null, '', mockPath);
-    signIn(['parties.party.read', 'ledger.entry.read'], 'khata');
+    signIn(['khata.book.read'], 'khata');
     renderShell();
-    expect(within(mobileHeader()).getByRole('button', { name: 'Back' })).toBeInTheDocument();
+    expect(within(mobileHeader()).queryByRole('button', { name: 'Back' })).not.toBeInTheDocument();
   });
   it('keeps the account off the phone header: it lives on the More tab now', () => {
     /* docs/mobile-redesign — the header held six controls in 390 px and cut

@@ -188,6 +188,8 @@ export const PERMISSION_CODES = [
   'lending.today.read',
   'lending.reminder.send',
   'lending.report.read',
+  // The Money Book's own way in (rebuilt 11 Nov 2026).
+  'khata.book.read',
 ] as const;
 export type PermissionCode = (typeof PERMISSION_CODES)[number];
 

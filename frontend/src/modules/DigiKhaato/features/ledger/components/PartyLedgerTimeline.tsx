@@ -104,7 +104,6 @@ export function PartyLedgerTimeline({
   readOnly: archivedReadOnly = false,
   book = 'main',
   fillHeight = false,
-  personal = false,
 }: Readonly<{
   partyId: string;
   title?: string;
@@ -119,7 +118,6 @@ export function PartyLedgerTimeline({
   book?: LedgerBook;
   /** Opt-in bounded history for the Udhaar person workspace. */
   fillHeight?: boolean;
-  personal?: boolean;
   /**
    * The party is archived (PTY-04 FR-14): the rows are read, never corrected.
    * The server refuses a correction or a reversal on an archived party with
@@ -168,7 +166,7 @@ export function PartyLedgerTimeline({
         /* LED-03 FR-7: offered only to somebody who could correct, and only
            once there is something to reveal. A MODE, not a filter, so a switch. */
         aside={
-          correction.canCorrect && hasEntries && !shopBook && !personal ? (
+          correction.canCorrect && hasEntries && !shopBook ? (
             <UbSwitch
               checked={ledger.showCorrections}
               onCheckedChange={ledger.toggleCorrections}
@@ -294,7 +292,6 @@ export function PartyLedgerTimeline({
                 <EntryRow
                   entry={entry}
                   shop={shopBook}
-                  personal={personal}
                   t={t}
                   viewerId={viewerId}
                   wasCorrected={ledger.superseded.has(entry.id)}
@@ -352,7 +349,6 @@ export function PartyLedgerTimeline({
 function EntryRow({
   entry,
   shop,
-  personal = false,
   t,
   viewerId,
   wasCorrected,
@@ -360,7 +356,6 @@ function EntryRow({
 }: Readonly<{
   entry: LedgerEntry;
   shop?: boolean;
-  personal?: boolean;
   t: TranslateFn;
   viewerId: string | null;
   /** True when another loaded row supersedes this one — see the badge below. */
@@ -492,7 +487,7 @@ function EntryRow({
         <UbStack gap={0} align="end">
           <UbAmount
             value={entry.amount}
-            tone={reversed ? 'neutral' : personal && entry.sourceType === 'manual' ? entry.direction === 'debit' ? 'payable' : 'receivable' : view.tone}
+            tone={reversed ? 'neutral' : view.tone}
             sign="none"
             label={t(view.labelId)}
             /* Hidden when the title on the left is already those same two words —

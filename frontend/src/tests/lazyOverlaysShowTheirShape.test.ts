@@ -29,7 +29,6 @@ const NOT_AN_OPENER = new Set([
   'src/modules/DigiKhaato/features/library/components/SeatsPageContent.tsx:SeatPanelLazy',
   // Page content that happens to contain dialogs; not opened by a tap.
   'src/modules/DigiKhaato/features/imports/components/ImportPageContent.tsx:ImportWizard',
-  'src/modules/DigiKhaato/features/parties/components/PartyDetailPageContent.tsx:PersonalUdhaarPage',
   // It lazy-loads the drawer primitive ITSELF; a drawer-shaped loading view
   // would put that primitive back in every page's shell (A1's to decide).
   'src/components/layout/MobileQuickSearch.tsx:UbDrawer',

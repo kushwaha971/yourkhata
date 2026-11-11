@@ -21,4 +21,3 @@ register(TenantTable("parties.PartyRelation", export_name="party_relations.csv")
 register(TenantTable("parties.ShopPromise", export_name="shop_promises.csv"))
 
 # Personal Udhaar: which user this private scope belongs to; bookkeeping, not a record.
-register(TenantTable("parties.PersonalBook", export_name=None))
