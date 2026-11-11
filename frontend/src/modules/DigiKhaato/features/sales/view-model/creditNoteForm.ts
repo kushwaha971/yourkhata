@@ -47,7 +47,8 @@ export const emptyCreditNoteForm = (
   reason: 'sales_return',
   reasonNote: '',
   restock: invoice.lines.some((line) => !!line.itemId),
-  settlement: 'hold_advance',
+  // A quick-sale bill has no khata to hold credit in: its return is refunded.
+  settlement: invoice.party ? 'hold_advance' : 'refund',
   refundMode: 'cash',
   refundReference: '',
   lines: invoice.lines.map((line) => ({ againstLineId: line.id ?? '', qty: '' })),

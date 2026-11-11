@@ -109,7 +109,9 @@ export interface InvoiceFormValues {
 /* Counter shops start a new bill on Quick sale. R-DEC-63 (30 Oct) split
    `retail` into shop kinds and this list was not told, so a kirana's bill
    opened on Saved customer (Shop round, 11 Nov). Wholesale and trading types
-   bill known buyers, so they keep Saved customer. */
+   bill known buyers, so they keep Saved customer; so do jewellery (a name on
+   nearly every bill: PAN, buy-back), furniture (delivered, needs an address)
+   and agri inputs (farmers buy on credit till harvest) — owner, 11 Nov. */
 export const WALK_IN_BUSINESS_TYPES: readonly string[] = [
   'retail',
   'food',
@@ -119,10 +121,7 @@ export const WALK_IN_BUSINESS_TYPES: readonly string[] = [
   'garments',
   'hardware',
   'auto_parts',
-  'jewellery',
   'stationery',
-  'agri',
-  'furniture',
 ];
 
 export const defaultBillingMode = (businessType: string | null | undefined): BillingMode =>

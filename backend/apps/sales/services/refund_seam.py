@@ -90,7 +90,9 @@ def record_refund(
         ctx=ctx,
         payload={
             "direction": "out",
-            "party_id": str(party.id),
+            # A quick-sale return has nobody to name: the till pays it out.
+            "party_id": str(party.id) if party is not None else None,
+            "walk_in_refund": party is None,
             "payment_date": payment_date,
             "mode_breakup": mode_breakup,
             "note": refund["note"] or f"Refund · Credit note {document.number}"[:255],
@@ -135,6 +137,16 @@ def release_refund(*, ctx: Ctx, credit_note_id: Any, payment_id: Any, amount: De
     )
     if note is None or note.status in (DocumentStatus.VOID, DocumentStatus.DRAFT):
         return None
+    if note.party_id is None:
+        # A quick-sale return has no khata to hold the money as credit, so its
+        # refund cannot be undone alone: cancelling the RETURN takes it too.
+        from apps.common.exceptions import BusinessRuleViolation
+
+        raise BusinessRuleViolation(
+            "cancel_the_return",
+            f"Cancel the return {note.number} instead. Its refund is cancelled with it.",
+            details={"credit_note_id": str(note.id), "number": note.number},
+        )
     meta = dict(note.meta or {})
     refund = dict(meta.get("refund") or {})
     if refund.get("payment_id") not in (None, str(payment_id)):

@@ -108,3 +108,32 @@ Desktop (1280):
 
 **8/10 — the Shop is "in test".** Not rounded up. The two lost points are
 the Quick-sale return and a full Hindi/dark/after-error design pass.
+
+## After the owner's calls (11 Nov 2026, same day)
+
+The owner agreed with all three recommendations:
+
+1. **Quick-sale return built.** ⋯ → Goods came back works on a quick-sale
+   bill; the note keeps the walk-in name, restocks, and the whole amount
+   leaves the till as a payout with nobody named (`ck_payment_out_has_party`
+   now allows that for a refund only, migration payments 0007). The refund
+   cannot be voided alone (`cancel_the_return`); cancelling the return voids
+   it too. Hand pass: CN/26-27/0001 for the ₹50 atta bill — stock 99.039 →
+   100, PAYOUT/26-27/0001 ₹50, Payments reads "Quick sale · Cash · Paid out".
+   `e2e/quick-sale-return.mjs` 18/18 at 390/1280; its name check failed on
+   the build that printed "₹50.00 refunded to" and nothing.
+2. **Refresh grace window, 30 s**, only while the replacement token is unused;
+   a used replacement or a later replay still revokes the family. The
+   lost-reply test fails with the window at 0.
+3. **Jewellery, furniture and agri** start on Saved customer.
+
+Also fixed: the three on-demand bill sheets drew nothing while loading
+(`lazyOverlaysShowTheirShape` caught it); they show the dialog frame.
+
+Regression: 61/61 Shop harnesses; backend suite green except
+`test_the_matrix_covers_every_app_on_disk`, which fails only on this machine
+because of an untracked, empty `backend/apps/.claude` tool folder.
+
+**Score now 9/10:** Functional earns its point (the return works end to
+end). Design is still 0 — a Hindi/dark/after-error pass across the whole
+Shop, not only the C screens, is the remaining work.

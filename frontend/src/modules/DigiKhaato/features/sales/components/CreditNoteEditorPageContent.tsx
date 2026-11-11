@@ -77,7 +77,13 @@ export function CreditNoteEditorPageContent({
 
   const nothing = !preview || preview.lines.length === 0;
   const stock = values.restock ? stockBackText(invoice, values) : '';
-  const party = invoice.partySnapshot?.name ?? invoice.party?.name ?? '';
+  // `||`, not `??`: a quick-sale bill's snapshot carries an EMPTY name, and
+  // "₹50.00 refunded to" with nobody after it was the result (11 Nov 2026).
+  const party =
+    invoice.partySnapshot?.name ||
+    invoice.party?.name ||
+    invoice.walkInName ||
+    t('sales.walkIn.label');
   return (
     <UbPageShell>
       <UbPageHeader

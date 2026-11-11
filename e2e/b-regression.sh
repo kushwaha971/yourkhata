@@ -73,3 +73,5 @@ run g-day g-day.mjs
 # regression and went stale unseen; they run with every piece now.
 run day-book day-book.mjs
 run jewel-day jewel-day.mjs
+run quick-sale-return quick-sale-return.mjs
+run bcd-look bcd-look.mjs

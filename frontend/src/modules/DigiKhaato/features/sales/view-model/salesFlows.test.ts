@@ -114,10 +114,14 @@ describe('what each status allows', () => {
     expect(isVoidable(makeDocument({ status: 'void' }))).toBe(false);
   });
 
-  it('SAL-04 EC-7: offers a return only on a party bill with something left to return', () => {
+  it('offers a return on any bill with something left to return, quick sale included', () => {
+    // Shop round, 11 Nov 2026 (owner, relaxing EC-7): a walk-in bringing atta
+    // back found only "cancel the whole bill" on a quick-sale bill.
     const party = { id: 'p1', name: 'Ramesh', gstin: null, mobile: null, state_code: '27' };
     expect(canReturn(makeDocument({ party }))).toBe(true);
-    expect(canReturn(makeDocument({ party: null }))).toBe(false);
+    expect(canReturn(makeDocument({ party: null }))).toBe(true);
+    expect(emptyCreditNoteForm(makeDocument({ party: null }), '2026-11-11').settlement).toBe('refund');
+    expect(emptyCreditNoteForm(makeDocument({ party }), '2026-11-11').settlement).toBe('hold_advance');
     expect(
       canReturn(makeDocument({ party, lines: [wireLine({ qty: '1.000', returned_qty: '1.000' })] }))
     ).toBe(false);

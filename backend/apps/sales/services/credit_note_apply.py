@@ -154,7 +154,8 @@ def void_credit_note(
     refuse_unless_voidable(note)
     if not from_origin:
         guard_origin_void(tenant=ctx.tenant, document=note, confirm_origin=confirm_origin)
-    if note.amount_paid > 0:
+    walk_in_refund = (note.meta or {}).get("refund") if note.party_id is None else None
+    if note.amount_paid > 0 and not walk_in_refund:
         raise ValidationFailed(
             {"non_field_errors": ["Void the refund payment first"]},
             message="Void the refund payment first",
@@ -171,6 +172,12 @@ def void_credit_note(
     note.amount_due = ZERO
     note.version += 1
     note.save()
+    if walk_in_refund and walk_in_refund.get("payment_id") and not walk_in_refund.get("voided"):
+        # A quick-sale return's refund goes with it (refund_seam.release_refund
+        # refuses it alone). The note is VOID first, so the release is a no-op.
+        from apps.payments.services.void import void_payment  # D5: deferred
+
+        void_payment(ctx=ctx, payment_id=walk_in_refund["payment_id"], reason=reason)
     reversals = {"stock_movement_ids": movement_ids, "ledger_entry_id": reversal_id}
     write_audit(
         ctx=ctx,

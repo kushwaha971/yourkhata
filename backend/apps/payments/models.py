@@ -126,9 +126,13 @@ class Payment(TenantModel):
                 | models.Q(status=PaymentStatus.VOID, void_reason__isnull=False),
                 name="ck_payment_void_has_reason",
             ),
-            # PUR-02 BR-5 — money out always has somebody it went to.
+            # PUR-02 BR-5 — money out always has somebody it went to, except a
+            # quick-sale return's refund (owner, 11 Nov 2026): the till paid a
+            # walk-in back against the bill, and there is nobody to name.
             models.CheckConstraint(
-                condition=models.Q(direction=PaymentDirection.IN) | models.Q(party__isnull=False),
+                condition=models.Q(direction=PaymentDirection.IN)
+                | models.Q(party__isnull=False)
+                | models.Q(meta__context="refund"),
                 name="ck_payment_out_has_party",
             ),
             # A4a (R5) — the ledger's CHECK, the ledger's three buckets.

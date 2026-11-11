@@ -6,8 +6,9 @@ a draft), with the credit note's own header rules in front of it:
 * AGAINST an invoice: the party, place of supply, reverse charge and round-off
   come from the invoice (FR-2); the lines are `credit_note_lines`' — invoice
   lines and quantities, priced at the invoice's snapshot. The invoice must be
-  issued and not void, and have a party (a walk-in bill's return needs the
-  customer made a party first, EC-7).
+  issued and not void. A quick-sale bill's return (owner, 11 Nov 2026,
+  relaxing EC-7) keeps the bill's walk-in name and has no khata to hold
+  credit in, so it is always settled as a refund of the whole note.
 * STANDALONE (goodwill, a rate correction with no single bill): party required,
   lines built like an invoice's at the note's own date (FR-3).
 
@@ -53,10 +54,6 @@ def invoice_for_credit(tenant: Any, against_id: Any, *, lock: bool = False) -> S
         raise ValidationFailed({"against_id": ["Invoice is void"]})
     if invoice.status not in CREDITABLE_STATUSES:
         raise ValidationFailed({"against_id": ["Issue the invoice first."]})
-    if invoice.party_id is None:
-        raise ValidationFailed(
-            {"against_id": ["Save the quick-sale customer first, then record the return."]}
-        )
     return invoice
 
 
@@ -103,10 +100,13 @@ def recompute(
     invoice = invoice or invoice_for_credit(ctx.tenant, document.against_id)
     if header.get("party_id") and str(header["party_id"]) != str(invoice.party_id):
         raise ValidationFailed({"party_id": ["The customer must be the invoice's."]})
+    if invoice.party_id is None:
+        # A quick-sale return: nothing to hold credit in, so the money goes back.
+        document.meta = {**(document.meta or {}), "settlement": Settlement.REFUND}
     header.update(
         party_id=invoice.party_id,
-        walk_in_name=None,
-        walk_in_mobile=None,
+        walk_in_name=invoice.walk_in_name,
+        walk_in_mobile=invoice.walk_in_mobile,
         place_of_supply_state=invoice.place_of_supply_state,
         reverse_charge=invoice.reverse_charge,
     )

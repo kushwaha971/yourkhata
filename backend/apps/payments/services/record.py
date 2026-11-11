@@ -584,6 +584,12 @@ def _record(
             ctx, document_id=walk_in_document_id, amount=amount, part=allow_adjustment
         )
         mode = AllocationMode.MANUAL
+    elif payload.get("walk_in_refund") is True and not payload.get("party_id"):
+        # A quick-sale bill's return (sales refund_seam): money out of the
+        # till against no khata, allocated to nothing.
+        if direction != PaymentDirection.OUT or payload.get("context") != "refund":
+            raise ValidationFailed({"party_id": ["Choose who paid."]})
+        chosen, mode = [], AllocationMode.NONE
     else:
         if not payload.get("party_id"):
             raise ValidationFailed({"party_id": ["Choose who paid."]})

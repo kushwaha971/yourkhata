@@ -9,6 +9,7 @@ import { useFieldArray, type UseFormReturn } from 'react-hook-form';
 
 import {
   UbBox,
+  UbDialogLoading,
   UbButton,
   UbChoiceChips,
   UbDialog,
@@ -49,11 +50,19 @@ const LineFinder = dynamic(
   { ssr: false }
 );
 
-// Sheets open on a tap, so their code loads with the tap, not with the editor.
-const AddonSheet = dynamic(() => import('./AddonSheet').then((m) => m.AddonSheet), { ssr: false });
-const LooseSheet = dynamic(() => import('./LooseSheet').then((m) => m.LooseSheet), { ssr: false });
+// Sheets open on a tap, so their code loads with the tap, not with the editor;
+// meanwhile the dialog's own frame shows the tap landed (A8).
+const AddonSheet = dynamic(() => import('./AddonSheet').then((m) => m.AddonSheet), {
+  ssr: false,
+  loading: () => <UbDialogLoading />,
+});
+const LooseSheet = dynamic(() => import('./LooseSheet').then((m) => m.LooseSheet), {
+  ssr: false,
+  loading: () => <UbDialogLoading />,
+});
 const SubstituteSheet = dynamic(() => import('./SubstituteSheet').then((m) => m.SubstituteSheet), {
   ssr: false,
+  loading: () => <UbDialogLoading />,
 });
 
 const MAX_LINES = 100;

@@ -197,6 +197,7 @@
   "sales.creditNote.settlement.hold": "एडवांस में रखें",
   "sales.creditNote.settlement.holdHint": "अगले बिल के लिए खाते में रहेगा",
   "sales.creditNote.settlement.label": "बाकी रकम का क्या करें",
+  "sales.creditNote.settlement.quickSale": "तुरंत बिक्री: {amount} अभी वापस दें।",
   "sales.creditNote.settlement.refund": "अभी वापस करें",
   "sales.creditNote.settlement.refundHint": "{amount} अभी लौटाएँ",
   "sales.creditNote.shareText": "नमस्ते {party}, बिल {against} के लिए {total} का क्रेडिट नोट {number} {shop} ने जारी किया। देखें: {link}",

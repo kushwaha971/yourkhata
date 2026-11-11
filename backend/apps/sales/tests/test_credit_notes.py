@@ -16,6 +16,9 @@ from apps.reports.selectors.day_book import DayBookQuery, day_book, summarise
 from apps.reports.selectors.gst_checks import gst_exceptions
 from apps.sales.models import SalesCreditApplication, SalesDocument, SalesDocumentLine
 from apps.sales.tests.conftest import (
+    cash,
+    draft,
+    issue,
     CREDIT_NOTES,
     credit_note_url,
     invoice_url,
@@ -310,7 +313,8 @@ def test_composition_tenant_credit_note_has_no_tax(
 def test_a_note_against_a_void_or_walk_in_invoice_is_refused(
     owner: Any, make_item: Any, make_party: Any
 ) -> None:
-    """EC-1 / EC-7 — "Invoice is void"; a walk-in bill needs the customer made a party."""
+    """EC-1 — "Invoice is void". (EC-7's walk-in refusal was relaxed on 11 Nov 2026;
+    see test_a_quick_sale_return_refunds_from_the_till_and_restocks.)"""
     item = make_item()
     invoice = issued_invoice(owner, make_party(), [line(item, "1")])
     owner.post(invoice_url(invoice["id"], "void"), {"reason": "Duplicate bill"})
@@ -383,3 +387,83 @@ def test_the_reports_read_real_credit_notes_as_their_track_assumed(
     flagged = {(r["number"], r["issue_code"]) for r in checks["rows"]}
     assert (refunded["number"], "cn_without_original") in flagged
     assert not any(number == applied["number"] for number, _ in flagged)
+
+
+def test_a_quick_sale_return_refunds_from_the_till_and_restocks(
+    owner: Any, make_item: Any
+) -> None:
+    """Shop round, 11 Nov 2026 (owner, relaxing EC-7): a walk-in brings back one
+    of two packets. The bill offered only "cancel the whole bill". Now the note
+    keeps the bill's walk-in name, restocks the packet, and the money leaves
+    the till as a payment with nobody named — no khata moves, because there is
+    none — and it must be the whole return, since there is nowhere to hold it."""
+    from apps.payments.models import Payment
+
+    item = make_item()
+    walk = draft(owner, walk_in_name="Counter", lines=[line(item, "2")]).json()["data"]
+    paid = issue(owner, walk["id"], payment=cash(walk["grand_total"])).json()["data"]
+    after_sale = ItemStock.objects.get(item=item).on_hand
+
+    created = note_draft(owner, against_id=paid["id"], lines=returning(paid, "1"))
+    assert created.status_code == 201, created.json()
+    note = created.json()["data"]
+    assert note.get("party") is None
+    half = note["grand_total"]
+
+    short = issue_note(owner, note["id"], refund={"mode_breakup": [{"mode": "cash", "amount": "1.00"}]})
+    assert short.status_code == 400
+    assert "refund" in short.json()["error"]["details"]
+
+    done = issue_note(owner, note["id"], refund={"mode_breakup": [{"mode": "cash", "amount": half}]})
+    assert done.status_code == 200, done.json()
+    issued = done.json()["data"]
+    assert issued["status"] == "applied"
+    assert ItemStock.objects.get(item=item).on_hand == after_sale + 1
+    refund = Payment.objects.get(meta__credit_note_id=issued["id"])
+    assert refund.direction == "out" and refund.party_id is None and refund.amount == Decimal(half)
+    assert not LedgerEntry.objects.filter(source_id=refund.id).exists()
+    assert not LedgerEntry.objects.filter(source_id=issued["id"]).exists()
+    recalc_clean()
+
+
+def test_only_a_refund_can_name_nobody(owner: Any) -> None:
+    """The till-pays-it-out path is the refund's alone: an ordinary receipt or
+    payment with nobody named is still refused."""
+    response = owner.post(
+        reverse("v1:payment-list"),
+        {
+            "direction": "out",
+            "walk_in_refund": True,
+            "mode_breakup": [{"mode": "cash", "amount": "10.00"}],
+        },
+        format="json",
+    )
+    assert response.status_code == 400
+
+
+def test_a_quick_sale_return_made_by_mistake_can_be_undone(owner: Any, make_item: Any) -> None:
+    """A return typed against the wrong bill must not be stuck: cancelling it
+    takes the packet back out of stock and the refund with it, and leaves no
+    half-state the database refuses."""
+    from apps.payments.models import Payment
+    from apps.payments.tests.conftest import void as void_payment
+
+    item = make_item()
+    walk = draft(owner, walk_in_name="Counter", lines=[line(item, "2")]).json()["data"]
+    paid = issue(owner, walk["id"], payment=cash(walk["grand_total"])).json()["data"]
+    after_sale = ItemStock.objects.get(item=item).on_hand
+    note = note_draft(owner, against_id=paid["id"], lines=returning(paid, "1")).json()["data"]
+    issued = issue_note(
+        owner, note["id"], refund={"mode_breakup": [{"mode": "cash", "amount": note["grand_total"]}]}
+    ).json()["data"]
+    refund = Payment.objects.get(meta__credit_note_id=issued["id"])
+
+    alone = void_payment(owner, refund.id, reason="Wrong bill")
+    assert alone.status_code == 409
+    assert alone.json()["error"]["code"] == "cancel_the_return"
+    cancelled = owner.post(credit_note_url(issued["id"], "void"), {"reason": "Wrong bill"}, format="json")
+    assert cancelled.status_code == 200, cancelled.json()
+    assert ItemStock.objects.get(item=item).on_hand == after_sale
+    refund.refresh_from_db()
+    assert refund.status == "void"
+    recalc_clean()

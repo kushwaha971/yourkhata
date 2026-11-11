@@ -197,6 +197,7 @@
   "sales.creditNote.settlement.hold": "Hold as advance",
   "sales.creditNote.settlement.holdHint": "Stays in their khata for the next bill",
   "sales.creditNote.settlement.label": "What happens to the rest",
+  "sales.creditNote.settlement.quickSale": "Quick sale: give back {amount} now.",
   "sales.creditNote.settlement.refund": "Refund now",
   "sales.creditNote.settlement.refundHint": "Hand back {amount} now",
   "sales.creditNote.shareText": "Namaste {party}, credit note {number} for {total} against bill {against} has been issued by {shop}. View: {link}",

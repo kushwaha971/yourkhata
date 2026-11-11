@@ -91,8 +91,9 @@ export const isVoidable = (doc: Pick<SalesDocument, 'kind' | 'status'>): boolean
     : ['issued', 'applied']
   ).includes(doc.status);
 
-/** SAL-04 §10 / EC-7 — a return needs an issued, non-void bill with a party and a line left. */
-export const canReturn = (doc: SalesDocument): boolean => doc.party !== null && hasGoodsToTakeBack(doc);
+/** SAL-04 §10 — an issued, non-void bill with a line left. A quick-sale bill
+ * returns too (owner, 11 Nov 2026, relaxing EC-7): its money goes straight back. */
+export const canReturn = (doc: SalesDocument): boolean => hasGoodsToTakeBack(doc);
 
 /** G6 — a quick-sale bill can exchange too: the exchange saves the customer first. */
 export const hasGoodsToTakeBack = (doc: SalesDocument): boolean =>

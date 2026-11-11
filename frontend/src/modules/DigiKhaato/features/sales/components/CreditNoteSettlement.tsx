@@ -51,6 +51,8 @@ export function CreditNoteSettlement({
   const restock = watch('restock');
   const hasGoods = invoice.lines.some((line) => !!line.itemId);
   const canRefund = Number(left) > 0;
+  // A quick-sale bill: no khata to hold the money, so there is no choice.
+  const quickSale = !invoice.party;
 
   const reasons = useMemo(
     () =>
@@ -131,7 +133,11 @@ export function CreditNoteSettlement({
             disabled={disabled}
           />
         )}
-        {canRefund ? (
+        {canRefund && quickSale ? (
+          <UbText variant="body-sm" data-testid="credit-note-quick-sale-refund">
+            {t('sales.creditNote.settlement.quickSale', { amount: formatInr(left) })}
+          </UbText>
+        ) : canRefund ? (
           <UbRadioGroup<Settlement>
             name="credit-note-settlement"
             value={settlement}

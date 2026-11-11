@@ -45,7 +45,7 @@ from apps.sales.services.credit_note_lines import (
 from apps.sales.services.credit_notes import CREDIT_NOTE_KINDS, invoice_for_credit, recompute
 from apps.sales.services.issue_parts import party_snapshot
 from apps.sales.services.ledger_link import post_credit_note_credit
-from apps.sales.services.refund_seam import clean_refund, record_refund
+from apps.sales.services.refund_seam import clean_refund, record_refund, refund_total
 from apps.sales.services.stock_link import restock_rows
 
 
@@ -150,16 +150,21 @@ def issue_credit_note(
         errors["lines"] = ["Add at least one item to return"]
     if not (meta.get("reason") or {}).get("code"):
         errors["reason"] = ["Choose a reason"]
-    if note.party_id is None:
+    # A quick-sale bill's return (credit_notes.py): no khata, so a full refund.
+    walk_in = invoice is not None and invoice.party_id is None
+    if note.party_id is None and not walk_in:
         errors["party_id"] = ["Choose a saved customer"]
     if errors:
         raise ValidationFailed(errors)
     requested_refund = clean_refund(refund) if refund is not None else meta.get("refund_request")
-    settlement = meta.get("settlement") or Settlement.HOLD_ADVANCE
+    settlement = Settlement.REFUND if walk_in else meta.get("settlement") or Settlement.HOLD_ADVANCE
     if settlement == Settlement.REFUND and not requested_refund:
         raise ValidationFailed({"refund": ["Enter how the money was refunded."]})
+    if walk_in and refund_total(requested_refund) != note.grand_total:
+        raise ValidationFailed({"refund": [f"Give back the whole return, ₹{note.grand_total}."]})
 
-    party = relock_if_moved(tenant=ctx.tenant, party=party, party_id=note.party_id)
+    if not walk_in:
+        party = relock_if_moved(tenant=ctx.tenant, party=party, party_id=note.party_id)
     if invoice is not None:
         _take_quantities(invoice, rows)
     quantity_rows = [row for row in rows if not _is_value(row)]
@@ -175,8 +180,10 @@ def issue_credit_note(
     note.supplier_gstin_snapshot = ctx.tenant.gstin or None
     note.status = DocumentStatus.ISSUED
     note.issued_at = timezone.now()
-    note.amount_paid = ZERO
-    note.amount_due = note.grand_total
+    # A quick-sale return is settled in the same breath (ck_sales_document_walk_in_paid):
+    # its refund, checked above to be the whole note, is recorded below.
+    note.amount_paid = note.grand_total if walk_in else ZERO
+    note.amount_due = ZERO if walk_in else note.grand_total
     note.version += 1
     meta["restock_movement_ids"] = movement_ids
     note.meta = meta
@@ -184,11 +191,11 @@ def issue_credit_note(
     drafts.replace_lines(note, rows)
 
     ledger_entry_id, balance = None, None
-    if note.grand_total > 0:
+    if note.grand_total > 0 and not walk_in:
         entry, balance = post_credit_note_credit(ctx=ctx, document=note, party=party)
         ledger_entry_id = str(entry.id)
     applied = ZERO
-    if invoice is not None and invoice.amount_due > 0 and note.grand_total > 0:
+    if not walk_in and invoice is not None and invoice.amount_due > 0 and note.grand_total > 0:
         applied = min(note.grand_total, invoice.amount_due)
         apply_credit(note, invoice, applied)
         refresh_invoice_amounts(invoice, ctx=ctx)

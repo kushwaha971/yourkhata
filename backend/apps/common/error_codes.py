@@ -98,6 +98,8 @@ _REGISTRY: dict[str, tuple[int, bool]] = {
     "opening_balance_exists": (409, False),
     "entry_already_reversed": (409, False),
     "use_document_void": (409, False),
+    # A quick-sale return's refund is undone by cancelling the return (11 Nov 2026).
+    "cancel_the_return": (409, False),
     "merge_self": (409, False),
     "merge_in_progress": (409, False),
     "merge_balance_mismatch": (409, False),
