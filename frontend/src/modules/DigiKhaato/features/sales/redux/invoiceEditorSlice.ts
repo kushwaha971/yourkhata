@@ -52,6 +52,8 @@ export interface InvoiceEditorState {
   loadRequestId: string | null;
   saveRequestId: string | null;
   context: SalesContext | null;
+  /** The context request failed (not aborted): the editor says so, not a skeleton for ever. */
+  contextFailed: boolean;
   saveState: SaveState;
   savedAt: string | null;
   issuing: boolean;
@@ -71,6 +73,7 @@ const initialState: InvoiceEditorState = {
   loadRequestId: null,
   saveRequestId: null,
   context: null,
+  contextFailed: false,
   saveState: 'idle',
   savedAt: null,
   issuing: false,
@@ -131,8 +134,15 @@ const invoiceEditorSlice = createSlice({
   },
   extraReducers: (builder) => {
     builder
+      .addCase(fetchSalesContext.pending, (state) => {
+        state.contextFailed = false;
+      })
       .addCase(fetchSalesContext.fulfilled, (state, action) => {
         state.context = action.payload as Draft<SalesContext>;
+      })
+      .addCase(fetchSalesContext.rejected, (state, action) => {
+        // Shop round (11 Nov 2026): a failed load left the bill a skeleton for ever.
+        if (!action.meta.aborted) state.contextFailed = true;
       })
       .addCase(issueInvoice.pending, (state) => {
         state.issuing = true;

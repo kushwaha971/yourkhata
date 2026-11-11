@@ -185,6 +185,25 @@ export function StockTransferPageContent(): React.JSX.Element {
     );
   }
 
+  // The places did not load: say so, never "your stock is in one place".
+  if (transfer.loadFailed && !places) {
+    return (
+      <UbPageShell>
+        <UbPageHeader title={t('stock.transfer.title')} />
+        <UbEmptyState
+          variant="error"
+          title={t('common.error.title')}
+          action={
+            <UbButton variant="secondary" onClick={() => void transfer.retryPlaces()}>
+              {t('common.action.retry')}
+            </UbButton>
+          }
+          data-testid="transfer-load-error"
+        />
+      </UbPageShell>
+    );
+  }
+
   // One place only: name the second (D10 offers godowns once there are two).
   if (places && places.length < 2) {
     return (

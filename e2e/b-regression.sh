@@ -75,3 +75,4 @@ run day-book day-book.mjs
 run jewel-day jewel-day.mjs
 run quick-sale-return quick-sale-return.mjs
 run bcd-look bcd-look.mjs
+run shop-look shop-look.mjs

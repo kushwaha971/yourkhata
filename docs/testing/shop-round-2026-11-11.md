@@ -137,3 +137,24 @@ because of an untracked, empty `backend/apps/.claude` tool folder.
 **Score now 9/10:** Functional earns its point (the return works end to
 end). Design is still 0 — a Hindi/dark/after-error pass across the whole
 Shop, not only the C screens, is the remaining work.
+
+## Design pass across the whole Shop (11 Nov 2026)
+
+`e2e/shop-look.mjs`: 23 screens × 320/390/1280 × light/dark × EN/HI, and
+each screen with its data requests answered 500 at 390/1280 in EN/HI. It
+measures the page opened, the theme drew, no sideways scroll, no text cut,
+no raw key, Hindi on screen, and that a failed screen SAYS it failed.
+
+First run 2106/2116; every failure was in the error case:
+
+- **Move stock** read a failed load as "no places" and told the shop
+  "Your stock is in one place now". It now says it could not load, with Try
+  again (`StockTransferPageContent.test.tsx`, fails on the old code).
+- **New bill** stayed a skeleton for ever, and on a phone had no way out.
+  It now shows the error with Try again and its × (`invoiceEditorContext.test.ts`).
+- Reports is a fixed menu with no data; the check no longer expects an error there.
+
+Final: look sweep 2112/2112, regression 62/62, frontend 5122/5122.
+
+**Score: Design earns its point — 10/10 on the evidence, with the
+"owner found nothing" point standing until the owner's own check.**

@@ -93,6 +93,8 @@ export interface UseInvoiceEditorResult {
     override?: boolean
   ) => Promise<SalesDocumentEnvelope | null>;
   readonly restart: () => void;
+  /** Load the shop's billing context again after it failed. */
+  readonly retryContext: () => void;
 }
 
 /**
@@ -531,5 +533,20 @@ export const useInvoiceEditor = (
     idempotency.rotate();
   }, [dispatch, form, today, context, idempotency, kind, saves]);
 
-  return { kind, form, values, preview, schemes, editor, today, canWrite, save, issue, restart };
+  const retryContext = useCallback(() => void dispatch(fetchSalesContext(today)), [dispatch, today]);
+
+  return {
+    kind,
+    form,
+    values,
+    preview,
+    schemes,
+    editor,
+    today,
+    canWrite,
+    save,
+    issue,
+    restart,
+    retryContext,
+  };
 };

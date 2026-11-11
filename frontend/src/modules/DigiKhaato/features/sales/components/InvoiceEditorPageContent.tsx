@@ -413,6 +413,29 @@ export function InvoiceEditorPageContent({
       </UbPageShell>
     );
   }
+  if (!context && server.contextFailed) {
+    return (
+      <UbPageShell>
+        {/* The editor hides the menu on a phone: keep its × so nobody is stuck. */}
+        <UbTaskBar
+          title={t('sales.newBill')}
+          onClose={() => router.push(home)}
+          closeLabel={t('common.action.close')}
+          className="-mx-4 -mt-4 mb-1"
+        />
+        <UbEmptyState
+          variant="error"
+          title={t('common.error.title')}
+          action={
+            <UbButton variant="secondary" onClick={editor.retryContext}>
+              {t('common.action.retry')}
+            </UbButton>
+          }
+          data-testid="invoice-editor-load-error"
+        />
+      </UbPageShell>
+    );
+  }
   if (!context || loadedIssued || (documentId && server.loadStatus !== 'succeeded')) {
     return <UbPageSkeleton variant="card" />;
   }

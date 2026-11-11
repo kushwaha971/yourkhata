@@ -39,6 +39,9 @@ function useStockTransferState() {
   const [to, setTo] = useState('');
   const [rows, setRows] = useState<readonly TransferRow[]>([]);
   const [saving, setSaving] = useState(false);
+  // Shop round (11 Nov 2026): a failed load was read as "no places", so a
+  // shop with a godown was told "Your stock is in one place now".
+  const [loadFailed, setLoadFailed] = useState(false);
 
   const applyPlaces = useCallback((list: readonly Place[]) => {
     setPlaces(list);
@@ -52,19 +55,26 @@ function useStockTransferState() {
   }, []);
   const loadPlaces = useCallback(
     () =>
-      listPlaces()
-        .catch(() => [])
-        .then(applyPlaces),
+      listPlaces().then(
+        (list) => {
+          setLoadFailed(false);
+          applyPlaces(list);
+        },
+        () => setLoadFailed(true)
+      ),
     [applyPlaces]
   );
 
   useEffect(() => {
     let alive = true;
-    void listPlaces()
-      .catch(() => [])
-      .then((list) => {
+    void listPlaces().then(
+      (list) => {
         if (alive) applyPlaces(list);
-      });
+      },
+      () => {
+        if (alive) setLoadFailed(true);
+      }
+    );
     return () => {
       alive = false;
     };
@@ -227,6 +237,8 @@ function useStockTransferState() {
 
   return {
     places,
+    loadFailed,
+    retryPlaces: loadPlaces,
     from,
     to,
     setFrom: (id: string) => setPlace('from', id),
