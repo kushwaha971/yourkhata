@@ -39,6 +39,16 @@ Last updated: 5 Oct 2026 (§0 is live); older sections last revised 29 Sep 2026 
 3. Find the first unchecked step in §0.4 and continue from there, without redoing finished steps.
 4. Update this section (and commit it on `dev`) after every finished step, so it never lags the code.
 
+**Shop module round (P0 §9), started 11 Nov 2026, at 9c952d9.** Done: §9.1 every
+harness (57/57 on e926502); §9.2 monkey 3 seeds (101/202/303) × 390/1280, all pass
+(303@390 failed once on the harness's own `/auth/me` socket hang-up, replay passed),
+BUT it wandered off the bill editor only 0–2 times per run, so it is not yet a
+module-wide wander; §9.3 g-day 14/14, day-book 94/94 (harness repaired, now in
+b-regression), jewel-day 26/26; §9.4 Shop catalogue column has no "not run" left
+(E16 via `e2e/settings-restart.mjs`). Left: a wander-heavy monkey across all Shop
+screens, the written manual pass (beginner, phone + desktop), the §8 score. The
+API restart must use `/Users/akashkushwaha/Projects/ims-platform/backend/.venv/bin/python`.
+
 If this section looks stale (the commits it names are not the latest), rebuild the state from git history, `git status`, `docs/platform/progress/*.md`, the test suites and the running app before acting.
 
 ### 0.1 Standing rules from the owner (binding)
