@@ -315,7 +315,7 @@ describe('a 1280 laptop (WP-05 dock, design §A4 dBill columns)', () => {
       signIn(['sales.invoice.read', 'sales.invoice.write']);
       renderWithProviders(<InvoiceEditorPageContent documentId={null} />);
       const dock = await screen.findByTestId('invoice-dock');
-      // A Quick Sale finishes on "Paid cash" or "UPI or other"; a saved
+      // A Quick sale finishes on "Paid cash" or "UPI or other"; a saved
       // customer's bill on Issue (below).
       expect(within(dock).getByRole('button', { name: /Paid cash/ })).toBeInTheDocument();
       expect(screen.getByTestId('invoice-issue')).toHaveClass('max-2xl:hidden');
@@ -1035,7 +1035,7 @@ describe('Issue with the network gone (07-screens/09 §3 offline)', () => {
 
 /* The counter's two commonest moments, each one tap shorter (07-screens/09 §3,
    rescore of 20 Oct): the same item scanned twice became two lines to read,
-   and a cash Quick Sale opened a sheet only to confirm what it already said. */
+   and a cash Quick sale opened a sheet only to confirm what it already said. */
 describe('a busy counter (07-screens/09 §3)', () => {
   const RIGHTS: PermissionCode[] = [
     'sales.invoice.read',
@@ -1170,7 +1170,7 @@ describe('a busy counter (07-screens/09 §3)', () => {
     expect(search).toHaveAttribute('aria-expanded', 'true');
   });
 
-  it('issues a cash Quick Sale in one tap, with the whole amount in cash and no sheet', async () => {
+  it('issues a cash Quick sale in one tap, with the whole amount in cash and no sheet', async () => {
     const draft = jest.requireActual('../api/salesService').toEnvelope({
       data: wireDocument({ status: 'draft', number: null, version: 1 }),
       meta: {},
@@ -1378,7 +1378,7 @@ describe('holding a bill (Counter Mode, hold and resume)', () => {
     expect(held).toHaveTextContent('On hold · 1');
     const resume = within(held).getByRole('link', { name: /Bengaluru Traders.*₹1,062\.00/ });
     expect(resume).toHaveAttribute('href', '/sales/invoices/held-1/edit');
-    // Three held Quick Sales of one amount must still be told apart: each says
+    // Three held Quick sales of one amount must still be told apart: each says
     // when it was last touched, on this device's clock like every other time.
     expect(resume).toHaveTextContent(formatClock('2026-10-20T06:12:00Z'));
     // One quiet row that scrolls sideways, never three rows of a phone screen.

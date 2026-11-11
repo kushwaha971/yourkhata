@@ -252,7 +252,7 @@ it('reduces a business that has never billed to one empty state and a way to bil
   expect(screen.queryByRole('button', { name: /^View:/ })).not.toBeInTheDocument();
   expect(screen.queryByRole('searchbox')).not.toBeInTheDocument();
   expect(screen.queryByRole('button', { name: /Export/ })).not.toBeInTheDocument();
-  expect(screen.queryByText('This month')).not.toBeInTheDocument();
+  expect(screen.queryByRole('button', { name: /^Period:/ })).not.toBeInTheDocument();
   expect(screen.queryByText('₹0.00')).not.toBeInTheDocument();
 });
 
@@ -268,6 +268,6 @@ it.each([
   expect(screen.getByRole('button', { name: /^View:/ })).toBeInTheDocument();
   expect(screen.getByRole('searchbox')).toBeInTheDocument();
   expect(screen.getByRole('button', { name: /Export/ })).toBeInTheDocument();
-  expect(screen.getAllByText('This month').length).toBeGreaterThan(0);
+  expect(screen.getByRole('button', { name: /^Period:/ })).toBeInTheDocument();
   expect(screen.queryByRole('link', { name: 'New bill' })).not.toBeInTheDocument();
 });

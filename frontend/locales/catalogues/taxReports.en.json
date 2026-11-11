@@ -212,7 +212,7 @@
   "reports.register.void.include": "Show them",
   "reports.register.void.label": "Cancelled bills",
   "reports.register.void.leaveOut": "Leave out",
-  "reports.register.walkIn": "Quick Sale",
+  "reports.register.walkIn": "Quick sale",
   "reports.salesRegister.caption": "Sales register",
   "reports.salesRegister.empty.title": "No sales in this period",
   "reports.salesRegister.emptyBook.body": "Every bill and credit note you issue is listed here with its tax, ready for GST filing.",

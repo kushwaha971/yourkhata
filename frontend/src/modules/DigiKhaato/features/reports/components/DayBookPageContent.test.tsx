@@ -305,7 +305,7 @@ it('keeps the running cash out of the sheet for a reader without the drawer', as
   expect(within(sheet).queryByText('Cash after this')).not.toBeInTheDocument();
 });
 
-it('says why a bill moved no cash, names a Quick Sale, and marks a cancelled line', async () => {
+it('says why a bill moved no cash, names a Quick sale, and marks a cancelled line', async () => {
   setTier('cards');
   service.getDayBook.mockResolvedValue(
     DATA(true, [
@@ -339,8 +339,8 @@ it('says why a bill moved no cash, names a Quick Sale, and marks a cancelled lin
   const cards = await screen.findAllByTestId('day-book-row');
   const sale = cards[0] as HTMLElement;
   const expense = cards[1] as HTMLElement;
-  expect(within(sale).getByText('Quick Sale')).toBeInTheDocument();
-  expect(sale).toHaveAccessibleName('Open Quick Sale · 10:15 · Bill INV/26-27/0418');
+  expect(within(sale).getByText('Quick sale')).toBeInTheDocument();
+  expect(sale).toHaveAccessibleName('Open Quick sale · 10:15 · Bill INV/26-27/0418');
   expect(within(sale).getByText('On credit')).toBeInTheDocument();
   expect(within(expense).getByText('· Expense: Tea')).toBeInTheDocument();
   // An expense is found by its category; its number is in the sheet.

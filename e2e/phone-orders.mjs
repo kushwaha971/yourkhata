@@ -90,6 +90,10 @@ try {
     if (SHOTS) await page.screenshot({ path: `${SHOTS}/loose-${width}.png` });
     await page.getByTestId('loose-add').click();
     await sheet.waitFor({ state: 'hidden' });
+    // H53 for this sheet (Shop round, 11 Nov): closing it handed focus back to
+    // the search, whose list reopened over the line just added.
+    await page.waitForTimeout(300);
+    check(`${width}: no item list left open over the new line`, (await page.locator('[role=listbox]:visible').count()) === 0);
     // Whichever layout draws the line, one of the bill's boxes holds the weight.
     const values = await page.locator('main input').evaluateAll((els) => els.map((e) => e.value));
     const shownText = await page.locator('main').innerText();

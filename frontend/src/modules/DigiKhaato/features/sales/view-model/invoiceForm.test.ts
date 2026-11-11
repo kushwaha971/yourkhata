@@ -1,4 +1,4 @@
-import { emptyInvoiceForm, emptyLine, toWireBody } from './invoiceForm';
+import { defaultBillingMode, emptyInvoiceForm, emptyLine, toWireBody } from './invoiceForm';
 
 /**
  * Found by seeded monkey testing (A3, seeds 3033 and 202, phone and desktop):
@@ -50,4 +50,21 @@ describe('toWireBody old gold', () => {
     });
     expect(body.old_gold).toBeNull();
   });
+});
+
+/**
+ * Found in the Shop round (11 Nov 2026): R-DEC-63 split `retail` into shop
+ * kinds and the walk-in list kept only `retail` and `food`, so a kirana's new
+ * bill opened on Saved customer and Issue was refused until the merchant
+ * switched to Quick sale, on every bill.
+ */
+describe('defaultBillingMode', () => {
+  it.each(['kirana', 'medical', 'garments', 'electronics', 'hardware', 'jewellery', 'food', 'retail'])(
+    'starts a %s bill on Quick sale',
+    (type) => expect(defaultBillingMode(type)).toBe('walkIn')
+  );
+  it.each(['wholesale', 'distribution', 'trader', 'manufacturer'])(
+    'starts a %s bill on Saved customer',
+    (type) => expect(defaultBillingMode(type)).toBe('party')
+  );
 });

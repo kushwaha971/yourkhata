@@ -338,7 +338,7 @@
   "reports.daybook.type.stock_adjustment": "Stock adjustment",
   "reports.daybook.type.write_off": "Write-off",
   "reports.daybook.void": "Cancelled",
-  "reports.daybook.walkIn": "Quick Sale",
+  "reports.daybook.walkIn": "Quick sale",
   "reports.daybook.which.detail": "{type}: {detail}",
   "reports.debtors.column.owes": "You will get",
   "reports.debtors.column.party": "Customer",

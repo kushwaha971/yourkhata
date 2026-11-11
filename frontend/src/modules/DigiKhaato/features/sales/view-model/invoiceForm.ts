@@ -106,7 +106,24 @@ export interface InvoiceFormValues {
 }
 
 /** SAL-07 FR-1 — counters bill walk-ins; everybody else bills a party. */
-export const WALK_IN_BUSINESS_TYPES: readonly string[] = ['retail', 'food'];
+/* Counter shops start a new bill on Quick sale. R-DEC-63 (30 Oct) split
+   `retail` into shop kinds and this list was not told, so a kirana's bill
+   opened on Saved customer (Shop round, 11 Nov). Wholesale and trading types
+   bill known buyers, so they keep Saved customer. */
+export const WALK_IN_BUSINESS_TYPES: readonly string[] = [
+  'retail',
+  'food',
+  'kirana',
+  'medical',
+  'electronics',
+  'garments',
+  'hardware',
+  'auto_parts',
+  'jewellery',
+  'stationery',
+  'agri',
+  'furniture',
+];
 
 export const defaultBillingMode = (businessType: string | null | undefined): BillingMode =>
   businessType && WALK_IN_BUSINESS_TYPES.includes(businessType) ? 'walkIn' : 'party';

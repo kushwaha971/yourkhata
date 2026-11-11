@@ -391,16 +391,20 @@ export function InvoiceLinesSection({
     row: ItemListRow;
     via: Parameters<typeof quickAdd>[1];
   } | null>(null);
-  /* The sheet hands focus back to the search, which would open its list over
-     the line just added: let the focus land, then let go of it. */
-  const closeSubstitutes = useCallback(() => {
-    setSubstituteFor(null);
+  /* A line sheet hands focus back to the search, which would open its list
+     over the line just added (H53; the loose and add-on sheets did it too,
+     found in the Shop round): let the focus land, then let go of it. */
+  const releaseSearch = useCallback(() => {
     window.setTimeout(() => {
       const active = document.activeElement;
       if (active instanceof HTMLElement && active.getAttribute('role') === 'combobox')
         active.blur();
     }, 0);
   }, []);
+  const closeSubstitutes = useCallback(() => {
+    setSubstituteFor(null);
+    releaseSearch();
+  }, [releaseSearch]);
   const pickOrChooseTag = useCallback(
     (row: ItemListRow, via: Parameters<typeof quickAdd>[1]) => {
       if (keepsTag(row)) return chooseTag(row);
@@ -787,17 +791,24 @@ export function InvoiceLinesSection({
       {looseFor && (
         <LooseSheet
           item={looseFor.row}
-          onClose={() => setLooseFor(null)}
+          onClose={() => {
+            setLooseFor(null);
+            releaseSearch();
+          }}
           onAdd={(qty) => {
             setValue(`lines.${looseFor.index}.qty`, qty, { shouldDirty: true });
             setLooseFor(null);
+            releaseSearch();
           }}
         />
       )}
       {addonFor && (
         <AddonSheet
           item={addonFor.row}
-          onClose={() => setAddonFor(null)}
+          onClose={() => {
+            setAddonFor(null);
+            releaseSearch();
+          }}
           onAdd={(chosen, qty) => {
             const base = `lines.${addonFor.index}` as const;
             const each = chosen.reduce(
@@ -815,6 +826,7 @@ export function InvoiceLinesSection({
               },
             }));
             setAddonFor(null);
+            releaseSearch();
           }}
         />
       )}

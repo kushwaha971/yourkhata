@@ -191,12 +191,12 @@ it('shows a cancelled receipt in grey with its reason and Record again, and no S
   expect(screen.queryByRole('button', { name: 'More actions' })).not.toBeInTheDocument();
 });
 
-it('names a receipt with nobody on it a Quick Sale', () => {
+it('names a receipt with nobody on it a Quick sale', () => {
   hook.usePaymentReceipt.mockImplementation(() =>
     receiptState({ ...RECEIPT, party: null, allocations: [] })
   );
   renderWithProviders(<PaymentReceiptPageContent id="p1" />);
-  expect(screen.getByText('Quick Sale')).toBeInTheDocument();
+  expect(screen.getByText('Quick sale')).toBeInTheDocument();
 });
 
 /** §0.2: a cancel is not queued, and the share text comes from the server. */

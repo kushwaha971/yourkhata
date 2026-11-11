@@ -231,3 +231,42 @@ describe('G1: a unit after the amount (design "₹ 12,710 / g")', () => {
     expect(container.querySelector('label')).toBeNull();
   });
 });
+
+/**
+ * Shop round (11 Nov 2026): Receive payment autofocuses the amount and THEN
+ * fills in what is owed, so no focus event fires; the caret sat after "340.00"
+ * and typing a part payment of 140 was refused digit by digit.
+ */
+describe('selectWhenFilled', () => {
+  function Prefill({ select }: Readonly<{ select: boolean }>) {
+    const [value, setValue] = useState('');
+    return (
+      <>
+        <UbMoneyInput aria-label="Amount" value={value} onChange={setValue} selectWhenFilled={select} autoFocus />
+        <button type="button" onClick={() => setValue('340.00')}>
+          fill
+        </button>
+      </>
+    );
+  }
+
+  it('selects an amount filled in while the field has focus, so typing replaces it', async () => {
+    render(<Prefill select />);
+    const input = screen.getByRole<HTMLInputElement>('textbox', { name: 'Amount' });
+    input.focus();
+    act(() => screen.getByRole('button', { name: 'fill' }).click());
+    input.focus();
+    expect(input).toHaveValue('340.00');
+    expect([input.selectionStart, input.selectionEnd]).toEqual([0, 6]);
+    await userEvent.keyboard('140', { skipClick: true } as never);
+    expect(input).toHaveValue('140');
+  });
+
+  it('never selects over what the merchant is typing', async () => {
+    render(<Prefill select />);
+    const input = screen.getByRole<HTMLInputElement>('textbox', { name: 'Amount' });
+    await userEvent.type(input, '12');
+    expect(input).toHaveValue('12');
+    expect(input.selectionStart).toBe(2);
+  });
+});

@@ -172,8 +172,8 @@ it('paints money in as money got, and money out in plain ink', async () => {
   expect(out).not.toContain('text-give');
 });
 
-it('names a receipt with nobody on it as a Quick Sale', async () => {
+it('names a receipt with nobody on it as a Quick sale', async () => {
   service.listPayments.mockImplementation(async () => page([{ ...ANITA, party: null }]));
   renderWithProviders(<PaymentsPageContent />);
-  expect(await screen.findByText(/Quick Sale/)).toBeInTheDocument();
+  expect(await screen.findByText(/Quick sale/)).toBeInTheDocument();
 });

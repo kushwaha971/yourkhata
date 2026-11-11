@@ -226,7 +226,7 @@ it('draws a phone card per bill under a band per date carrying that day’s tota
   expect(second).toHaveTextContent('Total ₹0.00');
   const cards = within(first).getAllByTestId('register-row');
   expect(cards[0]).toHaveAccessibleName('Open Ramesh Traders · INV/26-27/0041 · Total ₹1,772.00');
-  expect(cards[1]).toHaveAccessibleName('Open Quick Sale · INV/26-27/0042 · Total ₹228.00');
+  expect(cards[1]).toHaveAccessibleName('Open Quick sale · INV/26-27/0042 · Total ₹228.00');
   expect(within(second).getByTestId('register-row')).toHaveTextContent('Cancelled');
   // No wide table scrolled sideways on a phone.
   expect(screen.queryByRole('table')).not.toBeInTheDocument();
@@ -391,7 +391,7 @@ it('reduces a sales book with no document to one empty state and a way to bill',
   expect(screen.queryByTestId('filters-button')).not.toBeInTheDocument();
   expect(screen.queryByRole('switch', { name: 'Show cancelled' })).not.toBeInTheDocument();
   expect(screen.queryByRole('button', { name: /Export/ })).not.toBeInTheDocument();
-  expect(screen.queryByText('This month')).not.toBeInTheDocument();
+  expect(screen.queryByRole('button', { name: /^Period:/ })).not.toBeInTheDocument();
 });
 
 it('reduces an empty purchase book the same way, without an action for a reader', async () => {
@@ -418,6 +418,6 @@ it.each([
   // toolbar stays one row; it is not a switch running off the end of it.
   expect(screen.queryByRole('switch', { name: 'Show cancelled' })).not.toBeInTheDocument();
   expect(screen.getByRole('button', { name: /Export/ })).toBeInTheDocument();
-  expect(screen.getAllByText('This month').length).toBeGreaterThan(0);
+  expect(screen.getByRole('button', { name: /^Period:/ })).toBeInTheDocument();
   expect(screen.queryByText('No sales yet')).not.toBeInTheDocument();
 });

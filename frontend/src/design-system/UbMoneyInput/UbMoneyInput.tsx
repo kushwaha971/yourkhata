@@ -1,6 +1,14 @@
 'use client';
 
-import { forwardRef, memo, useCallback, useRef, useState, type InputHTMLAttributes } from 'react';
+import {
+  forwardRef,
+  memo,
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  type InputHTMLAttributes,
+} from 'react';
 
 import { flushSync } from 'react-dom';
 
@@ -66,6 +74,14 @@ export interface UbMoneyInputProps extends Omit<
    * unit); unset, the box is drawn exactly as before.
    */
   readonly unit?: string;
+  /**
+   * Shop round (11 Nov 2026): an amount the form fills in while the field
+   * already has focus (the amount owed, prefilled into an autofocused sheet)
+   * arrives with no focus event, so the caret sat after "340.00" and a typed
+   * part payment was refused digit by digit. Set, an amount that arrives from
+   * outside while focused is selected, so the first key replaces it.
+   */
+  readonly selectWhenFilled?: boolean;
   readonly className?: string;
 }
 
@@ -145,6 +161,7 @@ const UbMoneyInputInner = forwardRef<HTMLInputElement, UbMoneyInputProps>(
       decimalPlaces = 2,
       maxDecimalPlaces = decimalPlaces,
       unit,
+      selectWhenFilled = false,
       className,
       onFocus,
       onBlur,
@@ -154,19 +171,39 @@ const UbMoneyInputInner = forwardRef<HTMLInputElement, UbMoneyInputProps>(
   ) {
     const [focused, setFocused] = useState(false);
     const focusRequest = useRef(0);
+    const own = useRef<HTMLInputElement | null>(null);
+    // What this field last sent, so a value it did not send is "from outside".
+    const sent = useRef<string | null>(null);
+    const setRef = useCallback(
+      (node: HTMLInputElement | null) => {
+        own.current = node;
+        if (typeof ref === 'function') ref(node);
+        else if (ref) ref.current = node;
+      },
+      [ref]
+    );
 
     const handleChange = useCallback(
-      (event: React.ChangeEvent<HTMLInputElement>) =>
-        onChange(capDecimals(sanitiseAmount(event.target.value), maxDecimalPlaces)),
+      (event: React.ChangeEvent<HTMLInputElement>) => {
+        const next = capDecimals(sanitiseAmount(event.target.value), maxDecimalPlaces);
+        sent.current = next;
+        onChange(next);
+      },
       [onChange, maxDecimalPlaces]
     );
+
+    useEffect(() => {
+      const input = own.current;
+      if (!selectWhenFilled || !input || !value || value === sent.current) return;
+      if (input.ownerDocument.activeElement === input) input.select();
+    }, [selectWhenFilled, value]);
 
     const raw = capDecimals(value ?? '', maxDecimalPlaces);
     const shown = focused || !value ? raw : groupIndian(value, decimalPlaces);
 
     const field = (
       <MLInput
-        ref={ref}
+        ref={setRef}
         // `inputMode="decimal"` rather than `type="number"`: a number input
         // gives a phone the right keypad but also spinners, scroll-wheel
         // increments and a browser-localised decimal separator, none of
@@ -214,7 +251,10 @@ const UbMoneyInputInner = forwardRef<HTMLInputElement, UbMoneyInputProps>(
           setFocused(false);
           // Committed to the caller's precision on the way out, so the form
           // holds "2300.00" rather than "2300." or "2300".
-          if (value) onChange(padDecimals(value, maxDecimalPlaces));
+          if (value) {
+            sent.current = padDecimals(value, maxDecimalPlaces);
+            onChange(sent.current);
+          }
           onBlur?.(event);
         }}
         className={

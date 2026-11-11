@@ -79,7 +79,17 @@ const log = [];
 // finding, and "stuck on a skeleton" says nothing without the open requests.
 const inflight = new Map();
 const lastErrors = [];
-const WANDER = ["/dashboard", "/sales/invoices", "/parties?type=customer", "/items", "/payments", "/sales/estimates", "/reports"];
+// Shop round (11 Nov): every screen every kind of shop has, so a module-wide
+// run (--wander=N) visits the whole Shop and not seven pages of it.
+const WANDER = [
+  "/dashboard", "/sales/invoices", "/sales/estimates", "/customers", "/suppliers",
+  "/items", "/stock/summary", "/stock/low", "/stock/count", "/stock/transfer",
+  "/purchases/bills", "/purchases/orders", "/payments", "/expenses",
+  "/reports", "/reports/day-book", "/reports/aging", "/reports/sales-register",
+  "/reports/purchase-register", "/reports/gst-summary", "/reports/profit",
+];
+// How often a step wanders, against the 13 other kinds of step (default 1).
+const WANDER_WEIGHT = Number(arg("wander", "1"));
 // API: every finished request, for counts, bursts and the slowest replies.
 const calls = [];
 // Speed: one entry per full page load (reload, wander, return).
@@ -454,7 +464,7 @@ try {
       failures.push(`harness signed out before step ${i}; last: ${log.slice(-3).join(" | ")}`);
       break;
     }
-    const kind = pick(["tap", "tap", "tap", "tap", "type", "type", "key", "scroll", "additem", "additem", "scan", "reload", "back", "wander"]);
+    const kind = pick(["tap", "tap", "tap", "tap", "type", "type", "key", "scroll", "additem", "additem", "scan", "reload", "back", ...Array(WANDER_WEIGHT).fill("wander")]);
     page.setDefaultTimeout(4000);
     const step = async () => {
       try {

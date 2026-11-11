@@ -174,6 +174,7 @@ export function PaymentModeEditor({
                               : undefined
                           }
                           autoFocus={index === 0}
+                          selectWhenFilled={index === 0}
                           onKeyDown={(event) => {
                             if (!compact || event.key !== 'Enter' || event.ctrlKey || event.metaKey)
                               return;
