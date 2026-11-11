@@ -17,7 +17,7 @@ import { MLMenu, MLMenuItem, MLMenuLabel, MLSpinner } from 'src/design-system/pr
 import { useAppRouter } from 'src/hooks/useAppRouter';
 import { useAppDispatch, useAppSelector } from 'src/hooks/useAppStore';
 import { useTranslation } from 'src/hooks/useTranslation';
-import { selectAppsAddable } from 'src/redux/slice/sessionSlice';
+import { selectAppsAddable, selectSessionUser } from 'src/redux/slice/sessionSlice';
 import { ROUTES } from 'src/routes';
 import { cn } from 'src/utils/cn';
 import { roleLabel } from 'src/utils/roleLabel';
@@ -85,6 +85,8 @@ export function TenantSwitcherMenu({
   const { apps, app } = useNavigation();
   const { kindLabel } = useAppWords();
   const addable = useAppSelector(selectAppsAddable);
+  // The Money Book's avatar is its owner's initials (design I1: "RK"), not the business's.
+  const userName = useAppSelector(selectSessionUser)?.name;
   const [appAction, setAppAction] = useState<'off' | 'leave' | null>(null);
   const [appBusy, setAppBusy] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -130,7 +132,10 @@ export function TenantSwitcherMenu({
   const active = switcher.activeTenant;
   const shown = splitByOwnership(switcher.groups.active.slice(0, MENU_TENANT_LIMIT));
   const overflow = switcher.groups.active.length > MENU_TENANT_LIMIT;
-  const activeName = tenantNameView(active.name);
+  // The Money Book is the person's own book, not the business's: its header says
+  // "My Money Book" (design I1), while the menu still switches apps and businesses.
+  const shownName = app === 'khata' ? t('moneybook.app.mine') : active.name;
+  const activeName = tenantNameView(shownName);
   const openAppLabel = apps.find((a) => a.code === app)?.labelId;
   // B2 (design `rail()`): "Hardware · Shop" — the kind under the business name,
   // in the Shop only; Library and Lending have no kind.
@@ -167,7 +172,7 @@ export function TenantSwitcherMenu({
                   as="span"
                   variant="inherit"
                   truncate
-                  title={activeName.truncated ? active.name : undefined}
+                  title={activeName.truncated ? shownName : undefined}
                   className="ds-nav-label-medium text-text-onNav"
                 >
                   {activeName.text}
@@ -187,13 +192,13 @@ export function TenantSwitcherMenu({
             </>
           ) : (
             <>
-              <UbAvatar name={active.name} size="sm" />
+              <UbAvatar name={app === 'khata' ? (userName ?? shownName) : active.name} size="sm" />
               <UbText
                 as="span"
                 variant="body-sm-medium"
                 tone="inherit"
                 truncate
-                title={activeName.truncated ? active.name : undefined}
+                title={activeName.truncated ? shownName : undefined}
                 className="min-w-0 flex-1 text-left"
               >
                 {activeName.text}

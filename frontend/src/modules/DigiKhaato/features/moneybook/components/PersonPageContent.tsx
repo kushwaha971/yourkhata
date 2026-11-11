@@ -168,11 +168,13 @@ export function PersonPageContent({ id }: Readonly<{ id: string }>): React.JSX.E
   }
 
   const side = person ? sideOf(person.balance) : 'settled';
-  const entries = book.entries;
+  // Only this person's entries: another person's, still held, are never shown here.
+  const mine = book.entriesFor === id;
+  const entries = mine ? book.entries : [];
   const call = person?.mobile ? `tel:+91${person.mobile}` : null;
 
   const entryList = (() => {
-    if (book.entriesStatus === 'failed')
+    if (mine && book.entriesStatus === 'failed')
       return (
         <UbEmptyState
           variant="error"
@@ -180,7 +182,7 @@ export function PersonPageContent({ id }: Readonly<{ id: string }>): React.JSX.E
           action={<UbButton onClick={refreshEntries}>{t('moneybook.common.tryAgain')}</UbButton>}
         />
       );
-    if (book.entriesStatus !== 'succeeded' && entries.length === 0)
+    if ((!mine || book.entriesStatus !== 'succeeded') && entries.length === 0)
       return <UbSkeleton variant="list" count={3} label={t('moneybook.common.loading')} />;
     if (entries.length === 0)
       return (
@@ -473,7 +475,7 @@ export function PersonPageContent({ id }: Readonly<{ id: string }>): React.JSX.E
               variant="inherit"
               className="whitespace-nowrap text-[13px] font-semibold text-text-secondary"
             >
-              {t('moneybook.entries.count', { count: book.entriesTotal })}
+              {t('moneybook.entries.count', { count: mine ? book.entriesTotal : 0 })}
             </UbText>
             <UbSwitch
               checked={book.showRemoved}

@@ -235,3 +235,27 @@ describe('the sidebar', () => {
     expect(screen.queryByRole('link', { name: 'Ledger' })).toBeNull();
   });
 });
+
+describe('the Money Book is the person’s own book (owner, 11 Nov 2026)', () => {
+  it('says "My Money Book" in the header, not the business, and the business elsewhere', async () => {
+    /* A personal book headed "Verma Finance" read as the business's book. The
+       design (I1) heads it "My Money Book"; every other app keeps the business. */
+    store.dispatch(
+      sessionLoaded({
+        ...after([...APPS, { code: 'khata', labelId: 'nav.workspace.khata', homePath: '/money-book', order: 95 }], 'khata'),
+        permissions: ['khata.book.read'] as PermissionCode[],
+        enabledModules: ['khata', 'platform'],
+      } as never)
+    );
+    mockPath = '/money-book';
+    renderWithProviders(<TenantSwitcherMenu rail caption="YourKhata" />);
+    expect(await screen.findByText('My Money Book')).toBeInTheDocument();
+    expect(screen.queryByText('Verma Finance')).not.toBeInTheDocument();
+  });
+
+  it('keeps the business name in another app', async () => {
+    renderWithProviders(<TenantSwitcherMenu rail caption="YourKhata" />);
+    expect(await screen.findByText('Verma Finance')).toBeInTheDocument();
+    expect(screen.queryByText('My Money Book')).not.toBeInTheDocument();
+  });
+});

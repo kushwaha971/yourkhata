@@ -239,7 +239,9 @@ class ReminderTextView(OwnBook):
         if tone not in ReminderTone.values:
             raise ValidationFailed(details={"tone": [_("Choose a kind of message.")]})
         settings = selectors.settings_for(self.owner)
-        locale = getattr(self.owner, "locale", "en")
+        # The language ON SCREEN (the person's switch), not the saved account locale:
+        # a Hindi screen wrote an English message (H33, Money Book hand pass, 12 Nov).
+        locale = request.query_params.get("lang") or getattr(self.owner, "locale", "en")
         return StandardResponse.ok({"text": reminder_text(person=person, tone=tone, settings=settings, locale=locale)})
 
 

@@ -41,3 +41,25 @@ it('refuses a negative amount in words, in the required and the optional validat
   );
   expect(messageOf(() => v.optionalAmountValidation().validateSync('50'))).toBe('');
 });
+
+it('calls an extra zero too large, not a decimals mistake (E7)', () => {
+  /* Money Book round (11 Nov 2026): 99999999999 — 99999999999 for 9999999999 —
+     was told "Use up to two decimals, like 500.00.", because the format pattern
+     also caps the digits and ran first. Size is now judged before shape. */
+  let v = null as unknown as ValidationSchemas;
+  renderWithProviders(
+    <Probe
+      onReady={(schemas) => {
+        v = schemas;
+      }}
+    />
+  );
+  expect(
+    messageOf(() => v.amountValidation({ max: '9999999999.99' }).validateSync('99999999999'))
+  ).toBe('That amount is too large.');
+  // A real decimals mistake still says so.
+  expect(messageOf(() => v.amountValidation().validateSync('50.123'))).toBe(
+    'Use up to two decimals, like 500.00.'
+  );
+  expect(messageOf(() => v.amountValidation().validateSync('500'))).toBe('');
+});

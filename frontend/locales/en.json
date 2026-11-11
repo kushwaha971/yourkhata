@@ -134,6 +134,7 @@
   "library.words.error": "We could not load this student",
   "library.words.notFound": "This student was not found",
   "library.words.person": "Student",
+  "moneybook.app.mine": "My Money Book",
   "moneybook.nav.oldDues": "Old dues",
   "moneybook.nav.people": "People",
   "moneybook.nav.reminders": "Reminders",

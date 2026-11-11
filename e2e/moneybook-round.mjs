@@ -71,6 +71,31 @@ try {
     };
     const book = async () => (await api('/moneybook/people?page_size=1')).body?.meta?.totals;
 
+    // Pick from contacts (owner, 11 Nov): in the design's scan slot, on a phone that
+    // can pick contacts; it fills name and mobile and saves nothing by itself.
+    if (phone) {
+      await page.addInitScript(() => {
+        Object.defineProperty(navigator, 'contacts', {
+          configurable: true,
+          value: { select: async () => [{ name: ['Radhe Krishna Patil'], tel: ['+91 97946 20535'] }] },
+        });
+      });
+      await page.goto(`${base}/money-book`, { waitUntil: 'networkidle' });
+      const posts = [];
+      const watch = (r) => r.method() === 'POST' && r.url().includes('/moneybook/people') && posts.push(r.url());
+      page.on('request', watch);
+      await page.getByTestId('moneybook-pick-contact').click();
+      const filled = page.getByRole('dialog');
+      await filled.getByLabel('Name', { exact: true }).waitFor();
+      const nameIn = await filled.getByLabel('Name', { exact: true }).inputValue();
+      const mobileIn = await filled.getByLabel('Mobile number', { exact: true }).inputValue();
+      check(tag('Pick from contacts fills the name'), nameIn === 'Radhe Krishna Patil', nameIn);
+      check(tag('Pick from contacts fills the mobile'), mobileIn.replace(/\D/g, '').endsWith('9794620535'), mobileIn);
+      check(tag('a picked contact is not saved until Save'), posts.length === 0, `${posts.length}`);
+      page.off('request', watch);
+      await page.keyboard.press('Escape');
+    }
+
     // 1. Add a person through the screen.
     const name = `Round ${width} ${String(Date.now()).slice(-5)}`;
     const before = await book();
@@ -113,6 +138,50 @@ try {
     check(tag('the header says ₹1,100 without a reload'), await shown('₹1,100'));
     await shot('01-two-entries');
 
+    // Edge cases at the counter (docs/testing/edge-case-catalogue.md).
+    {
+      // E26: the sheet opens clean — no red before anything is typed.
+      await page.getByTestId('moneybook-got').filter({ visible: true }).first().click();
+      const sheet = page.getByRole('dialog');
+      await sheet.getByLabel('Amount', { exact: true }).waitFor();
+      const red = await sheet.locator('[role=alert], .text-error, [aria-invalid=true]').count();
+      check(tag('E26 the entry sheet opens with no error shown'), red === 0, `${red}`);
+
+      // E7: extra zeros are refused and nothing is stored.
+      await sheet.getByLabel('Amount', { exact: true }).fill('99999999999');
+      const posts = [];
+      const watch = (r) => r.method() === 'POST' && /\/entries$/.test(new URL(r.url()).pathname) && posts.push(r.url());
+      page.on('request', watch);
+      await page.getByTestId('moneybook-entry-save').click();
+      await page.waitForTimeout(900);
+      check(tag('E7 ₹99,99,99,99,999 is refused before it is sent'), posts.length === 0 && (await sheet.isVisible()), `${posts.length} sent`);
+
+      // E4/E15: the connection fails — the reason is said, the sheet and the amount stay.
+      await sheet.getByLabel('Amount', { exact: true }).fill('250');
+      await page.route('**/api/v1/moneybook/people/*/entries', (route) =>
+        route.request().method() === 'POST' ? route.abort('internetdisconnected') : route.continue()
+      );
+      await page.getByTestId('moneybook-entry-save').click();
+      await page.waitForTimeout(1500);
+      const kept = await sheet.getByLabel('Amount', { exact: true }).inputValue().catch(() => '');
+      const said = await page.locator('[role=alert],[role=status]').allInnerTexts();
+      check(tag('E4 offline Save keeps the sheet and the typed ₹250'), (await sheet.isVisible()) && kept.replace(/[,.0]/g, '').startsWith('25'), kept);
+      check(tag('E15 offline Save says why, in words'), said.some((s) => s.trim().length > 8), said.join(' | ').slice(0, 120));
+      await page.unroute('**/api/v1/moneybook/people/*/entries');
+      check(tag('E4 nothing was stored while offline'), same(await balance(), '1100.00'), await balance());
+
+      // E1: three fast taps on Save write once.
+      const before1 = (await api(`/moneybook/people/${id}/entries`)).body?.meta?.total;
+      await page.getByTestId('moneybook-entry-save').evaluate((b) => { b.click(); b.click(); b.click(); });
+      await sheet.waitFor({ state: 'hidden', timeout: 8000 }).catch(() => undefined);
+      await page.waitForTimeout(800);
+      const after1 = (await api(`/moneybook/people/${id}/entries`)).body?.meta?.total;
+      check(tag('E1 three fast taps on Save write one entry'), after1 === before1 + 1, `${before1} → ${after1}`);
+      check(tag('E1 the balance moved by ₹250 once (1100 → 850)'), same(await balance(), '850.00'), await balance());
+      // Back to the story's figure with a Gave of 250.
+      await entry('gave', '250', 'Evens out');
+    }
+
     // 3. Change the ₹1,500 to ₹1,000: the balance moves by the difference.
     const row = (note) =>
       phone
@@ -141,13 +210,13 @@ try {
     // The originals stay in the book, hidden until Show removed.
     const live = (await api(`/moneybook/people/${id}/entries`)).body?.data ?? [];
     const all = (await api(`/moneybook/people/${id}/entries?include_removed=true`)).body?.data ?? [];
-    check(tag('one live entry is listed (the ₹1,000)'), live.length === 1 && live[0].amount === '1000.00', JSON.stringify(live.map((e) => e.amount)));
-    check(tag('all five rows are kept (two originals, two removals, the new one)'), all.length === 5, `${all.length}`);
+    check(tag('three live entries are listed (₹250 gave, ₹250 got, the changed ₹1,000)'), live.length === 3 && live.some((e) => e.amount === '1000.00'), JSON.stringify(live.map((e) => e.amount)));
+    check(tag('all seven rows are kept (originals, removals, the new ones)'), all.length === 7, `${all.length}`);
     check(tag('the live row\'s "balance after" is the person\'s balance'), same(live[0]?.balance_after, await balance()));
     await page.getByRole('switch', { name: 'Show removed' }).first().click();
     await page.waitForTimeout(900);
     const struck = phone ? await page.getByTestId('moneybook-entry-row').count() : await page.locator('tbody tr').count();
-    check(tag('Show removed draws all five rows'), struck === 5, `${struck}`);
+    check(tag('Show removed draws all seven rows'), struck === 7, `${struck}`);
     await shot('02-after-fixes');
 
     // 5. The list and its To get agree with the server, without a reload.
@@ -166,9 +235,65 @@ try {
     // 6. The report for this person.
     await page.goto(`${base}/money-book/report?person=${id}`, { waitUntil: 'networkidle' });
     const report = (await api(`/moneybook/report?person=${id}`)).body?.meta?.summary;
-    check(tag('report: you gave ₹1,000, you got ₹0, to get now ₹1,000'), same(report?.you_gave, '1000') && same(report?.you_got, '0') && same(report?.to_get_now, '1000'), JSON.stringify(report));
+    check(tag('report: you gave ₹1,250, you got ₹250, to get now ₹1,000'), same(report?.you_gave, '1250') && same(report?.you_got, '250') && same(report?.to_get_now, '1000'), JSON.stringify(report));
     const rep = plain(await page.locator('main').innerText());
     check(tag('the report screen shows To get now ₹1,000'), rep.includes('Togetnow1000'), rep.slice(0, 160));
+    // Owner, 11 Nov: on a phone the report showed "Gave money" with no amount — the
+    // table's Amount column ran off the screen. Every row must show its ₹, visibly.
+    {
+      await page.goto(`${base}/money-book/report`, { waitUntil: 'networkidle' });
+      const rows = phone ? page.getByTestId('moneybook-report-list').locator('li') : page.locator('[data-testid=moneybook-report-table] tbody tr');
+      const n = await rows.count();
+      const unseen = await rows.evaluateAll((els) =>
+        els.filter((el) => {
+          const money = [...el.querySelectorAll('*')].find((c) => !c.children.length && /^₹[\d,]+(\.\d{2})?$/.test(c.textContent.trim()));
+          if (!money) return true;
+          const r = money.getBoundingClientRect();
+          return r.width === 0 || r.right > innerWidth || r.left < 0;
+        }).length
+      );
+      check(tag(`every report row shows its amount on screen (${n} rows)`), n > 0 && unseen === 0, `${unseen} without a visible ₹`);
+    }
+    // Owner, 11 Nov: the report's filters live in one drawer (period, From/To,
+    // person) and apply together; Share and Print work on a phone.
+    {
+      await page.addInitScript(() => {
+        window.__shared = [];
+        window.__printed = 0;
+        Object.defineProperty(navigator, 'share', { configurable: true, value: async (d) => { window.__shared.push(d); } });
+        window.print = () => { window.__printed += 1; };
+      });
+      await page.goto(`${base}/money-book/report`, { waitUntil: 'networkidle' });
+      // Owner, 12 Nov: the desktop drew Filters, Share and Print twice.
+      const once = await page.evaluate(() =>
+        ['moneybook-report-filters', 'moneybook-report-share'].map(
+          (id) => [...document.querySelectorAll(`[data-testid=${id}]`)].filter((e) => e.offsetParent !== null).length
+        )
+      );
+      check(tag('Filters and Share each appear once on screen'), once.every((n) => n === 1), JSON.stringify(once));
+      await page.getByTestId('moneybook-report-share').filter({ visible: true }).first().click();
+      await page.waitForTimeout(500);
+      const shared = await page.evaluate(() => window.__shared);
+      const text = shared[0]?.text ?? '';
+      check(tag('Share opens the phone\'s share sheet with the report'), shared.length === 1 && text.includes('₹1,000') && text.includes('₹250'), text.split('\n').slice(0, 3).join(' / '));
+      await page.getByRole('button', { name: 'Print', exact: true }).filter({ visible: true }).first().click();
+      check(tag('Print opens the print sheet'), (await page.evaluate(() => window.__printed)) === 1);
+      const asked = [];
+      const watch = (r) => new URL(r.url()).pathname === '/api/v1/moneybook/report' && asked.push(new URL(r.url()).searchParams);
+      page.on('request', watch);
+      await page.getByTestId('moneybook-report-filters').filter({ visible: true }).first().click();
+      const drawer = page.getByRole('dialog');
+      await drawer.getByRole('radio', { name: 'Last month' }).or(drawer.getByRole('button', { name: 'Last month' })).first().click();
+      await drawer.getByLabel('Person').selectOption({ label: name }).catch(() => undefined);
+      check(tag('the filter drawer asks nothing until Apply'), asked.length === 0, `${asked.length}`);
+      await page.getByTestId('moneybook-report-apply').click();
+      await page.waitForTimeout(1200);
+      const last = asked.at(-1);
+      const ist = new Date(Date.now() + 5.5 * 3600e3);
+      const lm = new Date(Date.UTC(ist.getUTCFullYear(), ist.getUTCMonth() - 1, 1)).toISOString().slice(0, 10);
+      check(tag('Apply asks for last month and the person chosen'), last?.get('from') === lm && last?.get('person') === id, last ? last.toString() : 'no request');
+      page.off('request', watch);
+    }
     await shot('04-report');
 
     // 7. Money in the book: cannot be put away, not even ₹0.01 off.
@@ -181,13 +306,30 @@ try {
     check(tag('the Shop\'s lists do not have this person'), shop.length === 0, `${shop.length}`);
     check(tag('the Shop\'s API cannot open a Money Book person'), (await api(`/parties/${id}`)).status === 404);
 
+    // E17: a long name with Hindi and a large amount stay inside the screen.
+    {
+      const long = `Shree Ganesh Kirana and General Store (रमेश भाई) ${width}`;
+      const made = await api('/moneybook/people', { method: 'POST', data: { name: long } });
+      const lid = made.body?.data?.id ?? made.body?.error?.details?.id;
+      if (!(await api(`/moneybook/people/${lid}/entries`)).body?.meta?.total)
+        await api(`/moneybook/people/${lid}/entries`, { method: 'POST', data: { kind: 'gave', amount: '1240378' } });
+      for (const path of [`/money-book/${lid}`, '/money-book']) {
+        await page.goto(`${base}${path}`, { waitUntil: 'networkidle' });
+        const over = await page.evaluate(() => document.documentElement.scrollWidth - innerWidth);
+        check(tag(`E17 a long Hindi name and ₹12,40,378 fit ${path === '/money-book' ? 'the list' : 'the person page'}`), over <= 0, `${over}px`);
+      }
+      await shot('05-long-name');
+    }
+
     // 9. Nothing off a phone screen, on every Money Book screen.
     for (const path of ['/money-book', `/money-book/${id}`, '/money-book/report', '/money-book/reminders', '/money-book/old-dues']) {
       await page.goto(`${base}${path}`, { waitUntil: 'networkidle' });
       const over = await page.evaluate(() => document.documentElement.scrollWidth - innerWidth);
       check(tag(`${path.replace(id, ':id')} has no sideways scroll`), over <= 0, `${over}px`);
     }
-    check(tag('no page or console error'), errors.length === 0, errors.slice(0, 2).join(' | '));
+    // The offline check (E4) cuts the network on purpose; that one line is expected.
+    const real = errors.filter((e) => !e.includes('ERR_INTERNET_DISCONNECTED'));
+    check(tag('no page or console error'), real.length === 0, real.slice(0, 2).join(' | '));
     await ctx.close();
   }
 } finally {

@@ -259,10 +259,11 @@ export async function listOldDues(signal?: AbortSignal): Promise<{ rows: Person[
 export async function reminderText(
   personId: string,
   tone: ReminderTone,
+  lang: string,
   signal?: AbortSignal
 ): Promise<string> {
   const { data } = await api.get(
-    `${MONEYBOOK_PATHS.REMINDER_TEXT}${toQueryString({ person: personId, tone })}`,
+    `${MONEYBOOK_PATHS.REMINDER_TEXT}${toQueryString({ person: personId, tone, lang })}`,
     { signal }
   );
   return str((data.data as Wire).text);

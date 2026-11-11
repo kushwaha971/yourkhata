@@ -2,6 +2,8 @@
 
 > **1 Nov 2026 — START HERE: `docs/team/CONTINUE-AD-CERTIFICATION.md`.** Parts A–D of the Shop revamp are built; the A–D certification is mid-way; Part G waits for the owner's explicit go. That file supersedes everything below for what to do next.
 
+> **12 Nov 2026 — Money Book rebuilt from scratch and through its P0 round (9/10).** Owner, 11 Nov: Money Book, Library and Lending are deleted and rebuilt, each with NO relation to the Shop (`docs/revamp/rebuild-money-book-library-lending.md`). Money Book done: `apps/moneybook`, `/money-book`, report `docs/testing/moneybook-round-2026-11-11.md`. Next: Library (Members & Fees), then Lending. Library and Lending still use the shared person page on the `main` book until their rebuild.
+
 Last updated: 5 Oct 2026 (§0 is live); older sections last revised 29 Sep 2026 (IST) — MVP complete; final UAT approved with issues and all fixed (D1–D8, D10); product renamed YourKhata (yourkhata.com, logo concept A applied, round-2 logo options awaiting owner choice); support sessions now truly view-only (SEC-A); demo videos: plan/scripts/pipeline done, recording paused.
 
 ---

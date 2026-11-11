@@ -235,15 +235,18 @@ export const buildValidationSchemas = (
       .required(t('validation.amount.required'))
       // QA B14 — before the format check, so a typed minus is named for what it is.
       .test('notNegative', t('validation.amount.negative'), (value) => !value?.startsWith('-'))
+      // Size before shape: DECIMAL_2DP caps the digits too, so 99999999999 (an
+      // extra zero, E7) was told "Use up to two decimals" instead of "too large"
+      // (Money Book round, 11 Nov). Only a plain number is judged by size here.
+      .test('max', t('validation.amount.tooLarge'), (value) =>
+        value && /^\d+(\.\d+)?$/.test(value) ? Number(value) <= Number(options?.max ?? MAX_AMOUNT) : true
+      )
       .matches(REGEX.DECIMAL_2DP, t('validation.amount.format'))
       .test('positive', t('validation.amount.positive'), (value) => {
         if (!value) return false;
         const parsed = Number(value);
         return options?.allowZero ? parsed >= 0 : parsed > 0;
-      })
-      .test('max', t('validation.amount.tooLarge'), (value) =>
-        value ? Number(value) <= Number(options?.max ?? MAX_AMOUNT) : true
-      );
+      });
 
   /**
    * An amount a form does not insist on — a credit limit, an opening balance

@@ -282,3 +282,15 @@ def test_a_reminder_is_unsigned_unless_the_owner_signs_it(me):
     entry(client, pid, "gave", "4500", entry_date="2026-10-22")
     text = client.get(ROOT + f"reminders/text?person={pid}&tone=polite").json()["data"]["text"]
     assert text == "Hi Suresh, a gentle reminder: ₹4,500 is pending from our account (last entry 22 Oct). Thanks!"
+
+
+def test_the_reminder_is_written_in_the_language_on_screen(me):
+    """H33: a Hindi screen wrote an English message, because the server used the
+    account's saved language rather than the person's switch (hand pass, 12 Nov)."""
+    client, _ = me
+    pid = add(client, "Suresh Jadhav")
+    entry(client, pid, "gave", "4500", entry_date="2026-10-22")
+    hi = client.get(ROOT + f"reminders/text?person={pid}&tone=polite&lang=hi").json()["data"]["text"]
+    assert hi.startswith("नमस्ते Suresh") and "₹4,500" in hi
+    en = client.get(ROOT + f"reminders/text?person={pid}&tone=polite&lang=en").json()["data"]["text"]
+    assert en.startswith("Hi Suresh")

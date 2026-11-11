@@ -84,8 +84,8 @@ try {
     await page.keyboard.press('Enter');
     await page.waitForURL((u) => !u.pathname.startsWith('/login'));
     if (MONEY_BOOK) {
-      const person = (await (await ctx.request.get(`${base}/api/v1/personal/parties?status=active&balance=owes_me&page_size=1`)).json()).data[0];
-      SCREENS = ['/khata', `/parties/${person.id}`, `/parties/${person.id}/statement`];
+      const person = (await (await ctx.request.get(`${base}/api/v1/moneybook/people?balance=get&page_size=1`)).json()).data[0];
+      SCREENS = ['/money-book', `/money-book/${person.id}`, '/money-book/report', '/money-book/reminders', '/money-book/old-dues'];
     }
     const cases = [];
     for (const theme of ['light', 'dark'])

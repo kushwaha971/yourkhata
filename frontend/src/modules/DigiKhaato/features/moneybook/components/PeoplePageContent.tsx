@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import dynamic from 'next/dynamic';
 
-import { Plus, Printer, SlidersHorizontal } from 'lucide-react';
+import { Contact, Plus, Printer, SlidersHorizontal } from 'lucide-react';
 
 import {
   UbActionSheet,
@@ -14,7 +14,6 @@ import {
   UbDrawerLoading,
   UbEmptyState,
   UbFab,
-  UbLink,
   UbNativeSelect,
   UbPageHeader,
   UbPageShell,
@@ -27,8 +26,10 @@ import {
 import { useAppRouter } from 'src/hooks/useAppRouter';
 import { useAppDispatch, useAppSelector } from 'src/hooks/useAppStore';
 import { useDebounce } from 'src/hooks/useDebounce';
+import { usePhoneContactPicker } from 'src/hooks/usePhoneContactPicker';
 import { useTranslation } from 'src/hooks/useTranslation';
 import { todayInTenantTz } from 'src/utils/dates';
+import type { PickedPhoneContact } from 'src/utils/phoneContacts';
 
 import { setQuery, selectMoneyBook } from '../redux/moneybookSlice';
 import { fetchPeople } from '../redux/moneybookThunks';
@@ -70,6 +71,14 @@ export function PeoplePageContent(): React.JSX.Element {
   const q = useDebounce(search.trim(), 250);
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [adding, setAdding] = useState(false);
+  // In the design's scan-button slot, "Pick from contacts" (owner, 11 Nov): there
+  // is nothing to scan in a Money Book, and a contact fills name and mobile in
+  // one tap. Drawn only where the browser can pick contacts — never a dead button.
+  const [picked, setPicked] = useState<PickedPhoneContact | null>(null);
+  const contacts = usePhoneContactPicker((contact) => {
+    setPicked(contact);
+    setAdding(true);
+  }, t('moneybook.people.contactsError'));
   const balance = book.query.balance ?? 'all';
   const sort = book.query.sort ?? 'last_entry';
 
@@ -233,9 +242,12 @@ export function PeoplePageContent(): React.JSX.Element {
                   <PersonAmount balance={person.balance} t={t} />
                 </UbBox>
                 <UbBox as="td" className="text-right">
-                  <UbLink href={MONEYBOOK_ROUTES.person(person.id)} variant="body-sm">
+                  {/* A tap, not a link: 25 "Open" links were 25 page prefetches at
+                      once, and every navigation queued behind them for ~8 s
+                      (Money Book monkey, 11 Nov). The phone rows already work this way. */}
+                  <UbButton variant="link" size="sm" onClick={() => open(person.id)}>
                     {t('moneybook.people.open')}
-                  </UbLink>
+                  </UbButton>
                 </UbBox>
               </UbBox>
             ))}
@@ -302,6 +314,18 @@ export function PeoplePageContent(): React.JSX.Element {
                   </UbPressable>
                 }
               />
+              {contacts.supported && (
+                <UbButton
+                  iconOnly
+                  icon={<Contact className="h-5 w-5" aria-hidden />}
+                  busy={contacts.busy}
+                  onClick={() => void contacts.choose()}
+                  className="h-11 w-11 shrink-0 bg-surface-nav text-white hover:bg-surface-navHover active:bg-surface-nav"
+                  data-testid="moneybook-pick-contact"
+                >
+                  {t('moneybook.people.pickContact')}
+                </UbButton>
+              )}
               <UbBox className="hidden gap-2 lg:flex">
                 {showSelect}
                 {sortSelect}
@@ -336,10 +360,15 @@ export function PeoplePageContent(): React.JSX.Element {
       {adding && (
         <PersonFormDrawer
           open
-          initialName={noMatch ? q : ''}
-          onClose={() => setAdding(false)}
+          initialName={picked?.name ?? (noMatch ? q : '')}
+          initialMobile={picked?.mobile ?? ''}
+          onClose={() => {
+            setAdding(false);
+            setPicked(null);
+          }}
           onSaved={(person) => {
             setAdding(false);
+            setPicked(null);
             open(person.id);
           }}
         />

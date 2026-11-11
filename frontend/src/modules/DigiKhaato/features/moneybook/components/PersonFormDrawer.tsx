@@ -36,6 +36,7 @@ export function PersonFormDrawer({
   open,
   person,
   initialName = '',
+  initialMobile = '',
   onClose,
   onSaved,
 }: Readonly<{
@@ -43,6 +44,8 @@ export function PersonFormDrawer({
   /** Present when editing. */
   person?: Person | null;
   initialName?: string;
+  /** From a picked phone contact: digits, any format. */
+  initialMobile?: string;
   onClose: () => void;
   onSaved: (person: Person) => void;
 }>) {
@@ -58,7 +61,11 @@ export function PersonFormDrawer({
     mode: 'onTouched',
     values: {
       name: person?.name ?? initialName,
-      mobile: person?.mobile ? `+91${person.mobile}` : '',
+      mobile: person?.mobile
+        ? `+91${person.mobile}`
+        : initialMobile
+          ? `+91${initialMobile.replace(/\D/g, '').slice(-10)}`
+          : '',
     },
   });
 

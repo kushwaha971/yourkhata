@@ -34,6 +34,11 @@ export interface MoneyBookState {
   entries: Entry[];
   entriesTotal: number;
   entriesStatus: RequestStatus;
+  /** Whose entries these are, and the request that is allowed to answer. */
+  entriesFor: string | null;
+  /** The latest person asked for: an older answer must not replace it. */
+  personRequest: string | null;
+  entriesRequest: string | null;
   entriesError: ApiErrorShape | null;
   showRemoved: boolean;
   reportQuery: ReportQuery;
@@ -59,6 +64,9 @@ const initialState: MoneyBookState = {
   entries: [],
   entriesTotal: 0,
   entriesStatus: 'idle',
+  entriesFor: null,
+  personRequest: null,
+  entriesRequest: null,
   entriesError: null,
   showRemoved: false,
   reportQuery: {},
@@ -120,36 +128,46 @@ export const moneybookSlice = createSlice({
         state.peopleError = (action.payload ?? null) as Draft<ApiErrorShape> | null;
       })
       .addCase(fetchPerson.pending, (state, action) => {
+        state.personRequest = action.meta.requestId;
         state.personStatus = 'loading';
         state.personError = null;
         if (state.person?.id !== action.meta.arg) {
           // Paint the row already held at once (from the list) rather than a blank.
           state.person = state.people?.rows.find((row) => row.id === action.meta.arg) ?? null;
-          state.entries = [];
-          state.entriesStatus = 'idle';
         }
       })
       .addCase(fetchPerson.fulfilled, (state, action) => {
+        if (action.meta.requestId !== state.personRequest) return;
         state.person = action.payload;
         state.personStatus = 'succeeded';
       })
       .addCase(fetchPerson.rejected, (state, action) => {
-        if (action.meta.aborted) return;
+        if (action.meta.aborted || action.meta.requestId !== state.personRequest) return;
         state.personStatus = 'failed';
         state.personError = (action.payload ?? null) as Draft<ApiErrorShape> | null;
       })
-      .addCase(fetchEntries.pending, (state) => {
+      .addCase(fetchEntries.pending, (state, action) => {
+        if (state.entriesFor !== action.meta.arg.personId) {
+          state.entries = [];
+          state.entriesTotal = 0;
+        }
+        state.entriesFor = action.meta.arg.personId;
+        state.entriesRequest = action.meta.requestId;
         state.entriesStatus = 'loading';
         state.entriesError = null;
       })
       .addCase(fetchEntries.fulfilled, (state, action) => {
-        if (action.meta.arg.personId !== state.person?.id) return;
+        /* Keyed to the latest REQUEST, not to the person in memory: when the
+           entries landed before the person (anyone not already in the loaded
+           list), the old check dropped them and the page sat on "0 entries"
+           and skeleton rows for ~8 s (Money Book monkey, 12 Nov). */
+        if (action.meta.requestId !== state.entriesRequest) return;
         state.entries = action.payload.rows;
         state.entriesTotal = action.payload.total;
         state.entriesStatus = 'succeeded';
       })
       .addCase(fetchEntries.rejected, (state, action) => {
-        if (action.meta.aborted) return;
+        if (action.meta.aborted || action.meta.requestId !== state.entriesRequest) return;
         state.entriesStatus = 'failed';
         state.entriesError = (action.payload ?? null) as Draft<ApiErrorShape> | null;
       })

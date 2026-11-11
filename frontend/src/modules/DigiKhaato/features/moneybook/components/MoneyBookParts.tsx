@@ -47,7 +47,10 @@ export const Figure = memo(function Figure({
 
 export function Figures({ children }: Readonly<{ children: ReactNode }>) {
   return (
-    <UbBox className="grid gap-2.5 [grid-auto-columns:minmax(0,1fr)] [grid-auto-flow:column]">
+    <UbBox
+      data-testid="moneybook-totals"
+      className="grid gap-2.5 [grid-auto-columns:minmax(0,1fr)] [grid-auto-flow:column]"
+    >
       {children}
     </UbBox>
   );
@@ -57,10 +60,12 @@ export function Figures({ children }: Readonly<{ children: ReactNode }>) {
 export function List({
   children,
   className,
-}: Readonly<{ children: ReactNode; className?: string }>) {
+  testId,
+}: Readonly<{ children: ReactNode; className?: string; testId?: string }>) {
   return (
     <UbBox
       as="ul"
+      data-testid={testId}
       className={cn(
         'overflow-clip rounded-xl border border-border-hairline bg-surface-card [&>li:last-child>*]:border-b-0',
         className

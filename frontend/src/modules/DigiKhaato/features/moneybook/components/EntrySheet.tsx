@@ -27,6 +27,7 @@ import { showSnackbar } from 'src/redux/slice/snackbarSlice';
 import 'src/i18n/catalogues/validation';
 import { cn } from 'src/utils/cn';
 import { todayInTenantTz } from 'src/utils/dates';
+import { REGEX } from 'src/utils/regexConstants';
 
 import { previewEntry } from '../api/moneybookService';
 import { replaceEntry, saveEntry } from '../redux/moneybookThunks';
@@ -84,7 +85,9 @@ export function EntrySheet({
   // "After this": asked of the server for a new entry. A correction cannot be
   // previewed there, so it is the person's balance without the old entry and
   // with the new one — the same rule the server's replace applies.
-  const valid = Boolean(typed) && Number(typed) > 0;
+  // Ask only about an amount the form itself would accept: a typo of extra
+  // zeros earned the server a 400 on every keystroke (Money Book round).
+  const valid = Boolean(typed) && Number(typed) > 0 && REGEX.DECIMAL_2DP.test(typed);
   const ask = `${chosen}:${typed}`;
   const correctionAfter = useMemo(() => {
     if (!replacing || !valid) return null;

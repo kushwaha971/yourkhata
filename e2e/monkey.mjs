@@ -232,6 +232,9 @@ const readyAfter = async (t0) => {
   busyAt2s = null;
   const probe = setTimeout(async () => {
     busyAt2s = await busyNow();
+    // A picture of a page that is still not ready at 2 s: what the person sees.
+    if (process.env.MONKEY_SLOW_SHOTS)
+      await page.screenshot({ path: `${dir}/slow-${seed}-${width}-${Date.now()}.png` }).catch(() => {});
   }, 2000);
   await page
     .waitForFunction(
@@ -332,29 +335,36 @@ const checkAgrees = async (i, how) => {
   }
   // Money book round (11 Nov): a person's balance and the book's "To get" are
   // the server's, after every reload and return. Read from the private book
-  // (`/personal/…`), which is what these screens read.
+  // (`/api/v1/moneybook/…`), which is what these screens read.
   if (me.active_app === "khata") {
     const plain = (s) => s.replace(/[₹,\s]/g, "");
-    const person = new URL(url).pathname.match(/^\/parties\/([0-9a-f-]{36})$/)?.[1];
+    // The address AFTER the wait: read before it, a page that moved meanwhile
+    // compared one person's server figure with another person's screen.
+    const url = page.url();
+    const person = new URL(url).pathname.match(/^\/money-book\/([0-9a-f-]{36})$/)?.[1];
     if (person) {
-      const balance = (await (await ctx.request.get(`${base}/api/v1/personal/parties/${person}`)).json().catch(() => ({}))).data?.balance;
-      const shown = await page.getByTestId("udhaar-person-overview").innerText({ timeout: 4000 }).catch(() => "");
+      const balance = (await (await ctx.request.get(`${base}/api/v1/moneybook/people/${person}`)).json().catch(() => ({}))).data?.balance;
+      const shown = await page.getByTestId("moneybook-balance").innerText({ timeout: 4000 }).catch(() => "");
       if (balance !== undefined && shown) {
         agreeChecks += 1;
         // MONKEY_SKEW=1 shifts the expected figure by ₹1: the check must then fail (P0 §1).
         const want = Math.abs(Number(balance)) + (process.env.MONKEY_SKEW ? 1 : 0);
-        if (!plain(shown).includes(want.toFixed(2)))
-          failures.push(`step ${i}: after ${how} the person page does not show the server's balance ${balance} (${shown.replace(/\s+/g, " ").slice(0, 80)})`);
+        if (!plain(shown).includes(want.toFixed(2).replace(/\.00$/, "")))
+        {
+          await page.screenshot({ path: `${dir}/agree-fail-${seed}-${width}-step${i}.png` }).catch(() => {});
+          failures.push(`step ${i}: after ${how} the person page does not show the server's balance ${balance} (${shown.replace(/\s+/g, " ").slice(0, 80)}) at ${url.replace(base, "")}`);
+        }
       }
     }
-    if (new URL(url).pathname === "/khata" && !new URL(url).search.includes("q=")) {
+    if (new URL(url).pathname === "/money-book" && !new URL(url).search.includes("q=")) {
       const query = new URL(url).search.replace(/^\?/, "");
-      const totals = (await (await ctx.request.get(`${base}/api/v1/personal/parties?${query}${query ? "&" : ""}page_size=1`)).json().catch(() => ({}))).meta?.totals;
-      const shown = await page.getByTestId("khata-people-summary").innerText({ timeout: 4000 }).catch(() => "");
+      const totals = (await (await ctx.request.get(`${base}/api/v1/moneybook/people?${query}${query ? "&" : ""}page_size=1`)).json().catch(() => ({}))).meta?.totals;
+      const shown = await page.getByTestId("moneybook-totals").innerText({ timeout: 4000 }).catch(() => "");
       if (totals && shown) {
         agreeChecks += 1;
-        if (!plain(shown).includes(totals.receivable))
-          failures.push(`step ${i}: after ${how} "To get" is not the server's ${totals.receivable} (${shown.replace(/\s+/g, " ")})`);
+        const toGet = Number(totals.to_get).toFixed(2).replace(/\.00$/, "");
+        if (!plain(shown).includes(toGet))
+          failures.push(`step ${i}: after ${how} "To get" is not the server's ${totals.to_get} (${shown.replace(/\s+/g, " ")})`);
       }
     }
   }
@@ -442,8 +452,8 @@ try {
   // Money book round (11 Nov): `--app=khata` wanders the Money book instead —
   // its list, real people's pages and their statements, from the private book.
   if (arg("app", "") === "khata") {
-    const people = ((await (await ctx.request.get(`${base}/api/v1/personal/parties?status=active&page_size=8`)).json().catch(() => ({}))).data ?? []).slice(0, 4);
-    WANDER = ["/khata", "/khata?balance=owes_me", ...people.flatMap((p) => [`/parties/${p.id}`, `/parties/${p.id}/statement`])];
+    const people = ((await (await ctx.request.get(`${base}/api/v1/moneybook/people?page_size=8`)).json().catch(() => ({}))).data ?? []).slice(0, 4);
+    WANDER = ["/money-book", "/money-book/report", "/money-book/reminders", "/money-book/old-dues", ...people.flatMap((p) => [`/money-book/${p.id}`, `/money-book/report?person=${p.id}`])];
   }
   // Real item names, so "add item" types what a merchant would.
   const itemNames = (
@@ -622,13 +632,22 @@ try {
             await page.keyboard.press("Escape").catch(() => {});
           }
           // Back the way a user comes back: Back, or the sidebar's Bills then New bill.
-          if (rand() < 0.5) await page.goBack({ timeout: 8000 }).catch(() => {});
+          // Back inside the app is a client move with no load event: wait for the
+          // address to change, not for a load that never comes (it was counted as
+          // an 8 s page in the Money Book round, 11 Nov).
+          if (rand() < 0.5) await page.goBack({ timeout: 8000, waitUntil: "commit" }).catch(() => {});
           else if (MONEY_BOOK) {
-            // The Money book's way home is People in its own menu.
+            // The Money book's way home is People in its own menu. The clock starts
+            // when the move starts: a click that timed out under a sheet left open
+            // by a random tap was counted as 3 s of page time.
+            await page.keyboard.press("Escape").catch(() => {});
+            const people = page.locator(`a[href="/money-book"]:visible`).first();
             lastT0 = Date.now();
-            const people = page.locator(`a[href^="/khata"]:visible`).first();
-            if (!(await people.click({ timeout: 3000 }).then(() => true).catch(() => false))) await page.goto(`${base}/khata`, { waitUntil: "load" });
-            await page.waitForURL(/\/khata/, { timeout: 8000 }).catch(() => {});
+            if (!(await people.click({ timeout: 3000 }).then(() => true).catch(() => false))) {
+              lastT0 = Date.now();
+              await page.goto(`${base}/money-book`, { waitUntil: "load" });
+            }
+            await page.waitForURL(/\/money-book/, { timeout: 8000 }).catch(() => {});
             await pageSpeed("People");
           } else {
             lastT0 = Date.now();
@@ -641,7 +660,7 @@ try {
             if (moved) await pageSpeed("New bill from the list");
             else log.push(`${i} (New bill could not be tapped on the list; came back by address)`);
           }
-          if (MONEY_BOOK ? !/\/(khata|parties)/.test(page.url()) : !page.url().startsWith(`${base}/sales/invoices/`)) {
+          if (MONEY_BOOK ? !/\/money-book/.test(page.url()) : !page.url().startsWith(`${base}/sales/invoices/`)) {
             lastT0 = Date.now();
             await page.goto(url, { waitUntil: "load", timeout: 20000 });
             await pageSpeed("return");

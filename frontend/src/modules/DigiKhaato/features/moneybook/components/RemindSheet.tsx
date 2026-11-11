@@ -41,15 +41,17 @@ export function RemindSheet({
   onClose,
   onAddMobile,
 }: Readonly<{ person: Person; onClose: () => void; onAddMobile: () => void }>) {
-  const { t } = useTranslation();
+  const { t, locale } = useTranslation();
   const dispatch = useAppDispatch();
   const { key, rotate } = useIdempotencyKey();
   const [tone, setTone] = useState<ReminderTone>('polite');
   // The server's words for each kind of message, and the owner's edits to them,
   // both keyed by kind: switching back to Polite keeps what they had typed.
-  const [written, setWritten] = useState<Partial<Record<ReminderTone, string>>>({});
+  // Keyed by kind and language: switching language writes the message again.
+  const [written, setWritten] = useState<Partial<Record<string, string>>>({});
   const [edited, setEdited] = useState<Partial<Record<ReminderTone, string>>>({});
-  const loading = written[tone] === undefined;
+  const wording = `${tone}:${locale}`;
+  const loading = written[wording] === undefined;
   // The bubble's corner time, as WhatsApp would stamp it now ("4:42 pm").
   const [now] = useState(() =>
     new Date().toLocaleTimeString('en-IN', {
@@ -59,17 +61,17 @@ export function RemindSheet({
       timeZone: 'Asia/Kolkata',
     })
   );
-  const text = edited[tone] ?? written[tone] ?? '';
+  const text = edited[tone] ?? written[wording] ?? '';
   const setText = (value: string): void => setEdited((all) => ({ ...all, [tone]: value }));
 
   useEffect(() => {
-    if (written[tone] !== undefined) return undefined;
+    if (written[wording] !== undefined) return undefined;
     const controller = new AbortController();
-    reminderText(person.id, tone, controller.signal)
-      .then((value) => setWritten((all) => ({ ...all, [tone]: value })))
+    reminderText(person.id, tone, locale, controller.signal)
+      .then((value) => setWritten((all) => ({ ...all, [wording]: value })))
       .catch(() => undefined);
     return () => controller.abort();
-  }, [person.id, tone, written]);
+  }, [person.id, tone, written, locale, wording]);
 
   const open = (channel: ReminderChannel): void => {
     const href =
