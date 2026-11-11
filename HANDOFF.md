@@ -45,8 +45,10 @@ harness (57/57 on e926502); §9.2 monkey 3 seeds (101/202/303) × 390/1280, all 
 BUT it wandered off the bill editor only 0–2 times per run, so it is not yet a
 module-wide wander; §9.3 g-day 14/14, day-book 94/94 (harness repaired, now in
 b-regression), jewel-day 26/26; §9.4 Shop catalogue column has no "not run" left
-(E16 via `e2e/settings-restart.mjs`). Left: a wander-heavy monkey across all Shop
-screens, the written manual pass (beginner, phone + desktop), the §8 score. The
+(E16 via `e2e/settings-restart.mjs`). Round finished at cfc9480: wander monkey
+6/6, manual pass, three fixes, **score 8/10, in test** — full report and the four
+owner questions in `docs/testing/shop-round-2026-11-11.md` (Quick-sale return,
+sign-out after idle, which kinds start on Quick sale, the 6-digit OTP copy). The
 API restart must use `/Users/akashkushwaha/Projects/ims-platform/backend/.venv/bin/python`.
 
 If this section looks stale (the commits it names are not the latest), rebuild the state from git history, `git status`, `docs/platform/progress/*.md`, the test suites and the running app before acting.
