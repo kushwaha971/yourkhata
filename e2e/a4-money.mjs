@@ -33,6 +33,18 @@ const page = await ctx.newPage();
 const errors = [];
 page.on('console', (m) => m.type() === 'error' && !/status of 4/.test(m.text()) && errors.push(m.text().slice(0, 160)));
 const api = async (p) => (await (await ctx.request.get(`${base}/api/v1${p}`)).json());
+
+// Every harness run adds items to the QA shop, so the first page by name can be
+// all unpriced or out of stock (11 Nov: 1,221 items). Read every page.
+const allItems = async () => {
+  const out = [];
+  for (let page = 1; page <= 20; page += 1) {
+    const r = await api(`/items?page_size=100&ordering=name&page=${page}`);
+    out.push(...(r.data ?? []));
+    if (page >= (r.meta?.total_pages ?? 1)) break;
+  }
+  return out;
+};
 const send = async (method, p, data) => {
   const csrf = (await ctx.cookies()).find((c) => c.name === 'ub_csrf')?.value;
   const r = await ctx.request.fetch(`${base}/api/v1${p}`, {
@@ -146,7 +158,7 @@ try {
   const party = customers[13];
   // Priced, stocked and seeded: other harnesses' zero-stock items ("A5 item …")
   // now sort first by name, and items[17] of 40 stopped existing (H25).
-  const items = (await api('/items?page_size=200&ordering=name')).data.filter(
+  const items = (await allItems()).filter(
     (i) => Number(i.selling_price) > 0 && Number(i.on_hand) > 20 && !/^(A\d+ item|Edge |A6 )/.test(i.name)
   );
   // Other harnesses keep adding items that sort into the first 200 by name, so

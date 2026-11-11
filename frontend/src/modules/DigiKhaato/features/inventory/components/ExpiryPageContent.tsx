@@ -10,6 +10,7 @@ import {
   UbEmptyState,
   UbPageHeader,
   UbPageShell,
+  UbTaskBar,
   UbPanel,
   UbStack,
   UbStatusBadge,
@@ -193,25 +194,37 @@ export function ExpiryPageContent(): React.JSX.Element {
 
   return (
     <UbPageShell>
-      <UbPageHeader
-        title={t('stock.expiry.title')}
-        subtitle={t('stock.expiry.subtitle')}
-        primaryActions={
-          desk ? (
-            <UbStack direction="row" gap={2}>
-              <UbButton
-                variant="secondary"
-                disabled={rows.length === 0}
-                onClick={() => saveBlob(expiryCsv(rows, t), `expiry-${within}.csv`)}
-                data-testid="expiry-export"
-              >
-                {t('stock.expiry.export')}
-              </UbButton>
-              {returnButton}
-            </UbStack>
-          ) : undefined
-        }
-      />
+      {!desk && (
+        // D7 phone: the design's back bar, 16 px title, no subtitle.
+        <UbTaskBar
+          back
+          title={t('stock.expiry.title')}
+          onClose={() => router.push(ROUTES.ITEMS)}
+          closeLabel={t('common.action.back')}
+          className="-mx-4 -mt-4 mb-1"
+        />
+      )}
+      {desk && (
+        <UbPageHeader
+          title={t('stock.expiry.title')}
+          subtitle={t('stock.expiry.subtitle')}
+          primaryActions={
+            desk ? (
+              <UbStack direction="row" gap={2}>
+                <UbButton
+                  variant="secondary"
+                  disabled={rows.length === 0}
+                  onClick={() => saveBlob(expiryCsv(rows, t), `expiry-${within}.csv`)}
+                  data-testid="expiry-export"
+                >
+                  {t('stock.expiry.export')}
+                </UbButton>
+                {returnButton}
+              </UbStack>
+            ) : undefined
+          }
+        />
+      )}
       <UbStack gap={3} data-testid="expiry-screen">
         <UbChoiceChips<ExpiryWindow>
           revealSelected

@@ -13,6 +13,8 @@ import {
   UbLink,
   UbPageHeader,
   UbPageShell,
+  UbTaskBar,
+  useGridTier,
   UbPanel,
   UbScanButton,
   UbSearchInput,
@@ -22,6 +24,7 @@ import {
 } from 'src/design-system';
 import { useAppRouter } from 'src/hooks/useAppRouter';
 import { useTranslation } from 'src/hooks/useTranslation';
+import { ROUTES } from 'src/routes';
 import { formatBusinessDate } from 'src/utils/dates';
 
 import { findSerial, type SerialFound } from '../api/serialService';
@@ -48,6 +51,7 @@ const monthsLeft = (until: string | null): number | null => {
 export function FindImeiPageContent(): React.JSX.Element {
   const { t } = useTranslation();
   const router = useAppRouter();
+  const phone = useGridTier() === 'cards';
   const params = useSearchParams();
   const [code, setCode] = useState(params.get('imei') ?? '');
   const [found, setFound] = useState<SerialFound | null>(null);
@@ -73,7 +77,18 @@ export function FindImeiPageContent(): React.JSX.Element {
   const left = monthsLeft(found?.warrantyUntil ?? null);
   return (
     <UbPageShell>
-      <UbPageHeader title={t('items.imei.title')} subtitle={t('items.imei.subtitle')} />
+      {phone ? (
+        // D8 phone: the design's back bar, 16 px title, no subtitle.
+        <UbTaskBar
+          back
+          title={t('items.imei.title')}
+          onClose={() => router.push(ROUTES.ITEMS)}
+          closeLabel={t('common.action.back')}
+          className="-mx-4 -mt-4 mb-1"
+        />
+      ) : (
+        <UbPageHeader title={t('items.imei.title')} subtitle={t('items.imei.subtitle')} />
+      )}
       <UbStack gap={3} className="max-w-xl" data-testid="find-imei">
         <UbBox
           as="form"

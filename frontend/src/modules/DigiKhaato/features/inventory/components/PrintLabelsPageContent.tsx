@@ -7,21 +7,26 @@ import { useSearchParams } from 'next/navigation';
 import { Printer } from 'lucide-react';
 
 import {
+  UbBottomBar,
   UbBox,
   UbButton,
-  UbChoiceChips,
   UbEmptyState,
   UbPageHeader,
   UbPageShell,
   UbPanel,
   UbQuantityInput,
+  UbSegmentedControl,
   UbStack,
   UbSwitch,
+  UbTaskBar,
   UbText,
+  useGridTier,
 } from 'src/design-system';
+import { useAppRouter } from 'src/hooks/useAppRouter';
 import { useAppSelector } from 'src/hooks/useAppStore';
 import { useTranslation } from 'src/hooks/useTranslation';
 import { selectActiveTenant } from 'src/redux/slice/sessionSlice';
+import { ROUTES } from 'src/routes';
 import { formatInr } from 'src/utils/money';
 
 import { getPurchaseBill } from '../../purchases/api/purchaseBillService';
@@ -53,6 +58,8 @@ type LabelSize = 'roll' | 'sheet';
 export function PrintLabelsPageContent(): React.JSX.Element {
   const { t } = useTranslation();
   const params = useSearchParams();
+  const router = useAppRouter();
+  const phone = useGridTier() === 'cards';
   const tenant = useAppSelector(selectActiveTenant);
   const business = tenant?.name ?? '';
   const keepsTags = Boolean(tenant?.features?.includes('jewellery'));
@@ -154,24 +161,38 @@ export function PrintLabelsPageContent(): React.JSX.Element {
   const setCount = (itemId: string, count: string) =>
     setRows((all) => all.map((row) => (row.itemId === itemId ? { ...row, count } : row)));
 
+  const printButton = (
+    <UbButton
+      variant="primary"
+      icon={<Printer className="h-4 w-4" aria-hidden />}
+      disabled={total === 0}
+      onClick={() => window.print()}
+      data-testid="labels-print"
+    >
+      {t('items.labels.print', { count: total })}
+    </UbButton>
+  );
+
   return (
     <UbPageShell>
       <UbBox className="ub-print-hide">
-        <UbPageHeader
-          title={t('items.labels.title')}
-          subtitle={source ?? undefined}
-          actions={
-            <UbButton
-              variant="primary"
-              icon={<Printer className="h-4 w-4" aria-hidden />}
-              disabled={total === 0}
-              onClick={() => window.print()}
-              data-testid="labels-print"
-            >
-              {t('items.labels.print', { count: total })}
-            </UbButton>
-          }
-        />
+        {phone ? (
+          // D9 phone: the design's back bar (16 px title, the purchase under it).
+          <UbTaskBar
+            back
+            title={t('items.labels.title')}
+            subtitle={source ?? undefined}
+            onClose={() => router.push(ROUTES.ITEMS)}
+            closeLabel={t('common.action.back')}
+            className="-mx-4 -mt-4 mb-1"
+          />
+        ) : (
+          <UbPageHeader
+            title={t('items.labels.title')}
+            subtitle={source ?? undefined}
+            actions={printButton}
+          />
+        )}
       </UbBox>
       <UbBox className="ub-print-hide grid gap-4 lg:grid-cols-[minmax(0,1fr)_420px]">
         <UbStack gap={3}>
@@ -227,7 +248,8 @@ export function PrintLabelsPageContent(): React.JSX.Element {
             <UbText as="p" variant="inherit" className="text-[13px] font-semibold">
               {t('items.labels.size')}
             </UbText>
-            <UbChoiceChips<LabelSize>
+            {/* D9: the design's segmented control (`.segc`), not chips. */}
+            <UbSegmentedControl<LabelSize>
               value={size}
               onChange={setSize}
               options={[
@@ -267,6 +289,14 @@ export function PrintLabelsPageContent(): React.JSX.Element {
           </UbStack>
         </UbPanel>
       </UbBox>
+      {phone && (
+        <UbBottomBar
+          clearToBottom
+          className="ub-print-hide -mx-4 grid border-t border-border-hairline bg-surface-card px-4 pb-[calc(0.75rem+env(safe-area-inset-bottom,0px))] pt-3"
+        >
+          {printButton}
+        </UbBottomBar>
+      )}
       {/* What the printer gets: every label, on the chosen paper. */}
       <UbBox
         className={

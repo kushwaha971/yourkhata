@@ -70,6 +70,18 @@ page.on("response", async (r) => {
 });
 const api = async (path) =>
   await (await ctx.request.get(`${base}/api/v1${path}`)).json();
+
+// Every harness run adds items to the QA shop, so the first page by name can be
+// all unpriced or out of stock (11 Nov: 1,221 items). Read every page.
+const allItems = async () => {
+  const out = [];
+  for (let page = 1; page <= 20; page += 1) {
+    const r = await api(`/items?page_size=100&ordering=name&page=${page}`);
+    out.push(...(r.data ?? []));
+    if (page >= (r.meta?.total_pages ?? 1)) break;
+  }
+  return out;
+};
 try {
   await page.goto(`${base}/login/email`);
   await page.fill("input[type=email]", "scale@digikhaato.test");
@@ -85,7 +97,7 @@ try {
   const before = Number(
     (await api(`/parties/${party.id}?book=shop`)).data.shop.customer_balance,
   );
-  const item = (await api("/items?page_size=200&ordering=name&stock_status=ok")).data.find(
+  const item = (await allItems()).find(
     (i) => Number(i.selling_price) > 0 && Number(i.on_hand ?? 1) > 0,
   );
   console.log(

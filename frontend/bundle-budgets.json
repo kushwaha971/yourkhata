@@ -1,5 +1,6 @@
 {
   "//": [
+    "11 Nov 2026, Parts B/C/D measured against the design: Expiry, Find by IMEI and Print labels take the phone back bar (UbTaskBar), Print labels' print button moves to a phone bottom bar and Label size becomes UbSegmentedControl. Those routes moved 0-0.4 KB; the sales and purchase editors moved 1.1-1.4 KB through the bundler regrouping the now more widely shared bars, with no editor code changed. Measured + 0.3.",
     "11 Nov 2026, Part G budget catch-up: G1-G12 added routes (/sales/exchange, /sales/repairs, /reports/schedule-h, phone/cafe orders, schemes, sites, vehicles) that were never given budgets and grew the sales editors (old gold, schemes, sites, loose and substitute sheets) and the sales word list (+23 KB raw English). The add-on, loose and substitute sheets and the site picker were made dynamic() first, which took 6 KB off every bill editor; what remains is set to measured + 0.3. Next saving if needed: split the per-kind sales words (repairs, karigars, vehicles, sites, cafe, phone orders) into their own catalogue so lists and details stop carrying them.",
     "3 Nov 2026, jewellery finish: bills and shared search grew for the tag hold and fixed search list; /settings/messages is new; sales routes moved for the reminder choices. Measured + 0.3. Same night: the reminder sheet bubble and the saved-bill tag guard, measured + 0.3.",
     "31 Oct 2026, D P6 add-ons: the sales editors moved for AddonSheet and the line add-on caption; item routes for ItemAddonFields. Measured + 0.3.",
@@ -1507,12 +1508,12 @@
       "firstLoad": 347.0
     },
     "/sales/challans/new": {
-      "route": 199.9,
-      "firstLoad": 443.0
+      "route": 201.3,
+      "firstLoad": 444.5
     },
     "/sales/challans/[id]/edit": {
-      "route": 199.9,
-      "firstLoad": 443.0
+      "route": 201.3,
+      "firstLoad": 444.5
     },
     "/purchases/orders/[id]": {
       "route": 79.6,
@@ -1523,12 +1524,12 @@
       "firstLoad": 335.3
     },
     "/purchases/orders/new": {
-      "route": 182.2,
-      "firstLoad": 425.5
+      "route": 183.9,
+      "firstLoad": 427.0
     },
     "/purchases/orders/[id]/edit": {
-      "route": 182.2,
-      "firstLoad": 425.5
+      "route": 183.9,
+      "firstLoad": 427.1
     },
     "/sales/orders/[id]": {
       "route": 98.8,
@@ -1539,12 +1540,12 @@
       "firstLoad": 347.0
     },
     "/sales/orders/new": {
-      "route": 199.9,
-      "firstLoad": 443.0
+      "route": 201.3,
+      "firstLoad": 444.5
     },
     "/sales/orders/[id]/edit": {
-      "route": 199.9,
-      "firstLoad": 443.0
+      "route": 201.3,
+      "firstLoad": 444.5
     },
     "/parties": {
       "route": 109,
@@ -1555,12 +1556,12 @@
       "firstLoad": 344.4
     },
     "/sales/invoices/new": {
-      "route": 199.8,
-      "firstLoad": 443.0
+      "route": 201.3,
+      "firstLoad": 444.4
     },
     "/sales/invoices/[id]/edit": {
-      "route": 199.9,
-      "firstLoad": 443.0
+      "route": 201.3,
+      "firstLoad": 444.5
     },
     "/sales/invoices": {
       "route": 103.7,
@@ -1575,12 +1576,12 @@
       "firstLoad": 347.0
     },
     "/sales/estimates/new": {
-      "route": 199.8,
-      "firstLoad": 443.0
+      "route": 201.3,
+      "firstLoad": 444.5
     },
     "/sales/estimates/[id]/edit": {
-      "route": 199.9,
-      "firstLoad": 443.0
+      "route": 201.3,
+      "firstLoad": 444.5
     },
     "/sales/estimates/[id]": {
       "route": 98.8,
@@ -1735,16 +1736,16 @@
       "firstLoad": 322.8
     },
     "/purchases/bills/[id]/edit": {
-      "route": 182.2,
-      "firstLoad": 425.5
+      "route": 183.9,
+      "firstLoad": 427.1
     },
     "/purchases/bills": {
       "route": 95,
       "firstLoad": 335.3
     },
     "/purchases/bills/new": {
-      "route": 182.2,
-      "firstLoad": 425.5
+      "route": 183.9,
+      "firstLoad": 427.0
     },
     "/reports": {
       "route": 72,
@@ -1951,24 +1952,24 @@
     "/solutions": {},
     "/solutions/[slug]": {},
     "/stock/count": {
-      "route": 91.4,
-      "firstLoad": 334.6
+      "route": 91.9,
+      "firstLoad": 335.1
     },
     "/stock/transfer": {
       "route": 121.9,
       "firstLoad": 365.0
     },
     "/items/labels": {
-      "route": 87.8,
-      "firstLoad": 331.0
+      "route": 88.2,
+      "firstLoad": 331.3
     },
     "/items/imei": {
-      "route": 68.7,
-      "firstLoad": 312.0
+      "route": 69.4,
+      "firstLoad": 312.5
     },
     "/stock/expiry": {
-      "route": 80.3,
-      "firstLoad": 323.4
+      "route": 80.6,
+      "firstLoad": 323.8
     },
     "/stock/rates": {
       "route": 113.6,

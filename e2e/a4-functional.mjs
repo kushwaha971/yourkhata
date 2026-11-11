@@ -47,6 +47,18 @@ page.on('request', (r) => {
 });
 const api = async (path) => await (await ctx.request.get(`${base}/api/v1${path}`)).json();
 
+// Every harness run adds items to the QA shop, so the first page by name can be
+// all unpriced or out of stock (11 Nov: 1,221 items). Read every page.
+const allItems = async () => {
+  const out = [];
+  for (let page = 1; page <= 20; page += 1) {
+    const r = await api(`/items?page_size=100&ordering=name&page=${page}`);
+    out.push(...(r.data ?? []));
+    if (page >= (r.meta?.total_pages ?? 1)) break;
+  }
+  return out;
+};
+
 const search = () => page.getByRole('combobox').first();
 const addItem = async (name) => {
   await search().click();
@@ -78,7 +90,7 @@ try {
   await page.waitForURL((u) => !u.pathname.startsWith('/login'));
   signedIn = true;
 
-  const items = (await api('/items?page_size=200&ordering=name')).data.filter(
+  const items = (await allItems()).filter(
     (i) => Number(i.selling_price) > 0 && Number(i.on_hand ?? i.stock?.on_hand ?? 0) > 5
   );
   const [a, b] = items;

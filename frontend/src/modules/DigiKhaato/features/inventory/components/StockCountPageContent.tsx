@@ -152,7 +152,15 @@ const createCountColumns = ({
               {t('stock.count.count')}
             </UbText>
           ) : (
-            '—'
+            // dCount: a row not counted yet reads "—" in the "Same" style (`.amt.mute`).
+            <UbText
+              as="span"
+              variant="body-sm-medium"
+              tone="tertiary"
+              className="ds-num whitespace-nowrap font-bold"
+            >
+              —
+            </UbText>
           );
         }
         return (
@@ -313,8 +321,12 @@ export function StockCountPageContent(): React.JSX.Element {
         },
         {
           id: 'differ',
-          template: t(summary.differ === 1 ? 'stock.count.line.differOne' : 'stock.count.line.differ'),
-          values: { n: { text: String(summary.differ), tone: summary.differ > 0 ? 'payable' : 'neutral' } },
+          template: t(
+            summary.differ === 1 ? 'stock.count.line.differOne' : 'stock.count.line.differ'
+          ),
+          values: {
+            n: { text: String(summary.differ), tone: summary.differ > 0 ? 'payable' : 'neutral' },
+          },
         },
         ...(summary.valueChange !== null
           ? [
@@ -324,7 +336,9 @@ export function StockCountPageContent(): React.JSX.Element {
                 values: {
                   amount: {
                     text: withMinusSign(summary.valueChange),
-                    tone: summary.valueChange.startsWith('-') ? ('payable' as const) : ('neutral' as const),
+                    tone: summary.valueChange.startsWith('-')
+                      ? ('payable' as const)
+                      : ('neutral' as const),
                   },
                 },
               },
@@ -409,26 +423,26 @@ export function StockCountPageContent(): React.JSX.Element {
           trailing={saveButton}
         />
       ) : (
-      <UbPageHeader
-        title={t('stock.count.title')}
-        subtitle={
-          phone
-            ? summary
-              ? t('stock.count.started', { time: formatShopTime(summary.startedAt) })
-              : undefined
-            : t('stock.count.subtitle')
-        }
-        actions={
-          <>
-            {!phone && (
-              <UbButton variant="secondary" onClick={() => router.push(ROUTES.ITEMS)}>
-                {t('stock.count.pause')}
-              </UbButton>
-            )}
-            {saveButton}
-          </>
-        }
-      />
+        <UbPageHeader
+          title={t('stock.count.title')}
+          subtitle={
+            phone
+              ? summary
+                ? t('stock.count.started', { time: formatShopTime(summary.startedAt) })
+                : undefined
+              : t('stock.count.subtitle')
+          }
+          actions={
+            <>
+              {!phone && (
+                <UbButton variant="secondary" onClick={() => router.push(ROUTES.ITEMS)}>
+                  {t('stock.count.pause')}
+                </UbButton>
+              )}
+              {saveButton}
+            </>
+          }
+        />
       )}
       <UbStack gap={3} data-testid="stock-count-screen" className="pb-24 lg:pb-0">
         {/* Design pCount: the scan bar, then the count line. dCount draws the
@@ -566,11 +580,7 @@ export function StockCountPageContent(): React.JSX.Element {
         open={confirming}
         onOpenChange={setConfirming}
         title={t('stock.count.confirm.title')}
-        description={
-          summary
-            ? t('stock.count.confirm.body', { count: summary.differ })
-            : undefined
-        }
+        description={summary ? t('stock.count.confirm.body', { count: summary.differ }) : undefined}
         closeLabel={t('common.action.close')}
         footer={
           <>
