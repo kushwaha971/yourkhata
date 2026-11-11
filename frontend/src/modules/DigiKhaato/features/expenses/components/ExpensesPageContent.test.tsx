@@ -141,16 +141,13 @@ it('lists this month and shows the filtered total', async () => {
   expect(lastAsked()).toMatchObject({ preset: 'thisMonth', tab: 'all' });
 });
 
-it('asks the server for cancelled expenses when the Cancelled chip is chosen', async () => {
-  // The chip must change the REQUEST, not just light up. 08 §12 / R-DEC-33:
-  // the chips are on the screen, not inside the Filters sheet.
+it('draws the Part F design: no chips, no category or mode filter, no cash book link', async () => {
   signIn(['expenses.expense.read']);
   renderWithProviders(<ExpensesPageContent />);
   await screen.findByText('Tea for staff');
-  const group = screen.getByRole('radiogroup', { name: 'Which expenses' });
-  await userEvent.click(within(group).getByRole('radio', { name: 'Cancelled' }));
-  await waitFor(() => expect(lastAsked().tab).toBe('void'));
-  expect(mockSearch).toContain('tab=void');
+  expect(screen.queryByRole('radiogroup', { name: 'Which expenses' })).not.toBeInTheDocument();
+  expect(screen.queryByRole('link', { name: /Cash book/ })).not.toBeInTheDocument();
+  expect(screen.queryByRole('button', { name: /All categories/ })).not.toBeInTheDocument();
 });
 
 it('reads a card as the date, then category · mode, then the note', async () => {

@@ -5,6 +5,7 @@ import { Suspense } from 'react';
 import { UbPageSkeleton } from 'src/design-system';
 
 import { SalesFlowListPageContent } from 'modules/DigiKhaato/features/sales/components/SalesFlowListPageContent';
+import 'src/i18n/catalogues/exports';
 import 'src/i18n/catalogues/money';
 import 'src/i18n/catalogues/sales';
 

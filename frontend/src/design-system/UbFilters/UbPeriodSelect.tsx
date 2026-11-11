@@ -2,7 +2,7 @@
 
 import { memo, useCallback, useState } from 'react';
 
-import { CalendarDays, ChevronDown } from 'lucide-react';
+import { ChevronDown } from 'lucide-react';
 
 import { deferredModule, useDeferredModule } from 'src/design-system/primitives/deferredModule';
 import { cn } from 'src/utils/cn';
@@ -117,9 +117,13 @@ function UbPeriodSelectBase<P extends string>({
       )}
       data-testid="period-select"
     >
-      {size !== 'sm' && <CalendarDays aria-hidden className="h-4 w-4 shrink-0 opacity-70" />}
+      {/* Part F design: "Date: This month", the filter's name then its value, like UbFilterSelect. */}
       <span className="truncate">
-        {size === 'sm' && isCustom ? presets.find((p) => p.value === customValue)?.label : current}
+        {size === 'sm'
+          ? isCustom
+            ? presets.find((p) => p.value === customValue)?.label
+            : current
+          : `${labels.period}: ${current}`}
       </span>
       <ChevronDown aria-hidden className="h-4 w-4 shrink-0 opacity-70" />
     </button>

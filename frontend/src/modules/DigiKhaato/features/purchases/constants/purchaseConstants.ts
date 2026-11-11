@@ -15,7 +15,7 @@ export const PURCHASE_BILL_PRESETS: readonly PurchaseBillPreset[] = [
   'thisFy',
   'custom',
 ];
-export const DEFAULT_PURCHASE_BILL_PRESET: PurchaseBillPreset = 'thisFy';
+export const DEFAULT_PURCHASE_BILL_PRESET: PurchaseBillPreset = 'thisMonth';
 
 export const PURCHASE_BILL_TABS_ORDER: readonly PurchaseBillTab[] = [
   'all',

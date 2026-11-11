@@ -9,7 +9,7 @@ import type { InvoiceTab } from '../types/sales.types';
 export type InvoicePreset =
   'today' | 'yesterday' | 'thisWeek' | 'thisMonth' | 'thisFy' | 'lastFy' | 'custom';
 
-/** SAL-08 FR-3 / BR-4 — the date chips; "This FY" is the default. */
+/** SAL-08 FR-3 — the date chips; "This month" is the default (Part F design, owner 11 Nov 2026). */
 export const INVOICE_PRESETS: readonly InvoicePreset[] = [
   'today',
   'yesterday',
@@ -19,7 +19,7 @@ export const INVOICE_PRESETS: readonly InvoicePreset[] = [
   'lastFy',
   'custom',
 ];
-export const DEFAULT_INVOICE_PRESET: InvoicePreset = 'thisFy';
+export const DEFAULT_INVOICE_PRESET: InvoicePreset = 'thisMonth';
 
 export const INVOICE_TABS_ORDER: readonly InvoiceTab[] = [
   'all',

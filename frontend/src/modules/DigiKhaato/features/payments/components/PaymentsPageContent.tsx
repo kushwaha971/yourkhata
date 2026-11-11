@@ -8,10 +8,8 @@ import { Plus } from 'lucide-react';
 
 import {
   UbButton,
-  UbChoiceChips,
   UbDrawerLoading,
   UbEmptyState,
-  UbFilterSelect,
   UbFilterSheet,
   UbLoadMore,
   UbPageHeader,
@@ -37,7 +35,6 @@ import { useOpenOnAddQuery } from 'src/hooks/useOpenOnAddQuery';
 import { usePermissions } from 'src/hooks/usePermissions';
 import { useTranslation } from 'src/hooks/useTranslation';
 import { ROUTES } from 'src/routes';
-import { PAYMENT_MODES, type PaymentMode } from 'src/types/domain.types';
 
 import { ListExportButton } from 'modules/DigiKhaato/features/imports/components/ListHeaderActions';
 
@@ -53,7 +50,7 @@ import { isNarrowed } from '../view-model/paymentDisplay';
 import { createPaymentColumns } from './PaymentColumns';
 import { PaymentListStats } from './PaymentListStats';
 
-import type { PaymentContext, PaymentRow, PaymentTab } from '../types/payment.types';
+import type { PaymentContext, PaymentRow } from '../types/payment.types';
 
 /** The drawer loads with the tap that opens it, not with the list (CLAUDE.md). */
 const PaymentFormDrawerLazy = dynamic(
@@ -63,7 +60,6 @@ const PaymentFormDrawerLazy = dynamic(
 );
 
 const SEARCH_DEBOUNCE_MS = 300;
-const ALL = 'all';
 
 /**
  * 08 §9 / PAY-01 FR-10 — `/payments`: every Shop receipt and supplier payment,
@@ -171,21 +167,6 @@ export function PaymentsPageContent(): React.JSX.Element {
     () => PAYMENT_PRESETS.map((value) => ({ value, label: t(`expenses.period.${value}`) })),
     [t]
   );
-  const modeOptions = useMemo(
-    () => [
-      { value: ALL, label: t('payments.filter.allModes') },
-      ...PAYMENT_MODES.map((mode) => ({ value: mode, label: t(`ledger.mode.${mode}`) })),
-    ],
-    [t]
-  );
-  const tabs = useMemo(
-    () =>
-      (['all', 'in', 'out', 'void'] as const).map((value) => ({
-        value,
-        label: t(`payments.tab.${value}`),
-      })),
-    [t]
-  );
   const rowId = useCallback((row: PaymentRow) => row.id, []);
   const rowName = useCallback(
     (row: PaymentRow) => `${row.number} ${row.party?.name ?? ''}`.trim(),
@@ -213,15 +194,7 @@ export function PaymentsPageContent(): React.JSX.Element {
      filter that found nothing keeps its controls; only a business with no
      payment at all is reduced to the empty card. */
   const emptyBook = list.status === 'succeeded' && list.rows.length === 0 && list.hasAny === false;
-  const modeSpec: UbFilterSpec = {
-    kind: 'single',
-    key: 'mode',
-    label: t('payments.filter.mode'),
-    anyLabel: t('payments.filter.allModes'),
-    options: modeOptions.filter((option) => option.value !== ALL),
-  };
-  /* On a phone: the search and ONE Filters button holding the period and the
-     mode; the chips stay visible, as on the bills register (R-DEC-33). */
+  /* On a phone: the search and ONE Filters button holding the period. */
   const phoneSpecs: UbFilterSpec[] = [
     {
       kind: 'single',
@@ -240,14 +213,12 @@ export function PaymentsPageContent(): React.JSX.Element {
       toLabel: t('expenses.period.to'),
       max: list.today,
     },
-    modeSpec,
   ];
   const custom = filters.preset === 'custom';
   const phoneValues: UbFilterValues = {
     preset: filters.preset === DEFAULT_PAYMENT_PRESET || custom ? '' : filters.preset,
     dateFrom: custom ? filters.dateFrom : '',
     dateTo: custom ? filters.dateTo : '',
-    mode: filters.mode ?? '',
   };
   const applyPhone = (next: UbFilterValues) => {
     const ranged = Boolean(next.dateFrom || next.dateTo);
@@ -256,7 +227,6 @@ export function PaymentsPageContent(): React.JSX.Element {
       preset: ranged ? 'custom' : ((next.preset || DEFAULT_PAYMENT_PRESET) as PaymentPreset),
       dateFrom: next.dateFrom || filters.dateFrom,
       dateTo: next.dateTo || filters.dateTo,
-      mode: next.mode ? (next.mode as PaymentMode) : null,
     });
   };
   const searchBox = (
@@ -317,12 +287,6 @@ export function PaymentsPageContent(): React.JSX.Element {
                       apply: t('common.action.apply'),
                       close: t('common.action.close'),
                     }}
-                  />
-                  <UbFilterSelect
-                    spec={modeSpec}
-                    value={filters.mode ?? ''}
-                    onChange={(value) => list.setMode(value ? (value as PaymentMode) : null)}
-                    closeLabel={t('common.action.close')}
                   />
                 </>
               )}
@@ -453,15 +417,6 @@ export function PaymentsPageContent(): React.JSX.Element {
           <>
             {phone && tools}
             {!phone && summary}
-            <UbChoiceChips<PaymentTab>
-              value={filters.tab}
-              onChange={list.setTab}
-              options={tabs}
-              ariaLabel={t('payments.tab.label')}
-              className="flex-nowrap overflow-x-auto py-1.5 [&>button]:shrink-0"
-            />
-            {/* Cancelled payments are never counted, so their tab has no totals:
-                "Received · 0 payments ₹0.00" over a list of them read as a fault. */}
             {phone && summary}
             {grid}
           </>

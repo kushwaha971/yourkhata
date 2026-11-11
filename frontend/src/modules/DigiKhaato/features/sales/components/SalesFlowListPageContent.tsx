@@ -8,7 +8,6 @@ import { RecordTotals } from 'src/components/records/RecordTotals';
 import {
   UbActionLink,
   UbButton,
-  UbChoiceChips,
   UbPeriodSelect,
   UbEmptyState,
   UbFilterSheet,
@@ -33,6 +32,9 @@ import { useCommittedSearch } from 'src/hooks/useCommittedSearch';
 import { useTranslation } from 'src/hooks/useTranslation';
 import { formatBusinessDate } from 'src/utils/dates';
 
+import { ListExportButton } from 'modules/DigiKhaato/features/imports/components/ListHeaderActions';
+
+import { flowExportPath } from '../api/salesService';
 import {
   DEFAULT_INVOICE_PRESET,
   INVOICE_PRESETS,
@@ -41,13 +43,12 @@ import {
 } from '../constants/salesConstants';
 import { useSalesFlowList } from '../hooks/useSalesFlowList';
 import { useSalesGridLabels } from '../hooks/useSalesGridLabels';
-import { FLOW_HOME, FLOW_TABS, flowRowHref } from '../view-model/flowDisplay';
+import { FLOW_HOME, flowRowHref } from '../view-model/flowDisplay';
 
 import { createFlowColumns } from './FlowColumns';
-import { SalesSectionLinks } from './SalesSectionLinks';
 
 import type { InvoiceListRow } from '../types/sales.types';
-import type { FlowKind, FlowTab } from '../types/salesFlows.types';
+import type { FlowKind } from '../types/salesFlows.types';
 
 const COPY: Readonly<Record<FlowKind, { readonly ns: string; readonly stat: string }>> = {
   estimate: { ns: 'sales.estimate', stat: 'sales.estimate.totalQuoted' },
@@ -79,7 +80,9 @@ export function SalesFlowListPageContent({
       ? 'sales.order.new'
       : kind === 'delivery_challan'
         ? 'sales.challan.new'
-        : 'sales.estimate.new';
+        : kind === 'credit_note'
+          ? 'sales.creditNote.new'
+          : 'sales.estimate.new';
 
   const { setQuery, filters, refetch, clearFilters, error, canWrite, setTab } = list;
   const [search, setSearch] = useCommittedSearch(filters.q, setQuery, INVOICE_SEARCH_DEBOUNCE_MS);
@@ -94,7 +97,10 @@ export function SalesFlowListPageContent({
       }),
     [t, kind, tier, wide]
   );
-  const newEstimate = canWrite && kind !== 'credit_note';
+  // A credit note's New opens its own page, which sends the merchant to the
+  // bill being returned: a return cannot be made without one.
+  const newEstimate = canWrite;
+  const exportPath = flowExportPath(kind, filters);
   const existingDrafts =
     kind === 'credit_note' && filters.tab === 'all' && (list.tabs?.draft ?? 0) > 0;
   const emptyStates = useMemo<UbDataGridEmptyStates>(
@@ -168,15 +174,6 @@ export function SalesFlowListPageContent({
   const presets = useMemo(
     () => INVOICE_PRESETS.map((value) => ({ value, label: t(`sales.period.${value}`) })),
     [t]
-  );
-  const tabs = useMemo(
-    () =>
-      FLOW_TABS[kind].map((value) => {
-        const count = list.tabs?.[value];
-        const label = t(`${ns}.tab.${value}`);
-        return { value, label: count !== undefined ? `${label} · ${count}` : label };
-      }),
-    [t, ns, kind, list.tabs]
   );
   const rowId = useCallback((row: InvoiceListRow) => row.id, []);
   const rowName = useCallback(
@@ -384,7 +381,15 @@ export function SalesFlowListPageContent({
         wrapTitle
         title={t(`${ns}.listTitle`)}
         subtitle={t(`${ns}.listSubtitle`)}
-        actions={<SalesSectionLinks current={kind} />}
+        actions={
+          exportPath ? (
+            <ListExportButton
+              listPath={exportPath}
+              permission="reports.export"
+              empty={list.status === 'succeeded' && list.total === 0}
+            />
+          ) : undefined
+        }
         primaryAction={
           newEstimate && !emptyBook ? (
             <UbActionLink
@@ -437,14 +442,6 @@ export function SalesFlowListPageContent({
           <>
             {phone && tools}
             {!phone && stats}
-            <UbChoiceChips<FlowTab>
-              revealSelected
-              value={filters.tab}
-              onChange={list.setTab}
-              options={tabs}
-              ariaLabel={t('sales.flow.status')}
-              className="flex-nowrap overflow-x-auto py-1.5 [&>button]:shrink-0"
-            />
             {phone && stats}
             {grid}
           </>

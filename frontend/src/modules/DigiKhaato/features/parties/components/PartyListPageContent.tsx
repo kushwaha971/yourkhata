@@ -1063,7 +1063,10 @@ export function PartyListPageContent({
                   onSearch={setSearchInput}
                   balance={filters.balance}
                   onBalance={handleBalance}
+                  /* Part F (owner, 11 Nov 2026): Suppliers' toolbar is the
+                     search alone, as the design draws it. */
                   filters={
+                    supplier ? undefined : (
                     <>
                       {/* The design's desktop toolbar: Show and Balance beside
                           the search; a phone keeps its one-tap chips. */}
@@ -1133,6 +1136,7 @@ export function PartyListPageContent({
                         onApply={setFilters}
                       />
                     </>
+                    )
                   }
                 />
               ) : undefined

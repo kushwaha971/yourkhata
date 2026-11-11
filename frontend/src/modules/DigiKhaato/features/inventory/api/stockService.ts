@@ -141,6 +141,10 @@ export const stockSummaryExportPath = (filters: StockSummaryFilters): string =>
     ordering: filters.ordering,
   })}`;
 
+/** Low stock's Export: the stock report narrowed to what that screen lists, low and out. */
+export const lowStockExportPath = (): string =>
+  `${API_PATHS.REPORT_STOCK_SUMMARY}${toQueryString({ status: 'short', hide_zero: 'false' })}`;
+
 export const getStockSummary = async (
   filters: StockSummaryFilters,
   signal?: AbortSignal

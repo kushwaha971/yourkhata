@@ -328,3 +328,18 @@ def test_the_json_page_is_a_slice_of_the_file_and_its_totals_are_the_files(
     assert body["meta"]["total"] == totals["item_count"] == len(table) - 1
     for key in ("on_hand", "stock_value", "potential_sale_value", "unit"):
         assert totals[key] == file_total[key], key
+
+
+def test_the_short_filter_is_the_low_stock_screen(tenant: Any, api_as: Any) -> None:
+    """Part F design (owner, 11 Nov 2026): Export on Low stock downloads
+    exactly the items that screen lists, low and out, and nothing that is fine."""
+    for n in range(6):
+        _stock(tenant, f"Item {n}", n, "10", "12", reorder=3)
+    owner, _ = api_as(tenant)
+    screen = owner.get(reverse("v1:stock-low")).json()
+    rows = _csv(
+        owner.get(reverse("v1:report-stock-summary") + "?status=short&hide_zero=false&format=csv")
+    )
+    names = sorted(r[0] for r in rows[1:-1])
+    assert names == sorted(row["item"]["name"] for row in screen["data"])
+    assert names == ["Item 0", "Item 1", "Item 2", "Item 3"]

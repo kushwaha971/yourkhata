@@ -9,7 +9,6 @@ import {
   UbButton,
   UbPeriodSelect,
   useMediaQuery,
-  UbChoiceChips,
   UbEmptyState,
   UbFilterChip,
   UbFilterSheet,
@@ -51,7 +50,6 @@ import {
   DEBIT_NOTE_TABS,
   PURCHASE_ORDER_TABS,
   type PurchaseBillListRow,
-  type PurchaseBillTab,
   type PurchaseKind,
 } from '../types/purchase.types';
 import { isPurchaseListNarrowed } from '../view-model/purchaseBillDisplay';
@@ -79,12 +77,12 @@ const LIST_COPY = {
     emptyFirstBody: 'purchases.order.empty.firstBody',
     tab: 'purchases.order.tab',
   },
-  // Shop P0 — a debit note starts from its bill, so this list has no "New".
+  // A debit note starts from its bill: New opens Purchases to pick it.
   debit_note: {
     home: ROUTES.DEBIT_NOTES,
     tabs: DEBIT_NOTE_TABS,
     title: 'purchases.debitNote.listTitle',
-    newLabel: null,
+    newLabel: 'purchases.debitNote.new',
     emptyFirst: 'purchases.debitNote.empty.first',
     emptyFirstBody: 'purchases.debitNote.empty.firstBody',
     tab: 'purchases.debitNote.tab',
@@ -112,7 +110,7 @@ export function PurchaseBillsListPageContent({
   const { w } = useAppWords();
   const copy = LIST_COPY[kind];
   const order = kind === 'purchase_order';
-  const NEW_BILL = `${copy.home}/new`;
+  const NEW_BILL = kind === 'debit_note' ? ROUTES.PURCHASE_BILLS : `${copy.home}/new`;
 
   const { setQuery, filters, canWrite } = list;
   const [search, setSearch] = useCommittedSearch(
@@ -211,15 +209,6 @@ export function PurchaseBillsListPageContent({
   const presets = useMemo(
     () => PURCHASE_BILL_PRESETS.map((value) => ({ value, label: t(`purchases.period.${value}`) })),
     [t]
-  );
-  const tabs = useMemo(
-    () =>
-      copy.tabs.map((value: PurchaseBillTab) => {
-        const count = list.counts?.[value];
-        const label = t(`${copy.tab}.${value}`);
-        return { value, label: count ? `${label} · ${count}` : label };
-      }),
-    [t, list.counts, copy]
   );
   const rowId = useCallback((row: PurchaseBillListRow) => row.id, []);
   const rowName = useCallback(
@@ -438,22 +427,13 @@ export function PurchaseBillsListPageContent({
         title={t(copy.title)}
         subtitle={w(`${copy.title}Sub`)}
         actions={
-          <>
-            {Object.entries(LIST_COPY)
-              .filter(([key]) => key !== kind)
-              .map(([key, section]) => (
-                <UbActionLink key={key} href={section.home} variant="secondary">
-                  {t(section.title)}
-                </UbActionLink>
-              ))}
-            {kind === 'purchase_bill' && (
-              <ListExportButton
-                listPath={purchaseBillExportPath({ ...filters, partyId: null })}
-                permission="reports.export"
-                empty={list.status === 'succeeded' && list.total === 0}
-              />
-            )}
-          </>
+          !order ? (
+            <ListExportButton
+              listPath={purchaseBillExportPath({ ...filters, partyId: null }, kind)}
+              permission="reports.export"
+              empty={list.status === 'succeeded' && list.total === 0}
+            />
+          ) : undefined
         }
         primaryAction={
           canWrite && copy.newLabel && !emptyBook ? (
@@ -508,13 +488,6 @@ export function PurchaseBillsListPageContent({
           <>
             {phone && tools}
             {!phone && stats}
-            <UbChoiceChips<PurchaseBillTab>
-              value={filters.tab}
-              onChange={list.setTab}
-              options={tabs}
-              ariaLabel={t('purchases.tab.label')}
-              className="shrink-0 flex-nowrap overflow-x-auto py-1.5 [&>button]:shrink-0"
-            />
             {dueChip}
             {phone && stats}
             {grid}

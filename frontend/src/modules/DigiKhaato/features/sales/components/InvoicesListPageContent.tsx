@@ -8,7 +8,6 @@ import {
   UbActionLink,
   UbButton,
   UbPeriodSelect,
-  UbChoiceChips,
   UbFilterSelect,
   UbEmptyState,
   UbFilterSheet,
@@ -40,7 +39,6 @@ import {
   DEFAULT_INVOICE_PRESET,
   INVOICE_PRESETS,
   INVOICE_SEARCH_DEBOUNCE_MS,
-  INVOICE_TABS_ORDER,
   type InvoicePreset,
 } from '../constants/salesConstants';
 import { useInvoiceList } from '../hooks/useInvoiceList';
@@ -50,9 +48,8 @@ import { ORIGIN_MODULE_IDS } from '../view-model/originDisplay';
 
 import { createInvoiceColumns } from './InvoiceColumns';
 import { InvoiceListStats } from './InvoiceListStats';
-import { SalesSectionLinks } from './SalesSectionLinks';
 
-import type { InvoiceListRow, InvoiceTab } from '../types/sales.types';
+import type { InvoiceListRow } from '../types/sales.types';
 
 const NEW_BILL = `${ROUTES.SALES_INVOICES}/new`;
 
@@ -163,15 +160,6 @@ export function InvoicesListPageContent(): React.JSX.Element {
   const presets = useMemo(
     () => INVOICE_PRESETS.map((value) => ({ value, label: t(`sales.period.${value}`) })),
     [t]
-  );
-  const tabs = useMemo(
-    () =>
-      INVOICE_TABS_ORDER.map((value) => {
-        const count = list.tabs?.[value];
-        const label = t(`sales.tab.${value}`);
-        return { value, label: count ? `${label} · ${count}` : label };
-      }),
-    [t, list.tabs]
   );
   const rowId = useCallback((row: InvoiceListRow) => row.id, []);
   const rowName = useCallback(
@@ -385,14 +373,11 @@ export function InvoicesListPageContent(): React.JSX.Element {
         title={t('sales.list.title')}
         subtitle={t('sales.list.subtitle')}
         actions={
-          <>
-            <SalesSectionLinks current="invoice" />
-            <ListExportButton
-              listPath={invoiceExportPath({ ...filters, partyId: null })}
-              permission="reports.export"
-              empty={list.status === 'succeeded' && list.total === 0}
-            />
-          </>
+          <ListExportButton
+            listPath={invoiceExportPath({ ...filters, partyId: null })}
+            permission="reports.export"
+            empty={list.status === 'succeeded' && list.total === 0}
+          />
         }
         primaryAction={
           canWrite && !emptyBook ? (
@@ -452,13 +437,6 @@ export function InvoicesListPageContent(): React.JSX.Element {
                 loading={list.status === 'loading' || list.status === 'idle'}
               />
             )}
-            <UbChoiceChips<InvoiceTab>
-              value={filters.tab}
-              onChange={list.setTab}
-              options={tabs.map((tab) => ({ value: tab.value, label: tab.label }))}
-              ariaLabel={t('sales.tab.label')}
-              className="flex-nowrap overflow-x-auto py-1.5 [&>button]:shrink-0"
-            />
             {phone && (totals || list.status === 'loading' || list.status === 'idle') && (
               <InvoiceListStats
                 totals={totals}

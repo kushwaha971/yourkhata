@@ -221,10 +221,10 @@ describe('the record toast after "Paid now" (PUR-02 FR-8)', () => {
 });
 
 describe('the list filters in the address bar', () => {
-  it('round-trips a tab, a search and a custom range, and defaults to this FY', () => {
+  it('round-trips a tab, a search and a custom range, and defaults to this month', () => {
     const today = '2026-09-25';
     const defaults = purchaseFiltersFromQuery(new URLSearchParams(''), today);
-    expect(defaults).toMatchObject({ preset: 'thisFy', dateFrom: '2026-04-01', tab: 'all' });
+    expect(defaults).toMatchObject({ preset: 'thisMonth', dateFrom: '2026-09-01', tab: 'all' });
     expect(purchaseQueryFromFilters(defaults)).toBe('');
 
     const qs = 'period=custom&from=2026-09-01&to=2026-09-10&tab=unpaid&q=AT%2F778';

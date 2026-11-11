@@ -16,6 +16,9 @@ from rest_framework.permissions import SAFE_METHODS, IsAuthenticated
 
 from apps.common.constants import ModuleCode
 from apps.common.context import Ctx
+from apps.common.dates import tenant_today
+from apps.common.exceptions import ValidationFailed
+from apps.common.exports import CsvExportMixin, ExportColumn, csv_date
 from apps.common.permissions import ModuleEnabled
 from apps.common.responses import StandardResponse
 from apps.common.throttling import ScopedUserRateThrottle
@@ -24,7 +27,7 @@ from apps.sales.constants import ESTIMATE_TAB_STATUSES, DocumentStatus
 from apps.sales.filters import InvoiceFilterSet
 from apps.sales.models import SalesDocument
 from apps.sales.permissions import EstimateConvertPermissions, EstimatePermissions
-from apps.sales.selectors.documents import ORDERING_FIELDS, detail_queryset, list_documents
+from apps.sales.selectors.documents import ORDERING_FIELDS, apply_tab, detail_queryset, list_documents
 from apps.sales.serializers.document import DocumentReadSerializer, ShareLinkSerializer
 from apps.sales.serializers.flows import (
     EstimateWriteSerializer,
@@ -40,7 +43,17 @@ from apps.sales.views.common import created, draft_created, ok, tabbed_list
 KINDS = service.ESTIMATE_KINDS
 
 
+
+EXPORT_COLUMNS = (
+    ExportColumn("number", lambda d: d.number or ""),
+    ExportColumn("date", lambda d: csv_date(d.document_date)),
+    ExportColumn("customer", lambda d: d.party.name if d.party_id else ""),
+    ExportColumn("amount", lambda d: d.grand_total, numeric=True),
+    ExportColumn("status", lambda d: d.status),
+)
+
 class EstimateViewSet(
+    CsvExportMixin,
     TenantScopeMixin,
     mixins.ListModelMixin,
     mixins.RetrieveModelMixin,
@@ -57,6 +70,8 @@ class EstimateViewSet(
         EstimateConvertPermissions,
     ]
     throttle_classes = [ScopedUserRateThrottle]
+    export_resource = "estimates"
+    export_columns = EXPORT_COLUMNS
 
     def get_throttles(self) -> list[Any]:
         scope = "user" if self.request.method in SAFE_METHODS else "ledger_write"
@@ -68,7 +83,21 @@ class EstimateViewSet(
         return detail_queryset(tenant=self.get_tenant(), kinds=KINDS)
 
     def list(self, request: Any, *args: Any, **kwargs: Any) -> Any:
+        if self.wants_csv(request):
+            return self.csv_export(request)
         return tabbed_list(self, request, ESTIMATE_TAB_STATUSES)
+
+    def export_queryset(self) -> Any:
+        """The file is the screen: the tab narrows it as it narrows the list."""
+        tab = self.request.query_params.get("tab") or "all"
+        if tab not in ESTIMATE_TAB_STATUSES:
+            raise ValidationFailed({"tab": [f"Choose one of {', '.join(ESTIMATE_TAB_STATUSES)}."]})
+        return apply_tab(
+            self.filter_queryset(self.get_queryset()),
+            tab,
+            ESTIMATE_TAB_STATUSES,
+            today=tenant_today(self.get_tenant()),
+        )
 
     def retrieve(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         return ok(get_object_or_404(self.get_queryset(), pk=kwargs["pk"]))

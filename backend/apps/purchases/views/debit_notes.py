@@ -20,6 +20,7 @@ from apps.common.constants import ModuleCode
 from apps.common.context import Ctx
 from apps.common.dates import tenant_today
 from apps.common.exceptions import ValidationFailed
+from apps.common.exports import CsvExportMixin, ExportColumn, csv_date
 from apps.common.idempotency import idempotent
 from apps.common.money import ZERO
 from apps.common.permissions import ModuleEnabled
@@ -60,7 +61,17 @@ def _note_envelope(document: PurchaseDocument, *, extra: dict | None = None) -> 
     return {"data": BillReadSerializer(document).data, "meta": {"warnings": [], **(extra or {})}}
 
 
+DEBIT_NOTE_EXPORT_COLUMNS = (
+    ExportColumn("number", lambda d: d.number or ""),
+    ExportColumn("date", lambda d: csv_date(d.document_date)),
+    ExportColumn("supplier", lambda d: d.party.name if d.party_id else ""),
+    ExportColumn("amount", lambda d: d.grand_total, numeric=True),
+    ExportColumn("status", lambda d: d.status),
+)
+
+
 class DebitNoteViewSet(
+    CsvExportMixin,
     TenantScopeMixin,
     mixins.ListModelMixin,
     mixins.RetrieveModelMixin,
@@ -76,6 +87,8 @@ class DebitNoteViewSet(
         DebitNotePermissions,
     ]
     throttle_classes = [ScopedUserRateThrottle]
+    export_resource = "debit-notes"
+    export_columns = DEBIT_NOTE_EXPORT_COLUMNS
 
     def get_throttles(self) -> list[Any]:
         scope = "user" if self.request.method in SAFE_METHODS else "ledger_write"
@@ -86,7 +99,18 @@ class DebitNoteViewSet(
             return list_bills(tenant=self.get_tenant(), kinds=DEBIT_NOTE_KINDS)
         return detail_queryset(tenant=self.get_tenant(), kinds=DEBIT_NOTE_KINDS)
 
+    def export_queryset(self) -> Any:
+        """The file is the screen: the tab narrows it as it narrows the list."""
+        tab = self.request.query_params.get("tab") or "all"
+        if tab not in DEBIT_NOTE_TAB_STATUSES:
+            raise ValidationFailed(
+                {"tab": [f"Choose one of {', '.join(DEBIT_NOTE_TAB_STATUSES)}."]}
+            )
+        return apply_tab(self.filter_queryset(self.get_queryset()), tab, DEBIT_NOTE_TAB_STATUSES)
+
     def list(self, request: Any, *args: Any, **kwargs: Any) -> Any:
+        if self.wants_csv(request):
+            return self.csv_export(request)
         tab = request.query_params.get("tab") or "all"
         if tab not in DEBIT_NOTE_TAB_STATUSES:
             raise ValidationFailed(

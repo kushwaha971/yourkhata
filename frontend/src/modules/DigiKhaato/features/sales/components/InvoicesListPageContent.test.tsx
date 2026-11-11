@@ -1,6 +1,6 @@
 import type * as ReactModule from 'react';
 
-import { act, fireEvent, screen, waitFor, within } from '@testing-library/react';
+import { act, fireEvent, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
 import { UbButton } from 'src/design-system';
@@ -121,7 +121,7 @@ beforeEach(() => {
   );
 });
 
-it('lists this financial year and shows the server totals', async () => {
+it('lists this month and shows the server totals (Part F design)', async () => {
   // The tiles are meta.totals over the filtered set, not a sum of the page.
   signIn(['sales.invoice.read', 'sales.invoice.write']);
   renderWithProviders(<InvoicesListPageContent />);
@@ -129,19 +129,17 @@ it('lists this financial year and shows the server totals', async () => {
   expect(screen.getByText('Billed')).toBeInTheDocument();
   expect(screen.getAllByText('₹112.00').length).toBeGreaterThanOrEqual(2);
   expect(screen.getByRole('link', { name: /New bill/ })).toBeInTheDocument();
-  expect(lastAsked()).toMatchObject({ tab: 'all', dateFrom: expect.stringMatching(/-04-01$/) });
+  expect(lastAsked()).toMatchObject({ tab: 'all', dateFrom: expect.stringMatching(/-01$/) });
+  expect(lastAsked().dateFrom.slice(0, 7)).toBe(lastAsked().dateTo.slice(0, 7));
 });
 
-/** Counter register: the common status question must not require opening Filters. */
-it('asks the server for paid bills directly from the visible status choices', async () => {
+/** Part F design (owner, 11 Nov 2026): no status chips; a link with ?tab= (Home's tiles) still narrows. */
+it('draws no status chips and still honours a status in the link', async () => {
+  mockSearch = 'tab=paid';
   signIn(['sales.invoice.read']);
-  const user = userEvent.setup();
   renderWithProviders(<InvoicesListPageContent />);
-  await screen.findAllByText(/Ramesh Traders/);
-  const group = screen.getByRole('radiogroup', { name: 'Bill status' });
-  await user.click(within(group).getByRole('radio', { name: /^Paid/ }));
   await waitFor(() => expect(lastAsked().tab).toBe('paid'));
-  expect(mockSearch).toBe('tab=paid');
+  expect(screen.queryByRole('radiogroup', { name: 'Bill status' })).not.toBeInTheDocument();
 });
 
 it('a shop with no bill at all sees one sentence and one button (owner, 12 Oct 2026)', async () => {
@@ -219,11 +217,10 @@ it('opens the new bill editor from the phone header action', async () => {
 it('preserves the chosen status when applying the advanced filter drawer', async () => {
   signIn(['sales.invoice.read']);
   const user = userEvent.setup();
+  mockSearch = 'tab=paid';
   renderWithProviders(<InvoicesListPageContent />);
-  await screen.findAllByText(/Ramesh Traders/);
-  await user.click(screen.getByRole('radio', { name: /^Paid/ }));
   await waitFor(() => expect(lastAsked().tab).toBe('paid'));
-  await user.click(screen.getByTestId('filters-button'));
+  await user.click(await screen.findByTestId('filters-button'));
   await user.click(await screen.findByTestId('filters-apply'));
   expect(lastAsked().tab).toBe('paid');
 });

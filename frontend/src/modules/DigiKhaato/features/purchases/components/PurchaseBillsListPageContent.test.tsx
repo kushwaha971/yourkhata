@@ -1,6 +1,6 @@
 import type * as ReactModule from 'react';
 
-import { screen, waitFor, within } from '@testing-library/react';
+import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
 import { resetAllFeatureState } from 'src/redux/actions';
@@ -113,7 +113,7 @@ beforeEach(() => {
   );
 });
 
-it('lists this financial year and shows the server payables totals (PUR-03 FR-3)', async () => {
+it('lists this month and shows the server payables totals (PUR-03 FR-3)', async () => {
   signIn(['purchases.bill.read', 'purchases.bill.write']);
   renderWithProviders(<PurchaseBillsListPageContent />);
   expect((await screen.findAllByText(/Agro Traders/)).length).toBeGreaterThan(0);
@@ -123,7 +123,7 @@ it('lists this financial year and shows the server payables totals (PUR-03 FR-3)
   expect(screen.queryByRole('tab')).not.toBeInTheDocument();
   expect(screen.getByTestId('filters-button')).toBeInTheDocument();
   expect(screen.getByRole('link', { name: /New purchase/ })).toBeInTheDocument();
-  expect(lastAsked()).toMatchObject({ tab: 'all', dateFrom: expect.stringMatching(/-04-01$/) });
+  expect(lastAsked()).toMatchObject({ tab: 'all', dateFrom: expect.stringMatching(/-01$/) });
 });
 
 it('asks for the bills due in the window a link names, says so, and can drop it (WP-06)', async () => {
@@ -140,15 +140,12 @@ it('asks for the bills due in the window a link names, says so, and can drop it 
   expect(screen.queryByRole('button', { name: /^Due / })).not.toBeInTheDocument();
 });
 
-it('asks the server for unpaid bills when the Unpaid tab is chosen (AC-1)', async () => {
+it('draws no status chips (Part F design) and still honours a status in the link', async () => {
+  mockSearch = 'tab=unpaid';
   signIn(['purchases.bill.read']);
   renderWithProviders(<PurchaseBillsListPageContent />);
-  await screen.findAllByText(/Agro Traders/);
-  const user = userEvent.setup();
-  const group = screen.getByRole('radiogroup', { name: 'Bills by status' });
-  await user.click(within(group).getByRole('radio', { name: /To pay/ }));
   await waitFor(() => expect(lastAsked().tab).toBe('unpaid'));
-  expect(mockSearch).toContain('tab=unpaid');
+  expect(screen.queryByRole('radiogroup', { name: 'Bills by status' })).not.toBeInTheDocument();
 });
 
 it('shows a shop that has never bought anything one sentence, not tabs and ₹0', async () => {
@@ -186,13 +183,11 @@ it('tells a member without access so, and asks nothing', () => {
   expect(service.listPurchaseBills).not.toHaveBeenCalled();
 });
 
-it('keeps bill status choices visible and supplier paper numbers readable on phones', async () => {
-  /** Revamp defect: status was buried in Filters and the supplier paper number was absent from phone rows. */
+it('keeps supplier paper numbers readable on phones', async () => {
+  /** Revamp defect: the supplier paper number was absent from phone rows. */
   signIn(['purchases.bill.read']);
   renderWithProviders(<PurchaseBillsListPageContent />);
   await screen.findAllByText(/Agro Traders/);
-  const statuses = screen.getByRole('radiogroup', { name: 'Bills by status' });
-  expect(within(statuses).getByRole('radio', { name: /To pay/ })).toBeVisible();
   expect(screen.getByText(/AT\/778/)).toBeVisible();
   expect(screen.getByTestId('ub-grid-scroll-region')).toContainElement(
     screen.getByTestId('ub-grid-cards')
@@ -243,7 +238,7 @@ it('treats an empty period in a used book as filtered empty and clears the date 
   expect(screen.queryByText('No purchase bills yet')).not.toBeInTheDocument();
   await userEvent.setup().click(clear);
   await waitFor(() => expect(mockSearch).not.toContain('period='));
-  expect(lastAsked().dateFrom).toMatch(/-04-01$/);
+  expect(lastAsked().dateFrom).toMatch(/-01$/);
 });
 
 /** LOOK defect: a return-to-supplier card said "₹144.00 to pay" for credit the supplier owes back. */

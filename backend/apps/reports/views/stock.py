@@ -40,7 +40,7 @@ from apps.reports.views.export_support import (
 )
 
 SLUG = "stock-summary"
-_STOCK_FILTERS = {"all": None, "in": "in", "low": "low", "out": "out", "negative": "negative"}
+_STOCK_FILTERS = {"all": None, "in": "in", "low": "low", "out": "out", "negative": "negative", "short": "short"}
 _COST_COLUMNS = ("avg_cost", "stock_value", "potential_sale_value")
 
 

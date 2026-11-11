@@ -106,6 +106,8 @@ SUMMARY_STATUS = {
     "low": Q(stock_status=StockStatus.LOW),
     "out": Q(stock_status=StockStatus.OUT),
     "negative": Q(on_hand__lt=0),
+    # Low stock's Export: everything the Low stock screen lists, low and out.
+    "short": Q(stock_status__in=[StockStatus.LOW, StockStatus.OUT]),
 }
 
 

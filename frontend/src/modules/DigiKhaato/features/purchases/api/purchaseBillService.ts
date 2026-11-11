@@ -251,8 +251,11 @@ const DETAIL_PATH: Readonly<Record<PurchaseKind, (id: string) => string>> = {
   debit_note: API_PATHS.DEBIT_NOTE,
 };
 
-export const purchaseBillExportPath = (filters: Parameters<typeof purchaseBillListQuery>[0]): string =>
-  `${API_PATHS.PURCHASE_BILLS}${purchaseBillListQuery({ ...filters, page: 1 })}`;
+export const purchaseBillExportPath = (
+  filters: Parameters<typeof purchaseBillListQuery>[0],
+  kind: 'purchase_bill' | 'debit_note' = 'purchase_bill'
+): string =>
+  `${kind === 'debit_note' ? API_PATHS.DEBIT_NOTES : API_PATHS.PURCHASE_BILLS}${purchaseBillListQuery({ ...filters, page: 1 })}`;
 
 export const listPurchaseBills = async (
   filters: PurchaseBillListQuery,

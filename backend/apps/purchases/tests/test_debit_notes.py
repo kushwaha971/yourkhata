@@ -376,3 +376,19 @@ def test_a_phone_tracked_by_imei_can_be_sent_back(owner: Any, make_supplier: Any
     voided = owner.post(note_url(note.json()["data"]["id"], "void"), {"reason": "Shop kept it"}, format="json")
     assert voided.status_code == 200, voided.json()
     assert Serial.objects.filter(status=Serial.IN_STOCK).count() == 2
+
+
+def test_the_debit_notes_export_is_the_list_on_screen(
+    owner: Any, make_supplier: Any, make_item: Any
+) -> None:
+    """Part F design (owner, 11 Nov 2026): Export on Debit notes downloads the
+    list as filtered, the same contract as Purchases; Void's file is empty."""
+    supplier, rice = make_supplier(), make_item("Rice", "100.00", "GST0")
+    bill = recorded_bill(owner, party_id=str(supplier.id), lines=[line(rice, "5", "100.00")])
+    assert return_goods(owner, bill, (1, "1")).status_code == 201
+    issued = owner.get(reverse(NOTES), {"format": "csv"})
+    assert issued.status_code == 200, issued.content
+    rows = b"".join(issued.streaming_content).decode().splitlines()
+    assert len(rows) == 2 and supplier.name in rows[1]
+    voided = owner.get(reverse(NOTES), {"format": "csv", "tab": "void"})
+    assert voided.status_code == 400 and voided.json()["error"]["code"] == "nothing_to_export"

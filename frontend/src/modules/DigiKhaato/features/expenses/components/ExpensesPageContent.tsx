@@ -4,15 +4,12 @@ import { useCallback, useMemo } from 'react';
 
 import dynamic from 'next/dynamic';
 
-import { BookOpen, Plus } from 'lucide-react';
+import { Plus } from 'lucide-react';
 
 import {
-  UbActionLink,
   UbButton,
-  UbChoiceChips,
   UbDrawerLoading,
   UbEmptyState,
-  UbFilterSelect,
   UbFilterSheet,
   UbLoadMore,
   UbPageHeader,
@@ -32,13 +29,9 @@ import {
   type UbDataGridLabels,
   type UbGridState,
 } from 'src/design-system/UbDataGrid';
-import { useAppSelector } from 'src/hooks/useAppStore';
 import { useCommittedSearch } from 'src/hooks/useCommittedSearch';
 import { useOpenOnAddQuery } from 'src/hooks/useOpenOnAddQuery';
 import { useTranslation } from 'src/hooks/useTranslation';
-import { selectActiveApp } from 'src/redux/slice/sessionSlice';
-import { ROUTES } from 'src/routes';
-import { PAYMENT_MODES, type PaymentMode } from 'src/types/domain.types';
 
 import { ListExportButton } from 'modules/DigiKhaato/features/imports/components/ListHeaderActions';
 
@@ -51,7 +44,7 @@ import { isNarrowed } from '../view-model/expenseDisplay';
 import { createExpenseColumns } from './ExpenseColumns';
 import { ExpenseListStats } from './ExpenseListStats';
 
-import type { Expense, ExpensePreset, ExpenseTab } from '../types/expense.types';
+import type { Expense, ExpensePreset } from '../types/expense.types';
 
 /** The form and the detail sheet load with the tap that opens them, not with the list. */
 const ExpenseFormDrawerLazy = dynamic(
@@ -81,7 +74,6 @@ const SEARCH_DEBOUNCE_MS = 300;
  * same page with `app=library`.
  */
 export function ExpensesPageContent(): React.JSX.Element {
-  const activeApp = useAppSelector(selectActiveApp);
   const { t } = useTranslation();
   const tier = useGridTier();
   const phone = tier === 'cards';
@@ -172,22 +164,6 @@ export function ExpensesPageContent(): React.JSX.Element {
     () => EXPENSE_PRESETS.map((value) => ({ value, label: t(`expenses.period.${value}`) })),
     [t]
   );
-  const categoryOptions = useMemo(
-    () => form.categories.map((category) => ({ value: category.id, label: category.name })),
-    [form.categories]
-  );
-  const modeOptions = useMemo(
-    () => PAYMENT_MODES.map((mode) => ({ value: mode, label: t(`ledger.mode.${mode}`) })),
-    [t]
-  );
-  const tabs = useMemo(
-    () =>
-      (['all', 'unpaid', 'void'] as const).map((value) => ({
-        value,
-        label: t(`expenses.tab.${value}`),
-      })),
-    [t]
-  );
 
   const { openDetail } = form;
   const rowId = useCallback((row: Expense) => row.id, []);
@@ -210,22 +186,7 @@ export function ExpensesPageContent(): React.JSX.Element {
      filter that found nothing keeps its controls; only a business that has
      never written an expense is reduced to the empty card. */
   const emptyBook = list.status === 'succeeded' && list.rows.length === 0 && list.hasAny === false;
-  const categorySpec: UbFilterSpec = {
-    kind: 'single',
-    key: 'category',
-    label: t('expenses.filter.category'),
-    anyLabel: t('expenses.filter.allCategories'),
-    options: categoryOptions,
-  };
-  const modeSpec: UbFilterSpec = {
-    kind: 'single',
-    key: 'mode',
-    label: t('expenses.filter.mode'),
-    anyLabel: t('expenses.filter.allModes'),
-    options: modeOptions,
-  };
-  /* On a phone: the search and ONE Filters button holding the period, the
-     category and the mode; the chips stay visible (R-DEC-33). */
+  /* On a phone: the search and ONE Filters button holding the period. */
   const phoneSpecs: UbFilterSpec[] = [
     {
       kind: 'single',
@@ -244,16 +205,12 @@ export function ExpensesPageContent(): React.JSX.Element {
       toLabel: t('expenses.period.to'),
       max: list.today,
     },
-    categorySpec,
-    modeSpec,
   ];
   const custom = filters.preset === 'custom';
   const phoneValues: UbFilterValues = {
     preset: filters.preset === DEFAULT_EXPENSE_PRESET || custom ? '' : filters.preset,
     dateFrom: custom ? filters.dateFrom : '',
     dateTo: custom ? filters.dateTo : '',
-    category: filters.categoryId ?? '',
-    mode: filters.mode ?? '',
   };
   const applyPhone = (next: UbFilterValues) => {
     const ranged = Boolean(next.dateFrom || next.dateTo);
@@ -262,8 +219,6 @@ export function ExpensesPageContent(): React.JSX.Element {
       preset: ranged ? 'custom' : ((next.preset || DEFAULT_EXPENSE_PRESET) as ExpensePreset),
       dateFrom: next.dateFrom || filters.dateFrom,
       dateTo: next.dateTo || filters.dateTo,
-      categoryId: next.category || null,
-      mode: next.mode ? (next.mode as PaymentMode) : null,
     });
   };
   const searchBox = (
@@ -326,24 +281,6 @@ export function ExpensesPageContent(): React.JSX.Element {
                       apply: t('common.action.apply'),
                       close: t('common.action.close'),
                     }}
-                  />
-                  {/* Below 1280 px each says only its value ("All categories"):
-                      with "Category:" and "Paid by:" in front the search hint
-                      was cut to "Number, note or c" at 1024. The accessible
-                      name keeps both. */}
-                  <UbFilterSelect
-                    spec={categorySpec}
-                    showLabel={wide}
-                    value={filters.categoryId ?? ''}
-                    onChange={(value) => list.setCategory(value || null)}
-                    closeLabel={t('common.action.close')}
-                  />
-                  <UbFilterSelect
-                    spec={modeSpec}
-                    showLabel={wide}
-                    value={filters.mode ?? ''}
-                    onChange={(value) => list.setMode(value ? (value as PaymentMode) : null)}
-                    closeLabel={t('common.action.close')}
                   />
                 </>
               )}
@@ -414,18 +351,6 @@ export function ExpensesPageContent(): React.JSX.Element {
         subtitle={t('expenses.subtitle')}
         actions={
           <>
-            {/* Library P0 — the cash book is the Shop's word and the Shop's
-                screen, so another app's menu never offers it. */}
-            {(activeApp === null || activeApp === 'shop') && (
-              <UbActionLink
-                href={ROUTES.CASHBOOK}
-                variant="secondary"
-                icon={<BookOpen className="h-4 w-4" aria-hidden />}
-                iconOnly="mobile"
-              >
-                {t('cashbook.title')}
-              </UbActionLink>
-            )}
             {/* IMP-02 — this period and these filters, as a CSV. */}
             {!emptyBook && (
               <ListExportButton
@@ -494,13 +419,6 @@ export function ExpensesPageContent(): React.JSX.Element {
           <>
             {phone && tools}
             {!phone && summary}
-            <UbChoiceChips<ExpenseTab>
-              value={filters.tab}
-              onChange={list.setTab}
-              options={tabs}
-              ariaLabel={t('expenses.tab.label')}
-              className="flex-nowrap overflow-x-auto py-1.5 [&>button]:shrink-0"
-            />
             {phone && summary}
             {grid}
           </>

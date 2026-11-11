@@ -232,6 +232,17 @@ export const invoiceListQuery = (filters: InvoiceListQuery): string =>
 export const invoiceExportPath = (filters: InvoiceListQuery): string =>
   `${API_PATHS.SALES_INVOICES}${invoiceListQuery({ ...filters, page: 1 })}`;
 
+/** Estimates and credit notes export their list as filtered; orders and challans have no export. */
+export const flowExportPath = (kind: string, filters: object): string | null => {
+  const path =
+    kind === 'estimate'
+      ? API_PATHS.SALES_ESTIMATES
+      : kind === 'credit_note'
+        ? API_PATHS.SALES_CREDIT_NOTES
+        : null;
+  return path && `${path}${invoiceListQuery({ ...(filters as InvoiceListQuery), page: 1 })}`;
+};
+
 export const listInvoices = async (
   filters: InvoiceListQuery,
   signal?: AbortSignal

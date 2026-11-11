@@ -3,7 +3,6 @@ import { act, fireEvent, screen } from '@testing-library/react';
 import { renderWithProviders } from 'src/tests/renderWithProviders';
 
 import { makeDocument } from '../testing/salesFixtures';
-import { FLOW_TABS } from '../view-model/flowDisplay';
 
 import { SalesFlowListPageContent } from './SalesFlowListPageContent';
 
@@ -11,6 +10,12 @@ import type { UseSalesFlowListResult } from '../hooks/useSalesFlowList';
 import type { FlowKind } from '../types/salesFlows.types';
 
 jest.mock('../hooks/useSalesFlowList');
+jest.mock('modules/DigiKhaato/features/imports/components/ListHeaderActions', () => ({
+  ListExportButton: ({ listPath }: { listPath: string }) => {
+    const { UbButton } = jest.requireActual('src/design-system');
+    return <UbButton data-path={listPath}>Export</UbButton>;
+  },
+}));
 jest.mock('next/navigation', () => ({
   useRouter: () => ({ push: jest.fn(), replace: jest.fn(), prefetch: jest.fn() }),
   usePathname: () => '/sales/estimates',
@@ -62,21 +67,30 @@ const source = (): UseSalesFlowListResult => ({
 beforeEach(() => jest.clearAllMocks());
 
 it.each<FlowKind>(['estimate', 'sales_order', 'delivery_challan', 'credit_note'])(
-  'exposes %s status filtering without opening a sheet',
+  'draws %s as the Part F design: no status chips, no links to the other lists',
   (kind) => {
-    /** R-DEC-29 defect: the older flow register hid phone status in Filters, contrary to09 §1. */
-    const state = source();
-    hooks.useSalesFlowList.mockReturnValue(state);
+    /** Part F (owner, 11 Nov 2026): the register is the design's — search, period, table. */
+    hooks.useSalesFlowList.mockReturnValue(source());
     renderWithProviders(<SalesFlowListPageContent kind={kind} />);
-    const options = screen.getAllByRole('radio');
-    const option = options[1];
-    if (!option) throw new Error('Missing second status');
-    fireEvent.click(option);
-    expect(state.setTab).toHaveBeenCalledWith(FLOW_TABS[kind][1]);
-    if (kind === 'credit_note')
-      expect(screen.queryByTestId('estimate-new')).not.toBeInTheDocument();
+    expect(screen.queryAllByRole('radio')).toHaveLength(0);
+    expect(screen.queryByRole('link', { name: 'Bills' })).not.toBeInTheDocument();
+    expect(screen.getByTestId('estimate-new')).toBeInTheDocument();
   }
 );
+
+it.each<[FlowKind, boolean]>([
+  ['estimate', true],
+  ['credit_note', true],
+  ['sales_order', false],
+  ['delivery_challan', false],
+])('offers Export on %s: %s', (kind, shown) => {
+  /** The design's Export, where the server has one; orders and challans have none. */
+  hooks.useSalesFlowList.mockReturnValue(source());
+  renderWithProviders(<SalesFlowListPageContent kind={kind} />);
+  const button = screen.queryByRole('button', { name: 'Export' });
+  expect(Boolean(button)).toBe(shown);
+  if (button) expect(button.dataset.path).toMatch(kind === 'estimate' ? /estimates/ : /credit-notes/);
+});
 
 it('synchronizes an externally changed query without sending the old search back', async () => {
   /** Defect: the old local search overwrote URL/clear changes with its stale debounced value. */
@@ -107,7 +121,6 @@ it('offers the existing drafts when the recorded credit-note view is empty', () 
   renderWithProviders(<SalesFlowListPageContent kind="credit_note" />);
   fireEvent.click(screen.getByRole('button', { name: 'Show drafts' }));
   expect(state.setTab).toHaveBeenCalledWith('draft');
-  expect(screen.queryByTestId('estimate-new')).not.toBeInTheDocument();
 });
 
 it('keeps a read-only register usable without offering a write action', () => {

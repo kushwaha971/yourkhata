@@ -96,11 +96,11 @@ describe('invoice form → wire', () => {
 });
 
 describe('the list in the address bar (SAL-08 FR-3)', () => {
-  it('defaults to this financial year, all tabs, and writes nothing to the URL', () => {
+  it('defaults to this month (Part F design), all tabs, and writes nothing to the URL', () => {
     const filters = invoiceFiltersFromQuery(new URLSearchParams(''), TODAY);
     expect(filters).toMatchObject({
-      preset: 'thisFy',
-      dateFrom: '2026-04-01',
+      preset: 'thisMonth',
+      dateFrom: '2026-09-01',
       dateTo: TODAY,
       tab: 'all',
       page: 1,
