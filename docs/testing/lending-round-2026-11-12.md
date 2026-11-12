@@ -127,3 +127,33 @@ Collect has the date line the owner asked for in the Library.
 | Owner 1 | 0 | not yet seen by the owner |
 
 **9/10.**
+
+## Owner's additions, 12 Nov (later the same day)
+
+Three things the owner asked for after the round above, each tested the same
+way before it was pushed:
+
+1. **₹0 on Collect is "visited, paid nothing".** No ₹0 collection is written;
+   the server records the Not paid visit with that reason, so the stop shows
+   Not paid and late and left stay where they were. Only for today. Save reads
+   "Save — visited, paid nothing" and the WhatsApp receipt is hidden.
+2. **Add borrower can fill name and mobile from one phone contact** — the
+   shared button the Customers form uses. Chrome on Android only; it draws
+   nothing on a computer or an iPhone.
+3. **A loan given before the day it is entered.** Pick the start from the
+   calendar; the missed days show late at once; collect each past day on its own
+   date. Writing the test for this **found a defect**: a collection dated before
+   the loan started was accepted. The server refuses it now, naming the start
+   day, and Collect's calendar greys out every day before it.
+
+| Check | Result |
+|---|---|
+| Server `apps/lending` | all pass, with the ₹0 and the two-days-back tests worked out by hand |
+| `e2e/lending-new-checks.mjs` (new) | **24/24** at 390 and 1280 — contact fills name and mobile (stubbed as Android Chrome does), none on desktop; ₹0 stores nothing and turns the stop Not paid; back-dated loan ₹1,000 late on entry, 9 Nov shut and 10 Nov open in the calendar, a collection before the start refused (400), past days collected → nothing late, ₹9,000 left |
+| `e2e/lending-round.mjs` | 64/64 |
+| Look sweep | 828/828 |
+| Monkey 3 × 2 | 5 PASS first time; seed 333 at 1280 failed once and passed on a re-run (0 failures in 305 moves). The first failure's line was not kept, so its cause is unknown — named here rather than hidden |
+
+Screens: `lending-shots/new-*.png`. Not covered: a real Android phone's
+contact picker (the browser's own sheet cannot be driven by a test; the stub
+returns what Chrome returns).
