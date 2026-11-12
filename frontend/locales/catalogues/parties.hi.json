@@ -1,5 +1,4 @@
 {
-  "library.archive.member": "{count, plural, one {# लाइब्रेरी सदस्यता} other {# लाइब्रेरी सदस्यताएँ}} अभी खुली है। पहले उसे बंद करें।",
   "parties.archive.action": "आर्काइव करें",
   "parties.archive.activeGuardian": "{name} {count, plural, one {# सक्रिय संपर्क} other {# सक्रिय संपर्कों}} के अभिभावक हैं। पहले जुड़ाव हटाएँ, या {count, plural, one {उस संपर्क} other {उन संपर्कों}} को आर्काइव करें।",
   "parties.archive.blocked.body": "आर्काइव करने से पहले हिसाब बराबर करें।",

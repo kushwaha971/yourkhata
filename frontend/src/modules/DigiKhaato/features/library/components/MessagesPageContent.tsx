@@ -1,211 +1,95 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-
-import dynamic from 'next/dynamic';
-
-import { MessageCircle, Users } from 'lucide-react';
+import { useCallback, useEffect, useMemo } from 'react';
 
 import {
-  UbAmount,
+  UbBox,
   UbButton,
-  UbDrawerLoading,
   UbEmptyState,
-  UbListItemText,
   UbPageHeader,
   UbPageShell,
-  UbPageSkeleton,
+  UbPressable,
+  UbSkeleton,
   UbStack,
   UbStatusBadge,
   UbText,
 } from 'src/design-system';
+import { useAppRouter } from 'src/hooks/useAppRouter';
 import { useAppDispatch, useAppSelector } from 'src/hooks/useAppStore';
-import { usePermissions } from 'src/hooks/usePermissions';
 import { useTranslation } from 'src/hooks/useTranslation';
-import { formatBusinessDate } from 'src/utils/dates';
+import { todayInTenantTz } from 'src/utils/dates';
 
-import { selectLibraryMessages } from '../redux/libraryMessagesSlice';
-import { fetchFeeReminders } from '../redux/libraryMessageThunk';
+import { selectLibrary } from '../redux/librarySlice';
+import { fetchMessages } from '../redux/libraryThunks';
+import { LIBRARY_ROUTES } from '../routes';
+import { shortDate } from '../view-model/libraryDisplay';
 
-import { LibraryCard } from './LibraryCard';
-
-import type { FeeReminderRow } from '../types/message.types';
-
-/** The message loads with the tap that opens it (CLAUDE.md). */
-const MessageDialogLazy = dynamic(() => import('./MessageDialog').then((m) => m.MessageDialog), {
-  ssr: false, loading: () => <UbDrawerLoading />,
-});
-/** QA F4 / B51 — a group message; a form, so it loads with the tap too. */
-const BulkMessageDrawerLazy = dynamic(
-  () => import('./BulkMessageDrawer').then((m) => m.BulkMessageDrawer),
-  { ssr: false, loading: () => <UbDrawerLoading /> }
-);
+import { List } from './LibraryParts';
 
 /**
- * W06 (owner, 4 Oct 2026) — `/library/messages`: today's fee messages, the
- * way Reminders work. The schedule is fixed — 7, 3 and 1 day before a plan
- * ends, then 1, 3 and 7 days after it ended unrenewed — so this list is
- * exactly who to message today. Each opens WhatsApp with the text filled in
- * and is recorded; a row sent today says so and can still be sent again.
- *
- * QA F4 / B51 — "Message a group" sends to fee unpaid, plans ending, a shift or
- * everybody, outside that schedule, in a fixed message or the desk's own words.
+ * Messages — every fee reminder, receipt and welcome the counter OPENED in
+ * WhatsApp, newest first. Nothing here was sent by the app (DEC-012); the log
+ * is what settles "nobody told me".
  */
 export function MessagesPageContent(): React.JSX.Element {
   const { t } = useTranslation();
   const dispatch = useAppDispatch();
-  const state = useAppSelector(selectLibraryMessages);
-  const { can, hasModule } = usePermissions();
-  const canRead = hasModule('library') && can('library.member.read');
-  const canSend = hasModule('library') && can('library.member.write');
-  const [open, setOpen] = useState<FeeReminderRow | null>(null);
-  const [groupOpen, setGroupOpen] = useState(false);
+  const router = useAppRouter();
+  const lib = useAppSelector(selectLibrary);
+  const today = useMemo(() => todayInTenantTz(), []);
 
+  const load = useCallback(() => dispatch(fetchMessages()), [dispatch]);
   useEffect(() => {
-    if (!canRead) return undefined;
-    const promise = dispatch(fetchFeeReminders());
-    return () => promise.abort();
-  }, [canRead, dispatch]);
-  const staleNow = state.stale && state.staleUrgency === 'now';
-  useEffect(() => {
-    if (canRead && staleNow) void dispatch(fetchFeeReminders());
-  }, [canRead, staleNow, dispatch]);
+    const r = load();
+    return () => r.abort();
+  }, [load]);
 
-  if (!canRead) {
-    return (
-      <UbPageShell>
-        <UbEmptyState
-          variant="firstUse"
-          title={t('library.noAccess.title')}
-          description={t('library.noAccess.body')}
-        />
-      </UbPageShell>
-    );
-  }
-
+  const rows = lib.messages.data ?? [];
   return (
-    <UbPageShell width="measure">
-      <UbPageHeader
-        title={t('library.messages.title')}
-        actions={
-          canSend ? (
-            <UbButton
-              icon={<Users className="h-4 w-4" aria-hidden />}
-              onClick={() => setGroupOpen(true)}
-              data-testid="library-bulk-open"
-            >
-              {t('library.messages.bulk.open')}
-            </UbButton>
-          ) : undefined
-        }
-      />
-      {state.status === 'idle' || state.status === 'loading' ? (
-        <UbPageSkeleton variant="card" />
-      ) : state.status === 'failed' ? (
-        <UbEmptyState
-          variant="error"
-          title={t('library.messages.error.title')}
-          description={state.error?.message}
-          requestId={state.error?.requestId ?? null}
-          requestIdLabel={t('common.error.reference')}
-        />
-      ) : (
-        <UbStack gap={3} data-testid="library-messages">
-          <UbText variant="body-sm" tone="secondary">
-            {t('library.messages.schedule')}
-          </UbText>
-          {state.rows.length === 0 ? (
-            <LibraryCard padded>
-              <UbText variant="body-sm" tone="tertiary">
-                {t('library.messages.none')}
-              </UbText>
-            </LibraryCard>
-          ) : (
-            <LibraryCard padded>
-              <UbStack as="ul" gap={0} aria-label={t('library.messages.title')}>
-                {state.rows.map((row) => (
-                  <UbStack
-                    as="li"
-                    key={row.membershipId}
-                    gap={2}
-                    className="border-b border-border-hairline py-3 last:border-b-0"
-                  >
-                    <UbStack direction="row" justify="between" align="start" gap={3}>
-                      <UbListItemText
-                        primary={row.name}
-                        secondary={[
-                          row.memberNumber,
-                          row.seat,
-                          row.endsOn
-                            ? t(
-                                row.kind === 'due'
-                                  ? 'library.messages.endsOn'
-                                  : 'library.messages.endedOn',
-                                { date: formatBusinessDate(row.endsOn) }
-                              )
-                            : '',
-                        ]
-                          .filter(Boolean)
-                          .join(' · ')}
-                      />
-                      <UbStack gap={1} align="end" className="shrink-0">
-                        <UbAmount
-                          value={row.amount}
-                          tone="receivable"
-                          label={t('library.member.owes')}
-                        />
-                        <UbStatusBadge
-                          tone={row.kind === 'due' ? 'warning' : 'error'}
-                          label={t(
-                            row.kind === 'due' ? 'library.fee.due_soon' : 'library.fee.overdue'
-                          )}
-                        />
-                      </UbStack>
-                    </UbStack>
-                    <UbStack direction="row" gap={2} align="center" wrap>
-                      {canSend && row.hasMobile && (
-                        <UbButton
-                          size="sm"
-                          variant={row.sentToday ? 'secondary' : 'primary'}
-                          icon={<MessageCircle className="h-4 w-4" aria-hidden />}
-                          onClick={() => setOpen(row)}
-                        >
-                          {t('library.messages.send')}
-                        </UbButton>
-                      )}
-                      {!row.hasMobile && (
-                        <UbText variant="caption" tone="tertiary">
-                          {t('library.messages.noMobile', { name: row.name })}
-                        </UbText>
-                      )}
-                      {row.sentToday && (
-                        <UbStatusBadge tone="success" label={t('library.messages.sentToday')} />
-                      )}
-                    </UbStack>
+    <UbPageShell>
+      <UbStack gap={3} className="pb-24 lg:pb-6">
+        <UbPageHeader title={t('library.messages.title')} subtitle={t('library.messages.subtitle')} />
+        {lib.messages.status === 'failed' && !lib.messages.data ? (
+          <UbEmptyState
+            variant="error"
+            title={t('library.messages.error')}
+            action={<UbButton onClick={load}>{t('library.common.tryAgain')}</UbButton>}
+          />
+        ) : !lib.messages.data ? (
+          <UbSkeleton variant="list" count={5} label={t('library.common.loading')} />
+        ) : rows.length === 0 ? (
+          <UbEmptyState
+            variant="firstUse"
+            title={t('library.messages.none')}
+            description={t('library.messages.noneBody')}
+            action={<UbButton onClick={() => router.push(LIBRARY_ROUTES.fees)}>{t('library.messages.goFees')}</UbButton>}
+          />
+        ) : (
+          <List testId="library-messages-list">
+            {rows.map((m) => (
+              <UbBox as="li" key={m.id}>
+                <UbPressable
+                  onClick={() => router.push(LIBRARY_ROUTES.student(m.studentId))}
+                  className="grid w-full gap-1 border-b border-border-hairline px-4 py-3 text-left"
+                >
+                  <UbStack direction="row" align="center" justify="between" gap={2}>
+                    <UbText variant="inherit" truncate className="text-[14px] font-medium">
+                      {m.student}
+                    </UbText>
+                    <UbStatusBadge label={t(`library.messages.kind.${m.kind}`)} tone={m.kind === 'fee_due' ? 'warning' : 'success'} />
                   </UbStack>
-                ))}
-              </UbStack>
-            </LibraryCard>
-          )}
-        </UbStack>
-      )}
-      {open && (
-        <MessageDialogLazy
-          membershipId={open.membershipId}
-          name={open.name}
-          kind="fee"
-          onClose={() => setOpen(null)}
-        />
-      )}
-      {groupOpen && (
-        <BulkMessageDrawerLazy
-          onClose={() => {
-            setGroupOpen(false);
-            // What was opened today now reads "sent today" on the schedule.
-            void dispatch(fetchFeeReminders());
-          }}
-        />
-      )}
+                  <UbText variant="inherit" className="line-clamp-2 text-[12.5px] text-text-secondary">
+                    {m.text}
+                  </UbText>
+                  <UbText variant="inherit" className="text-[12px] text-text-tertiary">
+                    {t('library.messages.opened', { date: shortDate(m.openedAt.slice(0, 10), today) })}
+                  </UbText>
+                </UbPressable>
+              </UbBox>
+            ))}
+          </List>
+        )}
+      </UbStack>
     </UbPageShell>
   );
 }

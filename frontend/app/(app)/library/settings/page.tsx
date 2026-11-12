@@ -1,12 +1,11 @@
 'use client';
 
-import { LibrarySettingsPageContent } from 'modules/DigiKhaato/features/library/components/LibrarySettingsPageContent';
+import { SettingsPageContent } from 'modules/DigiKhaato/features/library/components/SettingsPageContent';
 
 // The words this screen renders arrive with its chunk (src/i18n/catalogueRegistry.ts).
 import 'src/i18n/catalogues/library';
-import 'src/i18n/catalogues/validation';
 
-/** F02 (LIB-01 §7) — the library's settings and its two counters. */
+/** Library settings — fees, seats, name and UPI ID. */
 export default function Page(): React.JSX.Element {
-  return <LibrarySettingsPageContent />;
+  return <SettingsPageContent />;
 }

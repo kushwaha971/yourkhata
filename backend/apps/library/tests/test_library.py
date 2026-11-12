@@ -268,3 +268,13 @@ def test_a_scan_finds_exactly_one_book_and_a_barcode_is_on_one_book(lib):
     assert client.get(ROOT + "books?code=000").json()["data"] == []
     r = post(client, "books", {"title": "Other", "code": "9789384761540"})
     assert r.status_code == 409 and r.json()["error"]["code"] == "code_in_use"
+
+
+def test_the_fee_poster_has_the_shifts_and_a_upi_qr_only_with_a_upi_id(lib):
+    client, _t, _s = lib
+    assert client.get(ROOT + "fees/poster").json()["data"]["qr"] is None
+    client.patch(ROOT + "settings", {"upi_id": "gyan@upi", "sign_as": "Gyan Study Library"}, format="json")
+    poster = client.get(ROOT + "fees/poster").json()["data"]
+    assert poster["name"] == "Gyan Study Library"
+    assert [s["monthly_fee"] for s in poster["shifts"]] == ["800.00", "600.00", "1200.00"]
+    assert poster["qr"]["size"] == len(poster["qr"]["modules"]) > 20

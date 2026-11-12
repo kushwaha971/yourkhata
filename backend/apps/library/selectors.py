@@ -170,8 +170,11 @@ def home(tenant: Any) -> dict:
         [(s, st) for s, st in pairs if st.status in order],
         key=lambda p: (order[p[1].status], -p[1].days_late, p[1].paid_to, p[0].name),
     )
+    from apps.library.messages import library_name
+
     return {
         "day": day.isoformat(),
+        "name": library_name(tenant, settings_for(tenant)),
         "seats": seats,
         "seats_filled": seated.values("seat").distinct().count(),
         "shifts": shift_counts(tenant),

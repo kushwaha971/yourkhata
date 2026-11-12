@@ -31,6 +31,15 @@ export type ApiErrorCode =
   | 'balance_not_settled'
   | 'person_archived'
   | 'nothing_to_remind'
+  // Members & Fees (rebuilt 12 Nov 2026).
+  | 'seat_taken'
+  | 'seat_in_use'
+  | 'student_exists'
+  | 'student_left'
+  | 'not_latest_payment'
+  | 'no_copy_left'
+  | 'copies_out'
+  | 'code_in_use'
   // auth and session
   | 'invalid_credentials'
   /**

@@ -26,7 +26,7 @@ import { AppsPageContent } from './AppsPageContent';
  * that opens the Apps page (R-DEC-09: the owner did not want every app listed
  * in the rail). With a single app and nothing to add, both stay as they were.
  */
-let mockPath = '/library/members';
+let mockPath = '/library/students';
 const push = jest.fn();
 jest.mock('next/navigation', () => ({
   ...jest.requireActual('next/navigation'),
@@ -84,7 +84,7 @@ beforeEach(() => {
   push.mockReset();
   window.sessionStorage.clear();
   resetNavigationSyncForTests();
-  mockPath = '/library/members';
+  mockPath = '/library/students';
 });
 
 describe('phone App button', () => {

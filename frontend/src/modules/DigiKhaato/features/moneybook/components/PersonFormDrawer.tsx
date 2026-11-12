@@ -72,7 +72,7 @@ export function PersonFormDrawer({
   const save = async (values: PersonFormValues): Promise<void> => {
     setSaving(true);
     setExisting(null);
-    const mobile = values.mobile.replace(/\D/g, '').slice(-10);
+    const mobile = (values.mobile ?? '').replace(/\D/g, '').slice(-10);
     const action = person
       ? await dispatch(editPerson({ id: person.id, name: values.name, mobile }))
       : await dispatch(savePerson({ name: values.name, mobile, key }));

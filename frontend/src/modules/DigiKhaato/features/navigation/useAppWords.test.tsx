@@ -69,7 +69,6 @@ const words = () =>
   }).result.current;
 
 it.each([
-  ['library', 'Student', 'Back to students', '/library/members'],
   ['lending', 'Borrower', 'Back to borrowers', '/lending/borrowers'],
   // DEC-019 — the Shop's people are its Customers tab; the Udhaar book has its own list.
   ['shop', 'Customer', 'Back to customers', '/customers'],

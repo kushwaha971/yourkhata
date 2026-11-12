@@ -23,7 +23,7 @@ import type { ImportJob } from '../types/import.types';
 const RECORDS_ROUTE: Readonly<Record<string, string>> = {
   parties: ROUTES.PARTIES,
   items: ROUTES.ITEMS,
-  students: ROUTES.LIBRARY_MEMBERS,
+  students: ROUTES.LIBRARY_STUDENTS,
   loans: ROUTES.LENDING_LOANS,
 };
 

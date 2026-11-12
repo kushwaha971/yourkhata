@@ -155,29 +155,18 @@ export const ROUTES = {
   /** IMP-01 — the import wizard; `?kind=` skips the kind picker (FR-14). */
   IMPORTS: '/imports',
 
-  // ── library ── F01: the library vertical (FRD library §7). Flat keys, as
-  // every other address here: `Route` is a union of strings, which a nested
-  // `ROUTES.library.*` object would break (G3). Each page arrives with its
-  // F-task; until then only the module gate exists under `/library`.
+  // ── library ── Members & Fees, rebuilt 12 Nov 2026 (docs/revamp/library).
   LIBRARY_HOME: '/library',
   LIBRARY_COUNTER: '/library/counter',
-  LIBRARY_MEMBERS: '/library/members',
-  LIBRARY_CATALOGUE: '/library/catalogue',
-  LIBRARY_COPIES: '/library/copies',
-  LIBRARY_HOLDS: '/library/holds',
-  LIBRARY_VERIFICATION: '/library/verification',
-  LIBRARY_REPORTS: '/library/reports',
-  LIBRARY_SETTINGS: '/library/settings',
-  // W03 — a study library's desks, by shift.
+  LIBRARY_STUDENTS: '/library/students',
   LIBRARY_SEATS: '/library/seats',
-  // W03 — who has to pay, and the fee plans.
   LIBRARY_FEES: '/library/fees',
-  // W05 — the reading room's day register: who came in, who is in now.
   LIBRARY_ATTENDANCE: '/library/attendance',
-  // W06 — today's fee messages, sent by hand like reminders.
   LIBRARY_MESSAGES: '/library/messages',
-  /** Library P0 — fees in, expenses out, what is left. */
   LIBRARY_MONEY: '/library/money',
+  LIBRARY_EXPENSES: '/library/expenses',
+  LIBRARY_BOOKS: '/library/books',
+  LIBRARY_SETTINGS: '/library/settings',
 
   // ── lending ── L02: the lending vertical's screens (FRD lending §0.2).
   LENDING_HOME: '/lending',

@@ -1,223 +1,118 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 
-import { IndianRupee, Receipt, Wallet } from 'lucide-react';
-
-import { SummaryStatGrid } from 'src/components/stats/SummaryStatGrid';
 import {
-  UbActionLink,
+  UbBox,
+  UbButton,
   UbChoiceChips,
-  UbDivider,
   UbEmptyState,
-  UbInfoRow,
   UbPageHeader,
   UbPageShell,
-  UbPageSkeleton,
+  UbSkeleton,
   UbStack,
-  UbStatCard,
-  UbText,
 } from 'src/design-system';
+import { useAppRouter } from 'src/hooks/useAppRouter';
 import { useAppDispatch, useAppSelector } from 'src/hooks/useAppStore';
-import { usePermissions } from 'src/hooks/usePermissions';
 import { useTranslation } from 'src/hooks/useTranslation';
-import { selectTenantTimezone } from 'src/redux/slice/sessionSlice';
-import { ROUTES } from 'src/routes';
-import type { ApiErrorShape } from 'src/types/api.types';
 import { todayInTenantTz } from 'src/utils/dates';
-import { formatInr, isNegativeAmount } from 'src/utils/money';
 
-import { fetchLibraryMoney } from '../redux/libraryMoneyThunk';
+import { selectLibrary } from '../redux/librarySlice';
+import { fetchMoney } from '../redux/libraryThunks';
+import { LIBRARY_ROUTES } from '../routes';
+import { rupees } from '../view-model/libraryDisplay';
 
-import { LibraryCard } from './LibraryCard';
+import { Card, Figure, Figures, KeyValue } from './LibraryParts';
 
-import type { LibraryMoney } from '../types/money.types';
+import type { ExpenseHead } from '../types/library.types';
 
-type Period = 'this_month' | 'last_month' | 'this_year';
-const PERIODS: readonly Period[] = ['this_month', 'last_month', 'this_year'];
+type Period = 'month' | 'last' | 'year';
+const HEADS: readonly ExpenseHead[] = ['rent', 'electricity', 'internet', 'salary', 'cleaning', 'other'];
 
-/** The dates a period means, in the library's own calendar. */
-export const periodDates = (period: Period, today: string): { from: string; to: string } => {
+const rangeOf = (period: Period, today: string): { from: string; to: string } => {
   const y = Number(today.slice(0, 4));
   const m = Number(today.slice(5, 7));
-  const pad = (n: number) => String(n).padStart(2, '0');
-  if (period === 'this_month') return { from: `${y}-${pad(m)}-01`, to: today };
-  if (period === 'last_month') {
-    const py = m === 1 ? y - 1 : y;
-    const pm = m === 1 ? 12 : m - 1;
-    const last = new Date(Date.UTC(py, pm, 0)).getUTCDate();
-    return { from: `${py}-${pad(pm)}-01`, to: `${py}-${pad(pm)}-${pad(last)}` };
+  if (period === 'year') return { from: `${y}-01-01`, to: today };
+  if (period === 'last') {
+    const ly = m === 1 ? y - 1 : y;
+    const lm = m === 1 ? 12 : m - 1;
+    const end = new Date(ly, lm, 0).getDate();
+    const mm = String(lm).padStart(2, '0');
+    return { from: `${ly}-${mm}-01`, to: `${ly}-${mm}-${end}` };
   }
-  return { from: `${y}-01-01`, to: today };
+  return { from: `${today.slice(0, 7)}-01`, to: today };
 };
 
 /**
- * Library P0 — `/library/money`: the question a reading room's owner asks at the end
- * of a month. What students PAID (fees, admissions, renewals, fines — not what is
- * merely charged), what the business SPENT (its recorded expenses, by category), and
- * what is left. Expenses are recorded on the shared Expenses page, which keeps this
- * app's menu; "Add expense" goes there.
+ * Income & expenses — fees in, the library's own expenses out, and what is
+ * left, for this month, last month or this year. Nothing here is the Shop's.
  */
 export function MoneyPageContent(): React.JSX.Element {
   const { t } = useTranslation();
   const dispatch = useAppDispatch();
-  const timezone = useAppSelector(selectTenantTimezone);
-  const today = todayInTenantTz(timezone ?? undefined);
-  const { can, hasModule } = usePermissions();
-  const canRead = hasModule('library') && can('library.reports.read');
-  const canSpend = hasModule('expenses') && can('expenses.expense.read');
-  const [period, setPeriod] = useState<Period>('this_month');
-  const range = useMemo(() => periodDates(period, today), [period, today]);
-  const [data, setData] = useState<LibraryMoney | null>(null);
-  const [error, setError] = useState<ApiErrorShape | null>(null);
+  const router = useAppRouter();
+  const lib = useAppSelector(selectLibrary);
+  const today = useMemo(() => todayInTenantTz(), []);
+  const [period, setPeriod] = useState<Period>('month');
+  const range = useMemo(() => rangeOf(period, today), [period, today]);
 
+  const load = useCallback(() => dispatch(fetchMoney(range)), [dispatch, range]);
   useEffect(() => {
-    if (!canRead) return undefined;
-    const request = dispatch(fetchLibraryMoney(range));
-    void request.then((result) => {
-      if (fetchLibraryMoney.fulfilled.match(result)) {
-        setData(result.payload);
-        setError(null);
-      } else if (!result.meta.aborted) setError(result.payload ?? null);
-    });
-    return () => request.abort();
-  }, [dispatch, range, canRead]);
+    const r = load();
+    return () => r.abort();
+  }, [load]);
 
-  if (!canRead) {
-    return (
-      <UbPageShell>
-        <UbEmptyState variant="firstUse" title={t('library.money.noAccess')} />
-      </UbPageShell>
-    );
-  }
-  const shown = data && data.from === range.from && data.to === range.to ? data : null;
-  /* Owner, 12 Oct 2026: a room that has never taken a fee nor recorded an
-     expense is shown one sentence and one link — no period chips, no ₹0.00
-     tiles, no empty Money in / Money out cards. `hasAny` is the server's, over
-     all time, so a quiet month in a busy room keeps its chips; an older server
-     that does not send it never hides anything. */
-  const emptyBook = shown?.hasAny === false;
-  /* The header's link folds to its icon on a phone; the empty state's is the
-     only thing on the screen and keeps its words. */
-  const expensesLink = (label: string, testId: string, inHeader: boolean): React.JSX.Element => (
-    <UbActionLink
-      href={ROUTES.EXPENSES}
-      variant="secondary"
-      icon={<Receipt className="h-4 w-4" aria-hidden />}
-      iconOnly={inHeader ? 'mobile' : false}
-      data-testid={testId}
-    >
-      {label}
-    </UbActionLink>
-  );
+  const m = lib.money.data;
+  const net = Number(m?.net ?? 0);
   return (
     <UbPageShell>
-      <UbPageHeader
-        title={t('library.money.title')}
-        actions={
-          canSpend && !emptyBook
-            ? expensesLink(t('library.money.addExpense'), 'library-money-expenses', true)
-            : undefined
-        }
-      />
-      <UbStack gap={3} data-testid="library-money">
-        {emptyBook ? (
-          <UbEmptyState
-            variant="firstUse"
-            title={t('library.money.empty.title')}
-            description={t('library.money.empty.body')}
-            action={
-              canSpend
-                ? expensesLink(
-                    t('library.money.empty.action'),
-                    'library-money-empty-expenses',
-                    false
-                  )
-                : undefined
-            }
-          />
-        ) : (
-          <UbChoiceChips<Period>
-            id="library-money-period"
-            ariaLabel={t('library.money.period')}
-            value={period}
-            onChange={setPeriod}
-            options={PERIODS.map((p) => ({ value: p, label: t(`library.money.period.${p}`) }))}
-          />
-        )}
-        {error && !shown && (
+      <UbStack gap={3} className="pb-24 lg:pb-6">
+        <UbPageHeader
+          title={t('library.money.title')}
+          actions={
+            <UbButton variant="outlineNeutral" onClick={() => router.push(LIBRARY_ROUTES.expenses)}>
+              {t('library.money.expenses')}
+            </UbButton>
+          }
+          renderMobileActions={(a) => a}
+        />
+        <UbChoiceChips
+          ariaLabel={t('library.money.period')}
+          value={period}
+          onChange={(v) => setPeriod(v as Period)}
+          options={(['month', 'last', 'year'] as const).map((p) => ({ value: p, label: t(`library.money.${p}`) }))}
+        />
+        {lib.money.status === 'failed' && !m ? (
           <UbEmptyState
             variant="error"
             title={t('library.money.error')}
-            description={error.message}
+            action={<UbButton onClick={load}>{t('library.common.tryAgain')}</UbButton>}
           />
-        )}
-        {!shown && !error && <UbPageSkeleton variant="card" />}
-        {shown && !emptyBook && (
+        ) : !m ? (
+          <UbSkeleton variant="list" count={3} label={t('library.common.loading')} />
+        ) : (
           <>
-            <SummaryStatGrid storageKey="libraryMoney">
-              <UbStatCard
-                icon={<IndianRupee className="h-4 w-4" aria-hidden />}
-                label={t('library.money.in')}
-                value={formatInr(shown.incomeTotal)}
-              />
-              <UbStatCard
-                icon={<Receipt className="h-4 w-4" aria-hidden />}
-                label={t('library.money.out')}
-                value={formatInr(shown.expensesTotal)}
-              />
-              <UbStatCard
-                icon={<Wallet className="h-4 w-4" aria-hidden />}
-                label={t(
-                  isNegativeAmount(shown.profit) ? 'library.money.loss' : 'library.money.left'
-                )}
-                value={formatInr(shown.profit.replace('-', ''))}
-                tone={isNegativeAmount(shown.profit) ? 'danger' : 'success'}
-              />
-            </SummaryStatGrid>
-            <LibraryCard padded>
-              <UbStack gap={2} data-testid="library-money-in">
-                <UbText variant="label">{t('library.money.inTitle')}</UbText>
-                {shown.income.length === 0 ? (
-                  <UbText variant="body-sm" tone="tertiary">
-                    {t('library.money.noIncome')}
-                  </UbText>
-                ) : (
-                  shown.income.map((row) => (
-                    <UbInfoRow
-                      key={row.kind}
-                      label={t(`library.money.kind.${row.kind}`)}
-                      value={formatInr(row.amount)}
-                    />
-                  ))
-                )}
-              </UbStack>
-            </LibraryCard>
-            <LibraryCard padded>
-              <UbStack gap={2} data-testid="library-money-out">
-                <UbText variant="label">{t('library.money.outTitle')}</UbText>
-                {shown.expenses.length === 0 ? (
-                  <UbText variant="body-sm" tone="tertiary">
-                    {t('library.money.noExpenses')}
-                  </UbText>
-                ) : (
-                  shown.expenses.map((row) => (
-                    <UbInfoRow
-                      key={row.category}
-                      label={row.category}
-                      value={formatInr(row.amount)}
-                    />
-                  ))
-                )}
-                <UbDivider />
-                <UbInfoRow
-                  label={t(
-                    isNegativeAmount(shown.profit) ? 'library.money.loss' : 'library.money.left'
-                  )}
-                  value={formatInr(shown.profit.replace('-', ''))}
-                />
-              </UbStack>
-            </LibraryCard>
+            <Figures testId="library-money-figures">
+              <Figure label={t('library.money.fees')} value={rupees(m.fees)} caption={t('library.home.payments', { count: m.payments })} tone="get" />
+              <Figure label={t('library.money.spent')} value={rupees(m.expenses)} tone="give" />
+              <UbBox className="max-lg:hidden lg:contents">
+                <Figure label={t('library.money.left')} value={`${net < 0 ? '−' : ''}${rupees(m.net)}`} tone={net < 0 ? 'give' : 'get'} />
+              </UbBox>
+            </Figures>
+            <Card className="lg:hidden">
+              <KeyValue label={t('library.money.left')} value={`${net < 0 ? '−' : ''}${rupees(m.net)}`} />
+            </Card>
+            <Card testId="library-money-heads">
+              {HEADS.filter((h) => m.heads[h]).length === 0 ? (
+                <UbStack gap={1}>
+                  <KeyValue label={t('library.money.noExpenses')} value="—" />
+                </UbStack>
+              ) : (
+                HEADS.filter((h) => m.heads[h]).map((h) => (
+                  <KeyValue key={h} label={t(`library.expense.head.${h}`)} value={rupees(m.heads[h])} />
+                ))
+              )}
+            </Card>
           </>
         )}
       </UbStack>

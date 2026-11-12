@@ -389,3 +389,28 @@ class SettingsView(LibraryView):
     def patch(self, request: Any) -> Any:
         services.update_settings(tenant=self.tenant, data=request.data)
         return StandardResponse.ok(self._json())
+
+
+class PosterView(LibraryView):
+    """The fee poster for the wall (I7): the library's name, each shift's fee and
+    a UPI QR with no amount, so a student pays whatever their month is."""
+
+    def get(self, request: Any) -> Any:
+        from apps.common.qr import encode, matrix_rows
+        from apps.common.upi import build_upi_url, valid_vpa
+
+        settings = services.settings_for(self.tenant)
+        name = messages.library_name(self.tenant, settings)
+        qr = None
+        if valid_vpa(settings.upi_id):
+            matrix = encode(build_upi_url(pa=settings.upi_id, pn=name or settings.upi_id))
+            qr = {"size": len(matrix), "modules": matrix_rows(matrix)}
+        return StandardResponse.ok({
+            "name": name,
+            "upi_id": settings.upi_id,
+            "shifts": [
+                {"name": s["name"], "monthly_fee": s["monthly_fee"], "full_day": s["full_day"]}
+                for s in selectors.shift_counts(self.tenant)
+            ],
+            "qr": qr,
+        })

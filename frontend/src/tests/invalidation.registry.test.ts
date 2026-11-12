@@ -98,9 +98,11 @@ describe('invalidation registry', () => {
     expect(new Set(all).size).toBe(all.length);
   });
 
-  it('finds the library module registration (the module half is not vacuous)', () => {
-    expect(MODULES).toContain('library');
-    expect(registeredInvalidationModules()).toContain('library');
+  // The rebuilt Library (12 Nov 2026) keeps its own slice and registers no map;
+  // Lending is the vertical that proves the module half is not vacuous.
+  it('finds the lending module registration (the module half is not vacuous)', () => {
+    expect(MODULES).toContain('lending');
+    expect(registeredInvalidationModules()).toContain('lending');
   });
 
   /**

@@ -22,7 +22,10 @@ const base = process.env.E2E_BASE ?? 'http://localhost:3005';
 // Money book round (11 Nov): `--app=khata` sweeps the Money book (list, a person,
 // their statement) as the scale owner, whose private book has people in it.
 const MONEY_BOOK = arg('app', '') === 'khata';
-const shop = MONEY_BOOK
+// Library round (12 Nov): `--app=library` sweeps every Members & Fees screen as the
+// scale owner, whose business has the design's room seeded (e2e/library_seed.py).
+const LIBRARY = arg('app', '') === 'library';
+const shop = MONEY_BOOK || LIBRARY
   ? { email: 'scale@digikhaato.test', password: process.env.E2E_SCALE_PASSWORD ?? 'Scale-Run-2026!' }
   : JSON.parse(readFileSync('/tmp/e2e-shots/kind-shops.json', 'utf8')).kirana;
 const ALL = [
@@ -33,7 +36,7 @@ const ALL = [
   '/reports/purchase-register', '/reports/gst-summary', '/reports/profit',
 ];
 let SCREENS = ONLY ? ONLY.split(',') : ALL;
-const RAW = /\b(common|sales|stock|items|inventory|reports|payments|purchases|parties|expenses|shell|ledger)\.[a-z][A-Za-z]+\.[A-Za-z.]+/;
+const RAW = /\b(library|common|sales|stock|items|inventory|reports|payments|purchases|parties|expenses|shell|ledger)\.[a-z][A-Za-z]+\.[A-Za-z.]+/;
 // The requests that keep a person signed in and the shell drawn; everything
 // else is "the screen's data", which the error case answers with a 500.
 const SHELL_API = /\/api\/v1\/(auth|tenants|notifications|session|me\b|onboarding|platform|apps|business)/;
@@ -86,6 +89,12 @@ try {
     if (MONEY_BOOK) {
       const person = (await (await ctx.request.get(`${base}/api/v1/moneybook/people?balance=get&page_size=1`)).json()).data[0];
       SCREENS = ['/money-book', `/money-book/${person.id}`, '/money-book/report', '/money-book/reminders', '/money-book/old-dues'];
+    }
+    if (LIBRARY) {
+      const late = (await (await ctx.request.get(`${base}/api/v1/library/students?fee=over&page_size=1`)).json()).data[0];
+      SCREENS = ['/library', '/library/seats', '/library/students', `/library/students/${late.id}`, '/library/fees',
+        '/library/counter', '/library/attendance', '/library/messages', '/library/money', '/library/expenses',
+        '/library/books', '/library/settings'];
     }
     const cases = [];
     for (const theme of ['light', 'dark'])

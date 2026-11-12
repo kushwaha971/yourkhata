@@ -1,13 +1,7 @@
 /**
- * ADR-061 — the library's registrations into core's registries (party panel,
- * dashboard section, reminder tab, module reports), and the only file that
- * makes them. Imported, bare, by `src/modules/registrations.ts` and by
- * nothing else (`src/tests/verticalRegistrations.test.ts`).
- *
- * Data and `dynamic()` references only — never a slice, thunk, schema or
- * service — and no message ids (the ADR's amendment): this file reaches the
- * khata, dashboard and reminders routes, and a literal id here would pull the
- * whole library catalogue onto them. F04 added the party panel (`./partyPanel`);
- * F08 the reminder tab, F10 the dashboard section, F11 the reports.
+ * ADR-061 — the library's registrations into core's registries. The rebuilt
+ * Library (12 Nov 2026) stands alone and registers nothing into the Shop's
+ * screens (no party panel, no khata words). Kept so `src/modules/registrations.ts`
+ * has one bare import per vertical (`src/tests/verticalRegistrations.test.ts`).
  */
-import './partyPanel';
+export {};

@@ -5,7 +5,7 @@ import { CounterPageContent } from 'modules/DigiKhaato/features/library/componen
 // The words this screen renders arrive with its chunk (src/i18n/catalogueRegistry.ts).
 import 'src/i18n/catalogues/library';
 
-/** F05 (LIB-06) — the counter: issue, return and renew at the desk. */
+/** Counter — find a student, mark them in or out, collect. */
 export default function Page(): React.JSX.Element {
   return <CounterPageContent />;
 }

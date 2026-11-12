@@ -107,7 +107,7 @@ describe('one menu per app', () => {
     const nav = listed();
     expect(nav.app).toBe('library');
     const keys = keysOf(nav);
-    expect(keys).toEqual(expect.arrayContaining(['libraryMembers', 'team', 'settings']));
+    expect(keys).toEqual(expect.arrayContaining(['libraryStudents', 'team', 'settings']));
     for (const shop of ['parties', 'invoices', 'purchases', 'cashbook', 'payments', 'dashboard']) {
       expect(keys).not.toContain(shop);
     }
@@ -117,7 +117,7 @@ describe('one menu per app', () => {
     mockPath = '/lending/loans';
     const keys = keysOf(listed());
     expect(keys).toEqual(expect.arrayContaining(['lendingToday', 'lendingLoans', 'team']));
-    for (const other of ['parties', 'invoices', 'cashbook', 'libraryMembers']) {
+    for (const other of ['parties', 'invoices', 'cashbook', 'libraryStudents']) {
       expect(keys).not.toContain(other);
     }
   });

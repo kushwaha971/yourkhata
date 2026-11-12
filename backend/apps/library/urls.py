@@ -21,6 +21,7 @@ urlpatterns = [
     path("students/<uuid:pk>/payments", views.PaymentsView.as_view()),
     path("payments/<uuid:pk>/remove", views.RemovePaymentView.as_view()),
     path("fees", views.FeesView.as_view()),
+    path("fees/poster", views.PosterView.as_view()),
     path("messages", views.MessagesView.as_view()),
     path("messages/text", views.MessageTextView.as_view()),
     path("attendance", views.AttendanceView.as_view()),

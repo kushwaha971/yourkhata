@@ -8,8 +8,6 @@ import { useValidationSchemas } from 'src/hooks/useValidationSchemas';
 import { store } from 'src/redux/store';
 import { ALL_MESSAGES } from 'src/tests/allMessages';
 
-import { useCatalogueSchemas } from 'modules/DigiKhaato/features/library/validation/catalogueSchemas';
-import { useLibrarySettingsSchemas } from 'modules/DigiKhaato/features/library/validation/settingsSchemas';
 
 const wrapper = ({ children }: { children: ReactNode }) => (
   <Provider store={store}>
@@ -45,21 +43,5 @@ describe('QA B15: format errors explain what to correct before checking digits',
     await expect(
       result.current.gstinValidation().validate('27AAPFU0939F1ZU', { abortEarly: false })
     ).rejects.toMatchObject({ errors: ["That GSTIN's check digit is wrong."] });
-  });
-
-  it('says how long an ISBN must be instead of blaming a nonexistent check digit', async () => {
-    // QA typed 12345 and was told its check digit was wrong.
-    const { result } = renderHook(() => useCatalogueSchemas(), { wrapper });
-    await expect(
-      result.current.titleSchema.validateAt('isbn', { isbn: '12345' }, { abortEarly: false })
-    ).rejects.toMatchObject({ errors: ['ISBN must have 10 or 13 digits.'] });
-  });
-
-  it('asks for a number before comparing a counter against the used sequence', async () => {
-    // QA typed abc and was told that number had already been used.
-    const { result } = renderHook(() => useLibrarySettingsSchemas(), { wrapper });
-    await expect(
-      result.current.raiseNumberSchema(10).validate({ nextNumber: 'abc' })
-    ).rejects.toMatchObject({ message: 'Enter a number.' });
   });
 });

@@ -1,389 +1,206 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import dynamic from 'next/dynamic';
 
 import {
+  UbAvatar,
+  UbBox,
   UbButton,
-  UbChoiceChips,
-  UbDialogLoading,
   UbDrawerLoading,
   UbEmptyState,
-  UbListItemText,
   UbPageHeader,
   UbPageShell,
   UbPressable,
+  UbSearchInput,
+  UbSkeleton,
   UbStack,
   UbText,
-  UbTextInput,
-  useIsMobileLayer,
 } from 'src/design-system';
-import { usePermissions } from 'src/hooks/usePermissions';
+import { useAppRouter } from 'src/hooks/useAppRouter';
+import { useAppDispatch, useAppSelector } from 'src/hooks/useAppStore';
+import { useDebounce } from 'src/hooks/useDebounce';
 import { useTranslation } from 'src/hooks/useTranslation';
+import { showSnackbar } from 'src/redux/slice/snackbarSlice';
+import { todayInTenantTz } from 'src/utils/dates';
 
-import { finePreview } from '../api/libraryChargeService';
-import { useCounter } from '../hooks/useCounter';
-import { COUNTER_MODES, type CounterMode, type CounterRow } from '../types/counter.types';
-import { MODE_SHORTCUTS } from '../view-model/counterDisplay';
+import { markAttendance } from '../api/libraryService';
+import { selectLibrary } from '../redux/librarySlice';
+import { fetchAttendance, fetchStudents } from '../redux/libraryThunks';
+import { LIBRARY_ROUTES } from '../routes';
+import { feeLine } from '../view-model/libraryDisplay';
 
-import { CounterMemberPanel } from './CounterMemberPanel';
-import { CounterSessionList } from './CounterSessionList';
-import { LibraryCard } from './LibraryCard';
-import { LIBRARY_OVERLAY_CLASSNAME } from './LibraryOverlays';
+import { List } from './LibraryParts';
 
-/** The prompts load with the scan that needs them, and are preloaded on idle (LIB-06 §7). */
-const loadPrompts = () => import('./CounterPrompts');
-const OverridePromptLazy = dynamic(() => loadPrompts().then((m) => m.OverridePrompt), {
-  ssr: false,
+import type { Student } from '../types/library.types';
+
+const CollectSheet = dynamic(() => import('./CollectSheet').then((m) => m.CollectSheet), {
+  loading: () => <UbDrawerLoading />,
 });
-const FinishDialogLazy = dynamic(() => loadPrompts().then((m) => m.FinishDialog), {
-  ssr: false,
-});
-const MarkLostDialogLazy = dynamic(() => import('./ChargeDialogs').then((m) => m.MarkLostDialog), {
-  ssr: false, loading: () => <UbDialogLoading />,
-});
-const PaymentFormDrawerLazy = dynamic(
-  () =>
-    import('modules/DigiKhaato/features/payments/components/PaymentFormDrawer').then(
-      (m) => m.PaymentFormDrawer
-    ),
-  { ssr: false,
-  loading: () => <UbDrawerLoading /> }
-);
 
 /**
- * F05 (LIB-06) — `/library/counter`, the screen a library uses most: one scan
- * box, three modes, and a list of what happened. Keyboard-first: a scanner
- * types and presses Enter; Alt+I/R/N switch modes; Esc finishes with the
- * member. Focus returns to the box after every action and every dialog.
- *
- * Not `dynamic(, { ssr: false })` itself — its first paint is the scan box. The prompts are.
+ * Counter — the screen at the desk. Type a name, a mobile or a seat number and
+ * the student is one tap from In, Out or Collect. Who is in today shows under
+ * the box, so a student walking out is found without typing.
  */
 export function CounterPageContent(): React.JSX.Element {
   const { t } = useTranslation();
-  const counter = useCounter();
-  const isMobileLayer = useIsMobileLayer();
-  const box = useRef<HTMLInputElement | null>(null);
-  const [text, setText] = useState('');
-  const [finishing, setFinishing] = useState(false);
-  const [active, setActive] = useState(0);
-  const [collecting, setCollecting] = useState<CounterRow | null>(null);
-  const [losing, setLosing] = useState<{
-    loanId: string;
-    title: string;
-    fine: { amount: string; daysLate: number } | null;
-  } | null>(null);
-  const { can } = usePermissions();
-  const canCollect = can('payments.payment.write');
-  const canAdjust = can('library.loan.adjust');
-  const { member, mode, prompt, search } = counter;
+  const dispatch = useAppDispatch();
+  const router = useAppRouter();
+  const lib = useAppSelector(selectLibrary);
+  const today = useMemo(() => todayInTenantTz(), []);
+  const [search, setSearch] = useState('');
+  const q = useDebounce(search.trim(), 200);
+  const [collecting, setCollecting] = useState<Student | null>(null);
+  const [marking, setMarking] = useState<string | null>(null);
 
-  const focusBox = useCallback(() => {
-    requestAnimationFrame(() => box.current?.focus());
-  }, []);
-
-  // Preload the prompts' chunk on idle, so an override never waits on it.
+  const loadIn = useCallback(() => dispatch(fetchAttendance(today)), [dispatch, today]);
   useEffect(() => {
-    const id = window.setTimeout(() => void loadPrompts(), 1500);
-    return () => window.clearTimeout(id);
-  }, []);
-
-  // Focus back in the box whenever a prompt or the finish dialog closes.
+    const r = loadIn();
+    return () => r.abort();
+  }, [loadIn]);
   useEffect(() => {
-    if (!prompt && !finishing && !collecting && !losing) focusBox();
-  }, [prompt, finishing, collecting, losing, focusBox, counter.session.length, member]);
+    if (!q) return undefined;
+    const r = dispatch(fetchStudents({ q, page: 1, pageSize: 10 }));
+    return () => r.abort();
+  }, [dispatch, q]);
 
-  const finish = useCallback(() => {
-    if (member) setFinishing(true);
-  }, [member]);
-
-  // FR-1 — Alt+I/R/N by `event.code`; Esc finishes with the member.
-  useEffect(() => {
-    const onKey = (event: KeyboardEvent) => {
-      const shortcut = event.altKey ? MODE_SHORTCUTS[event.code] : undefined;
-      if (shortcut) {
-        event.preventDefault();
-        counter.setMode(shortcut);
-        focusBox();
-      } else if (event.key === 'Escape' && member && !prompt && !finishing) {
-        finish();
-      }
-    };
-    document.addEventListener('keydown', onKey);
-    return () => document.removeEventListener('keydown', onKey);
-  }, [counter, member, prompt, finishing, finish, focusBox]);
-
-  const submit = useCallback(() => {
-    // QA-F05-3 — the box clears on submit, so with names on screen an empty
-    // Enter means "this one", not Finish.
-    if (
-      search &&
-      search.results.length > 0 &&
-      (text.trim() === '' || text.trim() === search.code)
-    ) {
-      const picked = search.results[Math.min(active, search.results.length - 1)];
-      if (picked) counter.pickMember(picked.membershipId);
-      setText('');
-      return;
-    }
-    if (!text.trim()) {
-      finish();
-      return;
-    }
-    counter.submit(text);
-    setText('');
-    setActive(0);
-  }, [search, text, active, counter, finish]);
-
-  const modes = useMemo(
-    () =>
-      COUNTER_MODES.map((value) => ({
-        value,
-        label: t(`library.counter.mode.${value}`),
-      })),
-    [t]
+  const inside = useMemo(
+    () => new Map((lib.attendance.data ?? []).map((a) => [a.studentId, a])),
+    [lib.attendance.data]
   );
+  const results = q ? (lib.students.data?.rows ?? []) : [];
 
-  if (!counter.canIssue) {
+  const mark = async (s: Pick<Student, 'id' | 'name'>, out: boolean) => {
+    setMarking(s.id);
+    try {
+      await markAttendance(s.id, out, `${s.id}-${today}-${out ? 'out' : 'in'}`);
+      dispatch(showSnackbar({ severity: 'success', id: out ? 'library.counter.outDone' : 'library.counter.inDone', params: { name: s.name } }));
+      void loadIn();
+    } catch {
+      dispatch(showSnackbar({ severity: 'error', message: t('library.counter.markError') }));
+    } finally {
+      setMarking(null);
+    }
+  };
+
+  const actionsFor = (s: Student) => {
+    const row = inside.get(s.id);
+    const isIn = Boolean(row && !row.outAt);
     return (
-      <UbPageShell>
-        <UbEmptyState
-          variant="firstUse"
-          title={t('library.noAccess.title')}
-          description={t('library.noAccess.body')}
-        />
-      </UbPageShell>
+      <UbStack direction="row" gap={1.5}>
+        {s.status !== 'left' && (
+          <UbButton
+            size="sm"
+            variant="outlineNeutral"
+            busy={marking === s.id}
+            disabled={Boolean(row?.outAt)}
+            onClick={() => void mark(s, isIn)}
+            data-testid="library-counter-mark"
+          >
+            {row?.outAt ? t('library.counter.wentOut') : isIn ? t('library.counter.out') : t('library.counter.in')}
+          </UbButton>
+        )}
+        {s.fee !== 'paid' && s.fee !== 'hold' && s.status !== 'left' && (
+          <UbButton size="sm" variant="primary" onClick={() => setCollecting(s)}>
+            {t('library.home.collect')}
+          </UbButton>
+        )}
+      </UbStack>
     );
-  }
+  };
 
-  /* QA B22 — on a phone the two columns stack, and the member card came after the
-     whole log; there it sits right under the scan box instead. */
-  const memberPanel = member ? (
-    <CounterMemberPanel
-      member={member}
-      t={t}
-      busy={counter.busy}
-      onRenew={(copyId, code) => counter.submit(code, { copyId, mode: 'renew' })}
-      onLost={
-        canAdjust
-          ? (loanId, title) => {
-              setLosing({ loanId, title, fine: null });
-              void finePreview(loanId)
-                .then((fine) => setLosing((now) => (now ? { ...now, fine } : now)))
-                .catch(() => undefined);
-            }
-          : undefined
-      }
-      onRenewAll={counter.renewAll}
-      onFinish={finish}
-    />
-  ) : (
-    mode === 'issue' && (
-      <LibraryCard padded>
-        <UbText variant="body-sm" tone="tertiary">
-          {t('library.counter.noMemberYet')}
-        </UbText>
-      </LibraryCard>
-    )
-  );
-
-  const failedKeys = new Set(counter.failed.map((item) => item.key));
-  const pending = [...(counter.inFlight ? [counter.inFlight] : []), ...counter.queue];
+  const insideNow = (lib.attendance.data ?? []).filter((a) => !a.outAt);
 
   return (
     <UbPageShell>
-      <UbPageHeader title={t('library.counter.title')} />
-      <UbStack gap={3} className="lg:grid lg:grid-cols-[3fr_2fr] lg:items-start lg:gap-6">
-        <UbStack gap={3} className="min-w-0">
-          <UbChoiceChips<CounterMode>
-            id="library-counter-mode"
-            value={mode}
-            onChange={(next) => {
-              counter.setMode(next);
-              focusBox();
-            }}
-            options={modes}
-            ariaLabel={t('library.counter.modeLabel')}
-          />
-          <UbStack gap={1}>
-            <UbTextInput
-              ref={box}
-              id="library-counter-box"
-              name="library-counter-box"
-              aria-label={t('library.counter.scanHint')}
-              placeholder={
-                mode === 'issue' && member
-                  ? t('library.counter.placeholder.issueTo', { name: member.name })
-                  : t(`library.counter.placeholder.${mode}`)
-              }
-              value={text}
-              onChange={setText}
-              autoComplete="off"
-              enterKeyHint="go"
-              data-testid="counter-box"
-              onKeyDown={(event: React.KeyboardEvent<HTMLInputElement>) => {
-                if (event.key === 'Enter') {
-                  event.preventDefault();
-                  submit();
-                } else if (search && event.key === 'ArrowDown') {
-                  event.preventDefault();
-                  setActive((i) => Math.min(i + 1, search.results.length - 1));
-                } else if (search && event.key === 'ArrowUp') {
-                  event.preventDefault();
-                  setActive((i) => Math.max(i - 1, 0));
-                }
-              }}
-            />
-            <UbText variant="caption" tone="tertiary" className="max-sm:hidden">
-              {t('library.counter.keys')}
+      <UbStack gap={3} className="pb-24 lg:pb-6">
+        <UbPageHeader title={t('library.counter.title')} subtitle={t('library.counter.subtitle')} />
+        <UbSearchInput
+          value={search}
+          onChange={setSearch}
+          placeholder={t('library.counter.search')}
+          aria-label={t('library.counter.search')}
+          autoFocus
+        />
+        {q ? (
+          lib.students.status === 'loading' && results.length === 0 ? (
+            <UbSkeleton variant="list" count={3} label={t('library.common.loading')} />
+          ) : results.length === 0 ? (
+            <UbEmptyState variant="filtered" title={t('library.students.noMatch.title')} description={t('library.students.noMatch.body', { q })} />
+          ) : (
+            <List testId="library-counter-results">
+              {results.map((s) => (
+                <UbBox as="li" key={s.id}>
+                  {/* Two controls side by side, never a button inside a button. */}
+                  <UbStack direction="row" align="center" gap={3} className="min-h-14 border-b border-border-hairline px-4 py-2">
+                    <UbPressable
+                      onClick={() => router.push(LIBRARY_ROUTES.student(s.id))}
+                      className="flex min-w-0 flex-1 items-center gap-3 text-left"
+                    >
+                      <UbAvatar name={s.name} size="sm" />
+                      <UbStack gap={0} className="min-w-0">
+                        <UbText variant="inherit" truncate className="text-[14px] font-medium">
+                          {s.name}
+                        </UbText>
+                        <UbText variant="inherit" truncate className="text-[12.5px] text-text-tertiary">
+                          {feeLine(s, today, t)}
+                        </UbText>
+                      </UbStack>
+                    </UbPressable>
+                    {actionsFor(s)}
+                  </UbStack>
+                </UbBox>
+              ))}
+            </List>
+          )
+        ) : (
+          <UbStack gap={2}>
+            <UbText variant="inherit" className="font-semibold">
+              {t('library.counter.inNow', { count: insideNow.length })}
             </UbText>
-          </UbStack>
-          {isMobileLayer && memberPanel}
-
-          {search && (
-            <LibraryCard padded>
-              {search.results.length === 0 ? (
-                <UbText variant="body-sm" tone="tertiary">
-                  {t('library.counter.noMember', { q: search.code })}
-                </UbText>
-              ) : (
-                <UbStack as="ul" gap={0} aria-label={t('library.counter.matches')}>
-                  {search.results.map((result, index) => (
-                    <UbStack as="li" key={result.membershipId} gap={0}>
-                      <UbPressable
-                        className={`w-full rounded-control px-3 py-2 text-left ${
-                          index === active ? 'bg-surface-hover' : ''
-                        }`}
-                        aria-current={index === active ? 'true' : undefined}
-                        onClick={() => {
-                          counter.pickMember(result.membershipId);
-                          setText('');
-                        }}
-                      >
-                        <UbListItemText
-                          primary={result.name}
-                          secondary={[result.memberNumber, result.groupLabel]
+            {insideNow.length === 0 ? (
+              <UbText variant="inherit" className="text-[13px] text-text-tertiary">
+                {t('library.counter.nobodyIn')}
+              </UbText>
+            ) : (
+              <List testId="library-counter-inside">
+                {insideNow.map((a) => (
+                  <UbBox as="li" key={a.id}>
+                    <UbStack direction="row" align="center" gap={3} className="min-h-14 border-b border-border-hairline px-4 py-2">
+                      <UbStack gap={0} className="min-w-0 flex-1">
+                        <UbText variant="inherit" truncate className="text-[14px] font-medium">
+                          {a.student}
+                        </UbText>
+                        <UbText variant="inherit" className="text-[12.5px] text-text-tertiary">
+                          {[
+                            a.seat ? t('library.fees.seat', { seat: a.seat }) : null,
+                            t('library.counter.since', {
+                              time: new Date(a.inAt).toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit', hour12: true, timeZone: 'Asia/Kolkata' }),
+                            }),
+                          ]
                             .filter(Boolean)
                             .join(' · ')}
-                        />
-                      </UbPressable>
+                        </UbText>
+                      </UbStack>
+                      <UbButton
+                        size="sm"
+                        variant="outlineNeutral"
+                        busy={marking === a.studentId}
+                        onClick={() => void mark({ id: a.studentId, name: a.student }, true)}
+                      >
+                        {t('library.counter.out')}
+                      </UbButton>
                     </UbStack>
-                  ))}
-                </UbStack>
-              )}
-            </LibraryCard>
-          )}
-
-          {prompt?.kind === 'alreadyWith' && member && (
-            <LibraryCard padded>
-              <UbStack data-testid="counter-already-with" gap={2}>
-                <UbText variant="body-sm">
-                  {t('library.counter.alreadyWith', { name: member.name, title: prompt.title })}
-                </UbText>
-                <UbStack direction="row" gap={2}>
-                  <UbButton
-                    size="sm"
-                    onClick={() =>
-                      counter.submit(prompt.code, { copyId: prompt.copyId, mode: 'return' })
-                    }
-                  >
-                    {t('library.counter.mode.return')}
-                  </UbButton>
-                  <UbButton
-                    size="sm"
-                    variant="secondary"
-                    onClick={() =>
-                      counter.submit(prompt.code, { copyId: prompt.copyId, mode: 'renew' })
-                    }
-                  >
-                    {t('library.counter.renew')}
-                  </UbButton>
-                  <UbButton size="sm" variant="ghost" onClick={counter.closePrompt}>
-                    {t('common.action.cancel')}
-                  </UbButton>
-                </UbStack>
-              </UbStack>
-            </LibraryCard>
-          )}
-
-          {counter.session.length === 0 && pending.length === 0 ? (
-            <UbText variant="body-sm" tone="tertiary" data-testid="counter-empty">
-              {mode === 'issue' && member
-                ? t('library.counter.empty.issueTo', { name: member.name })
-                : t(`library.counter.empty.${mode}`)}
-            </UbText>
-          ) : (
-            <CounterSessionList
-              rows={counter.session}
-              pending={pending}
-              failedKeys={failedKeys}
-              t={t}
-              today={counter.today}
-              busy={counter.busy}
-              onUndo={(row) => void counter.undo(row, t('library.counter.undoReason'))}
-              onRetry={counter.retry}
-              onSkip={counter.skip}
-              onCollect={canCollect ? setCollecting : undefined}
-            />
-          )}
-        </UbStack>
-
-        {!isMobileLayer && (
-          <UbStack gap={3} className="lg:sticky lg:top-4">
-            {memberPanel}
+                  </UbBox>
+                ))}
+              </List>
+            )}
           </UbStack>
         )}
       </UbStack>
-
-      {prompt?.kind === 'override' && (
-        <OverridePromptLazy
-          prompt={prompt}
-          onClose={counter.closePrompt}
-          onSubmit={(reason) =>
-            counter.submit(prompt.code, {
-              overrideReason: reason,
-              ...(prompt.copyId ? { copyId: prompt.copyId } : {}),
-            })
-          }
-        />
-      )}
-      {collecting?.charge && (
-        <PaymentFormDrawerLazy
-          className={LIBRARY_OVERLAY_CLASSNAME}
-          context={{
-            direction: 'in',
-            partyId: collecting.charge.partyId,
-            partyName: collecting.charge.partyName,
-            documentId: collecting.charge.id,
-            documentNumber: collecting.charge.number,
-            documentDue: collecting.charge.amountDue,
-            entry: 'party',
-            // DEC-019 — the library's fees, and an advance that stays the library's.
-            bucket: 'library',
-          }}
-          onClose={() => setCollecting(null)}
-        />
-      )}
-      {losing && (
-        <MarkLostDialogLazy
-          title={losing.title}
-          fine={losing.fine}
-          busy={counter.busy}
-          onClose={() => setLosing(null)}
-          onSubmit={(reason) => counter.markLost(losing.loanId, losing.title, reason)}
-        />
-      )}
-      {finishing && member && (
-        <FinishDialogLazy
-          member={member}
-          onClose={() => setFinishing(false)}
-          onDone={() => {
-            setFinishing(false);
-            counter.finish();
-          }}
-        />
-      )}
+      {collecting && <CollectSheet student={collecting} onClose={() => setCollecting(null)} />}
     </UbPageShell>
   );
 }
