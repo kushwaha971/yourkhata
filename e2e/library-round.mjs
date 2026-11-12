@@ -224,6 +224,26 @@ try {
     await d.waitFor({ state: 'hidden', timeout: 8000 }).catch(() => undefined);
     await page.waitForTimeout(800);
     check(tag('E1 three fast taps on Save make one payment'), (await paysOf(swati.id)) === s0 + 1, `${s0} → ${await paysOf(swati.id)}`);
+    // E13: a fee paid on an earlier day is recorded on that day (owner, 12 Nov: "but I want date").
+    const omkar = await studentBy('Omkar Patil');
+    await page.goto(`${base}/library/students/${omkar.id}`, { waitUntil: 'networkidle' });
+    await page.getByTestId(phone ? 'library-collect-phone' : 'library-collect').click();
+    d = page.getByRole('dialog');
+    await d.getByLabel('Amount', { exact: true }).waitFor();
+    if (await d.getByRole('switch').count()) await d.getByRole('switch').click();
+    await d.getByTestId('library-collect-change-date').click();
+    // A day earlier this month, picked in the calendar the way a person taps it.
+    const now = new Date();
+    const day = Math.max(1, now.getDate() - 3);
+    const back = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+    await d.getByRole('button', { name: /Paid on|\d{1,2} \w{3} \d{4}/ }).filter({ hasText: /\d{4}/ }).first().click();
+    await page.locator('[role=gridcell] button').filter({ hasText: new RegExp(`^${day}$`) }).first().click();
+    const savedBack = page.waitForResponse((r) => r.request().method() === 'POST' && /\/library\/students\/[^/]+\/payments$/.test(new URL(r.url()).pathname));
+    await page.getByTestId('library-collect-save').click();
+    const backBody = await (await savedBack).json();
+    check(tag('E13 a back-dated fee is stored on its own day'), backBody?.data?.paid_on === back, `${backBody?.data?.paid_on} vs ${back}`);
+    await d.waitFor({ state: 'hidden' }).catch(() => undefined);
+
     // E17: a long Hindi name fits the student page and the list.
     const longName = 'श्रीमती राधाकृष्णन वेंकटसुब्रमण्यम पाटिल देशमुख कुलकर्णी';
     const made = await api('/library/students', { method: 'POST', data: { name: longName, shift_id: map.shift_id, monthly_fee: '1240378' } });

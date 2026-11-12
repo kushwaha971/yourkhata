@@ -9,10 +9,12 @@ import {
   UbBox,
   UbButton,
   UbChoiceChips,
+  UbDateInput,
   UbDrawer,
   UbField,
   UbForm,
   UbMoneyInput,
+  UbPressable,
   UbSegmentedControl,
   UbSwitch,
   UbText,
@@ -62,6 +64,8 @@ export function CollectSheet({
   const start = due > 0 ? due : fee;
   const [choice, setChoice] = useState<Choice>(start === fee ? 'one' : 'part');
   const [share, setShare] = useState(Boolean(student.mobile));
+  // Paid on an earlier day (owner, 12 Nov: "but I want date"): today unless changed.
+  const [changingDate, setChangingDate] = useState(false);
   const [saving, setSaving] = useState(false);
   const [answer, setAnswer] = useState<{ ask: string; paidTo: string; credit: string } | null>(null);
   const form = useForm<CollectValues>({
@@ -69,7 +73,7 @@ export function CollectSheet({
     mode: 'onTouched',
     defaultValues: { amount: plain(start), mode: 'cash', paidOn: today },
   });
-  const [amount, mode] = useWatch({ control: form.control, name: ['amount', 'mode'] });
+  const [amount, mode, paidOn] = useWatch({ control: form.control, name: ['amount', 'mode', 'paidOn'] });
   const typed = useDebounce(amount, 250);
 
   const valid = Boolean(typed) && Number(typed) > 0 && REGEX.DECIMAL_2DP.test(typed);
@@ -197,6 +201,28 @@ export function CollectSheet({
             { value: 'upi', label: t('library.mode.upi') },
           ]}
         />
+        {changingDate ? (
+          <UbField name="paidOn" label={t('library.collect.dateLabel')}>
+            {(field) => (
+              <UbDateInput
+                {...field}
+                value={field.value as string}
+                max={today}
+                onChange={(v) => field.onChange(v ?? today)}
+              />
+            )}
+          </UbField>
+        ) : (
+          <UbPressable
+            onClick={() => setChangingDate(true)}
+            className="w-auto text-[12.5px] text-text-tertiary"
+            data-testid="library-collect-change-date"
+          >
+            {t('library.collect.date', {
+              date: paidOn === today ? t('library.collect.today', { date: shortDate(today, today) }) : shortDate(paidOn, today),
+            })}
+          </UbPressable>
+        )}
         <UbBox
           aria-live="polite"
           className={cn('min-h-11 rounded-[10px] bg-surface-sunken px-3.5 py-3', !afterText && 'invisible')}

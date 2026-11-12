@@ -62,7 +62,7 @@ opening that one book, the Shop never seeing a student, every screen fitting.
 | E10 wrong book | pass (no Shop table: test_the_library_writes_no_shop_table; the Shop's API has no party for a student) |
 | E11 no stock | n/a (a book with every copy out is refused, `no_copy_left`) |
 | E12 undo | pass (removal row; only the newest payment, so the caches go back exactly) |
-| E13 back-dated | partly: the joining day can be back-dated; Collect is today's (the design's sheet has no date) |
+| E13 back-dated | pass (Collect has a date; a fee picked on the 9th is stored on the 9th and counted on that day) |
 | E14 freezes | pass (monkey 3 × 2) |
 | E15 reason shown | pass (seat_taken, not_latest_payment, no_copy_left shown in place; error case on all 12 screens) |
 | E16 settings survive | pass (due-soon days set, API restarted, read back) |
@@ -150,10 +150,21 @@ students, October's income ₹5,700, a back-dated payment counted on its own day
 and not today's, a future date refused. The reminder texts carry the same
 amounts and dates, in English and Hindi, signed with the library's name.
 
-**Notifications.** The rebuilt Library raises no bell notifications: nothing in
-the design asks for one, and messages to students open WhatsApp by hand
-(DEC-012). The old app had a morning "fees became overdue today" bell; whether
-to bring it back is the owner's call.
+**Paid on an earlier day** (owner: "but I want date"). The Collect sheet has the
+Money Book's "Today, 12 Nov · change date" line and a calendar; a future day is
+refused by the server. Harness E13: a fee picked on the 9th is stored on the 9th
+and counted in that day's money, not today's (`test_a_back_dated_payment…`).
+
+**The morning bell** (owner: "add the bell"). At 09:00 on the business's clock,
+one bell row per library: "N fees became overdue today" — the students whose fee
+was due yesterday and is unpaid — for the library's people only, opening Fees
+with them ticked. Grouped by the day (running twice raises one row), nothing on
+a day with nobody newly late, nothing sent to a student. Tested in
+`test_history.py`, and on the live stack in English and Hindi
+(`library-shots/bell-*.png`). Running it live found a defect no unit test could:
+the notification service locks a row and needs a transaction, which every test
+already has — outside one the morning job would have crashed. Fixed, with a test
+that runs outside a test transaction.
 
 ## §8 score
 

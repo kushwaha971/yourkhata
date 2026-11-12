@@ -151,3 +151,46 @@ def test_a_payment_cannot_be_dated_in_the_future(room):
     r = client.post(ROOT + f"students/{s['id']}/payments", {"amount": "800", "paid_on": "2026-11-13"},
                     format="json", HTTP_IDEMPOTENCY_KEY=str(uuid4()))
     assert r.status_code == 400
+
+
+def test_the_morning_bell_names_the_fees_that_became_overdue_today(room, tenant):
+    """One bell row: Gita's fee was due yesterday (11 Nov) and is unpaid; Hari has
+    been late for weeks (not "today"); Asha is paid. Nobody newly late → no row."""
+    from apps.library import tasks
+    from apps.notifications.models import Notification
+
+    client, shifts = room
+    student(client, shifts, "Gita LateToday", 11, "Morning", "2026-10-11", [("2026-10-11", "800")])
+    student(client, shifts, "Hari LongLate", 12, "Morning", "2026-09-01")
+    student(client, shifts, "Asha Paid", 13, "Morning", "2026-11-01", [("2026-11-01", "800")])
+    assert tasks.notify_overdue_today(tenant, TODAY) is True
+    row = Notification.objects.get(tenant=tenant, type=tasks.OVERDUE_TODAY)
+    assert row.title == "Fees overdue today: 1"
+    # Run twice the same morning: still one row (grouped by the day).
+    tasks.notify_overdue_today(tenant, TODAY)
+    assert Notification.objects.filter(tenant=tenant, type=tasks.OVERDUE_TODAY).count() == 1
+    # The next day nobody new is late (Gita is now 2 days late): no new bell.
+    assert tasks.notify_overdue_today(tenant, TODAY + dt.timedelta(days=1)) is False
+    # The bell is for the library's people and opens Fees · Overdue.
+    bell = client.get("/api/v1/notifications").json()["data"]
+    mine = [b for b in bell if b.get("type_code", b.get("type")) == tasks.OVERDUE_TODAY]
+    assert mine and "/library/fees" in str(mine[0])
+
+
+
+@pytest.mark.django_db(transaction=True)
+def test_the_bell_job_runs_outside_a_test_transaction(tenant, api_as, monkeypatch):
+    """The live job has no surrounding transaction; notify() needs one (12 Nov)."""
+    from apps.library import tasks
+    from apps.notifications.models import Notification
+
+    entitle(tenant)
+    seed_library(None, tenant)
+    Shift.objects.filter(tenant=tenant).update(monthly_fee=800)
+    monkeypatch.setattr(services, "today", lambda _t: TODAY)
+    client, _ = api_as(tenant)
+    client.put(ROOT + "seats", {"count": 5}, format="json")
+    shifts = {s.name: str(s.pk) for s in Shift.objects.filter(tenant=tenant)}
+    student(client, shifts, "Late Today", 1, "Morning", "2026-10-11", [("2026-10-11", "800")])
+    assert tasks.notify_overdue_today(tenant, TODAY) is True
+    assert Notification.objects.filter(tenant=tenant, type=tasks.OVERDUE_TODAY).count() == 1

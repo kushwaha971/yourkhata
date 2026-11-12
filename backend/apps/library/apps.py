@@ -41,3 +41,24 @@ class LibraryConfig(AppConfig):
         from apps.platform_app.apps_registry import register_app_setup
 
         register_app_setup("library", library_setup)
+
+        # The morning bell (owner, 12 Nov 2026): fees that became overdue today.
+        from apps.common.jobs import Schedule, register_schedule
+        from apps.library import tasks
+        from apps.notifications.constants import NotificationCategory, NotificationSeverity
+        from apps.notifications.services.notify import NotificationType, register_notification_type
+
+        register_notification_type(
+            tasks.OVERDUE_TODAY,
+            NotificationType(
+                code=tasks.OVERDUE_TODAY,
+                category=NotificationCategory.REMINDERS,
+                severity=NotificationSeverity.WARNING,
+                required_permission="library.member.read",
+                title_en="Fees overdue today: {count}",
+                body_en="Tap to see who to remind",
+                group_window=24 * 60,
+                route=lambda _params: "/library/fees?pick=over",
+            ),
+        )
+        register_schedule(Schedule(tasks.OVERDUE_TODAY, period="daily", at_hour_ist=9, minute=0))

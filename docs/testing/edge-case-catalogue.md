@@ -68,8 +68,7 @@ E1 pass (g3a double tap, g3e E4 lost reply). E2 fixed (order, issue and tag form
 ## Members & Fees (Library), 12 Nov 2026
 
 The Library's column, case by case with its evidence, is in
-`docs/testing/library-round-2026-11-12.md` §9.4: no case "not run" (E13 partly:
-Collect is today's, as the design's sheet has no date).
+`docs/testing/library-round-2026-11-12.md` §9.4: no case "not run".
 
 ## How the monkey uses this
 
