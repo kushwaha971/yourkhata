@@ -1,7 +1,9 @@
 {
   "lending.borrower.add": "Add borrower",
+  "lending.borrower.contactsError": "Could not open your contacts. Type the name and mobile.",
   "lending.borrower.edit": "Edit",
   "lending.borrower.error": "Could not load this borrower.",
+  "lending.borrower.fromContacts": "Choose from phone contacts",
   "lending.borrower.mobile": "Mobile",
   "lending.borrower.mobileHint": "For reminders and receipts on WhatsApp",
   "lending.borrower.name": "Name",

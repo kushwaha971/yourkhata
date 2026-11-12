@@ -277,3 +277,23 @@ def test_collecting_nothing_records_a_visit_and_the_money_stays_late(lender):
     # ₹0 on an earlier day is refused: a visit is today's.
     r = post(client, f"loans/{l['id']}/collections", {"amount": "0", "collected_on": "2026-11-10"}, ok=None)
     assert r.status_code == 400
+
+
+def test_a_loan_entered_today_that_started_two_days_ago(lender):
+    """Owner, 12 Nov: a loan given on Tue 10 Nov is entered on Thu 12 Nov. The start
+    is picked from the calendar and each past day's collection keeps its own date.
+    By hand: ₹500 a day from Tue 10 → 10, 11 and 12 Nov are due (₹1,500).
+    Nothing entered: ₹1,000 late since 10 Nov, ₹500 due today, ₹20,000 left.
+    Collect 10th and 11th on their own days: nothing late, ₹19,000 left."""
+    client, _t, route = lender
+    l = loan(client, borrower(client, route), starts_on="2026-11-10")
+    d = client.get(ROOT + f"loans/{l['id']}").json()["data"]
+    assert (d["late"], d["late_since"], d["due_today"], d["left"]) == ("1000.00", "2026-11-10", "500.00", "20000.00")
+    for day in ("2026-11-10", "2026-11-11"):
+        post(client, f"loans/{l['id']}/collections", {"amount": "500", "collected_on": day})
+    d = client.get(ROOT + f"loans/{l['id']}").json()["data"]
+    assert (d["late"], d["due_today"], d["left"]) == ("0.00", "500.00", "19000.00")
+    days = sorted(Collection.objects.filter(loan_id=l["id"]).values_list("collected_on", flat=True))
+    assert days == [D(2026, 11, 10), D(2026, 11, 11)]
+    # A collection before the loan started is refused.
+    assert post(client, f"loans/{l['id']}/collections", {"amount": "500", "collected_on": "2026-11-09"}, ok=None).status_code == 400

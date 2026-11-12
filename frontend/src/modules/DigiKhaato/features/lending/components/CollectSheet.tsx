@@ -201,7 +201,7 @@ export function CollectSheet({
         {changingDate ? (
           <UbField name="collectedOn" label={t('lending.collect.dateLabel')}>
             {(field) => (
-              <UbDateInput {...field} value={field.value as string} max={today} onChange={(v) => field.onChange(v ?? today)} />
+              <UbDateInput {...field} value={field.value as string} min={loan.startsOn} max={today} onChange={(v) => field.onChange(v ?? today)} />
             )}
           </UbField>
         ) : (

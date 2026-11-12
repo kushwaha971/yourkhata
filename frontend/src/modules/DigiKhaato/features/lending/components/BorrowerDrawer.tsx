@@ -5,6 +5,7 @@ import { useEffect, useId, useState } from 'react';
 import { yupResolver } from '@hookform/resolvers/yup';
 import { useForm } from 'react-hook-form';
 
+import { PhoneContactButton } from 'src/components/contacts/PhoneContactButton';
 import { UbButton, UbDrawer, UbField, UbForm, UbNativeSelect, UbPhoneInput, UbStatusBanner, UbTextInput } from 'src/design-system';
 import { useAppDispatch } from 'src/hooks/useAppStore';
 import { useIdempotencyKey } from 'src/hooks/useIdempotencyKey';
@@ -84,6 +85,19 @@ export function BorrowerDrawer({
       }
     >
       <UbForm id={formId} form={form} onSubmit={save}>
+        {/* Fills name and mobile from one phone contact (Chrome on Android); draws
+            nothing where the browser cannot pick contacts, as the party form does. */}
+        {!borrower && (
+          <PhoneContactButton
+            onPick={(contact) => {
+              form.setValue('name', contact.name, { shouldDirty: true, shouldValidate: true });
+              form.setValue('mobile', contact.mobile, { shouldDirty: true, shouldValidate: true });
+            }}
+            label={t('lending.borrower.fromContacts')}
+            errorMessage={t('lending.borrower.contactsError')}
+            disabled={saving}
+          />
+        )}
         <UbField name="name" label={t('lending.borrower.name')} required>
           {(field) => <UbTextInput {...field} value={field.value as string} autoComplete="off" autoFocus />}
         </UbField>

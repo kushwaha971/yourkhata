@@ -1,7 +1,9 @@
 {
   "lending.borrower.add": "व्यक्ति जोड़ें",
+  "lending.borrower.contactsError": "कॉन्टैक्ट नहीं खुले। नाम और मोबाइल लिखें।",
   "lending.borrower.edit": "बदलें",
   "lending.borrower.error": "यह व्यक्ति लोड नहीं हुआ।",
+  "lending.borrower.fromContacts": "फ़ोन कॉन्टैक्ट से चुनें",
   "lending.borrower.mobile": "मोबाइल",
   "lending.borrower.mobileHint": "WhatsApp पर याद और रसीद के लिए",
   "lending.borrower.name": "नाम",

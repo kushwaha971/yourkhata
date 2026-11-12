@@ -294,6 +294,10 @@ def collect(*, tenant: Any, user: Any, loan_id: Any, data: dict) -> Collection |
         loan = get_loan(tenant=tenant, loan_id=loan_id, lock=True)
         if loan.status != LoanStatus.ACTIVE:
             raise BusinessRuleViolation("loan_closed", _("Loan %(n)s is closed.") % {"n": loan.number})
+        if day < loan.starts_on:
+            # Money cannot come in before the loan was given (back-dated entry, 12 Nov).
+            raise ValidationFailed(details={"collected_on": [
+                _("This loan starts on %(d)s. Choose that day or later.") % {"d": loan.starts_on.strftime("%d/%m/%Y")}]})
         left = book.position(dues=dues_of(loan), collected=collected_on_loan(loan), day=day).left
         if amount > left:
             raise BusinessRuleViolation(
