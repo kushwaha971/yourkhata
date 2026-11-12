@@ -1,136 +1,80 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 
-import { CompactCard } from 'src/components/records/CompactCard';
-import {
-  UbButton,
-  UbEmptyState,
-  UbListItemText,
-  UbPageHeader,
-  UbPageShell,
-  UbStack,
-  UbText,
-  UbTextInput,
-} from 'src/design-system';
+import { Plus } from 'lucide-react';
+
+import { UbBox, UbButton, UbEmptyState, UbPageHeader, UbPageShell, UbSkeleton, UbStack, UbText, UbTextInput } from 'src/design-system';
 import { useAppDispatch, useAppSelector } from 'src/hooks/useAppStore';
-import { usePermissions } from 'src/hooks/usePermissions';
+import { useIdempotencyKey } from 'src/hooks/useIdempotencyKey';
 import { useTranslation } from 'src/hooks/useTranslation';
 import { showSnackbar } from 'src/redux/slice/snackbarSlice';
+import { toApiError } from 'src/utils/apiError';
 
-import { fetchLendingRoutes, saveLendingRoute } from '../redux/lendingThunk';
-import { selectLendingToday } from '../redux/lendingTodaySlice';
+import { List } from 'modules/DigiKhaato/features/appParts/AppParts';
 
-/**
- * `/lending/routes` (FRD LEN-07): the collection rounds. A loan joins a route
- * when it is given; today's round lists the stops in that order.
- */
+import { saveRoute } from '../api/lendingService';
+import { selectLending } from '../redux/lendingSlice';
+import { fetchRoutes } from '../redux/lendingThunks';
+
+/** Routes — the lender's lines ("Market road"); the round and new loans use them. */
 export function RoutesPageContent(): React.JSX.Element {
   const { t } = useTranslation();
   const dispatch = useAppDispatch();
-  const { routes } = useAppSelector(selectLendingToday);
-  const { can, hasModule } = usePermissions();
-  const canRead = hasModule('lending') && can('lending.route.read');
-  const canManage = hasModule('lending') && can('lending.route.manage');
+  const lend = useAppSelector(selectLending);
+  const { key, rotate } = useIdempotencyKey();
   const [name, setName] = useState('');
-  const [error, setError] = useState('');
+  const [saving, setSaving] = useState(false);
 
+  const load = useCallback(() => dispatch(fetchRoutes()), [dispatch]);
   useEffect(() => {
-    if (!canRead) return undefined;
-    const promise = dispatch(fetchLendingRoutes());
-    return () => promise.abort();
-  }, [canRead, dispatch]);
+    const r = load();
+    return () => r.abort();
+  }, [load]);
 
   const add = async () => {
-    if (!name.trim()) {
-      setError(t('lending.routes.name.required'));
-      return;
-    }
-    const result = await dispatch(saveLendingRoute(name.trim()));
-    if (saveLendingRoute.fulfilled.match(result)) {
-      dispatch(
-        showSnackbar({
-          severity: 'success',
-          id: 'lending.routes.added',
-          params: { name: name.trim() },
-        })
-      );
+    if (!name.trim()) return;
+    setSaving(true);
+    try {
+      await saveRoute(name.trim(), undefined, key);
+      rotate();
       setName('');
-      void dispatch(fetchLendingRoutes());
-    } else {
-      setError(result.payload?.message ?? '');
+      dispatch(showSnackbar({ severity: 'success', id: 'lending.routes.saved', params: { name: name.trim() } }));
+      void load();
+    } catch (e) {
+      dispatch(showSnackbar({ severity: 'error', message: toApiError(e, 'lending.routes.error').message ?? t('lending.routes.error') }));
+    } finally {
+      setSaving(false);
     }
   };
+  const rows = lend.routes.data ?? [];
 
-  if (!canRead) {
-    return (
-      <UbPageShell>
-        <UbEmptyState
-          variant="firstUse"
-          title={t('lending.noAccess.title')}
-          description={t('lending.noAccess.body')}
-        />
-      </UbPageShell>
-    );
-  }
   return (
-    <UbPageShell width="measure">
-      <UbPageHeader title={t('lending.routes.title')} />
-      <UbStack gap={3} data-testid="lending-routes">
-        {routes.length === 0 ? (
-          <UbText variant="body-sm" tone="tertiary">
-            {t('lending.routes.empty')}
-          </UbText>
+    <UbPageShell>
+      <UbStack gap={3} className="pb-24 lg:pb-6">
+        <UbPageHeader title={t('lending.routes.title')} subtitle={t('lending.routes.subtitle')} />
+        <UbStack direction="row" gap={2}>
+          <UbTextInput aria-label={t('lending.routes.name')} placeholder={t('lending.routes.name')} value={name} onChange={setName} className="flex-1" />
+          <UbButton icon={<Plus className="h-4 w-4" aria-hidden />} busy={saving} disabled={!name.trim()} onClick={() => void add()} data-testid="lending-route-add">
+            {t('lending.routes.add')}
+          </UbButton>
+        </UbStack>
+        {lend.routes.status === 'failed' && !lend.routes.data ? (
+          <UbEmptyState variant="error" title={t('lending.routes.error')} action={<UbButton onClick={load}>{t('lending.common.tryAgain')}</UbButton>} />
+        ) : !lend.routes.data ? (
+          <UbSkeleton variant="list" count={3} label={t('lending.common.loading')} />
+        ) : rows.length === 0 ? (
+          <UbEmptyState variant="firstUse" title={t('lending.routes.none')} description={t('lending.routes.noneBody')} />
         ) : (
-          <CompactCard padded>
-            <UbStack as="ul" gap={0} aria-label={t('lending.routes.title')}>
-              {routes.map((r) => (
-                <UbStack
-                  as="li"
-                  key={r.id}
-                  gap={0}
-                  className="border-b border-border-hairline py-3 last:border-b-0"
-                >
-                  <UbListItemText
-                    primary={r.name}
-                    secondary={[
-                      t('lending.routes.loans', { count: r.loans ?? 0 }),
-                      r.agent ? t('lending.routes.agent', { name: r.agent.name }) : '',
-                    ]
-                      .filter(Boolean)
-                      .join(' · ')}
-                  />
-                </UbStack>
-              ))}
-            </UbStack>
-          </CompactCard>
-        )}
-        {canManage && (
-          <CompactCard padded>
-            <UbStack gap={2}>
-              <UbTextInput
-                id="lending-route-name"
-                name="lending-route-name"
-                aria-label={t('lending.routes.name')}
-                placeholder={t('lending.routes.name.placeholder')}
-                value={name}
-                onChange={(next) => {
-                  setName(next);
-                  setError('');
-                }}
-                invalid={!!error}
-                maxLength={60}
-              />
-              {error && (
-                <UbText variant="caption" tone="formError">
-                  {error}
+          <List testId="lending-routes-list">
+            {rows.map((r) => (
+              <UbBox as="li" key={r.id}>
+                <UbText variant="inherit" className="block min-h-14 border-b border-border-hairline px-4 py-4 text-[14px] font-medium">
+                  {r.name}
                 </UbText>
-              )}
-              <UbButton variant="secondary" onClick={() => void add()}>
-                {t('lending.routes.add')}
-              </UbButton>
-            </UbStack>
-          </CompactCard>
+              </UbBox>
+            ))}
+          </List>
         )}
       </UbStack>
     </UbPageShell>

@@ -1,85 +1,35 @@
-import { Banknote, HandCoins, Landmark, MessageCircle, Route, Users } from 'lucide-react';
+import { Bell, HandCoins, Home, List, Route as RouteIcon, Settings, Users } from 'lucide-react';
 
 import { ROUTES } from 'src/routes';
 
 import type { AppManifest } from 'modules/DigiKhaato/features/navigation/appManifest';
 
 /**
- * docs/platform/14 §4.2 — Lending & collections' own menu: today's round,
- * loans, borrowers, routes and messages. Moved here from the shared list
- * unchanged.
+ * Loans & Collections (code name `lending`), rebuilt from scratch on 12 Nov
+ * 2026 as an app that stands alone. Its menu is the design's (Part I,
+ * `APP.lending`): Today; Lending — Loans, Borrowers, Routes, Messages. The
+ * phone bar: Today, Loans, Borrowers, Messages.
  */
+const READ = 'lending.loan.read';
+
 export const LENDING_APP: AppManifest = {
   code: 'lending',
   labelId: 'nav.workspace.lending',
-  icon: Banknote,
+  icon: HandCoins,
   routePrefixes: [ROUTES.LENDING_HOME],
-  // docs/platform/14 step 6 — this app's words on the shared khata.
-  words: {
-    'parties.detail.badge.customer': 'lending.words.person',
-    'parties.detail.backToList': 'lending.words.backToList',
-    'parties.detail.notFound': 'lending.words.notFound',
-    'parties.detail.error.title': 'lending.words.error',
-    'parties.detail.archivedBanner': 'lending.words.archived',
-  },
   peopleHref: ROUTES.LENDING_BORROWERS,
-  sections: [{ key: 'daily', labelId: 'nav.section.daily' }],
-  navigation: [
-    {
-      // L02 — lending's day: today's collection round (FRD LEN-08), its landing.
-      key: 'lendingToday',
-      icon: HandCoins,
-      labelId: 'nav.lending.today',
-      href: ROUTES.LENDING_HOME,
-      module: 'lending',
-      permission: 'lending.today.read',
-      section: 'daily',
-      order: 1,
-      bottomNav: true,
-    },
-    {
-      key: 'lendingLoans',
-      icon: Landmark,
-      labelId: 'nav.lending.loans',
-      href: ROUTES.LENDING_LOANS,
-      module: 'lending',
-      permission: 'lending.loan.read',
-      section: 'daily',
-      order: 2,
-      bottomNav: true,
-    },
-    {
-      key: 'lendingBorrowers',
-      icon: Users,
-      labelId: 'nav.lending.borrowers',
-      href: ROUTES.LENDING_BORROWERS,
-      module: 'lending',
-      permission: 'lending.borrower.read',
-      section: 'daily',
-      order: 3,
-      bottomNav: true,
-    },
-    {
-      key: 'lendingRoutes',
-      icon: Route,
-      labelId: 'nav.lending.routes',
-      href: ROUTES.LENDING_ROUTES,
-      module: 'lending',
-      permission: 'lending.route.read',
-      section: 'daily',
-      order: 4,
-      bottomNav: true,
-    },
-    {
-      // L03 — today's reminders to borrowers, sent by hand like reminders (LEN-12).
-      key: 'lendingMessages',
-      icon: MessageCircle,
-      labelId: 'nav.lending.messages',
-      href: ROUTES.LENDING_MESSAGES,
-      module: 'lending',
-      permission: 'lending.reminder.send',
-      section: 'daily',
-      order: 5,
-    },
+  sections: [
+    { key: 'lendingToday', labelId: 'lending.nav.section.today' },
+    { key: 'lendingBook', labelId: 'lending.nav.section.lending' },
   ],
+  navigation: [
+    { key: 'lendingToday', icon: Home, labelId: 'lending.nav.today', href: ROUTES.LENDING_HOME, module: 'lending', permission: READ, section: 'lendingToday', order: 1, bottomNav: true },
+    { key: 'lendingLoans', icon: List, labelId: 'lending.nav.loans', href: ROUTES.LENDING_LOANS, module: 'lending', permission: READ, section: 'lendingBook', order: 2, bottomNav: true },
+    { key: 'lendingBorrowers', icon: Users, labelId: 'lending.nav.borrowers', href: ROUTES.LENDING_BORROWERS, module: 'lending', permission: READ, section: 'lendingBook', order: 3, bottomNav: true },
+    { key: 'lendingRoutes', icon: RouteIcon, labelId: 'lending.nav.routes', href: ROUTES.LENDING_ROUTES, module: 'lending', permission: READ, section: 'lendingBook', order: 4 },
+    { key: 'lendingMessages', icon: Bell, labelId: 'lending.nav.messages', href: ROUTES.LENDING_MESSAGES, module: 'lending', permission: READ, section: 'lendingBook', order: 5, bottomNav: true },
+    { key: 'lendingSettings', icon: Settings, labelId: 'lending.nav.settings', href: ROUTES.LENDING_SETTINGS, module: 'lending', permission: 'lending.settings.manage', section: 'account', order: 60 },
+  ],
+  // Each Lending screen owns its search; a loan, a borrower and New loan have a back.
+  shell: { pageBackPattern: '^/lending/(loans|borrowers)/[^/]+/?$' },
 };

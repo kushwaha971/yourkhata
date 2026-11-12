@@ -1,666 +1,263 @@
-import { api, ubConfig } from 'src/api/AxiosInstances';
+import { api } from 'src/api/AxiosInstances';
 import { toQueryString } from 'src/utils/queryString';
 
-import { toSplit } from '../view-model/borrowerSplit';
-
-import { LENDING_PATHS } from './lendingPaths';
-
 import type {
-  BorrowerEditValues,
-  BorrowerPage,
-  BorrowerRow,
-  BorrowerSplit,
-  BorrowerStatusFilter,
-  CollectFormValues,
-  CollectionPreview,
-  CollectionRow,
-  LateFeeKind,
-  LendingRoute,
+  Borrower,
+  BorrowerDetail,
+  BorrowerValues,
+  CollectPreview,
+  CollectValues,
+  LendingSettings,
+  Loan,
   LoanDetail,
-  LoanDueFigures,
-  LoanFigures,
-  LoanFormValues,
-  LoanMessageRow,
   LoanPreview,
-  LoanRow,
-  TodayRound,
-  VisitOutcome,
-  VisitRow,
+  NewLoanValues,
+  RemindKind,
+  Round,
+  Route,
+  Stop,
 } from '../types/lending.types';
 
-/** Lending (FRD lending.md): one async function per endpoint, and the mapping. */
+/** Loans & Collections' own API (`/lending/…`): one function per endpoint. */
 type Wire = Readonly<Record<string, unknown>>;
 
-const str = (value: unknown): string =>
-  value === null || value === undefined ? '' : String(value);
-const strOrNull = (value: unknown): string | null =>
-  value === null || value === undefined || value === '' ? null : String(value);
-const num = (value: unknown): number => Number(value ?? 0);
+const seg = (id: string): string => encodeURIComponent(id);
+export const LENDING_PATHS = {
+  TODAY: '/lending/today',
+  ROUTES: '/lending/routes',
+  ROUTE: (id: string) => `/lending/routes/${seg(id)}`,
+  BORROWERS: '/lending/borrowers',
+  BORROWER: (id: string) => `/lending/borrowers/${seg(id)}`,
+  LOANS: '/lending/loans',
+  LOAN: (id: string) => `/lending/loans/${seg(id)}`,
+  COLLECT: (id: string) => `/lending/loans/${seg(id)}/collections`,
+  NOT_PAID: (id: string) => `/lending/loans/${seg(id)}/not-paid`,
+  CLOSE: (id: string) => `/lending/loans/${seg(id)}/close`,
+  REMOVE: (id: string) => `/lending/collections/${seg(id)}/remove`,
+  REMIND: '/lending/remind',
+  MESSAGES: '/lending/messages',
+  MESSAGE_TEXT: '/lending/messages/text',
+  SETTINGS: '/lending/settings',
+} as const;
 
-const toFigures = (row: Wire): LoanFigures => ({
-  dueToday: str(row.due_today || '0.00'),
-  arrears: str(row.arrears || '0.00'),
-  remaining: str(row.remaining || '0.00'),
-  collected: str(row.collected || '0.00'),
-  daysPastDue: num(row.days_past_due),
-  nextDueOn: strOrNull(row.next_due_on),
-  nextDueAmount: strOrNull(row.next_due_amount),
+const str = (v: unknown): string => (v === null || v === undefined ? '' : String(v));
+const strOrNull = (v: unknown): string | null => (v === null || v === undefined || v === '' ? null : String(v));
+const num = (v: unknown): number => Number(v ?? 0) || 0;
+const data = <T>(r: { data: { data: T } }): T => r.data.data;
+const key = (k?: string) => (k ? { headers: { 'Idempotency-Key': k } } : {});
+
+export const toLoan = (r: Wire): Loan => ({
+  id: str(r.id),
+  number: str(r.number),
+  borrowerId: str(r.borrower_id),
+  borrower: str(r.borrower),
+  mobile: str(r.mobile),
+  work: str(r.work),
+  routeId: strOrNull(r.route_id),
+  route: str(r.route),
+  lent: str(r.lent),
+  charges: str(r.charges),
+  frequency: str(r.frequency) as Loan['frequency'],
+  count: num(r.count),
+  each: str(r.each),
+  startsOn: str(r.starts_on),
+  status: str(r.status) as Loan['status'],
+  closedOn: strOrNull(r.closed_on),
+  closeReason: str(r.close_reason),
+  total: str(r.total),
+  collected: str(r.collected),
+  late: str(r.late),
+  lateDays: num(r.late_days),
+  lateSince: strOrNull(r.late_since),
+  dueToday: str(r.due_today),
+  left: str(r.left),
+  paidCount: num(r.paid_count),
+  nextDue: strOrNull(r.next_due),
+  endsOn: strOrNull(r.ends_on),
+  createdOn: str(r.created_on),
 });
 
-export const toLoanRow = (row: Wire): LoanRow => {
-  const b = (row.borrower ?? {}) as Wire;
-  const route = row.route as Wire | null;
-  return {
-    ...toFigures(row),
-    id: str(row.id),
-    number: str(row.number),
-    status: str(row.status) as LoanRow['status'],
-    closeReason: str(row.close_reason),
-    borrower: {
-      id: str(b.id),
-      number: str(b.number),
-      partyId: str(b.party_id),
-      name: str(b.name),
-      mobile: strOrNull(b.mobile),
-      area: str(b.area),
-    },
-    route: route ? { id: str(route.id), name: str(route.name) } : null,
-    planType: str(row.plan_type) as LoanRow['planType'],
-    frequency: str(row.frequency) as LoanRow['frequency'],
-    principal: str(row.principal),
-    rate: str(row.rate),
-    rateUnit: str(row.rate_unit) as LoanRow['rateUnit'],
-    instalmentCount: num(row.instalment_count),
-    instalmentAmount: str(row.instalment_amount),
-    totalInterest: str(row.total_interest),
-    totalPayable: str(row.total_payable),
-    cashHandedOver: str(row.cash_handed_over),
-    effectiveAnnualRate: str(row.effective_annual_rate),
-    disbursedOn: str(row.disbursed_on),
-    maturityOn: str(row.maturity_on),
-    notes: str(row.notes),
-  };
-};
+const toStop = (r: Wire): Stop => ({
+  ...toLoan(r),
+  today: str(r.today),
+  lateAtStart: str(r.late_at_start),
+  collectedToday: str(r.collected_today),
+  state: str(r.state) as Stop['state'],
+  reason: str(r.reason),
+  promisedOn: strOrNull(r.promised_on),
+});
 
-const toLender = (raw: unknown): LoanDetail['lender'] => {
-  if (!raw || typeof raw !== 'object') return null;
-  const l = raw as Wire;
-  return {
-    name: str(l.name),
-    legalName: str(l.legal_name),
-    address: ((l.address as unknown[] | undefined) ?? []).map(str),
-    phone: str(l.phone),
-    gstin: str(l.gstin),
-  };
-};
-
-export const toLoanDetail = (row: Wire): LoanDetail => ({
-  ...toLoanRow(row),
-  lender: toLender(row.lender),
-  lateFee: (() => {
-    const rule = (row.late_fee ?? {}) as Wire;
-    return {
-      kind: (str(rule.kind) || 'none') as LoanDetail['lateFee']['kind'],
-      value: strOrNull(rule.value),
-      cap: strOrNull(rule.cap),
-      graceDays: num(rule.grace_days),
-    };
-  })(),
-  closedOn: strOrNull(row.closed_on),
-  statusReason: str(row.status_reason),
-  writeOffAmount: strOrNull(row.write_off_amount),
-  hasCollections: Boolean(row.has_collections),
-  deductions: ((row.deductions as Wire[] | undefined) ?? []).map((d) => ({
-    kind: str(d.kind),
-    label: str(d.label),
-    amount: str(d.amount),
+const toLoanDetail = (r: Wire): LoanDetail => ({
+  ...toLoan(r),
+  schedule: ((r.schedule as Wire[]) ?? []).map((s) => ({
+    seq: num(s.seq),
+    dueOn: str(s.due_on),
+    amount: str(s.amount),
+    paid: str(s.paid),
+    state: str(s.state) as LoanDetail['schedule'][number]['state'],
   })),
-  schedule: ((row.schedule as Wire[] | undefined) ?? []).map((d) => ({
-    id: str(d.id),
-    seq: num(d.seq),
-    dueOn: str(d.due_on),
-    amount: str(d.amount),
-    settled: str(d.settled),
-    outstanding: str(d.outstanding),
-    lateFee: str(d.late_fee ?? '0.00'),
-    waived: str(d.waived ?? '0.00'),
-    status: str(d.status),
+  collections: ((r.collections as Wire[]) ?? []).map((c) => ({
+    id: str(c.id),
+    amount: str(c.amount),
+    mode: str(c.mode) as 'cash' | 'upi',
+    collectedOn: str(c.collected_on),
+    status: str(c.status) as 'live' | 'removed',
+    by: str(c.by),
   })),
+  visits: ((r.visits as Wire[]) ?? []).map((v) => ({ day: str(v.day), reason: str(v.reason), promisedOn: strOrNull(v.promised_on) })),
+  daysToGo: num(r.days_to_go),
 });
 
-/** The form's values as the API's terms (FRD LEN-03 §6). */
-export const toTermsBody = (values: LoanFormValues): Record<string, unknown> => {
-  const fileCharge = Number(values.fileCharge || 0);
-  return {
-    plan_type: values.planType,
-    principal: values.principal,
-    rate: values.planType === 'fixed_daily' ? undefined : values.rate || '0',
-    rate_unit: values.rateUnit,
-    frequency: values.frequency,
-    instalment_count: values.planType === 'flexible' ? 1 : Number(values.instalmentCount || 0),
-    per_instalment_amount:
-      values.planType === 'fixed_daily' ? values.perInstalmentAmount : undefined,
-    collection_weekdays: values.frequency === 'daily' ? values.collectionWeekdays : undefined,
-    disbursed_on: values.disbursedOn,
-    first_due_on: values.firstDueOn,
-    deductions:
-      fileCharge > 0
-        ? [{ kind: 'processing_fee', label: 'File charge', amount: values.fileCharge }]
-        : [],
-  };
-};
-
-export const toLoanBody = (values: LoanFormValues): Record<string, unknown> => ({
-  ...toTermsBody(values),
-  ...(values.borrowerMode === 'existing'
-    ? { borrower_id: values.borrowerId }
-    : {
-        party: { name: values.name.trim(), mobile: (values.mobile ?? '').trim() || undefined },
-        area: (values.area ?? '').trim() || undefined,
-      }),
-  route_id: values.routeId || undefined,
-  payment_mode: values.paymentMode,
-  // QA F8 — the server records it as history (an adjustment), never today's cash.
-  ...(values.existingLoan
-    ? {
-        existing:
-          values.collectedBy === 'amount'
-            ? { collected_amount: values.collectedAmount }
-            : { instalments_collected: Number(values.collectedInstalments) },
-      }
-    : {}),
-  notes: (values.notes ?? '').trim() || undefined,
-  ...(values.lateFeeKind && values.lateFeeKind !== 'none'
-    ? {
-        late_fee_kind: values.lateFeeKind,
-        late_fee_value: values.lateFeeValue,
-        late_fee_cap: values.lateFeeKind === 'flat_once' ? undefined : values.lateFeeCap,
-        late_fee_grace_days: Number(values.lateFeeGraceDays || 0),
-      }
-    : {}),
+const toBorrower = (r: Wire): Borrower => ({
+  id: str(r.id),
+  name: str(r.name),
+  mobile: str(r.mobile),
+  work: str(r.work),
+  routeId: strOrNull(r.route_id),
+  route: str(r.route),
+  note: str(r.note),
+  loans: num(r.loans),
+  left: str(r.left || '0.00'),
+  late: str(r.late || '0.00'),
 });
 
-const quiet = ubConfig({ suppressErrorSnackbar: true });
-
-export const previewLoan = async (
-  body: Record<string, unknown>,
-  signal?: AbortSignal
-): Promise<LoanPreview> => {
-  const response = await api.post<{ data: Wire; meta: { warnings: Wire[] } }>(
-    LENDING_PATHS.PREVIEW,
-    body,
-    ubConfig({ signal, suppressErrorSnackbar: true })
-  );
-  const d = response.data.data;
+export async function getToday(route: string, signal?: AbortSignal): Promise<Round> {
+  const r = data<Wire>(await api.get(`${LENDING_PATHS.TODAY}${toQueryString({ route: route || undefined })}`, { signal }));
+  const b = (r.book ?? {}) as Wire;
   return {
-    cashHandedOver: str(d.cash_handed_over),
-    deductionsTotal: str(d.deductions_total),
-    instalmentAmount: str(d.instalment_amount),
-    totalInterest: str(d.total_interest),
-    totalPayable: str(d.total_payable),
-    maturityOn: str(d.maturity_on),
-    effectiveAnnualRate: str(d.effective_annual_rate),
-    effectiveAnnualRateDisplay: str(d.effective_annual_rate_display),
-    schedule: ((d.schedule as Wire[] | undefined) ?? []).map((r) => ({
-      seq: num(r.seq),
-      dueOn: str(r.due_on),
-      amount: str(r.amount),
-      principal: str(r.principal),
-      interest: str(r.interest),
-    })),
-    warnings: (response.data.meta?.warnings ?? []).map((w) => str(w.code)),
+    day: str(r.day),
+    routeId: strOrNull(r.route_id),
+    route: str(r.route),
+    due: str(r.due),
+    collected: str(r.collected),
+    short: str(r.short),
+    stops: ((r.stops as Wire[]) ?? []).map(toStop),
+    stopsTotal: num(r.stops_total),
+    stopsDone: num(r.stops_done),
+    toVisit: num(r.to_visit),
+    notPaid: num(r.not_paid),
+    book: { late: str(b.late), lateBorrowers: num(b.late_borrowers), lentMonth: str(b.lent_month), loansMonth: num(b.loans_month) },
+    routes: ((r.routes as Wire[]) ?? []).map((x) => ({ id: str(x.id), name: str(x.name) })),
+    name: str(r.name),
   };
-};
-
-export const createLoan = async (values: LoanFormValues, key: string): Promise<LoanDetail> => {
-  const response = await api.post<{ data: Wire }>(
-    LENDING_PATHS.LOANS,
-    toLoanBody(values),
-    ubConfig({ headers: { 'Idempotency-Key': key }, suppressErrorSnackbar: true })
-  );
-  return toLoanDetail(response.data.data);
-};
-
-export interface LoanPage {
-  readonly rows: LoanRow[];
-  /** Any loan at all, whatever the filter: a list hides its search only when there is none. */
-  readonly hasLoans: boolean;
-  readonly total: number;
-  readonly page: number;
-  readonly totalPages: number;
 }
 
-export const listLoans = async (
-  params: { status?: string; q?: string; route?: string; borrower?: string; page?: string },
-  signal?: AbortSignal
-): Promise<LoanPage> => {
-  const response = await api.get<{
-    data: Wire[];
-    meta: { page: number; total: number; total_pages: number; has_loans?: boolean };
-  }>(`${LENDING_PATHS.LOANS}${toQueryString(params)}`, { signal });
-  const rows = response.data.data.map(toLoanRow);
-  return {
-    rows,
-    // An older server does not say; a row is proof enough, and otherwise the
-    // search stays, as it always did.
-    hasLoans: response.data.meta.has_loans ?? true,
-    total: response.data.meta.total,
-    page: response.data.meta.page,
-    totalPages: response.data.meta.total_pages,
-  };
-};
-
-export const getLoan = async (id: string, signal?: AbortSignal): Promise<LoanDetail> => {
-  const response = await api.get<{ data: Wire }>(LENDING_PATHS.LOAN(id), { signal });
-  return toLoanDetail(response.data.data);
-};
-
-export const getLoanActivity = async (
-  id: string,
-  signal?: AbortSignal
-): Promise<{ collections: CollectionRow[]; visits: VisitRow[]; messages: LoanMessageRow[] }> => {
-  const response = await api.get<{ data: Wire[]; meta: { visits: Wire[]; messages?: Wire[] } }>(
-    LENDING_PATHS.COLLECTIONS(id),
-    { signal }
-  );
-  return {
-    collections: response.data.data.map((c) => ({
-      id: str(c.id),
-      collectedOn: str(c.collected_on),
-      amount: str(c.amount),
-      mode: str(c.mode),
-      reference: str(c.reference),
-      note: str(c.note),
-      receiptNumber: str(c.receipt_number),
-      voided: Boolean(c.voided),
-      opening: Boolean(c.opening),
-    })),
-    visits: (response.data.meta?.visits ?? []).map((v) => ({
-      onDate: str(v.on_date),
-      outcome: str(v.outcome) as VisitOutcome,
-      reason: str(v.reason),
-      promisedOn: strOrNull(v.promised_on),
-    })),
-    messages: (response.data.meta?.messages ?? []).map((m) => ({
-      id: str(m.id),
-      kind: str(m.kind) as LoanMessageRow['kind'],
-      subject: str(m.subject),
-      channel: str(m.channel) as LoanMessageRow['channel'],
-      at: strOrNull(m.at),
-    })),
-  };
-};
-
-export const previewCollection = async (
-  loanId: string,
-  amount: string,
-  signal?: AbortSignal
-): Promise<CollectionPreview> => {
-  const response = await api.post<{ data: Wire }>(
-    LENDING_PATHS.COLLECTION_PREVIEW(loanId),
-    { amount },
-    ubConfig({ signal, suppressErrorSnackbar: true })
-  );
-  const d = response.data.data;
-  return {
-    amount: str(d.amount),
-    remainingAfter: str(d.remaining_after),
-    clears: ((d.clears as Wire[] | undefined) ?? []).map((c) => ({
-      seq: num(c.seq),
-      dueOn: str(c.due_on),
-      amount: str(c.amount),
-      when: str(c.when) as 'missed' | 'today' | 'ahead',
-    })),
-  };
-};
-
-export interface CollectResult {
-  readonly receiptNumber: string;
-  readonly amount: string;
-  readonly loanStatus: string;
-  readonly figures: LoanFigures;
+export async function listRoutes(signal?: AbortSignal): Promise<Route[]> {
+  return data<Wire[]>(await api.get(LENDING_PATHS.ROUTES, { signal })).map((r) => ({ id: str(r.id), name: str(r.name), active: Boolean(r.active) }));
 }
 
-export const collect = async (
-  loanId: string,
-  values: CollectFormValues,
-  key: string
-): Promise<CollectResult> => {
-  const response = await api.post<{ data: Wire }>(
-    LENDING_PATHS.COLLECTIONS(loanId),
-    {
-      amount: values.amount,
-      mode: values.mode,
-      reference: (values.reference ?? '').trim() || undefined,
-      note: (values.note ?? '').trim() || undefined,
-      collected_on: values.collectedOn || undefined,
-    },
-    ubConfig({ headers: { 'Idempotency-Key': key }, suppressErrorSnackbar: true })
-  );
-  const d = response.data.data;
-  return {
-    receiptNumber: str(d.receipt_number),
-    amount: str(d.amount),
-    loanStatus: str(d.loan_status),
-    figures: toFigures((d.figures ?? {}) as Wire),
-  };
-};
-
-export const recordVisit = async (
-  loanId: string,
-  body: { outcome: VisitOutcome; reason: string; promisedOn?: string }
-): Promise<void> => {
-  await api.post(
-    LENDING_PATHS.VISITS(loanId),
-    { outcome: body.outcome, reason: body.reason, promised_on: body.promisedOn || undefined },
-    quiet
-  );
-};
-
-export const getToday = async (route: string, signal?: AbortSignal): Promise<TodayRound> => {
-  const response = await api.get<{
-    data: Wire[];
-    meta: {
-      on: string;
-      due: string;
-      collected: string;
-      short: string;
-      stops: number;
-      done: number;
-      has_loans?: boolean;
-    };
-  }>(`${LENDING_PATHS.TODAY}${toQueryString({ route: route || undefined })}`, { signal });
-  const meta = response.data.meta;
-  return {
-    on: meta.on,
-    hasLoans: meta.has_loans ?? true,
-    due: meta.due,
-    collected: meta.collected,
-    short: meta.short,
-    stopsCount: meta.stops,
-    done: meta.done,
-    stops: response.data.data.map((s) => {
-      const visit = s.visit as Wire | null;
-      return {
-        loanId: str(s.loan_id),
-        number: str(s.number),
-        name: str(s.name),
-        mobile: strOrNull(s.mobile),
-        area: str(s.area),
-        route: strOrNull(s.route),
-        seq: num(s.seq),
-        frequency: str(s.frequency) as TodayRound['stops'][number]['frequency'],
-        instalmentAmount: str(s.instalment_amount),
-        dueToday: str(s.due_today),
-        arrears: str(s.arrears),
-        daysPastDue: num(s.days_past_due),
-        collectedToday: str(s.collected_today),
-        remaining: str(s.remaining),
-        remindedToday: Boolean(s.reminded_today),
-        visit: visit
-          ? {
-              outcome: str(visit.outcome) as VisitOutcome,
-              reason: str(visit.reason),
-              promisedOn: strOrNull(visit.promised_on),
-            }
-          : null,
-      };
-    }),
-  };
-};
-
-export const listRoutes = async (signal?: AbortSignal): Promise<LendingRoute[]> => {
-  const response = await api.get<{ data: Wire[] }>(LENDING_PATHS.ROUTES, { signal });
-  return response.data.data.map((r) => {
-    const agent = r.agent as Wire | null;
-    return {
-      id: str(r.id),
-      name: str(r.name),
-      agent: agent ? { id: str(agent.id), name: str(agent.name) } : null,
-      isActive: Boolean(r.is_active),
-      loans: r.loans === null || r.loans === undefined ? null : num(r.loans),
-      version: num(r.version),
-    };
-  });
-};
-
-export const saveRoute = async (name: string): Promise<void> => {
-  await api.post(LENDING_PATHS.ROUTES, { name }, quiet);
-};
-
-/**
- * `status` absent (or `all`) is everybody, the server's default. The new-loan
- * picker asks for `active`: a blocked person cannot be given a loan, so
- * offering them there is offering a refusal.
- */
-export const listBorrowers = async (
-  params: { q?: string; status?: BorrowerStatusFilter; page?: string },
-  signal?: AbortSignal
-): Promise<BorrowerPage> => {
-  const response = await api.get<{
-    data: Wire[];
-    meta?: { totals?: Wire; page?: number; total?: number; total_pages?: number };
-  }>(
-    `${LENDING_PATHS.BORROWERS}${toQueryString({
-      q: params.q || undefined,
-      page: params.page,
-      status: params.status && params.status !== 'all' ? params.status : undefined,
-    })}`,
-    { signal }
-  );
-  const totals = response.data.meta?.totals;
-  return {
-    rows: response.data.data.map(toBorrower),
-    page: response.data.meta?.page ?? 1,
-    total: response.data.meta?.total ?? response.data.data.length,
-    totalPages: response.data.meta?.total_pages ?? 1,
-    totals: totals ? { left: str(totals.left), late: str(totals.late) } : null,
-  };
-};
-
-const toBorrower = (b: Wire): BorrowerRow => {
-  const route = b.route as Wire | null;
-  const sum = b.summary as Wire | null | undefined;
-  return {
-    id: str(b.id),
-    number: str(b.number),
-    partyId: str(b.party_id),
-    name: str(b.name),
-    mobile: strOrNull(b.mobile),
-    area: str(b.area),
-    route: route ? { id: str(route.id), name: str(route.name) } : null,
-    status: b.status === 'blocked' ? 'blocked' : 'active',
-    blockedReason: str(b.blocked_reason),
-    notes: str(b.notes),
-    version: num(b.version),
-    summary: sum
-      ? {
-          loans: num(sum.loans),
-          running: num(sum.running),
-          given: str(sum.given),
-          collected: str(sum.collected),
-          left: str(sum.left),
-          late: str(sum.late),
-        }
-      : null,
-  };
-};
-
-/** One borrower with their loans added up — the line above their list of loans. */
-export const getBorrower = async (id: string, signal?: AbortSignal): Promise<BorrowerRow> => {
-  const response = await api.get<{ data: Wire }>(LENDING_PATHS.BORROWER(id), { signal });
-  return toBorrower(response.data.data);
-};
-
-// ── Edit and block a borrower (owner, 12 Oct 2026; owner or admin only) ────
-
-/**
- * `PATCH /lending/borrowers/{id}`. Name and mobile change on the PARTY (the
- * server goes through the parties app's own service), so a number another
- * party holds comes back as a field error on `mobile`. The drawer says field
- * errors itself, hence quiet; anything else reaches the global snackbar from
- * the thunk's caller.
- */
-export const updateBorrower = async (
-  id: string,
-  values: BorrowerEditValues,
-  version: number
-): Promise<BorrowerRow> => {
-  const response = await api.patch<{ data: Wire }>(
-    LENDING_PATHS.BORROWER(id),
-    {
-      version,
-      name: values.name.trim(),
-      mobile: values.mobile.trim() || null,
-      area: values.area.trim(),
-      notes: values.notes.trim(),
-    },
-    quiet
-  );
-  return toBorrower(response.data.data);
-};
-
-/**
- * No new loans for this person from now; collections on running loans carry
- * on. Not quiet: a refusal has nothing to anchor to in a one-field dialog, so
- * the global snackbar says it.
- */
-export const blockBorrower = async (id: string, reason: string): Promise<BorrowerRow> => {
-  const response = await api.post<{ data: Wire }>(LENDING_PATHS.BORROWER_BLOCK(id), {
-    reason: reason.trim() || undefined,
-  });
-  return toBorrower(response.data.data);
-};
-
-export const unblockBorrower = async (id: string): Promise<BorrowerRow> => {
-  const response = await api.post<{ data: Wire }>(LENDING_PATHS.BORROWER_UNBLOCK(id), {});
-  return toBorrower(response.data.data);
-};
-
-// ── "Collect from <borrower>" (review L5) ───────────────────────────────────
-
-/** How `amount` splits across the borrower's running loans. Records nothing. */
-export const previewBorrowerCollection = async (
-  borrowerId: string,
-  amount: string,
-  signal?: AbortSignal
-): Promise<BorrowerSplit> => {
-  const response = await api.post<{ data: Wire }>(
-    LENDING_PATHS.BORROWER_COLLECTION_PREVIEW(borrowerId),
-    { amount },
-    ubConfig({ signal, suppressErrorSnackbar: true })
-  );
-  return toSplit(response.data.data as Readonly<Record<string, unknown>>);
-};
-
-export interface BorrowerCollectResult {
-  readonly amount: string;
-  readonly receipts: readonly string[];
+export async function saveRoute(name: string, id?: string, idempotencyKey?: string): Promise<void> {
+  if (id) await api.patch(LENDING_PATHS.ROUTE(id), { name });
+  else await api.post(LENDING_PATHS.ROUTES, { name }, key(idempotencyKey));
 }
 
-/**
- * One collection per loan, exactly the split that was shown. A split that
- * changed meanwhile comes back as `balance_changed` with the new one in
- * `details.split`, for the sheet to show instead.
- */
-export const collectFromBorrower = async (
-  split: BorrowerSplit,
-  values: CollectFormValues,
-  key: string
-): Promise<BorrowerCollectResult> => {
-  const response = await api.post<{ data: Wire }>(
-    LENDING_PATHS.BORROWER_COLLECTIONS(split.borrowerId),
-    {
-      amount: split.amount,
-      split: split.loans.map((l) => ({ loan_id: l.loanId, amount: l.amount })),
-      mode: values.mode,
-      reference: (values.reference ?? '').trim() || undefined,
-      note: (values.note ?? '').trim() || undefined,
-      collected_on: values.collectedOn || undefined,
-    },
-    ubConfig({ headers: { 'Idempotency-Key': key }, suppressErrorSnackbar: true })
-  );
-  const d = response.data.data;
+export async function listBorrowers(q: string, signal?: AbortSignal): Promise<Borrower[]> {
+  return data<Wire[]>(await api.get(`${LENDING_PATHS.BORROWERS}${toQueryString({ q: q || undefined })}`, { signal })).map(toBorrower);
+}
+
+export async function getBorrower(id: string, signal?: AbortSignal): Promise<BorrowerDetail> {
+  const r = data<Wire>(await api.get(LENDING_PATHS.BORROWER(id), { signal }));
+  return { ...toBorrower(r), allLoans: ((r.all_loans as Wire[]) ?? []).map(toLoan) };
+}
+
+export async function saveBorrower(v: BorrowerValues, id: string | null, idempotencyKey: string): Promise<{ id: string; name: string }> {
+  const body = { name: v.name, mobile: v.mobile, work: v.work, route_id: v.routeId || null };
+  const r = id ? await api.patch(LENDING_PATHS.BORROWER(id), body) : await api.post(LENDING_PATHS.BORROWERS, body, key(idempotencyKey));
+  const d = data<Wire>(r);
+  return { id: str(d.id), name: str(d.name) };
+}
+
+export async function listLoans(q: { status?: string; route?: string; q?: string }, signal?: AbortSignal): Promise<Loan[]> {
+  return data<Wire[]>(
+    await api.get(`${LENDING_PATHS.LOANS}${toQueryString({ status: q.status, route: q.route || undefined, q: q.q || undefined })}`, { signal })
+  ).map(toLoan);
+}
+
+export async function getLoan(id: string, signal?: AbortSignal): Promise<LoanDetail> {
+  return toLoanDetail(data<Wire>(await api.get(LENDING_PATHS.LOAN(id), { signal })));
+}
+
+const loanBody = (v: NewLoanValues): Wire => ({
+  borrower_id: v.borrowerId,
+  lent: v.lent,
+  frequency: v.frequency,
+  count: Number(v.count),
+  each: v.each,
+  starts_on: v.startsOn || undefined,
+  route_id: v.routeId || null,
+  charges: v.charges || '0',
+});
+
+export async function previewLoan(v: NewLoanValues, signal?: AbortSignal): Promise<LoanPreview> {
+  const r = data<Wire>(await api.post(`${LENDING_PATHS.LOANS}?preview=true`, loanBody(v), { signal }));
   return {
-    amount: str(d.amount),
-    receipts: ((d.collections as Wire[] | undefined) ?? []).map((c) => str(c.receipt_number)),
+    toCollect: str(r.to_collect),
+    inHand: str(r.in_hand),
+    earns: str(r.earns),
+    lastDay: str(r.last_day),
+    schedule: ((r.schedule as Wire[]) ?? []).map((s) => ({ seq: num(s.seq), dueOn: str(s.due_on), amount: str(s.amount) })),
   };
-};
+}
 
-// ── LEN-09 — late fees and waivers ──────────────────────────────────────────
+export async function createLoan(v: NewLoanValues, idempotencyKey: string): Promise<LoanDetail> {
+  return toLoanDetail(data<Wire>(await api.post(LENDING_PATHS.LOANS, loanBody(v), key(idempotencyKey))));
+}
 
-export const getLoanDue = async (
-  loanId: string,
-  dueId: string,
-  signal?: AbortSignal
-): Promise<LoanDueFigures> => {
-  const response = await api.get<{ data: Wire }>(
-    LENDING_PATHS.DUE(loanId, dueId),
-    ubConfig({ signal, suppressErrorSnackbar: true })
-  );
-  const d = response.data.data;
-  const fee = d.late_fee as Wire | null;
-  const left = (d.waivable ?? {}) as Wire;
+const collectBody = (v: CollectValues): Wire => ({ amount: v.amount, mode: v.mode, ...(v.collectedOn ? { collected_on: v.collectedOn } : {}) });
+
+export async function previewCollect(loanId: string, v: CollectValues, signal?: AbortSignal): Promise<CollectPreview> {
+  const r = data<Wire>(await api.post(`${LENDING_PATHS.COLLECT(loanId)}?preview=true`, collectBody(v), { signal }));
   return {
-    dueId: str(d.due_id),
-    seq: num(d.seq),
-    status: str(d.status),
-    lateFee: fee
-      ? {
-          rule: str(fee.rule) as LateFeeKind,
-          daysLate: num(fee.days_late),
-          ruleAmount: str(fee.rule_amount),
-          alreadyCharged: str(fee.already_charged),
-          suggested: str(fee.suggested),
-        }
-      : null,
-    waivable: {
-      interest: str(left.interest),
-      fee: str(left.fee),
-      principal: str(left.principal),
-    },
+    collected: str(r.collected),
+    late: str(r.late),
+    lateDays: num(r.late_days),
+    dueToday: str(r.due_today),
+    left: str(r.left),
+    daysToGo: num(r.days_to_go),
   };
-};
+}
 
-/** `kind` "fee" adds a late fee; "waive" forgives `component` of the instalment. */
-export const adjustLoanDue = async (
-  loanId: string,
-  body: {
-    kind: 'fee' | 'waive';
-    dueId: string;
-    amount: string;
-    reason: string;
-    component?: 'interest' | 'fee' | 'principal';
-  },
-  key: string
-): Promise<LoanDetail> => {
-  const response = await api.post<{ data: Wire }>(
-    body.kind === 'fee' ? LENDING_PATHS.LATE_FEES(loanId) : LENDING_PATHS.WAIVERS(loanId),
-    {
-      due_id: body.dueId,
-      amount: body.amount,
-      reason: body.reason.trim(),
-      ...(body.kind === 'waive' ? { component: body.component } : {}),
-    },
-    ubConfig({ headers: { 'Idempotency-Key': key }, suppressErrorSnackbar: true })
-  );
-  return toLoanDetail(response.data.data.loan as Wire);
-};
+export async function collect(loanId: string, v: CollectValues, idempotencyKey: string): Promise<{ loan: LoanDetail; receipt: string }> {
+  const r = await api.post(LENDING_PATHS.COLLECT(loanId), collectBody(v), key(idempotencyKey));
+  const meta = (r.data.meta ?? {}) as Wire;
+  return { loan: toLoanDetail(meta.loan as Wire), receipt: str(meta.receipt) };
+}
 
-// ── LEN-10 — write-off and cancel ───────────────────────────────────────────
+export async function notPaid(loanId: string, v: { reason: string; promisedOn: string }, idempotencyKey: string): Promise<void> {
+  await api.post(LENDING_PATHS.NOT_PAID(loanId), { reason: v.reason, promised_on: v.promisedOn || undefined }, key(idempotencyKey));
+}
 
-export const endLoan = async (
-  loanId: string,
-  body:
-    | { kind: 'write_off'; amount: string; reasonCode: string; reason: string }
-    | { kind: 'cancel'; reason: string }
-): Promise<LoanDetail> => {
-  const response = await api.post<{ data: Wire }>(
-    body.kind === 'write_off' ? LENDING_PATHS.WRITE_OFF(loanId) : LENDING_PATHS.CANCEL(loanId),
-    body.kind === 'write_off'
-      ? { amount: body.amount, reason_code: body.reasonCode, reason: body.reason.trim() }
-      : { reason: body.reason.trim() },
-    quiet
-  );
-  return toLoanDetail(response.data.data.loan as Wire);
-};
+export async function removeCollection(id: string, reason: string, idempotencyKey: string): Promise<LoanDetail> {
+  return toLoanDetail(data<Wire>(await api.post(LENDING_PATHS.REMOVE(id), { reason }, key(idempotencyKey))));
+}
+
+export async function closeLoan(id: string, reason: 'paid' | 'written_off', idempotencyKey: string): Promise<LoanDetail> {
+  return toLoanDetail(data<Wire>(await api.post(LENDING_PATHS.CLOSE(id), { reason }, key(idempotencyKey))));
+}
+
+export async function remindList(kind: RemindKind, signal?: AbortSignal): Promise<{ rows: Loan[]; counts: Record<RemindKind, number> }> {
+  const r = await api.get(`${LENDING_PATHS.REMIND}${toQueryString({ kind })}`, { signal });
+  const c = ((r.data.meta ?? {}) as Wire).counts as Wire | undefined;
+  return {
+    rows: (r.data.data as Wire[]).map(toLoan),
+    counts: { late: num(c?.late), due_today: num(c?.due_today), due_tomorrow: num(c?.due_tomorrow) },
+  };
+}
+
+export async function messageText(loanId: string, kind: RemindKind, lang: string, signal?: AbortSignal): Promise<{ text: string; mobile: string }> {
+  const r = data<Wire>(await api.get(`${LENDING_PATHS.MESSAGE_TEXT}${toQueryString({ loan: loanId, kind, lang })}`, { signal }));
+  return { text: str(r.text), mobile: str(r.mobile) };
+}
+
+export async function recordMessage(loanId: string, kind: string, text: string, idempotencyKey: string): Promise<void> {
+  await api.post(LENDING_PATHS.MESSAGES, { loan_id: loanId, kind, text }, key(idempotencyKey));
+}
+
+export async function getSettings(signal?: AbortSignal): Promise<LendingSettings> {
+  const r = data<Wire>(await api.get(LENDING_PATHS.SETTINGS, { signal }));
+  return { signAs: str(r.sign_as), name: str(r.name), upiId: str(r.upi_id) };
+}
+
+export async function saveSettings(v: { signAs: string; upiId: string }): Promise<void> {
+  await api.patch(LENDING_PATHS.SETTINGS, { sign_as: v.signAs, upi_id: v.upiId });
+}

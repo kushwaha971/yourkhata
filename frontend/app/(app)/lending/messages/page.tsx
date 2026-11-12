@@ -5,7 +5,7 @@ import { MessagesPageContent } from 'modules/DigiKhaato/features/lending/compone
 // The words this screen renders arrive with its chunk (src/i18n/catalogueRegistry.ts).
 import 'src/i18n/catalogues/lending';
 
-/** L03 — today's reminders to borrowers, sent by hand and recorded (LEN-12). */
+/** I11 · Reminders to borrowers. */
 export default function Page(): React.JSX.Element {
   return <MessagesPageContent />;
 }

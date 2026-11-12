@@ -1,686 +1,313 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import dynamic from 'next/dynamic';
 
-import {
-  Ban,
-  FileCheck2,
-  FileText,
-  FileX2,
-  HandCoins,
-  MessageCircle,
-  Printer,
-  QrCode,
-} from 'lucide-react';
+import { ArrowLeft, Bell } from 'lucide-react';
 
-import { CompactCard, CompactFact } from 'src/components/records/CompactCard';
 import {
-  UbActionLink,
-  UbAmount,
+  UbBottomBar,
+  UbBox,
   UbButton,
-  UbDialogLoading,
+  UbChoiceChips,
+  UbConfirmDialog,
+  UbDialog,
+  UbDrawerLoading,
   UbEmptyState,
   UbLink,
-  UbPageHeader,
+  UbMoreActions,
   UbPageShell,
-  UbPageSkeleton,
-  UbSectionHeading,
+  UbSkeleton,
   UbStack,
   UbStatusBadge,
-  UbStatusBanner,
   UbText,
+  UbTextInput,
+  type UbMenuListRow,
 } from 'src/design-system';
+import { useAppRouter } from 'src/hooks/useAppRouter';
 import { useAppDispatch, useAppSelector } from 'src/hooks/useAppStore';
-import { usePermissions } from 'src/hooks/usePermissions';
+import { useIdempotencyKey } from 'src/hooks/useIdempotencyKey';
 import { useTranslation } from 'src/hooks/useTranslation';
-import { selectLocale } from 'src/redux/slice/localeSlice';
-import { selectTenantTimezone } from 'src/redux/slice/sessionSlice';
-import { ROUTES } from 'src/routes';
-import { formatBusinessDate, todayInTenantTz } from 'src/utils/dates';
-import { formatInr } from 'src/utils/money';
-import { formatPhoneForDisplay } from 'src/utils/share';
+import { showSnackbar } from 'src/redux/slice/snackbarSlice';
+import { toApiError } from 'src/utils/apiError';
+import { todayInTenantTz } from 'src/utils/dates';
 
-import { selectLendingLoans } from '../redux/lendingLoansSlice';
-import { fetchLendingLoan } from '../redux/lendingThunk';
-import {
-  LOAN_STATUS_TONE,
-  askedToday,
-  endedReason,
-  isNonZero,
-  isRemindable,
-  localClock,
-  localDay,
-} from '../view-model/lendingDisplay';
+import { Card, Figure, Figures, KeyValue, List, Table } from 'modules/DigiKhaato/features/appParts/AppParts';
 
-import type { LendingMessageKind, LoanDue } from '../types/lending.types';
-import type { LoanPaper } from './print/LoanPapersPrint';
+import { closeLoan, removeCollection } from '../api/lendingService';
+import { useRemind } from '../hooks/useRemind';
+import { selectLending } from '../redux/lendingSlice';
+import { fetchLoan, fetchToday } from '../redux/lendingThunks';
+import { LENDING_ROUTES } from '../routes';
+import { SCHEDULE_TONE, SCHEDULE_WORD, planLine, rupees, shortDate } from '../view-model/lendingDisplay';
 
-// This workspace also opens lazily on the borrower, independently of its route.
-import 'src/i18n/catalogues/lending';
-import 'src/i18n/catalogues/payLink';
+import type { CollectionRow, LoanDetail } from '../types/lending.types';
 
-const CollectDialogLazy = dynamic(() => import('./CollectDialog').then((m) => m.CollectDialog), {
-  ssr: false,
-  loading: () => <UbDialogLoading />,
+const CollectSheet = dynamic(() => import('./CollectSheet').then((m) => m.CollectSheet), {
+  loading: () => <UbDrawerLoading />,
 });
-const NotPaidDialogLazy = dynamic(() => import('./NotPaidDialog').then((m) => m.NotPaidDialog), {
-  ssr: false,
-  loading: () => <UbDialogLoading />,
-});
-/* Shop P0 — the borrower's UPI QR for what is due, with Share and Copy link. */
-const UpiPayQrDialogLazy = dynamic(
-  () => import('../../payments/pay-link/components/UpiPayQrDialog').then((m) => m.UpiPayQrDialog),
-  { ssr: false,
-  loading: () => <UbDialogLoading /> }
-);
-/* LEN-09 — the late-fee and waiver dialog loads with the tap. */
-const AdjustDueDialogLazy = dynamic(
-  () => import('./AdjustDueDialog').then((m) => m.AdjustDueDialog),
-  { ssr: false,
-  loading: () => <UbDialogLoading /> }
-);
-const OPEN_DUE = new Set(['due', 'overdue']);
-/* LEN-10 — write-off and cancel load with the tap. */
-const EndLoanDialogLazy = dynamic(() => import('./EndLoanDialog').then((m) => m.EndLoanDialog), {
-  ssr: false,
-  loading: () => <UbDialogLoading />,
+const NotPaidSheet = dynamic(() => import('./NotPaidSheet').then((m) => m.NotPaidSheet), {
+  loading: () => <UbDrawerLoading />,
 });
 
-/* Lending P0 — receipt, statement and closure letter: the sheet loads with the tap. */
-const LoanPapersPrintLazy = dynamic(
-  () => import('./print/LoanPapersPrint').then((m) => m.LoanPapersPrint),
-  { ssr: false }
-);
-const MessageDialogLazy = dynamic(() => import('./MessageDialog').then((m) => m.MessageDialog), {
-  ssr: false,
-  loading: () => <UbDialogLoading />,
-});
-
-const DUE_TONE: Readonly<Record<string, 'success' | 'warning' | 'error' | 'neutral' | 'info'>> = {
-  paid: 'success',
-  overdue: 'error',
-  due: 'warning',
-  scheduled: 'neutral',
+/** "Around today": the last three days through the next three, as the design shows six rows. */
+const aroundToday = (rows: LoanDetail['schedule'], today: string) => {
+  const i = rows.findIndex((r) => r.dueOn >= today);
+  const at = i === -1 ? rows.length : i;
+  return rows.slice(Math.max(0, at - 4), at + 2);
 };
 
 /**
- * `/lending/loans/[id]` (FRD LEN-05): the loan as agreed and as it stands —
- * what is late, what is left, the instalments with what each has taken, every
- * collection with its mode and note, and the visits.
+ * I9 · The loan page — Lent, Collected, Late and Left, the schedule around today
+ * and every collection. Collect, Not paid and Remind sit in the header; closing
+ * a loan and removing a wrong collection are behind ⋯.
  */
-export function LoanPageContent({
-  id,
-  embedded = false,
-}: Readonly<{ id: string; embedded?: boolean }>): React.JSX.Element {
-  const Container = embedded ? UbStack : UbPageShell;
+export function LoanPageContent({ id }: Readonly<{ id: string }>): React.JSX.Element {
   const { t } = useTranslation();
   const dispatch = useAppDispatch();
-  const state = useAppSelector(selectLendingLoans);
-  const timezone = useAppSelector(selectTenantTimezone);
-  const today = todayInTenantTz(timezone ?? undefined);
-  const locale = useAppSelector(selectLocale);
-  const { can, hasModule } = usePermissions();
-  const canRead = hasModule('lending') && can('lending.loan.read');
-  const canCollect = hasModule('lending') && can('lending.collection.create');
+  const router = useAppRouter();
+  const lend = useAppSelector(selectLending);
+  const today = useMemo(() => todayInTenantTz(), []);
+  const { remind, busy } = useRemind();
+  const { key, rotate } = useIdempotencyKey();
+  const [all, setAll] = useState(false);
   const [collecting, setCollecting] = useState(false);
-  const [visiting, setVisiting] = useState(false);
-  const canRemind = hasModule('lending') && can('lending.reminder.send');
-  const [messaging, setMessaging] = useState<{
-    kind: LendingMessageKind;
-    collectionId?: string;
-  } | null>(null);
-  const [showAll, setShowAll] = useState(false);
-  const [showingQr, setShowingQr] = useState(false);
-  const canCharge = hasModule('lending') && can('lending.charge.create');
-  const canWaive = hasModule('lending') && can('lending.waiver.create');
-  const canClose = hasModule('lending') && can('lending.loan.close');
-  // A write-off is the owner's alone; `platform.tenant.manage` is the owner's codename.
-  const isOwner = can('platform.tenant.manage');
-  const [ending, setEnding] = useState<'write_off' | 'cancel' | null>(null);
-  const [adjusting, setAdjusting] = useState<{ due: LoanDue; mode: 'fee' | 'waive' } | null>(null);
-  const [paper, setPaper] = useState<{
-    kind: LoanPaper;
-    collectionId?: string;
-    key: number;
-  } | null>(null);
-  const printPaper = (kind: LoanPaper, collectionId?: string) =>
-    setPaper((current) => ({ kind, collectionId, key: (current?.key ?? 0) + 1 }));
+  const [notPaying, setNotPaying] = useState(false);
+  const [removing, setRemoving] = useState<CollectionRow | null>(null);
+  const [reason, setReason] = useState('');
+  const [closing, setClosing] = useState<'paid' | 'written_off' | null>(null);
+  const [working, setWorking] = useState(false);
 
+  const load = useCallback(() => dispatch(fetchLoan(id)), [dispatch, id]);
   useEffect(() => {
-    if (!canRead) return undefined;
-    const promise = dispatch(fetchLendingLoan(id));
-    return () => promise.abort();
-  }, [canRead, dispatch, id, state.staleSeq]);
+    const r = load();
+    return () => r.abort();
+  }, [load]);
+  // The lender's name signs the receipt; the round carries it.
+  useEffect(() => {
+    if (!lend.round.data) void dispatch(fetchToday(''));
+  }, [dispatch, lend.round.data]);
 
-  if (!canRead) {
-    return (
-      <Container>
-        <UbEmptyState
-          variant="firstUse"
-          title={t('lending.noAccess.title')}
-          description={t('lending.noAccess.body')}
-        />
-      </Container>
-    );
-  }
-  const loan = state.loan?.id === id ? state.loan : null;
-  if (!loan) {
-    if (state.status === 'failed') {
-      return (
-        <Container>
-          <UbEmptyState
-            variant="firstUse"
-            title={t('lending.loan.notFound')}
-            action={
-              <UbActionLink href={ROUTES.LENDING_LOANS} variant="secondary">
-                {t('lending.loans.title')}
-              </UbActionLink>
-            }
-          />
-        </Container>
-      );
+  const loan = lend.loan.data?.id === id ? lend.loan.data : null;
+  const lenderName = lend.round.data?.name ?? '';
+
+  const remove = async () => {
+    if (!removing || !reason.trim()) return;
+    setWorking(true);
+    try {
+      await removeCollection(removing.id, reason.trim(), key);
+      rotate();
+      setRemoving(null);
+      setReason('');
+      dispatch(showSnackbar({ severity: 'success', id: 'lending.collection.removed', params: { amount: rupees(removing.amount) } }));
+      void load();
+    } catch (e) {
+      dispatch(showSnackbar({ severity: 'error', message: toApiError(e, 'lending.collection.removeError').message ?? t('lending.collection.removeError') }));
+    } finally {
+      setWorking(false);
     }
-    return <UbPageSkeleton variant="card" />;
-  }
-  const active = loan.status === 'active';
-  const remindable = canRemind && isRemindable(loan, today);
-  const remindedToday = state.messages.find(
-    (m) => m.kind === 'reminder' && localDay(m.at) === today
-  );
-  // "Receipt after a collection": offered on the latest one still standing.
-  // An opening row (QA F8) had no receipt, so it is never the one offered.
-  const latestCollection = state.collections.find((c) => !c.voided && !c.opening);
-  const asked = askedToday(loan);
-  const schedule = showAll
-    ? loan.schedule
-    : loan.schedule.filter((d) => d.status !== 'paid').slice(0, 6);
-  const rateLine =
-    loan.planType === 'fixed_daily'
-      ? t('lending.loan.fixedLine', {
-          amount: formatInr(loan.instalmentAmount),
-          count: loan.instalmentCount,
-        })
-      : t(`lending.loan.rateLine.${loan.rateUnit}`, {
-          rate: Number(loan.rate).toString(),
-          plan: t(`lending.plan.${loan.planType}`),
-        });
+  };
+  const close = async () => {
+    if (!closing) return;
+    setWorking(true);
+    try {
+      await closeLoan(id, closing, key);
+      rotate();
+      setClosing(null);
+      dispatch(showSnackbar({ severity: 'success', id: 'lending.loan.closed' }));
+      void load();
+    } catch (e) {
+      setClosing(null);
+      dispatch(showSnackbar({ severity: 'error', message: toApiError(e, 'lending.loan.closeError').message ?? t('lending.loan.closeError') }));
+    } finally {
+      setWorking(false);
+    }
+  };
 
-  const collectionAction =
-    active && canCollect ? (
-      <UbButton
-        onClick={() => setCollecting(true)}
-        data-testid="lending-loan-collect"
-        icon={<HandCoins className="h-4 w-4" aria-hidden />}
-        iconOnly="mobile"
-        className="max-sm:h-10 max-sm:w-10"
-      >
-        {t('lending.collect.button', {
-          amount: formatInr(isNonZero(asked) ? asked : loan.instalmentAmount),
-        })}
-      </UbButton>
-    ) : undefined;
+  if (lend.loan.status === 'failed' && !loan)
+    return (
+      <UbPageShell>
+        <UbEmptyState
+          variant={lend.loan.error?.code === 'not_found' ? 'filtered' : 'error'}
+          title={t(lend.loan.error?.code === 'not_found' ? 'lending.loan.notFound' : 'lending.loan.error')}
+          action={<UbButton variant="outlineNeutral" onClick={() => router.push(LENDING_ROUTES.loans)}>{t('lending.loan.back')}</UbButton>}
+        />
+      </UbPageShell>
+    );
+  if (!loan)
+    return (
+      <UbPageShell>
+        <UbSkeleton variant="list" count={5} label={t('lending.common.loading')} />
+      </UbPageShell>
+    );
+
+  const active = loan.status === 'active';
+  const lateKind = Number(loan.late) > 0 ? 'late' : 'due_today';
+  const subtitle = [loan.work, loan.route, t('lending.loan.lentOn', { date: shortDate(loan.startsOn, today) })].filter(Boolean).join(' · ');
+  const rows = all ? loan.schedule : aroundToday(loan.schedule, today);
+  const live = loan.collections.filter((c) => c.status === 'live');
+  const moreRows: UbMenuListRow[] = [
+    ...(live[0] ? [{ key: 'remove', label: t('lending.collection.removeLast'), onSelect: () => setRemoving(live[0] ?? null) }] : []),
+    ...(active && Number(loan.left) === 0 ? [{ key: 'close', label: t('lending.loan.close'), onSelect: () => setClosing('paid') }] : []),
+    ...(active && Number(loan.left) > 0 ? [{ key: 'writeoff', label: t('lending.loan.writeOff'), tone: 'danger' as const, onSelect: () => setClosing('written_off') }] : []),
+    { key: 'borrower', label: t('lending.loan.openBorrower'), onSelect: () => router.push(LENDING_ROUTES.borrower(loan.borrowerId)) },
+  ];
 
   return (
-    <Container className={embedded ? 'flex flex-col gap-3' : undefined}>
-      {embedded ? (
-        <UbSectionHeading
-          title={loan.borrower.name}
-          aside={collectionAction}
-          className="ub-print-hide"
-        />
-      ) : (
-        <UbPageHeader
-          className="ub-print-hide"
-          title={loan.borrower.name}
-          actions={collectionAction}
-        />
-      )}
-      <UbStack gap={3} data-testid="lending-loan" className="ub-print-hide">
-        {(loan.status === 'written_off' || loan.status === 'cancelled') && (
-          <UbStatusBanner
-            tone="warning"
-            title={t(`lending.end.banner.${loan.status}`, {
-              date: loan.closedOn ? formatBusinessDate(loan.closedOn) : '',
-            })}
-            description={loan.statusReason ? endedReason(loan.statusReason, t) : undefined}
-            data-testid="lending-loan-ended"
-          />
-        )}
-        <UbStack direction="row" gap={2} align="center" wrap>
-          <UbText variant="body-sm" className="ds-mono">
-            {loan.number}
-          </UbText>
-          {isNonZero(loan.arrears) ? (
-            <UbStatusBadge
-              tone="error"
-              label={t('lending.loans.late', { days: loan.daysPastDue })}
-            />
-          ) : (
-            <UbStatusBadge
-              tone={LOAN_STATUS_TONE[loan.status]}
-              label={t(`lending.status.${loan.status}`)}
-            />
-          )}
-          {!embedded && (
-            <UbLink
-              href={`${ROUTES.LENDING_LOANS}?borrower=${encodeURIComponent(loan.borrower.id)}`}
-            >
-              {t('lending.loan.ledger')}
-            </UbLink>
-          )}
-        </UbStack>
-
-        <CompactCard padded>
-          <UbStack gap={3}>
-            <UbStack className="grid grid-cols-3 gap-3">
-              {[
-                ['lending.loan.dueNow', asked, isNonZero(loan.arrears)],
-                ['lending.loan.left', loan.remaining, false],
-                ['lending.loan.collected', loan.collected, false],
-              ].map(([label, amount, late]) => (
-                <UbStack key={String(label)} gap={0} className="min-w-28">
-                  <UbText variant="caption" tone="tertiary">
-                    {t(String(label))}
-                  </UbText>
-                  {/* self-start: UbAmount is a right-aligned column, and stretched
-                      across its stack the figure sat away from its label. */}
-                  <UbAmount
-                    value={String(amount)}
-                    size="lg"
-                    tone={late ? 'receivable' : undefined}
-                    label={t(String(label))}
-                    labelHidden
-                    className="self-start"
-                  />
-                </UbStack>
-              ))}
-            </UbStack>
-            {isNonZero(loan.arrears) && (
-              <UbText variant="body-sm" tone="error">
-                {t('lending.today.late', {
-                  amount: formatInr(loan.arrears),
-                  days: loan.daysPastDue,
-                })}
-              </UbText>
-            )}
-            {/* "Not paid" records a missed visit, so it is offered only when
-                something is actually due (L02 QA: it showed on a loan whose
-                first instalment was tomorrow). */}
-            {((active && canCollect && isNonZero(asked)) ||
-              remindable ||
-              (active && canCollect)) && (
-              <UbStack direction="row" gap={2} align="center" wrap>
-                {active && canCollect && (
-                  <UbButton
-                    size="sm"
-                    variant="secondary"
-                    icon={<QrCode className="h-4 w-4" aria-hidden />}
-                    onClick={() => setShowingQr(true)}
-                    data-testid="lending-loan-upi-qr"
-                  >
-                    {t('payLink.button')}
-                  </UbButton>
-                )}
-                {active && canCollect && isNonZero(asked) && (
-                  <UbButton size="sm" variant="secondary" onClick={() => setVisiting(true)}>
-                    {t('lending.visit.button')}
-                  </UbButton>
-                )}
-                {remindable && (
-                  <UbButton
-                    size="sm"
-                    variant="secondary"
-                    icon={<MessageCircle className="h-4 w-4" aria-hidden />}
-                    onClick={() => setMessaging({ kind: 'reminder' })}
-                    data-testid="lending-loan-remind"
-                  >
-                    {t('lending.messages.remind')}
-                  </UbButton>
-                )}
-                {remindable && remindedToday && (
-                  <UbText variant="caption" tone="tertiary">
-                    {t('lending.messages.remindedAt', {
-                      time: localClock(remindedToday.at),
-                      channel: t(`lending.messages.channel.${remindedToday.channel}`),
-                    })}
-                  </UbText>
-                )}
-              </UbStack>
-            )}
+    <UbPageShell>
+      <UbStack gap={3} className="pb-44 lg:pb-6">
+        <UbStack direction="row" align="center" gap={2}>
+          <UbLink href={LENDING_ROUTES.loans} aria-label={t('lending.loan.back')} underline={false} className="-ml-2 flex h-11 w-11 items-center justify-center lg:hidden">
+            <ArrowLeft className="h-5 w-5" aria-hidden />
+          </UbLink>
+          <UbStack gap={0} className="min-w-0 flex-1">
+            <UbText as="h1" variant="inherit" className="line-clamp-2 break-words text-[17px] font-semibold lg:text-[26px] lg:font-bold">
+              {t('lending.loan.title', { number: loan.number, name: loan.borrower })}
+            </UbText>
+            <UbText variant="inherit" className="text-[12.5px] text-text-tertiary lg:text-[15px] lg:text-text-secondary">
+              {subtitle}
+            </UbText>
           </UbStack>
-        </CompactCard>
-
-        {/* Lending P0 — the papers a borrower is handed: the statement any time, and
-            the closure letter ("no dues") once the loan is paid off. */}
-        <UbStack direction="row" gap={2} wrap data-testid="lending-loan-papers">
-          <UbButton
-            size="sm"
-            variant="secondary"
-            icon={<FileText className="h-4 w-4" aria-hidden />}
-            onClick={() => printPaper('statement')}
-            data-testid="lending-loan-print-statement"
-          >
-            {t('lending.papers.statement.print')}
-          </UbButton>
-          {active &&
-            canClose &&
-            isOwner &&
-            loan.writeOffAmount &&
-            isNonZero(loan.writeOffAmount) && (
-              <UbButton
-                size="sm"
-                variant="secondary"
-                icon={<FileX2 className="h-4 w-4" aria-hidden />}
-                onClick={() => setEnding('write_off')}
-                data-testid="lending-loan-write-off"
-              >
-                {t('lending.end.writeOff.button')}
+          {active && (
+            <UbStack direction="row" gap={2} className="max-lg:hidden">
+              <UbButton variant="outlineNeutral" icon={<Bell className="h-4 w-4" aria-hidden />} busy={busy === loan.id} onClick={() => void remind(loan, lateKind)}>
+                {t('lending.loan.remind')}
               </UbButton>
-            )}
-          {active && canClose && !loan.hasCollections && (
-            <UbButton
-              size="sm"
-              variant="secondary"
-              icon={<Ban className="h-4 w-4" aria-hidden />}
-              onClick={() => setEnding('cancel')}
-              data-testid="lending-loan-cancel"
-            >
-              {t('lending.end.cancel.button')}
-            </UbButton>
+              <UbButton variant="outlineNeutral" onClick={() => setNotPaying(true)}>
+                {t('lending.stop.notPaidButton')}
+              </UbButton>
+              <UbButton variant="primary" onClick={() => setCollecting(true)} data-testid="lending-loan-collect">
+                {t('lending.stop.collect')}
+              </UbButton>
+            </UbStack>
           )}
-          {loan.status === 'closed' && !isNonZero(loan.remaining) && (
-            <UbButton
-              size="sm"
-              variant="secondary"
-              icon={<FileCheck2 className="h-4 w-4" aria-hidden />}
-              onClick={() => printPaper('closure')}
-              data-testid="lending-loan-print-closure"
-            >
-              {t('lending.papers.closure.print')}
-            </UbButton>
-          )}
+          <UbMoreActions label={t('lending.common.more')} title={t('lending.common.moreActions')} closeLabel={t('lending.common.close')} rows={moreRows} />
         </UbStack>
-
-        <CompactCard padded>
-          <UbStack className="grid grid-cols-2 gap-x-4 gap-y-3">
-            <CompactFact label={t('lending.loan.terms')} value={rateLine} />
-            {loan.lateFee.kind !== 'none' && (
-              <CompactFact
-                label={t('lending.loan.lateFeeRule')}
-                value={t(`lending.lateFee.rule.${loan.lateFee.kind}`, {
-                  value: formatInr(loan.lateFee.value ?? '0'),
-                  rate: Number(loan.lateFee.value ?? 0).toString(),
-                  cap: formatInr(loan.lateFee.cap ?? '0'),
-                  days: loan.lateFee.graceDays,
-                })}
+        {!active && (
+          <UbStatusBadge label={t(loan.closeReason === 'written_off' ? 'lending.loan.writtenOff' : 'lending.loan.paidUp', { date: shortDate(loan.closedOn, today) })} tone={loan.closeReason === 'written_off' ? 'error' : 'success'} />
+        )}
+        <Figures testId="lending-loan-figures">
+          <Figure label={t('lending.fig.lent')} value={rupees(loan.lent)} caption={`${shortDate(loan.startsOn, today)} · ${planLine(loan, t)}`} />
+          <Figure label={t('lending.fig.collected')} value={rupees(loan.collected)} caption={t('lending.loan.daysOf', { done: loan.paidCount, total: loan.count })} tone="get" />
+          <UbBox className="max-lg:hidden lg:contents">
+            <Figure label={t('lending.fig.late')} value={rupees(loan.late)} caption={t('lending.loan.lateDays', { count: loan.lateDays })} tone="give" />
+            <Figure label={t('lending.fig.left')} value={rupees(loan.left)} caption={t('lending.loan.ends', { date: shortDate(loan.endsOn, today) })} />
+          </UbBox>
+        </Figures>
+        <UbBox className="grid grid-cols-2 gap-2.5 lg:hidden">
+          <Figure label={t('lending.fig.late')} value={rupees(loan.late)} caption={t('lending.loan.lateDays', { count: loan.lateDays })} tone="give" />
+          <Figure label={t('lending.fig.left')} value={rupees(loan.left)} caption={t('lending.loan.ends', { date: shortDate(loan.endsOn, today) })} />
+        </UbBox>
+        <UbBox className="grid items-start gap-4 lg:[grid-template-columns:minmax(0,1fr)_340px]">
+          <UbStack gap={2}>
+            <UbStack direction="row" justify="between" align="center">
+              <UbText variant="inherit" className="font-semibold">
+                {t('lending.loan.schedule')}
+              </UbText>
+              <UbChoiceChips
+                ariaLabel={t('lending.loan.schedule')}
+                value={all ? 'all' : 'around'}
+                onChange={(v) => setAll(v === 'all')}
+                options={[
+                  { value: 'around', label: t('lending.loan.aroundToday') },
+                  { value: 'all', label: t('lending.loan.allDays', { count: loan.count }) },
+                ]}
+                className="flex-nowrap [&_*]:whitespace-nowrap [&_[role=radio]]:px-2.5 [&_[role=radio]]:text-[12.5px]"
               />
-            )}
-            <CompactFact
-              label={t('lending.preview.rate')}
-              value={t('lending.preview.rateValue', {
-                rate: Number(loan.effectiveAnnualRate).toFixed(1),
-              })}
-            />
-            <CompactFact label={t('lending.loan.principal')} value={formatInr(loan.principal)} />
-            <CompactFact label={t('lending.preview.cash')} value={formatInr(loan.cashHandedOver)} />
-            <CompactFact label={t('lending.preview.total')} value={formatInr(loan.totalPayable)} />
-            {loan.deductions.map((d) => (
-              <CompactFact key={d.label} label={d.label} value={formatInr(d.amount)} />
-            ))}
-            <CompactFact
-              label={t('lending.loan.given')}
-              value={formatBusinessDate(loan.disbursedOn)}
-            />
-            <CompactFact
-              label={t('lending.loan.ends')}
-              value={formatBusinessDate(loan.maturityOn)}
-            />
-            {loan.borrower.mobile && (
-              <CompactFact
-                label={t('lending.form.mobile')}
-                value={formatPhoneForDisplay(loan.borrower.mobile)}
-              />
-            )}
-            {loan.route && <CompactFact label={t('lending.route.label')} value={loan.route.name} />}
-            {loan.notes && <CompactFact label={t('lending.form.notes')} value={loan.notes} />}
+            </UbStack>
+            <Table testId="lending-schedule" head={[{ label: t('lending.col.date') }, { label: t('lending.col.due'), align: 'right' }, { label: t('lending.col.status') }]}>
+              {rows.map((r) => (
+                <UbBox as="tr" key={r.seq}>
+                  <UbBox as="td">{shortDate(r.dueOn, today)}</UbBox>
+                  <UbBox as="td" className="ds-num text-right">
+                    {rupees(r.amount)}
+                  </UbBox>
+                  <UbBox as="td">
+                    <UbStatusBadge label={t(SCHEDULE_WORD[r.state])} tone={SCHEDULE_TONE[r.state]} />
+                  </UbBox>
+                </UbBox>
+              ))}
+            </Table>
           </UbStack>
-        </CompactCard>
-
-        <CompactCard padded>
-          <UbStack gap={1} data-testid="lending-loan-schedule">
-            <UbText variant="label">{t('lending.loan.instalments')}</UbText>
-            {schedule.map((due) => (
-              <UbStack
-                key={due.id}
-                gap={1}
-                className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 border-t border-border-hairline py-2"
-              >
-                <UbStack direction="row" justify="between" align="center" gap={2}>
-                  <UbText variant="body-sm">{`${due.seq}. ${formatBusinessDate(due.dueOn)}`}</UbText>
-                  <UbStack direction="row" gap={2} align="center">
-                    <UbText variant="body-sm">
-                      {formatInr(isNonZero(due.outstanding) ? due.outstanding : due.amount)}
-                    </UbText>
-                    <UbStatusBadge
-                      tone={DUE_TONE[due.status] ?? 'neutral'}
-                      label={t(
-                        due.status === 'scheduled' && !isNonZero(due.outstanding)
-                          ? 'lending.due.prepaid'
-                          : `lending.due.${due.status}`
-                      )}
-                    />
-                  </UbStack>
-                </UbStack>
-                {(isNonZero(due.lateFee) || isNonZero(due.waived)) && (
-                  <UbText
-                    variant="caption"
-                    tone="tertiary"
-                    className="col-span-2"
-                    data-testid="lending-due-adjusted"
-                  >
-                    {[
-                      isNonZero(due.lateFee)
-                        ? t('lending.due.lateFee', { amount: formatInr(due.lateFee) })
-                        : '',
-                      isNonZero(due.waived)
-                        ? t('lending.due.waived', { amount: formatInr(due.waived) })
-                        : '',
-                    ]
-                      .filter(Boolean)
-                      .join(' · ')}
-                  </UbText>
-                )}
-                {active && OPEN_DUE.has(due.status) && (canCharge || canWaive) && (
-                  <UbStack direction="row" gap={2} className="col-start-2 row-start-1">
-                    {canCharge && loan.lateFee.kind !== 'none' && due.status === 'overdue' && (
-                      <UbButton
-                        size="sm"
-                        variant="ghost"
-                        onClick={() => setAdjusting({ due, mode: 'fee' })}
-                        data-testid="lending-due-late-fee"
-                      >
-                        {t('lending.adjust.fee.button')}
-                      </UbButton>
-                    )}
-                    {canWaive && (
-                      <UbButton
-                        size="sm"
-                        variant="ghost"
-                        onClick={() => setAdjusting({ due, mode: 'waive' })}
-                        data-testid="lending-due-waive"
-                      >
-                        {t('lending.adjust.waive.button')}
-                      </UbButton>
-                    )}
-                  </UbStack>
-                )}
-              </UbStack>
-            ))}
-            <UbButton size="sm" variant="ghost" onClick={() => setShowAll((s) => !s)}>
-              {showAll
-                ? t('lending.loan.showOpen')
-                : t('lending.loan.showAll', { count: loan.schedule.length })}
-            </UbButton>
-          </UbStack>
-        </CompactCard>
-
-        <CompactCard padded>
-          <UbStack gap={1} data-testid="lending-loan-collections">
-            <UbText variant="label">{t('lending.loan.collections')}</UbText>
-            {state.collections.length === 0 && (
-              <UbText variant="body-sm" tone="tertiary">
+          <Card testId="lending-collections">
+            <UbText variant="inherit" className="font-semibold">
+              {t('lending.loan.collections')}
+            </UbText>
+            {live.length === 0 ? (
+              <UbText variant="inherit" className="text-[13px] text-text-tertiary">
                 {t('lending.loan.noCollections')}
               </UbText>
+            ) : (
+              live.slice(0, 8).map((c) => (
+                <KeyValue
+                  key={c.id}
+                  label={`${shortDate(c.collectedOn, today)} · ${t(`lending.mode.${c.mode}`)}${c.by ? ` · ${c.by}` : ''}`}
+                  value={
+                    <UbText as="span" variant="inherit" className="ds-num font-bold text-get">
+                      {rupees(c.amount)}
+                    </UbText>
+                  }
+                />
+              ))
             )}
-            {state.collections.map((c) => (
-              <UbStack key={c.id} gap={0} className="border-t border-border-hairline py-2">
-                <UbStack direction="row" justify="between" gap={2}>
-                  <UbText variant="body-sm-medium" tone={c.voided ? 'tertiary' : undefined}>
-                    {formatInr(c.amount)}
-                  </UbText>
-                  <UbText variant="caption" tone="tertiary">
-                    {[
-                      formatBusinessDate(c.collectedOn),
-                      c.opening ? t('lending.loan.collectedBefore') : t(`lending.mode.${c.mode}`),
-                      c.receiptNumber,
-                    ]
-                      .filter(Boolean)
-                      .join(' · ')}
-                  </UbText>
-                </UbStack>
-                {!c.opening && (c.note || c.reference || c.voided) && (
-                  <UbText variant="caption" tone="secondary">
-                    {[c.voided ? t('lending.loan.voided') : '', c.reference, c.note]
-                      .filter(Boolean)
-                      .join(' · ')}
-                  </UbText>
-                )}
-                {!c.opening && (
-                  <UbButton
-                    size="sm"
-                    variant="ghost"
-                    className="self-start"
-                    icon={<Printer className="h-4 w-4" aria-hidden />}
-                    onClick={() => printPaper('receipt', c.id)}
-                    data-testid="lending-loan-print-receipt"
-                  >
-                    {t('lending.papers.receipt.print')}
-                  </UbButton>
-                )}
-                {canRemind && c.id === latestCollection?.id && (
-                  <UbButton
-                    size="sm"
-                    variant="ghost"
-                    className="self-start"
-                    icon={<MessageCircle className="h-4 w-4" aria-hidden />}
-                    onClick={() => setMessaging({ kind: 'receipt', collectionId: c.id })}
-                    data-testid="lending-loan-receipt"
-                  >
-                    {t('lending.messages.sendReceipt')}
-                  </UbButton>
-                )}
-              </UbStack>
-            ))}
-            {state.visits.map((v, i) => (
-              <UbText
-                key={`${v.onDate}-${i}`}
-                variant="caption"
-                tone="tertiary"
-                className="border-t border-border-hairline py-2"
-              >
-                {[
-                  formatBusinessDate(v.onDate),
-                  t(`lending.visit.outcome.${v.outcome}`),
-                  v.promisedOn ? formatBusinessDate(v.promisedOn) : '',
-                  v.reason,
-                ]
-                  .filter(Boolean)
-                  .join(' · ')}
-              </UbText>
-            ))}
-          </UbStack>
-        </CompactCard>
-
-        {state.messages.length > 0 && (
-          <CompactCard padded>
-            <UbStack gap={1} data-testid="lending-loan-messages">
-              <UbText variant="label">{t('lending.messages.history')}</UbText>
-              {state.messages.map((m) => (
-                <UbText
-                  key={m.id}
-                  variant="caption"
-                  tone="tertiary"
-                  className="border-t border-border-hairline py-2"
-                >
-                  {[
-                    `${formatBusinessDate(localDay(m.at))} ${localClock(m.at)}`,
-                    t(`lending.messages.kind.${m.kind}`),
-                    t(`lending.messages.channel.${m.channel}`),
-                  ].join(' · ')}
-                </UbText>
-              ))}
-            </UbStack>
-          </CompactCard>
-        )}
+            {loan.visits.length > 0 && (
+              <List className="mt-1">
+                {loan.visits.slice(0, 3).map((v) => (
+                  <UbBox as="li" key={v.day}>
+                    <UbText variant="inherit" className="block border-b border-border-hairline px-3 py-2 text-[12.5px] text-text-secondary">
+                      {t('lending.loan.notPaidOn', { date: shortDate(v.day, today), reason: v.reason })}
+                      {v.promisedOn ? ` · ${t('lending.loan.promised', { date: shortDate(v.promisedOn, today) })}` : ''}
+                    </UbText>
+                  </UbBox>
+                ))}
+              </List>
+            )}
+          </Card>
+        </UbBox>
       </UbStack>
-      {ending && <EndLoanDialogLazy loan={loan} mode={ending} onClose={() => setEnding(null)} />}
-      {adjusting && (
-        <AdjustDueDialogLazy
-          loanId={loan.id}
-          due={adjusting.due}
-          mode={adjusting.mode}
-          onClose={() => setAdjusting(null)}
-        />
+      {active && (
+        <UbBottomBar
+          sticky={false}
+          // Pinned above the bottom bar, as the Library's (a sticky dock floats on a short page).
+          className="fixed inset-x-0 bottom-[var(--ub-nav-offset)] z-20 grid grid-cols-2 gap-2 border-t border-border-hairline bg-surface-card px-4 pb-3.5 pt-2.5 lg:hidden"
+        >
+          <UbButton variant="secondary" size="lg" onClick={() => setNotPaying(true)}>
+            {t('lending.stop.notPaidButton')}
+          </UbButton>
+          <UbButton variant="primary" size="lg" onClick={() => setCollecting(true)} data-testid="lending-loan-collect-phone">
+            {t('lending.stop.collect')}
+          </UbButton>
+        </UbBottomBar>
       )}
-      {paper && (
-        <LoanPapersPrintLazy
-          loan={loan}
-          collections={state.collections}
-          paper={paper.kind}
-          collectionId={paper.collectionId ?? null}
-          locale={locale}
-          today={today}
-          printKey={paper.key}
-        />
-      )}
-      {showingQr && (
-        <UpiPayQrDialogLazy
-          amount={isNonZero(asked) ? asked : loan.instalmentAmount}
-          reference={loan.number}
-          title={t('payLink.loanTitle', {
-            amount: formatInr(isNonZero(asked) ? asked : loan.instalmentAmount),
-          })}
-          onClose={() => setShowingQr(false)}
-        />
-      )}
-      {messaging && (
-        <MessageDialogLazy
-          loanId={loan.id}
-          name={loan.borrower.name}
-          kind={messaging.kind}
-          collectionId={messaging.collectionId}
-          onClose={() => setMessaging(null)}
-        />
-      )}
-      {collecting && (
-        <CollectDialogLazy
-          loanId={loan.id}
-          name={loan.borrower.name}
-          number={loan.number}
-          suggested={isNonZero(asked) ? asked : loan.instalmentAmount}
-          onClose={() => setCollecting(false)}
-        />
-      )}
-      {visiting && (
-        <NotPaidDialogLazy
-          loanId={loan.id}
-          name={loan.borrower.name}
-          today={today}
-          onClose={() => setVisiting(false)}
-        />
-      )}
-    </Container>
+      {collecting && <CollectSheet loan={loan} lenderName={lenderName} onClose={() => setCollecting(false)} onSaved={() => void load()} />}
+      {notPaying && <NotPaidSheet loan={loan} onClose={() => setNotPaying(false)} onSaved={() => void load()} />}
+      <UbDialog
+        open={removing !== null}
+        onOpenChange={(open) => !open && setRemoving(null)}
+        title={t('lending.collection.removeTitle', { amount: rupees(removing?.amount ?? '0') })}
+        description={t('lending.collection.removeBody')}
+        closeLabel={t('lending.common.close')}
+        footer={
+          <UbButton variant="destructive" busy={working} disabled={!reason.trim()} onClick={() => void remove()}>
+            {t('lending.collection.remove')}
+          </UbButton>
+        }
+      >
+        <UbTextInput aria-label={t('lending.collection.reason')} placeholder={t('lending.collection.reason')} value={reason} onChange={setReason} autoFocus />
+      </UbDialog>
+      <UbConfirmDialog
+        open={closing !== null}
+        onOpenChange={(open) => !open && setClosing(null)}
+        title={t(closing === 'written_off' ? 'lending.loan.writeOffTitle' : 'lending.loan.closeTitle', { number: loan.number })}
+        description={t(closing === 'written_off' ? 'lending.loan.writeOffBody' : 'lending.loan.closeBody', { amount: rupees(loan.left) })}
+        confirmLabel={t(closing === 'written_off' ? 'lending.loan.writeOff' : 'lending.loan.close')}
+        cancelLabel={t('lending.common.cancel')}
+        closeLabel={t('lending.common.close')}
+        destructive={closing === 'written_off'}
+        busy={working}
+        onConfirm={() => void close()}
+      />
+    </UbPageShell>
   );
 }

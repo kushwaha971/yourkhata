@@ -1,1 +1,1 @@
-export { ListLoading as default } from 'src/components/layout/RouteLoading';
+export { HomeLoading as default } from 'src/components/layout/RouteLoading';

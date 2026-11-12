@@ -2,825 +2,353 @@
 
 import { useEffect, useId, useMemo, useState } from 'react';
 
-import { useSearchParams } from 'next/navigation';
-
 import { yupResolver } from '@hookform/resolvers/yup';
 import { useForm, useWatch } from 'react-hook-form';
 
-import { PhoneContactButton } from 'src/components/contacts/PhoneContactButton';
-import { CompactCard } from 'src/components/records/CompactCard';
 import {
+  UbBottomBar,
+  UbBox,
   UbButton,
-  UbChoiceChips,
   UbDateInput,
   UbEmptyState,
   UbField,
   UbForm,
   UbMoneyInput,
-  UbCombobox,
+  UbNativeSelect,
   UbPageHeader,
   UbPageShell,
-  UbPhoneInput,
   UbStack,
-  UbStatusBanner,
-  UbSwitch,
   UbText,
   UbTextInput,
 } from 'src/design-system';
 import { useAppRouter } from 'src/hooks/useAppRouter';
-import { useAppDispatch, useAppSelector } from 'src/hooks/useAppStore';
+import { useAppDispatch } from 'src/hooks/useAppStore';
+import { useDebounce } from 'src/hooks/useDebounce';
 import { useIdempotencyKey } from 'src/hooks/useIdempotencyKey';
-import { usePermissions } from 'src/hooks/usePermissions';
 import { useTranslation } from 'src/hooks/useTranslation';
-import { selectTenantTimezone } from 'src/redux/slice/sessionSlice';
 import { showSnackbar } from 'src/redux/slice/snackbarSlice';
-import { ROUTES } from 'src/routes';
-import { applyServerErrors } from 'src/utils/applyServerErrors';
-import { formatBusinessDate, todayInTenantTz } from 'src/utils/dates';
-import { addMoney, formatInr } from 'src/utils/money';
-import { mayHaveBeenSaved } from 'src/utils/requestKey';
+import 'src/i18n/catalogues/validation';
+import { toApiError } from 'src/utils/apiError';
+import { todayInTenantTz } from 'src/utils/dates';
+import { REGEX } from 'src/utils/regexConstants';
 
-import { toTermsBody } from '../api/lendingService';
-import { selectLendingForm } from '../redux/lendingFormSlice';
-import {
-  createLendingLoan,
-  fetchLendingBorrowers,
-  fetchLendingRoutes,
-  previewLendingLoan,
-} from '../redux/lendingThunk';
-import { selectLendingToday } from '../redux/lendingTodaySlice';
-import {
-  COLLECTED_BY,
-  LATE_FEE_KINDS,
-  PAYMENT_MODES,
-  PLAN_FREQUENCIES,
-  PLAN_TYPES,
-  type CollectedBy,
-  type LendingPaymentMode,
-  type LoanFormValues,
-  type PlanType,
-} from '../types/lending.types';
+import { Card, Figure, Figures, KeyValue, Table } from 'modules/DigiKhaato/features/appParts/AppParts';
+
+import { createLoan, listBorrowers, listRoutes, previewLoan } from '../api/lendingService';
+import { LENDING_ROUTES } from '../routes';
 import { useLendingSchemas } from '../validation/lendingSchemas';
-import { WEEKDAY_BITS, defaultFirstDue } from '../view-model/lendingDisplay';
+import { rupees, shortDate } from '../view-model/lendingDisplay';
 
-const PREVIEW_DEBOUNCE_MS = 400;
-/** The server's refusal of a loan to a blocked borrower (`borrower_blocked`, 409). */
-const BORROWER_BLOCKED = 'borrower_blocked';
-const MON_TO_SAT = 63;
-const SHOWN_ROWS = 5;
+import type { Borrower, Frequency, LoanPreview, NewLoanValues, Route } from '../types/lending.types';
 
-/** Server field → this form's field. */
-const SERVER_FIELD: Readonly<Record<string, keyof LoanFormValues>> = {
-  principal: 'principal',
-  rate: 'rate',
-  instalment_count: 'instalmentCount',
-  per_instalment_amount: 'perInstalmentAmount',
-  first_due_on: 'firstDueOn',
-  disbursed_on: 'disbursedOn',
-  'party.name': 'name',
-  'party.mobile': 'mobile',
-  borrower_id: 'borrowerId',
-  deductions: 'fileCharge',
-  'deductions.0.amount': 'fileCharge',
-  collection_weekdays: 'collectionWeekdays',
+/** The plans a small lender uses, as the design's one select ("Daily · 40 days"). */
+const PLANS: readonly { readonly key: string; readonly frequency: Frequency; readonly count: number }[] = [
+  { key: 'daily-40', frequency: 'daily', count: 40 },
+  { key: 'daily-60', frequency: 'daily', count: 60 },
+  { key: 'daily-100', frequency: 'daily', count: 100 },
+  { key: 'weekly-10', frequency: 'weekly', count: 10 },
+  { key: 'weekly-12', frequency: 'weekly', count: 12 },
+  { key: 'weekly-25', frequency: 'weekly', count: 25 },
+  { key: 'monthly-6', frequency: 'monthly', count: 6 },
+  { key: 'monthly-12', frequency: 'monthly', count: 12 },
+];
+
+const tomorrow = (today: string): string => {
+  const d = new Date(`${today}T00:00:00`);
+  d.setDate(d.getDate() + 1);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 };
-
-/** The server's field errors, keyed by this form's field names. */
-/** The first specific reason a refusal gives, for the preview panel (QA B6). */
-const firstReason = (error: { details?: Record<string, unknown> } | null): string | null => {
-  const first = Object.values(error?.details ?? {})[0];
-  return Array.isArray(first) && typeof first[0] === 'string' ? first[0] : null;
-};
-
-const toFormDetails = (
-  details: Readonly<Record<string, unknown>> | undefined,
-  collectedBy: CollectedBy = 'instalments'
-): Record<string, unknown> =>
-  Object.fromEntries(
-    Object.entries(details ?? {}).map(([k, m]) => [
-      // QA F8 — "already collected" is refused under whichever box is showing.
-      k === 'existing'
-        ? collectedBy === 'amount'
-          ? 'collectedAmount'
-          : 'collectedInstalments'
-        : (SERVER_FIELD[k] ?? k),
-      m,
-    ])
-  );
 
 /**
- * `/lending/loans/new` (FRD LEN-03, LEN-04; the agreed wireframe): who, the
- * plan, the money, and the live preview the server computes — the schedule,
- * the total to collect, the cash handed over and the effective yearly rate,
- * shown before anything is saved and never hidden behind a tap.
+ * I10 · New loan — amount lent, plan, each day's amount, start date and route.
+ * The whole schedule is shown before Save (the server's own), so the borrower
+ * can see it too: what will be collected, any charge taken at the start, the
+ * last day, and every collection day.
  */
-export function NewLoanPageContent(): React.JSX.Element {
+export function NewLoanPageContent({ borrowerId }: Readonly<{ borrowerId?: string }>): React.JSX.Element {
   const { t } = useTranslation();
-  const router = useAppRouter();
   const dispatch = useAppDispatch();
+  const router = useAppRouter();
   const formId = useId();
-  const timezone = useAppSelector(selectTenantTimezone);
-  const today = todayInTenantTz(timezone ?? undefined);
-  const { preview, previewStatus, previewError, borrowers, saving } =
-    useAppSelector(selectLendingForm);
-  const { routes } = useAppSelector(selectLendingToday);
-  const { can, hasModule } = usePermissions();
-  const canLend = hasModule('lending') && can('lending.loan.create');
+  const today = useMemo(() => todayInTenantTz(), []);
+  const { newLoanSchema } = useLendingSchemas();
   const { key, rotate } = useIdempotencyKey();
-  const { loanSchema } = useLendingSchemas();
-  const [showAll, setShowAll] = useState(false);
-  // "+ Loan" on a borrower's page opens this form with that person chosen
-  // (`?borrower=<id>&name=<name>`); the name seeds the search so the picker's
-  // first page holds them however long the book is.
-  const params = useSearchParams();
-  const givenBorrower = params.get('borrower') ?? '';
-  const [search, setSearch] = useState(givenBorrower ? (params.get('name') ?? '') : '');
-
-  const form = useForm<LoanFormValues>({
-    resolver: yupResolver(loanSchema),
+  const [borrowers, setBorrowers] = useState<readonly Borrower[]>([]);
+  const [routes, setRoutes] = useState<readonly Route[]>([]);
+  const [plan, setPlan] = useState('daily-40');
+  const [answer, setAnswer] = useState<{ ask: string; preview: LoanPreview } | null>(null);
+  const [saving, setSaving] = useState(false);
+  // A failed load is never an empty list of borrowers (H70): it says so, with Try again.
+  const [loadFailed, setLoadFailed] = useState(false);
+  const [attempt, setAttempt] = useState(0);
+  const form = useForm<NewLoanValues>({
+    resolver: yupResolver(newLoanSchema),
     mode: 'onTouched',
     defaultValues: {
-      borrowerMode: givenBorrower ? 'existing' : 'new',
-      borrowerId: givenBorrower,
-      borrowerName: '',
-      name: '',
-      mobile: '',
-      area: '',
-      routeId: '',
-      planType: 'fixed_daily',
-      principal: '',
-      fileCharge: '',
-      rate: '2',
-      rateUnit: 'per_month',
+      borrowerId: borrowerId ?? '',
+      lent: '',
       frequency: 'daily',
-      instalmentCount: '100',
-      perInstalmentAmount: '',
-      disbursedOn: today,
-      firstDueOn: defaultFirstDue(today, 'daily', 'fixed_daily'),
-      collectionWeekdays: MON_TO_SAT,
-      paymentMode: 'cash',
-      notes: '',
-      lateFeeKind: 'none',
-      lateFeeValue: '',
-      lateFeeCap: '',
-      lateFeeGraceDays: '0',
-      existingLoan: false,
-      collectedBy: 'instalments',
-      collectedInstalments: '',
-      collectedAmount: '',
+      count: '40',
+      each: '',
+      startsOn: tomorrow(today),
+      routeId: '',
+      charges: '',
     },
   });
-  const values = useWatch({ control: form.control }) as LoanFormValues;
-  const plan = values.planType;
-
-  // QA B46 / F12 — the first instalment follows "Money given on", the plan and the
-  // frequency, one period on, until the person sets it themselves.
-  const { disbursedOn, frequency } = values;
-  useEffect(() => {
-    if (!disbursedOn || form.getFieldState('firstDueOn').isDirty) return;
-    form.setValue('firstDueOn', defaultFirstDue(disbursedOn, frequency, plan));
-  }, [disbursedOn, frequency, plan, form]);
+  const values = useWatch({ control: form.control });
+  const asked = useDebounce(JSON.stringify(values), 300);
 
   useEffect(() => {
-    void dispatch(fetchLendingRoutes());
-  }, [dispatch]);
-  useEffect(() => {
-    if (values.borrowerMode !== 'existing') return undefined;
-    // Active only: a blocked borrower cannot be given a loan, so the picker
-    // does not offer them (owner, 12 Oct 2026).
-    const promise = dispatch(fetchLendingBorrowers({ q: search, status: 'active' }));
-    return () => promise.abort();
-  }, [dispatch, search, values.borrowerMode]);
-
-  // The preview: debounced, the previous request cancelled, so a slow answer
-  // never overwrites a newer one (FRD LEN-03 §7).
-  const terms = useMemo(() => JSON.stringify(toTermsBody(values)), [values]);
-  useEffect(() => {
-    if (!(Number(values.principal) > 0)) return undefined;
-    let request: { abort: () => void } | null = null;
-    const id = window.setTimeout(() => {
-      const pending = dispatch(previewLendingLoan(JSON.parse(terms) as Record<string, unknown>));
-      request = pending;
-      // QA B6 — a refused preview names its fields: "The deductions must be less than
-      // the amount lent" under File charge, not "Please check the highlighted fields"
-      // with nothing highlighted. A good preview clears what an earlier one marked.
-      void pending.then((result) => {
-        if (previewLendingLoan.fulfilled.match(result)) {
-          form.clearErrors(Object.values(SERVER_FIELD));
-        } else if (result.payload?.code === 'validation_error') {
-          applyServerErrors(
-            { ...result.payload, details: toFormDetails(result.payload.details) },
-            form.setError,
-            Object.values(SERVER_FIELD)
-          );
-        }
+    const controller = new AbortController();
+    void Promise.all([listBorrowers('', controller.signal), listRoutes(controller.signal)])
+      .then(([b, r]) => {
+        setLoadFailed(false);
+        setBorrowers(b);
+        setRoutes(r.filter((x) => x.active));
+        const chosen = b.find((x) => x.id === (borrowerId ?? ''));
+        if (chosen?.routeId) form.setValue('routeId', chosen.routeId);
+      })
+      .catch((e: unknown) => {
+        if (!controller.signal.aborted && !(e instanceof DOMException)) setLoadFailed(true);
       });
-    }, PREVIEW_DEBOUNCE_MS);
-    return () => {
-      window.clearTimeout(id);
-      request?.abort();
-    };
-  }, [dispatch, terms, values.principal, form]);
+    return () => controller.abort();
+  }, [borrowerId, form, attempt]);
 
-  const save = async (data: LoanFormValues) => {
-    const result = await dispatch(createLendingLoan({ values: data, key }));
-    // L-R1 — a save that ended without an answer may have landed, so Try
-    // again must replay it under the SAME key; a new key would record it twice.
-    if (createLendingLoan.fulfilled.match(result) || !mayHaveBeenSaved(result.payload)) rotate();
-    if (createLendingLoan.fulfilled.match(result)) {
-      dispatch(
-        showSnackbar({
-          severity: 'success',
-          id: 'lending.loan.saved',
-          params: { number: result.payload.number, name: result.payload.borrower.name },
-        })
-      );
-      router.push(`${ROUTES.LENDING_LOANS}/${result.payload.id}`);
-      return;
+  // The schedule before Save, asked of the server only for numbers it would accept.
+  const v = values as NewLoanValues;
+  const ready =
+    Boolean(v.lent && v.each && v.count) &&
+    REGEX.DECIMAL_2DP.test(v.lent ?? '') &&
+    REGEX.DECIMAL_2DP.test(v.each ?? '') &&
+    Number(v.each) * Number(v.count) >= Number(v.lent);
+  useEffect(() => {
+    if (!ready) return undefined;
+    const controller = new AbortController();
+    const ask = asked;
+    previewLoan({ ...v, borrowerId: v.borrowerId || 'preview' }, controller.signal)
+      .then((preview) => setAnswer({ ask, preview }))
+      .catch(() => undefined);
+    return () => controller.abort();
+    // `asked` carries every value; `v` is read through it.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ready, asked]);
+  const preview = ready && answer?.ask === asked ? answer.preview : null;
+  const borrower = borrowers.find((b) => b.id === v.borrowerId);
+
+  const save = async (values: NewLoanValues) => {
+    setSaving(true);
+    try {
+      const loan = await createLoan(values, key);
+      rotate();
+      dispatch(showSnackbar({ severity: 'success', id: 'lending.newLoan.saved', params: { number: loan.number, name: loan.borrower } }));
+      router.push(LENDING_ROUTES.loan(loan.id));
+    } catch (e) {
+      const err = toApiError(e, 'lending.newLoan.error');
+      if (err.code === 'validation_error') rotate();
+      dispatch(showSnackbar({ severity: 'error', message: err.message ?? t('lending.newLoan.error') }));
+    } finally {
+      setSaving(false);
     }
-    const failure = result.payload;
-    if (!failure) return;
-    if (String(failure.code) === BORROWER_BLOCKED) {
-      // Reached only by a page opened before the block, or a link to a
-      // blocked person: the picker and their page both hide the way here.
-      dispatch(showSnackbar({ severity: 'error', id: 'lending.borrower.blockedRefused' }));
-      return;
-    }
-    applyServerErrors(
-      { ...failure, details: toFormDetails(failure.details, data.collectedBy) },
-      form.setError,
-      [...Object.values(SERVER_FIELD), 'collectedInstalments', 'collectedAmount']
-    );
   };
 
-  if (!canLend) {
-    return (
-      <UbPageShell>
-        <UbEmptyState
-          variant="firstUse"
-          title={t('lending.noAccess.title')}
-          description={t('lending.noAccess.body')}
-        />
-      </UbPageShell>
-    );
-  }
-
-  const rows = preview?.schedule ?? [];
-  const shown = showAll ? rows : rows.slice(0, SHOWN_ROWS);
-
-  const money = (
-    name: 'principal' | 'fileCharge' | 'perInstalmentAmount' | 'lateFeeValue' | 'lateFeeCap',
-    required = false
-  ) => (
-    <UbField
-      name={name}
-      label={t(`lending.form.${name}`)}
-      hint={name === 'fileCharge' ? t('lending.form.fileCharge.hint') : undefined}
-      required={required}
-      optionalLabel={required ? undefined : t('common.field.optional')}
-      placeholder="0.00"
-      className="flex-1"
-    >
-      {(field) => (
-        <UbMoneyInput
-          {...field}
-          value={field.value as string}
-          onChange={field.onChange}
-          inputMode="decimal"
-          disabled={saving}
-        />
+  const each = t(`lending.newLoan.each.${v.frequency ?? 'daily'}`);
+  const fields = (
+    <>
+      {/* Started from a borrower: the design names them in the subtitle and asks no more. */}
+      {!borrowerId && (
+      <UbField name="borrowerId" label={t('lending.newLoan.borrower')} required>
+        {(field) => (
+          <UbNativeSelect
+            {...field}
+            value={field.value as string}
+            onChange={(id) => {
+              field.onChange(id);
+              const b = borrowers.find((x) => x.id === id);
+              if (b?.routeId) form.setValue('routeId', b.routeId);
+            }}
+            options={[{ value: '', label: t('lending.newLoan.chooseBorrower') }, ...borrowers.map((b) => ({ value: b.id, label: b.name }))]}
+          />
+        )}
+      </UbField>
       )}
-    </UbField>
+      {borrower && (
+        <UbText variant="inherit" className="-mt-2 text-[12.5px] text-text-tertiary">
+          {[borrower.mobile ? `+91 ${borrower.mobile.slice(0, 5)} ${borrower.mobile.slice(5)}` : null, borrower.loans ? t('lending.newLoan.running', { count: borrower.loans }) : t('lending.newLoan.noneRunning')]
+            .filter(Boolean)
+            .join(' · ')}
+        </UbText>
+      )}
+      <UbField name="lent" label={t('lending.newLoan.lent')} required>
+        {(field) => <UbMoneyInput {...field} value={field.value as string} inputMode="decimal" className="text-right" />}
+      </UbField>
+      <UbStack gap={1.5}>
+        <UbText variant="inherit" className="text-[13px] font-semibold">
+          {t('lending.newLoan.plan')}
+        </UbText>
+        <UbNativeSelect
+          aria-label={t('lending.newLoan.plan')}
+          value={plan}
+          onChange={(k) => {
+            setPlan(k);
+            const p = PLANS.find((x) => x.key === k);
+            if (p) {
+              form.setValue('frequency', p.frequency, { shouldValidate: true });
+              form.setValue('count', String(p.count), { shouldValidate: true });
+            }
+          }}
+          options={[
+            ...PLANS.map((p) => ({ value: p.key, label: t(`lending.plan.${p.frequency}`, { count: p.count }) })),
+            { value: 'other', label: t('lending.newLoan.otherPlan') },
+          ]}
+        />
+      </UbStack>
+      {plan === 'other' && (
+        <UbBox className="grid grid-cols-2 gap-3">
+          <UbField name="frequency" label={t('lending.newLoan.howOften')}>
+            {(field) => (
+              <UbNativeSelect
+                {...field}
+                value={field.value as string}
+                options={(['daily', 'weekly', 'monthly'] as const).map((f) => ({ value: f, label: t(`lending.frequency.${f}`) }))}
+              />
+            )}
+          </UbField>
+          <UbField name="count" label={t('lending.newLoan.count')}>
+            {(field) => <UbTextInput {...field} value={field.value as string} inputMode="numeric" />}
+          </UbField>
+        </UbBox>
+      )}
+      <UbBox className="grid grid-cols-2 gap-3">
+        <UbField name="each" label={each} required>
+          {(field) => <UbMoneyInput {...field} value={field.value as string} inputMode="decimal" className="text-right" />}
+        </UbField>
+        <UbField name="startsOn" label={t('lending.newLoan.starts')}>
+          {(field) => <UbDateInput {...field} value={field.value as string} onChange={(d) => field.onChange(d ?? today)} />}
+        </UbField>
+      </UbBox>
+      <UbField name="routeId" label={t('lending.newLoan.route')}>
+        {(field) => (
+          <UbNativeSelect
+            {...field}
+            value={field.value as string}
+            options={[{ value: '', label: t('lending.newLoan.noRoute') }, ...routes.map((r) => ({ value: r.id, label: r.name }))]}
+          />
+        )}
+      </UbField>
+      <UbField name="charges" label={t('lending.newLoan.charges')} optionalLabel={t('lending.common.optional')} hint={t('lending.newLoan.chargesHint')}>
+        {(field) => <UbMoneyInput {...field} value={field.value as string} inputMode="decimal" className="text-right" />}
+      </UbField>
+    </>
   );
+
+  const sched = preview?.schedule ?? [];
+  const shown = sched.length > 4 ? [...sched.slice(0, 3), null, sched[sched.length - 1]] : sched;
+  const ruleLine = preview
+    ? t(v.frequency === 'daily' ? 'lending.newLoan.ruleDaily' : 'lending.newLoan.rule', { count: sched.length, amount: rupees(v.each) })
+    : '';
 
   return (
     <UbPageShell>
-      <UbPageHeader title={t('lending.loan.new')} />
-      <UbStack gap={3} className="lg:grid lg:grid-cols-[3fr_2fr] lg:items-start lg:gap-6">
-        <UbForm id={formId} form={form} onSubmit={save}>
-          <CompactCard padded>
-            <UbStack gap={1}>
-              <UbText variant="label">{t('lending.form.who')}</UbText>
-              <UbField name="borrowerMode" label={t('lending.form.who')} controlOwnsLabel>
-                {(field) => (
-                  <UbChoiceChips<'new' | 'existing'>
-                    id={field.id}
-                    ariaLabel={t('lending.form.who')}
-                    value={field.value as 'new' | 'existing'}
-                    onChange={(next) => field.onChange(next)}
-                    options={[
-                      { value: 'new', label: t('lending.form.who.new') },
-                      { value: 'existing', label: t('lending.form.who.existing') },
-                    ]}
-                  />
-                )}
-              </UbField>
-              {values.borrowerMode === 'new' ? (
-                <>
-                  <PhoneContactButton
-                    onPick={(contact) => {
-                      form.setValue('name', contact.name, {
-                        shouldDirty: true,
-                        shouldValidate: true,
-                      });
-                      form.setValue('mobile', contact.mobile, {
-                        shouldDirty: true,
-                        shouldValidate: true,
-                      });
-                    }}
-                    label={t('lending.form.phoneContact.choose')}
-                    errorMessage={t('lending.form.phoneContact.error')}
-                    unsupportedNote={t('lending.form.phoneContact.unsupported')}
-                    disabled={saving}
-                  />
-                  <UbField
-                    name="name"
-                    label={t('lending.form.name')}
-                    placeholder={t('lending.form.name.placeholder')}
-                    required
-                  >
-                    {(field) => <UbTextInput {...field} autoComplete="off" disabled={saving} />}
-                  </UbField>
-                  <UbStack direction="row" gap={3} className="max-xl:flex-col">
-                    <UbField
-                      name="mobile"
-                      label={t('lending.form.mobile')}
-                      placeholder={t('lending.form.mobile.placeholder')}
-                      optionalLabel={t('common.field.optional')}
-                      className="flex-1"
-                    >
-                      {(field) => <UbPhoneInput {...field} disabled={saving} />}
-                    </UbField>
-                    <UbField
-                      name="area"
-                      label={t('lending.form.area')}
-                      placeholder={t('lending.form.area.placeholder')}
-                      optionalLabel={t('common.field.optional')}
-                      className="flex-1"
-                    >
-                      {(field) => <UbTextInput {...field} autoComplete="off" disabled={saving} />}
-                    </UbField>
-                  </UbStack>
-                </>
-              ) : (
-                <UbField name="borrowerId" label={t('lending.form.borrower')} required>
-                  {(field) => (
-                    <UbStack gap={2}>
-                      <UbTextInput
-                        id="lending-borrower-search"
-                        name="lending-borrower-search"
-                        aria-label={t('lending.form.borrower.search')}
-                        placeholder={t('lending.form.borrower.search')}
-                        value={search}
-                        onChange={setSearch}
-                      />
-                      <UbCombobox
-                        searchPlaceholder={t('lending.select.search')}
-                        emptyLabel={t('lending.select.noMatches')}
-                        id={field.id}
-                        name={field.name}
-                        aria-label={t('lending.form.borrower')}
-                        value={String(field.value ?? '')}
-                        onChange={field.onChange}
-                        invalid={field.invalid}
-                        placeholder={t('lending.form.borrower.placeholder')}
-                        options={borrowers.map((b) => ({
-                          value: b.id,
-                          label: `${b.name} · ${b.number}`,
-                        }))}
-                      />
-                    </UbStack>
-                  )}
-                </UbField>
-              )}
-              {routes.length > 0 && (
-                <UbField
-                  name="routeId"
-                  label={t('lending.route.label')}
-                  optionalLabel={t('common.field.optional')}
-                >
-                  {(field) => (
-                    <UbCombobox
-                      searchPlaceholder={t('lending.select.search')}
-                      emptyLabel={t('lending.select.noMatches')}
-                      id={field.id}
-                      name={field.name}
-                      aria-label={t('lending.route.label')}
-                      value={String(field.value ?? '')}
-                      onChange={field.onChange}
-                      placeholder={t('lending.route.none')}
-                      options={routes
-                        .filter((r) => r.isActive)
-                        .map((r) => ({ value: r.id, label: r.name }))}
-                    />
-                  )}
-                </UbField>
-              )}
-            </UbStack>
-          </CompactCard>
-
-          <CompactCard padded>
-            <UbStack gap={1}>
-              <UbText variant="label">{t('lending.form.plan')}</UbText>
-              <UbField name="planType" label={t('lending.form.plan')} controlOwnsLabel>
-                {(field) => (
-                  <UbChoiceChips<PlanType>
-                    id={field.id}
-                    ariaLabel={t('lending.form.plan')}
-                    value={field.value as PlanType}
-                    onChange={(next) => {
-                      field.onChange(next);
-                      form.setValue('frequency', PLAN_FREQUENCIES[next][0] ?? 'monthly');
-                    }}
-                    options={PLAN_TYPES.map((p) => ({ value: p, label: t(`lending.plan.${p}`) }))}
-                  />
-                )}
-              </UbField>
-              <UbText variant="caption" tone="tertiary">
-                {t(`lending.plan.${plan}.hint`)}
-              </UbText>
-              <UbStack direction="row" gap={3} className="max-sm:flex-col">
-                {money('principal', true)}
-                {money('fileCharge')}
-              </UbStack>
-              {plan !== 'flexible' && PLAN_FREQUENCIES[plan].length > 1 && (
-                <UbField name="frequency" label={t('lending.form.frequency')} controlOwnsLabel>
-                  {(field) => (
-                    <UbChoiceChips<string>
-                      id={field.id}
-                      ariaLabel={t('lending.form.frequency')}
-                      value={String(field.value)}
-                      onChange={(next) => field.onChange(next)}
-                      options={PLAN_FREQUENCIES[plan].map((f) => ({
-                        value: f,
-                        label: t(`lending.frequency.${f}`),
-                      }))}
-                    />
-                  )}
-                </UbField>
-              )}
-              {plan === 'fixed_daily' ? (
-                <UbStack direction="row" gap={3} className="max-sm:flex-col">
-                  {money('perInstalmentAmount', true)}
-                  <UbField
-                    name="instalmentCount"
-                    label={t('lending.form.count')}
-                    required
-                    className="flex-1"
-                  >
-                    {(field) => <UbTextInput {...field} inputMode="numeric" autoComplete="off" />}
-                  </UbField>
-                </UbStack>
-              ) : (
-                <UbStack direction="row" gap={3} className="max-sm:flex-col">
-                  <UbField
-                    name="rate"
-                    label={t('lending.form.rate')}
-                    hint={t('lending.form.rate.hint')}
-                    className="flex-1"
-                  >
-                    {(field) => <UbTextInput {...field} inputMode="decimal" autoComplete="off" />}
-                  </UbField>
-                  <UbField name="rateUnit" label={t('lending.form.rateUnit')} className="flex-1">
-                    {(field) => (
-                      <UbCombobox
-                        searchPlaceholder={t('lending.select.search')}
-                        emptyLabel={t('lending.select.noMatches')}
-                        id={field.id}
-                        name={field.name}
-                        aria-label={t('lending.form.rateUnit')}
-                        value={String(field.value)}
-                        onChange={field.onChange}
-                        options={[
-                          { value: 'per_month', label: t('lending.rate.per_month') },
-                          { value: 'per_year', label: t('lending.rate.per_year') },
-                        ]}
-                      />
-                    )}
-                  </UbField>
-                  {plan !== 'flexible' && (
-                    <UbField
-                      name="instalmentCount"
-                      label={t('lending.form.count')}
-                      required
-                      className="flex-1"
-                    >
-                      {(field) => <UbTextInput {...field} inputMode="numeric" autoComplete="off" />}
-                    </UbField>
-                  )}
-                </UbStack>
-              )}
-              <UbStack direction="row" gap={3} className="max-sm:flex-col">
-                <UbField
-                  name="disbursedOn"
-                  label={t('lending.form.disbursedOn')}
-                  className="flex-1"
-                >
-                  {(field) => (
-                    <UbDateInput
-                      id={field.id}
-                      name={field.name}
-                      aria-label={t('lending.form.disbursedOn')}
-                      value={String(field.value ?? '')}
-                      max={today}
-                      onChange={(v: string | null) => field.onChange(v ?? '')}
-                    />
-                  )}
-                </UbField>
-                <UbField
-                  name="firstDueOn"
-                  label={t(plan === 'flexible' ? 'lending.form.endOn' : 'lending.form.firstDueOn')}
-                  className="flex-1"
-                >
-                  {(field) => (
-                    <UbDateInput
-                      id={field.id}
-                      name={field.name}
-                      aria-label={t('lending.form.firstDueOn')}
-                      value={String(field.value ?? '')}
-                      min={values.disbursedOn}
-                      onChange={(v: string | null) => field.onChange(v ?? '')}
-                    />
-                  )}
-                </UbField>
-              </UbStack>
-              {values.frequency === 'daily' && (
-                <UbField
-                  name="collectionWeekdays"
-                  label={t('lending.form.weekdays')}
-                  controlOwnsLabel
-                >
-                  {(field) => (
-                    <UbStack gap={1}>
-                      <UbText variant="body-sm-medium">{t('lending.form.weekdays')}</UbText>
-                      <UbStack direction="row" gap={1} wrap>
-                        {WEEKDAY_BITS.map((bit, i) => {
-                          const on = (Number(field.value) & bit) !== 0;
-                          return (
-                            <UbButton
-                              key={bit}
-                              size="sm"
-                              variant={on ? 'primary' : 'secondary'}
-                              aria-pressed={on}
-                              onClick={() => field.onChange(Number(field.value) ^ bit)}
-                            >
-                              {t(`lending.weekday.${i}`)}
-                            </UbButton>
-                          );
-                        })}
-                      </UbStack>
-                    </UbStack>
-                  )}
-                </UbField>
-              )}
-            </UbStack>
-          </CompactCard>
-
-          {/* LEN-09 FR-1 — a late fee is charged only when the borrower agreed to one
-              here; the rule is frozen with the terms. */}
-          <CompactCard padded>
-            <UbStack gap={3} data-testid="lending-late-fee-terms">
-              <UbField name="lateFeeKind" label={t('lending.form.lateFeeKind')}>
-                {(field) => (
-                  <UbCombobox
-                    searchPlaceholder={t('lending.select.search')}
-                    emptyLabel={t('lending.select.noMatches')}
-                    id={field.id}
-                    value={String(field.value ?? 'none')}
-                    onChange={field.onChange}
-                    options={LATE_FEE_KINDS.map((kind) => ({
-                      value: kind,
-                      label: t(`lending.lateFee.kind.${kind}`),
-                    }))}
-                  />
-                )}
-              </UbField>
-              {values.lateFeeKind && values.lateFeeKind !== 'none' && (
-                <UbStack direction="row" gap={3} className="max-sm:flex-col">
-                  {values.lateFeeKind === 'simple_interest' ? (
-                    <UbField
-                      name="lateFeeValue"
-                      label={t('lending.form.lateFeeRate')}
-                      required
-                      className="flex-1"
-                    >
-                      {(field) => <UbTextInput {...field} inputMode="decimal" autoComplete="off" />}
-                    </UbField>
-                  ) : (
-                    money('lateFeeValue', true)
-                  )}
-                  {values.lateFeeKind !== 'flat_once' && money('lateFeeCap', true)}
-                  <UbField
-                    name="lateFeeGraceDays"
-                    label={t('lending.form.lateFeeGraceDays')}
-                    className="flex-1"
-                  >
-                    {(field) => <UbTextInput {...field} inputMode="numeric" autoComplete="off" />}
-                  </UbField>
-                </UbStack>
-              )}
-            </UbStack>
-          </CompactCard>
-
-          <CompactCard padded>
-            <UbStack gap={1}>
-              {/* QA F8 — a loan already running in the paper book: what it has
-                  collected comes in as history, and nothing moves today's cash. */}
-              <UbField name="existingLoan" label={t('lending.form.existing')} controlOwnsLabel>
-                {(field) => (
-                  <UbSwitch
-                    id={field.id}
-                    checked={Boolean(field.value)}
-                    onCheckedChange={field.onChange}
-                    label={t('lending.form.existing')}
-                    description={t('lending.form.existing.hint')}
-                    disabled={saving}
-                  />
-                )}
-              </UbField>
-              {values.existingLoan ? (
-                <UbStack gap={2} data-testid="lending-existing">
-                  <UbField name="collectedBy" label={t('lending.form.collected')} controlOwnsLabel>
-                    {(field) => (
-                      <UbStack gap={1}>
-                        <UbText variant="body-sm-medium">{t('lending.form.collected')}</UbText>
-                        <UbChoiceChips<CollectedBy>
-                          id={field.id}
-                          ariaLabel={t('lending.form.collected')}
-                          value={field.value as CollectedBy}
-                          onChange={(next) => field.onChange(next)}
-                          options={COLLECTED_BY.map((by) => ({
-                            value: by,
-                            label: t(`lending.form.collected.${by}`),
-                          }))}
-                        />
-                      </UbStack>
-                    )}
-                  </UbField>
-                  {values.collectedBy === 'amount' ? (
-                    <UbField
-                      name="collectedAmount"
-                      label={t('lending.form.collected.amountLabel')}
-                      placeholder="0.00"
-                      required
-                    >
-                      {(field) => (
-                        <UbMoneyInput
-                          {...field}
-                          value={field.value as string}
-                          onChange={field.onChange}
-                          inputMode="decimal"
-                          disabled={saving}
-                        />
-                      )}
-                    </UbField>
-                  ) : (
-                    <UbField
-                      name="collectedInstalments"
-                      label={t('lending.form.collected.instalmentsLabel')}
-                      hint={
-                        preview
-                          ? t('lending.form.collected.instalmentsHint', {
-                              count: preview.schedule.length,
-                            })
-                          : undefined
-                      }
-                      required
-                    >
-                      {(field) => (
-                        <UbTextInput
-                          {...field}
-                          inputMode="numeric"
-                          autoComplete="off"
-                          disabled={saving}
-                        />
-                      )}
-                    </UbField>
-                  )}
-                  <UbText variant="caption" tone="tertiary">
-                    {t('lending.form.existing.noCash')}
-                  </UbText>
-                </UbStack>
-              ) : (
-                <UbField name="paymentMode" label={t('lending.form.givenBy')} controlOwnsLabel>
-                  {(field) => (
-                    <UbStack gap={1}>
-                      <UbText variant="body-sm-medium">{t('lending.form.givenBy')}</UbText>
-                      <UbChoiceChips<LendingPaymentMode>
-                        id={field.id}
-                        ariaLabel={t('lending.form.givenBy')}
-                        value={field.value as LendingPaymentMode}
-                        onChange={(next) => field.onChange(next)}
-                        options={PAYMENT_MODES.map((m) => ({
-                          value: m,
-                          label: t(`lending.mode.${m}`),
-                        }))}
-                      />
-                    </UbStack>
-                  )}
-                </UbField>
-              )}
-              <UbField
-                name="notes"
-                label={t('lending.form.notes')}
-                placeholder={t('lending.form.notes.placeholder')}
-                optionalLabel={t('common.field.optional')}
-              >
-                {(field) => <UbTextInput {...field} autoComplete="off" disabled={saving} />}
-              </UbField>
-            </UbStack>
-          </CompactCard>
-        </UbForm>
-
-        <UbStack gap={3} className="lg:sticky lg:top-4">
-          <CompactCard padded>
-            <UbStack gap={2} data-testid="lending-loan-preview">
-              <UbText variant="label">{t('lending.preview.title')}</UbText>
-              {!preview ? (
-                <UbText variant="body-sm" tone={previewError ? 'warning' : 'tertiary'}>
-                  {firstReason(previewError) ??
-                    previewError?.message ??
-                    (previewStatus === 'loading'
-                      ? t('lending.preview.working')
-                      : t('lending.preview.empty'))}
+      <UbStack gap={3} className="pb-32 lg:pb-28">
+        <UbPageHeader title={t('lending.newLoan.title')} subtitle={borrower?.name ?? t('lending.newLoan.subtitle')} />
+        {loadFailed && (
+          <UbEmptyState
+            variant="error"
+            title={t('lending.newLoan.loadError')}
+            action={<UbButton onClick={() => setAttempt((n) => n + 1)}>{t('lending.common.tryAgain')}</UbButton>}
+          />
+        )}
+        <UbForm id={formId} form={form} onSubmit={save} className={loadFailed ? 'hidden' : undefined}>
+          <UbBox className="grid items-start gap-4 lg:[grid-template-columns:420px_minmax(0,1fr)]">
+            <Card className="gap-3.5" testId="lending-new-loan-form">
+              {fields}
+            </Card>
+            <UbStack gap={2.5}>
+              {/* Phone: the design's Preview card. */}
+              <Card className="lg:hidden" testId="lending-new-loan-preview">
+                <UbText variant="inherit" className="font-semibold">
+                  {t('lending.newLoan.preview')}
                 </UbText>
-              ) : (
-                <>
-                  {[
-                    ['lending.preview.cash', preview.cashHandedOver],
-                    ['lending.preview.total', preview.totalPayable],
-                    [
-                      'lending.preview.cost',
-                      addMoney(preview.totalInterest, preview.deductionsTotal),
-                    ],
-                  ].map(([id, amount]) => (
-                    <UbStack key={id} direction="row" justify="between" gap={2}>
-                      <UbText variant="body-sm" tone="secondary">
-                        {t(String(id))}
-                      </UbText>
-                      <UbText variant="body-sm-medium">{formatInr(String(amount))}</UbText>
-                    </UbStack>
-                  ))}
-                  <UbStack direction="row" justify="between" gap={2}>
-                    <UbText variant="body-sm" tone="secondary">
-                      {t('lending.preview.rate')}
+                {preview ? (
+                  <>
+                    <KeyValue label={t('lending.newLoan.toCollect')} value={rupees(preview.toCollect)} />
+                    <KeyValue label={t('lending.newLoan.chargesAtStart')} value={rupees(addCharges(v.charges))} />
+                    <KeyValue label={t('lending.newLoan.inHand')} value={rupees(preview.inHand)} />
+                    <KeyValue label={t('lending.newLoan.lastDay')} value={shortDate(preview.lastDay, today)} />
+                    <UbText variant="inherit" className="text-[12.5px] text-text-tertiary">
+                      {ruleLine}
                     </UbText>
-                    <UbText variant="body-sm-medium">
-                      {t('lending.preview.rateValue', { rate: preview.effectiveAnnualRateDisplay })}
-                    </UbText>
-                  </UbStack>
-                  <UbText variant="caption" tone="tertiary">
-                    {t('lending.preview.ends', {
-                      count: rows.length,
-                      date: formatBusinessDate(preview.maturityOn),
-                    })}
+                  </>
+                ) : (
+                  <UbText variant="inherit" className="text-[12.5px] text-text-tertiary">
+                    {t('lending.newLoan.previewHint')}
                   </UbText>
-                  {preview.warnings.includes('interest_above_principal') && (
-                    <UbStatusBanner tone="info" title={t('lending.preview.interestAbove')} />
-                  )}
-                  <UbStack gap={0} as="ul" aria-label={t('lending.preview.schedule')}>
-                    {shown.map((row) => (
-                      <UbStack
-                        as="li"
-                        key={row.seq}
-                        direction="row"
-                        justify="between"
-                        gap={2}
-                        className="border-t border-border-hairline py-1"
-                      >
-                        <UbText variant="caption" tone="secondary">
-                          {`${row.seq}. ${formatBusinessDate(row.dueOn)}`}
-                        </UbText>
-                        <UbText variant="caption">{formatInr(row.amount)}</UbText>
-                      </UbStack>
-                    ))}
-                  </UbStack>
-                  {rows.length > SHOWN_ROWS && (
-                    <UbButton size="sm" variant="ghost" onClick={() => setShowAll((s) => !s)}>
-                      {showAll
-                        ? t('lending.preview.showLess')
-                        : t('lending.preview.showAll', { count: rows.length })}
-                    </UbButton>
-                  )}
-                </>
-              )}
+                )}
+              </Card>
+              <UbStack gap={2.5} className="max-lg:hidden">
+                {preview ? (
+                  <>
+                    <Figures testId="lending-new-loan-figures">
+                      <Figure label={t('lending.newLoan.toCollect')} value={rupees(preview.toCollect)} caption={t('lending.newLoan.collections', { count: sched.length })} />
+                      <Figure label={each} value={rupees(v.each)} caption={v.frequency === 'daily' ? t('lending.newLoan.sundaysSkipped') : t(`lending.frequency.${v.frequency}`)} />
+                      <Figure label={t('lending.newLoan.lastDay')} value={shortDate(preview.lastDay, today)} caption={t(`lending.weekday.${['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'][new Date(`${preview.lastDay}T00:00:00`).getDay()]}`)} />
+                    </Figures>
+                    <Table testId="lending-new-loan-schedule" head={[{ label: '#' }, { label: t('lending.col.date') }, { label: t('lending.col.due'), align: 'right' }]}>
+                      {shown.map((r, i) =>
+                        r ? (
+                          <UbBox as="tr" key={r.seq}>
+                            <UbBox as="td">{r.seq}</UbBox>
+                            <UbBox as="td">{shortDate(r.dueOn, today)}</UbBox>
+                            <UbBox as="td" className="ds-num text-right">
+                              {rupees(r.amount)}
+                            </UbBox>
+                          </UbBox>
+                        ) : (
+                          <UbBox as="tr" key={`gap-${i}`}>
+                            <UbBox as="td">…</UbBox>
+                            <UbBox as="td">…</UbBox>
+                            <UbBox as="td" className="text-right">
+                              …
+                            </UbBox>
+                          </UbBox>
+                        )
+                      )}
+                    </Table>
+                  </>
+                ) : (
+                  <Card>
+                    <UbText variant="inherit" className="text-[13px] text-text-tertiary">
+                      {t('lending.newLoan.previewHint')}
+                    </UbText>
+                  </Card>
+                )}
+              </UbStack>
             </UbStack>
-          </CompactCard>
-          <UbButton
-            type="submit"
-            form={formId}
-            busy={saving}
-            disabled={!preview}
-            data-testid="lending-loan-save"
-          >
-            {!preview
-              ? t('lending.loan.saveDisabled')
-              : values.existingLoan
-                ? t('lending.loan.saveExisting')
-                : t('lending.loan.save', { amount: formatInr(preview.cashHandedOver) })}
-          </UbButton>
-        </UbStack>
+          </UbBox>
+        </UbForm>
       </UbStack>
+      <UbBottomBar
+        sticky={false}
+        className="fixed inset-x-0 bottom-[var(--ub-nav-offset)] z-20 flex items-center gap-2 border-t border-border-hairline bg-surface-card px-4 pb-3.5 pt-2.5 lg:bottom-0 lg:left-[var(--ub-rail-width,232px)] lg:justify-end lg:px-6"
+      >
+        <UbStack gap={0} className="max-lg:hidden lg:mr-auto">
+          <UbText variant="inherit" className="text-[13px] text-text-secondary">
+            {t('lending.newLoan.lentTotal')}
+          </UbText>
+          <UbText variant="inherit" className="ds-num text-[22px] font-extrabold">
+            {rupees(v.lent || '0')}
+          </UbText>
+        </UbStack>
+        <UbButton variant="secondary" size="lg" className="max-lg:hidden" onClick={() => router.push(LENDING_ROUTES.today)}>
+          {t('lending.common.cancel')}
+        </UbButton>
+        <UbButton type="submit" form={formId} size="lg" busy={saving} className="max-lg:w-full" data-testid="lending-new-loan-save">
+          {t('lending.newLoan.save')}
+        </UbButton>
+      </UbBottomBar>
     </UbPageShell>
   );
 }
+
+/** The charge as typed, or ₹0. */
+const addCharges = (v: string | undefined): string => (v && Number(v) > 0 ? v : '0');

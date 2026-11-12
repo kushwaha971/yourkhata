@@ -1,376 +1,302 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import dynamic from 'next/dynamic';
 
-import { MessageCircle, Plus } from 'lucide-react';
+import { Plus } from 'lucide-react';
 
-import { CompactCard } from 'src/components/records/CompactCard';
-import { SummaryStatGrid } from 'src/components/stats/SummaryStatGrid';
 import {
-  UbActionLink,
-  UbAmount,
+  UbAvatar,
+  UbBox,
   UbButton,
-  UbDialogLoading,
+  UbChoiceChips,
+  UbDrawerLoading,
   UbEmptyState,
-  UbFilterSelect,
-  UbListItemText,
+  UbNativeSelect,
   UbPageHeader,
   UbPageShell,
-  UbPageSkeleton,
   UbPressable,
+  UbProgress,
+  UbSkeleton,
   UbStack,
-  UbStatCard,
   UbStatusBadge,
   UbText,
 } from 'src/design-system';
 import { useAppRouter } from 'src/hooks/useAppRouter';
 import { useAppDispatch, useAppSelector } from 'src/hooks/useAppStore';
-import { usePermissions } from 'src/hooks/usePermissions';
 import { useTranslation } from 'src/hooks/useTranslation';
-import { ROUTES } from 'src/routes';
-import { formatBusinessDate } from 'src/utils/dates';
-import { formatInr } from 'src/utils/money';
+import { todayInTenantTz } from 'src/utils/dates';
 
-import { fetchLendingRoutes, fetchLendingToday } from '../redux/lendingThunk';
-import { selectLendingToday } from '../redux/lendingTodaySlice';
-import { askedToday, caption, isNonZero, STOP_TONE, stopState } from '../view-model/lendingDisplay';
+import { Card, Figure, Figures, List, Table } from 'modules/DigiKhaato/features/appParts/AppParts';
 
-import type { TodayStop } from '../types/lending.types';
+import { selectLending, setRoute } from '../redux/lendingSlice';
+import { fetchToday } from '../redux/lendingThunks';
+import { LENDING_ROUTES } from '../routes';
+import { STOP_TONE, STOP_WORD, rupees, workLine } from '../view-model/lendingDisplay';
 
-/** The sheets load with the tap that opens them (CLAUDE.md). */
-const CollectDialogLazy = dynamic(() => import('./CollectDialog').then((m) => m.CollectDialog), {
-  ssr: false,
-  loading: () => <UbDialogLoading />,
+import type { Stop, StopState } from '../types/lending.types';
+
+const CollectSheet = dynamic(() => import('./CollectSheet').then((m) => m.CollectSheet), {
+  loading: () => <UbDrawerLoading />,
 });
-const NotPaidDialogLazy = dynamic(() => import('./NotPaidDialog').then((m) => m.NotPaidDialog), {
-  ssr: false,
-  loading: () => <UbDialogLoading />,
-});
-const MessageDialogLazy = dynamic(() => import('./MessageDialog').then((m) => m.MessageDialog), {
-  ssr: false,
-  loading: () => <UbDialogLoading />,
+const NotPaidSheet = dynamic(() => import('./NotPaidSheet').then((m) => m.NotPaidSheet), {
+  loading: () => <UbDrawerLoading />,
 });
 
-const ALL = '';
+type Show = 'visit' | 'done' | 'not';
+const WEEKDAYS = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+const inShow = (s: StopState, show: Show): boolean =>
+  show === 'visit' ? s === 'late' || s === 'due' : show === 'done' ? s === 'done' : s === 'not';
 
 /**
- * `/lending` — today's collection round (FRD LEN-08; the approved designs,
- * 12 Oct 2026).
- *
- * A lender who has never given a loan sees ONE thing: "Give your first loan",
- * with a line saying routes and collectors come later — no row of ₹0.00 tiles
- * and no checklist whose first step is routes. The setup card (docs/platform/14
- * step 5) is not drawn here at all: its first step is that panel, and the two
- * left after it are optional and already said under it, while on a phone the
- * card pushed the day's two figures below the fold (QA, 12 Oct 2026). That needs the server's
- * `hasLoans`, because an empty round on day one and an empty round for a lender
- * with a book look the same as a list.
- *
- * With loans: two big figures (to collect today, collected), then every stop in
- * route order with Collect on each. A person with two loans is two rows, each
- * named by its loan number. A stop paid or visited stays on the list, counted
- * done, so the agent sees the round they walked.
+ * I8 · Today — the collector's round. One card says what is collected, what is
+ * still due and how much is short. Each stop shows today's amount and anything
+ * late, with Not paid and Collect right on the row.
  */
 export function TodayPageContent(): React.JSX.Element {
   const { t } = useTranslation();
-  const router = useAppRouter();
   const dispatch = useAppDispatch();
-  const state = useAppSelector(selectLendingToday);
-  const { can, hasModule } = usePermissions();
-  const canRead = hasModule('lending') && can('lending.today.read');
-  const canCollect = hasModule('lending') && can('lending.collection.create');
-  const canLend = hasModule('lending') && can('lending.loan.create');
-  const [route, setRoute] = useState(ALL);
-  const [collecting, setCollecting] = useState<TodayStop | null>(null);
-  const [notPaid, setNotPaid] = useState<TodayStop | null>(null);
-  const canRemind = hasModule('lending') && can('lending.reminder.send');
-  const [messaging, setMessaging] = useState<{
-    stop: TodayStop;
-    kind: 'reminder' | 'receipt';
-  } | null>(null);
+  const router = useAppRouter();
+  const lend = useAppSelector(selectLending);
+  const today = useMemo(() => todayInTenantTz(), []);
+  const [show, setShow] = useState<Show>('visit');
+  const [collecting, setCollecting] = useState<Stop | null>(null);
+  const [notPaying, setNotPaying] = useState<Stop | null>(null);
 
+  const load = useCallback(() => dispatch(fetchToday(lend.route)), [dispatch, lend.route]);
   useEffect(() => {
-    if (!canRead) return undefined;
-    const promise = dispatch(fetchLendingRoutes());
-    return () => promise.abort();
-  }, [canRead, dispatch]);
-  useEffect(() => {
-    if (!canRead) return undefined;
-    const promise = dispatch(fetchLendingToday(route));
-    return () => promise.abort();
-  }, [canRead, dispatch, route]);
-  const staleNow = state.stale && state.staleUrgency === 'now';
-  useEffect(() => {
-    if (canRead && staleNow) void dispatch(fetchLendingToday(route));
-  }, [canRead, staleNow, dispatch, route]);
+    const r = load();
+    return () => r.abort();
+  }, [load]);
 
-  if (!canRead) {
-    return (
-      <UbPageShell>
+  const round = lend.round.data;
+  const date = new Date(`${today}T00:00:00`);
+  const dayWords = `${t(`lending.weekday.${WEEKDAYS[date.getDay()]}`)} ${date.getDate()} ${MONTHS[date.getMonth()]}`;
+  const stops = (round?.stops ?? []).filter((s) => inShow(s.state, show));
+  const percent = round && Number(round.due) > 0 ? (Number(round.collected) / Number(round.due)) * 100 : 0;
+
+  const routeSelect = round && (
+    <UbNativeSelect
+      aria-label={t('lending.today.route')}
+      value={lend.route}
+      onChange={(v) => dispatch(setRoute(v))}
+      options={[{ value: '', label: t('lending.today.allRoutes') }, ...round.routes.map((r) => ({ value: r.id, label: r.name }))]}
+      className="h-8 w-auto text-[13px]"
+    />
+  );
+
+  const stopActions = (s: Stop, size: 'sm' = 'sm') =>
+    s.state === 'done' ? (
+      <UbStatusBadge label={t('lending.stop.collectedAmount', { amount: rupees(s.collectedToday) })} tone="success" />
+    ) : s.state === 'not' ? (
+      <UbStatusBadge label={t(STOP_WORD.not)} tone="error" />
+    ) : (
+      <UbStack direction="row" gap={1.5} className="w-full lg:w-auto lg:justify-end">
+        <UbButton size={size} variant="outlineNeutral" className="flex-1 lg:flex-none" onClick={() => setNotPaying(s)} data-testid="lending-not-paid">
+          {t('lending.stop.notPaidButton')}
+        </UbButton>
+        <UbButton size={size} variant="primary" className="flex-1 lg:flex-none" onClick={() => setCollecting(s)} data-testid="lending-collect">
+          {t('lending.stop.collect')}
+        </UbButton>
+      </UbStack>
+    );
+
+  const body = (() => {
+    if (lend.round.status === 'failed' && !round)
+      return (
+        <UbEmptyState variant="error" title={t('lending.today.error')} action={<UbButton onClick={load}>{t('lending.common.tryAgain')}</UbButton>} />
+      );
+    if (!round) return <UbSkeleton variant="list" count={5} label={t('lending.common.loading')} />;
+    if (round.stopsTotal === 0)
+      return (
         <UbEmptyState
           variant="firstUse"
-          title={t('lending.noAccess.title')}
-          description={t('lending.noAccess.body')}
+          title={t('lending.today.empty.title')}
+          description={t('lending.today.empty.body')}
+          action={<UbButton onClick={() => router.push(LENDING_ROUTES.newLoan)}>{t('lending.today.newLoan')}</UbButton>}
         />
-      </UbPageShell>
+      );
+    const roundCard = (
+      <Card testId="lending-round">
+        {/* The route IS the card's title: a title beside a select naming the same route
+            read "All routes  All routes" (hand pass, 12 Nov). */}
+        <UbStack direction="row" align="center" gap={2}>
+          <UbText variant="inherit" className="font-semibold">
+            {t('lending.today.route')}
+          </UbText>
+          {routeSelect}
+        </UbStack>
+        <UbText variant="inherit" className="ds-num text-[20px] font-extrabold">
+          {rupees(round.collected)}{' '}
+          <UbText as="span" variant="inherit" className="text-[14px] font-medium text-text-tertiary">
+            {t('lending.today.collectedOf', { due: rupees(round.due) })}
+          </UbText>
+        </UbText>
+        <UbProgress percent={percent} tone="success" ariaLabel={t('lending.today.collectedOf', { due: rupees(round.due) })} />
+        <UbText variant="inherit" className="text-[12.5px] text-text-tertiary">
+          {t('lending.today.stopsDone', { done: round.stopsDone, total: round.stopsTotal })}
+          {Number(round.short) > 0 && (
+            <>
+              {' · '}
+              <UbText as="span" variant="inherit" className="text-give">
+                {t('lending.today.short', { amount: rupees(round.short) })}
+              </UbText>
+            </>
+          )}
+        </UbText>
+      </Card>
     );
-  }
-  const round = state.round;
-  const routes = state.routes.filter((r) => r.isActive);
+    const chips = (
+      <UbChoiceChips
+        ariaLabel={t('lending.today.show')}
+        value={show}
+        onChange={(v) => setShow(v as Show)}
+        options={[
+          { value: 'visit', label: t('lending.today.toVisit', { count: round.toVisit }) },
+          { value: 'done', label: t('lending.today.done', { count: round.stopsDone }) },
+          { value: 'not', label: t('lending.today.notPaid', { count: round.notPaid }) },
+        ]}
+        className="flex-nowrap overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden [&>*]:shrink-0 [&_*]:whitespace-nowrap [&_[role=radio]]:px-2.5 [&_[role=radio]]:text-[12.5px]"
+      />
+    );
+    const none = (
+      <UbText variant="inherit" className="text-[13px] text-text-tertiary">
+        {t(`lending.today.none.${show}`)}
+      </UbText>
+    );
+    return (
+      <>
+        <UbStack gap={3} className="lg:hidden">
+          {roundCard}
+          {chips}
+          {stops.length === 0 ? (
+            none
+          ) : (
+            <List testId="lending-stops">
+              {stops.map((s) => (
+                <UbBox as="li" key={s.id}>
+                  <UbStack direction="row" wrap align="start" className="gap-2.5 border-b border-border-hairline px-4 py-3">
+                    <UbPressable onClick={() => router.push(LENDING_ROUTES.loan(s.id))} className="flex min-w-0 flex-1 gap-3 text-left">
+                      <UbAvatar name={s.borrower} size="sm" />
+                      <UbStack gap={0} className="min-w-0">
+                        <UbText variant="inherit" truncate className="text-[14px] font-medium">
+                          {s.borrower}
+                        </UbText>
+                        <UbText variant="inherit" truncate className="text-[12.5px] text-text-tertiary">
+                          {workLine(s)}
+                        </UbText>
+                        <UbText variant="inherit" className="ds-num text-[12.5px] text-text-tertiary">
+                          {t('lending.stop.today', { amount: rupees(s.today) })}
+                          {Number(s.lateAtStart) > 0 && (
+                            <>
+                              {' · '}
+                              <UbText as="span" variant="inherit" className="text-give">
+                                {t('lending.stop.lateAmount', { amount: rupees(s.lateAtStart) })}
+                              </UbText>
+                            </>
+                          )}
+                        </UbText>
+                      </UbStack>
+                    </UbPressable>
+                    {s.state === 'done' || s.state === 'not' ? stopActions(s) : <UbBox className="basis-full pl-11">{stopActions(s)}</UbBox>}
+                  </UbStack>
+                </UbBox>
+              ))}
+            </List>
+          )}
+        </UbStack>
+        <UbStack gap={4} className="max-lg:hidden">
+          <Figures testId="lending-figures">
+            <Figure label={t('lending.fig.collected')} value={rupees(round.collected)} caption={t('lending.today.stopsOf', { done: round.stopsDone, total: round.stopsTotal })} tone="get" />
+            <Figure label={t('lending.fig.stillDue')} value={rupees(round.short)} caption={t('lending.today.stopsLeft', { count: round.toVisit })} />
+            <Figure label={t('lending.fig.late')} value={rupees(round.book.late)} caption={t('lending.today.borrowers', { count: round.book.lateBorrowers })} tone="give" />
+            <Figure label={t('lending.fig.lentMonth')} value={rupees(round.book.lentMonth)} caption={t('lending.today.loans', { count: round.book.loansMonth })} />
+          </Figures>
+          {(round?.stops.length ?? 0) === 0 ? (
+            none
+          ) : (
+            <Table
+              testId="lending-stops-table"
+              head={[
+                { label: t('lending.col.borrower') },
+                { label: t('lending.col.loan') },
+                { label: t('lending.col.today'), align: 'right' },
+                { label: t('lending.col.late'), align: 'right' },
+                { label: t('lending.col.status') },
+                { label: '' },
+              ]}
+            >
+              {/* Every stop, as the design's desktop table draws it; the phone filters by chip. */}
+              {(round?.stops ?? []).map((s) => (
+                <UbBox as="tr" key={s.id}>
+                  <UbBox as="td">
+                    <UbPressable onClick={() => router.push(LENDING_ROUTES.loan(s.id))} className="flex w-auto items-center gap-2.5 text-left">
+                      <UbAvatar name={s.borrower} size="sm" />
+                      <UbStack gap={0}>
+                        <UbText variant="inherit" className="font-semibold">
+                          {s.borrower}
+                        </UbText>
+                        <UbText variant="inherit" className="text-[12px] text-text-tertiary">
+                          {s.work}
+                        </UbText>
+                      </UbStack>
+                    </UbPressable>
+                  </UbBox>
+                  <UbBox as="td" className="text-text-secondary">
+                    {s.number}
+                  </UbBox>
+                  <UbBox as="td" className="ds-num text-right">
+                    {rupees(s.today)}
+                  </UbBox>
+                  <UbBox as="td" className="ds-num text-right text-give">
+                    {Number(s.lateAtStart) > 0 ? rupees(s.lateAtStart) : '—'}
+                  </UbBox>
+                  <UbBox as="td">
+                    <UbStatusBadge label={t(STOP_WORD[s.state])} tone={STOP_TONE[s.state]} />
+                  </UbBox>
+                  <UbBox as="td" className="text-right">
+                    {s.state === 'late' || s.state === 'due' ? stopActions(s) : null}
+                  </UbBox>
+                </UbBox>
+              ))}
+            </Table>
+          )}
+        </UbStack>
+      </>
+    );
+  })();
 
   return (
     <UbPageShell>
-      <UbPageHeader
-        title={
-          round
-            ? t('lending.today.titleOn', { date: formatBusinessDate(round.on) })
-            : t('lending.today.title')
-        }
-        actions={
-          canLend ? (
-            <UbActionLink
-              href={ROUTES.LENDING_NEW_LOAN}
-              icon={<Plus className="h-4 w-4" aria-hidden />}
-              iconOnly="mobile"
-              className="max-sm:h-10 max-sm:w-10"
-            >
-              {t('lending.loan.new')}
-            </UbActionLink>
-          ) : undefined
-        }
-      />
-      {!round ? (
-        state.status === 'failed' ? (
-          <UbEmptyState
-            variant="error"
-            title={t('lending.today.error')}
-            description={state.error?.message}
-          />
-        ) : (
-          <UbPageSkeleton variant="card" />
-        )
-      ) : !round.hasLoans ? (
-        <UbStack gap={3} data-testid="lending-first-use">
-          <UbEmptyState
-            variant="firstUse"
-            title={t('lending.today.first.title')}
-            description={t('lending.today.first.body')}
-            action={
-              canLend ? (
-                <UbActionLink
-                  href={ROUTES.LENDING_NEW_LOAN}
-                  icon={<Plus className="h-4 w-4" aria-hidden />}
-                >
-                  {t('lending.loan.new')}
-                </UbActionLink>
-              ) : undefined
-            }
-          />
-          <UbText variant="body-sm" tone="tertiary" align="center">
-            {t('lending.today.first.later')}
-          </UbText>
-        </UbStack>
-      ) : (
-        <UbStack gap={3} data-testid="lending-today">
-          <SummaryStatGrid storageKey="lendingToday">
-            <UbStatCard
-              label={t('lending.today.due')}
-              value={formatInr(round.due)}
-              subtext={t('lending.today.stops', { count: round.stopsCount })}
-              tone={isNonZero(round.short) ? 'danger' : undefined}
-            />
-            <UbStatCard
-              label={t('lending.today.collected')}
-              value={formatInr(round.collected)}
-              subtext={t('lending.today.doneCount', { count: round.done })}
-              tone="success"
-            />
-          </SummaryStatGrid>
-          {routes.length > 0 && (
-            <UbStack direction="row" gap={2}>
-              <UbFilterSelect
-                spec={{
-                  kind: 'single',
-                  key: 'route',
-                  label: t('lending.route.label'),
-                  options: [
-                    { value: ALL, label: t('lending.route.all') },
-                    ...routes.map((r) => ({ value: r.id, label: r.name })),
-                  ],
-                }}
-                value={route}
-                onChange={setRoute}
-                closeLabel={t('common.action.close')}
-              />
+      <UbStack gap={3} className="pb-24 lg:pb-6">
+        <UbPageHeader
+          title={t('lending.today.title')}
+          subtitle={round ? t('lending.today.subtitle', { day: dayWords, name: round.name }) : undefined}
+          actions={
+            <UbStack direction="row" gap={2} className="max-lg:hidden">
+              {routeSelect}
+              <UbButton variant="primary" icon={<Plus className="h-4 w-4" aria-hidden />} onClick={() => router.push(LENDING_ROUTES.newLoan)} className="lg:h-10 lg:text-[14px]">
+                {t('lending.today.newLoan')}
+              </UbButton>
             </UbStack>
-          )}
-          {round.stops.length === 0 ? (
-            <UbEmptyState
-              variant="firstUse"
-              title={t('lending.today.empty.title')}
-              description={t('lending.today.empty.body')}
-              action={
-                canLend ? (
-                  <UbActionLink href={ROUTES.LENDING_NEW_LOAN} variant="secondary">
-                    {t('lending.loan.new')}
-                  </UbActionLink>
-                ) : undefined
-              }
-            />
-          ) : (
-            <CompactCard padded>
-              <UbStack as="ul" gap={0} aria-label={t('lending.today.title')}>
-                {round.stops.map((stop) => {
-                  const state = stopState(stop);
-                  // Found by using it: a stop marked "not paid" lost its Collect
-                  // button, and the borrower who comes round at six could not pay.
-                  const open = isNonZero(askedToday(stop));
-                  return (
-                    <UbStack
-                      as="li"
-                      key={stop.loanId}
-                      gap={2}
-                      className="border-b border-border-hairline py-3 last:border-b-0"
-                      data-testid={`lending-stop-${stop.number}`}
-                    >
-                      <UbStack direction="row" justify="between" align="start" gap={3}>
-                        <UbPressable
-                          className="min-w-0 flex-1 text-left"
-                          onClick={() => router.push(`${ROUTES.LENDING_LOANS}/${stop.loanId}`)}
-                        >
-                          {/* Named by the LOAN as well as the person: Geeta with two
-                              loans is two rows, and the number tells them apart. */}
-                          <UbListItemText
-                            primary={stop.name}
-                            secondary={caption([
-                              t('lending.today.loanEach', {
-                                number: stop.number,
-                                each: t(`lending.frequency.each.${stop.frequency}`, {
-                                  amount: formatInr(stop.instalmentAmount),
-                                }),
-                              }),
-                              stop.area,
-                            ])}
-                          />
-                        </UbPressable>
-                        <UbStack gap={1} align="end" className="shrink-0">
-                          <UbAmount
-                            value={askedToday(stop)}
-                            tone={isNonZero(stop.arrears) ? 'receivable' : undefined}
-                            label={t('lending.today.asked')}
-                          />
-                          <UbStatusBadge
-                            tone={STOP_TONE[state]}
-                            label={t(`lending.stop.${state}`, {
-                              amount: formatInr(stop.collectedToday),
-                              days: stop.daysPastDue,
-                            })}
-                          />
-                        </UbStack>
-                      </UbStack>
-                      {isNonZero(stop.arrears) && state !== 'paid' && (
-                        <UbText variant="caption" tone="error">
-                          {t('lending.today.late', {
-                            amount: formatInr(stop.arrears),
-                            days: stop.daysPastDue,
-                          })}
-                        </UbText>
-                      )}
-                      {stop.visit && (
-                        <UbText variant="caption" tone="tertiary">
-                          {[
-                            t(`lending.visit.outcome.${stop.visit.outcome}`),
-                            stop.visit.promisedOn ? formatBusinessDate(stop.visit.promisedOn) : '',
-                            stop.visit.reason,
-                          ]
-                            .filter(Boolean)
-                            .join(' · ')}
-                        </UbText>
-                      )}
-                      {((canCollect && open) || canRemind) && (
-                        <UbStack direction="row" gap={2} align="center" wrap>
-                          {canCollect && open && (
-                            <UbButton
-                              size="sm"
-                              onClick={() => setCollecting(stop)}
-                              data-testid="lending-stop-collect"
-                            >
-                              {t('lending.collect.button', { amount: formatInr(askedToday(stop)) })}
-                            </UbButton>
-                          )}
-                          {canCollect && open && !stop.visit && state !== 'part' && (
-                            <UbButton
-                              size="sm"
-                              variant="secondary"
-                              onClick={() => setNotPaid(stop)}
-                            >
-                              {t('lending.visit.button')}
-                            </UbButton>
-                          )}
-                          {/* L03 — money in: the receipt; nothing in yet: a reminder,
-                              once a day (the sheet says when the next can go). */}
-                          {canRemind && isNonZero(stop.collectedToday) && (
-                            <UbButton
-                              size="sm"
-                              variant="ghost"
-                              icon={<MessageCircle className="h-4 w-4" aria-hidden />}
-                              onClick={() => setMessaging({ stop, kind: 'receipt' })}
-                            >
-                              {t('lending.messages.sendReceipt')}
-                            </UbButton>
-                          )}
-                          {canRemind && open && !isNonZero(stop.collectedToday) && (
-                            <UbButton
-                              size="sm"
-                              variant="ghost"
-                              icon={<MessageCircle className="h-4 w-4" aria-hidden />}
-                              onClick={() => setMessaging({ stop, kind: 'reminder' })}
-                              data-testid="lending-stop-remind"
-                            >
-                              {stop.remindedToday
-                                ? t('lending.messages.reminded')
-                                : t('lending.messages.remind')}
-                            </UbButton>
-                          )}
-                        </UbStack>
-                      )}
-                    </UbStack>
-                  );
-                })}
-              </UbStack>
-            </CompactCard>
-          )}
-        </UbStack>
-      )}
-      {collecting && (
-        <CollectDialogLazy
-          loanId={collecting.loanId}
-          name={collecting.name}
-          number={collecting.number}
-          suggested={
-            isNonZero(askedToday(collecting)) ? askedToday(collecting) : collecting.instalmentAmount
           }
+          renderMobileActions={() => null}
+          className="max-lg:[&_[data-ub-page-subtitle]]:hidden"
+        />
+        {body}
+      </UbStack>
+      {collecting && round && (
+        <CollectSheet
+          loan={collecting}
+          lenderName={round.name}
           onClose={() => setCollecting(null)}
+          onSaved={() => void load()}
         />
       )}
-      {messaging && (
-        <MessageDialogLazy
-          loanId={messaging.stop.loanId}
-          name={messaging.stop.name}
-          kind={messaging.kind}
-          onClose={() => setMessaging(null)}
-        />
-      )}
-      {notPaid && round && (
-        <NotPaidDialogLazy
-          loanId={notPaid.loanId}
-          name={notPaid.name}
-          today={round.on}
-          onClose={() => setNotPaid(null)}
-        />
-      )}
+      {notPaying && <NotPaidSheet loan={notPaying} onClose={() => setNotPaying(null)} onSaved={() => void load()} />}
     </UbPageShell>
   );
 }
