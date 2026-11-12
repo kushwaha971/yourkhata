@@ -21,7 +21,7 @@ from apps.common.responses import StandardResponse
 from apps.common.tenancy import get_effective_tenant
 from apps.lending import book, messages, selectors, services
 from apps.lending.constants import MessageKind
-from apps.lending.models import Message, Route
+from apps.lending.models import Message, Route, Visit
 
 READ = "lending.loan.read"
 COLLECT = "lending.collection.create"
@@ -162,6 +162,12 @@ class CollectView(LendingView):
             return StandardResponse.ok(data)
         row = services.collect(tenant=self.tenant, user=request.user, loan_id=pk, data=request.data)
         loan = services.get_loan(tenant=self.tenant, loan_id=pk)
+        if isinstance(row, Visit):
+            # ₹0: a visit, not a collection — nothing to receipt.
+            return StandardResponse.ok(
+                {"visit": {"day": row.day.isoformat(), "reason": row.reason}},
+                meta={"loan": selectors.loan_detail(self.tenant, loan), "receipt": ""},
+            )
         detail = selectors.loan_detail(self.tenant, loan)
         pos = book.position(dues=services.dues_of(loan), collected=services.collected_on_loan(loan), day=services.today(self.tenant))
         receipt = messages.receipt_text(

@@ -265,7 +265,9 @@ def collected_on_loan(loan: Loan) -> Decimal:
 
 
 def _clean_collection(tenant: Any, data: dict) -> tuple[Decimal, str, dt.date]:
-    amount = clean_amount(data.get("amount"))
+    # ₹0 is allowed: "visited, paid nothing" (owner, 12 Nov). It never becomes a
+    # ₹0 collection — `collect` records it as a Not paid visit instead.
+    amount = clean_amount(data.get("amount"), allow_zero=True)
     mode = data.get("mode") or PayMode.CASH
     if mode not in PayMode.values:
         raise ValidationFailed(details={"mode": [_("Choose Cash or UPI.")]})
@@ -279,8 +281,15 @@ def preview_collection(*, tenant: Any, loan_id: Any, data: dict) -> book.Positio
     return book.after(dues=dues_of(loan), collected=collected_on_loan(loan), amount=amount, day=today(tenant))
 
 
-def collect(*, tenant: Any, user: Any, loan_id: Any, data: dict) -> Collection:
+def collect(*, tenant: Any, user: Any, loan_id: Any, data: dict) -> Collection | Visit:
+    """Money collected; or, for ₹0, the visit at which nothing was paid (owner,
+    12 Nov: "collect 0 rupees" = visited, paid nothing). The money stays late."""
     amount, mode, day = _clean_collection(tenant, data)
+    if amount == 0:
+        if day != today(tenant):
+            raise ValidationFailed(details={"collected_on": [_("A visit with nothing paid is recorded for today.")]})
+        return not_paid(tenant=tenant, user=user, loan_id=loan_id,
+                        data={"reason": data.get("reason") or _("Visited, paid nothing"), "promised_on": data.get("promised_on")})
     with transaction.atomic():
         loan = get_loan(tenant=tenant, loan_id=loan_id, lock=True)
         if loan.status != LoanStatus.ACTIVE:

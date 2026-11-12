@@ -158,7 +158,7 @@ def test_a_collection_and_a_schedule_are_history_in_the_database(lender):
         Due.objects.filter(loan_id=l["id"]).delete()
 
 
-@pytest.mark.parametrize("amount", ["0", "-5", "abc", "99999999999", ""])
+@pytest.mark.parametrize("amount", ["-5", "abc", "99999999999", ""])
 def test_a_bad_amount_is_refused_and_stores_nothing(lender, amount):
     client, _t, route = lender
     l = loan(client, borrower(client, route))
@@ -259,3 +259,21 @@ def test_lending_writes_no_shop_table(lender):
     l = loan(client, borrower(client, route))
     post(client, f"loans/{l['id']}/collections", {"amount": "500"})
     assert (Party.objects.count(), LedgerEntry.objects.count()) == before
+
+
+def test_collecting_nothing_records_a_visit_and_the_money_stays_late(lender):
+    """Owner, 12 Nov: "collect 0 rupees" = visited, paid nothing. No ₹0 collection is
+    written; the stop shows Not paid; late and left do not move."""
+    client, _t, route = lender
+    l = loan(client, borrower(client, route))
+    before = client.get(ROOT + f"loans/{l['id']}").json()["data"]
+    r = post(client, f"loans/{l['id']}/collections", {"amount": "0"})
+    assert r.status_code == 200 and r.json()["data"]["visit"]["reason"] == "Visited, paid nothing"
+    assert not Collection.objects.filter(loan_id=l["id"]).exists()
+    after = client.get(ROOT + f"loans/{l['id']}").json()["data"]
+    assert (after["late"], after["left"]) == (before["late"], before["left"])
+    stop = client.get(ROOT + "today").json()["data"]["stops"][0]
+    assert stop["state"] == "not"
+    # ₹0 on an earlier day is refused: a visit is today's.
+    r = post(client, f"loans/{l['id']}/collections", {"amount": "0", "collected_on": "2026-11-10"}, ok=None)
+    assert r.status_code == 400

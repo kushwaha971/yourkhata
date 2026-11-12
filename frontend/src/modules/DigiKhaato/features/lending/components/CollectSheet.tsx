@@ -80,7 +80,9 @@ export function CollectSheet({
   const valid = Boolean(typed) && Number(typed) > 0 && REGEX.DECIMAL_2DP.test(typed);
   // The Save label reads the amount AS TYPED, so it checks that, not the debounced copy:
   // a lone "-" sat beside a still-valid debounced value and formatting it threw (Lending monkey, 12 Nov).
-  const amountOk = Boolean(amount) && Number(amount) > 0 && REGEX.DECIMAL_2DP.test(amount);
+  const amountOk = Boolean(amount) && Number(amount) >= 0 && REGEX.DECIMAL_2DP.test(amount);
+  // ₹0 is "visited, paid nothing" (owner, 12 Nov): the server records a Not paid visit.
+  const nothing = amountOk && Number(amount) === 0;
 
   useEffect(() => {
     if (!valid) return undefined;
@@ -102,7 +104,7 @@ export function CollectSheet({
   const save = async (values: CollectValues): Promise<void> => {
     setSaving(true);
     // Opened in the tap itself: a window opened after an await is a popup the phone blocks.
-    const wa = share && loan.mobile ? window.open('', '_blank') : null;
+    const wa = share && loan.mobile && Number(values.amount) > 0 ? window.open('', '_blank') : null;
     const action = await dispatch(collect({ loanId: loan.id, values, key }));
     setSaving(false);
     if (collect.fulfilled.match(action)) {
@@ -113,11 +115,15 @@ export function CollectSheet({
         void recordMessage(loan.id, 'receipt', receipt, `${key}-receipt`).catch(() => undefined);
       }
       dispatch(
-        showSnackbar({
-          severity: 'success',
-          id: 'lending.collect.saved',
-          params: { amount: rupees(values.amount), name: loan.borrower, left: rupees(updated.left) },
-        })
+        showSnackbar(
+          Number(values.amount) === 0
+            ? { severity: 'success', id: 'lending.collect.savedNothing', params: { name: loan.borrower } }
+            : {
+                severity: 'success',
+                id: 'lending.collect.saved',
+                params: { amount: rupees(values.amount), name: loan.borrower, left: rupees(updated.left) },
+              }
+        )
       );
       onSaved?.(updated);
       onClose();
@@ -150,7 +156,7 @@ export function CollectSheet({
           className="min-w-[104px] justify-self-start px-6"
           data-testid="lending-collect-save"
         >
-          {amountOk ? t('lending.collect.save', { amount: rupees(amount) }) : t('lending.collect.saveEmpty')}
+          {nothing ? t('lending.collect.saveNothing') : amountOk ? t('lending.collect.save', { amount: rupees(amount) }) : t('lending.collect.saveEmpty')}
         </UbButton>
       }
     >
@@ -225,7 +231,7 @@ export function CollectSheet({
             </UbText>
           )}
         </UbBox>
-        {loan.mobile && (
+        {loan.mobile && !nothing && (
           <UbSwitch
             checked={share}
             onCheckedChange={setShare}

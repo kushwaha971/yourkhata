@@ -24,7 +24,7 @@ export const useLendingSchemas = () => {
       charges: v.optionalAmountValidation({ max: '9999999999.99' }).defined().default(''),
     }) as Yup.ObjectSchema<NewLoanValues>;
     const collectSchema = Yup.object({
-      amount: v.amountValidation({ max: '9999999999.99' }),
+      amount: v.amountValidation({ allowZero: true, max: '9999999999.99' }),
       mode: Yup.mixed<PayMode>().oneOf(MODES).defined(),
       collectedOn: v.businessDateValidation(),
     }) as Yup.ObjectSchema<CollectValues>;
