@@ -26,6 +26,7 @@ import { showSnackbar } from 'src/redux/slice/snackbarSlice';
 import { todayInTenantTz } from 'src/utils/dates';
 
 import { markAttendance } from '../api/libraryService';
+import { useLibraryAccess } from '../hooks/useLibraryAccess';
 import { selectLibrary } from '../redux/librarySlice';
 import { fetchAttendance, fetchStudents } from '../redux/libraryThunks';
 import { LIBRARY_ROUTES } from '../routes';
@@ -49,6 +50,7 @@ export function CounterPageContent(): React.JSX.Element {
   const dispatch = useAppDispatch();
   const router = useAppRouter();
   const lib = useAppSelector(selectLibrary);
+  const { canCollect } = useLibraryAccess();
   const today = useMemo(() => todayInTenantTz(), []);
   const [search, setSearch] = useState('');
   const q = useDebounce(search.trim(), 200);
@@ -88,6 +90,7 @@ export function CounterPageContent(): React.JSX.Element {
   const actionsFor = (s: Student) => {
     const row = inside.get(s.id);
     const isIn = Boolean(row && !row.outAt);
+    if (!canCollect) return null;
     return (
       <UbStack direction="row" gap={1.5}>
         {s.status !== 'left' && (
@@ -193,14 +196,11 @@ export function CounterPageContent(): React.JSX.Element {
                             .join(' · ')}
                         </UbText>
                       </UbStack>
-                      <UbButton
-                        size="sm"
-                        variant="outlineNeutral"
-                        busy={marking === a.studentId}
-                        onClick={() => void mark({ id: a.studentId, name: a.student }, true)}
-                      >
-                        {t('library.counter.out')}
-                      </UbButton>
+                      {canCollect && (
+                        <UbButton size="sm" variant="outlineNeutral" busy={marking === a.studentId} onClick={() => void mark({ id: a.studentId, name: a.student }, true)}>
+                          {t('library.counter.out')}
+                        </UbButton>
+                      )}
                     </UbStack>
                   </UbBox>
                 ))}

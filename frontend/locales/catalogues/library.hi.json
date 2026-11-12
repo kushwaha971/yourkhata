@@ -84,6 +84,8 @@
   "library.common.more": "और",
   "library.common.moreActions": "और काम",
   "library.common.optional": "ज़रूरी नहीं",
+  "library.common.ownerOnly.body": "मालिक से कहें कि वे यह करें, या आपका रोल बदलें।",
+  "library.common.ownerOnly.title": "यह सिर्फ़ मालिक कर सकते हैं",
   "library.common.save": "सेव करें",
   "library.common.tryAgain": "फिर से कोशिश करें",
   "library.counter.in": "आए",

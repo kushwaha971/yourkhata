@@ -247,3 +247,11 @@ idle, so do not message sessions the owner has stopped.
   - which harness switches off the scale QA shop's Expenses app;
   - four Library tests that fail by date on 1 Nov;
   - the error-registry count (228 against 223).
+
+## QA audit of the four apps — main session, 13 Nov 2026
+
+- **Branch / worktree:** `shop/a2`, `proceed-222204`.
+- **State:** done. 12 defects fixed, each with a test. Report `docs/testing/apps-audit-2026-11-13.md`.
+- **Checks:** `e2e/team-roles.mjs` (members in their own accounts), `e2e/audit-dump.mjs` (sums from raw rows), `backend/tests/integration/test_apps_audit.py`.
+- **Next step for whoever picks it up:** rewrite the stale jobs of `e2e/run-regression.mjs` (statement, credit, writeoff, csp, aging, phonecountry; s3-N2, d3-SW and share-page need `PW_CHROME`), and move the about 56 harnesses that take today from `toISOString()` to the shop's day.
+- **Run notes:** restart the API after a server edit (`--noreload`); the worktree has no `.venv`, so `e2e/serve-api.sh` falls back to `python`, which this Mac lacks — start it with `$E2E_PYTHON` and log to `/tmp/api.log`. Never run two harnesses at once on the QA account.

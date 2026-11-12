@@ -25,6 +25,7 @@ import { useAppDispatch, useAppSelector } from 'src/hooks/useAppStore';
 import { useTranslation } from 'src/hooks/useTranslation';
 import { todayInTenantTz } from 'src/utils/dates';
 
+import { useLibraryAccess } from '../hooks/useLibraryAccess';
 import { useRemind } from '../hooks/useRemind';
 import { selectLibrary, setSeatShift } from '../redux/librarySlice';
 import { fetchSeats } from '../redux/libraryThunks';
@@ -58,6 +59,7 @@ export function SeatsPageContent(): React.JSX.Element {
   const dispatch = useAppDispatch();
   const router = useAppRouter();
   const lib = useAppSelector(selectLibrary);
+  const { canWrite, canCollect, canManage } = useLibraryAccess();
   const desktop = useMediaQuery('(min-width: 1024px)');
   const today = useMemo(() => todayInTenantTz(), []);
   const { remind, busy } = useRemind();
@@ -117,7 +119,7 @@ export function SeatsPageContent(): React.JSX.Element {
           variant="firstUse"
           title={t('library.seats.none.title')}
           description={t('library.seats.none.body')}
-          action={<UbButton onClick={() => setEditing(true)}>{t('library.seats.edit')}</UbButton>}
+          action={canManage ? <UbButton onClick={() => setEditing(true)}>{t('library.seats.edit')}</UbButton> : undefined}
         />
       );
     return (
@@ -141,7 +143,7 @@ export function SeatsPageContent(): React.JSX.Element {
         >
           {null}
         </UbChipTabs>
-        <UbBox className="grid items-start gap-4 lg:[grid-template-columns:minmax(0,1fr)_340px]">
+        <UbBox className="grid grid-cols-[minmax(0,1fr)] items-start gap-4 lg:[grid-template-columns:minmax(0,1fr)_340px]">
           <Card className="gap-3 max-lg:border-0 max-lg:bg-transparent max-lg:p-0">
             <SeatGrid
               seats={map.seats}
@@ -165,12 +167,16 @@ export function SeatsPageContent(): React.JSX.Element {
                   <KeyValue label={t('library.seats.monthlyFee')} value={rupees(s.monthlyFee)} />
                   <KeyValue label={t('library.seats.joined')} value={shortDate(s.joinedOn, today)} />
                   <UbBox className="grid grid-cols-2 gap-2">
-                    <UbButton variant="outlineNeutral" onClick={() => setMoving(s)}>
-                      {t('library.seats.move')}
-                    </UbButton>
-                    <UbButton variant="primary" onClick={() => setCollecting(s)}>
-                      {collectLabel}
-                    </UbButton>
+                    {canWrite && (
+                      <UbButton variant="outlineNeutral" onClick={() => setMoving(s)}>
+                        {t('library.seats.move')}
+                      </UbButton>
+                    )}
+                    {canCollect && (
+                      <UbButton variant="primary" onClick={() => setCollecting(s)}>
+                        {collectLabel}
+                      </UbButton>
+                    )}
                   </UbBox>
                 </>
               ) : (
@@ -178,9 +184,11 @@ export function SeatsPageContent(): React.JSX.Element {
                   <UbText variant="inherit" className="text-[13px] text-text-tertiary">
                     {t('library.seats.emptyBody')}
                   </UbText>
-                  <UbButton variant="primary" onClick={() => setEnrolSeat(shown.number)}>
-                    {t('library.seats.enrolHere')}
-                  </UbButton>
+                  {canWrite && (
+                    <UbButton variant="primary" onClick={() => setEnrolSeat(shown.number)}>
+                      {t('library.seats.enrolHere')}
+                    </UbButton>
+                  )}
                 </>
               )}
             </Card>
@@ -203,9 +211,11 @@ export function SeatsPageContent(): React.JSX.Element {
                 : undefined
           }
           actions={
-            <UbButton variant="outlineNeutral" onClick={() => setEditing(true)} className="max-lg:hidden">
-              {t('library.seats.edit')}
-            </UbButton>
+            canManage && (
+              <UbButton variant="outlineNeutral" onClick={() => setEditing(true)} className="max-lg:hidden">
+                {t('library.seats.edit')}
+              </UbButton>
+            )
           }
           renderMobileActions={() => null}
         />
@@ -218,16 +228,20 @@ export function SeatsPageContent(): React.JSX.Element {
           title={panelTitle}
           closeLabel={t('library.common.close')}
           footer={
-            s ? (
+            !canWrite && !canCollect ? null : s ? (
               <UbBox className="grid grid-cols-2 gap-2">
-                <UbButton variant="secondary" size="lg" busy={busy === s.id} onClick={() => void remind(s)}>
-                  {t('library.seats.remind')}
-                </UbButton>
-                <UbButton variant="primary" size="lg" onClick={() => setCollecting(s)}>
-                  {collectLabel}
-                </UbButton>
+                {canWrite && (
+                  <UbButton variant="secondary" size="lg" busy={busy === s.id} onClick={() => void remind(s)}>
+                    {t('library.seats.remind')}
+                  </UbButton>
+                )}
+                {canCollect && (
+                  <UbButton variant="primary" size="lg" onClick={() => setCollecting(s)}>
+                    {collectLabel}
+                  </UbButton>
+                )}
               </UbBox>
-            ) : cell ? (
+            ) : cell && canWrite ? (
               <UbButton variant="primary" size="lg" fullWidth onClick={() => setEnrolSeat(cell.number)}>
                 {t('library.seats.enrolHere')}
               </UbButton>
@@ -239,9 +253,11 @@ export function SeatsPageContent(): React.JSX.Element {
               <>
                 {occupant}
                 <UbBox className="grid grid-cols-2 gap-2">
-                  <UbButton variant="outlineNeutral" onClick={() => setMoving(s)}>
-                    {t('library.seats.move')}
-                  </UbButton>
+                  {canWrite && (
+                    <UbButton variant="outlineNeutral" onClick={() => setMoving(s)}>
+                      {t('library.seats.move')}
+                    </UbButton>
+                  )}
                   <UbButton variant="outlineNeutral" onClick={() => router.push(LIBRARY_ROUTES.student(s.id))}>
                     {t('library.seats.open')}
                   </UbButton>

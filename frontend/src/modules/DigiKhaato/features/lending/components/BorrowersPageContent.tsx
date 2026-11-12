@@ -29,6 +29,7 @@ import { ROUTES } from 'src/routes';
 
 import { List } from 'modules/DigiKhaato/features/appParts/AppParts';
 
+import { useLendingAccess } from '../hooks/useLendingAccess';
 import { selectLending } from '../redux/lendingSlice';
 import { fetchBorrowers } from '../redux/lendingThunks';
 import { LENDING_ROUTES } from '../routes';
@@ -44,6 +45,7 @@ export function BorrowersPageContent(): React.JSX.Element {
   const dispatch = useAppDispatch();
   const router = useAppRouter();
   const lend = useAppSelector(selectLending);
+  const { canLend } = useLendingAccess();
   const [search, setSearch] = useState('');
   const q = useDebounce(search.trim(), 250);
   const [adding, setAdding] = useState(false);
@@ -61,6 +63,7 @@ export function BorrowersPageContent(): React.JSX.Element {
         <UbPageHeader
           title={t('lending.borrowers.title')}
           actions={
+            !canLend ? undefined : (
             <UbStack direction="row" gap={2} className="max-lg:hidden">
               <UbButton variant="outlineNeutral" icon={<FileUp className="h-4 w-4" aria-hidden />} onClick={() => router.push(`${ROUTES.IMPORTS}?kind=loans`)}>
                 {t('lending.borrowers.import')}
@@ -69,6 +72,7 @@ export function BorrowersPageContent(): React.JSX.Element {
                 {t('lending.borrower.add')}
               </UbButton>
             </UbStack>
+            )
           }
           renderMobileActions={() => null}
         />
@@ -85,7 +89,7 @@ export function BorrowersPageContent(): React.JSX.Element {
               variant="firstUse"
               title={t('lending.borrowers.none')}
               description={t('lending.borrowers.noneBody')}
-              action={<UbButton onClick={() => setAdding(true)}>{t('lending.borrower.add')}</UbButton>}
+              action={canLend ? <UbButton onClick={() => setAdding(true)}>{t('lending.borrower.add')}</UbButton> : undefined}
             />
           )
         ) : (
@@ -118,7 +122,7 @@ export function BorrowersPageContent(): React.JSX.Element {
           </List>
         )}
       </UbStack>
-      <UbFab label={t('lending.borrower.add')} icon={<Plus className="h-4 w-4" aria-hidden />} mobileOnly extended onClick={() => setAdding(true)} />
+      {canLend && <UbFab label={t('lending.borrower.add')} icon={<Plus className="h-4 w-4" aria-hidden />} mobileOnly extended onClick={() => setAdding(true)} />}
       {adding && (
         <BorrowerDrawer
           onClose={() => setAdding(false)}

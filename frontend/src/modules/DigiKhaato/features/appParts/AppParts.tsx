@@ -2,7 +2,7 @@
 
 import { memo, type ReactNode } from 'react';
 
-import { UbBox, UbStack, UbText } from 'src/design-system';
+import { UbBox, UbEmptyState, UbStack, UbText } from 'src/design-system';
 import { cn } from 'src/utils/cn';
 
 /**
@@ -126,6 +126,36 @@ export function Table({
         </UbBox>
         <UbBox as="tbody">{children}</UbBox>
       </UbBox>
+    </UbBox>
+  );
+}
+
+/**
+ * A page this team member may not use, reached by its address (the menu never
+ * offers it). It says so in plain words instead of drawing a form the server
+ * will refuse (QA audit, 12 Nov 2026).
+ */
+export function OwnerOnly({ title, body }: Readonly<{ title: string; body: string }>) {
+  return <UbEmptyState variant="filtered" title={title} description={body} />;
+}
+
+/**
+ * The message as the customer will read it, drawn as a chat bubble. One column
+ * that may shrink and words that may break anywhere: a long unbroken word (a
+ * pasted link, a name typed without spaces) used to push the page wider than a
+ * phone (QA audit, 13 Nov 2026). `children` replaces the bubble while editing.
+ */
+export function MessagePreview({ text, children, className }: Readonly<{ text: string; children?: ReactNode; className?: string }>) {
+  return (
+    <UbBox className={cn('grid min-w-0 grid-cols-[minmax(0,1fr)] rounded-[12px] bg-[#ECE5DD] p-3 dark:bg-surface-sunken', className)} data-testid="message-preview">
+      {children ?? (
+        <UbText
+          variant="inherit"
+          className="max-w-[92%] justify-self-end whitespace-pre-wrap rounded-[10px_10px_2px_10px] bg-[#DCF8C6] px-3 py-2.5 text-[14px] leading-[1.45] text-[#111] [overflow-wrap:anywhere] dark:bg-[#1F3B26] dark:text-text-primary"
+        >
+          {text}
+        </UbText>
+      )}
     </UbBox>
   );
 }

@@ -2,6 +2,8 @@
 
 > **1 Nov 2026 — START HERE: `docs/team/CONTINUE-AD-CERTIFICATION.md`.** Parts A–D of the Shop revamp are built; the A–D certification is mid-way; Part G waits for the owner's explicit go. That file supersedes everything below for what to do next.
 
+> **13 Nov 2026 — QA audit of Lending, Library, Money Book and Business: 12 defects found and fixed, combined 9.0/10.** Report `docs/testing/apps-audit-2026-11-13.md`. Team members (admin, staff, accountant) sign in to their own accounts in `e2e/team-roles.mjs` (1023/1023); server role, junk-input and isolation tests in `backend/tests/integration/test_apps_audit.py`. Not done: the old `e2e/run-regression.mjs` set is out of date against the rebuilt apps (180/183, 6 jobs crash; report §7) and needs rewriting; Business per-kind rounds were not repeated. Waiting on the owner: may staff add a borrower or loan in Lending; bring back "Turn this app off / Leave this app" on Apps.
+>
 > **12 Nov 2026 — Lending (Loans & Collections) rebuilt from scratch and through its P0 round (9/10).** Report `docs/testing/lending-round-2026-11-12.md` (harness 64/64, measured 17/17, look 828/828, monkey 3×2 PASS). All three rebuilds (Money Book, Library, Lending) are done; next is the owner's check.
 >
 > **12 Nov 2026 — Library (Members & Fees) rebuilt from scratch and through its P0 round (9/10).** Server + screens + students import, report `docs/testing/library-round-2026-11-12.md` (harness 68/68, look 1104/1104, monkey 3×2 PASS). Books is simple with a barcode scanner (owner). Fixed on the way: Money Book Add person hung with no mobile. Next: Lending (Loans & Collections), the same way.

@@ -11,6 +11,7 @@ import { useAppRouter } from 'src/hooks/useAppRouter';
 import { useTranslation, type TranslateFn } from 'src/hooks/useTranslation';
 
 import { getPoster, type Poster } from '../api/libraryService';
+import { useLibraryAccess } from '../hooks/useLibraryAccess';
 import { LIBRARY_ROUTES } from '../routes';
 import { rupees } from '../view-model/libraryDisplay';
 
@@ -57,6 +58,7 @@ function PosterSheet({ poster, t }: Readonly<{ poster: Poster; t: TranslateFn }>
 export function FeePoster({ onClose }: Readonly<{ onClose: () => void }>) {
   const { t } = useTranslation();
   const router = useAppRouter();
+  const { canManage } = useLibraryAccess();
   const [poster, setPoster] = useState<Poster | null>(null);
   const [printing, setPrinting] = useState(false);
 
@@ -100,9 +102,11 @@ export function FeePoster({ onClose }: Readonly<{ onClose: () => void }>) {
               tone="info"
               title={t('library.poster.noUpi')}
               action={
-                <UbButton variant="outlineNeutral" size="sm" onClick={() => router.push(LIBRARY_ROUTES.settings)}>
-                  {t('library.poster.addUpi')}
-                </UbButton>
+                canManage ? (
+                  <UbButton variant="outlineNeutral" size="sm" onClick={() => router.push(LIBRARY_ROUTES.settings)}>
+                    {t('library.poster.addUpi')}
+                  </UbButton>
+                ) : undefined
               }
             />
           )}

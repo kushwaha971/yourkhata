@@ -36,6 +36,7 @@ import { todayInTenantTz } from 'src/utils/dates';
 import { Card, Figure, Figures, KeyValue, List, Table } from 'modules/DigiKhaato/features/appParts/AppParts';
 
 import { closeLoan, removeCollection } from '../api/lendingService';
+import { useLendingAccess } from '../hooks/useLendingAccess';
 import { useRemind } from '../hooks/useRemind';
 import { selectLending } from '../redux/lendingSlice';
 import { fetchLoan, fetchToday } from '../redux/lendingThunks';
@@ -68,6 +69,7 @@ export function LoanPageContent({ id }: Readonly<{ id: string }>): React.JSX.Ele
   const dispatch = useAppDispatch();
   const router = useAppRouter();
   const lend = useAppSelector(selectLending);
+  const { canCollect, canManage } = useLendingAccess();
   const today = useMemo(() => todayInTenantTz(), []);
   const { remind, busy } = useRemind();
   const { key, rotate } = useIdempotencyKey();
@@ -148,9 +150,9 @@ export function LoanPageContent({ id }: Readonly<{ id: string }>): React.JSX.Ele
   const rows = all ? loan.schedule : aroundToday(loan.schedule, today);
   const live = loan.collections.filter((c) => c.status === 'live');
   const moreRows: UbMenuListRow[] = [
-    ...(live[0] ? [{ key: 'remove', label: t('lending.collection.removeLast'), onSelect: () => setRemoving(live[0] ?? null) }] : []),
-    ...(active && Number(loan.left) === 0 ? [{ key: 'close', label: t('lending.loan.close'), onSelect: () => setClosing('paid') }] : []),
-    ...(active && Number(loan.left) > 0 ? [{ key: 'writeoff', label: t('lending.loan.writeOff'), tone: 'danger' as const, onSelect: () => setClosing('written_off') }] : []),
+    ...(live[0] && canCollect ? [{ key: 'remove', label: t('lending.collection.removeLast'), onSelect: () => setRemoving(live[0] ?? null) }] : []),
+    ...(active && canManage && Number(loan.left) === 0 ? [{ key: 'close', label: t('lending.loan.close'), onSelect: () => setClosing('paid') }] : []),
+    ...(active && canManage && Number(loan.left) > 0 ? [{ key: 'writeoff', label: t('lending.loan.writeOff'), tone: 'danger' as const, onSelect: () => setClosing('written_off') }] : []),
     { key: 'borrower', label: t('lending.loan.openBorrower'), onSelect: () => router.push(LENDING_ROUTES.borrower(loan.borrowerId)) },
   ];
 
@@ -169,7 +171,7 @@ export function LoanPageContent({ id }: Readonly<{ id: string }>): React.JSX.Ele
               {subtitle}
             </UbText>
           </UbStack>
-          {active && (
+          {active && canCollect && (
             <UbStack direction="row" gap={2} className="max-lg:hidden">
               <UbButton variant="outlineNeutral" icon={<Bell className="h-4 w-4" aria-hidden />} busy={busy === loan.id} onClick={() => void remind(loan, lateKind)}>
                 {t('lending.loan.remind')}
@@ -199,7 +201,7 @@ export function LoanPageContent({ id }: Readonly<{ id: string }>): React.JSX.Ele
           <Figure label={t('lending.fig.late')} value={rupees(loan.late)} caption={t('lending.loan.lateDays', { count: loan.lateDays })} tone="give" />
           <Figure label={t('lending.fig.left')} value={rupees(loan.left)} caption={t('lending.loan.ends', { date: shortDate(loan.endsOn, today) })} />
         </UbBox>
-        <UbBox className="grid items-start gap-4 lg:[grid-template-columns:minmax(0,1fr)_340px]">
+        <UbBox className="grid grid-cols-[minmax(0,1fr)] items-start gap-4 lg:[grid-template-columns:minmax(0,1fr)_340px]">
           <UbStack gap={2}>
             <UbStack direction="row" justify="between" align="center">
               <UbText variant="inherit" className="font-semibold">
@@ -266,7 +268,7 @@ export function LoanPageContent({ id }: Readonly<{ id: string }>): React.JSX.Ele
           </Card>
         </UbBox>
       </UbStack>
-      {active && (
+      {active && canCollect && (
         <UbBottomBar
           sticky={false}
           // Pinned above the bottom bar, as the Library's (a sticky dock floats on a short page).

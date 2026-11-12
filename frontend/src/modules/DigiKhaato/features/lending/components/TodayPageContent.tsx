@@ -30,6 +30,7 @@ import { todayInTenantTz } from 'src/utils/dates';
 
 import { Card, Figure, Figures, List, Table } from 'modules/DigiKhaato/features/appParts/AppParts';
 
+import { useLendingAccess } from '../hooks/useLendingAccess';
 import { selectLending, setRoute } from '../redux/lendingSlice';
 import { fetchToday } from '../redux/lendingThunks';
 import { LENDING_ROUTES } from '../routes';
@@ -61,6 +62,7 @@ export function TodayPageContent(): React.JSX.Element {
   const dispatch = useAppDispatch();
   const router = useAppRouter();
   const lend = useAppSelector(selectLending);
+  const { canCollect, canLend } = useLendingAccess();
   const today = useMemo(() => todayInTenantTz(), []);
   const [show, setShow] = useState<Show>('visit');
   const [collecting, setCollecting] = useState<Stop | null>(null);
@@ -93,7 +95,7 @@ export function TodayPageContent(): React.JSX.Element {
       <UbStatusBadge label={t('lending.stop.collectedAmount', { amount: rupees(s.collectedToday) })} tone="success" />
     ) : s.state === 'not' ? (
       <UbStatusBadge label={t(STOP_WORD.not)} tone="error" />
-    ) : (
+    ) : !canCollect ? null : (
       <UbStack direction="row" gap={1.5} className="w-full lg:w-auto lg:justify-end">
         <UbButton size={size} variant="outlineNeutral" className="flex-1 lg:flex-none" onClick={() => setNotPaying(s)} data-testid="lending-not-paid">
           {t('lending.stop.notPaidButton')}
@@ -116,7 +118,7 @@ export function TodayPageContent(): React.JSX.Element {
           variant="firstUse"
           title={t('lending.today.empty.title')}
           description={t('lending.today.empty.body')}
-          action={<UbButton onClick={() => router.push(LENDING_ROUTES.newLoan)}>{t('lending.today.newLoan')}</UbButton>}
+          action={canLend ? <UbButton onClick={() => router.push(LENDING_ROUTES.newLoan)}>{t('lending.today.newLoan')}</UbButton> : undefined}
         />
       );
     const roundCard = (
@@ -278,9 +280,11 @@ export function TodayPageContent(): React.JSX.Element {
           actions={
             <UbStack direction="row" gap={2} className="max-lg:hidden">
               {routeSelect}
-              <UbButton variant="primary" icon={<Plus className="h-4 w-4" aria-hidden />} onClick={() => router.push(LENDING_ROUTES.newLoan)} className="lg:h-10 lg:text-[14px]">
-                {t('lending.today.newLoan')}
-              </UbButton>
+              {canLend && (
+                <UbButton variant="primary" icon={<Plus className="h-4 w-4" aria-hidden />} onClick={() => router.push(LENDING_ROUTES.newLoan)} className="lg:h-10 lg:text-[14px]">
+                  {t('lending.today.newLoan')}
+                </UbButton>
+              )}
             </UbStack>
           }
           renderMobileActions={() => null}

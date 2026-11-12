@@ -84,6 +84,8 @@
   "library.common.more": "More",
   "library.common.moreActions": "More actions",
   "library.common.optional": "optional",
+  "library.common.ownerOnly.body": "Ask the owner to do it, or to change your role.",
+  "library.common.ownerOnly.title": "Only the owner can do this",
   "library.common.save": "Save",
   "library.common.tryAgain": "Try again",
   "library.counter.in": "In",

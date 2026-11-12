@@ -64,6 +64,8 @@
   "lending.common.more": "More",
   "lending.common.moreActions": "More actions",
   "lending.common.optional": "optional",
+  "lending.common.ownerOnly.body": "Ask the owner to do it, or to change your role.",
+  "lending.common.ownerOnly.title": "Only the owner can do this",
   "lending.common.save": "Save",
   "lending.common.tryAgain": "Try again",
   "lending.fig.collected": "Collected",

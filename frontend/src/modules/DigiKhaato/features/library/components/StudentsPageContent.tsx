@@ -28,6 +28,7 @@ import { useTranslation } from 'src/hooks/useTranslation';
 import { ROUTES } from 'src/routes';
 import { todayInTenantTz } from 'src/utils/dates';
 
+import { useLibraryAccess } from '../hooks/useLibraryAccess';
 import { selectLibrary, setStudentsQuery } from '../redux/librarySlice';
 import { fetchStudents } from '../redux/libraryThunks';
 import { LIBRARY_ROUTES } from '../routes';
@@ -55,6 +56,7 @@ export function StudentsPageContent(): React.JSX.Element {
   const dispatch = useAppDispatch();
   const router = useAppRouter();
   const lib = useAppSelector(selectLibrary);
+  const { canWrite } = useLibraryAccess();
   const today = useMemo(() => todayInTenantTz(), []);
   const [search, setSearch] = useState(lib.studentsQuery.q ?? '');
   const q = useDebounce(search.trim(), 250);
@@ -118,7 +120,7 @@ export function StudentsPageContent(): React.JSX.Element {
           title={t('library.students.empty.title')}
           description={t('library.students.empty.body')}
           action={
-            <UbStack direction="row" gap={2} wrap>
+            canWrite && <UbStack direction="row" gap={2} wrap>
               <UbButton icon={<Plus className="h-4 w-4" aria-hidden />} onClick={() => setEnrolling(true)}>
                 {t('library.home.enrol')}
               </UbButton>
@@ -229,7 +231,7 @@ export function StudentsPageContent(): React.JSX.Element {
           title={t('library.students.title')}
           subtitle={counts ? t('library.students.subtitle', { count: counts.all, due: page?.due ?? '0' }) : undefined}
           actions={
-            <UbStack direction="row" gap={2} className="max-lg:hidden">
+            canWrite && <UbStack direction="row" gap={2} className="max-lg:hidden">
               <UbButton
                 variant="outlineNeutral"
                 icon={<FileUp className="h-4 w-4" aria-hidden />}
@@ -258,13 +260,9 @@ export function StudentsPageContent(): React.JSX.Element {
         )}
         {body}
       </UbStack>
-      <UbFab
-        label={t('library.home.enrol')}
-        icon={<Plus className="h-4 w-4" aria-hidden />}
-        mobileOnly
-        extended
-        onClick={() => setEnrolling(true)}
-      />
+      {canWrite && (
+        <UbFab label={t('library.home.enrol')} icon={<Plus className="h-4 w-4" aria-hidden />} mobileOnly extended onClick={() => setEnrolling(true)} />
+      )}
       {enrolling && (
         <EnrolDrawer
           onClose={() => setEnrolling(false)}

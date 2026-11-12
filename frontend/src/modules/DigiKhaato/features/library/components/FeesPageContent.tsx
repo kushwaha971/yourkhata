@@ -28,12 +28,16 @@ import { useTranslation, type TranslateFn } from 'src/hooks/useTranslation';
 import { cn } from 'src/utils/cn';
 import { sumMoney } from 'src/utils/money';
 
+import { MessagePreview } from 'modules/DigiKhaato/features/appParts/AppParts';
+
 import { messageText } from '../api/libraryService';
+import { useLibraryAccess } from '../hooks/useLibraryAccess';
 import { useRemind } from '../hooks/useRemind';
 import { selectLibrary, setFee } from '../redux/librarySlice';
 import { fetchFees } from '../redux/libraryThunks';
 import { LIBRARY_ROUTES } from '../routes';
 import { dueAmount, monthName, rupees } from '../view-model/libraryDisplay';
+
 
 import { FeeBadge, List, Table } from './LibraryParts';
 
@@ -66,6 +70,7 @@ export function FeesPageContent(): React.JSX.Element {
   const dispatch = useAppDispatch();
   const router = useAppRouter();
   const lib = useAppSelector(selectLibrary);
+  const { canWrite, canCollect } = useLibraryAccess();
   const { remind, busy } = useRemind();
   // Picks belong to the chip they were made on: another chip's list starts empty.
   const [pickedFor, setPickedFor] = useState<{ fee: FeeFilter; ids: ReadonlySet<string> }>({ fee: 'over', ids: new Set() });
@@ -218,7 +223,7 @@ export function FeesPageContent(): React.JSX.Element {
                   {dueAmount(s)}
                 </UbBox>
                 <UbBox as="td" className="text-right">
-                  {s.fee !== 'paid' && s.fee !== 'hold' && (
+                  {canCollect && s.fee !== 'paid' && s.fee !== 'hold' && (
                     <UbButton variant="link" size="sm" onClick={() => setCollecting(s)}>
                       {t('library.home.collect')}
                     </UbButton>
@@ -231,14 +236,7 @@ export function FeesPageContent(): React.JSX.Element {
             <UbText variant="inherit" className="text-[12.5px] text-text-tertiary">
               {t('library.fees.preview')}
             </UbText>
-            <UbBox className="grid rounded-[12px] bg-[#ECE5DD] p-3.5">
-              <UbText
-                variant="inherit"
-                className="max-w-[92%] justify-self-end whitespace-pre-wrap rounded-[10px_10px_2px_10px] bg-[#DCF8C6] px-3 py-2.5 text-[14px] leading-[1.45] text-[#111]"
-              >
-                {preview?.id === previewOf?.id ? preview?.text : t('library.common.loading')}
-              </UbText>
-            </UbBox>
+            <MessagePreview className="p-3.5" text={(preview?.id === previewOf?.id ? preview?.text : undefined) ?? t('library.common.loading')} />
             <UbText variant="inherit" className="text-[12.5px] text-text-tertiary">
               {t('library.fees.oneAtATime')}
             </UbText>
@@ -264,7 +262,7 @@ export function FeesPageContent(): React.JSX.Element {
               <UbButton variant="outlineNeutral" icon={<Printer className="h-4 w-4" aria-hidden />} onClick={() => setPoster(true)}>
                 {t('library.fees.poster')}
               </UbButton>
-              {(counts?.over ?? 0) > 0 && (
+              {canWrite && (counts?.over ?? 0) > 0 && (
                 <UbButton
                   variant="primary"
                   icon={<Bell className="h-4 w-4" aria-hidden />}
@@ -307,17 +305,16 @@ export function FeesPageContent(): React.JSX.Element {
               </>
             ) : (
               <>
-                <UbButton
-                  variant="secondary"
-                  size="lg"
-                  disabled={pickedRows.length !== 1}
-                  onClick={() => pickedRows[0] && setCollecting(pickedRows[0])}
-                >
-                  {t('library.home.collect')}
-                </UbButton>
-                <UbButton variant="primary" size="lg" busy={busy !== null} onClick={() => startQueue(pickedRows)}>
-                  {t('library.fees.remindCount', { count: picked.size })}
-                </UbButton>
+                {canCollect && (
+                  <UbButton variant="secondary" size="lg" disabled={pickedRows.length !== 1} onClick={() => pickedRows[0] && setCollecting(pickedRows[0])}>
+                    {t('library.home.collect')}
+                  </UbButton>
+                )}
+                {canWrite && (
+                  <UbButton variant="primary" size="lg" busy={busy !== null} onClick={() => startQueue(pickedRows)}>
+                    {t('library.fees.remindCount', { count: picked.size })}
+                  </UbButton>
+                )}
               </>
             )}
           </UbBox>

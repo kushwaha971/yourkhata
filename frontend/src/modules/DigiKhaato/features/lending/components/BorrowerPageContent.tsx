@@ -26,6 +26,7 @@ import { todayInTenantTz } from 'src/utils/dates';
 
 import { Figure, Figures, List } from 'modules/DigiKhaato/features/appParts/AppParts';
 
+import { useLendingAccess } from '../hooks/useLendingAccess';
 import { selectLending } from '../redux/lendingSlice';
 import { fetchBorrower } from '../redux/lendingThunks';
 import { LENDING_ROUTES } from '../routes';
@@ -41,6 +42,7 @@ export function BorrowerPageContent({ id }: Readonly<{ id: string }>): React.JSX
   const dispatch = useAppDispatch();
   const router = useAppRouter();
   const lend = useAppSelector(selectLending);
+  const { canLend } = useLendingAccess();
   const today = useMemo(() => todayInTenantTz(), []);
   const [editing, setEditing] = useState(false);
 
@@ -71,6 +73,7 @@ export function BorrowerPageContent({ id }: Readonly<{ id: string }>): React.JSX
           title={b.name}
           subtitle={[b.mobile ? `+91 ${b.mobile.slice(0, 5)} ${b.mobile.slice(5)}` : null, b.work, b.route].filter(Boolean).join(' · ')}
           actions={
+            !canLend ? undefined : (
             <UbStack direction="row" gap={2}>
               <UbButton variant="outlineNeutral" onClick={() => setEditing(true)}>
                 {t('lending.borrower.edit')}
@@ -79,6 +82,7 @@ export function BorrowerPageContent({ id }: Readonly<{ id: string }>): React.JSX
                 {t('lending.today.newLoan')}
               </UbButton>
             </UbStack>
+            )
           }
           renderMobileActions={(a) => a}
         />

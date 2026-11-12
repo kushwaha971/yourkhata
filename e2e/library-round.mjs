@@ -246,10 +246,11 @@ try {
     const back = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
     await d.getByRole('button', { name: /Paid on|\d{1,2} \w{3} \d{4}/ }).filter({ hasText: /\d{4}/ }).first().click();
     await page.locator('[role=gridcell] button').filter({ hasText: new RegExp(`^${day}$`) }).first().click();
-    const savedBack = page.waitForResponse((r) => r.request().method() === 'POST' && /\/library\/students\/[^/]+\/payments$/.test(new URL(r.url()).pathname));
+    // The preview is a POST to the same path with ?preview=true; wait for the save itself.
+    const savedBack = page.waitForResponse((r) => r.request().method() === 'POST' && /\/library\/students\/[^/]+\/payments$/.test(new URL(r.url()).pathname) && !new URL(r.url()).searchParams.has('preview'));
     await page.getByTestId('library-collect-save').click();
     const backBody = await (await savedBack).json();
-    check(tag('E13 a back-dated fee is stored on its own day'), backBody?.data?.paid_on === back, `${backBody?.data?.paid_on} vs ${back}`);
+    check(tag('E13 a back-dated fee is stored on its own day'), backBody?.data?.paid_on === back, `${backBody?.data?.paid_on ?? JSON.stringify(backBody?.error ?? backBody).slice(0, 160)} vs ${back}`);
     await d.waitFor({ state: 'hidden' }).catch(() => undefined);
 
     // E17: a long Hindi name fits the student page and the list.

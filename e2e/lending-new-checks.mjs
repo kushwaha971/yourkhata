@@ -26,7 +26,9 @@ const check = (ok, label) => {
   else fail += 1;
   console.log(`${ok ? 'ok  ' : 'FAIL'} ${label}`);
 };
-const iso = (d) => d.toISOString().slice(0, 10);
+// The LOCAL day, not UTC: before 05:30 IST toISOString() is still yesterday,
+// which made "two days ago" three and the loan ₹500 later than expected.
+const iso = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 
 const browser = await chromium.launch({ executablePath: process.env.PW_CHROME ?? process.env.CHROME });
 for (const width of [390, 1280]) {

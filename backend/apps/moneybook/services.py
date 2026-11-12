@@ -195,14 +195,20 @@ def _post(
     return entry
 
 
+def _must_be_in_book(person: Person) -> None:
+    """A person put away is at ₹0 and stays there: no entry is added, removed or
+    corrected until they are brought back."""
+    if person.archived_at is not None:
+        raise BusinessRuleViolation(
+            "person_archived", _("%(name)s is put away. Bring them back first.") % {"name": person.name}
+        )
+
+
 def add_entry(*, owner: Any, person_id: Any, data: dict) -> Entry:
     clean = _clean_entry(data)
     with transaction.atomic():
         person = get_person(owner=owner, person_id=person_id, lock=True)
-        if person.archived_at is not None:
-            raise BusinessRuleViolation(
-                "person_archived", _("%(name)s is put away. Bring them back first.") % {"name": person.name}
-            )
+        _must_be_in_book(person)
         entry = _post(person, **clean)
         _refresh_last(person)
         person.save()
@@ -235,6 +241,7 @@ def _locked_entry(owner: Any, entry_id: Any) -> tuple[Person, Entry]:
     if entry is None:
         raise NotFound(_("This entry is not in your book."))
     person = get_person(owner=owner, person_id=entry.person_id, lock=True)
+    _must_be_in_book(person)
     entry = Entry.objects.get(pk=entry.pk)  # re-read under the person's lock
     return person, entry
 

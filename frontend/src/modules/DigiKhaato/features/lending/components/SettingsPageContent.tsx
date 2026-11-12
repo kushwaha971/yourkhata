@@ -8,9 +8,10 @@ import { useTranslation } from 'src/hooks/useTranslation';
 import { showSnackbar } from 'src/redux/slice/snackbarSlice';
 import { toApiError } from 'src/utils/apiError';
 
-import { Card } from 'modules/DigiKhaato/features/appParts/AppParts';
+import { Card, OwnerOnly } from 'modules/DigiKhaato/features/appParts/AppParts';
 
 import { saveSettings } from '../api/lendingService';
+import { useLendingAccess } from '../hooks/useLendingAccess';
 import { selectLending } from '../redux/lendingSlice';
 import { fetchSettings } from '../redux/lendingThunks';
 
@@ -59,6 +60,7 @@ export function SettingsPageContent(): React.JSX.Element {
   const { t } = useTranslation();
   const dispatch = useAppDispatch();
   const lend = useAppSelector(selectLending);
+  const { canManage } = useLendingAccess();
   const load = useCallback(() => dispatch(fetchSettings()), [dispatch]);
   useEffect(() => {
     const r = load();
@@ -69,7 +71,9 @@ export function SettingsPageContent(): React.JSX.Element {
     <UbPageShell>
       <UbStack gap={3} className="pb-24 lg:pb-6">
         <UbPageHeader title={t('lending.settings.title')} />
-        {lend.settings.status === 'failed' && !s ? (
+        {!canManage ? (
+          <OwnerOnly title={t('lending.common.ownerOnly.title')} body={t('lending.common.ownerOnly.body')} />
+        ) : lend.settings.status === 'failed' && !s ? (
           <UbEmptyState variant="error" title={t('lending.settings.error')} action={<UbButton onClick={load}>{t('lending.common.tryAgain')}</UbButton>} />
         ) : !s ? (
           <UbSkeleton variant="list" count={2} label={t('lending.common.loading')} />

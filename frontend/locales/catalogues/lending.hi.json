@@ -64,6 +64,8 @@
   "lending.common.more": "और",
   "lending.common.moreActions": "और काम",
   "lending.common.optional": "ज़रूरी नहीं",
+  "lending.common.ownerOnly.body": "मालिक से कहें कि वे यह करें, या आपका रोल बदलें।",
+  "lending.common.ownerOnly.title": "यह सिर्फ़ मालिक कर सकते हैं",
   "lending.common.save": "सेव करें",
   "lending.common.tryAgain": "फिर से कोशिश करें",
   "lending.fig.collected": "मिला",

@@ -14,6 +14,7 @@ from django.utils.translation import gettext as _
 
 from apps.common.dates import tenant_today
 from apps.common.exceptions import BusinessRuleViolation, NotFound, ValidationFailed
+from apps.common.plain_requests import switch_of
 from apps.lending import book
 from apps.lending.constants import (
     MAX_AMOUNT,
@@ -194,7 +195,7 @@ def _clean_loan(tenant: Any, data: dict) -> dict:
         "each": each,
         "charges": charges,
         "starts_on": starts_on,
-        "skip_sundays": bool(data.get("skip_sundays", True)) if frequency == Frequency.DAILY else False,
+        "skip_sundays": switch_of(data.get("skip_sundays", True)) if frequency == Frequency.DAILY else False,
     }
 
 
@@ -253,6 +254,16 @@ def get_loan(*, tenant: Any, loan_id: Any, lock: bool = False) -> Loan:
     return loan
 
 
+def _closed(loan: Loan) -> BusinessRuleViolation:
+    return BusinessRuleViolation("loan_closed", _("Loan %(n)s is closed.") % {"n": loan.number})
+
+
+def _must_be_open(loan: Loan) -> None:
+    """A closed loan keeps the day and the reason it was closed for."""
+    if loan.status == LoanStatus.CLOSED:
+        raise _closed(loan)
+
+
 def dues_of(loan: Loan) -> list[tuple[int, dt.date, Decimal]]:
     return list(Due.objects.filter(loan=loan).order_by("seq").values_list("seq", "due_on", "amount"))
 
@@ -293,7 +304,7 @@ def collect(*, tenant: Any, user: Any, loan_id: Any, data: dict) -> Collection |
     with transaction.atomic():
         loan = get_loan(tenant=tenant, loan_id=loan_id, lock=True)
         if loan.status != LoanStatus.ACTIVE:
-            raise BusinessRuleViolation("loan_closed", _("Loan %(n)s is closed.") % {"n": loan.number})
+            raise _closed(loan)
         if day < loan.starts_on:
             # Money cannot come in before the loan was given (back-dated entry, 12 Nov).
             raise ValidationFailed(details={"collected_on": [
@@ -343,6 +354,7 @@ def remove_collection(*, tenant: Any, user: Any, collection_id: Any, reason: Any
 def not_paid(*, tenant: Any, user: Any, loan_id: Any, data: dict) -> Visit:
     with transaction.atomic():
         loan = get_loan(tenant=tenant, loan_id=loan_id, lock=True)
+        _must_be_open(loan)
         day = today(tenant)
         promised = clean_date(data.get("promised_on"), "promised_on") if data.get("promised_on") else None
         if promised and promised < day:
@@ -356,10 +368,12 @@ def not_paid(*, tenant: Any, user: Any, loan_id: Any, data: dict) -> Visit:
 
 def close_loan(*, tenant: Any, loan_id: Any, data: dict) -> Loan:
     reason = data.get("reason") or CloseReason.PAID
-    if reason not in CloseReason.values:
-        raise ValidationFailed(details={"reason": [_("Choose why the loan is closed.")]})
     with transaction.atomic():
+        # The loan first: a stranger's id is "not in your book" whatever they sent.
         loan = get_loan(tenant=tenant, loan_id=loan_id, lock=True)
+        if reason not in CloseReason.values:
+            raise ValidationFailed(details={"reason": [_("Choose why the loan is closed.")]})
+        _must_be_open(loan)
         left = book.position(dues=dues_of(loan), collected=collected_on_loan(loan), day=today(tenant)).left
         if reason == CloseReason.PAID and left > 0:
             raise BusinessRuleViolation(

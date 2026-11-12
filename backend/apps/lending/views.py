@@ -14,6 +14,8 @@ from django.utils.translation import gettext as _
 from rest_framework.permissions import SAFE_METHODS, IsAuthenticated
 from rest_framework.views import APIView
 
+from apps.common.plain_requests import PlainBodyMixin, date_of as _date
+
 from apps.common.exceptions import ValidationFailed
 from apps.common.idempotency import idempotent
 from apps.common.permissions import HasPermission, ModuleEnabled
@@ -29,15 +31,6 @@ LEND = "lending.loan.create"
 MANAGE = "lending.settings.manage"
 
 
-def _date(value: Any, field: str) -> dt.date | None:
-    if not value:
-        return None
-    try:
-        return dt.date.fromisoformat(str(value))
-    except ValueError:
-        raise ValidationFailed(details={field: [_("Choose a date.")]}) from None
-
-
 def position_json(p: book.Position) -> dict:
     return {
         "collected": selectors.money(p.collected), "late": selectors.money(p.late), "late_days": p.late_days,
@@ -46,7 +39,7 @@ def position_json(p: book.Position) -> dict:
     }
 
 
-class LendingView(APIView):
+class LendingView(PlainBodyMixin, APIView):
     read = READ
     write = COLLECT
     scope_exempt = (

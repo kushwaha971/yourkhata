@@ -24,7 +24,9 @@ import { showSnackbar } from 'src/redux/slice/snackbarSlice';
 import 'src/i18n/catalogues/validation';
 import { toApiError } from 'src/utils/apiError';
 
+import { OwnerOnly } from '../../appParts/AppParts';
 import { listShifts, saveSettings, saveShift } from '../api/libraryService';
+import { useLibraryAccess } from '../hooks/useLibraryAccess';
 import { selectLibrary } from '../redux/librarySlice';
 import { fetchSettings } from '../redux/libraryThunks';
 import { useLibrarySchemas, type SettingsValues } from '../validation/librarySchemas';
@@ -124,6 +126,7 @@ export function SettingsPageContent(): React.JSX.Element {
   const { t } = useTranslation();
   const dispatch = useAppDispatch();
   const lib = useAppSelector(selectLibrary);
+  const { canManage } = useLibraryAccess();
   const [shifts, setShifts] = useState<readonly Shift[] | null>(null);
   const [seats, setSeats] = useState(false);
 
@@ -143,7 +146,9 @@ export function SettingsPageContent(): React.JSX.Element {
     <UbPageShell>
       <UbStack gap={3} className="pb-24 lg:pb-6">
         <UbPageHeader title={t('library.settings.title')} />
-        {lib.settings.status === 'failed' && !settings ? (
+        {!canManage ? (
+          <OwnerOnly title={t('library.common.ownerOnly.title')} body={t('library.common.ownerOnly.body')} />
+        ) : lib.settings.status === 'failed' && !settings ? (
           <UbEmptyState variant="error" title={t('library.settings.error')} action={<UbButton onClick={load}>{t('library.common.tryAgain')}</UbButton>} />
         ) : !settings ? (
           <UbSkeleton variant="list" count={4} label={t('library.common.loading')} />

@@ -32,9 +32,10 @@ import { toApiError } from 'src/utils/apiError';
 import { todayInTenantTz } from 'src/utils/dates';
 import { REGEX } from 'src/utils/regexConstants';
 
-import { Card, Figure, Figures, KeyValue, Table } from 'modules/DigiKhaato/features/appParts/AppParts';
+import { Card, Figure, Figures, KeyValue, OwnerOnly, Table } from 'modules/DigiKhaato/features/appParts/AppParts';
 
 import { createLoan, listBorrowers, listRoutes, previewLoan } from '../api/lendingService';
+import { useLendingAccess } from '../hooks/useLendingAccess';
 import { LENDING_ROUTES } from '../routes';
 import { useLendingSchemas } from '../validation/lendingSchemas';
 import { rupees, shortDate } from '../view-model/lendingDisplay';
@@ -66,6 +67,17 @@ const tomorrow = (today: string): string => {
  * last day, and every collection day.
  */
 export function NewLoanPageContent({ borrowerId }: Readonly<{ borrowerId?: string }>): React.JSX.Element {
+  const { t } = useTranslation();
+  const { canLend } = useLendingAccess();
+  if (canLend) return <NewLoanForm borrowerId={borrowerId} />;
+  return (
+    <UbPageShell>
+      <OwnerOnly title={t('lending.common.ownerOnly.title')} body={t('lending.common.ownerOnly.body')} />
+    </UbPageShell>
+  );
+}
+
+function NewLoanForm({ borrowerId }: Readonly<{ borrowerId?: string }>): React.JSX.Element {
   const { t } = useTranslation();
   const dispatch = useAppDispatch();
   const router = useAppRouter();
@@ -259,7 +271,7 @@ export function NewLoanPageContent({ borrowerId }: Readonly<{ borrowerId?: strin
           />
         )}
         <UbForm id={formId} form={form} onSubmit={save} className={loadFailed ? 'hidden' : undefined}>
-          <UbBox className="grid items-start gap-4 lg:[grid-template-columns:420px_minmax(0,1fr)]">
+          <UbBox className="grid grid-cols-[minmax(0,1fr)] items-start gap-4 lg:[grid-template-columns:420px_minmax(0,1fr)]">
             <Card className="gap-3.5" testId="lending-new-loan-form">
               {fields}
             </Card>

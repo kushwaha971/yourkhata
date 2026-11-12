@@ -52,6 +52,22 @@ def test_asking_twice_counts_two_asks_on_one_row(owner: Any, medical: Any, make_
     assert book(owner).json()["meta"]["counts"]["asked_today"] == 1
 
 
+def test_asked_today_is_the_shops_day_before_half_past_five(
+    owner: Any, medical: Any, make_item: Any, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Prevents: "asked today" compared the server's UTC day with the shop's own,
+    so a medicine asked for between midnight and 05:30 IST counted as 0 (QA audit,
+    13 Nov 2026: found because the suite ran at 04:00)."""
+    import datetime as dt
+
+    from django.utils import timezone
+
+    early = dt.datetime(2026, 11, 12, 22, 30, tzinfo=dt.UTC)  # 04:00 on the 13th in India
+    monkeypatch.setattr(timezone, "now", lambda: early)
+    assert ask(owner, make_item("Dolo 650")).status_code == 201
+    assert book(owner).json()["meta"]["counts"]["asked_today"] == 1
+
+
 def test_only_items_below_their_own_reorder_level_join_by_stock(
     owner: Any, medical: Any, make_item: Any
 ) -> None:

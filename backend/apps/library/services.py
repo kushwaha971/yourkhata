@@ -240,6 +240,21 @@ def _check_seat_free(tenant: Any, seat: Seat | None, shift: Shift, *, exclude: A
         )
 
 
+def _check_mobile_free(tenant: Any, mobile: str, *, exclude: Any = None) -> None:
+    """One mobile, one student who is still here: a fee reminder has one reader."""
+    if not mobile:
+        return
+    existing = (
+        Student.objects.filter(tenant=tenant, mobile=mobile).exclude(status=StudentStatus.LEFT).exclude(pk=exclude).first()
+    )
+    if existing:
+        raise BusinessRuleViolation(
+            "student_exists",
+            _("%(name)s already has this mobile number.") % {"name": existing.name},
+            details={"id": str(existing.pk)},
+        )
+
+
 def enrol_student(*, tenant: Any, user: Any, data: dict) -> Student:
     name = clean_name(data.get("name"))
     mobile = clean_mobile(data.get("mobile"))
@@ -253,15 +268,7 @@ def enrol_student(*, tenant: Any, user: Any, data: dict) -> Student:
             if seat is not None:
                 Seat.objects.select_for_update().filter(pk=seat.pk).first()
             _check_seat_free(tenant, seat, shift)
-            if mobile and Student.objects.filter(tenant=tenant, mobile=mobile).exclude(
-                status=StudentStatus.LEFT
-            ).exists():
-                existing = Student.objects.filter(tenant=tenant, mobile=mobile).exclude(status=StudentStatus.LEFT).first()
-                raise BusinessRuleViolation(
-                    "student_exists",
-                    _("%(name)s already has this mobile number.") % {"name": existing.name},
-                    details={"id": str(existing.pk)},
-                )
+            _check_mobile_free(tenant, mobile)
             student = Student.objects.create(
                 tenant=tenant,
                 created_by=user,
@@ -293,6 +300,8 @@ def update_student(*, tenant: Any, student_id: Any, data: dict) -> Student:
             student.name = clean_name(data["name"])
         if "mobile" in data:
             student.mobile = clean_mobile(data["mobile"])
+            if student.status != StudentStatus.LEFT:
+                _check_mobile_free(tenant, student.mobile, exclude=student.pk)
         if "monthly_fee" in data:
             student.monthly_fee = clean_amount(data["monthly_fee"], "monthly_fee")
         if "note" in data:
@@ -321,11 +330,19 @@ def set_status(*, tenant: Any, student_id: Any, action: str, data: dict) -> Stud
     with transaction.atomic():
         student = get_student(tenant=tenant, student_id=student_id, lock=True)
         if action == "hold":
-            student.status = StudentStatus.HOLD
-            student.hold_until = clean_date(data.get("hold_until"), "hold_until") if data.get("hold_until") else None
+            if student.status == StudentStatus.LEFT:
+                raise BusinessRuleViolation(
+                    "student_left", _("%(name)s has left. Bring them back first.") % {"name": student.name}
+                )
+            until = clean_date(data.get("hold_until"), "hold_until") if data.get("hold_until") else None
+            if until and until < today(tenant):
+                raise ValidationFailed(details={"hold_until": [_("Choose today or a later day.")]})
+            student.status, student.hold_until = StudentStatus.HOLD, until
         elif action == "resume":
             if student.status == StudentStatus.LEFT and student.seat_id:
                 _check_seat_free(tenant, student.seat, student.shift, exclude=student.pk)
+            if student.status == StudentStatus.LEFT:
+                _check_mobile_free(tenant, student.mobile, exclude=student.pk)
             student.status = StudentStatus.ACTIVE
             student.hold_until = None
         elif action == "leave":

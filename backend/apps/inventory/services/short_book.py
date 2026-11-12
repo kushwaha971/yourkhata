@@ -18,7 +18,7 @@ from django.db import IntegrityError, transaction
 from django.utils import timezone
 
 from apps.common.context import Ctx
-from apps.common.dates import tenant_today
+from apps.common.dates import tenant_timezone, tenant_today
 from apps.common.exceptions import NotFound, ValidationFailed
 from apps.inventory.constants import ItemStatus, StockStatus
 from apps.inventory.models import Item, ShortBookEntry
@@ -75,12 +75,13 @@ def short_book(*, tenant: Any) -> dict:
     ids = [entry.item_id for entry in entries] + [item.id for item in low]
     last = _last_purchases(tenant, ids)
     today = tenant_today(tenant)
+    zone = tenant_timezone(tenant)
     rows: list[dict] = []
     asked_today = 0
     for entry in entries:
         item = entry.item
         on_hand = getattr(stock.get(item.id), "on_hand", None)
-        if entry.reason == "asked" and timezone.localdate(entry.updated_at) == today:
+        if entry.reason == "asked" and entry.updated_at.astimezone(zone).date() == today:
             asked_today += 1
         rows.append(
             {

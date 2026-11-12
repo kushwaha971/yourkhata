@@ -22,9 +22,10 @@ import { useAppDispatch, useAppSelector } from 'src/hooks/useAppStore';
 import { useTranslation } from 'src/hooks/useTranslation';
 import { showSnackbar } from 'src/redux/slice/snackbarSlice';
 
-import { List } from 'modules/DigiKhaato/features/appParts/AppParts';
+import { List, MessagePreview } from 'modules/DigiKhaato/features/appParts/AppParts';
 
 import { messageText, recordMessage } from '../api/lendingService';
+import { useLendingAccess } from '../hooks/useLendingAccess';
 import { selectLending, setRemindKind } from '../redux/lendingSlice';
 import { fetchRemind } from '../redux/lendingThunks';
 import { LENDING_ROUTES } from '../routes';
@@ -44,6 +45,7 @@ export function MessagesPageContent(): React.JSX.Element {
   const dispatch = useAppDispatch();
   const router = useAppRouter();
   const lend = useAppSelector(selectLending);
+  const { canCollect } = useLendingAccess();
   const kind = lend.remindKind;
   const [step, setStep] = useState(0);
   const [text, setText] = useState<{ for: string; text: string; mobile: string } | null>(null);
@@ -96,7 +98,7 @@ export function MessagesPageContent(): React.JSX.Element {
     if (!lend.remind.data) return <UbSkeleton variant="list" count={4} label={t('lending.common.loading')} />;
     if (rows.length === 0) return <UbEmptyState variant="filtered" title={t(`lending.messages.none.${kind}`)} />;
     return (
-      <UbBox className="grid items-start gap-4 lg:[grid-template-columns:minmax(0,1fr)_380px]">
+      <UbBox className="grid grid-cols-[minmax(0,1fr)] items-start gap-4 lg:[grid-template-columns:minmax(0,1fr)_380px]">
         <List testId="lending-remind-list">
           {rows.map((l, i) => (
             <UbBox as="li" key={l.id}>
@@ -133,7 +135,7 @@ export function MessagesPageContent(): React.JSX.Element {
             {current ? t('lending.messages.previewFor', { name: current.borrower }) : t('lending.messages.allDone')}
           </UbText>
           {current && (
-            <UbBox className="grid rounded-[12px] bg-[#ECE5DD] p-3 dark:bg-surface-sunken">
+            <MessagePreview text={shown?.text ?? t('lending.common.loading')}>
               {editing && shown ? (
                 <UbTextArea
                   aria-label={t('lending.messages.editText')}
@@ -141,19 +143,13 @@ export function MessagesPageContent(): React.JSX.Element {
                   onChange={(v) => setText({ ...shown, text: v })}
                   className="[&_textarea]:min-h-[96px]"
                 />
-              ) : (
-                <UbText
-                  variant="inherit"
-                  className="max-w-[92%] justify-self-end whitespace-pre-wrap rounded-[10px_10px_2px_10px] bg-[#DCF8C6] px-3 py-2.5 text-[14px] leading-[1.45] text-[#111] dark:bg-[#1F3B26] dark:text-text-primary"
-                >
-                  {shown?.text ?? t('lending.common.loading')}
-                </UbText>
-              )}
-            </UbBox>
+              ) : undefined}
+            </MessagePreview>
           )}
           <UbText variant="inherit" className="text-[12.5px] text-text-tertiary">
             {t('lending.messages.oneAtATime')}
           </UbText>
+          {canCollect && (
           <UbStack direction="row" gap={2} className="max-lg:hidden">
             <UbButton variant="secondary" onClick={() => setEditing((e) => !e)} disabled={!current}>
               {t('lending.messages.editText')}
@@ -162,6 +158,7 @@ export function MessagesPageContent(): React.JSX.Element {
               {t('lending.messages.whatsappStep', { n: Math.min(step + 1, rows.length), total: rows.length })}
             </UbButton>
           </UbStack>
+          )}
         </UbStack>
       </UbBox>
     );
@@ -187,7 +184,7 @@ export function MessagesPageContent(): React.JSX.Element {
         />
         {body}
       </UbStack>
-      {current && (
+      {current && canCollect && (
         <UbBottomBar
           sticky={false}
           className="fixed inset-x-0 bottom-[var(--ub-nav-offset)] z-20 grid grid-cols-2 gap-2 border-t border-border-hairline bg-surface-card px-4 pb-3.5 pt-2.5 lg:hidden"

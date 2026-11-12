@@ -32,6 +32,7 @@ import { showSnackbar } from 'src/redux/slice/snackbarSlice';
 import { cn } from 'src/utils/cn';
 import { todayInTenantTz } from 'src/utils/dates';
 
+import { useLibraryAccess } from '../hooks/useLibraryAccess';
 import { useRemind } from '../hooks/useRemind';
 import { selectLibrary } from '../redux/librarySlice';
 import { changeStatus, fetchPayments, fetchStudent, removePayment } from '../redux/libraryThunks';
@@ -64,6 +65,7 @@ export function StudentPageContent({ id }: Readonly<{ id: string }>): React.JSX.
   const dispatch = useAppDispatch();
   const router = useAppRouter();
   const lib = useAppSelector(selectLibrary);
+  const { canWrite, canCollect } = useLibraryAccess();
   const today = useMemo(() => todayInTenantTz(), []);
   const { remind, busy } = useRemind();
   const { key, rotate } = useIdempotencyKey();
@@ -154,31 +156,32 @@ export function StudentPageContent({ id }: Readonly<{ id: string }>): React.JSX.
     .join(' · ');
 
   const moreRows: UbMenuListRow[] = [
-    ...(!left && s.status !== 'hold' ? [{ key: 'hold', label: t('library.student.hold'), onSelect: () => setConfirm('hold') }] : []),
-    ...(s.status === 'hold' || left ? [{ key: 'resume', label: t(left ? 'library.student.rejoin' : 'library.student.resume'), onSelect: () => void setStatus('resume') }] : []),
-    ...(latest ? [{ key: 'remove', label: t('library.payment.removeLatest'), onSelect: () => setRemoving(latest) }] : []),
-    ...(!left ? [{ key: 'leave', label: t('library.student.leave'), tone: 'danger' as const, onSelect: () => setConfirm('leave') }] : []),
+    ...(canWrite && !left && s.status !== 'hold' ? [{ key: 'hold', label: t('library.student.hold'), onSelect: () => setConfirm('hold') }] : []),
+    ...(canWrite && (s.status === 'hold' || left) ? [{ key: 'resume', label: t(left ? 'library.student.rejoin' : 'library.student.resume'), onSelect: () => void setStatus('resume') }] : []),
+    ...(canCollect && latest ? [{ key: 'remove', label: t('library.payment.removeLatest'), onSelect: () => setRemoving(latest) }] : []),
+    ...(canWrite && !left ? [{ key: 'leave', label: t('library.student.leave'), tone: 'danger' as const, onSelect: () => setConfirm('leave') }] : []),
   ];
 
-  const actions = !left && (
+  const actions = !left && (canWrite || canCollect) && (
     <UbStack direction="row" gap={2} className="max-lg:hidden">
-      <UbButton variant="outlineNeutral" onClick={() => setConfirm('hold')} disabled={s.status === 'hold'}>
-        {t('library.student.hold')}
-      </UbButton>
-      <UbButton variant="outlineNeutral" onClick={() => setMoving(true)}>
-        {t('library.seats.move')}
-      </UbButton>
-      <UbButton
-        variant="outlineNeutral"
-        icon={<Bell className="h-4 w-4" aria-hidden />}
-        busy={busy === s.id}
-        onClick={() => void remind(s)}
-      >
-        {t('library.seats.remind')}
-      </UbButton>
-      <UbButton variant="primary" onClick={() => setCollecting(true)} data-testid="library-collect">
-        {t('library.student.collect')}
-      </UbButton>
+      {canWrite && (
+        <>
+          <UbButton variant="outlineNeutral" onClick={() => setConfirm('hold')} disabled={s.status === 'hold'}>
+            {t('library.student.hold')}
+          </UbButton>
+          <UbButton variant="outlineNeutral" onClick={() => setMoving(true)}>
+            {t('library.seats.move')}
+          </UbButton>
+          <UbButton variant="outlineNeutral" icon={<Bell className="h-4 w-4" aria-hidden />} busy={busy === s.id} onClick={() => void remind(s)}>
+            {t('library.seats.remind')}
+          </UbButton>
+        </>
+      )}
+      {canCollect && (
+        <UbButton variant="primary" onClick={() => setCollecting(true)} data-testid="library-collect">
+          {t('library.student.collect')}
+        </UbButton>
+      )}
     </UbStack>
   );
 
@@ -306,7 +309,7 @@ export function StudentPageContent({ id }: Readonly<{ id: string }>): React.JSX.
             />
           )}
         </UbStack>
-        <UbBox className="grid items-start gap-4 lg:[grid-template-columns:minmax(0,1fr)_340px]">
+        <UbBox className="grid grid-cols-[minmax(0,1fr)] items-start gap-4 lg:[grid-template-columns:minmax(0,1fr)_340px]">
           <UbStack gap={4}>
             {/* Phone: the design's Fee due card. */}
             <Card className="gap-1 lg:hidden" testId="library-fee-due">
@@ -346,17 +349,21 @@ export function StudentPageContent({ id }: Readonly<{ id: string }>): React.JSX.
           {attendance}
         </UbBox>
       </UbStack>
-      {!left && (
+      {!left && (canWrite || canCollect) && (
         <UbBottomBar
           sticky={false}
           // Pinned, not sticky: on a short list a sticky dock floated mid-screen (hand pass, 12 Nov).
           className="fixed inset-x-0 bottom-[var(--ub-nav-offset)] z-20 border-t border-border-hairline bg-surface-card px-4 pb-3.5 pt-2.5 grid grid-cols-2 gap-2 lg:hidden">
-          <UbButton variant="secondary" size="lg" busy={busy === s.id} onClick={() => void remind(s)}>
-            {t('library.seats.remind')}
-          </UbButton>
-          <UbButton variant="primary" size="lg" onClick={() => setCollecting(true)} data-testid="library-collect-phone">
-            {t('library.student.collect')}
-          </UbButton>
+          {canWrite && (
+            <UbButton variant="secondary" size="lg" busy={busy === s.id} onClick={() => void remind(s)}>
+              {t('library.seats.remind')}
+            </UbButton>
+          )}
+          {canCollect && (
+            <UbButton variant="primary" size="lg" onClick={() => setCollecting(true)} data-testid="library-collect-phone">
+              {t('library.student.collect')}
+            </UbButton>
+          )}
         </UbBottomBar>
       )}
       {collecting && (

@@ -8,7 +8,7 @@ import pytest
 from django.urls import reverse
 
 from apps.imports.tests.helpers import detail, upload
-from apps.lending import services
+from apps.lending import selectors, services
 from apps.lending.models import Borrower, Collection, Loan
 from apps.lending.tests.test_lending import TODAY, entitle
 
@@ -22,6 +22,7 @@ def lender(tenant: Any, api_as: Any, monkeypatch: Any) -> Any:
     tenant.enabled_modules = sorted({*tenant.enabled_modules, "import_export"})
     tenant.save(update_fields=["enabled_modules"])
     monkeypatch.setattr(services, "today", lambda _t: TODAY)
+    monkeypatch.setattr(selectors, "today", lambda _t: TODAY)
     client, _ = api_as(tenant, role="owner")
     return client
 

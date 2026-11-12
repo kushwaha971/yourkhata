@@ -28,6 +28,7 @@ import { todayInTenantTz } from 'src/utils/dates';
 
 import { List, Table } from 'modules/DigiKhaato/features/appParts/AppParts';
 
+import { useLendingAccess } from '../hooks/useLendingAccess';
 import { selectLending } from '../redux/lendingSlice';
 import { fetchLoans } from '../redux/lendingThunks';
 import { LENDING_ROUTES } from '../routes';
@@ -50,6 +51,7 @@ export function LoansPageContent(): React.JSX.Element {
   const dispatch = useAppDispatch();
   const router = useAppRouter();
   const lend = useAppSelector(selectLending);
+  const { canLend } = useLendingAccess();
   const today = useMemo(() => todayInTenantTz(), []);
   const [show, setShow] = useState<Show>('active');
   const [search, setSearch] = useState('');
@@ -74,7 +76,7 @@ export function LoansPageContent(): React.JSX.Element {
         <UbEmptyState
           variant="firstUse"
           title={t(`lending.loans.none.${show}`)}
-          action={show === 'active' ? <UbButton onClick={() => router.push(LENDING_ROUTES.newLoan)}>{t('lending.today.newLoan')}</UbButton> : undefined}
+          action={show === 'active' && canLend ? <UbButton onClick={() => router.push(LENDING_ROUTES.newLoan)}>{t('lending.today.newLoan')}</UbButton> : undefined}
         />
       );
     return (
@@ -163,9 +165,11 @@ export function LoansPageContent(): React.JSX.Element {
         <UbPageHeader
           title={t('lending.loans.title')}
           actions={
-            <UbButton variant="primary" icon={<Plus className="h-4 w-4" aria-hidden />} onClick={() => router.push(LENDING_ROUTES.newLoan)} className="max-lg:hidden lg:h-10 lg:text-[14px]">
-              {t('lending.today.newLoan')}
-            </UbButton>
+            canLend ? (
+              <UbButton variant="primary" icon={<Plus className="h-4 w-4" aria-hidden />} onClick={() => router.push(LENDING_ROUTES.newLoan)} className="max-lg:hidden lg:h-10 lg:text-[14px]">
+                {t('lending.today.newLoan')}
+              </UbButton>
+            ) : undefined
           }
           renderMobileActions={() => null}
         />
@@ -182,7 +186,7 @@ export function LoansPageContent(): React.JSX.Element {
         />
         {body}
       </UbStack>
-      <UbFab label={t('lending.today.newLoan')} icon={<Plus className="h-4 w-4" aria-hidden />} mobileOnly extended onClick={() => router.push(LENDING_ROUTES.newLoan)} />
+      {canLend && <UbFab label={t('lending.today.newLoan')} icon={<Plus className="h-4 w-4" aria-hidden />} mobileOnly extended onClick={() => router.push(LENDING_ROUTES.newLoan)} />}
     </UbPageShell>
   );
 }

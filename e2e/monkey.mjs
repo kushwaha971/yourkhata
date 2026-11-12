@@ -771,9 +771,26 @@ try {
           const overflow = await page.evaluate(
             () => document.documentElement.scrollWidth - window.innerWidth,
           );
+          // Name what sticks out: "2px wider" alone cannot be fixed from a log.
+          const culprit =
+            overflow > 0
+              ? await page.evaluate(() =>
+                  [...document.querySelectorAll("body *")]
+                    .filter((el) => {
+                      const r = el.getBoundingClientRect();
+                      return r.width > 0 && r.right > window.innerWidth + 0.5;
+                    })
+                    .slice(-3)
+                    .map(
+                      (el) =>
+                        `${el.tagName.toLowerCase()}[${el.getAttribute("data-testid") ?? String(el.className).slice(0, 60)}] right=${Math.round(el.getBoundingClientRect().right)} "${(el.textContent ?? "").trim().slice(0, 30)}"`,
+                    )
+                    .join(" | "),
+                )
+              : "";
           if (overflow > 0)
             failures.push(
-              `step ${i}: page ${overflow}px wider than the viewport`,
+              `step ${i}: page ${overflow}px wider than the viewport at ${new URL(page.url()).pathname} (${culprit})`,
             );
           if (expectName) {
             const box = page.getByTestId("invoice-customer-line");

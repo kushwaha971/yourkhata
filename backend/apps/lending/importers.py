@@ -36,12 +36,13 @@ TEMPLATE_ROWS = (
 
 
 def preflight(tenant: Any) -> dict:
-    from apps.common.dates import tenant_today
+    from apps.lending import services
     from apps.lending.models import Borrower, Route
 
     return {
         "tenant": tenant,
-        "today": tenant_today(tenant),
+        # The app has one clock: the day a loan is late on is the day an import counts from.
+        "today": services.today(tenant),
         "routes": {r.name.lower(): r for r in Route.objects.filter(tenant=tenant)},
         "mobiles": {b.mobile: b for b in Borrower.objects.filter(tenant=tenant, active=True).exclude(mobile="")},
     }

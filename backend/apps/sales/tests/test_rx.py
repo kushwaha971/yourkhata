@@ -40,16 +40,17 @@ def test_the_schedule_h_register_lists_scheduled_sales_with_their_prescription(
 ) -> None:
     """The register lists every issued sale of a scheduled medicine, with or
     without a doctor written, and nothing else; a kirana is told it is not theirs."""
-    import datetime as dt
 
     from django.urls import reverse
 
+    from apps.common.dates import tenant_today
     from apps.inventory.models import Item
     from apps.platform_app.models import TenantSetting
     from apps.sales.tests.conftest import cash, issue
 
     url = reverse("v1:schedule-h-register")
-    today = dt.date.today().isoformat()
+    # The shop's day, not the server's: they differ before 05:30 in India.
+    today = tenant_today(shop).isoformat()
     assert owner.get(url, {"date_from": today, "date_to": today}).status_code == 404
     TenantSetting.objects.update_or_create(
         tenant=shop, key="shop.features.batches", defaults={"value": {"value": True}}

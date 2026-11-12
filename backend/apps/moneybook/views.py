@@ -18,6 +18,8 @@ from rest_framework.exceptions import PermissionDenied
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.views import APIView
 
+from apps.common.plain_requests import PlainBodyMixin, date_of as _date, page_of
+
 from apps.common.exceptions import BusinessRuleViolation, ValidationFailed
 from apps.common.idempotency import idempotent
 from apps.common.responses import StandardResponse
@@ -28,6 +30,7 @@ from apps.moneybook.reminders import reminder_text
 
 PAGE_SIZE = 25
 PAGE_MAX = 100
+OLD_DUES_DAYS_MAX = 3650
 
 
 def person_json(p: Person) -> dict:
@@ -77,24 +80,10 @@ def reminder_json(r: Reminder) -> dict:
 
 
 def _page(request: Any) -> tuple[int, int]:
-    try:
-        page = max(1, int(request.query_params.get("page", 1)))
-        size = min(PAGE_MAX, max(1, int(request.query_params.get("page_size", PAGE_SIZE))))
-    except ValueError:
-        raise ValidationFailed(details={"page": [_("Enter a page number.")]}) from None
-    return page, size
+    return page_of(request, size=PAGE_SIZE, size_max=PAGE_MAX)
 
 
-def _date(value: Any, field: str) -> dt.date | None:
-    if not value:
-        return None
-    try:
-        return dt.date.fromisoformat(str(value))
-    except ValueError:
-        raise ValidationFailed(details={field: [_("Choose a date.")]}) from None
-
-
-class OwnBook(APIView):
+class OwnBook(PlainBodyMixin, APIView):
     """The signed-in person's own book; a support session may not open it."""
 
     permission_classes = [IsAuthenticated]
@@ -222,10 +211,10 @@ class OldDuesView(OwnBook):
     def get(self, request: Any) -> Any:
         settings = selectors.settings_for(self.owner)
         try:
-            days = int(request.query_params.get("days", settings.old_dues_days))
+            days = min(OLD_DUES_DAYS_MAX, max(1, int(request.query_params.get("days", settings.old_dues_days))))
         except ValueError:
             raise ValidationFailed(details={"days": [_("Enter a number of days.")]}) from None
-        rows = selectors.old_dues(owner=self.owner, days=max(1, days), today=services.today())
+        rows = selectors.old_dues(owner=self.owner, days=days, today=services.today())
         page, size = _page(request)
         total = rows.count()
         data = [person_json(x) for x in rows[(page - 1) * size : page * size]]

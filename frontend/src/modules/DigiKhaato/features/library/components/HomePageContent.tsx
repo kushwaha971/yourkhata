@@ -25,6 +25,7 @@ import { useAppDispatch, useAppSelector } from 'src/hooks/useAppStore';
 import { useTranslation } from 'src/hooks/useTranslation';
 import { todayInTenantTz } from 'src/utils/dates';
 
+import { useLibraryAccess } from '../hooks/useLibraryAccess';
 import { selectLibrary, setFee } from '../redux/librarySlice';
 import { fetchHome, fetchSeats } from '../redux/libraryThunks';
 import { LIBRARY_ROUTES } from '../routes';
@@ -55,6 +56,7 @@ export function HomePageContent(): React.JSX.Element {
   const dispatch = useAppDispatch();
   const router = useAppRouter();
   const lib = useAppSelector(selectLibrary);
+  const { canWrite, canCollect, canManage } = useLibraryAccess();
   const today = useMemo(() => todayInTenantTz(), []);
   const [collecting, setCollecting] = useState<Student | null>(null);
   const [enrolling, setEnrolling] = useState(false);
@@ -97,7 +99,7 @@ export function HomePageContent(): React.JSX.Element {
       {t('library.home.counter')}
     </UbButton>
   );
-  const enrolButton = (
+  const enrolButton = canWrite && (
     <UbButton
       variant="primary"
       size="lg"
@@ -128,7 +130,7 @@ export function HomePageContent(): React.JSX.Element {
           description={t(home.seats === 0 ? 'library.home.empty.seats' : 'library.home.empty.students')}
           action={
             home.seats === 0 ? (
-              <UbButton onClick={() => router.push(LIBRARY_ROUTES.settings)}>{t('library.home.empty.setUp')}</UbButton>
+              canManage && <UbButton onClick={() => router.push(LIBRARY_ROUTES.settings)}>{t('library.home.empty.setUp')}</UbButton>
             ) : (
               enrolButton
             )
@@ -188,7 +190,7 @@ export function HomePageContent(): React.JSX.Element {
               </UbStack>
             ))}
           </UbBox>
-          {home.overdueStudents > 0 && (
+          {canWrite && home.overdueStudents > 0 && (
             <UbButton
               variant="outlineNeutral"
               size="sm"
@@ -279,7 +281,7 @@ export function HomePageContent(): React.JSX.Element {
                   {dueAmount(s)}
                 </UbBox>
                 <UbBox as="td" className="text-right">
-                  {s.fee !== 'paid' && s.fee !== 'hold' && (
+                  {canCollect && s.fee !== 'paid' && s.fee !== 'hold' && (
                     <UbButton variant="link" size="sm" onClick={() => setCollecting(s)}>
                       {t('library.home.collect')}
                     </UbButton>

@@ -14,6 +14,7 @@ import { toApiError } from 'src/utils/apiError';
 import { List } from 'modules/DigiKhaato/features/appParts/AppParts';
 
 import { saveRoute } from '../api/lendingService';
+import { useLendingAccess } from '../hooks/useLendingAccess';
 import { selectLending } from '../redux/lendingSlice';
 import { fetchRoutes } from '../redux/lendingThunks';
 
@@ -22,6 +23,7 @@ export function RoutesPageContent(): React.JSX.Element {
   const { t } = useTranslation();
   const dispatch = useAppDispatch();
   const lend = useAppSelector(selectLending);
+  const { canManage } = useLendingAccess();
   const { key, rotate } = useIdempotencyKey();
   const [name, setName] = useState('');
   const [saving, setSaving] = useState(false);
@@ -53,12 +55,14 @@ export function RoutesPageContent(): React.JSX.Element {
     <UbPageShell>
       <UbStack gap={3} className="pb-24 lg:pb-6">
         <UbPageHeader title={t('lending.routes.title')} subtitle={t('lending.routes.subtitle')} />
+        {canManage && (
         <UbStack direction="row" gap={2}>
           <UbTextInput aria-label={t('lending.routes.name')} placeholder={t('lending.routes.name')} value={name} onChange={setName} className="flex-1" />
           <UbButton icon={<Plus className="h-4 w-4" aria-hidden />} busy={saving} disabled={!name.trim()} onClick={() => void add()} data-testid="lending-route-add">
             {t('lending.routes.add')}
           </UbButton>
         </UbStack>
+        )}
         {lend.routes.status === 'failed' && !lend.routes.data ? (
           <UbEmptyState variant="error" title={t('lending.routes.error')} action={<UbButton onClick={load}>{t('lending.common.tryAgain')}</UbButton>} />
         ) : !lend.routes.data ? (

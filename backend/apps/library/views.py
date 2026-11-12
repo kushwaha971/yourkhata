@@ -15,6 +15,8 @@ from django.utils.translation import gettext as _
 from rest_framework.permissions import SAFE_METHODS, IsAuthenticated
 from rest_framework.views import APIView
 
+from apps.common.plain_requests import PlainBodyMixin, date_of as _date, page_of
+
 from apps.common.exceptions import ValidationFailed
 from apps.common.idempotency import idempotent
 from apps.common.permissions import HasPermission, ModuleEnabled
@@ -49,24 +51,10 @@ def payment_json(p: Payment) -> dict:
 
 
 def _page(request: Any) -> tuple[int, int]:
-    try:
-        page = max(1, int(request.query_params.get("page", 1)))
-        size = min(PAGE_MAX, max(1, int(request.query_params.get("page_size", PAGE_SIZE))))
-    except ValueError:
-        raise ValidationFailed(details={"page": [_("Enter a page number.")]}) from None
-    return page, size
+    return page_of(request, size=PAGE_SIZE, size_max=PAGE_MAX)
 
 
-def _date(value: Any, field: str) -> dt.date | None:
-    if not value:
-        return None
-    try:
-        return dt.date.fromisoformat(str(value))
-    except ValueError:
-        raise ValidationFailed(details={field: [_("Choose a date.")]}) from None
-
-
-class LibraryView(APIView):
+class LibraryView(PlainBodyMixin, APIView):
     """Reads take `read`; a write takes the view's `write` codename."""
 
     read = READ
