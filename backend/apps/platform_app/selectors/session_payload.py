@@ -74,9 +74,28 @@ def tenant_rows(user: Any) -> list[dict]:
             "status": m.status,
             "tenant_status": m.tenant.status,
             "onboarding_step": m.tenant.onboarding_step,
+            # The ★'s app (owner, 12 Nov 2026). Which apps each business opens
+            # is NOT here: it costs queries per business on the first request of
+            # every load (`auth-me` budget); `GET /memberships/apps` serves the
+            # Apps screen alone.
+            "primary_app": m.primary_app,
         }
         for m in memberships_of(user=user)
     ]
+
+
+def apps_per_business(user: Any) -> list[dict]:
+    """`GET /memberships/apps` — for each business, the apps this person can open
+    there: the Apps screen lists places under each app (owner, 12 Nov 2026)."""
+    return [{"tenant_id": str(m.tenant_id), "apps": _apps_here(m)} for m in memberships_of(user=user)]
+
+
+def _apps_here(membership: Any) -> list[str]:
+    from apps.platform_app import apps_registry
+
+    if membership.status != "active":
+        return []
+    return [a.code for a in apps_registry.accessible_apps(membership, permissions_for(membership))]
 
 
 def active_tenant_block(tenant: Any) -> dict:

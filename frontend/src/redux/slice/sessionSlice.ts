@@ -103,6 +103,8 @@ export interface SessionTenant {
   /** `owner | admin | staff | accountant`, as the caller holds it here. */
   readonly role?: string | null;
   readonly isDefault?: boolean;
+  /** With `isDefault`: the app the ★ was set in; sign-in opens it. */
+  readonly primaryApp?: string;
   /** `active | invited | suspended | removed`. */
   readonly status?: string;
   /** The caller's OWN membership row id — what FR-5 and FR-7 act on. */

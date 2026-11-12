@@ -32,7 +32,10 @@ const TILE =
 export function AppTiles({
   onLeave,
   caption = false,
+  addableOnly = false,
 }: Readonly<{
+  /** Only the apps the business could add: the Apps screen draws the rest (owner, 12 Nov 2026). */
+  addableOnly?: boolean;
   /** Called before a tile navigates, so a sheet can close. */
   onLeave?: () => void;
   /** Show "Your apps" / "Add an app" captions (the page; the sheet has its own). */
@@ -46,6 +49,7 @@ export function AppTiles({
 
   return (
     <UbBox className="flex flex-col gap-4">
+      {!addableOnly && (
       <UbBox>
         {caption && (
           <UbText as="h2" variant="label" tone="tertiary" className="pb-2">
@@ -84,6 +88,7 @@ export function AppTiles({
           })}
         </UbGrid>
       </UbBox>
+      )}
       {addable.length > 0 && (
         <UbBox>
           <UbText as="h2" variant="label" tone="tertiary" className="pb-2">

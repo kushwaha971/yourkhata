@@ -105,6 +105,7 @@ def is_own_draft(membership: Any) -> bool:
 def preferred_membership(*, user: Any) -> Membership | None:
     """The business a sign-in opens (docs/platform/14 §4.1; replaces PLT-04 FR-9's rule).
 
+    0. The one starred on the Apps screen (`is_default` with a `primary_app`).
     1. The one this person used last, on any device (`last_used_at`).
     2. Never used any: their default, else the only one — counting only usable
        businesses when they have one, so a half-made side business they own
@@ -119,10 +120,17 @@ def preferred_membership(*, user: Any) -> Membership | None:
     )
     if not active:
         return None
+    pool = [m for m in active if not is_own_draft(m)] or active
+    # Owner, 12 Nov 2026: the ★ on the Apps screen decides where a sign-in
+    # lands, ahead of the last business used.
+    # A ★ counts even on the owner's own unfinished business: they chose it, and
+    # the landing then sends them to finish its setup.
+    starred = [m for m in active if m.is_default and m.primary_app]
+    if starred:
+        return starred[0]
     used = [m for m in active if m.last_used_at is not None]
     if used:
         return max(used, key=lambda m: m.last_used_at)
-    pool = [m for m in active if not is_own_draft(m)] or active
     flagged = [m for m in pool if m.is_default]
     if flagged:
         return flagged[0]

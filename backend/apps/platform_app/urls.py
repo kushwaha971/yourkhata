@@ -66,6 +66,7 @@ from apps.platform_app.views.tenant import (
     MemberListCreateView,
     MemberRemoveView,
     MemberUnblockView,
+    MembershipAppsView,
     MembershipDetailView,
     RoleListView,
     TenantCreateView,
@@ -149,6 +150,7 @@ urlpatterns = [
         MemberRevokeSessionsView.as_view(),
         name="membership-revoke-sessions",
     ),
+    path("memberships/apps", MembershipAppsView.as_view(), name="membership-apps"),
     path(
         "memberships/<uuid:membership_id>",
         MembershipDetailView.as_view(),

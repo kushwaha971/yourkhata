@@ -333,6 +333,7 @@ def start_session(
         membership = active_membership(user=user, tenant_id=tenant_id)
     if membership is None:
         membership = preferred_membership(user=user)
+        _open_starred_app(membership)
     from apps.platform_app.services.memberships import touch
 
     touch(membership)
@@ -362,6 +363,24 @@ def start_session(
             metadata={"method": method, "device_label": issued.session.device_label},
         )
     return LoggedIn(user=user, membership=membership, tokens=issued, is_new=is_new)
+
+
+def _open_starred_app(membership: Any) -> None:
+    """A sign-in into the starred business opens the starred app (owner, 12 Nov
+    2026), by making it the app last used there — the one rule every screen
+    already follows. An app this person can no longer open is skipped."""
+    if membership is None or not membership.is_default or not membership.primary_app:
+        return
+    if membership.last_app == membership.primary_app:
+        return
+    from apps.common.permissions_registry import permissions_for
+    from apps.platform_app import apps_registry
+    from apps.platform_app.models import Membership
+
+    codes = {a.code for a in apps_registry.accessible_apps(membership, permissions_for(membership))}
+    if membership.primary_app in codes:
+        Membership.objects.filter(pk=membership.pk).update(last_app=membership.primary_app)
+        membership.last_app = membership.primary_app
 
 
 def logout(

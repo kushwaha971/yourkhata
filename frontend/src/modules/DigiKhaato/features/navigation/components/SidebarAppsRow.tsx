@@ -7,7 +7,7 @@ import { ChevronRight, LayoutGrid } from 'lucide-react';
 import { UbLink, UbStack, UbText } from 'src/design-system';
 import { useAppSelector } from 'src/hooks/useAppStore';
 import { useTranslation } from 'src/hooks/useTranslation';
-import { selectAppsAddable } from 'src/redux/slice/sessionSlice';
+import { selectAppsAddable, selectSessionTenants } from 'src/redux/slice/sessionSlice';
 import { ROUTES } from 'src/routes';
 import { cn } from 'src/utils/cn';
 
@@ -29,7 +29,10 @@ export function SidebarAppsRow({ onNavigate }: Readonly<{ onNavigate?: () => voi
   const { apps } = useNavigation();
   const pathname = usePathname();
   const addable = useAppSelector(selectAppsAddable);
-  if (apps.length < 2 && addable.length === 0) return null;
+  const tenants = useAppSelector(selectSessionTenants);
+  // The Apps screen is also where a person with several businesses changes
+  // business (owner, 12 Nov 2026), so it is reachable for them too.
+  if (apps.length < 2 && addable.length === 0 && tenants.length < 2) return null;
   const active = pathname === ROUTES.APPS;
 
   return (

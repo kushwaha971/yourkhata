@@ -249,26 +249,45 @@ def switch_tenant(
     return membership, issued
 
 
-def set_default(*, user: Any, membership: Any, request_id: str | None = None) -> Any:
+def set_default(
+    *, user: Any, membership: Any, app: str | None = None, request_id: str | None = None
+) -> Any:
     """FR-5 / BR-3: exactly one `is_default=true` membership per user.
 
     The server clears the others rather than trusting the client to send two
     requests; two defaults is a state no code reads correctly.
+
+    `app` is the ★'s app (owner, 12 Nov 2026: the Apps screen stars a library,
+    a ledger or a shop, and sign-in opens THAT). Refused for an app this person
+    cannot open here, exactly as `switch_app` refuses it.
     """
+    from apps.common.permissions_registry import permissions_for
+    from apps.platform_app import apps_registry
     from apps.platform_app.models import Membership
 
     if membership.user_id != user.id:
         raise PermissionDenied("You may only change your own membership.")
     if membership.status != MembershipStatus.ACTIVE:
         raise PermissionDenied("You are not an active member of this business.")
+    code = str(app or "")
+    if code and code not in {
+        a.code for a in apps_registry.accessible_apps(membership, permissions_for(membership))
+    }:
+        raise PermissionDenied("You cannot open that app in this business.")
 
     with transaction.atomic():
         Membership.objects.filter(user=user, is_default=True).exclude(pk=membership.pk).update(
-            is_default=False
+            is_default=False, primary_app=""
         )
+        fields = []
         if not membership.is_default:
             membership.is_default = True
-            membership.save(update_fields=["is_default", "updated_at"])
+            fields.append("is_default")
+        if app is not None and membership.primary_app != code:
+            membership.primary_app = code
+            fields.append("primary_app")
+        if fields:
+            membership.save(update_fields=[*fields, "updated_at"])
         # "Open this one when I sign in" is a choice about the next sign-in, and
         # sign-in opens the business last used: so choosing it counts as using it.
         touch(membership)
@@ -282,7 +301,7 @@ def set_default(*, user: Any, membership: Any, request_id: str | None = None) ->
             action=AuditAction.MEMBER_DEFAULT_CHANGED,
             entity_type="platform_membership",
             entity_id=membership.id,
-            after={"is_default": True},
+            after={"is_default": True, "primary_app": membership.primary_app},
         )
     return membership
 

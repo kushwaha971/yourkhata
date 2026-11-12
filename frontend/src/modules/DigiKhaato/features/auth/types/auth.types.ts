@@ -36,6 +36,7 @@ export interface TenantApiRow {
   readonly timezone?: string;
   readonly role?: RoleCode;
   readonly is_default?: boolean;
+  readonly primary_app?: string;
   readonly status?: MembershipStatus;
   /** PLT-04 FR-5 / FR-7 — the caller's own membership row, for default/leave. */
   readonly membership_id?: string;

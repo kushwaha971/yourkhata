@@ -3,7 +3,7 @@ import { fireEvent, screen, within } from '@testing-library/react';
 import { MobileTabBar } from 'src/components/layout/MobileTabBar';
 import { UbSidebar } from 'src/components/layout/UbSidebar';
 import { resetAllFeatureState } from 'src/redux/actions';
-import { sessionLoaded, type SessionApp } from 'src/redux/slice/sessionSlice';
+import { sessionLoaded, type SessionApp, type SessionTenant } from 'src/redux/slice/sessionSlice';
 import { store } from 'src/redux/store';
 import { renderWithProviders } from 'src/tests/renderWithProviders';
 import { MODULE_CODES, type PermissionCode } from 'src/types/domain.types';
@@ -34,6 +34,11 @@ jest.mock('next/navigation', () => ({
   useRouter: () => ({ push, replace: jest.fn(), prefetch: jest.fn(), back: jest.fn() }),
   useSearchParams: () => new URLSearchParams(),
 }));
+const mockAppsOf: Record<string, string[]> = {};
+jest.mock('../../tenant-switcher/api/tenantSwitcherService', () => ({
+  ...jest.requireActual('../../tenant-switcher/api/tenantSwitcherService'),
+  fetchAppsPerBusiness: jest.fn(() => Promise.resolve(mockAppsOf)),
+}));
 jest.mock('../../auth/api/authService', () => ({
   ...jest.requireActual('../../auth/api/authService'),
   switchApp: jest.fn(() => new Promise(() => undefined)),
@@ -55,7 +60,11 @@ const ADD_LENDING: SessionApp[] = [
   { code: 'lending', labelId: 'nav.workspace.lending', homePath: '/lending', order: 40 },
 ];
 
-const load = (apps: SessionApp[], appsAddable: SessionApp[] = []) => {
+const load = (
+  apps: SessionApp[],
+  appsAddable: SessionApp[] = [],
+  tenants: SessionTenant[] = [{ id: 't1', name: 'Kumar Kirana', timezone: 'Asia/Kolkata', role: 'owner' }]
+) => {
   store.dispatch(resetAllFeatureState());
   store.dispatch(
     sessionLoaded({
@@ -69,7 +78,7 @@ const load = (apps: SessionApp[], appsAddable: SessionApp[] = []) => {
         passwordExpiresAt: null,
       },
       activeTenant: { id: 't1', name: 'Kumar Kirana', timezone: 'Asia/Kolkata', role: 'owner' },
-      tenants: [{ id: 't1', name: 'Kumar Kirana', timezone: 'Asia/Kolkata', role: 'owner' }],
+      tenants,
       permissions: PERMISSIONS,
       enabledModules: [...MODULE_CODES],
       version: 1,
@@ -81,6 +90,7 @@ const load = (apps: SessionApp[], appsAddable: SessionApp[] = []) => {
 };
 
 beforeEach(() => {
+  for (const key of Object.keys(mockAppsOf)) delete mockAppsOf[key];
   push.mockReset();
   window.sessionStorage.clear();
   resetNavigationSyncForTests();
@@ -88,7 +98,7 @@ beforeEach(() => {
 });
 
 describe('phone App button', () => {
-  it('replaces More with the open app, and opens a sheet of apps and More rows', async () => {
+  it('replaces More with the open app, and its sheet opens the Apps screen from one row', async () => {
     load(APPS);
     renderWithProviders(<MobileTabBar />);
     const button = screen.getByRole('button', { name: 'Apps and more, now in Library' });
@@ -97,20 +107,34 @@ describe('phone App button', () => {
 
     fireEvent.click(button);
     const sheet = await screen.findByRole('dialog', { name: 'Apps and more' });
-    const tiles = within(within(sheet).getByTestId('app-sheet-tiles')).getAllByRole('button');
-    expect(tiles.map((tile) => tile.textContent)).toEqual(['Library', 'Business', 'Money book']);
-    expect(tiles[0]).toHaveAttribute('aria-current', 'true');
+    // Owner, 12 Nov 2026: one "Apps" row (what is open now), not a grid of tiles.
+    const row = within(sheet).getByTestId('more-apps-row');
+    expect(row).toHaveAttribute('href', '/apps');
+    expect(row).toHaveTextContent('Library · Kumar Kirana');
+    expect(within(sheet).queryByTestId('app-sheet-tiles')).not.toBeInTheDocument();
     // Everything the More page held is in the same sheet.
     expect(within(sheet).getByRole('searchbox', { name: 'Find a feature' })).toBeInTheDocument();
   });
 
-  it('opens another app where the person left it', () => {
-    load(APPS);
-    rememberAppPlace('t1', 'shop', '/sales/invoices');
-    renderWithProviders(<MobileTabBar />);
-    fireEvent.click(screen.getByRole('button', { name: 'Apps and more, now in Library' }));
-    fireEvent.click(screen.getByRole('button', { name: 'Business' }));
-    expect(push).toHaveBeenCalledWith('/sales/invoices');
+  it('lists, under the open app, every business where it opens, the open one ticked and the ★ one Primary', async () => {
+    Object.assign(mockAppsOf, { t1: ['library', 'shop', 'khata'], t2: ['library'], t3: ['lending'] });
+    load(APPS, [], [
+      { id: 't1', name: 'Kumar Kirana', timezone: 'Asia/Kolkata', role: 'owner', membershipId: 'm1' },
+      { id: 't2', name: 'Gyan Library Baner', timezone: 'Asia/Kolkata', role: 'owner', membershipId: 'm2', isDefault: true, primaryApp: 'library' },
+      { id: 't3', name: 'Verma Finance', timezone: 'Asia/Kolkata', role: 'staff', membershipId: 'm3' },
+    ]);
+    renderWithProviders(<AppsPageContent />);
+    expect(screen.getByRole('heading', { name: 'Your libraries' })).toBeInTheDocument();
+    // The other businesses arrive with `GET /memberships/apps`.
+    await screen.findByText('Gyan Library Baner');
+    const places = within(screen.getByTestId('apps-places')).getAllByTestId('apps-place');
+    expect(places.map((p) => p.textContent)).toEqual(['Kumar KiranaOpen now', 'Gyan Library Baner★ Primary']);
+    expect(places[0]).toHaveAttribute('aria-current', 'true');
+    const stars = screen.getAllByTestId('apps-star');
+    expect(stars.map((b) => b.getAttribute('aria-pressed'))).toEqual(['false', 'true']);
+    expect(screen.getByTestId('apps-add')).toHaveTextContent('Add library');
+    // A Ledger only another business runs still gets its card.
+    expect(screen.getByTestId('apps-card-lending')).toHaveTextContent('Ledger');
   });
 
   it('keeps More for a person with one app', () => {
@@ -154,17 +178,20 @@ describe('desktop rail and the Apps page (R-DEC-09)', () => {
     expect(screen.getByRole('link', { name: 'Apps' })).toBeInTheDocument();
   });
 
-  it('opens another app from the Apps page where the person left it', () => {
+  it('opens another app from the Apps page where the person left it; Money book has no places', () => {
     load(APPS, ADD_LENDING);
     rememberAppPlace('t1', 'khata', '/khata/aging');
     renderWithProviders(<AppsPageContent />);
-    const tiles = within(screen.getByTestId('app-sheet-tiles')).getAllByRole('button');
-    expect(tiles.map((tile) => tile.textContent)).toEqual(['Library', 'Business', 'Money book']);
+    const cards = within(screen.getByTestId('app-sheet-tiles')).getAllByRole('button');
+    expect(cards.map((card) => card.textContent)).toEqual(['LibraryOpen now', 'Business', 'Money book']);
     expect(within(screen.getByTestId('app-add-tiles')).getByRole('button')).toHaveTextContent(
       'Add Ledger'
     );
-    fireEvent.click(screen.getByRole('button', { name: 'Money book' }));
+    fireEvent.click(screen.getByTestId('apps-card-khata'));
     expect(push).toHaveBeenCalledWith('/khata/aging');
+    // Money book is the person's own (owner, 12 Nov 2026): no list, no ★, no Add.
+    expect(screen.getByText('Your own money book')).toBeInTheDocument();
+    expect(screen.queryByTestId('apps-places')).not.toBeInTheDocument();
   });
 
   /**

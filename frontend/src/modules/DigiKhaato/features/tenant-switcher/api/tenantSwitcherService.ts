@@ -22,13 +22,25 @@ import type { TWriteClass } from 'src/types/api.types';
  * it is what happens to the previous default when the server clears it. A
  * client that could send `false` could leave a user with no default at all.
  */
-export const setDefaultMembership = async (membershipId: string): Promise<void> => {
+export const setDefaultMembership = async (membershipId: string, primaryApp?: string): Promise<void> => {
   await api.patch(
     API_PATHS.MEMBERSHIP(membershipId),
-    { is_default: true },
+    // `primary_app`: the app the Apps screen's ★ was set in (owner, 12 Nov 2026).
+    primaryApp ? { is_default: true, primary_app: primaryApp } : { is_default: true },
     ubConfig({ suppressErrorSnackbar: true })
   );
 };
+/**
+ * GET /memberships/apps — for each business, the apps this person opens there
+ * (owner, 12 Nov 2026: the Apps screen lists places under each app). Kept out
+ * of `/auth/me`, whose query budget is the first request of every load.
+ */
+export const fetchAppsPerBusiness = async (signal?: AbortSignal): Promise<Readonly<Record<string, readonly string[]>>> => {
+  const r = await api.get(API_PATHS.MEMBERSHIP_APPS, ubConfig({ suppressErrorSnackbar: true, signal }));
+  const rows = (r.data?.data ?? []) as { tenant_id: string; apps?: string[] }[];
+  return Object.fromEntries(rows.map((row) => [row.tenant_id, row.apps ?? []]));
+};
+
 export const setDefaultMembershipWriteClass: TWriteClass = 'online-only';
 
 /**

@@ -346,6 +346,7 @@ class MembershipReadSerializer(serializers.Serializer):
     role = serializers.CharField(source="role.code", read_only=True)
     status = serializers.CharField(read_only=True)
     is_default = serializers.BooleanField(read_only=True)
+    primary_app = serializers.CharField(read_only=True)
     joined_at = serializers.DateTimeField(read_only=True)
 
 
@@ -479,6 +480,8 @@ class MembershipPatchSerializer(serializers.Serializer):
     """
 
     is_default = serializers.BooleanField()
+    #: The app the ★ was set in; the service checks this person can open it here.
+    primary_app = serializers.CharField(max_length=32, required=False, allow_blank=True)
 
     def validate_is_default(self, value: bool) -> bool:
         if value is not True:

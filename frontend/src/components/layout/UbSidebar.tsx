@@ -57,7 +57,7 @@ export function UbSidebar(): React.JSX.Element {
         'border-r border-surface-nav bg-surface-nav text-text-onNav'
       )}
     >
-      <TenantSwitcherMenu rail caption={appName} />
+      <TenantSwitcherMenu rail fixed caption={appName} />
       <UbBox aria-hidden className="h-px w-full shrink-0 bg-white/10" />
       {/* R-DEC-09 — one "Apps" row, then the open app's own rows. The apps
           themselves are listed on the Apps page, not in the rail. */}

@@ -70,6 +70,9 @@ class Membership(TimeStampedModel):
     #: the switcher and the landing open it again, on any device. Blank → the
     #: first app they can open.
     last_app = models.CharField(max_length=32, blank=True, default="")
+    #: With `is_default`: the app the ★ was set in (owner, 12 Nov 2026). A sign-in
+    #: opens this business in this app, whatever was used last. Blank → `last_app`.
+    primary_app = models.CharField(max_length=32, blank=True, default="")
     # Empty explicit grants mean no apps, never legacy business-wide access.
     app_grants_configured = models.BooleanField(default=False)
 

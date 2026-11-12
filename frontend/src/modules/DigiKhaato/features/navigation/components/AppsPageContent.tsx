@@ -3,6 +3,7 @@
 import { UbPageHeader, UbPageShell } from 'src/design-system';
 import { useTranslation } from 'src/hooks/useTranslation';
 
+import { AppsPanel } from './AppsPanel';
 import { AppTiles } from './AppTiles';
 
 /**
@@ -19,7 +20,8 @@ export function AppsPageContent(): React.JSX.Element {
   const { t } = useTranslation();
   return (
     <UbPageShell header={<UbPageHeader title={t('nav.apps')} subtitle={t('nav.apps.description')} />}>
-      <AppTiles caption />
+      <AppsPanel />
+      <AppTiles addableOnly />
     </UbPageShell>
   );
 }

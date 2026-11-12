@@ -198,6 +198,16 @@ EXPECTED: dict[tuple[str, str], dict[str, int]] = {
         "other_tenant": 200,
     },
     # ── Self-service membership rows (PLT-04 §12) ───────────────────────────
+    # The Apps screen's per-business app list: the caller's own rows only, so
+    # any signed-in person gets theirs (owner, 12 Nov 2026).
+    ("GET", "v1:membership-apps"): {
+        "owner": 200,
+        "admin": 200,
+        "staff": 200,
+        "accountant": 200,
+        "anon": 401,
+        "other_tenant": 200,
+    },
     ("PATCH", "v1:membership-detail"): {
         "owner": 200,
         "admin": 200,

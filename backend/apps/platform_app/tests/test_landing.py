@@ -174,3 +174,17 @@ def test_me_and_refresh_say_the_same_as_the_sign_in() -> None:
         reverse("v1:auth-login"), {"email": user.email, "password": PASSWORD}, format="json"
     ).json()["data"]["landing"]
     assert client.get(reverse("v1:auth-me")).json()["data"]["landing"] == signed
+
+
+def test_a_starred_business_still_in_setup_is_where_the_owner_lands_to_finish_it() -> None:
+    """Owner, 12 Nov 2026: a new library branch, starred on the Apps screen before
+    its setup is done. Sign-in goes there (to finish setup), not to the business
+    used last — the ★ is the person's own choice."""
+    user = _user()
+    work = TenantFactory(onboarding_step=4)
+    branch = TenantFactory(onboarding_step=1)
+    MembershipFactory(user=user, tenant=work, role=_owner(), last_used_at=timezone.now())
+    MembershipFactory(user=user, tenant=branch, role=_owner(), is_default=True, primary_app="library")
+    data = _sign_in(user)
+    assert data["active_tenant_id"] == str(branch.id)
+    assert data["landing"]["kind"] == "business_setup"

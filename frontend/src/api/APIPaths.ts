@@ -49,6 +49,8 @@ export const API_PATHS = {
   TENANT_BRANDING: '/tenants/current/branding',
   MEMBERSHIPS: '/memberships',
   MEMBERSHIP: (id: string) => `/memberships/${seg(id)}`,
+  /** Which apps the caller opens in each business — the Apps screen only. */
+  MEMBERSHIP_APPS: '/memberships/apps',
   MEMBERSHIP_INVITE: '/memberships/invite',
   /**
    * PLT-05 — team invitations. A separate collection from `/memberships`

@@ -120,7 +120,7 @@ export function UbAppShell({ children }: Readonly<{ children: ReactNode }>): Rea
           ) : (
             <MobileBackButton upHref={mobileNav.upHref} />
           )}
-          <TenantSwitcherMenu className="min-w-0 flex-1" />
+          <TenantSwitcherMenu fixed className="min-w-0 flex-1" />
           {/* UAT D2 — below `lg` the top bar does not render, and it held the
               only party search. It is here as a 44 px icon, reusing the same
               component. The account (and Sign out) moved to the More tab with

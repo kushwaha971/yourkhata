@@ -361,6 +361,7 @@ export const getSession = async (signal?: AbortSignal): Promise<SessionPayload> 
     timezone: row.timezone ?? DEFAULT_TENANT_TIMEZONE,
     role: row.role ?? null,
     isDefault: row.is_default ?? false,
+    primaryApp: row.primary_app ?? '',
     status: row.status ?? 'active',
     membershipId: row.membership_id ?? null,
     onboardingStep: row.onboarding_step ?? null,

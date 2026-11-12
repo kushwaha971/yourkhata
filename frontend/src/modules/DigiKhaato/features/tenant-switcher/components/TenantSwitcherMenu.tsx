@@ -67,6 +67,7 @@ export function TenantSwitcherMenu({
   className,
   rail = false,
   caption,
+  fixed = false,
 }: Readonly<{
   className?: string;
   /**
@@ -77,6 +78,12 @@ export function TenantSwitcherMenu({
   rail?: boolean;
   /** The line under the name in the rail (the product name). */
   caption?: string;
+  /**
+   * Owner, 12 Nov 2026: the side menu and the phone header only SAY which app
+   * and business are open; choosing moves to the Apps screen (`AppsPanel`).
+   * Draws the same block with no chevron and no menu.
+   */
+  fixed?: boolean;
 }>): React.JSX.Element | null {
   const { t } = useTranslation();
   const router = useAppRouter();
@@ -144,6 +151,40 @@ export function TenantSwitcherMenu({
   const isOwner = active.role === 'owner';
   const openAppName = openAppLabel ? t(openAppLabel) : '';
   const showApps = apps.length > 1 || (isOwner && addable.length > 0);
+
+  if (fixed) {
+    return rail ? (
+      <UbBox className={cn('flex items-center gap-2 p-3', className)} data-testid="open-place">
+        <UbBox as="span" className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] bg-white shadow-1">
+          <UbLogo variant="mark" size="sm" />
+        </UbBox>
+        <UbBox as="span" className="flex min-w-0 flex-1 flex-col justify-center">
+          <UbText as="span" variant="inherit" truncate title={activeName.truncated ? shownName : undefined} className="ds-nav-label-medium text-text-onNav">
+            {activeName.text}
+          </UbText>
+          {railCaption && (
+            <UbText as="span" variant="inherit" truncate className="ds-nav-caption-regular text-text-onNavMuted">
+              {railCaption}
+            </UbText>
+          )}
+        </UbBox>
+      </UbBox>
+    ) : (
+      <UbBox className={cn('flex min-w-0 items-center gap-2', className)} data-testid="open-place">
+        <UbAvatar name={app === 'khata' ? (userName ?? shownName) : active.name} size="sm" />
+        <UbBox as="span" className="flex min-w-0 flex-1 flex-col">
+          <UbText as="span" variant="body-sm-medium" truncate title={activeName.truncated ? shownName : undefined}>
+            {activeName.text}
+          </UbText>
+          {appCaption && (
+            <UbText as="span" variant="caption" tone="secondary" truncate>
+              {appCaption}
+            </UbText>
+          )}
+        </UbBox>
+      </UbBox>
+    );
+  }
 
   return (
     <>

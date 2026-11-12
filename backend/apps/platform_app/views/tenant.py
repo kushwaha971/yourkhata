@@ -338,6 +338,17 @@ def _shop_choice_values(data: Any) -> dict[str, Any]:
     return values
 
 
+class MembershipAppsView(APIView):
+    """`GET /memberships/apps` — which apps the caller opens in each of their
+    businesses (owner, 12 Nov 2026: the Apps screen). Kept out of `/auth/me`,
+    whose query budget is the first request of every load."""
+
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request: Any) -> Any:
+        return StandardResponse.ok(session_payload.apps_per_business(request.user))
+
+
 class MembershipDetailView(APIView):
     """`PATCH`/`DELETE /memberships/{id}` — the self-service half (PLT-04 FR-5, FR-7).
 
@@ -361,6 +372,7 @@ class MembershipDetailView(APIView):
         membership = membership_service.set_default(
             user=request.user,
             membership=membership,
+            app=serializer.validated_data.get("primary_app"),
             request_id=getattr(request, "request_id", None),
         )
         return StandardResponse.ok(MembershipReadSerializer(membership).data)
