@@ -202,7 +202,6 @@ def test_the_engine_read_codenames_are_the_contract_ones() -> None:
 
     assert ENGINE_READ_PERMISSIONS == {
         "dues": {
-            "lending": "lending.loan.read_all",
             "library": "library.member.read",
             "gym": "gym.membership.money_read",
         },

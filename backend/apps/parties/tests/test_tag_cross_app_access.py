@@ -54,13 +54,13 @@ def test_one_app_grant_cannot_delete_rename_or_merge_a_shared_tag(shared_tag):
     assert Tag.objects.filter(pk=tag_id, name="Wholesale").exists()
 
 
-def test_one_app_grant_still_creates_and_lists_tags(shared_tag):
+def test_an_app_with_no_contacts_cannot_reach_the_shops_tags(shared_tag):
+    """Lending was rebuilt on 12 Nov 2026 with its own borrowers and no relation
+    to the Shop: a person in Lending only must not list or make the Shop's tags."""
     _, _, make, _ = shared_tag
     lending = make(lending="admin")
-    assert lending.get("/api/v1/parties/tags").status_code == 200
-    assert (
-        lending.post("/api/v1/parties/tags", {"name": "Seat A"}, format="json").status_code == 201
-    )
+    assert lending.get("/api/v1/parties/tags").status_code == 403
+    assert lending.post("/api/v1/parties/tags", {"name": "Seat A"}, format="json").status_code == 403
 
 
 def test_member_with_every_contact_app_right_can_manage_tags(shared_tag):

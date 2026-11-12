@@ -107,7 +107,8 @@ def test_a_grant_puts_a_person_in_that_app_only_with_that_apps_rights() -> None:
     me = _me(_client(user))
     assert [a["code"] for a in me["apps"]] == ["lending"]
     held = set(me["permissions"])
-    assert "lending.today.read" in held and "parties.party.read" in held  # lending uses parties
+    # Lending stands alone since 12 Nov 2026: its own borrowers, no Shop contacts.
+    assert "lending.loan.read" in held and "parties.party.read" not in held
     assert "sales.invoice.read" not in held and "library.member.read" not in held
 
 

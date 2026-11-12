@@ -117,6 +117,11 @@ _REGISTRY: dict[str, tuple[int, bool]] = {
     "copies_out": (409, False),
     "no_copy_left": (409, False),
     "code_in_use": (409, False),
+    # Loans & Collections (rebuilt 12 Nov 2026).
+    "borrower_exists": (409, False),
+    "loan_closed": (409, False),
+    "more_than_left": (409, False),
+    "money_left": (409, False),
     "merge_self": (409, False),
     "merge_in_progress": (409, False),
     "merge_balance_mismatch": (409, False),

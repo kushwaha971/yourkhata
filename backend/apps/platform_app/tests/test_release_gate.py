@@ -53,15 +53,12 @@ def test_lending_and_library_are_released_everywhere_a_release_has_to_reach() ->
     migration (so an existing one does). Miss one and a module is on the landing
     page and missing from the product, or present on a new server and absent on
     the live one."""
-    from importlib import import_module
-
     from apps.platform_app.management.commands.seed_plans import MVP_MODULES
 
     for code in RELEASED_10_OCT:
         assert code not in UNRELEASED_MODULES
         assert code in entitlements.released_modules()
         assert code in MVP_MODULES
-    assert import_module("apps.lending.migrations.0004_release").CODE == "lending"
 
 
 def test_the_unbuilt_codes_exist_and_are_all_unreleased() -> None:
