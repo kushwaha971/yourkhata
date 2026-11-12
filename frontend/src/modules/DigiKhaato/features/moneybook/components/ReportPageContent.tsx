@@ -200,7 +200,7 @@ export function ReportPageContent(): React.JSX.Element {
             </UbBox>
           ))}
         </List>
-        <UbBox className="hidden overflow-x-auto rounded-xl border border-border-hairline bg-surface-card lg:block print:block print:overflow-visible">
+        <UbBox className="hidden overflow-x-auto rounded-[12px] border border-border-hairline bg-surface-card lg:block print:block print:overflow-visible">
           <UbBox
             as="table"
             className="w-full min-w-[560px] border-collapse text-[13.4px] [&_td]:border-b [&_td]:border-border-hairline [&_td]:px-3 [&_td]:py-2 [&_th]:px-3 [&_th]:py-2 [&_tr:last-child>td]:border-b-0"

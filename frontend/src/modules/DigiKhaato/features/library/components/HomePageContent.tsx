@@ -74,7 +74,7 @@ export function HomePageContent(): React.JSX.Element {
   const open = useCallback((id: string) => router.push(LIBRARY_ROUTES.student(id)), [router]);
   const remindOverdue = () => {
     dispatch(setFee('over'));
-    router.push(LIBRARY_ROUTES.fees);
+    router.push(`${LIBRARY_ROUTES.fees}?pick=over`);
   };
 
   const date = new Date(`${today}T00:00:00`);
@@ -92,7 +92,7 @@ export function HomePageContent(): React.JSX.Element {
       size="lg"
       icon={<ScanLine className="h-4 w-4" aria-hidden />}
       onClick={() => router.push(LIBRARY_ROUTES.counter)}
-      className="w-full lg:w-auto"
+      className="w-full lg:h-10 lg:w-auto lg:text-[14px]"
     >
       {t('library.home.counter')}
     </UbButton>
@@ -103,7 +103,7 @@ export function HomePageContent(): React.JSX.Element {
       size="lg"
       icon={<Plus className="h-4 w-4" aria-hidden />}
       onClick={() => setEnrolling(true)}
-      className="w-full lg:w-auto"
+      className="w-full lg:h-10 lg:w-auto lg:text-[14px]"
       data-testid="library-enrol"
     >
       {t('library.home.enrol')}

@@ -296,7 +296,7 @@ export function PeoplePageContent(): React.JSX.Element {
         />
         {figures}
         {!emptyBook && (
-          <UbBox className="rounded-xl lg:border lg:border-border-hairline lg:bg-surface-card">
+          <UbBox className="rounded-[12px] lg:border lg:border-border-hairline lg:bg-surface-card">
             <UbStack direction="row" align="center" gap={2} className="lg:p-3">
               <UbSearchInput
                 value={search}

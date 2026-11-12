@@ -26,7 +26,7 @@ export const Figure = memo(function Figure({
   side,
 }: Readonly<{ label: string; value: string; caption?: string; side?: 'get' | 'give' }>) {
   return (
-    <UbBox className="grid min-w-0 gap-0.5 rounded-xl border border-border-hairline bg-surface-card px-3.5 py-2.5">
+    <UbBox className="grid min-w-0 gap-0.5 rounded-[12px] border border-border-hairline bg-surface-card px-3.5 py-2.5">
       <UbText variant="inherit" className="text-[12px] font-semibold text-text-tertiary">
         {label}
       </UbText>
@@ -67,7 +67,7 @@ export function List({
       as="ul"
       data-testid={testId}
       className={cn(
-        'overflow-clip rounded-xl border border-border-hairline bg-surface-card [&>li:last-child>*]:border-b-0',
+        'overflow-clip rounded-[12px] border border-border-hairline bg-surface-card [&>li:last-child>*]:border-b-0',
         className
       )}
     >

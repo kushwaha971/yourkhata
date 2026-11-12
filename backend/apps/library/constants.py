@@ -11,7 +11,7 @@ class StudentStatus(models.TextChoices):
 
 
 class FeeStatus(models.TextChoices):
-    """One per student, decided in this order (01-model-and-api.md)."""
+    """One per student, decided in this order: hold, over, part, soon, paid."""
 
     HOLD = "hold", _("On hold")
     PART = "part", _("Part paid")

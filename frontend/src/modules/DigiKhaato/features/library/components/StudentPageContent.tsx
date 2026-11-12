@@ -141,7 +141,9 @@ export function StudentPageContent({ id }: Readonly<{ id: string }>): React.JSX.
     s.fee === 'over'
       ? t('library.student.ended', { date: shortDate(s.paidTo, today), count: s.daysLate })
       : s.fee === 'part'
-        ? t('library.fee.left', { amount: rupees(s.due) })
+        ? s.daysLate > 0
+          ? t('library.student.partLate', { paid: rupees(s.credit), fee: rupees(s.monthlyFee), count: s.daysLate })
+          : t('library.student.partPaid', { paid: rupees(s.credit), fee: rupees(s.monthlyFee) })
         : t('library.student.dueOn', { date: shortDate(s.paidTo, today) });
   const subtitle = [
     s.mobile ? `+91 ${s.mobile.slice(0, 5)} ${s.mobile.slice(5)}` : null,
@@ -286,7 +288,11 @@ export function StudentPageContent({ id }: Readonly<{ id: string }>): React.JSX.
             <UbText as="h1" variant="inherit" className="line-clamp-2 break-words text-[17px] font-semibold lg:text-[22px] lg:font-bold">
               {s.name}
             </UbText>
-            <UbText variant="inherit" className="ds-num text-[12.5px] text-text-tertiary lg:text-[13.4px]">
+            {/* The design's phone header says only where they sit (I6); the desktop adds mobile and since. */}
+            <UbText variant="inherit" className="ds-num text-[12.5px] text-text-tertiary lg:hidden">
+              {left ? t('library.students.left') : seatLine(s, t)}
+            </UbText>
+            <UbText variant="inherit" className="ds-num hidden text-[13.4px] text-text-tertiary lg:block">
               {subtitle}
             </UbText>
           </UbStack>
@@ -341,7 +347,10 @@ export function StudentPageContent({ id }: Readonly<{ id: string }>): React.JSX.
         </UbBox>
       </UbStack>
       {!left && (
-        <UbBottomBar sticky className="grid grid-cols-2 gap-2 lg:hidden">
+        <UbBottomBar
+          sticky={false}
+          // Pinned, not sticky: on a short list a sticky dock floated mid-screen (hand pass, 12 Nov).
+          className="fixed inset-x-0 bottom-[var(--ub-nav-offset)] z-20 border-t border-border-hairline bg-surface-card px-4 pb-3.5 pt-2.5 grid grid-cols-2 gap-2 lg:hidden">
           <UbButton variant="secondary" size="lg" busy={busy === s.id} onClick={() => void remind(s)}>
             {t('library.seats.remind')}
           </UbButton>

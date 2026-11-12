@@ -102,12 +102,13 @@ def fee_state(
     due = max(Decimal("0.00"), monthly_fee * unpaid - credit)
     if status == StudentStatus.HOLD:
         return FeeState(FeeStatus.HOLD, due, days_late, current)
-    if credit > 0:
-        # Part paid: the rest of the month being paid for.
-        rest = monthly_fee * max(unpaid, 1) - credit
-        return FeeState(FeeStatus.PART, max(rest, Decimal("0.00")), days_late, current)
     if unpaid > 0:
+        # Late is late, whatever part was paid: three months behind with ₹300 put
+        # down is Overdue, not "Part paid" (found 12 Nov). The part is taken off the due.
         return FeeState(FeeStatus.OVER, due, days_late, current)
+    if credit > 0:
+        # Part paid and not yet late: the rest of the month being paid for.
+        return FeeState(FeeStatus.PART, max(monthly_fee - credit, Decimal("0.00")), 0, current)
     if (current - today).days < due_soon_days:
         return FeeState(FeeStatus.SOON, monthly_fee, 0, current)
     return FeeState(FeeStatus.PAID, Decimal("0.00"), 0, current)

@@ -133,7 +133,7 @@ export function RemindSheet({
           /* The message as WhatsApp will show it (I3): a green bubble on the chat's
              beige, the time in its corner. Every word is the owner's to change. */
           <UbBox
-            className="rounded-xl bg-[#E9E3DA] p-3 dark:bg-surface-sunken"
+            className="rounded-[12px] bg-[#E9E3DA] p-3 dark:bg-surface-sunken"
             data-testid="moneybook-remind-bubble"
           >
             <UbBox className="ml-9 rounded-lg bg-[#D9FDD3] px-3 pb-1.5 pt-2.5 shadow-[0_1px_1px_rgba(0,0,0,0.08)] dark:bg-[#1F3B26]">

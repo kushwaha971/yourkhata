@@ -94,10 +94,14 @@ export function CollectSheet({
   const afterText = (() => {
     if (!after) return null;
     const left = Number(after.credit);
-    const paid = t('library.collect.after', { date: shortDate(after.paidTo, today) });
     const seat = student.seat ? ` ${t('library.collect.seatStays', { seat: student.seat, name: first })}` : '';
+    const date = shortDate(after.paidTo, today);
+    // No month moved: the money waits as part of THIS month, which is still owed (hand pass, 12 Nov).
+    if (after.paidTo === student.paidTo)
+      return { paid: t('library.collect.partOnly', { amount: rupees(String(fee - left)), date }), rest: seat, date };
+    const paid = t('library.collect.after', { date });
     const part = left > 0 ? ` ${t('library.collect.partLeft', { amount: rupees(String(fee - left)) })}` : '';
-    return { paid, rest: `${part}${seat}`, date: shortDate(after.paidTo, today) };
+    return { paid, rest: `${part}${seat}`, date };
   })();
 
   const save = async (values: CollectValues): Promise<void> => {
@@ -113,11 +117,17 @@ export function CollectSheet({
         wa.location.href = whatsappHref(student.mobile, receipt);
         void recordMessage(student.id, 'receipt', receipt, `${key}-receipt`).catch(() => undefined);
       }
+      const stillOwed = updated.paidTo === student.paidTo && Number(updated.credit) > 0;
       dispatch(
         showSnackbar({
           severity: 'success',
-          id: 'library.collect.saved',
-          params: { amount: rupees(values.amount), name: student.name, date: shortDate(updated.paidTo, today) },
+          id: stillOwed ? 'library.collect.savedPart' : 'library.collect.saved',
+          params: {
+            amount: rupees(values.amount),
+            name: student.name,
+            date: shortDate(updated.paidTo, today),
+            left: rupees(updated.due),
+          },
         })
       );
       onSaved?.(updated);
@@ -134,7 +144,6 @@ export function CollectSheet({
       open
       onOpenChange={(next) => !next && onClose()}
       title={t('library.collect.title')}
-      description={student.name}
       closeLabel={t('library.common.close')}
       keyboardAware
       footer={
@@ -143,7 +152,7 @@ export function CollectSheet({
           form={formId}
           busy={saving}
           size="lg"
-          fullWidth
+          className="min-w-[104px] justify-self-start px-6"
           data-testid="library-collect-save"
         >
           {valid ? t('library.collect.save', { amount: rupees(amount) }) : t('library.collect.saveEmpty')}
@@ -177,6 +186,7 @@ export function CollectSheet({
             { value: 'three', label: t('library.collect.threeMonths', { amount: rupees(String(fee * 3)) }) },
             { value: 'part', label: t('library.collect.part') },
           ]}
+          className="flex-nowrap [&>*]:shrink-0 [&_*]:whitespace-nowrap [&_[role=radio]]:px-2.5 [&_[role=radio]]:text-[12.5px]"
         />
         <UbSegmentedControl
           ariaLabel={t('library.collect.mode')}

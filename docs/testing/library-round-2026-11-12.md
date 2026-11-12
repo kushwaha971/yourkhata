@@ -106,6 +106,55 @@ Departures, listed for the owner rather than chosen silently:
 - screens with no mock (Counter, Students, Attendance, Messages, Income & expenses,
   Expenses, Books, Settings) reuse the rated Money Book parts.
 
+## Second pass (owner, 12 Nov: "do all of it first, then Lending")
+
+**Side by side, every mock.** I6 (the student page and the Collect sheet) was
+not paired in the first pass. Paired now (`library-shots/compare-library-i6*.png`)
+and five differences fixed: the Collect chips wrapped to two lines, Save was full
+width, an extra line sat under the sheet title, and the phone header carried
+the mobile and "since" where the design says only "Seat 14 · Full day".
+
+**Pixels measured, not eyeballed.** `e2e/library-measure.mjs` reads the design
+element inside each `[data-mock]` and ours on the running screen: **23/23** parts
+within 1 px (weights exact). It found six differences before the fixes — cards
+and figure cards rounded 16 px (the design's 12; the Money Book had the same and
+is fixed too), card padding 14 (16), seats rounded 12 (8), desktop Counter/Enrol
+46 px tall (40), and chips at 14 px type and padding (12.5 / 10).
+
+**By hand, tap by tap, phone and desktop** (the built-in browser):
+- Home's "Remind 4 overdue" opened Fees with nobody picked; the design's Fees
+  arrives with them ticked and "Remind 4" in the dock — it does now.
+- On a short list the dock floated mid-screen (sticky only sticks on a long
+  page); it is pinned above the bottom bar, with the design's dock padding.
+- The phone chips were cut at "Part paid"; "All" carries no count on a phone,
+  as drawn, and the scroll line is gone.
+- A part payment said "Paid to 11 Nov after this. ₹500 left for the NEXT month",
+  and the saved message said "Paid to 11 Nov": both wrong, the ₹500 is owed for
+  THIS month. Now "₹500 still to pay for this month. Paid to stays 11 Nov", and
+  the card reads "₹300 of ₹800 paid · 1 day late".
+- Enrol on an empty seat from the desktop panel, with no mobile: saved, the
+  seat turned amber, Morning went 12/60 → 13/60 without a reload.
+
+**A calculation defect, found from the hand pass.** A student three months behind
+who once put down ₹300 showed "Part paid" — the order checked part before late.
+Late now always wins; the part is taken off the due.
+
+**A library with a past** (owner: "prefill data on previous dates").
+`test_history.py` builds students through the API on past days — every month on
+time, stopped after two months, behind with a part paid, part paid and not late,
+three months ahead in one go, joined on the 31st, due in three days, never paid —
+fixes "today" at 12 Nov, and checks figures worked out by hand: ₹2,400 for three
+missed months, ₹2,100 with ₹300 put down (Overdue), 31 Aug → 30 Sep → 31 Oct →
+30 Nov → 31 Dec, ₹1,600 never paid since 1 Oct, Home Overdue ₹6,100 over 3
+students, October's income ₹5,700, a back-dated payment counted on its own day
+and not today's, a future date refused. The reminder texts carry the same
+amounts and dates, in English and Hindi, signed with the library's name.
+
+**Notifications.** The rebuilt Library raises no bell notifications: nothing in
+the design asks for one, and messages to students open WhatsApp by hand
+(DEC-012). The old app had a morning "fees became overdue today" bell; whether
+to bring it back is the owner's call.
+
 ## §8 score
 
 | Points | Earned | Evidence |
@@ -117,6 +166,6 @@ Departures, listed for the owner rather than chosen silently:
 | Data and recovery 1 | 1 | offline Save stores nothing, then once; three taps write once |
 | Performance 1 | 1 | API p95 ≤ 48 ms; forms load on demand |
 | Honesty 1 | 1 | this report, harness defects named |
-| Owner 1 | 0 | not yet seen by the owner |
+| Owner 1 | 0 | the owner asked for this second pass: I6, measured pixels and a hand pass were missing from the first |
 
 **9/10.**

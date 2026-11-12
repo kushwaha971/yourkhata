@@ -429,7 +429,7 @@ export function PersonPageContent({ id }: Readonly<{ id: string }>): React.JSX.E
 
           {/* "To get from Suresh ₹4,500" — with the pair beside it on a desktop. */}
           {person ? (
-            <UbBox className="flex items-center gap-3 rounded-xl border border-border-hairline bg-surface-card px-4 py-3">
+            <UbBox className="flex items-center gap-3 rounded-[12px] border border-border-hairline bg-surface-card px-4 py-3">
               <UbStack gap={0} className="min-w-0 flex-1">
                 <UbText variant="inherit" className="text-[12px] text-text-tertiary">
                   {headline(person, t)}

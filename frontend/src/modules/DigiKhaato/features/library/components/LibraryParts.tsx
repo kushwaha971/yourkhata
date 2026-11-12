@@ -27,7 +27,7 @@ export const Figure = memo(function Figure({
   tone,
 }: Readonly<{ label: string; value: string; caption?: string; tone?: keyof typeof TONE_CLASS }>) {
   return (
-    <UbBox className="grid min-w-0 gap-0.5 rounded-xl border border-border-hairline bg-surface-card px-3.5 py-2.5">
+    <UbBox className="grid min-w-0 gap-0.5 rounded-[12px] border border-border-hairline bg-surface-card px-3.5 py-2.5">
       <UbText variant="inherit" truncate className="text-[12px] font-semibold text-text-tertiary">
         {label}
       </UbText>
@@ -66,7 +66,7 @@ export function Card({
   return (
     <UbBox
       data-testid={testId}
-      className={cn('grid gap-2 rounded-xl border border-border-hairline bg-surface-card px-4 py-3.5', className)}
+      className={cn('grid gap-2 rounded-[12px] border border-border-hairline bg-surface-card p-4', className)}
     >
       {children}
     </UbBox>
@@ -84,7 +84,7 @@ export function List({
       as="ul"
       data-testid={testId}
       className={cn(
-        'overflow-clip rounded-xl border border-border-hairline bg-surface-card [&>li:last-child>*]:border-b-0',
+        'overflow-clip rounded-[12px] border border-border-hairline bg-surface-card [&>li:last-child>*]:border-b-0',
         className
       )}
     >
@@ -189,7 +189,7 @@ export function SeatGrid({
             onClick={onSeat ? () => onSeat(cell) : undefined}
             disabled={!onSeat}
             className={cn(
-              'ds-num grid h-[var(--seat-p)] w-full place-items-center rounded-lg text-[12px] font-bold lg:h-[var(--seat-d)]',
+              'ds-num grid h-[var(--seat-p)] w-full place-items-center rounded-[8px] text-[12px] font-bold lg:h-[var(--seat-d)]',
               s ? cn(SEAT_WASH[s.fee], 'text-text-primary') : 'border-[1.5px] border-dashed border-border-strong text-text-tertiary',
               selected === cell.number && 'outline outline-2 outline-offset-1 outline-primary'
             )}
@@ -249,7 +249,7 @@ export function Table({
   testId,
 }: Readonly<{ head: readonly { label: string; align?: 'right' }[]; children: ReactNode; testId?: string }>) {
   return (
-    <UbBox className="overflow-x-auto rounded-xl border border-border-hairline bg-surface-card">
+    <UbBox className="overflow-x-auto rounded-[12px] border border-border-hairline bg-surface-card">
       <UbBox
         as="table"
         data-testid={testId}

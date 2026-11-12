@@ -80,7 +80,8 @@ def test_part_money_stays_as_credit_and_completes_the_next_month():
         (D(2026, 10, 25), 0, "over", "1200.00", 5),   # I6: ended 25 Oct, 5 days late
         (D(2026, 11, 2), 0, "soon", "1200.00", 0),    # within 7 days
         (D(2026, 11, 30), 0, "paid", "0.00", 0),
-        (D(2026, 11, 30), 400, "part", "800.00", 0),  # ₹400 of ₹1,200 paid
+        (D(2026, 11, 30), 400, "part", "800.00", 0),  # ₹400 of ₹1,200 paid, not late
+        (D(2026, 10, 25), 400, "over", "800.00", 5),  # late with ₹400 put down: Overdue, ₹800 left
         (D(2026, 8, 25), 0, "over", "3600.00", 66),   # three months behind
     ],
 )

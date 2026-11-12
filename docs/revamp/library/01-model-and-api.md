@@ -52,8 +52,8 @@ student shows **Part paid** with "₹400 left". A first payment for a student
 with no `paid_to` starts from `joined_on`. The sheet's "Paid to 25 Nov after
 this" is `POST … preview=true`, the same code path without saving.
 
-**Fee status** (one, in this order): `hold` (on hold) → `part` (credit > 0) →
-`over` (paid_to < today; "5 days late") → `soon` (paid_to within
+**Fee status** (one, in this order): `hold` (on hold) → `over` (paid_to < today;
+"5 days late"; any part already paid is taken off the due) → `part` (credit > 0 and not late) → `soon` (paid_to within
 `due_soon_days`) → `paid`. A student with no seat is still a student; an empty
 seat is a seat with no active student for that shift.
 

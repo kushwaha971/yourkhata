@@ -97,7 +97,7 @@ export function StudentsPageContent(): React.JSX.Element {
         value: v,
         label: v === 'left' || !counts ? t(`library.students.chip.${v}`) : t('library.students.chipCount', { label: t(`library.students.chip.${v}`), count: counts[v] }),
       }))}
-      className="flex-nowrap overflow-x-auto [&>*]:shrink-0 [&_*]:whitespace-nowrap"
+      className="flex-nowrap overflow-x-auto [&>*]:shrink-0 [&_*]:whitespace-nowrap [&_[role=radio]]:px-2.5 [&_[role=radio]]:text-[12.5px]"
     />
   );
 

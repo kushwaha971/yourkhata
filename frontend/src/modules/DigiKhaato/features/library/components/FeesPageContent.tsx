@@ -74,6 +74,8 @@ export function FeesPageContent(): React.JSX.Element {
   const [poster, setPoster] = useState(false);
   const [preview, setPreview] = useState<{ id: string; text: string } | null>(null);
   const fee = lib.fee;
+  // Home's "Remind 5 overdue" arrives with ?pick=over: every overdue student ticked (I7).
+  const [autoPick, setAutoPick] = useState(() => typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('pick') === 'over');
 
   const load = useCallback(() => dispatch(fetchFees(fee)), [dispatch, fee]);
   useEffect(() => {
@@ -84,6 +86,10 @@ export function FeesPageContent(): React.JSX.Element {
   const page = lib.fees.data;
   const rows = useMemo(() => page?.rows ?? [], [page]);
   const counts = page?.counts;
+  if (autoPick && page && fee === 'over') {
+    setAutoPick(false);
+    setPickedFor({ fee, ids: new Set(rows.filter((r) => r.fee === 'over').map((r) => r.id)) });
+  }
   const picked: ReadonlySet<string> = pickedFor.fee === fee ? pickedFor.ids : new Set();
   const setPicked = (ids: ReadonlySet<string>) => setPickedFor({ fee, ids });
 
@@ -125,9 +131,12 @@ export function FeesPageContent(): React.JSX.Element {
       onChange={(v) => dispatch(setFee(v as FeeFilter))}
       options={chips.map((v) => ({
         value: v,
-        label: counts ? t('library.students.chipCount', { label: t(`library.students.chip.${v}`), count: counts[v] }) : t(`library.students.chip.${v}`),
+        label:
+          counts && !(v === 'all' && chips === PHONE_CHIPS)
+            ? t('library.students.chipCount', { label: t(`library.students.chip.${v}`), count: counts[v] })
+            : t(`library.students.chip.${v}`),
       }))}
-      className="flex-nowrap overflow-x-auto [&>*]:shrink-0 [&_*]:whitespace-nowrap"
+      className="flex-nowrap overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden [&>*]:shrink-0 [&_*]:whitespace-nowrap [&_[role=radio]]:px-2.5 [&_[role=radio]]:text-[12.5px]"
     />
   );
 
@@ -222,7 +231,7 @@ export function FeesPageContent(): React.JSX.Element {
             <UbText variant="inherit" className="text-[12.5px] text-text-tertiary">
               {t('library.fees.preview')}
             </UbText>
-            <UbBox className="grid rounded-xl bg-[#ECE5DD] p-3.5">
+            <UbBox className="grid rounded-[12px] bg-[#ECE5DD] p-3.5">
               <UbText
                 variant="inherit"
                 className="max-w-[92%] justify-self-end whitespace-pre-wrap rounded-[10px_10px_2px_10px] bg-[#DCF8C6] px-3 py-2.5 text-[14px] leading-[1.45] text-[#111]"
@@ -277,7 +286,10 @@ export function FeesPageContent(): React.JSX.Element {
         {body}
       </UbStack>
       {(picked.size > 0 || queue.length > 0) && (
-        <UbBottomBar sticky className="grid gap-2 lg:hidden" data-testid="library-fees-dock">
+        <UbBottomBar
+          sticky={false}
+          // Pinned, not sticky: on a short list a sticky dock floated mid-screen (hand pass, 12 Nov).
+          className="fixed inset-x-0 bottom-[var(--ub-nav-offset)] z-20 border-t border-border-hairline bg-surface-card px-4 pb-3.5 pt-2.5 grid gap-2 lg:hidden" data-testid="library-fees-dock">
           <UbText variant="inherit" className="text-[12.5px] text-text-tertiary">
             {queue.length > 0
               ? t('library.fees.next', { name: queue[0]?.name ?? '', count: queue.length })
