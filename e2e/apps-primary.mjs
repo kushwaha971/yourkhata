@@ -91,12 +91,23 @@ for (const width of [390, 1280]) {
     await page.getByRole('button', { name: /Apps and more/ }).click();
     await page.getByTestId('more-apps-row').click();
   } else {
-    await page.getByTestId('sidebar-apps-row').getByRole('link').click();
+    // Desktop: Apps is its own page (owner, 12 Nov 2026: no popover, no drawer).
+    await page.getByTestId('sidebar-apps-row').getByRole('link', { name: 'Apps' }).click();
+    await page.waitForURL((u) => u.pathname === '/apps');
+    check((await page.getByRole('dialog').count()) === 0, `${width}: Apps opened as its own page, no popover`);
   }
   await page.getByTestId('apps-panel').waitFor();
   await page.getByTestId('apps-card-library').click({ trial: true });
   check(await page.getByTestId('apps-card-library').isVisible(), `${width}: Library has a card`);
   await page.screenshot({ path: `${SHOTS}/${width}-2-apps.png`, fullPage: true });
+  // MEASURE, not read: a label clipped by its card ("Busines") passes every
+  // getByRole. Each card is at least as wide as its words.
+  const clipped = await page.getByTestId('app-sheet-tiles').first().evaluate((grid) =>
+    [...grid.querySelectorAll('span')].filter((el) => el.scrollWidth > el.clientWidth + 1 || el.getBoundingClientRect().right > grid.getBoundingClientRect().right + 1).map((el) => el.textContent)
+  );
+  check(clipped.length === 0, `${width}: no app card label is cut off${clipped.length ? ` (${clipped.join(', ')})` : ''}`);
+  const cardWidth = await page.getByTestId('apps-card-library').evaluate((el) => Math.round(el.getBoundingClientRect().width));
+  check(cardWidth >= (phone ? 150 : 115), `${width}: app cards have room (${cardWidth}px)`);
 
   // 3. Library → the branch is listed; tapping it opens it in the Library.
   await page.getByTestId('apps-card-library').click();

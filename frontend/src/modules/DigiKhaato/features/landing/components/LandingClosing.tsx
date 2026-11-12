@@ -144,7 +144,7 @@ function FinalCtaBase() {
               className="max-sm:w-full max-sm:flex-col"
             >
               <UbActionLink
-                href={ROUTES.SIGNUP}
+                href={ROUTES.LOGIN}
                 variant="secondary"
                 size="lg"
                 icon={<ArrowRight aria-hidden className="order-last h-4 w-4" />}

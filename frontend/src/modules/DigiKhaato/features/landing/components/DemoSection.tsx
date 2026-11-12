@@ -176,7 +176,7 @@ function DemoSectionBase() {
                   {t('landing.demo.unavailable')}
                 </UbText>
                 <UbActionLink
-                  href={ROUTES.SIGNUP}
+                  href={ROUTES.LOGIN}
                   variant="primary"
                   size="lg"
                   className="rounded-[14px]"

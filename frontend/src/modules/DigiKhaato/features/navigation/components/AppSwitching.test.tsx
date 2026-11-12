@@ -128,7 +128,7 @@ describe('phone App button', () => {
     // The other businesses arrive with `GET /memberships/apps`.
     await screen.findByText('Gyan Library Baner');
     const places = within(screen.getByTestId('apps-places')).getAllByTestId('apps-place');
-    expect(places.map((p) => p.textContent)).toEqual(['Kumar KiranaOpen now', 'Gyan Library Baner★ Primary']);
+    expect(places.map((p) => p.textContent)).toEqual(['Kumar KiranaOwner · Open now', 'Gyan Library BanerOwner · ★ Primary']);
     expect(places[0]).toHaveAttribute('aria-current', 'true');
     const stars = screen.getAllByTestId('apps-star');
     expect(stars.map((b) => b.getAttribute('aria-pressed'))).toEqual(['false', 'true']);
@@ -155,6 +155,7 @@ describe('desktop rail and the Apps page (R-DEC-09)', () => {
     load(APPS);
     renderWithProviders(<UbSidebar />);
     const rail = screen.getByRole('navigation');
+    // Owner, 12 Nov 2026: Apps is its own page, never a popover or a drawer.
     expect(within(rail).getByRole('link', { name: 'Apps' })).toHaveAttribute('href', '/apps');
     for (const other of ['Business', 'Money book', 'Ledger']) {
       expect(within(rail).queryByRole('link', { name: other })).not.toBeInTheDocument();
@@ -183,7 +184,7 @@ describe('desktop rail and the Apps page (R-DEC-09)', () => {
     rememberAppPlace('t1', 'khata', '/khata/aging');
     renderWithProviders(<AppsPageContent />);
     const cards = within(screen.getByTestId('app-sheet-tiles')).getAllByRole('button');
-    expect(cards.map((card) => card.textContent)).toEqual(['LibraryOpen now', 'Business', 'Money book']);
+    expect(cards.map((card) => card.textContent)).toEqual(['LibraryOpen now', 'BusinessBills, stock', 'Money bookYou gave, you got']);
     expect(within(screen.getByTestId('app-add-tiles')).getByRole('button')).toHaveTextContent(
       'Add Ledger'
     );

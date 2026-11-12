@@ -1,6 +1,6 @@
 'use client';
 
-import { UbPageHeader, UbPageShell } from 'src/design-system';
+import { UbPageHeader, UbPageShell, UbStack } from 'src/design-system';
 import { useTranslation } from 'src/hooks/useTranslation';
 
 import { AppsPanel } from './AppsPanel';
@@ -19,9 +19,12 @@ import { AppTiles } from './AppTiles';
 export function AppsPageContent(): React.JSX.Element {
   const { t } = useTranslation();
   return (
-    <UbPageShell header={<UbPageHeader title={t('nav.apps')} subtitle={t('nav.apps.description')} />}>
-      <AppsPanel />
-      <AppTiles addableOnly />
+    <UbPageShell header={<UbPageHeader title={t('nav.apps')} subtitle={t('tenant.apps.pageSubtitle')} />}>
+      {/* A reading width: four cards and a short list, not a data grid. */}
+      <UbStack gap={6} className="w-full max-w-3xl">
+        <AppsPanel />
+        <AppTiles addableOnly />
+      </UbStack>
     </UbPageShell>
   );
 }

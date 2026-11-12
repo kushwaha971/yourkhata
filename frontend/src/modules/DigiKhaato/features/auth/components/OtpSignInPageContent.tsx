@@ -121,7 +121,9 @@ export function OtpSignInPageContent({ mode }: OtpSignInPageContentProps): React
             ? t('auth.otp.codeTitle')
             : mode === 'signUp'
               ? t('auth.signUp.heading')
-              : t('auth.signIn')
+              : // Owner, 12 Nov 2026: one process for everyone — a number and a
+                // code — so the page never says "sign up" or "create account".
+                t('auth.otp.oneHeading')
         }
         description={
           otp
@@ -268,10 +270,15 @@ export function OtpSignInPageContent({ mode }: OtpSignInPageContentProps): React
             </>
           ) : (
             <>
-              {t('auth.signUp.prompt', { appName })}{' '}
-              <UbLink href={ROUTES.SIGNUP} variant="inherit">
-                {t('auth.signUp.link')}
+              {t('auth.otp.newHere')}{' '}
+              <UbLink href={ROUTES.LEGAL_TERMS} variant="inherit">
+                {t('auth.otp.terms')}
+              </UbLink>{' '}
+              {t('auth.otp.and')}{' '}
+              <UbLink href={ROUTES.LEGAL_PRIVACY} variant="inherit">
+                {t('auth.otp.privacy')}
               </UbLink>
+              .
             </>
           )}
         </UbText>

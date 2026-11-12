@@ -82,7 +82,11 @@ const toCodeStep = async (user: ReturnType<typeof userEvent.setup>) => {
 describe('OtpSignInPageContent — the number', () => {
   it('asks only for a mobile number: no email, no password, no country picker', () => {
     renderWithProviders(<OtpSignInPageContent mode="signIn" />);
-    expect(screen.getByRole('heading', { level: 1, name: 'Sign in' })).toBeInTheDocument();
+    // Owner, 12 Nov 2026: one page for both — a new number becomes an account.
+    expect(screen.getByRole('heading', { level: 1, name: 'Enter your mobile number' })).toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: 'Create an account' })).not.toBeInTheDocument();
+    expect(screen.queryByText(/sign up|create/i)).not.toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Terms' })).toHaveAttribute('href', '/legal/terms');
     expect(screen.getByLabelText(/Mobile number/)).toBeInTheDocument();
     expect(screen.getByText('+91')).toBeInTheDocument();
     expect(screen.queryByLabelText(/Email/)).not.toBeInTheDocument();

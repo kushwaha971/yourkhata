@@ -114,7 +114,13 @@ function UbOtpInputBase({
   const handleChange = useCallback(
     (index: number, raw: string) => {
       if (readOnly) return;
-      const typed = onlyDigits(raw);
+      let typed = onlyDigits(raw);
+      // No `maxLength` (see the cell), so typing beside a filled cell's digit
+      // arrives as both: keep the new one.
+      const old = digits[index];
+      if (old && typed.length === 2 && (typed.startsWith(old) || typed.endsWith(old))) {
+        typed = typed.startsWith(old) ? typed.slice(1) : typed.slice(0, 1);
+      }
       if (typed.length === 0) {
         // The cell was cleared, or a character the mask rejects was typed.
         commit(`${digits.slice(0, index)}${digits.slice(index + 1)}`, index);
@@ -183,7 +189,11 @@ function UbOtpInputBase({
           // platform offer the code six times.
           autoComplete={index === 0 ? 'one-time-code' : 'off'}
           autoFocus={autoFocus && index === 0}
-          maxLength={1}
+          // No `maxLength={1}`: a code put in WITHOUT a paste event — the
+          // keyboard's clipboard chip, or the SMS autofill — was cut by the
+          // browser to its first digit before `handleChange` could spread it
+          // (owner, 12 Nov 2026: "not able to copy paste"). `handleChange`
+          // keeps one digit per cell itself.
           readOnly={readOnly}
           disabled={disabled}
           aria-label={cellLabel(index + 1, length)}

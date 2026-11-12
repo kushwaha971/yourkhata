@@ -1,0 +1,23 @@
+import { chromium } from 'playwright';
+const base = 'http://localhost:3005';
+const b = await chromium.launch({ executablePath: process.env.PW_CHROME ?? process.env.CHROME });
+const ctx = await b.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
+const p = await ctx.newPage();
+await p.goto(`${base}/login`, { waitUntil: 'networkidle' });
+console.log('login heading:', await p.getByRole('heading', { level: 1 }).first().innerText());
+await p.locator('input[type=tel]').first().fill(process.env.MOBILE ?? '9811122233');
+await p.getByRole('button', { name: /Send code|Get code|Continue/i }).first().click();
+const first = p.getByRole('group').locator('input').first();
+await first.waitFor({ timeout: 15000 });
+await first.focus();
+await p.keyboard.insertText('1234');   // a keyboard clipboard chip / SMS autofill
+await p.waitForTimeout(300);
+const vals = await p.getByRole('group').locator('input').evaluateAll((els) => els.map((e) => e.value).join(''));
+console.log('after insert:', JSON.stringify(vals));
+const heading = await p.getByRole('heading', { level: 1 }).first().innerText();
+console.log('heading:', heading);
+await p.goto(`${base}/signup`);
+await p.waitForURL((u) => u.pathname === '/login');
+console.log('signup goes to:', new URL(p.url()).pathname);
+await p.screenshot({ path: process.env.SHOT ?? '/tmp/otp-insert.png' });
+await b.close();

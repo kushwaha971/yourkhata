@@ -126,7 +126,7 @@ function PlanCard({
       </UbStack>
 
       <UbActionLink
-        href={ROUTES.SIGNUP}
+        href={ROUTES.LOGIN}
         variant={plan.highlight ? 'primary' : 'outlineNeutral'}
         size="lg"
         className="ub-lift w-full rounded-[14px]"

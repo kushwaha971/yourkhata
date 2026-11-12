@@ -1,6 +1,6 @@
 import { useState } from 'react';
 
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
 import { OTP_LENGTH, UbOtpInput } from './UbOtpInput';
@@ -162,4 +162,27 @@ it('pastes all six authentication digits and submits once without truncation', a
   ]);
   expect(complete).toHaveBeenCalledTimes(1);
   expect(complete).toHaveBeenCalledWith('932234');
+});
+
+/**
+ * Owner, 12 Nov 2026: "not able to copy paste" on the login code. On a phone the
+ * code usually arrives WITHOUT a paste event — the keyboard's clipboard chip or
+ * the SMS autofill inserts "1234" into the first cell — and `maxLength={1}` had
+ * the browser cut it to "1" before the change handler saw it (reproduced on the
+ * live login page with Playwright's insertText). jsdom does not enforce
+ * maxLength, so the first assertion pins the attribute itself.
+ */
+it('lets a whole code put into the first cell (keyboard chip, SMS autofill) fill every cell', () => {
+  const onComplete = jest.fn();
+  render(<Harness onComplete={onComplete} />);
+  expect(cells()[0]).not.toHaveAttribute('maxlength');
+  fireEvent.change(cells()[0] as HTMLInputElement, { target: { value: '1234' } });
+  expect(cells().map((cell) => cell.value)).toEqual(['1', '2', '3', '4']);
+  expect(onComplete).toHaveBeenCalledWith('1234');
+});
+
+it('typing beside a filled digit replaces it rather than spilling', () => {
+  render(<Harness initial="1234" />);
+  fireEvent.change(cells()[1] as HTMLInputElement, { target: { value: '29' } });
+  expect(cells().map((cell) => cell.value)).toEqual(['1', '9', '3', '4']);
 });

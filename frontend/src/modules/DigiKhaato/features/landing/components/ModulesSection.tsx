@@ -116,7 +116,7 @@ function ModuleCard({
             "Start free" links are three different links to a screen reader. */}
         <UbStack direction="row" wrap gap={2} className="pt-1 max-sm:flex-col max-sm:[&>*]:w-full">
           <UbActionLink
-            href={ROUTES.SIGNUP}
+            href={ROUTES.LOGIN}
             variant="primary"
             size="md"
             aria-label={t('landing.modules.cta.startFor', { name: t(key('name')) })}

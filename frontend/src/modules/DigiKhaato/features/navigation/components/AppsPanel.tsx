@@ -13,12 +13,13 @@ import { selectActiveTenant, selectSessionTenants } from 'src/redux/slice/sessio
 import { showSnackbar } from 'src/redux/slice/snackbarSlice';
 import { addBusinessPath } from 'src/routes';
 import { cn } from 'src/utils/cn';
+import { roleLabel } from 'src/utils/roleLabel';
 import { clearLocalExceptDrafts } from 'src/utils/storage';
 
 import { APP_MANIFESTS, manifestFor } from 'modules/appManifests';
 
 import { switchTenant } from '../../auth/redux/sessionThunk';
-import { resetOnboarding } from '../../onboarding/redux/onboardingSlice';
+import { draftChanged, resetOnboarding } from '../../onboarding/redux/onboardingSlice';
 import { fetchAppsPerBusiness } from '../../tenant-switcher/api/tenantSwitcherService';
 import { setDefaultTenant } from '../../tenant-switcher/redux/tenantSwitcherThunk';
 import { appPlace } from '../appPlace';
@@ -32,9 +33,11 @@ const PERSONAL_APPS: ReadonlySet<string> = new Set(['khata']);
 /** Apps with their own words for "Your …" and "Add …"; any other says "place". */
 const WORDED: ReadonlySet<string> = new Set(['shop', 'library', 'lending']);
 const wordOf = (code: string): string => (WORDED.has(code) ? code : 'any');
+/** Apps with a one-line "what it is for" under their name (design: the Apps canvas). */
+const ABOUT: ReadonlySet<string> = new Set(['shop', 'khata', 'library', 'lending']);
 
 const CARD =
-  'relative flex min-h-[72px] flex-col items-start justify-between gap-1 rounded-card p-3 text-left active:scale-[0.98] motion-reduce:active:scale-100';
+  'relative flex min-h-[88px] flex-col items-start justify-between gap-2 rounded-card p-3 text-left active:scale-[0.98] motion-reduce:active:scale-100';
 
 interface Place {
   readonly tenantId: string;
@@ -42,6 +45,8 @@ interface Place {
   readonly name: string;
   readonly open: boolean;
   readonly primary: boolean;
+  /** Owner / Staff / … — what this person is there. */
+  readonly role: string;
 }
 
 /**
@@ -98,6 +103,7 @@ export function AppsPanel({ onLeave }: Readonly<{ onLeave?: () => void }>): Reac
         name: row.name,
         open: row.id === active?.id && code === current,
         primary: Boolean(row.isDefault) && row.primaryApp === code,
+        role: row.role ? roleLabel(t, row.role) : '',
       }));
 
   const homeOf = (code: string): string =>
@@ -156,8 +162,11 @@ export function AppsPanel({ onLeave }: Readonly<{ onLeave?: () => void }>): Reac
     }
   };
 
-  const addPlace = (): void => {
+  const addPlace = (code: string): void => {
     dispatch(resetOnboarding());
+    // "+ Add library" starts the new business with the Library already ticked
+    // on step 1 ("What do you want to use?"); the owner can still change it.
+    dispatch(draftChanged({ apps: [code] }));
     onLeave?.();
     router.push(addBusinessPath());
   };
@@ -166,6 +175,9 @@ export function AppsPanel({ onLeave }: Readonly<{ onLeave?: () => void }>): Reac
 
   return (
     <UbStack gap={4} data-testid="apps-panel">
+      <UbText as="h2" variant="label" tone="tertiary">
+        {t('tenant.apps.yourApps')}
+      </UbText>
       <UbGrid columns={{ base: 2, sm: 4 }} gap={2} data-testid="app-sheet-tiles">
         {codes.map((code) => {
           const manifest = manifestFor(code);
@@ -187,14 +199,14 @@ export function AppsPanel({ onLeave }: Readonly<{ onLeave?: () => void }>): Reac
               )}
             >
               {Icon && <Icon aria-hidden className="h-5 w-5" strokeWidth={on ? 2 : 1.75} />}
-              <UbText as="span" variant="body-medium" tone="inherit" className="break-words">
-                {t(manifest?.labelId ?? code)}
-              </UbText>
-              {isOpen && (
-                <UbText as="span" variant="caption" tone="secondary">
-                  {t('tenant.apps.openNow')}
+              <UbStack gap={0} className="min-w-0">
+                <UbText as="span" variant="body-medium" tone="inherit" className="break-words">
+                  {t(manifest?.labelId ?? code)}
                 </UbText>
-              )}
+                <UbText as="span" variant="caption" tone="secondary" className="break-words">
+                  {isOpen ? t('tenant.apps.openNow') : ABOUT.has(code) ? t(`tenant.apps.about.${code}`) : ''}
+                </UbText>
+              </UbStack>
               {isOpen && <Check aria-hidden className="absolute right-3 top-3 h-4 w-4" strokeWidth={2.5} />}
             </UbPressable>
           );
@@ -248,13 +260,11 @@ export function AppsPanel({ onLeave }: Readonly<{ onLeave?: () => void }>): Reac
                     <UbText as="span" variant="body-medium" className="break-words">
                       {place.name}
                     </UbText>
-                    {(place.open || place.primary) && (
-                      <UbText as="span" variant="caption" tone="secondary">
-                        {[place.open && t('tenant.apps.openNow'), place.primary && t('tenant.apps.primary')]
-                          .filter(Boolean)
-                          .join(' · ')}
-                      </UbText>
-                    )}
+                    <UbText as="span" variant="caption" tone="secondary" className="break-words">
+                      {[place.role, place.open && t('tenant.apps.openNow'), place.primary && t('tenant.apps.primary')]
+                        .filter(Boolean)
+                        .join(' · ')}
+                    </UbText>
                   </UbStack>
                   {busy === `${place.tenantId}:${view}` && <MLSpinner />}
                 </UbPressable>
@@ -279,7 +289,7 @@ export function AppsPanel({ onLeave }: Readonly<{ onLeave?: () => void }>): Reac
               </UbBox>
             ))}
             <UbPressable
-              onClick={addPlace}
+              onClick={() => addPlace(view)}
               data-testid="apps-add"
               className="flex min-h-[48px] w-full items-center gap-2 px-3.5 text-left text-action"
             >

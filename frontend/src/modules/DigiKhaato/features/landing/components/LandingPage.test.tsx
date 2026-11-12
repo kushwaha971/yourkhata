@@ -81,14 +81,14 @@ describe('LandingPage', () => {
   });
 
   /** No billing exists, so every "Start free" goes to sign-up and nowhere else. */
-  it('sends every Start free to /signup and every Log in to /login', () => {
+  it('sends every Start free to /login (one page for everyone, owner 12 Nov 2026) and every Log in to /login', () => {
     renderPage();
 
     const starts = screen.getAllByRole('link', { name: /^Start free/ });
     // header, hero, how it works, closing band (pricing is hidden; nothing is
     // charged today, so "Start free" is true and stays)
     expect(starts.length).toBeGreaterThanOrEqual(4);
-    starts.forEach((link) => expect(link).toHaveAttribute('href', '/signup'));
+    starts.forEach((link) => expect(link).toHaveAttribute('href', '/login'));
     screen
       .getAllByRole('link', { name: 'Log in' })
       .forEach((link) => expect(link).toHaveAttribute('href', '/login'));
@@ -203,7 +203,7 @@ describe('LandingPage', () => {
     const unavailable = within(demo).getByTestId('landing-demo-unavailable');
     expect(within(unavailable).getByRole('link', { name: /start free/i })).toHaveAttribute(
       'href',
-      '/signup'
+      '/login'
     );
   });
 
@@ -385,7 +385,7 @@ describe('the module story', () => {
       expect(within(card).getByRole('heading', { name: 'What you can do' })).toBeInTheDocument();
       expect(within(card).getByRole('link', { name: `Start free with ${name}` })).toHaveAttribute(
         'href',
-        '/signup'
+        '/login'
       );
       expect(within(card).getByRole('link', { name: `See ${name} in the demo` })).toHaveAttribute(
         'href',

@@ -108,7 +108,7 @@ function LandingHeaderBase() {
               {t('landing.nav.login')}
             </UbActionLink>
             <UbActionLink
-              href={ROUTES.SIGNUP}
+              href={ROUTES.LOGIN}
               variant="primary"
               className="ub-lift rounded-[14px] px-4"
               data-testid="landing-header-start"
@@ -163,7 +163,7 @@ function LandingHeaderBase() {
           </UbStack>
           <UbStack gap={3}>
             <UbActionLink
-              href={ROUTES.SIGNUP}
+              href={ROUTES.LOGIN}
               variant="primary"
               size="lg"
               className="w-full rounded-[14px]"

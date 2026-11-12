@@ -40,7 +40,6 @@ export const CRAWL_ALLOW: readonly string[] = [
   // `/legal/terms` and `/legal/privacy`, and any legal page added beside them.
   '/legal/',
   ROUTES.LOGIN,
-  ROUTES.SIGNUP,
 ];
 
 /**

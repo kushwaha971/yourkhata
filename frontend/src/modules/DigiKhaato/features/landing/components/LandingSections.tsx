@@ -139,7 +139,7 @@ function HowItWorksSectionBase() {
         </UbReveal>
         <UbStack align="center" className="mt-10">
           <UbActionLink
-            href={ROUTES.SIGNUP}
+            href={ROUTES.LOGIN}
             variant="primary"
             size="lg"
             icon={<ArrowRight aria-hidden className="order-last h-4 w-4" />}

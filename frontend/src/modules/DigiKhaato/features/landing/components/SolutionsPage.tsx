@@ -180,7 +180,7 @@ export function SolutionsPage({ solution }: Readonly<{ solution?: Solution }>): 
             YourKhata works in a browser on phone or computer. The application supports Hindi and
             English.
           </UbText>
-          <UbActionLink href={ROUTES.SIGNUP} variant="primary" className="self-start">
+          <UbActionLink href={ROUTES.LOGIN} variant="primary" className="self-start">
             Create your account
           </UbActionLink>
         </UbStack>

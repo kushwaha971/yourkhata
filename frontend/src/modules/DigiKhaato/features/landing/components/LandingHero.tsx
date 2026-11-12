@@ -126,7 +126,7 @@ function LandingHeroBase() {
               className="w-full max-sm:flex-col max-sm:[&>*]:w-full"
             >
               <UbActionLink
-                href={ROUTES.SIGNUP}
+                href={ROUTES.LOGIN}
                 variant="primary"
                 size="lg"
                 className="ub-lift h-12 rounded-[14px] px-6 text-[1.0625rem]"
