@@ -70,6 +70,11 @@ E1 pass (g3a double tap, g3e E4 lost reply). E2 fixed (order, issue and tag form
 The Library's column, case by case with its evidence, is in
 `docs/testing/library-round-2026-11-12.md` §9.4: no case "not run".
 
+## Loans & Collections (Lending), 12 Nov 2026
+
+The Lending column, case by case with its evidence, is in
+`docs/testing/lending-round-2026-11-12.md` §9.4.
+
 ## How the monkey uses this
 
 `e2e/monkey.mjs` now does what a distracted user does, not only taps: reload,

@@ -30,6 +30,8 @@ export const KNOWN_TYPES: ReadonlySet<string> = new Set([
   'dues.run_failed',
   // Members & Fees (owner, 12 Nov 2026): the morning bell of fees newly overdue.
   'library.overdue_today',
+  // Loans & Collections (12 Nov 2026): the morning bell of loans newly late.
+  'lending.late_today',
 ]);
 
 /**

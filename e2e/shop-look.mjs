@@ -25,7 +25,9 @@ const MONEY_BOOK = arg('app', '') === 'khata';
 // Library round (12 Nov): `--app=library` sweeps every Members & Fees screen as the
 // scale owner, whose business has the design's room seeded (e2e/library_seed.py).
 const LIBRARY = arg('app', '') === 'library';
-const shop = MONEY_BOOK || LIBRARY
+// Lending round (12 Nov): `--app=lending` sweeps every Loans & Collections screen (e2e/lending_seed.py).
+const LENDING = arg('app', '') === 'lending';
+const shop = MONEY_BOOK || LIBRARY || LENDING
   ? { email: 'scale@digikhaato.test', password: process.env.E2E_SCALE_PASSWORD ?? 'Scale-Run-2026!' }
   : JSON.parse(readFileSync('/tmp/e2e-shots/kind-shops.json', 'utf8')).kirana;
 const ALL = [
@@ -36,7 +38,7 @@ const ALL = [
   '/reports/purchase-register', '/reports/gst-summary', '/reports/profit',
 ];
 let SCREENS = ONLY ? ONLY.split(',') : ALL;
-const RAW = /\b(library|common|sales|stock|items|inventory|reports|payments|purchases|parties|expenses|shell|ledger)\.[a-z][A-Za-z]+\.[A-Za-z.]+/;
+const RAW = /\b(lending|library|common|sales|stock|items|inventory|reports|payments|purchases|parties|expenses|shell|ledger)\.[a-z][A-Za-z]+\.[A-Za-z.]+/;
 // The requests that keep a person signed in and the shell drawn; everything
 // else is "the screen's data", which the error case answers with a 500.
 const SHELL_API = /\/api\/v1\/(auth|tenants|notifications|session|me\b|onboarding|platform|apps|business)/;
@@ -95,6 +97,12 @@ try {
       SCREENS = ['/library', '/library/seats', '/library/students', `/library/students/${late.id}`, '/library/fees',
         '/library/counter', '/library/attendance', '/library/messages', '/library/money', '/library/expenses',
         '/library/books', '/library/settings'];
+    }
+    if (LENDING) {
+      const loan = (await (await ctx.request.get(`${base}/api/v1/lending/remind?kind=late`)).json()).data[0];
+      const b = (await (await ctx.request.get(`${base}/api/v1/lending/borrowers`)).json()).data[0];
+      SCREENS = ['/lending', '/lending/loans', `/lending/loans/${loan.id}`, '/lending/loans/new', '/lending/borrowers',
+        `/lending/borrowers/${b.id}`, '/lending/routes', '/lending/messages', '/lending/settings'];
     }
     const cases = [];
     for (const theme of ['light', 'dark'])

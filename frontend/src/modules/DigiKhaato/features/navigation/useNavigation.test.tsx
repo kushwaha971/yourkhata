@@ -179,12 +179,13 @@ describe('one menu per app', () => {
     load({
       apps: [SERVER_APPS[1] as SessionApp],
       activeApp: 'lending',
-      permissions: ['lending.today.read', 'lending.loan.read'] as PermissionCode[],
+      permissions: ['lending.loan.read'] as PermissionCode[],
     });
     mockPath = '/settings';
     const nav = listed();
     expect(nav.apps.map((a) => a.code)).toEqual(['lending']);
-    expect(keysOf(nav)).toEqual(['lendingToday', 'lendingLoans']);
+    // A reader sees the book; Lending settings needs `lending.settings.manage`.
+    expect(keysOf(nav)).toEqual(['lendingToday', 'lendingLoans', 'lendingBorrowers', 'lendingRoutes', 'lendingMessages']);
   });
 });
 

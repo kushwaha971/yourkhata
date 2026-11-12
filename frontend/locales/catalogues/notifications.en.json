@@ -29,6 +29,8 @@
   "notifications.type.import_done.title": "{count, plural, one {Import finished — # record created} other {Import finished — # records created}}",
   "notifications.type.import_failed.body": "Tap to see why and try again.",
   "notifications.type.import_failed.title": "Import failed — nothing was saved",
+  "notifications.type.lending.late_today.body": "Open Messages to remind them.",
+  "notifications.type.lending.late_today.title": "{count, plural, one {# loan became} other {# loans became}} late today",
   "notifications.type.library.overdue_today.body": "Open Fees to remind them.",
   "notifications.type.library.overdue_today.title": "{count, plural, one {# fee became} other {# fees became}} overdue today",
   "notifications.type.low_stock.body": "Reorder before they run out.",

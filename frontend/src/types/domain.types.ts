@@ -157,24 +157,11 @@ export const PERMISSION_CODES = [
   'library.member.write',
   'library.fee.create',
   'library.settings.manage',
-  // ── LEN ── lending (FRD lending §0.8), the codenames the built screens use.
+  // ── lending ── Loans & Collections, rebuilt 12 Nov 2026.
   'lending.loan.read',
-  'lending.loan.read_all',
   'lending.loan.create',
-  'lending.loan.close',
-  'lending.borrower.read',
-  'lending.borrower.write',
   'lending.collection.create',
-  'lending.collection.read',
-  'lending.collection.void',
-  'lending.charge.create',
-  'lending.waiver.create',
-  'lending.visit.write',
-  'lending.route.read',
-  'lending.route.manage',
-  'lending.today.read',
-  'lending.reminder.send',
-  'lending.report.read',
+  'lending.settings.manage',
   // The Money Book's own way in (rebuilt 11 Nov 2026).
   'khata.book.read',
 ] as const;

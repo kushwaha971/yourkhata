@@ -194,6 +194,14 @@ try {
     await page.waitForTimeout(800);
     check(tag('E7 an extra-zero amount is refused as too large'), /too large/i.test(await d.innerText()) && (await paysOf(nikhil.id)) === n0);
     await page.keyboard.press('Escape');
+    // A lone "-" typed mid-amount must not throw (found by the Lending monkey, 12 Nov).
+    d = await openCollect();
+    const errsBefore = errors.length;
+    await d.getByLabel('Amount', { exact: true }).fill('');
+    await d.getByLabel('Amount', { exact: true }).type('-');
+    await page.waitForTimeout(600);
+    check(tag('typing "-" in the amount throws nothing and keeps the sheet'), errors.length === errsBefore && (await d.isVisible()), errors.slice(errsBefore).join(' | ').slice(0, 120));
+    await page.keyboard.press('Escape');
     // E4: offline Save keeps the sheet and the amount, and stores nothing.
     d = await openCollect();
     await ctx.setOffline(true);

@@ -46,7 +46,7 @@ const pick = (list) => list[Math.floor(rand() * list.length)];
 // the run on the sign-in page tapping "कोड भेजें" (send code), asking for real
 // OTPs — which read as a /auth/me + /auth/refresh "request loop" (A6, seed 92).
 const SKIP =
-  /issue|delete|void|record|remove|sign out|log out|archive|cancel bill|discard|send code|साइन आउट|लॉग आउट|कोड भेजें|जारी करें|हटाएँ|मिटाएँ|left the library|लाइब्रेरी छोड़ी|remind|याद दिला|print|प्रिंट/i;
+  /issue|delete|void|record|remove|sign out|log out|archive|cancel bill|discard|send code|साइन आउट|लॉग आउट|कोड भेजें|जारी करें|हटाएँ|मिटाएँ|left the library|लाइब्रेरी छोड़ी|remind|याद दिला|print|प्रिंट|write off|छोड़ दें|whatsapp/i;
 const TEXT = [
   "",
   "a",
@@ -84,8 +84,10 @@ const lastErrors = [];
 const MONEY_BOOK = process.argv.includes("--app=khata");
 // Library round (12 Nov): `--app=library` wanders Members & Fees (e2e/library_seed.py first).
 const LIBRARY = process.argv.includes("--app=library");
+// Lending round (12 Nov): `--app=lending` wanders Loans & Collections (e2e/lending_seed.py first).
+const LENDING = process.argv.includes("--app=lending");
 // The app's own way home, for the apps that are not the Shop.
-const APP_HOME = MONEY_BOOK ? "/money-book" : LIBRARY ? "/library" : null;
+const APP_HOME = MONEY_BOOK ? "/money-book" : LIBRARY ? "/library" : LENDING ? "/lending" : null;
 let WANDER = [
   "/dashboard", "/sales/invoices", "/sales/estimates", "/customers", "/suppliers",
   "/items", "/stock/summary", "/stock/low", "/stock/count", "/stock/transfer",
@@ -405,6 +407,34 @@ const checkAgrees = async (i, how) => {
       }
     }
   }
+  // Lending round (12 Nov): a loan's Left and Today's collected are the server's.
+  if (LENDING) {
+    const plainL = (s) => s.replace(/[₹,\s]/g, "");
+    const urlL = page.url();
+    const pathL = new URL(urlL).pathname;
+    const skewL = process.env.MONKEY_SKEW ? 1 : 0;
+    const loanId = pathL.match(/^\/lending\/loans\/([0-9a-f-]{36})$/)?.[1];
+    if (loanId) {
+      const left = (await (await ctx.request.get(`${base}/api/v1/lending/loans/${loanId}`)).json().catch(() => ({}))).data?.left;
+      // The page, not one grid: on a phone Left sits in the second row of figures.
+      const shown = await page.locator("main").innerText({ timeout: 4000 }).catch(() => "");
+      if (left !== undefined && shown) {
+        agreeChecks += 1;
+        const want = (Number(left) + skewL).toLocaleString("en-IN").replace(/,/g, "");
+        if (!plainL(shown).includes(want)) failures.push(`step ${i}: after ${how} the loan page does not show the server's left ${left} at ${urlL.replace(base, "")}`);
+      }
+    }
+    if (pathL === "/lending") {
+      const r = (await (await ctx.request.get(`${base}/api/v1/lending/today`)).json().catch(() => ({}))).data;
+      const box = width < 1024 ? page.getByTestId("lending-round") : page.getByTestId("lending-figures");
+      const shown = await box.innerText({ timeout: 4000 }).catch(() => "");
+      if (r && shown) {
+        agreeChecks += 1;
+        const want = (Number(r.collected) + skewL).toLocaleString("en-IN").replace(/,/g, "");
+        if (!plainL(shown).includes(want)) failures.push(`step ${i}: after ${how} Today's collected is not the server's ${r.collected}`);
+      }
+    }
+  }
   const nav = await page.evaluate(() => document.querySelector("nav[aria-label]")?.innerText ?? "").catch(() => "");
   // The words and orders rows are the SHOP's: when the monkey has wandered
   // into another app (the Udhaar book, from Apps) its menu has neither.
@@ -497,6 +527,11 @@ try {
     WANDER = ["/library", "/library/seats", "/library/students", "/library/fees", "/library/counter", "/library/attendance",
       "/library/messages", "/library/money", "/library/expenses", "/library/books", "/library/settings",
       ...students.map((x) => `/library/students/${x.id}`)];
+  }
+  if (LENDING) {
+    const loans = ((await (await ctx.request.get(`${base}/api/v1/lending/loans`)).json().catch(() => ({}))).data ?? []).slice(0, 4);
+    WANDER = ["/lending", "/lending/loans", "/lending/loans/new", "/lending/borrowers", "/lending/routes", "/lending/messages",
+      "/lending/settings", ...loans.map((x) => `/lending/loans/${x.id}`)];
   }
   // Real item names, so "add item" types what a merchant would.
   const itemNames = (

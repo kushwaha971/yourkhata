@@ -14,4 +14,5 @@
  * Released or not, a vertical is listed: the readers filter by
  * `enabled_modules`, which never contains an unreleased module.
  */
+import 'modules/DigiKhaato/features/lending/register';
 import 'modules/DigiKhaato/features/library/register';

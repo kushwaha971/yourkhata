@@ -98,11 +98,12 @@ describe('invalidation registry', () => {
     expect(new Set(all).size).toBe(all.length);
   });
 
-  // The rebuilt Library (12 Nov 2026) keeps its own slice and registers no map;
-  // Lending is the vertical that proves the module half is not vacuous.
-  it('finds the lending module registration (the module half is not vacuous)', () => {
-    expect(MODULES).toContain('lending');
-    expect(registeredInvalidationModules()).toContain('lending');
+  // The rebuilt Money Book, Library and Lending (11–12 Nov 2026) each keep their
+  // own lazily injected slice and register no invalidation map. If a module adds
+  // one, it must be found here and registered — this says which state is true now.
+  it('knows which modules register an invalidation map (none since the rebuild)', () => {
+    expect(MODULES).toEqual([]);
+    expect(registeredInvalidationModules()).toEqual([]);
   });
 
   /**
@@ -112,7 +113,8 @@ describe('invalidation registry', () => {
    * module. A thunk dispatched from a dialog that never loaded the module's
    * slice would otherwise invalidate nothing, silently.
    */
-  it.each(MODULES.map((module) => [module]))(
+  // jest refuses `it.each([])`: with no module maps (since the rebuild) there is nothing to load alone.
+  (MODULES.length ? it.each(MODULES.map((module) => [module])) : it.skip.each([['(none)']]))(
     'every %s thunk file registers its module when imported alone',
     (module) => {
       const files = thunkFiles.filter((path) => moduleOf(path) === module);

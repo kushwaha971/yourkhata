@@ -40,6 +40,11 @@ export type ApiErrorCode =
   | 'no_copy_left'
   | 'copies_out'
   | 'code_in_use'
+  // Loans & Collections (rebuilt 12 Nov 2026).
+  | 'borrower_exists'
+  | 'loan_closed'
+  | 'more_than_left'
+  | 'money_left'
   // auth and session
   | 'invalid_credentials'
   /**

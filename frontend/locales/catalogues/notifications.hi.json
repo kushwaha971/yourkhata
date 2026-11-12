@@ -29,6 +29,8 @@
   "notifications.type.import_done.title": "{count, plural, one {इम्पोर्ट पूरा — # रिकॉर्ड बना} other {इम्पोर्ट पूरा — # रिकॉर्ड बने}}",
   "notifications.type.import_failed.body": "कारण देखने और फिर कोशिश करने के लिए टैप करें।",
   "notifications.type.import_failed.title": "इम्पोर्ट नहीं हो सका — कुछ भी सेव नहीं हुआ",
+  "notifications.type.lending.late_today.body": "याद दिलाने के लिए मैसेज खोलें।",
+  "notifications.type.lending.late_today.title": "{count, plural, one {# लोन} other {# लोन}} आज देर से हो गए",
   "notifications.type.library.overdue_today.body": "याद दिलाने के लिए फ़ीस खोलें।",
   "notifications.type.library.overdue_today.title": "{count, plural, one {# फ़ीस का} other {# फ़ीस का}} समय आज निकल गया",
   "notifications.type.low_stock.body": "खत्म होने से पहले दोबारा मँगाएँ।",

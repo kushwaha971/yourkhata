@@ -2,6 +2,8 @@
 
 > **1 Nov 2026 — START HERE: `docs/team/CONTINUE-AD-CERTIFICATION.md`.** Parts A–D of the Shop revamp are built; the A–D certification is mid-way; Part G waits for the owner's explicit go. That file supersedes everything below for what to do next.
 
+> **12 Nov 2026 — Lending (Loans & Collections) rebuilt from scratch and through its P0 round (9/10).** Report `docs/testing/lending-round-2026-11-12.md` (harness 64/64, measured 17/17, look 828/828, monkey 3×2 PASS). All three rebuilds (Money Book, Library, Lending) are done; next is the owner's check.
+>
 > **12 Nov 2026 — Library (Members & Fees) rebuilt from scratch and through its P0 round (9/10).** Server + screens + students import, report `docs/testing/library-round-2026-11-12.md` (harness 68/68, look 1104/1104, monkey 3×2 PASS). Books is simple with a barcode scanner (owner). Fixed on the way: Money Book Add person hung with no mobile. Next: Lending (Loans & Collections), the same way.
 >
 > **12 Nov 2026 — Money Book rebuilt from scratch and through its P0 round (9/10).** Owner, 11 Nov: Money Book, Library and Lending are deleted and rebuilt, each with NO relation to the Shop (`docs/revamp/rebuild-money-book-library-lending.md`). Money Book done: `apps/moneybook`, `/money-book`, report `docs/testing/moneybook-round-2026-11-11.md`. Next: Library (Members & Fees), then Lending. Library and Lending still use the shared person page on the `main` book until their rebuild.

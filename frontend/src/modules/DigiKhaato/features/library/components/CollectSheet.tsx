@@ -77,6 +77,9 @@ export function CollectSheet({
   const typed = useDebounce(amount, 250);
 
   const valid = Boolean(typed) && Number(typed) > 0 && REGEX.DECIMAL_2DP.test(typed);
+  // The Save label reads the amount AS TYPED, so it checks that, not the debounced copy:
+  // a lone "-" sat beside a still-valid debounced value and formatting it threw (Lending monkey, 12 Nov).
+  const amountOk = Boolean(amount) && Number(amount) > 0 && REGEX.DECIMAL_2DP.test(amount);
   useEffect(() => {
     if (!valid) return undefined;
     const controller = new AbortController();
@@ -159,7 +162,7 @@ export function CollectSheet({
           className="min-w-[104px] justify-self-start px-6"
           data-testid="library-collect-save"
         >
-          {valid ? t('library.collect.save', { amount: rupees(amount) }) : t('library.collect.saveEmpty')}
+          {amountOk ? t('library.collect.save', { amount: rupees(amount) }) : t('library.collect.saveEmpty')}
         </UbButton>
       }
     >
