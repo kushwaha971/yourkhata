@@ -1,27 +1,36 @@
 'use client';
 
-import { useCallback, useEffect, useId, useMemo } from 'react';
+import { useCallback, useEffect, useId, useMemo, useState } from 'react';
 
 import { yupResolver } from '@hookform/resolvers/yup';
-import { useForm } from 'react-hook-form';
+import { useForm, useWatch } from 'react-hook-form';
 
 import {
   UbButton,
   UbDialog,
   UbField,
   UbForm,
+  UbOtpInput,
   UbPhoneInput,
+  UbStack,
+  UbText,
   UbSelect,
   UbTextInput,
 } from 'src/design-system';
+import { useAppDispatch } from 'src/hooks/useAppStore';
 import { useTranslation } from 'src/hooks/useTranslation';
+import { showSnackbar } from 'src/redux/slice/snackbarSlice';
+import { toApiError } from 'src/utils/apiError';
+import { formatPhoneForDisplay } from 'src/utils/share';
 
+import { sendStaffCode } from '../api/memberService';
 import { DEFAULT_INVITE_ROLE } from '../constants/teamDefaults';
 import { useRoles } from '../hooks/useRoles';
 import { useMemberSchemas } from '../validation/memberSchemas';
 import { roleOptionLabel } from '../view-model/roleDisplay';
 
 import type { UseMembersResult } from '../hooks/useMembers';
+import type { StaffCodeSent } from '../types/member.types';
 import type { AddMemberFormValues } from '../validation/memberSchemas';
 
 // Loaded with dynamic(), so its own words come with its own chunk rather than
@@ -67,6 +76,41 @@ export function AddMemberDialog({
 
   const { reset, setError } = form;
   const { addOpen, closeAdd, submitAdd } = members;
+  const dispatch = useAppDispatch();
+
+  // Owner, 12 Nov 2026: the new staff member confirms their number with a code
+  // sent to it (WhatsApp, or SMS where that is the login channel). They read it
+  // out; the owner types it here; the member is added only with it.
+  const mobile = useWatch({ control: form.control, name: 'mobile' }) ?? '';
+  const [sent, setSent] = useState<(StaffCodeSent & { readonly mobile: string }) | null>(null);
+  const [code, setCode] = useState('');
+  const [sending, setSending] = useState(false);
+  const [wait, setWait] = useState(0);
+  const sentHere = sent !== null && sent.mobile === mobile;
+  const codeReady = sentHere && code.length === sent.codeLength;
+
+  useEffect(() => {
+    if (wait <= 0) return undefined;
+    const timer = window.setTimeout(() => setWait((left) => left - 1), 1000);
+    return () => window.clearTimeout(timer);
+  }, [wait]);
+
+  const sendCode = useCallback(async () => {
+    const valid = await form.trigger('mobile');
+    if (!valid || !mobile) return;
+    setSending(true);
+    try {
+      const issued = await sendStaffCode(mobile);
+      setSent({ ...issued, mobile });
+      setCode('');
+      setWait(issued.retryAfter);
+    } catch (thrown) {
+      const error = toApiError(thrown, 'team.member.code.sendError');
+      dispatch(showSnackbar({ severity: 'error', message: error.message ?? t('team.member.code.sendError') }));
+    } finally {
+      setSending(false);
+    }
+  }, [dispatch, form, mobile, t]);
 
   /**
    * Cleared when the dialog OPENS, not when it closes: clearing on close races
@@ -76,10 +120,22 @@ export function AddMemberDialog({
   useEffect(() => {
     if (addOpen) reset(defaults);
   }, [addOpen, reset, defaults]);
+  // A fresh dialog has sent no code: reset while rendering the opening, which
+  // React allows for state derived from a prop (no effect, no extra pass).
+  const [seenOpen, setSeenOpen] = useState(addOpen);
+  if (seenOpen !== addOpen) {
+    setSeenOpen(addOpen);
+    if (addOpen) {
+      setSent(null);
+      setCode('');
+      setWait(0);
+    }
+  }
 
   const submit = useCallback(
-    (values: AddMemberFormValues) => submitAdd(values, setError),
-    [submitAdd, setError]
+    (values: AddMemberFormValues) =>
+      sent && sentHere ? submitAdd(values, setError, { challengeId: sent.challengeId, code }) : Promise.resolve(),
+    [submitAdd, setError, sent, sentHere, code]
   );
 
   const roleOptions = useMemo(
@@ -111,7 +167,7 @@ export function AddMemberDialog({
             form={formId}
             busy={members.isAdding}
             busyLabel={t('team.member.add.submitting')}
-            disabled={!members.canWrite}
+            disabled={!members.canWrite || !codeReady}
           >
             {t('team.member.add.submit')}
           </UbButton>
@@ -142,6 +198,38 @@ export function AddMemberDialog({
         >
           {(field) => <UbPhoneInput {...field} lockCountry autoComplete="off" />}
         </UbField>
+
+        <UbStack gap={2} data-testid="staff-code">
+          {sentHere ? (
+            <>
+              <UbText variant="body-sm" tone="secondary">
+                {t(sent.channel === 'whatsapp' ? 'team.member.code.sentWhatsapp' : 'team.member.code.sentSms', {
+                  mobile: formatPhoneForDisplay(sent.mobile),
+                })}
+              </UbText>
+              <UbOtpInput
+                length={sent.codeLength}
+                value={code}
+                onChange={setCode}
+                label={t('team.member.code.label')}
+                cellLabel={(index, total) => t('team.member.code.cell', { index, total })}
+                autoFocus
+              />
+              <UbButton variant="ghost" size="sm" onClick={() => void sendCode()} disabled={wait > 0} busy={sending} className="self-start">
+                {wait > 0 ? t('team.member.code.resendIn', { seconds: wait }) : t('team.member.code.resend')}
+              </UbButton>
+            </>
+          ) : (
+            <>
+              <UbButton variant="secondary" onClick={() => void sendCode()} busy={sending} busyLabel={t('team.member.code.sending')} className="self-start">
+                {t('team.member.code.send')}
+              </UbButton>
+              <UbText variant="caption" tone="tertiary">
+                {t('team.member.code.why')}
+              </UbText>
+            </>
+          )}
+        </UbStack>
 
         <UbField
           name="role"

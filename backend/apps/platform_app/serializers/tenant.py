@@ -423,6 +423,18 @@ def entitlements_effective(tenant: Any) -> frozenset[str]:
     return effective_modules(tenant)
 
 
+class MemberMobileCodeSerializer(serializers.Serializer):
+    """`POST /members/mobile-code` — the number to send a check code to."""
+
+    mobile = serializers.CharField(max_length=15)
+
+    def validate_mobile(self, value: str) -> str:
+        try:
+            return normalise_mobile(value)
+        except ValueError as exc:
+            raise serializers.ValidationError(str(exc)) from exc
+
+
 class MemberCreateSerializer(serializers.Serializer):
     """`POST /members` (DEC-012).
 
@@ -441,6 +453,10 @@ class MemberCreateSerializer(serializers.Serializer):
     full_name = serializers.CharField(max_length=120, trim_whitespace=True)
     role = serializers.CharField(max_length=32)
     mobile = serializers.CharField(max_length=15, required=False, allow_blank=True, allow_null=True)
+    #: Owner, 12 Nov 2026: a staff member added by mobile confirms the number
+    #: with the code `POST /members/mobile-code` sent to it.
+    challenge_id = serializers.CharField(max_length=64, required=False, allow_blank=True)
+    code = serializers.CharField(max_length=8, required=False, allow_blank=True)
 
     def validate_mobile(self, value: str | None) -> str | None:
         """Normalise to E.164 or refuse, as `InvitationCreateSerializer` does (NEW-2).

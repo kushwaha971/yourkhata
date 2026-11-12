@@ -19,7 +19,7 @@ it.each(SOLUTIONS)('renders crawlable content and matching FAQs for $slug', (sol
   expect(screen.getByRole('heading', { level: 1, name: solution.name })).toBeInTheDocument();
   expect(screen.getByRole('link', { name: 'Create your account' })).toHaveAttribute(
     'href',
-    '/signup'
+    '/login'
   );
   const json = JSON.parse(
     container.querySelector('script[type="application/ld+json"]')?.textContent ?? '{}'

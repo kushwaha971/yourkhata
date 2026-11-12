@@ -70,7 +70,8 @@ export interface UseMembersResult {
   readonly closeAdd: () => void;
   readonly submitAdd: (
     values: AddMemberFormValues,
-    setError: UseFormSetError<AddMemberFormValues>
+    setError: UseFormSetError<AddMemberFormValues>,
+    check?: { readonly challengeId: string; readonly code: string }
   ) => Promise<void>;
 
   readonly lastCredentials: IssuedCredentials | null;
@@ -139,7 +140,11 @@ export function useMembers(): UseMembersResult {
   }, [dispatch]);
 
   const submitAdd = useCallback(
-    async (values: AddMemberFormValues, setError: UseFormSetError<AddMemberFormValues>) => {
+    async (
+      values: AddMemberFormValues,
+      setError: UseFormSetError<AddMemberFormValues>,
+      check?: { readonly challengeId: string; readonly code: string }
+    ) => {
       setAddFormErrors([]);
       try {
         await dispatch(
@@ -147,6 +152,7 @@ export function useMembers(): UseMembersResult {
             fullName: values.fullName,
             role: values.role,
             mobile: values.mobile ?? null,
+            ...(check ? { challengeId: check.challengeId, code: check.code } : {}),
             idempotencyKey: addKey,
           })
         ).unwrap();

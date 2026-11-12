@@ -61,6 +61,8 @@ export const API_PATHS = {
    */
   /** DEC-012 — the team, and adding to it with owner-issued credentials. */
   MEMBERS: '/members',
+  /** Send a check code to a new staff member's number (owner, 12 Nov 2026). */
+  MEMBER_MOBILE_CODE: '/members/mobile-code',
   MEMBER_CREDENTIALS: (membershipId: string) => `/members/${seg(membershipId)}/credentials`,
   /**
    * Owner, 12 Oct 2026 — a manager acting on somebody else: edit (PATCH),

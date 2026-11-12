@@ -157,6 +157,15 @@ async function run() {
     await page.getByLabel(/Full name/i).fill(MOBILE_STAFF.name);
     await page.getByLabel(/Mobile number/i).first().fill(MOBILE_STAFF.national);
     await shot(page, '02-add-form');
+    // Owner, 12 Nov 2026: the number is confirmed with a code sent to it first.
+    record('Add to team waits for the code', await page.getByRole('button', { name: /Add to team/i }).isDisabled());
+    const sentAt = logSize();
+    await page.getByRole('button', { name: /Send code to this number/i }).click();
+    const staffCode = await codeFromLog(MOBILE_STAFF.national.slice(-3), sentAt);
+    record('a code is sent to the new staff number', Boolean(staffCode));
+    await page.getByRole('group', { name: /Code from their phone/i }).locator('input').first().click();
+    await page.keyboard.type(staffCode ?? '');
+    await shot(page, '02b-code-entered');
     await page.getByRole('button', { name: /Add to team/i }).click();
     await page.waitForTimeout(2500);
     await shot(page, '03-on-your-team');
