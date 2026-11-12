@@ -114,7 +114,7 @@ def test_a_business_that_chose_one_app_runs_only_that_app(
     assert not modules & {"sales", "purchases", "inventory", "expenses"}
 
 
-@pytest.mark.parametrize("app", ["lending"])
+@pytest.mark.parametrize("app", ["library", "lending"])
 def test_a_library_or_a_lender_alone_can_import_its_register(
     api_as: Any, tenant: Any, onboarding_ready: Any, app: str
 ) -> None:

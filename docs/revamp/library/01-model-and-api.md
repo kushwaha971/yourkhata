@@ -99,9 +99,9 @@ All of `apps/library` (11 migrations, 19 tables) and `features/library`, the
 public self check-in pages, the students import, the `library`/`deposit`
 ledger and payment buckets' library rows, and the library parties.
 
-## Still to build in this rebuild
+## Students from the paper register
 
-- **Students from a paper register (import).** The old app had it (QA F10: a
-  reading room going live with two hundred students). Its importer wrote old
-  tables and is gone with them; it is rebuilt on `library_student` with the
-  enrol service, before the round, not deferred.
+`importers.py` (QA F10): name, mobile, shift, seat, monthly fee, joined, paid
+till. Each row goes through the enrol service and takes the register's "paid
+till" as its `paid_to`, with NO payment row — nothing is today's money. Seats
+are checked against the map and against earlier rows of the same file.

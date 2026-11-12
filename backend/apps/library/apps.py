@@ -21,12 +21,17 @@ class LibraryConfig(AppConfig):
         from apps.platform_app.services.guards import register_module_enable_hook
 
         register_module_enable_hook("library", seed_library)
+
+        from apps.library import importers
+
+        importers.register()
         register_app(
             AppSpec(
                 code="library",
                 label_id="nav.workspace.library",
                 anchor="library",
-                capabilities=frozenset({"library"}),
+                # `import_export`: the students import from the paper register.
+                capabilities=frozenset({"library", "import_export"}),
                 entry_permission="library.member.read",
                 home_path="/library",
                 order=10,
