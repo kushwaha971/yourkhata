@@ -62,42 +62,6 @@ def test_lending_and_library_are_released_everywhere_a_release_has_to_reach() ->
         assert code in entitlements.released_modules()
         assert code in MVP_MODULES
     assert import_module("apps.lending.migrations.0004_release").CODE == "lending"
-    assert import_module("apps.library.migrations.0010_release").CODE == "library"
-
-
-def test_the_release_migration_adds_the_module_and_its_reverse_removes_it(tenant: Any) -> None:
-    """The migration's own two functions, run against real rows: a plan gains
-    the code once (never twice), a partner that allows the whole MVP set gains
-    it, a partner restricted to fewer modules is left alone, and the reverse
-    takes it back out."""
-    from importlib import import_module
-
-    from django.apps import apps as django_apps
-
-    release = import_module("apps.library.migrations.0010_release")
-    plan, partner = tenant.plan, tenant.partner
-    plan.modules = [m for m in plan.modules if m != "library"]
-    plan.save(update_fields=["modules"])
-    partner.allowed_modules = list(release.MVP_BEFORE)
-    partner.save(update_fields=["allowed_modules"])
-
-    release.forwards(django_apps, None)
-    release.forwards(django_apps, None)
-    plan.refresh_from_db()
-    partner.refresh_from_db()
-    assert plan.modules.count("library") == 1
-    assert partner.allowed_modules.count("library") == 1
-
-    release.backwards(django_apps, None)
-    plan.refresh_from_db()
-    partner.refresh_from_db()
-    assert "library" not in plan.modules and "library" not in partner.allowed_modules
-
-    partner.allowed_modules = ["platform", "parties"]
-    partner.save(update_fields=["allowed_modules"])
-    release.forwards(django_apps, None)
-    partner.refresh_from_db()
-    assert "library" not in partner.allowed_modules
 
 
 def test_the_unbuilt_codes_exist_and_are_all_unreleased() -> None:

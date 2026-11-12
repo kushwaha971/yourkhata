@@ -88,7 +88,8 @@ class Migration(migrations.Migration):
     dependencies = [
         ("platform", "0017_otp_provider_verification_id"),
         ("lending", "0004_release"),
-        ("library", "0010_release"),
+        # ("library", "0010_release") was here; the Library was rebuilt from
+        # scratch on 12 Nov 2026 and its old migrations are gone.
     ]
 
     operations = [migrations.RunPython(forwards, backwards)]

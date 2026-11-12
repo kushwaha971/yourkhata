@@ -16,7 +16,7 @@ from django.test import override_settings
 from django.urls import reverse
 from rest_framework.test import APIClient
 
-from apps.library.models import LibraryMembershipType
+from apps.library.models import Shift
 from apps.platform_app.models import MembershipAppGrant
 from apps.platform_app.tokens import CSRF_COOKIE
 from tests.factories.platform import (
@@ -75,14 +75,14 @@ def test_a_new_library_lists_its_three_steps_none_done() -> None:
         ("seats", False),
         ("student", False),
     ]
-    assert data["steps"][0]["path"] == "/library/fees"
+    assert data["steps"][0]["path"] == "/library/settings"
     assert (data["complete"], data["hidden"], data["can_hide"]) == (False, False, True)
 
 
 def test_a_step_is_done_when_the_books_say_so() -> None:
     tenant = _business()
     _, owner = _person(tenant, "owner")
-    LibraryMembershipType.objects.create(tenant=tenant, name="Monthly", code="MONTHLY")
+    Shift.objects.create(tenant=tenant, name="Morning", monthly_fee=800)
     assert _setup(owner, "library")["steps"][0]["done"] is True
 
 

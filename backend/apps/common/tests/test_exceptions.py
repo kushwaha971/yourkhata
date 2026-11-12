@@ -67,7 +67,7 @@ def test_registry_is_closed_and_complete() -> None:
     #           (a job or order moved out of turn).
     # Shop round (11 Nov 2026) — +1: `cancel_the_return` (a quick-sale return's
     #           refund is undone with the return, never alone).
-    assert len(REGISTRY) == 241
+    assert len(REGISTRY) == 252
     assert REGISTRY["settlement_balances_changed"] == (409, False)
     assert REGISTRY["promise_already_open"] == (409, False)
     assert REGISTRY["promise_closed"] == (409, False)

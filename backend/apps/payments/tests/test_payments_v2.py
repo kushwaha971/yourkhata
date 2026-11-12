@@ -110,10 +110,9 @@ def test_targets_for_direction_can_ask_for_auto_targets_only(clean_targets: Any)
     shop = [t.document_type for t in targets_for_direction("in", bucket="shop")]
     auto = [t.document_type for t in targets_for_direction("in", auto_only=True)]
     # ── DUE-03 ── the dues engine's `dues_due` (shop since DEC-019, auto) registers too.
-    # ── B10 ── the library's `library_charge` is its own bucket (DEC-019), auto.
     assert every == ["test_never_auto"]
     assert shop == ["sales_document", "dues_due"]
-    assert auto == ["sales_document", "library_charge", "dues_due"]
+    assert auto == ["sales_document", "dues_due"]
 
 
 def test_every_caller_hands_the_target_its_ctx_and_payment() -> None:

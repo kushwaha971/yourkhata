@@ -227,7 +227,8 @@ def test_the_four_existing_sources_are_registered_by_their_owners() -> None:
     assert sources[SourceType.PAYMENT].buckets == frozenset(LedgerBucket.values)
     for name in (SourceType.SALES_DOCUMENT, SourceType.PURCHASE_DOCUMENT, SourceType.EXPENSE):
         assert sources[name].buckets == frozenset({"shop"})
-    assert sources["library_charge"].buckets == frozenset({"library"})
+    # The Library keeps its own fees since 12 Nov 2026: it posts nothing here.
+    assert "library_charge" not in sources
 
 
 def test_registration_is_idempotent_and_refuses_a_different_shape() -> None:

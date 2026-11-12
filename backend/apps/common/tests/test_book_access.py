@@ -12,6 +12,28 @@ from tests.factories.parties import PartyFactory
 pytestmark = pytest.mark.django_db
 
 
+@pytest.fixture(autouse=True)
+def _library_notice():
+    """A notice addressed to the Library's people. The rebuilt Library (12 Nov
+    2026) sends none of its own, so the app-scoping rule is proved with this one."""
+    from apps.notifications.constants import NotificationCategory, NotificationSeverity
+    from apps.notifications.services.notify import REGISTRY, NotificationType, register_notification_type
+
+    if "library.overdue_today" not in REGISTRY:
+        register_notification_type(
+            "library.overdue_today",
+            NotificationType(
+                code="library.overdue_today",
+                category=NotificationCategory.SYSTEM,
+                severity=NotificationSeverity.INFO,
+                required_permission="library.member.read",
+                title_en="{count} fees became overdue today",
+                body_en="",
+            ),
+        )
+    yield
+
+
 @pytest.fixture
 def books(tenant, api_as, system_roles):
     modules = list(dict.fromkeys([*tenant.enabled_modules, "khata", "library", "lending", "dues"]))
@@ -210,34 +232,6 @@ def test_explicitly_empty_grants_never_restore_legacy_access(books):
     MembershipAppGrant.objects.filter(membership=member).delete()
     assert client.get("/api/v1/payments").status_code == 403
     assert client.get("/api/v1/parties").status_code == 403
-
-
-def test_deposit_module_and_receipt_scope_follow_the_same_app(books):
-    """A Shop payment reader must not see or move a Library deposit by its id."""
-    import uuid
-
-    from apps.common.context import Ctx
-    from apps.payments.services.deposits import open_deposit
-
-    tenant, party, make = books
-    deposit = open_deposit(
-        ctx=Ctx.system(tenant),
-        party_id=party.id,
-        module="library",
-        subject_type="library_membership",
-        subject_id=uuid.uuid4(),
-        purpose="Deposit",
-        expected_amount="50.00",
-    )
-    shop, _ = make(shop="admin")
-    assert shop.get(f"/api/v1/deposits/{deposit.id}").status_code == 404
-    assert shop.post(f"/api/v1/deposits/{deposit.id}/receive", {}, format="json").status_code == 404
-    assert shop.get("/api/v1/deposits").json()["data"] == []
-    library, _ = make(library="accountant")
-    assert library.get(f"/api/v1/deposits/{deposit.id}").status_code == 200
-    assert (
-        library.post(f"/api/v1/deposits/{deposit.id}/receive", {}, format="json").status_code == 403
-    )
 
 
 def test_owner_setting_empty_grants_persists_no_apps(books, system_roles):

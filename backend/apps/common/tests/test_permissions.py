@@ -62,18 +62,10 @@ CANON_PERMISSIONS = {
     "notifications.settings.manage",
     # A9b — R26, owner Q2; canon §0.9 amended by the module-roles CR.
     "platform.calendar.manage",
-    # ── B02 ── library (LIB-14) ── FRD LIB-14 §9; canon §0.9 CR drafted in the
-    # Track L progress file (CR-PLATFORM-ROLES item 2 widened the action set).
-    "library.catalogue.read",
-    "library.catalogue.write",
-    "library.copy.withdraw",
+    # Members & Fees, rebuilt 12 Nov 2026.
     "library.member.read",
     "library.member.write",
-    "library.member.close",
-    "library.loan.read",
-    "library.loan.write",
-    "library.loan.override",
-    "library.loan.adjust",
+    "library.fee.create",
     # ── LEN ── lending (FRD lending §0.8), the codenames the built features use.
     "lending.loan.read",
     "lending.loan.read_all",
@@ -93,11 +85,6 @@ CANON_PERMISSIONS = {
     "lending.reminder.send",
     "lending.report.read",
     "khata.book.read",
-    "library.charge.waive",
-    "library.charge.write",
-    "library.verification.run",
-    "library.verification.close",
-    "library.reports.read",
     "library.settings.manage",
 }
 

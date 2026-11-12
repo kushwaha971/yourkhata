@@ -61,24 +61,10 @@ PERMISSIONS: frozenset[str] = frozenset(
         # ── A9b ── R26, owner Q2 (canon §0.9 CR drafted in the Track P progress
         # file): owner and admin write tenant-wide closed days and weekdays.
         "platform.calendar.manage",
-        # ── B02 ── library (LIB-14) ── FRD LIB-14 §9; canon §0.9 CR drafted in
-        # docs/platform/progress/wave-b-track-l.md. Held by nobody while library
-        # is in UNRELEASED_MODULES (permissions_for drops hidden modules).
-        "library.catalogue.read",
-        "library.catalogue.write",
-        "library.copy.withdraw",
+        # Members & Fees (rebuilt 12 Nov 2026): read, enrol/edit, collect, set up.
         "library.member.read",
         "library.member.write",
-        "library.member.close",
-        "library.loan.read",
-        "library.loan.write",
-        "library.loan.override",
-        "library.loan.adjust",
-        "library.charge.waive",
-        "library.charge.write",
-        "library.verification.run",
-        "library.verification.close",
-        "library.reports.read",
+        "library.fee.create",
         "library.settings.manage",
         # ── LEN ── lending (FRD lending §0.8), the subset the screens built so far use.
         "lending.loan.read",
@@ -151,18 +137,10 @@ _STAFF = {
     "expenses.expense.read",
     "expenses.expense.write",
     "reports.basic.read",
-    # ── B02 ── library (LIB-14) ── §10's staff column: the assistant and the
-    # weekly volunteer work the counter. Withdraw, override, adjust and waive
-    # are off and grantable per member (FR-3); close, charge.write,
-    # verification.close, reports and settings are not staff's at all.
-    # Admin (owner minus tenant.manage) and accountant (every `.read`) derive.
-    "library.catalogue.read",
-    "library.catalogue.write",
+    # Members & Fees: the counter reads, enrols and collects; set-up is the owner's.
     "library.member.read",
     "library.member.write",
-    "library.loan.read",
-    "library.loan.write",
-    "library.verification.run",
+    "library.fee.create",
     # ── LEN ── the office staff and the collection round: read the book, record
     # collections and visits, add borrowers. Lending, closing, voiding, routes and
     # reports stay with the owner and admin (FRD lending §0.8, CQ-12).

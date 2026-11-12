@@ -20,7 +20,7 @@ pytestmark = pytest.mark.django_db
 
 @pytest.fixture
 def shared_tag(tenant, api_as, system_roles):
-    modules = list(dict.fromkeys([*tenant.enabled_modules, "khata", "library"]))
+    modules = list(dict.fromkeys([*tenant.enabled_modules, "khata", "lending"]))
     tenant.enabled_modules = modules
     tenant.save(update_fields=["enabled_modules"])
     tenant.plan.modules = modules
@@ -44,28 +44,28 @@ def shared_tag(tenant, api_as, system_roles):
 
 def test_one_app_grant_cannot_delete_rename_or_merge_a_shared_tag(shared_tag):
     tag_id, other_id, make, _ = shared_tag
-    library = make(library="admin")
+    lending = make(lending="admin")
     base = f"/api/v1/parties/tags/{tag_id}"
-    assert library.patch(base, {"name": "Renamed"}, format="json").status_code == 403
+    assert lending.patch(base, {"name": "Renamed"}, format="json").status_code == 403
     assert (
-        library.post(f"{base}/merge", {"into_tag_id": other_id}, format="json").status_code == 403
+        lending.post(f"{base}/merge", {"into_tag_id": other_id}, format="json").status_code == 403
     )
-    assert library.delete(base).status_code == 403
+    assert lending.delete(base).status_code == 403
     assert Tag.objects.filter(pk=tag_id, name="Wholesale").exists()
 
 
 def test_one_app_grant_still_creates_and_lists_tags(shared_tag):
     _, _, make, _ = shared_tag
-    library = make(library="admin")
-    assert library.get("/api/v1/parties/tags").status_code == 200
+    lending = make(lending="admin")
+    assert lending.get("/api/v1/parties/tags").status_code == 200
     assert (
-        library.post("/api/v1/parties/tags", {"name": "Seat A"}, format="json").status_code == 201
+        lending.post("/api/v1/parties/tags", {"name": "Seat A"}, format="json").status_code == 201
     )
 
 
 def test_member_with_every_contact_app_right_can_manage_tags(shared_tag):
     tag_id, _, make, owner = shared_tag
-    every = make(shop="admin", khata="admin", library="admin")
+    every = make(shop="admin", khata="admin", lending="admin")
     response = every.patch(f"/api/v1/parties/tags/{tag_id}", {"name": "Bulk buyers"}, format="json")
     assert response.status_code == 200, response.content
     assert owner.delete(f"/api/v1/parties/tags/{tag_id}").status_code in (200, 204)
