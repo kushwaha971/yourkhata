@@ -1,216 +1,143 @@
-"""The lending tables (FRD lending LEN-02, -04, -06, -07, -08).
+"""Loans & Collections' own tables (docs/revamp/lending/01-model-and-api.md).
 
-The loan keeps no balance of its own (FRD §0.3): money is payments, obligations
-are ledger lines in the `loan` bucket, and the dues engine says when money is
-expected. These tables hold what only lending knows — the terms as agreed, who
-collects where, and what a visit found.
+Rebuilt from scratch on 12 Nov 2026. A lender belongs to the business (tenant).
+Nothing here points at a Shop table or another app's: a borrower is not a
+party, a collection is not a payment, a schedule is not a dues schedule.
 """
 
 from __future__ import annotations
 
 from django.db import models
-from django.db.models import F, Q
-from django.db.models.functions import Lower
+from django.db.models import Q
 
 from apps.common.db.fields import MoneyField
 from apps.common.models import TenantModel
 from apps.lending.constants import (
-    LABEL_MAX,
     NAME_MAX,
     NOTE_MAX,
     REASON_MAX,
-    BorrowerStatus,
-    DeductionKind,
+    CloseReason,
     Frequency,
     LoanStatus,
-    PlanType,
-    RateUnit,
-    VisitOutcome,
+    MessageKind,
+    PayMode,
+    RowStatus,
 )
 
 
-def _in(field: str, choices: type[models.TextChoices]) -> Q:
-    return Q(**{f"{field}__in": choices.values})
-
-
-class LendingRoute(TenantModel):
-    """A collection round ("Market lane", "Station road"), walked by one agent."""
-
+class Route(TenantModel):
     name = models.CharField(max_length=NAME_MAX)
-    agent = models.ForeignKey(
-        "platform.User", on_delete=models.SET_NULL, null=True, blank=True, related_name="+"
-    )
-    is_active = models.BooleanField(default=True)
-    sort_order = models.SmallIntegerField(default=0)
-    version = models.IntegerField(default=1)
+    sort = models.PositiveSmallIntegerField(default=0)
+    active = models.BooleanField(default=True)
 
     class Meta:
         db_table = "lending_route"
-        constraints = [
-            models.UniqueConstraint(F("tenant"), Lower("name"), name="uq_lending_route_name"),
-        ]
+        ordering = ["sort", "name"]
 
 
-class LendingBorrower(TenantModel):
-    """The lending role of a party (ADR-046): one row per borrower."""
-
-    party = models.OneToOneField("parties.Party", on_delete=models.RESTRICT, related_name="+")
-    borrower_number = models.CharField(max_length=24)
-    guarantor = models.ForeignKey(
-        "parties.Party", on_delete=models.RESTRICT, null=True, blank=True, related_name="+"
-    )
-    route = models.ForeignKey(
-        LendingRoute, on_delete=models.RESTRICT, null=True, blank=True, related_name="borrowers"
-    )
-    area = models.CharField(max_length=NAME_MAX, default="", blank=True)
-    notes = models.TextField(default="", blank=True)
-    #: Owner, 12 Oct 2026 — a blocked borrower gets no new loan; collections on
-    #: the loans they already hold carry on (`services.borrowers`).
-    status = models.CharField(max_length=10, default=BorrowerStatus.ACTIVE)
-    blocked_at = models.DateTimeField(null=True, blank=True)
-    #: Optional, in the owner's words. Kept until unblocked, then cleared: the
-    #: audit rows keep the history, the row says only what is true now.
-    blocked_reason = models.CharField(max_length=REASON_MAX, default="", blank=True)
-    version = models.IntegerField(default=1)
+class Borrower(TenantModel):
+    name = models.CharField(max_length=NAME_MAX)
+    mobile = models.CharField(max_length=10, blank=True, default="")
+    # What they do, as the round names them: "Tea stall", "Vegetables".
+    work = models.CharField(max_length=NAME_MAX, blank=True, default="")
+    route = models.ForeignKey(Route, null=True, blank=True, on_delete=models.PROTECT, related_name="+")
+    note = models.CharField(max_length=NOTE_MAX, blank=True, default="")
+    active = models.BooleanField(default=True)
 
     class Meta:
         db_table = "lending_borrower"
-        constraints = [
-            models.UniqueConstraint(
-                fields=["tenant", "borrower_number"], name="uq_lending_borrower_number"
-            ),
-            models.CheckConstraint(
-                condition=_in("status", BorrowerStatus), name="ck_lending_borrower_status"
-            ),
-        ]
+        indexes = [models.Index(fields=["tenant", "name"], name="ix_lending_borrower_name")]
 
 
-class LendingLoan(TenantModel):
-    """One loan: the terms as agreed, frozen at save (LEN-04 BR-1), and its links
-    to the disbursal payment and the dues schedule."""
-
-    number = models.CharField(max_length=32)
-    borrower = models.ForeignKey(LendingBorrower, on_delete=models.RESTRICT, related_name="loans")
-    party = models.ForeignKey("parties.Party", on_delete=models.RESTRICT, related_name="+")
-    route = models.ForeignKey(
-        LendingRoute, on_delete=models.RESTRICT, null=True, blank=True, related_name="loans"
-    )
-    route_seq = models.IntegerField(default=0)
-    plan_type = models.CharField(max_length=16)
-    principal = MoneyField()
-    rate = models.DecimalField(max_digits=9, decimal_places=4, default=0)
-    rate_unit = models.CharField(max_length=10, default=RateUnit.PER_MONTH)
-    frequency = models.CharField(max_length=12)
-    instalment_count = models.IntegerField()
-    per_instalment_amount = MoneyField(null=True, blank=True)
-    collection_weekdays = models.SmallIntegerField(default=63)
-    rounding_rule = models.CharField(max_length=10, default="paise")
-    disbursed_on = models.DateField()
-    first_due_on = models.DateField()
-    maturity_on = models.DateField()
-    instalment_amount = MoneyField()
-    total_interest = MoneyField()
-    total_payable = MoneyField()
-    deductions_total = MoneyField(default=0)
-    cash_handed_over = MoneyField()
-    effective_annual_rate = models.DecimalField(max_digits=7, decimal_places=2)
-    #: What the disbursal payment has paid out (the target's `amount_paid`).
-    disbursed_amount = MoneyField(default=0)
-    disbursal_payment_id = models.UUIDField(null=True, blank=True)
-    schedule_id = models.UUIDField(null=True, blank=True)
-    status = models.CharField(max_length=12, default=LoanStatus.ACTIVE)
-    close_reason = models.CharField(max_length=12, default="", blank=True)
+class Loan(TenantModel):
+    number = models.CharField(max_length=16)
+    borrower = models.ForeignKey(Borrower, on_delete=models.PROTECT, related_name="loans")
+    route = models.ForeignKey(Route, null=True, blank=True, on_delete=models.PROTECT, related_name="+")
+    lent = MoneyField()
+    charges = MoneyField(default=0)
+    frequency = models.CharField(max_length=8, choices=Frequency.choices)
+    count = models.PositiveSmallIntegerField()
+    each = MoneyField()
+    starts_on = models.DateField()
+    skip_sundays = models.BooleanField(default=True)
+    status = models.CharField(max_length=8, choices=LoanStatus.choices, default=LoanStatus.ACTIVE)
     closed_on = models.DateField(null=True, blank=True)
-    notes = models.TextField(max_length=NOTE_MAX, default="", blank=True)
-    #: LEN-09 FR-1/FR-2 — the late-fee rule agreed with the borrower, frozen with the
-    #: terms: `none`, `flat_once` (₹ once per late instalment), `per_day` (₹ a day,
-    #: capped) or `simple_interest` (% a year on the unpaid instalment, capped).
-    late_fee_kind = models.CharField(max_length=16, default="none")
-    late_fee_value = models.DecimalField(max_digits=10, decimal_places=4, null=True, blank=True)
-    late_fee_cap = MoneyField(null=True, blank=True)
-    late_fee_grace_days = models.SmallIntegerField(default=0)
-    #: LEN-10 — why a loan was written off or cancelled, in the owner's words.
-    status_reason = models.CharField(max_length=255, default="", blank=True)
-    version = models.IntegerField(default=1)
+    close_reason = models.CharField(max_length=12, choices=CloseReason.choices, blank=True, default="")
+    note = models.CharField(max_length=NOTE_MAX, blank=True, default="")
 
     class Meta:
         db_table = "lending_loan"
         constraints = [
             models.UniqueConstraint(fields=["tenant", "number"], name="uq_lending_loan_number"),
-            models.CheckConstraint(condition=_in("plan_type", PlanType), name="ck_lending_plan"),
-            models.CheckConstraint(
-                condition=_in("frequency", Frequency), name="ck_lending_frequency"
-            ),
-            models.CheckConstraint(condition=_in("status", LoanStatus), name="ck_lending_status"),
-            models.CheckConstraint(condition=Q(principal__gt=0), name="ck_lending_principal"),
+            models.CheckConstraint(condition=Q(lent__gt=0) & Q(each__gt=0) & Q(charges__gte=0), name="ck_lending_loan_amounts"),
         ]
-        indexes = [
-            models.Index(
-                fields=["tenant", "status", "route", "route_seq"], name="ix_lending_route"
-            ),
-            models.Index(fields=["tenant", "party"], name="ix_lending_loan_party"),
-        ]
-
-    @property
-    def document_date(self) -> object:
-        """The payments protocol's `(document_date, number, id)` order key."""
-        return self.disbursed_on
+        indexes = [models.Index(fields=["tenant", "status", "route"], name="ix_lending_loan_round")]
 
 
-class LendingLoanDeduction(TenantModel):
-    loan = models.ForeignKey(LendingLoan, on_delete=models.RESTRICT, related_name="deductions")
-    kind = models.CharField(max_length=20)
-    label = models.CharField(max_length=LABEL_MAX)
+class Due(TenantModel):
+    """One row of the schedule, written once with the loan."""
+
+    loan = models.ForeignKey(Loan, on_delete=models.PROTECT, related_name="dues")
+    seq = models.PositiveSmallIntegerField()
+    due_on = models.DateField()
     amount = MoneyField()
 
     class Meta:
-        db_table = "lending_loan_deduction"
-        constraints = [
-            models.CheckConstraint(
-                condition=_in("kind", DeductionKind), name="ck_lending_ded_kind"
-            ),
-            models.CheckConstraint(condition=Q(amount__gt=0), name="ck_lending_ded_amount"),
-        ]
+        db_table = "lending_due"
+        ordering = ["seq"]
+        constraints = [models.UniqueConstraint(fields=["loan", "seq"], name="uq_lending_due_seq")]
+        indexes = [models.Index(fields=["tenant", "due_on"], name="ix_lending_due_day")]
 
 
-class LendingCollection(TenantModel):
-    """One collection: the payment and what only lending knows about it."""
+class Collection(TenantModel):
+    """Money collected on a loan. Never edited, never deleted (migration 0002)."""
 
-    loan = models.ForeignKey(LendingLoan, on_delete=models.RESTRICT, related_name="collections")
-    payment_id = models.UUIDField()
+    loan = models.ForeignKey(Loan, on_delete=models.PROTECT, related_name="collections")
     amount = MoneyField()
+    mode = models.CharField(max_length=4, choices=PayMode.choices)
     collected_on = models.DateField()
-    route = models.ForeignKey(
-        LendingRoute, on_delete=models.SET_NULL, null=True, blank=True, related_name="+"
-    )
-    collected_by = models.ForeignKey(
-        "platform.User", on_delete=models.SET_NULL, null=True, blank=True, related_name="+"
-    )
-    voided_at = models.DateTimeField(null=True, blank=True)
-    #: QA F8 — what a loan brought in from paper had already collected: history, an
-    #: `adjustment` payment no cash report counts, never part of a day's round.
-    is_opening = models.BooleanField(default=False, db_default=False)
+    status = models.CharField(max_length=8, choices=RowStatus.choices, default=RowStatus.LIVE)
+    removes = models.OneToOneField("self", null=True, blank=True, on_delete=models.PROTECT, related_name="removed_by")
+    reason = models.CharField(max_length=REASON_MAX, blank=True, default="")
 
     class Meta:
         db_table = "lending_collection"
+        constraints = [models.CheckConstraint(condition=Q(amount__gt=0), name="ck_lending_collection_positive")]
         indexes = [
-            models.Index(fields=["tenant", "collected_on"], name="ix_lending_coll_day"),
-            models.Index(fields=["loan", "collected_on"], name="ix_lending_coll_loan"),
+            models.Index(fields=["loan", "collected_on"], name="ix_lending_collection_loan"),
+            models.Index(fields=["tenant", "collected_on"], name="ix_lending_collection_day"),
         ]
 
 
-class LendingVisit(TenantModel):
-    """A stop with no money: "not paid", "not at home", "promised Friday"."""
+class Visit(TenantModel):
+    """A "Not paid" at the door, with why and when they promised."""
 
-    loan = models.ForeignKey(LendingLoan, on_delete=models.RESTRICT, related_name="visits")
-    on_date = models.DateField()
-    outcome = models.CharField(max_length=10)
-    reason = models.CharField(max_length=REASON_MAX, default="", blank=True)
+    loan = models.ForeignKey(Loan, on_delete=models.PROTECT, related_name="visits")
+    day = models.DateField()
+    reason = models.CharField(max_length=REASON_MAX, blank=True, default="")
     promised_on = models.DateField(null=True, blank=True)
 
     class Meta:
         db_table = "lending_visit"
-        constraints = [
-            models.CheckConstraint(condition=_in("outcome", VisitOutcome), name="ck_lending_visit"),
-        ]
-        indexes = [models.Index(fields=["tenant", "on_date"], name="ix_lending_visit_day")]
+        constraints = [models.UniqueConstraint(fields=["loan", "day"], name="uq_lending_visit_day")]
+
+
+class Message(TenantModel):
+    """A record that WhatsApp was OPENED with this text. Nothing is sent (DEC-012)."""
+
+    loan = models.ForeignKey(Loan, on_delete=models.PROTECT, related_name="messages")
+    kind = models.CharField(max_length=12, choices=MessageKind.choices)
+    text = models.TextField()
+
+    class Meta:
+        db_table = "lending_message"
+        indexes = [models.Index(fields=["tenant", "-created_at"], name="ix_lending_message_recent")]
+
+
+class Settings(models.Model):
+    tenant = models.OneToOneField("platform.Tenant", primary_key=True, on_delete=models.RESTRICT, related_name="+")
+    sign_as = models.CharField(max_length=NAME_MAX, blank=True, default="")
+    upi_id = models.CharField(max_length=60, blank=True, default="")
+
+    class Meta:
+        db_table = "lending_settings"

@@ -1,117 +1,74 @@
-"""AppConfig for the lending vertical (FRD lending.md; ADR-041)."""
-
-from __future__ import annotations
-
 from django.apps import AppConfig
 
 
 class LendingConfig(AppConfig):
-    default_auto_field = "django.db.models.BigAutoField"
+    """Loans & Collections: a small lender's loans, round and collections.
+
+    Rebuilt from scratch on 12 Nov 2026 as an app that stands alone (owner: "I
+    don't want any relation with shop"). Its tables are its own; it reads and
+    writes no Shop table and no other app's. See
+    docs/revamp/lending/01-model-and-api.md.
+    """
+
     name = "apps.lending"
     label = "lending"
-    verbose_name = "Lending & collections"
+    verbose_name = "Lending"
+    default_auto_field = "django.db.models.BigAutoField"
 
     def ready(self) -> None:
-        """Registrations with the core and the dues engine, all deferred imports."""
-        from apps.common.constants import Direction, LedgerBucket
-        from apps.dues.registry import register_subject
-        from apps.ledger.constants import EntryType
-        from apps.ledger.selectors.sources import register_source_resolver
-        from apps.ledger.services.postings import register_posting_source
-        from apps.lending.constants import (
-            MODULE,
-            NUMBER_BORROWER,
-            NUMBER_LOAN,
-            SOURCE_DEDUCTION,
-            SUBJECT_LOAN,
-        )
-        from apps.lending.services import loans, messages
-        from apps.lending.services.holidays import on_calendar_changed
-        from apps.parties.services.roles import register_party_role
-        from apps.payments.services.targets import register_target
-        from apps.platform_app.services.calendar import (
-            register_calendar_listener,
-            register_calendar_reader,
-        )
-        from apps.platform_app.services.sequences import register_number_kind
+        from apps.common.jobs import Schedule, register_schedule
+        from apps.lending import tasks
+        from apps.lending.services import seed_lending
+        from apps.notifications.constants import NotificationCategory, NotificationSeverity
+        from apps.notifications.services.notify import NotificationType, register_notification_type
+        from apps.platform_app.apps_registry import AppSpec, SetupStep, register_app, register_app_setup
+        from apps.platform_app.services.guards import register_module_enable_hook
 
-        register_number_kind(
-            NUMBER_LOAN,
-            module=MODULE,
-            mode="perpetual",
-            default_prefix="LN-",
-            padding=4,
-            label_id="lending.numbering.loan",
-        )
-        register_number_kind(
-            NUMBER_BORROWER,
-            module=MODULE,
-            mode="perpetual",
-            default_prefix="B-",
-            padding=4,
-            label_id="lending.numbering.borrower",
-        )
-        register_calendar_reader(MODULE)
-        # QA F8 — a holiday moves the instalments that hold no money yet.
-        register_calendar_listener(on_calendar_changed)
-        # FRD §0.3 — a deduction at disbursal is a `charge` in the loan bucket.
-        register_posting_source(
-            SOURCE_DEDUCTION,
-            module=MODULE,
-            entry_types={EntryType.CHARGE: Direction.DEBIT},
-            buckets=frozenset({LedgerBucket.LOAN.value}),
-        )
-        register_source_resolver(SOURCE_DEDUCTION, loans.resolve_deductions)
-        # LEN-10 — a write-off is one credit off the borrower's loan balance.
-        from apps.lending.services.closing import SOURCE_WRITE_OFF
+        register_module_enable_hook("lending", seed_lending)
 
-        register_posting_source(
-            SOURCE_WRITE_OFF,
-            module=MODULE,
-            entry_types={EntryType.ADJUSTMENT_CREDIT: Direction.CREDIT},
-            buckets=frozenset({LedgerBucket.LOAN.value}),
-        )
-        register_target(loans.LendingLoanTarget())
-        register_subject(
-            SUBJECT_LOAN,
-            module=MODULE,
-            label=loans.loan_labels,
-            on_due_changed=loans.on_due_changed,
-            reminder_template_key="lending_instalment_due",
-        )
-        register_party_role(
-            "lending_borrower",
-            module=MODULE,
-            label_id="lending.role.borrower",
-            party_ids=loans.borrower_party_ids,
-        )
-        # LEN-12 — the policy, the reminder sources and the fixed texts.
-        messages.register()
-        # QA F10 — running loans from the old register, through the import wizard.
         from apps.lending import importers
 
         importers.register()
-
-        # docs/platform/14 §4.2 — Lending & collections as an app.
-        from apps.platform_app.apps_registry import AppSpec, register_app
-
         register_app(
             AppSpec(
                 code="lending",
                 label_id="nav.workspace.lending",
                 anchor="lending",
-                # `import_export` — QA F10: the running-loans import (migration 0007).
-                capabilities=frozenset(
-                    {"lending", "parties", "ledger", "payments", "dues", "import_export"}
-                ),
-                entry_permission="lending.today.read",
+                # `import_export`: running loans from the paper register.
+                capabilities=frozenset({"lending", "import_export"}),
+                entry_permission="lending.loan.read",
                 home_path="/lending",
                 order=20,
             )
         )
 
-        # docs/platform/14 step 5 — the setup checklist on this app's home.
-        from apps.lending.selectors.setup import lending_setup
-        from apps.platform_app.apps_registry import register_app_setup
+        def lending_setup(tenant: object) -> list:
+            """The first steps a lender takes: a borrower, a loan, a route."""
+            from apps.lending.models import Borrower, Loan, Route
+
+            return [
+                SetupStep(key="loan", label_id="lending.setup.loan", path="/lending/loans/new",
+                          done=Loan.objects.filter(tenant=tenant).exists(), permission="lending.loan.create"),
+                SetupStep(key="routes", label_id="lending.setup.routes", path="/lending/routes",
+                          done=Route.objects.filter(tenant=tenant).exists(), permission="lending.settings.manage"),
+                SetupStep(key="borrower", label_id="lending.setup.borrower", path="/lending/borrowers",
+                          done=Borrower.objects.filter(tenant=tenant).exists(), permission="lending.loan.create"),
+            ]
 
         register_app_setup("lending", lending_setup)
+
+        # The morning bell: loans that became late today.
+        register_notification_type(
+            tasks.LATE_TODAY,
+            NotificationType(
+                code=tasks.LATE_TODAY,
+                category=NotificationCategory.REMINDERS,
+                severity=NotificationSeverity.WARNING,
+                required_permission="lending.loan.read",
+                title_en="Loans late today: {count}",
+                body_en="Tap to see who to remind",
+                group_window=24 * 60,
+                route=lambda _params: "/lending/messages",
+            ),
+        )
+        register_schedule(Schedule(tasks.LATE_TODAY, period="daily", at_hour_ist=8, minute=0))

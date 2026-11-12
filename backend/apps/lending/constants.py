@@ -1,67 +1,53 @@
-"""Vocabularies of the lending module (FRD lending §0)."""
-
-from __future__ import annotations
+from decimal import Decimal
 
 from django.db import models
-
-MODULE = "lending"
-SUBJECT_LOAN = "lending_loan"
-SOURCE_DEDUCTION = "lending_deduction"
-TARGET_LOAN = "lending_loan"
-NUMBER_LOAN = "lending_loan"
-NUMBER_BORROWER = "lending_borrower"
-NOTE_MAX = 500
-LABEL_MAX = 60
-NAME_MAX = 60
-REASON_MAX = 160
-
-
-class PlanType(models.TextChoices):
-    FLAT = "flat"
-    REDUCING = "reducing"
-    INTEREST_ONLY = "interest_only"
-    FIXED_DAILY = "fixed_daily"
-    FLEXIBLE = "flexible"
+from django.utils.translation import gettext_lazy as _
 
 
 class Frequency(models.TextChoices):
-    DAILY = "daily"
-    WEEKLY = "weekly"
-    FORTNIGHTLY = "fortnightly"
-    MONTHLY = "monthly"
-
-
-class RateUnit(models.TextChoices):
-    PER_MONTH = "per_month"
-    PER_YEAR = "per_year"
-
-
-class BorrowerStatus(models.TextChoices):
-    """Whether a borrower may be given a NEW loan (owner, 12 Oct 2026).
-
-    Blocking is about the next loan only: what they already owe stays owed and
-    stays collectable, so nothing on a running loan reads this.
-    """
-
-    ACTIVE = "active"
-    BLOCKED = "blocked"
+    DAILY = "daily", _("Daily")
+    WEEKLY = "weekly", _("Weekly")
+    MONTHLY = "monthly", _("Monthly")
 
 
 class LoanStatus(models.TextChoices):
-    ACTIVE = "active"
-    CLOSED = "closed"
-    WRITTEN_OFF = "written_off"
-    CANCELLED = "cancelled"
+    ACTIVE = "active", _("Running")
+    CLOSED = "closed", _("Closed")
 
 
-class DeductionKind(models.TextChoices):
-    PROCESSING_FEE = "processing_fee"
-    UPFRONT_INTEREST = "upfront_interest"
-    DOCUMENTATION = "documentation"
-    OTHER = "other"
+class CloseReason(models.TextChoices):
+    PAID = "paid", _("Paid in full")
+    WRITTEN_OFF = "written_off", _("Written off")
 
 
-class VisitOutcome(models.TextChoices):
-    NOT_PAID = "not_paid"
-    NOT_HOME = "not_home"
-    PROMISED = "promised"
+class PayMode(models.TextChoices):
+    CASH = "cash", _("Cash")
+    UPI = "upi", _("UPI")
+
+
+class RowStatus(models.TextChoices):
+    LIVE = "live", _("Live")
+    REMOVED = "removed", _("Removed")
+
+
+class StopState(models.TextChoices):
+    """A loan on a day, as the round shows it (I8)."""
+
+    LATE = "late", _("Late")
+    DUE = "due", _("Due today")
+    DONE = "done", _("Collected")
+    NOT_PAID = "not", _("Not paid")
+
+
+class MessageKind(models.TextChoices):
+    LATE = "late", _("Late")
+    DUE_TODAY = "due_today", _("Due today")
+    DUE_TOMORROW = "due_tomorrow", _("Due tomorrow")
+    RECEIPT = "receipt", _("Receipt")
+
+
+MAX_AMOUNT = Decimal("9999999999.99")
+MAX_COUNT = 400
+NAME_MAX = 120
+NOTE_MAX = 200
+REASON_MAX = 200
