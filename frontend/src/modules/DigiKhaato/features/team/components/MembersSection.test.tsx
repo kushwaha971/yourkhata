@@ -34,7 +34,6 @@ const roleService = jest.requireMock('../api/roleService') as { fetchRoles: jest
 const memberService = jest.requireMock('../api/memberService') as {
   listMembers: jest.Mock;
   createMember: jest.Mock;
-  sendStaffCode: jest.Mock;
   regenerateCredentials: jest.Mock;
 };
 
@@ -108,25 +107,6 @@ beforeEach(() => {
   roleService.fetchRoles.mockResolvedValue([]);
 });
 
-/**
- * Owner, 12 Nov 2026: a staff member is added only with the code sent to their
- * number. Send it, type what they read out, then add — as the owner does.
- */
-const sendAndTypeCode = async (user: ReturnType<typeof userEvent.setup>): Promise<void> => {
-  memberService.sendStaffCode.mockResolvedValue({ challengeId: 'ch-1', codeLength: 4, channel: 'whatsapp', retryAfter: 60 });
-  // By position, not words, so the Hindi screen is driven the same way.
-  await user.click(within(screen.getByTestId('staff-code')).getByRole('button'));
-  const boxes = within(screen.getByTestId('staff-code')).queryAllByRole('textbox');
-  if (boxes.length > 0) {
-    await user.click(boxes[0] as HTMLElement);
-    await user.keyboard('1234');
-  }
-};
-const confirmAndAdd = async (user: ReturnType<typeof userEvent.setup>): Promise<void> => {
-  await sendAndTypeCode(user);
-  await user.click(screen.getByRole('button', { name: 'Add to team' }));
-};
-
 describe('MembersSection — the permission', () => {
   it('does not fetch the team for somebody who may not manage it', async () => {
     // The server enforces this on every request (R-SEC-2). Asking anyway spends
@@ -152,7 +132,7 @@ describe('MembersSection — adding somebody', () => {
     expect(screen.queryByLabelText(/Email address/)).not.toBeInTheDocument();
     await user.type(await screen.findByLabelText(/Full name/), 'Ramesh Kumar');
     await user.type(screen.getByLabelText(/Mobile number/), '9890011223');
-    await confirmAndAdd(user);
+    await user.click(screen.getByRole('button', { name: 'Add to team' }));
 
     expect(await screen.findByText('Ramesh Kumar is on your team')).toBeInTheDocument();
     expect(screen.getByText(/sign in with \+91 98900 11223/)).toBeInTheDocument();
@@ -171,7 +151,7 @@ describe('MembersSection — adding somebody', () => {
 
     await user.click(await screen.findByRole('button', { name: 'Add member' }));
     await user.type(await screen.findByLabelText(/Full name/), 'Ramesh Kumar');
-    await confirmAndAdd(user);
+    await user.click(screen.getByRole('button', { name: 'Add to team' }));
 
     expect(await screen.findByText('Enter a mobile number.')).toBeInTheDocument();
     expect(memberService.createMember).not.toHaveBeenCalled();
@@ -269,7 +249,7 @@ describe('MembersSection — a ten-digit mobile (UAT D4)', () => {
     await user.click(await screen.findByRole('button', { name: 'Add member' }));
     await user.type(await screen.findByLabelText(/Full name/), 'Ramesh Kumar');
     await user.type(screen.getByLabelText(/Mobile number/), '9890011223');
-    await confirmAndAdd(user);
+    await user.click(screen.getByRole('button', { name: 'Add to team' }));
 
     await waitFor(() => expect(memberService.createMember).toHaveBeenCalledTimes(1));
     expect(screen.queryByText('Enter a 10-digit Indian mobile number.')).not.toBeInTheDocument();
@@ -302,7 +282,7 @@ describe('MembersSection — a mobile another login already holds (NEW-2)', () =
     await user.click(await screen.findByRole('button', { name: 'Add member' }));
     await user.type(await screen.findByLabelText(/Full name/), 'Ramesh Kumar');
     await user.type(screen.getByLabelText(/Mobile number/), '9876543210');
-    await confirmAndAdd(user);
+    await user.click(screen.getByRole('button', { name: 'Add to team' }));
 
     const mobile = screen.getByLabelText(/Mobile number/);
     await waitFor(() => expect(mobile).toHaveAttribute('aria-invalid', 'true'));
@@ -341,7 +321,6 @@ describe('MembersSection — the taken-mobile refusal in Hindi (L6)', () => {
     );
     const mobile = screen.getByLabelText(/मोबाइल नंबर/);
     await user.type(mobile, '9876543210');
-    await sendAndTypeCode(user);
     await user.click(screen.getByRole('button', { name: messages['team.member.add.submit'] }));
 
     await waitFor(() => expect(mobile).toHaveAttribute('aria-invalid', 'true'));
@@ -402,28 +381,5 @@ describe('MembersSection — the heading count and the invited row’s disc (QA 
     expect(invitedCard?.querySelector('[aria-hidden] svg.lucide-mail')).not.toBeNull();
     // A joined member keeps their initials.
     expect(within(memberCard as HTMLElement).getByText('RK')).toBeInTheDocument();
-  });
-});
-
-describe('MembersSection — the staff number check (owner, 12 Nov 2026)', () => {
-  it('keeps Add to team off until the code from their phone is in, then sends it with the member', async () => {
-    memberService.createMember.mockResolvedValue(BY_MOBILE);
-    const user = userEvent.setup();
-    renderWithProviders(<MembersSection />);
-    await user.click(await screen.findByRole('button', { name: 'Add member' }));
-    await user.type(await screen.findByLabelText(/Full name/), 'Ramesh Kumar');
-    await user.type(screen.getByLabelText(/Mobile number/), '9890011223');
-    expect(screen.getByRole('button', { name: 'Add to team' })).toBeDisabled();
-
-    await sendAndTypeCode(user);
-    expect(memberService.sendStaffCode).toHaveBeenCalledWith('+919890011223');
-    expect(screen.getByText(/Code sent on WhatsApp to/)).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Add to team' })).toBeEnabled();
-    await user.click(screen.getByRole('button', { name: 'Add to team' }));
-    expect(memberService.createMember.mock.calls[0][0]).toMatchObject({
-      mobile: '+919890011223',
-      challengeId: 'ch-1',
-      code: '1234',
-    });
   });
 });

@@ -64,7 +64,6 @@ from apps.platform_app.views.tenant import (
     MemberCredentialsView,
     MemberDetailView,
     MemberListCreateView,
-    MemberMobileCodeView,
     MemberRemoveView,
     MemberUnblockView,
     MembershipAppsView,
@@ -158,7 +157,6 @@ urlpatterns = [
         name="membership-detail",
     ),
     path("members", MemberListCreateView.as_view(), name="member-list"),
-    path("members/mobile-code", MemberMobileCodeView.as_view(), name="member-mobile-code"),
     path("members/<uuid:membership_id>/apps", MemberAppsView.as_view(), name="member-apps"),
     # Owner, 12 Oct 2026 — the manager's half: edit, block, unblock, remove.
     path("members/<uuid:membership_id>", MemberDetailView.as_view(), name="member-detail"),

@@ -215,9 +215,6 @@ def request_otp(
     ) and purpose not in (
         OtpPurpose.LOGIN,
         OtpPurpose.SIGNUP,
-        # Owner, 12 Nov 2026: a new staff member's number is confirmed with a
-        # code before they are added (`POST /members/mobile-code`).
-        OtpPurpose.VERIFY,
     ):
         raise OtpNotSent("SMS OTP is available only for sign-in and sign-up.")
     _assert_not_throttled(mobile=mobile, ip=ip)

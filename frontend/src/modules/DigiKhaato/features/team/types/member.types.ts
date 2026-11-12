@@ -102,19 +102,6 @@ export interface MemberDraft {
   readonly fullName: string;
   readonly role: MemberRoleCode;
   readonly mobile?: string | null;
-  /** The code sent to `mobile` and the challenge it answers (owner, 12 Nov 2026). */
-  readonly challengeId?: string;
-  readonly code?: string;
-}
-
-/** `POST /members/mobile-code` — a check code is on its way to the number. */
-export interface StaffCodeSent {
-  readonly challengeId: string;
-  readonly codeLength: 4 | 6;
-  /** `whatsapp` or `sms`: the screen says which. */
-  readonly channel: string;
-  /** Seconds before another code may be sent. */
-  readonly retryAfter: number;
 }
 
 /**

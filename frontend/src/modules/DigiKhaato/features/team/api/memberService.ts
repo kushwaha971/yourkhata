@@ -12,7 +12,8 @@ import type {
   MemberDraft,
   MemberEdit,
   MemberListParams,
-  MemberListResult, StaffCodeSent } from '../types/member.types';
+  MemberListResult,
+} from '../types/member.types';
 
 /**
  * Part 19 §19.3.4 — one exported async function per endpoint, owning the
@@ -146,7 +147,6 @@ export const createMember = async (
       full_name: input.fullName,
       role: input.role,
       ...(input.mobile ? { mobile: input.mobile } : {}),
-      ...(input.challengeId ? { challenge_id: input.challengeId, code: input.code ?? '' } : {}),
     },
     ubConfig({ headers: { 'Idempotency-Key': idempotencyKey } })
   );
@@ -154,23 +154,6 @@ export const createMember = async (
   return toCredentials(response.data.data);
 };
 export const createMemberWriteClass: TWriteClass = 'online-only';
-
-/**
- * POST /members/mobile-code — send a check code to the new staff member's
- * number, by WhatsApp or SMS as the login code goes (owner, 12 Nov 2026). The
- * member is added only with that code.
- */
-export const sendStaffCode = async (mobile: string): Promise<StaffCodeSent> => {
-  const response = await api.post(API_PATHS.MEMBER_MOBILE_CODE, { mobile }, ubConfig({ suppressErrorSnackbar: true }));
-  const data = response.data.data as { challenge_id: string; code_length?: number; channel?: string; retry_after?: number };
-  return {
-    challengeId: data.challenge_id,
-    codeLength: data.code_length === 6 ? 6 : 4,
-    channel: data.channel ?? 'sms',
-    retryAfter: data.retry_after ?? 60,
-  };
-};
-export const sendStaffCodeWriteClass: TWriteClass = 'online-only';
 
 /**
  * POST /members/{id}/credentials — reissue the temporary password.

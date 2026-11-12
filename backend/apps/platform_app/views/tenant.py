@@ -10,7 +10,6 @@ from __future__ import annotations
 from typing import Any
 
 from django.conf import settings
-from django.db import transaction
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.views import APIView
 
@@ -41,7 +40,6 @@ from apps.platform_app.serializers.tenant import (
     InvitationReadSerializer,
     MEMBER_LIST_STATUSES,
     MemberCreateSerializer,
-    MemberMobileCodeSerializer,
     MemberReadSerializer,
     MemberUpdateSerializer,
     MembershipPatchSerializer,
@@ -56,8 +54,6 @@ from apps.platform_app.services import entitlements
 from apps.platform_app.services import member_admin
 from apps.platform_app.services import memberships as membership_service
 from apps.platform_app.services import onboarding as onboarding_service
-from apps.platform_app.constants import OtpPurpose
-from apps.platform_app.services import otp as otp_service
 from apps.platform_app.services import sessions as session_service
 from apps.platform_app.services import tenant_settings as settings_service
 
@@ -610,22 +606,15 @@ class MemberListCreateView(APIView):
         if refusal:
             raise ValidationFailed({"role": [refusal]})
 
-        mobile = data.get("mobile") or None
-        # The code is checked on its own, never inside a transaction that a
-        # refused add could roll back: rolled back, a wrong guess would not
-        # count, and a four-digit code could be guessed without limit.
-        if mobile:
-            _confirm_staff_mobile(mobile=mobile, data=data, request=request)
-        with transaction.atomic():
-            issued = credentials_service.create_member(
-                tenant=tenant,
-                role=role,
-                email=data.get("email") or "",
-                full_name=data["full_name"],
-                mobile=mobile,
-                actor=request.user,
-                ctx=Ctx.from_request(request),
-            )
+        issued = credentials_service.create_member(
+            tenant=tenant,
+            role=role,
+            email=data.get("email") or "",
+            full_name=data["full_name"],
+            mobile=data.get("mobile") or None,
+            actor=request.user,
+            ctx=Ctx.from_request(request),
+        )
         return StandardResponse.created(_credentials_payload(issued))
 
     def idempotent_response_body(self, request: Any, response: Any) -> Any:
@@ -643,56 +632,6 @@ class MemberListCreateView(APIView):
         data["password"] = None
         body["data"] = data
         return body
-
-
-def _confirm_staff_mobile(*, mobile: str, data: dict, request: Any) -> None:
-    """Owner, 12 Nov 2026: a staff member is added by mobile only once the code
-    sent to that number is entered. The code must be for THIS number — a code
-    for one number never adds another — and it is spent here, once."""
-    challenge_id, code = data.get("challenge_id") or "", data.get("code") or ""
-    if not challenge_id or not code:
-        raise ValidationFailed({"code": ["Send the code to this number and enter it."]})
-    try:
-        challenge = otp_service.consume_challenge(
-            challenge_id=challenge_id,
-            code=code,
-            purpose=OtpPurpose.VERIFY,
-            request_id=getattr(request, "request_id", None),
-            ip=_meta(request)["ip"],
-        )
-    except otp_service.OtpInvalid as exc:
-        raise ValidationFailed({"code": ["That code is wrong. Check it with them, or send a new one."]}) from exc
-    if challenge.mobile != mobile:
-        raise ValidationFailed({"code": ["That code was sent to another number."]})
-
-
-class MemberMobileCodeView(APIView):
-    """`POST /members/mobile-code` — send a check code to a new staff member's
-    number, by WhatsApp or SMS, whichever the login code uses (owner, 12 Nov
-    2026). Owner and admin only, like adding the member."""
-
-    permission_classes = [IsAuthenticated, MembersManagePermission]
-
-    def post(self, request: Any) -> Any:
-        _tenant_or_refuse(request)
-        serializer = MemberMobileCodeSerializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        meta = _meta(request)
-        issued = otp_service.request_otp(
-            mobile=serializer.validated_data["mobile"],
-            purpose=OtpPurpose.VERIFY,
-            ip=meta["ip"],
-            request_id=meta["request_id"],
-        )
-        return StandardResponse.ok(
-            {
-                "challenge_id": str(issued.challenge_id),
-                "expires_in": issued.expires_in,
-                "retry_after": issued.retry_after,
-                "code_length": issued.code_length,
-                "channel": issued.channel,
-            }
-        )
 
 
 class MemberAppsView(APIView):

@@ -26,17 +26,6 @@ def _credentials_url(membership_id: Any) -> str:
     return reverse("v1:member-credentials", kwargs={"membership_id": str(membership_id)})
 
 
-@pytest.fixture(autouse=True)
-def _staff_codes(monkeypatch: Any) -> None:
-    """Owner, 12 Nov 2026: a staff member added by mobile confirms the number
-    with a code. Every add here sends one first, as the screen does, so pin the
-    code and lift the resend wait that would otherwise refuse a second add."""
-    from tests.fixtures import DEFAULT_OTP_CODE
-
-    monkeypatch.setattr("apps.platform_app.services.otp.generate_code", lambda: DEFAULT_OTP_CODE)
-    monkeypatch.setattr("apps.platform_app.services.otp._assert_not_throttled", lambda **_: None)
-
-
 def _create(client: Any, **overrides: Any) -> Any:
     body = {
         "email": "ramesh@shop.test",
@@ -44,12 +33,6 @@ def _create(client: Any, **overrides: Any) -> Any:
         "role": "staff",
         **overrides,
     }
-    if body.get("mobile") and "code" not in body:
-        from tests.fixtures import DEFAULT_OTP_CODE
-
-        sent = client.post(reverse("v1:member-mobile-code"), {"mobile": body["mobile"]}, format="json")
-        if sent.status_code == 200:
-            body = {**body, "challenge_id": sent.json()["data"]["challenge_id"], "code": DEFAULT_OTP_CODE}
     return client.post(reverse(LIST_URL), body, format="json")
 
 
@@ -463,60 +446,3 @@ def test_an_existing_account_is_added_whatever_mobile_the_owner_typed(
     own = _create(client, mobile="+919876543210")
     assert own.status_code == 201, own.content
     assert own.json()["data"]["created_user"] is False
-
-
-
-# ── The staff number check (owner, 12 Nov 2026) ──────────────────────────────
-
-
-@pytest.mark.django_db
-def test_a_staff_member_by_mobile_is_added_only_with_the_code_sent_to_that_number(
-    api_as: Any, tenant: Any
-) -> None:
-    from tests.fixtures import DEFAULT_OTP_CODE
-
-    client, _ = api_as(tenant)
-    no_code = _create(client, email="", mobile="9845033344", code="")
-    assert no_code.status_code == 400 and "code" in no_code.json()["error"]["details"]
-
-    sent = client.post(reverse("v1:member-mobile-code"), {"mobile": "98450 33344"}, format="json")
-    assert sent.status_code == 200, sent.content
-    challenge = sent.json()["data"]["challenge_id"]
-    wrong = _create(client, email="", mobile="9845033344", challenge_id=challenge, code="0000")
-    assert wrong.status_code == 400 and "code" in wrong.json()["error"]["details"]
-
-    # A code sent to one number never adds another.
-    other = _create(client, email="", mobile="9845055566", challenge_id=challenge, code=DEFAULT_OTP_CODE)
-    assert other.status_code == 400
-    assert other.json()["error"]["details"]["code"] == ["That code was sent to another number."]
-
-    sent = client.post(reverse("v1:member-mobile-code"), {"mobile": "9845033344"}, format="json")
-    ok = _create(client, email="", mobile="9845033344",
-                 challenge_id=sent.json()["data"]["challenge_id"], code=DEFAULT_OTP_CODE)
-    assert ok.status_code == 201, ok.content
-    assert ok.json()["data"]["mobile"] == "+919845033344"
-
-
-@pytest.mark.django_db
-def test_only_an_owner_or_admin_can_send_a_staff_check_code(api_as: Any, tenant: Any) -> None:
-    client, _ = api_as(tenant, role=RoleCode.STAFF)
-    got = client.post(reverse("v1:member-mobile-code"), {"mobile": "9845077788"}, format="json")
-    assert got.status_code == 403
-
-
-
-@pytest.mark.django_db
-def test_wrong_staff_codes_count_and_burn_the_code(api_as: Any, tenant: Any, settings: Any) -> None:
-    """A wrong guess must count even though the add is refused: otherwise a
-    four-digit code could be guessed without limit. After the attempt limit the
-    right code no longer works either."""
-    from tests.fixtures import DEFAULT_OTP_CODE
-
-    client, _ = api_as(tenant)
-    sent = client.post(reverse("v1:member-mobile-code"), {"mobile": "9845099900"}, format="json")
-    challenge = sent.json()["data"]["challenge_id"]
-    wrong = "0000" if DEFAULT_OTP_CODE != "0000" else "1111"
-    for _ in range(int(settings.UB_OTP_MAX_ATTEMPTS)):
-        assert _create(client, email="", mobile="9845099900", challenge_id=challenge, code=wrong).status_code == 400
-    late = _create(client, email="", mobile="9845099900", challenge_id=challenge, code=DEFAULT_OTP_CODE)
-    assert late.status_code == 400 and "code" in late.json()["error"]["details"]

@@ -119,9 +119,7 @@ def test_failed_delivery_expires_challenge_and_returns_error(auth_client, settin
     assert OtpChallenge.objects.get(mobile="+919794620535").expires_at <= timezone.now()
 
 
-# "verify" is allowed since 12 Nov 2026: it confirms a new staff member's
-# number (`POST /members/mobile-code`). A password reset still never texts.
-@pytest.mark.parametrize("purpose", ["reset"])
+@pytest.mark.parametrize("purpose", ["verify", "reset"])
 @pytest.mark.parametrize("provider", ["fast2sms", "message_central"])
 def test_fast2sms_cannot_be_used_outside_signin_signup(settings, purpose, provider):
     """Only the owner's requested authentication purposes may trigger a paid SMS."""
