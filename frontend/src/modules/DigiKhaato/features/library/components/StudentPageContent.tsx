@@ -271,7 +271,7 @@ export function StudentPageContent({ id }: Readonly<{ id: string }>): React.JSX.
 
   return (
     <UbPageShell>
-      <UbStack gap={3} className="pb-28 lg:pb-6">
+      <UbStack gap={3} className="pb-44 lg:pb-6">
         {/* Header: back (phone), name, mobile · seat · since; the actions (I6). */}
         <UbStack direction="row" align="center" gap={2}>
           <UbLink

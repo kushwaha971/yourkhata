@@ -2,7 +2,7 @@
 
 > **1 Nov 2026 — START HERE: `docs/team/CONTINUE-AD-CERTIFICATION.md`.** Parts A–D of the Shop revamp are built; the A–D certification is mid-way; Part G waits for the owner's explicit go. That file supersedes everything below for what to do next.
 
-> **12 Nov 2026 — Library (Members & Fees) server rebuilt, commit bf0b646, NOT pushed.** Old app and 19 tables gone (backup `/tmp/db-backups/digikhaato_dev-before-library-rebuild-2026-11-12.dump`); new `apps/library` per `docs/revamp/library/01-model-and-api.md` (study library: seats by shift, monthly fees, simple Books with barcode scan — owner, 12 Nov). Server suite green. Next: students import, then delete `features/library` and build the screens (I4–I7 mocks + menu rows), compare each with the design at 390/320/1280, then the P0 round, then push. Old screens call the old API until then — do not push before the screens land.
+> **12 Nov 2026 — Library (Members & Fees) rebuilt from scratch and through its P0 round (9/10).** Server + screens + students import, report `docs/testing/library-round-2026-11-12.md` (harness 68/68, look 1104/1104, monkey 3×2 PASS). Books is simple with a barcode scanner (owner). Fixed on the way: Money Book Add person hung with no mobile. Next: Lending (Loans & Collections), the same way.
 >
 > **12 Nov 2026 — Money Book rebuilt from scratch and through its P0 round (9/10).** Owner, 11 Nov: Money Book, Library and Lending are deleted and rebuilt, each with NO relation to the Shop (`docs/revamp/rebuild-money-book-library-lending.md`). Money Book done: `apps/moneybook`, `/money-book`, report `docs/testing/moneybook-round-2026-11-11.md`. Next: Library (Members & Fees), then Lending. Library and Lending still use the shared person page on the `main` book until their rebuild.
 

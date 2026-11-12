@@ -160,7 +160,16 @@ export function CounterPageContent(): React.JSX.Element {
             <UbText variant="inherit" className="font-semibold">
               {t('library.counter.inNow', { count: insideNow.length })}
             </UbText>
-            {insideNow.length === 0 ? (
+            {lib.attendance.status === 'failed' && !lib.attendance.data ? (
+              // A failed load is never "nobody is in": that would be a false fact at the desk.
+              <UbEmptyState
+                variant="error"
+                title={t('library.attendance.error')}
+                action={<UbButton onClick={() => void loadIn()}>{t('library.common.tryAgain')}</UbButton>}
+              />
+            ) : !lib.attendance.data ? (
+              <UbSkeleton variant="list" count={3} label={t('library.common.loading')} />
+            ) : insideNow.length === 0 ? (
               <UbText variant="inherit" className="text-[13px] text-text-tertiary">
                 {t('library.counter.nobodyIn')}
               </UbText>

@@ -46,7 +46,7 @@ const pick = (list) => list[Math.floor(rand() * list.length)];
 // the run on the sign-in page tapping "कोड भेजें" (send code), asking for real
 // OTPs — which read as a /auth/me + /auth/refresh "request loop" (A6, seed 92).
 const SKIP =
-  /issue|delete|void|record|remove|sign out|log out|archive|cancel bill|discard|send code|साइन आउट|लॉग आउट|कोड भेजें|जारी करें|हटाएँ|मिटाएँ/i;
+  /issue|delete|void|record|remove|sign out|log out|archive|cancel bill|discard|send code|साइन आउट|लॉग आउट|कोड भेजें|जारी करें|हटाएँ|मिटाएँ|left the library|लाइब्रेरी छोड़ी|remind|याद दिला|print|प्रिंट/i;
 const TEXT = [
   "",
   "a",
@@ -82,6 +82,10 @@ const lastErrors = [];
 // Shop round (11 Nov): every screen every kind of shop has, so a module-wide
 // run (--wander=N) visits the whole Shop and not seven pages of it.
 const MONEY_BOOK = process.argv.includes("--app=khata");
+// Library round (12 Nov): `--app=library` wanders Members & Fees (e2e/library_seed.py first).
+const LIBRARY = process.argv.includes("--app=library");
+// The app's own way home, for the apps that are not the Shop.
+const APP_HOME = MONEY_BOOK ? "/money-book" : LIBRARY ? "/library" : null;
 let WANDER = [
   "/dashboard", "/sales/invoices", "/sales/estimates", "/customers", "/suppliers",
   "/items", "/stock/summary", "/stock/low", "/stock/count", "/stock/transfer",
@@ -368,6 +372,39 @@ const checkAgrees = async (i, how) => {
       }
     }
   }
+  // Library round (12 Nov): a student's fee due and Home's Overdue are the server's,
+  // after every reload and return (MONKEY_SKEW=1 must make it fail, P0 §1).
+  if (LIBRARY) {
+    const plain = (s) => s.replace(/[₹,\s]/g, "");
+    const url = page.url();
+    const path = new URL(url).pathname;
+    const skew = process.env.MONKEY_SKEW ? 1 : 0;
+    const student = path.match(/^\/library\/students\/([0-9a-f-]{36})$/)?.[1];
+    if (student) {
+      const due = (await (await ctx.request.get(`${base}/api/v1/library/students/${student}`)).json().catch(() => ({}))).data?.due;
+      const box = width < 1024 ? page.getByTestId("library-fee-due") : page.getByTestId("library-figures");
+      const shown = await box.innerText({ timeout: 4000 }).catch(() => "");
+      if (due !== undefined && shown) {
+        agreeChecks += 1;
+        const want = (Number(due) + skew).toFixed(2).replace(/\.00$/, "");
+        if (!plain(shown).includes(want)) {
+          await page.screenshot({ path: `${dir}/agree-fail-${seed}-${width}-step${i}.png` }).catch(() => {});
+          failures.push(`step ${i}: after ${how} the student page does not show the server's fee due ${due} (${shown.replace(/\s+/g, " ").slice(0, 80)}) at ${url.replace(base, "")}`);
+        }
+      }
+    }
+    if (path === "/library") {
+      const home = (await (await ctx.request.get(`${base}/api/v1/library/home`)).json().catch(() => ({}))).data;
+      const box = width < 1024 ? page.getByTestId("library-home-fees") : page.getByTestId("library-figures");
+      const shown = await box.innerText({ timeout: 4000 }).catch(() => "");
+      if (home && shown) {
+        agreeChecks += 1;
+        const want = (Number(home.overdue) + skew).toFixed(2).replace(/\.00$/, "");
+        if (!plain(shown).includes(want))
+          failures.push(`step ${i}: after ${how} Home's Overdue is not the server's ${home.overdue} (${shown.replace(/\s+/g, " ").slice(0, 80)})`);
+      }
+    }
+  }
   const nav = await page.evaluate(() => document.querySelector("nav[aria-label]")?.innerText ?? "").catch(() => "");
   // The words and orders rows are the SHOP's: when the monkey has wandered
   // into another app (the Udhaar book, from Apps) its menu has neither.
@@ -454,6 +491,12 @@ try {
   if (arg("app", "") === "khata") {
     const people = ((await (await ctx.request.get(`${base}/api/v1/moneybook/people?page_size=8`)).json().catch(() => ({}))).data ?? []).slice(0, 4);
     WANDER = ["/money-book", "/money-book/report", "/money-book/reminders", "/money-book/old-dues", ...people.flatMap((p) => [`/money-book/${p.id}`, `/money-book/report?person=${p.id}`])];
+  }
+  if (LIBRARY) {
+    const students = ((await (await ctx.request.get(`${base}/api/v1/library/students?page_size=6`)).json().catch(() => ({}))).data ?? []).slice(0, 4);
+    WANDER = ["/library", "/library/seats", "/library/students", "/library/fees", "/library/counter", "/library/attendance",
+      "/library/messages", "/library/money", "/library/expenses", "/library/books", "/library/settings",
+      ...students.map((x) => `/library/students/${x.id}`)];
   }
   // Real item names, so "add item" types what a merchant would.
   const itemNames = (
@@ -619,7 +662,7 @@ try {
           lastT0 = Date.now();
           await page.goto(`${base}${to}`, { waitUntil: "load", timeout: 20000 });
           await pageSpeed(`wander ${to}`);
-          if (MONEY_BOOK) await checkAgrees(i, `opening ${to}`);
+          if (APP_HOME) await checkAgrees(i, `opening ${to}`);
           for (let k = 0; k < 1 + Math.floor(rand() * 3); k += 1) {
             const there = await page.locator("button:visible, [role=tab]:visible").all();
             const safe = [];
@@ -636,19 +679,19 @@ try {
           // address to change, not for a load that never comes (it was counted as
           // an 8 s page in the Money Book round, 11 Nov).
           if (rand() < 0.5) await page.goBack({ timeout: 8000, waitUntil: "commit" }).catch(() => {});
-          else if (MONEY_BOOK) {
+          else if (APP_HOME) {
             // The Money book's way home is People in its own menu. The clock starts
             // when the move starts: a click that timed out under a sheet left open
             // by a random tap was counted as 3 s of page time.
             await page.keyboard.press("Escape").catch(() => {});
-            const people = page.locator(`a[href="/money-book"]:visible`).first();
+            const people = page.locator(`a[href="${APP_HOME}"]:visible`).first();
             lastT0 = Date.now();
             if (!(await people.click({ timeout: 3000 }).then(() => true).catch(() => false))) {
               lastT0 = Date.now();
-              await page.goto(`${base}/money-book`, { waitUntil: "load" });
+              await page.goto(`${base}${APP_HOME}`, { waitUntil: "load" });
             }
-            await page.waitForURL(/\/money-book/, { timeout: 8000 }).catch(() => {});
-            await pageSpeed("People");
+            await page.waitForURL((u) => u.pathname.startsWith(APP_HOME), { timeout: 8000 }).catch(() => {});
+            await pageSpeed("app home");
           } else {
             lastT0 = Date.now();
             await page.goto(`${base}/sales/invoices`, { waitUntil: "load", timeout: 20000 });
@@ -660,7 +703,7 @@ try {
             if (moved) await pageSpeed("New bill from the list");
             else log.push(`${i} (New bill could not be tapped on the list; came back by address)`);
           }
-          if (MONEY_BOOK ? !/\/money-book/.test(page.url()) : !page.url().startsWith(`${base}/sales/invoices/`)) {
+          if (APP_HOME ? !new URL(page.url()).pathname.startsWith(APP_HOME) : !page.url().startsWith(`${base}/sales/invoices/`)) {
             lastT0 = Date.now();
             await page.goto(url, { waitUntil: "load", timeout: 20000 });
             await pageSpeed("return");

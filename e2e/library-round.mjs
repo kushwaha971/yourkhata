@@ -174,6 +174,75 @@ try {
     check(tag('a scanned barcode opens that book'), opened && (await page.getByRole('dialog').innerText()).includes("Lucent's General Knowledge"));
     await shot('05-book-scanned');
 
+    // 8. Edge cases (docs/testing/edge-case-catalogue.md, Library column).
+    const nikhil = await studentBy('Nikhil Raut');
+    const paysOf = async (sid) => (await api(`/library/students/${sid}/payments`)).body?.data?.length ?? -1;
+    const openCollect = async () => {
+      await page.goto(`${base}/library/students/${nikhil.id}`, { waitUntil: 'networkidle' });
+      await page.getByTestId(phone ? 'library-collect-phone' : 'library-collect').click();
+      const d = page.getByRole('dialog');
+      await d.getByLabel('Amount', { exact: true }).waitFor();
+      const sw2 = d.getByRole('switch');
+      if (await sw2.count()) await sw2.click();
+      return d;
+    };
+    // E7: an extra zero is refused on screen as too large, and nothing is sent.
+    let d = await openCollect();
+    await d.getByLabel('Amount', { exact: true }).fill('99999999999');
+    const n0 = await paysOf(nikhil.id);
+    await page.getByTestId('library-collect-save').click();
+    await page.waitForTimeout(800);
+    check(tag('E7 an extra-zero amount is refused as too large'), /too large/i.test(await d.innerText()) && (await paysOf(nikhil.id)) === n0);
+    await page.keyboard.press('Escape');
+    // E4: offline Save keeps the sheet and the amount, and stores nothing.
+    d = await openCollect();
+    await ctx.setOffline(true);
+    await page.getByTestId('library-collect-save').click();
+    await page.waitForTimeout(1500);
+    const keptOpen = await d.isVisible();
+    const keptAmount = plain(await d.getByLabel('Amount', { exact: true }).inputValue().catch(() => ''));
+    const storedOffline = await paysOf(nikhil.id);
+    await ctx.setOffline(false);
+    check(tag('E4 offline Save keeps the sheet and the amount, stores nothing'), keptOpen && same(keptAmount, '800') && storedOffline === n0, `${keptOpen} ${keptAmount} ${storedOffline - n0}`);
+    // Back online: whatever the sheet does now, the fee is stored at most once.
+    await d.waitFor({ state: 'hidden', timeout: 10000 }).catch(() => undefined);
+    if (await d.isVisible()) await page.getByTestId('library-collect-save').click();
+    await d.waitFor({ state: 'hidden', timeout: 10000 }).catch(() => undefined);
+    await page.waitForTimeout(800);
+    check(tag('E4 back online the fee is stored exactly once'), (await paysOf(nikhil.id)) === n0 + 1, `${n0} → ${await paysOf(nikhil.id)}`);
+    // E1: three fast taps on Save make one payment (a fresh sheet, another student).
+    const swati = await studentBy('Swati Kale');
+    const s0 = await paysOf(swati.id);
+    await page.goto(`${base}/library/students/${swati.id}`, { waitUntil: 'networkidle' });
+    await page.getByTestId(phone ? 'library-collect-phone' : 'library-collect').click();
+    d = page.getByRole('dialog');
+    await d.getByLabel('Amount', { exact: true }).waitFor();
+    if (await d.getByRole('switch').count()) await d.getByRole('switch').click();
+    const tap = page.getByTestId('library-collect-save');
+    // Three taps as fast as a thumb: the 2nd and 3rd land on a busy (or closing) button.
+    await Promise.all([0, 1, 2].map(() => tap.click({ force: true, timeout: 2000 }).catch(() => undefined)));
+    await d.waitFor({ state: 'hidden', timeout: 8000 }).catch(() => undefined);
+    await page.waitForTimeout(800);
+    check(tag('E1 three fast taps on Save make one payment'), (await paysOf(swati.id)) === s0 + 1, `${s0} → ${await paysOf(swati.id)}`);
+    // E17: a long Hindi name fits the student page and the list.
+    const longName = 'श्रीमती राधाकृष्णन वेंकटसुब्रमण्यम पाटिल देशमुख कुलकर्णी';
+    const made = await api('/library/students', { method: 'POST', data: { name: longName, shift_id: map.shift_id, monthly_fee: '1240378' } });
+    await page.goto(`${base}/library/students/${made.body?.data?.id}`, { waitUntil: 'networkidle' });
+    await fits('E17 a long Hindi name on the student page');
+    await page.goto(`${base}/library/students?q=${encodeURIComponent('राधाकृष्णन')}`, { waitUntil: 'networkidle' });
+    await fits('E17 a long Hindi name in the list');
+    await shot('06-long-name');
+
+    // E26: a form drawer opens with nothing red before Save.
+    await page.goto(`${base}/library/students`, { waitUntil: 'networkidle' });
+    await page.getByRole('button', { name: 'Enrol student' }).filter({ visible: true }).first().click();
+    const fresh = page.getByRole('dialog');
+    await fresh.getByLabel('Name', { exact: true }).waitFor();
+    await page.waitForTimeout(400);
+    const red = await fresh.locator('[role=alert], [aria-invalid=true]').count();
+    check(tag('E26 Enrol opens with no error shown'), red === 0, `${red}`);
+    await page.keyboard.press('Escape');
+
     // 7. The Shop never sees a student (owner: no relation with the Shop).
     const shop = await api(`/parties?q=${encodeURIComponent('Rahul Gaikwad')}`);
     check(tag('the Shop has no party for a library student'), (shop.body?.data ?? []).length === 0, `${(shop.body?.data ?? []).length}`);
@@ -182,7 +251,9 @@ try {
       await page.goto(`${base}${path}`, { waitUntil: 'networkidle' });
       await fits(path);
     }
-    check(tag('no page or console error'), errors.length === 0, errors.slice(0, 3).join(' | '));
+    // The browser's own lines for the deliberate offline step (E4) are not the app's errors.
+    const real = errors.filter((e) => !e.includes('ERR_INTERNET_DISCONNECTED'));
+    check(tag('no page or console error'), real.length === 0, real.slice(0, 3).join(' | '));
     await ctx.close();
   }
 } finally {
