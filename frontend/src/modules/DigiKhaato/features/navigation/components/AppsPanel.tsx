@@ -2,9 +2,9 @@
 
 import { useEffect, useMemo, useState } from 'react';
 
-import { Check, Plus, Star } from 'lucide-react';
+import { Check, LogOut, Plus, Power, Star } from 'lucide-react';
 
-import { UbBox, UbGrid, UbPressable, UbStack, UbText } from 'src/design-system';
+import { UbBox, UbConfirmDialog, UbGrid, UbPressable, UbStack, UbText } from 'src/design-system';
 import { MLSpinner } from 'src/design-system/primitives';
 import { useAppRouter } from 'src/hooks/useAppRouter';
 import { useAppDispatch, useAppSelector } from 'src/hooks/useAppStore';
@@ -18,7 +18,7 @@ import { clearLocalExceptDrafts } from 'src/utils/storage';
 
 import { APP_MANIFESTS, manifestFor } from 'modules/appManifests';
 
-import { switchTenant } from '../../auth/redux/sessionThunk';
+import { leaveApp, setAppRunning, switchTenant } from '../../auth/redux/sessionThunk';
 import { draftChanged, resetOnboarding } from '../../onboarding/redux/onboardingSlice';
 import { fetchAppsPerBusiness } from '../../tenant-switcher/api/tenantSwitcherService';
 import { setDefaultTenant } from '../../tenant-switcher/redux/tenantSwitcherThunk';
@@ -60,6 +60,12 @@ interface Place {
  * A card opens its app at once (its ★ place, else the one open now, else the
  * first); a place opens that business in this app. The ★ only chooses what the
  * next sign-in opens (`primary_app`), so it never moves the person.
+ *
+ * Under the places sits one quiet action for the chosen app in the OPEN
+ * business (owner, 14 Nov 2026: "bring back"): the owner turns the app off for
+ * everyone there, anyone else leaves it. It was in the business menu this
+ * screen replaced. Never for the last app, never for the person's own book,
+ * and always behind a confirmation that says what happens.
  */
 export function AppsPanel({ onLeave }: Readonly<{ onLeave?: () => void }>): React.JSX.Element {
   const { t } = useTranslation();
@@ -70,6 +76,7 @@ export function AppsPanel({ onLeave }: Readonly<{ onLeave?: () => void }>): Reac
   const tenants = useAppSelector(selectSessionTenants);
   const [chosen, setChosen] = useState<string | null>(current ?? null);
   const [busy, setBusy] = useState<string | null>(null);
+  const [confirming, setConfirming] = useState<string | null>(null);
   // Which apps each business opens, from its own request; until it answers (or
   // if it cannot), the open business's apps alone, which the session holds.
   const [appsOf, setAppsOf] = useState<Readonly<Record<string, readonly string[]>>>({});
@@ -172,6 +179,35 @@ export function AppsPanel({ onLeave }: Readonly<{ onLeave?: () => void }>): Reac
   };
 
   const places = view && !PERSONAL_APPS.has(view) ? placesOf(view) : [];
+
+  const isOwner = active?.role === 'owner';
+  // The server acts on the open business, so the app must run THERE; and the
+  // last app stays (a business with no app has no screen to come back to).
+  const canRemove = Boolean(view) && !PERSONAL_APPS.has(view ?? '') && here.length > 1 && here.some((a) => a.code === view);
+  const viewName = view ? t(manifestFor(view)?.labelId ?? view) : '';
+  const removeWord = isOwner ? 'turnOff' : 'leave';
+
+  const removeApp = async (): Promise<void> => {
+    if (!confirming) return;
+    const code = confirming;
+    setBusy(`remove:${code}`);
+    const done = isOwner
+      ? await dispatch(setAppRunning({ app: code, running: false }))
+      : await dispatch(leaveApp({ app: code }));
+    setBusy(null);
+    setConfirming(null);
+    if (!setAppRunning.fulfilled.match(done) && !leaveApp.fulfilled.match(done)) {
+      dispatch(showSnackbar({ severity: 'error', id: 'tenant.switcher.apps.error' }));
+      return;
+    }
+    setChosen(null);
+    // The app they were in is gone: go to the one the server says is open now.
+    const next = done.payload.apps?.find((row) => row.code === done.payload.activeApp);
+    if (code === current && next) {
+      onLeave?.();
+      router.push(next.homePath);
+    }
+  };
 
   return (
     <UbStack gap={4} data-testid="apps-panel">
@@ -302,8 +338,38 @@ export function AppsPanel({ onLeave }: Readonly<{ onLeave?: () => void }>): Reac
           <UbText as="p" variant="caption" tone="secondary">
             {t('tenant.apps.hint')}
           </UbText>
+          {canRemove && (
+            <UbPressable
+              onClick={() => setConfirming(view)}
+              disabled={busy !== null}
+              data-testid="apps-app-action"
+              className="flex min-h-[44px] items-center gap-2 self-start rounded-control pr-3 text-left text-text-secondary"
+            >
+              {isOwner ? (
+                <Power aria-hidden className="h-4 w-4 shrink-0" strokeWidth={2} />
+              ) : (
+                <LogOut aria-hidden className="h-4 w-4 shrink-0" strokeWidth={2} />
+              )}
+              <UbText as="span" variant="body-medium" tone="inherit">
+                {t(`tenant.switcher.apps.${removeWord}`, { app: viewName })}
+              </UbText>
+            </UbPressable>
+          )}
         </UbStack>
       )}
+      <UbConfirmDialog
+        open={confirming !== null}
+        onOpenChange={(open) => !open && setConfirming(null)}
+        title={t(`tenant.switcher.apps.${removeWord}.title`, { app: viewName, business: active?.name ?? '' })}
+        // The consequence, in one sentence, before the act.
+        description={t(`tenant.switcher.apps.${removeWord}.body`, { app: viewName })}
+        confirmLabel={t(`tenant.switcher.apps.${removeWord}`, { app: viewName })}
+        cancelLabel={t('common.action.cancel')}
+        closeLabel={t('common.action.dismiss')}
+        onConfirm={() => void removeApp()}
+        busy={busy?.startsWith('remove:')}
+        busyLabel={t('tenant.switcher.apps.working')}
+      />
     </UbStack>
   );
 }

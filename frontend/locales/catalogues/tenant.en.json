@@ -47,7 +47,7 @@
   "tenant.switcher.apps.leave.body": "You will no longer see {app} here. Your other apps stay, and the owner can add you back.",
   "tenant.switcher.apps.leave.title": "Leave {app} at {business}?",
   "tenant.switcher.apps.turnOff": "Turn off {app}",
-  "tenant.switcher.apps.turnOff.body": "Its menu goes for everyone here. Nothing is deleted, and you can turn it back on from this menu.",
+  "tenant.switcher.apps.turnOff.body": "Its menu goes for everyone here. Nothing is deleted, and you can add it back from Apps.",
   "tenant.switcher.apps.turnOff.title": "Turn off {app} for {business}?",
   "tenant.switcher.apps.working": "Working…",
   "tenant.switcher.defaultSet": "This business will open by default.",

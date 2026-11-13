@@ -1,4 +1,4 @@
-import { fireEvent, screen, within } from '@testing-library/react';
+import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 
 import { MobileTabBar } from 'src/components/layout/MobileTabBar';
 import { UbSidebar } from 'src/components/layout/UbSidebar';
@@ -42,7 +42,13 @@ jest.mock('../../tenant-switcher/api/tenantSwitcherService', () => ({
 jest.mock('../../auth/api/authService', () => ({
   ...jest.requireActual('../../auth/api/authService'),
   switchApp: jest.fn(() => new Promise(() => undefined)),
+  setAppRunning: jest.fn(),
+  leaveApp: jest.fn(),
 }));
+const authService = jest.requireMock('../../auth/api/authService') as {
+  setAppRunning: jest.Mock;
+  leaveApp: jest.Mock;
+};
 
 const PERMISSIONS = [
   ...APP_MANIFESTS.flatMap((app) => app.navigation.map((item) => item.permission)),
@@ -63,7 +69,8 @@ const ADD_LENDING: SessionApp[] = [
 const load = (
   apps: SessionApp[],
   appsAddable: SessionApp[] = [],
-  tenants: SessionTenant[] = [{ id: 't1', name: 'Kumar Kirana', timezone: 'Asia/Kolkata', role: 'owner' }]
+  tenants: SessionTenant[] = [{ id: 't1', name: 'Kumar Kirana', timezone: 'Asia/Kolkata', role: 'owner' }],
+  role: 'owner' | 'staff' = 'owner'
 ) => {
   store.dispatch(resetAllFeatureState());
   store.dispatch(
@@ -77,8 +84,8 @@ const load = (
         mustChangePassword: false,
         passwordExpiresAt: null,
       },
-      activeTenant: { id: 't1', name: 'Kumar Kirana', timezone: 'Asia/Kolkata', role: 'owner' },
-      tenants,
+      activeTenant: { id: 't1', name: 'Kumar Kirana', timezone: 'Asia/Kolkata', role },
+      tenants: tenants.map((row) => (row.id === 't1' ? { ...row, role } : row)),
       permissions: PERMISSIONS,
       enabledModules: [...MODULE_CODES],
       version: 1,
@@ -216,5 +223,52 @@ describe('desktop rail and the Apps page (R-DEC-09)', () => {
     for (const label of labels) {
       expect(label.className).not.toMatch(/\btext-text-(primary|secondary|tertiary)\b/);
     }
+  });
+});
+
+/**
+ * Owner, 14 Nov 2026: "Yes, bring back". Turn off (owner) and Leave (anyone
+ * else) lived in the business menu at the top of the side menu; when the Apps
+ * screen replaced that menu (12 Nov) nothing carried them over, so an owner
+ * could add an app and never take it away, and a member could not step out of
+ * one. They are on the Apps screen now, under the app they act on.
+ */
+describe('turn an app off or leave it, from the Apps page', () => {
+  const after = (apps: SessionApp[], activeApp: string) => ({ ...store.getState().session, version: 2, apps, activeApp, appsAddable: [] });
+
+  it('lets the owner turn off the open app after a confirmation, then opens the app that is left', async () => {
+    load(APPS);
+    authService.setAppRunning.mockResolvedValue(after(APPS.slice(1), 'shop'));
+    renderWithProviders(<AppsPageContent />);
+    fireEvent.click(screen.getByRole('button', { name: 'Turn off Library' }));
+    expect(await screen.findByText('Turn off Library for Kumar Kirana?')).toBeInTheDocument();
+    expect(authService.setAppRunning).not.toHaveBeenCalled();
+    fireEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Turn off Library' }));
+    await waitFor(() => expect(authService.setAppRunning).toHaveBeenCalledWith('library', false));
+    await waitFor(() => expect(push).toHaveBeenCalledWith('/dashboard'));
+    expect(screen.queryByRole('button', { name: 'Leave Library' })).not.toBeInTheDocument();
+  });
+
+  it('lets a staff member leave the open app, and never offers them Turn off', async () => {
+    load(APPS, [], undefined, 'staff');
+    authService.leaveApp.mockResolvedValue(after(APPS.slice(1), 'shop'));
+    renderWithProviders(<AppsPageContent />);
+    expect(screen.queryByRole('button', { name: 'Turn off Library' })).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Leave Library' }));
+    expect(await screen.findByText('Leave Library at Kumar Kirana?')).toBeInTheDocument();
+    fireEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Leave Library' }));
+    await waitFor(() => expect(authService.leaveApp).toHaveBeenCalledWith('library'));
+    await waitFor(() => expect(push).toHaveBeenCalledWith('/dashboard'));
+  });
+
+  it('offers neither with one app (the last app cannot go), nor on the person\u2019s own Money book', () => {
+    load(LIBRARY_ONLY);
+    const { unmount } = renderWithProviders(<AppsPageContent />);
+    expect(screen.queryByTestId('apps-app-action')).not.toBeInTheDocument();
+    unmount();
+    load(APPS);
+    renderWithProviders(<AppsPageContent />);
+    fireEvent.click(screen.getByTestId('apps-card-khata'));
+    expect(screen.queryByTestId('apps-app-action')).not.toBeInTheDocument();
   });
 });
