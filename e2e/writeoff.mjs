@@ -10,6 +10,7 @@
  * dialog, the empty and the filled write-off form, and the khata after, at
  * four widths, into $E2E_SHOTS/writeoff.
  */
+import { enterUdhaarBook } from './lib/udhaar-book.mjs';
 import { createRequire } from 'node:module';
 const { chromium } = createRequire(import.meta.url)('playwright');
 import { mkdirSync } from 'node:fs';
@@ -95,7 +96,7 @@ const SIZES = [
 /** Opens the khata, the ⋯ menu, Archive, and confirms — reaching the blocked state. */
 async function reachBlocked(page, partyId) {
   // The shared person route uses the open app's book; enter Udhaar explicitly.
-  await page.goto(`${FRONTEND}/khata`, { waitUntil: 'networkidle' });
+  await enterUdhaarBook(page, FRONTEND);
   await page.goto(`${FRONTEND}/parties/${partyId}`, { waitUntil: 'domcontentloaded', timeout: 180000 });
   await page.getByRole('heading', { name: /Naidu Agency/ }).first().waitFor({ timeout: 90000 });
   await page.waitForTimeout(1200);
@@ -118,7 +119,7 @@ async function writeOff(page, dialog, sizeId) {
 
 const main = async () => {
   const { token, parties } = await seed(1 + (wantShots ? SIZES.length : 0));
-  const browser = await chromium.launch({ executablePath: process.env.CHROME });
+  const browser = await chromium.launch({ executablePath: process.env.CHROME || process.env.PW_CHROME || undefined });
 
   // ── Assertions, at a laptop width ────────────────────────────────────────
   {

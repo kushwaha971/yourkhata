@@ -112,19 +112,23 @@ monkey caught it.
 | **Combined** | | | | | **9.0** |
 
 Business is below 9 because this audit did not repeat its per-kind rounds or
-its monkey, and its older regression set is out of date (§7). That is a limit
+its monkey (§7; its older regression set is green again, 301/301). That is a limit
 of the evidence, not a known defect.
 
 ## 7. Not done, and limits
 
-1. **The old regression set (`e2e/run-regression.mjs --quick`) is out of date:
-   180/183, with 3 failing and 6 crashing jobs.** None is caused by this audit.
-   `statement`, `credit` and `writeoff` open `/khata`, which the Money Book
-   rebuild replaced; `csp` looks for a "Save draft" button the bill screen no
-   longer has; `s3-N2`, `d3-SW` and `share-page` start a browser that is not
-   installed on this machine; `aging` and `phonecountry` were not looked into.
-   These harnesses need rewriting for the rebuilt apps. It is its own piece of
-   work.
+1. **The old regression set (`e2e/run-regression.mjs --quick`) was out of date
+   (180/183, 3 failing and 6 crashing jobs) and is now rewritten and green:
+   301/301 across 14 jobs** (13 Nov, after the audit). None of the nine was a
+   product defect. Three started a browser that is not installed here; the
+   rest waited for words or pages the rebuilt apps changed ("Gave money",
+   "Paid cash", the reworded credit-limit hint, `/khata` gone, only the open
+   Old dues tab carrying a total). They now wait on the control, not the
+   sentence. **One thing for the owner:** the old Udhaar person page, its
+   statement and its credit-limit form still work, but no menu links to them
+   any more; they open only by address inside a Money Book session, which is
+   how `statement`, `credit`, `writeoff` and `s3-N2` reach them
+   (`e2e/lib/udhaar-book.mjs`). Keep, link or remove them is the owner's call.
 2. **About 56 harnesses work out "today" in UTC**, so they give false failures
    between midnight and 5:30 in the morning India time. The product code found
    with the same fault is fixed (defects 8 and 9).

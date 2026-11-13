@@ -518,7 +518,7 @@ const main = async () => {
   }
 
   // ── 5. The browser ───────────────────────────────────────────────────────
-  const browser = await chromium.launch({ executablePath: process.env.CHROME });
+  const browser = await chromium.launch({ executablePath: process.env.CHROME || process.env.PW_CHROME || undefined });
   const context = await browser.newContext({ viewport: { width: 1280, height: 800 }, acceptDownloads: true });
   // Any export the browser gets through to the API spends the same budget.
   context.on('response', (response) => {
@@ -543,9 +543,11 @@ const main = async () => {
       tilesMatch(tiles, HAND_RECEIVABLE_TOTALS),
       `got ${JSON.stringify(tiles)} want ${JSON.stringify(expectedTiles(HAND_RECEIVABLE_TOTALS))}`);
     const tabs = await page.getByRole('tab').allInnerTexts();
-    record('browser: the tabs carry the position — You will get ₹10,835.56 · You will give ₹2,000.00',
+    // B36: only the OPEN tab carries a total, the same one its rows add up to.
+    // The other side's figure appears when that tab is opened (checked below).
+    record('browser: the open tab carries the position — You will get ₹10,835.56; the other tab carries no figure',
       tabs.some((t) => /You will get/.test(t) && t.includes(inr(HAND_RECEIVABLE_TOTALS.total))) &&
-        tabs.some((t) => /You will give/.test(t) && t.includes(inr('2000.00'))),
+        tabs.some((t) => /You will give/.test(t) && !t.includes('₹')),
       tabs.map((t) => t.replace(/\s+/g, ' ')).join(' | '));
     const names = await gridNames(page, allNames);
     const wantNames = (opened.body?.data ?? []).map((r) => r.party.name);
@@ -593,6 +595,11 @@ const main = async () => {
     record('browser: the Payable tab sends type=payable', Boolean(payParams),
       payParams ? JSON.stringify(paramsOf(payParams)) : 'no request');
     const payTiles = await tilesSettle(page, HAND_PAYABLE.D);
+    const payTabs = await page.getByRole('tab').allInnerTexts();
+    record('browser: opened, the You will give tab carries ₹2,000.00 and You will get drops its figure',
+      payTabs.some((t) => /You will give/.test(t) && t.includes(inr('2000.00'))) &&
+        payTabs.some((t) => /You will get/.test(t) && !t.includes('₹')),
+      payTabs.map((t) => t.replace(/\s+/g, ' ')).join(' | '));
     const payNames = await gridNames(page, allNames);
     record('browser: the Payable tab shows the supplier only, with the supplier\'s tiles',
       JSON.stringify(payNames) === JSON.stringify([nameOf.D]) && tilesMatch(payTiles, HAND_PAYABLE.D),

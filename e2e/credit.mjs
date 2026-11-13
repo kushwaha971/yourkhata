@@ -36,6 +36,7 @@
  *
  * Exits non-zero on any failure.
  */
+import { enterUdhaarBook } from './lib/udhaar-book.mjs';
 import { createRequire } from 'node:module';
 const { chromium } = createRequire(import.meta.url)('playwright');
 import { BACKEND_DIR as LOCAL_BACKEND_DIR, PYTHON } from './lib/local.mjs';
@@ -182,10 +183,8 @@ const signIn = async (page) => {
     await page.waitForTimeout(600);
     // DEC-019 — the khata page is the Udhaar book's: open its list first, as a merchant
     // does, so the session is in that app (from the Shop the page shows bills instead).
-    await page.goto(`${FRONTEND}/khata`, {
-      waitUntil: 'domcontentloaded',
-      timeout: 45000,
-    });
+    await enterUdhaarBook(page, FRONTEND);
+    await page.goto(`${FRONTEND}/parties`, { waitUntil: 'domcontentloaded', timeout: 45000 });
     try {
       await page.waitForSelector('[data-testid="ub-grid"]', { timeout: 20000 });
       await page.waitForTimeout(600);
@@ -324,7 +323,7 @@ async function sweep(ctx, size, parties) {
        `scrollIntoViewIfNeeded` on the hint rather than on the field, because
        the hint sits UNDER the field and a field scrolled just into view leaves
        its hint clipped — which is the same defect one line lower down. */
-    const hint = page.getByText(/already owe .* this limit is already crossed/i).first();
+    const hint = page.getByText(/already have to get .* this limit is already crossed/i).first();
     await hint.waitFor({ state: 'visible', timeout: 10000 });
     await hint.scrollIntoViewIfNeeded();
     await settle(page, 400);
@@ -499,7 +498,8 @@ async function checks(browser, token, parties) {
     );
     await page.getByRole('button', { name: 'Credit', exact: true }).first().click();
     await settle(page, 800);
-    const hint = page.getByText(/already owe .* this limit is already crossed/i).first();
+    await page.screenshot({ path: '/tmp/credit-dbg.png' }); console.log('DBG', (await page.getByRole('dialog').last().innerText()).replace(/\s+/g,' ').slice(0,900));
+    const hint = page.getByText(/already have to get .* this limit is already crossed/i).first();
     const shown = (await hint.count()) > 0;
     const text = shown ? await hint.innerText() : '(absent)';
     record(

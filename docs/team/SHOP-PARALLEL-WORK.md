@@ -253,5 +253,6 @@ idle, so do not message sessions the owner has stopped.
 - **Branch / worktree:** `shop/a2`, `proceed-222204`.
 - **State:** done. 12 defects fixed, each with a test. Report `docs/testing/apps-audit-2026-11-13.md`.
 - **Checks:** `e2e/team-roles.mjs` (members in their own accounts), `e2e/audit-dump.mjs` (sums from raw rows), `backend/tests/integration/test_apps_audit.py`.
-- **Next step for whoever picks it up:** rewrite the stale jobs of `e2e/run-regression.mjs` (statement, credit, writeoff, csp, aging, phonecountry; s3-N2, d3-SW and share-page need `PW_CHROME`), and move the about 56 harnesses that take today from `toISOString()` to the shop's day.
+- **Regression set (13 Nov, later):** the nine stale jobs of `e2e/run-regression.mjs` are rewritten; `--quick` is 301/301 over 14 jobs. The old Udhaar person page, statement and credit form are reached through `e2e/lib/udhaar-book.mjs` (a Money Book session); no menu links to them, which is an open question for the owner.
+- **Next step for whoever picks it up:** the ~56 harnesses that work out today in UTC; the Business per-kind and monkey rounds; the owner's answers on staff adding borrowers and on the orphaned Udhaar screens.
 - **Run notes:** restart the API after a server edit (`--noreload`); the worktree has no `.venv`, so `e2e/serve-api.sh` falls back to `python`, which this Mac lacks — start it with `$E2E_PYTHON` and log to `/tmp/api.log`. Never run two harnesses at once on the QA account.

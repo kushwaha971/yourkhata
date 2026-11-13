@@ -386,7 +386,7 @@ async function phaseHI(browser) {
 }
 
 const phases = { P: phaseP, R4: (b) => phaseR4(b, false), R4HI: (b) => phaseR4(b, true), CORNER: phaseCorner, SW: phaseSW, L7: phaseL7, L8: phaseL8, HI: phaseHI };
-const browser = await chromium.launch();
+const browser = await chromium.launch({ executablePath: process.env.CHROME || process.env.PW_CHROME || undefined });
 try {
   for (const p of PHASES) {
     try { await phases[p](browser); } catch (e) { record(p, `phase ${p} crashed`, false, e.stack); }

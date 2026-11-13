@@ -40,6 +40,7 @@
  * the seat check, and a deny override of ledger.entry.read (no system role
  * lacks it and there is no API for overrides).
  */
+import { enterUdhaarBook } from './lib/udhaar-book.mjs';
 import { chromium } from 'playwright';
 import { BACKEND_DIR as LOCAL_BACKEND_DIR, PYTHON, psql as localPsql } from './lib/local.mjs';
 import { execFileSync } from 'node:child_process';
@@ -279,6 +280,8 @@ const serverPreview = async (owner, partyId) => {
 };
 
 const openKhata = async (page, partyId, name) => {
+  // The person page reads the open app's book; the Udhaar view is the Money book session's.
+  await enterUdhaarBook(page, FRONTEND);
   await page.goto(`${FRONTEND}/parties/${partyId}`, { waitUntil: 'domcontentloaded', timeout: 120000 });
   await page.getByRole('heading', { name }).first().waitFor({ timeout: 60000 });
   await page.waitForTimeout(1200);
@@ -1614,8 +1617,8 @@ const khataFacts = (page) =>
       barLabel: bar?.getAttribute('aria-label') ?? null,
       fillWidth: fill ? fill.style.width || getComputedStyle(fill).width : null,
       fillColor: fill ? getComputedStyle(fill).backgroundColor : null,
-      gaveAll: text.match(/You gave in all\n(₹[\d,]+\.\d\d)/)?.[1] ?? null,
-      gotAll: text.match(/You got in all\n(₹[\d,]+\.\d\d)/)?.[1] ?? null,
+      gaveAll: text.match(/Gave money in all\n(₹[\d,]+\.\d\d)/)?.[1] ?? null,
+      gotAll: text.match(/Got money in all\n(₹[\d,]+\.\d\d)/)?.[1] ?? null,
       rows: [...document.querySelectorAll('main button')].filter((b) => /^More actions for /.test(b.getAttribute('aria-label') ?? b.textContent.trim())).length,
       scrollY: Math.round(window.scrollY),
     };
@@ -1928,7 +1931,7 @@ async function phaseN2(browser, state, token) {
       await openKhata(page, overP, /QA Over Phone/);
       const b = await khataFacts(page);
       await page.screenshot({ path: nShot('phone', 'N2-0-over-before'), fullPage: true });
-      const { reqs } = await postViaDrawer(page, /You gave/, '200', 'Phone check');
+      const { reqs } = await postViaDrawer(page, /Gave money/, '200', 'Phone check');
       const a = await khataFacts(page);
       await page.screenshot({ path: nShot('phone', 'N2-1-over-after-200'), fullPage: true });
       record('N2', 'phone: You gave ₹200 on ₹1,250/₹1,000 → caption "₹450.00 over the ₹1,000.00 limit", total +₹200, header ₹1,450.00, no reload', a.caption === '₹450.00 over the ₹1,000.00 limit' && a.gaveAll === '₹1,450.00' && a.header === '₹1,450.00', `before=${JSON.stringify(b)} after=${JSON.stringify(a)}`);
@@ -1942,9 +1945,9 @@ async function phaseN2(browser, state, token) {
       await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight));
       await page.waitForTimeout(800);
       const lb = await khataFacts(page);
-      const inViewP = await page.getByRole('button', { name: /You gave/ }).first().evaluate((el) => { const r = el.getBoundingClientRect(); return r.top >= 0 && r.bottom <= window.innerHeight; });
+      const inViewP = await page.getByRole('button', { name: /Gave money/ }).first().evaluate((el) => { const r = el.getBoundingClientRect(); return r.top >= 0 && r.bottom <= window.innerHeight; });
       await page.screenshot({ path: nShot('phone', 'N2-7-long-before') });
-      await postViaDrawer(page, /You gave/, '5', 'Phone scrolled post', { noScroll: true });
+      await postViaDrawer(page, /Gave money/, '5', 'Phone scrolled post', { noScroll: true });
       const la = await khataFacts(page);
       await page.screenshot({ path: nShot('phone', 'N2-8-long-after') });
       record('N2', `phone long khata: rows kept +1 (${lb.rows} → ${la.rows}) and scroll kept (${lb.scrollY} → ${la.scrollY})`, lb.rows > 50 && la.rows === lb.rows + 1 && Math.abs(la.scrollY - lb.scrollY) < 400, `You-gave in viewport when scrolled to the bottom: ${inViewP}`);
@@ -1962,7 +1965,7 @@ async function phaseN2(browser, state, token) {
     const nav0 = docLoads;
     // Sample the header every 50 ms from Save to prove it moves instantly.
     await page.evaluate(() => { window.__hdr = []; const t0 = performance.now(); window.__hdrT0 = t0; window.__hdrT = setInterval(() => { const m = document.querySelector('main')?.innerText.match(/(?:Customer|Supplier)[^\n]*\n(₹[\d,]+\.\d\d)/); const c = document.querySelector('main')?.innerText.match(/Credit used\s*\n+\s*([^\n]+)/); window.__hdr.push([Math.round(performance.now() - t0), m?.[1] ?? null, c?.[1] ?? null]); }, 50); });
-    const s1 = await postViaDrawer(page, /You gave/, '200', 'Oil tins');
+    const s1 = await postViaDrawer(page, /Gave money/, '200', 'Oil tins');
     const [hdr1, saveAt] = await page.evaluate(() => { clearInterval(window.__hdrT); return [window.__hdr, window.__saveAt]; });
     const a1 = await khataFacts(page);
     await page.screenshot({ path: nShot('desktop', 'N2-1-over-after-200'), fullPage: true });
@@ -2014,9 +2017,9 @@ async function phaseN2(browser, state, token) {
       // Slow the party-detail and timeline reads so the first write's refetch is still in flight when the second lands.
       await page.route(new RegExp(`/api/v1/parties/${over}(\\?|$)|/api/v1/parties/${over}/ledger-entries\\?`), async (route) => { if (route.request().method() === 'GET') await sleep(1200); await route.continue(); });
       await page.evaluate(() => { window.__hdr = []; const t0 = performance.now(); window.__hdrT = setInterval(() => { const m = document.querySelector('main')?.innerText.match(/(?:Customer|Supplier)[^\n]*\n(₹[\d,]+\.\d\d)/); window.__hdr.push([Math.round(performance.now() - t0), m?.[1] ?? null]); }, 50); });
-      const q1 = await postViaDrawer(page, /You gave/, '10', 'Matchbox', { wait: false });
+      const q1 = await postViaDrawer(page, /Gave money/, '10', 'Matchbox', { wait: false });
       await page.waitForSelector('role=dialog', { state: 'detached', timeout: 15000 }).catch(() => {});
-      const q2 = await postViaDrawer(page, /You gave/, '20', 'Candles', { windowMs: 5000 });
+      const q2 = await postViaDrawer(page, /Gave money/, '20', 'Candles', { windowMs: 5000 });
       const hdr = await page.evaluate(() => { clearInterval(window.__hdrT); return window.__hdr; });
       await page.unroute(new RegExp(`/api/v1/parties/${over}(\\?|$)|/api/v1/parties/${over}/ledger-entries\\?`));
       const seq = hdr.map((h) => h[1]).filter((v, i, arr) => i === 0 || v !== arr[i - 1]);
@@ -2033,14 +2036,15 @@ async function phaseN2(browser, state, token) {
       await page.getByRole('button', { name: 'Archive' }).last().click();
       const dialog = page.getByRole('dialog').last();
       await dialog.getByRole('button', { name: 'Archive' }).click();
-      await dialog.getByText(/still owes you/).waitFor({ timeout: 30000 });
+      // The sentence above the two ways out has been reworded more than once; the button is the contract.
+      await dialog.getByRole('button', { name: /^Write off ₹/ }).waitFor({ timeout: 30000 });
       await dialog.getByRole('button', { name: /^Write off ₹/ }).click();
       await dialog.getByLabel('Why are you writing this off?').fill('Shop closed');
       await dialog.getByLabel('I understand this money is written off').click();
       const reqs = []; const onReq = (r) => { if (r.url().startsWith(BACKEND)) reqs.push(`${r.method()} ${r.url().replace(BACKEND, '').slice(0, 90)}`); };
       page.on('request', onReq);
       await dialog.getByRole('button', { name: 'Write off and archive' }).click();
-      await page.getByText('This party is archived').waitFor({ timeout: 30000 }).catch(() => {});
+      await page.getByText(/is archived/).first().waitFor({ timeout: 30000 }).catch(() => {});
       await page.waitForTimeout(3500);
       page.off('request', onReq);
       const a = await khataFacts(page);
@@ -2053,7 +2057,7 @@ async function phaseN2(browser, state, token) {
     {
       await openKhata(page, near, /QA Near Limit/);
       const b = await khataFacts(page);
-      const s = await postViaDrawer(page, /You gave/, '250', 'Ghee tins');
+      const s = await postViaDrawer(page, /Gave money/, '250', 'Ghee tins');
       const a = await khataFacts(page);
       await page.screenshot({ path: nShot('desktop', 'N2-6-near-after-250'), fullPage: true });
       record('N2', '₹500 → You gave ₹250 → "₹250.00 left of ₹1,000.00", amber (text-warning caption, amber fill), header ₹750.00, fill 50% → 75%', a.caption === '₹250.00 left of ₹1,000.00' && a.header === '₹750.00' && /text-warning/.test(a.captionClass ?? '') && a.fillColor === a.captionColor && b.fillWidth === '50%' && a.fillWidth === '75%', `before ${JSON.stringify(b)} after ${JSON.stringify(a)}`);
@@ -2070,9 +2074,9 @@ async function phaseN2(browser, state, token) {
       await page.waitForTimeout(800);
       const b = await khataFacts(page);
       await page.screenshot({ path: nShot('desktop', 'N2-7-long-before') });
-      const gave = page.getByRole('button', { name: /You gave/ }).first();
+      const gave = page.getByRole('button', { name: /Gave money/ }).first();
       const inView = await gave.evaluate((el) => { const r = el.getBoundingClientRect(); return r.top >= 0 && r.bottom <= window.innerHeight; });
-      const s = await postViaDrawer(page, /You gave/, '5', 'Scrolled post', { noScroll: true });
+      const s = await postViaDrawer(page, /Gave money/, '5', 'Scrolled post', { noScroll: true });
       const a = await khataFacts(page);
       await page.screenshot({ path: nShot('desktop', 'N2-8-long-after') });
       record('N2', `long khata scrolled past 50 rows then post → loaded depth kept (rows ${b.rows} → ${a.rows}, expect +1)`, b.rows > 50 && a.rows === b.rows + 1, `before ${JSON.stringify({ rows: b.rows, scrollY: b.scrollY })} after ${JSON.stringify({ rows: a.rows, scrollY: a.scrollY })}; You-gave button in viewport before click: ${inView}`);
@@ -2709,7 +2713,7 @@ const main = async () => {
   const reuseOnly = PHASES.every((p) => p === 'R' || p === 'N' || /^N\d$/.test(p) || p === 'F' || /^F\d$/.test(p));
   const state = reuseOnly && existsSync(STATE_FILE) ? JSON.parse(readFileSync(STATE_FILE, 'utf8')) : await seed();
   if (process.argv.includes('--seed-only')) { console.log(JSON.stringify(state, null, 2)); return; }
-  const browser = await chromium.launch();
+  const browser = await chromium.launch({ executablePath: process.env.CHROME || process.env.PW_CHROME || undefined });
   if (PHASES.includes('A')) await phaseA(browser, state);
   if (PHASES.includes('B')) await phaseB(browser, state);
   if (PHASES.includes('C')) await phaseC(browser, state);

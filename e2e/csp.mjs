@@ -43,7 +43,7 @@ const record = (check, ok, detail = '') => {
 const owner = await newOwner({ shop: 'CSP Check Stores', prefix: 'csp' });
 const party = await addParty(owner.token, { name: 'Ramesh Traders', mobile: uniqMobile() });
 
-const browser = await chromium.launch(process.env.CHROME ? { executablePath: process.env.CHROME } : {});
+const browser = await chromium.launch({ executablePath: process.env.CHROME || process.env.PW_CHROME || undefined });
 for (const vp of [
   { id: 'phone', width: 390, height: 844, isMobile: true },
   { id: 'desktop', width: 1280, height: 800, isMobile: false },
@@ -90,7 +90,7 @@ for (const vp of [
         ? [
             ['/customers', 'Ramesh Traders'],
             [`/parties/${party.id}`, 'Ramesh Traders'],
-            ['/sales/invoices/new', 'Save draft'],
+            ['/sales/invoices/new', 'Paid cash'],
             ['/more', 'Sign out'],
           ]
         : [['/dashboard', 'Dashboard'], ['/customers', 'Ramesh Traders']];

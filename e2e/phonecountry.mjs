@@ -54,7 +54,7 @@ const measure = (page) =>
     };
   });
 
-const browser = await chromium.launch(process.env.CHROME ? { executablePath: process.env.CHROME } : {});
+const browser = await chromium.launch({ executablePath: process.env.CHROME || process.env.PW_CHROME || undefined });
 for (const [index, vp] of [
   { id: 'phone', width: 360, height: 780, isMobile: true },
   { id: 'desktop', width: 1280, height: 800, isMobile: false },
@@ -126,7 +126,8 @@ for (const [index, vp] of [
   await page.getByRole('listbox').getByRole('option').first().click();
   if (SHOTS) await page.screenshot({ path: `${SHOT_DIR}/${vp.id}-uk.png` });
 
-  await page.getByRole('button', { name: /^Save/ }).filter({ visible: true }).first().click();
+  // The form's own submit button, whatever it is called for this kind of shop.
+  await page.locator('button[type="submit"]').filter({ visible: true }).last().click();
   await page.waitForTimeout(2500);
   const found = await api('GET', `/parties?q=${encodeURIComponent(name)}`, null, owner.token);
   const stored = found.body?.data?.[0]?.mobile;

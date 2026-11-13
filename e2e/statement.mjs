@@ -42,6 +42,7 @@
  *
  * Exits non-zero on any failure.
  */
+import { enterUdhaarBook } from './lib/udhaar-book.mjs';
 import { createRequire } from 'node:module';
 const { chromium } = createRequire(import.meta.url)('playwright');
 import { mkdirSync, writeFileSync } from 'node:fs';
@@ -231,7 +232,8 @@ const signIn = async (page, who = OWNER) => {
     await page.waitForTimeout(600);
     // DEC-019 — the khata page is the Udhaar book's: open its list first, as a merchant
     // does, so the session is in that app (from the Shop the page shows bills instead).
-    await page.goto(`${FRONTEND}/khata`, { waitUntil: 'domcontentloaded', timeout: 45000 });
+    await enterUdhaarBook(page, FRONTEND);
+    await page.goto(`${FRONTEND}/parties`, { waitUntil: 'domcontentloaded', timeout: 45000 });
     try {
       await page.waitForSelector('[data-testid="ub-grid"]', { timeout: 20000 });
       await page.waitForTimeout(600);

@@ -159,7 +159,7 @@ async function main() {
     `${invoice.number} ${invoice.status} due ${due}`,
   );
   const url = `${FRONTEND}/d/${token}`;
-  const browser = await chromium.launch();
+  const browser = await chromium.launch({ executablePath: process.env.CHROME || process.env.PW_CHROME || undefined });
 
   // ── 1. A customer's phone opens the link ────────────────────────────────
   {
@@ -375,7 +375,7 @@ async function main() {
       .catch(() => undefined);
     await page
       .waitForFunction(
-        () => document.body.innerText.includes("बकाया राशि"),
+        () => document.body.innerText.includes("बाकी राशि"),
         null,
         { timeout: 15000 },
       )
@@ -383,7 +383,7 @@ async function main() {
     const text = await page.locator("body").innerText();
     record(
       "Hindi: an Accept-Language hi phone reads the page in Hindi",
-      text.includes("बकाया राशि") && text.includes("का भुगतान करें"),
+      text.includes("बाकी राशि") && text.includes("का भुगतान करें"),
       text.slice(0, 200).replace(/\n/g, " | "),
     );
     const overflow = await page.evaluate(
