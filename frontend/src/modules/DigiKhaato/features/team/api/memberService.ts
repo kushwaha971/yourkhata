@@ -9,6 +9,8 @@ import type {
   IssuedCredentials,
   Member,
   MemberApiRow,
+  MemberAppGrant,
+  MemberApps,
   MemberDraft,
   MemberEdit,
   MemberListParams,
@@ -229,3 +231,35 @@ export const unblockMemberWriteClass: TWriteClass = 'online-only';
 export const removeMember = (membershipId: string, idempotencyKey: string): Promise<Member> =>
   postMemberAction(API_PATHS.MEMBER_REMOVE(membershipId), idempotencyKey);
 export const removeMemberWriteClass: TWriteClass = 'online-only';
+
+interface MemberAppsApiResponse {
+  readonly data: { readonly grants: readonly { app: string; role: string }[]; readonly opens: readonly string[] };
+}
+
+const toMemberApps = (data: MemberAppsApiResponse['data']): MemberApps => ({
+  grants: data.grants.map((g) => ({ app: g.app, role: g.role })),
+  opens: [...data.opens],
+});
+
+/**
+ * GET /members/{id}/apps (owner, 14 Nov 2026) — the apps a member is given and
+ * the apps they actually open. A member from before grants existed has no
+ * grant rows and opens every app their role opens; `opens` says so.
+ */
+export const getMemberApps = async (membershipId: string, signal?: AbortSignal): Promise<MemberApps> => {
+  const response = await api.get<MemberAppsApiResponse>(API_PATHS.MEMBER_APPS(membershipId), { signal });
+  return toMemberApps(response.data.data);
+};
+
+/**
+ * PUT /members/{id}/apps — replaces the whole set. Online-only for the reason
+ * `updateMember` gives: access must not wait in a queue.
+ */
+export const setMemberApps = async (
+  membershipId: string,
+  grants: readonly MemberAppGrant[]
+): Promise<MemberApps> => {
+  const response = await api.put<MemberAppsApiResponse>(API_PATHS.MEMBER_APPS(membershipId), { grants });
+  return toMemberApps(response.data.data);
+};
+export const setMemberAppsWriteClass: TWriteClass = 'online-only';

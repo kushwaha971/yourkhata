@@ -23,13 +23,9 @@ import { draftChanged, resetOnboarding } from '../../onboarding/redux/onboarding
 import { fetchAppsPerBusiness } from '../../tenant-switcher/api/tenantSwitcherService';
 import { setDefaultTenant } from '../../tenant-switcher/redux/tenantSwitcherThunk';
 import { appPlace } from '../appPlace';
+import { PERSONAL_APPS } from '../personalApps';
 import { useNavigation } from '../useNavigation';
 
-/**
- * The person's own apps: one book per person, not per business (owner, 12 Nov
- * 2026), so they get no list of places, no ★ and no "+ Add".
- */
-const PERSONAL_APPS: ReadonlySet<string> = new Set(['khata']);
 /** Apps with their own words for "Your …" and "Add …"; any other says "place". */
 const WORDED: ReadonlySet<string> = new Set(['shop', 'library', 'lending']);
 const wordOf = (code: string): string => (WORDED.has(code) ? code : 'any');

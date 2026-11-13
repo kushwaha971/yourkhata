@@ -2,7 +2,7 @@
 
 import { useCallback, useMemo } from 'react';
 
-import { Ban, KeyRound, Pencil, ShieldCheck, UserMinus } from 'lucide-react';
+import { Ban, KeyRound, LayoutGrid, Pencil, ShieldCheck, UserMinus } from 'lucide-react';
 
 import { UbActionSheet, type UbMenuListRow } from 'src/design-system';
 import type { TranslateFn } from 'src/hooks/useTranslation';
@@ -34,6 +34,7 @@ export interface MemberActionsMenuProps {
   readonly onUnblock: (membershipId: string) => void;
   readonly onRemove: (membershipId: string) => void;
   readonly onRegenerate: (membershipId: string) => void;
+  readonly onApps: (membershipId: string) => void;
 }
 
 export function MemberActionsMenu({
@@ -46,6 +47,7 @@ export function MemberActionsMenu({
   onUnblock,
   onRemove,
   onRegenerate,
+  onApps,
 }: Readonly<MemberActionsMenuProps>): React.JSX.Element | null {
   /* `UbActionSheet` closes the sheet before a row acts (WP-03 D-04a): the
      dialog a row opens must not sit under a still-mounted sheet. */
@@ -71,6 +73,15 @@ export function MemberActionsMenu({
         label: t('team.member.edit.action'),
         icon: <Pencil className="h-5 w-5" />,
         onSelect: () => run(onEdit),
+      });
+    }
+    if (actions.apps) {
+      list.push({
+        key: 'apps',
+        label: t('team.member.apps.action'),
+        caption: t('team.member.apps.caption'),
+        icon: <LayoutGrid className="h-5 w-5" />,
+        onSelect: () => run(onApps),
       });
     }
     if (actions.regenerate) {
@@ -109,7 +120,7 @@ export function MemberActionsMenu({
       });
     }
     return list;
-  }, [actions, t, run, onEdit, onRegenerate, onUnblock, onBlock, onRemove]);
+  }, [actions, t, run, onEdit, onApps, onRegenerate, onUnblock, onBlock, onRemove]);
 
   if (!member) return null;
 

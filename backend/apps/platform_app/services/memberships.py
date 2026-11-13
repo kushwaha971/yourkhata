@@ -88,6 +88,22 @@ def switch_app(*, membership: Any, app: Any, request_id: str | None = None) -> A
     return membership
 
 
+def member_apps_json(membership: Any) -> dict:
+    """`GET`/`PUT /members/{id}/apps` — the grants, and the apps the member OPENS.
+
+    `opens` is the server's own answer (`accessible_apps`), so the Team screen
+    ticks what the member can really open: a member from before grants existed
+    has no grant rows and still opens every app their role opens.
+    """
+    from apps.common.permissions_registry import permissions_for
+    from apps.platform_app import apps_registry
+
+    if hasattr(membership, "_ub_app_grants"):
+        del membership._ub_app_grants
+    opens = apps_registry.accessible_apps(membership, permissions_for(membership))
+    return {"grants": app_grants_json(membership), "opens": [a.code for a in opens]}
+
+
 def app_grants_json(membership: Any) -> list[dict]:
     """A member's grants as the Team screen shows them, in switcher order."""
     from apps.platform_app import apps_registry

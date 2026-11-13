@@ -191,6 +191,22 @@ def test_the_owner_assigns_apps_per_person(team: dict) -> None:
     assert team["ravi"].permissions_version == 2  # held sessions re-read
 
 
+def test_the_team_screen_reads_which_apps_a_member_opens_today(team: dict) -> None:
+    """Owner, 14 Nov 2026: the Team screen ticks the apps a member can open. A
+    member from before grants existed has NO grant rows and still opens every
+    app their role opens, so reading `grants` alone would show them with every
+    app off; `opens` is what the server actually lets them open, and after a
+    PUT it follows the grants, and the member's session the same."""
+    client = _client(team["owner"])
+    url = reverse("v1:member-apps", args=[team["ravi"].id])
+    before = client.get(url).json()["data"]
+    assert before["grants"] == []
+    assert before["opens"] == ["library", "lending", "shop"]
+    after = _put(client, team["ravi"], [{"app": "lending", "role": "staff"}]).json()["data"]
+    assert after["opens"] == ["lending"]
+    assert client.get(url).json()["data"]["opens"] == ["lending"]
+
+
 @pytest.mark.parametrize(
     "grants, says",
     [

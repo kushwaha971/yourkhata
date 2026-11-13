@@ -650,7 +650,7 @@ class MemberAppsView(APIView):
         )
         if membership is None:
             raise NotFound()
-        return StandardResponse.ok({"grants": membership_service.app_grants_json(membership)})
+        return StandardResponse.ok(membership_service.member_apps_json(membership))
 
     def put(self, request: Any, membership_id: Any) -> Any:
         tenant = _tenant_or_refuse(request)
@@ -662,7 +662,7 @@ class MemberAppsView(APIView):
             actor=request.user,
             ctx=Ctx.from_request(request),
         )
-        return StandardResponse.ok({"grants": membership_service.app_grants_json(membership)})
+        return StandardResponse.ok(membership_service.member_apps_json(membership))
 
 
 #: Owner, 12 Oct 2026: acting on a PERSON is the owner's or an admin's act.

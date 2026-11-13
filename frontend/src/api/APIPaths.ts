@@ -71,6 +71,7 @@ export const API_PATHS = {
   MEMBER_BLOCK: (membershipId: string) => `/members/${seg(membershipId)}/block`,
   MEMBER_UNBLOCK: (membershipId: string) => `/members/${seg(membershipId)}/unblock`,
   MEMBER_REMOVE: (membershipId: string) => `/members/${seg(membershipId)}/remove`,
+  MEMBER_APPS: (membershipId: string) => `/members/${seg(membershipId)}/apps`,
   INVITATIONS: '/invitations',
   INVITATION: (id: string) => `/invitations/${seg(id)}`,
   /** PLT-05 FR-10 — the seat-consuming accept. */

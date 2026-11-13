@@ -56,6 +56,13 @@ const EditMemberDialog = dynamic(
   loading: () => <UbDialogLoading /> }
 );
 
+/* Owner, 14 Nov 2026 — which apps a member opens: fetched when it opens. */
+const MemberAppsDialog = dynamic(
+  () => import('./MemberAppsDialog').then((module) => module.MemberAppsDialog),
+  { ssr: false,
+  loading: () => <UbDialogLoading /> }
+);
+
 const CredentialsDialog = dynamic(
   () => import('./CredentialsDialog').then((module) => module.CredentialsDialog),
   { ssr: false,
@@ -104,6 +111,9 @@ export function MembersSection(): React.JSX.Element {
     closeActions,
     openEdit,
     editTarget,
+    openApps,
+    appsTarget,
+    closeApps,
     confirm,
     isActing,
     requestConfirm,
@@ -306,8 +316,10 @@ export function MembersSection(): React.JSX.Element {
         onUnblock={handleUnblock}
         onRemove={handleRemove}
         onRegenerate={requestRegenerate}
+        onApps={openApps}
       />
       {editTarget && <EditMemberDialog admin={admin} canWrite={canWrite} />}
+      {appsTarget && <MemberAppsDialog member={appsTarget} onClose={closeApps} />}
 
       {/* Block and Remove ask first, in a sentence that says what happens to
           the PERSON — signed out everywhere, and for Remove, off the team —

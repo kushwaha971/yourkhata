@@ -127,3 +127,15 @@ export interface IssuedCredentials {
   /** `otp` — no password exists; they sign in with `mobile` and a code. */
   readonly signIn: 'otp' | 'password';
 }
+
+/** Owner, 14 Nov 2026 — `GET`/`PUT /members/{id}/apps`: one app, one role. */
+export interface MemberAppGrant {
+  readonly app: string;
+  readonly role: string;
+}
+
+/** `grants` as saved; `opens` the apps the server lets the member open today. */
+export interface MemberApps {
+  readonly grants: readonly MemberAppGrant[];
+  readonly opens: readonly string[];
+}
