@@ -37,6 +37,12 @@ import 'src/i18n/catalogues/team';
  * member's own book away. An app already given in a role keeps that role; a
  * newly switched-on app gets the member's business role (or staff, when their
  * role belongs to one app only and this is another).
+ *
+ * Under each app that is on, its PARTS (owner, 14 Nov 2026): Sales, Stock,
+ * Take fees… — only the ones the server says this member's role could use. A
+ * part switched off is hidden from them; the server denies it. While an app is
+ * off its parts are not drawn and keep their state, so turning the app back on
+ * brings them back as they were.
  */
 export function MemberAppsDialog({
   member,
@@ -53,6 +59,7 @@ export function MemberAppsDialog({
   const [loaded, setLoaded] = useState<MemberApps | null>(null);
   const [failed, setFailed] = useState(false);
   const [on, setOn] = useState<ReadonlySet<string>>(new Set());
+  const [shown, setShown] = useState<ReadonlySet<string>>(new Set());
   const [saving, setSaving] = useState(false);
   const [refused, setRefused] = useState(false);
   const [attempt, setAttempt] = useState(0);
@@ -64,6 +71,7 @@ export function MemberAppsDialog({
         setLoaded(apps);
         setFailed(false);
         setOn(new Set(apps.opens));
+        setShown(new Set(apps.parts.filter((row) => !row.hidden).map((row) => row.part)));
       })
       .catch(() => {
         if (!controller.signal.aborted) setFailed(true);
@@ -90,6 +98,15 @@ export function MemberAppsDialog({
     });
   };
 
+  const togglePart = (part: string, next: boolean): void => {
+    setShown((prev) => {
+      const copy = new Set(prev);
+      if (next) copy.add(part);
+      else copy.delete(part);
+      return copy;
+    });
+  };
+
   const save = async (): Promise<void> => {
     if (saving) return;
     const chosen = shared.filter((app) => on.has(app.code));
@@ -103,7 +120,8 @@ export function MemberAppsDialog({
     ];
     setSaving(true);
     try {
-      await setMemberApps(member.id, grants);
+      const hidden = (loaded?.parts ?? []).filter((row) => !shown.has(row.part)).map((row) => row.part);
+      await setMemberApps(member.id, grants, hidden);
       dispatch(
         showSnackbar({
           severity: 'success',
@@ -152,15 +170,32 @@ export function MemberAppsDialog({
         <UbSkeleton variant="list" count={3} label={t('team.member.apps.loading')} />
       ) : (
         <UbStack gap={2} data-testid="member-apps">
-          {shared.map((app) => (
-            <UbSwitch
-              key={app.code}
-              checked={on.has(app.code)}
-              onCheckedChange={(next) => toggle(app.code, next)}
-              label={t(app.labelId)}
-              disabled={saving}
-            />
-          ))}
+          {shared.map((app) => {
+            const parts = on.has(app.code) ? (loaded.parts ?? []).filter((row) => row.app === app.code) : [];
+            return (
+              <UbStack key={app.code} gap={0}>
+                <UbSwitch
+                  checked={on.has(app.code)}
+                  onCheckedChange={(next) => toggle(app.code, next)}
+                  label={t(app.labelId)}
+                  disabled={saving}
+                />
+                {parts.length > 0 && (
+                  <UbStack gap={0} className="ml-1 border-l-2 border-border-hairline pl-4" data-testid={`member-parts-${app.code}`}>
+                    {parts.map((row) => (
+                      <UbSwitch
+                        key={row.part}
+                        checked={shown.has(row.part)}
+                        onCheckedChange={(next) => togglePart(row.part, next)}
+                        label={t(`team.member.parts.${row.part}`)}
+                        disabled={saving}
+                      />
+                    ))}
+                  </UbStack>
+                )}
+              </UbStack>
+            );
+          })}
           {refused && (
             <UbText as="p" variant="caption" role="alert" className="text-formError">
               {t('team.member.apps.none')}

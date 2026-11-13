@@ -10,6 +10,7 @@ from __future__ import annotations
 from typing import Any
 
 from django.conf import settings
+from django.db import transaction
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.views import APIView
 
@@ -52,6 +53,7 @@ from apps.platform_app.serializers.tenant import (
 from apps.platform_app.services import credentials as credentials_service
 from apps.platform_app.services import entitlements
 from apps.platform_app.services import member_admin
+from apps.platform_app.services import member_parts as member_parts_service
 from apps.platform_app.services import memberships as membership_service
 from apps.platform_app.services import onboarding as onboarding_service
 from apps.platform_app.services import sessions as session_service
@@ -655,13 +657,28 @@ class MemberAppsView(APIView):
     def put(self, request: Any, membership_id: Any) -> Any:
         tenant = _tenant_or_refuse(request)
         data = request.data if isinstance(request.data, dict) else {}
-        membership = membership_service.set_app_grants(
-            tenant=tenant,
-            membership_id=membership_id,
-            grants=data.get("grants"),
-            actor=request.user,
-            ctx=Ctx.from_request(request),
-        )
+        # `grants` (which apps) and `hidden` (which parts inside them, owner
+        # 14 Nov 2026) may come together or alone; one transaction either way.
+        if "grants" not in data and "hidden" not in data:
+            raise ValidationFailed({"grants": ["Send the apps, the hidden parts, or both."]})
+        with transaction.atomic():
+            membership = None
+            if "grants" in data:
+                membership = membership_service.set_app_grants(
+                    tenant=tenant,
+                    membership_id=membership_id,
+                    grants=data.get("grants"),
+                    actor=request.user,
+                    ctx=Ctx.from_request(request),
+                )
+            if "hidden" in data:
+                membership = member_parts_service.set_hidden_parts(
+                    tenant=tenant,
+                    membership_id=membership_id,
+                    hidden=data.get("hidden"),
+                    ctx=Ctx.from_request(request),
+                )
+        membership = member_of_tenant(tenant=tenant, membership_id=membership_id) or membership
         return StandardResponse.ok(membership_service.member_apps_json(membership))
 
 

@@ -1,5 +1,6 @@
 {
   "//": [
+    "14 Nov 2026, Team: hide parts of an app per member. The dialog is dynamic(); the member slice's new target ships with the shared store and moved /parties/[id]/statement first load to 328.0 against 328. Raised to measured + 0.3.",
     "14 Nov 2026, Team: choose which apps a member opens (owner). The Apps row in the member sheet, its slice target and the team catalogue's twelve new words (EN+HI) moved /settings/team to 97.7 and /accept-invite/[token] (which loads the same catalogue) to 11.4, each over by under 0.05 KB; the dialog itself is dynamic(). Raised to measured + 0.3.",
     "11 Nov 2026, Parts B/C/D measured against the design: Expiry, Find by IMEI and Print labels take the phone back bar (UbTaskBar), Print labels' print button moves to a phone bottom bar and Label size becomes UbSegmentedControl. Those routes moved 0-0.4 KB; the sales and purchase editors moved 1.1-1.4 KB through the bundler regrouping the now more widely shared bars, with no editor code changed. Measured + 0.3.",
     "11 Nov 2026, Part G budget catch-up: G1-G12 added routes (/sales/exchange, /sales/repairs, /reports/schedule-h, phone/cafe orders, schemes, sites, vehicles) that were never given budgets and grew the sales editors (old gold, schemes, sites, loose and substitute sheets) and the sales word list (+23 KB raw English). The add-on, loose and substitute sheets and the site picker were made dynamic() first, which took 6 KB off every bill editor; what remains is set to measured + 0.3. Next saving if needed: split the per-kind sales words (repairs, karigars, vehicles, sites, cafe, phone orders) into their own catalogue so lists and details stop carrying them.",
@@ -1623,7 +1624,7 @@
     },
     "/parties/[id]/statement": {
       "route": 93,
-      "firstLoad": 328
+      "firstLoad": 328.3
     },
     "/ledger/aging": {
       "route": 108.6,

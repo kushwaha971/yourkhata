@@ -233,12 +233,17 @@ export const removeMember = (membershipId: string, idempotencyKey: string): Prom
 export const removeMemberWriteClass: TWriteClass = 'online-only';
 
 interface MemberAppsApiResponse {
-  readonly data: { readonly grants: readonly { app: string; role: string }[]; readonly opens: readonly string[] };
+  readonly data: {
+    readonly grants: readonly { app: string; role: string }[];
+    readonly opens: readonly string[];
+    readonly parts?: readonly { app: string; part: string; hidden: boolean }[];
+  };
 }
 
 const toMemberApps = (data: MemberAppsApiResponse['data']): MemberApps => ({
   grants: data.grants.map((g) => ({ app: g.app, role: g.role })),
   opens: [...data.opens],
+  parts: (data.parts ?? []).map((row) => ({ app: row.app, part: row.part, hidden: row.hidden })),
 });
 
 /**
@@ -252,14 +257,16 @@ export const getMemberApps = async (membershipId: string, signal?: AbortSignal):
 };
 
 /**
- * PUT /members/{id}/apps — replaces the whole set. Online-only for the reason
- * `updateMember` gives: access must not wait in a queue.
+ * PUT /members/{id}/apps — replaces the apps and the hidden parts, in one
+ * request so the two never disagree. Online-only for the reason `updateMember`
+ * gives: access must not wait in a queue.
  */
 export const setMemberApps = async (
   membershipId: string,
-  grants: readonly MemberAppGrant[]
+  grants: readonly MemberAppGrant[],
+  hidden: readonly string[]
 ): Promise<MemberApps> => {
-  const response = await api.put<MemberAppsApiResponse>(API_PATHS.MEMBER_APPS(membershipId), { grants });
+  const response = await api.put<MemberAppsApiResponse>(API_PATHS.MEMBER_APPS(membershipId), { grants, hidden });
   return toMemberApps(response.data.data);
 };
 export const setMemberAppsWriteClass: TWriteClass = 'online-only';

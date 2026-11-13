@@ -101,7 +101,13 @@ def member_apps_json(membership: Any) -> dict:
     if hasattr(membership, "_ub_app_grants"):
         del membership._ub_app_grants
     opens = apps_registry.accessible_apps(membership, permissions_for(membership))
-    return {"grants": app_grants_json(membership), "opens": [a.code for a in opens]}
+    from apps.platform_app.services.member_parts import parts_json
+
+    return {
+        "grants": app_grants_json(membership),
+        "opens": [a.code for a in opens],
+        "parts": parts_json(membership),
+    }
 
 
 def app_grants_json(membership: Any) -> list[dict]:

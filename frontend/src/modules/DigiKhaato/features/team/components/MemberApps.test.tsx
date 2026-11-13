@@ -113,6 +113,12 @@ beforeEach(() => {
   roleService.fetchRoles.mockResolvedValue([]);
 });
 
+const PARTS = [
+  { app: 'library', part: 'library_fees', hidden: false },
+  { app: 'shop', part: 'sales', hidden: false },
+  { app: 'shop', part: 'purchases', hidden: true },
+];
+
 const openApps = async (name: string) => {
   await userEvent.click(await screen.findByRole('button', { name: `Actions for ${name}` }));
   await userEvent.click(await screen.findByRole('button', { name: /^Apps/ }));
@@ -121,10 +127,11 @@ const openApps = async (name: string) => {
 
 describe('apps a member can open', () => {
   beforeEach(() => {
-    memberService.getMemberApps.mockResolvedValue({ grants: [], opens: ['library', 'lending', 'shop', 'khata'] });
+    memberService.getMemberApps.mockResolvedValue({ grants: [], opens: ['library', 'lending', 'shop', 'khata'], parts: PARTS });
     memberService.setMemberApps.mockImplementation(async (_id: string, grants: { app: string }[]) => ({
       grants,
       opens: grants.map((g) => g.app),
+      parts: PARTS,
     }));
   });
 
@@ -153,7 +160,7 @@ describe('apps a member can open', () => {
       expect(memberService.setMemberApps).toHaveBeenCalledWith('m-staff', [
         { app: 'lending', role: 'staff' },
         { app: 'khata', role: 'staff' },
-      ])
+      ], expect.any(Array))
     );
     // The global snackbar (mounted once in AppProviders) carries the sentence.
     await waitFor(() => expect(JSON.stringify(store.getState().snackbar)).toMatch(/Ramesh Kumar now opens Ledger only here/));
@@ -164,6 +171,7 @@ describe('apps a member can open', () => {
     memberService.getMemberApps.mockResolvedValue({
       grants: [{ app: 'shop', role: 'accountant' }, { app: 'lending', role: 'staff' }],
       opens: ['lending', 'shop'],
+      parts: [],
     });
     signInAs('u-owner', 'owner');
     renderWithProviders(<MembersSection />);
@@ -176,12 +184,12 @@ describe('apps a member can open', () => {
         { app: 'lending', role: 'staff' },
         { app: 'shop', role: 'accountant' },
         { app: 'khata', role: 'staff' },
-      ])
+      ], expect.any(Array))
     );
   });
 
   it('will not save with every app off, and says Block is for stopping them', async () => {
-    memberService.getMemberApps.mockResolvedValue({ grants: [{ app: 'lending', role: 'staff' }], opens: ['lending'] });
+    memberService.getMemberApps.mockResolvedValue({ grants: [{ app: 'lending', role: 'staff' }], opens: ['lending'], parts: [] });
     signInAs('u-owner', 'owner');
     renderWithProviders(<MembersSection />);
     const dialog = await openApps('Ramesh Kumar');
@@ -191,6 +199,36 @@ describe('apps a member can open', () => {
     await userEvent.click(within(dialog).getByRole('button', { name: 'Save' }));
     expect(await within(dialog).findByText(/Keep at least one app on/)).toBeInTheDocument();
     expect(memberService.setMemberApps).not.toHaveBeenCalled();
+  });
+
+  it('shows each app\u2019s parts under it, as the server says, and sends the parts switched off', async () => {
+    signInAs('u-owner', 'owner');
+    renderWithProviders(<MembersSection />);
+    const dialog = await openApps('Ramesh Kumar');
+    const sales = await within(dialog).findByRole('switch', { name: /Sales/ });
+    expect(sales).toBeChecked();
+    // Hidden on the server: the switch is off.
+    expect(within(dialog).getByRole('switch', { name: /Purchases/ })).not.toBeChecked();
+    expect(within(dialog).getByRole('switch', { name: /Take fees/ })).toBeChecked();
+    await userEvent.click(sales);
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Save' }));
+    await waitFor(() =>
+      expect(memberService.setMemberApps).toHaveBeenCalledWith('m-staff', expect.any(Array), ['sales', 'purchases'])
+    );
+  });
+
+  it('hides an app\u2019s parts while the app itself is off, and keeps them as they were', async () => {
+    signInAs('u-owner', 'owner');
+    renderWithProviders(<MembersSection />);
+    const dialog = await openApps('Ramesh Kumar');
+    const shop = await within(dialog).findByRole('switch', { name: /^Business/ });
+    await waitFor(() => expect(shop).toBeChecked());
+    await userEvent.click(shop);
+    expect(within(dialog).queryByRole('switch', { name: /Sales/ })).not.toBeInTheDocument();
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Save' }));
+    await waitFor(() =>
+      expect(memberService.setMemberApps).toHaveBeenCalledWith('m-staff', expect.any(Array), ['purchases'])
+    );
   });
 
   it('is not offered on a blocked row, the owner row, or to an admin on another admin', async () => {

@@ -105,14 +105,15 @@ for (const width of [390, 1280]) {
   // Every app off is refused, and nothing is sent.
   const puts = [];
   o.page.on('request', (r) => r.method() === 'PUT' && r.url().includes(`/members/${memberId}/apps`) && puts.push(r.postData()));
-  for (const sw of await dialog.getByRole('switch').all()) await sw.click();
+  // Only the app rows: an app's parts (member-parts.mjs) disappear when it goes off.
+  for (const app of ['Library', 'Ledger', 'Business']) await dialog.getByRole('switch', { name: app, exact: true }).click();
   await dialog.getByRole('button', { name: 'Save' }).click();
   await dialog.getByText(/Keep at least one app on/).waitFor({ timeout: 5000 }).catch(() => {});
   check((await dialog.getByText(/Keep at least one app on/).count()) === 1 && puts.length === 0, `${tag}: every app off is refused on screen, nothing sent (${puts.length})`);
   await o.page.screenshot({ path: `${SHOTS}/${width}-2-none.png` });
 
   // Leave only Ledger on.
-  await dialog.getByRole('switch', { name: /Ledger/ }).click();
+  await dialog.getByRole('switch', { name: 'Ledger', exact: true }).click();
   await dialog.getByRole('button', { name: 'Save' }).dblclick().catch(() => {});
   await dialog.waitFor({ state: 'hidden', timeout: 10000 }).catch(() => {});
   check(puts.length === 1, `${tag}: a double tap on Save sends one change (${puts.length})`);

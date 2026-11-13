@@ -134,8 +134,16 @@ export interface MemberAppGrant {
   readonly role: string;
 }
 
-/** `grants` as saved; `opens` the apps the server lets the member open today. */
+/** One part of an app the member's role could use (owner, 14 Nov 2026), and whether it is hidden. */
+export interface MemberAppPart {
+  readonly app: string;
+  readonly part: string;
+  readonly hidden: boolean;
+}
+
+/** `grants` as saved; `opens` the apps the server lets the member open today; `parts` inside them. */
 export interface MemberApps {
   readonly grants: readonly MemberAppGrant[];
   readonly opens: readonly string[];
+  readonly parts: readonly MemberAppPart[];
 }
