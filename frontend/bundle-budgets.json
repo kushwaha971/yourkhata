@@ -1,6 +1,5 @@
 {
   "//": [
-    "14 Nov 2026, Turn off / Leave on the Apps screen (owner: bring back): AppsPanel gained one row, its confirmation (UbConfirmDialog) and the setAppRunning and leaveApp thunks, which the business menu carried before the Apps screen replaced it. /apps route measured 61.6 (was under 61.4); raised to measured + 0.3 = 61.9, first load unchanged within its budget.",
     "11 Nov 2026, Parts B/C/D measured against the design: Expiry, Find by IMEI and Print labels take the phone back bar (UbTaskBar), Print labels' print button moves to a phone bottom bar and Label size becomes UbSegmentedControl. Those routes moved 0-0.4 KB; the sales and purchase editors moved 1.1-1.4 KB through the bundler regrouping the now more widely shared bars, with no editor code changed. Measured + 0.3.",
     "11 Nov 2026, Part G budget catch-up: G1-G12 added routes (/sales/exchange, /sales/repairs, /reports/schedule-h, phone/cafe orders, schemes, sites, vehicles) that were never given budgets and grew the sales editors (old gold, schemes, sites, loose and substitute sheets) and the sales word list (+23 KB raw English). The add-on, loose and substitute sheets and the site picker were made dynamic() first, which took 6 KB off every bill editor; what remains is set to measured + 0.3. Next saving if needed: split the per-kind sales words (repairs, karigars, vehicles, sites, cafe, phone orders) into their own catalogue so lists and details stop carrying them.",
     "3 Nov 2026, jewellery finish: bills and shared search grew for the tag hold and fixed search list; /settings/messages is new; sales routes moved for the reminder choices. Measured + 0.3. Same night: the reminder sheet bubble and the saved-bill tag guard, measured + 0.3.",
@@ -1946,7 +1945,7 @@
       "firstLoad": 351.9
     },
     "/apps": {
-      "route": 61.9,
+      "route": 61.4,
       "firstLoad": 304.6
     },
     "/pay/[token]": {},

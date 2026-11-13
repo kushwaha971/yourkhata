@@ -121,8 +121,29 @@ for (const width of [390, 1280]) {
   const names = await rows.allInnerTexts();
   check(names.some((n) => n.includes(BRANCH)), `${width}: under Library: ${names.map((n) => n.split('\n')[0]).join(' | ')}`);
   await page.screenshot({ path: `${SHOTS}/${width}-3-libraries.png`, fullPage: true });
+  // Another business: the screen asks first (owner, 14 Nov 2026). Cancel sends
+  // nothing and stays; Switch, tapped twice, sends one switch.
+  const homeName = (await me()).tenants.find((t) => t.id === home.id)?.name ?? '';
+  const switches = [];
+  page.on('request', (r) => r.method() === 'POST' && r.url().includes('/auth/switch-tenant') && switches.push(r.url()));
   await rows.filter({ hasText: BRANCH }).click();
+  const ask = page.getByRole('dialog');
+  await ask.waitFor();
+  const words = (await ask.innerText()).replace(/\s+/g, ' ');
+  check(words.includes(`Switch to ${BRANCH}?`) && words.includes(`You are in ${homeName} now.`) && words.includes(`Library will open at ${BRANCH}`), `${width}: the switch asks first and names both: ${words.slice(0, 150)}`);
+  const askWide = await ask.evaluate((el) => [...el.querySelectorAll('*')].filter((n) => n.scrollWidth > n.clientWidth + 1 && n.children.length === 0).length);
+  check(askWide === 0, `${width}: no word in the question is cut (${askWide})`);
+  await page.screenshot({ path: `${SHOTS}/${width}-3b-switch-ask.png` });
+  await ask.getByRole('button', { name: 'Cancel' }).click();
+  await ask.waitFor({ state: 'hidden' });
+  check(switches.length === 0 && (await me()).active_tenant_id === home.id, `${width}: Cancel sends nothing and stays in ${homeName}`);
+  await rows.filter({ hasText: BRANCH }).click();
+  await page.getByRole('dialog').getByRole('button', { name: 'Switch' }).dblclick().catch(() => {});
   await page.waitForURL((u) => u.pathname.startsWith('/library'), { timeout: 15000 });
+  check(switches.length === 1, `${width}: a double tap on Switch sends one switch (${switches.length})`);
+  await page.getByText(new RegExp(BRANCH)).first().waitFor({ timeout: 8000 }).catch(() => {});
+  const shown = (await page.locator('body').innerText()).replace(/\s+/g, ' ');
+  check(shown.includes(BRANCH) && !shown.includes(homeName), `${width}: the screen now shows ${BRANCH}, not ${homeName}`);
   await page.waitForLoadState('networkidle');
   session = await me();
   check(session.active_tenant_id === branch.id && session.active_app === 'library', `${width}: the branch opened, in the Library`);

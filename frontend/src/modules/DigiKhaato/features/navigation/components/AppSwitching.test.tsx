@@ -42,13 +42,9 @@ jest.mock('../../tenant-switcher/api/tenantSwitcherService', () => ({
 jest.mock('../../auth/api/authService', () => ({
   ...jest.requireActual('../../auth/api/authService'),
   switchApp: jest.fn(() => new Promise(() => undefined)),
-  setAppRunning: jest.fn(),
-  leaveApp: jest.fn(),
+  switchTenant: jest.fn(),
 }));
-const authService = jest.requireMock('../../auth/api/authService') as {
-  setAppRunning: jest.Mock;
-  leaveApp: jest.Mock;
-};
+const authService = jest.requireMock('../../auth/api/authService') as { switchTenant: jest.Mock };
 
 const PERMISSIONS = [
   ...APP_MANIFESTS.flatMap((app) => app.navigation.map((item) => item.permission)),
@@ -227,48 +223,63 @@ describe('desktop rail and the Apps page (R-DEC-09)', () => {
 });
 
 /**
- * Owner, 14 Nov 2026: "Yes, bring back". Turn off (owner) and Leave (anyone
- * else) lived in the business menu at the top of the side menu; when the Apps
- * screen replaced that menu (12 Nov) nothing carried them over, so an owner
- * could add an app and never take it away, and a member could not step out of
- * one. They are on the Apps screen now, under the app they act on.
+ * Owner, 14 Nov 2026. Opening a place in ANOTHER business changed every figure
+ * on every screen with one tap and no word of it: a mis-tap on the Apps screen
+ * and the next bill went into the wrong business's book. The switch now asks
+ * first and says where the person is and where they are going. The same day
+ * the owner had "Turn off" and "Leave" removed from this screen again: changing
+ * where you work is done by switching, not by switching things off.
  */
-describe('turn an app off or leave it, from the Apps page', () => {
-  const after = (apps: SessionApp[], activeApp: string) => ({ ...store.getState().session, version: 2, apps, activeApp, appsAddable: [] });
-
-  it('lets the owner turn off the open app after a confirmation, then opens the app that is left', async () => {
-    load(APPS);
-    authService.setAppRunning.mockResolvedValue(after(APPS.slice(1), 'shop'));
+describe('switching to another business from the Apps page asks first', () => {
+  const TWO: SessionTenant[] = [
+    { id: 't1', name: 'Kumar Kirana', timezone: 'Asia/Kolkata', role: 'owner', membershipId: 'm1' },
+    { id: 't2', name: 'Gyan Library Baner', timezone: 'Asia/Kolkata', role: 'owner', membershipId: 'm2' },
+  ];
+  const setUp = async () => {
+    Object.assign(mockAppsOf, { t1: ['library', 'shop', 'khata'], t2: ['library'] });
+    load(APPS, [], TWO);
+    authService.switchTenant.mockReset();
+    authService.switchTenant.mockResolvedValue({
+      ...store.getState().session,
+      version: 2,
+      activeTenant: { id: 't2', name: 'Gyan Library Baner', timezone: 'Asia/Kolkata', role: 'owner' },
+    });
     renderWithProviders(<AppsPageContent />);
-    fireEvent.click(screen.getByRole('button', { name: 'Turn off Library' }));
-    expect(await screen.findByText('Turn off Library for Kumar Kirana?')).toBeInTheDocument();
-    expect(authService.setAppRunning).not.toHaveBeenCalled();
-    fireEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Turn off Library' }));
-    await waitFor(() => expect(authService.setAppRunning).toHaveBeenCalledWith('library', false));
-    await waitFor(() => expect(push).toHaveBeenCalledWith('/dashboard'));
-    expect(screen.queryByRole('button', { name: 'Leave Library' })).not.toBeInTheDocument();
+    await screen.findByText('Gyan Library Baner');
+    fireEvent.click(screen.getByRole('button', { name: /^Gyan Library Baner/ }));
+    return screen.findByRole('dialog');
+  };
+
+  it('names both businesses and the app, and sends nothing until Switch is tapped', async () => {
+    const dialog = await setUp();
+    expect(within(dialog).getByText('Switch to Gyan Library Baner?')).toBeInTheDocument();
+    expect(dialog).toHaveTextContent('You are in Kumar Kirana now. Library will open at Gyan Library Baner, and every screen will show its records.');
+    expect(authService.switchTenant).not.toHaveBeenCalled();
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Switch' }));
+    await waitFor(() => expect(authService.switchTenant).toHaveBeenCalledWith('t2'));
+    await waitFor(() => expect(push).toHaveBeenCalledWith('/library'));
   });
 
-  it('lets a staff member leave the open app, and never offers them Turn off', async () => {
-    load(APPS, [], undefined, 'staff');
-    authService.leaveApp.mockResolvedValue(after(APPS.slice(1), 'shop'));
-    renderWithProviders(<AppsPageContent />);
-    expect(screen.queryByRole('button', { name: 'Turn off Library' })).not.toBeInTheDocument();
-    fireEvent.click(screen.getByRole('button', { name: 'Leave Library' }));
-    expect(await screen.findByText('Leave Library at Kumar Kirana?')).toBeInTheDocument();
-    fireEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Leave Library' }));
-    await waitFor(() => expect(authService.leaveApp).toHaveBeenCalledWith('library'));
-    await waitFor(() => expect(push).toHaveBeenCalledWith('/dashboard'));
+  it('stays where it is on Cancel', async () => {
+    const dialog = await setUp();
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Cancel' }));
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+    expect(authService.switchTenant).not.toHaveBeenCalled();
+    expect(push).not.toHaveBeenCalled();
   });
 
-  it('offers neither with one app (the last app cannot go), nor on the person\u2019s own Money book', () => {
-    load(LIBRARY_ONLY);
-    const { unmount } = renderWithProviders(<AppsPageContent />);
-    expect(screen.queryByTestId('apps-app-action')).not.toBeInTheDocument();
-    unmount();
+  it('opens another app of the SAME business at once, with no question', () => {
     load(APPS);
     renderWithProviders(<AppsPageContent />);
-    fireEvent.click(screen.getByTestId('apps-card-khata'));
-    expect(screen.queryByTestId('apps-app-action')).not.toBeInTheDocument();
+    fireEvent.click(screen.getByTestId('apps-card-shop'));
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    expect(push).toHaveBeenCalledWith('/dashboard');
+  });
+
+  it('offers no Turn off and no Leave on this screen', () => {
+    load(APPS);
+    renderWithProviders(<AppsPageContent />);
+    expect(screen.queryByRole('button', { name: /^Turn off / })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /^Leave / })).not.toBeInTheDocument();
   });
 });

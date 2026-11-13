@@ -148,7 +148,7 @@ of the evidence, not a known defect.
    API, the frontend and browsers also running) and passes when run alone. No
    dues code was changed. It needs timing on a quiet machine before it is
    trusted either way.
-7. "Turn this app off / Leave this app" was missing from the Apps page. Brought
-   back on the owner's word (14 Nov): one row under the chosen app, owner turns
-   off, anyone else leaves, behind a confirmation. `e2e/apps-turn-off-leave.mjs`
-   69/69. Not offered on Money book, which is each person's own.
+7. "Turn this app off / Leave this app" is not on the Apps page. It was
+   brought back on 14 Nov and removed again the same day on the owner's word.
+   Instead, switching to another business from Apps asks first and names both
+   businesses (`e2e/apps-primary.mjs` 47/47).
