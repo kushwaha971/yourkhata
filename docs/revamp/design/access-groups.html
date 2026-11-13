@@ -472,7 +472,7 @@ body.only-p .col.d,body.only-d .col.p{display:none}
 </defs>
 </svg>
 <div class="bar"><div class="bar-in">
-  <div class="bar-t"><b>Access groups</b><span>Design for review · 14 Nov 2026 · decide what team members can open and do, once for many people · no code changed</span></div>
+  <div class="bar-t"><b>Access groups</b><span>Design for review · v2 14 Nov 2026 · each business and each app manages its own team access · no code changed</span></div>
   <div class="ctl"><span>Show</span><div class="seg" id="viewseg"><button type="button" aria-pressed="true" data-v="both">Both</button><button type="button" aria-pressed="false" data-v="p">Phone</button><button type="button" aria-pressed="false" data-v="d">Desktop</button></div></div>
   <div class="seg" id="themeseg"><button type="button" aria-pressed="true" data-t="">Auto</button><button type="button" aria-pressed="false" data-t="light">Light</button><button type="button" aria-pressed="false" data-t="dark">Dark</button></div>
 </div></div>
@@ -482,11 +482,11 @@ body.only-p .col.d,body.only-d .col.p{display:none}
   <b>Start</b>
   <a href="#intro">What this page is</a>
   <b>Screens</b>
-  <a href="#g1">G1 · Access groups list</a>
+  <a href="#g1">G1 · Groups for the open app</a>
   <a href="#g2">G2 · Make or change a group</a>
   <a href="#g3">G3 · Add member picks a group</a>
   <a href="#g4">G4 · One member, with an exception</a>
-  <a href="#g5">G5 · Same person, two businesses</a>
+  <a href="#g5">G5 · Same person, two apps or two branches</a>
   <a href="#g6">G6 · No groups yet</a>
   <b>Decide</b>
   <a href="#ask">Questions for you</a>
@@ -494,30 +494,31 @@ body.only-p .col.d,body.only-d .col.p{display:none}
 <main>
 
 <section id="intro">
-  <header><div class="tags"><span class="tag new">New</span></div><h2>What this page is</h2>
-  <p class="lede">Today the owner sets each member's apps and parts one by one. An access group is a named set of those choices, made once. Put five counter staff in "Counter staff" and change the group once: all five change.</p></header>
+  <header><div class="tags"><span class="tag new">New</span><span class="tag dec">v2</span></div><h2>What this page is</h2>
+  <p class="lede">Team follows the business and the app you have open. In Shree Ganesh Kirana › Business you set who can use Business there, and nothing else. In Library you set Library. Each branch has its own groups.</p></header>
   <div class="tblwrap"><table><thead><tr><th>Rule</th><th>What it means for the shopkeeper</th></tr></thead><tbody>
-    <tr><th>Each business has its own groups</th><td>"Counter staff" in one shop and "Counter staff" in another are separate. Each owner makes their own. A person who works in two businesses can be in a different group in each.</td></tr>
-    <tr><th>Three levels per part</th><td><b>Off</b> (not shown), <b>View only</b> (can see, cannot make or change) and <b>Full</b> (can make and change). Parts that are only an action, like Take fees or Give loans, have Off and Full.</td></tr>
-    <tr><th>One default group</th><td>Picked already when you add a member. You can change it there.</td></tr>
-    <tr><th>Exceptions stay possible</th><td>A member follows their group, and the owner can still change one part for one person. The screen says so, with "Use group again".</td></tr>
-    <tr><th>Never in a group</th><td>Deleting or cancelling a bill stays with the owner and admins. Money book is each person's own and is not in groups.</td></tr>
-    <tr><th>Who can change groups</th><td>The owner and admins.</td></tr>
+    <tr><th>One business, one app</th><td>Groups, members' access and Add member all belong to the open business and the open app. Library access is set from inside Library, Business access from inside Business.</td></tr>
+    <tr><th>Each branch is separate</th><td>Branch 1 and Branch 2 have their own groups, even for the same app.</td></tr>
+    <tr><th>Three levels per part</th><td><b>Off</b> (not shown), <b>View only</b> (can see, cannot make or change) and <b>Full</b> (can make and change). Parts that are only an action, like Take fees, have Off and Full.</td></tr>
+    <tr><th>One default group per app</th><td>Picked already when you add a member here. You can change it.</td></tr>
+    <tr><th>Exceptions stay possible</th><td>A member follows their group; the owner can still change one part for one person, with "Use group again".</td></tr>
+    <tr><th>Never in a group</th><td>Deleting or cancelling a bill stays with the owner and admins. Money book is each person's own.</td></tr>
   </tbody></table></div>
 </section>
 
 <section id="g1">
-  <header><div class="tags"><span class="tag new">New</span></div><h2>G1 · Access groups list</h2>
-  <p class="lede">A second tab on Team. Each group shows what it opens, how many people are in it, and which one is the default.</p></header>
+  <header><div class="tags"><span class="tag new">New</span></div><h2>G1 · Groups for the open app</h2>
+  <p class="lede">The page says which app and business it is for. Business shows Business groups; Library shows Library groups.</p></header>
   <div class="stage">
-    <div class="col d"><span class="cap">Desktop · Team › Access groups</span><div class="fit" data-w="1280" data-mock="dGroups"></div></div>
-    <div class="col p"><span class="cap">Phone · Team › Access groups</span><div class="fit" data-w="410" data-mock="pGroups"></div></div>
+    <div class="col d"><span class="cap">Desktop · Business › Team › Access groups</span><div class="fit" data-w="1280" data-mock="dGroups"></div></div>
+    <div class="col p"><span class="cap">Phone · Business › Team › Access groups</span><div class="fit" data-w="410" data-mock="pGroups"></div></div>
+    <div class="col p"><span class="cap">Phone · Library › Team › Access groups</span><div class="fit" data-w="410" data-mock="pGroupsLib"></div></div>
   </div>
 </section>
 
 <section id="g2">
   <header><div class="tags"><span class="tag new">New</span></div><h2>G2 · Make or change a group</h2>
-  <p class="lede">Name, default switch, then each app with its parts. An app switched off hides its parts. Saving shows how many members change.</p></header>
+  <p class="lede">Name, default switch, then this app's parts only. Saving says how many members change.</p></header>
   <div class="stage">
     <div class="col d"><span class="cap">Desktop · drawer on the right</span><div class="fit" data-w="1280" data-mock="dGroupEdit"></div></div>
     <div class="col p"><span class="cap">Phone · full screen</span><div class="fit" data-w="410" data-mock="pGroupEdit"></div></div>
@@ -526,7 +527,7 @@ body.only-p .col.d,body.only-d .col.p{display:none}
 
 <section id="g3">
   <header><div class="tags"><span class="tag new">New</span></div><h2>G3 · Add member picks a group</h2>
-  <p class="lede">One more field on the existing Add member form. The default group is already chosen.</p></header>
+  <p class="lede">Adding a member from Business gives them Business here. The form says so, and how to add them to another app.</p></header>
   <div class="stage">
     <div class="col d"><span class="cap">Desktop · Add member</span><div class="fit" data-w="1280" data-mock="dAdd"></div></div>
     <div class="col p"><span class="cap">Phone · Add member</span><div class="fit" data-w="410" data-mock="pAdd"></div></div>
@@ -535,30 +536,29 @@ body.only-p .col.d,body.only-d .col.p{display:none}
 
 <section id="g4">
   <header><div class="tags"><span class="tag new">New</span></div><h2>G4 · One member, with an exception</h2>
-  <p class="lede">The Members list shows each person's group. A member whose access differs from their group says "1 change", and their Apps sheet marks it, with "Use group again".</p></header>
+  <p class="lede">The Members list shows each person's group for this app. One person's sheet: can they use this app here, their group, and any part that differs from it.</p></header>
   <div class="stage">
-    <div class="col d"><span class="cap">Desktop · Team › Members</span><div class="fit" data-w="1280" data-mock="dMembers"></div></div>
-    <div class="col p"><span class="cap">Phone · ⋯ › Apps for one member</span><div class="fit" data-w="410" data-mock="pMember"></div></div>
+    <div class="col d"><span class="cap">Desktop · Business › Team › Members</span><div class="fit" data-w="1280" data-mock="dMembers"></div></div>
+    <div class="col p"><span class="cap">Phone · ⋯ › Access for one member</span><div class="fit" data-w="410" data-mock="pMember"></div></div>
   </div>
 </section>
 
 <section id="g5">
-  <header><div class="tags"><span class="tag new">New</span></div><h2>G5 · Same person, two businesses</h2>
-  <p class="lede">Ramesh works at two shops. Each owner puts him in their own group. He sees what the open business allows; switching business switches his access with it.</p></header>
-  <div class="tblwrap"><table><thead><tr><th>Part</th><th>Shree Ganesh Kirana · group "Counter staff"</th><th>Ganesh Traders · group "Billing and stock"</th></tr></thead><tbody>
-    <tr><th>Sales</th><td>View only</td><td>Full</td></tr>
-    <tr><th>Purchases</th><td>Off</td><td>Full</td></tr>
-    <tr><th>Stock</th><td>View only</td><td>Full</td></tr>
-    <tr><th>Payments</th><td>Full</td><td>Full</td></tr>
-    <tr><th>Expenses</th><td>Off</td><td>View only</td></tr>
+  <header><div class="tags"><span class="tag new">New</span></div><h2>G5 · Same person, two apps or two branches</h2>
+  <p class="lede">Ramesh signs in once. What he can do depends on the business and app he has open, each set from its own Team page.</p></header>
+  <div class="tblwrap"><table><thead><tr><th>Where Ramesh is working</th><th>Set from</th><th>His group there</th><th>What he can do</th></tr></thead><tbody>
+    <tr><th>Shree Ganesh Kirana · Branch 1 · Business</th><td>Branch 1 › Business › Team</td><td>Counter staff</td><td>Sales full, Stock view only, Payments full, Purchases off</td></tr>
+    <tr><th>Shree Ganesh Kirana · Branch 2 · Business</th><td>Branch 2 › Business › Team</td><td>Billing and stock</td><td>Sales full, Stock full, Purchases full</td></tr>
+    <tr><th>Shree Ganesh Kirana · Branch 1 · Library</th><td>Branch 1 › Library › Team</td><td>Library desk</td><td>Add and edit students full, Take fees off</td></tr>
+    <tr><th>His own shop</th><td>—</td><td>Owner</td><td>Everything. Nobody else's groups touch it.</td></tr>
   </tbody></table></div>
 </section>
 
 <section id="g6">
   <header><div class="tags"><span class="tag new">New</span></div><h2>G6 · No groups yet</h2>
-  <p class="lede">Until the owner makes a group, members get everything their role allows, as today. The empty tab says that and offers one ready example.</p></header>
+  <p class="lede">Until the owner makes a group for this app, members get everything their role allows here, as today.</p></header>
   <div class="stage">
-    <div class="col p"><span class="cap">Phone · Access groups, first visit</span><div class="fit" data-w="410" data-mock="pEmpty"></div></div>
+    <div class="col p"><span class="cap">Phone · Business › Team › Access groups, first visit</span><div class="fit" data-w="410" data-mock="pEmpty"></div></div>
   </div>
 </section>
 
@@ -566,9 +566,10 @@ body.only-p .col.d,body.only-d .col.p{display:none}
   <header><h2>Questions for you</h2><p class="lede">Each has my suggestion. Say yes, or tell me what to change.</p></header>
   <div class="tblwrap"><table><thead><tr><th>Question</th><th>Suggestion</th></tr></thead><tbody>
     <tr><th>Name of the tab</th><td>"Access groups". Hindi: "पहुँच समूह".</td></tr>
-    <tr><th>Groups and roles</th><td>Keep Admin, Staff and Accountant as they are. A group only narrows what a Staff or Accountant member can do; it never gives more than their role. Admins are not put in groups.</td></tr>
-    <tr><th>Ready-made group</th><td>Offer one example on the empty tab, "Counter staff" (Sales full, Payments full, Stock view only, Purchases and Expenses off), which the owner can change before saving.</td></tr>
-    <tr><th>Deleting a group</th><td>Allowed only when nobody is in it; otherwise it asks to move its members to another group first.</td></tr>
+    <tr><th>Groups and roles</th><td>Keep Admin, Staff and Accountant as they are. A group only narrows what a Staff or Accountant member's role allows here; it never gives more. Admins are not put in groups.</td></tr>
+    <tr><th>Ready-made group</th><td>One example per app on the empty tab: "Counter staff" for Business, "Library desk" for Library, "Collection agent" for Ledger. The owner can change it before saving.</td></tr>
+    <tr><th>Deleting a group</th><td>Only when nobody is in it; otherwise it asks to move its members to another group first.</td></tr>
+    <tr><th>The Apps dialog built today</th><td>It lists every app of the business in one place. With this design it becomes the G4 sheet: the open app only.</td></tr>
     <tr><th>Reports</th><td>Not a part for now: the Dashboard uses the same permission, so hiding Reports would hide the member's home screen.</td></tr>
   </tbody></table></div>
 </section>
@@ -1652,34 +1653,38 @@ function applyKind(t){
   fitAll();
 }
 document.addEventListener('click',e=>{if(e.target.closest('.allk')){allKinds=!allKinds;applyKind(cur)}});
-/* ── Access groups (14 Nov 2026) ─────────────────────────────────────────── */
-const T=Object.assign({},BT.kirana);
+/* ── Access groups v2 (14 Nov 2026): one business, one app ─────────────── */
+const T=Object.assign({},BT.kirana,{shop:'Shree Ganesh Kirana · Branch 1'});
+const PLACE='Shree Ganesh Kirana · Branch 1';
 const seg3=(on,two)=>`<div class="segc" style="${two?'max-width:180px':''}">${(two?['Off','Full']:['Off','View only','Full']).map((l,i)=>`<span class="${i===on?'on':''}" style="height:32px;font-size:13px">${l}</span>`).join('')}</div>`;
 /* Name on its own line, the choices under it: three choices beside a long name do not fit a phone. */
 const partRow=(name,on,two,o={})=>`<div style="display:grid;gap:6px;padding:8px 0;${o.mark?'background:var(--warn-wash);margin:0 -10px;padding:8px 10px;border-radius:8px':''}"><span style="display:flex;gap:8px;align-items:baseline;min-width:0"><span style="font-size:14px">${name}</span>${o.note?`<small class="small" style="color:var(--warn)">${o.note}</small>`:''}</span>${seg3(on,two)}</div>`;
-const appBlock=(name,on,parts)=>`<div class="card pad" style="display:grid;gap:4px;min-width:0">${swr(name,on?'':'Off: members do not see this app',on)}${on?`<div style="border-left:2px solid var(--line);padding-left:14px;display:grid">${parts}</div>`:''}</div>`;
-const GROUPS=[['Counter staff','Business · Sales full, Stock view only',4,1],['Collection agent','Ledger · Collect full',2,0],['Library desk','Library · Students full, Take fees off',1,0]];
+const partsCard=(rows)=>`<div class="card pad" style="display:grid;min-width:0"><b style="font-weight:600;margin-bottom:2px">What they can do in Business</b>${rows}</div>`;
+const BIZ_PARTS=(v,o={})=>partRow('Sales (bills, estimates, returns)',v[0])+partRow('Purchases',v[1])+partRow('Stock',v[2],0,o.stock||{})+partRow('Payments',v[3])+partRow('Expenses',v[4]);
+const GROUPS=[['Counter staff','Sales full · Stock view only',4,1],['Billing only','Sales full · everything else off',2,0],['Stock keeper','Stock full · Purchases full · Sales view only',1,0]];
+const LGROUPS=[['Library desk','Students full · Take fees off',2,1],['Fees collector','Take fees full · Students view only',1,0]];
 const deskTeam=(body,o={})=>desk(T,Object.assign({active:'',h:o.h||800,body},o)).replace(`<div class="ri">${I('team','s')}<span>Team</span></div>`,`<div class="ri on">${I('team','s')}<span>Team</span></div>`);
-const teamHead=(tab)=>`<div class="phd"><div><h1>Team</h1><p>Who works with you, and what each person can open.</p></div><div class="acts">${tab==='g'?`<span class="btn cta">${I('plus','s')}New group</span>`:`<span class="btn cta">${I('plus','s')}Add member</span>`}</div></div>
-<div class="pills"><span class="chp ${tab==='m'?'on':''}">Members · 7</span><span class="chp ${tab==='g'?'on':''}">Access groups · 3</span></div>`;
-M.dGroups=()=>deskTeam(`${teamHead('g')}<div class="tf"><table><thead><tr><th>Group</th><th>What it opens</th><th class="r">Members</th><th></th></tr></thead><tbody>${GROUPS.map(g=>`<tr><td><b style="font-weight:600">${g[0]}</b>${g[3]?' <span class="badge teal">Default</span>':''}</td><td>${g[1]}</td><td class="r">${g[2]}</td><td class="r"><span class="btn sm">Edit</span></td></tr>`).join('')}</tbody></table></div><span class="small mute">A member follows their group in this business only. Money book is never part of a group.</span>`,{h:620});
-M.pGroups=()=>phone(T,{head:'back',title:'Team',h:780,bs:'gap:12px',body:`<div class="pills"><span class="chp sm">Members · 7</span><span class="chp sm on">Access groups · 3</span></div><div class="lst">${GROUPS.map(g=>`<div class="li"><span class="t"><b>${g[0]}</b><small>${g[1]}</small></span><span class="e"><b style="font-weight:600">${g[2]}</b>${g[3]?'<span class="badge teal">Default</span>':'<small>people</small>'}</span></div>`).join('')}</div><span class="small mute">A member follows their group in this business only. Money book is never part of a group.</span><span class="btn cta lg w">${I('plus','s')}New group</span>`});
-const groupForm=()=>`${fld('Group name','Counter staff')}${swr('Default group','New members start in this group',true)}
-${appBlock('Business',true,partRow('Sales (bills, estimates, returns)',2)+partRow('Purchases',0)+partRow('Stock',1)+partRow('Payments',2)+partRow('Expenses',0))}
-${appBlock('Library',false,'')}
-${appBlock('Ledger',true,partRow('Give loans and add borrowers',0,1)+partRow('Collect payments',1,1))}
-<span class="small mute">Deleting or cancelling a bill always stays with the owner and admins.</span>`;
-M.dGroupEdit=()=>deskTeam(teamHead('g')+`<div class="tf" style="opacity:.6"><table><tbody>${GROUPS.map(g=>`<tr><td>${g[0]}</td><td>${g[1]}</td></tr>`).join('')}</tbody></table></div>`,{h:1180,overlay:drawer('Counter staff',groupForm(),`<span class="btn soft lg">Cancel</span><span class="btn cta lg" style="flex:1">Save · 4 members change</span>`,{sub:'4 members in this group',bs:'display:grid;gap:12px'})});
-M.pGroupEdit=()=>phone(T,{head:'back',close:1,title:'Counter staff',sub:'4 members in this group',h:1340,bs:'gap:12px',body:groupForm(),dock:`<div class="pdock"><div class="two"><span class="btn soft lg">Cancel</span><span class="btn cta lg">Save · 4 change</span></div></div>`});
-const addForm=()=>`${fld('Name','Suresh Patil')}${fld('Mobile','+91 98220 41178')}${sel('Role','Staff')}${sel('Access group','Counter staff (default)',{hint:'Business: Sales full, Stock view only, Payments full. You can change it later.'})}<span class="small mute">They sign in with this mobile number and a code. Nothing is sent to them by itself.</span>`;
-M.dAdd=()=>deskTeam(teamHead('m'),{h:720,overlay:drawer('Add member',addForm(),`<span class="btn soft lg">Cancel</span><span class="btn cta lg" style="flex:1">Add member</span>`,{bs:'display:grid;gap:14px'})});
-M.pAdd=()=>phone(T,{head:'back',title:'Team',h:780,body:'',overlay:sheet('Add member',addForm(),`<span class="btn soft lg">Cancel</span><span class="btn cta lg">Add member</span>`,{bs:'display:grid;gap:14px'})});
-const MEM=[['Suresh Patil','+91 98220 41178','Counter staff',''],['Anita More','+91 99700 11102','Counter staff','1 change'],['Vijay Kale','+91 97300 55210','Collection agent',''],['Rekha Jadhav','+91 90110 22004','Library desk','']];
-M.dMembers=()=>deskTeam(`${teamHead('m')}<div class="tf"><table><thead><tr><th>Name</th><th>Role</th><th>Access group</th><th>Last signed in</th><th></th></tr></thead><tbody>${MEM.map(m=>`<tr><td><b style="font-weight:500">${m[0]}</b><small>${m[1]}</small></td><td>Staff</td><td>${m[2]}${m[3]?` <span class="badge warn">${m[3]}</span>`:''}</td><td>Today</td><td class="r"><span class="btn sm">Apps</span></td></tr>`).join('')}</tbody></table></div>`,{h:620});
-M.pMember=()=>phone(T,{head:'back',title:'Team',h:1180,body:'',overlay:sheet('Apps for Anita More',`${sel('Access group','Counter staff')}
+const ctx=(app)=>`<div style="display:flex"><span class="badge teal">${app} · ${PLACE}</span></div>`;
+const teamHead=(tab,app='Business')=>`<div class="phd"><div><h1>Team</h1><p>Who can use ${app} here, and what they can do.</p></div><div class="acts">${tab==='g'?`<span class="btn cta">${I('plus','s')}New group</span>`:`<span class="btn cta">${I('plus','s')}Add member</span>`}</div></div>
+${ctx(app)}<div class="pills"><span class="chp ${tab==='m'?'on':''}">Members · 7</span><span class="chp ${tab==='g'?'on':''}">Access groups · 3</span></div>`;
+const groupTable=(rows)=>`<div class="tf"><table><thead><tr><th>Group</th><th>What they can do</th><th class="r">Members</th><th></th></tr></thead><tbody>${rows.map(g=>`<tr><td><b style="font-weight:600">${g[0]}</b>${g[3]?' <span class="badge teal">Default</span>':''}</td><td>${g[1]}</td><td class="r">${g[2]}</td><td class="r"><span class="btn sm">Edit</span></td></tr>`).join('')}</tbody></table></div>`;
+const groupList=(rows)=>`<div class="lst">${rows.map(g=>`<div class="li"><span class="t"><b>${g[0]}</b><small>${g[1]}</small></span><span class="e"><b style="font-weight:600">${g[2]}</b>${g[3]?'<span class="badge teal">Default</span>':'<small>people</small>'}</span></div>`).join('')}</div>`;
+M.dGroups=()=>deskTeam(`${teamHead('g')}${groupTable(GROUPS)}<span class="small mute">These groups are for Business at ${PLACE} only. Library and Ledger have their own, on their own Team page.</span>`,{h:620});
+const phoneHead=(app)=>`<div style="display:grid;gap:8px">${ctx(app)}</div>`;
+M.pGroups=()=>phone(T,{head:'back',title:'Team',sub:'Business',h:780,bs:'gap:12px',body:`${phoneHead('Business')}<div class="pills"><span class="chp sm">Members · 7</span><span class="chp sm on">Access groups · 3</span></div>${groupList(GROUPS)}<span class="small mute">For Business here only. Library and Ledger have their own.</span><span class="btn cta lg w">${I('plus','s')}New group</span>`});
+M.pGroupsLib=()=>phone(T,{head:'back',title:'Team',sub:'Library',h:780,bs:'gap:12px',body:`${phoneHead('Library')}<div class="pills"><span class="chp sm">Members · 3</span><span class="chp sm on">Access groups · 2</span></div>${groupList(LGROUPS)}<span class="small mute">For Library here only.</span><span class="btn cta lg w">${I('plus','s')}New group</span>`});
+const groupForm=()=>`${ctx('Business')}${fld('Group name','Counter staff')}${swr('Default group','New members of Business here start in this group',true)}${partsCard(BIZ_PARTS([2,0,1,2,0]))}<span class="small mute">Deleting or cancelling a bill always stays with the owner and admins.</span>`;
+M.dGroupEdit=()=>deskTeam(teamHead('g')+groupTable(GROUPS).replace('class="tf"','class="tf" style="opacity:.6"'),{h:980,overlay:drawer('Counter staff',groupForm(),`<span class="btn soft lg">Cancel</span><span class="btn cta lg" style="flex:1">Save · 4 members change</span>`,{sub:'4 members in this group',bs:'display:grid;gap:12px'})});
+M.pGroupEdit=()=>phone(T,{head:'back',close:1,title:'Counter staff',sub:'4 members in this group',h:1080,bs:'gap:12px',body:groupForm(),dock:`<div class="pdock"><div class="two"><span class="btn soft lg">Cancel</span><span class="btn cta lg">Save · 4 change</span></div></div>`});
+const addForm=()=>`${ctx('Business')}${fld('Name','Suresh Patil')}${fld('Mobile','+91 98220 41178')}${sel('Role','Staff')}${sel('Access group','Counter staff (default)',{hint:'Sales full, Stock view only, Payments full. You can change it later.'})}<span class="small mute">This gives Suresh Business here. To let him use Library too, open Library › Team and add him there. He signs in with this mobile number and a code; nothing is sent to him by itself.</span>`;
+M.dAdd=()=>deskTeam(teamHead('m'),{h:760,overlay:drawer('Add member to Business',addForm(),`<span class="btn soft lg">Cancel</span><span class="btn cta lg" style="flex:1">Add member</span>`,{bs:'display:grid;gap:14px'})});
+M.pAdd=()=>phone(T,{head:'back',title:'Team',sub:'Business',h:860,body:'',overlay:sheet('Add member',addForm(),`<span class="btn soft lg">Cancel</span><span class="btn cta lg">Add member</span>`,{bs:'display:grid;gap:14px'})});
+const MEM=[['Suresh Patil','+91 98220 41178','Counter staff',''],['Anita More','+91 99700 11102','Counter staff','1 change'],['Vijay Kale','+91 97300 55210','Stock keeper',''],['Rekha Jadhav','+91 90110 22004','Billing only','']];
+M.dMembers=()=>deskTeam(`${teamHead('m')}<div class="tf"><table><thead><tr><th>Name</th><th>Role</th><th>Group in Business</th><th>Last signed in</th><th></th></tr></thead><tbody>${MEM.map(m=>`<tr><td><b style="font-weight:500">${m[0]}</b><small>${m[1]}</small></td><td>Staff</td><td>${m[2]}${m[3]?` <span class="badge warn">${m[3]}</span>`:''}</td><td>Today</td><td class="r"><span class="btn sm">Access</span></td></tr>`).join('')}</tbody></table></div>`,{h:620});
+M.pMember=()=>phone(T,{head:'back',title:'Team',sub:'Business',h:1140,body:'',overlay:sheet('Anita More',`${swr('Can use Business here','Off: Business is hidden from Anita here. She keeps signing in.',true)}${sel('Access group','Counter staff')}
 <div class="card pad" style="display:grid;gap:4px;background:var(--warn-wash);border-color:transparent"><b style="font-weight:600">1 change from the group</b><span class="small">Stock is Full for Anita. The group says View only.</span><span class="btn sm" style="justify-self:start;margin-top:4px">Use group again</span></div>
-${appBlock('Business',true,partRow('Sales (bills, estimates, returns)',2)+partRow('Purchases',0)+partRow('Stock',2,0,{mark:1,note:'Group: View only'})+partRow('Payments',2)+partRow('Expenses',0))}`,`<span class="btn soft lg">Cancel</span><span class="btn cta lg">Save</span>`,{bs:'display:grid;gap:12px',sub:'In Shree Ganesh Kirana only'})});
-M.pEmpty=()=>phone(T,{head:'back',title:'Team',h:780,bs:'gap:12px',body:`<div class="pills"><span class="chp sm">Members · 7</span><span class="chp sm on">Access groups</span></div><div class="card pad" style="display:grid;gap:8px;justify-items:start;padding:20px"><span class="av" style="width:44px;height:44px">${I('team')}</span><b style="font-weight:600;font-size:16px">No groups yet</b><span class="small" style="color:var(--ink-2)">Right now each member can use everything their role allows. Make a group to decide this once for many people.</span><span class="btn cta lg w">${I('plus','s')}Make "Counter staff"</span><span class="btn lg w">Make my own group</span></div>`});
+${partsCard(BIZ_PARTS([2,0,2,2,0],{stock:{mark:1,note:'Group: View only'}}))}`,`<span class="btn soft lg">Cancel</span><span class="btn cta lg">Save</span>`,{bs:'display:grid;gap:12px',sub:'Business · Branch 1'})});
+M.pEmpty=()=>phone(T,{head:'back',title:'Team',sub:'Business',h:780,bs:'gap:12px',body:`${phoneHead('Business')}<div class="pills"><span class="chp sm">Members · 7</span><span class="chp sm on">Access groups</span></div><div class="card pad" style="display:grid;gap:8px;justify-items:start;padding:20px"><span class="av" style="width:44px;height:44px">${I('team')}</span><b style="font-weight:600;font-size:16px">No groups for Business yet</b><span class="small" style="color:var(--ink-2)">Right now each member can use everything their role allows in Business here. Make a group to decide this once for many people.</span><span class="btn cta lg w">${I('plus','s')}Make "Counter staff"</span><span class="btn lg w">Make my own group</span></div>`});
 /* ── render ── */
 function fitAll(){document.querySelectorAll('.fit').forEach(f=>{const sc=f.firstElementChild;if(!sc)return;const w=+f.dataset.w,s=Math.min(1,f.clientWidth/w);sc.style.transform=`scale(${s})`;sc.style.width=w+'px';f.style.height=Math.ceil(sc.offsetHeight*s)+'px';});}
 function render(){document.querySelectorAll('.fit').forEach(f=>{const fn=M[f.dataset.mock];f.innerHTML=`<div class="scale">${fn?fn():'<div class="ui" style="padding:20px">Missing: '+f.dataset.mock+'</div>'}</div>`;});fitAll();}
