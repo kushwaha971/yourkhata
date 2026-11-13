@@ -125,12 +125,13 @@ const JOBS = [
   plain('csp', 60, { quick: true }),
   plain('phonecountry', 60, { quick: true }),
   plain('otpsignin', 60, { quick: true }),
-  plain('credit', 120, { quick: true }),
   plain('tags', 120),
   plain('aging', 120, { quick: true }),
-  plain('ledger', 240),
-  plain('statement', 150, { quick: true }),
-  plain('writeoff', 60, { quick: true }),
+  // Owner, 13 Nov 2026: the old Udhaar person page and statement are removed
+  // (they open only for the Shop's book now). `credit`, `ledger`, `statement`,
+  // `writeoff` and sprint3-qa's N2 tested only that view and went with it; this
+  // job proves the door is shut and the Shop's own person page still opens.
+  plain('old-udhaar-gone', 40, { quick: true }),
   // SAL-03 FR-5 — a shared bill opened the way a customer opens it (launch blocker).
   plain('share-page', 60, { quick: true }),
   plain('credentials', 60, { quick: true }),
@@ -143,7 +144,6 @@ const JOBS = [
   s3('R', 240, { rt: true, joined: true }),
   s3('N3', 90),
   s3('N1', 120, { rt: true, joined: true }),
-  s3('N2', 150, { quick: true }),
   s3('F1', 180),
   s3('F2', 150),
   s3('F3', 200, { rt: true }),

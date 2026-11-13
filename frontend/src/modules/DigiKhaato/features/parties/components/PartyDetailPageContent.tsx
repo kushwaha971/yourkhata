@@ -503,7 +503,8 @@ export function PartyDetailPageContent({
     Boolean(party) &&
     !isArchived &&
     hasModule('payments') &&
-    can('payments.payment.read');
+    // The QR ends in "Mark received", which records the money; a role that cannot record is not offered it.
+    can('payments.payment.write');
   const canSell = hasModule('sales') && can('sales.invoice.write');
   const canPurchase = hasModule('purchases') && can('purchases.bill.write');
   const shopActions =

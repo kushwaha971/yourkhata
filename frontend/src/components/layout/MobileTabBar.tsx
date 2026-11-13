@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 
 import dynamic from 'next/dynamic';
 
-import { ChevronUp, LayoutGrid } from 'lucide-react';
+import { LayoutGrid } from 'lucide-react';
 
 import { UbBottomNav, type UbBottomNavItem } from 'src/design-system';
 import { useTranslation } from 'src/hooks/useTranslation';
@@ -61,12 +61,20 @@ export function MobileTabBar(): React.JSX.Element | null {
 
   if (!visible || bottomNav.length === 0) return null;
 
-  // Revamp 04 §2 (N-1) — with two or more apps the fifth slot is the App
-  // button: the open app's own icon and short name, so the bar always says
-  // which app this is, and a sheet with the apps and everything More held.
-  // With one app it stays More, exactly as before.
+  // Owner, 13 Nov 2026: the fifth slot reads "More" in every app. It used to
+  // carry the open app's own icon and short name (Revamp 04 §2, N-1), which
+  // read as one more page of the app; the header already says which app is
+  // open. With two or more apps it still opens the sheet with the apps and
+  // everything More held; with one app it is the link to the More page.
   const current = apps.length > 1 ? apps.find((item) => item.code === app) : undefined;
-  const AppIcon = current?.icon;
+  const more = {
+    key: MORE_TAB,
+    label: t('nav.more'),
+    icon: (
+      <LayoutGrid aria-hidden strokeWidth={active === MORE_TAB ? 2 : 1.75} className="h-6 w-6" />
+    ),
+    active: active === MORE_TAB,
+  };
 
   const items: UbBottomNavItem[] = [
     ...bottomNav.map((tab) => {
@@ -79,36 +87,16 @@ export function MobileTabBar(): React.JSX.Element | null {
         active: active === tab.key,
       };
     }),
-    current && AppIcon
+    current
       ? {
-          key: MORE_TAB,
-          label: t(current.shortLabelId),
+          ...more,
           ariaLabel: t('nav.apps.button', { app: t(current.labelId) }),
           onSelect: () => {
             setSheetMounted(true);
             setSheetOpen(true);
           },
-          icon: (
-            <AppIcon aria-hidden strokeWidth={active === MORE_TAB ? 2 : 1.75} className="h-6 w-6" />
-          ),
-          trailing: (
-            <ChevronUp aria-hidden className="ml-0.5 inline h-3 w-3 align-[-1px]" strokeWidth={2.5} />
-          ),
-          active: active === MORE_TAB,
         }
-      : {
-          key: MORE_TAB,
-          href: ROUTES.MORE,
-          label: t('nav.more'),
-          icon: (
-            <LayoutGrid
-              aria-hidden
-              strokeWidth={active === MORE_TAB ? 2 : 1.75}
-              className="h-6 w-6"
-            />
-          ),
-          active: active === MORE_TAB,
-        },
+      : { ...more, href: ROUTES.MORE },
   ];
 
   return (

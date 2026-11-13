@@ -5,6 +5,7 @@ import { Suspense, use } from 'react';
 import { UbPageSkeleton } from 'src/design-system';
 
 import { PartyDetailPageContent } from 'modules/DigiKhaato/features/parties/components/PartyDetailPageContent';
+import { ShopBookOnly } from 'modules/DigiKhaato/features/parties/components/ShopBookOnly';
 
 // The words this screen renders arrive with its chunk (src/i18n/catalogueRegistry.ts).
 import 'src/i18n/catalogues/ledger';
@@ -29,7 +30,9 @@ export default function PartyDetailPage({
 
   return (
     <Suspense fallback={<UbPageSkeleton variant="card" />}>
-      <PartyDetailPageContent id={id} />
+      <ShopBookOnly>
+        <PartyDetailPageContent id={id} />
+      </ShopBookOnly>
     </Suspense>
   );
 }

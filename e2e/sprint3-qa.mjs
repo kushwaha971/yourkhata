@@ -40,7 +40,6 @@
  * the seat check, and a deny override of ledger.entry.read (no system role
  * lacks it and there is no API for overrides).
  */
-import { enterUdhaarBook } from './lib/udhaar-book.mjs';
 import { chromium } from 'playwright';
 import { BACKEND_DIR as LOCAL_BACKEND_DIR, PYTHON, psql as localPsql } from './lib/local.mjs';
 import { execFileSync } from 'node:child_process';
@@ -280,8 +279,6 @@ const serverPreview = async (owner, partyId) => {
 };
 
 const openKhata = async (page, partyId, name) => {
-  // The person page reads the open app's book; the Udhaar view is the Money book session's.
-  await enterUdhaarBook(page, FRONTEND);
   await page.goto(`${FRONTEND}/parties/${partyId}`, { waitUntil: 'domcontentloaded', timeout: 120000 });
   await page.getByRole('heading', { name }).first().waitFor({ timeout: 60000 });
   await page.waitForTimeout(1200);

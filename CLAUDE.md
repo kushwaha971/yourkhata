@@ -301,13 +301,14 @@ cd frontend && npm run i18n:split && npm run i18n:check         # after any merg
 # `output: standalone` requires — `next start` cannot serve this build and
 # answers 500/text-plain for every chunk. Two scripts do it correctly:
 ./e2e/serve-api.sh && ./e2e/serve.sh
-node e2e/journey.mjs && node e2e/security.mjs && node e2e/credentials.mjs \
-  && node e2e/parties.mjs && node e2e/tags.mjs && node e2e/credit.mjs \
-  && node e2e/ledger.mjs && node e2e/statement.mjs
+node e2e/run-regression.mjs --quick
 ```
 
-238 checks across the eight: journey 72, security 10, credentials 17, parties 30,
-tags 13, credit 18, ledger 54, statement 24.
+`credit.mjs`, `ledger.mjs`, `statement.mjs` and `writeoff.mjs` were retired on
+13 Nov 2026 with the old Udhaar person page, statement and credit-limit screens
+they tested (owner: "Remove them"); `e2e/old-udhaar-gone.mjs` proves those
+addresses no longer open outside the Shop. The paragraphs below that name those
+harnesses are history, kept for the lessons.
 
 `node e2e/tags.mjs --shots` additionally sweeps every screen the tags feature
 touches at four widths, in each of its conditions, into `/tmp/e2e-shots/tags`.

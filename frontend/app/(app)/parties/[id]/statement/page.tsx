@@ -5,6 +5,7 @@ import { Suspense, use } from 'react';
 import { UbPageSkeleton } from 'src/design-system';
 
 import { PartyStatementPageContent } from 'modules/DigiKhaato/features/ledger/components/PartyStatementPageContent';
+import { ShopBookOnly } from 'modules/DigiKhaato/features/parties/components/ShopBookOnly';
 
 // The words this screen renders arrive with its chunk (src/i18n/catalogueRegistry.ts).
 import 'src/i18n/catalogues/ledger';
@@ -29,7 +30,9 @@ export default function PartyStatementPage({
 
   return (
     <Suspense fallback={<UbPageSkeleton variant="card" />}>
-      <PartyStatementPageContent id={id} />
+      <ShopBookOnly>
+        <PartyStatementPageContent id={id} />
+      </ShopBookOnly>
     </Suspense>
   );
 }

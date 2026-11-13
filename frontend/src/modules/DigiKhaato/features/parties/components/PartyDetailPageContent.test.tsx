@@ -614,6 +614,34 @@ describe('opened from the Shop (DEC-019)', () => {
       { partyId: ID, book: 'shop', page: 1, pageSize: 5 }, expect.anything());
   }, 15000);
 
+  /**
+   * Owner, 13 Nov 2026: a role is shown only what it may use. The UPI code ends
+   * in "Mark received", which records the money, so an accountant (who reads
+   * payments but cannot record one) was offered a step the server refuses.
+   */
+  it.each([['payments.payment.read', false], ['payments.payment.write', true]] as const)(
+    'offers Collect by UPI only to a role that may record the money (%s)', async (code, offered) => {
+      shopSession();
+      const current = store.getState().session;
+      if (!current.user) throw new Error('Expected signed-in fixture');
+      store.dispatch(sessionLoaded({ ...current, user: current.user,
+        enabledModules: [...current.enabledModules, 'payments'],
+        permissions: [...current.permissions.filter((c) => !c.startsWith('payments.')), code] }));
+      partyService.getParty.mockResolvedValue({ ...RESULT, party: { ...PARTY, shopBalance: '400.00',
+        shop: { customerBalance: '1000.00', customerDue: '1000.00', customerCredit: '0.00',
+          supplierBalance: '0.00', supplierDue: '0.00', supplierCredit: '0.00',
+          daysOverdue: 42, oldestDueOn: '2026-09-01', lastActivityAt: null, lastActivityKind: null } } });
+      const user = userEvent.setup();
+      renderWithProviders(<PartyDetailPageContent id={ID} />);
+      await screen.findByText('Ramesh Traders');
+      const more = screen.queryByRole('button', { name: 'More actions' });
+      if (more) await user.click(more);
+      else expect(offered).toBe(false);
+      const item = screen.queryByRole('button', { name: 'Collect by UPI' });
+      if (offered) expect(item).toBeInTheDocument();
+      else expect(item).not.toBeInTheDocument();
+    }, 15000);
+
   /** Person revamp: the main payment action is reachable without opening overflow. */
   it('puts role-specific actions on the Shop page and preserves the selected billing person', async () => {
     shopSession();

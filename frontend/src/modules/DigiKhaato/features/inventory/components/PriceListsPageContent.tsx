@@ -227,7 +227,7 @@ export function PriceListsPageContent(): React.JSX.Element {
         title={t('priceLists.title')}
         subtitle={isPhone ? undefined : t('priceLists.subtitle')}
         actions={
-          all.length > 0 ? (
+          all.length > 0 && can('reports.export') ? (
             <UbButton variant="secondary" onClick={exportLists}>
               {t('priceLists.export')}
             </UbButton>

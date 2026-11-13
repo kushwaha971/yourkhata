@@ -19,6 +19,7 @@ import {
   type UbDataGridColumn,
 } from 'src/design-system';
 import { useAppRouter } from 'src/hooks/useAppRouter';
+import { usePermissions } from 'src/hooks/usePermissions';
 import { useTranslation, type TranslateFn } from 'src/hooks/useTranslation';
 import { ROUTES } from 'src/routes';
 import { formatBusinessDate } from 'src/utils/dates';
@@ -133,6 +134,10 @@ const expiryCsv = (rows: readonly ExpiryRow[], t: TranslateFn): Blob => {
 export function ExpiryPageContent(): React.JSX.Element {
   const { t } = useTranslation();
   const router = useAppRouter();
+  const { can } = usePermissions();
+  // A return is a debit note, and a file of the stock is an export: each only for a role that may.
+  const canReturn = can('purchases.bill.write');
+  const canExport = can('reports.export');
   const tier = useGridTier();
   const desk = tier !== 'cards';
   const [within, setWithin] = useState<ExpiryWindow>('30');
@@ -180,7 +185,7 @@ export function ExpiryPageContent(): React.JSX.Element {
     [t]
   );
 
-  const returnButton = (
+  const returnButton = canReturn && (
     <UbButton
       variant={desk ? 'primary' : 'secondary'}
       onClick={returnTo}
@@ -211,14 +216,16 @@ export function ExpiryPageContent(): React.JSX.Element {
           primaryActions={
             desk ? (
               <UbStack direction="row" gap={2}>
-                <UbButton
-                  variant="secondary"
-                  disabled={rows.length === 0}
-                  onClick={() => saveBlob(expiryCsv(rows, t), `expiry-${within}.csv`)}
-                  data-testid="expiry-export"
-                >
-                  {t('stock.expiry.export')}
-                </UbButton>
+                {canExport && (
+                  <UbButton
+                    variant="secondary"
+                    disabled={rows.length === 0}
+                    onClick={() => saveBlob(expiryCsv(rows, t), `expiry-${within}.csv`)}
+                    data-testid="expiry-export"
+                  >
+                    {t('stock.expiry.export')}
+                  </UbButton>
+                )}
                 {returnButton}
               </UbStack>
             ) : undefined

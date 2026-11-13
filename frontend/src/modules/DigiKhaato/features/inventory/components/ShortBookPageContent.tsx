@@ -149,7 +149,10 @@ export function ShortBookPageContent(): React.JSX.Element {
   const tier = useGridTier();
   const isPhone = useIsMobileLayer();
   const { can, hasModule } = usePermissions();
-  const canOrder = hasModule('purchases') && can('purchases.bill.write') && can('inventory.item.write');
+  // Adding a line needs the right to change items; staff and accountants read the book.
+  const canAdd = can('inventory.item.write');
+  const canOrder =
+    hasModule('purchases') && can('purchases.bill.write') && can('inventory.item.write');
   const [book, setBook] = useState<ShortBook | null>(null);
   const [failed, setFailed] = useState(false);
   const [attempt, setAttempt] = useState(0);
@@ -186,17 +189,17 @@ export function ShortBookPageContent(): React.JSX.Element {
   const distributors = useMemo(() => {
     const seen = new Map<string, string>();
     for (const row of book?.rows ?? [])
-      seen.set(row.supplier?.id ?? 'none', row.supplier?.name ?? t('stock.shortBook.noDistributor'));
+      seen.set(
+        row.supplier?.id ?? 'none',
+        row.supplier?.name ?? t('stock.shortBook.noDistributor')
+      );
     return [...seen].map(([value, label]) => ({ value, label }));
   }, [book, t]);
 
-  const add = useCallback(
-    (itemId: string) => {
-      setAdding(false);
-      void addToShortBook(itemId, 'manual').then(() => setAttempt((n) => n + 1));
-    },
-    []
-  );
+  const add = useCallback((itemId: string) => {
+    setAdding(false);
+    void addToShortBook(itemId, 'manual').then(() => setAttempt((n) => n + 1));
+  }, []);
 
   /* One draft order per distributor; rows with no distributor yet stay in the
      book, because an order needs someone to buy from. */
@@ -295,14 +298,16 @@ export function ShortBookPageContent(): React.JSX.Element {
         title={t('stock.shortBook.title')}
         subtitle={isPhone ? undefined : t('stock.shortBook.subtitle')}
         actions={
-          <UbButton
-            variant="secondary"
-            icon={<Plus className="h-4 w-4" aria-hidden />}
-            onClick={() => setAdding(true)}
-            data-testid="short-book-add"
-          >
-            {t('stock.shortBook.add')}
-          </UbButton>
+          canAdd ? (
+            <UbButton
+              variant="secondary"
+              icon={<Plus className="h-4 w-4" aria-hidden />}
+              onClick={() => setAdding(true)}
+              data-testid="short-book-add"
+            >
+              {t('stock.shortBook.add')}
+            </UbButton>
+          ) : undefined
         }
         primaryAction={orderButton || undefined}
         renderMobileActions={(actions) => (
@@ -383,7 +388,11 @@ export function ShortBookPageContent(): React.JSX.Element {
           footer={null}
         />
         {book && book.rows.length > 0 && (
-          <UbText variant="body-sm" tone="secondary" className="rounded-card border border-border-hairline bg-surface-card p-4">
+          <UbText
+            variant="body-sm"
+            tone="secondary"
+            className="rounded-card border border-border-hairline bg-surface-card p-4"
+          >
             {t('stock.shortBook.note')}
           </UbText>
         )}
@@ -418,11 +427,22 @@ export function ShortBookPageContent(): React.JSX.Element {
       >
         <UbStack gap={2} data-testid="short-book-sent">
           {(sent ?? []).map((group) => (
-            <UbStack key={group.name} direction="row" justify="between" align="center" className="gap-3">
+            <UbStack
+              key={group.name}
+              direction="row"
+              justify="between"
+              align="center"
+              className="gap-3"
+            >
               <UbText variant="body-sm">
                 {t('stock.shortBook.madeRow', { name: group.name, count: group.rows.length })}
               </UbText>
-              <UbLink href={whatsappLink(group.name, group.rows, t)} target="_blank" rel="noopener noreferrer" variant="body-sm">
+              <UbLink
+                href={whatsappLink(group.name, group.rows, t)}
+                target="_blank"
+                rel="noopener noreferrer"
+                variant="body-sm"
+              >
                 {t('stock.shortBook.whatsapp')}
               </UbLink>
             </UbStack>
@@ -432,4 +452,3 @@ export function ShortBookPageContent(): React.JSX.Element {
     </UbPageShell>
   );
 }
-

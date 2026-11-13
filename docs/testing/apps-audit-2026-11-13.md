@@ -124,11 +124,13 @@ of the evidence, not a known defect.
    rest waited for words or pages the rebuilt apps changed ("Gave money",
    "Paid cash", the reworded credit-limit hint, `/khata` gone, only the open
    Old dues tab carrying a total). They now wait on the control, not the
-   sentence. **One thing for the owner:** the old Udhaar person page, its
-   statement and its credit-limit form still work, but no menu links to them
-   any more; they open only by address inside a Money Book session, which is
-   how `statement`, `credit`, `writeoff` and `s3-N2` reach them
-   (`e2e/lib/udhaar-book.mjs`). Keep, link or remove them is the owner's call.
+   sentence. **Removed on the owner's word (13 Nov):** the old Udhaar person page, its
+   statement and its credit-limit form no longer open outside the Shop
+   (`parties/components/ShopBookOnly`, `e2e/old-udhaar-gone.mjs`); the `statement`, `credit`,
+   `ledger` and `writeoff` harnesses that only tested them are deleted. The
+   same day role hiding was extended to Business: short book Add, price-list
+   Export, expiry Export and Return, and Collect by UPI are not shown to a
+   role the server would refuse (`shopHidesWhatTheRoleMayNot.test.tsx`).
 2. **About 56 harnesses work out "today" in UTC**, so they give false failures
    between midnight and 5:30 in the morning India time. The product code found
    with the same fault is fixed (defects 8 and 9).

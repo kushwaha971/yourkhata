@@ -98,12 +98,15 @@ beforeEach(() => {
 });
 
 describe('phone App button', () => {
-  it('replaces More with the open app, and its sheet opens the Apps screen from one row', async () => {
+  it('still reads More with several apps, and its sheet opens the Apps screen from one row', async () => {
     load(APPS);
     renderWithProviders(<MobileTabBar />);
     const button = screen.getByRole('button', { name: 'Apps and more, now in Library' });
     expect(button).toHaveAttribute('aria-haspopup', 'dialog');
     expect(screen.queryByRole('link', { name: 'More' })).not.toBeInTheDocument();
+    // Owner, 13 Nov 2026: the slot reads "More" in every app, never the app's
+    // own name (it read "Library"); the header already says which app is open.
+    expect(button).toHaveTextContent(/^More$/);
 
     fireEvent.click(button);
     const sheet = await screen.findByRole('dialog', { name: 'Apps and more' });
