@@ -127,8 +127,11 @@ _STAFF = {
     "library.member.read",
     "library.member.write",
     "library.fee.create",
-    # Loans & Collections: the counter and the collector read the book and collect.
+    # Loans & Collections: the counter and the collector read the book, collect,
+    # and (owner, 13 Nov 2026) add a borrower and give a loan. Routes, closing a
+    # loan and settings stay with the owner and admins.
     "lending.loan.read",
+    "lending.loan.create",
     "lending.collection.create",
 }
 # No *.void, no ledger.entry.correct, no reports.financial.read, no platform.*.

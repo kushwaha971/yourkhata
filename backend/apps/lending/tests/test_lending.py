@@ -232,13 +232,20 @@ def test_the_morning_bell_names_loans_that_became_late_today(lender, tenant):
     assert Notification.objects.get(tenant=tenant, type=tasks.LATE_TODAY).title == "Loans late today: 1"
 
 
-def test_collector_collects_but_cannot_lend_or_set_up(lender, api_as):
+def test_staff_collect_and_lend_but_cannot_set_up(lender, api_as):
+    """Owner, 13 Nov 2026: staff add a borrower and give a loan as well as collect.
+    Routes and closing a loan stay with the owner; an accountant still writes nothing."""
     client, tenant, route = lender
     l = loan(client, borrower(client, route))
     staff, _ = api_as(tenant, role="staff")
     assert post(staff, f"loans/{l['id']}/collections", {"amount": "500"}, ok=None).status_code == 201
-    assert post(staff, "loans", {"borrower_id": l["borrower_id"], "lent": "100", "count": 1, "each": "100"}, ok=None).status_code == 403
+    made = post(staff, "borrowers", {"name": "Added by staff", "mobile": "9822000111", "route_id": route}, ok=None)
+    assert made.status_code == 201, made.content
+    assert post(staff, "loans", {"borrower_id": l["borrower_id"], "lent": "100", "count": 1, "each": "100"}, ok=None).status_code == 201
     assert post(staff, "routes", {"name": "x"}, ok=None).status_code == 403
+    assert post(staff, f"loans/{l['id']}/close", {"reason": "written_off"}, ok=None).status_code == 403
+    reader, _ = api_as(tenant, role="accountant")
+    assert post(reader, "loans", {"borrower_id": l["borrower_id"], "lent": "100", "count": 1, "each": "100"}, ok=None).status_code == 403
 
 
 def test_another_business_sees_none_of_it(lender, other_tenant, api_as):

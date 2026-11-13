@@ -36,7 +36,7 @@ for the server tests.
 | --- | --- | --- | --- | --- |
 | Owner | everything | everything | own book | everything |
 | Admin | everything | everything | own book | everything |
-| Staff | reads; takes a collection; no new loan, borrower, route or settings | reads; enrols, takes a fee, attendance, books; no expenses or settings | own book, empty of the owner's | pages open, no refused request |
+| Staff | reads; takes a collection; adds a borrower and gives a loan (owner, 14 Nov); no route, closing a loan or settings | reads; enrols, takes a fee, attendance, books; no expenses or settings | own book, empty of the owner's | pages open, no refused request |
 | Accountant | reads only | reads only | own book | reads |
 
 Each cell was checked twice: at the server (allowed or 403) and on screen (the
@@ -134,9 +134,11 @@ of the evidence, not a known defect.
 2. **About 56 harnesses work out "today" in UTC**, so they give false failures
    between midnight and 5:30 in the morning India time. The product code found
    with the same fault is fixed (defects 8 and 9).
-3. **Staff cannot add a borrower or a loan in Lending** (owner and admin only).
-   That is how the role table is written; whether a collection agent should add
-   borrowers is the owner's call.
+3. **Staff could not add a borrower or a loan in Lending.** Changed on the
+   owner's word (14 Nov, "Yes, let staff add"): staff now hold
+   `lending.loan.create`. Routes, closing or writing off a loan and settings
+   stay with the owner and admins; an accountant only reads.
+   `e2e/staff-lends.mjs` 42/42, `team-roles` 1023/1023.
 4. **Business per-kind and monkey rounds were not repeated**; see
    `shop-round-2026-11-11.md` for the last ones.
 5. The monkey cannot run its reload-and-return check on `/library`,

@@ -38,10 +38,12 @@ const TEAM = [
 
 /** Pages per app, and which roles may NOT use each (they must be told so). */
 const OWNER_ADMIN = ['staff', 'accountant'];
+/** Owner, 13 Nov 2026: staff add borrowers and give loans; an accountant still only reads. */
+const NOT_ACCOUNTANT = ['accountant'];
 const PAGES = {
   lending: [
     ['/lending', []], ['/lending/loans', []], ['/lending/borrowers', []], ['/lending/messages', []],
-    ['/lending/routes', []], ['/lending/settings', OWNER_ADMIN], ['/lending/loans/new', OWNER_ADMIN],
+    ['/lending/routes', []], ['/lending/settings', OWNER_ADMIN], ['/lending/loans/new', NOT_ACCOUNTANT],
   ],
   library: [
     ['/library', []], ['/library/students', []], ['/library/fees', []], ['/library/seats', []],

@@ -184,7 +184,9 @@ def test_no_junk_query_crashes_any_route(world):
 
 #: Routes only the owner or an admin may write.
 OWNER_ONLY = ("library/shifts", "library/seats", "library/expenses", "library/settings")
-STAFF_MAY_WRITE_LENDING = ("/collections", "/not-paid", "/remove", "lending/messages")
+#: Owner, 13 Nov 2026: staff add borrowers and give loans too. Routes, closing a
+#: loan and settings stay with the owner and admins.
+STAFF_MAY_NOT_WRITE_LENDING = ("lending/routes", "/close", "lending/settings")
 
 
 def may_write(role: str, path: str) -> bool:
@@ -195,7 +197,7 @@ def may_write(role: str, path: str) -> bool:
     if role == "accountant":
         return False
     if path.startswith("lending/"):
-        return any(part in path for part in STAFF_MAY_WRITE_LENDING)
+        return not any(part in path for part in STAFF_MAY_NOT_WRITE_LENDING)
     return not any(path.startswith(p) for p in OWNER_ONLY)
 
 

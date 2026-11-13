@@ -20,7 +20,8 @@ amount lent, plus any charges taken at the start; both are shown before Save.
 The business (tenant). Permissions: `lending.loan.read` (read everything),
 `lending.collection.create` (collect, not paid), `lending.loan.create` (new loan,
 borrowers), `lending.settings.manage` (routes, settings, close a loan). Owner and
-manager hold all; a collector holds read + collect.
+manager hold all; staff hold read, collect and (owner, 13 Nov 2026) new loan and
+borrowers, never routes, settings or closing a loan; an accountant only reads.
 
 ## Tables (`apps/lending`, all `lending_*`, all new)
 

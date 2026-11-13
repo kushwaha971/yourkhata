@@ -2,6 +2,7 @@ import { screen } from '@testing-library/react';
 
 import { renderWithProviders } from 'src/tests/renderWithProviders';
 
+import { BorrowersPageContent } from 'modules/DigiKhaato/features/lending/components/BorrowersPageContent';
 import { RoutesPageContent } from 'modules/DigiKhaato/features/lending/components/RoutesPageContent';
 import { SettingsPageContent as LendingSettings } from 'modules/DigiKhaato/features/lending/components/SettingsPageContent';
 import { ExpensesPageContent } from 'modules/DigiKhaato/features/library/components/ExpensesPageContent';
@@ -16,6 +17,11 @@ import { SettingsPageContent as LibrarySettings } from 'modules/DigiKhaato/featu
  */
 jest.mock('modules/DigiKhaato/features/lending/api/lendingService');
 jest.mock('modules/DigiKhaato/features/library/api/libraryService');
+jest.mock('next/navigation', () => ({
+  useRouter: () => ({ push: jest.fn(), replace: jest.fn() }),
+  usePathname: () => '/lending/borrowers',
+  useSearchParams: () => new URLSearchParams(),
+}));
 
 let granted: readonly string[] = [];
 jest.mock('src/hooks/usePermissions', () => ({
@@ -29,6 +35,7 @@ jest.mock('src/hooks/usePermissions', () => ({
 
 const lending = jest.requireMock('modules/DigiKhaato/features/lending/api/lendingService') as {
   listRoutes: jest.Mock;
+  listBorrowers: jest.Mock;
   getSettings: jest.Mock;
 };
 const library = jest.requireMock('modules/DigiKhaato/features/library/api/libraryService') as {
@@ -37,13 +44,16 @@ const library = jest.requireMock('modules/DigiKhaato/features/library/api/librar
   listShifts: jest.Mock;
 };
 
-const STAFF_LENDING = ['lending.loan.read', 'lending.collection.create'];
+// Owner, 13 Nov 2026: staff add borrowers and give loans too (the server's role table).
+const STAFF_LENDING = ['lending.loan.read', 'lending.loan.create', 'lending.collection.create'];
+const ACCOUNTANT_LENDING = ['lending.loan.read'];
 const STAFF_LIBRARY = ['library.member.read', 'library.member.write', 'library.fee.create'];
-const OWNER = [...STAFF_LENDING, 'lending.loan.create', 'lending.settings.manage', ...STAFF_LIBRARY, 'library.settings.manage'];
+const OWNER = [...STAFF_LENDING, 'lending.settings.manage', ...STAFF_LIBRARY, 'library.settings.manage'];
 const EXPENSE = { id: 'e1', spentOn: '2026-11-10', head: 'electricity', amount: '1200.00', note: 'October', status: 'live', reason: '' };
 
 beforeEach(() => {
   lending.listRoutes.mockResolvedValue([{ id: 'r1', name: 'Camp road', active: true }]);
+  lending.listBorrowers.mockResolvedValue([]);
   lending.getSettings.mockResolvedValue({ signAs: 'Gyan Finance', name: 'Gyan Finance', upiId: '' });
   library.listExpenses.mockResolvedValue([EXPENSE]);
   library.getSettings.mockResolvedValue({ signAs: 'Gyan Library', name: 'Gyan Library', upiId: '', dueSoonDays: 3, seats: 20 });
@@ -57,6 +67,20 @@ describe('Lending shows a member only what their role may do', () => {
     expect(await screen.findByText('Camp road')).toBeInTheDocument();
     expect(screen.queryByTestId('lending-route-add')).not.toBeInTheDocument();
     expect(screen.queryByPlaceholderText('Route name')).not.toBeInTheDocument();
+  });
+
+  it('staff are offered Add borrower, which the owner allowed them', async () => {
+    granted = STAFF_LENDING;
+    renderWithProviders(<BorrowersPageContent />);
+    expect(await screen.findByText('No borrowers yet')).toBeInTheDocument();
+    expect(screen.getAllByRole('button', { name: 'Add borrower' }).length).toBeGreaterThan(0);
+  });
+
+  it('an accountant reads the borrowers and is not offered Add borrower', async () => {
+    granted = ACCOUNTANT_LENDING;
+    renderWithProviders(<BorrowersPageContent />);
+    expect(await screen.findByText('No borrowers yet')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Add borrower' })).not.toBeInTheDocument();
   });
 
   it('the owner keeps the add form', async () => {

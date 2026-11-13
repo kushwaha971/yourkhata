@@ -9,7 +9,8 @@ import { usePermissions } from 'src/hooks/usePermissions';
  * `apps/lending/views.py`, which decides again on every request. Reading is the
  * menu's gate; these three decide which actions a screen draws. An action the
  * member may not take is hidden, never drawn to be refused (R-SEC-2): staff
- * collect on the round but do not lend, an accountant only reads.
+ * collect, add borrowers and give loans (owner, 13 Nov 2026) but do not manage
+ * routes, close loans or change settings; an accountant only reads.
  */
 export interface LendingAccess {
   /** Collect, Not paid, remove a wrong collection, send a reminder. */
