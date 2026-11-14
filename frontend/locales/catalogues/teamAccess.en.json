@@ -1,5 +1,5 @@
 {
-  "team.access.addNote": "This gives them {app} at {business}. To let them use another app, open that app's Team page and add them there. They sign in with this mobile number and a code.",
+  "team.access.addNote": "This gives them {app} at {business}. To let them use another app, open that app's Team page and add them there.",
   "team.access.addedBody": "{name} was already on your team. They sign in as before; their other apps stay as they were.",
   "team.access.addedTitle": "{name} can now use {app} here",
   "team.access.canUse": "Can use {app} here",
