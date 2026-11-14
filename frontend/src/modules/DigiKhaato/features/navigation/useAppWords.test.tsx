@@ -10,6 +10,7 @@ import { ALL_MESSAGES } from 'src/tests/allMessages';
 import type { PermissionCode } from 'src/types/domain.types';
 
 import { useAppWords } from './useAppWords';
+import { useBusinessTranslation } from './useBusinessTranslation';
 
 /**
  * docs/platform/14 step 6 — a khata is one page whichever app opened it, and it
@@ -97,4 +98,24 @@ it("B2: the business's own words win, and its kind is offered for the rail", () 
   expect(w('nav.suppliers')).toBe('Distributors');
   expect(w('nav.parties')).toBe('Customers');
   expect(kindLabel).toBe('Medical');
+});
+
+
+it("a hardware or electrical shop's sales screens say Quotation (owner, 14 Nov 2026)", () => {
+  /** Prevents: the menu saying "Quotations" while the page it opens, its empty
+   * state and its New button still say "Estimate" — the page used `t()` and
+   * never saw the business's words. */
+  load('shop', { en: { 'sales.estimate.listTitle': 'Quotations', 'sales.estimate.new': 'New quotation' } });
+  const { t } = renderHook(() => useBusinessTranslation(), {
+    wrapper: ({ children }: { children: ReactNode }) => (
+      <Provider store={store}>
+        <IntlProvider locale="en" messages={ALL_MESSAGES.en}>
+          {children}
+        </IntlProvider>
+      </Provider>
+    ),
+  }).result.current;
+  expect(t('sales.estimate.listTitle')).toBe('Quotations');
+  expect(t('sales.estimate.new')).toBe('New quotation');
+  expect(t('sales.estimate.listSubtitle')).toBe('Prices you gave before a sale.');
 });

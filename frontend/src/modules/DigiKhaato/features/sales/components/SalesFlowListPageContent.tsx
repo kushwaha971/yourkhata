@@ -29,10 +29,10 @@ import {
 } from 'src/design-system/UbDataGrid';
 import { useAppRouter } from 'src/hooks/useAppRouter';
 import { useCommittedSearch } from 'src/hooks/useCommittedSearch';
-import { useTranslation } from 'src/hooks/useTranslation';
 import { formatBusinessDate } from 'src/utils/dates';
 
 import { ListExportButton } from 'modules/DigiKhaato/features/imports/components/ListHeaderActions';
+import { useBusinessTranslation } from 'modules/DigiKhaato/features/navigation/useBusinessTranslation';
 
 import { flowExportPath } from '../api/salesService';
 import {
@@ -67,7 +67,7 @@ const COPY: Readonly<Record<FlowKind, { readonly ns: string; readonly stat: stri
 export function SalesFlowListPageContent({
   kind,
 }: Readonly<{ kind: FlowKind }>): React.JSX.Element {
-  const { t } = useTranslation();
+  const { t } = useBusinessTranslation();
   const router = useAppRouter();
   const tier = useGridTier();
   const wide = useMediaQuery('(min-width: 1280px)');

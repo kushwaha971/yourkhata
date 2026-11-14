@@ -4,8 +4,9 @@ import { ClipboardCheck, ClipboardList, FileText, PackageCheck, Undo2 } from 'lu
 
 import { UbActionLink } from 'src/design-system';
 import { usePermissions } from 'src/hooks/usePermissions';
-import { useTranslation } from 'src/hooks/useTranslation';
 import { ROUTES } from 'src/routes';
+
+import { useBusinessTranslation } from 'modules/DigiKhaato/features/navigation/useBusinessTranslation';
 
 type Section = 'invoice' | 'estimate' | 'sales_order' | 'delivery_challan' | 'credit_note';
 
@@ -61,7 +62,7 @@ const SECTIONS: readonly {
  * so the header stays one row (owner's rule).
  */
 export function SalesSectionLinks({ current }: Readonly<{ current: Section }>): React.JSX.Element {
-  const { t } = useTranslation();
+  const { t } = useBusinessTranslation();
   const { can } = usePermissions();
   return (
     <>

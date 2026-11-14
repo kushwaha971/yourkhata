@@ -1,5 +1,5 @@
-"""G11 — a kirana's phone and WhatsApp orders. Only a business that keeps them
-(a kirana by default) sees them; any other answers 404."""
+"""G11 — phone and WhatsApp orders, on for every kind of shop. Only a business that keeps them
+(the Shop features switch) sees them; any other answers 404."""
 
 from __future__ import annotations
 
@@ -30,7 +30,7 @@ class _View(APIView):
         from apps.platform_app.selectors.business_words import features_of
 
         if "phone_orders" not in features_of(get_effective_tenant(request)):
-            raise NotFound("Phone orders are kept by kirana shops.")
+            raise NotFound("Phone orders are turned off for this business.")
 
 
 class PhoneOrdersView(_View):

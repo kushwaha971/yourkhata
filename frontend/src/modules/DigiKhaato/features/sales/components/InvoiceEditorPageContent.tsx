@@ -33,7 +33,6 @@ import { useAppDispatch, useAppSelector } from 'src/hooks/useAppStore';
 import { useDocksEditorTotals } from 'src/hooks/useDocksEditorTotals';
 import { useDocumentEditorWindowEffects } from 'src/hooks/useDocumentEditorWindowEffects';
 import { useStillWorking } from 'src/hooks/useStillWorking';
-import { useTranslation } from 'src/hooks/useTranslation';
 import { selectLocale } from 'src/redux/slice/localeSlice';
 import { selectNetworkState } from 'src/redux/slice/networkSlice';
 import { selectActiveTenant, selectMayOverrideCreditLimit } from 'src/redux/slice/sessionSlice';
@@ -42,6 +41,8 @@ import type { RootState } from 'src/redux/store';
 import { ROUTES } from 'src/routes';
 import { formatBusinessDate } from 'src/utils/dates';
 import { formatInr, subtractMoney, sumMoney } from 'src/utils/money';
+
+import { useBusinessTranslation } from 'modules/DigiKhaato/features/navigation/useBusinessTranslation';
 
 import { useJewelDefaults } from '../../inventory/api/metalRateService';
 import { listInvoices } from '../api/salesService';
@@ -106,7 +107,7 @@ export function InvoiceEditorPageContent({
   documentId,
   kind = 'invoice',
 }: Readonly<{ documentId: string | null; kind?: EditorKind }>): React.JSX.Element {
-  const { t } = useTranslation();
+  const { t } = useBusinessTranslation();
   const router = useAppRouter();
   const dispatch = useAppDispatch();
   const store = useStore<RootState>();

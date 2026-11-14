@@ -10,7 +10,7 @@ in this codebase may branch on `Tenant.business_type`. A test asserts that.
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 
 from apps.platform_app.constants import BusinessType
 
@@ -73,8 +73,9 @@ PRESETS: dict[str, Preset] = {
         favourite_units=("NOS", "PCS", "SET", "BOX", "MTR"),
         extra_expense_categories=("Repairs & service", "Shop maintenance"),
         default_due_days=7,
-        # D8: a mobile shop asks one IMEI for each phone.
-        features=frozenset({"orders", "serials"}),
+        # D8: a mobile shop asks one IMEI for each phone. Sites (owner, 14 Nov
+        # 2026): an electrical shop supplies wiring by job site, as hardware does.
+        features=frozenset({"orders", "serials", "sites"}),
     ),
     BusinessType.GARMENTS.value: Preset(
         inventory_enabled=True,
@@ -206,6 +207,11 @@ PRESETS: dict[str, Preset] = {
         default_due_days=30,
     ),
 }
+
+#: Owner, 14 Nov 2026: every shop takes orders on the phone and WhatsApp, not
+#: only a kirana, so every kind starts with them on. Shop features turns them off.
+EVERY_KIND_FEATURES: frozenset[str] = frozenset({"phone_orders"})
+PRESETS = {kind: replace(p, features=p.features | EVERY_KIND_FEATURES) for kind, p in PRESETS.items()}
 
 # FR-7: the modules a new tenant asks for, before the partner and plan
 # intersection. `inventory` is added only when the preset enables it.

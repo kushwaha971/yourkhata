@@ -86,3 +86,30 @@ def test_the_wholesale_switch_moves_the_starting_words_only() -> None:
     assert "nav.parties" not in words_of(_tenant("kirana"), "en", {**on, "shop.wholesale": {"value": False}})
     typed = {"parties.labels": {"customer": "Patient", "supplier": "Supplier"}, "shop.wholesale": {"value": True}}
     assert words_of(_tenant("medical"), "en", typed)["nav.parties"] == "Patients"
+
+
+@pytest.mark.parametrize("kind", ["kirana", "hardware", "electronics", "medical", "garments", "auto_parts", "jewellery", "food", "stationery", "agri", "furniture", "other"])
+def test_every_kind_keeps_phone_orders_by_default(kind: str) -> None:
+    """Owner, 14 Nov 2026: phone and WhatsApp orders are for every shop."""
+    assert "phone_orders" in features_of(_tenant(kind), {})
+
+
+def test_an_electrical_shop_keeps_sites_like_hardware() -> None:
+    """Owner, 14 Nov 2026: an electrical shop supplies wiring by job site, as hardware does."""
+    on = features_of(_tenant("electronics"), {})
+    assert {"sites", "orders", "serials"} <= set(on)
+
+
+@pytest.mark.parametrize("kind", ["hardware", "electronics"])
+def test_hardware_and_electrical_shops_say_quotation(kind: str) -> None:
+    """The estimate is called what these shopkeepers call it, in both languages."""
+    en = words_of(_tenant(kind), "en", {})
+    hi = words_of(_tenant(kind), "hi", {})
+    assert en["nav.estimates"] == "Quotations"
+    assert en["sales.estimate.new"] == "New quotation"
+    assert en["sales.estimate.title"] == "Quotation"
+    assert hi["nav.estimates"] == "कोटेशन"
+
+
+def test_a_kirana_still_says_estimate() -> None:
+    assert "nav.estimates" not in words_of(_tenant("kirana"), "en", {})

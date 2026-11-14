@@ -29,10 +29,10 @@ import {
 } from 'src/design-system/UbDataGrid';
 import { useAppRouter } from 'src/hooks/useAppRouter';
 import { useCommittedSearch } from 'src/hooks/useCommittedSearch';
-import { useTranslation } from 'src/hooks/useTranslation';
 import { ROUTES } from 'src/routes';
 
 import { ListExportButton } from 'modules/DigiKhaato/features/imports/components/ListHeaderActions';
+import { useBusinessTranslation } from 'modules/DigiKhaato/features/navigation/useBusinessTranslation';
 
 import { invoiceExportPath } from '../api/salesService';
 import {
@@ -59,7 +59,7 @@ const NEW_BILL = `${ROUTES.SALES_INVOICES}/new`;
  * (FR-5). Rows open the bill; `N` starts a new one (FR-12).
  */
 export function InvoicesListPageContent(): React.JSX.Element {
-  const { t } = useTranslation();
+  const { t } = useBusinessTranslation();
   const router = useAppRouter();
   const tier = useGridTier();
   const wide = useMediaQuery('(min-width: 1280px)');

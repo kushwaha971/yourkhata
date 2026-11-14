@@ -35,12 +35,13 @@ import {
 } from 'src/design-system';
 import { useAppSelector } from 'src/hooks/useAppStore';
 import { usePermissions } from 'src/hooks/usePermissions';
-import { useTranslation } from 'src/hooks/useTranslation';
 import { selectLocale } from 'src/redux/slice/localeSlice';
 import { selectNetworkImpaired } from 'src/redux/slice/networkSlice';
 import { ROUTES } from 'src/routes';
 import { formatBusinessDate } from 'src/utils/dates';
 import { formatInr } from 'src/utils/money';
+
+import { useBusinessTranslation } from 'modules/DigiKhaato/features/navigation/useBusinessTranslation';
 
 import { useInvoiceDetail } from '../hooks/useInvoiceDetail';
 import { STATUS_TONE, partyLabel } from '../view-model/invoiceDisplay';
@@ -112,7 +113,7 @@ function InvoiceDetailScreen({
   id,
   kind = 'invoice',
 }: Readonly<{ id: string; kind?: DetailKind }>): React.JSX.Element {
-  const { t } = useTranslation();
+  const { t } = useBusinessTranslation();
   const search = useSearchParams();
   const locale = useAppSelector(selectLocale);
   const { can, hasModule } = usePermissions();

@@ -461,6 +461,7 @@ def test_completing_the_wizard_seeds_every_default(
         "shop.features.batches",
         "shop.features.variants",
         "shop.features.orders",
+        "shop.features.phone_orders",
         "parties.labels",
     }
     labels = TenantSetting.objects.get(tenant=new_tenant, key="parties.labels").value

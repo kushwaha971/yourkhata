@@ -32,8 +32,23 @@ def _kg_item(make_item: Any, name: str, price: str) -> Any:
     return item
 
 
-def test_a_shop_that_keeps_no_phone_orders_has_none(owner: Any) -> None:
+def test_a_shop_that_turned_phone_orders_off_has_none(shop: Any, owner: Any) -> None:
+    """Every kind keeps phone orders by default (owner, 14 Nov 2026); the Shop
+    features switch still takes them away, and the address answers 404."""
+    from apps.platform_app.models import TenantSetting
+
+    TenantSetting.objects.update_or_create(
+        tenant=shop, key="shop.features.phone_orders", defaults={"value": {"value": False}}
+    )
     assert owner.get(reverse(URL)).status_code == 404
+
+
+@pytest.mark.parametrize("kind", ["hardware", "electronics", "medical", "garments", "jewellery", "other"])
+def test_every_kind_of_shop_keeps_phone_orders(shop: Any, owner: Any, kind: str) -> None:
+    """Owner, 14 Nov 2026: every shop takes orders on WhatsApp, not only a kirana."""
+    shop.business_type = kind
+    shop.save(update_fields=["business_type"])
+    assert owner.get(reverse(URL)).status_code == 200
 
 
 def test_a_whatsapp_list_is_read_against_the_items(kirana: Any, owner: Any, make_item: Any) -> None:

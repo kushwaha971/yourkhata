@@ -59,6 +59,23 @@ _KIND: dict[str, tuple[str, str]] = {
     "services": ("Services", "सेवाएँ"),
 }
 
+#: Owner, 14 Nov 2026: hardware and electrical shops call an estimate a
+#: quotation. Only the word changes; the document and its rules do not.
+_QUOTATION_KINDS = frozenset({"hardware", "electronics"})
+_QUOTATION: dict[str, tuple[str, str]] = {
+    "nav.estimates": ("Quotations", "कोटेशन"),
+    "sales.estimate.listTitle": ("Quotations", "कोटेशन"),
+    "sales.estimate.count": ("Quotations", "कोटेशन"),
+    "sales.estimate.new": ("New quotation", "नया कोटेशन"),
+    "sales.estimate.title": ("Quotation", "कोटेशन"),
+    "sales.estimate.empty.first": ("No quotations yet", "अभी कोई कोटेशन नहीं"),
+    "sales.estimate.empty.filtered": ("No quotations match", "कोई कोटेशन नहीं मिला"),
+    "sales.estimate.fromEstimate": ("From quotation", "कोटेशन से"),
+    "sales.flow.column.estimate": ("Quotation", "कोटेशन"),
+    "sales.print.number.estimate": ("Quotation no.", "कोटेशन सं."),
+    "sales.estimate.total": ("Quotation total", "कोटेशन कुल"),
+}
+
 #: B3 — which of the design's kind pictures (`b-*` symbols) the kind uses.
 _PICTURE: dict[str, str] = {
     "kirana": "kirana",
@@ -133,6 +150,9 @@ def words_of(tenant: Any, locale: str = "en", rows: dict[str, Any] | None = None
     if kind:
         words["business.kind"] = kind[1] if locale == "hi" else kind[0]
     hi = locale == "hi"
+    if tenant.business_type in _QUOTATION_KINDS:
+        for key, pair in _QUOTATION.items():
+            words[key] = pair[1] if hi else pair[0]
 
     def add(one: str) -> str:
         return f"{_ONE_HI.get(one, one)} जोड़ें" if hi else f"Add {one.lower()}"

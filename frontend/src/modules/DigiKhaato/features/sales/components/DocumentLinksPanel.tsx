@@ -8,9 +8,10 @@ import {
   UbStatusBanner,
   UbText,
 } from 'src/design-system';
-import { useTranslation } from 'src/hooks/useTranslation';
 import { formatBusinessDate } from 'src/utils/dates';
 import { formatInr } from 'src/utils/money';
+
+import { useBusinessTranslation } from 'modules/DigiKhaato/features/navigation/useBusinessTranslation';
 
 import { flowDetailHref } from '../view-model/flowDisplay';
 
@@ -30,7 +31,7 @@ const refLabel = (ref: SalesDocRef): string =>
 export function DocumentLinksPanel({
   doc,
 }: Readonly<{ doc: SalesDocument }>): React.JSX.Element | null {
-  const { t } = useTranslation();
+  const { t } = useBusinessTranslation();
   const { links } = doc;
   const uses = (rows: readonly SalesCreditUse[], labelId: string) =>
     rows.length > 0 && (

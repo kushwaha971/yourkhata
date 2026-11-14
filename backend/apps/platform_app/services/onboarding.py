@@ -670,7 +670,7 @@ def apply_preset(*, tenant: Any, actor: Any = None, ctx: Any = None) -> dict:
         # `get_or_create` keeps it; the rest start from the kind's preset.
         **{
             f"shop.features.{key}": {"value": key in preset.features}
-            for key in (*presets.SIGNUP_FEATURES, "orders")
+            for key in (*presets.SIGNUP_FEATURES, "orders", *presets.EVERY_KIND_FEATURES)
         },
         "parties.labels": {
             "customer": preset.party_labels[0],

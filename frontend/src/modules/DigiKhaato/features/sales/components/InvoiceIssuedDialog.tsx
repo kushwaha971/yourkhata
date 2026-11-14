@@ -3,8 +3,9 @@
 import { CheckCircle2 } from 'lucide-react';
 
 import { UbButton, UbDialog, UbStack, UbText } from 'src/design-system';
-import { useTranslation } from 'src/hooks/useTranslation';
 import { formatInr } from 'src/utils/money';
+
+import { useBusinessTranslation } from 'modules/DigiKhaato/features/navigation/useBusinessTranslation';
 
 import { salesWarningMessage } from '../view-model/invoiceDisplay';
 
@@ -31,7 +32,7 @@ export function InvoiceIssuedDialog({
   onView: () => void;
   onNewBill: () => void;
 }>): React.JSX.Element {
-  const { t } = useTranslation();
+  const { t } = useBusinessTranslation();
   const doc = issued.document;
   const party = doc.party?.name;
   const modes = doc.payment?.modeBreakup.map((row) => t(`ledger.mode.${row.mode}`)).join(' + ');
