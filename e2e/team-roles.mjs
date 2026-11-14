@@ -99,7 +99,7 @@ const ownerPeople = ((await owner.get('moneybook/people?page_size=100')).data ??
 // ── each member signs in with their own number ─────────────────────────────
 const codeFor = async (mobile, notBefore) => {
   for (let i = 0; i < 30; i += 1) {
-    const log = readFileSync(API_LOG, 'utf8').slice(notBefore);
+    const log = readFileSync(API_LOG).subarray(notBefore).toString('utf8');
     const hits = [...log.matchAll(/sms\.console to=\+91…(\d{3}) body=(\d{4,6}) is your/g)].filter((m) => m[1] === mobile.slice(-3));
     if (hits.length) return hits[hits.length - 1][2];
     await new Promise((r) => setTimeout(r, 400));

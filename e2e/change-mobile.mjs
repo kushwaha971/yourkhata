@@ -24,10 +24,13 @@ const check = (ok, label) => {
 };
 const STAFF = '9700011102';
 const TAKEN = '9700011101'; // the QA admin signs in with it
-const NEXT = { 390: '9700011190', 1280: '9700011191' };
+// A fresh pair of numbers each run: the server waits sixty seconds between
+// codes to one number, so reusing a number on a quick rerun is refused.
+const tail = String(Date.now()).slice(-4);
+const NEXT = { 390: `97001${tail}0`, 1280: `97001${tail}1` };
 const codeFor = async (mobile, notBefore) => {
   for (let i = 0; i < 30; i += 1) {
-    const log = readFileSync(API_LOG, 'utf8').slice(notBefore);
+    const log = readFileSync(API_LOG).subarray(notBefore).toString('utf8');
     const hits = [...log.matchAll(/sms\.console to=\+\d+…(\d{3}) body=(\d{4,6}) is your/g)].filter((m) => m[1] === mobile.slice(-3));
     if (hits.length) return hits[hits.length - 1][2];
     await new Promise((r) => setTimeout(r, 400));
@@ -76,7 +79,10 @@ for (const width of [390, 1280]) {
   const ctx = await b.newContext({ viewport: { width, height: phone ? 844 : 860 }, ...(phone ? { isMobile: true, hasTouch: true } : {}) });
   const page = await ctx.newPage();
   const errors = [];
-  page.on('pageerror', (e) => errors.push(`${new URL(page.url()).pathname}: ${String(e).slice(0, 90)}`));
+  // Every console error is printed, so an intermittent one (React #418 on
+  // /login, seen twice in about twelve live runs) leaves its evidence.
+  page.on('console', (m) => { if (m.type() === 'error' && !/Failed to load resource/.test(m.text())) console.log(`console ${new URL(page.url()).pathname}: ${m.text().slice(0, 1500)}`); });
+  page.on('pageerror', (e) => errors.push(`${new URL(page.url()).pathname}: ${String(e).slice(0, 300)}`));
   await signIn(page, STAFF);
   check((await me(ctx)).mobile === `+91${STAFF}`, `${tag}: signed in as the QA staff member`);
 
@@ -101,6 +107,10 @@ for (const width of [390, 1280]) {
   await cell.focus();
   await page.keyboard.insertText(right ?? '');
   await page.waitForURL((u) => u.pathname === '/settings/me', { timeout: 15000 }).catch(() => {});
+  if (new URL(page.url()).pathname !== '/settings/me') {
+    console.log(`debug ${tag}: still on ${new URL(page.url()).pathname}; code ${right}; boxes "${await page.getByRole('group').locator('input').evaluateAll((xs) => xs.map((x) => x.value).join(''))}"; text: ${(await page.locator('main').innerText()).replace(/\s+/g, ' ').slice(0, 200)}`);
+    await page.screenshot({ path: `${SHOTS}/${width}-stuck.png`, fullPage: true });
+  }
   const after = (await me(ctx)).mobile;
   check(after === `+91${NEXT[width]}`, `${tag}: the new number is read back (${after})`);
   check(after !== `+91${NEXT[width]}0`, `${tag}: self-test, a skewed number would not match`);
@@ -111,19 +121,25 @@ for (const width of [390, 1280]) {
   check(wide <= 0, `${tag}: nothing runs off the screen (${wide}px)`);
 
   // The new number signs in.
+  if (process.env.DEBUG418) {
+    console.log('storage', await page.evaluate(() => JSON.stringify({ l: { ...localStorage }, s: { ...sessionStorage } })));
+  }
   await ctx.clearCookies();
+  if (process.env.DEBUG418) {
+    const ssr = await (await ctx.request.get(`${base}/login`)).text();
+    console.log('ssr main text', ssr.replace(/<script[\s\S]*?<\/script>/g, '').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').slice(0, 400));
+  }
   await signIn(page, NEXT[width]);
   check((await me(ctx)).mobile === `+91${NEXT[width]}`, `${tag}: the new number signs in`);
 
   // And back, so the QA account keeps its number.
   await change(page, STAFF);
   check((await me(ctx)).mobile === `+91${STAFF}`, `${tag}: changed back to the QA number`);
-  // Known, separate (14 Nov 2026): /login on a phone whose cookies were just
-  // cleared after a session raises React #418 (server and client HTML differ).
-  // Recorded in HANDOFF; reported here, not counted against this feature.
-  const mine = errors.filter((e) => !e.startsWith('/login:'));
-  check(mine.length === 0, `${tag}: no page error on the Settings screens ${mine.join(' | ')}`);
-  if (errors.length > mine.length) console.log(`note ${tag}: ${errors.length - mine.length} error(s) on /login after cookies were cleared (known, separate)`);
+  // 14 Nov 2026: one run raised React #418 (server and client HTML differ) on
+  // /login after cookies were cleared; sixteen targeted reruns did not. It
+  // counts again, and the page is kept so the next one can be read.
+  check(errors.length === 0, `${tag}: no page error ${errors.join(' | ')}`);
+  if (errors.length) await page.screenshot({ path: `${SHOTS}/${width}-page-error.png`, fullPage: true });
   await ctx.close();
 }
 await b.close();

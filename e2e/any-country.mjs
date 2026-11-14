@@ -26,7 +26,7 @@ const check = (ok, label) => {
 };
 const codeFor = async (last3, notBefore) => {
   for (let i = 0; i < 30; i += 1) {
-    const log = readFileSync(API_LOG, 'utf8').slice(notBefore);
+    const log = readFileSync(API_LOG).subarray(notBefore).toString('utf8');
     const hits = [...log.matchAll(/sms\.console to=\+\d+…(\d{3}) body=(\d{4,6}) is your/g)].filter((m) => m[1] === last3);
     if (hits.length) return hits[hits.length - 1][2];
     await new Promise((r) => setTimeout(r, 400));

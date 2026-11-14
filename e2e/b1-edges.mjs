@@ -24,7 +24,7 @@ const check = (name, ok, detail = '') => {
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const codeFor = async (mobile, from) => {
   for (let i = 0; i < 40; i += 1) {
-    const hits = [...readFileSync(LOG, 'utf8').slice(from).matchAll(/sms\.console to=\+91…(\d{3}) body=(\d{4,6}) is your/g)].filter((m) => m[1] === mobile.slice(-3));
+    const hits = [...readFileSync(LOG).subarray(from).toString('utf8').matchAll(/sms\.console to=\+91…(\d{3}) body=(\d{4,6}) is your/g)].filter((m) => m[1] === mobile.slice(-3));
     if (hits.length) return hits.at(-1)[2];
     await sleep(300);
   }
