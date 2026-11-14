@@ -1,5 +1,6 @@
 {
   "//": [
+    "14 Nov 2026, Settings round (owner: test Settings for every user): Messages, Business features, Plan and Business days now sit behind SettingsGate, so staff are told the setting is not available instead of a blank page or endless loading; the gate and its words moved those routes up to 0.9 KB. Plan also gained its plain plan and row names. Raised to measured + 0.3.",
     "14 Nov 2026, Access groups (owner-approved design docs/revamp/design/access-groups.html): /settings/team gained the Members | Access groups tabs, the app-and-business label, the per-app group column and their words (the new teamAccess catalogue); the groups list, the group form and the member access sheet are dynamic(). Route 100.8 / first load 343.3 measured; raised to measured + 0.3. /set-password and /accept-invite are back inside budget once the access words left the team catalogue.",
     "14 Nov 2026, Team: hide parts of an app per member. The dialog is dynamic(); the member slice's new target ships with the shared store and moved /parties/[id]/statement first load to 328.0 against 328. Raised to measured + 0.3.",
     "14 Nov 2026, Team: choose which apps a member opens (owner). The Apps row in the member sheet, its slice target and the team catalogue's twelve new words (EN+HI) moved /settings/team to 97.7 and /accept-invite/[token] (which loads the same catalogue) to 11.4, each over by under 0.05 KB; the dialog itself is dynamic(). Raised to measured + 0.3.",
@@ -1625,7 +1626,7 @@
     },
     "/parties/[id]/statement": {
       "route": 93,
-      "firstLoad": 328.3
+      "firstLoad": 328.6
     },
     "/ledger/aging": {
       "route": 108.6,
@@ -1636,8 +1637,8 @@
       "firstLoad": 304.3
     },
     "/settings/plan": {
-      "route": 60.0,
-      "firstLoad": 303.3
+      "route": 61.2,
+      "firstLoad": 303.9
     },
     "/settings": {
       "route": 115.4,
@@ -1656,7 +1657,7 @@
       "firstLoad": 335
     },
     "/settings/shop-features": {
-      "route": 73.6,
+      "route": 73.9,
       "firstLoad": 316.8
     },
     "/settings/devices": {
@@ -1784,7 +1785,7 @@
       "firstLoad": 287.2
     },
     "/settings/business-days": {
-      "route": 73.3,
+      "route": 73.8,
       "firstLoad": 316.6
     },
     "/library/catalogue": {
@@ -1948,7 +1949,7 @@
       "firstLoad": 351.9
     },
     "/apps": {
-      "route": 61.4,
+      "route": 61.7,
       "firstLoad": 304.6
     },
     "/pay/[token]": {},
@@ -1992,7 +1993,7 @@
       "firstLoad": 300.4
     },
     "/settings/messages": {
-      "route": 86.6,
+      "route": 87.3,
       "firstLoad": 329.8
     },
     "/sales/exchange": {

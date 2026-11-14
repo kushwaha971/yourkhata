@@ -14,8 +14,14 @@
   "plan.limit.title": "प्लान की सीमा पूरी हुई",
   "plan.module.locked.body": "{module} आपके प्लान में नहीं है। इसे चालू करने के लिए अपने प्रदाता से कहें।",
   "plan.module.locked.title": "यह आपके व्यापार के लिए बंद है",
+  "plan.name.free": "मुफ़्त",
+  "plan.name.unlimited": "असीमित",
   "plan.near.atBody": "और जोड़ने के लिए {partner} से संपर्क करें।",
   "plan.near.body": "{limit} में से {used} {noun} इस्तेमाल हुए",
   "plan.near.nearBody": "आप इस प्लान की सीमा के पास हैं।",
-  "plan.page.subtitle": "यह व्यापार क्या इस्तेमाल कर सकता है।"
+  "plan.page.subtitle": "यह व्यापार क्या इस्तेमाल कर सकता है।",
+  "plan.row.max_invoices_per_month": "इस महीने के बिल",
+  "plan.row.max_parties": "संपर्क",
+  "plan.row.max_users": "टीम सदस्य",
+  "plan.row.storage_mb": "स्टोरेज (MB)"
 }

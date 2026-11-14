@@ -5,6 +5,7 @@ import { Suspense } from 'react';
 import { UbPageSkeleton } from 'src/design-system';
 
 import { BusinessDaysPageContent } from 'modules/DigiKhaato/features/calendar/components/BusinessDaysPageContent';
+import { SettingsGate } from 'modules/DigiKhaato/features/settings/components/SettingsGate';
 
 // The words this screen renders arrive with its chunk (src/i18n/catalogueRegistry.ts).
 import 'src/i18n/catalogues/calendar';
@@ -14,7 +15,9 @@ import 'src/i18n/catalogues/settingsGate';
 export default function BusinessDaysPage(): React.JSX.Element {
   return (
     <Suspense fallback={<UbPageSkeleton variant="card" />}>
-      <BusinessDaysPageContent />
+      <SettingsGate need="canView">
+        <BusinessDaysPageContent />
+      </SettingsGate>
     </Suspense>
   );
 }

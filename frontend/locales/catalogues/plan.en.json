@@ -14,8 +14,14 @@
   "plan.limit.title": "Plan limit reached",
   "plan.module.locked.body": "{module} is not part of your plan. Ask your provider to switch it on.",
   "plan.module.locked.title": "This is switched off for your business",
+  "plan.name.free": "Free",
+  "plan.name.unlimited": "Unlimited",
   "plan.near.atBody": "Contact {partner} to add more.",
   "plan.near.body": "{used} of {limit} {noun} used",
   "plan.near.nearBody": "You are close to the limit for this plan.",
-  "plan.page.subtitle": "What this business can use."
+  "plan.page.subtitle": "What this business can use.",
+  "plan.row.max_invoices_per_month": "Bills this month",
+  "plan.row.max_parties": "Contacts",
+  "plan.row.max_users": "Team members",
+  "plan.row.storage_mb": "Storage (MB)"
 }
