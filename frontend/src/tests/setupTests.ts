@@ -98,4 +98,4 @@ if (typeof globalThis.ResizeObserver === 'undefined') {
 }
 
 // Keep the default OTP fixtures independent of the developer’s live provider.
-process.env.NEXT_PUBLIC_OTP_PROVIDER = 'message_central';
+process.env.NEXT_PUBLIC_OTP_PROVIDER = 'console';

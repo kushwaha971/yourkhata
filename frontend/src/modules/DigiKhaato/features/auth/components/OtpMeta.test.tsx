@@ -40,7 +40,7 @@ it('identifies the YourKhata sender before requesting a code and verifies all si
     details: { reason: 'incorrect', attempts_left: 4 },
   });
   const user = userEvent.setup();
-  renderWithProviders(<OtpSignInPageContent mode="signIn" />);
+  renderWithProviders(<OtpSignInPageContent />);
   expect(screen.getByText(/YourKhata will send a 6-digit/)).toBeInTheDocument();
   expect(screen.getByText(/Only enter this code on yourkhata.com/)).toBeInTheDocument();
   await user.type(screen.getByRole('textbox', { name: /Mobile number/ }), '9794620535');

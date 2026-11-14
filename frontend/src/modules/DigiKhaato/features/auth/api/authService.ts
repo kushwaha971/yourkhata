@@ -265,8 +265,8 @@ export const requestOtp = async (input: OtpRequestInput): Promise<OtpChallenge> 
     challengeId: data.challenge_id,
     expiresIn: data.expires_in,
     retryAfter: data.retry_after,
-    // An older server sends neither; it only ever sent four digits by SMS.
-    codeLength: data.code_length === 6 ? 6 : 4,
+    // Six digits unless the server says otherwise (owner, 14 Nov 2026).
+    codeLength: typeof data.code_length === 'number' && data.code_length > 0 ? data.code_length : 6,
     channel: data.channel === 'whatsapp' ? 'whatsapp' : 'sms',
   };
 };

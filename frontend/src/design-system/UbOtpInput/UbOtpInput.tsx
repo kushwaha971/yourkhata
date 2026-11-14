@@ -41,10 +41,11 @@ import { cn } from 'src/utils/cn';
  * The value is the whole code, so the FORM holds one string and the schema is
  * `/^\d{4}$/` — the cells are a rendering decision, not a data shape.
  */
-export const OTP_LENGTH = 4;
+/** Six digits: the only length the server sends since 14 Nov 2026 (owner). */
+export const OTP_LENGTH = 6;
 
 export interface UbOtpInputProps {
-  readonly length?: 4 | 6;
+  readonly length?: number;
   readonly value: string;
   readonly onChange: (value: string) => void;
   /** Fired once, when the sixth digit lands. */
@@ -63,6 +64,22 @@ export interface UbOtpInputProps {
 }
 
 const onlyDigits = (value: string): string => value.replace(/\D/g, '');
+
+/**
+ * The code inside pasted or autofilled text (owner, 14 Nov 2026: "not able to
+ * paste otp directly"). A copied MESSAGE carries other numbers — "valid for 10
+ * minutes", the phone number — and taking its first digits sent "1048" for
+ * "Valid for 10 minutes. Your code is 4821". So: a run of exactly `length`
+ * digits wins; else every digit, when together they make the code ("482 193");
+ * else the first `length` digits, as before.
+ */
+export const codeFrom = (text: string, length: number): string => {
+  const runs = text.match(/\d+/g) ?? [];
+  const exact = runs.find((run) => run.length === length);
+  if (exact) return exact;
+  const all = onlyDigits(text);
+  return all.slice(0, length);
+};
 
 function UbOtpInputBase({
   length = OTP_LENGTH,
@@ -114,7 +131,13 @@ function UbOtpInputBase({
   const handleChange = useCallback(
     (index: number, raw: string) => {
       if (readOnly) return;
-      let typed = onlyDigits(raw);
+      // A whole message or code put into one cell (iOS autofill, a keyboard's
+      // clipboard chip) arrives here without a paste event: read the code in it.
+      let typed = raw.length > 2 ? codeFrom(raw, length) : onlyDigits(raw);
+      if (raw.length > 2 && typed.length === length) {
+        commit(typed, length);
+        return;
+      }
       // No `maxLength` (see the cell), so typing beside a filled cell's digit
       // arrives as both: keep the new one.
       const old = digits[index];
@@ -160,7 +183,8 @@ function UbOtpInputBase({
   const handlePaste = useCallback(
     (event: ClipboardEvent<HTMLInputElement>) => {
       if (readOnly) return;
-      const pasted = onlyDigits(event.clipboardData.getData('text'));
+      const clip = event.clipboardData.getData('text') || event.clipboardData.getData('text/plain');
+      const pasted = codeFrom(clip, length);
       if (!pasted) return;
       event.preventDefault();
       const next = pasted.slice(0, length);

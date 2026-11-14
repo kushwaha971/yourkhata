@@ -55,12 +55,13 @@ def otp_enabled(settings: Any) -> Any:
 # ── T-PLT-01-1 unit: code generation ─────────────────────────────────────────
 
 
-def test_generate_code_is_four_digits_and_zero_padded() -> None:
-    """T-PLT-01-1 / BR-4."""
+def test_generate_code_is_six_digits_and_zero_padded() -> None:
+    """T-PLT-01-1 / BR-4. Six digits since 14 Nov 2026 (owner): the console makes
+    WhatsApp's length, so tests and local runs use the screen real users see."""
     from apps.platform_app.services.otp import generate_code
 
     seen = {generate_code() for _ in range(300)}
-    assert all(re.fullmatch(r"\d{4}", code) for code in seen)
+    assert all(re.fullmatch(r"\d{6}", code) for code in seen)
     assert len(seen) > 100, "the generator is not varying"
 
 
@@ -152,7 +153,7 @@ def test_request_then_verify_creates_user_session_and_cookies(
     assert response.status_code == 200
     body = response.json()["data"]
     assert set(body) == {"challenge_id", "expires_in", "retry_after", "code_length", "channel"}
-    assert body["code_length"] == 4
+    assert body["code_length"] == 6
     assert body["channel"] == "sms"
     assert body["expires_in"] == 600
     assert body["retry_after"] == 60

@@ -32,17 +32,19 @@ Sentry/OTel/Prometheus (PostHog is the one exception, DEC-017: read
 messaging, local UPI QR. Anything else needs a new ADR. If a fix seems to need a
 package, say so instead of adding one.
 
-**Identity is a mobile number and an OTP (DEC-013, DEC-014; they reverse
-DEC-010).** `/login` and `/signup` are one flow — an Indian mobile, then a
-four-digit code. **Message Central VerifyNow generates, sends and validates the
-code**, called only from Django (`services/message_central.py`, credentials
-`MC_CUSTOMER_ID` / `MC_PASSWORD` from the environment); nothing of theirs
-reaches the browser. Without credentials the `console` provider prints the code
-in the API log — which is what tests and `e2e/serve-api.sh` always use. Resend
-waits sixty seconds, enforced by the server; sessions slide for ninety days. The
-email + password screen survives only at the unlinked `/login/email`, for the
-platform console and pre-change accounts, and the e2e harnesses sign in there.
-Never commit Message Central credentials. Fast2SMS is gone; do not bring it back.
+**Identity is a mobile number and an OTP (DEC-013; owner, 14 Nov 2026).**
+`/login` is the only flow for everybody, new or returning — an Indian mobile,
+then a **six-digit code sent on WhatsApp** (`UB_OTP_PROVIDER=meta_whatsapp`,
+`services/meta_whatsapp.py`, the `META_WHATSAPP_*` values from the
+environment); a new number becomes an account on its first code, so no screen
+says "sign up" or "create account" (`/signup` forwards to `/login`). The
+`console` provider makes the same six-digit code and prints it in the API log —
+which is what tests and `e2e/serve-api.sh` always use. Resend waits sixty
+seconds, enforced by the server; sessions slide for ninety days. The email +
+password screen survives only at the unlinked `/login/email`, for the platform
+console and pre-change accounts, and the e2e harnesses sign in there. Never
+commit WhatsApp credentials. Message Central and Fast2SMS (the four-digit SMS
+providers) were removed on 14 Nov 2026; do not bring them back.
 
 **Nothing is emailed (DEC-012).** `UB_EMAIL_BACKEND` is the console backend and
 no provider is being paid for until the platform earns. An owner adds staff by

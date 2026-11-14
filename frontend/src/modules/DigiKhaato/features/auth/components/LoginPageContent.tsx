@@ -10,16 +10,13 @@ import {
   UbCheckbox,
   UbField,
   UbForm,
-  UbLink,
   UbStack,
   UbStatusBanner,
-  UbText,
   UbTextInput,
 } from 'src/design-system';
 import { useAppSelector } from 'src/hooks/useAppStore';
 import { useTranslation } from 'src/hooks/useTranslation';
 import { selectAppName } from 'src/redux/slice/whiteLabelSlice';
-import { ROUTES } from 'src/routes';
 
 import { useAuthRedirect } from '../hooks/useAuthRedirect';
 import { useLogin } from '../hooks/useLogin';
@@ -206,16 +203,6 @@ export function LoginPageContent(): React.JSX.Element {
         </UbStack>
       </AuthPanel>
 
-      {/* CR-2026-09-19-A — there is no longer an OTP verify that registers a
-          user on the way past, so the way to an account has to be visible.
-          Last, and outside the panel: a secondary route out of this screen,
-          which is where all three references put it. */}
-      <UbText variant="body-sm" tone="tertiary" align="center">
-        {t('auth.signUp.prompt', { appName })}{' '}
-        <UbLink href={ROUTES.SIGNUP} variant="inherit">
-          {t('auth.signUp.link')}
-        </UbLink>
-      </UbText>
     </UbStack>
   );
 }

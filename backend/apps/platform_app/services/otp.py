@@ -5,11 +5,13 @@ Two entry points, both of which take Python values and return Python values:
 
 The properties this module exists to hold:
 
-* **Message Central issues and checks the code** (DEC-014): with
-  `UB_OTP_PROVIDER=message_central` this module never sees a code it did not
-  just receive from the person typing it, and stores only the provider's
-  `verificationId`. The `console` provider — local runs, tests, e2e — makes a
-  code here and prints it in the API log, because nobody is texted there;
+* **The code is six digits and goes by WhatsApp** (owner, 14 Nov 2026): with
+  `UB_OTP_PROVIDER=meta_whatsapp` this module makes the code, stores only its
+  hash and Meta delivers it. The `console` provider — local runs, tests, e2e —
+  makes the same six-digit code and prints it in the API log, because nobody
+  is messaged there. The four-digit SMS providers (Message Central, Fast2SMS)
+  were removed the same day: nothing used them, and a second code length meant
+  a sign-in screen and a test path that real users never saw;
 * the code never appears in a response, in any environment (Part 27 §27.4.1);
 * the provider's `verificationId` never appears in a response either: the
   browser holds our `challenge_id`, which binds the mobile, the attempts and
@@ -40,10 +42,11 @@ from django.utils import timezone
 from apps.common.audit import AuditAction, write_audit
 from apps.common.exceptions import BusinessRuleViolation
 from apps.platform_app.constants import OtpPurpose
-from apps.platform_app.services import fast2sms, message_central, meta_whatsapp, throttle
+from apps.platform_app.services import meta_whatsapp, throttle
 
-# Message Central's default length; the console provider matches it.
-CODE_LENGTH = 4
+# One length for every provider: WhatsApp's six, which the console matches so
+# tests and local runs use the screen real users see.
+CODE_LENGTH = 6
 RESEND_AFTER_SECONDS = throttle.OTP_RESEND_GAP_SECONDS
 
 
@@ -60,7 +63,7 @@ class OtpIssued:
     challenge_id: Any
     expires_in: int
     retry_after: int
-    code_length: int = 4
+    code_length: int = CODE_LENGTH
     channel: str = "sms"
 
 
@@ -96,35 +99,21 @@ class OtpNotSent(BusinessRuleViolation):
         super().__init__("provider_error", message)
 
 
-PROVIDER_MESSAGE_CENTRAL = "message_central"
 PROVIDER_CONSOLE = "console"
-PROVIDER_FAST2SMS = "fast2sms"
 PROVIDER_META = "meta_whatsapp"
 
 
 def _provider() -> str:
-    """Fast2SMS is explicit and fails closed when its credentials are absent."""
+    """WhatsApp when configured to; otherwise the console (local, tests, e2e)."""
     if getattr(settings, "UB_OTP_PROVIDER", PROVIDER_CONSOLE) == PROVIDER_META:
         return PROVIDER_META
-    if getattr(settings, "UB_OTP_PROVIDER", PROVIDER_CONSOLE) == PROVIDER_FAST2SMS:
-        return PROVIDER_FAST2SMS
-    if (
-        getattr(settings, "UB_OTP_PROVIDER", PROVIDER_CONSOLE) == PROVIDER_MESSAGE_CENTRAL
-        and message_central.is_configured()
-    ):
-        return PROVIDER_MESSAGE_CENTRAL
     return PROVIDER_CONSOLE
-
-
-# Direct Meta codes are six digits and are delivered on WhatsApp;
-# every other provider sends our four digits (or Message Central's) by SMS.
-META_CODE_LENGTH = 6
 
 
 def code_shape() -> tuple[int, str]:
     """`(digits, channel)` for the provider this server is running with now."""
     if _provider() == PROVIDER_META:
-        return META_CODE_LENGTH, "whatsapp"
+        return CODE_LENGTH, "whatsapp"
     return CODE_LENGTH, "sms"
 
 
@@ -145,7 +134,7 @@ def _send_console_code(
         related_id=challenge.id,
     )
     if getattr(sent, "status", "sent") == "failed":
-        raise message_central.MessageCentralError("The SMS adapter refused the code.")
+        raise OtpNotSent()
 
 
 def hash_code(code: str) -> str:
@@ -208,11 +197,7 @@ def request_otp(
     """Create a challenge and dispatch the code. Never reveals whether the mobile exists."""
     from apps.platform_app.models import OtpChallenge
 
-    if _provider() in (
-        PROVIDER_FAST2SMS,
-        PROVIDER_MESSAGE_CENTRAL,
-        PROVIDER_META,
-    ) and purpose not in (
+    if _provider() == PROVIDER_META and purpose not in (
         OtpPurpose.LOGIN,
         OtpPurpose.SIGNUP,
     ):
@@ -221,15 +206,13 @@ def request_otp(
 
     ttl = int(settings.UB_OTP_TTL_SECONDS)
     provider = _provider()
-    via_message_central = provider == PROVIDER_MESSAGE_CENTRAL
-    external_code = via_message_central
-    code = "" if external_code else (f"{secrets.randbelow(900000) + 100000}" if provider == PROVIDER_META else generate_code())
+    code = generate_code()
 
     with transaction.atomic():
         challenge = OtpChallenge.objects.create(
             mobile=mobile,
             purpose=purpose,
-            code_hash="" if external_code else hash_code(code),
+            code_hash=hash_code(code),
             attempts=0,
             expires_at=timezone.now() + dt.timedelta(seconds=ttl),
             ip=ip,
@@ -246,15 +229,8 @@ def request_otp(
     # spent rather than deleted so the resend gap and the hourly budgets still
     # count the attempt.
     try:
-        if via_message_central:
-            verification_id = message_central.send_otp(mobile)
-            OtpChallenge.objects.filter(pk=challenge.pk).update(
-                provider_verification_id=verification_id
-            )
-        elif provider == PROVIDER_META:
+        if provider == PROVIDER_META:
             meta_whatsapp.send_otp(mobile, code)
-        elif provider == PROVIDER_FAST2SMS:
-            fast2sms.send_otp(mobile, code)
         else:
             _send_console_code(
                 mobile=mobile,
@@ -264,16 +240,8 @@ def request_otp(
                 purpose=purpose,
                 challenge=challenge,
             )
-    except (
-        message_central.MessageCentralError,
-        fast2sms.Fast2SmsError,
-        meta_whatsapp.MetaWhatsAppError,
-    ) as exc:
+    except (meta_whatsapp.MetaWhatsAppError, OtpNotSent) as exc:
         OtpChallenge.objects.filter(pk=challenge.pk).update(expires_at=timezone.now())
-        if getattr(exc, "code", None) == message_central.REQUEST_ALREADY_EXISTS:
-            # They hold their own 60-second gap; ours matches it, so this is a
-            # race or a clock difference. Same answer as our own throttle.
-            raise OtpThrottled(RESEND_AFTER_SECONDS) from exc
         raise OtpNotSent() from exc
 
     _audit(
@@ -329,24 +297,6 @@ def consume_challenge(
 
     known = _looks_like_uuid(challenge_id)
 
-    # Message Central checks its own codes, over HTTP, so that question is
-    # asked BEFORE the row is locked (Part 20 §20.11.2: no lock across a
-    # provider call). The same refusals run first, so a spent or expired
-    # challenge never costs a provider request; they run again under the lock.
-    provider_answer: message_central.Validation | None = None
-    if known:
-        peek = checked(OtpChallenge.objects.filter(pk=challenge_id).first())
-        if peek.provider_verification_id:
-            try:
-                provider_answer = message_central.validate_otp(
-                    peek.mobile, peek.provider_verification_id, str(code)
-                )
-            except message_central.MessageCentralError as exc:
-                # Not the person's mistake: no attempt is counted against them.
-                raise OtpNotSent(
-                    "We couldn't check the code right now. Please try again in a moment."
-                ) from exc
-
     with transaction.atomic():
         challenge = checked(
             OtpChallenge.objects.select_for_update().filter(pk=challenge_id).first()
@@ -354,15 +304,10 @@ def consume_challenge(
             else None
         )
 
-        if provider_answer is not None:
-            matches = provider_answer.verified
-            # Their word on why not ("expired" above all) is truer than ours.
-            failure_reason = provider_answer.reason or "incorrect"
-        else:
-            matches = bool(challenge.code_hash) and hmac.compare_digest(
-                challenge.code_hash, hash_code(str(code))
-            )
-            failure_reason = "incorrect"
+        matches = bool(challenge.code_hash) and hmac.compare_digest(
+            challenge.code_hash, hash_code(str(code))
+        )
+        failure_reason = "incorrect"
 
         if not matches:
             challenge.attempts += 1

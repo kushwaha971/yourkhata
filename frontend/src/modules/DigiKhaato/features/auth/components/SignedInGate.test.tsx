@@ -56,7 +56,7 @@ const mobileBox = (): HTMLElement | null => screen.queryByLabelText(/mobile/i);
 describe('the sign-in screen over a session', () => {
   it('draws no form while a hard load is still asking who this is', () => {
     store.dispatch(sessionRequested());
-    renderWithProviders(<OtpSignInPageContent mode="signIn" />);
+    renderWithProviders(<OtpSignInPageContent />);
     expect(mobileBox()).not.toBeInTheDocument();
   });
 
@@ -64,7 +64,7 @@ describe('the sign-in screen over a session', () => {
     query = 'next=%2Flibrary%2Fmembers';
     store.dispatch(sessionLoaded(SESSION as never));
     authService.getSession.mockResolvedValue(SESSION);
-    renderWithProviders(<OtpSignInPageContent mode="signUp" />);
+    renderWithProviders(<OtpSignInPageContent />);
     expect(mobileBox()).not.toBeInTheDocument();
     await waitFor(() => expect(replace).toHaveBeenCalledWith('/library/members'));
   });
@@ -73,7 +73,7 @@ describe('the sign-in screen over a session', () => {
     query = 'next=https%3A%2F%2Fevil.example%2F';
     store.dispatch(sessionLoaded(SESSION as never));
     authService.getSession.mockResolvedValue(SESSION);
-    renderWithProviders(<OtpSignInPageContent mode="signIn" />);
+    renderWithProviders(<OtpSignInPageContent />);
     await waitFor(() => expect(replace).toHaveBeenCalled());
     expect(String(replace.mock.calls[0]?.[0])).toMatch(/^\/(?!\/)/);
     expect(String(replace.mock.calls[0]?.[0])).not.toContain('evil');
@@ -89,7 +89,7 @@ describe('the sign-in screen over a session', () => {
       status: 401,
       warnings: [],
     });
-    renderWithProviders(<OtpSignInPageContent mode="signIn" />);
+    renderWithProviders(<OtpSignInPageContent />);
     expect(await screen.findByLabelText(/mobile/i)).toBeInTheDocument();
     expect(replace).not.toHaveBeenCalled();
   });

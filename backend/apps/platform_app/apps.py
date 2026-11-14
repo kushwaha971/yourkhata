@@ -92,8 +92,8 @@ def check_console_sms_backend(app_configs: object = None, **kwargs: object) -> l
     if not getattr(settings, "UB_AUTH_OTP_ENABLED", False):
         return []
 
-    # DEC-014: the code is Message Central's to send. `console` means it is
-    # only printed in this server's log.
+    # Owner, 14 Nov 2026: the code goes by WhatsApp (`meta_whatsapp`).
+    # `console` means it is only printed in this server's log.
     provider = getattr(settings, "UB_OTP_PROVIDER", "console") or "console"
     if settings.DEBUG or provider != "console":
         return []
@@ -103,7 +103,7 @@ def check_console_sms_backend(app_configs: object = None, **kwargs: object) -> l
         Error(
             "The OTP provider is the console and DEBUG is off: no sign-in code would "
             "be delivered to any merchant.",
-            hint="Set FAST2SMS_API_KEY and UB_OTP_PROVIDER=fast2sms, or set "
+            hint="Set the META_WHATSAPP_* values and UB_OTP_PROVIDER=meta_whatsapp, or set "
             "UB_ALLOW_CONSOLE_SMS=1 for a single-user local deployment.",
             id="platform.E001",
         )

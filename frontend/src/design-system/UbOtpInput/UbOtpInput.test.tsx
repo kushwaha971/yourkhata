@@ -21,7 +21,7 @@ function Harness({
   onComplete?: (value: string) => void;
   readOnly?: boolean;
   initial?: string;
-  length?: 4 | 6;
+  length?: number;
 }>) {
   const [value, setValue] = useState(initial);
   return (
@@ -57,7 +57,7 @@ describe('UbOtpInput', () => {
     expect(second).toHaveAttribute('autocomplete', 'off');
   });
 
-  it('fills all four cells from one paste and fires onComplete once', async () => {
+  it('fills all six cells from one paste and fires onComplete once', async () => {
     const user = userEvent.setup();
     const onComplete = jest.fn();
     render(<Harness onComplete={onComplete} />);
@@ -65,11 +65,11 @@ describe('UbOtpInput', () => {
     const [first] = cells();
     if (!first) throw new Error('no cells rendered');
     first.focus();
-    await user.paste('1234');
+    await user.paste('123456');
 
-    expect(cells().map((cell) => cell.value)).toEqual(['1', '2', '3', '4']);
+    expect(cells().map((cell) => cell.value)).toEqual(['1', '2', '3', '4', '5', '6']);
     expect(onComplete).toHaveBeenCalledTimes(1);
-    expect(onComplete).toHaveBeenCalledWith('1234');
+    expect(onComplete).toHaveBeenCalledWith('123456');
   });
 
   it('strips the spaces an SMS copy brings with it', async () => {
@@ -84,22 +84,22 @@ describe('UbOtpInput', () => {
       cells()
         .map((cell) => cell.value)
         .join('')
-    ).toBe('1234');
+    ).toBe('123456');
   });
 
-  it('advances as digits are typed and auto-submits on the fourth', async () => {
+  it('advances as digits are typed and auto-submits on the sixth', async () => {
     const user = userEvent.setup();
     const onComplete = jest.fn();
     render(<Harness onComplete={onComplete} />);
 
-    await user.type(cells()[0] as HTMLInputElement, '1234');
+    await user.type(cells()[0] as HTMLInputElement, '123456');
 
     expect(
       cells()
         .map((cell) => cell.value)
         .join('')
-    ).toBe('1234');
-    expect(onComplete).toHaveBeenCalledWith('1234');
+    ).toBe('123456');
+    expect(onComplete).toHaveBeenCalledWith('123456');
   });
 
   it('rejects a non-digit rather than showing it', async () => {
@@ -176,13 +176,49 @@ it('lets a whole code put into the first cell (keyboard chip, SMS autofill) fill
   const onComplete = jest.fn();
   render(<Harness onComplete={onComplete} />);
   expect(cells()[0]).not.toHaveAttribute('maxlength');
-  fireEvent.change(cells()[0] as HTMLInputElement, { target: { value: '1234' } });
-  expect(cells().map((cell) => cell.value)).toEqual(['1', '2', '3', '4']);
-  expect(onComplete).toHaveBeenCalledWith('1234');
+  fireEvent.change(cells()[0] as HTMLInputElement, { target: { value: '123456' } });
+  expect(cells().map((cell) => cell.value)).toEqual(['1', '2', '3', '4', '5', '6']);
+  expect(onComplete).toHaveBeenCalledWith('123456');
 });
 
 it('typing beside a filled digit replaces it rather than spilling', () => {
-  render(<Harness initial="1234" />);
+  render(<Harness initial="123456" />);
   fireEvent.change(cells()[1] as HTMLInputElement, { target: { value: '29' } });
-  expect(cells().map((cell) => cell.value)).toEqual(['1', '9', '3', '4']);
+  expect(cells().map((cell) => cell.value)).toEqual(['1', '9', '3', '4', '5', '6']);
+});
+
+/**
+ * Owner, 14 Nov 2026: "not able to paste otp directly". A pasted MESSAGE carries
+ * other numbers — "Valid for 10 minutes", the phone number — and the cells took
+ * the first digits they found, so a wrong code was sent and refused
+ * (reproduced on the live sign-in page: "Valid for 10 minutes. Your code is
+ * 4821" sent "1048"). The cells now take the run of digits that IS a code.
+ */
+describe('a pasted message gives the code, not its other numbers', () => {
+  const six = (): string[] => screen.getAllByRole('textbox').map((cell) => (cell as HTMLInputElement).value);
+
+  it.each([
+    ['code last', 'Valid for 10 minutes. Your YourKhata code is 482193'],
+    ['the phone number first', 'Code for +91 98111 22255 is 482193'],
+    ['code first', '482193 is your code. Valid 10 min. Do not share.'],
+    ['grouped with a space', '482 193'],
+  ])('paste with %s', async (_name, text) => {
+    const user = userEvent.setup();
+    const complete = jest.fn();
+    render(<Harness length={6} onComplete={complete} />);
+    screen.getByLabelText('Digit 1 of 6').focus();
+    await user.paste(text);
+    expect(six().join('')).toBe('482193');
+    expect(complete).toHaveBeenCalledWith('482193');
+  });
+
+  it('a whole message put into the first cell (iOS autofill, keyboard chip) gives the code', () => {
+    const complete = jest.fn();
+    render(<Harness length={6} onComplete={complete} />);
+    fireEvent.change(screen.getByLabelText('Digit 1 of 6'), {
+      target: { value: 'Valid for 10 minutes. Your code is 482193' },
+    });
+    expect(six().join('')).toBe('482193');
+    expect(complete).toHaveBeenCalledWith('482193');
+  });
 });

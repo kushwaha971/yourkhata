@@ -34,14 +34,9 @@ DATABASES["default"]["TEST"] = {  # noqa: F405
     "NAME": env.str("UB_TEST_DB_NAME", "test_udhaarbook")  # noqa: F405
 }
 
-# DEC-014 — never a real SMS from the suite. `base` reads backend/.env, where
-# the owner's Message Central credentials live, so without this every OTP test
-# would text a made-up number on a paid account. Tests of the Message Central
-# service set the credentials themselves and stub the network.
-FAST2SMS_API_KEY = ""
-MC_CUSTOMER_ID = ""
-MC_PASSWORD = ""
-MC_AUTH_TOKEN = ""
+# Never a real message from the suite. `base` reads backend/.env, where the
+# owner's WhatsApp credentials live, so without this every OTP test would
+# message a made-up number. The WhatsApp service's own tests stub the network.
 UB_OTP_PROVIDER = "console"
 UB_SMS_BACKEND = "apps.common.integrations.sms.console.ConsoleSmsBackend"
 

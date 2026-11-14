@@ -360,33 +360,20 @@ UB_SCHEDULER_BATCH = env.int("UB_SCHEDULER_BATCH", 50)
 UB_SCHEDULER_ENQUEUE_LOCK_ID = env.int("UB_SCHEDULER_ENQUEUE_LOCK_ID", 918273645)
 
 # ── Integrations (ADR-015/016) ───────────────────────────────────────────────
-# Message Central VerifyNow (DEC-014, owner 10 Oct 2026) sends, and validates,
-# the sign-in OTP. Credentials come from the environment only and never leave
-# Django. `MC_*` are the names Message Central's own guides use, so they are
-# not `UB_`-prefixed.
+# Meta's WhatsApp Cloud API sends the sign-in code (owner, 14 Nov 2026).
+# Credentials come from the environment only and never leave Django.
 META_WHATSAPP_ACCESS_TOKEN = env.str("META_WHATSAPP_ACCESS_TOKEN", "")
 META_WHATSAPP_APP_SECRET = env.str("META_WHATSAPP_APP_SECRET", "")
 META_WHATSAPP_WEBHOOK_VERIFY_TOKEN = env.str("META_WHATSAPP_WEBHOOK_VERIFY_TOKEN", "")
 META_WHATSAPP_PHONE_NUMBER_ID = env.str("META_WHATSAPP_PHONE_NUMBER_ID", "")
 META_WHATSAPP_WABA_ID = env.str("META_WHATSAPP_WABA_ID", "")
 META_WHATSAPP_TEMPLATE = env.str("META_WHATSAPP_TEMPLATE", "yourkhata_login_otp")
-FAST2SMS_API_KEY = env.str("FAST2SMS_API_KEY", "")
-MC_CUSTOMER_ID = env.str("MC_CUSTOMER_ID", "")
-MC_PASSWORD = env.str("MC_PASSWORD", "")
-MC_AUTH_TOKEN = env.str("MC_AUTH_TOKEN", "")
-# `cpaas` is the host their API page documents. The brief this was built from
-# said `cxapi.messagecentral.com`, which has no DNS record: every send failed
-# as "unreachable" until this was corrected (10 Oct 2026).
-MC_BASE_URL = env.str("MC_BASE_URL", "https://cpaas.messagecentral.com")
-# Who issues and checks the code: `message_central` whenever both credentials
-# are set, else `console` -- the code is made here and printed in the API log,
-# which is how a local run, the test suite and the e2e harnesses sign in
-# without texting anybody. Set it explicitly only to force `console`.
-UB_OTP_PROVIDER = env.str("UB_OTP_PROVIDER", "") or (
-    "fast2sms"
-    if FAST2SMS_API_KEY
-    else ("message_central" if MC_CUSTOMER_ID and (MC_PASSWORD or MC_AUTH_TOKEN) else "console")
-)
+# Who sends and checks the sign-in code (owner, 14 Nov 2026): `meta_whatsapp`
+# sends a six-digit code on WhatsApp; anything else is `console`, which makes
+# the same six-digit code and prints it in the API log — how a local run, the
+# test suite and the e2e harnesses sign in without messaging anybody. The
+# four-digit SMS providers (Message Central, Fast2SMS) were removed that day.
+UB_OTP_PROVIDER = env.str("UB_OTP_PROVIDER", "") or "console"
 # Reminders and other texts are adapter-only (ADR-015): the console backend
 # until a provider is chosen for them. The sign-in OTP does not go through it.
 UB_SMS_BACKEND = env.str("UB_SMS_BACKEND", "") or (

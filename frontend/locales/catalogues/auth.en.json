@@ -71,13 +71,5 @@
   "auth.password.updated": "Password updated",
   "auth.signIn": "Sign in",
   "auth.signInPrompt": "to open your {appName} book",
-  "auth.signUp.body": "An email address and a password. Nothing else to set up.",
-  "auth.signUp.creating": "Creating your account…",
-  "auth.signUp.error": "Could not create the account. Try again.",
-  "auth.signUp.haveAccount": "Already have an account?",
-  "auth.signUp.heading": "Create your account",
-  "auth.signUp.link": "Create an account",
-  "auth.signUp.prompt": "New to {appName}?",
-  "auth.signUp.submit": "Create account",
   "auth.throttled.body": "Too many tries from this account. Wait for the timer to finish."
 }

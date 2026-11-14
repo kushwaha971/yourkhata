@@ -15,7 +15,7 @@ import 'src/i18n/catalogues/validation';
 export default function LoginPage(): React.JSX.Element {
   return (
     <Suspense fallback={<UbPageSkeleton variant="form" count={2} />}>
-      <OtpSignInPageContent mode="signIn" />
+      <OtpSignInPageContent />
     </Suspense>
   );
 }

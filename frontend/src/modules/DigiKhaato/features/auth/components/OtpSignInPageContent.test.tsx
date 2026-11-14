@@ -37,7 +37,7 @@ const CHALLENGE = {
   challengeId: 'c-1',
   expiresIn: 600,
   retryAfter: 60,
-  codeLength: 4,
+  codeLength: 6,
   channel: 'sms',
 };
 
@@ -81,7 +81,7 @@ const toCodeStep = async (user: ReturnType<typeof userEvent.setup>) => {
 
 describe('OtpSignInPageContent — the number', () => {
   it('asks only for a mobile number: no email, no password, no country picker', () => {
-    renderWithProviders(<OtpSignInPageContent mode="signIn" />);
+    renderWithProviders(<OtpSignInPageContent />);
     // Owner, 12 Nov 2026: one page for both — a new number becomes an account.
     expect(screen.getByRole('heading', { level: 1, name: 'Enter your mobile number' })).toBeInTheDocument();
     expect(screen.queryByRole('link', { name: 'Create an account' })).not.toBeInTheDocument();
@@ -97,12 +97,12 @@ describe('OtpSignInPageContent — the number', () => {
 
   it('sends the code to the number in E.164', async () => {
     const user = userEvent.setup();
-    renderWithProviders(<OtpSignInPageContent mode="signIn" />);
+    renderWithProviders(<OtpSignInPageContent />);
     await toCodeStep(user);
     expect(authService.requestOtp).toHaveBeenCalledWith(
       expect.objectContaining({ mobile: '+919845011122' })
     );
-    expect(screen.getByText(/We sent a 4-digit code to \+91 98450 11122/)).toBeInTheDocument();
+    expect(screen.getByText(/We sent a 6-digit code to \+91 98450 11122/)).toBeInTheDocument();
   });
 
   it('draws as many boxes as the SERVER sent digits, whatever the build guessed', async () => {
@@ -112,7 +112,7 @@ describe('OtpSignInPageContent — the number', () => {
     authService.requestOtp.mockResolvedValue({ ...CHALLENGE, codeLength: 6 });
     authService.verifyOtp.mockReturnValue(new Promise(() => undefined));
     const user = userEvent.setup();
-    renderWithProviders(<OtpSignInPageContent mode="signIn" />);
+    renderWithProviders(<OtpSignInPageContent />);
     await toCodeStep(user);
     expect(screen.getByText(/We sent a 6-digit code to/)).toBeInTheDocument();
     expect(screen.getByLabelText('Digit 6 of 6')).toBeInTheDocument();
@@ -128,24 +128,22 @@ describe('OtpSignInPageContent — the number', () => {
 
   it('refuses a short number before asking the server', async () => {
     const user = userEvent.setup();
-    renderWithProviders(<OtpSignInPageContent mode="signIn" />);
+    renderWithProviders(<OtpSignInPageContent />);
     await user.type(screen.getByLabelText(/Mobile number/), '98450');
     await user.click(screen.getByRole('button', { name: 'Send code' }));
     expect(await screen.findByText('Enter a 10-digit Indian mobile number.')).toBeInTheDocument();
     expect(authService.requestOtp).not.toHaveBeenCalled();
   });
 
-  it('words the same flow as sign-up on /signup, with the terms line', () => {
-    renderWithProviders(<OtpSignInPageContent mode="signUp" />);
-    expect(
-      screen.getByRole('heading', { level: 1, name: 'Create your account' })
-    ).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'Sign in' })).toBeInTheDocument();
+  it('never offers to create an account: one number, one code, for everybody', () => {
+    renderWithProviders(<OtpSignInPageContent />);
+    expect(screen.queryByText(/create (an |your )?account/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/sign up/i)).not.toBeInTheDocument();
   });
 });
 
 describe('OtpSignInPageContent — the code', () => {
-  it('verifies by itself when the fourth digit lands, then routes', async () => {
+  it('verifies by itself when the sixth digit lands, then routes', async () => {
     authService.verifyOtp.mockResolvedValue({
       userId: 'u1',
       name: '',
@@ -163,14 +161,14 @@ describe('OtpSignInPageContent — the code', () => {
       landing: null,
     });
     const user = userEvent.setup();
-    renderWithProviders(<OtpSignInPageContent mode="signUp" />);
+    renderWithProviders(<OtpSignInPageContent />);
     await toCodeStep(user);
 
-    await user.keyboard('4829');
+    await user.keyboard('482913');
 
     await waitFor(() =>
       expect(authService.verifyOtp).toHaveBeenCalledWith(
-        expect.objectContaining({ challengeId: 'c-1', code: '4829' })
+        expect.objectContaining({ challengeId: 'c-1', code: '482913' })
       )
     );
     // A new number is a new account, and a new account starts onboarding.
@@ -180,9 +178,9 @@ describe('OtpSignInPageContent — the code', () => {
   it('says how many tries are left after a wrong code', async () => {
     authService.verifyOtp.mockRejectedValue(otpError('incorrect', 3));
     const user = userEvent.setup();
-    renderWithProviders(<OtpSignInPageContent mode="signIn" />);
+    renderWithProviders(<OtpSignInPageContent />);
     await toCodeStep(user);
-    await user.keyboard('1111');
+    await user.keyboard('111111');
     expect(await screen.findByText('Wrong code. 3 tries left.')).toBeInTheDocument();
     // The cells empty, so the next code is typed rather than edited over.
     await waitFor(() =>
@@ -193,9 +191,9 @@ describe('OtpSignInPageContent — the code', () => {
   it('says to ask for a new code when this one can no longer work', async () => {
     authService.verifyOtp.mockRejectedValue(otpError('expired', 0));
     const user = userEvent.setup();
-    renderWithProviders(<OtpSignInPageContent mode="signIn" />);
+    renderWithProviders(<OtpSignInPageContent />);
     await toCodeStep(user);
-    await user.keyboard('1111');
+    await user.keyboard('111111');
     expect(
       await screen.findByText("This code can't be used any more. Tap Resend code for a new one.")
     ).toBeInTheDocument();
@@ -203,11 +201,11 @@ describe('OtpSignInPageContent — the code', () => {
 
   it('goes back to the number on "Change number", keeping nothing of the code', async () => {
     const user = userEvent.setup();
-    renderWithProviders(<OtpSignInPageContent mode="signIn" />);
+    renderWithProviders(<OtpSignInPageContent />);
     await toCodeStep(user);
     await user.click(screen.getByRole('button', { name: 'Change number' }));
     expect(await screen.findByLabelText(/Mobile number/)).toBeInTheDocument();
-    expect(screen.queryByText(/We sent a 4-digit code/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/We sent a 6-digit code/)).not.toBeInTheDocument();
   });
 });
 
@@ -215,7 +213,7 @@ describe('OtpSignInPageContent — resend after sixty seconds', () => {
   it('counts down from 1:00 and only then offers "Resend code"', async () => {
     jest.useFakeTimers({ now: new Date('2026-10-09T10:00:00Z'), doNotFake: ['queueMicrotask'] });
     const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
-    renderWithProviders(<OtpSignInPageContent mode="signIn" />);
+    renderWithProviders(<OtpSignInPageContent />);
     await toCodeStep(user);
 
     // Never "2:01": the countdown rounds up, and a 60-second timer is capped at 1:00.
@@ -245,7 +243,7 @@ describe('OtpSignInPageContent — resend after sixty seconds', () => {
   it('moves the countdown when the server says a resend came too early', async () => {
     jest.useFakeTimers({ now: new Date('2026-10-09T10:00:00Z'), doNotFake: ['queueMicrotask'] });
     const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
-    renderWithProviders(<OtpSignInPageContent mode="signIn" />);
+    renderWithProviders(<OtpSignInPageContent />);
     await toCodeStep(user);
     act(() => {
       jest.advanceTimersByTime(61_000);

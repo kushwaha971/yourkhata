@@ -70,12 +70,12 @@ describe('authService — mobile + OTP (owner, 9 Oct 2026)', () => {
 
     expect(post.mock.calls[0]?.[0]).toBe('/auth/otp/request');
     expect(post.mock.calls[0]?.[1]).toEqual({ mobile: '+919845011122', locale: 'hi' });
-    // An older server sent no length: it only ever sent four digits by SMS.
+    // No length sent: six, the only length since 14 Nov 2026.
     expect(challenge).toEqual({
       challengeId: 'c-1',
       expiresIn: 600,
       retryAfter: 60,
-      codeLength: 4,
+      codeLength: 6,
       channel: 'sms',
     });
   });

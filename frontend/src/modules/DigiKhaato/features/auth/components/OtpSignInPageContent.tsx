@@ -45,11 +45,6 @@ const RESEND_SECONDS = 60;
 const clock = (seconds: number): string =>
   `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, '0')}`;
 
-export interface OtpSignInPageContentProps {
-  /** Only the words differ: one flow signs in a number it knows and signs up one it does not. */
-  readonly mode: 'signIn' | 'signUp';
-}
-
 /**
  * Owner, 9 Oct 2026 — "for registration and login use only mobile number and
  * OTP … use same things", replacing the email + password screens on /login and
@@ -65,7 +60,7 @@ export interface OtpSignInPageContentProps {
  * every visit for ninety days (server `UB_REFRESH_TOKEN_DAYS`), on a phone and
  * a desktop alike, so there is no "remember me" to tick.
  */
-export function OtpSignInPageContent({ mode }: OtpSignInPageContentProps): React.JSX.Element {
+export function OtpSignInPageContent(): React.JSX.Element {
   const { t } = useTranslation();
   const appName = useAppSelector(selectAppName);
   const schemas = useAuthSchemas();
@@ -83,7 +78,7 @@ export function OtpSignInPageContent({ mode }: OtpSignInPageContentProps): React
   const otp = flow.otp;
   // The server says how many digits it sent and where; before the first code
   // there is no answer yet, and the code step is not on screen.
-  const codeLength = otp?.codeLength ?? 4;
+  const codeLength = otp?.codeLength ?? 6;
   const viaWhatsApp = otp?.channel === 'whatsapp';
   const codeSchema = useMemo(() => schemas.otpCodeSchema(codeLength), [schemas, codeLength]);
   const codeForm = useForm<OtpCodeFormValues>({
@@ -119,11 +114,9 @@ export function OtpSignInPageContent({ mode }: OtpSignInPageContentProps): React
         title={
           otp
             ? t('auth.otp.codeTitle')
-            : mode === 'signUp'
-              ? t('auth.signUp.heading')
-              : // Owner, 12 Nov 2026: one process for everyone — a number and a
-                // code — so the page never says "sign up" or "create account".
-                t('auth.otp.oneHeading')
+            : // Owner, 12 and 14 Nov 2026: one process for everyone — a number
+              // and a code — so the page never says "sign up" or "create account".
+              t('auth.otp.oneHeading')
         }
         description={
           otp
@@ -261,26 +254,15 @@ export function OtpSignInPageContent({ mode }: OtpSignInPageContentProps): React
 
       {otp === null && (
         <UbText variant="body-sm" tone="tertiary" align="center">
-          {mode === 'signUp' ? (
-            <>
-              {t('auth.signUp.haveAccount')}{' '}
-              <UbLink href={ROUTES.LOGIN} variant="inherit">
-                {t('auth.signIn')}
-              </UbLink>
-            </>
-          ) : (
-            <>
-              {t('auth.otp.newHere')}{' '}
-              <UbLink href={ROUTES.LEGAL_TERMS} variant="inherit">
-                {t('auth.otp.terms')}
-              </UbLink>{' '}
-              {t('auth.otp.and')}{' '}
-              <UbLink href={ROUTES.LEGAL_PRIVACY} variant="inherit">
-                {t('auth.otp.privacy')}
-              </UbLink>
-              .
-            </>
-          )}
+          {t('auth.otp.newHere')}{' '}
+          <UbLink href={ROUTES.LEGAL_TERMS} variant="inherit">
+            {t('auth.otp.terms')}
+          </UbLink>{' '}
+          {t('auth.otp.and')}{' '}
+          <UbLink href={ROUTES.LEGAL_PRIVACY} variant="inherit">
+            {t('auth.otp.privacy')}
+          </UbLink>
+          .
         </UbText>
       )}
       {/* Creating an account is where the terms are accepted, so the sign-up

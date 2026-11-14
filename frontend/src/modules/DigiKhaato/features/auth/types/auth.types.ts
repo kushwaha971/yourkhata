@@ -70,7 +70,8 @@ export interface OtpChallenge {
   readonly channel: OtpChannel;
 }
 
-export type OtpCodeLength = 4 | 6;
+/** Six since 14 Nov 2026 (owner); the server still says so on every challenge. */
+export type OtpCodeLength = number;
 export type OtpChannel = 'sms' | 'whatsapp';
 
 /** `POST /auth/otp/verify`. */

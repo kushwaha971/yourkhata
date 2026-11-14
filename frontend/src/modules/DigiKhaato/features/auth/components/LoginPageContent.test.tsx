@@ -137,11 +137,9 @@ describe('LoginPageContent — initial state', () => {
     expect(screen.queryByRole('button', { name: /Get code/i })).not.toBeInTheDocument();
   });
 
-  it('shows the way to create an account, since nothing registers implicitly', () => {
+  it('offers no "Create an account": everybody signs in with a number and a code (owner, 14 Nov 2026)', () => {
     renderWithProviders(<LoginPageContent />);
-
-    const link = screen.getByRole('link', { name: 'Create an account' });
-    expect(link).toHaveAttribute('href', '/signup');
+    expect(screen.queryByRole('link', { name: 'Create an account' })).not.toBeInTheDocument();
   });
 
   /**
