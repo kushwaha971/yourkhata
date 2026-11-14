@@ -64,7 +64,7 @@ export interface MemberState {
   actionsTargetId: string | null;
   editTargetId: string | null;
   /** Owner, 14 Nov 2026 — whose apps the Apps dialog is choosing. */
-  appsTargetId: string | null;
+  accessTargetId: string | null;
   editStatus: RequestStatus;
   /** Block and Remove ask first; Unblock does not — it takes nothing away. */
   confirm: { readonly kind: MemberConfirmKind; readonly id: string } | null;
@@ -91,7 +91,7 @@ const initialState: MemberState = {
   regenerateStatus: 'idle',
   actionsTargetId: null,
   editTargetId: null,
-  appsTargetId: null,
+  accessTargetId: null,
   editStatus: 'idle',
   confirm: null,
   actionStatus: 'idle',
@@ -149,11 +149,11 @@ const memberSlice = createSlice({
     editMemberClosed(state) {
       state.editTargetId = null;
     },
-    memberAppsOpened(state, action: PayloadAction<string>) {
-      state.appsTargetId = action.payload;
+    memberAccessOpened(state, action: PayloadAction<string>) {
+      state.accessTargetId = action.payload;
     },
-    memberAppsClosed(state) {
-      state.appsTargetId = null;
+    memberAccessClosed(state) {
+      state.accessTargetId = null;
     },
     memberConfirmRequested(state, action: PayloadAction<{ kind: MemberConfirmKind; id: string }>) {
       state.confirm = action.payload;
@@ -284,8 +284,8 @@ export const {
   memberActionsClosed,
   editMemberOpened,
   editMemberClosed,
-  memberAppsOpened,
-  memberAppsClosed,
+  memberAccessOpened,
+  memberAccessClosed,
   memberConfirmRequested,
   memberConfirmCancelled,
   resetMembers,
@@ -316,8 +316,8 @@ export const selectMemberActionsTargetId = (state: RootState): string | null =>
   state.member.actionsTargetId;
 export const selectEditMemberTargetId = (state: RootState): string | null =>
   state.member.editTargetId;
-export const selectMemberAppsTargetId = (state: RootState): string | null =>
-  state.member.appsTargetId;
+export const selectMemberAccessTargetId = (state: RootState): string | null =>
+  state.member.accessTargetId;
 export const selectEditMemberStatus = (state: RootState): RequestStatus => state.member.editStatus;
 export const selectMemberConfirm = (state: RootState): MemberState['confirm'] =>
   state.member.confirm;

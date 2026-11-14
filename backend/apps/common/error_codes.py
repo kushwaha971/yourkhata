@@ -317,6 +317,8 @@ _REGISTRY: dict[str, tuple[int, bool]] = {
     # docs/platform/14 §6 decision 2 — a business runs at least one app, and a
     # member is in at least one; the owner is in every app and turns one off.
     "app_last_one": (409, False),  # D app, of (business|member)
+    # Owner, 14 Nov 2026 — an access group with members is not deleted.
+    "group_has_members": (409, False),  # D members
     "owner_in_every_app": (409, False),  # D app
 }
 

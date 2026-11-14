@@ -25,7 +25,7 @@ describe('memberActionsFor', () => {
       unblock: false,
       remove: true,
       regenerate: false,
-      apps: true,
+      access: true,
     });
   });
 
@@ -52,7 +52,7 @@ describe('memberActionsFor', () => {
     // A blocked row that still offered Block would be a button that does
     // nothing; one with no Unblock would be a person nobody can let back in.
     expect(memberActionsFor(OWNER, row({ status: 'suspended', mustChangePassword: true }))).toEqual(
-      { edit: true, block: false, unblock: true, remove: true, regenerate: false, apps: false }
+      { edit: true, block: false, unblock: true, remove: true, regenerate: false, access: false }
     );
   });
 

@@ -37,8 +37,8 @@ export interface MemberActionSet {
   readonly remove: boolean;
   /** The pre-existing reissue, folded into the same sheet when the sheet is shown. */
   readonly regenerate: boolean;
-  /** Owner, 14 Nov 2026 — which apps they open here. Not on a blocked row: Unblock comes first. */
-  readonly apps: boolean;
+  /** Owner, 14 Nov 2026 — their access in the open app. Not on a blocked row: Unblock comes first. */
+  readonly access: boolean;
 }
 
 export const NO_MEMBER_ACTIONS: MemberActionSet = {
@@ -47,7 +47,7 @@ export const NO_MEMBER_ACTIONS: MemberActionSet = {
   unblock: false,
   remove: false,
   regenerate: false,
-  apps: false,
+  access: false,
 };
 
 export const memberActionsFor = (
@@ -68,7 +68,7 @@ export const memberActionsFor = (
     // A blocked person is not going to sign in on a new password until they
     // are let back in, and reissuing one would bump their epoch for nothing.
     regenerate: target.mustChangePassword && !blocked,
-    apps: !blocked,
+    access: !blocked,
   };
 };
 
@@ -79,7 +79,7 @@ export const hasAnyMemberAction = (actions: MemberActionSet): boolean =>
   actions.unblock ||
   actions.remove ||
   actions.regenerate ||
-  actions.apps;
+  actions.access;
 
 /**
  * The roles the edit dialog may offer. `owner` never (transferred, not

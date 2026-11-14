@@ -55,6 +55,9 @@ from apps.platform_app.views.settings import (
     TenantSettingsView,
 )
 from apps.platform_app.views.tenant import (
+    AccessGroupListView,
+    AccessGroupView,
+    MemberAccessView,
     OnboardingAppsView,
     InvitationAcceptView,
     InvitationDetailView,
@@ -158,6 +161,10 @@ urlpatterns = [
     ),
     path("members", MemberListCreateView.as_view(), name="member-list"),
     path("members/<uuid:membership_id>/apps", MemberAppsView.as_view(), name="member-apps"),
+    # Owner, 14 Nov 2026 — access groups and one member's access, per app.
+    path("members/<uuid:membership_id>/access", MemberAccessView.as_view(), name="member-access"),
+    path("access-groups", AccessGroupListView.as_view(), name="access-group-list"),
+    path("access-groups/<uuid:group_id>", AccessGroupView.as_view(), name="access-group-detail"),
     # Owner, 12 Oct 2026 — the manager's half: edit, block, unblock, remove.
     path("members/<uuid:membership_id>", MemberDetailView.as_view(), name="member-detail"),
     path("members/<uuid:membership_id>/block", MemberBlockView.as_view(), name="member-block"),

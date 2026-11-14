@@ -124,6 +124,8 @@ import taxReportsEn from 'locales/catalogues/taxReports.en.json';
 import taxReportsHi from 'locales/catalogues/taxReports.hi.json';
 import teamEn from 'locales/catalogues/team.en.json';
 import teamHi from 'locales/catalogues/team.hi.json';
+import teamAccessEn from 'locales/catalogues/teamAccess.en.json';
+import teamAccessHi from 'locales/catalogues/teamAccess.hi.json';
 import tenantEn from 'locales/catalogues/tenant.en.json';
 import tenantHi from 'locales/catalogues/tenant.hi.json';
 import validationEn from 'locales/catalogues/validation.en.json';
@@ -205,6 +207,7 @@ export const en: Readonly<Record<string, string>> = {
   ...stockEn,
   ...taxReportsEn,
   ...teamEn,
+  ...teamAccessEn,
   ...tenantEn,
   ...validationEn,
 };
@@ -272,6 +275,7 @@ export const hi: Readonly<Record<string, string>> = {
   ...stockHi,
   ...taxReportsHi,
   ...teamHi,
+  ...teamAccessHi,
   ...tenantHi,
   ...validationHi,
 };

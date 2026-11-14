@@ -10,6 +10,7 @@ from apps.platform_app.constants import (
     PartnerStatus,
     TenantStatus,
 )
+from apps.platform_app.models.access import AccessGroup, MemberAppAccess
 from apps.platform_app.models.audit import AuditLog
 from apps.platform_app.models.calendar import ClosedDay
 from apps.platform_app.models.auth import AuthToken, OtpChallenge, Session
@@ -32,6 +33,8 @@ from apps.platform_app.models.tenant import Tenant
 from apps.platform_app.models.user import User
 
 __all__ = [
+    "AccessGroup",
+    "MemberAppAccess",
     "AuditLog",
     "ClosedDay",
     "AuthToken",

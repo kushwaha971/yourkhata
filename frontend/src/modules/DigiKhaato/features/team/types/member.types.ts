@@ -1,6 +1,7 @@
 import type { PageMeta } from 'src/types/api.types';
 import type { ModuleCode } from 'src/types/domain.types';
 
+import type { MemberAccessSummary } from './accessGroup.types';
 import type { MemberRoleCode } from './role.types';
 
 /**
@@ -45,6 +46,8 @@ export interface MemberApiRow {
   readonly last_login_at: string | null;
   readonly must_change_password: boolean;
   readonly password_expires_at: string | null;
+  /** Owner, 14 Nov 2026 — present when the list was asked for one app (`?app=`). */
+  readonly access?: { can_use: boolean; group_id: string | null; group_name: string | null; changes: number } | null;
 }
 
 export interface Member {
@@ -69,6 +72,8 @@ export interface Member {
   readonly mustChangePassword: boolean;
   /** ISO 8601, or `null` once they have chosen their own password. */
   readonly passwordExpiresAt: string | null;
+  /** Owner, 14 Nov 2026 — their access in the open app, when the list was asked for one. */
+  readonly access?: MemberAccessSummary | null;
 }
 
 export interface MemberListParams {
@@ -76,6 +81,8 @@ export interface MemberListParams {
   readonly pageSize: number;
   /** `GET /members?status=` — absent means every listed status. */
   readonly status?: 'active' | 'invited' | 'suspended';
+  /** Owner, 14 Nov 2026 — the open app: each row then carries its `access` there. */
+  readonly app?: string;
 }
 
 /**
@@ -102,6 +109,10 @@ export interface MemberDraft {
   readonly fullName: string;
   readonly role: MemberRoleCode;
   readonly mobile?: string | null;
+  /** Owner, 14 Nov 2026 — added from inside this app: they get it (and their own Money book). */
+  readonly app?: string;
+  /** The access group they start in there; the app's default when absent. */
+  readonly groupId?: string | null;
 }
 
 /**
@@ -126,24 +137,6 @@ export interface IssuedCredentials {
   readonly mobile: string | null;
   /** `otp` — no password exists; they sign in with `mobile` and a code. */
   readonly signIn: 'otp' | 'password';
-}
-
-/** Owner, 14 Nov 2026 — `GET`/`PUT /members/{id}/apps`: one app, one role. */
-export interface MemberAppGrant {
-  readonly app: string;
-  readonly role: string;
-}
-
-/** One part of an app the member's role could use (owner, 14 Nov 2026), and whether it is hidden. */
-export interface MemberAppPart {
-  readonly app: string;
-  readonly part: string;
-  readonly hidden: boolean;
-}
-
-/** `grants` as saved; `opens` the apps the server lets the member open today; `parts` inside them. */
-export interface MemberApps {
-  readonly grants: readonly MemberAppGrant[];
-  readonly opens: readonly string[];
-  readonly parts: readonly MemberAppPart[];
+  /** Owner, 14 Nov 2026 — they were already on the team and were given this app. */
+  readonly addedToApp?: string | null;
 }

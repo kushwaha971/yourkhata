@@ -1,5 +1,6 @@
 {
   "//": [
+    "14 Nov 2026, Access groups (owner-approved design docs/revamp/design/access-groups.html): /settings/team gained the Members | Access groups tabs, the app-and-business label, the per-app group column and their words (the new teamAccess catalogue); the groups list, the group form and the member access sheet are dynamic(). Route 100.8 / first load 343.3 measured; raised to measured + 0.3. /set-password and /accept-invite are back inside budget once the access words left the team catalogue.",
     "14 Nov 2026, Team: hide parts of an app per member. The dialog is dynamic(); the member slice's new target ships with the shared store and moved /parties/[id]/statement first load to 328.0 against 328. Raised to measured + 0.3.",
     "14 Nov 2026, Team: choose which apps a member opens (owner). The Apps row in the member sheet, its slice target and the team catalogue's twelve new words (EN+HI) moved /settings/team to 97.7 and /accept-invite/[token] (which loads the same catalogue) to 11.4, each over by under 0.05 KB; the dialog itself is dynamic(). Raised to measured + 0.3.",
     "11 Nov 2026, Parts B/C/D measured against the design: Expiry, Find by IMEI and Print labels take the phone back bar (UbTaskBar), Print labels' print button moves to a phone bottom bar and Label size becomes UbSegmentedControl. Those routes moved 0-0.4 KB; the sales and purchase editors moved 1.1-1.4 KB through the bundler regrouping the now more widely shared bars, with no editor code changed. Measured + 0.3.",
@@ -1611,8 +1612,8 @@
       "firstLoad": 358.4
     },
     "/settings/team": {
-      "route": 98.0,
-      "firstLoad": 340.9
+      "route": 101.1,
+      "firstLoad": 343.6
     },
     "/parties/[id]": {
       "route": 123.0,

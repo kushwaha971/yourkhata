@@ -16,7 +16,6 @@ import {
 import {
   UbDataGrid,
   type UbDataGridEmptyStates,
-  type UbDataGridLabels,
   type UbGridState,
 } from 'src/design-system/UbDataGrid';
 import { useNowMs } from 'src/hooks/useNowMs';
@@ -27,6 +26,8 @@ import { Can } from '../../auth/components/Can';
 import { PAGE_SIZE_OPTIONS } from '../constants/teamDefaults';
 import { useMemberAdmin } from '../hooks/useMemberAdmin';
 import { useMembers } from '../hooks/useMembers';
+import { useTeamApp } from '../hooks/useTeamApp';
+import { useTeamGridLabels } from '../hooks/useTeamGridLabels';
 import { memberActionsFor, NO_MEMBER_ACTIONS } from '../view-model/memberActions';
 import { memberCountOf } from '../view-model/memberCount';
 
@@ -35,6 +36,9 @@ import { MemberActionsMenu } from './MemberActionsMenu';
 import { createMemberColumns } from './MemberColumns';
 
 import type { Member } from '../types/member.types';
+
+// The access words ride with the screens that show them (owner, 14 Nov 2026).
+import 'src/i18n/catalogues/teamAccess';
 
 /**
  * Part 19 §19.9 — both overlays are fetched when they are OPENED, not when the
@@ -57,8 +61,8 @@ const EditMemberDialog = dynamic(
 );
 
 /* Owner, 14 Nov 2026 — which apps a member opens: fetched when it opens. */
-const MemberAppsDialog = dynamic(
-  () => import('./MemberAppsDialog').then((module) => module.MemberAppsDialog),
+const MemberAccessSheet = dynamic(
+  () => import('./MemberAccessSheet').then((module) => module.MemberAccessSheet),
   { ssr: false,
   loading: () => <UbDialogLoading /> }
 );
@@ -104,6 +108,7 @@ export function MembersSection(): React.JSX.Element {
     refetch,
   } = members;
   const admin = useMemberAdmin();
+  const teamApp = useTeamApp();
   const {
     viewer,
     actionsTarget,
@@ -111,9 +116,9 @@ export function MembersSection(): React.JSX.Element {
     closeActions,
     openEdit,
     editTarget,
-    openApps,
-    appsTarget,
-    closeApps,
+    openAccess,
+    accessTarget,
+    closeAccess,
     confirm,
     isActing,
     requestConfirm,
@@ -137,44 +142,12 @@ export function MembersSection(): React.JSX.Element {
         onRegenerate: requestRegenerate,
         viewer,
         onOpenActions: openActions,
+        appLabel: teamApp?.label ?? null,
       }),
-    [t, formatDate, nowMs, canWrite, requestRegenerate, viewer, openActions]
+    [t, formatDate, nowMs, canWrite, requestRegenerate, viewer, openActions, teamApp?.label]
   );
 
-  const labels = useMemo<UbDataGridLabels>(
-    () => ({
-      loading: t('team.members.loading'),
-      // `{page}` and `{pages}` pass through as literal text: the grid
-      // substitutes them itself, because it is the only thing that knows them.
-      pageOf: t('common.grid.pageOf', { page: '{page}', pages: '{pages}' }),
-      previousPage: t('common.grid.previousPage'),
-      nextPage: t('common.grid.nextPage'),
-      pageSize: t('common.grid.pageSize'),
-      // `{page}` and `{total}` pass through as literal text, like `pageOf`
-      // above: the pagination bar substitutes them, because it is the only
-      // thing that knows which page a button points at.
-      goToPage: t('common.grid.goToPage', { page: '{page}' }),
-      ofTotal: t('common.grid.ofTotal', { total: '{total}' }),
-      // This grid has no selection — `selectable` is never passed, because a
-      // team is read down a list rather than acted on in bulk — so nothing ever
-      // paints this. It is a required part of the grid's contract and is given
-      // an honest zero rather than a placeholder: `selectedCount` is an ICU
-      // PLURAL, and a plural resolved against the string `'{count}'` renders
-      // "NaN selected", which is what the party list was showing.
-      selectedCount: t('common.grid.selectedCount', { count: 0 }),
-
-      selectAll: t('team.list.select.all'),
-      selectRow: t('team.list.select.row', { name: '{name}' }),
-      showing: t('common.grid.showing'),
-      columns: t('common.grid.columns'),
-      showAllColumns: t('common.grid.showAllColumns'),
-      sortBy: t('common.grid.sortBy', { column: '{column}' }),
-      sortedAscending: t('common.grid.sortedAscending'),
-      sortedDescending: t('common.grid.sortedDescending'),
-      openRow: t('team.list.open', { name: '{name}' }),
-    }),
-    [t]
-  );
+  const labels = useTeamGridLabels('team.members.loading');
 
   const emptyStates = useMemo<UbDataGridEmptyStates>(
     () => ({
@@ -316,10 +289,21 @@ export function MembersSection(): React.JSX.Element {
         onUnblock={handleUnblock}
         onRemove={handleRemove}
         onRegenerate={requestRegenerate}
-        onApps={openApps}
+        onAccess={openAccess}
+        appLabel={teamApp?.label ?? null}
       />
       {editTarget && <EditMemberDialog admin={admin} canWrite={canWrite} />}
-      {appsTarget && <MemberAppsDialog member={appsTarget} onClose={closeApps} />}
+      {accessTarget && teamApp && (
+        <MemberAccessSheet
+          member={accessTarget}
+          app={teamApp}
+          onClose={closeAccess}
+          onSaved={() => {
+            closeAccess();
+            refetch();
+          }}
+        />
+      )}
 
       {/* Block and Remove ask first, in a sentence that says what happens to
           the PERSON — signed out everywhere, and for Remove, off the team —

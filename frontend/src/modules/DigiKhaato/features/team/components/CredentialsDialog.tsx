@@ -17,6 +17,8 @@ import { useTranslation } from 'src/hooks/useTranslation';
 import { selectActiveTenant } from 'src/redux/slice/sessionSlice';
 import { formatPhoneForDisplay } from 'src/utils/share';
 
+import { manifestFor } from 'modules/appManifests';
+
 import { buildShareText } from '../view-model/credentialsShare';
 
 import type { UseMembersResult } from '../hooks/useMembers';
@@ -24,6 +26,7 @@ import type { UseMembersResult } from '../hooks/useMembers';
 // Loaded with dynamic(), so its own words come with its own chunk rather than
 // with the screen that opens it (src/i18n/catalogueRegistry.ts).
 import 'src/i18n/catalogues/team';
+import 'src/i18n/catalogues/teamAccess';
 
 /**
  * The one-time credentials (DEC-012).
@@ -86,6 +89,24 @@ export function CredentialsDialog({
    * with this number — and the dialog can be closed by any tap, because there
    * is no secret on it to lose.
    */
+  // Owner, 14 Nov 2026 — already on the team: they were given the open app.
+  if (lastCredentials.addedToApp) {
+    const labelId = manifestFor(lastCredentials.addedToApp)?.labelId;
+    return (
+      <UbDialog
+        open
+        onOpenChange={handleOpenChange}
+        title={t('team.access.addedTitle', { name: member.fullName, app: labelId ? t(labelId) : '' })}
+        closeLabel={t('common.action.close')}
+        footer={<UbButton onClick={dismissCredentials}>{t('team.credentials.done')}</UbButton>}
+      >
+        <UbText as="p" variant="inherit">
+          {t('team.access.addedBody', { name: member.fullName })}
+        </UbText>
+      </UbDialog>
+    );
+  }
+
   if (lastCredentials.signIn === 'otp') {
     return (
       <UbDialog

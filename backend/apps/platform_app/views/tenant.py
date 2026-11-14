@@ -53,7 +53,7 @@ from apps.platform_app.serializers.tenant import (
 from apps.platform_app.services import credentials as credentials_service
 from apps.platform_app.services import entitlements
 from apps.platform_app.services import member_admin
-from apps.platform_app.services import member_parts as member_parts_service
+from apps.platform_app.services import access_groups as access_service
 from apps.platform_app.services import memberships as membership_service
 from apps.platform_app.services import onboarding as onboarding_service
 from apps.platform_app.services import sessions as session_service
@@ -588,9 +588,15 @@ class MemberListCreateView(APIView):
         page = paginator.paginate_queryset(queryset, request, view=self)
         # A13: one `effective_modules` per page, not per row (`role_active`).
         context = {"effective_modules": entitlements.effective_modules(tenant)}
-        return StandardResponse.paginated(
-            paginator, MemberReadSerializer(page, many=True, context=context).data
-        )
+        rows = MemberReadSerializer(page, many=True, context=context).data
+        # Owner, 14 Nov 2026 — Team follows the open app: `?app=` adds each
+        # member's access there (can they use it, their group, their changes).
+        app = request.query_params.get("app")
+        if app:
+            code = access_service._running_app(tenant, app)
+            access = access_service.list_access(list(page), code)
+            rows = [{**row, "access": access.get(str(row["id"]))} for row in rows]
+        return StandardResponse.paginated(paginator, rows)
 
     @idempotent("member_create")
     def post(self, request: Any) -> Any:
@@ -608,15 +614,49 @@ class MemberListCreateView(APIView):
         if refusal:
             raise ValidationFailed({"role": [refusal]})
 
-        issued = credentials_service.create_member(
-            tenant=tenant,
-            role=role,
-            email=data.get("email") or "",
-            full_name=data["full_name"],
-            mobile=data.get("mobile") or None,
-            actor=request.user,
-            ctx=Ctx.from_request(request),
-        )
+        # Owner, 14 Nov 2026 — adding from inside an app gives that app only
+        # (and the person's own Money book), in the group chosen or the app's
+        # default. Somebody already on the team is given the app instead.
+        app = request.data.get("app") if isinstance(request.data, dict) else None
+        group_id = request.data.get("group_id") if isinstance(request.data, dict) else None
+        if app:
+            app = access_service._running_app(tenant, app)
+            existing = access_service.member_by_mobile(tenant, data.get("mobile"))
+            if existing is not None:
+                with transaction.atomic():
+                    member = access_service.set_member_access(
+                        tenant=tenant,
+                        membership_id=existing.pk,
+                        app=app,
+                        data={"can_use": True, **({"group_id": group_id} if group_id else {})},
+                        actor=request.user,
+                        ctx=Ctx.from_request(request),
+                    )
+                # The same shape as a new member's answer, so the dialog that
+                # follows needs no second path: no password, `added_to_app` set.
+                issued = credentials_service.IssuedCredentials(
+                    user=member.user, membership=member, password="", expires_at=None, created_user=False
+                )
+                return StandardResponse.ok({**_credentials_payload(issued), "added_to_app": app})
+        with transaction.atomic():
+            issued = credentials_service.create_member(
+                tenant=tenant,
+                role=role,
+                email=data.get("email") or "",
+                full_name=data["full_name"],
+                mobile=data.get("mobile") or None,
+                actor=request.user,
+                ctx=Ctx.from_request(request),
+            )
+            if app:
+                access_service.start_in_app(
+                    tenant=tenant,
+                    membership=issued.membership,
+                    app=app,
+                    group_id=group_id,
+                    actor=request.user,
+                    ctx=Ctx.from_request(request),
+                )
         return StandardResponse.created(_credentials_payload(issued))
 
     def idempotent_response_body(self, request: Any, response: Any) -> Any:
@@ -657,28 +697,13 @@ class MemberAppsView(APIView):
     def put(self, request: Any, membership_id: Any) -> Any:
         tenant = _tenant_or_refuse(request)
         data = request.data if isinstance(request.data, dict) else {}
-        # `grants` (which apps) and `hidden` (which parts inside them, owner
-        # 14 Nov 2026) may come together or alone; one transaction either way.
-        if "grants" not in data and "hidden" not in data:
-            raise ValidationFailed({"grants": ["Send the apps, the hidden parts, or both."]})
-        with transaction.atomic():
-            membership = None
-            if "grants" in data:
-                membership = membership_service.set_app_grants(
-                    tenant=tenant,
-                    membership_id=membership_id,
-                    grants=data.get("grants"),
-                    actor=request.user,
-                    ctx=Ctx.from_request(request),
-                )
-            if "hidden" in data:
-                membership = member_parts_service.set_hidden_parts(
-                    tenant=tenant,
-                    membership_id=membership_id,
-                    hidden=data.get("hidden"),
-                    ctx=Ctx.from_request(request),
-                )
-        membership = member_of_tenant(tenant=tenant, membership_id=membership_id) or membership
+        membership = membership_service.set_app_grants(
+            tenant=tenant,
+            membership_id=membership_id,
+            grants=data.get("grants"),
+            actor=request.user,
+            ctx=Ctx.from_request(request),
+        )
         return StandardResponse.ok(membership_service.member_apps_json(membership))
 
 
@@ -814,3 +839,69 @@ class RoleListView(APIView):
 
     def get(self, request: Any) -> Any:
         return StandardResponse.ok(membership_service.roles_payload(_tenant_or_refuse(request)))
+
+
+class AccessGroupListView(APIView):
+    """`GET`/`POST /access-groups?app=` — one app's groups in this business.
+
+    Owner, 14 Nov 2026 (design: docs/revamp/design/access-groups.html): Team
+    follows the open business and app, so every request names its app.
+    """
+
+    permission_classes = [IsAuthenticated, MembersManagePermission]
+
+    def get(self, request: Any) -> Any:
+        tenant = _tenant_or_refuse(request)
+        return StandardResponse.ok(access_service.groups_payload(tenant, request.query_params.get("app")))
+
+    def post(self, request: Any) -> Any:
+        tenant = _tenant_or_refuse(request)
+        return StandardResponse.created(
+            access_service.create_group(tenant=tenant, data=request.data, ctx=Ctx.from_request(request))
+        )
+
+
+class AccessGroupView(APIView):
+    """`PATCH`/`DELETE /access-groups/{id}` — change one group (every member in it changes)."""
+
+    permission_classes = [IsAuthenticated, MembersManagePermission]
+
+    def patch(self, request: Any, group_id: Any) -> Any:
+        tenant = _tenant_or_refuse(request)
+        return StandardResponse.ok(
+            access_service.update_group(
+                tenant=tenant, group_id=group_id, data=request.data, ctx=Ctx.from_request(request)
+            )
+        )
+
+    def delete(self, request: Any, group_id: Any) -> Any:
+        tenant = _tenant_or_refuse(request)
+        access_service.delete_group(tenant=tenant, group_id=group_id, ctx=Ctx.from_request(request))
+        return StandardResponse.ok({"deleted": True})
+
+
+class MemberAccessView(APIView):
+    """`GET`/`PUT /members/{id}/access?app=` — one member, one app, this business."""
+
+    permission_classes = [IsAuthenticated, MembersManagePermission]
+
+    def get(self, request: Any, membership_id: Any) -> Any:
+        tenant = _tenant_or_refuse(request)
+        membership = member_of_tenant(tenant=tenant, membership_id=membership_id)
+        if membership is None:
+            raise NotFound()
+        app = access_service._running_app(tenant, request.query_params.get("app"))
+        return StandardResponse.ok(access_service.member_access_json(membership, app))
+
+    def put(self, request: Any, membership_id: Any) -> Any:
+        tenant = _tenant_or_refuse(request)
+        app = request.query_params.get("app")
+        membership = access_service.set_member_access(
+            tenant=tenant,
+            membership_id=membership_id,
+            app=app,
+            data=request.data,
+            actor=request.user,
+            ctx=Ctx.from_request(request),
+        )
+        return StandardResponse.ok(access_service.member_access_json(membership, str(app)))

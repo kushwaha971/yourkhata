@@ -153,6 +153,7 @@ of the evidence, not a known defect.
    Instead, switching to another business from Apps asks first and names both
    businesses (`e2e/apps-primary.mjs` 47/47).
 8. A member can now be made active or inactive per app from Team → ⋯ → Apps,
-   without blocking them (owner, 14 Nov; `e2e/member-apps.mjs` 44/44), and the
-   same per part inside an app (`e2e/member-parts.mjs` 42/42). Reports is not a
-   part: the Dashboard shares its permission.
+   without blocking them, and per part with Off / View only / Full, through
+   access groups that belong to one business and one app (owner, 14 Nov;
+   `e2e/access-groups.mjs` 69/69). Reports is not a part: the Dashboard shares
+   its permission.

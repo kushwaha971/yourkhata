@@ -198,6 +198,12 @@ def permissions_for(membership: Any) -> frozenset[str]:
         }
     base |= allow
     base -= set(override.get("deny", []))
+    # Owner, 14 Nov 2026 — access groups and per-member levels narrow a member
+    # inside one app (off / view / full per part); they never add. Deferred
+    # import (rule D1); cached on the membership for the request.
+    from apps.platform_app.services.access_groups import access_denies
+
+    base -= access_denies(membership)
     enabled = set(membership.tenant.enabled_modules or [])
     # A1 (PLT-X11 §10): a module's codenames land with its first commit; while
     # the module is unreleased nobody holds them. Deferred import (rule D1), and

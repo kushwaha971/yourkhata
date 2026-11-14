@@ -14,8 +14,8 @@ import { applyServerErrors } from 'src/utils/applyServerErrors';
 
 import {
   editMemberClosed,
-  memberAppsClosed,
-  memberAppsOpened,
+  memberAccessClosed,
+  memberAccessOpened,
   editMemberOpened,
   memberActionsClosed,
   memberActionsOpened,
@@ -23,7 +23,7 @@ import {
   memberConfirmRequested,
   selectEditMemberStatus,
   selectEditMemberTargetId,
-  selectMemberAppsTargetId,
+  selectMemberAccessTargetId,
   selectMemberActionStatus,
   selectMemberActionsTargetId,
   selectMemberConfirm,
@@ -59,9 +59,9 @@ export interface UseMemberAdminResult {
   readonly openEdit: (membershipId: string) => void;
   readonly closeEdit: () => void;
 
-  readonly appsTarget: Member | null;
-  readonly openApps: (membershipId: string) => void;
-  readonly closeApps: () => void;
+  readonly accessTarget: Member | null;
+  readonly openAccess: (membershipId: string) => void;
+  readonly closeAccess: () => void;
   readonly submitEdit: (
     values: EditMemberFormValues,
     setError: UseFormSetError<EditMemberFormValues>
@@ -88,7 +88,7 @@ export function useMemberAdmin(): UseMemberAdminResult {
   const rows = useAppSelector(selectMemberRows);
   const actionsTargetId = useAppSelector(selectMemberActionsTargetId);
   const editTargetId = useAppSelector(selectEditMemberTargetId);
-  const appsTargetId = useAppSelector(selectMemberAppsTargetId);
+  const accessTargetId = useAppSelector(selectMemberAccessTargetId);
   const editStatus = useAppSelector(selectEditMemberStatus);
   const confirmState = useAppSelector(selectMemberConfirm);
   const actionStatus = useAppSelector(selectMemberActionStatus);
@@ -129,14 +129,14 @@ export function useMemberAdmin(): UseMemberAdminResult {
 
   const editTarget = find(editTargetId);
 
-  const openApps = useCallback(
+  const openAccess = useCallback(
     (membershipId: string) => {
-      dispatch(memberAppsOpened(membershipId));
+      dispatch(memberAccessOpened(membershipId));
     },
     [dispatch]
   );
-  const closeApps = useCallback(() => {
-    dispatch(memberAppsClosed());
+  const closeAccess = useCallback(() => {
+    dispatch(memberAccessClosed());
   }, [dispatch]);
 
   const submitEdit = useCallback(
@@ -257,9 +257,9 @@ export function useMemberAdmin(): UseMemberAdminResult {
     openEdit,
     closeEdit,
     submitEdit,
-    appsTarget: find(appsTargetId),
-    openApps,
-    closeApps,
+    accessTarget: find(accessTargetId),
+    openAccess,
+    closeAccess,
     confirm:
       confirmState && confirmMember ? { kind: confirmState.kind, member: confirmMember } : null,
     isActing: actionStatus === 'loading',

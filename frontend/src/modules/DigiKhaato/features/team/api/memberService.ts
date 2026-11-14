@@ -9,8 +9,6 @@ import type {
   IssuedCredentials,
   Member,
   MemberApiRow,
-  MemberAppGrant,
-  MemberApps,
   MemberDraft,
   MemberEdit,
   MemberListParams,
@@ -44,6 +42,7 @@ interface CredentialsApiResponse {
     readonly login_url: string;
     readonly mobile?: string | null;
     readonly sign_in?: 'otp' | 'password';
+    readonly added_to_app?: string;
   };
 }
 
@@ -66,6 +65,14 @@ const toMember = (row: MemberApiRow): Member => ({
   lastLoginAt: row.last_login_at ?? null,
   mustChangePassword: Boolean(row.must_change_password),
   passwordExpiresAt: row.password_expires_at ?? null,
+  access: row.access
+    ? {
+        canUse: row.access.can_use,
+        groupId: row.access.group_id,
+        groupName: row.access.group_name,
+        changes: row.access.changes,
+      }
+    : null,
 });
 
 const toCredentials = (data: CredentialsApiResponse['data']): IssuedCredentials => ({
@@ -80,6 +87,7 @@ const toCredentials = (data: CredentialsApiResponse['data']): IssuedCredentials 
   loginUrl: data.login_url,
   mobile: data.mobile ?? null,
   signIn: data.sign_in ?? (data.password ? 'password' : 'otp'),
+  addedToApp: data.added_to_app ?? null,
 });
 
 /**
@@ -98,6 +106,7 @@ export const listMembers = async (
     page: params.page,
     page_size: params.pageSize,
     status: params.status,
+    app: params.app,
   });
 
   const response = await api.get<MemberListApiResponse>(
@@ -149,6 +158,9 @@ export const createMember = async (
       full_name: input.fullName,
       role: input.role,
       ...(input.mobile ? { mobile: input.mobile } : {}),
+      // Owner, 14 Nov 2026 — added from inside an app: that app, in a group.
+      ...(input.app ? { app: input.app } : {}),
+      ...(input.groupId ? { group_id: input.groupId } : {}),
     },
     ubConfig({ headers: { 'Idempotency-Key': idempotencyKey } })
   );
@@ -231,42 +243,3 @@ export const unblockMemberWriteClass: TWriteClass = 'online-only';
 export const removeMember = (membershipId: string, idempotencyKey: string): Promise<Member> =>
   postMemberAction(API_PATHS.MEMBER_REMOVE(membershipId), idempotencyKey);
 export const removeMemberWriteClass: TWriteClass = 'online-only';
-
-interface MemberAppsApiResponse {
-  readonly data: {
-    readonly grants: readonly { app: string; role: string }[];
-    readonly opens: readonly string[];
-    readonly parts?: readonly { app: string; part: string; hidden: boolean }[];
-  };
-}
-
-const toMemberApps = (data: MemberAppsApiResponse['data']): MemberApps => ({
-  grants: data.grants.map((g) => ({ app: g.app, role: g.role })),
-  opens: [...data.opens],
-  parts: (data.parts ?? []).map((row) => ({ app: row.app, part: row.part, hidden: row.hidden })),
-});
-
-/**
- * GET /members/{id}/apps (owner, 14 Nov 2026) — the apps a member is given and
- * the apps they actually open. A member from before grants existed has no
- * grant rows and opens every app their role opens; `opens` says so.
- */
-export const getMemberApps = async (membershipId: string, signal?: AbortSignal): Promise<MemberApps> => {
-  const response = await api.get<MemberAppsApiResponse>(API_PATHS.MEMBER_APPS(membershipId), { signal });
-  return toMemberApps(response.data.data);
-};
-
-/**
- * PUT /members/{id}/apps — replaces the apps and the hidden parts, in one
- * request so the two never disagree. Online-only for the reason `updateMember`
- * gives: access must not wait in a queue.
- */
-export const setMemberApps = async (
-  membershipId: string,
-  grants: readonly MemberAppGrant[],
-  hidden: readonly string[]
-): Promise<MemberApps> => {
-  const response = await api.put<MemberAppsApiResponse>(API_PATHS.MEMBER_APPS(membershipId), { grants, hidden });
-  return toMemberApps(response.data.data);
-};
-export const setMemberAppsWriteClass: TWriteClass = 'online-only';

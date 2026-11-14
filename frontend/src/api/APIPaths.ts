@@ -72,6 +72,10 @@ export const API_PATHS = {
   MEMBER_UNBLOCK: (membershipId: string) => `/members/${seg(membershipId)}/unblock`,
   MEMBER_REMOVE: (membershipId: string) => `/members/${seg(membershipId)}/remove`,
   MEMBER_APPS: (membershipId: string) => `/members/${seg(membershipId)}/apps`,
+  // Owner, 14 Nov 2026 — access groups and one member's access, per app.
+  MEMBER_ACCESS: (membershipId: string) => `/members/${seg(membershipId)}/access`,
+  ACCESS_GROUPS: '/access-groups',
+  ACCESS_GROUP: (groupId: string) => `/access-groups/${seg(groupId)}`,
   INVITATIONS: '/invitations',
   INVITATION: (id: string) => `/invitations/${seg(id)}`,
   /** PLT-05 FR-10 — the seat-consuming accept. */

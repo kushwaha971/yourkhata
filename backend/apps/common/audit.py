@@ -60,6 +60,7 @@ class AuditAction:
     MEMBER_ROLE_CHANGED = "member.role_changed"
     # docs/platform/14 §6 decision 1 — which apps a member is in, and as what.
     MEMBER_APPS_CHANGED = "member.apps_changed"
+    ACCESS_GROUP_CHANGED = "access_group.changed"
     MEMBER_REMOVED = "member.removed"
     # Owner, 12 Oct 2026 — the manager's half of the team screen: a name
     # corrected, and a member locked out (`suspended`) and let back in.

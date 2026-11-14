@@ -54,6 +54,8 @@ export interface MemberColumnDeps {
   /** Owner, 12 Oct 2026 — who is looking, for `memberActionsFor`. */
   readonly viewer: MemberActionViewer;
   readonly onOpenActions: (membershipId: string) => void;
+  /** Owner, 14 Nov 2026 — the open app's name: a column says each member's group there. */
+  readonly appLabel?: string | null;
 }
 
 export const createMemberColumns = ({
@@ -64,6 +66,7 @@ export const createMemberColumns = ({
   onRegenerate,
   viewer,
   onOpenActions,
+  appLabel,
 }: MemberColumnDeps): readonly UbDataGridColumn<Member>[] => [
   {
     id: 'name',
@@ -100,6 +103,34 @@ export const createMemberColumns = ({
       );
     },
   },
+  ...(appLabel
+    ? [
+        {
+          id: 'group',
+          header: t('team.members.column.group', { app: appLabel }),
+          // Before the role: a phone card shows the first two lines only, and
+          // on this page the group says more than the role.
+          priority: 1 as const,
+          cardSlot: 'meta' as const,
+          widthShare: 18,
+          cell: (member: Member) => {
+            const access = member.access;
+            const label = !access
+              ? ''
+              : !access.canUse
+                ? t('team.access.cannotUse', { app: appLabel })
+                : (access.groupName ?? t('team.access.noGroup'));
+            return (
+              <MemberRoleCell
+                label={label}
+                caption={access && access.canUse && access.changes > 0 ? t('team.access.changes', { count: access.changes }) : null}
+                inactive={Boolean(access && !access.canUse)}
+              />
+            );
+          },
+        },
+      ]
+    : []),
   {
     id: 'role',
     header: t('team.members.column.role'),

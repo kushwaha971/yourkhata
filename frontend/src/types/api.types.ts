@@ -61,6 +61,7 @@ export type ApiErrorCode =
   | 'otp_invalid'
   | 'otp_throttled'
   | 'login_throttled'
+  | 'group_has_members'
   | 'token_stale'
   | 'invalid_token'
   | 'session_revoked'

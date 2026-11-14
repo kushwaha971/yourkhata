@@ -124,6 +124,7 @@
     "appSetup.": "appSetup",
     "shopSearch.": "counterSearch",
     "billDetail.": "salesDetail",
-    "counterRegister.": "counterRegister"
+    "counterRegister.": "counterRegister",
+    "team.access.": "teamAccess"
   }
 }

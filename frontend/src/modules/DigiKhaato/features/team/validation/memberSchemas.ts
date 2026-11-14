@@ -22,6 +22,8 @@ export interface AddMemberFormValues {
   fullName: string;
   role: MemberRoleCode;
   mobile: string;
+  /** Owner, 14 Nov 2026 — the access group in the open app; 'none' for no group. */
+  groupId?: string;
 }
 
 /**
@@ -69,6 +71,7 @@ export const useMemberSchemas = (
         // OTP, so it is required (and Indian — the field is locked to +91,
         // because the sign-in code is sent to India only).
         mobile: v.mobileValidation(true).nonNullable().defined(),
+        groupId: Yup.string().optional(),
       }),
       editMemberSchema: Yup.object({
         fullName: v.nameValidation().defined(),

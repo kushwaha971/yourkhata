@@ -34,7 +34,9 @@ export interface MemberActionsMenuProps {
   readonly onUnblock: (membershipId: string) => void;
   readonly onRemove: (membershipId: string) => void;
   readonly onRegenerate: (membershipId: string) => void;
-  readonly onApps: (membershipId: string) => void;
+  readonly onAccess: (membershipId: string) => void;
+  /** The open app's name; no Access row when no app (or a person's own app) is open. */
+  readonly appLabel: string | null;
 }
 
 export function MemberActionsMenu({
@@ -47,7 +49,8 @@ export function MemberActionsMenu({
   onUnblock,
   onRemove,
   onRegenerate,
-  onApps,
+  onAccess,
+  appLabel,
 }: Readonly<MemberActionsMenuProps>): React.JSX.Element | null {
   /* `UbActionSheet` closes the sheet before a row acts (WP-03 D-04a): the
      dialog a row opens must not sit under a still-mounted sheet. */
@@ -75,13 +78,13 @@ export function MemberActionsMenu({
         onSelect: () => run(onEdit),
       });
     }
-    if (actions.apps) {
+    if (actions.access && appLabel) {
       list.push({
-        key: 'apps',
-        label: t('team.member.apps.action'),
-        caption: t('team.member.apps.caption'),
+        key: 'access',
+        label: t('team.member.access.action'),
+        caption: t('team.member.access.caption', { app: appLabel }),
         icon: <LayoutGrid className="h-5 w-5" />,
-        onSelect: () => run(onApps),
+        onSelect: () => run(onAccess),
       });
     }
     if (actions.regenerate) {
@@ -120,7 +123,7 @@ export function MemberActionsMenu({
       });
     }
     return list;
-  }, [actions, t, run, onEdit, onApps, onRegenerate, onUnblock, onBlock, onRemove]);
+  }, [actions, appLabel, t, run, onEdit, onAccess, onRegenerate, onUnblock, onBlock, onRemove]);
 
   if (!member) return null;
 

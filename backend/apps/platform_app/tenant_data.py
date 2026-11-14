@@ -90,4 +90,8 @@ register(
     # A9b (PLT-X08): the calendar's dated closures — configuration the merchant
     # keyed in, so it travels with the export.
     TenantTable("platform.ClosedDay", export_name="closed_days.csv"),
+    # Owner, 14 Nov 2026 — access groups are configuration the owner keyed in.
+    # Members' rows in them go with their membership (CASCADE), so the deletion
+    # job reaches an empty group.
+    TenantTable("platform.AccessGroup", export_name="access_groups.csv"),
 )
