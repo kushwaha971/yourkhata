@@ -87,9 +87,18 @@ EDITABLE_FIELDS = (
     "track_stock",
     "reorder_point",
     "description",
+    "rack",
+    "fits_vehicle",
+    "tracking",
+    "warranty_months",
+    "salt",
+    "schedule",
 )
 
 AUDITED_FIELDS = EDITABLE_FIELDS
+
+#: G4 — the drug schedules a medicine can carry; "" is none.
+SCHEDULES = ("", "H", "H1", "X")
 
 
 # ── BR-2: the auto-SKU algorithm ─────────────────────────────────────────────
@@ -348,6 +357,44 @@ def _validate(*, ctx: Ctx, data: dict, item: Item | None) -> tuple[dict, Errors,
             )
         cleaned["description"] = description
 
+    # D P3 — IMEI / serial tracking and the warranty a sale starts.
+    if has("tracking"):
+        tracking = data.get("tracking") or "none"
+        if tracking not in ("none", "serial", "batch"):
+            errors.add("tracking", "Choose none, serial or batch.", "invalid")
+        elif item is not None and tracking != item.tracking and StockMovement.objects.filter(item=item).exists():
+            errors.add("tracking", "Tracking can't change once stock has moved.", "tracking_locked")
+        cleaned["tracking"] = tracking
+    if has("warranty_months"):
+        raw = data.get("warranty_months")
+        try:
+            months = int(raw) if raw not in (None, "") else None
+        except (TypeError, ValueError):
+            months = -1
+        if months is not None and not (0 <= months <= 120):
+            errors.add("warranty_months", "Enter 0 to 120 months.", "invalid")
+        cleaned["warranty_months"] = months
+
+    # D P1b — the part's shelf and the vehicles it fits: short free text.
+    for key, limit in (("rack", 16), ("fits_vehicle", 120)):
+        if has(key):
+            text = clean_text(data.get(key) or "") or None
+            if text and len(text) > limit:
+                errors.add(key, f"Keep it under {limit} characters.", "max_length")
+            cleaned[key] = text
+
+    # G4 — a medicine's salt and its drug schedule.
+    if has("salt"):
+        text = clean_text(data.get("salt") or "") or None
+        if text and len(text) > 160:
+            errors.add("salt", "Keep it under 160 characters.", "max_length")
+        cleaned["salt"] = text
+    if has("schedule"):
+        schedule = str(data.get("schedule") or "").strip().upper()
+        if schedule not in SCHEDULES:
+            errors.add("schedule", "Choose None, H, H1 or X.", "invalid")
+        cleaned["schedule"] = schedule
+
     # Cross-field: selling ≤ MRP, compared tax-inclusive (§10).
     mrp = current("mrp")
     selling = current("selling_price")
@@ -539,7 +586,16 @@ def create_item(*, ctx: Ctx, payload: dict) -> dict:
     """FR-1/FR-2/FR-7 — `{item, warnings}`; opening stock in the same transaction."""
     cleaned, errors, warnings = _validate(ctx=ctx, data=payload, item=None)
     opening = None
-    if payload.get("opening_stock"):
+    if payload.get("opening_stock") and cleaned.get("tracking") in ("serial", "batch"):
+        # D P3 — every phone in stock has its IMEI; an opening quantity has none.
+        errors.add(
+            "opening_stock",
+            "Add IMEI items through a purchase, so each number is recorded."
+            if cleaned.get("tracking") == "serial"
+            else "Add batch items through a purchase, so each batch and expiry is recorded.",
+            "serials_required" if cleaned.get("tracking") == "serial" else "batches_required",
+        )
+    elif payload.get("opening_stock"):
         if not cleaned.get("track_stock"):
             errors.add(
                 "opening_stock",
@@ -581,6 +637,13 @@ def create_item(*, ctx: Ctx, payload: dict) -> dict:
                 details={},
             )
 
+    from apps.inventory.services.units import set_codes, set_units
+
+    set_units(ctx=ctx, item=item, raw=payload.get("units"))
+    set_codes(ctx=ctx, item=item, raw=payload.get("part_numbers"))
+    from apps.inventory.services.units import set_addons
+
+    set_addons(ctx=ctx, item=item, raw=payload.get("addons"))
     if item.track_stock and opening is None:
         # Without an opening the row starts at 0 and its level is initialised
         # silently. WITH one it is left at `ok`, so the opening post is
@@ -601,7 +664,25 @@ def create_item(*, ctx: Ctx, payload: dict) -> dict:
     )
     if opening is not None:
         _post_opening(ctx=ctx, item=item, opening=opening, path="create")
+    if payload.get("tag"):
+        _add_first_tag(ctx=ctx, item=item, raw=payload["tag"])
     return {"item": item, "warnings": warnings}
+
+
+def _add_first_tag(*, ctx: Ctx, item: Item, raw: Any) -> None:
+    """G2a — design D3 draws "Tag details" on the Add item form: the item and
+    its first piece are saved together or not at all (this runs inside
+    `create_item`'s transaction). The tag's refusals come back under `tag.`."""
+    from apps.inventory.services.tags import add_tag
+    from apps.platform_app.selectors.business_words import features_of
+
+    if "jewellery" not in features_of(ctx.tenant) or not isinstance(raw, dict):
+        raise ValidationFailed({"tag": ["Tags are not used by this business."]})
+    try:
+        add_tag(ctx=ctx, item=item, data=raw)
+    except ValidationFailed as exc:
+        details = getattr(exc, "details", None) or {}
+        raise ValidationFailed({f"tag.{k}": v for k, v in details.items() if k != "field_codes"}) from None
 
 
 def _insert(*, ctx: Ctx, fields: dict, sku: str) -> Item:
@@ -696,6 +777,15 @@ def update_item(*, ctx: Ctx, item_id: Any, payload: dict, can_adjust_stock: bool
             )
     if errors:
         raise ValidationFailed(errors.payload())
+    if "addons" in payload:
+        from apps.inventory.services.units import set_addons
+
+        set_addons(ctx=ctx, item=item, raw=payload.get("addons"))
+    if "units" in payload or "part_numbers" in payload:
+        from apps.inventory.services.units import set_codes, set_units
+
+        set_units(ctx=ctx, item=item, raw=payload.get("units"))
+        set_codes(ctx=ctx, item=item, raw=payload.get("part_numbers"))
     if turning_off:
         stock = ItemStock.objects.select_for_update().filter(item=item, location=location).first()
         if stock is not None and stock.on_hand != 0:

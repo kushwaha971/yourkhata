@@ -83,7 +83,7 @@ describe('PartyTagsPageContent', () => {
     renderWithProviders(<PartyTagsPageContent />);
 
     expect(await screen.findByText('Camp Area')).toBeInTheDocument();
-    expect(screen.getByText('34 parties')).toBeInTheDocument();
+    expect(screen.getByText('34 contacts')).toBeInTheDocument();
   });
 
   it('words an unused tag rather than printing a nought', async () => {
@@ -101,14 +101,14 @@ describe('PartyTagsPageContent', () => {
   it('makes the count a way in to the parties it counts', async () => {
     /**
      * A statistic becomes a route. The link is NAMED for a screen reader,
-     * because "34 parties" repeated down a column is a set of links called
+     * because "34 contacts" repeated down a column is a set of links called
      * nothing, and it filters by NAME because that is what the party list's
      * `tag` parameter takes and what a person reading the URL can check.
      */
     renderWithProviders(<PartyTagsPageContent />);
 
     const link = await screen.findByRole('link', {
-      name: 'Show the 34 parties tagged Camp Area',
+      name: 'Show the 34 contacts tagged Camp Area',
     });
     expect(link).toHaveAttribute('href', '/parties?tag=Camp%20Area');
   });
@@ -134,7 +134,7 @@ describe('PartyTagsPageContent', () => {
     expect(tagService.countTagParties).toHaveBeenCalledWith(CAMP.id);
     expect(
       await screen.findByText(
-        'It will be taken off 36 parties. Every one of them stays, with their other tags.'
+        'It will be taken off 36 contacts. Every one of them stays, with their other tags.'
       )
     ).toBeInTheDocument();
   });
@@ -204,7 +204,7 @@ describe('PartyTagsPageContent', () => {
     await user.click(await screen.findByRole('option', { name: 'Deccan' }));
 
     expect(
-      await screen.findByText('34 parties will move to “Deccan”. “Camp Area” will be deleted.')
+      await screen.findByText('34 contacts will move to “Deccan”. “Camp Area” will be deleted.')
     ).toBeInTheDocument();
   });
 

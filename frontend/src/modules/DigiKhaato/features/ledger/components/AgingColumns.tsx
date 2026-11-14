@@ -1,4 +1,6 @@
-import { UbAmount, UbLink, UbText } from 'src/design-system';
+import { MoreHorizontal } from 'lucide-react';
+
+import { UbAmount, UbButton, UbLink, UbText } from 'src/design-system';
 import type { UbDataGridColumn, UbGridTier } from 'src/design-system/UbDataGrid';
 import type { TranslateFn } from 'src/hooks/useTranslation';
 import { formatInr } from 'src/utils/money';
@@ -44,6 +46,10 @@ export interface AgingColumnDeps {
   readonly kind: AgingKind;
   readonly asOf: string;
   readonly tier: UbGridTier;
+  readonly book?: 'main' | 'shop';
+  /** 09 §10.7 — the Shop's table: a last column that opens the row's sheet
+   *  (Remind, Receive payment or Pay, and every bucket). */
+  readonly onActions?: (row: AgingRow) => void;
 }
 
 const BUCKET_WIDTH = 11;
@@ -53,6 +59,8 @@ export const createAgingColumns = ({
   kind,
   asOf,
   tier,
+  book = 'main',
+  onActions,
 }: AgingColumnDeps): readonly UbDataGridColumn<AgingRow>[] => {
   const isCards = tier === 'cards';
   const bucketLabel = (bucket: AgingBucket) => t(bucketLabelId(bucket));
@@ -82,7 +90,7 @@ export const createAgingColumns = ({
       }
       return (
         <UbLink
-          href={bucketStatementHref(row.partyId, bucket, asOf)}
+          href={bucketStatementHref(row.partyId, bucket, asOf, book)}
           variant="body-sm"
           className="ds-num"
           aria-label={t('ledger.aging.cell.label', {
@@ -109,7 +117,7 @@ export const createAgingColumns = ({
         isCards ? (
           row.partyName
         ) : (
-          <UbLink href={rowStatementHref(row.partyId, asOf)} variant="body-sm-medium">
+          <UbLink href={rowStatementHref(row.partyId, asOf, book)} variant="body-sm-medium">
             {row.partyName}
           </UbLink>
         ),
@@ -127,6 +135,10 @@ export const createAgingColumns = ({
            half of the line that answers the report's question. */
         if (isCards) {
           const oldest = oldestBucket(row.amounts);
+          // The whole balance in one bucket: the amount is already the row's
+          // figure on the right, so the line says only how old it is (audit
+          // A16 — "₹4,150.00 · 31–60 days" beside "₹4,150.00").
+          if (oldest && oldest.amount === row.amounts.total) return bucketLabel(oldest.bucket);
           return oldest
             ? t('ledger.aging.oldest', {
                 amount: formatInr(oldest.amount),
@@ -169,5 +181,30 @@ export const createAgingColumns = ({
         />
       ),
     },
+    ...(onActions
+      ? [
+          {
+            id: 'actions',
+            header: t('ledger.aging.column.actions'),
+            headerHidden: true,
+            priority: 1 as const,
+            align: 'end' as const,
+            cardSlot: 'none' as const,
+            widthShare: 8,
+            cell: (row: AgingRow) => (
+              <UbButton
+                variant="ghost"
+                size="sm"
+                iconOnly
+                icon={<MoreHorizontal className="h-4 w-4" aria-hidden />}
+                onClick={() => onActions(row)}
+                data-testid="aging-row-actions"
+              >
+                {t('ledger.aging.more', { name: row.partyName })}
+              </UbButton>
+            ),
+          },
+        ]
+      : []),
   ];
 };

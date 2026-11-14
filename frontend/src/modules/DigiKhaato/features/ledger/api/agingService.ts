@@ -33,6 +33,7 @@ interface AgingApiResponse {
     readonly page: number;
     readonly page_size: number;
     readonly total: number;
+    readonly has_any?: boolean;
   };
 }
 
@@ -55,6 +56,7 @@ export const getLedgerAging = async (
 ): Promise<AgingPage> => {
   const response = await api.get<AgingApiResponse>(
     `${API_PATHS.LEDGER_AGING}${toQueryString({
+      book: filters.book === 'shop' ? 'shop' : undefined,
       type: filters.kind,
       as_of: filters.asOf || undefined,
       tag: filters.tag || undefined,
@@ -77,12 +79,16 @@ export const getLedgerAging = async (
     page: meta.page,
     pageSize: meta.page_size,
     total: meta.total,
+    ...(typeof meta.has_any === 'boolean' ? { hasAny: meta.has_any } : {}),
   };
 };
 
-export const getLedgerSummary = async (signal?: AbortSignal): Promise<LedgerSummary> => {
+export const getLedgerSummary = async (
+  signal?: AbortSignal,
+  book: 'main' | 'shop' = 'main'
+): Promise<LedgerSummary> => {
   const response = await api.get<{ data: LedgerSummary }>(
-    API_PATHS.LEDGER_SUMMARY,
+    `${API_PATHS.LEDGER_SUMMARY}${book === 'shop' ? '?book=shop' : ''}`,
     ubConfig({ signal })
   );
   return { receivable: response.data.data.receivable, payable: response.data.data.payable };
@@ -97,10 +103,33 @@ export const getLedgerSummary = async (signal?: AbortSignal): Promise<LedgerSumm
  */
 export const agingCsvUrl = (filters: AgingFilters): string => {
   const query = toQueryString({
+    book: filters.book === 'shop' ? 'shop' : undefined,
     type: filters.kind,
     as_of: filters.asOf || undefined,
     tag: filters.tag || undefined,
     ordering: filters.ordering || undefined,
   });
   return absoluteApiUrl(`${API_PATHS.LEDGER_AGING}${query}${query ? '&' : '?'}format=csv`);
+};
+
+/**
+ * RPT-05 FR-9 — the same view as the REPORT's file: FR-5's collection-sheet
+ * columns (mobile, tags, collection date, oldest entry, last payment) and a
+ * TOTAL row, from `/reports/receivables-aging` or `/payables-aging`. The
+ * screen offers it when the reports module is on and the reader may read
+ * reports; otherwise it keeps LED-09's own file above.
+ */
+export const agingReportCsvUrl = (filters: AgingFilters): string => {
+  const query = toQueryString({
+    as_of: filters.asOf || undefined,
+    tag: filters.tag || undefined,
+    ordering: filters.ordering || undefined,
+    book: filters.book === 'shop' ? 'shop' : undefined,
+    format: 'csv',
+  });
+  const path =
+    filters.kind === 'payable'
+      ? API_PATHS.REPORT_PAYABLES_AGING
+      : API_PATHS.REPORT_RECEIVABLES_AGING;
+  return absoluteApiUrl(`${path}${query}`);
 };

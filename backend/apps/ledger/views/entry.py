@@ -13,6 +13,7 @@ from rest_framework import mixins, viewsets
 from rest_framework.decorators import action
 from rest_framework.permissions import SAFE_METHODS, IsAuthenticated
 
+from apps.common.book_access import BookAccessMixin, allowed_books
 from apps.common.constants import ModuleCode
 from apps.common.context import Ctx
 from apps.common.idempotency import idempotent
@@ -24,7 +25,14 @@ from apps.common.viewsets import TenantScopeMixin
 from apps.ledger.constants import EntryType
 from apps.ledger.models import LedgerEntry
 from apps.ledger.permissions import LedgerEntryPermissions
-from apps.ledger.selectors.entry import TIMELINE_ORDERING, party_entries, party_ledger_summary
+from apps.ledger.selectors.entry import (
+    BOOK_BUCKETS,
+    TIMELINE_ORDERING,
+    book_of,
+    party_entries,
+    party_ledger_summary,
+)
+from apps.ledger.selectors.sources import resolve_sources
 from apps.ledger.selectors.statement import (
     live_total_from_summary,
     timeline_carried,
@@ -45,6 +53,7 @@ from apps.ledger.services.opening import post_opening_balance
 
 
 class LedgerEntryViewSet(
+    BookAccessMixin,
     TenantScopeMixin,
     mixins.CreateModelMixin,
     mixins.ListModelMixin,
@@ -104,6 +113,24 @@ class LedgerEntryViewSet(
             return TimelineEntrySerializer
         return LedgerEntrySerializer
 
+    def permission_books(self, request: Any, codename: str) -> tuple[str, ...]:
+        if self.action in ("retrieve", "reverse", "correct"):
+            row = (
+                LedgerEntry.objects.for_tenant(self.get_tenant())
+                .filter(pk=self.kwargs.get("pk"))
+                .first()
+            )
+            if row is not None and row.bucket not in allowed_books(request, codename):
+                from django.http import Http404
+
+                raise Http404
+            # The handler returns the same 404 for a missing or inaccessible id.
+            return ()
+        # Manual ledger writes always post in main, regardless of query parameters.
+        if self.action == "create":
+            return ("main",)
+        return super().permission_books(request, codename)
+
     def _include_reversed(self) -> bool:
         """LED-03 BR-5 — `?include_reversed=true` and nothing else.
 
@@ -113,6 +140,10 @@ class LedgerEntryViewSet(
         getting it wrong.
         """
         return self.request.query_params.get("include_reversed", "").lower() == "true"
+
+    def _buckets(self) -> Any:
+        """DEC-019 — `?book=shop` reads the Shop's lines; anything else, the Udhaar book's."""
+        return BOOK_BUCKETS[book_of(self.request.query_params.get("book"))]
 
     def get_queryset(self) -> Any:
         """Scoped to the tenant, and to the party the caller named.
@@ -125,10 +156,15 @@ class LedgerEntryViewSet(
         party_id = self.request.query_params.get("party")
         if not party_id:
             return LedgerEntry.objects.none()
+        buckets = self._buckets()
         return with_running_balance(
             party_entries(
-                tenant=tenant, party_id=party_id, include_reversed=self._include_reversed()
-            )
+                tenant=tenant,
+                party_id=party_id,
+                include_reversed=self._include_reversed(),
+                buckets=buckets,
+            ),
+            buckets,
         )
 
     def _ctx(self, request: Any) -> Ctx:
@@ -171,15 +207,27 @@ class LedgerEntryViewSet(
         # query the summary would have been.
         carried = None
         if party_id and not cursor:
-            summary = party_ledger_summary(tenant=self.get_tenant(), party_id=party_id)
+            summary = party_ledger_summary(
+                tenant=self.get_tenant(), party_id=party_id, buckets=self._buckets()
+            )
             meta["summary"] = LedgerSummarySerializer(summary).data
             carried = live_total_from_summary(summary)
         elif party_id:
             carried = timeline_carried(
-                tenant=self.get_tenant(), party_id=party_id, position=decode_cursor(cursor)
+                tenant=self.get_tenant(),
+                party_id=party_id,
+                position=decode_cursor(cursor),
+                buckets=self._buckets(),
             )
         serializer = self.get_serializer(
-            page, many=True, context={**self.get_serializer_context(), "carried": carried}
+            page,
+            many=True,
+            context={
+                **self.get_serializer_context(),
+                "carried": carried,
+                # LED-10 FR-5 — the page's document numbers, one query per type.
+                "sources": resolve_sources(page or []),
+            },
         )
         return StandardResponse.ok(serializer.data, meta=meta)
 
@@ -356,12 +404,15 @@ class PartyLedgerEntryViewSet(LedgerEntryViewSet):
     def get_queryset(self) -> Any:
         # CR-027 — the window rides on the page query; `list` adds the carried
         # figure. See `with_running_balance`.
+        buckets = self._buckets()
         return with_running_balance(
             party_entries(
                 tenant=self.get_tenant(),
                 party_id=self.kwargs.get("party_pk"),
                 include_reversed=self._include_reversed(),
-            )
+                buckets=buckets,
+            ),
+            buckets,
         )
 
     def _party_id(self) -> Any:

@@ -37,7 +37,19 @@ export type LedgerEntryType =
   | 'write_off'
   | 'interest'
   | 'reversal'
-  | 'correction';
+  | 'correction'
+  /* A2 (ADR-048) — posted by the engines and verticals: a non-document amount owed
+     (a fine, a fee, a due in ledger mode), and a reduction of what is owed with no
+     money moving (a waiver, a discount). */
+  | 'charge'
+  | 'adjustment_credit';
+
+/**
+ * A2 (ADR-043), DEC-019 — which app's money a line is: `main` the Udhaar book,
+ * `shop` the Shop's bills and payments, `loan` lending's, `library` the
+ * library's, and `deposit` money HELD for the party and returnable.
+ */
+export type LedgerBucket = 'main' | 'shop' | 'loan' | 'library' | 'deposit';
 
 export type LedgerSourceType =
   'manual' | 'sales_document' | 'purchase_document' | 'payment' | 'expense' | 'ledger_entry';
@@ -80,11 +92,17 @@ export interface LedgerEntryApiRow {
    * carry none. Optional so an older server reads as "not known".
    */
   readonly running_balance?: string | null;
-  /** CR-027 — the document link; `null` for every manual row. Not mapped yet: nothing links. */
+  /** A2 — additive; absent from an older server, which reads as `main`. */
+  readonly bucket?: LedgerBucket;
+  /** CR-027 / LED-10 FR-5 — the document link; `null` for every manual row. */
   readonly source?: {
     readonly type: string;
     readonly id: string;
     readonly number: string | null;
+    readonly status?: string | null;
+    readonly kind?: string | null;
+    /** A4b — present (true) only on the lines of a deposit ADJUSTMENT. */
+    readonly adjustment?: boolean;
   } | null;
 }
 
@@ -122,6 +140,24 @@ export interface LedgerEntry {
    * it. Absent means "not known", which the row renders as no caption at all.
    */
   readonly runningBalance?: string | null;
+  /**
+   * LED-10 FR-5 — the document this line came from (an invoice, a receipt, an
+   * expense), resolved by the server with its number and current status.
+   * Absent on a manual line and on a row spliced in from a 201.
+   */
+  readonly source?: LedgerEntrySource;
+  /** A2 — absent reads as `main` (an older server, a fixture, a row spliced from a 201). */
+  readonly bucket?: LedgerBucket;
+}
+
+export interface LedgerEntrySource {
+  readonly type: string;
+  readonly id: string;
+  readonly number: string | null;
+  readonly status: string | null;
+  readonly kind: string | null;
+  /** A4b — the line of a deposit adjustment (see `entryAmountView`). */
+  readonly adjustment?: true;
 }
 
 /**
@@ -133,12 +169,13 @@ export interface LedgerEntry {
  * the body the day somebody spreads the form values.
  */
 export interface LedgerEntryFormValues {
+  readonly simple?: boolean;
   readonly direction: LedgerDirection;
   /** Decimal string. Never a number (R-TS-7). */
   readonly amount: string;
   readonly entryDate: string;
   readonly note: string;
-  /** Required when `direction` is `credit`; ignored by the server otherwise. */
+  /** Required for a legacy credit; personal `simple` entries may leave it unspecified. */
   readonly paymentMode: PaymentMode | '';
   /** Which UPI app, when the mode is `upi`; optional even then. */
   readonly upiApp: UpiApp | '';

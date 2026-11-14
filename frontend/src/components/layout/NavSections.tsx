@@ -3,9 +3,10 @@
 import { usePathname } from 'next/navigation';
 
 import { UbLink, UbStack, UbText } from 'src/design-system';
-import { useTranslation } from 'src/hooks/useTranslation';
 import { cn } from 'src/utils/cn';
 
+import { activeNavHref } from 'modules/DigiKhaato/features/navigation/activeNav';
+import { useAppWords } from 'modules/DigiKhaato/features/navigation/useAppWords';
 import { useNavigation } from 'modules/DigiKhaato/features/navigation/useNavigation';
 
 /**
@@ -21,15 +22,26 @@ import { useNavigation } from 'modules/DigiKhaato/features/navigation/useNavigat
  * (Zoho-style), which is why this uses the on-nav text tokens rather than
  * `--text-primary`.
  *
+ * Only the open app's menu lives here. Which app, like which business, is
+ * chosen in the business switcher above it (owner, 5 Oct 2026: no app row in
+ * the sidebar) — so the list never moves when a person changes app.
+ *
  * `onNavigate` exists for the drawer: a rail stays open when you follow a link,
  * a drawer must close. The rail passes nothing.
  */
 export function NavSections({
   onNavigate,
-}: Readonly<{ onNavigate?: () => void }>): React.JSX.Element {
+}: Readonly<{
+  onNavigate?: () => void;
+}>): React.JSX.Element {
   const pathname = usePathname();
-  const { t } = useTranslation();
+  // B2: menu words are the business's own (a medical store's Distributors).
+  const { w } = useAppWords();
   const { sections } = useNavigation();
+  const currentHref = activeNavHref(
+    pathname,
+    sections.flatMap((section) => section.items.map((item) => item.href))
+  );
 
   return (
     <UbStack gap={0} as="div" className="min-h-0 flex-1">
@@ -39,13 +51,13 @@ export function NavSections({
           <UbText
             as="span"
             variant="inherit"
-            className="ds-nav-caption-medium px-2 pb-0.5 text-text-muted"
+            className="ds-nav-caption-medium px-2 pb-0.5 text-text-onNavMuted opacity-80"
           >
-            {t(section.labelId)}
+            {w(section.labelId)}
           </UbText>
           {section.items.map((item) => {
             const Icon = item.icon;
-            const active = pathname === item.href || pathname.startsWith(`${item.href}/`);
+            const active = item.href === currentHref;
 
             const inner = (
               <>
@@ -62,10 +74,13 @@ export function NavSections({
                 <UbText
                   as="span"
                   variant="inherit"
-                  truncate
-                  className={cn('flex-1', active ? 'ds-nav-label-medium' : 'ds-nav-label-regular')}
+                  tone="inherit"
+                  className={cn(
+                    'line-clamp-2 min-w-0 flex-1 break-words',
+                    active ? 'ds-nav-label-medium' : 'ds-nav-label-regular'
+                  )}
                 >
-                  {t(item.labelId)}
+                  {w(item.labelId)}
                 </UbText>
               </>
             );
@@ -95,8 +110,13 @@ export function NavSections({
                 className={cn(
                   row,
                   active
-                    ? 'border-border-navActive bg-surface-navActive text-text-onNav'
-                    : 'border-transparent text-text-onNavMuted hover:bg-surface-navHover hover:text-text-onNav'
+                    ? // Revamp (Counter Mode v5): a marigold edge marks the
+                      // current row on the dark teal rail, drawn inside the
+                      // box so the label does not move.
+                      'border-border-navActive bg-surface-navActive text-text-onNav shadow-[inset_3px_0_0_hsl(var(--cta))]'
+                    : // Revamp F2: pressed is the current row's tint, so a press
+                      // shows under a mouse too (it was the hover style only).
+                      'border-transparent text-text-onNavMuted hover:bg-surface-navHover hover:text-text-onNav active:bg-surface-navActive'
                 )}
               >
                 {inner}

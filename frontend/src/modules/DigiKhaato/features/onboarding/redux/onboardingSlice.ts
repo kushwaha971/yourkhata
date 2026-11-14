@@ -11,6 +11,7 @@ import {
   completeOnboarding,
   createTenant,
   findResumableBusiness,
+  loadOfferedApps,
   resumeOnboarding,
   saveAddressStep,
   saveBusinessStep,
@@ -19,6 +20,7 @@ import {
 
 import type { BusinessType, GstType } from '../constants/businessTypes';
 import type {
+  OfferedApp,
   OnboardingAddress,
   OnboardingTenant,
   OnboardingWarning,
@@ -39,8 +41,11 @@ import type {
 export interface OnboardingDraft {
   name: string;
   businessType: BusinessType | null;
+  sellsWholesale: boolean;
   stateCode: string | null;
   ownerName: string | null;
+  /** The apps chosen on step 1; `null` until chosen or read back. */
+  apps: string[] | null;
   gstType: GstType;
   gstin: string | null;
   legalName: string | null;
@@ -97,6 +102,12 @@ export interface OnboardingState {
   resumable: ResumableBusiness | null;
   /** The lifecycle of that read; `idle` until "Add a business" needs it. */
   resumableStatus: RequestStatus;
+  /**
+   * The apps a new business may choose (`GET /onboarding/apps`). `null` when
+   * the server offered none — step 1 then asks no app question.
+   */
+  offeredApps: OfferedApp[] | null;
+  offeredStatus: RequestStatus;
 }
 
 /** Just enough of the business to name it on step 1. */
@@ -117,8 +128,10 @@ const emptyAddress: OnboardingAddress = {
 const initialDraft: OnboardingDraft = {
   name: '',
   businessType: null,
+  sellsWholesale: false,
   stateCode: null,
   ownerName: null,
+  apps: null,
   // §8 — "Default GST choice is 'Not registered'", which is the true state of
   // most of the businesses this product is for.
   gstType: 'unregistered',
@@ -144,6 +157,8 @@ const initialState: OnboardingState = {
   resumeStatus: 'idle',
   resumable: null,
   resumableStatus: 'idle',
+  offeredApps: null,
+  offeredStatus: 'idle',
 };
 
 /** Fold a server tenant back into the draft, so a resume shows real values. */
@@ -152,6 +167,8 @@ const applyTenant = (state: Draft<OnboardingState>, tenant: OnboardingTenant): v
   state.completedStep = Math.min(ONBOARDING_STEP_COUNT, tenant.onboardingStep);
   state.draft.name = tenant.name;
   state.draft.businessType = tenant.businessType;
+  state.draft.sellsWholesale = tenant.sellsWholesale;
+  if (tenant.apps && tenant.apps.length > 0) state.draft.apps = [...tenant.apps];
   state.draft.stateCode = tenant.stateCode;
   state.draft.gstType = tenant.gstType;
   state.draft.gstin = tenant.gstin;
@@ -254,7 +271,20 @@ const onboardingSlice = createSlice({
         state.resumable = { id: found.id, name: found.name, onboardingStep: found.onboardingStep };
         state.draft.name = found.name;
         state.draft.businessType = found.businessType;
+        state.draft.sellsWholesale = found.sellsWholesale;
+        if (found.apps && found.apps.length > 0) state.draft.apps = [...found.apps];
         state.draft.stateCode = found.stateCode;
+      })
+      .addCase(loadOfferedApps.pending, (state) => {
+        state.offeredStatus = 'loading';
+      })
+      .addCase(loadOfferedApps.fulfilled, (state, action) => {
+        state.offeredStatus = 'succeeded';
+        const offered = action.payload ?? [];
+        state.offeredApps = offered.length > 0 ? [...offered] : null;
+      })
+      .addCase(loadOfferedApps.rejected, (state, action) => {
+        state.offeredStatus = action.meta.aborted ? 'idle' : 'failed';
       })
       .addCase(findResumableBusiness.rejected, (state, action) => {
         state.resumableStatus = action.meta.aborted ? 'idle' : 'failed';
@@ -337,6 +367,8 @@ const onboardingSlice = createSlice({
               warnings: state.warnings,
               completed: state.completed,
               status: state.status,
+              offeredApps: state.offeredApps,
+              offeredStatus: state.offeredStatus,
             }
       );
   },
@@ -380,3 +412,9 @@ export const selectOnboardingResumableStatus = (state: RootState): RequestStatus
 /** NEW-1 — the lifecycle of reading the resumed business back from the server. */
 export const selectOnboardingResumeStatus = (state: RootState): RequestStatus =>
   state.onboarding.resumeStatus;
+
+/** The apps step 1 offers; `null` when the server offered no choice. */
+export const selectOnboardingOfferedApps = (state: RootState): readonly OfferedApp[] | null =>
+  state.onboarding.offeredApps;
+export const selectOnboardingOfferedStatus = (state: RootState): RequestStatus =>
+  state.onboarding.offeredStatus;

@@ -1,0 +1,139 @@
+import { Settings, Users, type LucideIcon } from 'lucide-react';
+
+import { ROUTES } from 'src/routes';
+import type { LedgerBook, ModuleCode, PermissionCode } from 'src/types/domain.types';
+
+/**
+ * docs/platform/14 §4.2 — an app's navigation is the APP's, declared in its own
+ * folder (`features/<app>/app.ts`), and listed once in `src/modules/appManifests.ts`.
+ *
+ * This replaced `sidebarConfig.ts`: one 498-line list of every row of every app,
+ * each tagged with a closed `'shop' | 'library' | 'lending'` union, so a new app
+ * meant editing shared files in six places and every app read from the same
+ * list. The shell now knows apps only through their manifests and never by name;
+ * an architecture test fails the build if shared code names one.
+ *
+ * Which apps a person may open, and which they are in, is the SERVER's
+ * (`apps`, `active_app` on the session, from its app registry and the person's
+ * grants). A manifest only says what the app looks like.
+ */
+export interface AppNavItem {
+  readonly key: string;
+  readonly icon: LucideIcon;
+  /** i18n key, never a literal. */
+  readonly labelId: string;
+  /** Absolute app path; `src/tests/routes.test.ts` proves a page is behind it. */
+  readonly href: string;
+  /** Gated by the tenant's effective modules (a capability, not the app). */
+  readonly module: ModuleCode;
+  /** Gated by the session's permissions. */
+  readonly permission: PermissionCode;
+  /**
+   * B2 / BP-22 #2 — gated by a business feature the server says is on: Sales
+   * orders, challans and purchase orders are `orders` (design E2 #6), shown
+   * only to the kinds that use them. Absent: every business has the row.
+   */
+  readonly feature?: string;
+  /** One of the manifest's own `sections`. */
+  readonly section: string;
+  readonly order: number;
+  /** Shown in the mobile bottom nav (max 4 + "More"). */
+  readonly bottomNav?: boolean;
+  /** The bottom-nav label, when the sidebar's is too long or names one half of a tab. */
+  readonly tabLabelId?: string;
+  /**
+   * docs/mobile-redesign/03 §3 — the bottom-nav row (by `key`) this page lives
+   * under on a phone: Suppliers under the Parties tab, Estimates under Bills.
+   * A page with neither `bottomNav` nor `tab` lights More.
+   */
+  readonly tab?: string;
+  /** Slice selector key for the badge count, if any. */
+  readonly badge?: 'overdueReminders' | 'lowStock' | 'unreadNotifications';
+}
+
+export interface AppNavSection {
+  readonly key: string;
+  readonly labelId: string;
+}
+
+export interface AppManifest {
+  /** The server's app code (`apps_registry`), e.g. `shop`, `library`. */
+  readonly code: string;
+  readonly labelId: string;
+  /**
+   * Revamp 04 §2–3 — the app's own mark: the phone's App button, the App
+   * sheet's tiles and the desktop rail's app list all draw it.
+   */
+  readonly icon: LucideIcon;
+  /** The App button's label when `labelId` is too long for a 64 px tab. */
+  readonly shortLabelId?: string;
+  /**
+   * Paths that belong to this app: a page under one opens this app's menu.
+   * Shared pages (a party's khata, a payment receipt, settings) belong to no
+   * app and keep the menu of the app the person is in.
+   */
+  readonly routePrefixes: readonly string[];
+  /** The app's own groups, in order. The platform's `account` group follows. */
+  readonly sections: readonly AppNavSection[];
+  /**
+   * Only built pages: the owner's rule is that an unbuilt feature is not shown,
+   * not even as an inert "Soon" row, so a row is added the day its page is.
+   */
+  readonly navigation: readonly AppNavItem[];
+  /**
+   * docs/platform/14 step 6 — the app's own words on pages every app shares.
+   * A map from a shared message id to this app's one: on a library's khata
+   * "Customer" is "Student", and "Back to customers" is "Back to students".
+   * Shared code asks `useAppWords().w(id)` and never names an app.
+   */
+  readonly words?: Readonly<Record<string, string>>;
+  /** Where "back to the list" goes from a shared person page (the khata). */
+  readonly peopleHref?: string;
+  /**
+   * DEC-019 — which ledger book the shared person page reads while this app is
+   * open: `main` is the Udhaar book (You gave / You got), `shop` is the Shop's
+   * bills and the payments against them. Each app shows only its own money, so
+   * a Shop customer's page never shows their udhaar figure. Absent is `main`.
+   */
+  readonly book?: LedgerBook;
+  /** What the shell offers while this app is open, by capability, never by name. */
+  readonly shell?: {
+    /** The top bar's party search (the Shop's customers and suppliers). */
+    readonly partySearch?: boolean;
+    /** The app opts into the permission-scoped command search in both headers. */
+    readonly commandSearch?: boolean;
+    /** Pages matching this trusted pattern provide their own Back control. */
+    readonly pageBackPattern?: string;
+    /** Pages matching this trusted pattern draw their own phone top bar (a
+     *  task screen: design §A4's bill, × and the title in the bar). */
+    readonly pageHeaderPattern?: string;
+  };
+}
+
+/** The platform's own rows, in every app: they belong to the business. */
+export const PLATFORM_SECTION: AppNavSection = { key: 'account', labelId: 'nav.section.account' };
+
+export const PLATFORM_NAV_ITEMS: readonly AppNavItem[] = [
+  {
+    key: 'team',
+    icon: Users,
+    labelId: 'nav.team',
+    href: ROUTES.SETTINGS_TEAM,
+    module: 'platform',
+    permission: 'platform.members.manage',
+    section: PLATFORM_SECTION.key,
+    order: 1,
+  },
+  {
+    key: 'settings',
+    icon: Settings,
+    labelId: 'nav.settings',
+    href: ROUTES.SETTINGS,
+    module: 'platform',
+    // The owner/admin/accountant gate: the three roles that may at least READ
+    // settings (PLT-06 §6). Staff open their own devices from the account menu.
+    permission: 'platform.audit.read',
+    section: PLATFORM_SECTION.key,
+    order: 2,
+  },
+];

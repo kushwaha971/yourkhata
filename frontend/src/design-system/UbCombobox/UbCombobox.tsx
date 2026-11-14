@@ -2,21 +2,19 @@
 
 import { forwardRef, memo, useCallback, useState } from 'react';
 
-import { Check, ChevronDown, Plus } from 'lucide-react';
+import { ChevronDown } from 'lucide-react';
 
-import {
-  MLCommand,
-  MLCommandEmpty,
-  MLCommandGroup,
-  MLCommandInput,
-  MLCommandItem,
-  MLCommandList,
-  MLPopover,
-  MLPopoverContent,
-  MLPopoverTrigger,
-} from 'src/design-system/primitives';
+import { MLPopover, MLPopoverContent, MLPopoverTrigger } from 'src/design-system/primitives';
+import { deferredModule, useDeferredModule } from 'src/design-system/primitives/deferredModule';
 import type { UbSelectOption } from 'src/design-system/UbSelect/UbSelect';
 import { cn } from 'src/utils/cn';
+
+/**
+ * W4-P — the search list (cmdk) is fetched after first paint, not in it: a
+ * screen paints the trigger, and the list appears only when somebody opens it.
+ * See `primitives/deferredModule.ts` for why this is not `React.lazy`.
+ */
+const panelModule = deferredModule(() => import('./UbComboboxPanel'));
 
 /**
  * A single choice from a list long enough to need searching.
@@ -66,6 +64,18 @@ export interface UbComboboxProps {
    */
   readonly onCreate?: (text: string) => void;
   readonly createLabel?: (text: string) => string;
+  /**
+   * What the closed trigger shows instead of the selected option's label —
+   * `UbPhoneInput` shows `+44` and keeps "United Kingdom (+44)" for the list.
+   */
+  readonly triggerContent?: React.ReactNode;
+  /** Classes for the open menu, when it must be wider than its trigger. */
+  readonly contentClassName?: string;
+  /**
+   * Where focus goes when the menu closes. Radix returns it to the trigger;
+   * `UbPhoneInput` sends it on to the number, so call `preventDefault()`.
+   */
+  readonly onCloseAutoFocus?: (event: Event) => void;
 }
 
 const UbComboboxInner = forwardRef<HTMLButtonElement, UbComboboxProps>(function UbComboboxInner(
@@ -83,23 +93,37 @@ const UbComboboxInner = forwardRef<HTMLButtonElement, UbComboboxProps>(function 
     onBlur,
     onCreate,
     createLabel,
+    triggerContent,
+    contentClassName,
+    onCloseAutoFocus,
     ...aria
   },
   ref
 ) {
-  const [open, setOpen] = useState(false);
+  const [open, setOpenState] = useState(false);
   const [search, setSearch] = useState('');
+  /**
+   * Every close clears the search. It used to survive: pick "United Arab
+   * Emirates" by typing 971, reopen, and the list was still filtered to 971 —
+   * so typing "india" searched "971india" and found nothing. Found by the
+   * phone field's country picker, the first caller opened twice in a row.
+   */
+  const setOpen = useCallback((next: boolean) => {
+    setOpenState(next);
+    if (!next) setSearch('');
+  }, []);
   const typed = search.trim();
   const exact = options.some((option) => option.label.toLowerCase() === typed.toLowerCase());
   const showCreate = Boolean(onCreate && createLabel && typed && !exact);
   const selected = options.find((option) => option.value === value);
+  const panel = useDeferredModule(panelModule, open);
 
   const handleSelect = useCallback(
     (next: string) => {
       onChange(next);
       setOpen(false);
     },
-    [onChange]
+    [onChange, setOpen]
   );
 
   /**
@@ -116,15 +140,18 @@ const UbComboboxInner = forwardRef<HTMLButtonElement, UbComboboxProps>(function 
    * rather than in a dialog and was never affected — which is exactly why this
    * would have gone unnoticed until somebody lost a half-filled form.
    */
-  const handleEscape = useCallback((event: React.KeyboardEvent<HTMLElement>) => {
-    if (event.key !== 'Escape') return;
-    event.preventDefault();
-    event.stopPropagation();
-    // Native too: React's synthetic `stopPropagation` does not stop a listener
-    // attached directly to `document`, which is what the overlay's is.
-    event.nativeEvent.stopImmediatePropagation();
-    setOpen(false);
-  }, []);
+  const handleEscape = useCallback(
+    (event: React.KeyboardEvent<HTMLElement>) => {
+      if (event.key !== 'Escape') return;
+      event.preventDefault();
+      event.stopPropagation();
+      // Native too: React's synthetic `stopPropagation` does not stop a listener
+      // attached directly to `document`, which is what the overlay's is.
+      event.nativeEvent.stopImmediatePropagation();
+      setOpen(false);
+    },
+    [setOpen]
+  );
 
   return (
     <MLPopover open={open} onOpenChange={setOpen}>
@@ -152,9 +179,12 @@ const UbComboboxInner = forwardRef<HTMLButtonElement, UbComboboxProps>(function 
         // `aria-controls` are Radix's own and are left to it.
         role="combobox"
         disabled={disabled}
-        onBlur={onBlur}
+        onBlur={() => {
+          // The search input is portalled, but still belongs to this field.
+          if (!open) onBlur?.();
+        }}
         className={cn(
-          'flex h-10 w-full items-center justify-between gap-2 rounded-control border px-3',
+          'ub-hit flex h-10 w-full items-center justify-between gap-2 rounded-control border px-3',
           'ds-body bg-surface-card text-left text-text-primary',
           'disabled:cursor-not-allowed disabled:bg-surface-sunken disabled:text-text-muted',
           'focus-visible:outline-none focus-visible:ring-0',
@@ -166,7 +196,7 @@ const UbComboboxInner = forwardRef<HTMLButtonElement, UbComboboxProps>(function 
         {...aria}
       >
         <span className={cn('truncate', !selected && 'text-text-muted')}>
-          {selected?.label ?? placeholder}
+          {triggerContent ?? selected?.label ?? placeholder}
         </span>
         <ChevronDown aria-hidden className="h-4 w-4 shrink-0 text-text-tertiary" />
       </MLPopoverTrigger>
@@ -174,57 +204,39 @@ const UbComboboxInner = forwardRef<HTMLButtonElement, UbComboboxProps>(function 
       <MLPopoverContent
         align="start"
         onKeyDownCapture={handleEscape}
+        onCloseAutoFocus={(event) => {
+          onBlur?.();
+          onCloseAutoFocus?.(event);
+        }}
         // Matched to the trigger so a long option cannot make the menu wider
         // than the field it belongs to — the same rule `UbSelect` follows.
-        className="w-[var(--radix-popover-trigger-width)] border-border-subtle bg-surface-card p-0"
+        className={cn(
+          'w-[var(--radix-popover-trigger-width)] border-border-subtle bg-surface-card p-0',
+          contentClassName
+        )}
       >
-        <MLCommand>
-          <MLCommandInput
-            value={search}
-            onValueChange={setSearch}
-            placeholder={searchPlaceholder}
-            className="ds-body-base-regular h-10"
+        {panel ? (
+          <panel.UbComboboxPanel
+            value={value}
+            options={options}
+            search={search}
+            onSearchChange={setSearch}
+            searchPlaceholder={searchPlaceholder}
+            emptyLabel={emptyLabel}
+            onSelect={handleSelect}
+            showCreate={showCreate}
+            typed={typed}
+            createLabel={createLabel}
+            onCreate={() => {
+              onCreate?.(typed);
+              setSearch('');
+              setOpen(false);
+            }}
           />
-          <MLCommandList className="max-h-[min(18rem,55dvh)]">
-            <MLCommandEmpty className="ds-body-sm px-3 py-6 text-center text-text-tertiary">
-              {emptyLabel}
-            </MLCommandEmpty>
-            <MLCommandGroup>
-              {options.map((option) => (
-                <MLCommandItem
-                  key={option.value}
-                  value={option.label}
-                  disabled={option.disabled}
-                  onSelect={() => handleSelect(option.value)}
-                  className="ds-body gap-2"
-                >
-                  <Check
-                    aria-hidden
-                    className={cn(
-                      'h-4 w-4 shrink-0 text-accent',
-                      option.value === value ? 'opacity-100' : 'opacity-0'
-                    )}
-                  />
-                  <span className="truncate">{option.label}</span>
-                </MLCommandItem>
-              ))}
-              {showCreate && (
-                <MLCommandItem
-                  value={`__create__ ${typed}`}
-                  onSelect={() => {
-                    onCreate?.(typed);
-                    setSearch('');
-                    setOpen(false);
-                  }}
-                  className="ds-body gap-2 text-accent"
-                >
-                  <Plus aria-hidden className="h-4 w-4 shrink-0" />
-                  <span className="truncate">{createLabel?.(typed)}</span>
-                </MLCommandItem>
-              )}
-            </MLCommandGroup>
-          </MLCommandList>
-        </MLCommand>
+        ) : (
+          // The open that beat the chunk: a row the height of the search box.
+          <div aria-busy="true" className="h-10" />
+        )}
       </MLPopoverContent>
     </MLPopover>
   );

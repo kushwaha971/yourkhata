@@ -23,7 +23,8 @@ MEDIA_ROOT = tempfile.mkdtemp(prefix="ub-test-media-")
 
 DATABASES["default"]["ATOMIC_REQUESTS"] = False  # noqa: F405
 # `lock_timeout` must stay short so the concurrency tests fail fast rather than hang.
-DATABASES["default"]["OPTIONS"] = {"options": "-c lock_timeout=5000"}  # noqa: F405
+# JIT stays off here as everywhere else (tests/performance/test_no_jit.py).
+DATABASES["default"]["OPTIONS"] = {"options": "-c lock_timeout=5000 -c jit=off"}  # noqa: F405
 
 LOGGING = build_logging_config(level="CRITICAL", fmt="console")  # noqa: F405
 
@@ -32,3 +33,13 @@ LOGGING = build_logging_config(level="CRITICAL", fmt="console")  # noqa: F405
 DATABASES["default"]["TEST"] = {  # noqa: F405
     "NAME": env.str("UB_TEST_DB_NAME", "test_udhaarbook")  # noqa: F405
 }
+
+# Never a real message from the suite. `base` reads backend/.env, where the
+# owner's WhatsApp credentials live, so without this every OTP test would
+# message a made-up number. The WhatsApp service's own tests stub the network.
+UB_OTP_PROVIDER = "console"
+UB_SMS_BACKEND = "apps.common.integrations.sms.console.ConsoleSmsBackend"
+
+META_WHATSAPP_ACCESS_TOKEN = ""
+META_WHATSAPP_APP_SECRET = ""
+META_WHATSAPP_WEBHOOK_VERIFY_TOKEN = ""

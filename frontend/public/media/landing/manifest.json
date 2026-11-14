@@ -1,0 +1,695 @@
+{
+  "version": 2,
+  "generated": "2026-10-11",
+  "note": "Silent loops recorded from real YourKhata screens on the demo stack (e2e/demo/record-clips.mjs), one take for the desktop layout and one for the phone layout. Posters equal each loop's first frame. Every name, number and the UPI handle sharmastore.demo@example are seeded demo data (e2e/demo/seed-demo.mjs).",
+  "assets": [
+    {
+      "id": "hero-desktop",
+      "kind": "hero",
+      "device": "desktop",
+      "width": 1280,
+      "height": 800,
+      "duration": 16,
+      "fps": 30,
+      "loop": true,
+      "audio": false,
+      "sources": [
+        {
+          "src": "/media/landing/hero-desktop.webm",
+          "type": "video/webm; codecs=vp9",
+          "bytes": 568744
+        },
+        {
+          "src": "/media/landing/hero-desktop.mp4",
+          "type": "video/mp4; codecs=avc1.4D4020",
+          "bytes": 524386
+        }
+      ],
+      "bytes": 1093130,
+      "poster": {
+        "webp": "/media/landing/hero-desktop-poster.webp",
+        "jpg": "/media/landing/hero-desktop-poster.jpg",
+        "bytes": {
+          "webp": 36598,
+          "jpg": 63711
+        }
+      },
+      "alt": "On a computer: the dashboard with To collect and To pay, a ₹1,200 'You gave' entry saved to Ramesh Traders' account, then a GST tax invoice filled in and issued.",
+      "caption": "Dashboard, a money-owed entry and a GST bill in one loop.",
+      "speed": 1.67
+    },
+    {
+      "id": "hero-mobile",
+      "kind": "hero",
+      "device": "mobile",
+      "width": 780,
+      "height": 1688,
+      "duration": 16,
+      "fps": 30,
+      "loop": true,
+      "audio": false,
+      "sources": [
+        {
+          "src": "/media/landing/hero-mobile.webm",
+          "type": "video/webm; codecs=vp9",
+          "bytes": 768064
+        },
+        {
+          "src": "/media/landing/hero-mobile.mp4",
+          "type": "video/mp4; codecs=avc1.4D4028",
+          "bytes": 636627
+        }
+      ],
+      "bytes": 1404691,
+      "poster": {
+        "webp": "/media/landing/hero-mobile-poster.webp",
+        "jpg": "/media/landing/hero-mobile-poster.jpg",
+        "bytes": {
+          "webp": 42610,
+          "jpg": 65011
+        }
+      },
+      "alt": "On a phone: the dashboard with To collect and To pay, a ₹1,200 'You gave' entry saved to Ramesh Traders' account, then a GST tax invoice filled in and issued.",
+      "caption": "Dashboard, a money-owed entry and a GST bill in one loop.",
+      "speed": 1.54
+    },
+    {
+      "id": "feat-bill-desktop",
+      "kind": "feature",
+      "device": "desktop",
+      "width": 1280,
+      "height": 800,
+      "duration": 12.77,
+      "fps": 30,
+      "loop": true,
+      "audio": false,
+      "sources": [
+        {
+          "src": "/media/landing/feat-bill-desktop.webm",
+          "type": "video/webm; codecs=vp9",
+          "bytes": 481084
+        },
+        {
+          "src": "/media/landing/feat-bill-desktop.mp4",
+          "type": "video/mp4; codecs=avc1.4D4020",
+          "bytes": 449681
+        }
+      ],
+      "bytes": 930765,
+      "poster": {
+        "webp": "/media/landing/feat-bill-desktop-poster.webp",
+        "jpg": "/media/landing/feat-bill-desktop-poster.jpg",
+        "bytes": {
+          "webp": 34120,
+          "jpg": 57886
+        }
+      },
+      "alt": "On a computer: a two-item tax invoice with CGST and SGST filled in automatically, then the issued invoice.",
+      "caption": "GST worked out as you add items.",
+      "speed": 1.7
+    },
+    {
+      "id": "feat-bill-mobile",
+      "kind": "feature",
+      "device": "mobile",
+      "width": 584,
+      "height": 1264,
+      "duration": 11.97,
+      "fps": 30,
+      "loop": true,
+      "audio": false,
+      "sources": [
+        {
+          "src": "/media/landing/feat-bill-mobile.webm",
+          "type": "video/webm; codecs=vp9",
+          "bytes": 333550
+        },
+        {
+          "src": "/media/landing/feat-bill-mobile.mp4",
+          "type": "video/mp4; codecs=avc1.4D401F",
+          "bytes": 297868
+        }
+      ],
+      "bytes": 631418,
+      "poster": {
+        "webp": "/media/landing/feat-bill-mobile-poster.webp",
+        "jpg": "/media/landing/feat-bill-mobile-poster.jpg",
+        "bytes": {
+          "webp": 27616,
+          "jpg": 42736
+        }
+      },
+      "alt": "On a phone: a two-item tax invoice with CGST and SGST filled in automatically, then the issued invoice.",
+      "caption": "GST worked out as you add items.",
+      "speed": 1.7
+    },
+    {
+      "id": "feat-khata-desktop",
+      "kind": "feature",
+      "device": "desktop",
+      "width": 1280,
+      "height": 800,
+      "duration": 11,
+      "fps": 30,
+      "loop": true,
+      "audio": false,
+      "sources": [
+        {
+          "src": "/media/landing/feat-khata-desktop.webm",
+          "type": "video/webm; codecs=vp9",
+          "bytes": 319541
+        },
+        {
+          "src": "/media/landing/feat-khata-desktop.mp4",
+          "type": "video/mp4; codecs=avc1.4D4020",
+          "bytes": 288218
+        }
+      ],
+      "bytes": 607759,
+      "poster": {
+        "webp": "/media/landing/feat-khata-desktop-poster.webp",
+        "jpg": "/media/landing/feat-khata-desktop-poster.jpg",
+        "bytes": {
+          "webp": 34290,
+          "jpg": 59464
+        }
+      },
+      "alt": "On a computer: the customer list, then Ramesh Traders' account, where a ₹1,200 'You gave' entry with a note is saved and the balance updates.",
+      "caption": "Record money owed in seconds; the running balance updates the moment you save.",
+      "speed": 1
+    },
+    {
+      "id": "feat-khata-mobile",
+      "kind": "feature",
+      "device": "mobile",
+      "width": 584,
+      "height": 1264,
+      "duration": 10.17,
+      "fps": 30,
+      "loop": true,
+      "audio": false,
+      "sources": [
+        {
+          "src": "/media/landing/feat-khata-mobile.webm",
+          "type": "video/webm; codecs=vp9",
+          "bytes": 264295
+        },
+        {
+          "src": "/media/landing/feat-khata-mobile.mp4",
+          "type": "video/mp4; codecs=avc1.4D401F",
+          "bytes": 257961
+        }
+      ],
+      "bytes": 522256,
+      "poster": {
+        "webp": "/media/landing/feat-khata-mobile-poster.webp",
+        "jpg": "/media/landing/feat-khata-mobile-poster.jpg",
+        "bytes": {
+          "webp": 31092,
+          "jpg": 48194
+        }
+      },
+      "alt": "On a phone: the customer list, then Ramesh Traders' account, where a ₹1,200 'You gave' entry with a note is saved and the balance updates.",
+      "caption": "Record money owed in seconds; the running balance updates the moment you save.",
+      "speed": 1
+    },
+    {
+      "id": "feat-purchase-desktop",
+      "kind": "feature",
+      "device": "desktop",
+      "width": 1280,
+      "height": 800,
+      "duration": 11,
+      "fps": 30,
+      "loop": true,
+      "audio": false,
+      "sources": [
+        {
+          "src": "/media/landing/feat-purchase-desktop.webm",
+          "type": "video/webm; codecs=vp9",
+          "bytes": 377391
+        },
+        {
+          "src": "/media/landing/feat-purchase-desktop.mp4",
+          "type": "video/mp4; codecs=avc1.4D4020",
+          "bytes": 377905
+        }
+      ],
+      "bytes": 755296,
+      "poster": {
+        "webp": "/media/landing/feat-purchase-desktop-poster.webp",
+        "jpg": "/media/landing/feat-purchase-desktop-poster.jpg",
+        "bytes": {
+          "webp": 21706,
+          "jpg": 37471
+        }
+      },
+      "alt": "On a computer: a purchase bill from Gupta Wholesale with GST worked out, recorded as paid from the Paid now sheet.",
+      "caption": "Purchases with input GST, and the supplier paid in the same step.",
+      "speed": 1.32
+    },
+    {
+      "id": "feat-purchase-mobile",
+      "kind": "feature",
+      "device": "mobile",
+      "width": 584,
+      "height": 1264,
+      "duration": 11.03,
+      "fps": 30,
+      "loop": true,
+      "audio": false,
+      "sources": [
+        {
+          "src": "/media/landing/feat-purchase-mobile.webm",
+          "type": "video/webm; codecs=vp9",
+          "bytes": 274468
+        },
+        {
+          "src": "/media/landing/feat-purchase-mobile.mp4",
+          "type": "video/mp4; codecs=avc1.4D401F",
+          "bytes": 271463
+        }
+      ],
+      "bytes": 545931,
+      "poster": {
+        "webp": "/media/landing/feat-purchase-mobile-poster.webp",
+        "jpg": "/media/landing/feat-purchase-mobile-poster.jpg",
+        "bytes": {
+          "webp": 17318,
+          "jpg": 27032
+        }
+      },
+      "alt": "On a phone: a purchase bill from Gupta Wholesale with GST worked out, recorded as paid from the Paid now sheet.",
+      "caption": "Purchases with input GST, and the supplier paid in the same step.",
+      "speed": 1.24
+    },
+    {
+      "id": "feat-reminder-desktop",
+      "kind": "feature",
+      "device": "desktop",
+      "width": 1280,
+      "height": 800,
+      "duration": 9.27,
+      "fps": 30,
+      "loop": true,
+      "audio": false,
+      "sources": [
+        {
+          "src": "/media/landing/feat-reminder-desktop.webm",
+          "type": "video/webm; codecs=vp9",
+          "bytes": 342371
+        },
+        {
+          "src": "/media/landing/feat-reminder-desktop.mp4",
+          "type": "video/mp4; codecs=avc1.4D4020",
+          "bytes": 299240
+        }
+      ],
+      "bytes": 641611,
+      "poster": {
+        "webp": "/media/landing/feat-reminder-desktop-poster.webp",
+        "jpg": "/media/landing/feat-reminder-desktop-poster.jpg",
+        "bytes": {
+          "webp": 36354,
+          "jpg": 58224
+        }
+      },
+      "alt": "On a computer: a customer's account, then Send reminder with the ready WhatsApp message, then the aging list of who owes and for how long.",
+      "caption": "A polite, exact reminder in two taps. You press send.",
+      "speed": 1
+    },
+    {
+      "id": "feat-reminder-mobile",
+      "kind": "feature",
+      "device": "mobile",
+      "width": 584,
+      "height": 1264,
+      "duration": 8.67,
+      "fps": 30,
+      "loop": true,
+      "audio": false,
+      "sources": [
+        {
+          "src": "/media/landing/feat-reminder-mobile.webm",
+          "type": "video/webm; codecs=vp9",
+          "bytes": 196238
+        },
+        {
+          "src": "/media/landing/feat-reminder-mobile.mp4",
+          "type": "video/mp4; codecs=avc1.4D401F",
+          "bytes": 209041
+        }
+      ],
+      "bytes": 405279,
+      "poster": {
+        "webp": "/media/landing/feat-reminder-mobile-poster.webp",
+        "jpg": "/media/landing/feat-reminder-mobile-poster.jpg",
+        "bytes": {
+          "webp": 30328,
+          "jpg": 48329
+        }
+      },
+      "alt": "On a phone: a customer's account, then Send reminder with the ready WhatsApp message, then the aging list of who owes and for how long.",
+      "caption": "A polite, exact reminder in two taps. You press send.",
+      "speed": 1
+    },
+    {
+      "id": "feat-reports-desktop",
+      "kind": "feature",
+      "device": "desktop",
+      "width": 1280,
+      "height": 800,
+      "duration": 9.27,
+      "fps": 30,
+      "loop": true,
+      "audio": false,
+      "sources": [
+        {
+          "src": "/media/landing/feat-reports-desktop.webm",
+          "type": "video/webm; codecs=vp9",
+          "bytes": 366705
+        },
+        {
+          "src": "/media/landing/feat-reports-desktop.mp4",
+          "type": "video/mp4; codecs=avc1.4D4020",
+          "bytes": 308279
+        }
+      ],
+      "bytes": 674984,
+      "poster": {
+        "webp": "/media/landing/feat-reports-desktop-poster.webp",
+        "jpg": "/media/landing/feat-reports-desktop-poster.jpg",
+        "bytes": {
+          "webp": 35742,
+          "jpg": 54547
+        }
+      },
+      "alt": "On a computer: the Reports hub, then the day book, then the GST summary.",
+      "caption": "Day book, aging, registers and the GST summary.",
+      "speed": 1
+    },
+    {
+      "id": "feat-reports-mobile",
+      "kind": "feature",
+      "device": "mobile",
+      "width": 584,
+      "height": 1264,
+      "duration": 8.8,
+      "fps": 30,
+      "loop": true,
+      "audio": false,
+      "sources": [
+        {
+          "src": "/media/landing/feat-reports-mobile.webm",
+          "type": "video/webm; codecs=vp9",
+          "bytes": 255982
+        },
+        {
+          "src": "/media/landing/feat-reports-mobile.mp4",
+          "type": "video/mp4; codecs=avc1.4D401F",
+          "bytes": 275462
+        }
+      ],
+      "bytes": 531444,
+      "poster": {
+        "webp": "/media/landing/feat-reports-mobile-poster.webp",
+        "jpg": "/media/landing/feat-reports-mobile-poster.jpg",
+        "bytes": {
+          "webp": 28454,
+          "jpg": 42875
+        }
+      },
+      "alt": "On a phone: the Reports hub, then the day book, then the GST summary.",
+      "caption": "Day book, aging, registers and the GST summary.",
+      "speed": 1
+    },
+    {
+      "id": "feat-stock-desktop",
+      "kind": "feature",
+      "device": "desktop",
+      "width": 1280,
+      "height": 800,
+      "duration": 10.93,
+      "fps": 30,
+      "loop": true,
+      "audio": false,
+      "sources": [
+        {
+          "src": "/media/landing/feat-stock-desktop.webm",
+          "type": "video/webm; codecs=vp9",
+          "bytes": 279425
+        },
+        {
+          "src": "/media/landing/feat-stock-desktop.mp4",
+          "type": "video/mp4; codecs=avc1.4D4020",
+          "bytes": 236291
+        }
+      ],
+      "bytes": 515716,
+      "poster": {
+        "webp": "/media/landing/feat-stock-desktop-poster.webp",
+        "jpg": "/media/landing/feat-stock-desktop-poster.jpg",
+        "bytes": {
+          "webp": 37212,
+          "jpg": 63908
+        }
+      },
+      "alt": "On a computer: the item list, the Low tab, an item's stock card with its movements, then Adjust stock.",
+      "caption": "What is in stock, what is low, and every movement.",
+      "speed": 1
+    },
+    {
+      "id": "feat-stock-mobile",
+      "kind": "feature",
+      "device": "mobile",
+      "width": 584,
+      "height": 1264,
+      "duration": 11.03,
+      "fps": 30,
+      "loop": true,
+      "audio": false,
+      "sources": [
+        {
+          "src": "/media/landing/feat-stock-mobile.webm",
+          "type": "video/webm; codecs=vp9",
+          "bytes": 222992
+        },
+        {
+          "src": "/media/landing/feat-stock-mobile.mp4",
+          "type": "video/mp4; codecs=avc1.4D401F",
+          "bytes": 230366
+        }
+      ],
+      "bytes": 453358,
+      "poster": {
+        "webp": "/media/landing/feat-stock-mobile-poster.webp",
+        "jpg": "/media/landing/feat-stock-mobile-poster.jpg",
+        "bytes": {
+          "webp": 27494,
+          "jpg": 43242
+        }
+      },
+      "alt": "On a phone: the item list, the Low tab, an item's stock card with its movements, then Adjust stock.",
+      "caption": "What is in stock, what is low, and every movement.",
+      "speed": 1.01
+    },
+    {
+      "id": "mod-lending-desktop",
+      "kind": "module",
+      "device": "desktop",
+      "width": 1280,
+      "height": 800,
+      "duration": 10.47,
+      "fps": 30,
+      "loop": true,
+      "audio": false,
+      "sources": [
+        {
+          "src": "/media/landing/mod-lending-desktop.webm",
+          "type": "video/webm; codecs=vp9",
+          "bytes": 315220
+        },
+        {
+          "src": "/media/landing/mod-lending-desktop.mp4",
+          "type": "video/mp4; codecs=avc1.4D4020",
+          "bytes": 246560
+        }
+      ],
+      "bytes": 561780,
+      "poster": {
+        "webp": "/media/landing/mod-lending-desktop-poster.webp",
+        "jpg": "/media/landing/mod-lending-desktop-poster.jpg",
+        "bytes": {
+          "webp": 27628,
+          "jpg": 44047
+        }
+      },
+      "alt": "On a computer: the Lending module: today's collection list, a collection saved for a borrower, then the list of running loans with what is left on each.",
+      "caption": "Every loan and every collection, on record.",
+      "speed": 1
+    },
+    {
+      "id": "mod-lending-mobile",
+      "kind": "module",
+      "device": "mobile",
+      "width": 584,
+      "height": 1264,
+      "duration": 9.93,
+      "fps": 30,
+      "loop": true,
+      "audio": false,
+      "sources": [
+        {
+          "src": "/media/landing/mod-lending-mobile.webm",
+          "type": "video/webm; codecs=vp9",
+          "bytes": 264897
+        },
+        {
+          "src": "/media/landing/mod-lending-mobile.mp4",
+          "type": "video/mp4; codecs=avc1.4D401F",
+          "bytes": 242219
+        }
+      ],
+      "bytes": 507116,
+      "poster": {
+        "webp": "/media/landing/mod-lending-mobile-poster.webp",
+        "jpg": "/media/landing/mod-lending-mobile-poster.jpg",
+        "bytes": {
+          "webp": 34950,
+          "jpg": 51888
+        }
+      },
+      "alt": "On a phone: the Lending module: today's collection list, a collection saved for a borrower, then the list of running loans with what is left on each.",
+      "caption": "Every loan and every collection, on record.",
+      "speed": 1
+    },
+    {
+      "id": "mod-library-desktop",
+      "kind": "module",
+      "device": "desktop",
+      "width": 1280,
+      "height": 800,
+      "duration": 11,
+      "fps": 30,
+      "loop": true,
+      "audio": false,
+      "sources": [
+        {
+          "src": "/media/landing/mod-library-desktop.webm",
+          "type": "video/webm; codecs=vp9",
+          "bytes": 208685
+        },
+        {
+          "src": "/media/landing/mod-library-desktop.mp4",
+          "type": "video/mp4; codecs=avc1.4D4020",
+          "bytes": 185152
+        }
+      ],
+      "bytes": 393837,
+      "poster": {
+        "webp": "/media/landing/mod-library-desktop-poster.webp",
+        "jpg": "/media/landing/mod-library-desktop-poster.jpg",
+        "bytes": {
+          "webp": 18814,
+          "jpg": 34365
+        }
+      },
+      "alt": "On a computer: the Library module: today's fees and seats, the book catalogue searched for a title, then a book issued to a student at the counter.",
+      "caption": "Students, seats, fees and books in one place.",
+      "speed": 1.16
+    },
+    {
+      "id": "mod-library-mobile",
+      "kind": "module",
+      "device": "mobile",
+      "width": 584,
+      "height": 1264,
+      "duration": 11.03,
+      "fps": 30,
+      "loop": true,
+      "audio": false,
+      "sources": [
+        {
+          "src": "/media/landing/mod-library-mobile.webm",
+          "type": "video/webm; codecs=vp9",
+          "bytes": 186194
+        },
+        {
+          "src": "/media/landing/mod-library-mobile.mp4",
+          "type": "video/mp4; codecs=avc1.4D401F",
+          "bytes": 187902
+        }
+      ],
+      "bytes": 374096,
+      "poster": {
+        "webp": "/media/landing/mod-library-mobile-poster.webp",
+        "jpg": "/media/landing/mod-library-mobile-poster.jpg",
+        "bytes": {
+          "webp": 22374,
+          "jpg": 35749
+        }
+      },
+      "alt": "On a phone: the Library module: today's fees and seats, the book catalogue searched for a title, then a book issued to a student at the counter.",
+      "caption": "Students, seats, fees and books in one place.",
+      "speed": 1.1
+    },
+    {
+      "id": "demo-hi-desktop",
+      "kind": "demo",
+      "device": "desktop",
+      "language": "hi",
+      "width": 1280,
+      "height": 720,
+      "duration": 320.3,
+      "fps": 30,
+      "loop": false,
+      "audio": true,
+      "sources": [
+        {
+          "src": "/media/landing/demo-hi-desktop.mp4",
+          "type": "video/mp4; codecs=avc1.4D401F,mp4a.40.2",
+          "bytes": 11186751
+        }
+      ],
+      "bytes": 11186751,
+      "poster": {
+        "webp": "/media/landing/demo-hi-desktop-poster.webp",
+        "jpg": "/media/landing/demo-hi-desktop-poster.jpg"
+      },
+      "captions": "/media/landing/demo-hi-desktop.vtt",
+      "subtitles": {
+        "en": "/media/landing/demo-hi-desktop.en.vtt"
+      },
+      "alt": "Six everyday business problems and how YourKhata solves each one, step by step on real screens: starting with only what you need, credit, bills, stock, monthly fees and daily collections. Hindi voice-over, with English subtitles."
+    },
+    {
+      "id": "demo-hi-mobile",
+      "kind": "demo",
+      "device": "mobile",
+      "language": "hi",
+      "width": 720,
+      "height": 1558,
+      "duration": 316.3,
+      "fps": 30,
+      "loop": false,
+      "audio": true,
+      "sources": [
+        {
+          "src": "/media/landing/demo-hi-mobile.mp4",
+          "type": "video/mp4; codecs=avc1.4D401F,mp4a.40.2",
+          "bytes": 12294764
+        }
+      ],
+      "bytes": 12294764,
+      "poster": {
+        "webp": "/media/landing/demo-hi-mobile-poster.webp",
+        "jpg": "/media/landing/demo-hi-mobile-poster.jpg"
+      },
+      "captions": "/media/landing/demo-hi-mobile.vtt",
+      "subtitles": {
+        "en": "/media/landing/demo-hi-mobile.en.vtt"
+      },
+      "alt": "Six everyday business problems and how YourKhata solves each one, step by step on real screens: starting with only what you need, credit, bills, stock, monthly fees and daily collections. Hindi voice-over, with English subtitles."
+    }
+  ]
+}

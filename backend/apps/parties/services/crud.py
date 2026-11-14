@@ -114,7 +114,7 @@ def _validate(payload: dict, *, party: Party | None) -> None:
     if "name" in payload:
         name = payload.get("name") or ""
         if len(name) < NAME_MIN_LENGTH:
-            details["name"] = ["Enter the party's name."]
+            details["name"] = ["Enter the contact's name."]
 
     if payload.get("notes") and len(payload["notes"]) > NOTES_MAX_LENGTH:
         details["notes"] = [f"Keep notes under {NOTES_MAX_LENGTH} characters."]
@@ -234,7 +234,7 @@ def _raise_duplicate_mobile(existing: Party) -> None:
     """
     raise ValidationFailed(
         {
-            "mobile": ["This mobile number is already used by another party."],
+            "mobile": ["This mobile number is already used by another contact."],
             "existing_party_id": str(existing.id),
             "existing_status": existing.status,
         }
@@ -300,6 +300,7 @@ def create_party(*, ctx: Ctx, payload: dict) -> tuple[Party, list[dict]]:
     # `parties_party` and would be dropped by it. `None` means the key was
     # absent, which is different from `[]` — see `update_party`.
     tag_names = data.pop("tags", None)
+    opening_book = data.pop("opening_book", "main") or "main"
     _apply_gstin(payload=data, warnings=warnings)
     _validate(data, party=None)
 
@@ -354,7 +355,7 @@ def create_party(*, ctx: Ctx, payload: dict) -> tuple[Party, list[dict]]:
         after=_audit_snapshot(party),
     )
 
-    _post_opening_if_asked(ctx=ctx, party=party, fields=fields)
+    _post_opening_if_asked(ctx=ctx, party=party, fields=fields, book=opening_book)
     return party, warnings
 
 
@@ -377,7 +378,7 @@ def update_party(*, ctx: Ctx, party: Party, payload: dict) -> tuple[Party, list[
         if offered:
             raise BusinessRuleViolation(
                 "party_archived",
-                "Restore this party before editing it.",
+                "Restore this contact before editing it.",
                 details={"fields": sorted(offered)},
             )
 
@@ -447,7 +448,7 @@ def update_party(*, ctx: Ctx, party: Party, payload: dict) -> tuple[Party, list[
 CREDIT_CONTROL_FIELDS: tuple[str, ...] = ("credit_limit", "credit_days")
 
 
-def _post_opening_if_asked(*, ctx: Ctx, party: Party, fields: dict) -> None:
+def _post_opening_if_asked(*, ctx: Ctx, party: Party, fields: dict, book: str = "main") -> None:
     """LED-02 FR-2 — post the opening entry, in the party's own transaction.
 
     AFTER the party's audit row, so the log reads in the order the events
@@ -480,6 +481,7 @@ def _post_opening_if_asked(*, ctx: Ctx, party: Party, fields: dict) -> None:
         direction=direction,
         as_of=as_of,
         via="party_create",
+        bucket=book,
     )
 
 

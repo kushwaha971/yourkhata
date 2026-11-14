@@ -1,3 +1,5 @@
+import { daysBetweenIso } from 'src/utils/calendarDays';
+
 import { DEFAULT_PRESET, FY_START_MONTH, STATEMENT_PRESETS } from '../constants/statementPeriod';
 
 import { balanceDirection, unsigned, type BalanceDirection } from './balanceSide';
@@ -45,13 +47,14 @@ export const isDebitRow = (row: StatementRow): boolean => row.direction === 'deb
  * "शुरुआती बाकी". Server text is never translated here: the row is mapped by
  * its `entryType`, which is the thing the client actually knows.
  */
-export const rowTitleId = (row: StatementRow): string | null => {
+export const rowTitleId = (row: Pick<StatementRow, 'entryType' | 'note'>): string | null => {
   if (row.entryType === 'opening') return 'ledger.entry.type.opening';
   return row.note.trim() ? null : `ledger.entry.type.${row.entryType}`;
 };
 
 /** A row the merchant has undone, struck through when corrections are shown. */
-export const isStruckThrough = (row: StatementRow): boolean => row.status === 'reversed';
+export const isStruckThrough = (row: Pick<StatementRow, 'status'>): boolean =>
+  row.status === 'reversed';
 
 // ── The period ───────────────────────────────────────────────────────────────
 
@@ -139,6 +142,7 @@ export const filtersFromQuery = (query: URLSearchParams, today: string): Stateme
     dateFrom: resolved.dateFrom,
     dateTo: resolved.dateTo,
     includeCorrections: query.get('corrections') === 'true',
+    ...(query.get('book') === 'shop' ? { book: 'shop' as const } : {}),
   };
 };
 
@@ -151,6 +155,7 @@ export const queryFromFilters = (filters: StatementFilters): string => {
     if (filters.dateTo) query.set('to', filters.dateTo);
   }
   if (filters.includeCorrections) query.set('corrections', 'true');
+  if (filters.book === 'shop') query.set('book', 'shop');
   return query.toString();
 };
 
@@ -169,7 +174,6 @@ export const rangeProblem = (filters: StatementFilters): 'inverted' | 'tooLong' 
   const { dateFrom, dateTo } = filters;
   if (!dateFrom || !dateTo) return null;
   if (dateFrom > dateTo) return 'inverted';
-  const days =
-    (Date.parse(`${dateTo}T00:00:00Z`) - Date.parse(`${dateFrom}T00:00:00Z`)) / 86_400_000;
+  const days = daysBetweenIso(dateFrom, dateTo);
   return days > MAX_RANGE_DAYS ? 'tooLong' : null;
 };

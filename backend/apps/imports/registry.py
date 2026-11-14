@@ -50,6 +50,14 @@ class RowResult:
     errors: list[tuple[str, str, str]] = field(default_factory=list)
     warnings: list[tuple[str, str, str]] = field(default_factory=list)
     preview: dict[str, Any] = field(default_factory=dict)
+    #: QA B27 — the row's own figures (an opening balance, a stock value, one
+    #: customer). The ENGINE adds them up: into the totals only when the row will
+    #: import, into `totals_problems` when it will not — so the review never
+    #: promises money from a row it is about to refuse.
+    tally: dict[str, Any] = field(default_factory=dict)
+    #: QA B28 — the record this row would duplicate ("Ramesh Traders"), or "". A
+    #: check, not a problem: the owner chooses to skip duplicates or create them.
+    duplicate: str = ""
 
     def error(self, column: str, code: str, message: str) -> None:
         self.errors.append((column, code, message))
@@ -90,6 +98,14 @@ class ImporterSpec:
     #: `totals(ctx) -> dict` after validation — figures the review step shows
     #: over the whole file (PTY-10 FR-7's opening totals, INV-09's categories).
     totals: Callable[[dict], dict] | None = None
+    #: R28 — the column `is_example` compares against the template rows. A
+    #: library copy has no `name`; its example row is known by its accession.
+    example_key: str = "name"
+    #: BP-11 / R-DEC-18 — the financial book `commit_rows` posts into, if any.
+    #: Reading and writing the kind then also need that book's own app grant,
+    #: exactly as the drawer that writes the same rows does; a merged codename
+    #: from another app's grant is not enough.
+    book: str | None = None
 
     @property
     def column_names(self) -> tuple[str, ...]:
@@ -101,9 +117,10 @@ class ImporterSpec:
 
     def is_example(self, row: Mapping[str, str]) -> bool:
         """FR-2 — an untouched template row is flagged, never silently created."""
-        name = (row.get("name") or "").strip().lower()
-        return bool(name) and any(
-            name == (example.get("name") or "").strip().lower() for example in self.template_rows
+        key = self.example_key
+        value = (row.get(key) or "").strip().lower()
+        return bool(value) and any(
+            value == (example.get(key) or "").strip().lower() for example in self.template_rows
         )
 
 
@@ -112,7 +129,14 @@ _LOADED = False
 
 
 def register(spec: ImporterSpec) -> ImporterSpec:
-    if spec.kind in _REGISTRY:
+    """Add an importer kind (R28). Idempotent by `kind`: the same spec, or an
+    equal one, is a no-op and returns the registered spec (a second `ready()`
+    or a re-imported mapper is harmless); a DIFFERENT spec under a used kind
+    still raises — two modules must never share one."""
+    existing = _REGISTRY.get(spec.kind)
+    if existing is not None:
+        if existing == spec:
+            return existing
         raise ImproperlyConfigured(f"Importer {spec.kind!r} registered twice")
     _REGISTRY[spec.kind] = spec
     return spec
@@ -128,6 +152,19 @@ def kinds() -> tuple[str, ...]:
     return tuple(_REGISTRY)
 
 
+_BASELINE: dict[str, ImporterSpec] | None = None
+
+
+def _reset_for_tests() -> None:  # pragma: no cover - test helper
+    """Back to the start-up kinds (the MVP mappers plus every `ready()`)."""
+    global _BASELINE
+    _ensure_loaded()
+    if _BASELINE is None:
+        _BASELINE = dict(_REGISTRY)
+    _REGISTRY.clear()
+    _REGISTRY.update(_BASELINE)
+
+
 def _ensure_loaded() -> None:
     """Import the MVP mappers on first use (they register themselves).
 
@@ -139,3 +176,15 @@ def _ensure_loaded() -> None:
         return
     _LOADED = True
     from apps.imports.mappers import items, parties  # noqa: F401
+
+
+def __getattr__(name: str) -> Any:
+    """The framework owns scalars: a vertical's importer reads its cells with the
+    coercers the core mappers use — `from apps.imports.registry import coerce`,
+    since this is the one module of `imports` a vertical may import (R27). Loaded
+    on first use, so this module still imports nothing but `common` and Django."""
+    if name in ("coerce", "CoerceError"):
+        from apps.imports.services import coerce
+
+        return coerce if name == "coerce" else coerce.CoerceError
+    raise AttributeError(name)

@@ -1,13 +1,30 @@
 import {
+  defaultModeFor,
   isInboundLine,
+  lineModeFor,
   onHandAfter,
+  quantityChanges,
   signedQty,
   totalValueImpact,
   valueImpact,
 } from './adjustmentMath';
-import { formatSignedQuantity, looksLikeBarcode, skuPrefix, stockBadge } from './itemDisplay';
+import {
+  formatSignedQuantity,
+  looksLikeBarcode,
+  lowStockOrderLine,
+  lowStockWords,
+  skuPrefix,
+  stockBadge,
+} from './itemDisplay';
+import {
+  categoryExists,
+  filterCategories,
+  filterUnits,
+  unitCodeExists,
+  unitSeed,
+} from './mastersView';
 
-import type { AdjustmentFormLine } from '../types/item.types';
+import type { AdjustmentFormLine, Category, LowStockRow } from '../types/item.types';
 
 const line = (over: Partial<AdjustmentFormLine>): AdjustmentFormLine => ({
   itemId: 'i1',
@@ -16,7 +33,7 @@ const line = (over: Partial<AdjustmentFormLine>): AdjustmentFormLine => ({
   allowDecimal: true,
   onHand: '5.000',
   avgCost: '44.0000',
-  mode: 'by',
+  mode: 'add',
   qty: '',
   unitCost: '',
   ...over,
@@ -31,7 +48,7 @@ describe('adjustment preview maths', () => {
   it('"Set to" sends the difference from on hand, not the typed count', () => {
     // Counting 2 on a shelf the book says holds 5 is a loss of 3.
     expect(signedQty(line({ mode: 'to', qty: '2' }))?.toFixed(3)).toBe('-3.000');
-    expect(signedQty(line({ mode: 'by', qty: '-3' }))?.toFixed(3)).toBe('-3.000');
+    expect(signedQty(line({ mode: 'remove', qty: '3' }))?.toFixed(3)).toBe('-3.000');
   });
 
   it('treats a half-typed number as nothing rather than NaN', () => {
@@ -40,7 +57,7 @@ describe('adjustment preview maths', () => {
   });
 
   it('values stock out at the average and stock in at the entered cost (BR-3)', () => {
-    expect(valueImpact(line({ qty: '-3' }))).toBe('-132.00');
+    expect(valueImpact(line({ mode: 'remove', qty: '3' }))).toBe('-132.00');
     expect(valueImpact(line({ qty: '2', unitCost: '50' }))).toBe('100.00');
     // Inbound with no cost yet has no value to preview.
     expect(valueImpact(line({ qty: '2' }))).toBeNull();
@@ -50,15 +67,47 @@ describe('adjustment preview maths', () => {
     const lines = [
       line({ qty: '1', unitCost: '0.1' }),
       line({ qty: '1', unitCost: '0.2' }),
-      line({ qty: '-1', avgCost: '44.0000' }),
+      line({ mode: 'remove', qty: '1', avgCost: '44.0000' }),
     ];
     expect(totalValueImpact(lines)).toBe('-43.70');
   });
 
   it('knows which lines need a unit cost', () => {
     expect(isInboundLine(line({ qty: '2' }))).toBe(true);
-    expect(isInboundLine(line({ qty: '-2' }))).toBe(false);
+    expect(isInboundLine(line({ mode: 'remove', qty: '2' }))).toBe(false);
     expect(isInboundLine(line({ mode: 'to', qty: '5' }))).toBe(false);
+  });
+
+  it('never needs a typed minus: Remove is the sign (09 §8.4)', () => {
+    // A remove typed with a sign would otherwise add stock back.
+    expect(signedQty(line({ mode: 'remove', qty: '4' }))?.toFixed(3)).toBe('-4.000');
+    expect(onHandAfter(line({ mode: 'remove', qty: '4' }))).toBe('1.000');
+    expect(onHandAfter(line({ mode: 'add', qty: '4' }))).toBe('9.000');
+  });
+
+  it('undoing a posted line picks the mode from its sign', () => {
+    expect(lineModeFor('-2.000')).toEqual({ mode: 'remove', qty: '2.000' });
+    expect(lineModeFor('3.000')).toEqual({ mode: 'add', qty: '3.000' });
+  });
+
+  it('a reason re-reads the mode: Counted is Set to, a loss is Remove, Other keeps it', () => {
+    expect(defaultModeFor('count', 'remove')).toBe('to');
+    expect(defaultModeFor('damage', 'add')).toBe('remove');
+    expect(defaultModeFor('theft', 'to')).toBe('remove');
+    expect(defaultModeFor('other', 'add')).toBe('add');
+  });
+
+  it('says the quantity change per unit for a member who may not see costs', () => {
+    const lines = [
+      line({ mode: 'remove', qty: '2', unitCode: 'BAG' }),
+      line({ itemId: 'i2', mode: 'remove', qty: '2', unitCode: 'BAG' }),
+      line({ itemId: 'i3', mode: 'add', qty: '3', unitCode: 'NOS' }),
+      line({ itemId: '', mode: 'add', qty: '9', unitCode: 'NOS' }),
+    ];
+    expect(quantityChanges(lines)).toEqual([
+      { unitCode: 'BAG', qty: '-4.000' },
+      { unitCode: 'NOS', qty: '3.000' },
+    ]);
   });
 });
 
@@ -89,5 +138,85 @@ describe('item display', () => {
   it('spots a barcode scanned into the name field (EC-3)', () => {
     expect(looksLikeBarcode('8901234567890')).toBe(true);
     expect(looksLikeBarcode('Rice 5kg')).toBe(false);
+  });
+});
+
+/**
+ * 09 §8.7 — a low-stock phone card says the row in words, and Order never puts
+ * a line of nothing on a purchase order.
+ */
+describe('low stock in words', () => {
+  const t = (id: string, params?: Record<string, string | number | Date>) =>
+    `${id}${params ? JSON.stringify(params) : ''}`;
+  const row = (over: Partial<LowStockRow>): LowStockRow => ({
+    item: { id: 'i1', name: 'Dal', sku: 'S1', unitCode: 'NOS', allowDecimal: false },
+    onHand: '3.000',
+    reorderPoint: '5.000',
+    stockStatus: 'low',
+    avgCost: null,
+    lastPurchaseCost: null,
+    suggestedQty: '7.000',
+    ...over,
+  });
+
+  it('says what is left and where it reorders', () => {
+    expect(lowStockWords(row({}), t)).toBe(
+      'stock.low.words.withReorder{"left":"stock.low.words.left{\\"qty\\":\\"3 NOS\\"}","qty":"5 NOS"}'
+    );
+  });
+
+  it('says only "Out of stock" for an item with no reorder point', () => {
+    expect(lowStockWords(row({ onHand: '0.000', stockStatus: 'out', reorderPoint: null }), t)).toBe(
+      'stock.low.words.out'
+    );
+  });
+
+  it('orders the suggestion, or one when there is none', () => {
+    expect(lowStockOrderLine(row({}))).toEqual({ itemId: 'i1', qty: '7.000' });
+    expect(lowStockOrderLine(row({ suggestedQty: '0.000' }))).toEqual({ itemId: 'i1', qty: '1' });
+  });
+});
+
+/**
+ * 09 §8.5 — "Already exists" must agree with the server's notion of the same
+ * name (case and spacing do not count), and is decided among SIBLINGS: "Dal"
+ * under Grocery does not block a top-level "Dal".
+ */
+describe('masters: same name, and find → add', () => {
+  const cat = (id: string, name: string, children: Category[] = []): Category => ({
+    id,
+    name,
+    parentId: null,
+    itemCount: 0,
+    children,
+  });
+  const grocery = cat('g', 'Grocery', [{ ...cat('d', 'Dal'), parentId: 'g' }]);
+  const tree = [grocery, cat('s', 'Snacks')];
+
+  it('treats case and spacing as the same name, among siblings only', () => {
+    expect(categoryExists(tree, '  SNACKS ', null)).toBe(true);
+    expect(categoryExists(tree, 'dal', 'g')).toBe(true);
+    expect(categoryExists(tree, 'dal', null)).toBe(false);
+    expect(categoryExists(tree, '   ', null)).toBe(false);
+  });
+
+  it('matches unit codes whatever their case', () => {
+    const units = [
+      { id: 'n', code: 'NOS', name: 'Numbers', allowDecimal: false, isSystem: true, isUqc: true },
+    ];
+    expect(unitCodeExists(units, 'nos')).toBe(true);
+    expect(unitCodeExists(units, 'box')).toBe(false);
+    expect(filterUnits(units, 'numb')).toHaveLength(1);
+  });
+
+  it('seeds a short word as a code and anything else as a name', () => {
+    expect(unitSeed('box')).toEqual({ code: 'BOX', name: '' });
+    expect(unitSeed('Bundle of 12')).toEqual({ code: '', name: 'Bundle of 12' });
+  });
+
+  it('keeps a parent whose child matches, with only that child', () => {
+    expect(filterCategories(tree, 'da')).toEqual([grocery]);
+    expect(filterCategories(tree, 'groc')).toEqual([grocery]);
+    expect(filterCategories(tree, 'zzz')).toEqual([]);
   });
 });

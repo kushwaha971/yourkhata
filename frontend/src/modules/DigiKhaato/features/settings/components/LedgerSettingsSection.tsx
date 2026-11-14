@@ -77,7 +77,7 @@ export function LedgerSettingsSection({
   const [templateEn, templateHi] = useWatch({ control, name: ['templateEn', 'templateHi'] });
 
   // QA D6 — the preview is the merchant's own message, so {business_name} is
-  // THEIR business, not the sample "Kirana Bhandar". The sample stays only as
+  // THEIR business, not the sample "Sharma General Store". The sample stays only as
   // the fallback for a session that has not loaded a business yet.
   const businessName = useAppSelector(selectActiveTenant)?.name;
   const sample = useMemo(
@@ -182,7 +182,15 @@ export function LedgerSettingsSection({
           />
         )}
       </UbField>
-      <UbStack direction="row" gap={1} wrap aria-label={t('settings.template.insert')}>
+      {/* 16 px between wrapped rows on a phone: each 28 px insert button's 44 px
+          hit area (`.ub-hit`) overhangs 8 px above and below (R-A-3, Sprint 12). */}
+      <UbStack
+        direction="row"
+        gap={1}
+        wrap
+        aria-label={t('settings.template.insert')}
+        className="max-sm:gap-y-4"
+      >
         {REMINDER_PLACEHOLDERS.map((placeholder) => (
           <UbButton
             key={placeholder}

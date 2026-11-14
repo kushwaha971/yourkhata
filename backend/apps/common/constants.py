@@ -14,7 +14,7 @@ class ModuleCode(models.TextChoices):
     """Canon §0.3 module codes."""
 
     PLATFORM = "platform", _("Platform")
-    PARTIES = "parties", _("Parties")
+    PARTIES = "parties", _("Contacts")
     LEDGER = "ledger", _("Ledger")
     INVENTORY = "inventory", _("Inventory")
     SALES = "sales", _("Sales")
@@ -26,6 +26,17 @@ class ModuleCode(models.TextChoices):
     IMPORT_EXPORT = "import_export", _("Import / export")
     HELP = "help", _("Help")
     TEAM = "team", _("Team")
+    # DEC-019 (owner, 12 Oct 2026) — the Udhaar book: You gave / You got with a person,
+    # like Khatabook, an app of its own and never part of the Shop. It is the anchor of
+    # the `khata` app; its money is the ledger's `main` bucket (`party.balance`).
+    KHATA = "khata", _("Udhaar book")
+    # ── A1 ── Platform verticals (ADR-041, contracts §1.1). Each is listed in
+    # `apps.platform_app.constants.UNRELEASED_MODULES` until its release CR, so
+    # no merchant sees, enables or reaches one before it is built (vision §4).
+    LENDING = "lending", _("Lending & collections")
+    LIBRARY = "library", _("Library")
+    GYM = "gym", _("Gym & fitness")
+    HOSPITALITY = "hospitality", _("Hotel & stays")
 
 
 class RoleCode(models.TextChoices):
@@ -62,6 +73,25 @@ class PaymentMode(models.TextChoices):
     CHEQUE = "cheque", _("Cheque")
     CARD = "card", _("Card")
     OTHER = "other", _("Other")
+    # ── A4b ── held deposits (ADR-044, contracts §1.4, R24, R37) ─────────────
+    #: No money moved: the two halves of applying a held deposit to a charge,
+    #: and an opening deposit taken before go-live. Accepted ONLY from
+    #: `payments.services.deposits`; every public path refuses it (R24), and the
+    #: cashbook never counts it (R4).
+    ADJUSTMENT = "adjustment", _("Adjusted, no money moved")
+
+
+# ── A4b ── the modes in which money actually changes hands ───────────────────
+#: Every public way of saying how money moved — a payment, a khata entry, an
+#: expense, a credit note's refund — accepts these and never `adjustment`. The
+#: ledger and expenses model fields keep these as their `choices`, which is
+#: exactly the set they had before `ADJUSTMENT` existed (no migration there).
+MONEY_PAYMENT_MODES: tuple[str, ...] = tuple(
+    mode.value for mode in PaymentMode if mode != PaymentMode.ADJUSTMENT
+)
+MONEY_PAYMENT_MODE_CHOICES: list[tuple[str, str]] = [
+    (mode.value, mode.label) for mode in PaymentMode if mode != PaymentMode.ADJUSTMENT
+]
 
 
 class UpiApp(models.TextChoices):
@@ -102,6 +132,7 @@ class DocumentKind(models.TextChoices):
     """Part 21 §21.3.1 `platform_document_sequence.kind`."""
 
     ESTIMATE = "estimate", _("Estimate")
+    SALES_ORDER = "sales_order", _("Sales order")
     INVOICE = "invoice", _("Invoice")
     BILL_OF_SUPPLY = "bill_of_supply", _("Bill of supply")
     CREDIT_NOTE = "credit_note", _("Credit note")
@@ -143,3 +174,41 @@ PAGE_SIZE_DEFAULT = 25
 PAGE_SIZE_MAX = 100
 CURSOR_LIMIT_DEFAULT = 50
 CURSOR_LIMIT_MAX = 200
+
+
+# ── A2 ── ledger buckets (ADR-043, contracts §1.2) ─────────────────────────────
+
+
+class LedgerBucket(models.TextChoices):
+    """Which kind of money a ledger line is — `ledger_entry.bucket`, `payments_payment.bucket`.
+
+    Here rather than in `apps.ledger` for `Direction`'s reason: the ledger is not its only
+    reader. `parties` moves a different cache per bucket and may not import the ledger, and
+    `payments` stores the bucket its payment posted in.
+
+    DEC-019 (owner, 12 Oct 2026; QA B3/B9/B10/B36): each app keeps ONLY its own money; the
+    person (name, mobile) is the one thing shared. So each app's money is its own bucket and
+    its own party cache, and no screen has to remember to subtract another app's.
+
+    * `main` — the udhaar book: You gave / You got, the opening balance, a write-off and their
+      corrections. Moves `party.balance`; the only bucket aging and the khata's reminders read.
+    * `shop` — the Shop: sales and purchase documents, expenses on credit, and the payments
+      that settle them. Moves `party.shop_balance` only.
+    * `loan` — lending: disbursal, interest, loan charges, collections, waivers. Moves
+      `party.loan_balance` only.
+    * `library` — the library's fees, fines, charges, waivers and the payments that settle
+      them. Moves `party.library_balance` only.
+    * `deposit` — money held for the party and returnable. Moves `party.deposit_held` only.
+    """
+
+    MAIN = "main", _("Udhaar book")
+    SHOP = "shop", _("Shop")
+    LOAN = "loan", _("Loan")
+    DEPOSIT = "deposit", _("Deposit")
+    LIBRARY = "library", _("Library")
+
+
+#: The buckets `party.balance` is the sum of (BR-1): what the party owes in the UDHAAR BOOK,
+#: net. Since DEC-019 that is its own bucket alone — a bill, a loan or a library fee is
+#: another app's, with its own cache.
+BALANCE_BUCKET_VALUES: tuple[str, ...] = (LedgerBucket.MAIN.value,)

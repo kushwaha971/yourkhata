@@ -24,12 +24,15 @@
 
 /** Empty string, not `null` or `undefined`: it round-trips through a URL. */
 export type PartyTypeFilter = '' | 'customer' | 'supplier';
-export type PartyBalanceFilter = '' | 'owes_me' | 'i_owe' | 'settled';
+/** A list with its type fixed: the Shop's Customers and Suppliers pages. */
+export type PartyKind = Exclude<PartyTypeFilter, ''>;
+export type PartyBalanceFilter = '' | 'due' | 'owes_me' | 'i_owe' | 'settled';
 export type PartyCollectionFilter = '' | 'today' | 'overdue' | 'upcoming';
 
 export const TYPE_FILTERS: readonly Exclude<PartyTypeFilter, ''>[] = ['customer', 'supplier'];
 
 export const BALANCE_FILTERS: readonly Exclude<PartyBalanceFilter, ''>[] = [
+  'due',
   'owes_me',
   'i_owe',
   'settled',
@@ -52,7 +55,6 @@ export const COLLECTION_FILTERS: readonly Exclude<PartyCollectionFilter, ''>[] =
 export const RECEIVABLE_FILTER = 'owes_me' as const;
 export const PAYABLE_FILTER = 'i_owe' as const;
 
-
 /**
  * PTY-06 FR-12 — the credit band a party is in.
  *
@@ -64,8 +66,24 @@ export const PAYABLE_FILTER = 'i_owe' as const;
  */
 export type PartyCreditFilter = '' | 'over' | 'near' | 'ok';
 
-export const CREDIT_FILTERS: readonly Exclude<PartyCreditFilter, ''>[] = [
-  'over',
-  'near',
-  'ok',
-];
+export const CREDIT_FILTERS: readonly Exclude<PartyCreditFilter, ''>[] = ['over', 'near', 'ok'];
+
+/**
+ * DEC-019 — the Shop's words for the money columns on its Customers and
+ * Suppliers lists. "You will get / You will give" are the Udhaar book's; on the
+ * Shop's lists the figure is what is due on bills, said in plain words a
+ * shopkeeper uses: "To collect" and "To pay". A map from the shared id to the
+ * Shop's, applied by wrapping `t`, so the filters, tiles and rows all change
+ * together and no component has to know which app it is in.
+ */
+export const SHOP_BOOK_WORDS: Readonly<Record<string, string>> = {
+  'parties.list.balance.receivable': 'parties.list.shop.toCollect',
+  'parties.list.balance.payable': 'parties.list.shop.toPay',
+  'parties.list.totals.receivable': 'parties.list.shop.toCollect',
+  'parties.list.totals.payable': 'parties.list.shop.toPay',
+  'parties.list.filter.balance.owes_me': 'parties.list.shop.toCollect',
+  'parties.list.filter.balance.i_owe': 'parties.list.shop.toPay',
+  'parties.list.totals.receivable.action': 'parties.list.shop.toCollect.action',
+  'parties.list.totals.payable.action': 'parties.list.shop.toPay.action',
+};
+

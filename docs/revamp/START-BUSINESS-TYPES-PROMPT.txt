@@ -1,0 +1,183 @@
+YOURKHATA · MASTER PROMPT FOR ANY AI CODING TOOL
+Covers everything the owner has raised: bugs, UI changes, the design review, and
+the new business types (features, scanning, setup data, wording, user guide).
+Paste it whole into Codex, Claude Code, Cursor or any other tool.
+These files are in the repo on `dev` (pushed 25 Oct 2026). Nothing needs attaching:
+  - docs/revamp/13-business-types-and-scanning-plan.md
+  - docs/revamp/14-business-type-setup-data.md
+  - docs/revamp/design/shop-fixes-and-business-types.html (the approved design)
+  - docs/revamp/design/shop-fixes-notes-for-prompt.txt (design notes, files per fix)
+  - docs/revamp/START-BUSINESS-TYPES-PROMPT.txt (this prompt)
+The design is also live at https://claude.ai/artifact/RsYjPpq2t3zCTMu5iUSvNm (owner's login
+only). Work from the HTML file. Its Business type picker at the top shows each
+business's version of a screen.
+
+────────────────────────────────────────────────────────────────────────
+WHO YOU ARE AND WHAT THIS IS
+────────────────────────────────────────────────────────────────────────
+You are continuing work on YourKhata (repo kushwaha971/yourkhata, branch `dev`
+unless the owner names another). Django + PostgreSQL backend, Next.js frontend,
+for Indian small businesses. Apps: Shop (billing, Counter Mode, customers,
+suppliers, purchases, stock, price lists, payments, expenses, reports, GST),
+Udhaar book, Library, Lending. About 80% of users are on phones and are not
+tech-savvy. Speed at a busy counter matters most.
+
+────────────────────────────────────────────────────────────────────────
+STEP 0 · READ BEFORE ANY CODE
+────────────────────────────────────────────────────────────────────────
+Pull the latest `dev`, then read in this order:
+1. CLAUDE.md (root): the acceptance gates (R-DEC-32, gates 1–12) and the Gates
+   commands. These are hard rules, not advice.
+2. AGENTS.md
+3. docs/FEEDBACK.md: every bug and UI point the owner raised (FB-xxx), with
+   priority and status. This is the live to-do list for fixes.
+4. docs/revamp/README.md, docs/revamp/12-decision-log.md (newest first),
+   docs/revamp/START-NEXT-SESSION-PROMPT.txt (the latest "next" section wins over
+   older ones), docs/revamp/02-preserve-and-contracts.md
+5. docs/revamp/07-screens/ (screen specs) and docs/revamp/design/ (visual references)
+6. The files listed at the top. Open docs/revamp/design/
+   shop-fixes-and-business-types.html in a browser and read it fully, including
+   section E2 (owner decisions still open).
+7. docs/BACKLOG.md (parked items; do not start them unless the owner says so)
+
+────────────────────────────────────────────────────────────────────────
+ORDER OF WORK
+────────────────────────────────────────────────────────────────────────
+1. P0 BUGS FIRST. Any FEEDBACK.md row with priority P0 that is Open or In
+   progress (currently FB-009 Home stuck on skeleton after login, FB-010 changes
+   not showing elsewhere until refresh). Reproduce, find the cause, fix it with a
+   regression test, and update the row. If you can't reproduce it, say exactly
+   what you tried and ask the owner for steps and device. Don't mark it Fixed on
+   a guess.
+2. FINISH THE CURRENT SHOP AND UDHAAR REVAMP as START-NEXT-SESSION-PROMPT.txt and
+   R-DEC-27/34 say. One feature at a time.
+3. SHOP FIXES FROM THE DESIGN (Part A of the design page; FB-011 to FB-016).
+   The owner approved the design first, so fix from it, not one by one. This is NOT
+   a new look: keep today's tokens, fonts and components, and change only what the
+   design page draws. Fix shared components once (UbDisclosure, UbDrawer/UbSheet,
+   UbField, UbRegister) so every screen gets it. One commit per fix:
+   A1 Header search (FB-011): the phone magnifier opens a full-screen search; on
+      desktop, a grouped list 640 px wide; a shorter hint. Files: ShopGlobalSearch.tsx,
+      CounterSearch.tsx, CounterSearchPanel.tsx, locales shopSearch.*
+   A2 Folding sections (FB-012): no inner box, no grey header, overflow-clip on the
+      root, a trigger without its own rounded corners, the focus ring on the root.
+      Files: UbDisclosure.tsx; PartyDetailPageContent.tsx infoPanel drawn bare.
+   A3 Saved customer box (FB-013): name + Change on line 1; mobile + balance (in a
+      right-aligned column) on line 2; Quick sale / Saved customer as one two-part
+      switch. File: InvoicePartySection.tsx
+   A4 Adding items (FB-014): one search with a scan button, no empty line card,
+      short lines (qty stepper, rate, and Edit opens a line sheet); on desktop, a table
+      with the search as its first row; "Add an item to finish the bill" instead of
+      "check the highlighted fields". Files: InvoiceLinesSection.tsx, ItemLineCell.tsx,
+      ItemQuickAdd.tsx, the editor dock.
+   A5 Drawer spacing standard (FB-015): label to box 6 px, box to hint 4, field to
+      field 16, group to group 24, switch rows 48 (phone) / 44 (desktop), edge 16
+      (phone) / 24 (desktop); footer Cancel + Save side by side. Apply to
+      PartyFormDrawer, ItemFormDrawer, PaymentFormDrawer, StockAdjustmentDrawer and
+      every other drawer.
+   A6–A8 are ALREADY ON dev (branch 59a1eb9 merged in 72816dc; fab327c): separate
+      customer/supplier forms (FB-004), table frame and count line staying during
+      search (FB-006/007), blank page on first tap (FB-005). Only verify them against
+      the design, and finish FB-004's phone-width check. Don't rebuild them.
+   Then Part F screens (suppliers, categories, orders, stock, money, reports) get the
+   same shared fixes and the per-business words and report rows as drawn.
+   Screenshots for every fix: phone 390 and 320 px, desktop 1280, light and dark,
+   EN and HI.
+
+4. BUSINESS TYPES, as the design page draws them (Parts B, C, D) and in the order
+   of plan 13. Part B = F0, Part C = S, Part D = P1–P6 fields, plus the dashboard
+   follow-ups, estimates/challans, and A4 PDF / 80 mm print columns per business:
+   F0 (business type decides features,
+   with starter setup from plan 14) → S (scanning: camera on phones, USB scanner
+   on desktop) → P1 units / part numbers / godowns → P2 variants + labels →
+   P3 IMEI/serial → P4 batch & expiry + Schedule H → P5 e-way bill / e-invoice →
+   P6 café add-ons → P7 jewellery app → P8 ERP pieces (each needs separate approval).
+   Before F0, check that the owner has answered, in 12-decision-log.md:
+   R-DEC-35 to R-DEC-38 (plan 13 §6) and the design page's section E2 (words only
+   vs menu re-order per business; bottom bar order; starter categories created vs
+   ticked; which business first; line details under the row vs a side drawer).
+   If not, ask all of them in one message and wait. Part A fixes don't wait for these.
+5. USER GUIDE per business type, after each business-type phase ships: how a
+   kirana, medical store, mobile shop and so on uses the Shop, in plain English and
+   Hindi, with phone screenshots. Put it where the in-app help lives (`apps/help`, `features/help`).
+
+NEW FEEDBACK DURING WORK: when the owner raises a new bug, UI change or idea, add
+it as the next FB row in docs/FEEDBACK.md with priority and status, then place it
+in the order above (P0 jumps the queue; UI polish waits for the design).
+
+────────────────────────────────────────────────────────────────────────
+THE BUSINESS-TYPE MODEL THE OWNER CHOSE (do not redesign it)
+────────────────────────────────────────────────────────────────────────
+- The business type chosen at sign-up decides what shows: features, fields,
+  starter categories and units, and wording. Sign-up asks "What do you sell?"
+  with picture tiles (EN + HI): Kirana, Medical, Mobile, Kapde, Hardware,
+  Mithai/Bakery, Wholesale, Jewellery, Other.
+- Users won't go looking in Settings. Features arrive from the preset at
+  sign-up, from the owner's team in the platform console, or as a one-time yes/no
+  card at the moment of need (UbFeatureOffer). Settings › Shop features is only a fallback.
+- Sidebar, menu and screen wording follow the business type where it helps
+  ("Retailer / Company" for a distributor, "Client / Vendor" for services,
+  "Distributor" as a medical store's supplier). Keep generic words everywhere
+  else. Wording comes from preset-written label settings (like `party_labels`
+  today), never from `if business_type == …` in code.
+- Every new feature is OFF for existing businesses. A kirana sees exactly what it
+  sees today.
+- Shop flavours (kirana, medical, mobile, garments, hardware) are ONE Shop with
+  extra fields. Jewellery (later Clinic, Accounts, Production) are separate apps in
+  More/Apps. Separate businesses use the existing Business switcher. A mixed shop
+  under one GSTIN can choose more than one type, and fields can be scoped by item category.
+
+────────────────────────────────────────────────────────────────────────
+RULES THAT ARE NOT OPTIONAL
+────────────────────────────────────────────────────────────────────────
+- One feature (or one FB fix) completely before the next (R-DEC-34): build, all
+  gates, LOOK at it, phone (390 px) and desktop (1280 px) screenshots of every
+  state in EN and HI (R-DEC-07), performance numbers, docs, commit, push.
+- Follow the design files exactly (docs/revamp/design/shop-fixes-and-business-types.html
+  for these fixes and business types, counter-mode.html for editors) and 07-screens.
+  Phone uses cards with scroll-next, desktop uses tables with pagination
+  (R-DEC-30/33). Don't invent changes the design doesn't draw.
+- Nothing branches on Tenant.business_type after onboarding (canon; a test
+  enforces it). Presets write editable rows once. Behaviour reads settings and
+  entitlements through ONE helper.
+- Money, stock and access must be correct. No design score excuses them (R-DEC-32).
+  Writes keep Idempotency-Keys and the double-tap lock.
+- Stock costing stays weighted average per item and location (D-01). Every stock
+  change goes through `post_movements`. Never add a second writer.
+- Library and Lending are frozen (L-01, 02-preserve-and-contracts.md): UI only, no
+  endpoint, model or flow changes.
+- A new outside library or provider needs an ADR first (ADR-021). Server changes
+  are written as a BP in docs/revamp/08-backend-change-proposals.md and need the owner's approval.
+- Plain words in English and Hindi (R-DEC-28). GST rates in presets are
+  suggestions the owner confirms, never stored on an item.
+- Fix shared components once, not per screen, and check every screen that uses them.
+
+────────────────────────────────────────────────────────────────────────
+SPEED: NOTHING GETS SLOWER
+────────────────────────────────────────────────────────────────────────
+For every change, and for every business-type feature while it is OFF:
+- e2e/counter-entry-timing.mjs, e2e/perf-billing.mjs, e2e/revamp-counter-search.mjs
+  and e2e/perf-app.mjs on the scale book (`manage.py seed_scale`) at 4× CPU: no
+  regression beyond noise. Put before/after numbers in the report.
+- Bill issue makes the same number of queries (assert it in a test).
+- With a feature off, Shop screens are pixel-identical at 390 and 1280 px.
+- `npm run bundle:check` holds the baseline; new screens and the scan decoder are lazy chunks.
+- Risky ones: P2 picker grouping, P4 batch inside post_movements, P6 add-ons in
+  Counter Mode. Any rise blocks the phase.
+
+────────────────────────────────────────────────────────────────────────
+AFTER EACH PIECE
+────────────────────────────────────────────────────────────────────────
+1. Run every gate in CLAUDE.md (backend pytest; frontend type-check, lint, test,
+   build, bundle:check, i18n:check; the e2e scripts) and paste the results.
+2. Write the report in docs/performance/<date>-<piece>.md: what changed and why
+   users need it, competitor comparison (dated, task-level), spec-to-check mapping,
+   screenshots, before/after timings, and what is missing or unproven, said plainly.
+3. Update the FEEDBACK.md row (status + commit) and add a Progress line to
+   docs/revamp/12-decision-log.md.
+4. Commit with a clear message, push, and tell the owner in plain language what
+   is done and what's next. Then start the next piece.
+
+If something is unclear or a rule blocks you, ask the owner one clear question.
+Never guess on money, stock, GST or access, and never claim something is fixed or
+matches the design without having looked at it.

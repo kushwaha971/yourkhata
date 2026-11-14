@@ -9,8 +9,13 @@ import type {
   PartyDetail,
   PartyDetailResult,
   PartyFormValues,
+  PartyIdentityValues,
   PartyListParams,
   PartyListResult,
+  ShopPartyFactsWire,
+  ShopPartyFacts,
+  ShopPartyCounts,
+  PartyRoleBadge,
   PartySaveResult,
 } from '../types/party.types';
 
@@ -31,6 +36,8 @@ interface PartyListApiResponse {
     readonly page_size: number;
     readonly total: number;
     readonly total_pages: number;
+    readonly has_any?: boolean;
+    readonly shop_counts?: ShopPartyCounts;
     /**
      * The header figures for the whole FILTERED set (Part 22 §22.4).
      *
@@ -78,6 +85,21 @@ interface PartyListApiResponse {
  * Money stays a STRING on purpose (R-TS-7). `UbAmount` and `view-model/*` parse
  * with decimal.js-light when they need maths.
  */
+export const toShopFacts = (row: ShopPartyFactsWire): ShopPartyFacts => ({
+  customerBalance: row.customer_balance,
+  customerDue: row.customer_due,
+  customerCredit: row.customer_credit,
+  supplierBalance: row.supplier_balance,
+  supplierDue: row.supplier_due,
+  supplierCredit: row.supplier_credit,
+  customerOpening: row.customer_opening ?? '0.00',
+  supplierOpening: row.supplier_opening ?? '0.00',
+  oldestDueOn: row.oldest_due_on,
+  daysOverdue: row.days_overdue,
+  lastActivityAt: row.last_activity_at,
+  lastActivityKind: row.last_activity_kind,
+});
+
 const toParty = (row: PartyApiRow): Party => ({
   id: row.id,
   name: row.name,
@@ -86,12 +108,15 @@ const toParty = (row: PartyApiRow): Party => ({
   isCustomer: row.is_customer,
   isSupplier: row.is_supplier,
   balance: row.balance,
+  ...(row.shop ? { shop: toShopFacts(row.shop) } : {}),
   status: row.status,
   lastActivityAt: row.last_activity_at,
   /* `?? []` because a server older than this client sends no `tags` key. An
      absent key and an untagged party render identically, which is the one
      place a default is honest: both mean "no chips on this row". */
   tags: (row.tags ?? []).map((tag) => ({ id: tag.id, name: tag.name, color: tag.color })),
+  /* A6 — absent means no module with roles is on, which renders as "no roles". */
+  roles: row.roles ?? [],
 });
 
 /**
@@ -117,9 +142,13 @@ const partyFilterQuery = (
   // comment claimed a 400.
   type: params.type || undefined,
   balance: params.balance || undefined,
+  late: params.late || undefined,
   collection: params.collection || undefined,
   tag: params.tag || undefined,
   credit: params.credit || undefined,
+  role: params.role || undefined,
+  // DEC-019 — only the Shop's book is spelled out; the Udhaar book is the default.
+  book: params.book === 'shop' ? 'shop' : undefined,
   ordering: params.ordering,
 });
 
@@ -170,6 +199,7 @@ export const listParties = async (
       pageSize: response.data.meta.page_size,
       total: response.data.meta.total,
       totalPages: response.data.meta.total_pages,
+      ...(response.data.meta.has_any === undefined ? {} : { hasAny: response.data.meta.has_any }),
     },
     // The whole block or none of it: half a total is worse than none, because
     // the screen would show one server figure beside one page figure and label
@@ -194,12 +224,25 @@ export const listParties = async (
        server does not count", which hides it too — but only one of them is a
        statement about the merchant's book. */
     overLimit: totals?.over_limit ?? null,
+    /* A6 — the server sends `roles` on every row while a module with roles is
+       on, and on none otherwise, so one row is enough to know. */
+    rolesOn: response.data.data.some((row) => row.roles !== undefined),
+    ...(response.data.meta.shop_counts ? { shopCounts: response.data.meta.shop_counts } : {}),
   };
 };
 
 // ── PTY-01 — create and edit ────────────────────────────────────────────────
 
-interface PartyDetailApiRow extends PartyApiRow {
+export interface PartyRoleBadgeApi {
+  readonly code: string;
+  readonly module: string;
+  readonly label_id: string;
+}
+
+/* `roles` is objects on the detail and codes on the list row (§6), so the
+   detail row does not inherit the list's spelling of it. */
+interface PartyDetailApiRow extends Omit<PartyApiRow, 'roles'> {
+  readonly roles?: readonly PartyRoleBadgeApi[];
   readonly alt_phone: string | null;
   readonly email: string | null;
   readonly gstin: string | null;
@@ -216,6 +259,8 @@ interface PartyDetailApiRow extends PartyApiRow {
   readonly opening_balance_direction: string | null;
   readonly opening_balance_as_of: string | null;
   readonly created_at: string;
+  /** DEC-019 — the Shop's own figure, absent unless it means something (see `PartyDetail`). */
+  readonly shop_balance?: string;
 }
 
 interface PartySaveApiResponse {
@@ -230,8 +275,16 @@ interface PartySaveApiResponse {
   };
 }
 
+export const toRoleBadge = (role: PartyRoleBadgeApi): PartyRoleBadge => ({
+  code: role.code,
+  module: role.module,
+  labelId: role.label_id,
+});
+
 const toPartyDetail = (row: PartyDetailApiRow): PartyDetail => ({
-  ...toParty(row),
+  ...toParty({ ...row, roles: row.roles?.map((role) => role.code) }),
+  /* A6 — spread only when sent: its absence is what hides the relations section. */
+  ...(row.roles ? { roleBadges: row.roles.map(toRoleBadge) } : {}),
   altPhone: row.alt_phone,
   email: row.email,
   gstin: row.gstin,
@@ -248,6 +301,9 @@ const toPartyDetail = (row: PartyDetailApiRow): PartyDetail => ({
   openingDirection: row.opening_balance_direction,
   openingAsOf: row.opening_balance_as_of,
   createdAt: row.created_at,
+  /* DEC-019 — spread only when sent, so an absent figure stays absent rather than
+     becoming an `undefined` key a `?? '0.00'` would turn into a fact. */
+  ...(row.shop_balance != null ? { shopBalance: row.shop_balance } : {}),
 });
 
 const toSaveResult = (body: PartySaveApiResponse): PartySaveResult => ({
@@ -289,8 +345,12 @@ const toWireBody = (values: PartyFormValues, { create }: { create: boolean }) =>
     credit_limit: text(values.creditLimit),
     credit_days: text(values.creditDays) ? Number(values.creditDays) : undefined,
     collection_date: text(values.collectionDate),
-    sms_opt_in: values.smsOptIn,
-    consent_source: text(values.consentSource),
+    /* A6 F7: reminders are for people who owe you, so a supplier-only
+       contact sends neither key. The form's default is "on", and before this
+       every supplier was saved opted in to reminders it never asked about. */
+    ...(values.isCustomer
+      ? { sms_opt_in: values.smsOptIn, consent_source: text(values.consentSource) }
+      : {}),
     /* PTY-05. ALWAYS sent, including as an empty array, and the two halves of
        that are different rules.
  
@@ -318,6 +378,7 @@ const toWireBody = (values: PartyFormValues, { create }: { create: boolean }) =>
           opening_balance_amount: values.openingAmount,
           opening_balance_direction: values.openingDirection,
           ...(text(values.openingAsOf) ? { opening_balance_as_of: values.openingAsOf } : {}),
+          ...(values.openingBook === 'shop' ? { opening_book: 'shop' } : {}),
         }
       : {}),
   };
@@ -356,6 +417,19 @@ export const updateParty = async (
     API_PATHS.PARTY(id),
     toWireBody(values, { create: false }),
     ubConfig({})
+  );
+  return toSaveResult(response.data);
+};
+
+/** A person's shared identity; do not resend another app's profile or money. */
+export const updatePartyIdentity = async (
+  id: string,
+  values: PartyIdentityValues
+): Promise<PartySaveResult> => {
+  const response = await api.patch<PartySaveApiResponse>(
+    API_PATHS.PARTY(id),
+    { name: values.name.trim(), mobile: values.mobile?.trim() || null },
+    ubConfig({ suppressErrorSnackbar: true })
   );
   return toSaveResult(response.data);
 };
@@ -399,9 +473,13 @@ interface PartyDetailApiResponse {
  * again. A toast would say the same thing and then disappear, leaving an empty
  * screen with no explanation.
  */
-export const getParty = async (id: string, signal?: AbortSignal): Promise<PartyDetailResult> => {
+export const getParty = async (
+  id: string,
+  signal?: AbortSignal,
+  book?: 'shop'
+): Promise<PartyDetailResult> => {
   const response = await api.get<PartyDetailApiResponse>(
-    API_PATHS.PARTY(id),
+    `${API_PATHS.PARTY(id)}${book ? '?book=shop' : ''}`,
     ubConfig({ signal, suppressErrorSnackbar: true })
   );
   const { summary, credit } = response.data.data;
@@ -537,6 +615,10 @@ export interface BulkArchiveSkip {
   readonly code: string;
   /** Decimal string, or `null` for an id the server could not find. */
   readonly balance: string | null;
+  /** A6 — with `party_has_open_records`: the module, the count, its sentence's id. */
+  readonly module?: string;
+  readonly count?: number;
+  readonly label_id?: string;
 }
 
 export interface BulkArchiveResult {

@@ -1,0 +1,10 @@
+src/components/records/RecordTotals.tsx 24ms
+src/design-system/UbDataGrid/UbDataGrid.tsx 25ms
+src/design-system/UbDataGrid/UbDataGrid.test.tsx 39ms
+src/design-system/UbPageHeader/UbPageHeader.tsx 3ms
+src/design-system/UbPageShell/UbPageShell.tsx 2ms (unchanged)
+src/modules/DigiKhaato/features/parties/components/PartyListPageContent.tsx 20ms
+src/modules/DigiKhaato/features/parties/components/ShopPartySummary.tsx 3ms
+src/modules/DigiKhaato/features/parties/components/ShopPartyToolbar.tsx 3ms (unchanged)
+src/modules/DigiKhaato/features/sales/components/InvoiceListStats.tsx 1ms (unchanged)
+src/modules/DigiKhaato/features/sales/components/InvoicesListPageContent.tsx 8ms

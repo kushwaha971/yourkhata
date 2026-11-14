@@ -55,3 +55,18 @@ describe('UbChoiceChips', () => {
     expect(screen.getByRole('radio', { name: 'Cash' })).toHaveAttribute('tabindex', '0');
   });
 });
+
+it('reveals the selected chip horizontally without scrolling the page', () => {
+  /** R-DEC-33: a URL-selected Draft chip could sit offscreen while its duplicate count was removed. */
+  const props = { onChange: jest.fn(), options: OPTIONS, ariaLabel: 'Via', revealSelected: true };
+  const view = render(<UbChoiceChips {...props} value="cash" />);
+  const group = screen.getByRole('radiogroup', { name: 'Via' });
+  Object.defineProperty(group, 'scrollWidth', { configurable: true, value: 500 });
+  Object.defineProperty(group, 'clientWidth', { configurable: true, value: 200 });
+  group.getBoundingClientRect = () => ({ left: 0, right: 200 }) as DOMRect;
+  screen.getByRole('radio', { name: 'Card' }).getBoundingClientRect = () =>
+    ({ left: 400, right: 480 }) as DOMRect;
+  view.rerender(<UbChoiceChips {...props} value="card" />);
+  expect(group.scrollLeft).toBe(280);
+  expect(window.scrollY).toBe(0);
+});

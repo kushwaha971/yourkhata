@@ -1,0 +1,918 @@
+// Seeded monkey testing for one screen: random taps, typing, keys and
+// scrolls, as an impatient or confused user would — and a failure the moment
+// the page crashes, logs a console error or React warning, answers 5xx, grows
+// wider than the viewport, or loses the data it was given.
+//
+//   node e2e/monkey.mjs --path=/sales/invoices/new --seed=7 --steps=300 --width=390
+//     [--setup=party]   start with a saved customer chosen (A3's box)
+//
+// Besides taps, typing, keys and scrolls it RELOADS, goes Back and Forward,
+// and wanders to another Shop page (pokes it, then returns by the sidebar or
+// Back), as a distracted user does. After each it checks the bill kept its
+// lines. It also watches the API (any 5xx, a refused save the screen should
+// have blocked, the same call repeated in a burst) and speed (page loads,
+// long main-thread tasks, JS heap growth), and prints a summary of both.
+//
+// The seed makes a failing run repeatable: rerun with the printed seed.
+// Writes only drafts to the LOCAL seeded QA tenant; never presses Issue,
+// Delete, Void or Record (those buttons are skipped by name).
+import { mkdirSync, writeFileSync } from "node:fs";
+import { chromium } from "playwright";
+
+const arg = (n, d) =>
+  process.argv.find((a) => a.startsWith(`--${n}=`))?.slice(n.length + 3) ?? d;
+const base = (process.env.E2E_BASE ?? "http://localhost:3000");
+const path = arg("path", "/sales/invoices/new");
+const seed = Number(arg("seed", String(Date.now() % 100000)));
+const steps = Number(arg("steps", "300"));
+const width = Number(arg("width", "390"));
+const setup = arg("setup", "");
+const dir = process.env.E2E_SHOTS ?? "/tmp/e2e-shots/monkey";
+mkdirSync(dir, { recursive: true });
+
+// mulberry32: a small seeded generator, so a run can be replayed exactly.
+let state = seed >>> 0;
+const rand = () => {
+  state = (state + 0x6d2b79f5) >>> 0;
+  let t = state;
+  t = Math.imul(t ^ (t >>> 15), t | 1);
+  t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+  return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+};
+const pick = (list) => list[Math.floor(rand() * list.length)];
+
+// In BOTH languages: a tap can switch the app to Hindi, and the English-only
+// list then let the monkey tap "साइन आउट करें" (sign out) and spend the rest of
+// the run on the sign-in page tapping "कोड भेजें" (send code), asking for real
+// OTPs — which read as a /auth/me + /auth/refresh "request loop" (A6, seed 92).
+const SKIP =
+  /issue|delete|void|record|remove|sign out|log out|archive|cancel bill|discard|send code|साइन आउट|लॉग आउट|कोड भेजें|जारी करें|हटाएँ|मिटाएँ|left the library|लाइब्रेरी छोड़ी|remind|याद दिला|print|प्रिंट|write off|छोड़ दें|whatsapp/i;
+const TEXT = [
+  "",
+  "a",
+  "12",
+  "0",
+  "-5",
+  "99999999",
+  "3.141",
+  "राधे",
+  "O'Brien & Sons",
+  "   ",
+  "😀",
+  "x".repeat(200),
+];
+const KEYS = [
+  "Enter",
+  "Escape",
+  "Tab",
+  "Shift+Tab",
+  "Backspace",
+  "ArrowDown",
+  "ArrowUp",
+  "Control+k",
+  "Control+s",
+];
+
+const failures = [];
+const log = [];
+// What the page is still waiting for, dumped by the watchdog: a hang is a
+// finding, and "stuck on a skeleton" says nothing without the open requests.
+const inflight = new Map();
+const lastErrors = [];
+// Shop round (11 Nov): every screen every kind of shop has, so a module-wide
+// run (--wander=N) visits the whole Shop and not seven pages of it.
+const MONEY_BOOK = process.argv.includes("--app=khata");
+// Library round (12 Nov): `--app=library` wanders Members & Fees (e2e/library_seed.py first).
+const LIBRARY = process.argv.includes("--app=library");
+// Lending round (12 Nov): `--app=lending` wanders Loans & Collections (e2e/lending_seed.py first).
+const LENDING = process.argv.includes("--app=lending");
+// The app's own way home, for the apps that are not the Shop.
+const APP_HOME = MONEY_BOOK ? "/money-book" : LIBRARY ? "/library" : LENDING ? "/lending" : null;
+let WANDER = [
+  "/dashboard", "/sales/invoices", "/sales/estimates", "/customers", "/suppliers",
+  "/items", "/stock/summary", "/stock/low", "/stock/count", "/stock/transfer",
+  "/purchases/bills", "/purchases/orders", "/payments", "/expenses",
+  "/reports", "/reports/day-book", "/reports/aging", "/reports/sales-register",
+  "/reports/purchase-register", "/reports/gst-summary", "/reports/profit",
+];
+// How often a step wanders, against the 13 other kinds of step (default 1).
+const WANDER_WEIGHT = Number(arg("wander", "1"));
+// API: every finished request, for counts, bursts and the slowest replies.
+const calls = [];
+// Speed: one entry per full page load (reload, wander, return).
+const loads = [];
+let keptChecks = 0;
+let keptOnServer = 0;
+const onDeviceOnly = [];
+const stuck = [];
+// Watchdog: a run that stops moving is a finding (a dialog, a print sheet, a
+// navigation that never settles), not a silent hang. Record what it was doing.
+// C1 (seed 301 at 390): a run that was still moving — 297 of 300 steps, each
+// answered — was called HUNG by a fixed 360 s total, after the scan action
+// made a step longer. A hang is a page that STOPS: no step finished for
+// STALL_MS. The total cap stays, wider, for a run that crawls.
+const WATCHDOG_MS = Number(process.env.MONKEY_WATCHDOG_MS ?? 900000);
+const STALL_MS = Number(process.env.MONKEY_STALL_MS ?? 60000);
+let lastStepAt = Date.now();
+const stall = setInterval(() => {
+  if (Date.now() - lastStepAt > STALL_MS) {
+    clearInterval(stall);
+    hung(`stalled: no step finished for ${STALL_MS / 1000}s`);
+  }
+}, 5000);
+stall.unref();
+const hung = async (why) => {
+  failures.push(`watchdog: ${why}; last actions: ${log.slice(-5).join(" | ")}`);
+  try {
+    await page.screenshot({
+      path: `${dir}/monkey-${seed}-${width}-hung.png`,
+      timeout: 5000,
+    });
+    console.log("hung at", page.url());
+    console.log("open requests:", JSON.stringify([...inflight.values()].slice(0, 12)));
+    console.log("last console errors:", JSON.stringify(lastErrors.slice(-6)));
+  } catch {}
+  writeFileSync(`${dir}/monkey-${seed}-${width}.log`, log.join("\n"));
+  console.log(`seed ${seed} · ${width}px · ${log.length} actions · HUNG`);
+  for (const f of failures) console.log("FAIL", f);
+  process.exit(1);
+};
+setTimeout(() => hung(`no finish after ${WATCHDOG_MS / 1000}s`), WATCHDOG_MS).unref();
+const browser = await chromium.launch(
+  process.env.PW_CHROME ? { executablePath: process.env.PW_CHROME } : {},
+);
+const ctx = await browser.newContext({
+  viewport: { width, height: width < 1024 ? 800 : 900 },
+});
+await ctx.addInitScript(() => {
+  const original = console.error;
+  window.__errors = [];
+  console.error = (...args) => {
+    window.__errors.push(
+      String(args[0]).slice(0, 200) +
+        "\n" +
+        (new Error().stack ?? "").split("\n").slice(2, 14).join("\n"),
+    );
+    original.apply(console, args);
+  };
+});
+const page = await ctx.newPage();
+let armed = false;
+let pageRef = null;
+page.on("console", (m) => {
+  // The browser's own note on a 4xx is not an app error; the response handler
+  // below logs every 4xx with its request and reply, and fails on any 5xx.
+  if (
+    /Failed to load resource: the server responded with a status of 4\d\d/.test(
+      m.text(),
+    )
+  )
+    return;
+  if (armed && (m.type() === "error" || /Warning:/.test(m.text())))
+    failures.push(`console: ${m.text().slice(0, 200)}`);
+});
+page.on("request", (r) => inflight.set(r, `${r.method()} ${r.url().replace(base, "")}`));
+page.on("requestfinished", (r) => inflight.delete(r));
+page.on("requestfailed", (r) => inflight.delete(r));
+page.on("console", (m) => m.type() === "error" && lastErrors.push(m.text().slice(0, 200)));
+page.on("pageerror", (e) =>
+  failures.push(`page error: ${e.message.slice(0, 200)}`),
+);
+page.on("response", async (r) => {
+  if (!armed || !r.url().includes("/api/") || r.status() < 400) return;
+  const reply = (await r.text().catch(() => "")).slice(0, 300);
+  const detail = `HTTP ${r.status()} ${r.request().method()} ${r.url().replace(base, "")} body=${(r.request().postData() ?? "").slice(0, 400)} reply=${reply}`;
+  console.log(detail);
+  if (r.status() >= 500) failures.push(detail);
+  // A draft save the server refuses for a field is one the screen should have
+  // held back (FB-020, R-DEC-56): the merchant sees "Couldn't save".
+  if (
+    r.status() === 400 &&
+    /\/sales\/invoices/.test(r.url()) &&
+    ["POST", "PATCH"].includes(r.request().method()) &&
+    /validation_error/.test(reply)
+  )
+    failures.push(`refused save the screen let through: ${detail}`);
+});
+// MONKEY_TRACE=1: every bill write, with its body and the step, to replay a
+// data finding exactly (the seed makes the run repeatable).
+if (process.env.MONKEY_TRACE)
+  page.on("request", (r) => {
+    if (/\/sales\/invoices/.test(r.url()) && ["POST", "PATCH", "DELETE"].includes(r.method())) {
+      const body = r.postData() ?? "";
+      const lines = (body.match(/"description":"[^"]*"/g) ?? []).map((x) => x.slice(15, -1));
+      console.log(`TRACE step ${log.length} ${r.method()} ${new URL(r.url()).pathname.replace("/api/v1", "")} lines=${JSON.stringify(lines)} at ${page.url().replace(base, "")} | last: ${log.slice(-2).join(" / ")}`);
+    }
+  });
+// Every request, for a slow page's report (A8): which one the screen waited on.
+const allReqs = [];
+page.on("requestfinished", (r) => {
+  const t = r.timing();
+  allReqs.push({ end: Date.now(), url: r.url().replace(base, "").replace("http://localhost:8000", "").slice(0, 70), wait: Math.round(t.requestStart), total: Math.round(t.responseEnd) });
+  if (allReqs.length > 400) allReqs.shift();
+});
+page.on("requestfinished", (r) => {
+  if (!armed || !r.url().includes("/api/")) return;
+  const t = r.timing();
+  calls.push({
+    at: Date.now(),
+    key: `${r.method()} ${new URL(r.url()).pathname.replace("/api/v1", "").replace(/[0-9a-f]{8}-[0-9a-f-]{27}/g, ":id")}`,
+    ms: t.responseEnd > 0 ? Math.round(t.responseEnd) : null,
+  });
+});
+/** Time until the screen shows its content: no busy region and no skeleton left. */
+const busyNow = () =>
+  page
+    .evaluate(() => {
+      const e = document.querySelector("main [aria-busy=true], main [data-skeleton], main .animate-pulse");
+      if (!document.querySelector("main")) return "no <main> yet";
+      if (!e) return null;
+      const path = [];
+      for (let x = e; x && x.tagName !== "MAIN" && path.length < 6; x = x.parentElement)
+        path.unshift(`${x.tagName.toLowerCase()}${x.getAttribute("data-testid") ? `[${x.getAttribute("data-testid")}]` : ""}${x.getAttribute("role") ? `(${x.getAttribute("role")})` : ""}`);
+      return `${path.join(">")} "${(e.getAttribute("aria-label") || e.textContent || "").trim().slice(0, 40)}" ${e.className?.toString().slice(0, 60)}`;
+    })
+    .catch(() => "unreadable");
+let busyAt2s = null;
+const readyAfter = async (t0) => {
+  busyAt2s = null;
+  const probe = setTimeout(async () => {
+    busyAt2s = await busyNow();
+    // A picture of a page that is still not ready at 2 s: what the person sees.
+    if (process.env.MONKEY_SLOW_SHOTS)
+      await page.screenshot({ path: `${dir}/slow-${seed}-${width}-${Date.now()}.png` }).catch(() => {});
+  }, 2000);
+  await page
+    .waitForFunction(
+      () =>
+        document.querySelector("main") &&
+        !document.querySelector("main [aria-busy=true], main [data-skeleton], main .animate-pulse"),
+      null,
+      // Interval polling, not the default animation-frame polling: frames can
+      // pause after Back/Forward, and every "slow return" of ~7.9 s (seeds 64,
+      // 93) was the wait itself — the page had its content at 2 s (A8 P5).
+      { timeout: 10000, polling: 100 },
+    )
+    .catch(() => {});
+  clearTimeout(probe);
+  const ms = Date.now() - t0;
+  // A slow page says WHAT kept it busy, so the failure can be traced, not guessed.
+  if (ms > 5000) {
+    lastBusy = await page
+      .evaluate(() => {
+        const e = document.querySelector("main [aria-busy=true], main [data-skeleton], main .animate-pulse");
+        if (!e) return "nothing busy at the end (main missing until late?)";
+        const at = (x) => `${x.tagName.toLowerCase()}${x.id ? `#${x.id}` : ""}${x.getAttribute("data-testid") ? `[data-testid=${x.getAttribute("data-testid")}]` : ""}`;
+        const path = [];
+        for (let x = e; x && x.tagName !== "MAIN" && path.length < 5; x = x.parentElement) path.unshift(at(x));
+        return `${path.join(" > ")} ${e.outerHTML.slice(0, 160)}`;
+      })
+      .catch(() => "unreadable");
+    lastBusy += ` · busy at 2 s: ${busyAt2s ?? "—"}`;
+    lastBusy += ` · still open: ${[...inflight.values()].slice(0, 6).join(", ") || "none"}`;
+    const slowest = allReqs
+      .filter((q) => q.end >= t0)
+      .sort((a, b) => b.total - a.total)
+      .slice(0, 5)
+      .map((q) => `${q.url} (wait ${q.wait} ms, total ${q.total} ms)`);
+    lastBusy += ` · slowest in the window: ${slowest.join(", ") || "none"}`;
+  }
+  return ms;
+};
+let lastBusy = null;
+let lastT0 = Date.now();
+const pageSpeed = async (why) => {
+  const ready = await readyAfter(lastT0);
+  const m = await page
+    .evaluate(() => {
+      const n = performance.getEntriesByType("navigation")[0];
+      return n ? { dcl: Math.round(n.domContentLoadedEventEnd), load: Math.round(n.loadEventEnd) } : null;
+    })
+    .catch(() => null);
+  loads.push({ why, url: page.url().replace(base, ""), ready, busy: ready > 5000 ? lastBusy : undefined, ...(m ?? {}) });
+};
+const linesNow = async () =>
+  (
+    await page
+      .locator("[data-testid=invoice-line] [data-part=name], [data-testid=invoice-line-card] [data-part=name]")
+      .allInnerTexts()
+      .catch(() => [])
+  ).sort();
+/**
+ * After a reload or a return the bill must not be lost. Either the screen
+ * still shows its lines, or — when the user came back to a fresh New bill —
+ * the draft they left is on the server with those lines (it went on hold).
+ * And the address must never name a draft the screen is not showing.
+ */
+const draftId = (u) => /\/sales\/invoices\/([0-9a-f-]{36})\/edit/.exec(u)?.[1] ?? null;
+const serverLines = async (id) =>
+  ((await (await ctx.request.get(`${base}/api/v1/sales/invoices/${id}`)).json().catch(() => ({}))).data?.lines ?? []).map(
+    (l) => l.description,
+  );
+/**
+ * B1–B3 — the screen agrees with the server after every reload and return,
+ * with data on screen (P0 §4: the data check must have run):
+ *  - Settings › Shop features: each switch shows the stored setting;
+ *  - any Shop page: the sidebar's words are the session's words, and the
+ *    orders rows are there exactly when the session says `orders`.
+ */
+let agreeChecks = 0;
+const otherAppSkips = [];
+const checkAgrees = async (i, how) => {
+  const url = page.url();
+  if (!url.startsWith(base) || url.includes("/login") || url.includes("/onboarding")) return;
+  await page.waitForTimeout(1200);
+  const me = (await (await ctx.request.get(`${base}/api/v1/auth/me`)).json().catch(() => ({}))).data;
+  if (!me?.active_tenant) return;
+  const locale = (await ctx.cookies()).find((c) => c.name === "ub_locale")?.value ?? "en";
+  const words = me.active_tenant.words?.[locale] ?? {};
+  const features = me.active_tenant.features ?? null;
+  if (url.includes("/settings/shop-features")) {
+    const values = (await (await ctx.request.get(`${base}/api/v1/tenants/current/settings`)).json().catch(() => ({}))).data?.values ?? {};
+    const shown = await page.evaluate(() =>
+      [...document.querySelectorAll("main [role=switch]")].map((e) => e.getAttribute("aria-checked") === "true"),
+    );
+    if (shown.length === 2) {
+      agreeChecks += 1;
+      const want = [Boolean(values["shop.wholesale"]?.value), Boolean(values["shop.features.orders"]?.value)];
+      if (shown[0] !== want[0] || shown[1] !== want[1])
+        failures.push(`step ${i}: after ${how} the switches show ${shown} but the server has ${want}`);
+    }
+  }
+  // Money book round (11 Nov): a person's balance and the book's "To get" are
+  // the server's, after every reload and return. Read from the private book
+  // (`/api/v1/moneybook/…`), which is what these screens read.
+  if (me.active_app === "khata") {
+    const plain = (s) => s.replace(/[₹,\s]/g, "");
+    // The address AFTER the wait: read before it, a page that moved meanwhile
+    // compared one person's server figure with another person's screen.
+    const url = page.url();
+    const person = new URL(url).pathname.match(/^\/money-book\/([0-9a-f-]{36})$/)?.[1];
+    if (person) {
+      const balance = (await (await ctx.request.get(`${base}/api/v1/moneybook/people/${person}`)).json().catch(() => ({}))).data?.balance;
+      const shown = await page.getByTestId("moneybook-balance").innerText({ timeout: 4000 }).catch(() => "");
+      if (balance !== undefined && shown) {
+        agreeChecks += 1;
+        // MONKEY_SKEW=1 shifts the expected figure by ₹1: the check must then fail (P0 §1).
+        const want = Math.abs(Number(balance)) + (process.env.MONKEY_SKEW ? 1 : 0);
+        if (!plain(shown).includes(want.toFixed(2).replace(/\.00$/, "")))
+        {
+          await page.screenshot({ path: `${dir}/agree-fail-${seed}-${width}-step${i}.png` }).catch(() => {});
+          failures.push(`step ${i}: after ${how} the person page does not show the server's balance ${balance} (${shown.replace(/\s+/g, " ").slice(0, 80)}) at ${url.replace(base, "")}`);
+        }
+      }
+    }
+    if (new URL(url).pathname === "/money-book" && !new URL(url).search.includes("q=")) {
+      const query = new URL(url).search.replace(/^\?/, "");
+      const totals = (await (await ctx.request.get(`${base}/api/v1/moneybook/people?${query}${query ? "&" : ""}page_size=1`)).json().catch(() => ({}))).meta?.totals;
+      const shown = await page.getByTestId("moneybook-totals").innerText({ timeout: 4000 }).catch(() => "");
+      if (totals && shown) {
+        agreeChecks += 1;
+        const toGet = Number(totals.to_get).toFixed(2).replace(/\.00$/, "");
+        if (!plain(shown).includes(toGet))
+          failures.push(`step ${i}: after ${how} "To get" is not the server's ${totals.to_get} (${shown.replace(/\s+/g, " ")})`);
+      }
+    }
+  }
+  // Library round (12 Nov): a student's fee due and Home's Overdue are the server's,
+  // after every reload and return (MONKEY_SKEW=1 must make it fail, P0 §1).
+  if (LIBRARY) {
+    const plain = (s) => s.replace(/[₹,\s]/g, "");
+    const url = page.url();
+    const path = new URL(url).pathname;
+    const skew = process.env.MONKEY_SKEW ? 1 : 0;
+    const student = path.match(/^\/library\/students\/([0-9a-f-]{36})$/)?.[1];
+    if (student) {
+      const due = (await (await ctx.request.get(`${base}/api/v1/library/students/${student}`)).json().catch(() => ({}))).data?.due;
+      const box = width < 1024 ? page.getByTestId("library-fee-due") : page.getByTestId("library-figures");
+      const shown = await box.innerText({ timeout: 4000 }).catch(() => "");
+      if (due !== undefined && shown) {
+        agreeChecks += 1;
+        const want = (Number(due) + skew).toFixed(2).replace(/\.00$/, "");
+        if (!plain(shown).includes(want)) {
+          await page.screenshot({ path: `${dir}/agree-fail-${seed}-${width}-step${i}.png` }).catch(() => {});
+          failures.push(`step ${i}: after ${how} the student page does not show the server's fee due ${due} (${shown.replace(/\s+/g, " ").slice(0, 80)}) at ${url.replace(base, "")}`);
+        }
+      }
+    }
+    if (path === "/library") {
+      const home = (await (await ctx.request.get(`${base}/api/v1/library/home`)).json().catch(() => ({}))).data;
+      const box = width < 1024 ? page.getByTestId("library-home-fees") : page.getByTestId("library-figures");
+      const shown = await box.innerText({ timeout: 4000 }).catch(() => "");
+      if (home && shown) {
+        agreeChecks += 1;
+        const want = (Number(home.overdue) + skew).toFixed(2).replace(/\.00$/, "");
+        if (!plain(shown).includes(want))
+          failures.push(`step ${i}: after ${how} Home's Overdue is not the server's ${home.overdue} (${shown.replace(/\s+/g, " ").slice(0, 80)})`);
+      }
+    }
+  }
+  // Lending round (12 Nov): a loan's Left and Today's collected are the server's.
+  if (LENDING) {
+    const plainL = (s) => s.replace(/[₹,\s]/g, "");
+    const urlL = page.url();
+    const pathL = new URL(urlL).pathname;
+    const skewL = process.env.MONKEY_SKEW ? 1 : 0;
+    const loanId = pathL.match(/^\/lending\/loans\/([0-9a-f-]{36})$/)?.[1];
+    if (loanId) {
+      const left = (await (await ctx.request.get(`${base}/api/v1/lending/loans/${loanId}`)).json().catch(() => ({}))).data?.left;
+      // The page, not one grid: on a phone Left sits in the second row of figures.
+      const shown = await page.locator("main").innerText({ timeout: 4000 }).catch(() => "");
+      if (left !== undefined && shown) {
+        agreeChecks += 1;
+        const want = (Number(left) + skewL).toLocaleString("en-IN").replace(/,/g, "");
+        if (!plainL(shown).includes(want)) failures.push(`step ${i}: after ${how} the loan page does not show the server's left ${left} at ${urlL.replace(base, "")}`);
+      }
+    }
+    if (pathL === "/lending") {
+      const r = (await (await ctx.request.get(`${base}/api/v1/lending/today`)).json().catch(() => ({}))).data;
+      const box = width < 1024 ? page.getByTestId("lending-round") : page.getByTestId("lending-figures");
+      const shown = await box.innerText({ timeout: 4000 }).catch(() => "");
+      if (r && shown) {
+        agreeChecks += 1;
+        const want = (Number(r.collected) + skewL).toLocaleString("en-IN").replace(/,/g, "");
+        if (!plainL(shown).includes(want)) failures.push(`step ${i}: after ${how} Today's collected is not the server's ${r.collected}`);
+      }
+    }
+  }
+  const nav = await page.evaluate(() => document.querySelector("nav[aria-label]")?.innerText ?? "").catch(() => "");
+  // The words and orders rows are the SHOP's: when the monkey has wandered
+  // into another app (the Udhaar book, from Apps) its menu has neither.
+  if (nav && features && me.active_app !== "shop") otherAppSkips.push(`step ${i}: ${me.active_app}`);
+  if (nav && features && me.active_app === "shop") {
+    agreeChecks += 1;
+    const supplierWord = words["nav.suppliers"];
+    const shot = async () => {
+      await page.screenshot({ path: `/tmp/claude/monkey-agree-step${i}.png` }).catch(() => {});
+      console.log(`agree-fail step ${i}: url ${page.url().replace(base, "")} app ${me.active_app} tenant ${me.active_tenant?.name} nav ${JSON.stringify(nav.slice(0, 160))}`);
+    };
+    if (supplierWord && !nav.includes(supplierWord)) await shot();
+    if (supplierWord && !nav.includes(supplierWord))
+      failures.push(`step ${i}: after ${how} the menu does not say "${supplierWord}" (the business's word)`);
+    // By the row's address, not its words: the monkey switches language, and
+    // the Hindi row is "बिक्री ऑर्डर" (a text check here was a false failure).
+    const hasOrders = await page
+      .evaluate(() => Boolean(document.querySelector('nav[aria-label] a[href="/sales/orders"]')))
+      .catch(() => false);
+    if (hasOrders !== features.includes("orders")) await shot();
+    if (hasOrders !== features.includes("orders"))
+      failures.push(`step ${i}: after ${how} the menu ${hasOrders ? "shows" : "hides"} Sales orders but the session says orders ${features.includes("orders") ? "on" : "off"}`);
+  }
+};
+const checkKept = async (i, before, how, leftFrom) => {
+  if (!before.length || !page.url().startsWith(`${base}/sales/invoices`)) return;
+  await page.waitForTimeout(2500);
+  // In both languages: the monkey switches to Hindi, and an English-only name
+  // left a restorable bill unrestored and reported it lost (G10, seed 3 / 1280).
+  const restore = page.getByRole("button", { name: /^(Restore|Keep|Continue|Use this|वापस लाएँ)/i });
+  if (await restore.count().catch(() => 0)) await restore.first().click().catch(() => {});
+  await page.waitForTimeout(600);
+  keptChecks += 1;
+  const after = await linesNow();
+  const shownId = draftId(page.url());
+  if (shownId && !after.length && (await serverLines(shownId)).length)
+    failures.push(`step ${i}: after ${how} the address names draft ${shownId} but the screen shows a blank bill`);
+  let lost = before.filter((n) => !after.includes(n));
+  if (lost.length && !after.length) {
+    // A fresh New bill: the one left behind must be safe on the server.
+    const leftId = draftId(leftFrom);
+    if (leftId) {
+      const saved = await serverLines(leftId);
+      lost = lost.filter((n) => !saved.includes(n));
+      if (!lost.length) keptOnServer += 1;
+    }
+  }
+  if (lost.length && !after.length) {
+    // Held (Hold saves it and opens a blank bill), or saved under an id the
+    // address no longer names: look through the newest drafts, as a merchant
+    // looks along the held strip.
+    const recent = ((await (await ctx.request.get(`${base}/api/v1/sales/invoices?tab=draft&page_size=50`)).json().catch(() => ({}))).data ?? []);
+    for (const d of recent) {
+      const saved = await serverLines(d.id);
+      if (lost.every((n) => saved.includes(n))) {
+        lost = [];
+        keptOnServer += 1;
+        break;
+      }
+    }
+  }
+  if (lost.length) {
+    // Not on the server yet, but kept on this device for the Restore offer:
+    // a warning (the server is behind), not lost work.
+    const device = await page.evaluate(() => Object.values(localStorage).join("\n")).catch(() => "");
+    if (lost.every((n) => device.includes(n))) {
+      onDeviceOnly.push(`step ${i}: ${lost.join(", ")} kept on this device only after ${how}`);
+      lost = [];
+    }
+  }
+  if (lost.length) failures.push(`step ${i}: after ${how} the bill lost ${lost.join(", ")} (had ${before.length}, now ${after.length}; left from ${leftFrom.replace(base, "")})`);
+};
+try {
+  await page.goto(`${base}/login/email`);
+  // B2: `--login=email:password` signs in as another local test owner (one
+  // per shop kind, e2e/fixtures/b2_kind_owners.py); default the QA shop.
+  const login = (process.argv.find((a) => a.startsWith("--login="))?.slice(8) ?? "scale@digikhaato.test:Scale-Run-2026!").split(":");
+  await page.fill("input[type=email]", login[0]);
+  await page.fill("input[type=password]", login.slice(1).join(":"));
+  await page.keyboard.press("Enter");
+  await page.waitForURL((u) => !u.pathname.startsWith("/login"));
+  // Money book round (11 Nov): `--app=khata` wanders the Money book instead —
+  // its list, real people's pages and their statements, from the private book.
+  if (arg("app", "") === "khata") {
+    const people = ((await (await ctx.request.get(`${base}/api/v1/moneybook/people?page_size=8`)).json().catch(() => ({}))).data ?? []).slice(0, 4);
+    WANDER = ["/money-book", "/money-book/report", "/money-book/reminders", "/money-book/old-dues", ...people.flatMap((p) => [`/money-book/${p.id}`, `/money-book/report?person=${p.id}`])];
+  }
+  if (LIBRARY) {
+    const students = ((await (await ctx.request.get(`${base}/api/v1/library/students?page_size=6`)).json().catch(() => ({}))).data ?? []).slice(0, 4);
+    WANDER = ["/library", "/library/seats", "/library/students", "/library/fees", "/library/counter", "/library/attendance",
+      "/library/messages", "/library/money", "/library/expenses", "/library/books", "/library/settings",
+      ...students.map((x) => `/library/students/${x.id}`)];
+  }
+  if (LENDING) {
+    const loans = ((await (await ctx.request.get(`${base}/api/v1/lending/loans`)).json().catch(() => ({}))).data ?? []).slice(0, 4);
+    WANDER = ["/lending", "/lending/loans", "/lending/loans/new", "/lending/borrowers", "/lending/routes", "/lending/messages",
+      "/lending/settings", ...loans.map((x) => `/lending/loans/${x.id}`)];
+  }
+  // Real item names, so "add item" types what a merchant would.
+  const itemNames = (
+    (await (await ctx.request.get(`${base}/api/v1/items?page_size=60&ordering=name`)).json().catch(() => ({}))).data ?? []
+  ).map((x) => x.name);
+  let url = `${base}${path}`;
+  let expectName = null;
+  if (setup === "party") {
+    const p = (
+      await (
+        await ctx.request.get(
+          `${base}/api/v1/parties?type=customer&status=active&book=shop&page_size=5`,
+        )
+      ).json()
+    ).data[0];
+    url += `${url.includes("?") ? "&" : "?"}party=${p.id}&partyName=${encodeURIComponent(p.name)}`;
+    expectName = p.name;
+  }
+  lastT0 = Date.now();
+  await page.goto(url, { waitUntil: "networkidle" });
+  await pageSpeed("start");
+  // G3: start with a real line, so the bill's data check always has data to guard.
+  if (arg("line", "")) {
+    const box = page.getByPlaceholder(/Search or scan item|Search item or scan/).first();
+    await box.fill(arg("line", "")).catch(() => undefined);
+    await page.getByRole("option").first().click({ timeout: 5000 }).catch(() => undefined);
+    // A jeweller's piece asks which tag first.
+    const startTag = page.getByTestId("tag-choice");
+    await startTag.waitFor({ timeout: 1500 }).catch(() => undefined);
+    if (await startTag.isVisible().catch(() => false))
+      await startTag.getByRole("button").first().click({ timeout: 1500 }).catch(() => undefined);
+    await page.keyboard.press("Escape").catch(() => undefined);
+  }
+  await page.evaluate(() => {
+    window.__long = 0;
+    try {
+      new PerformanceObserver((l) => {
+        for (const e of l.getEntries()) window.__long += e.duration;
+      }).observe({ type: "longtask", buffered: true });
+    } catch {}
+  });
+  var heapStart = await page.evaluate(() => performance.memory?.usedJSHeapSize ?? 0).catch(() => 0);
+  armed = true;
+
+  for (let i = 0; i < steps; i += 1) {
+    // G3: a jeweller's tagged item asks which piece; a merchant answers.
+    const tagChoice = page.getByTestId("tag-choice").getByRole("button").first();
+    if (await tagChoice.count().catch(() => 0)) await tagChoice.click({ timeout: 2000 }).catch(() => undefined);
+    lastStepAt = Date.now();
+    // A run that has signed itself out tests nothing but the sign-in page, so
+    // stop and say so plainly, with the last steps (see SKIP).
+    if (new URL(page.url()).pathname.startsWith("/login")) {
+      failures.push(`harness signed out before step ${i}; last: ${log.slice(-3).join(" | ")}`);
+      break;
+    }
+    const kind = pick(["tap", "tap", "tap", "tap", "type", "type", "key", "scroll", "additem", "additem", "scan", "reload", "back", ...Array(WANDER_WEIGHT).fill("wander")]);
+    page.setDefaultTimeout(4000);
+    const step = async () => {
+      try {
+        if (kind === "tap") {
+          const targets = await page
+            .locator(
+              "button:visible, [role=option]:visible, a:visible, input:visible, [role=button]:visible",
+            )
+            .all();
+          const usable = [];
+          for (const t of targets) {
+            // Short and tolerant: the element may be gone by the time it is read.
+            const name = (
+              (await t
+                .getAttribute("aria-label", { timeout: 300 })
+                .catch(() => null)) ??
+              (await t.innerText({ timeout: 300 }).catch(() => ""))
+            ).trim();
+            const href = await t
+              .getAttribute("href", { timeout: 300 })
+              .catch(() => null);
+            if (SKIP.test(name) || (href && !href.startsWith("#"))) continue;
+            usable.push([t, name]);
+          }
+          if (usable.length) {
+            const [t, name] = pick(usable);
+            log.push(`${i} tap "${name.slice(0, 40)}"`);
+            // The user changed the customer on purpose: the box may now differ.
+            if (/^(Change|Quick sale|Saved customer)$|Customer ·/.test(name))
+              expectName = null;
+            await t.click({ timeout: 1500, trial: false }).catch(() => {});
+          }
+        } else if (kind === "type") {
+          const text = pick(TEXT);
+          log.push(`${i} type ${JSON.stringify(text.slice(0, 20))}`);
+          await page.keyboard.type(text, { delay: 0 });
+        } else if (kind === "key") {
+          const key = pick(KEYS);
+          log.push(`${i} key ${key}`);
+          await page.keyboard.press(key);
+        } else if (kind === "additem") {
+          // As a merchant: part of a real name in the search, then a result.
+          const box = page.getByRole("combobox").first();
+          if (itemNames.length && (await box.count())) {
+            const name = pick(itemNames);
+            const part = name.slice(0, 3 + Math.floor(rand() * (name.length - 2)));
+            log.push(`${i} add item "${part}"`);
+            // Covered by a sheet or a dialog: a merchant would not reach it either.
+            if (!(await box.click({ timeout: 1500 }).then(() => true).catch(() => false))) return;
+            await page.keyboard.type(part, { delay: 15 });
+            const opt = page.getByRole("option").first();
+            await opt.waitFor({ timeout: 3000 }).catch(() => {});
+            if (await opt.count()) await opt.click({ timeout: 1500 }).catch(() => {});
+            await page.waitForTimeout(300);
+            // A jeweller's tagged piece asks which tag: choose one, as the counter would.
+            const tagBox = page.getByTestId("tag-choice");
+            if (await tagBox.isVisible().catch(() => false)) {
+              await tagBox.getByRole("button").first().click({ timeout: 1500 }).catch(() => {});
+              await page.waitForTimeout(300);
+            }
+            if (rand() < 0.7) await page.keyboard.press("Escape").catch(() => {});
+          }
+        } else if (kind === "scan") {
+          // C1: a USB scanner's burst into the search — a known code (the C1
+          // fixture's item), a code no item has, or a random EAN-13 — then
+          // Enter, as fast as a scanner types. The bill must keep its lines.
+          const box = page.getByRole("combobox").first();
+          if (!(await box.count())) return;
+          if (!(await box.click({ timeout: 1500 }).then(() => true).catch(() => false))) return;
+          const code = pick(["8906000000017", "8906000000017", "8906999999994", String(8900000000000 + Math.floor(rand() * 99999999))]);
+          log.push(`${i} scan ${code}`);
+          await page.keyboard.type(code, { delay: 0 });
+          await page.keyboard.press("Enter");
+          await page.waitForTimeout(400);
+        } else if (kind === "reload") {
+          const before = await linesNow();
+          const leftFrom = page.url();
+          log.push(`${i} reload (${before.length} lines)`);
+          lastT0 = Date.now();
+          await page.reload({ waitUntil: "load", timeout: 20000 });
+          await pageSpeed("reload");
+          await checkKept(i, before, "a reload", leftFrom);
+          await checkAgrees(i, "a reload");
+        } else if (kind === "back") {
+          const before = await linesNow();
+          const leftFrom = page.url();
+          const dir = pick(["back", "forward"]);
+          log.push(`${i} ${dir}`);
+          const tNav = Date.now();
+          const navErr = await (dir === "back" ? page.goBack({ timeout: 8000 }) : page.goForward({ timeout: 8000 }))
+            .then(() => null)
+            .catch((e) => e.message.split("\n")[0].slice(0, 60));
+          log.push(`${i} ${dir} from ${leftFrom.replace(base, "")} to ${page.url().replace(base, "")} in ${Date.now() - tNav} ms${navErr ? ` (${navErr})` : ""}`);
+          await page.waitForTimeout(300);
+          if (!page.url().startsWith(`${base}/sales/invoices`)) {
+            lastT0 = Date.now();
+            await page.goto(url, { waitUntil: "load", timeout: 20000 });
+            await pageSpeed("return");
+          }
+          await checkKept(i, before, `${dir} and return`, leftFrom);
+          await checkAgrees(i, `${dir} and return`);
+        } else if (kind === "wander") {
+          const before = await linesNow();
+          const leftFrom = page.url();
+          const to = pick(WANDER);
+          log.push(`${i} wander to ${to} (${before.length} lines)`);
+          lastT0 = Date.now();
+          await page.goto(`${base}${to}`, { waitUntil: "load", timeout: 20000 });
+          await pageSpeed(`wander ${to}`);
+          if (APP_HOME) await checkAgrees(i, `opening ${to}`);
+          for (let k = 0; k < 1 + Math.floor(rand() * 3); k += 1) {
+            const there = await page.locator("button:visible, [role=tab]:visible").all();
+            const safe = [];
+            for (const t of there) {
+              const n = ((await t.innerText({ timeout: 300 }).catch(() => "")) || "").trim();
+              if (n && !SKIP.test(n)) safe.push(t);
+            }
+            if (safe.length) await pick(safe).click({ timeout: 1500 }).catch(() => {});
+            await page.waitForTimeout(150);
+            await page.keyboard.press("Escape").catch(() => {});
+          }
+          // Back the way a user comes back: Back, or the sidebar's Bills then New bill.
+          // Back inside the app is a client move with no load event: wait for the
+          // address to change, not for a load that never comes (it was counted as
+          // an 8 s page in the Money Book round, 11 Nov).
+          if (rand() < 0.5) await page.goBack({ timeout: 8000, waitUntil: "commit" }).catch(() => {});
+          else if (APP_HOME) {
+            // The Money book's way home is People in its own menu. The clock starts
+            // when the move starts: a click that timed out under a sheet left open
+            // by a random tap was counted as 3 s of page time.
+            await page.keyboard.press("Escape").catch(() => {});
+            const people = page.locator(`a[href="${APP_HOME}"]:visible`).first();
+            lastT0 = Date.now();
+            if (!(await people.click({ timeout: 3000 }).then(() => true).catch(() => false))) {
+              lastT0 = Date.now();
+              await page.goto(`${base}${APP_HOME}`, { waitUntil: "load" });
+            }
+            await page.waitForURL((u) => u.pathname.startsWith(APP_HOME), { timeout: 8000 }).catch(() => {});
+            await pageSpeed("app home");
+          } else {
+            lastT0 = Date.now();
+            await page.goto(`${base}/sales/invoices`, { waitUntil: "load", timeout: 20000 });
+            await pageSpeed("Bills list");
+            // The clock for New bill starts at the tap, not at the list.
+            lastT0 = Date.now();
+            const tapped = await page.getByRole("link", { name: /New bill/ }).first().click({ timeout: 3000 }).then(() => true).catch(() => false);
+            const moved = tapped && (await page.waitForURL(/\/sales\/invoices\/(new|[0-9a-f-]{36}\/edit)/, { timeout: 8000 }).then(() => true).catch(() => false));
+            if (moved) await pageSpeed("New bill from the list");
+            else log.push(`${i} (New bill could not be tapped on the list; came back by address)`);
+          }
+          if (APP_HOME ? !new URL(page.url()).pathname.startsWith(APP_HOME) : !page.url().startsWith(`${base}/sales/invoices/`)) {
+            lastT0 = Date.now();
+            await page.goto(url, { waitUntil: "load", timeout: 20000 });
+            await pageSpeed("return");
+          }
+          await checkKept(i, before, `leaving for ${to} and coming back`, leftFrom);
+          await checkAgrees(i, `leaving for ${to} and coming back`);
+        } else {
+          log.push(`${i} scroll`);
+          await page.mouse.wheel(0, pick([-600, -200, 200, 600]));
+        }
+        await page.waitForTimeout(40);
+        // Left the screen (a link or Back): come back, as a user would.
+        if (
+          !page.url().startsWith(`${base}/sales/invoices`) &&
+          path.startsWith("/sales/invoices")
+        ) {
+          log.push(`${i} left to ${page.url().replace(base, "")}; back`);
+          // 'load', not 'networkidle': a screen with live requests (autosave,
+          // held bills) never goes quiet, and the run waited for ever.
+          await page.goto(url, { waitUntil: "load", timeout: 20000 });
+        }
+        if (i % 25 === 0) {
+          // A burst: the same call more than 15 times in 5 s is a loop, not a user.
+          const now = Date.now();
+          const recent = calls.filter((c) => now - c.at < 5000);
+          const per = {};
+          for (const c of recent) per[c.key] = (per[c.key] ?? 0) + 1;
+          for (const [k, n] of Object.entries(per))
+            if (n > 15) failures.push(`step ${i}: ${k} sent ${n} times in 5 s (request loop)`);
+          const overflow = await page.evaluate(
+            () => document.documentElement.scrollWidth - window.innerWidth,
+          );
+          // Name what sticks out: "2px wider" alone cannot be fixed from a log.
+          const culprit =
+            overflow > 0
+              ? await page.evaluate(() =>
+                  [...document.querySelectorAll("body *")]
+                    .filter((el) => {
+                      const r = el.getBoundingClientRect();
+                      return r.width > 0 && r.right > window.innerWidth + 0.5;
+                    })
+                    .slice(-3)
+                    .map(
+                      (el) =>
+                        `${el.tagName.toLowerCase()}[${el.getAttribute("data-testid") ?? String(el.className).slice(0, 60)}] right=${Math.round(el.getBoundingClientRect().right)} "${(el.textContent ?? "").trim().slice(0, 30)}"`,
+                    )
+                    .join(" | "),
+                )
+              : "";
+          if (overflow > 0)
+            failures.push(
+              `step ${i}: page ${overflow}px wider than the viewport at ${new URL(page.url()).pathname} (${culprit})`,
+            );
+          if (expectName) {
+            const box = page.getByTestId("invoice-customer-line");
+            if (
+              (await box.count()) &&
+              !(await box.innerText()).includes(expectName)
+            )
+              failures.push(`step ${i}: the customer box lost "${expectName}"`);
+          }
+        }
+      } catch (e) {
+        // A navigation mid-step (a tap opened another page) is not an app fault.
+        if (
+          !/Execution context was destroyed|Target page, context or browser has been closed|navigat/i.test(
+            String(e.message),
+          )
+        )
+          failures.push(
+            `step ${i} (${kind}): ${String(e.message).slice(0, 160)}`,
+          );
+      }
+    };
+    // A hard cap per step: one Playwright call (a click that waits on a
+    // navigation) ignored its own timeout and the run waited for ever. A step
+    // that hits the cap is recorded with a screenshot; the page is then
+    // checked for a real freeze before going on.
+    const STEP_MS = 8000;
+    const done = await Promise.race([
+      step().then(() => true),
+      new Promise((r) => setTimeout(() => r(false), STEP_MS)),
+    ]);
+    if (!done) {
+      stuck.push(`${i} (${kind}) ${log[log.length - 1] ?? ""}`);
+      const alive = await Promise.race([
+        page
+          .evaluate(() => 1)
+          .then(() => true)
+          .catch(() => false),
+        new Promise((r) => setTimeout(() => r(false), 5000)),
+      ]);
+      if (!alive)
+        failures.push(
+          `step ${i}: the page stopped responding (main thread frozen)`,
+        );
+      await page.keyboard.press("Escape").catch(() => {});
+    }
+    if (failures.length) break;
+  }
+  // The random run never reloaded with lines on the bill: do it once on purpose,
+  // so the data check always guards something rather than proving nothing.
+  if (!failures.length && keptChecks === 0 && path.startsWith("/sales/invoices") && arg("line", "")) {
+    await page.goto(`${base}${path}`, { waitUntil: "load" }).catch(() => undefined);
+    // In both languages: the random run may have left the app in Hindi.
+    const box = page.getByPlaceholder(/Search or scan item|Search item or scan|आइटम खोजें या स्कैन करें/).first();
+    await box.waitFor({ timeout: 8000 }).catch(() => undefined);
+    // The random run may have left a bill on this device; its sheet covers the search.
+    const discard = page.getByRole("button", { name: /^(Discard|छोड़ें|हटाएँ)$/ }).first();
+    await discard.waitFor({ timeout: 2500 }).catch(() => undefined);
+    if (await discard.isVisible().catch(() => false)) await discard.click().catch(() => undefined);
+    // Earlier runs sell test pieces, so the first match may have no tag left: try the next.
+    for (let tryNo = 0; tryNo < 8 && !(await linesNow()).length; tryNo += 1) {
+      await box.fill(arg("line", "")).catch(() => undefined);
+      await page.getByRole("option").nth(tryNo).click({ timeout: 5000 }).catch(() => undefined);
+      const closingTag = page.getByTestId("tag-choice");
+      await closingTag.waitFor({ timeout: 1500 }).catch(() => undefined);
+      if (await closingTag.isVisible().catch(() => false))
+        await closingTag.getByRole("button").first().click({ timeout: 1500 }).catch(() => undefined);
+      await page.keyboard.press("Escape").catch(() => undefined);
+      await page.waitForTimeout(800);
+    }
+    await page.waitForTimeout(2500);
+    const before = await linesNow();
+    await page.screenshot({ path: `${dir}/closing-${seed}-${width}.png` }).catch(() => undefined);
+    log.push(`closing reload (${before.length} lines) at ${page.url().replace(base, "")}`);
+    await page.reload({ waitUntil: "load", timeout: 20000 }).catch(() => undefined);
+    await checkKept(steps, before, "the closing reload", null);
+  }
+  await page.screenshot({ path: `${dir}/monkey-${seed}-${width}.png` });
+  var heapEnd = await page.evaluate(() => performance.memory?.usedJSHeapSize ?? 0).catch(() => 0);
+  var longMs = await page.evaluate(() => window.__long ?? 0).catch(() => 0);
+  const stacks = await page
+    .evaluate(() => window.__errors ?? [])
+    .catch(() => []);
+  if (stacks.length)
+    writeFileSync(
+      `${dir}/monkey-${seed}-${width}.stacks`,
+      stacks.join("\n---\n"),
+    );
+} finally {
+  writeFileSync(`${dir}/monkey-${seed}-${width}.log`, log.join("\n"));
+  await browser.close();
+}
+console.log(
+  `seed ${seed} · ${width}px · ${log.length} actions · ${failures.length} failures${stuck.length ? ` · ${stuck.length} harness-stuck steps: ${stuck.slice(0, 3).join(" | ")}` : ""}`,
+);
+// API and speed summary.
+for (const w of onDeviceOnly) console.log(`WARN ${w}`);
+console.log(`data: ${keptChecks} reload/return checks ran on a bill with lines (${keptOnServer} came back to a fresh bill; the one left was found on the server)`);
+console.log(`data: ${agreeChecks} screen-agrees-with-server checks ran (switches, menu words, orders rows)${otherAppSkips.length ? `; skipped in another app at ${otherAppSkips.slice(0, 4).join(", ")}` : ""}`);
+if (steps >= 100 && !path.startsWith('/sales/invoices') && !path.startsWith('/onboarding') && agreeChecks === 0)
+  failures.push('no reload/return ever checked the screen against the server: the data check proved nothing');
+if (steps >= 100 && path.startsWith('/sales/invoices') && keptChecks === 0) failures.push('no reload/return ever happened with lines on the bill: the data check proved nothing');
+const byKey = {};
+for (const c of calls) (byKey[c.key] ??= []).push(c.ms ?? 0);
+const top = Object.entries(byKey).sort((a, b) => b[1].length - a[1].length).slice(0, 6);
+const q = (xs, p) => [...xs].sort((a, b) => a - b)[Math.min(xs.length - 1, Math.floor(xs.length * p))] ?? 0;
+const allMs = calls.map((c) => c.ms ?? 0);
+console.log(`api: ${calls.length} calls · p50 ${q(allMs, 0.5)} ms · p95 ${q(allMs, 0.95)} ms · slowest ${Math.max(0, ...allMs)} ms`);
+for (const [k, ms] of top) console.log(`  ${String(ms.length).padStart(4)} × ${k} (p95 ${q(ms, 0.95)} ms)`);
+const readyMs = loads.map((l) => l.ready);
+const worst = loads.reduce((a, l) => (l.ready > (a?.ready ?? -1) ? l : a), null);
+console.log(`pages: ${loads.length} loads · content shown p50 ${q(readyMs, 0.5)} ms · p95 ${q(readyMs, 0.95)} ms · worst ${worst?.ready ?? 0} ms (${worst?.url ?? "-"}, ${worst?.why ?? ""})`);
+if (typeof heapStart !== "undefined" && heapStart)
+  console.log(`heap: ${(heapStart / 1e6).toFixed(1)} → ${(heapEnd / 1e6).toFixed(1)} MB (last page) · long tasks since start ${Math.round(longMs)} ms`);
+for (const l of loads) if (l.ready > 5000) failures.push(`slow page: ${l.url} took ${l.ready} ms to show its content (${l.why}); busy: ${l.busy ?? "-"}`);
+const slowApi = calls.filter((c) => (c.ms ?? 0) > 3000);
+for (const c of slowApi.slice(0, 5)) failures.push(`slow API: ${c.key} took ${c.ms} ms`);
+writeFileSync(`${dir}/monkey-${seed}-${width}.api.json`, JSON.stringify({ calls, loads }, null, 1));
+for (const f of failures) console.log("FAIL", f);
+if (failures.length)
+  console.log(
+    `replay: node e2e/monkey.mjs --path=${path} --seed=${seed} --steps=${steps} --width=${width}${setup ? ` --setup=${setup}` : ""}`,
+  );
+console.log(`verdict: ${failures.length ? `FAIL (${failures.length})` : 'PASS'}`);
+process.exitCode = failures.length ? 1 : 0;

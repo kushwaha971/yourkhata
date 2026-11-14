@@ -59,7 +59,7 @@ export interface UbDataGridPaginationProps {
  * would have matched the screenshot and lost a merchant a tap in the shop; the
  * two requirements only look like they conflict.
  */
-const STEP_BUTTON = 'h-11 w-11 p-0';
+const STEP_BUTTON = 'h-11 w-11 p-0 lg:h-8 lg:w-8';
 
 /** BrandHub's `TablePaginationPage`: 32px square, 8px radius, 12/16 type. */
 const STEP_FACE = 'flex h-8 w-8 items-center justify-center rounded-control';
@@ -103,7 +103,9 @@ function UbDataGridPaginationBase({
       data-testid="ub-grid-pagination"
       className={cn(
         'grid w-full grid-cols-[auto_1fr_auto] items-center gap-3',
-        'border-t border-border-hairline p-4',
+        'border-t border-border-hairline px-[14px] py-2.5',
+        // A pager with nothing to page is clutter on a phone ("Page 1 of 1").
+        pages <= 1 && 'max-md:hidden',
         className
       )}
     >

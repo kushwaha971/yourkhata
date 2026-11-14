@@ -133,7 +133,7 @@ export function DesignSystemWave1Gallery(): React.JSX.Element {
         </UbStack>
       </UbCard>
 
-      <UbCard title="UbPhoneInput" description="PLT-01 FR-1 — +91 fixed, ten digits.">
+      <UbCard title="UbPhoneInput" description="Any country, India first (ten digits for India).">
         <UbStack gap={3}>
           <UbPhoneInput value="+919876543210" onChange={() => undefined} aria-label="Mobile" />
           <UbPhoneInput value="" onChange={() => undefined} invalid aria-label="Mobile, invalid" />

@@ -26,6 +26,25 @@ export type ApiErrorCode =
   | 'service_busy'
   | 'rate_limited'
   | 'server_error'
+  // the Money Book (rebuilt 11 Nov 2026)
+  | 'person_exists'
+  | 'balance_not_settled'
+  | 'person_archived'
+  | 'nothing_to_remind'
+  // Members & Fees (rebuilt 12 Nov 2026).
+  | 'seat_taken'
+  | 'seat_in_use'
+  | 'student_exists'
+  | 'student_left'
+  | 'not_latest_payment'
+  | 'no_copy_left'
+  | 'copies_out'
+  | 'code_in_use'
+  // Loans & Collections (rebuilt 12 Nov 2026).
+  | 'borrower_exists'
+  | 'loan_closed'
+  | 'more_than_left'
+  | 'money_left'
   // auth and session
   | 'invalid_credentials'
   /**
@@ -42,6 +61,7 @@ export type ApiErrorCode =
   | 'otp_invalid'
   | 'otp_throttled'
   | 'login_throttled'
+  | 'group_has_members'
   | 'token_stale'
   | 'invalid_token'
   | 'session_revoked'
@@ -52,15 +72,44 @@ export type ApiErrorCode =
   | 'self_change_forbidden'
   | 'tenant_suspended'
   | 'gstin_in_use'
+  // CR-2026-09-29-SEC-A — every write in a support session (view only).
+  | 'impersonation_forbidden'
   // business
   | 'party_balance_nonzero'
+  // A6 — archive refused by a module's guard (contracts §4).
+  | 'party_has_open_records'
+  // A7 — a module's reminder policy refuses; a record no longer due (contracts §4).
+  | 'reminder_outside_window'
+  | 'reminder_cap_reached'
+  | 'due_not_open'
   // PTY-04 FR-3 — the write-off escape (Part 43 CR-135).
   | 'nothing_to_write_off'
   | 'balance_changed'
   | 'party_archived'
+  | 'promise_already_open'
+  | 'promise_closed'
+  | 'settlement_not_dual_role'
+  | 'settlement_over_balance'
+  | 'settlement_balances_changed'
   | 'insufficient_stock'
   | 'document_not_draft'
   | 'document_already_void'
+  // PUR-04 BR-10 — a bill with a standing debit note is voided only after the note.
+  | 'has_dependent_documents'
+  // ── A5 ── R55: a document another module issued — its origin refuses the void,
+  // or asks first (the void dialog resends with `confirm_origin`).
+  | 'document_origin_locked'
+  | 'document_origin_confirm'
+  // PAY-01 §9 / PAY-05 §10 — a listed bill was settled meanwhile (the drawer
+  // re-reads the bills); a second void of one payment.
+  | 'document_not_open'
+  | 'payment_already_void'
+  | 'upi_vpa_missing'
+  // Shop P0 — the desk's UPI QR (`/payments/pay-links`) with no UPI ID saved.
+  | 'upi_not_configured'
+  // Library P0 — QR self check-in: nobody matches; the policy wants the desk.
+  | 'checkin_not_found'
+  | 'checkin_see_desk'
   | 'credit_limit_exceeded'
   | 'duplicate_supplier_invoice'
   // PTY-05 — tags. Both are closed-registry codes the server mints
@@ -100,6 +149,26 @@ export type ApiErrorCode =
   | 'opening_exists'
   | 'unit_locked'
   | 'track_stock_not_allowed'
+  // RPT-07 FR-11 — GST reports for a business with no GSTIN (an empty state).
+  | 'gst_not_registered'
+  // F03 (LIB-02 §6) — the catalogue's conflicts the drawers say in place.
+  | 'library_accession_taken'
+  // F04 (LIB-04 §6) — enrol's conflicts, said on the field they are about.
+  | 'library_member_number_taken'
+  | 'library_membership_exists'
+  | 'library_plan_no_end'
+  // F05 (LIB-06 §6) — the counter's refusals it turns into prompts.
+  | 'library_member_blocked'
+  | 'library_copy_unavailable'
+  // F06 (LIB-07 §6) — refusals the charge dialogs say in place.
+  | 'library_waiver_over_ceiling'
+  | 'library_charge_has_payments'
+  | 'library_title_has_copies'
+  // W03 — a desk already held in that shift, said on the seat field.
+  | 'library_seat_taken'
+  // W05 — the reading room desk says these itself.
+  | 'attendance_blocked'
+  | 'attendance_duplicate'
   // transport-level codes minted on the client, never sent by the server:
   | 'network_error'
   | 'timeout'
@@ -164,6 +233,14 @@ export interface PageMeta {
   readonly pageSize: number;
   readonly total: number;
   readonly totalPages: number;
+  /**
+   * The server's `meta.has_any`: whether the list's kind of record exists at
+   * all, whatever the filters (approved designs, 12 Oct 2026). `false` is an
+   * empty book — one sentence and one button, no search, filters or ₹0 totals;
+   * an empty page with `true` is a filter that found nothing and keeps them.
+   * Absent from an endpoint that does not say, which keeps every control.
+   */
+  readonly hasAny?: boolean;
 }
 
 /** Cursor pagination — ledger entries, movements, notifications. */

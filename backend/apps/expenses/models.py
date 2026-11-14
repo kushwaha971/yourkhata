@@ -19,7 +19,7 @@ from __future__ import annotations
 
 from django.db import models
 
-from apps.common.constants import PaymentMode, UpiApp
+from apps.common.constants import MONEY_PAYMENT_MODE_CHOICES, PaymentMode, UpiApp
 from apps.common.db.fields import MoneyField, uuid7_pk
 from apps.common.models import SoftDeleteModel, TenantModel
 from apps.expenses.constants import (
@@ -130,7 +130,10 @@ class Expense(TenantModel):
     #: buckets by this, never by `created_at` (EXP-03 BR-10).
     expense_date = models.DateField()
     amount = MoneyField()
-    mode = models.CharField(max_length=16, choices=PaymentMode.choices, null=True, blank=True)
+    # A4b / R24: never `adjustment` — an expense is money that left.
+    mode = models.CharField(
+        max_length=16, choices=MONEY_PAYMENT_MODE_CHOICES, null=True, blank=True
+    )
     #: "PhonePe kiya" — the same flattened choice the ledger's "You got"
     #: offers, stored the same way: only ever with `mode='upi'`.
     upi_app = models.CharField(max_length=16, choices=UpiApp.choices, null=True, blank=True)
@@ -138,6 +141,10 @@ class Expense(TenantModel):
     note = models.CharField(max_length=NOTE_MAX_LENGTH, blank=True, default="")
     paid = models.BooleanField(default=True)
     due_on = models.DateField(null=True, blank=True)
+    #: DEC-019 (QA B10) — the app this expense was recorded in: `shop`, `library` or
+    #: `lending` (`EXPENSE_APPS`). Each app's profit, cashbook and reports read only
+    #: their own; there is no shared expense. The Library's rent is not the Shop's.
+    app = models.CharField(max_length=32, default="shop")
     status = models.CharField(
         max_length=10, choices=ExpenseStatus.choices, default=ExpenseStatus.RECORDED
     )

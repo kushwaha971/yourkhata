@@ -10,10 +10,12 @@ import {
   UbAmount,
   UbBox,
   UbButton,
+  UbDialogLoading,
+  UbDivider,
+  UbDrawerLoading,
+  UbEmptyState,
   UbPanel,
   UbSectionHeading,
-  UbDivider,
-  UbEmptyState,
   UbSkeleton,
   UbStack,
   UbStatusBadge,
@@ -23,24 +25,27 @@ import {
 import { useAppSelector } from 'src/hooks/useAppStore';
 import { useTranslation, type TranslateFn } from 'src/hooks/useTranslation';
 import { selectSessionUser } from 'src/redux/slice/sessionSlice';
+import type { LedgerBook } from 'src/types/domain.types';
 
 import { useEntryCorrection } from '../hooks/useEntryCorrection';
 import { usePartyLedger } from '../hooks/usePartyLedger';
 import {
   amountLabelRepeatsTitle,
+  bucketBadgeId,
   entryAmountView,
   entryBalanceCaption,
   entryCaption,
   entryReason,
-  entryTitle,
   isBackdated,
   isCorrectable,
   isOpeningEntry,
   isReversalRow,
   writtenOffLines,
 } from '../view-model/entryDisplay';
+import { khataEntryTitle } from '../view-model/narration';
 
 import { EntryActionsMenu } from './EntryActionsMenu';
+import { EntrySourceLink } from './EntrySourceLink';
 
 import type { LedgerEntry } from '../types/ledger.types';
 
@@ -52,7 +57,7 @@ import type { LedgerEntry } from '../types/ledger.types';
  * **the** read screen of this product: the bundle gate refused the build at
  * +58.6 KB, paid by every merchant who ever opens a khata to look at a balance.
  * It is the same finding the party form drawer and LED-01's entry drawer are
- * already `dynamic()` for, and the page's own comments record both.
+ * already `dynamic(, { ssr: false })` for, and the page's own comments record both.
  *
  * `EntryActionsMenu` is NOT lazy. It is a `UbDialog` with two buttons, it has
  * no form machinery behind it, and it is the thing the merchant taps FIRST —
@@ -63,11 +68,12 @@ import type { LedgerEntry } from '../types/ledger.types';
  */
 const LedgerCorrectionDrawerLazy = dynamic(
   () => import('./LedgerCorrectionDrawer').then((m) => m.LedgerCorrectionDrawer),
-  { ssr: false }
+  { ssr: false,
+  loading: () => <UbDrawerLoading /> }
 );
 const ReverseEntryDialogLazy = dynamic(
   () => import('./ReverseEntryDialog').then((m) => m.ReverseEntryDialog),
-  { ssr: false }
+  { ssr: false, loading: () => <UbDialogLoading /> }
 );
 
 /**
@@ -92,9 +98,26 @@ const ReverseEntryDialogLazy = dynamic(
  */
 export function PartyLedgerTimeline({
   partyId,
-  readOnly = false,
+  title,
+  emptyTitle,
+  emptyBody,
+  readOnly: archivedReadOnly = false,
+  book = 'main',
+  fillHeight = false,
 }: Readonly<{
   partyId: string;
+  title?: string;
+  emptyTitle?: string;
+  emptyBody?: string;
+  /**
+   * DEC-019 — the open app's book. On the Shop's (`shop`) the rows are bills,
+   * returns and payments, each fixed by its document: nothing is corrected from
+   * here, and the "You gave / You got in all" strip — the Udhaar book's words —
+   * is not drawn.
+   */
+  book?: LedgerBook;
+  /** Opt-in bounded history for the Udhaar person workspace. */
+  fillHeight?: boolean;
   /**
    * The party is archived (PTY-04 FR-14): the rows are read, never corrected.
    * The server refuses a correction or a reversal on an archived party with
@@ -104,7 +127,9 @@ export function PartyLedgerTimeline({
   readOnly?: boolean;
 }>): React.JSX.Element | null {
   const { t, d } = useTranslation();
-  const ledger = usePartyLedger(partyId);
+  const ledger = usePartyLedger(partyId, book);
+  const shopBook = book === 'shop';
+  const readOnly = archivedReadOnly || shopBook;
   const correction = useEntryCorrection();
   const user = useAppSelector(selectSessionUser);
   const viewerId = user?.id ?? null;
@@ -129,9 +154,10 @@ export function PartyLedgerTimeline({
        separated by hairlines. It used to be a card holding its own title,
        switch, totals and rows, which put 16 px of padding around 16 px of
        padding around every line. */
-    <UbStack gap={3}>
+    <UbStack gap={3} className={fillHeight ? 'min-h-0 flex-1' : undefined}>
       <UbSectionHeading
-        title={t('ledger.timeline.title')}
+        className={fillHeight ? 'flex-wrap [&_h2]:whitespace-normal [&_h2]:overflow-visible [&_h2]:text-clip' : undefined}
+        title={title ?? t('ledger.timeline.title')}
         meta={
           hasEntries
             ? t('ledger.timeline.count', { count: ledger.summary?.entryCount ?? 0 })
@@ -140,7 +166,7 @@ export function PartyLedgerTimeline({
         /* LED-03 FR-7: offered only to somebody who could correct, and only
            once there is something to reveal. A MODE, not a filter, so a switch. */
         aside={
-          correction.canCorrect && hasEntries ? (
+          correction.canCorrect && hasEntries && !shopBook ? (
             <UbSwitch
               checked={ledger.showCorrections}
               onCheckedChange={ledger.toggleCorrections}
@@ -151,10 +177,10 @@ export function PartyLedgerTimeline({
         }
       />
 
-      <UbPanel as="section">
+      <UbPanel as="section" aria-label={fillHeight ? title : undefined} tabIndex={fillHeight ? 0 : undefined} className={fillHeight ? 'relative min-h-0 flex-1 overflow-y-auto overscroll-contain focus-visible:shadow-focus [&_[data-testid=entry-source]]:flex-wrap [&_[data-testid=entry-source]_a]:whitespace-normal [&_[data-testid=entry-source]_a]:overflow-visible [&_[data-testid=entry-source]_a]:text-clip [&_.line-clamp-2]:line-clamp-none' : undefined}>
         {/* BrandHub PaymentsCard's two-cell total row: label 12/16 medium grey,
             figure 16/24 medium, a hairline between the cells. */}
-        {hasEntries && ledger.summary && (
+        {hasEntries && ledger.summary && !shopBook && !fillHeight && (
           <UbBox className="grid grid-cols-2 divide-x divide-border-hairline">
             <UbStack gap={1} className="px-4 py-3">
               <UbText as="span" variant="inherit" className="ds-body-s-medium text-text-tertiary">
@@ -193,6 +219,7 @@ export function PartyLedgerTimeline({
             tone, as the row itself is. With it the header reconciles the way a
             merchant checks it: gave − got − written off = the balance. */}
         {hasEntries &&
+          !shopBook &&
           writtenOffLines(ledger.summary?.writtenOff).map((line) => (
             <UbStack key={line.side} gap={1} className="border-t border-border-hairline px-4 py-3">
               <UbText as="span" variant="inherit" className="ds-body-s-medium text-text-tertiary">
@@ -237,8 +264,14 @@ export function PartyLedgerTimeline({
           <UbBox className="p-4">
             <UbEmptyState
               variant="firstUse"
-              title={t('ledger.timeline.empty.title')}
-              description={t('ledger.timeline.empty.body')}
+              title={
+                emptyTitle ??
+                t(shopBook ? 'ledger.timeline.shop.empty.title' : 'ledger.timeline.empty.title')
+              }
+              description={
+                emptyBody ??
+                t(shopBook ? 'ledger.timeline.shop.empty.body' : 'ledger.timeline.empty.body')
+              }
             />
           </UbBox>
         )}
@@ -258,6 +291,7 @@ export function PartyLedgerTimeline({
                 {index > 0 && <UbDivider />}
                 <EntryRow
                   entry={entry}
+                  shop={shopBook}
                   t={t}
                   viewerId={viewerId}
                   wasCorrected={ledger.superseded.has(entry.id)}
@@ -314,12 +348,14 @@ export function PartyLedgerTimeline({
  */
 function EntryRow({
   entry,
+  shop,
   t,
   viewerId,
   wasCorrected,
   onOpenMenu,
 }: Readonly<{
   entry: LedgerEntry;
+  shop?: boolean;
   t: TranslateFn;
   viewerId: string | null;
   /** True when another loaded row supersedes this one — see the badge below. */
@@ -328,17 +364,26 @@ function EntryRow({
   onOpenMenu?: (entry: LedgerEntry) => void;
 }>): React.JSX.Element {
   const view = useMemo(
-    () => entryAmountView(entry.direction, entry.entryType),
-    [entry.direction, entry.entryType]
+    () =>
+      entryAmountView(entry.direction, entry.entryType, entry.bucket, !!entry.source?.adjustment),
+    [entry.direction, entry.entryType, entry.bucket, entry.source?.adjustment]
   );
+  const bucketBadge = bucketBadgeId(entry.bucket);
   const caption = useMemo(() => entryCaption(entry, t, viewerId), [entry, t, viewerId]);
   const reason = entryReason(entry);
-  const balanceCaption = entryBalanceCaption(entry, t);
+  const balanceCaption = shop ? null : entryBalanceCaption(entry, t);
   const reversed = entry.status === 'reversed';
   const isOpening = isOpeningEntry(entry);
 
   return (
-    <UbStack direction="row" justify="between" align="start" className="gap-3 py-3">
+    // `relative` so the row's menu button can stretch its tap target over the
+    // whole row on a phone (below) — the row is what a thumb aims at.
+    <UbStack
+      direction="row"
+      justify="between"
+      align="start"
+      className={shop ? 'flex-wrap gap-3 py-3 max-lg:relative' : 'gap-3 py-3 max-lg:relative'}
+    >
       <UbStack gap={1} className="min-w-0 flex-1">
         {/* The title has the LINE TO ITSELF, and it wraps rather than truncates.
  
@@ -359,11 +404,11 @@ function EntryRow({
           variant="body"
           className={
             reversed
-              ? 'line-clamp-2 break-words line-through opacity-60'
-              : 'line-clamp-2 break-words'
+              ? `${shop ? '' : 'line-clamp-2'} break-words line-through opacity-60`
+              : `${shop ? '' : 'line-clamp-2'} break-words`
           }
         >
-          {entryTitle(entry, t)}
+          {khataEntryTitle(entry, t)}
         </UbText>
 
         {/* Every badge lives on the CAPTION line, and wraps there.
@@ -407,8 +452,20 @@ function EntryRow({
               transaction — nothing changed hands on that date, it is the
               position the book started from. */}
           {isOpening && <UbStatusBadge label={t('ledger.opening.badge')} tone="info" />}
+          {/* A2 — a loan or deposit line says which it is, on the caption line with the
+              other badges (the title owns its line). Absent on every shop line. */}
+          {bucketBadge && <UbStatusBadge label={t(bucketBadge)} tone="neutral" />}
+          {/* LED-10 FR-4 / §7 — a document's line names the document and links
+              back to it ("Invoice · INV/26-27/0042"), on the caption line with
+              the other badges so the title keeps its own. A document voided
+              since carries "Void" beside its number (§9). */}
+          {entry.source && <EntrySourceLink source={entry.source} t={t} />}
           {caption && (
-            <UbText variant="caption" tone="tertiary" className="min-w-0 truncate">
+            <UbText
+              variant="caption"
+              tone="tertiary"
+              className={shop ? 'min-w-0 whitespace-normal break-words' : 'min-w-0 truncate'}
+            >
               {caption}
             </UbText>
           )}
@@ -467,8 +524,12 @@ function EntryRow({
             iconOnly
             icon={<MoreHorizontal className="h-4 w-4" aria-hidden />}
             onClick={() => onOpenMenu(entry)}
+            /* docs/mobile-redesign — below `lg` the whole row opens the menu
+               (the button's ::after covers the row), so a merchant taps the
+               entry rather than hunting for a 24 px ⋯. One control, one name. */
+            className="max-lg:static max-lg:after:absolute max-lg:after:inset-0 max-lg:after:content-['']"
           >
-            {t('ledger.correction.rowActions', { title: entryTitle(entry, t) })}
+            {t('ledger.correction.rowActions', { title: khataEntryTitle(entry, t) })}
           </UbButton>
         )}
       </UbStack>

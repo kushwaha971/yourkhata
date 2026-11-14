@@ -2,10 +2,10 @@
 
 import { useCallback, useRef } from 'react';
 
+import { CompactDrawer as UbDrawer } from 'src/components/records/CompactOverlays';
 import {
   UbAmount,
   UbButton,
-  UbDrawer,
   UbInfoRow,
   UbStack,
   UbStatusBadge,
@@ -22,16 +22,24 @@ import { VoidExpenseDialog } from './VoidExpenseDialog';
 
 import type { UseExpenseFormResult } from '../hooks/useExpenseForm';
 
+// Loaded with dynamic(), so its own words come with its own chunk rather than
+// with the screen that opens it (src/i18n/catalogueRegistry.ts).
+import 'src/i18n/catalogues/expenses';
+import 'src/i18n/catalogues/money';
+import 'src/i18n/catalogues/partyPicker';
+import 'src/i18n/catalogues/validation';
+
 /**
- * EXP-01 FR-10 — one expense, and the one thing that can be done to it here.
+ * 08 §12.2 / EXP-01 FR-10 — one expense, and the one thing that can be done
+ * to it here: Cancel expense.
  *
  * Edit (FR-11's 24-hour window) and Duplicate are not built, so they are not
- * offered; Void is, because a wrong expense has to be withdrawable today. A
- * void keeps the row, its number and its reason on screen — the sheet swaps to
- * the Void badge in place from the server's answer (FR-12, AC-6).
+ * offered. A cancel keeps the row, its number and its reason on screen — the
+ * sheet swaps to the Cancelled badge in place from the server's answer (FR-12,
+ * AC-6), with who cancelled it and when.
  *
- * Lazily loaded by the list, with the void dialog inside it: neither is needed
- * to READ the list.
+ * Lazily loaded by the list, with the cancel dialog inside it: neither is
+ * needed to READ the list.
  */
 export function ExpenseDetailDrawer({
   form,
@@ -69,8 +77,15 @@ export function ExpenseDetailDrawer({
         <UbStack gap={4} data-testid="expense-detail">
           {isVoid && (
             <UbStatusBanner
-              tone="warning"
-              title={t('expenses.void.badge')}
+              tone="neutral"
+              title={
+                detail.voidedBy?.name && detail.voidedAt
+                  ? t('expenses.void.byLine', {
+                      name: detail.voidedBy.name,
+                      date: formatBusinessDate(detail.voidedAt),
+                    })
+                  : t('expenses.void.badge')
+              }
               description={detail.voidReason ?? undefined}
             />
           )}
@@ -116,7 +131,7 @@ export function ExpenseDetailDrawer({
           {!detail.paid && !isVoid && detail.party && (
             <UbStatusBanner
               tone="info"
-              title={t('expenses.unpaid.khataNote', { name: detail.party.name })}
+              title={t('expenses.unpaid.shopNote', { name: detail.party.name })}
             />
           )}
         </UbStack>

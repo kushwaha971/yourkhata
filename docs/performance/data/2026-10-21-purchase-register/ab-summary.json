@@ -1,0 +1,106 @@
+[
+  {
+    "width": 390,
+    "profile": "unthrottled",
+    "oldContent": [
+      83,
+      84,
+      81,
+      79,
+      69,
+      62
+    ],
+    "newContent": [
+      87,
+      76,
+      80,
+      78,
+      72,
+      71
+    ],
+    "oldMedian": 80.0,
+    "newMedian": 77.0,
+    "oldP95": 84,
+    "newP95": 87,
+    "newFirstChangeMax": 5,
+    "newInteractionMax": 48
+  },
+  {
+    "width": 390,
+    "profile": "throttled",
+    "oldContent": [
+      916,
+      523,
+      528,
+      928,
+      528,
+      531
+    ],
+    "newContent": [
+      936,
+      536,
+      537,
+      933,
+      531,
+      540
+    ],
+    "oldMedian": 529.5,
+    "newMedian": 538.5,
+    "oldP95": 928,
+    "newP95": 936,
+    "newFirstChangeMax": 12,
+    "newInteractionMax": 48
+  },
+  {
+    "width": 1280,
+    "profile": "unthrottled",
+    "oldContent": [
+      423,
+      379,
+      381,
+      398,
+      368,
+      370
+    ],
+    "newContent": [
+      407,
+      374,
+      377,
+      414,
+      380,
+      373
+    ],
+    "oldMedian": 380.0,
+    "newMedian": 378.5,
+    "oldP95": 423,
+    "newP95": 414,
+    "newFirstChangeMax": 32,
+    "newInteractionMax": 16
+  },
+  {
+    "width": 1280,
+    "profile": "throttled",
+    "oldContent": [
+      1240,
+      820,
+      828,
+      1243,
+      826,
+      824
+    ],
+    "newContent": [
+      1249,
+      837,
+      834,
+      1254,
+      828,
+      837
+    ],
+    "oldMedian": 827.0,
+    "newMedian": 837.0,
+    "oldP95": 1243,
+    "newP95": 1254,
+    "newFirstChangeMax": 28,
+    "newInteractionMax": 16
+  }
+]

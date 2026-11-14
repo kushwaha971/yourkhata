@@ -1,20 +1,21 @@
 'use client';
 
-import { forwardRef, memo, useCallback, useState } from 'react';
+import { forwardRef, memo, useCallback, useEffect, useRef, useState } from 'react';
 
-import { ChevronDown, Loader2, Plus } from 'lucide-react';
+import { ChevronDown } from 'lucide-react';
 
-import {
-  MLCommand,
-  MLCommandGroup,
-  MLCommandInput,
-  MLCommandItem,
-  MLCommandList,
-  MLPopover,
-  MLPopoverContent,
-  MLPopoverTrigger,
-} from 'src/design-system/primitives';
+import { MLPopover, MLPopoverContent, MLPopoverTrigger } from 'src/design-system/primitives';
+import { deferredModule, useDeferredModule } from 'src/design-system/primitives/deferredModule';
 import { cn } from 'src/utils/cn';
+
+/**
+ * W4-P — the search list (cmdk) is fetched right after first paint, not in it:
+ * every line of the bill editors starts with this trigger, and none of them
+ * needs the list until it is opened. `primitives/deferredModule.ts` says why
+ * this is not `React.lazy` — this is the keyboard-first field a barcode
+ * scanner types into.
+ */
+const panelModule = deferredModule(() => import('./UbAsyncComboboxPanel'));
 
 /**
  * A combobox whose options come from the SERVER, as the query changes.
@@ -31,12 +32,27 @@ import { cn } from 'src/utils/cn';
  *   · Enter with NO option to pick calls `onSubmitQuery` — a HID barcode
  *     scanner types the code and presses Enter faster than any search answers,
  *     and that Enter is the caller's cue to do an exact lookup instead;
- *   · `onCreate` adds a "+ Create '<query>'" row (inline create, INV-01 FR-9).
+ *   · `onCreate` adds a "+ Create '<query>'" row (inline create, INV-01 FR-9);
+ *   · Enter while `pending` (the options still answer an earlier query) is
+ *     held, then taken by the first option of the answer for what was typed —
+ *     or by `onSubmitQuery` when that answer is empty; with no row highlighted
+ *     (the list was replaced under cmdk), Enter takes the first row. Taken at once, it billed
+ *     the old answer's top row: K001 for K003 (WP-05, the timed counter run);
+ *   · `afterPick` decides where the caret goes after a pick. Radix returns it
+ *     to the trigger, where the next digit typed reopens the search — on a bill
+ *     line that digit is the quantity (WP-05, found by the timed counter run).
+ *
+ * Owner, 5 Oct 2026 — it lists on OPEN, before anything is typed: `onOpen` is
+ * the caller's cue to start its search (`usePagedSearch.activate`), and
+ * `paging` adds the row that loads the next page when it scrolls into view.
  */
 export interface UbAsyncComboboxOption {
   readonly value: string;
   readonly label: string;
+  /** One quiet line under the label; cut with an ellipsis when long. */
   readonly description?: string;
+  /** A further line that WRAPS rather than cut — for figures (WP-07's prices). */
+  readonly detail?: string;
   readonly disabled?: boolean;
 }
 
@@ -44,11 +60,17 @@ export interface UbAsyncComboboxProps {
   readonly value: string | null | undefined;
   /** What the closed trigger shows for `value` — the caller knows the label. */
   readonly selectedLabel?: string;
+  /** Full selected item name on document rows, without an ellipsis. */
+  readonly wrapSelectedLabel?: boolean;
   readonly query: string;
   readonly onQueryChange: (query: string) => void;
   readonly options: readonly UbAsyncComboboxOption[];
   readonly onSelect: (option: UbAsyncComboboxOption) => void;
+  /** Full command labels wrap; compact item pickers retain their existing layout. */
+  readonly wrapLabels?: boolean;
   readonly loading?: boolean;
+  /** The options do not answer `query` yet — an Enter waits for the ones that do. */
+  readonly pending?: boolean;
   readonly placeholder?: string;
   readonly searchPlaceholder?: string;
   readonly emptyLabel?: string;
@@ -67,6 +89,25 @@ export interface UbAsyncComboboxProps {
   readonly 'aria-describedby'?: string;
   readonly onBlur?: () => void;
   readonly onKeyDown?: (event: React.KeyboardEvent<HTMLButtonElement>) => void;
+  /** Called whenever the panel opens — start listing. */
+  readonly onOpen?: () => void;
+  readonly onOpenChange?: (open: boolean) => void;
+  /** The next page, when there is one. */
+  readonly paging?: UbAsyncComboboxPaging;
+  /**
+   * Where the caret goes after an option is picked, in place of Radix's return
+   * to the trigger — a bill line's `focusNext`. Closing without a pick still
+   * returns to the trigger.
+   */
+  readonly afterPick?: () => void;
+}
+
+export interface UbAsyncComboboxPaging {
+  readonly hasMore: boolean;
+  readonly loadingMore: boolean;
+  readonly onLoadMore: () => void;
+  readonly loadingMoreLabel: string;
+  readonly showMoreLabel: string;
 }
 
 const isPrintable = (event: React.KeyboardEvent): boolean =>
@@ -77,11 +118,14 @@ const UbAsyncComboboxInner = forwardRef<HTMLButtonElement, UbAsyncComboboxProps>
     {
       value,
       selectedLabel,
+      wrapSelectedLabel = false,
       query,
       onQueryChange,
       options,
       onSelect,
       loading = false,
+      wrapLabels = false,
+      pending = false,
       placeholder,
       searchPlaceholder,
       emptyLabel,
@@ -95,21 +139,46 @@ const UbAsyncComboboxInner = forwardRef<HTMLButtonElement, UbAsyncComboboxProps>
       id,
       onBlur,
       onKeyDown,
+      onOpen,
+      onOpenChange,
+      paging,
+      afterPick,
       name: _name,
       ...aria
     },
     ref
   ) {
-    const [open, setOpen] = useState(false);
+    const [open, setOpenState] = useState(false);
+    const setOpen = useCallback(
+      (next: boolean) => {
+        setOpenState(next);
+        onOpenChange?.(next);
+        if (next) onOpen?.();
+      },
+      [onOpen, onOpenChange]
+    );
     const trimmed = query.trim();
     const canCreate = Boolean(onCreate && createLabel && trimmed);
+    const panel = useDeferredModule(panelModule, open);
 
+    const picked = useRef(false);
     const pick = useCallback(
       (option: UbAsyncComboboxOption) => {
+        picked.current = true;
         onSelect(option);
         setOpen(false);
       },
-      [onSelect]
+      [onSelect, setOpen]
+    );
+    const handleCloseFocus = useCallback(
+      (event: Event) => {
+        const wasPick = picked.current;
+        picked.current = false;
+        if (!wasPick || !afterPick) return;
+        event.preventDefault();
+        afterPick();
+      },
+      [afterPick]
     );
 
     const handleTriggerKey = useCallback(
@@ -125,8 +194,22 @@ const UbAsyncComboboxInner = forwardRef<HTMLButtonElement, UbAsyncComboboxProps>
           setOpen(true);
         }
       },
-      [disabled, onKeyDown, onQueryChange]
+      [disabled, onKeyDown, onQueryChange, setOpen]
     );
+
+    /* An Enter that arrived before the answer to what was typed. */
+    const heldEnter = useRef(false);
+    useEffect(() => {
+      if (!open) heldEnter.current = false;
+      if (!open || pending || !heldEnter.current) return;
+      heldEnter.current = false;
+      const first = options.find((option) => !option.disabled);
+      if (first) pick(first);
+      else if (trimmed && onSubmitQuery) {
+        onSubmitQuery(trimmed);
+        setOpen(false);
+      }
+    }, [open, pending, options, pick, trimmed, onSubmitQuery, setOpen]);
 
     const handleContentKey = useCallback(
       (event: React.KeyboardEvent<HTMLElement>) => {
@@ -137,13 +220,32 @@ const UbAsyncComboboxInner = forwardRef<HTMLButtonElement, UbAsyncComboboxProps>
           setOpen(false);
           return;
         }
+        if (event.key === 'Enter' && pending) {
+          event.preventDefault();
+          event.stopPropagation();
+          heldEnter.current = true;
+          return;
+        }
+        // The list was replaced under cmdk and its highlight names a row that
+        // is gone, so its Enter would take nothing (line 31 of the timed run).
+        const first = options.find((option) => !option.disabled);
+        if (
+          event.key === 'Enter' &&
+          first &&
+          !event.currentTarget.querySelector('[cmdk-item][aria-selected="true"]')
+        ) {
+          event.preventDefault();
+          event.stopPropagation();
+          pick(first);
+          return;
+        }
         if (event.key === 'Enter' && options.length === 0 && trimmed && onSubmitQuery) {
           event.preventDefault();
           onSubmitQuery(trimmed);
           setOpen(false);
         }
       },
-      [options.length, trimmed, onSubmitQuery]
+      [options, trimmed, onSubmitQuery, setOpen, pending, pick]
     );
 
     return (
@@ -157,18 +259,24 @@ const UbAsyncComboboxInner = forwardRef<HTMLButtonElement, UbAsyncComboboxProps>
           onBlur={onBlur}
           onKeyDown={handleTriggerKey}
           className={cn(
-            'flex h-10 w-full items-center justify-between gap-2 rounded-control border px-3',
+            'ub-hit flex h-10 w-full items-center justify-between gap-2 rounded-control border px-3',
             'ds-body bg-surface-card text-left text-text-primary',
             'disabled:cursor-not-allowed disabled:bg-surface-sunken disabled:text-text-muted',
             'focus-visible:outline-none focus-visible:ring-0',
             invalid
               ? 'border-formError focus-visible:border-formError'
               : 'border-border-hairline hover:border-border-subtle focus-visible:border-text-primary',
+            wrapSelectedLabel && 'h-auto min-h-10 py-2',
             className
           )}
           {...aria}
         >
-          <span className={cn('truncate', !value && 'text-text-muted')}>
+          <span
+            className={cn(
+              wrapSelectedLabel ? 'min-w-0 whitespace-normal break-words' : 'truncate',
+              !value && 'text-text-muted'
+            )}
+          >
             {value ? (selectedLabel ?? value) : placeholder}
           </span>
           <ChevronDown aria-hidden className="h-4 w-4 shrink-0 text-text-tertiary" />
@@ -177,60 +285,33 @@ const UbAsyncComboboxInner = forwardRef<HTMLButtonElement, UbAsyncComboboxProps>
         <MLPopoverContent
           align="start"
           onKeyDownCapture={handleContentKey}
+          onCloseAutoFocus={handleCloseFocus}
           className="w-[max(var(--radix-popover-trigger-width),18rem)] border-border-subtle bg-surface-card p-0"
         >
-          <MLCommand shouldFilter={false}>
-            <MLCommandInput
-              value={query}
-              onValueChange={onQueryChange}
-              placeholder={searchPlaceholder}
-              className="ds-body-base-regular h-10"
+          {panel ? (
+            <panel.UbAsyncComboboxPanel
+              wrapLabels={wrapLabels}
+              query={query}
+              onQueryChange={onQueryChange}
+              options={options}
+              onPick={pick}
+              loading={loading}
+              searchPlaceholder={searchPlaceholder}
+              emptyLabel={emptyLabel}
+              loadingLabel={loadingLabel}
+              canCreate={canCreate}
+              trimmed={trimmed}
+              createLabel={createLabel}
+              paging={paging}
+              onCreate={() => {
+                onCreate?.(trimmed);
+                setOpen(false);
+              }}
             />
-            <MLCommandList className="max-h-[min(18rem,55dvh)]">
-              {loading && (
-                <div className="ds-body-sm flex items-center gap-2 px-3 py-3 text-text-tertiary">
-                  <Loader2 aria-hidden className="h-4 w-4 animate-spin" />
-                  {loadingLabel}
-                </div>
-              )}
-              {!loading && options.length === 0 && !canCreate && (
-                <div className="ds-body-sm px-3 py-6 text-center text-text-tertiary">
-                  {emptyLabel}
-                </div>
-              )}
-              <MLCommandGroup>
-                {options.map((option) => (
-                  <MLCommandItem
-                    key={option.value}
-                    value={option.value}
-                    disabled={option.disabled}
-                    onSelect={() => pick(option)}
-                    className="ds-body flex-col items-start gap-0"
-                  >
-                    <span className="w-full truncate">{option.label}</span>
-                    {option.description && (
-                      <span className="ds-body-s-regular w-full truncate text-text-tertiary">
-                        {option.description}
-                      </span>
-                    )}
-                  </MLCommandItem>
-                ))}
-                {canCreate && (
-                  <MLCommandItem
-                    value={`__create__${trimmed}`}
-                    onSelect={() => {
-                      onCreate?.(trimmed);
-                      setOpen(false);
-                    }}
-                    className="ds-body gap-2 text-accent"
-                  >
-                    <Plus aria-hidden className="h-4 w-4 shrink-0" />
-                    <span className="truncate">{createLabel?.(trimmed)}</span>
-                  </MLCommandItem>
-                )}
-              </MLCommandGroup>
-            </MLCommandList>
-          </MLCommand>
+          ) : (
+            // The open that beat the chunk: a row the height of the search box.
+            <div aria-busy="true" className="h-10" />
+          )}
         </MLPopoverContent>
       </MLPopover>
     );

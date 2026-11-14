@@ -1,6 +1,6 @@
 'use client';
 
-import { memo, type ReactNode } from 'react';
+import { memo, type ReactNode, type RefObject } from 'react';
 
 import { UbBottomBar } from 'src/design-system/UbBottomBar';
 import { cn } from 'src/utils/cn';
@@ -8,8 +8,10 @@ import { cn } from 'src/utils/cn';
 /**
  * Part 23 §23.3 — the page container every screen sits in: the content max
  * width, the page padding (16 px below `sm`, 32 px above, from the tokens) and
- * the bottom padding that keeps a sticky footer clear of `UbBottomNav`
- * (§19.6.3).
+ * a sticky footer slot. Room for `UbBottomNav` is the SHELL's job now
+ * (`--ub-nav-offset` on `main`): this spacer reserved 64 px under every phone
+ * page for a nav that did not exist, and could not know whether the page it sat
+ * in shows one (detail and task screens do not).
  *
  * ── CR-2026-09-19-D ─────────────────────────────────────────────────────────
  *  · **The content region is no longer a `<main>`.** `UbAppShell` renders the
@@ -45,6 +47,10 @@ export interface UbPageShellProps {
   /** A sticky action bar — the invoice editor's "Issue" row, a drawer's Save. */
   readonly footer?: ReactNode;
   readonly width?: UbPageShellWidth;
+  /** Opt-in register layout: available visual viewport, with rows owning the scroll. */
+  readonly viewport?: boolean;
+  /** Supplied by UbViewportPageShell; regular pages have no measurement hook. */
+  readonly viewportRef?: RefObject<HTMLDivElement | null>;
   readonly className?: string;
 }
 
@@ -58,10 +64,28 @@ function UbPageShellBase({
   children,
   footer,
   width = 'measure',
+  viewport = false,
+  viewportRef,
   className,
 }: Readonly<UbPageShellProps>) {
   return (
-    <div className={cn('flex min-h-full w-full flex-col bg-canvas', className)}>
+    <div
+      ref={viewportRef}
+      data-ub-viewport={viewport || undefined}
+      style={
+        viewport
+          ? {
+              height:
+                'calc(var(--ub-page-viewport, 100dvh) - var(--ub-page-top, 0px) - var(--ub-nav-offset, 0px) - var(--ub-page-cta, 0px))',
+            }
+          : undefined
+      }
+      className={cn(
+        'flex min-h-full w-full flex-col bg-canvas',
+        viewport && 'min-h-0 overflow-hidden',
+        className
+      )}
+    >
       {/* ── One column, header included ──────────────────────────────────
           The header used to render OUTSIDE this padded div, with padding of
           its own, so the title landed 32 px to the left of everything under
@@ -75,7 +99,8 @@ function UbPageShellBase({
       <div
         className={cn(
           'mx-auto flex w-full flex-1 flex-col gap-4 px-4 pb-6 pt-4 lg:px-6 lg:pb-3 lg:pt-3',
-          WIDTH[width]
+          WIDTH[width],
+          viewport && 'min-h-0 gap-3 pb-3 [&>*]:shrink-0'
         )}
       >
         {header}
@@ -86,8 +111,6 @@ function UbPageShellBase({
           <div className={cn('mx-auto w-full', WIDTH[width])}>{footer}</div>
         </UbBottomBar>
       )}
-      {/* Clears the 64 px bottom nav plus the iOS safe area (§19.6.3). */}
-      <div aria-hidden className="h-bottom-nav md:hidden" />
     </div>
   );
 }

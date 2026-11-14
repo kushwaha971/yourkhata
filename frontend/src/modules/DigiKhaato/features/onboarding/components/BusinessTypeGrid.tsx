@@ -1,36 +1,27 @@
 'use client';
 
-import { memo, useCallback, type KeyboardEvent } from 'react';
+import { memo, useCallback, useMemo, type KeyboardEvent } from 'react';
 
-import { UbGrid, UbPressable, UbText } from 'src/design-system';
+import { UbGrid, UbPressable, UbShopKindIcon, UbText } from 'src/design-system';
 import { useTranslation } from 'src/hooks/useTranslation';
 import { cn } from 'src/utils/cn';
 
-import {
-  BUSINESS_TYPES,
-  BUSINESS_TYPE_CONFIG,
-  type BusinessType,
-} from '../constants/businessTypes';
+import { SHOP_KIND_TILES, type BusinessType } from '../constants/businessTypes';
 
 /**
- * PLT-03 §7 — the nine business-type tiles.
+ * B1 — "What do you sell?": the design's shop-kind tiles (`.tiles`, `.tile`,
+ * `.tile.on`), three columns on a phone and five from `md`, as `pPick` and
+ * `dPick` draw them.
  *
- * It is a `radiogroup`, not nine buttons: exactly one may be chosen, the choice
- * is the field's value, and a screen reader should say "3 of 9 selected", which
- * nine buttons cannot say. T-PLT-03-8 asks for keyboard navigation, so the
- * roving tabindex is the real WAI-ARIA one — arrows move AND select, Home and
- * End jump, and only the chosen tile is in the tab order.
- *
- * §8 — each tile carries a one-line hint describing the TRADE ("Walk-in
- * customers, udhaar"), because "Wholesale" and "Trader / mandi" are not
- * self-explanatory to the person choosing between them. D-L5: the hints used to
- * say what each type turned on — "Stock, bills", "Bulk units" — and stock,
- * bills and units are not built, so they now describe the merchant's business
- * rather than features the product does not yet have.
+ * A `radiogroup`: exactly one (R-DEC-64, one business is one kind), arrows
+ * move AND select (T-PLT-03-8), only the chosen tile is in the tab order.
+ * `exclude` drops tiles — "Wholesale of what?" is the same grid without the
+ * Wholesale tile.
  */
 export interface BusinessTypeGridProps {
   readonly value: BusinessType | '';
   readonly onChange: (value: BusinessType) => void;
+  readonly exclude?: readonly BusinessType[];
   readonly invalid?: boolean;
   readonly describedBy?: string;
   readonly ariaLabel: string;
@@ -40,17 +31,23 @@ export interface BusinessTypeGridProps {
 function BusinessTypeGridBase({
   value,
   onChange,
+  exclude,
   invalid,
   describedBy,
   ariaLabel,
   className,
 }: Readonly<BusinessTypeGridProps>) {
   const { t } = useTranslation();
+  const tiles = useMemo(
+    () => SHOP_KIND_TILES.filter((tile) => !exclude?.includes(tile.value)),
+    [exclude]
+  );
 
   const onKeyDown = useCallback(
     (event: KeyboardEvent<HTMLDivElement>) => {
-      const index = BUSINESS_TYPES.indexOf(value as BusinessType);
-      const last = BUSINESS_TYPES.length - 1;
+      const kinds = tiles.map((tile) => tile.value);
+      const index = kinds.indexOf(value as BusinessType);
+      const last = kinds.length - 1;
       let next = index < 0 ? 0 : index;
       if (event.key === 'ArrowRight' || event.key === 'ArrowDown') {
         next = index >= last ? 0 : index + 1;
@@ -64,62 +61,70 @@ function BusinessTypeGridBase({
         return;
       }
       event.preventDefault();
-      const target = BUSINESS_TYPES[next];
-      if (target) onChange(target);
+      const target = kinds[next];
+      if (!target) return;
+      onChange(target);
+      // WAI-ARIA radio group: focus moves WITH the choice. Selecting without
+      // moving focus left the ring on the first tile and the next arrow press
+      // counted from the wrong place for a screen reader.
+      const group = event.currentTarget;
+      requestAnimationFrame(() =>
+        group.querySelector<HTMLElement>(`[data-kind="${target}"]`)?.focus()
+      );
     },
-    [value, onChange]
+    [tiles, value, onChange]
   );
 
   return (
-    /*
-     * CR-2026-09-19-F — the column count follows the width the tiles actually
-     * have, not the width of the phone they were designed on.
-     *
-     * It was 2 at every width below `sm` and 3 above. At 360 px that is two
-     * 160 px tiles carrying a label AND a one-line hint, which wraps "Trader /
-     * mandi" to three lines and the hint under it to four — nine tiles of
-     * ragged type. One column at 360 px is a taller list, and a list the
-     * merchant can read beats a grid they cannot. From `sm` it is two, and the
-     * third column arrives at `lg` — where the rail takes 320 px and the form's
-     * measure is what decides how many tiles fit, not the viewport.
-     */
     <UbGrid
       role="radiogroup"
       aria-label={ariaLabel}
       aria-describedby={describedBy}
       aria-invalid={invalid || undefined}
       onKeyDown={onKeyDown}
-      columns={{ base: 1, sm: 2, lg: 3 }}
-      gap={2}
-      className={className}
+      columns={{ base: 3 }}
+      gap={0}
+      className={cn('gap-[10px] md:grid-cols-5', className)}
     >
-      {BUSINESS_TYPES.map((type) => {
-        const config = BUSINESS_TYPE_CONFIG[type];
-        const Icon = config.icon;
-        const selected = value === type;
+      {tiles.map((tile, index) => {
+        const selected = value === tile.value;
         return (
           <UbPressable
-            key={type}
+            key={tile.value}
             role="radio"
             aria-checked={selected}
-            tabIndex={selected || (!value && type === BUSINESS_TYPES[0]) ? 0 : -1}
-            onClick={() => onChange(type)}
+            tabIndex={selected || (!value && index === 0) ? 0 : -1}
+            onClick={() => onChange(tile.value)}
+            data-kind={tile.value}
             className={cn(
-              'flex min-h-[88px] flex-col items-start gap-1 rounded-card border p-3',
+              // design .tile: centred grid, min-height 96, radius 12, padding
+              // 12 x 8, gap 6, 13 px / 600 / 1.2; .tile.on: 2 px accent, wash.
+              'grid min-h-[96px] min-w-0 content-center justify-items-center gap-[6px] rounded-[12px] px-2 py-3 text-center',
               selected
-                ? 'border-accent bg-accent-quiet'
-                : 'border-border-subtle bg-surface-card hover:bg-surface-hover'
+                ? 'border-2 border-action bg-accent-quiet'
+                : // Hover only where there is a pointer that hovers: on a phone a
+                  // tapped tile kept the grey after the tap and read as half-picked.
+                  'border border-border-subtle bg-surface-card [@media(hover:hover)]:hover:bg-surface-hover'
             )}
           >
-            <Icon
-              aria-hidden
-              className={cn('h-5 w-5', selected ? 'text-text-accent' : 'text-text-tertiary')}
-            />
-            <UbText as="span" variant="body-sm-medium">
-              {t(config.labelId)}
+            <UbShopKindIcon kind={tile.picture} className="text-text-accent" />
+            <UbText
+              as="span"
+              variant="body-sm-medium"
+              className={cn(
+                'text-[13px] font-semibold leading-[1.2]',
+                selected && 'text-text-accent'
+              )}
+            >
+              {t(tile.labelId)}
             </UbText>
-            <UbText as="span" variant="caption" tone="tertiary">
-              {t(config.hintId)}
+            <UbText
+              as="span"
+              variant="caption"
+              tone="tertiary"
+              className="text-[11.5px] font-medium leading-[1.2]"
+            >
+              {t(tile.hintId)}
             </UbText>
           </UbPressable>
         );

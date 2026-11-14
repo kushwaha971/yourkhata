@@ -1,0 +1,36 @@
+OPEN REGRESSION — not part of the passing suite. R-DEC-18 next transport hardening.
+
+This diagnostic failed before a fix: old user count 7 populated the next user of the same business after explicit teardown. Recreate as frontend/src/tests/lateAccountResponse.test.ts, implement the common request/session guard, and keep it as an active regression. Do not call whole-app user privacy complete while this remains.
+
+import type {AxiosAdapter, AxiosResponse} from 'axios';
+
+import {api, __resetTransportState} from 'src/api/AxiosInstances';
+import {resetAllFeatureState} from 'src/redux/actions';
+import {sessionExpired,sessionLoaded} from 'src/redux/slice/sessionSlice';
+import {store} from 'src/redux/store';
+
+import {selectUnreadCount} from 'modules/DigiKhaato/features/notifications/redux/notificationSlice';
+import {fetchUnreadCount} from 'modules/DigiKhaato/features/notifications/redux/notificationThunk';
+
+const signIn=(id:string)=>store.dispatch(sessionLoaded({
+ user:{id,name:'Radhe Krishna Enterprises operator',email:`${id}@shop.test`,mobile:null,locale:'en',mustChangePassword:false,passwordExpiresAt:null},
+ activeTenant:{id:'same-shop',name:'Radhe Krishna Enterprises',timezone:'Asia/Kolkata'},
+ tenants:[{id:'same-shop',name:'Radhe Krishna Enterprises',timezone:'Asia/Kolkata'}],
+ permissions:['parties.party.read'],enabledModules:['parties','notifications'],version:1,
+}));
+
+it('discards a late previous-user response after logout and another user signs into the same business',async()=>{
+ /** Tenant-only response guards cannot protect the next counter operator's private inbox. */
+ const original=api.defaults.adapter;
+ let reply:((response:AxiosResponse)=>void)=()=>undefined, started:()=>void=()=>undefined;
+ const issued=new Promise<void>(resolve=>{started=resolve;});
+ api.defaults.adapter=(async config=>{started();return new Promise(resolve=>{reply=response=>resolve({...response,config});});}) as AxiosAdapter;
+ try{
+  __resetTransportState();store.dispatch(resetAllFeatureState());signIn('operator-a');
+  const pending=store.dispatch(fetchUnreadCount());await issued;
+  store.dispatch(sessionExpired());store.dispatch(resetAllFeatureState());signIn('operator-b');
+  reply({data:{data:{count:7}},status:200,statusText:'OK',headers:{'x-tenant-id':'same-shop'},config:{} as AxiosResponse['config']});
+  await pending;
+  expect(selectUnreadCount(store.getState())).toBeNull();
+ }finally{api.defaults.adapter=original;store.dispatch(resetAllFeatureState());__resetTransportState();}
+});

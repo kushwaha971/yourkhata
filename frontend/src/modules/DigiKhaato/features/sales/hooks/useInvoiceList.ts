@@ -2,20 +2,23 @@
 
 import { useCallback, useEffect, useMemo } from 'react';
 
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
 
+import { useAppRouter } from 'src/hooks/useAppRouter';
 import { useAppDispatch, useAppSelector } from 'src/hooks/useAppStore';
 import { usePermissions } from 'src/hooks/usePermissions';
 import { selectNetworkImpaired } from 'src/redux/slice/networkSlice';
 import { selectTenantTimezone } from 'src/redux/slice/sessionSlice';
+import type { ModuleCode } from 'src/types/domain.types';
 import { todayInTenantTz } from 'src/utils/dates';
 
+import { originFilterModules } from '../originLinks';
 import {
   invoiceFiltersChanged,
   selectInvoiceList,
   type InvoiceListState,
 } from '../redux/invoiceListSlice';
-import { fetchInvoices } from '../redux/salesThunk';
+import { fetchInvoices, type InvoiceListArg } from '../redux/salesThunk';
 import {
   invoiceFiltersFromQuery,
   invoiceQueryFromFilters,
@@ -23,7 +26,6 @@ import {
   type InvoiceListFilters,
 } from '../view-model/invoiceDisplay';
 
-import type { InvoiceListQuery } from '../api/salesService';
 import type { InvoicePreset } from '../constants/salesConstants';
 import type { InvoiceTab } from '../types/sales.types';
 
@@ -40,15 +42,28 @@ export interface UseInvoiceListResult extends Omit<InvoiceListState, 'filters'> 
   readonly setPreset: (preset: InvoicePreset) => void;
   readonly setRange: (from: string | null, to: string | null) => void;
   readonly setTab: (tab: InvoiceTab) => void;
+  readonly applyFilters: (next: {
+    tab: InvoiceTab;
+    preset: InvoicePreset;
+    dateFrom: string;
+    dateTo: string;
+    originModule: string | null;
+  }) => void;
   readonly setQuery: (q: string) => void;
   readonly setPage: (page: number) => void;
   readonly clearFilters: () => void;
+  readonly originModules: readonly string[];
+  readonly setOriginModule: (originModule: string | null) => void;
   readonly refetch: () => void;
 }
 
-export const useInvoiceList = (): UseInvoiceListResult => {
+/**
+ * `append` is a phone's card list (R-DEC-33): the next page joins the cards
+ * already shown instead of replacing them. A desktop table pages by replacement.
+ */
+export const useInvoiceList = (mode: 'replace' | 'append' = 'replace'): UseInvoiceListResult => {
   const dispatch = useAppDispatch();
-  const router = useRouter();
+  const router = useAppRouter();
   const search = useSearchParams();
   const { can, hasModule } = usePermissions();
   const timezone = useAppSelector(selectTenantTimezone);
@@ -65,16 +80,18 @@ export const useInvoiceList = (): UseInvoiceListResult => {
     () => invoiceFiltersFromQuery(new URLSearchParams(queryString), today),
     [queryString, today]
   );
-  const query = useMemo<InvoiceListQuery>(
+  const query = useMemo<InvoiceListArg>(
     () => ({
+      mode,
       tab: filters.tab,
       dateFrom: filters.dateFrom,
       dateTo: filters.dateTo,
       partyId: null,
       q: filters.q,
       page: filters.page,
+      originModule: filters.originModule ?? null,
     }),
-    [filters]
+    [mode, filters]
   );
 
   useEffect(() => {
@@ -122,6 +139,32 @@ export const useInvoiceList = (): UseInvoiceListResult => {
       }),
     [push, filters]
   );
+  /**
+   * The phone's Filters sheet applies several choices at once (approved design,
+   * 12 Oct 2026). One push: calling setTab and then setPreset would each start
+   * from the same `filters`, and the second would undo the first.
+   */
+  const applyFilters = useCallback(
+    (next: {
+      tab: InvoiceTab;
+      preset: InvoicePreset;
+      dateFrom: string;
+      dateTo: string;
+      originModule: string | null;
+    }) => {
+      const resolved = next.preset === 'custom' ? null : resolveInvoicePreset(next.preset, today);
+      push({
+        ...filters,
+        tab: next.tab,
+        preset: next.preset,
+        dateFrom: resolved?.dateFrom ?? next.dateFrom,
+        dateTo: resolved?.dateTo ?? next.dateTo,
+        originModule: next.originModule,
+        page: 1,
+      });
+    },
+    [push, filters, today]
+  );
   const setTab = useCallback(
     (tab: InvoiceTab) => push({ ...filters, tab, page: 1 }),
     [push, filters]
@@ -129,7 +172,16 @@ export const useInvoiceList = (): UseInvoiceListResult => {
   const setQuery = useCallback((q: string) => push({ ...filters, q, page: 1 }), [push, filters]);
   const setPage = useCallback((page: number) => push({ ...filters, page }), [push, filters]);
   const clearFilters = useCallback(
-    () => push({ ...filters, tab: 'all', q: '', page: 1 }),
+    () => push({ ...filters, tab: 'all', q: '', page: 1, originModule: null }),
+    [push, filters]
+  );
+  // A5 (PLT-X05 §7) — the origin chip: modules with a registered origin link that are on.
+  const originModules = useMemo(
+    () => originFilterModules((module) => hasModule(module as ModuleCode)),
+    [hasModule]
+  );
+  const setOriginModule = useCallback(
+    (originModule: string | null) => push({ ...filters, originModule, page: 1 }),
     [push, filters]
   );
   const refetch = useCallback(() => {
@@ -145,9 +197,12 @@ export const useInvoiceList = (): UseInvoiceListResult => {
     setPreset,
     setRange,
     setTab,
+    applyFilters,
     setQuery,
     setPage,
     clearFilters,
     refetch,
+    originModules,
+    setOriginModule,
   };
 };

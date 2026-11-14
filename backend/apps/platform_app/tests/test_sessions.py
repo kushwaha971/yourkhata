@@ -13,6 +13,8 @@ import pytest
 from django.urls import reverse
 from django.utils import timezone
 
+from apps.platform_app.services.sessions import REUSE_GRACE_SECONDS
+
 pytestmark = pytest.mark.django_db
 
 REFRESH_URL = "v1:auth-refresh"
@@ -68,6 +70,10 @@ def test_reusing_an_old_refresh_token_revokes_the_whole_family(
     old_refresh = data["refresh_token"]
     rotated = auth_client.post(reverse(REFRESH_URL), {"refresh_token": old_refresh}, format="json")
     fresh_refresh = rotated.json()["data"]["refresh_token"]
+    # Past the lost-reply grace window (see the tests after this one).
+    Session.objects.filter(user=membership.user, revoked_at__isnull=False).update(
+        revoked_at=timezone.now() - dt.timedelta(seconds=REUSE_GRACE_SECONDS + 1)
+    )
 
     replayed = auth_client.post(reverse(REFRESH_URL), {"refresh_token": old_refresh}, format="json")
     assert replayed.status_code == 401
@@ -79,6 +85,53 @@ def test_reusing_an_old_refresh_token_revokes_the_whole_family(
     # The token that was legitimately issued is dead too — that is the point.
     after = auth_client.post(reverse(REFRESH_URL), {"refresh_token": fresh_refresh}, format="json")
     assert after.status_code == 401
+
+
+def test_a_reply_lost_to_a_navigation_does_not_sign_the_shop_out(
+    auth_client: Any, membership: Any
+) -> None:
+    """Shop round, 11 Nov 2026: a refresh rotated the token, the page navigated
+    before the reply's cookie landed, and the next request sent the old token.
+    That read as theft and signed out every device mid-sale. Seconds later,
+    with the new token never used, it is a lost reply: rotate again."""
+    from apps.platform_app.models import AuditLog, Session
+
+    data = _login(auth_client, membership)
+    old_refresh = data["refresh_token"]
+    auth_client.post(reverse(REFRESH_URL), {"refresh_token": old_refresh}, format="json")
+
+    again = auth_client.post(reverse(REFRESH_URL), {"refresh_token": old_refresh}, format="json")
+    assert again.status_code == 200
+    live = Session.objects.filter(user=membership.user, revoked_at__isnull=True)
+    assert live.count() == 1
+    assert not AuditLog.objects.filter(action="auth.refresh_reuse_detected").exists()
+    # The token that went unused is retired, so it cannot be held in reserve.
+    orphan = auth_client.post(
+        reverse(REFRESH_URL),
+        {"refresh_token": again.json()["data"]["refresh_token"]},
+        format="json",
+    )
+    assert orphan.status_code == 200
+
+
+def test_the_grace_window_never_covers_a_token_whose_successor_was_used(
+    auth_client: Any, membership: Any
+) -> None:
+    """Theft still kills the family inside the window: once the new token has
+    been used, the old one coming back is two holders, not a lost reply."""
+    from apps.platform_app.models import Session
+
+    data = _login(auth_client, membership)
+    old_refresh = data["refresh_token"]
+    rotated = auth_client.post(reverse(REFRESH_URL), {"refresh_token": old_refresh}, format="json")
+    auth_client.post(
+        reverse(REFRESH_URL), {"refresh_token": rotated.json()["data"]["refresh_token"]}, format="json"
+    )
+
+    replayed = auth_client.post(reverse(REFRESH_URL), {"refresh_token": old_refresh}, format="json")
+    assert replayed.status_code == 401
+    assert replayed.json()["error"]["code"] == "session_revoked"
+    assert not Session.objects.filter(user=membership.user, revoked_at__isnull=True).exists()
 
 
 def test_an_unknown_refresh_token_is_invalid_token_not_session_revoked(

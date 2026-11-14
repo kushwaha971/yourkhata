@@ -43,9 +43,11 @@ anything.
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from decimal import Decimal
-from typing import Any
+from typing import Any, TypedDict
 
+from django.core.exceptions import ImproperlyConfigured
 from django.db import transaction
 
 from apps.common.audit import AuditAction, write_audit
@@ -62,6 +64,127 @@ RECEIVABLE = "receivable"
 PAYABLE = "payable"
 
 ZERO = Decimal("0.00")
+
+
+# ── A6 ── PLT-X04: archive guards (contracts §1.3, BR-3, BR-4) ─────────────────
+#
+# A module that holds open records for a person — an active membership, a loan
+# being repaid, a deposit not yet returned — registers a guard, and archiving
+# that person is refused while it answers. Core never imports the module; the
+# module imports this. A guard of a module the tenant cannot reach is not
+# called (BR-3), because a switched-off module's rows are not the merchant's
+# concern on the screen they are using.
+
+
+class ArchiveBlock(TypedDict):
+    """What a guard answers when it refuses: the 409's `details`."""
+
+    module: str
+    count: int
+    label_id: str
+
+
+ArchiveGuard = Callable[[Any, Party], "ArchiveBlock | None"]
+
+_GUARDS: dict[str, list[ArchiveGuard]] = {}
+_GUARDS_BASELINE: dict[str, list[ArchiveGuard]] | None = None
+
+
+def register_archive_guard(module: str, guard: ArchiveGuard) -> None:
+    """`guard(tenant, party)` returns an `ArchiveBlock` or `None`. Idempotent.
+
+    Several guards per module are allowed (a gym guards memberships and lockers
+    separately); the same callable twice is one guard. `==` rather than `is`, so
+    a bound method re-created by a second `ready()` is recognised (A12's lesson).
+    """
+    if not module or not callable(guard):
+        raise ImproperlyConfigured("register_archive_guard needs a module and a callable.")
+    guards = _GUARDS.setdefault(module, [])
+    if not any(existing == guard for existing in guards):
+        guards.append(guard)
+
+
+def registered_archive_guards() -> dict[str, tuple[ArchiveGuard, ...]]:
+    return {module: tuple(guards) for module, guards in _GUARDS.items()}
+
+
+def _enabled_guards(tenant: Any) -> list[ArchiveGuard]:
+    if not _GUARDS:
+        return []
+    from apps.platform_app.services.entitlements import effective_modules
+
+    effective = effective_modules(tenant)
+    return [guard for module, guards in _GUARDS.items() if module in effective for guard in guards]
+
+
+def archive_block(tenant: Any, party: Party) -> ArchiveBlock | None:
+    """The first guard that refuses, or `None`. Called under the party lock."""
+    for guard in _enabled_guards(tenant):
+        block = guard(tenant, party)
+        if block:
+            return block
+    return None
+
+
+def _refuse_open_records(block: ArchiveBlock) -> None:
+    """409 `party_has_open_records` — the module, the number, the next step.
+
+    `label_id` is the module's own sentence ("Gym has 1 active membership…");
+    the English message here is the fallback for a client without it.
+    """
+    raise BusinessRuleViolation(
+        "party_has_open_records",
+        "Close this contact's open records first.",
+        details={
+            "module": block["module"],
+            "count": int(block["count"]),
+            "label_id": block["label_id"],
+        },
+    )
+
+
+#: DEC-019 — each app's own figure on the party, and the module whose being on makes it a
+#: refusal. A loan used to block an archive only because it sat inside `balance`; now each
+#: app's money is its own cache, so each blocks in its own words.
+APP_BALANCE_GUARDS: tuple[tuple[str, str, str], ...] = (
+    ("sales", "shop_balance", "parties.archive.owesOnBills"),
+    ("lending", "loan_balance", "parties.archive.owesOnLoan"),
+    ("library", "library_balance", "parties.archive.owesLibraryFees"),
+)
+
+
+def app_balance_guard(cache: str, module: str, label_id: str) -> ArchiveGuard:
+    """A guard refusing while `cache` is not zero (DEC-019)."""
+
+    def guard(_tenant: Any, party: Party) -> ArchiveBlock | None:
+        if (getattr(party, cache) or ZERO) == ZERO:
+            if cache != "shop_balance":
+                return None
+            # BP-09: equal customer/supplier dues can cancel in the old cache,
+            # but neither role is settled. This is a read guard, never a posting.
+            from apps.parties.selectors.shop import shop_party_facts
+
+            facts = (
+                party
+                if hasattr(party, "shop_customer_balance")
+                else shop_party_facts(tenant=_tenant, party_id=party.id)
+            )
+            if facts is None or (
+                facts.shop_customer_balance == ZERO and facts.shop_supplier_balance == ZERO
+            ):
+                return None
+        return {"module": module, "count": 1, "label_id": label_id}
+
+    guard.__name__ = f"{cache}_archive_guard"
+    return guard
+
+
+def _reset_guards_for_tests() -> None:  # pragma: no cover - test helper
+    global _GUARDS_BASELINE
+    if _GUARDS_BASELINE is None:
+        _GUARDS_BASELINE = {module: list(guards) for module, guards in _GUARDS.items()}
+    _GUARDS.clear()
+    _GUARDS.update({module: list(guards) for module, guards in _GUARDS_BASELINE.items()})
 
 
 def _audit_snapshot(party: Party) -> dict:
@@ -94,14 +217,15 @@ def _refuse_nonzero_balance(party: Party) -> None:
     endpoint, which the server accepts whichever suggestion it made.
     """
     label = RECEIVABLE if party.balance > ZERO else PAYABLE
+    details: dict = {
+        "balance": str(party.balance),
+        "balance_label": label,
+        "suggestion": "write_off" if label == RECEIVABLE else "collect",
+    }
     raise BusinessRuleViolation(
         "party_balance_nonzero",
         "Settle the balance or write it off before archiving.",
-        details={
-            "balance": str(party.balance),
-            "balance_label": label,
-            "suggestion": "write_off" if label == RECEIVABLE else "collect",
-        },
+        details=details,
     )
 
 
@@ -146,7 +270,7 @@ def archive_party(
         # returns the original response without reaching here.
         raise BusinessRuleViolation(
             "party_already_archived",
-            "This party is already archived.",
+            "This contact is already archived.",
         )
 
     # Taken BEFORE the write-off, so the audit row says what the balance was
@@ -160,6 +284,12 @@ def archive_party(
 
     if locked.balance != ZERO:
         _refuse_nonzero_balance(locked)
+
+    # A6 BR-3 — after the write-off and the balance check, under the lock. A
+    # refusal here rolls the write-off back with the rest of the transaction.
+    block = archive_block(ctx.tenant, locked)
+    if block is not None:
+        _refuse_open_records(block)
 
     locked.status = PartyStatus.ARCHIVED
     # `last_activity_at` is deliberately NOT touched (BR-12): it is when the
@@ -209,7 +339,7 @@ def restore_party(*, ctx: Ctx, party: Party, via: str = "api") -> Party:
     locked = Party.objects.select_for_update().get(pk=party.pk)
 
     if locked.status != PartyStatus.ARCHIVED:
-        raise BusinessRuleViolation("party_not_archived", "This party is not archived.")
+        raise BusinessRuleViolation("party_not_archived", "This contact is not archived.")
 
     before = _audit_snapshot(locked)
     locked.status = PartyStatus.ACTIVE
@@ -225,6 +355,30 @@ def restore_party(*, ctx: Ctx, party: Party, via: str = "api") -> Party:
         metadata={"via": via},
     )
     return locked
+
+
+def _skip_row(row: Party, block: ArchiveBlock | None) -> dict:
+    """One `skipped` entry: why this party stayed, in the single archive's words."""
+    if block is not None:
+        return {
+            "id": str(row.id),
+            "name": row.name,
+            "code": "party_has_open_records",
+            "balance": str(row.balance),
+            "module": block["module"],
+            "count": int(block["count"]),
+            "label_id": block["label_id"],
+        }
+    return {
+        "id": str(row.id),
+        "name": row.name,
+        "code": (
+            "party_already_archived"
+            if row.status == PartyStatus.ARCHIVED
+            else "party_balance_nonzero"
+        ),
+        "balance": str(row.balance),
+    }
 
 
 #: FR-9's ceiling. Two hundred rows in one transaction is a yearly clean-up;
@@ -263,21 +417,31 @@ def bulk_archive_parties(*, ctx: Ctx, ids: list[Any], reason: str = "") -> dict:
         .select_for_update(skip_locked=True)
         .values_list("pk", flat=True)
     )
+
+    # A6 BR-4 — every locked eligible party goes past the guards; a blocked one
+    # is skipped with the guard's module and count and is never archived. The
+    # rows are already locked above, so reading them again takes no new lock.
+    blocked: dict[Any, ArchiveBlock] = {}
+    if archived_ids and _enabled_guards(ctx.tenant):
+        rows = Party.objects.for_tenant(ctx.tenant).filter(pk__in=archived_ids)
+        from apps.platform_app.services.entitlements import effective_modules
+
+        if "sales" in effective_modules(ctx.tenant):
+            from apps.parties.selectors.shop import with_shop_facts
+
+            rows = with_shop_facts(rows, tenant=ctx.tenant)
+        for row in rows:
+            block = archive_block(ctx.tenant, row)
+            if block is not None:
+                blocked[row.pk] = block
+        archived_ids = [party_id for party_id in archived_ids if party_id not in blocked]
+
     Party.objects.for_tenant(ctx.tenant).filter(pk__in=archived_ids).update(
         status=PartyStatus.ARCHIVED
     )
 
     skipped = [
-        {
-            "id": str(row.id),
-            "name": row.name,
-            "code": (
-                "party_already_archived"
-                if row.status == PartyStatus.ARCHIVED
-                else "party_balance_nonzero"
-            ),
-            "balance": str(row.balance),
-        }
+        _skip_row(row, blocked.get(row.id))
         for row in scoped.exclude(pk__in=archived_ids).only("id", "name", "status", "balance")
     ]
 

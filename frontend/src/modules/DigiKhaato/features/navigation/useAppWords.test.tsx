@@ -1,0 +1,100 @@
+import type { ReactNode } from 'react';
+
+import { renderHook } from '@testing-library/react';
+import { IntlProvider } from 'react-intl';
+import { Provider } from 'react-redux';
+
+import { sessionLoaded, type SessionApp } from 'src/redux/slice/sessionSlice';
+import { store } from 'src/redux/store';
+import { ALL_MESSAGES } from 'src/tests/allMessages';
+import type { PermissionCode } from 'src/types/domain.types';
+
+import { useAppWords } from './useAppWords';
+
+/**
+ * docs/platform/14 step 6 — a khata is one page whichever app opened it, and it
+ * used to badge a reading room's student "Customer". The open app's words win
+ * on shared pages; an app with no word of its own gets the shared one.
+ */
+const mockPath = '/parties/p1';
+jest.mock('next/navigation', () => ({
+  ...jest.requireActual('next/navigation'),
+  usePathname: () => mockPath,
+}));
+
+const APPS: SessionApp[] = [
+  { code: 'library', labelId: 'nav.workspace.library', homePath: '/library', order: 10 },
+  { code: 'lending', labelId: 'nav.workspace.lending', homePath: '/lending', order: 20 },
+  { code: 'shop', labelId: 'nav.workspace.shop', homePath: '/dashboard', order: 90 },
+  { code: 'khata', labelId: 'nav.workspace.khata', homePath: '/money-book', order: 95 },
+];
+
+const load = (activeApp: string, businessWords?: Record<string, Record<string, string>>) =>
+  store.dispatch(
+    sessionLoaded({
+      user: {
+        id: 'u1',
+        name: 'Owner',
+        email: 'o@x.test',
+        mobile: null,
+        locale: 'en',
+        mustChangePassword: false,
+        passwordExpiresAt: null,
+      },
+      activeTenant: {
+        id: 't1',
+        name: 'Verma',
+        timezone: 'Asia/Kolkata',
+        role: 'owner',
+        ...(businessWords ? { words: businessWords } : {}),
+      },
+      tenants: [{ id: 't1', name: 'Verma', timezone: 'Asia/Kolkata', role: 'owner' }],
+      permissions: [] as PermissionCode[],
+      enabledModules: [],
+      version: 1,
+      apps: APPS,
+      activeApp,
+    })
+  );
+
+const words = () =>
+  renderHook(() => useAppWords(), {
+    wrapper: ({ children }: { children: ReactNode }) => (
+      <Provider store={store}>
+        <IntlProvider locale="en" messages={ALL_MESSAGES.en}>
+          {children}
+        </IntlProvider>
+      </Provider>
+    ),
+  }).result.current;
+
+it.each([
+  // DEC-019 — the Shop's people are its Customers tab; the Udhaar book has its own list.
+  ['shop', 'Customer', 'Back to customers', '/customers'],
+  ['khata', 'Customer', 'Back to customers', '/money-book'],
+])('in the %s, a khata says %s', (app, badge, back, href) => {
+  load(app);
+  const { w, peopleHref } = words();
+  expect(w('parties.detail.badge.customer')).toBe(badge);
+  expect(w('parties.detail.backToList')).toBe(back);
+  expect(peopleHref).toBe(href);
+});
+
+it('falls back to the shared word where the app declares none', () => {
+  load('library');
+  expect(words().w('parties.detail.badge.supplier')).toBe('Supplier');
+});
+
+
+it("B2: the business's own words win, and its kind is offered for the rail", () => {
+  /** Prevents: a medical store's menu saying "Suppliers" when the server sent
+   * "Distributors", or the kind missing under the business name. */
+  load('shop', {
+    en: { 'nav.suppliers': 'Distributors', 'business.kind': 'Medical' },
+    hi: { 'nav.suppliers': 'वितरक', 'business.kind': 'मेडिकल' },
+  });
+  const { w, kindLabel } = words();
+  expect(w('nav.suppliers')).toBe('Distributors');
+  expect(w('nav.parties')).toBe('Customers');
+  expect(kindLabel).toBe('Medical');
+});

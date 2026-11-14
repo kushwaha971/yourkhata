@@ -12,7 +12,7 @@
  * Node standard library only (ADR-021). Run with --print to regenerate the
  * chapter's table.
  */
-import { readFileSync } from 'node:fs';
+import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
 const root = process.cwd();
@@ -38,6 +38,12 @@ const resolve = (raw, value, seen = 0) => {
   const hsl = value.match(/^([\d.]+)\s+([\d.]+)%\s+([\d.]+)%$/);
   if (!hsl) return null;
   return [Number(hsl[1]), Number(hsl[2]), Number(hsl[3])];
+};
+
+/** `rgba(r, g, b, a)` → [r, g, b, a], for the two alpha tints. */
+const parseRgba = (value) => {
+  const m = value?.match(/^rgba\(\s*([\d.]+)\s*,\s*([\d.]+)\s*,\s*([\d.]+)\s*,\s*([\d.]+)\s*\)$/);
+  return m ? m.slice(1).map(Number) : null;
 };
 
 // ── Colour maths (WCAG 2.2, sRGB relative luminance) ─────────────────────────
@@ -89,6 +95,8 @@ const TEXT_ON_SURFACES = [
   'text-tertiary',
   'text-muted',
   'text-accent',
+  'amount-get',
+  'amount-give',
   'success',
   'warning',
   'error',
@@ -98,12 +106,18 @@ const TEXT_ON_SURFACES = [
 
 /** Tinted blocks and fills: foreground on its own dim/fill. */
 const TINTED = [
+  ['text-primary', 'accent'],
+  ['text-secondary', 'accent'],
+  ['cta-foreground', 'cta'],
+  ['cta-foreground', 'cta-hover'],
+  ['cta-foreground', 'cta-press'],
+  ['primary-on-solid', 'primary-solid'],
   ['success', 'success-dim'],
   ['warning', 'warning-dim'],
   ['error', 'error-dim'],
   ['form-error', 'form-error-dim'],
   ['info', 'info-dim'],
-  ['text-inverse', 'accent'],
+  ['text-inverse', 'action-fill'],
   ['text-inverse', 'success'],
   ['text-inverse', 'error'],
   ['text-inverse', 'form-error'],
@@ -113,7 +127,7 @@ const TINTED = [
 /** Non-text (WCAG 1.4.11): a control boundary that identifies the control. */
 const NON_TEXT = [
   ['border-strong', 'canvas'],
-  ['accent', 'canvas'],
+  ['action-fill', 'canvas'],
 ];
 
 /**
@@ -198,8 +212,143 @@ TEXT_ON_SURFACES.forEach((fg) => {
 TINTED.forEach(([fg, bg]) => check(fg, bg, 4.5, 'dark', darkRaw));
 NON_TEXT.forEach(([fg, bg]) => check(fg, bg, 3.0, 'dark', darkRaw));
 check('border-strong', 'surface-card', 3.0, 'dark', darkRaw);
-check('accent', 'surface-card', 3.0, 'dark', darkRaw);
+check('action-fill', 'surface-card', 3.0, 'dark', darkRaw);
 DARK_SEPARATION.forEach(([fg, bg, floor]) => check(fg, bg, floor, 'dark', darkRaw));
+
+/**
+ * CR-2026-09-29-BRAND-C — the K-c "Bandhan" mark. The white K is a LETTER, so
+ * it takes the text floor on its own cover, in both themes (the cover does not
+ * change with the theme, but the dark column is checked so that it never
+ * does by accident). The hem and the knot are DECORATIVE: listed here so the
+ * table shows them, with the floor they actually need — none for the hem,
+ * which is meant to be quiet, and 3:1 for the knot against the white band it
+ * is tied on and, in the dark column, the surfaces the wordmark's dot sits on.
+ */
+const BRAND = [
+  ['brand-figure', 'brand-cover', 4.5, 'light'],
+  ['brand-figure', 'brand-cover', 4.5, 'dark'],
+  ['brand-cover', 'canvas', 3.0, 'light'],
+  // On the dark rail the deep cover is 2.02:1. A logo's own colours are
+  // outside WCAG 1.4.11, and what identifies the mark there is the white K,
+  // checked against the rail itself on the next line; 2.0 is the line under
+  // which the cover stops reading as a tile at all, so a darker primary step
+  // cannot be adopted without somebody looking at the sidebar in dark mode.
+  ['brand-cover', 'surface-nav', 2.0, 'dark'],
+  ['brand-figure', 'surface-nav', 4.5, 'dark'],
+];
+const BRAND_DECORATIVE = [
+  ['brand-hem', 'brand-cover', 1.0, 'light'],
+  ['brand-hem', 'brand-cover', 1.0, 'dark'],
+  ['brand-knot', 'brand-figure', 3.0, 'light'],
+  ['brand-knot', 'brand-figure', 3.0, 'dark'],
+  ['brand-knot', 'canvas', 3.0, 'light'],
+  ['brand-knot', 'canvas', 3.0, 'dark'],
+  ['brand-knot', 'surface-card', 3.0, 'dark'],
+  ['brand-knot', 'surface-nav', 3.0, 'dark'],
+];
+[...BRAND, ...BRAND_DECORATIVE].forEach(([fg, bg, floor, theme]) =>
+  check(fg, bg, floor, theme, theme === 'light' ? lightRaw : darkRaw)
+);
+
+/**
+ * The landing page (`/`). Its closing band is primary-700 → primary-900 in both
+ * themes with `--landing-band-text` on it, and its white "Start free" there
+ * carries primary-800 type. The blobs, the phone bezel and the device glow are
+ * decorative and listed with floor 1.0 so the table shows them and a text use
+ * of any of them would be a visible review question.
+ */
+const LANDING = [
+  ['landing-band-text', 'primary-700', 4.5, 'light'],
+  ['landing-band-text', 'primary-700', 4.5, 'dark'],
+  ['landing-band-text', 'primary-800', 4.5, 'light'],
+  ['landing-band-text', 'primary-900', 4.5, 'dark'],
+  ['primary-800', 'landing-band-text', 4.5, 'light'],
+  ['primary-800', 'landing-band-text', 4.5, 'dark'],
+  ['primary-800', 'primary-50', 4.5, 'light'],
+  // The rotating hero word is `--text-accent` at display size, already held
+  // to 4.5 on every surface above; the key line sits on the canvas.
+  ['text-accent', 'canvas', 4.5, 'light'],
+  ['text-accent', 'canvas', 4.5, 'dark'],
+];
+const LANDING_DECORATIVE = [
+  ['landing-blob', 'canvas', 1.0, 'light'],
+  ['landing-blob', 'canvas', 1.0, 'dark'],
+  ['landing-blob-2', 'canvas', 1.0, 'light'],
+  ['landing-blob-3', 'canvas', 1.0, 'dark'],
+  ['device-bezel', 'canvas', 1.0, 'light'],
+  ['device-bezel', 'canvas', 1.2, 'dark'],
+];
+[...LANDING, ...LANDING_DECORATIVE].forEach(([fg, bg, floor, theme]) =>
+  check(fg, bg, floor, theme, theme === 'light' ? lightRaw : darkRaw)
+);
+
+/**
+ * Sprint 12 a11y sweep — text on the SELECTED tint. A selected row, card or
+ * chip is `--accent-quiet` (an rgba wash) over the card, and its caption kept
+ * the tertiary grey: 4.46:1 on #EDEDFB, which axe failed on /switch and on the
+ * reminder-rule cards while every pairing above passed, because none of them
+ * looked at a tint. The wash is composited over `--surface-card` here exactly
+ * as the browser does.
+ */
+const TEXT_ON_TINT = ['text-primary', 'text-secondary', 'text-tertiary', 'text-accent'];
+const luminanceRgb = (rgb) => relativeLuminance(rgb);
+const checkOnTint = (theme, raw) => {
+  const tint = parseRgba(raw['accent-quiet']);
+  const card = get(raw, 'surface-card', theme);
+  if (!tint || !card) {
+    console.error(`✗ low_contrast: --accent-quiet (${theme}) is not an rgba() over a card.`);
+    process.exitCode = 1;
+    return;
+  }
+  const base = hslToRgb(card);
+  const wash = base.map((c, i) => tint[i] * tint[3] + c * (1 - tint[3]));
+  TEXT_ON_TINT.forEach((fgName) => {
+    const fg = get(raw, fgName, theme);
+    if (!fg) return;
+    const [hi, lo] = [luminanceRgb(hslToRgb(fg)), luminanceRgb(wash)].sort((a, b) => b - a);
+    const ratio = (hi + 0.05) / (lo + 0.05);
+    const pass = ratio + 1e-9 >= 4.5;
+    rows.push({ theme, fg: fgName, bg: 'accent-quiet', ratio: ratio.toFixed(2), floor: 4.5, pass });
+    if (!pass) {
+      failures += 1;
+      console.error(
+        `✗ low_contrast: --${fgName} on --accent-quiet over --surface-card (${theme}) is ${ratio.toFixed(2)}:1, floor 4.5:1`
+      );
+    }
+  });
+};
+checkOnTint('light', lightRaw);
+checkOnTint('dark', darkRaw);
+
+/**
+ * Sprint 12 a11y sweep — the `-bright` steps are FILL colours. #E73F3F is
+ * 4.05:1 and #E49614 2.39:1 on white, and UbStatCard painted its label and
+ * figure in them: every "To collect", "Low or out" and "To pay" tile failed
+ * WCAG 1.4.3. A token table cannot see a class name, so the sources are
+ * scanned: `text-<tone>-bright` is refused anywhere in `src/` unless the line
+ * says `contrast: decorative` — an icon beside words that carry the meaning.
+ */
+const BRIGHT_TEXT = /\btext-(success|warning|error|info|form-error|formError)-bright\b/;
+const walk = (dir) =>
+  readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
+    const path = join(dir, entry.name);
+    if (entry.isDirectory()) return entry.name === 'node_modules' ? [] : walk(path);
+    return /\.(tsx?|css)$/.test(entry.name) && !/\.test\./.test(entry.name) ? [path] : [];
+  });
+let brightScanned = 0;
+for (const file of walk(join(root, 'src'))) {
+  brightScanned += 1;
+  readFileSync(file, 'utf8')
+    .split('\n')
+    .forEach((line, index) => {
+      if (BRIGHT_TEXT.test(line) && !/contrast: decorative/.test(line)) {
+        failures += 1;
+        console.error(
+          `✗ low_contrast: ${file.slice(root.length + 1)}:${index + 1} paints text in a -bright fill step (${line.trim().slice(0, 80)})`
+        );
+      }
+    });
+}
 
 if (process.argv.includes('--print')) {
   rows.forEach((row) =>
@@ -214,4 +363,6 @@ if (failures > 0 || process.exitCode === 1) {
   process.exit(1);
 }
 
-console.log(`✓ contrast — ${rows.length} pairings checked, all above their floor`);
+console.log(
+  `✓ contrast — ${rows.length} pairings checked, all above their floor; ${brightScanned} source files free of -bright text`
+);

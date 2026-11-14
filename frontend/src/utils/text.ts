@@ -13,10 +13,12 @@
  *
  * `[...word][0]` rather than `word[0]`: `charAt` would split a Devanagari
  * grapheme and a surrogate pair down the middle, which is how "अमित" becomes a
- * replacement glyph.
+ * replacement glyph. Punctuation is dropped first, so "Raju (milkman)" is "Rm",
+ * not "R(" — the design's initials, and the Money Book's most common names.
  */
 export const initialsOf = (name: string): string =>
   (name ?? '')
+    .replace(/[^\p{L}\p{M}\p{N}\s]/gu, '')
     .trim()
     .split(/\s+/)
     .slice(0, 2)

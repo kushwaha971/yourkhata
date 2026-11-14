@@ -6,25 +6,39 @@ import dynamic from 'next/dynamic';
 
 import { UserPlus } from 'lucide-react';
 
-import { UbButton, UbConfirmDialog, UbSectionHeading, UbStack } from 'src/design-system';
+import {
+  UbButton,
+  UbConfirmDialog,
+  UbDialogLoading,
+  UbSectionHeading,
+  UbStack,
+} from 'src/design-system';
 import {
   UbDataGrid,
   type UbDataGridEmptyStates,
-  type UbDataGridLabels,
   type UbGridState,
 } from 'src/design-system/UbDataGrid';
 import { useNowMs } from 'src/hooks/useNowMs';
 import { useTranslation } from 'src/hooks/useTranslation';
+import { accountDisplayName } from 'src/utils/accountIdentity';
 
 import { Can } from '../../auth/components/Can';
 import { PAGE_SIZE_OPTIONS } from '../constants/teamDefaults';
+import { useMemberAdmin } from '../hooks/useMemberAdmin';
 import { useMembers } from '../hooks/useMembers';
+import { useTeamApp } from '../hooks/useTeamApp';
+import { useTeamGridLabels } from '../hooks/useTeamGridLabels';
+import { memberActionsFor, NO_MEMBER_ACTIONS } from '../view-model/memberActions';
 import { memberCountOf } from '../view-model/memberCount';
 
 import { INVITE_AVATAR_ICON } from './InvitationRow';
+import { MemberActionsMenu } from './MemberActionsMenu';
 import { createMemberColumns } from './MemberColumns';
 
 import type { Member } from '../types/member.types';
+
+// The access words ride with the screens that show them (owner, 14 Nov 2026).
+import 'src/i18n/catalogues/teamAccess';
 
 /**
  * Part 19 §19.9 — both overlays are fetched when they are OPENED, not when the
@@ -34,12 +48,29 @@ import type { Member } from '../types/member.types';
  */
 const AddMemberDialog = dynamic(
   () => import('./AddMemberDialog').then((module) => module.AddMemberDialog),
-  { ssr: false }
+  { ssr: false,
+  loading: () => <UbDialogLoading /> }
+);
+
+/* Owner, 12 Oct 2026 — the edit form carries the same form stack as the add
+   dialog, so it is fetched when it opens, for the same reason. */
+const EditMemberDialog = dynamic(
+  () => import('./EditMemberDialog').then((module) => module.EditMemberDialog),
+  { ssr: false,
+  loading: () => <UbDialogLoading /> }
+);
+
+/* Owner, 14 Nov 2026 — which apps a member opens: fetched when it opens. */
+const MemberAccessSheet = dynamic(
+  () => import('./MemberAccessSheet').then((module) => module.MemberAccessSheet),
+  { ssr: false,
+  loading: () => <UbDialogLoading /> }
 );
 
 const CredentialsDialog = dynamic(
   () => import('./CredentialsDialog').then((module) => module.CredentialsDialog),
-  { ssr: false }
+  { ssr: false,
+  loading: () => <UbDialogLoading /> }
 );
 
 /**
@@ -76,6 +107,25 @@ export function MembersSection(): React.JSX.Element {
     setPage,
     refetch,
   } = members;
+  const admin = useMemberAdmin();
+  const teamApp = useTeamApp();
+  const {
+    viewer,
+    actionsTarget,
+    openActions,
+    closeActions,
+    openEdit,
+    editTarget,
+    openAccess,
+    accessTarget,
+    closeAccess,
+    confirm,
+    isActing,
+    requestConfirm,
+    cancelConfirm,
+    confirmAction,
+    unblock,
+  } = admin;
 
   /** Read outside render, so the column array's memo key is stable. */
   const nowMs = useNowMs();
@@ -90,44 +140,14 @@ export function MembersSection(): React.JSX.Element {
         nowMs,
         canWrite,
         onRegenerate: requestRegenerate,
+        viewer,
+        onOpenActions: openActions,
+        appLabel: teamApp?.label ?? null,
       }),
-    [t, formatDate, nowMs, canWrite, requestRegenerate]
+    [t, formatDate, nowMs, canWrite, requestRegenerate, viewer, openActions, teamApp?.label]
   );
 
-  const labels = useMemo<UbDataGridLabels>(
-    () => ({
-      loading: t('team.members.loading'),
-      // `{page}` and `{pages}` pass through as literal text: the grid
-      // substitutes them itself, because it is the only thing that knows them.
-      pageOf: t('common.grid.pageOf', { page: '{page}', pages: '{pages}' }),
-      previousPage: t('common.grid.previousPage'),
-      nextPage: t('common.grid.nextPage'),
-      pageSize: t('common.grid.pageSize'),
-      // `{page}` and `{total}` pass through as literal text, like `pageOf`
-      // above: the pagination bar substitutes them, because it is the only
-      // thing that knows which page a button points at.
-      goToPage: t('common.grid.goToPage', { page: '{page}' }),
-      ofTotal: t('common.grid.ofTotal', { total: '{total}' }),
-      // This grid has no selection — `selectable` is never passed, because a
-      // team is read down a list rather than acted on in bulk — so nothing ever
-      // paints this. It is a required part of the grid's contract and is given
-      // an honest zero rather than a placeholder: `selectedCount` is an ICU
-      // PLURAL, and a plural resolved against the string `'{count}'` renders
-      // "NaN selected", which is what the party list was showing.
-      selectedCount: t('common.grid.selectedCount', { count: 0 }),
-
-      selectAll: t('team.list.select.all'),
-      selectRow: t('team.list.select.row', { name: '{name}' }),
-      showing: t('common.grid.showing'),
-      columns: t('common.grid.columns'),
-      showAllColumns: t('common.grid.showAllColumns'),
-      sortBy: t('common.grid.sortBy', { column: '{column}' }),
-      sortedAscending: t('common.grid.sortedAscending'),
-      sortedDescending: t('common.grid.sortedDescending'),
-      openRow: t('team.list.open', { name: '{name}' }),
-    }),
-    [t]
-  );
+  const labels = useTeamGridLabels('team.members.loading');
 
   const emptyStates = useMemo<UbDataGridEmptyStates>(
     () => ({
@@ -166,7 +186,11 @@ export function MembersSection(): React.JSX.Element {
           : 'rows';
 
   const rowId = useCallback((member: Member) => member.id, []);
-  const rowName = useCallback((member: Member) => member.fullName || member.email, []);
+  const rowName = useCallback(
+    (member: Member) =>
+      accountDisplayName({ name: member.fullName, email: member.email, mobile: member.mobile }),
+    []
+  );
   const avatarIcon = useCallback(
     (member: Member) => (member.status === 'invited' ? INVITE_AVATAR_ICON : null),
     []
@@ -174,10 +198,9 @@ export function MembersSection(): React.JSX.Element {
   /* QA O3 — people who have joined, and the invited apart: an invited row
      holds no access, and "3 people" counted it as a colleague. */
   const count = memberCountOf(rows, meta);
-  const countLabel =
-    count.invited
-      ? t('team.members.countWithInvited', { count: count.joined, invited: count.invited })
-      : t('team.members.count', { count: count.joined });
+  const countLabel = count.invited
+    ? t('team.members.countWithInvited', { count: count.joined, invited: count.invited })
+    : t('team.members.count', { count: count.joined });
   const handlePageSize = useCallback((pageSize: number) => setPage(1, pageSize), [setPage]);
   const handleRegenerateOpenChange = useCallback(
     (next: boolean) => {
@@ -188,6 +211,32 @@ export function MembersSection(): React.JSX.Element {
   const handleConfirmRegenerate = useCallback(() => {
     void confirmRegenerate();
   }, [confirmRegenerate]);
+
+  const handleBlock = useCallback((id: string) => requestConfirm('block', id), [requestConfirm]);
+  const handleRemove = useCallback((id: string) => requestConfirm('remove', id), [requestConfirm]);
+  const handleUnblock = useCallback(
+    (id: string) => {
+      void unblock(id);
+    },
+    [unblock]
+  );
+  const handleConfirmOpenChange = useCallback(
+    (next: boolean) => {
+      if (!next) cancelConfirm();
+    },
+    [cancelConfirm]
+  );
+  const handleConfirmAction = useCallback(() => {
+    void confirmAction();
+  }, [confirmAction]);
+  const confirmName = confirm
+    ? accountDisplayName({
+        name: confirm.member.fullName,
+        email: confirm.member.email,
+        mobile: confirm.member.mobile,
+      })
+    : '';
+  const confirmKind = confirm?.kind ?? 'block';
 
   return (
     <UbStack gap={2}>
@@ -230,12 +279,62 @@ export function MembersSection(): React.JSX.Element {
       {addOpen && <AddMemberDialog members={members} />}
       {lastCredentials && <CredentialsDialog members={members} />}
 
+      <MemberActionsMenu
+        member={actionsTarget}
+        actions={actionsTarget ? memberActionsFor(viewer, actionsTarget) : NO_MEMBER_ACTIONS}
+        t={t}
+        onClose={closeActions}
+        onEdit={openEdit}
+        onBlock={handleBlock}
+        onUnblock={handleUnblock}
+        onRemove={handleRemove}
+        onRegenerate={requestRegenerate}
+        onAccess={openAccess}
+        appLabel={teamApp?.label ?? null}
+      />
+      {editTarget && <EditMemberDialog admin={admin} canWrite={canWrite} />}
+      {accessTarget && teamApp && (
+        <MemberAccessSheet
+          member={accessTarget}
+          app={teamApp}
+          onClose={closeAccess}
+          onSaved={() => {
+            closeAccess();
+            refetch();
+          }}
+        />
+      )}
+
+      {/* Block and Remove ask first, in a sentence that says what happens to
+          the PERSON — signed out everywhere, and for Remove, off the team —
+          because that is the consequence the owner is weighing. Unblock asks
+          nothing: it takes nothing away from anybody. */}
+      <UbConfirmDialog
+        open={Boolean(confirm)}
+        onOpenChange={handleConfirmOpenChange}
+        title={t(`team.member.${confirmKind}.title`, { name: confirmName })}
+        description={t(`team.member.${confirmKind}.body`, { name: confirmName })}
+        confirmLabel={t(`team.member.${confirmKind}.confirm`)}
+        cancelLabel={t('common.action.cancel')}
+        busyLabel={t(`team.member.${confirmKind}.working`)}
+        closeLabel={t('common.action.close')}
+        busy={isActing}
+        destructive
+        onConfirm={handleConfirmAction}
+      />
+
       <UbConfirmDialog
         open={Boolean(regenerateTarget)}
         onOpenChange={handleRegenerateOpenChange}
         title={t('team.regenerate.title')}
         description={t('team.regenerate.body', {
-          name: regenerateTarget?.fullName ?? regenerateTarget?.email ?? '',
+          name: regenerateTarget
+            ? accountDisplayName({
+                name: regenerateTarget.fullName,
+                email: regenerateTarget.email,
+                mobile: regenerateTarget.mobile,
+              })
+            : '',
         })}
         confirmLabel={t('team.regenerate.confirm')}
         cancelLabel={t('team.regenerate.cancel')}

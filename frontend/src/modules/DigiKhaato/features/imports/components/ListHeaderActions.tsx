@@ -39,6 +39,7 @@ export function ImportActionLink({
       variant="secondary"
       icon={<Upload className="h-4 w-4" aria-hidden />}
       iconOnly="mobile"
+      className="lg:[&_svg]:hidden"
     >
       {t('imports.action.import')}
     </UbActionLink>
@@ -68,6 +69,7 @@ export function ListExportButton({
       variant="secondary"
       icon={<Download className="h-4 w-4" aria-hidden />}
       iconOnly="mobile"
+      className="lg:[&_svg]:hidden"
       busy={exporting}
       busyLabel={t('exports.preparing')}
       disabled={empty}

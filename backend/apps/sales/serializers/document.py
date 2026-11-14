@@ -11,7 +11,12 @@ from typing import Any
 
 from rest_framework import serializers
 
+from apps.common.draft_creation import client_draft_key_field
 from apps.sales.models import SalesDocument, SalesDocumentLine
+from apps.sales.serializers.common import mask_mobile, person, refuse_origin_keys
+from apps.sales.serializers.links import document_links
+
+__all__ = ["DocumentReadSerializer", "mask_mobile"]
 
 
 class LineInputSerializer(serializers.Serializer):
@@ -22,6 +27,16 @@ class LineInputSerializer(serializers.Serializer):
     hsn_sac = serializers.CharField(required=False, allow_blank=True, allow_null=True, max_length=8)
     qty = serializers.DecimalField(max_digits=14, decimal_places=3, required=False, allow_null=True)
     unit_code = serializers.CharField(required=False, allow_null=True, max_length=8)
+    #: D P3 — a tracked item's IMEI / serial numbers, one per piece.
+    serials = serializers.ListField(
+        child=serializers.CharField(max_length=40), required=False, max_length=500
+    )
+    #: D P4 — a medicine's batch on this line.
+    batches = serializers.ListField(child=serializers.DictField(), required=False, max_length=5)
+    #: D P6 — a café item's add-ons chosen for this line.
+    addons = serializers.ListField(child=serializers.DictField(), required=False, max_length=12)
+    #: G2b — a jeweller's piece: weights, rate and charges (see `tags.line_jewel`).
+    jewel = serializers.DictField(required=False, allow_null=True)
     unit_price = serializers.DecimalField(
         max_digits=14, decimal_places=4, required=False, allow_null=True
     )
@@ -48,6 +63,7 @@ class PaymentInputSerializer(serializers.Serializer):
 
 
 class InvoiceWriteSerializer(serializers.Serializer):
+    client_draft_key = client_draft_key_field()
     kind = serializers.CharField(required=False, allow_null=True, allow_blank=True)
     party_id = serializers.UUIDField(required=False, allow_null=True)
     walk_in_name = serializers.CharField(
@@ -70,6 +86,30 @@ class InvoiceWriteSerializer(serializers.Serializer):
         max_digits=14, decimal_places=2, required=False, allow_null=True
     )
     notes = serializers.CharField(required=False, allow_blank=True)
+    #: D P1c — the godown; blank or absent is the business's first place.
+    location_id = serializers.UUIDField(required=False, allow_null=True)
+    #: D P1b — design D1 auto parts: the vehicle and the mechanic, printed on the bill.
+    vehicle_number = serializers.CharField(required=False, allow_blank=True, max_length=20)
+    mechanic = serializers.CharField(required=False, allow_blank=True, max_length=60)
+    #: G8 — make and model, so the vehicle page can name it.
+    vehicle_model = serializers.CharField(required=False, allow_blank=True, max_length=60)
+    #: G2c — a jeweller's old gold taken in: {weight_g, purity, rate?, less_pct}.
+    old_gold = serializers.DictField(required=False, allow_null=True)
+    #: G2d — the customer's PAN on a jeweller's bill of ₹2 lakh or more.
+    pan = serializers.CharField(required=False, allow_blank=True, max_length=12)
+    # G4 — the prescription for a Schedule H medicine on the bill.
+    rx_doctor = serializers.CharField(required=False, allow_blank=True, max_length=80)
+    rx_patient = serializers.CharField(required=False, allow_blank=True, max_length=80)
+    #: G3a — the custom order this bill delivers.
+    custom_order_id = serializers.UUIDField(required=False, allow_null=True)
+    #: G7 — the contractor's site this bill is for.
+    site_id = serializers.UUIDField(required=False, allow_null=True)
+    #: G11 — the phone order this bill is for.
+    phone_order_id = serializers.UUIDField(required=False, allow_null=True)
+    #: G10 — the café order this bill settles.
+    cafe_order_id = serializers.UUIDField(required=False, allow_null=True)
+    #: G5 — the repair job this bill delivers.
+    repair_job_id = serializers.UUIDField(required=False, allow_null=True)
     terms = serializers.CharField(required=False, allow_blank=True)
     lines = LineInputSerializer(many=True, required=False)
     payment = PaymentInputSerializer(required=False, allow_null=True)
@@ -83,6 +123,10 @@ class InvoiceWriteSerializer(serializers.Serializer):
             raise serializers.ValidationError(f"At most {LINES_MAX} lines.")
         return value
 
+    def to_internal_value(self, data: Any) -> Any:
+        refuse_origin_keys(data)  # ── A5 ── BR-4
+        return super().to_internal_value(data)
+
 
 class IssueSerializer(serializers.Serializer):
     payment = PaymentInputSerializer(required=False, allow_null=True)
@@ -95,16 +139,12 @@ class ShareLinkSerializer(serializers.Serializer):
     channel = serializers.ChoiceField(choices=("link", "whatsapp"), required=False, default="link")
 
 
-def _person(user: Any) -> dict | None:
-    if user is None:
-        return None
-    return {
-        "id": str(user.id),
-        "name": getattr(user, "full_name", "") or getattr(user, "email", ""),
-    }
-
-
 class LineReadSerializer(serializers.ModelSerializer):
+    tracks_serial = serializers.SerializerMethodField()
+
+    def get_tracks_serial(self, line: SalesDocumentLine) -> bool:
+        return line.item is not None and line.item.tracking == "serial"
+
     class Meta:
         model = SalesDocumentLine
         fields = (
@@ -115,6 +155,12 @@ class LineReadSerializer(serializers.ModelSerializer):
             "hsn_sac",
             "qty",
             "unit_code",
+            "unit_factor",
+            "serials",
+            "tracks_serial",
+            "batches",
+            "addons",
+            "jewel",
             "unit_price",
             "tax_inclusive",
             "discount_type",
@@ -129,6 +175,10 @@ class LineReadSerializer(serializers.ModelSerializer):
             "igst",
             "cess",
             "line_total",
+            "returned_qty",
+            "against_line_id",
+            "scheme_code",
+            "scheme_claim",
         )
 
 
@@ -149,13 +199,26 @@ def supplier_block(document: SalesDocument) -> dict:
 
 
 class DocumentReadSerializer(serializers.ModelSerializer):
+    location = serializers.SerializerMethodField()
+    vehicle = serializers.SerializerMethodField()
+    old_gold = serializers.SerializerMethodField()
+    pan = serializers.SerializerMethodField()
+    rx = serializers.SerializerMethodField()
+    repair_job = serializers.SerializerMethodField()
+    cafe_order = serializers.SerializerMethodField()
+    phone_order = serializers.SerializerMethodField()
+    site = serializers.SerializerMethodField()
+    custom_order = serializers.SerializerMethodField()
     party = serializers.SerializerMethodField()
     party_snapshot = serializers.SerializerMethodField()
     supplier = serializers.SerializerMethodField()
     payment = serializers.SerializerMethodField()
+    payments = serializers.SerializerMethodField()
     lines = LineReadSerializer(many=True, read_only=True)
     doc_discount_allocation = serializers.SerializerMethodField()
     created_by = serializers.SerializerMethodField()
+    links = serializers.SerializerMethodField()
+    origin = serializers.SerializerMethodField()  # ── A5 ── PLT-X05 §6
 
     class Meta:
         model = SalesDocument
@@ -173,6 +236,7 @@ class DocumentReadSerializer(serializers.ModelSerializer):
             "supplier",
             "document_date",
             "due_on",
+            "valid_until",
             "place_of_supply_state",
             "is_inter_state",
             "reverse_charge",
@@ -191,15 +255,71 @@ class DocumentReadSerializer(serializers.ModelSerializer):
             "amount_paid",
             "amount_due",
             "payment",
+            "payments",
             "lines",
             "notes",
+            "location",
+            "vehicle",
+            "old_gold",
+            "pan",
+            "rx",
+            "repair_job",
+            "cafe_order",
+            "phone_order",
+            "site",
+            "custom_order",
             "terms",
             "doc_discount_allocation",
             "created_by",
             "issued_at",
+            "voided_at",
+            "void_reason",
+            "links",
+            "origin",
             "created_at",
             "updated_at",
         )
+
+    def get_vehicle(self, obj: Any) -> dict | None:
+        """D P1b — {number, mechanic} on an auto-parts bill, or null."""
+        return (obj.meta or {}).get("vehicle") or None
+
+    def get_old_gold(self, obj: Any) -> dict | None:
+        """G2c — the old gold taken in on this bill (priced), or null."""
+        return (obj.meta or {}).get("old_gold") or None
+
+    def get_custom_order(self, obj: Any) -> dict | None:
+        """G3a — the custom order this bill delivers, or null."""
+        return (obj.meta or {}).get("custom_order") or None
+
+    def get_pan(self, obj: Any) -> str | None:
+        """G2d — the customer's PAN kept with this bill, or null."""
+        return (obj.meta or {}).get("pan") or None
+
+    def get_site(self, obj: Any) -> dict | None:
+        """G7 — the site this bill is for, or null."""
+        return {"id": str(obj.site_id), "name": obj.site.name} if obj.site_id else None
+
+    def get_phone_order(self, obj: Any) -> dict | None:
+        """G11 — the phone order this bill is for, or null."""
+        return (obj.meta or {}).get("phone_order") or None
+
+    def get_cafe_order(self, obj: Any) -> dict | None:
+        """G10 — the café order this bill settles, or null."""
+        return (obj.meta or {}).get("cafe_order") or None
+
+    def get_repair_job(self, obj: Any) -> dict | None:
+        """G5 — the repair job this bill delivers, or null."""
+        return (obj.meta or {}).get("repair_job") or None
+
+    def get_rx(self, obj: Any) -> dict | None:
+        """G4 — {doctor, patient} for a Schedule H medicine's sale, or null."""
+        return (obj.meta or {}).get("rx") or None
+
+    def get_location(self, obj: Any) -> dict | None:
+        """D P1c — the godown, or null for the business's first place."""
+        place = obj.location
+        return {"id": str(place.id), "name": place.name} if place is not None else None
 
     def get_party(self, obj: SalesDocument) -> dict | None:
         party = obj.party
@@ -226,66 +346,28 @@ class DocumentReadSerializer(serializers.ModelSerializer):
     def get_payment(self, obj: SalesDocument) -> dict | None:
         return (obj.meta or {}).get("payment")
 
+    def get_payments(self, obj: SalesDocument) -> list[dict]:
+        """PAY-01 — the receipts allocated to this invoice (a deferred import: rule D5)."""
+        if obj.status == "draft":
+            return []
+        from apps.payments.selectors.payments import payments_for_document
+
+        return payments_for_document(
+            tenant=obj.tenant_id, document_type="sales_document", document_id=obj.id
+        )
+
     def get_doc_discount_allocation(self, obj: SalesDocument) -> dict:
         return (obj.meta or {}).get("doc_discount_allocation") or {}
 
     def get_created_by(self, obj: SalesDocument) -> dict | None:
-        return _person(obj.created_by)
+        return person(obj.created_by)
 
+    def get_origin(self, obj: SalesDocument) -> dict | None:
+        """`{module, type, id, label} | null` — the module row this document was issued for."""
+        from apps.sales.services.origins import origin_view
 
-def mask_mobile(value: str | None) -> str | None:
-    """SAL-02 §19 — `+91 98••• ••210` in lists."""
-    if not value:
-        return None
-    digits = value[-10:]
-    return f"+91 {digits[:2]}••• ••{digits[-3:]}"
+        return origin_view(obj)
 
-
-class InvoiceListSerializer(serializers.ModelSerializer):
-    party = serializers.SerializerMethodField()
-    walk_in_mobile_masked = serializers.SerializerMethodField()
-    is_overdue = serializers.SerializerMethodField()
-    created_by = serializers.SerializerMethodField()
-
-    class Meta:
-        model = SalesDocument
-        fields = (
-            "id",
-            "kind",
-            "number",
-            "status",
-            "party",
-            "walk_in_name",
-            "walk_in_mobile_masked",
-            "document_date",
-            "due_on",
-            "grand_total",
-            "amount_paid",
-            "amount_due",
-            "is_overdue",
-            "created_by",
-        )
-
-    def get_party(self, obj: SalesDocument) -> dict | None:
-        if obj.party_id is None:
-            return None
-        name = (obj.party_snapshot or {}).get("name") or (obj.party.name if obj.party else "")
-        return {"id": str(obj.party_id), "name": name}
-
-    def get_walk_in_mobile_masked(self, obj: SalesDocument) -> str | None:
-        return mask_mobile(obj.walk_in_mobile)
-
-    def get_is_overdue(self, obj: SalesDocument) -> bool:
-        """BR-2 — same-day accuracy for the badge; the TAB uses the stored status."""
-        today = self.context.get("today")
-        if obj.status == "overdue":
-            return True
-        return bool(
-            today
-            and obj.due_on
-            and obj.due_on < today
-            and obj.status in ("issued", "partially_paid")
-        )
-
-    def get_created_by(self, obj: SalesDocument) -> dict | None:
-        return _person(obj.created_by)
+    def get_links(self, obj: SalesDocument) -> dict:
+        """SAL-01/04/05 — the documents this one is tied to, and a note's settlement."""
+        return document_links(obj)

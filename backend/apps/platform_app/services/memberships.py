@@ -35,6 +35,174 @@ class InvitationInvalid(BusinessRuleViolation):
         super().__init__("invitation_invalid", message)
 
 
+def touch(membership: Any) -> None:
+    """Record that this business was opened now (docs/platform/14 §4.1).
+
+    One UPDATE, no signal and no audit row: sign-in and switch are audited
+    themselves, and this is their consequence, not a separate act.
+    """
+    from django.utils import timezone
+
+    from apps.platform_app.models import Membership
+
+    if membership is None:
+        return
+    now = timezone.now()
+    Membership.objects.filter(pk=membership.pk).update(last_used_at=now)
+    membership.last_used_at = now
+
+
+def switch_app(*, membership: Any, app: Any, request_id: str | None = None) -> Any:
+    """`POST /auth/switch-app` — open another app of the same business (docs/platform/14 §4.2).
+
+    The choice is the person's, per business, kept on the server
+    (`membership.last_app`) so a phone and a laptop agree and the next sign-in
+    opens it. Refused for an app this person cannot open here: the business
+    does not run it, or they hold no grant for it.
+    """
+    from apps.common.permissions_registry import permissions_for
+    from apps.platform_app import apps_registry
+    from apps.platform_app.models import Membership
+
+    code = str(app or "")
+    allowed = {
+        a.code for a in apps_registry.accessible_apps(membership, permissions_for(membership))
+    }
+    if code not in allowed:
+        raise PermissionDenied("You cannot open that app in this business.")
+    Membership.objects.filter(pk=membership.pk).update(last_app=code)
+    membership.last_app = code
+    touch(membership)
+    write_audit(
+        ctx=Ctx(
+            tenant=membership.tenant,
+            actor=membership.user,
+            actor_type="user",
+            request_id=request_id or "",
+        ),
+        action=AuditAction.APP_SWITCHED,
+        entity_type="platform_membership",
+        entity_id=membership.id,
+        after={"app": code},
+    )
+    return membership
+
+
+def member_apps_json(membership: Any) -> dict:
+    """`GET`/`PUT /members/{id}/apps` — the grants, and the apps the member OPENS.
+
+    `opens` is the server's own answer (`accessible_apps`), so the Team screen
+    ticks what the member can really open: a member from before grants existed
+    has no grant rows and still opens every app their role opens.
+    """
+    from apps.common.permissions_registry import permissions_for
+    from apps.platform_app import apps_registry
+
+    if hasattr(membership, "_ub_app_grants"):
+        del membership._ub_app_grants
+    opens = apps_registry.accessible_apps(membership, permissions_for(membership))
+    return {"grants": app_grants_json(membership), "opens": [a.code for a in opens]}
+
+
+def app_grants_json(membership: Any) -> list[dict]:
+    """A member's grants as the Team screen shows them, in switcher order."""
+    from apps.platform_app import apps_registry
+
+    grants = apps_registry.grants_of(membership)
+    order = {a.code: a.order for a in apps_registry.registered_apps()}
+    return [
+        {"app": code, "role": role.code, "role_label_id": role_label_id(role)}
+        for code, role in sorted(grants.items(), key=lambda kv: order.get(kv[0], 999))
+    ]
+
+
+@transaction.atomic
+def set_app_grants(*, tenant: Any, membership_id: Any, grants: Any, actor: Any, ctx: Ctx) -> Any:
+    """`PUT /members/{id}/apps` — which apps this person is in, and as what (§6 decision 1).
+
+    Replaces the whole set. The owner of the business is in every app and takes
+    no grants; an explicitly empty set removes app access. It never restores
+    legacy business-wide permissions. The roles a grant may carry are the business's
+    own: the canon roles except owner, and a module role only in its own app.
+    Only an owner gives `admin`, as only an owner makes an admin today.
+
+    `permissions_version` is bumped so a session holding the old set re-reads
+    it on its next request (`token_stale`) instead of keeping it till expiry.
+    """
+    from apps.common.exceptions import NotFound, ValidationFailed
+    from apps.common.permissions_registry import module_role
+    from apps.platform_app import apps_registry
+    from apps.platform_app.models import Membership, MembershipAppGrant
+    from apps.platform_app.selectors.memberships import role_by_code
+
+    target = (
+        Membership.objects.select_related("role", "tenant")
+        .select_for_update(of=("self",))
+        .filter(tenant=tenant, pk=membership_id)
+        .first()
+    )
+    if target is None:
+        raise NotFound()
+    if target.role.code == "owner":
+        raise ValidationFailed({"grants": ["The owner is in every app of the business."]})
+    if not isinstance(grants, list):
+        raise ValidationFailed({"grants": ["Send a list of {app, role}."]})
+    running = {a.code: a for a in apps_registry.apps_of_business(tenant)}
+    actor_is_owner = (
+        actor is not None
+        and Membership.objects.filter(
+            tenant=tenant, user=actor, role__code="owner", status=MembershipStatus.ACTIVE
+        ).exists()
+    )
+    resolved: dict[str, Any] = {}
+    errors: list[str] = []
+    for row in grants:
+        app = str((row or {}).get("app") or "") if isinstance(row, dict) else ""
+        code = str((row or {}).get("role") or "") if isinstance(row, dict) else ""
+        spec = running.get(app)
+        role = role_by_code(tenant=tenant, code=code) if code else None
+        if spec is None:
+            errors.append(f"{app or '?'}: this business does not run that app.")
+        elif app in resolved:
+            errors.append(f"{app}: one role per app.")
+        elif role is None or role.code == "owner":
+            errors.append(f"{app}: choose a role.")
+        elif role.code == "admin" and not actor_is_owner:
+            errors.append(f"{app}: only the owner makes someone an admin.")
+        elif role_assignment_error(tenant=tenant, role=role):
+            errors.append(f"{app}: {role_assignment_error(tenant=tenant, role=role)}")
+        elif (m := module_role(role.code)) is not None and m.module not in spec.capabilities:
+            errors.append(f"{app}: that role belongs to another app.")
+        else:
+            resolved[app] = role
+    if errors:
+        raise ValidationFailed({"grants": errors})
+    before = {g.app: g.role.code for g in target.app_grants.select_related("role")}
+    MembershipAppGrant.objects.filter(membership=target).delete()
+    MembershipAppGrant.objects.bulk_create(
+        [
+            MembershipAppGrant(membership=target, app=app, role=role)
+            for app, role in resolved.items()
+        ]
+    )
+    Membership.objects.filter(pk=target.pk).update(
+        permissions_version=target.permissions_version + 1, app_grants_configured=True
+    )
+    target.permissions_version += 1
+    target.app_grants_configured = True
+    if hasattr(target, "_ub_app_grants"):
+        del target._ub_app_grants
+    write_audit(
+        ctx=ctx,
+        action=AuditAction.MEMBER_APPS_CHANGED,
+        entity_type="platform_membership",
+        entity_id=target.id,
+        before={"grants": before},
+        after={"grants": {app: role.code for app, role in resolved.items()}},
+    )
+    return target
+
+
 def switch_tenant(
     *,
     user: Any,
@@ -63,6 +231,7 @@ def switch_tenant(
     previous = sessions.session_for_claims(user=user, claims=current_claims or {})
 
     with transaction.atomic():
+        touch(membership)
         issued = sessions.issue(
             user=user,
             tenant=membership.tenant,
@@ -96,26 +265,48 @@ def switch_tenant(
     return membership, issued
 
 
-def set_default(*, user: Any, membership: Any, request_id: str | None = None) -> Any:
+def set_default(
+    *, user: Any, membership: Any, app: str | None = None, request_id: str | None = None
+) -> Any:
     """FR-5 / BR-3: exactly one `is_default=true` membership per user.
 
     The server clears the others rather than trusting the client to send two
     requests; two defaults is a state no code reads correctly.
+
+    `app` is the ★'s app (owner, 12 Nov 2026: the Apps screen stars a library,
+    a ledger or a shop, and sign-in opens THAT). Refused for an app this person
+    cannot open here, exactly as `switch_app` refuses it.
     """
+    from apps.common.permissions_registry import permissions_for
+    from apps.platform_app import apps_registry
     from apps.platform_app.models import Membership
 
     if membership.user_id != user.id:
         raise PermissionDenied("You may only change your own membership.")
     if membership.status != MembershipStatus.ACTIVE:
         raise PermissionDenied("You are not an active member of this business.")
+    code = str(app or "")
+    if code and code not in {
+        a.code for a in apps_registry.accessible_apps(membership, permissions_for(membership))
+    }:
+        raise PermissionDenied("You cannot open that app in this business.")
 
     with transaction.atomic():
         Membership.objects.filter(user=user, is_default=True).exclude(pk=membership.pk).update(
-            is_default=False
+            is_default=False, primary_app=""
         )
+        fields = []
         if not membership.is_default:
             membership.is_default = True
-            membership.save(update_fields=["is_default", "updated_at"])
+            fields.append("is_default")
+        if app is not None and membership.primary_app != code:
+            membership.primary_app = code
+            fields.append("primary_app")
+        if fields:
+            membership.save(update_fields=[*fields, "updated_at"])
+        # "Open this one when I sign in" is a choice about the next sign-in, and
+        # sign-in opens the business last used: so choosing it counts as using it.
+        touch(membership)
         write_audit(
             ctx=Ctx(
                 tenant=membership.tenant,
@@ -126,7 +317,7 @@ def set_default(*, user: Any, membership: Any, request_id: str | None = None) ->
             action=AuditAction.MEMBER_DEFAULT_CHANGED,
             entity_type="platform_membership",
             entity_id=membership.id,
-            after={"is_default": True},
+            after={"is_default": True, "primary_app": membership.primary_app},
         )
     return membership
 
@@ -672,3 +863,115 @@ def revoke_invitation(*, invitation: Any, ctx: Ctx) -> Any:
             metadata={"membership_id": str(cancelled.id) if cancelled is not None else None},
         )
     return Invitation.objects.get(pk=invitation.pk)
+
+
+# ── A13 ── module roles (ADR-052, FRD 00 PLT-X12) ────────────────────────────
+
+
+def role_module(role: Any) -> str | None:
+    """The vertical a system role belongs to, or None for canon and custom roles."""
+    from apps.common.permissions_registry import module_role
+
+    if role is None or not getattr(role, "is_system", False):
+        return None
+    spec = module_role(role.code)
+    return spec.module if spec is not None else None
+
+
+def role_label_id(role: Any) -> str:
+    """The catalogue key a role is named with: `tenant.role.<code>` for the
+    canon four (and custom roles), the registered `label_id` for a module role."""
+    from apps.common.permissions_registry import module_role
+
+    spec = module_role(role.code) if getattr(role, "is_system", False) else None
+    return spec.label_id if spec is not None else f"tenant.role.{role.code}"
+
+
+def role_assignment_error(*, tenant: Any, role: Any) -> str | None:
+    """Why `role` may not be given to a member of `tenant` right now, or None.
+
+    A module role is assignable only while its module is effective (FRD §6):
+    the team screen never offers it otherwise, and a hand-made request is
+    refused with the same words. A system role code that is neither canon nor
+    registered (its module's app is gone) is refused too — it would grant
+    nothing, and a member who can do nothing is a support call.
+    """
+    from apps.common.permissions_registry import ROLE_PERMISSIONS, module_role
+
+    if role is None or not role.is_system or role.code in ROLE_PERMISSIONS:
+        return None
+    spec = module_role(role.code)
+    if spec is None or spec.module not in entitlements.effective_modules(tenant):
+        return "This role belongs to a feature that is off."
+    return None
+
+
+def roles_payload(tenant: Any) -> list[dict]:
+    """`GET /roles` — the canon four, then the module roles of effective modules.
+
+    `label_id` is the catalogue key the client draws the name with: canon roles
+    use the existing `tenant.role.<code>`, module roles their registered label
+    (and, by convention, `<label_id>.caption` for "what this role cannot see").
+    `assignable` is false for `owner`, which is transferred, never granted.
+    """
+    from apps.common.constants import RoleCode
+    from apps.common.permissions_registry import module_roles
+
+    rows: list[dict] = [
+        {
+            "code": code.value,
+            "module": None,
+            "label_id": f"tenant.role.{code.value}",
+            "assignable": code != RoleCode.OWNER,
+            "is_module_role": False,
+        }
+        for code in RoleCode
+    ]
+    effective = entitlements.effective_modules(tenant)
+    rows.extend(
+        {
+            "code": spec.code,
+            "module": spec.module,
+            "label_id": spec.label_id,
+            "assignable": True,
+            "is_module_role": True,
+        }
+        for spec in module_roles()
+        if spec.module in effective
+    )
+    return rows
+
+
+def module_role_migration(code: str, *, name: str, codenames: Any) -> tuple[Any, Any]:
+    """`(forwards, backwards)` for a vertical's data migration writing its role row.
+
+    Usage in `apps/<vertical>/migrations/00NN_role.py`::
+
+        forwards, backwards = module_role_migration(
+            "gym_trainer", name="Trainer", codenames=GYM_TRAINER_CODENAMES
+        )
+        operations = [migrations.RunPython(forwards, backwards)]
+
+    Upserts by `code` where `tenant IS NULL` (idempotent), writes the codename
+    set so `GET /roles` and the drift test agree with the registry, and the
+    reverse deletes the row only while no membership uses it (RESTRICT would
+    refuse anyway; this says why). `apps.get_model` only, never a model import.
+    """
+    permissions = sorted(codenames)
+
+    def forwards(apps: Any, schema_editor: Any) -> None:
+        Role = apps.get_model("platform", "Role")
+        Role.objects.update_or_create(
+            tenant=None,
+            code=code,
+            defaults={"name": name, "is_system": True, "permissions": permissions},
+        )
+
+    def backwards(apps: Any, schema_editor: Any) -> None:
+        Role = apps.get_model("platform", "Role")
+        Membership = apps.get_model("platform", "Membership")
+        if Membership.objects.filter(role__tenant=None, role__code=code).exists():
+            raise RuntimeError(f"Role {code!r} is still held by a member; reassign them first.")
+        Role.objects.filter(tenant=None, code=code).delete()
+
+    return forwards, backwards

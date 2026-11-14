@@ -1,40 +1,30 @@
 'use client';
-
-import { FileText, IndianRupee, Receipt } from 'lucide-react';
-
-import { UbStatCard, UbStatGrid } from 'src/design-system';
+import { RecordTotals } from 'src/components/records/RecordTotals';
 import { useTranslation } from 'src/hooks/useTranslation';
-import { formatInr } from 'src/utils/money';
 
 import type { InvoiceListTotals } from '../types/sales.types';
+/** Totals are over the filtered set, never the visible page or a client sum. */
+const NONE: InvoiceListTotals = { count: 0, grandTotal: '0.00', amountDue: '0.00' };
 
-/**
- * SAL-08 FR-5 — billed, due and count over the FILTERED set. The money pair
- * leads; the count is dropped below `md` (the phone fold, owner, 23 Sep 2026)
- * because the "All · n" tab already says it.
- */
 export function InvoiceListStats({
   totals,
-}: Readonly<{ totals: InvoiceListTotals }>): React.JSX.Element {
+  loading = false,
+}: Readonly<{ totals: InvoiceListTotals | null; loading?: boolean }>): React.JSX.Element {
   const { t } = useTranslation();
+  const shown = totals ?? NONE;
   return (
-    <UbStatGrid>
-      <UbStatCard
-        icon={<Receipt className="h-4 w-4" aria-hidden />}
-        label={t('sales.total.billed')}
-        value={formatInr(totals.grandTotal)}
-      />
-      <UbStatCard
-        icon={<IndianRupee className="h-4 w-4" aria-hidden />}
-        label={t('sales.total.due')}
-        value={formatInr(totals.amountDue)}
-      />
-      <UbStatCard
-        icon={<FileText className="h-4 w-4" aria-hidden />}
-        label={t('sales.total.count')}
-        value={String(totals.count)}
-        className="max-md:hidden"
-      />
-    </UbStatGrid>
+    <RecordTotals
+      compactShort
+      countInMobileChips
+      label={t('sales.list.filteredTotals')}
+      count={shown.count}
+      countLabel={t('sales.total.count')}
+      testId="invoice-register-summary"
+      loading={loading && !totals}
+      figures={[
+        { key: 'billed', label: t('sales.total.billed'), amount: shown.grandTotal },
+        { key: 'due', label: t('sales.total.due'), amount: shown.amountDue, tone: 'receivable' },
+      ]}
+    />
   );
 }

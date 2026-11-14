@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef } from 'react';
 
 import { ArrowLeft, Download, Printer } from 'lucide-react';
 
+import { SummaryStatGrid } from 'src/components/stats/SummaryStatGrid';
 import {
   UbActionLink,
   UbAmount,
@@ -14,11 +15,11 @@ import {
   UbEmptyState,
   UbLink,
   UbPageHeader,
+  UbPageHeaderMobileActions,
   UbPageShell,
   UbSkeleton,
   UbStack,
   UbStatCard,
-  UbStatGrid,
   UbStatusBadge,
   UbStatusBanner,
   UbText,
@@ -33,14 +34,15 @@ import { formatInr } from 'src/utils/money';
 import { statementCsvUrl } from '../api/statementService';
 import { usePartyStatement } from '../hooks/usePartyStatement';
 import { entryAmountView, writtenOffLines } from '../view-model/entryDisplay';
+import { statementRowTitle } from '../view-model/narration';
 import {
   balanceDirection,
   balanceLabelId,
   isStruckThrough,
-  rowTitleId,
   unsigned,
 } from '../view-model/statementDisplay';
 
+import { DepositHeldBlock } from './DepositHeldBlock';
 import { StatementPrintView } from './print/StatementPrintView';
 import { StatementFilterBar } from './StatementFilterBar';
 
@@ -54,11 +56,26 @@ import type { StatementRow } from '../types/statement.types';
  * a feed: two money columns and a balance, in the order things happened, with
  * the opening above the first row and the closing under the last.
  */
+const SHOP_STATEMENT_WORDS: Readonly<Record<string, string>> = {
+  'ledger.statement.youGave': 'ledger.statement.shop.out',
+  'ledger.statement.youGot': 'ledger.statement.shop.in',
+  'ledger.statement.backToKhata': 'common.action.back',
+};
+
 export function PartyStatementPageContent({ id }: Readonly<{ id: string }>): React.JSX.Element {
-  const { t, d } = useTranslation();
+  const { t: baseT, d } = useTranslation();
   const timezone = useAppSelector(selectTenantTimezone);
   const tenant = useAppSelector(selectActiveTenant);
   const statement = usePartyStatement(id);
+  /* DEC-019 — "You gave / You got" are the Udhaar book's words. The Shop's
+     statement (`?book=shop`) heads its two money columns "Out" and "In", which
+     read right for a customer (goods out, money in) and a supplier (money out,
+     goods in) alike. */
+  const shopBook = statement.filters.book === 'shop';
+  const t = useCallback<TranslateFn>(
+    (key, values) => baseT(shopBook ? (SHOP_STATEMENT_WORDS[key] ?? key) : key, values),
+    [baseT, shopBook]
+  );
   const today = useMemo(() => todayInTenantTz(timezone ?? undefined), [timezone]);
 
   if (!statement.canRead) {
@@ -108,6 +125,16 @@ export function PartyStatementPageContent({ id }: Readonly<{ id: string }>): Rea
               ? `${t('ledger.statement.title')} · ${statement.party.mobileMasked}`
               : t('ledger.statement.title')
           }
+          /* docs/mobile-redesign (A3) — on a phone these actions are a worded ⋯ sheet. */
+          renderMobileActions={(actions) => (
+            <UbPageHeaderMobileActions
+              actions={actions}
+              mobile={{
+                menuLabel: t('common.action.moreActions'),
+                closeLabel: t('common.action.close'),
+              }}
+            />
+          )}
           actions={<StatementActions statement={statement} id={id} t={t} />}
         />
 
@@ -196,6 +223,13 @@ export function PartyStatementPageContent({ id }: Readonly<{ id: string }>): Rea
               )}
             </UbStack>
           </UbCard>
+
+          {/* A2 — money held for the party, beneath the passbook and outside it. */}
+          {statement.summary?.deposit && (
+            <UbCard>
+              <DepositHeldBlock deposit={statement.summary.deposit} />
+            </UbCard>
+          )}
         </UbStack>
       </UbBox>
 
@@ -306,7 +340,7 @@ function StatementSummaryStrip({
   const closing = summary.closingBalance;
 
   return (
-    <UbStatGrid>
+    <SummaryStatGrid storageKey="statement">
       {/* `formatInr` on every figure, because `UbStatCard` takes a
           PREFORMATTED value — and §23.2.4's note applies here as it does on the
           party list: receivable is the ledger's debit family and uses `danger`,
@@ -345,7 +379,7 @@ function StatementSummaryStrip({
         subtext={t(balanceLabelId(closing))}
         tone={CLOSING_TONE[balanceDirection(closing)]}
       />
-    </UbStatGrid>
+    </SummaryStatGrid>
   );
 }
 
@@ -381,8 +415,7 @@ function StatementRowView({
   d: (value: string) => string;
 }>): React.JSX.Element {
   const struck = isStruckThrough(row);
-  const view = entryAmountView(row.direction, row.entryType);
-  const titleId = rowTitleId(row);
+  const view = entryAmountView(row.direction, row.entryType, row.bucket, !!row.source?.adjustment);
   /* A write-off stores its reason as its note too (PTY-04 FR-3), so the title
      already says it — the timeline's `entryReason` drops the echo, and so does
      this row. */
@@ -415,7 +448,7 @@ function StatementRowView({
                 : 'line-clamp-2 break-words'
             }
           >
-            {titleId ? t(titleId) : row.note.trim()}
+            {statementRowTitle(row, t)}
           </UbText>
           {/* The badges and the reason sit under the title, on their own line —
             the rule LED-03 arrived at after the ⋯ squeezed a khata row's note

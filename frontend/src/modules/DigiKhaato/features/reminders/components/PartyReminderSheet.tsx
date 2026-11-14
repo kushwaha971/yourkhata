@@ -1,11 +1,13 @@
 'use client';
 
-import { memo, useCallback, useEffect, type RefObject } from 'react';
+import { memo, useCallback, useEffect, useRef, useState, type RefObject, type ReactNode } from 'react';
 
 import {
   UbButton,
+  UbChoiceChips,
   UbShareSheet,
   UbSkeleton,
+  UbStack,
   UbStatusBanner,
   type UbShareChannel,
   type UbShareSheetLabels,
@@ -17,6 +19,7 @@ import { useTranslation } from 'src/hooks/useTranslation';
 import { relativeTimeView } from 'src/utils/relativeTime';
 import { toDialableNumber } from 'src/utils/share';
 
+import { useReminderChoices } from '../hooks/useReminderChoices';
 import {
   previewCleared,
   selectReminderPreview,
@@ -26,6 +29,11 @@ import { fetchReminderPreview, sendManualReminder } from '../redux/reminderThunk
 import { channelLabelId } from '../view-model/reminderDisplay';
 
 import type { SendManualReminderArg } from '../types/reminder.types';
+
+// Loaded with dynamic(), so its own words come with its own chunk rather than
+// with the screen that opens it (src/i18n/catalogueRegistry.ts).
+import 'src/i18n/catalogues/reminders';
+import 'src/i18n/catalogues/share';
 
 /**
  * LED-06 — the reminder sheet, with the SERVER's words in it.
@@ -45,12 +53,17 @@ import type { SendManualReminderArg } from '../types/reminder.types';
  */
 export interface PartyReminderSheetProps {
   readonly partyId: string;
+  /** Given where the jeweller's other messages may be chosen (D15 `pRemind`). */
+  readonly partyName?: string;
+  readonly book?: 'main' | 'shop';
   readonly open: boolean;
   readonly onOpenChange: (open: boolean) => void;
   readonly title: string;
   readonly description: string;
   readonly phone: string | null;
   readonly labels: UbShareSheetLabels;
+  readonly whatsappIcon?: ReactNode;
+  readonly onlyChannel?: 'whatsapp' | 'sms';
   readonly returnFocusRef?: RefObject<HTMLElement | null>;
 }
 
@@ -62,15 +75,20 @@ const CHANNEL_OF: Readonly<Partial<Record<UbShareChannel, SendManualReminderArg[
 
 function PartyReminderSheetBase({
   partyId,
+  partyName = '',
+  book = 'main',
   open,
   onOpenChange,
   title,
   description,
   phone,
   labels,
+  whatsappIcon,
+  onlyChannel,
   returnFocusRef,
 }: Readonly<PartyReminderSheetProps>) {
   const { t } = useTranslation();
+  const handedOff = useRef(false);
   const dispatch = useAppDispatch();
   const feedback = useShareFeedback();
   const nowMs = useNowMs();
@@ -81,27 +99,48 @@ function PartyReminderSheetBase({
      and a khata left open overnight must not send yesterday's balance. */
   useEffect(() => {
     if (!open || !partyId) return;
-    const request = dispatch(fetchReminderPreview(partyId));
+    handedOff.current = false;
+    const request = dispatch(fetchReminderPreview(book === 'shop' ? { partyId, book } : partyId));
     return () => {
       request.abort();
       dispatch(previewCleared());
     };
-  }, [open, partyId, dispatch]);
+  }, [open, partyId, dispatch, book]);
+
+  const choices = useReminderChoices(open, { id: partyId, name: partyName });
+  const [choiceKey, setChoiceKey] = useState('payment');
+  const choice = choices.find((c) => c.key === choiceKey);
+  const chosenText = choice?.text;
 
   const onShared = useCallback(
-    (channel: UbShareChannel) => {
+    (channel: UbShareChannel, text: string) => {
+      // Only the payment reminder belongs in the reminder log.
+      const logged = chosenText ? undefined : CHANNEL_OF[channel];
+      if (book === 'shop' && logged) {
+        if (handedOff.current) return;
+        handedOff.current = true;
+      }
       feedback.onShared(channel);
-      const logged = CHANNEL_OF[channel];
-      if (logged) void dispatch(sendManualReminder({ partyId, channel: logged }));
+      // MSG-10 — the words that left, after any edit, are what the log keeps.
+      if (logged)
+        void dispatch(
+          sendManualReminder({
+            partyId,
+            channel: logged,
+            text: text || undefined,
+            ...(book === 'shop' ? { book } : {}),
+          })
+        );
     },
-    [feedback, dispatch, partyId]
+    [feedback, dispatch, partyId, book, chosenText]
   );
 
   const retry = useCallback(() => {
-    void dispatch(fetchReminderPreview(partyId));
-  }, [dispatch, partyId]);
+    void dispatch(fetchReminderPreview(book === 'shop' ? { partyId, book } : partyId));
+  }, [dispatch, partyId, book]);
 
-  const ready = status === 'succeeded' && preview?.partyId === partyId;
+  const ready =
+    status === 'succeeded' && preview?.partyId === partyId && (preview.book ?? 'main') === book;
 
   /* LED-06 FR-10 — a second reminder inside a day is allowed and said out
      loud first: a customer chased twice before lunch stops answering. */
@@ -134,16 +173,47 @@ function PartyReminderSheetBase({
     <UbSkeleton variant="text" count={4} label={t('reminders.sheet.loading')} />
   );
 
+  const chips =
+    choices.length > 1 ? (
+      <UbChoiceChips
+        ariaLabel={t('reminders.sheet.sendMessage')}
+        value={choice?.key ?? 'payment'}
+        onChange={setChoiceKey}
+        options={choices.map((c) => ({ value: c.key, label: c.label }))}
+      />
+    ) : undefined;
+
   return (
     <UbShareSheet
+      whatsappIcon={whatsappIcon}
+      onlyChannel={onlyChannel}
       open={open}
       onOpenChange={onOpenChange}
-      title={title}
+      title={chips ? t('reminders.sheet.sendMessage') : title}
+      draftKey={choice?.key}
+      conversation={
+        chips
+          ? {
+              editText: t('reminders.sheet.editText'),
+              share: t('reminders.sheet.shareOnWhatsapp'),
+              note: t('reminders.sheet.opensNote'),
+            }
+          : undefined
+      }
       description={description}
-      message={ready ? preview.text : ''}
-      smsMessage={ready ? preview.smsText : undefined}
-      notice={notice}
-      pending={pending}
+      message={chosenText ?? (ready ? onlyChannel === 'sms' ? preview.smsText ?? preview.text : preview.text : '')}
+      smsMessage={!chosenText && ready && onlyChannel !== 'sms' ? preview.smsText : undefined}
+      notice={
+        chips ? (
+          <UbStack gap={2}>
+            {chips}
+            {!chosenText && notice}
+          </UbStack>
+        ) : (
+          notice
+        )
+      }
+      pending={chosenText ? undefined : pending}
       callHref={phone ? `tel:${toDialableNumber(phone)}` : null}
       phone={phone}
       labels={labels}

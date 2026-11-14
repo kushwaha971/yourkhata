@@ -17,6 +17,11 @@ export interface UbStatusBadgeProps {
   readonly label: string;
   readonly tone?: UbStatusBadgeTone;
   readonly icon?: ReactNode;
+  /**
+   * What a screen reader hears instead of the short word, when the word alone
+   * does not say enough ("Standard" → "Standard unit, can't be changed").
+   */
+  readonly srLabel?: string;
   readonly className?: string;
 }
 
@@ -24,12 +29,20 @@ function UbStatusBadgeBase({
   label,
   tone = 'neutral',
   icon,
+  srLabel,
   className,
 }: Readonly<UbStatusBadgeProps>) {
   return (
     <MLBadge variant={tone} className={cn(className)}>
       {icon}
-      {label}
+      {srLabel ? (
+        <>
+          <span aria-hidden>{label}</span>
+          <span className="sr-only">{srLabel}</span>
+        </>
+      ) : (
+        label
+      )}
     </MLBadge>
   );
 }

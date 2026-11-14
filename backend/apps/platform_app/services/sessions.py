@@ -1,10 +1,18 @@
 """Refresh families, rotation and revocation (Part 20 §20.5.2–§20.5.3, Part 27 §27.4.3).
 
 One `platform_session` row per issued refresh token, chained by `family_id` and
-`replaced_by_id`. Rotation is unconditional — there is no reuse window — and
-presenting a refresh token that has already been rotated revokes **the entire
-family**. That is the whole token-theft response at MVP and it is deliberate: it
-costs a stolen-token holder the account immediately (Part 27 §27.4.4 step 2).
+`replaced_by_id`. Rotation is unconditional, and presenting a refresh token that
+has already been rotated revokes **the entire family**. That is the whole
+token-theft response at MVP and it is deliberate: it costs a stolen-token holder
+the account immediately (Part 27 §27.4.4 step 2).
+
+One narrow exception (owner, 11 Nov 2026): a reply lost to a navigation. The
+server rotated, the browser never stored the new cookie, and seconds later the
+old token returns while its successor has NEVER been used. That is one holder
+who missed a reply, not two holders, and signing a shop out mid-sale for it is
+the defect the Shop round found. Within `REUSE_GRACE_SECONDS`, and only while
+the successor is unused, the old token rotates again and the unused successor
+is retired. A used successor, or a later replay, still kills the family.
 
 The session id is minted *before* the token, because the token carries `sid` and
 the row stores `sha256(token)`; generating the id first is what lets both halves
@@ -42,6 +50,9 @@ class IssuedTokens:
 class InvalidToken(BusinessRuleViolation):
     def __init__(self) -> None:
         super().__init__("invalid_token", "Your session is not valid. Please sign in again.")
+
+
+REUSE_GRACE_SECONDS = 30
 
 
 class SessionRevoked(BusinessRuleViolation):
@@ -130,6 +141,21 @@ def rotate(
             raise InvalidToken()
 
         reused = session.revoked_at is not None or session.replaced_by_id is not None
+        successor = None
+        if reused and session.replaced_by_id is not None and session.revoked_at is not None:
+            fresh = session.revoked_at > timezone.now() - dt.timedelta(seconds=REUSE_GRACE_SECONDS)
+            candidate = (
+                Session.objects.select_for_update().filter(pk=session.replaced_by_id).first()
+                if fresh
+                else None
+            )
+            if (
+                candidate is not None
+                and candidate.revoked_at is None
+                and candidate.replaced_by_id is None
+            ):
+                # A lost reply (module docstring): rotate from here again.
+                successor, reused = candidate, False
         expired = session.expires_at <= timezone.now()
         user, tenant = session.user, session.tenant
         stale_epoch = int(claims.get("epo", -1)) != int(user.token_epoch)
@@ -152,9 +178,10 @@ def rotate(
                 ip=ip or session.ip,
                 family_id=session.family_id,
             )
-            session.replaced_by = issued.session
-            session.revoked_at = timezone.now()
-            session.save(update_fields=["replaced_by", "revoked_at", "updated_at"])
+            retired = successor or session
+            retired.replaced_by = issued.session
+            retired.revoked_at = timezone.now()
+            retired.save(update_fields=["replaced_by", "revoked_at", "updated_at"])
             return issued
 
     if reused:

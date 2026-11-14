@@ -16,6 +16,8 @@ from apps.parties.constants import ConsentSource, GstRegistration, OpeningDirect
 from apps.parties.models import Party, Tag
 from apps.parties.services.archive import BULK_ARCHIVE_MAX
 
+MOBILE_PATTERN = r"^(\+[1-9][0-9]{6,13}|[0-9]{10,14})$"
+
 
 class AddressField(serializers.JSONField):
     """A postal address, bounded.
@@ -87,6 +89,33 @@ class PartyListSerializer(serializers.ModelSerializer):
             "tags",
         )
         read_only_fields = fields
+
+    def to_representation(self, instance: Party) -> dict:
+        """A6 (PLT-X04 §6) — `roles` (codes) when the view computed them for the page.
+
+        The view puts `party_roles` in the context only when a role-bearing
+        module is on, so a tenant without one reads exactly the row it read
+        before (the A2 rule for the bucket figures).
+        """
+        data = super().to_representation(instance)
+        roles = self.context.get("party_roles")
+        if roles is not None:
+            data["roles"] = roles.get(instance.pk, [])
+        # DEC-019 — on the Shop's lists (`?book=shop`) the row's money is what is due on
+        # bills, never the Udhaar book's figure: the two are separate apps.
+        field = self.context.get("balance_field")
+        if field and field != "balance":
+            data["balance"] = self.fields["balance"].to_representation(getattr(instance, field))
+        if hasattr(instance, "shop_customer_balance"):
+            from apps.common.dates import tenant_today
+            from apps.parties.selectors.shop import serialize_shop_facts
+
+            data["shop"] = serialize_shop_facts(
+                instance,
+                today=tenant_today(self.context["view"].get_tenant()),
+                kind=self.context.get("shop_kind", "customer"),
+            )
+        return data
 
 
 class PartyTotalsSerializer(serializers.Serializer):
@@ -170,11 +199,14 @@ class PartyWriteSerializer(serializers.Serializer):
     display_code = serializers.CharField(
         max_length=24, required=False, allow_null=True, allow_blank=True
     )
+    # Any country's E.164 (seven to fourteen digits, so it fits `varchar(15)`
+    # with its plus — see `platform_app.mobile`), or the bare digits older
+    # clients send. Short international numbers used to need ten digits.
     mobile = serializers.RegexField(
-        r"^\+?[0-9]{10,15}$", required=False, allow_null=True, allow_blank=True
+        MOBILE_PATTERN, required=False, allow_null=True, allow_blank=True
     )
     alt_phone = serializers.RegexField(
-        r"^\+?[0-9]{10,15}$", required=False, allow_null=True, allow_blank=True
+        MOBILE_PATTERN, required=False, allow_null=True, allow_blank=True
     )
     email = serializers.EmailField(
         max_length=254, required=False, allow_null=True, allow_blank=True
@@ -207,6 +239,9 @@ class PartyWriteSerializer(serializers.Serializer):
         choices=OpeningDirection.choices, required=False, allow_null=True
     )
     opening_balance_as_of = serializers.DateField(required=False, allow_null=True)
+    #: A6 — which book the opening is posted in. The Shop's forms send `shop`
+    #: (DEC-019: the Shop keeps its own money); anything else is the Udhaar book.
+    opening_book = serializers.ChoiceField(choices=("main", "shop"), required=False, default="main")
     tags = PartyTagNamesField()
 
 
@@ -227,6 +262,7 @@ class PartyUpdateSerializer(PartyWriteSerializer):
             "opening_balance_amount",
             "opening_balance_direction",
             "opening_balance_as_of",
+            "opening_book",
         ):
             self.fields.pop(field, None)
 
@@ -275,6 +311,30 @@ class PartyDetailSerializer(serializers.ModelSerializer):
             "updated_at",
         )
         read_only_fields = fields
+
+    def to_representation(self, instance: Party) -> dict:
+        """DEC-019 — `shop_balance` when the Shop is on or it is not zero (`bucket_figures`);
+        never another app's money (a loan, a library fee, a deposit)."""
+        from apps.parties.services.balance import bucket_figures
+
+        data = super().to_representation(instance)
+        data.update(bucket_figures(instance))
+        data.update(_role_badges(self.context, instance))
+        return data
+
+
+def _role_badges(context: dict, instance: Party) -> dict:
+    """A6 (PLT-X04 §6) — `roles: [{code, module, label_id}]` while a role-bearing
+    module is on; absent otherwise. No query at all when no role is registered."""
+    from apps.parties.services.roles import enabled_roles, registered_roles, role_badges, roles_for
+
+    if not registered_roles():
+        return {}
+    tenant = context.get("tenant") or instance.tenant
+    if not enabled_roles(tenant):
+        return {}
+    codes = roles_for(tenant, [instance.pk]).get(instance.pk, [])
+    return {"roles": role_badges(tenant, codes)}
 
 
 class PartySummarySerializer(serializers.Serializer):
@@ -459,7 +519,7 @@ class PartyBulkArchiveSerializer(serializers.Serializer):
         """
         if isinstance(self.initial_data, dict) and "write_off" in self.initial_data:
             raise serializers.ValidationError(
-                {"write_off": ["Write-offs are made one party at a time, not in bulk."]}
+                {"write_off": ["Write-offs are made one contact at a time, not in bulk."]}
             )
         return attrs
 

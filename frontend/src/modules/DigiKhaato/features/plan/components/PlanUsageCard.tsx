@@ -33,6 +33,10 @@ import { isUnlimited, nounIdFor } from '../view-model/planDisplay';
  *
  * R-C-9 — the card renders its loading, empty, populated and error states.
  */
+/** The plan's own words, never its code ("unlimited") — Settings round, 14 Nov 2026. */
+const planName = (t: (id: string) => string, code: string | null | undefined): string | undefined =>
+  code ? t(`plan.name.${code}`) : undefined;
+
 export function PlanUsageCard(): React.JSX.Element {
   const { t } = useTranslation();
   const plan = usePlanLimits({ fetchOnMount: true });
@@ -63,7 +67,7 @@ export function PlanUsageCard(): React.JSX.Element {
   // with no limits, and saying so is the honest rendering.
   if (plan.limits.length === 0) {
     return (
-      <UbCard title={t('plan.card.title')} description={plan.planCode ?? undefined}>
+      <UbCard title={t('plan.card.title')} description={planName(t, plan.planCode)}>
         <UbText variant="body-sm">{t('plan.card.noLimits')}</UbText>
         <UbText variant="caption" tone="tertiary" className="mt-2">
           {t('plan.ledgerNote')}
@@ -75,7 +79,7 @@ export function PlanUsageCard(): React.JSX.Element {
   return (
     <UbCard
       title={t('plan.card.title')}
-      description={plan.planCode ?? undefined}
+      description={planName(t, plan.planCode)}
       action={
         plan.isNearMemberLimit || plan.isAtMemberLimit ? (
           <UbStatusBadge
@@ -100,7 +104,7 @@ export function PlanUsageCard(): React.JSX.Element {
                   {limit.key === 'max_users' && (
                     <Users aria-hidden className="h-4 w-4 text-text-tertiary" />
                   )}
-                  {noun}
+                  {t(`plan.row.${limit.key}`)}
                 </UbText>
                 {/* §23.2.6 — numerals stay Latin in Hindi, so the figure carries
                     its own direction rather than inheriting the sentence's. */}

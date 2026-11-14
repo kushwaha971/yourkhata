@@ -1,0 +1,7 @@
+
+> digikhaato-frontend@0.1.0 i18n:split
+> node scripts/split-locales.mjs
+
+  ! "feedback.*" has no line in locales/catalogues.json — kept in the shell
+✓ 0 file(s) written. Keys per catalogue: library 935, sales 513, reports 474, parties 437, lending 420, landing 306, shell 290, purchases 289, audit 236, items 205, taxReports 201, ledger 192, payments 184, imports 183, team 153, reminders 133, admin 123, onboarding 115, expenses 85, stock 83, settings 78, auth 76, data 63, businessProfile 62, validation 54, deposits 49, calendar 48, publicDocument 48, landingPricing 44, branding 43, cashbook 42, tenant 42, money 41, notifications 41, priceLists 40, partyLinks 36, sessions 30, inventory 27, partyBooks 26, plan 19, exports 16, share 16, salesDetail 15, itemPicker 15, selfCheckin 15, payLink 14, counterSearch 14, movement 13, publicPay 13, period 11, dataStatus 10, counterRegister 9, legal 6, partyPicker 6, paymentActions 6, settingsGate 6, appSetup 5
+  (194 keys pinned to the shell by the shell's own imports)

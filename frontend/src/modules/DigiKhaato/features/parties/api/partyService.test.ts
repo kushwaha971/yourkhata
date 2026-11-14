@@ -1,6 +1,6 @@
 import { api } from 'src/api/AxiosInstances';
 
-import { createParty, listParties, updateParty } from './partyService';
+import { createParty, listParties, updateParty, updatePartyIdentity } from './partyService';
 
 import type { PartyFormValues } from '../types/party.types';
 
@@ -171,9 +171,11 @@ describe('partyService.listParties', () => {
      * No fixture in this file carried a totals block at all, which is why it
      * survived: the mapping was never exercised, only the shape without it.
      */
-    jest.spyOn(api, 'get').mockResolvedValue(
-      bodyWith({ totals: { receivable: '2800.00', payable: '900.00', count: 2 } })
-    );
+    jest
+      .spyOn(api, 'get')
+      .mockResolvedValue(
+        bodyWith({ totals: { receivable: '2800.00', payable: '900.00', count: 2 } })
+      );
 
     const result = await listParties(PARAMS);
 
@@ -182,9 +184,11 @@ describe('partyService.listParties', () => {
   });
 
   it('keeps money a string on the way out of the totals too', async () => {
-    jest.spyOn(api, 'get').mockResolvedValue(
-      bodyWith({ totals: { receivable: '1234.50', payable: '0.00', count: 1 } })
-    );
+    jest
+      .spyOn(api, 'get')
+      .mockResolvedValue(
+        bodyWith({ totals: { receivable: '1234.50', payable: '0.00', count: 1 } })
+      );
 
     const result = await listParties(PARAMS);
 
@@ -214,9 +218,9 @@ describe('partyService.listParties', () => {
      * block is the contract (Part 22 §22.4); flat keys are not a second
      * spelling of it, they are nothing.
      */
-    jest.spyOn(api, 'get').mockResolvedValue(
-      bodyWith({ totals_receivable: '9999.00', totals_payable: '9999.00' })
-    );
+    jest
+      .spyOn(api, 'get')
+      .mockResolvedValue(bodyWith({ totals_receivable: '9999.00', totals_payable: '9999.00' }));
 
     const result = await listParties(PARAMS);
 
@@ -227,6 +231,33 @@ describe('partyService.listParties', () => {
 
 describe('partyService write path', () => {
   afterEach(() => jest.restoreAllMocks());
+
+  it('sends the Shop book with a Shop old balance, and no book for the Udhaar one', async () => {
+    /**
+     * A6 / DEC-019. Without `opening_book` the server posts the opening in the
+     * Udhaar book, which is what every old balance typed on the Shop form did.
+     */
+    const post = jest.spyOn(api, 'post').mockResolvedValue({ data: { data: DETAIL_ROW, meta: {} } });
+    await createParty({ ...FORM_VALUES, openingAmount: '1500.00', openingBook: 'shop' }, 'k-o1');
+    expect(post.mock.calls[0]?.[1]).toHaveProperty('opening_book', 'shop');
+    await createParty({ ...FORM_VALUES, openingAmount: '1500.00' }, 'k-o2');
+    expect(post.mock.calls[1]?.[1]).not.toHaveProperty('opening_book');
+  });
+
+  it('sends no reminder or consent keys for a supplier-only contact', async () => {
+    /**
+     * A6 F7. The form defaults "Send them reminders" to on and the supplier
+     * form has no such switch, so before this every supplier was saved opted
+     * in to reminders nobody asked about. A customer still sends both.
+     */
+    const post = jest.spyOn(api, 'post').mockResolvedValue({ data: { data: DETAIL_ROW, meta: {} } });
+    await createParty({ ...FORM_VALUES, isCustomer: false, isSupplier: true, smsOptIn: true }, 'k-s');
+    const body = post.mock.calls[0]?.[1] as Record<string, unknown>;
+    expect(body).not.toHaveProperty('sms_opt_in');
+    expect(body).not.toHaveProperty('consent_source');
+    await createParty({ ...FORM_VALUES, isCustomer: true, smsOptIn: true }, 'k-c');
+    expect(post.mock.calls[1]?.[1]).toHaveProperty('sms_opt_in', true);
+  });
 
   it('sends the tags the merchant put on the form', async () => {
     /**
@@ -329,3 +360,16 @@ const DETAIL_ROW = {
   opening_balance_as_of: null,
   created_at: '2026-01-05T08:00:00Z',
 };
+
+it('edits a shared identity without sending roles, balances or other profile fields', async () => {
+  const patch = jest.spyOn(api, 'patch').mockResolvedValue({
+    data: { data: DETAIL_ROW, meta: {} },
+  });
+  await updatePartyIdentity('p1', { name: ' Asha ', mobile: '' });
+  expect(patch).toHaveBeenCalledWith(
+    '/parties/p1',
+    { name: 'Asha', mobile: null },
+    expect.anything()
+  );
+  patch.mockRestore();
+});

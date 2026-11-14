@@ -3,10 +3,8 @@ import userEvent from '@testing-library/user-event';
 
 import { resetSession } from 'src/redux/slice/sessionSlice';
 import { store } from 'src/redux/store';
+import { en, hi } from 'src/tests/allMessages';
 import { renderWithProviders } from 'src/tests/renderWithProviders';
-
-import en from 'locales/en.json';
-import hi from 'locales/hi.json';
 
 import { resetAuth } from '../redux/authSlice';
 
@@ -139,11 +137,9 @@ describe('LoginPageContent — initial state', () => {
     expect(screen.queryByRole('button', { name: /Get code/i })).not.toBeInTheDocument();
   });
 
-  it('shows the way to create an account, since nothing registers implicitly', () => {
+  it('offers no "Create an account": everybody signs in with a number and a code (owner, 14 Nov 2026)', () => {
     renderWithProviders(<LoginPageContent />);
-
-    const link = screen.getByRole('link', { name: 'Create an account' });
-    expect(link).toHaveAttribute('href', '/signup');
+    expect(screen.queryByRole('link', { name: 'Create an account' })).not.toBeInTheDocument();
   });
 
   /**

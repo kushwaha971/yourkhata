@@ -55,16 +55,25 @@ ITEM_COST_KEYS = ("purchase_price", "avg_cost", "stock_value")
 MOVEMENT_COST_KEYS = ("unit_cost", "value", "avg_cost_after")
 
 
-def item_row(item: Item, *, valuation: bool = True) -> dict:
+def item_row(
+    item: Item, *, valuation: bool = True, gst_percent: dict[str, str | None] | None = None
+) -> dict:
     """INV-02 §14 — one list row (also the lookup response).
 
     `valuation=False` OMITS the cost keys rather than nulling them, the same
     contract `/stock/summary` has, so a client cannot mistake "hidden" for zero.
+
+    `gst_percent` (WP-07) maps tax code → today's rate plus cess. Given, the row
+    carries its item's, so the picker can say "GST 5% included" and read the
+    margin of a GST-inclusive price. Every member gets it: the rate is printed
+    on the bill they write; the margin built from it is what costs gate.
     """
     row = _item_row(item)
     if not valuation:
         for key in ITEM_COST_KEYS:
             row.pop(key, None)
+    if gst_percent is not None:
+        row["gst_percent"] = gst_percent.get(item.tax_code)
     return row
 
 
@@ -97,6 +106,43 @@ def _item_row(item: Item) -> dict:
         "stock_value": _s(getattr(item, "stock_value", None)),
         "status": item.status,
         "match_field": getattr(item, "match_field", None),
+        # D P1a — the other units it sells in (1 Box = 20 PCS), and the unit a
+        # box's own barcode named when the lookup matched one.
+        "units": [
+            {
+                "code": extra.unit.code,
+                "factor": _s(extra.factor),
+                "barcode": extra.barcode,
+                "selling_price": _s(extra.selling_price),
+                "allow_decimal": extra.unit.allow_decimal,
+            }
+            for extra in item.extra_units.all()
+        ],
+        "scanned_unit": getattr(item, "scanned_unit", None),
+        # D P1b — other part numbers, the rack, the vehicles it fits.
+        "part_numbers": [row.code for row in item.codes.all()],
+        "rack": item.rack,
+        # D P2 — the garment it is a size × colour of, and which one.
+        "product": (
+            {"id": str(item.product_id), "name": item.product.name} if item.product_id else None
+        ),
+        "attributes": item.attributes or {},
+        # D P3 — IMEI / serial tracking and the warranty months a sale starts.
+        # D P6 — a café item's add-ons, for the bill's add-on sheet.
+        "addons": [
+            # Sorted here: `.order_by()` would bypass the page's prefetch.
+            {"name": a.name, "price": str(a.price)}
+            for a in sorted(item.addons.all(), key=lambda a: a.position)
+        ],
+        "tracking": item.tracking,
+        "warranty_months": item.warranty_months,
+        # D P4 — the batch a sale would take next (earliest unexpired with stock),
+        # for the bill line's caption. One query, only for batch-tracked items.
+        "next_batch": _next_batch(item) if item.tracking == "batch" else None,
+        "fits_vehicle": item.fits_vehicle,
+        # G4 — the medicine's salt and drug schedule.
+        "salt": item.salt,
+        "schedule": item.schedule,
         "updated_at": item.updated_at.isoformat(),
     }
 
@@ -281,3 +327,15 @@ def adjustment_dict(adjustment: StockAdjustment, movements: list[StockMovement])
         "created_by": _user(adjustment.created_by),
         "created_at": adjustment.created_at.isoformat(),
     }
+
+
+def _next_batch(item: Item) -> dict | None:
+    from apps.common.dates import tenant_today
+    from apps.inventory.models import Batch
+
+    batch = (
+        Batch.objects.filter(item=item, qty__gt=0, expiry__gte=tenant_today(item.tenant))
+        .order_by("expiry", "batch_no")
+        .first()
+    )
+    return {"batch_no": batch.batch_no, "expiry": batch.expiry.isoformat()} if batch else None

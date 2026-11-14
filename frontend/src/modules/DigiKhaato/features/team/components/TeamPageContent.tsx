@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useMemo } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 
 import dynamic from 'next/dynamic';
 
@@ -9,11 +9,14 @@ import { UserPlus } from 'lucide-react';
 import {
   UbButton,
   UbConfirmDialog,
+  UbDialogLoading,
   UbPageHeader,
   UbPageShell,
   UbSectionHeading,
   UbStack,
+  UbStatusBadge,
   UbStatusBanner,
+  UbChipTabs,
 } from 'src/design-system';
 import {
   UbDataGrid,
@@ -21,18 +24,24 @@ import {
   type UbDataGridLabels,
   type UbGridState,
 } from 'src/design-system/UbDataGrid';
+import { useAppSelector } from 'src/hooks/useAppStore';
 import { useNowMs } from 'src/hooks/useNowMs';
 import { useTranslation } from 'src/hooks/useTranslation';
+import { selectActiveTenant } from 'src/redux/slice/sessionSlice';
 
 import { Can } from '../../auth/components/Can';
 import { PAGE_SIZE_OPTIONS } from '../constants/teamDefaults';
 import { useInvitations } from '../hooks/useInvitations';
+import { useTeamApp } from '../hooks/useTeamApp';
 
 import { createInvitationColumns } from './InvitationColumns';
 import { INVITE_AVATAR_ICON } from './InvitationRow';
 import { MembersSection } from './MembersSection';
 
 import type { Invitation } from '../types/invitation.types';
+
+// The access words ride with the screens that show them (owner, 14 Nov 2026).
+import 'src/i18n/catalogues/teamAccess';
 
 /**
  * Part 19 §19.9 — the two overlays are fetched when they are OPENED, not when
@@ -50,14 +59,22 @@ import type { Invitation } from '../types/invitation.types';
  * Each is rendered only while it is open, so the import is not triggered by the
  * mere presence of the element.
  */
+/* Owner, 14 Nov 2026 — the groups list is a tab most visits never open. */
+const AccessGroupsSection = dynamic(
+  () => import('./AccessGroupsSection').then((module) => module.AccessGroupsSection),
+  { ssr: false }
+);
+
 const InviteMemberDialog = dynamic(
   () => import('./InviteMemberDialog').then((module) => module.InviteMemberDialog),
-  { ssr: false }
+  { ssr: false,
+  loading: () => <UbDialogLoading /> }
 );
 
 const InviteLinkDialog = dynamic(
   () => import('./InviteLinkDialog').then((module) => module.InviteLinkDialog),
-  { ssr: false }
+  { ssr: false,
+  loading: () => <UbDialogLoading /> }
 );
 
 /**
@@ -115,6 +132,10 @@ export function TeamPageContent(): React.JSX.Element {
 
   /** Read outside render, so the column array's memo key is stable. */
   const nowMs = useNowMs();
+  // Owner, 14 Nov 2026 — Team follows the open business and app.
+  const teamApp = useTeamApp();
+  const business = useAppSelector(selectActiveTenant)?.name ?? '';
+  const [tab, setTab] = useState<'members' | 'groups'>('members');
 
   const formatDate = useCallback((value: string | Date) => d(value), [d]);
 
@@ -215,6 +236,52 @@ export function TeamPageContent(): React.JSX.Element {
     void confirmRevoke();
   }, [confirmRevoke]);
 
+  const people = (
+    <>
+      {/* DEC-012 — members FIRST. "Who works here" is the list that is
+          true; an invitation is a hope. An owner chasing a salesman who
+          cannot sign in should meet the real answer before the pending
+          one. */}
+      <MembersSection />
+
+      <UbStack gap={2}>
+        <UbSectionHeading
+          title={t('team.tab.invitations')}
+          meta={t('team.list.count', { count: meta.total })}
+          aside={
+            <Can permission="platform.members.manage">
+              <UbButton
+                variant="secondary"
+                onClick={openInvite}
+                icon={<UserPlus aria-hidden className="h-4 w-4" />}
+                // Class C, online only: disabled rather than hidden (§19.10.4).
+                disabled={!canWrite}
+              >
+                {t('team.invite.action')}
+              </UbButton>
+            </Can>
+          }
+        />
+
+        <UbDataGrid
+          rows={rows}
+          columns={columns}
+          rowId={rowId}
+          rowName={rowName}
+          state={gridState}
+          labels={labels}
+          emptyStates={emptyStates}
+          caption={t('team.list.caption')}
+          cardAvatarIcon={inviteAvatar}
+          page={meta}
+          onPageChange={setPage}
+          onPageSizeChange={handlePageSize}
+          pageSizeOptions={PAGE_SIZE_OPTIONS}
+        />
+      </UbStack>
+    </>
+  );
+
   return (
     <UbPageShell
       header={
@@ -252,47 +319,27 @@ export function TeamPageContent(): React.JSX.Element {
             />
           )}
 
-          {/* DEC-012 — members FIRST. "Who works here" is the list that is
-              true; an invitation is a hope. An owner chasing a salesman who
-              cannot sign in should meet the real answer before the pending
-              one. */}
-          <MembersSection />
-
-          <UbStack gap={2}>
-            <UbSectionHeading
-              title={t('team.tab.invitations')}
-              meta={t('team.list.count', { count: meta.total })}
-              aside={
-                <Can permission="platform.members.manage">
-                  <UbButton
-                    variant="secondary"
-                    onClick={openInvite}
-                    icon={<UserPlus aria-hidden className="h-4 w-4" />}
-                    // Class C, online only: disabled rather than hidden (§19.10.4).
-                    disabled={!canWrite}
-                  >
-                    {t('team.invite.action')}
-                  </UbButton>
-                </Can>
-              }
-            />
-
-            <UbDataGrid
-              rows={rows}
-              columns={columns}
-              rowId={rowId}
-              rowName={rowName}
-              state={gridState}
-              labels={labels}
-              emptyStates={emptyStates}
-              caption={t('team.list.caption')}
-              cardAvatarIcon={inviteAvatar}
-              page={meta}
-              onPageChange={setPage}
-              onPageSizeChange={handlePageSize}
-              pageSizeOptions={PAGE_SIZE_OPTIONS}
-            />
-          </UbStack>
+          {teamApp && (
+            <UbStack direction="row">
+              <UbStatusBadge tone="info" label={t('team.access.context', { app: teamApp.label, business })} />
+            </UbStack>
+          )}
+          {teamApp ? (
+            <UbChipTabs
+              value={tab}
+              onValueChange={setTab}
+              ariaLabel={t('team.title')}
+              size="sm"
+              tabs={[
+                { value: 'members', label: t('team.access.tab.members') },
+                { value: 'groups', label: t('team.access.tab.groups') },
+              ]}
+            >
+              {tab === 'groups' ? <AccessGroupsSection app={teamApp} /> : <UbStack gap={4}>{people}</UbStack>}
+            </UbChipTabs>
+          ) : (
+            people
+          )}
         </UbStack>
 
         {inviteOpen && <InviteMemberDialog invitations={invitations} />}

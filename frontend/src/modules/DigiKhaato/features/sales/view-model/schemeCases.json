@@ -1,0 +1,91 @@
+{
+  "_doc": "G9 — the same cases run in Python (apps/sales/tests/test_scheme_cases.py) and TypeScript (schemes.test.ts), so the bill screen and the server apply a scheme alike.",
+  "cases": [
+    {
+      "name": "buy 10 get 1: 10 cases give 1 free",
+      "schemes": [{"code": "PARLE-OCT", "rule": "free", "item_id": "a", "buy_qty": "10", "free_qty": "1"}],
+      "lines": [{"item_id": "a", "qty": "10", "unit_price": "620", "unit_code": "BOX"}],
+      "discounts": [null],
+      "free": [{"item_id": "a", "qty": "1", "unit_code": "BOX", "scheme": "PARLE-OCT"}]
+    },
+    {
+      "name": "buy 10 get 1 counts the item across lines; 25 give 2",
+      "schemes": [{"code": "PARLE-OCT", "rule": "free", "item_id": "a", "buy_qty": "10", "free_qty": "1"}],
+      "lines": [
+        {"item_id": "a", "qty": "15", "unit_price": "620", "unit_code": "BOX"},
+        {"item_id": "b", "qty": "3", "unit_price": "100", "unit_code": "NOS"},
+        {"item_id": "a", "qty": "10", "unit_price": "620", "unit_code": "BOX"}
+      ],
+      "discounts": [null, null, null],
+      "free": [{"item_id": "a", "qty": "2", "unit_code": "BOX", "scheme": "PARLE-OCT"}]
+    },
+    {
+      "name": "9 cases give nothing free",
+      "schemes": [{"code": "PARLE-OCT", "rule": "free", "item_id": "a", "buy_qty": "10", "free_qty": "1"}],
+      "lines": [{"item_id": "a", "qty": "9", "unit_price": "620", "unit_code": "BOX"}],
+      "discounts": [null],
+      "free": []
+    },
+    {
+      "name": "₹40 off per case",
+      "schemes": [{"code": "TATA-T48", "rule": "per_unit", "item_id": "a", "amount": "40"}],
+      "lines": [{"item_id": "a", "qty": "3", "unit_price": "500", "unit_code": "BOX"}],
+      "discounts": [{"type": "amount", "value": "120.00", "scheme": "TATA-T48"}],
+      "free": []
+    },
+    {
+      "name": "per unit off never takes more than the line",
+      "schemes": [{"code": "BIG", "rule": "per_unit", "item_id": "a", "amount": "40"}],
+      "lines": [{"item_id": "a", "qty": "2", "unit_price": "30", "unit_code": "NOS"}],
+      "discounts": [{"type": "amount", "value": "60.00", "scheme": "BIG"}],
+      "free": []
+    },
+    {
+      "name": "a line with its own discount keeps it",
+      "schemes": [{"code": "TATA-T48", "rule": "per_unit", "item_id": "a", "amount": "40"}],
+      "lines": [{"item_id": "a", "qty": "3", "unit_price": "500", "unit_code": "BOX", "discount_type": "percent", "discount_value": "5"}],
+      "discounts": [null],
+      "free": []
+    },
+    {
+      "name": "2% over ₹10,000 of the item: reached",
+      "schemes": [{"code": "SURF-CD2", "rule": "percent", "item_id": "s", "amount": "2", "min_bill": "10000"}],
+      "lines": [
+        {"item_id": "s", "qty": "10", "unit_price": "1000", "unit_code": "BOX"},
+        {"item_id": "b", "qty": "1", "unit_price": "5000", "unit_code": "NOS"}
+      ],
+      "discounts": [{"type": "percent", "value": "2.00", "scheme": "SURF-CD2"}, null],
+      "free": []
+    },
+    {
+      "name": "2% over ₹10,000 of the item: not reached",
+      "schemes": [{"code": "SURF-CD2", "rule": "percent", "item_id": "s", "amount": "2", "min_bill": "10000"}],
+      "lines": [
+        {"item_id": "s", "qty": "9", "unit_price": "1000", "unit_code": "BOX"},
+        {"item_id": "b", "qty": "1", "unit_price": "5000", "unit_code": "NOS"}
+      ],
+      "discounts": [null, null],
+      "free": []
+    },
+    {
+      "name": "a percent scheme without an item counts the whole bill",
+      "schemes": [{"code": "ALL3", "rule": "percent", "item_id": null, "amount": "3", "min_bill": "1000"}],
+      "lines": [
+        {"item_id": "a", "qty": "1", "unit_price": "600", "unit_code": "NOS"},
+        {"item_id": "b", "qty": "1", "unit_price": "400", "unit_code": "NOS"}
+      ],
+      "discounts": [{"type": "percent", "value": "3.00", "scheme": "ALL3"}, {"type": "percent", "value": "3.00", "scheme": "ALL3"}],
+      "free": []
+    },
+    {
+      "name": "a line takes one discount scheme, the first by code",
+      "schemes": [
+        {"code": "B-OFF", "rule": "per_unit", "item_id": "a", "amount": "10"},
+        {"code": "A-PCT", "rule": "percent", "item_id": "a", "amount": "5", "min_bill": "1"}
+      ],
+      "lines": [{"item_id": "a", "qty": "2", "unit_price": "100", "unit_code": "NOS"}],
+      "discounts": [{"type": "percent", "value": "5.00", "scheme": "A-PCT"}],
+      "free": []
+    }
+  ]
+}

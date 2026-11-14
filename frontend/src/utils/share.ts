@@ -95,8 +95,26 @@ export const formatPhoneForDisplay = (raw: string | null | undefined): string =>
     const national = digits.slice(INDIA_COUNTRY_CODE.length);
     return `+${INDIA_COUNTRY_CODE} ${national.slice(0, 5)} ${national.slice(5)}`;
   }
-  return raw.trim();
+  // Another country's E.164 with no spaces (owner, 14 Nov 2026): set its code
+  // apart, "+44 7911123499", as an Indian one is. Spaced input is kept as is.
+  const trimmed = raw.trim();
+  if (/^\+\d{8,15}$/.test(trimmed)) {
+    const code = dialCodeLength(trimmed.slice(1));
+    return `+${trimmed.slice(1, 1 + code)} ${trimmed.slice(1 + code)}`;
+  }
+  return trimmed;
 };
+
+/**
+ * How many digits a number's country code takes, by the ITU's own plan rather
+ * than a country table (that table would ride on every page): +1 and +7 are one
+ * digit, this short list is two, every other code is three.
+ */
+const TWO_DIGIT_CODES = new Set(
+  '20 27 30 31 32 33 34 36 39 40 41 43 44 45 46 47 48 49 51 52 53 54 55 56 57 58 60 61 62 63 64 65 66 81 82 84 86 90 91 92 93 94 95 98'.split(' ')
+);
+const dialCodeLength = (digits: string): number =>
+  digits.startsWith('1') || digits.startsWith('7') ? 1 : TWO_DIGIT_CODES.has(digits.slice(0, 2)) ? 2 : 3;
 
 /**
  * A phone number for a MACHINE — a `tel:` href, the clipboard — as E.164 with
@@ -129,6 +147,16 @@ export const encodeShareText = (text: string): string =>
 export const buildWhatsAppUrl = (text: string, phone?: string | null): string => {
   const digits = toWhatsAppDigits(phone);
   return `https://wa.me/${digits ?? ''}?text=${encodeShareText(text)}`;
+};
+
+/**
+ * A server-built `wa.me` link with the merchant's edited words in place of its
+ * own, to the same number (WP-04). The server knows the recipient and the
+ * client may not, so the number is kept from the link rather than looked up.
+ */
+export const withWhatsAppText = (waUrl: string, text: string): string => {
+  const digits = /^https:\/\/wa\.me\/(\d*)/.exec(waUrl)?.[1] ?? '';
+  return `https://wa.me/${digits}?text=${encodeShareText(text)}`;
 };
 
 /**

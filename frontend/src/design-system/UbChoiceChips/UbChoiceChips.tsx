@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useRef, type KeyboardEvent, type ReactNode } from 'react';
+import { useCallback, useLayoutEffect, useRef, type KeyboardEvent, type ReactNode } from 'react';
 
 import { cn } from 'src/utils/cn';
 
@@ -37,6 +37,8 @@ export interface UbChoiceChipsProps<T extends string> {
   readonly disabled?: boolean;
   readonly onBlur?: () => void;
   readonly className?: string;
+  /** Horizontal register strips keep the active status visible; wrapped form choices stay unchanged. */
+  readonly revealSelected?: boolean;
 }
 
 export function UbChoiceChips<T extends string>({
@@ -50,12 +52,30 @@ export function UbChoiceChips<T extends string>({
   disabled,
   onBlur,
   className,
+  revealSelected = false,
 }: Readonly<UbChoiceChipsProps<T>>): React.JSX.Element {
   const refs = useRef<(HTMLButtonElement | null)[]>([]);
   const checkedIndex = options.findIndex((option) => option.value === value);
   /* Roving tabindex: the checked chip is the one in the tab order, or the
      first when nothing is checked yet — so Tab reaches the group once. */
   const tabStop = checkedIndex >= 0 ? checkedIndex : 0;
+  useLayoutEffect(() => {
+    if (!revealSelected) return undefined;
+    const button = refs.current[checkedIndex];
+    const group = button?.parentElement;
+    if (!button || !group) return undefined;
+    const reveal = () => {
+      if (group.scrollWidth <= group.clientWidth) return;
+      const item = button.getBoundingClientRect();
+      const frame = group.getBoundingClientRect();
+      if (item.left < frame.left) group.scrollLeft -= frame.left - item.left;
+      else if (item.right > frame.right) group.scrollLeft += item.right - frame.right;
+    };
+    reveal();
+    const observer = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(reveal);
+    observer?.observe(group);
+    return () => observer?.disconnect();
+  }, [checkedIndex, options, revealSelected]);
 
   const onKeyDown = useCallback(
     (event: KeyboardEvent<HTMLDivElement>) => {
@@ -90,7 +110,9 @@ export function UbChoiceChips<T extends string>({
         // Blur of the GROUP, not of each chip, so `onTouched` fires once.
         if (!event.currentTarget.contains(event.relatedTarget as Node | null)) onBlur?.();
       }}
-      className={cn('flex flex-wrap gap-2', className)}
+      // 12 px between chips on a phone, across and between wrapped rows, so their
+      // 44 px hit areas (`.ub-hit`) meet rather than overlap (R-A-3, Sprint 12).
+      className={cn('flex flex-wrap gap-2 max-sm:gap-3', className)}
     >
       {options.map((option, index) => {
         const checked = index === checkedIndex;
@@ -107,11 +129,13 @@ export function UbChoiceChips<T extends string>({
             disabled={disabled}
             onClick={() => onChange(option.value)}
             className={cn(
-              'ds-body-s-medium inline-flex h-8 items-center gap-1.5 rounded-pill border px-3',
+              // The design's `.chp`: 14 px sides and regular weight (owner, 10 Nov 2026,
+              // "match design"); the 32 px face and 44 px phone target stay (R-DEC-32 #3).
+              'ub-hit ds-body-s-regular inline-flex h-8 items-center gap-1.5 rounded-pill border px-[14px]',
               'outline-none transition-colors duration-fast ease-standard focus-visible:shadow-focus',
               'disabled:cursor-not-allowed disabled:opacity-60',
               checked
-                ? 'border-accent bg-accent-quiet text-text-accent'
+                ? 'border-action bg-accent-quiet text-text-accent'
                 : invalid
                   ? 'border-formError text-text-secondary hover:bg-surface-hover'
                   : 'border-border-subtle text-text-secondary hover:bg-surface-hover hover:text-text-primary'

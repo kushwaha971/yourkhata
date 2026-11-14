@@ -34,6 +34,10 @@ export interface UseItemDetailResult {
   readonly setFilters: (next: MovementFilters) => void;
   readonly loadMore: () => void;
   readonly refetch: () => void;
+  /** Reload the first page of movements alone — a tab that failed retries by itself. */
+  readonly retryMovements: () => void;
+  /** No connection (or a degraded one): writes wait. */
+  readonly impaired: boolean;
   readonly archive: () => Promise<boolean>;
   readonly restore: () => Promise<boolean>;
   readonly can: {
@@ -90,6 +94,10 @@ export function useItemDetail(id: string): UseItemDetailResult {
     void dispatch(fetchItemDetail(id));
   }, [dispatch, id]);
 
+  const retryMovements = useCallback(() => {
+    if (canStock) void dispatch(fetchItemMovements({ id, filters, cursor: null }));
+  }, [dispatch, id, filters, canStock]);
+
   const archive = useCallback(async () => {
     try {
       const saved = await dispatch(archiveItem(id)).unwrap();
@@ -136,6 +144,8 @@ export function useItemDetail(id: string): UseItemDetailResult {
       setFilters,
       loadMore,
       refetch,
+      retryMovements,
+      impaired,
       archive,
       restore,
       can: {
@@ -156,6 +166,8 @@ export function useItemDetail(id: string): UseItemDetailResult {
       filters,
       loadMore,
       refetch,
+      retryMovements,
+      impaired,
       archive,
       restore,
       can,

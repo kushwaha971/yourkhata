@@ -87,7 +87,12 @@ export const ML_CONTROL_BASE =
  */
 export const ML_CONTROL_TONE = (invalid?: boolean): string =>
   invalid
-    ? 'border-formError focus-visible:border-formError'
+    ? /* Sprint 12 a11y sweep — keeping the error colour through focus left an
+         invalid field with NO focus change at all: Tab into "Enter an amount."
+         and nothing on screen moved (WCAG 2.4.7). The border thickens instead,
+         1 px → 2 px in the SAME error red (an inset 1 px shadow), so focus is
+         visible without the second colour the double-outline fix removed. */
+      'border-formError focus-visible:border-formError focus-visible:shadow-[inset_0_0_0_1px_hsl(var(--form-error))]'
     : // BrandHub: a #E6E6E6 hairline at rest, the ink colour on focus.
       'border-border-hairline hover:border-border-subtle focus-visible:border-text-primary';
 
@@ -207,7 +212,7 @@ export function MLToggleGroup<T extends string>({
           aria-pressed={value === option.value}
           onClick={() => onValueChange(option.value)}
           className={cn(
-            'ds-body-sm-medium min-h-9 rounded-control px-3 py-1.5',
+            'ub-hit ds-body-sm-medium min-h-9 rounded-control px-3 py-1.5',
             'transition-colors duration-fast ease-standard',
             value === option.value
               ? 'bg-surface-card text-text-primary shadow-1'
@@ -239,6 +244,7 @@ export interface MLTabsProps<T extends string> {
   readonly className?: string;
   /** `fit`: tabs as wide as their labels, left-aligned. `fill` shares the row. */
   readonly layout?: 'fill' | 'fit';
+  readonly appearance?: 'underline' | 'segmented';
   /** A control at the right end of the tab row — a filter that scopes every tab. */
   readonly trailing?: ReactNode;
 }
@@ -256,6 +262,7 @@ export function MLTabs<T extends string>({
   idPrefix,
   className,
   layout = 'fill',
+  appearance = 'underline',
   trailing,
 }: Readonly<MLTabsProps<T>>): React.JSX.Element {
   const generated = useId();
@@ -292,14 +299,20 @@ export function MLTabs<T extends string>({
 
   return (
     <div className={cn('flex w-full flex-col gap-4', className)}>
-      <div className="flex w-full flex-wrap items-center gap-x-4 gap-y-2 border-b border-border-hairline">
+      <div
+        className={cn(
+          'flex w-full flex-wrap items-center gap-x-4 gap-y-2',
+          appearance === 'underline' && 'border-b border-border-hairline'
+        )}
+      >
         <div
           ref={listRef}
           role="tablist"
           aria-label={ariaLabel}
           onKeyDown={onKeyDown}
           className={cn(
-            '-mb-px flex items-center gap-1',
+            'flex items-center gap-1',
+            appearance === 'segmented' ? 'rounded-control bg-surface-sunken p-1' : '-mb-px',
             layout === 'fill' ? 'w-full' : 'max-w-full overflow-x-auto'
           )}
         >
@@ -316,14 +329,23 @@ export function MLTabs<T extends string>({
                 tabIndex={active ? 0 : -1}
                 onClick={() => onValueChange(tab.value)}
                 className={cn(
-                  'ds-body-base-medium h-10 whitespace-nowrap border-b-2 px-4',
+                  /* 44 px on a phone (R-A-3). Not `.ub-hit`: a `fit` list
+                     scrolls sideways, and its overflow would clip the overhang. */
+                  'ds-body-base-medium h-10 whitespace-nowrap border-b-2 px-4 max-sm:h-11 max-sm:min-w-11',
                   /* A phone gets 8 px back per tab side in `fit`: four
                      labelled tabs with counts fit 360 px instead of scrolling. */
                   layout === 'fill' ? 'flex-1' : 'flex-none max-sm:px-3',
                   'transition-colors duration-fast ease-standard',
-                  active
-                    ? 'border-accent text-text-accent'
-                    : 'border-transparent text-text-tertiary hover:text-text-primary'
+                  appearance === 'segmented'
+                    ? cn(
+                        'rounded-control border-b-0 px-2',
+                        active
+                          ? 'bg-surface-card text-text-primary shadow-sm'
+                          : 'text-text-secondary'
+                      )
+                    : active
+                      ? 'border-action text-text-accent'
+                      : 'border-transparent text-text-tertiary hover:text-text-primary'
                 )}
               >
                 {tab.label}
@@ -357,7 +379,7 @@ export interface MLProgressProps extends HTMLAttributes<HTMLDivElement> {
 }
 
 const PROGRESS_TONE: Record<NonNullable<MLProgressProps['tone']>, string> = {
-  accent: 'bg-accent',
+  accent: 'bg-action',
   success: 'bg-success',
   warning: 'bg-warning',
   // A meter that has run out is the validation/system family, not ledger red.

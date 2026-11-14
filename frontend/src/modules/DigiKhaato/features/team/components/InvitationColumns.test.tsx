@@ -16,7 +16,13 @@ import { createMemberColumns } from './MemberColumns';
  * arithmetic is asserted instead, at both tiers that render a table.
  */
 const t = (id: string): string => id;
-const deps = { t, d: (v: string | Date) => String(v), nowMs: 0, canWrite: true, onRevoke: jest.fn() };
+const deps = {
+  t,
+  d: (v: string | Date) => String(v),
+  nowMs: 0,
+  canWrite: true,
+  onRevoke: jest.fn(),
+};
 
 const TABLE_AT_1280 = 1280 - 180 - 2 * 24;
 const TABLE_AT_768 = 768 - 2 * 16;
@@ -48,6 +54,8 @@ describe('invitations table — the actions column fits its button (D4)', () => 
       nowMs: 0,
       canWrite: true,
       onRegenerate: jest.fn(),
+      viewer: { isManager: false, role: null, userId: null },
+      onOpenActions: jest.fn(),
     }).find((c) => c.id === 'actions');
 
     expect(invitationActions?.headerHidden).toBeFalsy();

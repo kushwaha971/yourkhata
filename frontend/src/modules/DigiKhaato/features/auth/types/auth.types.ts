@@ -1,4 +1,5 @@
 import type { Locale, ModuleCode, PermissionCode } from 'src/types/domain.types';
+import type { Landing } from 'src/types/landing.types';
 
 /**
  * Part 19 §19.2.3 — the auth feature's own types.
@@ -35,6 +36,7 @@ export interface TenantApiRow {
   readonly timezone?: string;
   readonly role?: RoleCode;
   readonly is_default?: boolean;
+  readonly primary_app?: string;
   readonly status?: MembershipStatus;
   /** PLT-04 FR-5 / FR-7 — the caller's own membership row, for default/leave. */
   readonly membership_id?: string;
@@ -45,29 +47,45 @@ export interface TenantApiRow {
 // ── Domain shapes ────────────────────────────────────────────────────────────
 
 /** PLT-02 FR-1 — the login body. One identity, and it is an email. */
+/** Owner, 9 Oct 2026 — `POST /auth/otp/request`. */
+export interface OtpRequestInput {
+  /** E.164, always `+91…`: the sign-in code is sent to India only. */
+  readonly mobile: string;
+  readonly locale?: Locale;
+}
+
+/** What `otp/request` answers. Seconds, as the server sends them. */
+export interface OtpChallenge {
+  readonly challengeId: string;
+  readonly expiresIn: number;
+  /** Seconds before another code may be asked for — sixty seconds. */
+  readonly retryAfter: number;
+  /**
+   * How many digits were sent. The SERVER's answer, because it chooses the
+   * provider when it runs and a build that guessed differently was a sign-in
+   * nobody could finish (review G2, 12 Oct 2026).
+   */
+  readonly codeLength: OtpCodeLength;
+  /** Where the code went: our SMS, or MiniMoth's WhatsApp-first delivery. */
+  readonly channel: OtpChannel;
+}
+
+/** Six since 14 Nov 2026 (owner); the server still says so on every challenge. */
+export type OtpCodeLength = number;
+export type OtpChannel = 'sms' | 'whatsapp';
+
+/** `POST /auth/otp/verify`. */
+export interface OtpVerifyInput {
+  readonly challengeId: string;
+  readonly code: string;
+  readonly deviceLabel?: string;
+  readonly locale?: Locale;
+}
+
 export interface PasswordLoginInput {
   readonly email: string;
   readonly password: string;
   /** PLT-01 §7 — a label the user will recognise in PLT-09's device list. */
-  readonly deviceLabel?: string;
-}
-
-/**
- * CR-2026-09-19-A FR-S1 — sign-up. There is no longer an OTP verify that
- * registers a user as a side effect, so registration is an explicit act with an
- * explicit screen.
- */
-export interface RegisterInput {
-  readonly email: string;
-  readonly password: string;
-  /** PLT-03 BR-7 — optional; step 1 of the wizard asks again if it is blank. */
-  readonly name?: string;
-  /**
-   * E.164, and OPTIONAL — this is the whole point of CR-2026-09-19-A. A number
-   * given here is a profile field the later WhatsApp reminders and PLT-03's
-   * default business phone use; it proves nothing and logs nobody in.
-   */
-  readonly mobile?: string;
   readonly deviceLabel?: string;
 }
 
@@ -94,6 +112,8 @@ export interface PasswordResetConfirmInput {
  * one field only a fresh authentication knows: whether this account is new.
  */
 export interface AuthResult {
+  /** docs/platform/14 §4.1 — where this session goes next, as the server decided. */
+  readonly landing: Landing | null;
   readonly userId: string;
   readonly name: string;
   /** The identity. Never null: an account without one cannot be logged into. */
@@ -127,24 +147,7 @@ export interface AuthTenant {
 }
 
 /**
- * PLT-01 FR-9 / PLT-04 FR-9 — where an authenticated user goes next. A pure
- * decision, computed by the view-model and executed by the hook, so the routing
- * rule is unit-testable without a router.
+ * docs/platform/14 §4.1 — where an authenticated user goes next is the server's
+ * `landing` (`src/types/landing.types.ts`); `PostAuthDestination` was the
+ * client's own five-branch copy of that rule and is gone with it.
  */
-/**
- * PLT-01 FR-9 / PLT-04 FR-9 — the five branches `postAuthDestination` can
- * return, and only those.
- *
- * `{ kind: 'setPassword' }` was removed once by CR-2026-09-19-D, because
- * registration always set a password and the branch became unreachable. DEC-012
- * makes it reachable again and for a different reason: an owner can now create
- * an account on somebody else's behalf, so a session CAN arrive on a password
- * its holder did not choose. The branch is back because the situation is, not
- * because the old one returned.
- */
-export type PostAuthDestination =
-  | { readonly kind: 'setPassword' }
-  | { readonly kind: 'onboarding'; readonly step: number }
-  | { readonly kind: 'chooser' }
-  | { readonly kind: 'invitation' }
-  | { readonly kind: 'app'; readonly tenantId: string };

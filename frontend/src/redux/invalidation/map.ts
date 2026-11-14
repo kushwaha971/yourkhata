@@ -63,6 +63,14 @@ export const INVALIDATION: TInvalidationMap = {
   // ── platform & settings ───────────────────────────────────────────────────
   // A new tenant means a new token and a new dataset; nothing survives.
   switchTenant: { resetAll: true },
+  // Personal Udhaar is a different dataset, even inside the same login/business.
+  // Keep the new session app, but never retain another app's shared-book rows.
+  switchApp: { resetAll: true, patch: [['session', 'activeApp']] },
+  // The business's apps (and with them its modules) or this person's grants
+  // move. Same business and token, so nothing a feature cached belongs to
+  // someone else; the session slice re-reads the whole body from the answer.
+  setAppRunning: { patch: [['session', 'apps']] },
+  leaveApp: { patch: [['session', 'apps']] },
   logout: { resetAll: true },
 
   // ── PLT-02 / CR-2026-09-19-A — authentication ─────────────────────────────
@@ -71,6 +79,8 @@ export const INVALIDATION: TInvalidationMap = {
   // change is one flag on the auth slice, written by that slice's extraReducers
   // on this very action, which is what `patch` declares.
   requestPasswordReset: { patch: [['auth', 'resetRequested']] },
+  // A code was sent: the auth slice holds the challenge and the resend clock.
+  requestOtp: { patch: [['auth', 'otp']] },
   // A successful registration, login or reset-confirm is a NEW SESSION.
   // Anything a previous session left in the store belongs to a different user or
   // a different business, so the teardown is total — the same signal a tenant
@@ -83,8 +93,8 @@ export const INVALIDATION: TInvalidationMap = {
   // the `patch` declares: without it, the previous session's `activeTenant`
   // was still there when `/auth/me` answered for the new one, and the
   // stale-tab guard read a different tenant as "switched in another tab".
-  registerAccount: { resetAll: true, patch: [['session', 'activeTenant']] },
   passwordLogin: { resetAll: true, patch: [['session', 'activeTenant']] },
+  verifyOtp: { resetAll: true, patch: [['session', 'activeTenant']] },
   confirmPasswordReset: { resetAll: true, patch: [['session', 'activeTenant']] },
   // Setting a password changes no cached row; it changes whether the account
   // has one, which is a field of the auth slice.
@@ -146,6 +156,13 @@ export const INVALIDATION: TInvalidationMap = {
   // A reissue changes `must_change_password` and the expiry on one row, which
   // is what the list is FOR. It spends no seat, so the session is untouched.
   regenerateCredentials: { refetch: ['member'] },
+  // Owner, 12 Oct 2026 — the manager's edit, block, unblock and remove. Each
+  // changes a row the team list is showing; block, unblock and remove also
+  // move the seat count the plan banner reads, so the plan goes stale too.
+  editMember: { refetch: ['member'] },
+  blockMember: { refetch: ['member'], stale: ['plan'] },
+  unblockMember: { refetch: ['member'], stale: ['plan'] },
+  removeMember: { refetch: ['member'], stale: ['plan'] },
 
   // ── PTY-01 — create and edit a party ──────────────────────────────────────
   // `refetch`, not `stale`: the drawer opens over the list the merchant is
@@ -459,6 +476,10 @@ export const INVALIDATION: TInvalidationMap = {
   // INV-06 — on-hand, average, badges and the movement list all move, on
   // whichever of the three screens the merchant posted from.
   postStockAdjustment: { refetch: ['itemDetail', 'itemList', 'stockSummary'] },
+  // C3 — counting changes only the open count's page, which no other screen
+  // shows. Saving posts stock corrections, so it moves what an adjustment moves.
+  countStockItem: { refetch: ['stockCount'] },
+  saveStockCount: { refetch: ['itemDetail', 'itemList', 'stockSummary'] },
   // ── EXP-01 / EXP-02 / EXP-03 — expenses and the cashbook ──────────────────
   //
   // Recording and voiding change the list the merchant is looking at and the
@@ -495,6 +516,168 @@ export const INVALIDATION: TInvalidationMap = {
   // A share link changes nothing any other screen shows; the detail slice
   // holds the minted link itself (its fulfilled reducer, not a refetch).
   createInvoiceShareLink: { patch: [['invoiceDetail', 'shareLink']] },
+  // UAT D1 — revoking clears the held link in its own fulfilled reducer.
+  revokeInvoiceShareLink: { patch: [['invoiceDetail', 'shareLink']] },
+  // ── PAY-01 … PAY-05 — payments ───────────────────────────────────────────
+  //
+  // A payment moves the khata (the credit or debit line), the balance on the
+  // list, and every bill it settled. The merchant records it FROM the khata or
+  // the invoice page, so the khata's three figures are re-read now (the same
+  // list every ledger write refetches); the invoice page re-reads its bill in
+  // the drawer's `onSaved`, because `invoiceDetail` holds one document by id
+  // and takes no invalidation signal. The list and the ledger reports are
+  // stale for their next mount. Nothing is patched: the balance, the running
+  // totals and each bill's status are the server's arithmetic.
+  //
+  // PUR-02 — a supplier payment settles purchase bills the same way, and it is
+  // recorded FROM the bill page: `purchaseBillDetail` is re-read now (its hook
+  // refetches whenever the slice is stale), the bills list on its next mount.
+  recordPayment: {
+    refetch: [...LEDGER_WRITE_REFETCH, 'paymentList', 'purchaseBillDetail'],
+    stale: ['invoiceList', 'purchaseBillList', 'statement', 'ledgerAging'],
+  },
+  // The receipt page swaps to Void in place from the response (the `patch`).
+  // Voiding a credit note's refund voucher gives the note its credit back
+  // (SAL-04 FR-10), so the estimates / credit notes list is stale too.
+  // Voiding a supplier payment reopens its purchase bills (PUR-02 FR-7).
+  // ── A4a ── Apply to bills. The receipt swaps in place from the response (the
+  // `patch`). No khata line moves — the money was on the khata already (PLT-X03
+  // BR-3) — so the ledger's three are NOT re-read; the bills it settled changed
+  // status, so the lists that show them are stale, and the payment list's
+  // "allocated" column is re-read now.
+  allocateExistingPayment: {
+    patch: [['paymentReceipt', 'payment']],
+    refetch: ['paymentList'],
+    stale: ['invoiceList', 'salesDocList', 'purchaseBillList', 'purchaseBillDetail'],
+  },
+  voidPayment: {
+    patch: [['paymentReceipt', 'payment']],
+    refetch: [...LEDGER_WRITE_REFETCH, 'paymentList'],
+    stale: [
+      'invoiceList',
+      'salesDocList',
+      'purchaseBillList',
+      'purchaseBillDetail',
+      'statement',
+      'ledgerAging',
+    ],
+  },
+  // A share is words handed to WhatsApp, and an audit row: no money moves, so
+  // nothing else is stale. The receipt slice records the share's state.
+  shareReceipt: { patch: [['paymentReceipt', 'shareStatus']] },
+  // ── PUR-01 / PUR-04 — purchase bills ─────────────────────────────────────
+  //
+  // Autosave writes a draft from the editor, where the list is not mounted:
+  // stale. RECORDING moves the supplier's balance, khata, statement and aging
+  // by the grand total, stock and the average on every tracked line, and each
+  // item's last cost — all stale for their next mount, nothing patched,
+  // because every figure is the server's. A VOID is the same set reversed;
+  // the detail slice writes the voided bill from the 200 (its fulfilled
+  // reducer), which is the one `patch`.
+  savePurchaseBillDraft: { stale: ['purchaseBillList'] },
+  deletePurchaseBillDraft: { stale: ['purchaseBillList'] },
+  // Shop item 3 — the orders list moves; the bills list gains a draft on create-bill.
+  movePurchaseOrder: { stale: ['purchaseBillList'] },
+  // "Paid now" (PUR-02) writes a PAYOUT voucher with the record, and a void
+  // releases supplier payments as advances: the payments list is stale for both.
+  recordPurchaseBill: {
+    stale: [
+      'purchaseBillList',
+      'purchaseBillDetail',
+      'paymentList',
+      ...EXPENSE_LEDGER_STALE,
+      'itemList',
+      'itemDetail',
+      'stockSummary',
+    ],
+  },
+  // Shop P0 — a debit note moves stock, the supplier's khata and its bill's due, in
+  // both directions; the bill page refetches to show its note and its smaller due.
+  issueDebitNote: {
+    stale: [
+      'purchaseBillList',
+      'purchaseBillDetail',
+      ...EXPENSE_LEDGER_STALE,
+      'itemList',
+      'itemDetail',
+      'stockSummary',
+    ],
+  },
+  voidDebitNote: {
+    patch: [['purchaseBillDetail', 'bill']],
+    stale: ['purchaseBillList', ...EXPENSE_LEDGER_STALE, 'itemList', 'itemDetail', 'stockSummary'],
+  },
+  voidPurchaseBill: {
+    patch: [['purchaseBillDetail', 'bill']],
+    stale: [
+      'purchaseBillList',
+      'paymentList',
+      ...EXPENSE_LEDGER_STALE,
+      'itemList',
+      'itemDetail',
+      'stockSummary',
+    ],
+  },
+  // ── SAL-01 / SAL-04 / SAL-05 — estimates, credit notes, void ─────────────
+  //
+  // An estimate moves no money and no stock (FR-8), so its writes leave only
+  // the estimates list stale. The detail slice holds the moved estimate from
+  // the response (its fulfilled reducer). Converting writes a DRAFT invoice:
+  // the bills list is stale for its next mount, nothing else moved.
+  saveEstimateDraft: { stale: ['salesDocList'] },
+  deleteEstimateDraft: { stale: ['salesDocList'] },
+  moveEstimate: { patch: [['invoiceDetail', 'document']], stale: ['salesDocList'] },
+  convertEstimate: { stale: ['salesDocList', 'invoiceList'] },
+  // A credit note credits the khata, may restock, and settles the invoice's
+  // due — every one of those figures is the server's, so all are stale; the
+  // editor navigates to the new note, which it then reads. A refund at issue
+  // is a PAY-01 `payment_out` voucher: the payments list is stale too.
+  issueCreditNote: {
+    stale: [
+      'salesDocList',
+      'invoiceList',
+      'paymentList',
+      ...EXPENSE_LEDGER_STALE,
+      'itemList',
+      'itemDetail',
+      'stockSummary',
+    ],
+  },
+  // Apply moves no ledger line (the credit already did): two documents' dues.
+  applyCreditNote: {
+    patch: [['invoiceDetail', 'document']],
+    stale: ['salesDocList', 'invoiceList'],
+  },
+  // A void reverses stock and the khata line, dated today, and releases
+  // credit applications and payment allocations (the payments stay, as
+  // advances — PAY-05 `release_document_allocations`) — the same reach as the
+  // issue it undoes, plus the payments list whose unallocated figures moved.
+  voidInvoice: {
+    patch: [
+      ['invoiceDetail', 'document'],
+      ['invoiceDetail', 'voidResult'],
+    ],
+    stale: [
+      'invoiceList',
+      'salesDocList',
+      'paymentList',
+      ...EXPENSE_LEDGER_STALE,
+      'itemList',
+      'itemDetail',
+      'stockSummary',
+    ],
+  },
+  voidCreditNote: {
+    patch: [['invoiceDetail', 'document']],
+    stale: [
+      'invoiceList',
+      'salesDocList',
+      ...EXPENSE_LEDGER_STALE,
+      'itemList',
+      'itemDetail',
+      'stockSummary',
+    ],
+  },
   // ── LED-06 — manual reminders ─────────────────────────────────────────────
   //
   // A reminder moves no money, so nothing about the khata, the list or the
@@ -553,4 +736,50 @@ export const INVALIDATION: TInvalidationMap = {
   // load follows either way, which rebuilds every slice from `/auth/me`.
   startImpersonation: { resetAll: true },
   endImpersonation: { resetAll: true },
+
+  // ── A9b ── PLT-X08: the Business days screen. Each write's answer is written
+  // into `calendar.data` by `calendarSlice` itself (weekdays replaced, closures
+  // appended or removed); nothing else in the product reads the calendar yet.
+  saveWeekdays: { patch: [['calendar', 'data']] },
+  addClosedDays: { patch: [['calendar', 'data']] },
+  deleteClosedDay: { patch: [['calendar', 'data']] },
+  // ── A6 ── PLT-X04: the new, re-opened, ended or removed link is written into
+  // `partyRelation.data` by `partyRelationSlice` itself; no other screen lists
+  // relations, and the role counts do not move (a link is not a profile row).
+  createPartyRelation: { patch: [['partyRelation', 'data']] },
+  deletePartyRelation: { patch: [['partyRelation', 'data']] },
+  // ── A7 ── PLT-X06: the sent record is marked in `moduleReminders.sentIds` and
+  // counted in `sentCount` by its own reducer; whether it may go AGAIN is the
+  // server's, and the tab refetches when that count moves (after the send has
+  // landed, not when the sheet closes). The history list is stale like a shop send.
+  sendSourceReminder: {
+    patch: [
+      ['moduleReminders', 'sentIds'],
+      ['moduleReminders', 'sentCount'],
+    ],
+    stale: ['reminders'],
+  },
+  // ── A4b ── held deposits (FRD 00 PLT-X02) ─────────────────────────────────
+  // Every answer carries the deposit's new figures and `depositSlice` swaps the
+  // row in place (the `patch`), and the panel's held TOTAL is the server's
+  // (`meta.totals.held`), so `deposit` is re-read too rather than re-summed
+  // here (canon rule 3). Taking or returning a deposit moves the party's
+  // DEPOSIT bucket, which the khata header shows, so the ledger's three are
+  // re-read now; the payment list gains a row. Adjusting from a deposit also
+  // settles the charges it was applied to, so the document lists are stale.
+  receiveDeposit: {
+    patch: [['deposit', 'rows']],
+    refetch: [...LEDGER_WRITE_REFETCH, 'paymentList', 'deposit'],
+    stale: ['statement', 'ledgerAging', 'cashbook'],
+  },
+  refundDeposit: {
+    patch: [['deposit', 'rows']],
+    refetch: [...LEDGER_WRITE_REFETCH, 'paymentList', 'deposit'],
+    stale: ['statement', 'ledgerAging', 'cashbook'],
+  },
+  applyDeposit: {
+    patch: [['deposit', 'rows']],
+    refetch: [...LEDGER_WRITE_REFETCH, 'paymentList', 'deposit'],
+    stale: ['invoiceList', 'salesDocList', 'statement', 'ledgerAging'],
+  },
 };

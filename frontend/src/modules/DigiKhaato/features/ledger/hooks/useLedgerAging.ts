@@ -2,8 +2,9 @@
 
 import { useCallback, useEffect, useMemo } from 'react';
 
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
 
+import { useAppRouter } from 'src/hooks/useAppRouter';
 import { useAppDispatch, useAppSelector } from 'src/hooks/useAppStore';
 import { usePermissions } from 'src/hooks/usePermissions';
 import { selectNetworkImpaired } from 'src/redux/slice/networkSlice';
@@ -16,6 +17,7 @@ import {
   selectAgingAsOf,
   selectAgingCachedAt,
   selectAgingError,
+  selectAgingHasAny,
   selectAgingPage,
   selectAgingPageSize,
   selectAgingTotal,
@@ -63,6 +65,8 @@ export interface UseLedgerAgingResult {
   readonly page: number;
   readonly pageSize: number;
   readonly total: number;
+  /** The server's whole-book `has_any`; `null` until it has answered. */
+  readonly hasAny: boolean | null;
   readonly setKind: (kind: AgingKind) => void;
   readonly setAsOf: (asOf: string) => void;
   readonly setTag: (tag: string | null) => void;
@@ -71,9 +75,9 @@ export interface UseLedgerAgingResult {
   readonly refetch: () => void;
 }
 
-export const useLedgerAging = (): UseLedgerAgingResult => {
+export const useLedgerAging = (book: 'main' | 'shop' = 'main'): UseLedgerAgingResult => {
   const dispatch = useAppDispatch();
-  const router = useRouter();
+  const router = useAppRouter();
   const search = useSearchParams();
   const { can, hasModule } = usePermissions();
   const timezone = useAppSelector(selectTenantTimezone);
@@ -88,6 +92,7 @@ export const useLedgerAging = (): UseLedgerAgingResult => {
   const page = useAppSelector(selectAgingPage);
   const pageSize = useAppSelector(selectAgingPageSize);
   const total = useAppSelector(selectAgingTotal);
+  const hasAny = useAppSelector(selectAgingHasAny);
   const stale = useAppSelector(selectAgingStale);
   const isImpaired = useAppSelector(selectNetworkImpaired);
 
@@ -106,8 +111,11 @@ export const useLedgerAging = (): UseLedgerAgingResult => {
      have discovered as a page that never settles. */
   const queryString = search?.toString() ?? '';
   const filters = useMemo(
-    () => filtersFromQuery(new URLSearchParams(queryString), today),
-    [queryString, today]
+    () => ({
+      ...filtersFromQuery(new URLSearchParams(queryString), today),
+      ...(book === 'shop' ? { book } : {}),
+    }),
+    [queryString, today, book]
   );
   const problem = useMemo(() => asOfProblem(filters.asOf, today), [filters.asOf, today]);
 
@@ -127,9 +135,9 @@ export const useLedgerAging = (): UseLedgerAgingResult => {
      a merchant switches tabs is a request whose answer cannot have changed. */
   useEffect(() => {
     if (!canRead) return undefined;
-    const promise = dispatch(fetchLedgerSummary());
+    const promise = dispatch(fetchLedgerSummary(book === 'shop' ? book : undefined));
     return () => promise.abort();
-  }, [dispatch, canRead]);
+  }, [dispatch, canRead, book]);
 
   useEffect(() => {
     if (!stale || isImpaired || !canRead || problem) return undefined;
@@ -191,6 +199,7 @@ export const useLedgerAging = (): UseLedgerAgingResult => {
       page,
       pageSize,
       total,
+      hasAny,
       setKind,
       setAsOf,
       setTag,
@@ -214,6 +223,7 @@ export const useLedgerAging = (): UseLedgerAgingResult => {
       page,
       pageSize,
       total,
+      hasAny,
       setKind,
       setAsOf,
       setTag,

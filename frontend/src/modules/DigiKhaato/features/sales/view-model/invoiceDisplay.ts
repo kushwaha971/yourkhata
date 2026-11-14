@@ -1,5 +1,7 @@
 import type { UbStatusBadgeTone } from 'src/design-system/UbStatusBadge/UbStatusBadge';
-import { isValidWireDate } from 'src/utils/dates';
+import type { TranslateFn } from 'src/hooks/useTranslation';
+import { daysBetweenIso, formatBusinessDate, isValidWireDate } from 'src/utils/dates';
+import { formatQuantity } from 'src/utils/quantity';
 
 import { resolveExpensePreset } from '../../expenses/view-model/expenseDisplay';
 import { resolvePreset } from '../../ledger/view-model/statementDisplay';
@@ -17,6 +19,7 @@ import type {
   SalesDocument,
   SalesKind,
   SalesStatus,
+  SalesWarning,
 } from '../types/sales.types';
 
 /** SAL-08 §7 — the badge tones: draft grey, issued blue, part-paid amber, paid green, overdue red. */
@@ -27,11 +30,41 @@ export const STATUS_TONE: Record<SalesStatus, UbStatusBadgeTone> = {
   paid: 'success',
   overdue: 'error',
   void: 'neutral',
+  // SAL-01 §8 — sent info, accepted success, rejected error, expired warning.
+  sent: 'info',
+  accepted: 'success',
+  rejected: 'error',
+  expired: 'warning',
+  converted: 'neutral',
+  // SAL-04 §9 — open credit is `issued` (info); fully used is `applied`.
+  applied: 'success',
+  // Shop item 3 — an open order is still to be billed (info); cancelled is grey.
+  open: 'info',
+  cancelled: 'neutral',
 };
+
+/**
+ * Shop items 3–4 — paper that is not a bill: a quote, an order, a challan. None of
+ * them is a tax invoice, none is owed, and none carries the invoice's declaration.
+ */
+export const NOT_A_BILL: readonly SalesKind[] = ['estimate', 'sales_order', 'delivery_challan'];
+export const isNotABill = (kind: SalesKind): boolean => NOT_A_BILL.includes(kind);
+
+/** The "not a tax invoice" line each of them prints. */
+export const notTaxInvoiceId = (kind: SalesKind): string =>
+  kind === 'sales_order'
+    ? 'sales.order.notTaxInvoice'
+    : kind === 'delivery_challan'
+      ? 'sales.challan.notTaxInvoice'
+      : 'sales.estimate.notTaxInvoice';
 
 /** SAL-02 §8 / BR-12 — the document title a merchant's registration gives it. */
 export const documentTitleId = (kind: SalesKind, gstType: GstType): string => {
   if (kind === 'bill_of_supply') return 'sales.title.billOfSupply';
+  if (kind === 'estimate') return 'sales.estimate.title';
+  if (kind === 'sales_order') return 'sales.order.title';
+  if (kind === 'delivery_challan') return 'sales.challan.title';
+  if (kind === 'credit_note') return 'sales.creditNote.title';
   return gstType === 'regular' ? 'sales.title.taxInvoice' : 'sales.title.invoice';
 };
 
@@ -39,8 +72,9 @@ export const documentTitleId = (kind: SalesKind, gstType: GstType): string => {
 export const sgstLabelId = (placeOfSupply: string, interState: boolean): string =>
   !interState && UTGST_STATE_CODES.includes(placeOfSupply) ? 'sales.tax.utgst' : 'sales.tax.sgst';
 
+/** A regular tenant's invoice, estimate (as "Estimated GST") and credit note carry tax. */
 export const showsTax = (doc: Pick<SalesDocument, 'kind' | 'supplier'>): boolean =>
-  doc.kind === 'invoice' && doc.supplier.gstType === 'regular';
+  doc.kind !== 'bill_of_supply' && doc.supplier.gstType === 'regular';
 
 export const partyLabel = (doc: {
   readonly party: { readonly name: string } | null;
@@ -59,6 +93,8 @@ export interface InvoiceListFilters {
   readonly tab: InvoiceTab;
   readonly q: string;
   readonly page: number;
+  /** A5 — `?origin=gym`: only documents another module issued (the list's origin chip). */
+  readonly originModule?: string | null;
 }
 
 export const resolveInvoicePreset = (
@@ -96,6 +132,7 @@ export const invoiceFiltersFromQuery = (
     tab: tab && INVOICE_TABS_ORDER.includes(tab) ? tab : 'all',
     q: query.get('q') ?? '',
     page: Number.isInteger(page) && page > 1 ? page : 1,
+    originModule: query.get('origin') || null,
   };
 };
 
@@ -109,23 +146,69 @@ export const invoiceQueryFromFilters = (filters: InvoiceListFilters): string => 
   }
   if (filters.tab !== 'all') search.set('tab', filters.tab);
   if (filters.q.trim()) search.set('q', filters.q.trim());
+  if (filters.originModule) search.set('origin', filters.originModule);
   if (filters.page > 1) search.set('page', String(filters.page));
   return search.toString();
 };
 
 export const isNarrowed = (filters: InvoiceListFilters): boolean =>
-  filters.tab !== 'all' || !!filters.q.trim();
+  filters.tab !== 'all' || !!filters.q.trim() || !!filters.originModule;
 
 /** SAL-08 §8 — days past due for the "Overdue 3 d" caption (same-day accuracy, BR-2). */
 export const daysOverdue = (dueOn: string | null, today: string): number => {
   if (!dueOn || dueOn >= today) return 0;
-  const ms = new Date(`${today}T00:00:00Z`).getTime() - new Date(`${dueOn}T00:00:00Z`).getTime();
-  return Math.round(ms / 86_400_000);
+  return daysBetweenIso(dueOn, today);
 };
 
-/** SAL-03 BR-3 / FR-6 — the WhatsApp text, filled from the document (EN or HI). */
-export const whatsappUrl = (mobile: string | null, text: string): string => {
-  const digits = (mobile ?? '').replace(/\D/g, '').slice(-10);
-  const target = digits.length === 10 ? `91${digits}` : '';
-  return `https://wa.me/${target}?text=${encodeURIComponent(text)}`;
+/**
+ * QA B1 — the `insufficient_stock` 409's lines as message params: "QA Pen —
+ * asked 7, 5 NOS in stock". Quantities are trimmed the way a shelf reads them.
+ */
+export const stockShortLines = (
+  details: Readonly<Record<string, unknown>> | undefined
+): {
+  item: string;
+  requested: string;
+  available: string;
+  asOf?: string;
+  openingDate?: string;
+}[] => {
+  const lines = (details?.lines ?? []) as readonly Record<string, unknown>[];
+  return lines.map((line) => {
+    const unit = String(line.unit_code ?? '');
+    return {
+      item: String(line.item_name ?? ''),
+      requested: formatQuantity(String(line.requested ?? '0'), unit),
+      available: formatQuantity(String(line.available ?? '0'), unit),
+      ...(isValidWireDate(String(line.as_of ?? ''))
+        ? { asOf: formatBusinessDate(String(line.as_of)) }
+        : {}),
+      ...(isValidWireDate(String(line.opening_date ?? '')) &&
+      String(line.opening_date) > String(line.as_of)
+        ? { openingDate: formatBusinessDate(String(line.opening_date)) }
+        : {}),
+    };
+  });
 };
+
+/** B38: explain dated shortages in the same words before and after issue. */
+export const stockShortMessage = (
+  line: ReturnType<typeof stockShortLines>[number],
+  t: TranslateFn
+): string =>
+  t(
+    line.asOf && line.openingDate
+      ? 'sales.stock.beforeOpening'
+      : line.asOf
+        ? 'sales.stock.shortLineAsOf'
+        : 'sales.stock.shortLine',
+    line
+  );
+
+/** The same localized warning belongs in the totals and the issued dialog. */
+export const salesWarningMessage = (warning: SalesWarning, t: TranslateFn): string =>
+  warning.code === 'stock_before_available_date'
+    ? stockShortLines({ lines: [warning.details] })
+        .map((line) => stockShortMessage(line, t))
+        .join(' · ')
+    : warning.message;

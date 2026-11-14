@@ -7,6 +7,7 @@ import {
   toDialableNumber,
   isShareAbort,
   toWhatsAppDigits,
+  withWhatsAppText,
 } from './share';
 
 /**
@@ -168,6 +169,20 @@ describe('formatPhoneForDisplay (QA O6)', () => {
     expect(formatPhoneForDisplay(raw)).toBe(shown);
   });
 
+  /* Owner, 14 Nov 2026 ("check your screen"): a foreign number saved as
+     E.164 showed run together — "We sent a 6-digit code to +447911123499" —
+     while every Indian one is spaced. The country code is set off by a space;
+     a number already written with spaces is left as it was. */
+  it.each([
+    ['+447911123499', '+44 7911123499'],
+    ['+14155552671', '+1 4155552671'],
+    ['+971501234567', '+971 501234567'],
+    ['+79161234567', '+7 9161234567'],
+    ['+8613812345678', '+86 13812345678'],
+  ])('sets the country code of %s apart: %s', (raw, shown) => {
+    expect(formatPhoneForDisplay(raw)).toBe(shown);
+  });
+
   it.each([
     ['+44 20 7946 0958', '+44 20 7946 0958'],
     ['+1 (415) 555-0100', '+1 (415) 555-0100'],
@@ -207,5 +222,17 @@ describe('toDialableNumber — what a tel: link dials and Copy copies (QA O6 fol
 
   it('is empty for nothing', () => {
     expect(toDialableNumber(null)).toBe('');
+  });
+});
+
+describe('withWhatsAppText', () => {
+  it('keeps the server link’s number and carries the edited words exactly', () => {
+    const url = withWhatsAppText('https://wa.me/919812345678?text=old', 'नमस्ते & 🙏\nRs 500');
+    expect(url.startsWith('https://wa.me/919812345678?text=')).toBe(true);
+    expect(new URL(url).searchParams.get('text')).toBe('नमस्ते & 🙏\nRs 500');
+  });
+
+  it('leaves the chat to be chosen when the link names nobody', () => {
+    expect(withWhatsAppText('https://wa.me/?text=old', 'hi')).toBe('https://wa.me/?text=hi');
   });
 });

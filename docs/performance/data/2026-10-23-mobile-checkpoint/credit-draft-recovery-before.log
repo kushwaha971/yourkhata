@@ -1,0 +1,316 @@
+FAIL src/modules/DigiKhaato/features/sales/components/SalesFlowListPageContent.test.tsx
+  ✓ exposes estimate status filtering without opening a sheet (56 ms)
+  ✓ exposes sales_order status filtering without opening a sheet (17 ms)
+  ✓ exposes delivery_challan status filtering without opening a sheet (16 ms)
+  ✓ exposes credit_note status filtering without opening a sheet (16 ms)
+  ✓ synchronizes an externally changed query without sending the old search back (372 ms)
+  ✕ offers the existing drafts when the recorded credit-note view is empty (192 ms)
+
+  ● offers the existing drafts when the recorded credit-note view is empty
+
+    TestingLibraryElementError: Unable to find an accessible element with the role "button" and name "Show drafts"
+
+    Here are the accessible roles:
+
+      banner:
+
+      Name "":
+      [36m<header[39m
+        [33mclass[39m=[32m"flex flex-col gap-3"[39m
+        [33mdata-ub-page-header[39m=[32m""[39m
+      [36m/>[39m
+
+      --------------------------------------------------
+      heading:
+
+      Name "Credit notes":
+      [36m<h1[39m
+        [33mclass[39m=[32m"ds-h1 truncate leading-8 text-text-primary"[39m
+      [36m/>[39m
+
+      --------------------------------------------------
+      searchbox:
+
+      Name "Search bills":
+      [36m<input[39m
+        [33maria-label[39m=[32m"Search bills"[39m
+        [33mclass[39m=[32m"ds-body-base-regular h-full min-w-0 flex-1 bg-transparent text-text-primary outline-none placeholder:text-text-muted [&::-webkit-search-cancel-button]:hidden"[39m
+        [33mplaceholder[39m=[32m"Number, name or mobile"[39m
+        [33mtype[39m=[32m"search"[39m
+        [33mvalue[39m=[32m""[39m
+      [36m/>[39m
+
+      --------------------------------------------------
+      button:
+
+      Name "Filters":
+      [36m<button[39m
+        [33maria-haspopup[39m=[32m"dialog"[39m
+        [33maria-label[39m=[32m"Filters"[39m
+        [33mclass[39m=[32m"ub-hit ds-body-s-regular inline-flex h-10 max-w-full shrink-0 items-center gap-1.5 rounded-control border px-2.5 sm:gap-2 sm:px-3 transition-colors duration-fast ease-standard motion-reduce:transition-none outline-none focus-visible:shadow-focus disabled:cursor-not-allowed disabled:opacity-60 border-border bg-surface-card text-text-primary hover:bg-surface-hover"[39m
+        [33mdata-testid[39m=[32m"filters-button"[39m
+        [33mtype[39m=[32m"button"[39m
+      [36m/>[39m
+
+      --------------------------------------------------
+      radiogroup:
+
+      Name "Document status":
+      [36m<div[39m
+        [33maria-label[39m=[32m"Document status"[39m
+        [33mclass[39m=[32m"flex gap-2 max-sm:gap-3 flex-nowrap overflow-x-auto py-1.5 [&>button]:shrink-0"[39m
+        [33mrole[39m=[32m"radiogroup"[39m
+      [36m/>[39m
+
+      --------------------------------------------------
+      radio:
+
+      Name "Recorded · 0":
+      [36m<button[39m
+        [33maria-checked[39m=[32m"true"[39m
+        [33mclass[39m=[32m"ub-hit ds-body-s-medium inline-flex h-8 items-center gap-1.5 rounded-pill border px-3 outline-none transition-colors duration-fast ease-standard focus-visible:shadow-focus disabled:cursor-not-allowed disabled:opacity-60 border-action bg-accent-quiet text-text-accent"[39m
+        [33mrole[39m=[32m"radio"[39m
+        [33mtabindex[39m=[32m"0"[39m
+        [33mtype[39m=[32m"button"[39m
+      [36m/>[39m
+
+      Name "Open credit":
+      [36m<button[39m
+        [33maria-checked[39m=[32m"false"[39m
+        [33mclass[39m=[32m"ub-hit ds-body-s-medium inline-flex h-8 items-center gap-1.5 rounded-pill border px-3 outline-none transition-colors duration-fast ease-standard focus-visible:shadow-focus disabled:cursor-not-allowed disabled:opacity-60 border-border-subtle text-text-secondary hover:bg-surface-hover hover:text-text-primary"[39m
+        [33mrole[39m=[32m"radio"[39m
+        [33mtabindex[39m=[32m"-1"[39m
+        [33mtype[39m=[32m"button"[39m
+      [36m/>[39m
+
+      Name "Applied":
+      [36m<button[39m
+        [33maria-checked[39m=[32m"false"[39m
+        [33mclass[39m=[32m"ub-hit ds-body-s-medium inline-flex h-8 items-center gap-1.5 rounded-pill border px-3 outline-none transition-colors duration-fast ease-standard focus-visible:shadow-focus disabled:cursor-not-allowed disabled:opacity-60 border-border-subtle text-text-secondary hover:bg-surface-hover hover:text-text-primary"[39m
+        [33mrole[39m=[32m"radio"[39m
+        [33mtabindex[39m=[32m"-1"[39m
+        [33mtype[39m=[32m"button"[39m
+      [36m/>[39m
+
+      Name "Draft · 1":
+      [36m<button[39m
+        [33maria-checked[39m=[32m"false"[39m
+        [33mclass[39m=[32m"ub-hit ds-body-s-medium inline-flex h-8 items-center gap-1.5 rounded-pill border px-3 outline-none transition-colors duration-fast ease-standard focus-visible:shadow-focus disabled:cursor-not-allowed disabled:opacity-60 border-border-subtle text-text-secondary hover:bg-surface-hover hover:text-text-primary"[39m
+        [33mrole[39m=[32m"radio"[39m
+        [33mtabindex[39m=[32m"-1"[39m
+        [33mtype[39m=[32m"button"[39m
+      [36m/>[39m
+
+      Name "Void":
+      [36m<button[39m
+        [33maria-checked[39m=[32m"false"[39m
+        [33mclass[39m=[32m"ub-hit ds-body-s-medium inline-flex h-8 items-center gap-1.5 rounded-pill border px-3 outline-none transition-colors duration-fast ease-standard focus-visible:shadow-focus disabled:cursor-not-allowed disabled:opacity-60 border-border-subtle text-text-secondary hover:bg-surface-hover hover:text-text-primary"[39m
+        [33mrole[39m=[32m"radio"[39m
+        [33mtabindex[39m=[32m"-1"[39m
+        [33mtype[39m=[32m"button"[39m
+      [36m/>[39m
+
+      --------------------------------------------------
+      status:
+
+      Name "Totals for matching documents":
+      [36m<div[39m
+        [33maria-label[39m=[32m"Totals for matching documents"[39m
+        [33mclass[39m=[32m"flex flex-row items-baseline flex-wrap justify-between gap-3 py-2 max-md:[@media(max-height:640px)]:gap-1 max-md:[@media(max-height:640px)]:py-1"[39m
+        [33mdata-testid[39m=[32m"sales-flow-summary"[39m
+        [33mrole[39m=[32m"status"[39m
+      [36m/>[39m
+
+      --------------------------------------------------
+      paragraph:
+
+      Name "":
+      [36m<p[39m
+        [33mclass[39m=[32m"ds-body-sm text-text-secondary sr-only md:not-sr-only"[39m
+      [36m/>[39m
+
+      Name "":
+      [36m<p[39m
+        [33mclass[39m=[32m"ds-h3 text-text-primary"[39m
+      [36m/>[39m
+
+      Name "":
+      [36m<p[39m
+        [33mclass[39m=[32m"ds-body-sm max-w-prose text-text-tertiary"[39m
+      [36m/>[39m
+
+      --------------------------------------------------
+      region:
+
+      Name "Credit notes":
+      [36m<div[39m
+        [33maria-label[39m=[32m"Credit notes"[39m
+        [33mclass[39m=[32m"relative min-h-0 flex-1 overflow-y-auto overscroll-contain outline-none focus-visible:shadow-focus"[39m
+        [33mdata-testid[39m=[32m"ub-grid-scroll-region"[39m
+        [33mrole[39m=[32m"region"[39m
+        [33mtabindex[39m=[32m"0"[39m
+      [36m/>[39m
+
+      --------------------------------------------------
+
+    Ignored nodes: comments, script, style
+    [36m<body>[39m
+      [36m<div>[39m
+        [36m<div[39m
+          [33mclass[39m=[32m"flex w-full flex-col bg-canvas min-h-0 overflow-hidden"[39m
+          [33mdata-ub-viewport[39m=[32m"true"[39m
+          [33mstyle[39m=[32m"--ub-page-top: 0px; --ub-page-viewport: 768px;"[39m
+        [36m>[39m
+          [36m<div[39m
+            [33mclass[39m=[32m"mx-auto flex w-full flex-1 flex-col px-4 pt-4 lg:px-6 lg:pb-3 lg:pt-3 max-w-none min-h-0 gap-3 pb-3 [&>*]:shrink-0"[39m
+          [36m>[39m
+            [36m<header[39m
+              [33mclass[39m=[32m"flex flex-col gap-3"[39m
+              [33mdata-ub-page-header[39m=[32m""[39m
+            [36m>[39m
+              [36m<div[39m
+                [33mclass[39m=[32m"flex flex-wrap items-center gap-x-4 gap-y-2"[39m
+              [36m>[39m
+                [36m<div[39m
+                  [33mclass[39m=[32m"flex min-w-[8rem] flex-1 flex-col gap-0.5"[39m
+                [36m>[39m
+                  [36m<h1[39m
+                    [33mclass[39m=[32m"ds-h1 truncate leading-8 text-text-primary"[39m
+                  [36m>[39m
+                    [0mCredit notes[0m
+                  [36m</h1>[39m
+                [36m</div>[39m
+                [36m<div[39m
+                  [33mclass[39m=[32m"flex max-w-full shrink-0 flex-wrap items-center gap-2 max-sm:gap-3 max-lg:hidden"[39m
+                [36m/>[39m
+              [36m</div>[39m
+            [36m</header>[39m
+            [36m<div[39m
+              [33mclass[39m=[32m"flex flex-col gap-3 min-h-0 flex-1 !shrink max-md:[@media(max-height:640px)]:gap-1"[39m
+              [33mdata-testid[39m=[32m"credit_note-list-screen"[39m
+            [36m>[39m
+              [36m<div[39m
+                [33mclass[39m=[32m"flex flex-row items-center flex-wrap gap-3"[39m
+              [36m>[39m
+                [36m<div[39m
+                  [33mclass[39m=[32m"flex h-10 w-full items-center gap-2 rounded-control border bg-surface-card px-3 transition-colors duration-fast ease-standard focus-within:border-text-primary border-border-hairline hover:border-border-subtle focus-visible:border-text-primary min-w-0 flex-1"[39m
+                [36m>[39m
+                  [36m<svg[39m
+                    [33maria-hidden[39m=[32m"true"[39m
+                    [33mclass[39m=[32m"lucide lucide-search h-4 w-4 shrink-0 text-text-tertiary"[39m
+                    [33mfill[39m=[32m"none"[39m
+                    [33mheight[39m=[32m"24"[39m
+                    [33mstroke[39m=[32m"currentColor"[39m
+                    [33mstroke-linecap[39m=[32m"round"[39m
+                    [33mstroke-linejoin[39m=[32m"round"[39m
+                    [33mstroke-width[39m=[32m"2"[39m
+                    [33mviewBox[39m=[32m"0 0 24 24"[39m
+                    [33mwidth[39m=[32m"24"[39m
+                    [33mxmlns[39m=[32m"http://www.w3.org/2000/svg"[39m
+                  [36m>[39m
+                    [36m<circle[39m
+                      [33mcx[39m=[32m"11"[39m
+                      [33mcy[39m=[32m"11"[39m
+                      [33mr[39m=[32m"8"[39m
+                    [36m/>[39m
+                    [36m<path[39m
+                      [33md[39m=[32m"m21 21-4.3-4.3"[39m
+                    [36m/>[39m
+                  [36m</svg>[39m
+                  [36m<input[39m
+                    [33maria-label[39m=[32m"Search bills"[39m
+                    [33mclass[39m=[32m"ds-body-base-regular h-full min-w-0 flex-1 bg-transparent text-text-primary outline-none placeholder:text-text-muted [&::-webkit-search-cancel-button]:hidden"[39m
+                    [33mplaceholder[39m=[32m"Number, name or mobile"[39m
+                    [33mtype[39m=[32m"search"[39m
+                    [33mvalue[39m=[32m""[39m
+                  [36m/>[39m
+                [36m</div>[39m
+                [36m<button[39m
+                  [33maria-haspopup[39m=[32m"dialog"[39m
+                  [33maria-label[39m=[32m"Filters"[39m
+                  [33mclass[39m=[32m"ub-hit ds-body-s-regular inline-flex h-10 max-w-full shrink-0 items-center gap-1.5 rounded-control border px-2.5 sm:gap-2 sm:px-3 transition-colors duration-fast ease-standard motion-reduce:transition-none outline-none focus-visible:shadow-focus disabled:cursor-not-allowed disabled:opacity-60 border-border bg-surface-card text-text-primary hover:bg-surface-hover"[39m
+                  [33mdata-testid[39m=[32m"filters-button"[39m
+                  [33mtype[39m=[32m"button"[39m
+                [36m>[39m
+                  [36m<svg[39m
+                    [33maria-hidden[39m=[32m"true"[39m
+                    [33mclass[39m=[32m"lucide lucide-sliders-horizontal h-4 w-4 shrink-0"[39m
+                    [33mfill[39m=[32m"none"[39m
+                    [33mheight[39m=[32m"24"[39m
+                    [33mstroke[39m=[32m"currentColor"[39m
+                    [33mstroke-linecap[39m=[32m"round"[39m
+                    [33mstroke-linejoin[39m=[32m"round"[39m
+                    [33mstroke-width[39m=[32m"2"[39m
+                    [33mviewBox[39m=[32m"0 0 24 24"[39m
+                    [33mwidth[39m=[32m"24"[39m
+                    [33mxmlns[39m=[32m"http://www.w3.org/2000/svg"[39m
+                  [36m>[39m
+                    [36m<line[39m
+                      [33mx1[39m=[32m"21"[39m
+                      [33mx2[39m=[32m"14"[39m
+                      [33my1[39m=[32m"4"[39m
+                      [33my2[39m=[32m"4"[39m
+                    [36m/>[39m
+                    [36m<line[39m
+                      [33mx1[39m=[32m"10"[39m
+                      [33mx2[39m=[32m"3"[39m
+                      [33my1[39m=[32m"4"[39m
+                      [33my2[39m=[32m"4"[39m
+                    [36m/>[39m
+                    [36m<line[39m
+                      [33mx1[39m=[32m"21"[39m
+                      [33mx2[39m=[32m"12"[39m
+                      [33my1[39m=[32m"12"[39m
+                      [33my2[39m=[32m"12"[39m
+                    [36m/>[39m
+                    [36m<line[39m
+                      [33mx1[39m=[32m"8"[39m
+                      [33mx2[39m=[32m"3"[39m
+                      [33my1[39m=[32m"12"[39m
+                      [33my2[39m=[32m"12"[39m
+                    [36m/>[39m
+                    [36m<line[39m
+                      [33mx1[39m=[32m"21"[39m
+                      [33mx2[39m=[32m"16"[39m
+                      [33my1[39m=[32m"20"[39m
+                      [33my2[39m=[32m"20"[39m
+                    [36m/>[39m
+                    [36m<line[39m
+                      [33mx1[39m=[32m"12"[39m
+                      [33mx2[39m=[32m"3"[39m
+                      [33my1[39m=[32m"20"[39m
+                      [33my2[39m=[32m"20"[39m
+                    [36m/>[39m
+                    [36m<line[39m
+                      [33mx1[39m=[32m"14"[39m
+                      [33mx2[39m=[32m"14"[39m
+                      [33my1[39m=[32m"2"[39m
+                      [33my2[39m=[32m"6"[39m
+                    [36m/>[39m
+                    [36m<line[39m
+                      [33mx1[39m=[32m"8"[39m
+                      [33mx2[39m=[32m"8"[39m
+                      [33my1[39m=[32m"10"[39m
+                      [33my2[39m=[32m"14"[39m
+                    [36m/>[39m
+       ...
+
+       98 |  hooks.useSalesFlowList.mockReturnValue(state);
+       99 |  renderWithProviders(<SalesFlowListPageContent kind="credit_note" />);
+    > 100 |  fireEvent.click(screen.getByRole('button',{name:'Show drafts'}));
+          |                         ^
+      101 |  expect(state.setTab).toHaveBeenCalledWith('draft');
+      102 |  expect(screen.queryByTestId('estimate-new')).not.toBeInTheDocument();
+      103 | });
+
+      at Object.getElementError (node_modules/@testing-library/dom/dist/config.js:37:19)
+      at node_modules/@testing-library/dom/dist/query-helpers.js:76:38
+      at node_modules/@testing-library/dom/dist/query-helpers.js:52:17
+      at getByRole (node_modules/@testing-library/dom/dist/query-helpers.js:95:19)
+      at Object.<anonymous> (src/modules/DigiKhaato/features/sales/components/SalesFlowListPageContent.test.tsx:100:25)
+
+Test Suites: 1 failed, 1 total
+Tests:       1 failed, 5 passed, 6 total
+Snapshots:   0 total
+Time:        2.54 s
+Ran all test suites matching /src\/modules\/DigiKhaato\/features\/sales\/components\/SalesFlowListPageContent.test.tsx/i.

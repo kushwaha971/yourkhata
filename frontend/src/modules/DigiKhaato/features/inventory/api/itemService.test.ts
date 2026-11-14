@@ -5,8 +5,15 @@ import { createItemColumns } from '../components/ItemListColumns';
 import { filtersFromQuery, queryFromFilters } from '../hooks/useItemList';
 import { toShortLines } from '../hooks/useStockAdjustment';
 
-import { listItems, lookupItemByBarcode, toItemBody, type ItemRowWire } from './itemService';
+import {
+  createItem,
+  listItems,
+  lookupItemByBarcode,
+  toItemBody,
+  type ItemRowWire,
+} from './itemService';
 import { toAdjustmentBody } from './stockService';
+import { EMPTY_TAG } from './tagService';
 
 import type { ItemFormValues } from '../types/item.types';
 
@@ -50,6 +57,7 @@ const FORM: ItemFormValues = {
   taxInclusiveSelling: false,
   sellingPrice: '60.00',
   purchasePrice: null,
+  margin: '',
   mrp: null,
   trackStock: true,
   reorderPoint: '10',
@@ -57,6 +65,19 @@ const FORM: ItemFormValues = {
   openingQty: '5',
   openingCost: '44',
   openingAsOf: '2026-04-01',
+  extraUnits: [],
+  partNumbers: [],
+  rack: '',
+  fitsVehicle: '',
+  salt: '',
+  schedule: '',
+  hasVariants: false,
+  sizes: [],
+  colours: [],
+  addons: [],
+  tracking: 'none',
+  warrantyMonths: 0,
+  tag: { ...EMPTY_TAG },
 };
 
 describe('listItems', () => {
@@ -140,11 +161,13 @@ describe('valuation withheld (INV-08 EC-4, QA: stock value leaked to staff)', ()
     expect(toItemBody(FORM, { withOpening: false })).toHaveProperty('purchase_price');
   });
 
-  it('drops the Purchase column for a member who may not see costs', () => {
+  it('never puts the cost in the Items register, whoever is looking', () => {
+    /* The design's register (dItems) has no cost column at all; the cost is on
+       the item's page, behind the same valuation permission. */
     const t = ((key: string) => key) as TranslateFn;
     const ids = (valuation: boolean): string[] =>
       createItemColumns({ t, tier: 'full', valuation }).map((column) => column.id);
-    expect(ids(true)).toContain('purchasePrice');
+    expect(ids(true)).not.toContain('purchasePrice');
     expect(ids(false)).not.toContain('purchasePrice');
   });
 });
@@ -159,6 +182,16 @@ describe('lookupItemByBarcode', () => {
     await expect(lookupItemByBarcode('0000')).resolves.toBeNull();
   });
 
+  it('answers null for the 404 the transport actually rejects with (ApiErrorShape)', async () => {
+    /* C1 (found by e2e/c1-scan): the interceptor rejects with the normalised
+       shape, `status` on the error itself; the test above mocked axios's raw
+       shape, which the live app never sees, so an unknown scan did nothing. */
+    jest
+      .spyOn(api, 'get')
+      .mockRejectedValue({ code: 'not_found', message: 'No item', status: 404, details: {} });
+    await expect(lookupItemByBarcode('8906999999994')).resolves.toBeNull();
+  });
+
   it('still throws a real failure', async () => {
     jest.spyOn(api, 'get').mockRejectedValue({ response: { status: 500 } });
     await expect(lookupItemByBarcode('0000')).rejects.toBeTruthy();
@@ -166,6 +199,33 @@ describe('lookupItemByBarcode', () => {
 });
 
 describe('toItemBody', () => {
+  it('sends a medicine its salt and schedule (G4)', () => {
+    /* The bill's substitutes match on the salt and a scheduled medicine asks
+       for the doctor; a form that drops either loses both features silently. */
+    const body = toItemBody(
+      { ...FORM, salt: '  Paracetamol 650 mg ', schedule: 'H' },
+      { withOpening: false }
+    ) as unknown as Record<string, unknown>;
+    expect(body.salt).toBe('Paracetamol 650 mg');
+    expect(body.schedule).toBe('H');
+  });
+
+  it('G2a: sends the first tag only with a NEW item that has a tag no.', () => {
+    const tag = { ...EMPTY_TAG, tagNo: ' gc-1042 ', grossG: '12.900', stoneG: '0.560' };
+    const body = toItemBody({ ...FORM, tag }, { withOpening: true }) as unknown as Record<string, unknown>;
+    expect(body.tag).toEqual(
+      expect.objectContaining({
+        tag_no: 'gc-1042',
+        purity: 'gold_22k',
+        gross_g: '12.900',
+        stone_g: '0.560',
+        net_g: '',
+      })
+    );
+    expect(toItemBody({ ...FORM, tag }, { withOpening: false })).not.toHaveProperty('tag');
+    expect(toItemBody(FORM, { withOpening: true })).not.toHaveProperty('tag');
+  });
+
   it('sends blanks as null and the opening stock only on create', () => {
     const body = toItemBody(FORM, { withOpening: true });
     expect(body.name).toBe('Basmati Rice');
@@ -188,6 +248,33 @@ describe('toItemBody', () => {
   });
 });
 
+describe('createItem and the cost (WP-07)', () => {
+  afterEach(() => jest.restoreAllMocks());
+
+  it('sends no purchase price for a member who cannot see costs', async () => {
+    // The server now refuses a cost from someone who may not read one. Before
+    // this, create always sent `purchase_price: '0'`, so every item a member
+    // without financial access added would have been refused outright.
+    const post = jest.spyOn(api, 'post').mockResolvedValue({
+      data: {
+        data: { ...ROW, version: 1, created_at: ROW.updated_at, stock: [], movements_recent: [] },
+      },
+    });
+    await createItem(FORM, 'k1', { omitPurchasePrice: true });
+    expect(post.mock.calls[0]?.[1]).not.toHaveProperty('purchase_price');
+  });
+
+  it('still sends it for a member who can', async () => {
+    const post = jest.spyOn(api, 'post').mockResolvedValue({
+      data: {
+        data: { ...ROW, version: 1, created_at: ROW.updated_at, stock: [], movements_recent: [] },
+      },
+    });
+    await createItem({ ...FORM, purchasePrice: '40.00' }, 'k1');
+    expect(post.mock.calls[0]?.[1]).toHaveProperty('purchase_price', '40.00');
+  });
+});
+
 describe('toAdjustmentBody', () => {
   it('sends a cost only for stock coming in', () => {
     // An outbound line is valued at the average by the server; a cost sent
@@ -205,8 +292,8 @@ describe('toAdjustmentBody', () => {
             allowDecimal: false,
             onHand: '5',
             avgCost: '1',
-            mode: 'by',
-            qty: '-2',
+            mode: 'remove',
+            qty: '2',
             unitCost: '9',
           },
           {
@@ -216,7 +303,7 @@ describe('toAdjustmentBody', () => {
             allowDecimal: false,
             onHand: '5',
             avgCost: '1',
-            mode: 'by',
+            mode: 'add',
             qty: '2',
             unitCost: '9',
           },

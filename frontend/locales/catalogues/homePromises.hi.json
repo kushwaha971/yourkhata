@@ -1,0 +1,22 @@
+{
+  "homePromise.basis": "अगले 7 दिनों में, देर वाले पहले",
+  "homePromise.customer.amountOn": "{name} ने {date} को {amount} देने का वादा किया",
+  "homePromise.customer.amountToday": "{name} ने आज {amount} देने का वादा किया",
+  "homePromise.customer.on": "{name} ने {date} को देने का वादा किया",
+  "homePromise.customer.today": "{name} ने आज देने का वादा किया",
+  "homePromise.lane.amountOn": "{date} को {amount} का वादा",
+  "homePromise.lane.amountToday": "आज {amount} का वादा",
+  "homePromise.lane.on": "{date} का वादा",
+  "homePromise.lane.today": "आज का वादा",
+  "homePromise.late": "वादा {count} दिन देर",
+  "homePromise.nothingDue": "अभी कुछ बाकी नहीं",
+  "homePromise.owes": "{amount} बाकी",
+  "homePromise.pay": "{name} को भुगतान करें",
+  "homePromise.remind": "{name} को याद दिलाएँ",
+  "homePromise.supplier.amountOn": "आपने {date} को {name} को {amount} देने का वादा किया",
+  "homePromise.supplier.amountToday": "आपने आज {name} को {amount} देने का वादा किया",
+  "homePromise.supplier.on": "आपने {date} को {name} को देने का वादा किया",
+  "homePromise.supplier.today": "आपने आज {name} को देने का वादा किया",
+  "homePromise.title": "वादे",
+  "homePromise.youOwe": "आपको {amount} देने हैं"
+}

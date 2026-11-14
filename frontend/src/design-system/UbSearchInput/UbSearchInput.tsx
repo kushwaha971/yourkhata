@@ -1,6 +1,6 @@
 'use client';
 
-import { forwardRef, memo, type InputHTMLAttributes } from 'react';
+import { forwardRef, memo, type InputHTMLAttributes, type ReactNode } from 'react';
 
 import { Search } from 'lucide-react';
 
@@ -19,14 +19,16 @@ export interface UbSearchInputProps extends Omit<
   readonly value: string;
   readonly onChange: (value: string) => void;
   readonly className?: string;
+  /** Shown at the end of the box, e.g. the bill search's "Scanner ready · F2". */
+  readonly trailing?: ReactNode;
 }
 
 const UbSearchInputInner = forwardRef<HTMLInputElement, UbSearchInputProps>(
-  function UbSearchInputInner({ value, onChange, className, ...rest }, ref) {
+  function UbSearchInputInner({ value, onChange, className, trailing, ...rest }, ref) {
     return (
       <div
         className={cn(
-          'flex h-10 w-full items-center gap-2 rounded-control border bg-surface-card px-3',
+          'flex h-11 w-full items-center gap-2 rounded-control border bg-surface-card px-3 lg:h-10',
           'transition-colors duration-fast ease-standard focus-within:border-text-primary',
           ML_CONTROL_TONE(false),
           className
@@ -38,9 +40,10 @@ const UbSearchInputInner = forwardRef<HTMLInputElement, UbSearchInputProps>(
           type="search"
           value={value}
           onChange={(event) => onChange(event.target.value)}
-          className="ds-body-base-regular h-full min-w-0 flex-1 bg-transparent text-text-primary outline-none placeholder:text-text-muted [&::-webkit-search-cancel-button]:hidden"
+          className="ds-body-base-regular h-full lg:!text-[14px] min-w-0 flex-1 bg-transparent text-text-primary outline-none placeholder:text-text-muted [&::-webkit-search-cancel-button]:hidden"
           {...rest}
         />
+        {trailing}
       </div>
     );
   }

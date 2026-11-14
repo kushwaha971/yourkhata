@@ -85,8 +85,14 @@ def enqueue(
     scheduled_key: str | None = None,
     created_by: Any = None,
     request_id: str | None = None,
+    run_now: bool = False,
 ) -> Any:
     """Queue background work. The only way anything becomes asynchronous.
+
+    `run_now` (QA B32) runs the job through the normal runner the moment the
+    caller's transaction commits, for work small enough that waiting for the
+    scheduler's next tick is the whole of the delay. The row is still queued
+    first, so a crash between the commit and the run leaves it for the scheduler.
 
     Called inside the caller's transaction, so the INSERT commits with the
     caller's work: a job never exists for a transaction that rolled back and
@@ -122,7 +128,7 @@ def enqueue(
 
     from django.conf import settings
 
-    if getattr(settings, "UB_JOBS_EAGER", False):
+    if run_now or getattr(settings, "UB_JOBS_EAGER", False):
         # Local and test only (Part 20 §20.8.10): run inline after the current
         # transaction commits, so a test can assert job side effects without a loop.
         transaction.on_commit(lambda: run_job(model.objects.get(pk=job.pk), worker="eager"))
@@ -397,6 +403,8 @@ class Schedule:
 
 SCHEDULES: list[Schedule] = [
     Schedule("sales.refresh_overdue", period="daily", at_hour_ist=0, minute=15, grace_minutes=60),
+    # SAL-01 FR-5 — `sent → expired` once `valid_until` has passed (tenant date).
+    Schedule("sales.expire_estimates", period="daily", at_hour_ist=0, minute=20, grace_minutes=60),
     Schedule(
         "purchases.refresh_overdue", period="daily", at_hour_ist=0, minute=15, grace_minutes=60
     ),
@@ -411,6 +419,9 @@ SCHEDULES: list[Schedule] = [
         grace_minutes=120,
     ),
     Schedule("platform.purge_jobs", period="daily", at_hour_ist=2, minute=30, grace_minutes=120),
+    Schedule(
+        "platform.purge_rate_limits", period="daily", at_hour_ist=2, minute=35, grace_minutes=120
+    ),
     Schedule(
         "platform.check_invariants", period="daily", at_hour_ist=2, minute=45, grace_minutes=60
     ),
@@ -453,6 +464,47 @@ SCHEDULES: list[Schedule] = [
 ]
 
 
+# ── A10 ── `register_schedule` (ADR-042, contracts §1.9, FRD 00 PLT-X13) ─────
+#
+# The literal list above is core's own work. Engines and verticals add theirs
+# from `AppConfig.ready()` instead of editing it. A registered schedule is
+# appended to `SCHEDULES`, so `enqueue_scheduled`, `check_expected_runs` and
+# the double-run proof see it exactly as they see a core entry.
+#
+# One difference, on purpose: a core entry with no handler is skipped (it names
+# work that has not been built yet, Sprint 0's rule), but a REGISTERED one has
+# been built by the module that registered it, so a missing handler is a wiring
+# defect and `materialise_due_schedules` raises rather than never running it.
+
+_REGISTERED_SCHEDULES: set[str] = set()
+_SCHEDULES_BASELINE: tuple[list[Schedule], set[str]] | None = None
+
+
+def register_schedule(schedule: Schedule) -> None:
+    """Add a module's recurring job. Idempotent by `job_type` for an equal
+    schedule; a different schedule under a used job type (a core one
+    included) raises `ImproperlyConfigured` (EC-1)."""
+    existing = next((s for s in SCHEDULES if s.job_type == schedule.job_type), None)
+    if existing is not None:
+        if existing == schedule:
+            return
+        raise ImproperlyConfigured(
+            f"Schedule {schedule.job_type!r} is already registered with a different period"
+        )
+    SCHEDULES.append(schedule)
+    _REGISTERED_SCHEDULES.add(schedule.job_type)
+
+
+def _reset_for_tests() -> None:  # pragma: no cover - test helper
+    """Back to the start-up list (every `ready()` has run by the first call)."""
+    global _SCHEDULES_BASELINE
+    if _SCHEDULES_BASELINE is None:
+        _SCHEDULES_BASELINE = (list(SCHEDULES), set(_REGISTERED_SCHEDULES))
+    SCHEDULES[:] = _SCHEDULES_BASELINE[0]
+    _REGISTERED_SCHEDULES.clear()
+    _REGISTERED_SCHEDULES.update(_SCHEDULES_BASELINE[1])
+
+
 def materialise_due_schedules(now: dt.datetime | None = None) -> int:
     """Insert one job row per (schedule, period) that is due and not yet created.
 
@@ -460,11 +512,17 @@ def materialise_due_schedules(now: dt.datetime | None = None) -> int:
     every runner on every tick: the second caller's INSERT fails and is swallowed.
     That is the entire distributed-cron implementation.
     """
+    unwired = sorted(_REGISTERED_SCHEDULES - set(REGISTRY))
+    if unwired:
+        raise ImproperlyConfigured(
+            f"Registered schedules with no job_handler: {', '.join(unwired)} — "
+            f"import the module's tasks in its AppConfig.ready()"
+        )
     model = _job_model()
     created = 0
     for schedule in SCHEDULES:
         if schedule.job_type not in REGISTRY:
-            continue  # the owning app has not been built yet (Sprint 0)
+            continue  # a core entry whose owning work has not been built yet (Sprint 0)
         if not schedule.is_due(now):
             continue
         try:

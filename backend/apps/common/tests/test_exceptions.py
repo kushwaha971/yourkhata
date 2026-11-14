@@ -46,7 +46,43 @@ def test_registry_is_closed_and_complete() -> None:
     expired temporary password: the password was right, the window was not, and
     telling the holder otherwise sends them to reset a password they never had.
     """
-    assert len(REGISTRY) == 158
+    # ── A5 ── +2, below; ── A6 ── +1: `party_has_open_records` (contracts §4, PLT-X04).
+    # ── A7 ── +3: `reminder_outside_window`, `reminder_cap_reached`, `due_not_open`.
+    # ── A4b ── +2: `deposit_insufficient`, `deposit_released`.
+    # ── DUE-01 ── +1: `schedule_backdated_unconfirmed` (contracts §4).
+    # ── B02 ── +30: library Appendix A (`apps/library/tests/test_vocabulary.py`).
+    # ── ATT ── +3: `attendance_blocked`, `attendance_duplicate`, `entitlement_exhausted`.
+    # ── B05 ── +1: `sequence_exhausted` (a perpetual counter at its last value).
+    # ── W02 ── +1: `library_seat_taken` (a study library's seat, held in that shift).
+    # ── LEN ── +4: `loan_not_active`, `loan_disbursal_locked`, `collection_over_payoff`,
+    #           `route_has_loans` (FRD lending §0.7).
+    # ── L03 ── +1: `lending_nothing_due` (a Remind on a loan with nothing due).
+    # ── 12 Oct 2026 ── +1: `borrower_blocked` (a blocked borrower gets no new loan).
+    # ── QA B5 ── +1: `library_plan_no_end` (Renew on a plan with no end date).
+    # R-DEC-18 / BP-13 — +2 reload-only actor/business context preconditions (API §22.1.1).
+    # BP-16 (R-DEC-26) — +2: `promise_already_open`, `promise_closed` (Shop promises).
+    # BP-08 (R-DEC-26) — +3: `settlement_not_dual_role`, `settlement_over_balance`,
+    #           `settlement_balances_changed` (explicit customer–supplier settlement).
+    # G5 / G10 / G11 — +3: `repair_status`, `cafe_order_status`, `phone_order_status`
+    #           (a job or order moved out of turn).
+    # Shop round (11 Nov 2026) — +1: `cancel_the_return` (a quick-sale return's
+    #           refund is undone with the return, never alone).
+    # Access groups (14 Nov 2026) — +1: `group_has_members` (an access group with
+    #           members is not deleted; they are moved first).
+    assert len(REGISTRY) == 257
+    assert REGISTRY["settlement_balances_changed"] == (409, False)
+    assert REGISTRY["promise_already_open"] == (409, False)
+    assert REGISTRY["promise_closed"] == (409, False)
+    assert REGISTRY["session_context_changed"] == (409, False)
+    assert REGISTRY["tenant_context_changed"] == (409, False)
+    assert REGISTRY["attendance_blocked"] == (409, False)  # ATT
+    assert REGISTRY["attendance_duplicate"] == (409, False)  # ATT
+    assert REGISTRY["entitlement_exhausted"] == (409, False)  # ATT
+    assert REGISTRY["schedule_backdated_unconfirmed"] == (409, False)  # DUE-01
+    assert REGISTRY["deposit_insufficient"] == (409, False)
+    assert REGISTRY["party_has_open_records"] == (409, False)
+    assert REGISTRY["reminder_outside_window"] == (409, False)
+    assert REGISTRY["reminder_cap_reached"] == (409, False)
     assert "unauthenticated" in ERROR_CODES
     assert REGISTRY["password_change_required"] == (403, False)
     assert REGISTRY["password_expired"] == (401, False)
@@ -63,6 +99,12 @@ def test_registry_is_closed_and_complete() -> None:
     # `nothing_due` (the party may still owe) and not `stale_version` (the
     # reminder has no version) — the row was simply already dealt with.
     assert REGISTRY["reminder_not_sendable"] == (409, False)
+    # ── A5 ── contracts §4 (R55): the document port's origin listener refuses a void
+    # (`document_origin_locked`, D `origin_type`, `reason`) or asks for confirmation first
+    # (`document_origin_confirm`, D `origin_type`, `message`). Not `has_dependent_documents`:
+    # nothing references the invoice — the module's own row forbids it, in its own words.
+    assert REGISTRY["document_origin_locked"] == (409, False)
+    assert REGISTRY["document_origin_confirm"] == (409, False)
 
 
 def test_every_retryable_code_is_one_the_spec_marks_retryable() -> None:

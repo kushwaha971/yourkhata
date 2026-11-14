@@ -10,11 +10,13 @@ from apps.platform_app.constants import (
     PartnerStatus,
     TenantStatus,
 )
+from apps.platform_app.models.access import AccessGroup, MemberAppAccess
 from apps.platform_app.models.audit import AuditLog
+from apps.platform_app.models.calendar import ClosedDay
 from apps.platform_app.models.auth import AuthToken, OtpChallenge, Session
 from apps.platform_app.models.idempotency import IdempotencyKey
 from apps.platform_app.models.job import Job
-from apps.platform_app.models.membership import Invitation, Membership, Role
+from apps.platform_app.models.membership import Invitation, Membership, MembershipAppGrant, Role
 from apps.platform_app.models.partner import Partner, Plan
 from apps.platform_app.models.rate_limit import RateLimit
 from apps.platform_app.models.settings import (
@@ -31,7 +33,10 @@ from apps.platform_app.models.tenant import Tenant
 from apps.platform_app.models.user import User
 
 __all__ = [
+    "AccessGroup",
+    "MemberAppAccess",
     "AuditLog",
+    "ClosedDay",
     "AuthToken",
     "AuthTokenPurpose",
     "BusinessType",
@@ -43,6 +48,7 @@ __all__ = [
     "InvitationStatus",
     "Job",
     "Membership",
+    "MembershipAppGrant",
     "MembershipStatus",
     "OtpChallenge",
     "OtpPurpose",

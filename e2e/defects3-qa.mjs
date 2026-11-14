@@ -16,7 +16,7 @@
 import { chromium } from 'playwright';
 import { mkdirSync } from 'node:fs';
 
-const FE = 'http://localhost:3000';
+const FE = (process.env.E2E_BASE ?? 'http://localhost:3000');
 const BE = 'http://localhost:8000/api/v1';
 const SHOTS = process.env.E2E_SHOTS_DIR ?? '/tmp/e2e-shots/defects3';
 const arg = (n) => process.argv.find((a) => a.startsWith(`--${n}=`))?.split('=').slice(1).join('=');
@@ -49,7 +49,7 @@ async function session(browser, email, vp, { hi = false, password = PW, clipboar
   const ctx = await browser.newContext({ viewport: vp, ...(clipboard ? { permissions: ['clipboard-read', 'clipboard-write'] } : {}) });
   if (hi) await ctx.addCookies([{ name: 'ub_locale', value: 'hi', url: FE }]);
   const page = await ctx.newPage();
-  await page.goto(`${FE}/login`, { waitUntil: 'networkidle' });
+  await page.goto(`${FE}/login/email`, { waitUntil: 'networkidle' });
   await page.fill('input[type="email"]', email);
   await page.fill('input[type="password"]', password);
   await page.click('button[type="submit"]');
@@ -89,7 +89,7 @@ async function exerciseField(page, field, where, id = 'H1') {
   for (const v of VARIANTS) {
     await field.fill('');
     await page.evaluate((t) => navigator.clipboard.writeText(t), v);
-    await field.focus(); await page.keyboard.press('Control+V'); await page.waitForTimeout(150);
+    await field.focus(); await page.keyboard.press('ControlOrMeta+V'); await page.waitForTimeout(150);
     pasteOut.push([v, await field.inputValue()]);
     await field.fill(''); await field.fill(v); await page.waitForTimeout(100);
     fillOut.push([v, await field.inputValue()]);
@@ -104,7 +104,7 @@ async function phaseP(browser) {
     const { ctx, page } = await session(browser, OWNER, vp, { clipboard: true });
     // party form: mobile + alt phone
     await page.goto(`${FE}/parties`, { waitUntil: 'networkidle' }); await page.waitForTimeout(1200);
-    await page.getByRole('button', { name: /Add party/ }).first().click(); await page.waitForTimeout(1500);
+    await page.getByRole('button', { name: /Add contact/ }).first().click(); await page.waitForTimeout(1500);
     const dlg = page.getByRole('dialog').last();
     await exerciseField(page, dlg.locator('input[type="tel"]').first(), `${vp.width} party form mobile`);
     await dlg.getByRole('button', { name: /More details/ }).click().catch(() => {});
@@ -117,7 +117,7 @@ async function phaseP(browser) {
     const mob = dlg.locator('input[type="tel"]').first();
     const unique = `9${String(Date.now()).slice(-9)}`;
     await page.evaluate((t) => navigator.clipboard.writeText(t), `+91 ${unique.slice(0, 5)} ${unique.slice(5)}`);
-    await mob.fill(''); await mob.focus(); await page.keyboard.press('Control+V'); await page.waitForTimeout(200);
+    await mob.fill(''); await mob.focus(); await page.keyboard.press('ControlOrMeta+V'); await page.waitForTimeout(200);
     let body = null;
     page.on('request', (r) => { if (/\/api\/v1\/parties$/.test(r.url()) && r.method() === 'POST') body = r.postData(); });
     await dlg.getByRole('button', { name: /Save party/ }).click(); await page.waitForTimeout(2500);
@@ -205,7 +205,7 @@ async function phaseR4(browser, hi = false) {
   await page.getByRole('button', { name: new RegExp(complete.name) }).last().click();
   await page.waitForURL((u) => !u.pathname.startsWith('/switch'), { timeout: 10000 }).catch(() => {});
   await page.waitForTimeout(1500);
-  record('M3', `${hi ? 'hi ' : ''}/switch → ${complete.name}: lands on /parties, no "another tab" message`, new URL(page.url()).pathname === '/parties' && !snacks.seen.some((s) => /another tab|दूसरे टैब/.test(s)), `url=${page.url()} snacks=${JSON.stringify(snacks.seen)}`);
+  record('M3', `${hi ? 'hi ' : ''}/switch → ${complete.name}: lands on the landing page, no "another tab" message`, ['/dashboard', '/parties'].includes(new URL(page.url()).pathname) && !snacks.seen.some((s) => /another tab|दूसरे टैब/.test(s)), `url=${page.url()} snacks=${JSON.stringify(snacks.seen)}`);
   const res2 = await resumableOf(owner);
   record(id, 'GET /tenants/resumable now names the business just created (owner only, no books)', res2.body?.data?.tenant?.id === created?.id, JSON.stringify(res2.body?.data?.tenant?.name ?? null));
   await page.goto(`${FE}/switch`, { waitUntil: 'networkidle' }); await page.waitForTimeout(1000);
@@ -274,7 +274,7 @@ async function phaseSW(browser) {
       await page.waitForURL((u) => !u.pathname.startsWith('/switch'), { timeout: 8000 }).catch(() => {});
       await page.waitForTimeout(1500);
       await shot(page, `m3-switch-${target.name.replace(/\W+/g, '-')}`, false);
-      record('M3', `${vp.width}: /switch → "${target.name}" lands on /parties with no "another tab" warning and no reload`, new URL(page.url()).pathname === '/parties' && !snacks.seen.some((s) => /another tab/.test(s)) && docs.length === d0, `url=${page.url()} snacks=${JSON.stringify(snacks.seen)} docLoads=${JSON.stringify(docs.slice(d0))} me=${me}`);
+      record('M3', `${vp.width}: /switch → "${target.name}" lands on the landing page with no "another tab" warning and no reload`, ['/dashboard', '/parties'].includes(new URL(page.url()).pathname) && !snacks.seen.some((s) => /another tab/.test(s)) && docs.length === d0, `url=${page.url()} snacks=${JSON.stringify(snacks.seen)} docLoads=${JSON.stringify(docs.slice(d0))} me=${me}`);
     }
     snacks.stop();
     await ctx.close();
@@ -282,7 +282,7 @@ async function phaseSW(browser) {
   // genuine other-tab switch must still warn + reload
   const ctx = await browser.newContext({ viewport: { width: 1280, height: 800 } });
   const a = await ctx.newPage();
-  await a.goto(`${FE}/login`, { waitUntil: 'networkidle' });
+  await a.goto(`${FE}/login/email`, { waitUntil: 'networkidle' });
   await a.fill('input[type="email"]', OWNER); await a.fill('input[type="password"]', PW);
   await a.click('button[type="submit"]'); await a.waitForTimeout(3000);
   await a.goto(`${FE}/ledger/aging`, { waitUntil: 'networkidle' }); await a.waitForTimeout(1500);
@@ -332,7 +332,7 @@ async function phaseL8(browser) {
   record('L8', 'precondition: nothing resumable (so both tabs race to CREATE)', !res.body?.data?.tenant, JSON.stringify(res.body?.data?.tenant?.name ?? null));
   const ctx = await browser.newContext({ viewport: { width: 1280, height: 800 } });
   const a = await ctx.newPage();
-  await a.goto(`${FE}/login`, { waitUntil: 'networkidle' });
+  await a.goto(`${FE}/login/email`, { waitUntil: 'networkidle' });
   await a.fill('input[type="email"]', OWNER); await a.fill('input[type="password"]', PW);
   await a.click('button[type="submit"]'); await a.waitForTimeout(3000);
   const tabs = [a, await ctx.newPage()];
@@ -360,6 +360,10 @@ async function phaseL8(browser) {
 // ─── L6: the mobile-taken message in Hindi, and no raw field codes ──────────
 async function phaseHI(browser) {
   const taken = arg('taken') ?? '9845678901';
+  // DEC-013 — a number with an account is added, not refused; once it is on
+  // the team, typing it again is the refusal this phase reads in both languages.
+  const tok = await login(OWNER);
+  await api('POST', '/members', { full_name: 'Mobile Holder', mobile: `+91${taken}`, role: 'staff' }, tok, { 'Idempotency-Key': `holder-${Date.now()}` });
   for (const [vp, hi] of [[{ width: 360, height: 780 }, true], [{ width: 1280, height: 800 }, true], [{ width: 360, height: 780 }, false]]) {
     const { ctx, page } = await session(browser, OWNER, vp, { hi });
     let resp = null;
@@ -368,22 +372,21 @@ async function phaseHI(browser) {
     await page.getByRole('button', { name: hi ? /सदस्य जोड़ें/ : /Add member/ }).first().click(); await page.waitForTimeout(800);
     const dlg = page.getByRole('dialog').last();
     await dlg.getByRole('textbox').nth(0).fill('Kiran Patil');
-    await dlg.getByRole('textbox').nth(1).fill(`l6-${vp.width}-${Date.now()}@shop.test`);
     await dlg.locator('input[type="tel"]').first().fill(`+91 ${taken.slice(0, 5)} ${taken.slice(5)}`);
-    await dlg.getByRole('button', { name: hi ? /लॉगिन बनाएँ/ : /Create login/ }).click(); await page.waitForTimeout(2000);
+    await dlg.getByRole('button', { name: hi ? /टीम में जोड़ें/ : /Add to team/ }).click(); await page.waitForTimeout(2000);
     const text = await dlg.innerText();
     const all = await page.locator('body').innerText();
     await shot(page, `l6-mobile-taken-${hi ? 'hi' : 'en'}`);
     const codes = (() => { try { return JSON.stringify(JSON.parse(resp.b).error.field_codes ?? JSON.parse(resp.b).error.details); } catch { return ''; } })();
-    const want = hi ? 'यह मोबाइल नंबर किसी दूसरे लॉगिन में पहले से इस्तेमाल हो रहा है' : 'This mobile number is already used by another login';
-    record('L6', `${vp.width} ${hi ? 'hi' : 'en'}: taken mobile (typed with +91 and spaces) → message in ${hi ? 'Hindi' : 'English'} under the field`, resp?.s === 400 && text.includes(want) && (!hi || !/already used by another login/.test(all)), `status=${resp?.s} codes=${codes} :: ${text.replace(/\s+/g, ' ').slice(0, 300)}`);
-    record('L6', `${vp.width} ${hi ? 'hi' : 'en'}: no raw field code (mobile_taken / errors.field.*) on screen`, !/mobile_taken|errors\.field|field_codes/.test(all), '');
+    const want = hi ? 'यह व्यक्ति पहले से इस टीम में है' : 'That person is already on this team';
+    record('L6', `${vp.width} ${hi ? 'hi' : 'en'}: a teammate's mobile (typed with +91 and spaces) → message in ${hi ? 'Hindi' : 'English'} under the field`, resp?.s === 400 && text.includes(want) && (!hi || !/already on this team/.test(all)), `status=${resp?.s} codes=${codes} :: ${text.replace(/\s+/g, ' ').slice(0, 300)}`);
+    record('L6', `${vp.width} ${hi ? 'hi' : 'en'}: no raw field code (mobile_taken / errors.field.*) on screen`, !/mobile_taken|already_member|errors\.field|field_codes/.test(all), '');
     await ctx.close();
   }
 }
 
 const phases = { P: phaseP, R4: (b) => phaseR4(b, false), R4HI: (b) => phaseR4(b, true), CORNER: phaseCorner, SW: phaseSW, L7: phaseL7, L8: phaseL8, HI: phaseHI };
-const browser = await chromium.launch();
+const browser = await chromium.launch({ executablePath: process.env.CHROME || process.env.PW_CHROME || undefined });
 try {
   for (const p of PHASES) {
     try { await phases[p](browser); } catch (e) { record(p, `phase ${p} crashed`, false, e.stack); }

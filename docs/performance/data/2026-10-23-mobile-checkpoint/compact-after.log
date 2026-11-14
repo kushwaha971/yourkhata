@@ -1,0 +1,8 @@
+PASS src/modules/DigiKhaato/features/sales/components/SalesFlowListPageContent.test.tsx
+PASS src/modules/DigiKhaato/features/sales/components/FlowColumns.test.tsx
+
+Test Suites: 2 passed, 2 total
+Tests:       11 passed, 11 total
+Snapshots:   0 total
+Time:        1.447 s, estimated 2 s
+Ran all test suites matching /src\/modules\/DigiKhaato\/features\/sales\/components\/SalesFlowListPageContent.test.tsx|src\/modules\/DigiKhaato\/features\/sales\/components\/FlowColumns.test.tsx/i.

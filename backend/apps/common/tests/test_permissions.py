@@ -60,6 +60,19 @@ CANON_PERMISSIONS = {
     "reports.financial.read",
     "reports.export",
     "notifications.settings.manage",
+    # A9b — R26, owner Q2; canon §0.9 amended by the module-roles CR.
+    "platform.calendar.manage",
+    # Members & Fees, rebuilt 12 Nov 2026.
+    "library.member.read",
+    "library.member.write",
+    "library.fee.create",
+    # Loans & Collections, rebuilt 12 Nov 2026.
+    "lending.loan.read",
+    "lending.loan.create",
+    "lending.collection.create",
+    "lending.settings.manage",
+    "khata.book.read",
+    "library.settings.manage",
 }
 
 
@@ -86,6 +99,20 @@ def test_every_codename_is_module_resource_action() -> None:
         "correct",
         "adjust",
         "void",
+        # ── B02 ── library (LIB-14): the per-module verbs its FRD lists
+        # (CR-2026-09-30-PLATFORM-ROLES item 2). Each is named, so an invented
+        # verb such as `library.copy.retire` still fails here.
+        "withdraw",
+        "close",
+        "override",
+        "waive",
+        "run",
+        # ── LEN ── lending's verbs (FRD lending §0.8): a loan is CREATED (not
+        # merely written: giving money is its own act), a reminder is SENT, and
+        # the whole book is read with `read_all` beside the scoped `read`.
+        "create",
+        "send",
+        "read_all",
     }
     for codename in PERMISSIONS - CANON_FORMAT_EXCEPTIONS:
         parts = codename.split(".")

@@ -1,0 +1,26 @@
+[
+  {
+    "width": 390,
+    "profile": "unthrottled",
+    "old": 103.0,
+    "new": 107.5
+  },
+  {
+    "width": 390,
+    "profile": "throttled",
+    "old": 422.5,
+    "new": 418.0
+  },
+  {
+    "width": 1280,
+    "profile": "unthrottled",
+    "old": 80.0,
+    "new": 84.5
+  },
+  {
+    "width": 1280,
+    "profile": "throttled",
+    "old": 414.0,
+    "new": 407.5
+  }
+]

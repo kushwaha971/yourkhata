@@ -27,6 +27,7 @@ import type { LedgerCorrectionFormValues, LedgerEntryFormValues } from '../types
  * questions to the server.
  */
 export interface LedgerSchemas {
+  readonly simpleLedgerEntrySchema: Yup.ObjectSchema<LedgerEntryFormValues>;
   readonly ledgerEntrySchema: Yup.ObjectSchema<LedgerEntryFormValues>;
   /**
    * LED-02 §10. Three fields, and every one of them is a rule an ordinary entry
@@ -43,15 +44,6 @@ export interface LedgerSchemas {
    * out again — see `entryFields` below.
    */
   readonly ledgerCorrectionSchema: Yup.ObjectSchema<LedgerCorrectionFormValues>;
-  /**
-   * The reverse dialog's single field.
-   *
-   * It IS `ledgerCorrectionSchema`'s `reason`, pulled out so the dialog does not
-   * carry five controls' rules to validate one box — and so the two can never
-   * disagree about how short a reason may be, which would mean a merchant being
-   * refused in one dialog for what the other accepted.
-   */
-  readonly reverseReasonSchema: Yup.ObjectSchema<{ reason: string }>;
 }
 
 export const useLedgerSchemas = (): LedgerSchemas => {
@@ -105,10 +97,7 @@ export const useLedgerSchemas = (): LedgerSchemas => {
      stop. What it stops is somebody clicking through the dialog with an empty
      box, which would leave the surviving row saying what changed and nothing
      saying why. */
-  const reasonField = useMemo(
-    () => v.requiredBoundedText(160, 3, 'ledger.correction.reason.required'),
-    [v]
-  );
+  const reasonField = useMemo(() => v.reasonText('ledger.correction.reason.required'), [v]);
 
   /** The cross-field rule both forms carry, defined once for the same reason. */
   const creditNeedsAMode = useMemo(
@@ -125,6 +114,7 @@ export const useLedgerSchemas = (): LedgerSchemas => {
 
   return useMemo(
     () => ({
+      simpleLedgerEntrySchema: Yup.object(entryFields) as Yup.ObjectSchema<LedgerEntryFormValues>,
       ledgerEntrySchema: Yup.object(entryFields).test(
         'credit-needs-a-mode',
         t('ledger.entry.mode.required'),
@@ -139,10 +129,6 @@ export const useLedgerSchemas = (): LedgerSchemas => {
         t('ledger.entry.mode.required'),
         creditNeedsAMode
       ) as Yup.ObjectSchema<LedgerCorrectionFormValues>,
-
-      reverseReasonSchema: Yup.object({
-        reason: reasonField,
-      }) as Yup.ObjectSchema<{ reason: string }>,
 
       openingBalanceSchema: Yup.object({
         // `> 0` by default, which is EC-3: a ₹0.00 opening is "no opening", and

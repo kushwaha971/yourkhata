@@ -4,9 +4,11 @@ import {
   formatAmount,
   formatInr,
   isZeroAmount,
+  moneyOrZero,
   subtractMoney,
   sumMoney,
   toMoneyString,
+  withMinusSign,
 } from './money';
 
 /**
@@ -55,5 +57,34 @@ describe('money', () => {
     expect(isZeroAmount('0.00')).toBe(true);
     expect(isZeroAmount(null)).toBe(true);
     expect(isZeroAmount('0.01')).toBe(false);
+  });
+});
+
+/**
+ * WP-03 D-01 — a figure shown while the merchant is still typing ("Dues after
+ * this waiver: …") reads a half-typed amount. `Number('.')` is NaN and printed
+ * "₹NaN"; `new Decimal('.')` throws and would take the dialog down. Anything
+ * that is not yet a number counts as nothing.
+ */
+describe('moneyOrZero', () => {
+  it('reads a typed amount and treats anything unfinished as zero', () => {
+    expect(moneyOrZero('12.5')).toBe('12.50');
+    expect(moneyOrZero('12.')).toBe('12.00');
+    expect(moneyOrZero(' 40 ')).toBe('40.00');
+    expect(moneyOrZero('')).toBe('0.00');
+    expect(moneyOrZero('.')).toBe('0.00');
+    expect(moneyOrZero('-')).toBe('0.00');
+    expect(moneyOrZero('abc')).toBe('0.00');
+    expect(moneyOrZero(null)).toBe('0.00');
+    expect(moneyOrZero(undefined)).toBe('0.00');
+    expect(moneyOrZero(7)).toBe('7.00');
+  });
+});
+
+describe('withMinusSign', () => {
+  /** Prevents Intl's hyphen ("-₹0.47") on the printed bill. */
+  it('writes a negative with a true minus and a positive as it is', () => {
+    expect(withMinusSign('-0.47')).toBe('−₹0.47');
+    expect(withMinusSign('0.53')).toBe('₹0.53');
   });
 });

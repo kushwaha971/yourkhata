@@ -1,0 +1,47 @@
+320-light-hi context-loading 0 0 0
+320-light-hi context-error 0 0 0
+320-light-hi supplier-summary 0 0 0
+320-light-hi supplier-edit 0 0 0
+320-light-hi invalid-whole-quantity 0 0 0
+320-light-hi negative-quantity 0 0 0
+320-light-hi supplier-no-match 0 0 0
+320-light-hi supplier-create 0 0 0
+320-light-hi supplier-created 0 0 0
+320-light-hi order-send-reply-lost 0 0 0
+320-light-hi return-invalid-quantity 0 0 0
+320-light-hi return-valid-quantity 0 0 0
+320-dark-hi context-loading 0 0 0
+320-dark-hi context-error 0 0 0
+320-dark-hi supplier-summary 0 0 0
+320-dark-hi supplier-edit 0 0 0
+320-dark-hi invalid-whole-quantity 0 0 0
+320-dark-hi negative-quantity 0 0 0
+320-dark-hi supplier-no-match 0 0 0
+320-dark-hi supplier-create 0 0 0
+320-dark-hi supplier-created 0 0 0
+320-dark-hi order-send-reply-lost 0 0 0
+320-dark-hi return-invalid-quantity 0 0 0
+320-dark-hi return-valid-quantity 0 0 0
+1280-light-hi context-loading 0 0 0
+1280-light-hi context-error 0 0 0
+1280-light-hi supplier-summary 0 0 0
+1280-light-hi supplier-edit 0 0 0
+1280-light-hi invalid-whole-quantity 0 0 0
+1280-light-hi negative-quantity 0 0 0
+1280-light-hi supplier-no-match 0 0 0
+1280-light-hi supplier-create 0 0 0
+1280-light-hi supplier-created 0 0 0
+1280-light-hi order-send-reply-lost 0 0 0
+node:internal/modules/run_main:107
+    triggerUncaughtException(
+    ^
+
+locator.click: Timeout 30000ms exceeded.
+Call log:
+[2m  - waiting for getByRole('button', { name: 'और विकल्प', exact: true })[22m
+
+    at /Users/akashkushwaha/Projects/ims-platform/e2e/revamp-purchase-contracts.mjs:123:147 {
+  name: 'TimeoutError'
+}
+
+Node.js v26.8.1

@@ -16,6 +16,8 @@ const LABELS = {
   more: 'More…',
   close: 'Close',
   preview: 'Message',
+  reset: 'Reset to default',
+  empty: 'Write a message before sending.',
 } as const;
 
 const MESSAGE = 'Namaste Ramesh Traders,\nRs 2,500.00 is pending with Kumar & Co.';
@@ -73,9 +75,9 @@ describe('UbShareSheet', () => {
     renderSheet();
     const dialog = screen.getByRole('dialog', { name: 'Send reminder' });
     expect(dialog).toHaveAccessibleDescription('To Ramesh Traders · +91 98123 45678');
-    const preview = dialog.querySelector('[data-ub-share-preview]');
-    expect(preview?.textContent).toBe(MESSAGE);
-    expect(preview).toHaveClass('whitespace-pre-line');
+    const preview = dialog.querySelector<HTMLTextAreaElement>('[data-ub-share-preview]');
+    expect(preview?.value).toBe(MESSAGE);
+    expect(screen.getByRole('textbox', { name: 'Message' })).toBe(preview);
   });
 
   it('links WhatsApp to the party, in a new tab, with the whole message encoded', () => {
@@ -119,7 +121,7 @@ describe('UbShareSheet', () => {
     // `fireEvent`, not user-event: RTL's async wrapper flushes zero-delay
     // timers under fake timers, which is exactly the tick being asserted.
     fireEvent.click(screen.getByRole('link', { name: 'WhatsApp' }));
-    expect(props.onShared).toHaveBeenCalledWith('whatsapp');
+    expect(props.onShared).toHaveBeenCalledWith('whatsapp', MESSAGE);
     expect(props.onOpenChange).not.toHaveBeenCalled();
     act(() => {
       jest.runOnlyPendingTimers();
@@ -136,7 +138,7 @@ describe('UbShareSheet', () => {
     Object.defineProperty(navigator, 'clipboard', { value: { writeText }, configurable: true });
     const props = renderSheet();
     await user.click(screen.getByRole('button', { name: 'Copy text' }));
-    await waitFor(() => expect(props.onShared).toHaveBeenCalledWith('copy'));
+    await waitFor(() => expect(props.onShared).toHaveBeenCalledWith('copy', MESSAGE));
     expect(writeText).toHaveBeenCalledWith(MESSAGE);
     expect(props.onOpenChange).toHaveBeenCalledWith(false);
     expect(props.onFailed).not.toHaveBeenCalled();
@@ -173,7 +175,7 @@ describe('UbShareSheet', () => {
     const user = userEvent.setup();
     const props = renderSheet();
     await user.click(screen.getByRole('button', { name: 'More…' }));
-    await waitFor(() => expect(props.onShared).toHaveBeenCalledWith('native'));
+    await waitFor(() => expect(props.onShared).toHaveBeenCalledWith('native', MESSAGE));
     expect(share).toHaveBeenCalledWith({ title: 'Send reminder', text: MESSAGE });
     expect(props.onOpenChange).toHaveBeenCalledWith(false);
   });
@@ -213,6 +215,8 @@ describe('UbShareSheet', () => {
     const props = renderSheet();
     expect(screen.getByRole('button', { name: 'Close' })).toHaveFocus();
     await user.tab();
+    expect(screen.getByRole('textbox', { name: 'Message' })).toHaveFocus();
+    await user.tab();
     expect(screen.getByRole('link', { name: 'WhatsApp' })).toHaveFocus();
     await user.tab();
     expect(screen.getByRole('link', { name: 'SMS' })).toHaveFocus();
@@ -230,5 +234,180 @@ describe('UbShareSheet', () => {
     renderSheet({ open: false });
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
     expect(screen.queryByRole('link', { name: 'WhatsApp' })).not.toBeInTheDocument();
+  });
+
+  /* MSG-01..05 (WP-04) — the default text is a starting point. Before this the
+     sheet showed it read-only, so a merchant who wanted to add "please pay by
+     Friday" had to copy, paste into WhatsApp and edit there — and the SMS row
+     could not be edited at all. */
+  describe('editing the message before it goes', () => {
+    const EDITED =
+      'नमस्ते Ramesh 🙏\nPlease pay ₹2,500 by Friday & send a photo: https://x.in/p?a=1';
+
+    it('sends exactly the edited text through every channel', async () => {
+      const writeText = jest.fn().mockResolvedValue(undefined);
+      Object.defineProperty(navigator, 'clipboard', { value: { writeText }, configurable: true });
+      const props = renderSheet({ smsMessage: 'Short SMS default' });
+      fireEvent.change(screen.getByRole('textbox', { name: 'Message' }), {
+        target: { value: EDITED },
+      });
+      const wa = screen.getByRole('link', { name: 'WhatsApp' }).getAttribute('href') ?? '';
+      expect(new URL(wa).searchParams.get('text')).toBe(EDITED);
+      const sms = screen.getByRole('link', { name: 'SMS' }).getAttribute('href') ?? '';
+      expect(decodeURIComponent(sms.split('&body=')[1] ?? '')).toBe(EDITED);
+      fireEvent.click(screen.getByRole('button', { name: 'Copy text' }));
+      await waitFor(() => expect(writeText).toHaveBeenCalledWith(EDITED));
+      expect(props.onShared).toHaveBeenCalledWith('copy', EDITED);
+    });
+
+    it('tells the caller which words left with each channel, so the log can keep them', () => {
+      /* Prevents: MSG-10 — the reminder log storing the server's template
+         while the customer received the merchant's edit. */
+      const props = renderSheet({
+        smsMessage: 'Short SMS default',
+        callHref: 'tel:+910',
+        labels: { ...LABELS, call: 'Call' },
+      });
+      fireEvent.click(screen.getByRole('link', { name: 'SMS' }));
+      expect(props.onShared).toHaveBeenLastCalledWith('sms', 'Short SMS default');
+      fireEvent.change(screen.getByRole('textbox', { name: 'Message' }), {
+        target: { value: EDITED },
+      });
+      fireEvent.click(screen.getByRole('link', { name: 'WhatsApp' }));
+      expect(props.onShared).toHaveBeenLastCalledWith('whatsapp', EDITED);
+      fireEvent.click(screen.getByRole('link', { name: 'Call' }));
+      expect(props.onShared).toHaveBeenLastCalledWith('call', '');
+    });
+
+    it('keeps the edit when the default is refetched, and follows the default when untouched', () => {
+      const props = {
+        open: true,
+        onOpenChange: jest.fn(),
+        title: 'Send reminder',
+        message: MESSAGE,
+        phone: '+919812345678',
+        labels: LABELS,
+      };
+      const { rerender } = render(<UbShareSheet {...props} />);
+      rerender(<UbShareSheet {...props} message="A newer default" />);
+      expect(screen.getByRole('textbox', { name: 'Message' })).toHaveValue('A newer default');
+      fireEvent.change(screen.getByRole('textbox', { name: 'Message' }), {
+        target: { value: 'My words' },
+      });
+      rerender(<UbShareSheet {...props} message="Refetched default" />);
+      expect(screen.getByRole('textbox', { name: 'Message' })).toHaveValue('My words');
+    });
+
+    it('offers Reset to default only after an edit, and it restores the default', () => {
+      renderSheet();
+      expect(screen.queryByRole('button', { name: 'Reset to default' })).not.toBeInTheDocument();
+      fireEvent.change(screen.getByRole('textbox', { name: 'Message' }), {
+        target: { value: 'Changed' },
+      });
+      fireEvent.click(screen.getByRole('button', { name: 'Reset to default' }));
+      expect(screen.getByRole('textbox', { name: 'Message' })).toHaveValue(MESSAGE);
+      expect(
+        new URL(
+          screen.getByRole('link', { name: 'WhatsApp' }).getAttribute('href') ?? ''
+        ).searchParams.get('text')
+      ).toBe(MESSAGE);
+    });
+
+    it('will not open a channel with an empty message, and says why', () => {
+      renderSheet();
+      fireEvent.change(screen.getByRole('textbox', { name: 'Message' }), {
+        target: { value: '   \n ' },
+      });
+      expect(screen.queryByRole('link', { name: 'WhatsApp' })).not.toBeInTheDocument();
+      expect(screen.queryByRole('link', { name: 'SMS' })).not.toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'WhatsApp' })).toBeDisabled();
+      expect(screen.getByRole('button', { name: 'Copy text' })).toBeDisabled();
+      expect(screen.getByRole('alert')).toHaveTextContent('Write a message before sending.');
+    });
+
+    it('brings the reason into view when the message goes blank', () => {
+      /* Prevents: in a dialog that scrolls (the UPI QR on a phone) the reason
+         sitting under the sticky footer, so the merchant saw a disabled
+         button and a red box but not why. */
+      const scroll = jest.fn();
+      const original = Element.prototype.scrollIntoView;
+      Element.prototype.scrollIntoView = scroll;
+      renderSheet();
+      fireEvent.change(screen.getByRole('textbox', { name: 'Message' }), {
+        target: { value: ' ' },
+      });
+      expect(scroll).toHaveBeenCalledWith({ block: 'nearest' });
+      expect(scroll.mock.contexts[0]).toBe(screen.getByRole('alert'));
+      Element.prototype.scrollIntoView = original;
+    });
+
+    it('still offers Call while the message is blank: a call needs no words', () => {
+      renderSheet({ callHref: 'tel:+919812345678', labels: { ...LABELS, call: 'Call' } });
+      fireEvent.change(screen.getByRole('textbox', { name: 'Message' }), {
+        target: { value: '' },
+      });
+      expect(screen.getByRole('link', { name: 'Call' })).toHaveAttribute(
+        'href',
+        'tel:+919812345678'
+      );
+    });
+
+    it("never carries one person's edit to another, or into the next opening", () => {
+      const props = {
+        open: true,
+        onOpenChange: jest.fn(),
+        title: 'Send reminder',
+        message: MESSAGE,
+        phone: '+919812345678',
+        labels: LABELS,
+      };
+      const { rerender } = render(<UbShareSheet {...props} />);
+      fireEvent.change(screen.getByRole('textbox', { name: 'Message' }), {
+        target: { value: 'For Ramesh only' },
+      });
+      rerender(<UbShareSheet {...props} phone="+919900011122" message="Namaste Sita" />);
+      expect(screen.getByRole('textbox', { name: 'Message' })).toHaveValue('Namaste Sita');
+      fireEvent.change(screen.getByRole('textbox', { name: 'Message' }), {
+        target: { value: 'For Sita' },
+      });
+      rerender(
+        <UbShareSheet {...props} phone="+919900011122" message="Namaste Sita" open={false} />
+      );
+      rerender(<UbShareSheet {...props} phone="+919900011122" message="Namaste Sita" />);
+      expect(screen.getByRole('textbox', { name: 'Message' })).toHaveValue('Namaste Sita');
+    });
+  });
+});
+
+describe('UbShareSheet conversation (design pRemind)', () => {
+  const conversation = { editText: 'Edit text', share: 'Share on WhatsApp', note: 'Nothing is sent.' };
+  const props: UbShareSheetProps = {
+    open: true,
+    onOpenChange: () => undefined,
+    title: 'Send a message',
+    message: 'Namaste Sita',
+    phone: '+919900011122',
+    labels: LABELS,
+    conversation,
+  };
+
+  /** Prevents an edited message being dropped: the link must carry the typed words. */
+  it('shows a bubble, and Edit text changes the words WhatsApp receives', async () => {
+    const user = userEvent.setup();
+    render(<UbShareSheet {...props} />);
+    expect(screen.queryByRole('textbox')).not.toBeInTheDocument();
+    expect(screen.getByText('Namaste Sita')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Share on WhatsApp' })).toHaveAttribute(
+      'href',
+      expect.stringContaining('Namaste%20Sita')
+    );
+    await user.click(screen.getByRole('button', { name: 'Edit text' }));
+    const box = screen.getByRole('textbox', { name: 'Message' });
+    await user.clear(box);
+    await user.type(box, 'Hello');
+    expect(screen.getByRole('link', { name: 'WhatsApp' })).toHaveAttribute(
+      'href',
+      expect.stringContaining('Hello')
+    );
   });
 });

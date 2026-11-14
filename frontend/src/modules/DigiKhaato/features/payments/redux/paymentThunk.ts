@@ -1,0 +1,199 @@
+import { createAsyncThunk } from '@reduxjs/toolkit';
+
+import type { ApiErrorShape } from 'src/types/api.types';
+import { toApiError } from 'src/utils/apiError';
+
+import type {
+  AllocateResult,
+  CollectQr,
+  OpenDocument,
+  Payment,
+  PaymentBucket,
+  PaymentDirection,
+  PaymentFormValues,
+  PaymentListArg,
+  PaymentPage,
+  PaymentSaveResult,
+} from '../types/payment.types';
+
+/**
+ * Part 19 §19.3.3 — one service call each, and a catch that normalises.
+ *
+ * The service is imported INSIDE each thunk: the invalidation registry imports
+ * every thunk statically and the registry is in the shell, so a service
+ * imported at the top of this file would ship to every route (the expenses
+ * track measured it). Nothing prefetches payments, so the price is one small
+ * chunk with the first payment request of a session.
+ */
+const service = () => import('../api/paymentService');
+
+type Reject = { rejectValue: ApiErrorShape };
+
+/** QUERY. One page of the payments list with its filtered totals. */
+export const fetchPayments = createAsyncThunk<PaymentPage, PaymentListArg, Reject>(
+  'paymentList/fetchPayments',
+  async (filters, { signal, rejectWithValue }) => {
+    try {
+      return await (await service()).listPayments(filters, signal);
+    } catch (error) {
+      return rejectWithValue(toApiError(error, 'payments.list.error.title'));
+    }
+  }
+);
+
+/** QUERY. One receipt (the receipt page and its print sheet). */
+export const fetchPayment = createAsyncThunk<Payment, string, Reject>(
+  'paymentReceipt/fetchPayment',
+  async (id, { signal, rejectWithValue }) => {
+    try {
+      return await (await service()).getPayment(id, signal);
+    } catch (error) {
+      return rejectWithValue(toApiError(error, 'payments.receipt.error.title'));
+    }
+  }
+);
+
+/** QUERY. The allocation panel's open bills for a party, oldest first. */
+export const fetchOpenDocuments = createAsyncThunk<
+  readonly OpenDocument[],
+  {
+    readonly partyId: string;
+    readonly direction: PaymentDirection;
+    readonly bucket?: PaymentBucket;
+  },
+  Reject
+>(
+  'paymentForm/fetchOpenDocuments',
+  async ({ partyId, direction, bucket }, { signal, rejectWithValue }) => {
+    try {
+      return await (await service()).listOpenDocuments(partyId, direction, signal, bucket);
+    } catch (error) {
+      return rejectWithValue(toApiError(error, 'payments.alloc.error'));
+    }
+  }
+);
+
+/**
+ * QUERY. 08 §6 P-08-04 — the same list, read again to ask whether the dues
+ * changed on another device since the drawer opened. Deliberately a separate
+ * action that no reducer handles: re-reading through `fetchOpenDocuments`
+ * empties the rows while it waits and re-seeds every typed allocation, which
+ * is the opposite of a quiet check on focus or before Save.
+ */
+export const checkOpenDocuments = createAsyncThunk<
+  readonly OpenDocument[],
+  {
+    readonly partyId: string;
+    readonly direction: PaymentDirection;
+    readonly bucket?: PaymentBucket;
+  },
+  Reject
+>('paymentForm/checkOpenDocuments', async ({ partyId, direction, bucket }, { rejectWithValue }) => {
+  try {
+    return await (await service()).listOpenDocuments(partyId, direction, undefined, bucket, true);
+  } catch (error) {
+    return rejectWithValue(toApiError(error, 'payments.alloc.error'));
+  }
+});
+
+/** QUERY. PAY-03 — the Collect QR, or the receipt footer's static one. */
+export const fetchCollectQr = createAsyncThunk<
+  CollectQr,
+  { readonly amount?: string; readonly partyId?: string },
+  Reject
+>('paymentForm/fetchCollectQr', async (body, { rejectWithValue }) => {
+  try {
+    return await (await service()).createUpiIntent(body);
+  } catch (error) {
+    return rejectWithValue(toApiError(error, 'payments.upi.error'));
+  }
+});
+
+/** MUTATION. Record one payment, with the key the hook minted for this save. */
+export const recordPayment = createAsyncThunk<
+  PaymentSaveResult,
+  {
+    readonly values: PaymentFormValues;
+    readonly idempotencyKey: string;
+    readonly context: string;
+    readonly bucket?: PaymentBucket;
+    readonly quiet?: boolean;
+  },
+  Reject
+>(
+  'paymentForm/recordPayment',
+  async ({ values, idempotencyKey, context, bucket, quiet }, { rejectWithValue }) => {
+    try {
+      return await (await service()).recordPayment(values, idempotencyKey, context, bucket, quiet);
+    } catch (error) {
+      return rejectWithValue(toApiError(error, 'payments.save.error'));
+    }
+  }
+);
+
+/** MUTATION. PAY-05 — void with a reason; bills reopen, the khata line is reversed. */
+export const voidPayment = createAsyncThunk<
+  PaymentSaveResult,
+  { readonly id: string; readonly reason: string; readonly idempotencyKey: string },
+  Reject
+>('paymentReceipt/voidPayment', async ({ id, reason, idempotencyKey }, { rejectWithValue }) => {
+  try {
+    return await (await service()).voidPayment(id, reason, idempotencyKey);
+  } catch (error) {
+    return rejectWithValue(toApiError(error, 'payments.void.error'));
+  }
+});
+
+/** MUTATION (audit only). PAY-04 — the receipt's WhatsApp text, written by the server. */
+export const shareReceipt = createAsyncThunk<
+  { readonly text: string; readonly mobile: string | null },
+  { readonly id: string; readonly locale: string; readonly idempotencyKey: string },
+  Reject
+>('paymentReceipt/shareReceipt', async ({ id, locale, idempotencyKey }, { rejectWithValue }) => {
+  try {
+    return await (await service()).shareReceipt(id, locale, idempotencyKey);
+  } catch (error) {
+    return rejectWithValue(toApiError(error, 'payments.share.error'));
+  }
+});
+
+/** QUERY. A4a — the open documents Apply to bills offers: the payment's direction and bucket. */
+export const fetchApplyCandidates = createAsyncThunk<
+  readonly OpenDocument[],
+  {
+    readonly partyId: string;
+    readonly direction: PaymentDirection;
+    readonly bucket: PaymentBucket;
+  },
+  Reject
+>(
+  'paymentReceipt/fetchApplyCandidates',
+  async ({ partyId, direction, bucket }, { signal, rejectWithValue }) => {
+    try {
+      return await (await service()).listOpenDocuments(partyId, direction, signal, bucket);
+    } catch (error) {
+      return rejectWithValue(toApiError(error, 'payments.alloc.error'));
+    }
+  }
+);
+
+/** MUTATION. A4a (PLT-X03) — apply part of an advance to open bills; no khata line moves. */
+export const allocateExistingPayment = createAsyncThunk<
+  AllocateResult,
+  {
+    readonly id: string;
+    readonly rows: readonly {
+      readonly documentType: string;
+      readonly documentId: string;
+      readonly amount: string;
+    }[];
+    readonly idempotencyKey: string;
+  },
+  Reject
+>('paymentReceipt/allocateExisting', async ({ id, rows, idempotencyKey }, { rejectWithValue }) => {
+  try {
+    return await (await service()).allocateExisting(id, { allocations: rows }, idempotencyKey);
+  } catch (error) {
+    return rejectWithValue(toApiError(error, 'payments.apply.error'));
+  }
+});

@@ -39,11 +39,13 @@ import { cn } from 'src/utils/cn';
  *    than `disabled`, so focus is not thrown away mid-request.
  *
  * The value is the whole code, so the FORM holds one string and the schema is
- * `/^\d{6}$/` — the cells are a rendering decision, not a data shape.
+ * `/^\d{4}$/` — the cells are a rendering decision, not a data shape.
  */
+/** Six digits: the only length the server sends since 14 Nov 2026 (owner). */
 export const OTP_LENGTH = 6;
 
 export interface UbOtpInputProps {
+  readonly length?: number;
   readonly value: string;
   readonly onChange: (value: string) => void;
   /** Fired once, when the sixth digit lands. */
@@ -63,7 +65,24 @@ export interface UbOtpInputProps {
 
 const onlyDigits = (value: string): string => value.replace(/\D/g, '');
 
+/**
+ * The code inside pasted or autofilled text (owner, 14 Nov 2026: "not able to
+ * paste otp directly"). A copied MESSAGE carries other numbers — "valid for 10
+ * minutes", the phone number — and taking its first digits sent "1048" for
+ * "Valid for 10 minutes. Your code is 4821". So: a run of exactly `length`
+ * digits wins; else every digit, when together they make the code ("482 193");
+ * else the first `length` digits, as before.
+ */
+export const codeFrom = (text: string, length: number): string => {
+  const runs = text.match(/\d+/g) ?? [];
+  const exact = runs.find((run) => run.length === length);
+  if (exact) return exact;
+  const all = onlyDigits(text);
+  return all.slice(0, length);
+};
+
 function UbOtpInputBase({
+  length = OTP_LENGTH,
   value,
   onChange,
   onComplete,
@@ -82,34 +101,49 @@ function UbOtpInputBase({
   // happens to carry six digits (a parent repaint while verifying, say).
   const completedFor = useRef<string | null>(null);
 
-  const digits = onlyDigits(value).slice(0, OTP_LENGTH);
+  const digits = onlyDigits(value).slice(0, length);
 
   useEffect(() => {
-    if (digits.length === OTP_LENGTH && completedFor.current !== digits) {
+    if (digits.length === length && completedFor.current !== digits) {
       completedFor.current = digits;
       onComplete?.(digits);
     }
-    if (digits.length < OTP_LENGTH) completedFor.current = null;
-  }, [digits, onComplete]);
+    if (digits.length < length) completedFor.current = null;
+  }, [digits, onComplete, length]);
 
-  const focusCell = useCallback((index: number) => {
-    const clamped = Math.max(0, Math.min(OTP_LENGTH - 1, index));
-    cells.current[clamped]?.focus();
-    cells.current[clamped]?.select();
-  }, []);
+  const focusCell = useCallback(
+    (index: number) => {
+      const clamped = Math.max(0, Math.min(length - 1, index));
+      cells.current[clamped]?.focus();
+      cells.current[clamped]?.select();
+    },
+    [length]
+  );
 
   const commit = useCallback(
     (next: string, focusIndex: number) => {
-      onChange(next.slice(0, OTP_LENGTH));
+      onChange(next.slice(0, length));
       focusCell(focusIndex);
     },
-    [onChange, focusCell]
+    [onChange, focusCell, length]
   );
 
   const handleChange = useCallback(
     (index: number, raw: string) => {
       if (readOnly) return;
-      const typed = onlyDigits(raw);
+      // A whole message or code put into one cell (iOS autofill, a keyboard's
+      // clipboard chip) arrives here without a paste event: read the code in it.
+      let typed = raw.length > 2 ? codeFrom(raw, length) : onlyDigits(raw);
+      if (raw.length > 2 && typed.length === length) {
+        commit(typed, length);
+        return;
+      }
+      // No `maxLength` (see the cell), so typing beside a filled cell's digit
+      // arrives as both: keep the new one.
+      const old = digits[index];
+      if (old && typed.length === 2 && (typed.startsWith(old) || typed.endsWith(old))) {
+        typed = typed.startsWith(old) ? typed.slice(1) : typed.slice(0, 1);
+      }
       if (typed.length === 0) {
         // The cell was cleared, or a character the mask rejects was typed.
         commit(`${digits.slice(0, index)}${digits.slice(index + 1)}`, index);
@@ -118,9 +152,9 @@ function UbOtpInputBase({
       // Typing over a filled cell replaces it; a multi-character insert (some
       // Android keyboards deliver a paste this way) spills into the cells after.
       const combined = `${digits.slice(0, index)}${typed}${digits.slice(index + typed.length)}`;
-      commit(combined.slice(0, OTP_LENGTH), index + typed.length);
+      commit(combined.slice(0, length), index + typed.length);
     },
-    [digits, readOnly, commit]
+    [digits, readOnly, commit, length]
   );
 
   const handleKeyDown = useCallback(
@@ -149,13 +183,14 @@ function UbOtpInputBase({
   const handlePaste = useCallback(
     (event: ClipboardEvent<HTMLInputElement>) => {
       if (readOnly) return;
-      const pasted = onlyDigits(event.clipboardData.getData('text'));
+      const clip = event.clipboardData.getData('text') || event.clipboardData.getData('text/plain');
+      const pasted = codeFrom(clip, length);
       if (!pasted) return;
       event.preventDefault();
-      const next = pasted.slice(0, OTP_LENGTH);
+      const next = pasted.slice(0, length);
       commit(next, next.length);
     },
-    [readOnly, commit]
+    [readOnly, commit, length]
   );
 
   return (
@@ -166,7 +201,7 @@ function UbOtpInputBase({
       id={id}
       className={cn('flex items-center gap-2', className)}
     >
-      {Array.from({ length: OTP_LENGTH }, (_, index) => (
+      {Array.from({ length: length }, (_, index) => (
         <input
           key={index}
           ref={(node) => {
@@ -178,10 +213,14 @@ function UbOtpInputBase({
           // platform offer the code six times.
           autoComplete={index === 0 ? 'one-time-code' : 'off'}
           autoFocus={autoFocus && index === 0}
-          maxLength={1}
+          // No `maxLength={1}`: a code put in WITHOUT a paste event — the
+          // keyboard's clipboard chip, or the SMS autofill — was cut by the
+          // browser to its first digit before `handleChange` could spread it
+          // (owner, 12 Nov 2026: "not able to copy paste"). `handleChange`
+          // keeps one digit per cell itself.
           readOnly={readOnly}
           disabled={disabled}
-          aria-label={cellLabel(index + 1, OTP_LENGTH)}
+          aria-label={cellLabel(index + 1, length)}
           aria-invalid={invalid || undefined}
           value={digits[index] ?? ''}
           onChange={(event) => handleChange(index, event.target.value)}
@@ -189,14 +228,14 @@ function UbOtpInputBase({
           onPaste={handlePaste}
           onFocus={(event) => event.target.select()}
           className={cn(
-            /* `text-[20px]` was a literal, which R-S-5 forbids for exactly this
+            /* `text-[1.25rem]` was a literal, which R-S-5 forbids for exactly this
                reason: nothing else in the product is 20px, so an OTP cell
                belonged to no tier. `ds-num-base` is the numeric body tier — the
                same face and size as a rupee amount — and it is what BrandHub
                uses for its own slots (`ds-body-l-medium` on a `size-9` box).
                The cell stays 48x44 rather than their 36x36: this is a six-cell
                row a merchant types on a phone. */
-            'ds-num-base h-12 w-11 rounded-control border bg-surface-card text-center',
+            'ds-num-base h-12 w-11 min-w-0 rounded-control border bg-surface-card text-center',
             'text-text-primary transition-colors duration-fast ease-standard',
             'read-only:bg-surface-sunken disabled:cursor-not-allowed disabled:opacity-100',
             'disabled:bg-surface-sunken disabled:text-text-muted',

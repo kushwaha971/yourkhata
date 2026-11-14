@@ -8,7 +8,7 @@
  *   node e2e/defects2-sweep.mjs --owner=<email with parties> --wizard=<email whose 2nd business is unfinished> --wizardShop="<name>"
  */
 import { chromium } from 'playwright';
-const FE = 'http://localhost:3000', BE = 'http://localhost:8000/api/v1';
+const FE = (process.env.E2E_BASE ?? 'http://localhost:3000'), BE = 'http://localhost:8000/api/v1';
 const arg = (n) => process.argv.find((a) => a.startsWith(`--${n}=`))?.split('=').slice(1).join('=');
 const OWNER = arg('owner'), WIZ = arg('wizard'), WIZSHOP = arg('wizardShop'), PW = 'Dukaan2026x';
 const SHOTS = process.env.E2E_SHOTS_DIR ?? '/tmp/e2e-shots/defects2';
@@ -37,7 +37,7 @@ for (const lang of ['en', 'hi']) {
     const ctx = await browser.newContext({ viewport: { width: w, height: w < 768 ? 780 : 900 } });
     if (lang === 'hi') await ctx.addCookies([{ name: 'ub_locale', value: 'hi', url: FE }]);
     const page = await ctx.newPage();
-    await page.goto(`${FE}/login`, { waitUntil: 'networkidle' });
+    await page.goto(`${FE}/login/email`, { waitUntil: 'networkidle' });
     await page.fill('input[type="email"]', OWNER); await page.fill('input[type="password"]', PW);
     await page.click('button[type="submit"]'); await page.waitForURL((u) => !u.pathname.startsWith('/login'), { timeout: 30000 }); await page.waitForTimeout(2000);
     for (const [name, path, wait] of [['customers', '/parties', 1800], ['khata', `/parties/${ramesh}`, 1800], ['statement', `/parties/${ramesh}/statement`, 1800], ['team', '/settings/team', 1500]]) {
@@ -51,7 +51,7 @@ for (const lang of ['en', 'hi']) {
     const c2 = await browser.newContext({ viewport: { width: w, height: w < 768 ? 780 : 900 } });
     if (lang === 'hi') await c2.addCookies([{ name: 'ub_locale', value: 'hi', url: FE }]);
     const p2 = await c2.newPage();
-    await p2.goto(`${FE}/login`, { waitUntil: 'networkidle' });
+    await p2.goto(`${FE}/login/email`, { waitUntil: 'networkidle' });
     await p2.fill('input[type="email"]', WIZ); await p2.fill('input[type="password"]', PW);
     await p2.click('button[type="submit"]'); await p2.waitForURL((u) => !u.pathname.startsWith('/login'), { timeout: 30000 }); await p2.waitForTimeout(2000);
     await p2.goto(`${FE}/switch`, { waitUntil: 'networkidle' }); await p2.waitForTimeout(1200);

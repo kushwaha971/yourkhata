@@ -1,13 +1,18 @@
 'use client';
 
 import { useTranslation } from 'src/hooks/useTranslation';
+import type { PrintBranding } from 'src/print/brandingPrintService';
 import type { Locale } from 'src/types/domain.types';
 
 import { InvoicePrintA4 } from './InvoicePrintA4';
 import { InvoicePrintThermal80 } from './InvoicePrintThermal80';
 
-import type { PrintBranding } from '../../redux/salesThunk';
 import type { PrintTemplate, SalesDocument, UpiIntent } from '../../types/sales.types';
+
+// Loaded with dynamic(), so its own words come with its own chunk rather than
+// with the screen that opens it (src/i18n/catalogueRegistry.ts).
+import 'src/i18n/catalogues/money';
+import 'src/i18n/catalogues/sales';
 
 /**
  * SAL-03 FR-1 / FR-2 — the sheet `window.print()` prints: shown on screen as

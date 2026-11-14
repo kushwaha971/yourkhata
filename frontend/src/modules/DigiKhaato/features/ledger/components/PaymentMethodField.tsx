@@ -67,6 +67,8 @@ export interface PaymentMethodFieldProps {
   /** The chip row's accessible name. Defaults to the ledger's "Received via";
    *  an expense passes "Paid by", because there the money went the other way. */
   readonly ariaLabel?: string;
+  /** Compact forms keep the same choices in the shared UI-kit select. */
+  readonly presentation?: 'chips' | 'select';
 }
 
 export function PaymentMethodField({
@@ -80,6 +82,7 @@ export function PaymentMethodField({
   describedBy,
   disabled,
   ariaLabel,
+  presentation = 'chips',
 }: Readonly<PaymentMethodFieldProps>): React.JSX.Element {
   const options = useMemo(
     () =>
@@ -104,20 +107,37 @@ export function PaymentMethodField({
 
   return (
     <UbStack gap={2}>
-      <UbChoiceChips<Choice>
-        id={id}
-        ariaLabel={ariaLabel ?? t('ledger.entry.mode')}
-        value={selected}
-        options={options}
-        invalid={invalid}
-        describedBy={describedBy}
-        disabled={disabled}
-        onBlur={onBlur}
-        onChange={(choice) => {
-          const next = pairFor(choice, app);
-          onChange(next.mode, next.app);
-        }}
-      />
+      {presentation === 'select' ? (
+        <UbSelect
+          id={id}
+          aria-label={ariaLabel ?? t('ledger.entry.mode')}
+          value={selected}
+          options={options}
+          invalid={invalid}
+          aria-describedby={describedBy}
+          disabled={disabled}
+          onBlur={onBlur}
+          onChange={(value) => {
+            const next = pairFor(value as Choice, app);
+            onChange(next.mode, next.app);
+          }}
+        />
+      ) : (
+        <UbChoiceChips<Choice>
+          id={id}
+          ariaLabel={ariaLabel ?? t('ledger.entry.mode')}
+          value={selected}
+          options={options}
+          invalid={invalid}
+          describedBy={describedBy}
+          disabled={disabled}
+          onBlur={onBlur}
+          onChange={(choice) => {
+            const next = pairFor(choice, app);
+            onChange(next.mode, next.app);
+          }}
+        />
+      )}
       {selected === 'upi' && (
         <UbSelect
           id={`${id}-upi-app`}

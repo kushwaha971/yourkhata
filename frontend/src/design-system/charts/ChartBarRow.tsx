@@ -83,8 +83,11 @@ function ChartBarRowBase({
         className
       )}
     >
-      <div className="flex items-baseline justify-between gap-3">
-        <span className="ds-body-sm min-w-0 truncate text-text-secondary" title={row.label}>
+      <div className="flex flex-wrap items-baseline justify-between gap-3">
+        <span
+          className="ds-body-sm min-w-0 flex-1 basis-32 break-words text-text-secondary"
+          title={row.label}
+        >
           {row.label}
         </span>
         <span className="ds-body-sm-medium ds-num shrink-0 text-text-primary">{row.value}</span>

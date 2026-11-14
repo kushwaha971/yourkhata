@@ -3,14 +3,12 @@
 import { useCallback, useMemo, useState } from 'react';
 
 import dynamic from 'next/dynamic';
-import { useRouter } from 'next/navigation';
 
 import { MessageCircle, Settings2 } from 'lucide-react';
 
 import {
   UbBox,
   UbButton,
-  UbChoiceChips,
   UbEmptyState,
   UbPageHeader,
   UbPageShell,
@@ -18,6 +16,7 @@ import {
   UbStatusBanner,
   UbTabs,
   UbText,
+  UbFilterSelect,
 } from 'src/design-system';
 import {
   UbDataGrid,
@@ -26,33 +25,52 @@ import {
   type UbDataGridLabels,
   type UbGridState,
 } from 'src/design-system/UbDataGrid';
-import { useAppDispatch } from 'src/hooks/useAppStore';
+import { useAppRouter } from 'src/hooks/useAppRouter';
+import { useAppDispatch, useAppSelector } from 'src/hooks/useAppStore';
 import { useTranslation } from 'src/hooks/useTranslation';
+import { selectEnabledModules } from 'src/redux/slice/sessionSlice';
 import { partyPath } from 'src/routes';
 import { formatInr } from 'src/utils/money';
 
 import { usePartyReminder } from 'modules/DigiKhaato/features/ledger/hooks/usePartyReminder';
 
 import { useReminders } from '../hooks/useReminders';
+import { reminderTabsFor } from '../moduleTabs';
 import { startBulkReminders } from '../redux/reminderThunk';
+import { reminderTabLabel } from '../view-model/moduleReminderDisplay';
 import { REMINDER_TABS, bucketFigure, isBucket } from '../view-model/reminderDisplay';
 
 import { createDueColumns, createHistoryColumns } from './ReminderColumns';
 
 import type { DueParty, Reminder, ReminderKindFilter, ReminderTab } from '../types/reminder.types';
 
+// ADR-061 — this component READS a registry verticals write to; their
+// registrations run when this bare import is evaluated. It looks redundant
+// and must not be removed (src/tests/verticalRegistrations.test.ts).
+import 'src/modules/registrations';
+
 /* Each of these opens from a tap, so each belongs in the chunk that opens it
    (the rule CLAUDE.md records three times): a merchant who opens the screen to
    see who is due today downloads none of them. */
-const PartyReminderSheetLazy = /* @__PURE__ */ dynamic(() =>
-  import('./PartyReminderSheet').then((m) => m.PartyReminderSheet)
+const PartyReminderSheetLazy = /* @__PURE__ */ dynamic(
+  () => import('./PartyReminderSheet').then((m) => m.PartyReminderSheet),
+  { ssr: false }
 );
-const BulkReminderDialogLazy = /* @__PURE__ */ dynamic(() =>
-  import('./BulkReminderDialog').then((m) => m.BulkReminderDialog)
+const BulkReminderDialogLazy = /* @__PURE__ */ dynamic(
+  () => import('./BulkReminderDialog').then((m) => m.BulkReminderDialog),
+  { ssr: false }
 );
-const ReminderSettingsDialogLazy = /* @__PURE__ */ dynamic(() =>
-  import('./ReminderSettingsDialog').then((m) => m.ReminderSettingsDialog)
+const ReminderSettingsDialogLazy = /* @__PURE__ */ dynamic(
+  () => import('./ReminderSettingsDialog').then((m) => m.ReminderSettingsDialog),
+  { ssr: false }
 );
+// A7 — a module's tab, in its own chunk: a shop never downloads it.
+const ModuleRemindersPanelLazy = /* @__PURE__ */ dynamic(
+  () => import('./ModuleRemindersPanel').then((m) => m.ModuleRemindersPanel),
+  { ssr: false }
+);
+
+const SHOP_SCOPE = 'shop';
 
 const HISTORY_FILTERS: readonly ReminderKindFilter[] = ['', 'auto', 'manual', 'failed'];
 const FILTER_LABEL: Readonly<Record<ReminderKindFilter, string>> = {
@@ -75,13 +93,39 @@ const FILTER_LABEL: Readonly<Record<ReminderKindFilter, string>> = {
  * A single reminder is the khata's sheet, with the server's text. Bulk is the
  * sequential flow in `BulkReminderDialog`: a browser opens one window per tap,
  * so forty reminders are forty taps, each on a real link.
+ *
+ * ── An empty book is one sentence ────────────────────────────────────────
+ * Owner, 12 Oct 2026. A shop with no ledger entry at all sees one empty state
+ * in place of the shop's tabs — not "Today 0 · Late 0 · Next 0" over
+ * "₹0.00 from 0 customers", which is a report about nothing. The flag is the
+ * summary's `meta.has_any` (the same response the tab counts come from), and
+ * it is `undefined` until the server says, so nothing hides early or on an
+ * older server. A book with entries and nobody due keeps its tabs: that empty
+ * list is the answer to "who do I chase today". The settings button stays —
+ * it is the shop's reminder POLICY (auto-SMS, the text), which a merchant may
+ * well set before their first customer owes them, not a control over a list.
+ * Module tabs (library, lending) are untouched: only the Shop scope collapses.
  */
 export function RemindersPageContent(): React.JSX.Element {
   const { t } = useTranslation();
-  const router = useRouter();
+  const router = useAppRouter();
   const dispatch = useAppDispatch();
   const tier = useGridTier();
   const r = useReminders();
+  /* A7 — module tabs, from the registry, for the modules that are on. */
+  const enabledModules = useAppSelector(selectEnabledModules);
+  const moduleTabs = useMemo(() => reminderTabsFor(enabledModules), [enabledModules]);
+  const [scope, setScope] = useState<string>(SHOP_SCOPE);
+  const scopeTabs = useMemo(
+    () => [
+      { value: SHOP_SCOPE, label: t('reminders.module.shopTab') },
+      ...moduleTabs.map((tab) => ({
+        value: tab.module,
+        label: reminderTabLabel(t, tab.module, tab.labelId),
+      })),
+    ],
+    [moduleTabs, t]
+  );
 
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [bulkOpen, setBulkOpen] = useState(false);
@@ -241,6 +285,7 @@ export function RemindersPageContent(): React.JSX.Element {
   }
 
   const figure = isBucket(tab) ? bucketFigure(summary, tab) : null;
+  const emptyBook = summary?.hasAny === false;
   const pageIds = due.rows.map((row) => row.id);
 
   const dueState: UbGridState =
@@ -261,6 +306,114 @@ export function RemindersPageContent(): React.JSX.Element {
             ? 'filtered-empty'
             : 'empty'
           : 'rows';
+
+  const shopTabs = emptyBook ? (
+    <UbEmptyState
+      variant="firstUse"
+      title={t('reminders.emptyBook.title')}
+      description={t('reminders.emptyBook.body')}
+    />
+  ) : (
+    <UbTabs<ReminderTab>
+      value={tab}
+      onValueChange={setTab}
+      tabs={tabs}
+      ariaLabel={t('reminders.tabs')}
+      layout="fit"
+    >
+      {isBucket(tab) ? (
+        <UbStack gap={3}>
+          <UbStack direction="row" justify="between" align="center" gap={2} wrap>
+            <UbText variant="body-sm" tone="secondary" data-testid="bucket-caption">
+              {figure
+                ? t('reminders.bucket.caption', {
+                    amount: formatInr(figure.amount),
+                    count: figure.count,
+                  })
+                : ' '}
+            </UbText>
+            {canRemind && due.rows.length > 0 && (
+              <UbButton
+                variant="outlineNeutral"
+                size="sm"
+                icon={<MessageCircle aria-hidden className="h-4 w-4" />}
+                onClick={() => startBulk(pageIds)}
+              >
+                {t('reminders.bulk.page')}
+              </UbButton>
+            )}
+          </UbStack>
+          <UbDataGrid
+            rows={due.rows}
+            columns={dueColumns}
+            rowId={dueId}
+            rowName={dueName}
+            state={dueState}
+            labels={labels}
+            emptyStates={emptyStates}
+            caption={t(`reminders.caption.${tab}`)}
+            storageId="ledger.reminders.due"
+            page={{
+              page: due.page,
+              pageSize: due.pageSize,
+              total: due.total,
+              totalPages: Math.max(Math.ceil(due.total / Math.max(due.pageSize, 1)), 1),
+            }}
+            onPageChange={r.setPage}
+            selectable={canRemind}
+            selectedIds={selected}
+            onSelectionChange={setSelected}
+            bulkActions={
+              <UbButton
+                variant="primary"
+                size="sm"
+                icon={<MessageCircle aria-hidden className="h-4 w-4" />}
+                onClick={() => startBulk(selected)}
+              >
+                {t('reminders.bulk.selected', { count: selected.length })}
+              </UbButton>
+            }
+            onRowOpen={tier === 'cards' ? handleCardOpen : undefined}
+          />
+        </UbStack>
+      ) : (
+        <UbStack gap={3}>
+          <UbStack direction="row" gap={2}>
+            <UbFilterSelect
+              spec={{
+                kind: 'single',
+                key: 'kind',
+                label: t('reminders.filter.label'),
+                options: HISTORY_FILTERS.map((value) => ({ value, label: t(FILTER_LABEL[value]) })),
+              }}
+              value={history.filter}
+              onChange={(next) => setHistoryFilter(next as ReminderKindFilter)}
+              closeLabel={t('common.action.close')}
+            />
+          </UbStack>
+          <UbDataGrid
+            rows={history.rows}
+            columns={historyColumns}
+            rowId={historyId}
+            rowName={historyName}
+            state={historyState}
+            labels={labels}
+            emptyStates={emptyStates}
+            caption={t('reminders.caption.sent')}
+            storageId="ledger.reminders.sent"
+            page={{
+              page: history.page,
+              pageSize: history.pageSize,
+              total: history.total,
+              totalPages: Math.max(Math.ceil(history.total / Math.max(history.pageSize, 1)), 1),
+            }}
+            onPageChange={r.setPage}
+            onRowOpen={tier === 'cards' ? handleHistoryOpen : undefined}
+          />
+        </UbStack>
+      )}
+    </UbTabs>
+  );
 
   return (
     <UbPageShell>
@@ -292,98 +445,21 @@ export function RemindersPageContent(): React.JSX.Element {
           />
         )}
 
-        <UbTabs<ReminderTab>
-          value={tab}
-          onValueChange={setTab}
-          tabs={tabs}
-          ariaLabel={t('reminders.tabs')}
-          layout="fit"
-        >
-          {isBucket(tab) ? (
-            <UbStack gap={3}>
-              <UbStack direction="row" justify="between" align="center" gap={2} wrap>
-                <UbText variant="body-sm" tone="secondary" data-testid="bucket-caption">
-                  {figure
-                    ? t('reminders.bucket.caption', {
-                        amount: formatInr(figure.amount),
-                        count: figure.count,
-                      })
-                    : ' '}
-                </UbText>
-                {canRemind && due.rows.length > 0 && (
-                  <UbButton
-                    variant="outlineNeutral"
-                    size="sm"
-                    icon={<MessageCircle aria-hidden className="h-4 w-4" />}
-                    onClick={() => startBulk(pageIds)}
-                  >
-                    {t('reminders.bulk.page')}
-                  </UbButton>
-                )}
-              </UbStack>
-              <UbDataGrid
-                rows={due.rows}
-                columns={dueColumns}
-                rowId={dueId}
-                rowName={dueName}
-                state={dueState}
-                labels={labels}
-                emptyStates={emptyStates}
-                caption={t(`reminders.caption.${tab}`)}
-                storageId="ledger.reminders.due"
-                page={{
-                  page: due.page,
-                  pageSize: due.pageSize,
-                  total: due.total,
-                  totalPages: Math.max(Math.ceil(due.total / Math.max(due.pageSize, 1)), 1),
-                }}
-                onPageChange={r.setPage}
-                selectable={canRemind}
-                selectedIds={selected}
-                onSelectionChange={setSelected}
-                bulkActions={
-                  <UbButton
-                    variant="primary"
-                    size="sm"
-                    icon={<MessageCircle aria-hidden className="h-4 w-4" />}
-                    onClick={() => startBulk(selected)}
-                  >
-                    {t('reminders.bulk.selected', { count: selected.length })}
-                  </UbButton>
-                }
-                onRowOpen={tier === 'cards' ? handleCardOpen : undefined}
-              />
-            </UbStack>
-          ) : (
-            <UbStack gap={3}>
-              <UbChoiceChips<ReminderKindFilter>
-                value={history.filter}
-                onChange={setHistoryFilter}
-                ariaLabel={t('reminders.filter.label')}
-                options={HISTORY_FILTERS.map((value) => ({ value, label: t(FILTER_LABEL[value]) }))}
-              />
-              <UbDataGrid
-                rows={history.rows}
-                columns={historyColumns}
-                rowId={historyId}
-                rowName={historyName}
-                state={historyState}
-                labels={labels}
-                emptyStates={emptyStates}
-                caption={t('reminders.caption.sent')}
-                storageId="ledger.reminders.sent"
-                page={{
-                  page: history.page,
-                  pageSize: history.pageSize,
-                  total: history.total,
-                  totalPages: Math.max(Math.ceil(history.total / Math.max(history.pageSize, 1)), 1),
-                }}
-                onPageChange={r.setPage}
-                onRowOpen={tier === 'cards' ? handleHistoryOpen : undefined}
-              />
-            </UbStack>
-          )}
-        </UbTabs>
+        {moduleTabs.length > 0 ? (
+          /* A7 (PLT-X06 §7) — "Shop" plus each enabled module with a reminder
+             source. Only with a second tab: a plain shop's screen is unchanged. */
+          <UbTabs<string>
+            value={scope}
+            onValueChange={setScope}
+            tabs={scopeTabs}
+            ariaLabel={t('reminders.module.tabs')}
+            layout="fit"
+          >
+            {scope === SHOP_SCOPE ? shopTabs : <ModuleRemindersPanelLazy module={scope} />}
+          </UbTabs>
+        ) : (
+          shopTabs
+        )}
       </UbStack>
 
       {reminder.canRemind && reminder.open && (

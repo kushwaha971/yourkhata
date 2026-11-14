@@ -4,24 +4,50 @@ import { memo, useCallback } from 'react';
 
 import { Lock } from 'lucide-react';
 
-import { UbBox, UbPanel, UbPanelSection, UbStack, UbSwitch, UbText } from 'src/design-system';
+import {
+  UbBox,
+  UbPanel,
+  UbPanelSection,
+  UbStack,
+  UbStatusBanner,
+  UbSwitch,
+  UbText,
+} from 'src/design-system';
 import { useTranslation } from 'src/hooks/useTranslation';
 
-import type { SettingsModules } from '../types/settings.types';
+import type { ModuleRefusal, SettingsModules } from '../types/settings.types';
 
 /**
  * The switches a merchant sees. `platform`, `parties` and `ledger` are the
  * product itself and are never offered (the server refuses to turn them off),
  * and `team` is part of Settings rather than a feature a shop opts into.
  */
-const HIDDEN: readonly string[] = ['platform', 'parties', 'ledger', 'team', 'help'];
+/* Owner, 12 Oct 2026: Gym and Hotel are out of the current scope — hidden even
+   on a development stack that releases every module (`UB_UNRELEASED_MODULES`). */
+export const HIDDEN_MODULES: readonly string[] = [
+  'platform',
+  'parties',
+  'ledger',
+  'team',
+  'help',
+  'gym',
+  'hospitality',
+];
 
 export interface ModuleToggleListProps {
   readonly modules: SettingsModules;
   readonly canEdit: boolean;
   readonly busy: boolean;
   readonly onChange: (modules: readonly string[]) => void;
+  /**
+   * A12 (PLT-X10 §2, R14): the last refused "switch off", drawn under that
+   * module's switch as what is still open and the next step.
+   */
+  readonly refusal?: ModuleRefusal | null;
 }
+
+/** The fallback line for a counter without a label, or a label whose copy is not on this screen. */
+const GENERIC_BLOCKER = 'settings.module.blocker';
 
 /**
  * PLT-06 §7 `ModuleToggleList` (FR-4, T-PLT-06-8) — one switch per module the
@@ -39,8 +65,26 @@ function ModuleToggleListInner({
   canEdit,
   busy,
   onChange,
+  refusal = null,
 }: Readonly<ModuleToggleListProps>): React.JSX.Element {
   const { t } = useTranslation();
+
+  /**
+   * A label is a catalogue key the owning module ships ("library.off.copiesOut"
+   * taking `{count}`). A key whose catalogue this screen has not loaded comes
+   * back as the key itself, and a raw message id on screen is worse than the
+   * generic line, so that case falls back to it.
+   */
+  const blockerLine = useCallback(
+    (labelId: string | null, count: number) => {
+      if (labelId) {
+        const text = t(labelId, { count });
+        if (text !== labelId) return text;
+      }
+      return t(GENERIC_BLOCKER, { count });
+    },
+    [t]
+  );
 
   const toggle = useCallback(
     (module: string, next: boolean) => {
@@ -52,8 +96,8 @@ function ModuleToggleListInner({
     [modules.enabled, onChange]
   );
 
-  const available = modules.available.filter((module) => !HIDDEN.includes(module));
-  const locked = modules.locked.filter((module) => !HIDDEN.includes(module));
+  const available = modules.available.filter((module) => !HIDDEN_MODULES.includes(module));
+  const locked = modules.locked.filter((module) => !HIDDEN_MODULES.includes(module));
 
   return (
     <UbPanel as="section">
@@ -66,14 +110,24 @@ function ModuleToggleListInner({
             {t('settings.module.intro')}
           </UbText>
           {available.map((module) => (
-            <UbSwitch
-              key={module}
-              checked={modules.enabled.includes(module)}
-              onCheckedChange={(next) => toggle(module, next)}
-              label={t(`nav.module.${module}`)}
-              description={t(`settings.module.${module}.description`)}
-              disabled={!canEdit || busy}
-            />
+            <UbStack key={module} gap={2}>
+              <UbSwitch
+                checked={modules.enabled.includes(module)}
+                onCheckedChange={(next) => toggle(module, next)}
+                label={t(`nav.module.${module}`)}
+                description={t(`settings.module.${module}.description`)}
+                disabled={!canEdit || busy}
+              />
+              {refusal?.module === module && (
+                <UbStatusBanner
+                  tone="warning"
+                  title={t('settings.module.closeFirst')}
+                  description={refusal.lines
+                    .map((line) => blockerLine(line.labelId, line.count))
+                    .join(' · ')}
+                />
+              )}
+            </UbStack>
           ))}
           {locked.map((module) => (
             <UbStack key={module} direction="row" gap={3} align="start">

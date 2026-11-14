@@ -1,0 +1,508 @@
+import { act, screen, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+
+import { resetAllFeatureState } from 'src/redux/actions';
+import { sessionLoaded } from 'src/redux/slice/sessionSlice';
+import { store } from 'src/redux/store';
+import { renderWithProviders } from 'src/tests/renderWithProviders';
+import type { PermissionCode } from 'src/types/domain.types';
+
+import { makeDocument, wireDocument, wireLine } from '../testing/salesFixtures';
+
+import { CreditNoteEditorPageContent } from './CreditNoteEditorPageContent';
+import { DocumentActions } from './DocumentActions';
+import { InvoiceEditorPageContent } from './InvoiceEditorPageContent';
+import { VoidDocumentDialog } from './VoidDocumentDialog';
+
+/**
+ * SAL-01 / SAL-04 / SAL-05 on screen: the estimate editor's tax label, the void
+ * dialog's refusal and its payments step, and the return editor's cap. The
+ * services are stubbed at the module boundary; nothing reaches the network.
+ */
+const gst = { type: 'regular' };
+jest.mock('../../business-profile/api/businessProfileService', () => ({
+  fetchTenant: jest.fn(async () => ({
+    gstType: gst.type,
+    stateCode: '27',
+    businessType: 'wholesale',
+  })),
+}));
+jest.mock('../../inventory/api/mastersService', () => ({
+  listTaxRates: jest.fn(async () => [
+    {
+      code: 'GST5',
+      name: 'GST 5%',
+      rate: '5.000',
+      cessRate: '0.000',
+      effectiveTo: null,
+      isCurrent: true,
+    },
+  ]),
+}));
+jest.mock('../api/salesService', () => ({
+  ...jest.requireActual('../api/salesService'),
+  getInvoice: jest.fn(),
+}));
+jest.mock('../api/creditNoteService', () => ({
+  createAndIssueCreditNote: jest.fn(),
+  voidInvoice: jest.fn(),
+  voidCreditNote: jest.fn(),
+  applyCreditNote: jest.fn(),
+}));
+const push = jest.fn();
+jest.mock('next/navigation', () => ({
+  useRouter: () => ({ push, replace: jest.fn(), back: jest.fn(), prefetch: jest.fn() }),
+  useSearchParams: () => new URLSearchParams(''),
+  usePathname: () => '/sales',
+}));
+
+const sales = jest.requireMock('../api/salesService') as { getInvoice: jest.Mock };
+const credits = jest.requireMock('../api/creditNoteService') as {
+  createAndIssueCreditNote: jest.Mock;
+  voidInvoice: jest.Mock;
+};
+
+const signIn = (permissions: readonly PermissionCode[]): void => {
+  store.dispatch(
+    sessionLoaded({
+      user: {
+        id: 'u1',
+        name: 'Owner',
+        email: 'owner@shop.test',
+        mobile: null,
+        locale: 'en',
+        mustChangePassword: false,
+        passwordExpiresAt: null,
+      },
+      activeTenant: { id: 't1', name: 'Sharma General Store', timezone: 'Asia/Kolkata' },
+      tenants: [{ id: 't1', name: 'Sharma General Store', timezone: 'Asia/Kolkata' }],
+      permissions: [...permissions],
+      enabledModules: ['sales', 'parties', 'inventory'],
+      version: 1,
+    })
+  );
+};
+
+const settle = () => act(() => new Promise<void>((resolve) => setTimeout(resolve, 50)));
+
+beforeEach(() => {
+  jest.clearAllMocks();
+  store.dispatch(resetAllFeatureState());
+  window.localStorage.clear();
+  gst.type = 'regular';
+});
+
+describe('the estimate editor (SAL-01, TSK-SAL-01-07)', () => {
+  it('T-SAL01-8: is the bill editor titled Estimate, with "Save & send" and Estimated GST', async () => {
+    signIn(['sales.estimate.read', 'sales.estimate.write']);
+    renderWithProviders(<InvoiceEditorPageContent documentId={null} kind="estimate" />);
+    expect(await screen.findByRole('heading', { name: 'New estimate' })).toBeInTheDocument();
+    expect(screen.getByTestId('invoice-issue')).toHaveTextContent('Save & send');
+    expect(screen.getByTestId('estimated-gst')).toHaveTextContent(
+      'Estimated GST (final on invoice)'
+    );
+    // An estimate carries a validity, never a due date (FR-4).
+    expect(screen.getByText('Valid until')).toBeInTheDocument();
+    expect(screen.queryByText('Due on')).not.toBeInTheDocument();
+    await settle();
+  });
+
+  it('T-SAL01-8: hides the tax preview for a composition tenant (BR-3)', async () => {
+    gst.type = 'composition';
+    signIn(['sales.estimate.read', 'sales.estimate.write']);
+    renderWithProviders(<InvoiceEditorPageContent documentId={null} kind="estimate" />);
+    expect(await screen.findByTestId('invoice-issue')).toBeInTheDocument();
+    expect(screen.queryByTestId('estimated-gst')).not.toBeInTheDocument();
+    await settle();
+  });
+
+  it('refuses a member without the estimate codename, even one who may bill', async () => {
+    signIn(['sales.invoice.read', 'sales.invoice.write']);
+    renderWithProviders(<InvoiceEditorPageContent documentId={null} kind="estimate" />);
+    expect(screen.getByText('Bills are not available')).toBeInTheDocument();
+    await settle();
+  });
+});
+
+/**
+ * Shop item 3 — a sales order is the estimate's editor and page with its own words:
+ * "Save & confirm" in place of "Save & send", no validity and no due date (an
+ * order is never a receivable), and on an open order Convert to invoice and
+ * Cancel order — never Void, which is a bill's.
+ */
+describe('the sales order (Shop item 3)', () => {
+  it('is the bill editor titled Sales order, confirmed rather than sent, with no dates owed', async () => {
+    signIn(['sales.estimate.read', 'sales.estimate.write']);
+    renderWithProviders(<InvoiceEditorPageContent documentId={null} kind="sales_order" />);
+    expect(await screen.findByRole('heading', { name: /Sales order/ })).toBeInTheDocument();
+    expect(screen.getByTestId('invoice-issue')).toHaveTextContent('Save & confirm');
+    expect(screen.queryByText('Valid until')).not.toBeInTheDocument();
+    expect(screen.queryByText('Due on')).not.toBeInTheDocument();
+    await settle();
+  });
+
+  it('offers Convert and Cancel on an open order, and neither once it is billed', () => {
+    signIn([
+      'sales.estimate.read',
+      'sales.estimate.write',
+      'sales.invoice.write',
+      'sales.invoice.void',
+    ]);
+    const open = makeDocument({ kind: 'sales_order', status: 'open', number: 'SO/26-27/0001' });
+    const view = renderWithProviders(<DocumentActions doc={open} />);
+    expect(screen.getByTestId('order-convert')).toBeInTheDocument();
+    expect(screen.getByTestId('order-cancel')).toBeInTheDocument();
+    expect(screen.queryByTestId('document-void')).not.toBeInTheDocument();
+    view.unmount();
+    const billed = makeDocument({
+      kind: 'sales_order',
+      status: 'converted',
+      number: 'SO/26-27/0001',
+      // Billed as a live invoice; with no link (its draft discarded) it may be billed again.
+      links: { converted_to: { id: 'i9', kind: 'invoice', number: 'INV/1', status: 'issued' } },
+    });
+    renderWithProviders(<DocumentActions doc={billed} />);
+    expect(screen.queryByTestId('order-convert')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('order-cancel')).not.toBeInTheDocument();
+  });
+});
+
+/**
+ * Shop item 4 — a delivery challan is the bill editor for a named party only (no
+ * walk-in: goods on a challan go to somebody), with the challan's type and
+ * transport, "Save & issue"; on an issued challan, Convert to invoice and Void
+ * challan — Void only for a member who may void.
+ */
+describe('the delivery challan (Shop item 4)', () => {
+  it('asks why the goods are going and who carries them, for a party only', async () => {
+    signIn(['sales.invoice.read', 'sales.invoice.write']);
+    renderWithProviders(<InvoiceEditorPageContent documentId={null} kind="delivery_challan" />);
+    expect(await screen.findByRole('heading', { name: /Delivery challan/ })).toBeInTheDocument();
+    expect(screen.getByTestId('invoice-issue')).toHaveTextContent('Save & issue');
+    expect(screen.getByTestId('challan-details')).toHaveTextContent('Vehicle no.');
+    expect(screen.queryByRole('radio', { name: 'Walk-in' })).not.toBeInTheDocument();
+    await settle();
+  });
+
+  it('offers Convert and Void on an issued challan, and Void only to a member who may void', () => {
+    signIn(['sales.invoice.read', 'sales.invoice.write', 'sales.invoice.void']);
+    const issued = makeDocument({
+      kind: 'delivery_challan',
+      status: 'issued',
+      number: 'DC/26-27/0001',
+    });
+    const view = renderWithProviders(<DocumentActions doc={issued} />);
+    expect(screen.getByTestId('challan-convert')).toBeInTheDocument();
+    expect(screen.getByTestId('challan-void')).toBeInTheDocument();
+    expect(screen.queryByTestId('document-void')).not.toBeInTheDocument();
+    view.unmount();
+    store.dispatch(resetAllFeatureState());
+    signIn(['sales.invoice.read', 'sales.invoice.write']);
+    renderWithProviders(<DocumentActions doc={issued} />);
+    expect(screen.getByTestId('challan-convert')).toBeInTheDocument();
+    expect(screen.queryByTestId('challan-void')).not.toBeInTheDocument();
+  });
+});
+
+describe('the void dialog (SAL-05 §7)', () => {
+  /**
+   * WP-03 D-04c — Void is not greyed for a short reason any more (the shared
+   * reason dialog says why instead), so the rule is asserted on what is SENT:
+   * nothing below three characters, the reason once it has three.
+   */
+  it('T-SAL05-8: states the consequences and sends no void below three characters', async () => {
+    signIn(['sales.invoice.read', 'sales.invoice.void']);
+    const doc = makeDocument({ lines: [wireLine({ qty: '2.000' })] });
+    credits.voidInvoice.mockResolvedValue({
+      document: { ...doc, status: 'void' },
+      warnings: [],
+      rule46: null,
+      partyBalance: null,
+      ledgerEntryId: null,
+      voidResult: { documentId: doc.id, partyBalance: null, unallocatedPayments: [] },
+    });
+    renderWithProviders(<VoidDocumentDialog doc={doc} onClose={jest.fn()} />);
+    expect(screen.getByTestId('void-consequences')).toHaveTextContent('Stock: +2 Basmati Rice 5kg');
+    const confirm = screen.getByTestId('void-confirm');
+    await userEvent.type(screen.getByLabelText('Reason'), 'no');
+    await userEvent.click(confirm);
+    expect(credits.voidInvoice).not.toHaveBeenCalled();
+    expect(screen.getByLabelText('Reason')).toHaveAccessibleDescription(/.+/);
+    await userEvent.type(screen.getByLabelText('Reason'), 't mine');
+    await userEvent.click(confirm);
+    await waitFor(() => expect(credits.voidInvoice).toHaveBeenCalledTimes(1));
+  });
+
+  it('FR-7: after voiding a paid walk-in bill, says the money goes back over the counter', async () => {
+    signIn(['sales.invoice.read', 'sales.invoice.void']);
+    const doc = makeDocument({ status: 'paid', amount_paid: '473.00', amount_due: '0.00' });
+    credits.voidInvoice.mockResolvedValue({
+      document: { ...doc, status: 'void' },
+      warnings: [],
+      rule46: null,
+      partyBalance: null,
+      ledgerEntryId: null,
+      voidResult: {
+        documentId: doc.id,
+        partyBalance: null,
+        unallocatedPayments: [
+          { paymentId: 'pay1', number: 'RCT/26-27/0007', amount: '473.00', walkIn: true },
+        ],
+      },
+    });
+    const onClose = jest.fn();
+    renderWithProviders(<VoidDocumentDialog doc={doc} onClose={onClose} />);
+    await userEvent.type(screen.getByLabelText('Reason'), 'Duplicate bill');
+    await userEvent.click(screen.getByTestId('void-confirm'));
+    expect(await screen.findByText('Return ₹473.00 to the customer')).toBeInTheDocument();
+    // UAT D3 — the server voids the counter receipt with the bill; the copy says so and no
+    // longer asks the merchant to void it by hand.
+    expect(
+      screen.getByText(
+        'The bill and its counter receipt are void, so the ₹473.00 leaves your cash book. Hand it back to the customer.'
+      )
+    ).toBeInTheDocument();
+    expect(credits.voidInvoice).toHaveBeenCalledWith('d1', 'Duplicate bill');
+    // PAY-05 integration — the counter receipt is real now, and one tap from its void.
+    expect(screen.getByRole('link', { name: 'RCT/26-27/0007' })).toHaveAttribute(
+      'href',
+      '/payments/pay1'
+    );
+    expect(onClose).not.toHaveBeenCalled();
+    await userEvent.click(screen.getByTestId('void-follow-up-done'));
+    expect(onClose).toHaveBeenCalled();
+  });
+
+  it("BR-4 × PAY-05: a party bill's payments are named and kept as an advance", async () => {
+    signIn(['sales.invoice.read', 'sales.invoice.void']);
+    const doc = makeDocument({
+      status: 'partially_paid',
+      amount_paid: '300.00',
+      amount_due: '173.00',
+      party: { id: 'p1', name: 'Ramesh Traders', gstin: null, mobile: null, state_code: '27' },
+    });
+    credits.voidInvoice.mockResolvedValue({
+      document: { ...doc, status: 'void' },
+      warnings: [],
+      rule46: null,
+      partyBalance: '-300.00',
+      ledgerEntryId: null,
+      voidResult: {
+        documentId: doc.id,
+        partyBalance: '-300.00',
+        unallocatedPayments: [
+          { paymentId: 'pay2', number: 'RCT/26-27/0008', amount: '300.00', walkIn: false },
+        ],
+      },
+    });
+    const onClose = jest.fn();
+    renderWithProviders(<VoidDocumentDialog doc={doc} onClose={onClose} />);
+    await userEvent.type(screen.getByLabelText('Reason'), 'Wrong rate');
+    await userEvent.click(screen.getByTestId('void-confirm'));
+    expect(await screen.findByTestId('void-follow-up-receipts')).toHaveTextContent(
+      'RCT/26-27/0008 · ₹300.00'
+    );
+    expect(screen.getByText('Keep as advance')).toBeInTheDocument();
+  });
+});
+
+describe('the void dialog on an invoice with a credit note (QA S-D4)', () => {
+  it('says the credit note must be voided first, links it, and keeps Void disabled', async () => {
+    // S-D4: the dialog listed un-netted consequences and Void failed silently
+    // on the server's 400 "Void credit note CN/… first.".
+    signIn(['sales.invoice.read', 'sales.invoice.void']);
+    const doc = makeDocument({
+      links: {
+        credit_notes: [
+          {
+            id: 'cn1',
+            kind: 'credit_note',
+            number: 'CN/26-27/0001',
+            document_date: '2026-09-28',
+            status: 'applied',
+            grand_total: '165.00',
+          },
+        ],
+      },
+    });
+    renderWithProviders(<VoidDocumentDialog doc={doc} onClose={jest.fn()} />);
+    expect(screen.getByTestId('void-blocked')).toHaveTextContent(
+      'Void credit note CN/26-27/0001 first'
+    );
+    expect(screen.getByRole('link', { name: 'Open CN/26-27/0001' })).toHaveAttribute(
+      'href',
+      '/sales/credit-notes/cn1'
+    );
+    expect(screen.queryByTestId('void-consequences')).not.toBeInTheDocument();
+    expect(screen.getByTestId('void-confirm')).toBeDisabled();
+  });
+
+  it("shows the server's refusal in the dialog instead of failing silently", async () => {
+    signIn(['sales.invoice.read', 'sales.invoice.void']);
+    const doc = makeDocument();
+    credits.voidInvoice.mockRejectedValue({
+      code: 'validation_failed',
+      message: 'Void credit note CN/26-27/0002 first.',
+      details: { nonFieldErrors: ['Void credit note CN/26-27/0002 first.'] },
+      requestId: null,
+      status: 400,
+      warnings: [],
+    });
+    const onClose = jest.fn();
+    renderWithProviders(<VoidDocumentDialog doc={doc} onClose={onClose} />);
+    await userEvent.type(screen.getByLabelText('Reason'), 'Duplicate bill');
+    await userEvent.click(screen.getByTestId('void-confirm'));
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'Void credit note CN/26-27/0002 first.'
+    );
+    expect(onClose).not.toHaveBeenCalled();
+  });
+});
+
+describe('the return editor (SAL-04 §7)', () => {
+  const invoice = () =>
+    makeDocument({
+      party: { id: 'p1', name: 'Ramesh Traders', gstin: null, mobile: null, state_code: '27' },
+      party_snapshot: {
+        name: 'Ramesh Traders',
+        gstin: null,
+        state_code: '27',
+        mobile: null,
+        address: {},
+      },
+      lines: [wireLine({ id: 'l1', qty: '5.000', returned_qty: '2.000' })],
+      grand_total: '2363.00',
+      amount_due: '2363.00',
+      document_date: '2026-09-20',
+    });
+
+  it('T-SAL04-11: refuses more than what is left and issues the rest with one key', async () => {
+    signIn(['sales.invoice.read', 'sales.credit_note.write']);
+    sales.getInvoice.mockResolvedValue({
+      document: invoice(),
+      warnings: [],
+      rule46: null,
+      partyBalance: null,
+      ledgerEntryId: null,
+    });
+    credits.createAndIssueCreditNote.mockResolvedValue({
+      document: makeDocument({ ...wireDocument(), id: 'cn1', kind: 'credit_note' }),
+      warnings: [],
+      rule46: null,
+      partyBalance: null,
+      ledgerEntryId: null,
+      invoice: null,
+    });
+    renderWithProviders(<CreditNoteEditorPageContent againstId="d1" />);
+    const qty = await screen.findByLabelText('Return qty');
+    expect(screen.getByText('Invoiced 5 NOS · Returned 2 · ₹450.00 each')).toBeInTheDocument();
+    await userEvent.type(qty, '4');
+    // QA S-D3 — the cap is said as it is typed, with no blur, and Issue stays
+    // disabled: "Up to 3" beside an accepted 4 and a live Issue was the defect.
+    expect(await screen.findByText('Only 3 can be returned')).toBeInTheDocument();
+    expect(screen.getByTestId('credit-note-issue')).toBeDisabled();
+    await userEvent.click(screen.getByTestId('credit-note-issue'));
+    expect(credits.createAndIssueCreditNote).not.toHaveBeenCalled();
+
+    await userEvent.clear(qty);
+    await userEvent.type(qty, '3');
+    expect(screen.getByTestId('credit-note-consequence')).toHaveTextContent(
+      'Stock +3 Basmati Rice 5kg'
+    );
+    await userEvent.click(screen.getByTestId('credit-note-issue'));
+    await waitFor(() => expect(credits.createAndIssueCreditNote).toHaveBeenCalled());
+    const [body, key] = credits.createAndIssueCreditNote.mock.calls[0];
+    expect(body).toMatchObject({
+      against_id: 'd1',
+      reason: 'sales_return',
+      restock: true,
+      settlement: 'hold_advance',
+      lines: [{ against_line_id: 'l1', qty: '3' }],
+    });
+    expect(typeof key).toBe('string');
+    await waitFor(() => expect(push).toHaveBeenCalledWith('/sales/credit-notes/cn1'));
+  });
+});
+
+describe('the void of a document another module issued (A5, R55)', () => {
+  const moduleDoc = () =>
+    makeDocument({ origin: { module: 'gym', type: 'gym_membership', id: 'm1', label: 'M-0042' } });
+  const refusal = (code: string, details: Record<string, string>) => ({
+    code,
+    message: details.reason ?? details.message,
+    details,
+    requestId: null,
+    status: 409,
+    warnings: [],
+  });
+
+  it("shows the module's reason in place and keeps Void disabled when the origin refuses", async () => {
+    signIn(['sales.invoice.read', 'sales.invoice.void']);
+    credits.voidInvoice.mockRejectedValue(
+      refusal('document_origin_locked', {
+        origin_type: 'gym_membership',
+        reason: 'End the membership first',
+      })
+    );
+    renderWithProviders(<VoidDocumentDialog doc={moduleDoc()} onClose={jest.fn()} />);
+    await userEvent.type(screen.getByLabelText('Reason'), 'Wrong member');
+    await userEvent.click(screen.getByTestId('void-confirm'));
+    const locked = await screen.findByTestId('void-origin-locked');
+    expect(locked).toHaveTextContent('End the membership first');
+    expect(screen.getByTestId('void-confirm')).toBeDisabled();
+  });
+
+  it('asks the origin\'s question, then resends with confirm_origin on "Void anyway"', async () => {
+    signIn(['sales.invoice.read', 'sales.invoice.void']);
+    const doc = moduleDoc();
+    credits.voidInvoice.mockReset();
+    credits.voidInvoice
+      .mockRejectedValueOnce(
+        refusal('document_origin_confirm', {
+          origin_type: 'gym_membership',
+          message: 'This also ends membership M-0042.',
+        })
+      )
+      .mockResolvedValueOnce({
+        document: { ...doc, status: 'void' },
+        warnings: [],
+        rule46: null,
+        partyBalance: null,
+        ledgerEntryId: null,
+        voidResult: { documentId: doc.id, partyBalance: null, unallocatedPayments: [] },
+      });
+    const onClose = jest.fn();
+    renderWithProviders(<VoidDocumentDialog doc={doc} onClose={onClose} />);
+    await userEvent.type(screen.getByLabelText('Reason'), 'Wrong member');
+    await userEvent.click(screen.getByTestId('void-confirm'));
+    expect(await screen.findByTestId('void-origin-confirm')).toHaveTextContent(
+      'This also ends membership M-0042.'
+    );
+    expect(screen.getByTestId('void-confirm')).toHaveTextContent('Cancel anyway');
+    await userEvent.click(screen.getByTestId('void-confirm'));
+    await waitFor(() => expect(onClose).toHaveBeenCalled());
+    expect(credits.voidInvoice).toHaveBeenNthCalledWith(1, doc.id, 'Wrong member');
+    expect(credits.voidInvoice).toHaveBeenNthCalledWith(2, doc.id, 'Wrong member', true);
+  });
+});
+
+it('Counter cancellation checks the current bill before showing consequences', async () => {
+  // Defect: the old cancel action described a cached bill after payments/returns changed elsewhere.
+  signIn(['sales.invoice.read', 'sales.invoice.void', 'sales.credit_note.write']);
+  const fresh = makeDocument({ amount_paid: '100.00', amount_due: '373.00' });
+  sales.getInvoice.mockResolvedValue({
+    document: fresh,
+    warnings: [],
+    rule46: null,
+    partyBalance: null,
+    ledgerEntryId: null,
+  });
+  renderWithProviders(<DocumentActions doc={makeDocument()} menu />);
+  await userEvent.click(screen.getByRole('button', { name: 'More actions' }));
+  expect(
+    screen.getByText('Nothing was paid on this bill, so there is nothing to refund.')
+  ).toBeInTheDocument();
+  await userEvent.click(screen.getByRole('button', { name: /The bill was a mistake/ }));
+  await waitFor(() => expect(sales.getInvoice).toHaveBeenCalledWith('d1', expect.anything()));
+  expect(await screen.findByTestId('void-consequences')).toBeInTheDocument();
+});

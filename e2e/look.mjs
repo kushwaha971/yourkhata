@@ -7,7 +7,7 @@
 import { chromium } from 'playwright';
 import { mkdirSync, writeFileSync } from 'node:fs';
 
-const FRONTEND = process.env.E2E_FRONTEND ?? 'http://localhost:3000';
+const FRONTEND = process.env.E2E_FRONTEND ?? (process.env.E2E_BASE ?? 'http://localhost:3000');
 const BACKEND = process.env.E2E_BACKEND ?? 'http://localhost:8000/api/v1';
 const SHOT_DIR = process.env.E2E_SHOTS ?? '/tmp/claude-0/look';
 const wantShots = process.argv.includes('--shots');
@@ -179,7 +179,7 @@ async function seed() {
 const settle = (page, ms = 900) => page.waitForTimeout(ms);
 
 const signIn = async (page, who = OWNER) => {
-  await page.goto(`${FRONTEND}/login`, { waitUntil: 'networkidle', timeout: 180000 });
+  await page.goto(`${FRONTEND}/login/email`, { waitUntil: 'networkidle', timeout: 180000 });
   await page.waitForTimeout(3000);
   await page.fill('input[type="email"], input[name="email"]', who.email);
   await page.fill('input[type="password"], input[name="password"]', who.password);
@@ -214,7 +214,7 @@ const main = async () => {
   for (const size of SIZES2) {
     const context = await browser.newContext({ viewport: { width: size.width, height: size.height } });
     const page = await context.newPage();
-    await page.goto(`${FRONTEND}/login`, { waitUntil: 'networkidle', timeout: 180000 });
+    await page.goto(`${FRONTEND}/login/email`, { waitUntil: 'networkidle', timeout: 180000 });
     await settle(page, 1200);
     mkdirSync(`${SHOT_DIR}/${size.id}`, { recursive: true });
     await page.screenshot({ path: `${SHOT_DIR}/${size.id}/login.png` });

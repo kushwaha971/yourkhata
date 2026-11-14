@@ -1,16 +1,13 @@
-'use client';
+import { redirect } from 'next/navigation';
 
-import { Suspense } from 'react';
+import { ROUTES } from 'src/routes';
 
-import { UbPageSkeleton } from 'src/design-system';
-
-import { SignUpPageContent } from 'modules/DigiKhaato/features/auth/components/SignUpPageContent';
-
-/** CR-2026-09-19-A FR-S1 — email + password sign-up. Part 19 §19.1.4: this is the whole file. */
-export default function SignUpPage(): React.JSX.Element {
-  return (
-    <Suspense fallback={<UbPageSkeleton variant="form" count={4} />}>
-      <SignUpPageContent />
-    </Suspense>
-  );
+/**
+ * Owner, 12 Nov 2026: there is one sign-in-or-sign-up page. A mobile number
+ * and a code are the whole of both — a new number becomes an account on its
+ * first verified code — so `/signup` (still linked from the landing page and
+ * from old messages) forwards to `/login`.
+ */
+export default function SignUpPage(): never {
+  redirect(ROUTES.LOGIN);
 }

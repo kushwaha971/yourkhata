@@ -1,0 +1,30 @@
+FAIL src/design-system/UbForm/UbForm.test.tsx
+  ✕ saving a form in a portal never submits the document form that opened it (89 ms)
+  UbForm double-tap lock
+    ○ skipped submits once for two taps that arrive before the first has finished
+    ○ skipped accepts the next submit once the first has settled, so Try again works
+    ○ skipped still prevents the native submit of a dropped tap
+
+  ● saving a form in a portal never submits the document form that opened it
+
+    expect(jest.fn()).not.toHaveBeenCalled()
+
+    Expected number of calls: 0
+    Received number of calls: 1
+
+    1: {"qty": "1"}, {"_reactName": "onSubmit", "_targetInst": null, "bubbles": true, "cancelable": true, "currentTarget": null, "defaultPrevented": true, "eventPhase": 3, "isDefaultPrevented": [Function functionThatReturnsTrue], "isPropagationStopped": [Function functionThatReturnsFalse], "isTrusted": true, "nativeEvent": {"isTrusted": true}, "submitter": undefined, "target": <form class="flex w-full flex-col gap-1" method="post" novalidate=""><button class="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-control [&_svg]:shrink-0 ub-hit transition-colors duration-fast ease-standard active:scale-[0.98] motion-reduce:active:scale-100 disabled:active:scale-100 disabled:cursor-not-allowed disabled:opacity-45 bg-cta text-cta-foreground hover:bg-cta-hover active:bg-cta-press h-10 px-4 text-button" type="submit"><span class="inline-flex items-center gap-2">Save contact</span></button></form>, "timeStamp": 1792556584921, "type": "submit"}
+
+      107 |   fireEvent.click(screen.getByRole('button',{name:'Save contact'}));
+      108 |   await waitFor(()=>expect(saveContact).toHaveBeenCalledTimes(1));
+    > 109 |   expect(recordBill).not.toHaveBeenCalled();
+          |                          ^
+      110 | });
+      111 |
+
+      at Object.<anonymous> (src/design-system/UbForm/UbForm.test.tsx:109:26)
+
+Test Suites: 1 failed, 1 total
+Tests:       1 failed, 3 skipped, 4 total
+Snapshots:   0 total
+Time:        0.827 s, estimated 1 s
+Ran all test suites matching /UbForm.test.tsx/i with tests matching "form in a portal".

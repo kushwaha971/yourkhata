@@ -9,6 +9,9 @@ const member = (overrides: Partial<Member> = {}): Member => ({
   fullName: 'Ramesh Kumar',
   mobile: null,
   role: 'staff',
+  roleLabelId: '',
+  roleModule: null,
+  roleActive: true,
   status: 'active',
   joinedAt: null,
   lastLoginAt: null,
@@ -24,6 +27,8 @@ const credentials = (overrides: Partial<IssuedCredentials> = {}): IssuedCredenti
   passwordExpiresAt: '2026-09-28T00:00:00Z',
   createdUser: true,
   loginUrl: 'https://shop.test/login',
+  mobile: null,
+  signIn: 'password',
   ...overrides,
 });
 

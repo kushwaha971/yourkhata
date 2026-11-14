@@ -23,6 +23,21 @@ describe('lazily registered slices', () => {
     // PLT-10 / PLT-14 — "Your data" and the operator console ship with their routes.
     expect(keys).not.toContain('accountData');
     expect(keys).not.toContain('admin');
+    // PUR-01/03/04 — the purchase bill screens' three slices ship with their routes.
+    expect(keys).not.toContain('purchaseBillList');
+    expect(keys).not.toContain('purchaseBillEditor');
+    expect(keys).not.toContain('purchaseBillDetail');
+    // RPT-01 / RPT-02 — the dashboard and the day book ship with their routes.
+    expect(keys).not.toContain('reportDashboard');
+    expect(keys).not.toContain('reportDayBook');
+    // RPT-03 / RPT-04 / RPT-07 — the tax reports' slice ships with its three routes.
+    expect(keys).not.toContain('taxReports');
+    // F03 (LIB-02) — the catalogue's five slices ship with the library routes.
+    expect(keys).not.toContain('libraryTitleList');
+    expect(keys).not.toContain('libraryTitleDetail');
+    expect(keys).not.toContain('libraryCopyList');
+    expect(keys).not.toContain('libraryCopyDetail');
+    expect(keys).not.toContain('libraryCatalogueForm');
     // The shell's own slices are still there.
     expect(keys).toEqual(expect.arrayContaining(['session', 'partyList', 'ledgerForm']));
   });

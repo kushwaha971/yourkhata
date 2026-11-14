@@ -730,6 +730,61 @@ track follows the code, not §19, and §19 should be amended to match.
 `/d/[token]` page render (the API answers, the page is still the stub); SAL-06 FR-5 duplicate;
 the stale-draft flag; print copies (original/duplicate/triplicate); a separate `/print` route
 (the detail page prints itself; the success sheet opens it with `?print=1`); void (SAL-05).
+## CR-2026-09-28-SAL-B — SAL-01/04/05: estimates, credit notes and void, beside the FRDs
+
+**State:** `raised`. **Target:** Part 17-04 SAL-01, SAL-04, SAL-05; Part 21 §21.3.7; Part 20
+§20.1.4 (the payments seam); canon §0.9 (staff role). **Gate:** none — additive; migration
+`sales 0002_estimates_credit_notes`.
+
+**Columns beside §21.3.7.** `valid_until`, `against_id`, `converted_to_id` and
+`converted_from_id` are §21.3.7's. Added beside it: `sales_document_line.against_line_id`
+(a credit-note line → the invoice line it returns), because the cap and the `returned_qty`
+cache are per LINE — an invoice can carry the same item twice at two prices — and
+`IX(tenant_id, against_id)` (CR-SAL-3's optional index). `sales_credit_application` is Part
+21 §21.3.9's decided table with `U(credit_note_id, invoice_id)`; a second application of the
+same pair adds to `amount`. `converted_to` / `converted_from` are `SET NULL`, so discarding a
+converted DRAFT invoice frees the estimate to be converted again (the EC-9 relaxation of BR-6
+extends to a discarded draft as well as a voided invoice).
+
+**Where FR-12's reason lives.** In `meta.reason = {code, note}`, not prefixed into `notes`:
+`notes` prints, and "sales_return: two bottles leaked" on a customer's copy is a database
+code on paper. `restock`, `settlement` and the requested refund are in `meta` for the same
+no-column reason.
+
+**The payments seam.** `sales` may not import `payments`, and PAY-01 lands in parallel. Two
+functions are the whole of it and PAY-01 replaces their bodies, keeping callers and shapes:
+`services/refund_seam.record_refund` (a credit note's refund: the breakup in `meta.refund`,
+`amount_paid` as the cache, and the `payment_out` ledger debit BR-4 needs — to become
+`record_payment(direction='out')` allocated to the note) and `services/void_seam.
+release_invoice_payments` (SAL-05 FR-6 — today only a walk-in bill holds money, reported with
+`walk_in: true`; PAY-01 deletes the invoice's `payments_allocation` rows and reports each
+payment). Consequence stated plainly: until PAY-05 can void a refund, a refunded credit note
+cannot be voided (FR-10's rule, with no way yet to satisfy it). `services/amounts.
+refresh_invoice_amounts(invoice, amount_paid=…)` is the one recompute of `amount_due` and
+status from `grand_total − amount_paid − Σ applications` (BR-9); PAY-01's allocation should
+call it rather than keep a second formula.
+
+**Void of an invoice with credit notes.** FR-3 blocks while a non-void note stands AGAINST the
+invoice. Credit applied to it from OTHER notes (via `/apply`) is released back to those notes
+as open credit (BR-5), and the response's `meta.released_credit` names them.
+
+**Estimate status moves** are `POST …/mark-sent | mark-accepted | mark-rejected` (CR-SAL-1).
+Accept and reject start from `sent` only; `convert` from `sent | accepted | expired`. A second
+conversion is 409 `document_not_draft` "Estimate already converted". Expiry is the job
+`sales.expire_estimates` at 00:20 IST, by each tenant's own date, one `estimate.expired` audit
+row per estimate.
+
+**Staff hold `sales.credit_note.write`.** SAL-04 §12 and T-SAL04-10 give it to staff "per canon
+role"; the role table had omitted it. Void stays `sales.invoice.void` (owner, admin).
+
+**Not built, with reasons.** A standalone credit note in the UI (the API does it — FR-3 — but
+every counter return starts from a bill, and a party-and-lines editor for goodwill notes is a
+second editor); credit-note drafts in the UI (the return editor issues in one request with an
+Idempotency-Key; the API keeps drafts); "Duplicate & edit" (SAL-06 FR-5, not built for
+invoices either); the notification/SMS templates (NTF owns them); analytics events; restock or
+reversal onto an ARCHIVED item (`inventory.post_movements` refuses archived items and this track
+does not change the inventory writer — SAL-04 EC-2 / SAL-05 EC-1 surface as 409
+`item_archived`); the previous-FY warning for a void (SAL-05 EC-5).
 ## CR-2026-09-24-IMP-A — IMP-01 / PTY-10 / INV-09 / IMP-02: what was built beside the FRDs
 
 **State:** `raised`. **Target:** Part 17-01 PTY-10, Part 17-03 IMP-01/IMP-02/INV-09, Part 21
@@ -902,3 +957,981 @@ still resolves no tenant (403 `no_active_tenant`) rather than FR-3's `tenant_sus
 — Django admin at MVP), `/admin/users`, `/admin/audit-logs`, MFA.
 
 Requested against Part 17-01 PLT-14 FR-2…FR-8, Part 20 §20.4.8, Part 22 §22.13.
+
+## CR-2026-09-25-PAY-A — PAY-01…05 and LED-10: what was built beside the FRDs
+
+**State:** `raised`. **Target:** Part 17-02 PAY-01…PAY-05 and LED-10, Part 21 §21.3.9, Part 22
+§22.9, CR-2026-09-24-SAL-A. **Gate:** migrations `payments 0001_initial`,
+`payments 0002_money_invariants` (a CHECK over `mode_breakup` through an immutable SQL
+function, and a deferred constraint trigger for Σ allocations ≤ amount).
+
+**LED-10's service exists and the two stand-ins call it.** `ledger/services/postings.py`
+(`post_source_entry`, `reverse_source_entries`) replaces the bodies of
+`sales/services/ledger_link.post_invoice_debit` and `expenses/services/ledger_link.post_expense_payable`.
+It returns `(entry, balance)` rather than FR-1's bare `LedgerEntry`, because every caller needs
+the balance the posting produced. `reverse_source_entries` returns `(reversals, balance)`.
+`resolve_sources` is a registry each document app fills in `ready()` — the ledger may not import
+sales, payments or expenses — so `source` on the timeline and statement now carries `number`,
+`status` and `kind`; `url` stays null and the client routes by `type`.
+
+**The allocation target is an interface.** `payments/services/targets/` holds a protocol and a
+registry; the sales invoice target is registered by `PaymentsConfig.ready()`, and PUR-02 adds a
+purchase-bill target (direction `out`) beside it. A target MOVES a bill's caches by the allocated
+amount (`amount_paid ± a`, `amount_due ∓ a`) rather than recomputing `grand_total − paid −
+credits`, so SAL-04's credit applications survive a payment and a void without payments knowing
+about them. Status is recomputed by rule after every move, and `overdue` is decided at once
+(BR-4) rather than by the nightly job.
+
+**Walk-in bills hold `amount_due` at 0.** `ck_sales_document_walk_in_paid` (an issued walk-in bill
+is never a receivable) is a CHECK and cannot be deferred, and a walk-in payment is recorded
+against an already-issued bill. So a walk-in bill's `amount_due` stays 0 and what it can still take
+is `grand_total − amount_paid`. PAY-05 FR-5's walk-in void therefore leaves the bill `issued` with
+`amount_paid = 0` and `amount_due = 0`, not `amount_due = grand_total` as FR-5 says.
+
+**`payment_out` lines carry no mode.** BR-6 says the ledger entry carries `payment_mode =
+primary_mode`; `ck_ledger_entry_debit_has_no_mode` forbids a mode on any debit, and a payment out
+is a debit. Money in carries its mode (and UPI app) as FR-6 says; money out keeps its modes on
+the payment row only.
+
+**`mode_breakup` lines may carry `upi_app`.** PAY-02 §19 whitelists `mode`, `amount`, `reference`;
+the flattened UPI chips the ledger and expenses already use ("PhonePe kiya") write the app too,
+so the whitelist is those three plus `upi_app` (UPI lines only). The primary UPI line's app is
+copied onto the ledger credit.
+
+**Void does not refuse an archived party** (EC-5), unlike EXP-01's expense void, which does.
+
+**Party payments at issue are in** (closing CR-2026-09-24-SAL-A's refusal). The invoice is written
+issued-with-nothing-paid, its debit posted, then `record_payment` allocates up to the grand total
+and keeps the rest as advance; the khata shows the bill and the receipt as two lines (LED-10
+BR-4). `meta.payment` is still written (with `payment_id` and `number`) because the printed invoice
+reads it. The editor now opens the payment sheet for a party bill too, with "Full credit" beside
+the confirm (SAL-07 §9's state table) — one more tap for a pure credit sale.
+
+**API additions.** `GET /payments/open-documents?party_id&direction` (the allocation panel's rows,
+from the target registry, instead of FR-2's `GET /sales/invoices?...`, so the panel works for
+purchase bills unchanged); `POST /payments/{id}/share` → `{text, mobile}` (PAY-04 BR-4's
+server-rendered text, audited `payment.receipt_shared`, under `payments.payment.write`);
+`POST /payments/upi-intent {amount?, party_id?, note?}` → `{upi_url, amount, vpa, payee, qr}`
+(QR as module rows, the shape SAL-03's `UbQrCode` already draws, not FR-6's `{path, modules}`);
+`GET /payments/{id}` carries `business` (the receipt's header band) and `party_balance_after`
+(every ledger row up to this payment's, reversed rows included, so a later void does not rewrite
+history). Invoice detail carries `payments[]`.
+
+**Not built.** Share LINKS and the public `/d/<token>` receipt page (they need
+`parties_share_link`, and the public page is still a stub — the share text omits the link line);
+the receipt SMS and the void SMS (FR-6, BR-5/BR-7); the thermal-80 receipt template (A5 only);
+auto-print after save (`payments.auto_print_receipt`); the in-app owner notifications (§17);
+the cashbook's payments source (expenses may not import payments — the composition moves to
+`reports`, EXP-03); `ledger.check_integrity` (LED-10 FR-8); the counter-QR print view and the
+Settings UPI card (PAY-03 FR-1/FR-8, PLT-07's screen); the statement page's source links (the
+timeline has them).
+
+Requested against Part 17-02 PAY-01…PAY-05 and LED-10, Part 21 §21.3.9, Part 22 §22.9.
+## CR-2026-09-25-PUR-A — PUR-01 / PUR-03 / PUR-04: what was built beside the FRDs
+
+**State:** `raised`. **Target:** Part 17-03 §17.7.0, PUR-01, PUR-03, PUR-04; Part 21 §21.3.8;
+Part 20 §20.1.4. **Gate:** none — additive; migration `purchases 0001_add_purchases_document`.
+
+**The GST engine moved to `apps/tax/services/tax_engine.py`.** §17.7.0 says purchases use "the
+same engine as sales" and the import matrix forbids `purchases → sales`. The engine imports only
+`apps.common.money`, so it moved; `apps/sales/services/tax_engine.py` re-exports it until the
+parallel branches merge. A bill calls it with `gst_type="regular"` whatever the tenant is (the
+supplier charges GST to a composition shop too, FR-11). Two consequences of reusing it rather than
+writing §17.7.0's text a second time: the document-discount rounding residual goes to the LARGEST
+line, ties to the lowest line number (SAL-02 BR-5), not "remainder to the last line"; and SGST is
+`round2(t × r/100) − CGST` rather than a second `round2(t × r/200)`, so an odd paisa lands on SGST
+instead of vanishing. The §17.7.0 worked example is unchanged by either (T-PUR-01-1 passes to the
+paisa).
+
+**Duplicate index excludes drafts as well as voids.** §21.3.8 declares
+`U(tenant, party, supplier_invoice_number) WHERE … status <> 'void'`. Built as
+`UNIQUE (tenant, party, UPPER(supplier_invoice_number)) WHERE supplier_invoice_number IS NOT NULL
+AND status NOT IN ('void','draft')`. Drafts autosave: with them in the index a clerk who types an
+already-used number could not save the lines they were typing. The refusal is at RECORD (409
+`duplicate_supplier_invoice`, `details.existing`), the index still makes two recorded bills with
+one number impossible under any interleaving (a threaded test proves it), and `UPPER` because the
+number is typed by hand from paper. The number is trimmed and inner whitespace folded before
+storing.
+
+**Void changes the average cost.** PUR-04 FR-4/BR-4 ("avg cost is not recalculated — the dialog
+states 'Average cost unchanged'") predate CR-2026-09-24-INV-A, which this follows: the reversal
+movement is folded through the §21.3.6 (2) "reversal of an inbound" case in arrival order, so the
+average LOSES the value the bill blended in, and `recalc_stock` agrees by construction. The void
+dialog therefore does not print "Average cost unchanged". PUR-04 FR-4/BR-4 should be amended.
+
+**No payments in this change.** PUR-02 and FR-5/FR-6h (pay on the spot) are the payments track's.
+The seam is `apps/purchases/services/payment_seam.py`: `apply_payment(document, ±amount, today)` is
+the one writer of `amount_paid`/`amount_due`/`status` (BR-5), `lock_payable_bills` locks in
+`(document_date, number, id)` order, and `register_void_listener(fn)` lets payments release
+allocations inside `void_bill`'s transaction (FR-2d). The client renders no Pay action and no
+"Paid now" section until payments ships them.
+
+**Smaller deltas.** Recorded-bill PATCH accepts `notes` only (BR-7's text wavers on
+`attachment_id`, which is not built). `due_on` defaults at record to `document_date +
+party.credit_days` (0 when unset), matching FR-2. An archived item on a line is a 400 on
+`lines.N.item_id` at record, not a 409 `item_archived` (the same strict line validation sales
+uses). Void on an archived supplier is 409 `party_archived` (as the expense void). The list's
+counts are `meta.counts`; `all` literally includes drafts and voids (FR-1) while `meta.totals`
+excludes both from the money (BR-1). `purchases.refresh_overdue` was scheduled since Sprint 0
+with no handler and dead-lettered nightly; it now has one. Module-off guard for `purchases`
+counts drafts plus unpaid bills.
+
+**Not built.** Bill photo (`attachment_id`, FR-2/AC-6) — no `files_attachment` wiring in this
+wave; supplier payment and pay-now (PUR-02); inline item and supplier creation from the editor
+(FR-12, the PTY-01 quick form); scanner-driven lines; "Duplicate" and "Void and duplicate"
+(FR-9/FR-7 of PUR-04); `PurchaseBillPrint`; the purchase-register CSV (PUR-03 FR-8, RPT-04);
+bulk pay; `document_voided` notification to owners (PUR-04 §17); analytics events.
+
+## CR-2026-09-28-INT-A — W3 integration: payments × sales completion
+
+**One due formula.** An invoice's `amount_due` is `grand_total − amount_paid − Σ
+sales_credit_application` (SAL-02 BR-9) for every writer. PAY-01's sales allocation target now
+moves only `amount_paid` by the allocated delta and derives `amount_due` and the status through
+`sales.services.amounts.refresh_invoice_amounts`, so a credit note applied by SAL-04 is never
+clobbered by a payment and vice versa (test: ₹1000 invoice, ₹200 credit, ₹300 payment → ₹500 due;
+void the payment → ₹800; void the credit note → ₹1000). A walk-in bill keeps the target's own
+rule (`ck_sales_document_walk_in_paid` holds its due at zero).
+
+**LED-10 everywhere.** `sales/services/ledger_link.py` is now one-line calls into
+`ledger.services.postings`: `post_source_entry` for the invoice debit and the credit note credit,
+`reverse_source_entries` for a document void (C6 — dated today, sourced to the document). The
+posting matrix already allowed both entry types; it was not changed.
+
+**A credit note's refund is a PAY-01 voucher (SAL-04 FR-7 delta).** FR-7 says the refund payment
+is "allocated to the credit note". There is no credit-note allocation target (registering one with
+`direction='out'` would let PUR-02's FIFO auto-allocation settle customers' credit notes with
+supplier payments), so the refund is `record_payment(direction='out', allocations='none',
+meta={credit_note_id, credit_note_number})`. The PAYMENT posts the `payment_out` debit (sourced to
+the payment, not the note); the note's `amount_paid` still carries the refunded amount and
+`meta.refund` names the receipt (`payment_id`, `number`). FR-7 should be amended to match.
+
+**FR-10 is now reachable.** Voiding the refund voucher (`void_payment`) calls
+`sales.services.refund_seam.release_refund`, which gives the amount back to the note as open
+credit (audit `credit_note.refund_released`, `meta.refund.voided = true`); the note can then be
+voided. "Void the refund payment first" remains the refusal while the refund stands.
+
+**Invoice void releases real allocations (SAL-05 BR-4).** `void_seam.release_invoice_payments`
+calls PAY-05's `release_document_allocations`: the payments stay `recorded`, their
+`unallocated_amount` grows, and the response names each receipt (`payment_id`, `number`, `amount`,
+`walk_in`). The void dialog's follow-up lists and links those receipts: a party's money is an
+advance (given back, if at all, as a Paid-out payment); a walk-in's is handed back and the merchant
+voids the receipt.
+
+**Import rule.** Sales reaches payments only through deferred imports inside the two seams — the
+Part 20 §20.1.4 rule D5 pattern `payment_seam.py` already uses; payments imports sales at module
+level as the matrix allows.
+## CR-2026-09-28-RPT-A — RPT-01 / RPT-02 / RPT-05 / RPT-06 / RPT-08: what was built beside the FRDs
+
+**State:** `raised`. **Target:** Part 17-04 RPT-01, RPT-02, RPT-05, RPT-06, RPT-08; Part 19
+§19.6.2 (landing route); Part 21 (`reports_snapshot`). **Gate:** none — additive; migration
+`reports 0002_snapshot`.
+
+**Written against a sales app without credit notes or void.** SAL-01/04/05 were merging to main in
+parallel. The selectors assume `sales_document.kind='credit_note'` with statuses
+`issued`/`applied`/`void`, and `status='void'` on any document. Today's sales is invoices plus
+bills of supply net of credit notes by `document_date`; a refund is a `payment_out`. If SAL-04
+lands with other kind or status names, `apps/reports/constants.py` is the one place to change.
+
+**The dashboard is the landing page.** RPT-01 says it is the first screen, so `/dashboard` is in the
+sidebar (order 1) and "Go to dashboard" means it again. A reader without `reports.basic.read` is
+redirected to `/parties`, so staff with a narrow role still land somewhere they can use.
+
+**The snapshot is a table, not LocMemCache.** `reports_snapshot` (CR-106's columns) is shared
+across worker processes, ≤60 s old, and dropped `on_commit` by post_save/post_delete receivers on
+every model a tile reads. It is used for every tenant, not only those over 5,000 ledger entries —
+one code path is cheaper to keep right than two. The response is `Cache-Control: private,
+no-store` instead of FR's `max-age=60`: a browser-cached dashboard cannot be invalidated by a
+write, the server snapshot can.
+
+**Permissions follow the §12 table, not FR-6's parenthetical.** Staff see every tile except Cash in
+hand, which needs `reports.financial.read` and both the payments and expenses modules. The day
+book's running cash/bank columns and opening/closing need `reports.financial.read` too, as EXP-03
+does; without it they are absent from the JSON and from the CSV header, not zeroed. Each day-book
+source is gated on its own module's read codename and is left out of the query entirely when the
+reader lacks it.
+
+**Day book semantics.** Voided documents and reversed ledger lines are hidden by default; with
+`include_void=true` they appear typed `<type>_void` and move no balance. Only the ledger's OWN lines
+(`source_type` manual or ledger_entry) appear as ledger rows — a document's ledger posting would
+double the document. Pagination is page-numbered (100, max 200), not a cursor; the running
+balance is a window computed BEFORE the page is cut, so page two does not restart from zero. The
+totals card sits under the table instead of a sticky footer, and the phone view groups by date
+(there is no `UbTimeline`).
+
+**Cash in hand equals the day book's closing cash** and includes manual cash ledger entries, as the
+cashbook does. The cashbook (EXP-03) now includes payments: `expenses.selectors.cashbook` gained a
+`register_cashbook_source` registry and `apps.reports` registers a payments source from
+`ready()`, since `expenses` may not import `payments`. A split payment is two cashbook rows and one
+day-book row; a test asserts cashbook, day book and tile agree.
+
+**RPT-05 / RPT-06 reuse LED-09 and INV-08.** No second screen. The API adds
+`/reports/receivables-aging`, `/reports/payables-aging` and `/reports/stock-summary` (JSON + CSV);
+the existing screens export the reports file when the reports module is on. Payables aging is
+LED-09's screen with `?type=payable`. `cached_at` on aging is always null (no RPT-05 snapshot);
+an unknown `tag=` matches nothing rather than 400; a past `as_of` on stock without financial read
+is 403. `inventory.selectors.stock.filtered_summary` was extracted so both views share one filter.
+
+**RPT-08.** CSV only (no XLSX, no PDF — `format=pdf` is a 400 pointing at Print). Up to 5,000 rows
+stream; above that a `reports.build_export` job, 7-day expiry, through `apps/common/exports.py`.
+ISO dates, plain decimals, formula neutralisation (a mobile number exports as `'+91…`), a
+header-only file for an empty period. Reports register an `Exporter` in
+`apps/reports/exporting.py`; the job replays the query from `params`.
+
+**Not built.** Dashboard quick actions You gave / You got / Add item and per-debtor Bill (only New
+bill, New purchase, Send reminders); the short-form rupee has its exact figure in the accessible
+name rather than a tooltip; the first-use checklist shows only when there is no party AND no
+document; recent activity also lists purchases; charts (none required); RPT-05/06 XLSX; the
+aging CSV answers 202 JSON above 5,000 parties, which the anchor-based download does not follow.
+## CR-2026-09-28-RPT-B — RPT-03 / RPT-04 / RPT-07: what was built beside the FRDs
+
+**State:** `raised`. **Target:** Part 17-04 RPT-03, RPT-04, RPT-07, RPT-08; Part 22 §22.11.
+**Gate:** none — additive; no migration.
+
+**Permissions follow the FRDs' §12.** The registers are `reports.basic.read` plus the module's own
+read (`sales.invoice.read` / `purchases.bill.read`), so staff may VIEW them; export is
+`reports.export`. The one cost column (a purchase line's `unit_cost`) needs
+`reports.financial.read` and is absent, not blank, without it. The GST summary is
+`reports.financial.read` throughout. (The wave brief said "gate on reports.financial.read"; RPT-03
+§12 says financial is "not required (no cost columns)". The FRD was followed; the codename is one
+`HasPermission` line per view if the owner wants it tighter.)
+
+**Sign convention.** A credit note negates EVERY money column in the register, `amount_paid` and
+`amount_due` included (refund out, open credit), not only the three FR-2 names; Σ due is then the
+receivable net of open credit. A void row (`include_void=true`) is zero in every money column.
+
+**CR-RPT-2 is implemented** (`tax_code`, `inter_state`, `b2b` on RPT-03, and `series`, `created_by`,
+`ordering`). With `level=line`, `tax_code` filters the LINES as well as the documents, so the
+GST summary's rate row drills into register lines that sum to it. That link replaces FR-13's
+`GstDrilldownDrawer`.
+
+**Export.** Registers go through IMP-02's `CsvExportMixin` (sync ≤ 5,000 rows, queued above), with
+RPT-08's cell rules (ISO dates, `true`/`false`, signed plain amounts) and FR-8's file name on the
+synchronous path. Inherited from IMP-02 and not changed here: zero rows is 400
+`nothing_to_export` (RPT-08 EC-2 wants a headers-only file); the async download keeps IMP-02's
+`digikhaato-<resource>-<stamp>.csv` name; the audit action is IMP-02's `export.requested`
+(RPT-08 §16 names `report.export_requested`). Resources: `sales-register`, `sales-register-lines`,
+`purchase-register`, `purchase-register-lines`. The GST summary exports ONE ZIP of per-section
+CSVs (BR-9), always synchronously: its output is aggregates whatever the document count, and the
+async job only replays a list queryset. No XLSX (FR-14, RPT-08 FR-10/11) — the in-house writer
+is not built.
+
+**`period`.** `YYYY-Qn` is the n-th quarter of the FINANCIAL year starting in April of YYYY
+(Q1 = April–June), the QRMP quarter. A period running past today is clamped (EC-13); an explicit
+`date_to` in the future is 400.
+
+**Rows and boxes.** `outward.by_rate` includes reverse-charge SALES (so it reconciles with the
+register); `gstr3b["3.1(a)"]` excludes them (EC-14). `3.2` is B2C inter-state taxable supply by
+place of supply; composition and UIN recipients are not modelled. Net payable is the labelled
+simple head-wise figure (BR-10): output = 3.1(a) + 3.1(d), credit = 4(A)(3) + 4(A)(5). Nature
+rows beyond FRD's table: `b2b_rcm` (4B) and `cdnur` appear only when present; `outward.b2cs[]`
+(state × rate) and `outward.nil_exempt[]` (table 8, registered × inter/intra) are extra keys.
+
+**`gst_registration` (RPT-03 FR-2) is not in `party_snapshot`** — SAL-02's snapshot freezes name,
+GSTIN, state, mobile and address only. The column reads the snapshot key when present, else
+`regular` with a GSTIN and `unregistered` without. SAL-02 FR-7 should freeze it at issue.
+
+**Exceptions (FR-9):** eight codes; `missing_party_gstin` is not limited to unfiled periods
+because filing is not recorded; `cn_without_original` runs only once SAL-04's `against` exists.
+
+**Not built:** XLSX; the desktop section rail (§8); `UbHelpHint` (a caption line instead); the
+filing-reminder job and notifications (§17); `metadata.figures_hash` (§16); report caching and
+`Cache-Control` (§14/§20); per-figure `aria-describedby` (the coordinate is a visible badge);
+analytics events; the `sales_document_line_doc_tax_idx` index (§15, needs an `atomic=False`
+migration and an EXPLAIN test); RPT-08's export history, retry and 10-minute polling cap beyond
+what IMP-02's button already does.
+## CR-2026-09-28-PUR-B — PUR-02 supplier payment: what was built beside the FRD
+
+**State:** `raised`. **Target:** Part 17-03 PUR-02, PUR-01 FR-6h, PUR-04 FR-2d; Part 17-02 PAY-01.
+**Gate:** none — no migration.
+
+**No `SupplierPaymentDrawer`, no `supplierPaymentSlice`.** FR-1 says supplier payments are PAY-01's
+engine; §7 then specifies a second drawer, slice and schema. The PAY-01 `PaymentFormDrawer` already
+has direction, the mode lines, the allocation picker with Auto and per-row caps, and the advance
+line, so "Pay supplier" (bill page, khata ⋯ for a supplier, Payments list) opens it with
+`direction: 'out'`. One drawer, one set of rules. The server side is one allocation target,
+`payments/services/targets/purchases.py`, the only target for money out (CR-2026-09-28-INT-A).
+
+**FIFO order.** FR-3 orders by `due_on` then `document_date`; PAY-01 FR-5 and the lock order are
+`(document_date, number, id)`. Bills are LOCKED in the canonical order and SORTED by `(due_on,
+document_date, number, id)` for allocation; `open-documents` returns the same order so the drawer's
+preview matches.
+
+**A void bill's `amount_paid` returns to zero.** BR-4 releases the payments as advances; the bill
+then keeps no paid figure, so Σ allocations = `amount_paid` holds on every bill (§1's invariant).
+The void response's `released_payments` is now `[{payment_id, number, amount}]` (was ids) and the
+toast says how much stays as advance.
+
+**"Paid now" is on the record call.** `POST /purchases/bills/{id}/record` and `?record=true` accept
+`payment: {payment_date, mode_breakup, note}`, validated before anything is written and recorded
+as a PAYOUT allocated to the bill in the same transaction (T-PUR-01-5). A member without
+`payments.payment.write` gets 403 `permission_denied` with `details.payment` for the whole request
+(T-PUR-01-11). The editor asks "Paid now?" only for such a role and a non-zero bill.
+
+**Also:** `GET /purchases/bills/{id}` carries `payments[]` (FR-6's list on the bill); purchases
+registers a LED-10 source resolver so the khata names the bill by number; audit
+`purchase_bill.status_changed` per moved bill (§16). **Not built:** Purchases list "Pay selected"
+(FR-4), the `payment_out_by_staff` notification (§17), analytics (§18).
+
+## CR-2026-09-28-H3-A — the stock value is carried, and the average derived from it
+
+**State:** `raised` (built; needs the schema owner's acceptance). **Target:** Part 21 §21.3.6
+(2) "Rounding" ("Stock value is … at display time, never stored") and the
+`inventory_item_stock` / `inventory_stock_movement` column lists; Part 20 §20.6.2. Follows
+CR-2026-09-24-INV-A.
+
+**The defect.** QA final pass (Low): after voiding a purchase bill an item's average read
+140.0001 instead of 140.0000. The value-removing reversal of §21.3.6 (2) computes
+`on_hand × avg − |qty| × c`, and `on_hand × avg` is a product of the ROUNDED 4-dp average:
+3 @ 140, +6 @ 150 → 146.6667, so the stock is "worth" 9 × 146.6667 = 1320.0003 when 1320 was
+paid, and the void leaves 420.0003 / 3 = 140.0001.
+
+**Decision.** `inventory_item_stock.stock_value` numeric(24,7) carries the exact value and
+`inventory_stock_movement.value_after` numeric(24,7) records it per row (NULL on rows written
+before this change). The step (`apps/inventory/services/costing.py`) moves the value by exactly
+`qty × cost` for inbounds and value-removing reversals — exact at 7 dp, 3-dp qty × 4-dp cost —
+and derives the average as `q4(value / on_hand)` exactly where §21.3.6 (2) says it changes. A
+plain outbound leaves the average untouched (as the spec says) and takes its proportional share
+of value, so `q4(value / on_hand) == avg` holds after every step; stock ≤ 0 carries
+`on_hand × avg`. Consequence: a void with nothing in between restores on-hand, average and value
+exactly. The displayed stock value is unchanged — RPT-06 / INV-08 still show
+`ROUND(on_hand × avg_cost, 2)` per BR-4. Existing rows replay with `value = on_hand × avg`,
+which is what the old step computed, so a pre-existing book reports no drift; migration 0005
+backfills the cache's value with the same product.
+
+**Also (H3 item 2).** `recalc_balances --check` / `recalc_stock --check` (never write, exit 1
+on drift), `check_invariants` runs both, and the nightly callables are
+`apps.ledger.services.integrity.check_balances` and
+`apps.inventory.services.integrity.check_stock` (JSON summaries; party ids, never names).
+
+## CR-2026-09-28-SHARE-A — the customer share page, and what its payload needed
+
+**State:** `raised` (built; needs the API owner's acceptance). **Target:** Part 22 §22.12
+(`GET /public/d/{token}`), SAL-03 FR-5, Part 27 §27.12, Part 19 §19.6.4.
+
+**The defect (launch blocker).** `app/(public)/d/[token]/page.tsx` was the Sprint 0 stub: it
+rendered "This link has expired" for every token and never called the API, so every bill a
+merchant shared on WhatsApp opened as expired. A second defect sat behind it and was found by
+opening a link in a cookieless browser: `/d` was not in `PUBLIC_ROUTE_PREFIXES`, so the root
+layout's `GET /auth/me` 401'd, the refresh 401'd, and the customer was redirected to
+`/login?next=/d/<token>` — the credential moved from the path into a query string. `/legal/terms`
+and `/legal/privacy` (linked from sign-up before an account exists) had the same redirect.
+
+**Decision.** The page is a client fetch through `publicApi` (the durable per-IP budget would
+otherwise be spent from the Next server's one address) rendering the same `InvoicePrintA4` the
+merchant prints. The allow-listed payload gains three blocks, each allow-listed and tested key by
+key (`apps/sales/tests/test_share_public_page.py`):
+
+* `tenant_branding.logo_url` — `/api/v1/public/d/{token}/logo`, a new token-scoped route that
+  streams the TENANT's own logo under the same 404/expiry/revocation check and headers, because
+  `/files/{id}` needs a session. A partner's default logo is not streamed. The signature image is
+  deliberately NOT exposed on an open URL. nginx's log map redacts `/d/<token>/logo` too.
+* `upi` — `{upi_url, amount, qr}` from the paper's `upi_intent`, only for an invoice / bill of
+  supply that is issued, part paid or overdue with `amount_due > 0` and a valid VPA with the QR
+  setting on (EC-5, EC-6, EC-7); `null` otherwise.
+* `locale` — the shop's language; the page opens in Hindi when the shop or the phone's
+  Accept-Language says `hi`, unless the customer chose with the page's own switch.
+
+**Not done, recorded.** The ledger statement share (LED-04 FR-6/FR-7) is in MVP scope (Part 12
+LED-04 "WhatsApp or link share") but the existing token lives on `sales_document.public_token_hash`
+and cannot name a statement; it needs the generalised `parties_share_link` (C1) migration, a
+statement public payload and a statement variant of the page. Part 17-02 NTF-03 FR-3 also puts
+statements at `/khata/<token>` while LED-04 FR-7 puts them at `/d/<token>` — to be settled with it.
+
+## CR-2026-09-29-UAT-D1 — sharing a document twice is the SAME link; rotation is "Reset link"
+
+SAL-03 FR-5 / BR-4, Part 27 §27.12. Final UAT D1 (High).
+
+**The defect.** `create_share_link` minted a fresh token on every "Copy link" and "Share on
+WhatsApp", replacing the hash — so the link a customer already had on WhatsApp opened as "not
+available" the moment the merchant shared the bill again (or just copied the link to paste it
+somewhere else). BR-4's "one active token per document" was being enforced by killing the one the
+customer holds.
+
+**Decision.** Sharing is idempotent while a link is live (hash set, not expired, not revoked): the
+same URL and expiry come back (`reused: true`) and nothing is written or audited. Showing a URL
+again without storing it: the token is DERIVED, `HMAC-SHA256(SECRET_KEY, "sales-share:<doc
+id>:<nonce>")` (`django.utils.crypto.salted_hmac`, no new dependency), with a random 16-byte
+nonce in `meta.share_link.nonce`. The column still holds only the SHA-256 of the token and lookup
+is still by hash, so a database dump alone yields no usable link — the property H1's hashing was
+bought for; the attacker would also need the server key. Rejected: storing the raw token (a dump
+becomes a list of live links) and a client-side cache of the last URL (lost on reload; a second
+device would still rotate). Rotation is explicit: **Reset link** on the document page (owner/admin
+— the existing revoke permission `sales.invoice.void`) revokes, then shares again with a new
+nonce, copies the new URL and says the old link no longer works. Revoke drops the nonce so a
+revoked link can never be re-derived. A legacy link (minted before this, no nonce) or one whose
+derivation no longer matches (SECRET_KEY rotated) cannot be shown again and is replaced, which is
+the previous behaviour. Tests: `test_sharing_again_returns_the_same_live_link_uat_d1`,
+`test_an_expired_or_legacy_link_is_replaced_not_reused_uat_d1`, `useInvoiceDetail.share.test.tsx`.
+
+## CR-2026-09-29-UAT-D10 — the GST summary opens on this month
+
+RPT-07 §6 ("opens on the last completed month, the one being filed"). Final UAT D10 (Low).
+In UAT the GST summary opened on last month, which hid today's bills from a busy shop and showed
+a new shop an empty screen. It now opens on this month (month to date), matching the sales and
+purchase registers (RPT-03 FR-7); the month being filed is one tap on "Last month". A data-dependent
+default (this month when it has documents, else last month) was rejected: it needs a request before
+first paint and makes the screen open on different periods for reasons the merchant cannot see.
+`GST_DEFAULT_PRESET` in `features/reports/constants/taxReportConstants.ts`. Part 17-04 RPT-07 §6
+should be amended when this is registered in Part 43.
+## CR-2026-09-29-BRAND-A — DigiKhaato becomes YourKhata (yourkhata.com); customer documents carry no product name
+
+**State:** `raised` (built on `worktree-agent-adebf556cb3dc896a`; needs owner sign-off on the
+logo concept). **The mark is superseded by CR-2026-09-29-BRAND-C** (K-c "Bandhan"); the rename
+and the customer-document rule below stand. **Target:** Part 23 §23.2.6 (brand mark), Part 24 (white-label defaults),
+SAL-03 FR-5/FR-12 (print footer, share page), PAY-04, LED-04 §7, PLT-10 (export README).
+
+**Owner request.** "I have changed my domain from digikhaato to yourkhata.com. Update
+everything on the FE side. In any PDF I don't want any domain — instead keep the tenant name;
+don't keep the domain name in any place. Redesign my logo as well."
+
+**Decisions (lead's interpretation).**
+
+* The display name is **YourKhata** — one word, capital Y and K — in BOTH locales. The Hindi
+  shell had "डिजीखाता"; brand names are not translated, so `app.name` is "YourKhata" in `hi`
+  as well. Internal code paths (`modules/DigiKhaato/…`), the `UB_` env prefix, cookie names,
+  the repo folder, the log filename and dev database names are NOT renamed.
+* **Nothing a merchant's customer receives names the product or its domain.** The A4 and
+  80 mm prints (invoice, bill of supply, estimate, credit note), the A5 payment receipt and
+  the party statement print "Issued by <business>" where they printed "Generated by
+  DigiKhaato"; the share page `/d/<token>` prints "Shared by <business>" where it printed
+  "Powered by DigiKhaato", and switches off the root layout's title template, application
+  name, manifest, description and icons so the tab and favicon are not ours either. The
+  data-export ZIP's README says "Generated … for <business>". The public payload's
+  `app_name` no longer falls back to the product name on the client. WhatsApp/SMS reminder,
+  entry and receipt texts were checked: they were already signed `— {shop}` only.
+  Guarded by `frontend/src/tests/customerDocumentsCarryNoProductName.test.tsx` and
+  `backend/apps/platform_app/tests/test_tenant_data.py::test_the_export_names_the_business_and_never_the_product`.
+* Download FILENAMES are the merchant's own and say `yourkhata-…` (`yourkhata-parties-…csv`,
+  `yourkhata-{kind}-template.csv`, `yourkhata-{kind}-problems.csv`, `yourkhata-export-….zip`).
+* The mark is redesigned: three original concepts in `frontend/public/brand/concepts/`, concept
+  A (the open khata with a tick) applied to `UbLogo`, the favicon (SVG + 16 px cut + 32), the
+  apple-touch icon, the PWA 192/512 and the maskable 512. Tokens `--brand-page-back` and
+  `--brand-rule-short` are replaced by `--brand-rule-soft`. Rules in DESIGN-SYSTEM §7.
+* The domain appears only where an absolute origin is configured: production EXAMPLES in
+  `.env.example` / `backend/.env.example` (`UB_PUBLIC_BASE_URL`, `UB_ALLOWED_HOSTS`, CORS,
+  CSRF, cookie domain), nginx `server_name yourkhata.com www.yourkhata.com`, and Part 29's
+  examples. Dev defaults still point at localhost. The frontend needs no absolute URL of its
+  own: share links are built by the backend from `UB_PUBLIC_BASE_URL`, so a WhatsApp share
+  link necessarily contains `https://yourkhata.com/d/<token>` — that is the link, not branding.
+
+**Not done, recorded.** Part 23 §23.2.6 and Part 24's default `app_name` in the Project SSOT
+still say DigiKhaato and need the same edit through `project_write`. `package.json`'s `name`
+(`digikhaato-frontend`) is internal and left.
+
+## CR-2026-09-29-SEC-A — a support session is VIEW ONLY, enforced at the one door
+
+**State:** `done`. **Target:** Part 17-01 PLT-14 FR-5, Part 20 §20.4.8 rule 5,
+CR-2026-09-24-W2C-B. **Found by** the video producer reading the code: the console
+("A read-only support session for up to 60 minutes") and the owner's consent both promise
+read-only, but `CookieOrBearerJWTAuthentication._assert_impersonation_scope` said "Writes
+are allowed" and refused only the console, switching, deletion, export, consent, the team
+routes and `bank_details`/`upi_vpa`/`pan`. Every other write was stopped only if the view's
+permission class happened to check `imp` — `HasPermission`, `TenantManagePermission` and the
+settings/branding classes did (with a generic 403 `permission_denied`); `IsTenantMember`, on
+the notification inbox's mark-read and read-all, did not, and nothing stopped the next view
+from forgetting.
+
+**Decision.** W2C-B's "until the owning chapter chooses, a support session reads" is now the
+rule rather than an accident of which permission class a view uses. The authentication class
+refuses EVERY unsafe method (POST/PUT/PATCH/DELETE) under an `imp` token with 403
+`impersonation_forbidden` ("This is a view-only support session. Nothing can be changed."),
+before any view or permission class runs. A lapsed/revoked session still answers 401
+`session_revoked` first, so the client's refresh hands the tab back to the operator.
+
+**The allow-list** (`IMPERSONATION_WRITE_ALLOWED`, shared with `HasPermission` through
+`support_write_allowed()`): `POST /admin/impersonation/end` (the way out), `POST /auth/logout`,
+and `POST /reminders/preview` — the only POST the frontend makes merely to SHOW something
+(the reminder sheet's text; `preview_reminder` writes nothing). Considered and left off:
+`POST /payments/upi-intent` (writes nothing, but it is opened from the Collect action, a
+payment flow), `POST /payments/{id}/share` (audited, idempotency row), share-link creation
+(mints a token), notification mark-read (the owner's inbox state). `/auth/refresh` and the
+other sign-in routes never authenticate (`authentication_classes = []`), so the support token
+never reaches them. Reads are unchanged: open, except the console, switching, the whole-book
+export, the business's own consent requests and the password/session screens.
+`Ctx.from_request` still stamps `metadata.impersonation=true` on anything audited in the session.
+
+**Frontend.** `UbViewOnlyProvider` (design system) wraps the shell's content region while
+`session.impersonation` is set; `UbButton` (`primary`, `destructive`, any `type="submit"`)
+and `UbFab` disable themselves with the title "Support session · view only. Changes are
+turned off." The banner reads "Support session · view only — …" and its End session is
+`viewOnlySafe`; the account menu (Sign out) is outside the region. `impersonation_forbidden`
+resolves to `errors.impersonation_forbidden` in the snackbar, so the refusal reads as view-only
+in Hindi too (the server has no Hindi catalogue).
+
+**Tests.** `backend/apps/platform_app/tests/test_support_session_view_only.py` walks the URL
+resolver: every route accepting an unsafe method (95 today, router `.json` twins excluded)
+answers 403 `impersonation_forbidden` under a support token, except the allow-list; the six
+unauthenticated routes are pinned by name; reads, the allow-list, the audit stamp and the
+owner's own writes (during a live support session) are asserted. Frontend:
+`UbAppShell.test.tsx` (view-only state and the owner's unaffected state), `apiError.test.ts`.
+
+**Not done, recorded.** Logout from a support session clears the cookie but does not end the
+`platform_impersonation_session` row (it lapses at its expiry, ≤ 60 min); ending it on logout
+is a small follow-up. FR-5's "writes needed to reproduce fixes" stays refused; relaxing it is
+the owning chapter's call and would need fresh owner consent copy.
+
+## CR-2026-09-29-BRAND-C — the YourKhata mark is K-c "Bandhan", the tied bahi cover
+
+**State:** `done`. **Supersedes** the mark half of CR-2026-09-29-BRAND-A (the rename and the
+"customer documents carry no product name" rule in BRAND-A stand unchanged). **Target:**
+Part 23 §23.2.6 (brand mark), `docs/DESIGN-SYSTEM.md` §7.
+
+**How it was chosen.** Round 1 drew three pictures (`frontend/public/brand/concepts/`); Concept A,
+the open khata with a tick, was applied under BRAND-A. The owner asked for a K instead. Round 2
+(`concepts2/`, six marks) produced Concept 1, the "signature K" whose leg sweeps into a ruled
+line, and Concept 2, a joined YK; a partial apply of the joined YK was abandoned unshipped.
+The owner then asked to "keep the K like the 1st logo, but with some khata styling". Round 3
+(`concepts3/`, four variants of that K) was drawn, and **the owner chose K-c, "Bandhan"**: the
+tile is the cloth cover of a bahi-khata with a stitched hem; the K's sweep carries on across the
+cover as the tie band; a bahi-red knot with two white string ends closes it. Both concept rounds
+are committed as the record.
+
+**Decisions.**
+
+* Colours: cover `--brand-cover` → `--primary-600` (#3A36B8), hem `--brand-hem` → `--primary-400`
+  (decorative), K and band `--brand-figure` white, knot `--brand-knot` #C8322B — the ONE fixed
+  colour the mark may use, decorative, never text, and restated in the dark column as #D9453D
+  because it also ends the wordmark's sweep on the theme's surface. `--brand-mark`, `--brand-page`,
+  `--brand-rule` and `--brand-rule-soft` are removed.
+* White K on the cover is 8.75:1 and is held to the TEXT floor in both themes
+  (`scripts/check-contrast.mjs`, `darkTheme.contrast.test.ts`). The cover on the dark rail is
+  2.02:1; a logo's own colours are outside WCAG 1.4.11 and the white K identifies it there
+  (17:1 on the rail), so that pairing has an explicit 2.0 floor rather than none.
+* At 24 px and below (`UbLogo size="sm"`) the hem is dropped and the knot is one dot. The 16 px
+  favicon is the hand-cut `yourkhata-mark-16.svg`, now also the SVG favicon in `app/layout.tsx`
+  (a browser paints the SVG favicon at tab size whatever the master was drawn for); its knot was
+  re-cut as a 4 px dot on the pixel grid and its string ends dropped.
+* The in-app mark has no clipPath and no `id`, so two logos on one page cannot collide. The lockup
+  sets "YourKhata" with the signature K (indigo, `--text-accent`) whose sweep ends in the knot dot —
+  ONLY for the product's own name; a tenant's name is plain text.
+* A K no longer conflicts with white-labelling: a tenant with its own logo replaces the mark
+  through `branding.logo_attachment_id`, and a tenant without one is showing the product's default.
+
+**Not done, recorded.** Part 23 §23.2.6 in the Project SSOT still describes the round-1 mark.
+`theme_color` (manifest and `viewport.themeColor`) stays `#4A47D6`, the app's accent, not the
+cover's `#3A36B8`.
+
+## CR-2026-09-29-PLATFORM-B — the landing page is repositioned: one platform, many modules, a shared core
+
+**State:** `built`. It needs owner review of the copy, and the module statuses follow CR-2026-09-29-PLATFORM-A.
+**Target:** `/` (`features/landing`), `docs/platform/01-current-capabilities.md`, vision §4 (honest landing page).
+
+**Owner direction.** YourKhata becomes one all-in-one platform where different businesses and
+organisations keep their records, documents, transactions and collections, each module kept
+separate. Phase 1 is only the landing page. Planned modules are shown as planned, with no
+screenshots, demo, dates or "available now" call to action. Drop "kirana" and all regional jargon.
+
+**What changed.**
+
+* **Inventory first.** `docs/platform/01-current-capabilities.md` lists what is live, read from
+  the routes, pages and ready navigation entries. It is the page's source of truth. Compiling it
+  found a false claim on the old page: "share a link" for **statements**. Statement share links
+  need `parties_share_link` (PTY-09), which has no table. Share links exist for sales documents
+  only, and the card now says so.
+* **One config, `features/landing/config/modules.ts`.** It holds five modules, each with
+  `status: 'live' | 'in_development' | 'planned'` and the core pieces it builds on. The hero
+  badge, the module map, the module cards, "Who it's for" and the FAQ all read it. Its statuses
+  must equal the vision doc's §2 table, and a test parses that table.
+* **The new order:**
+  1. the hero, still the live shop module's real recordings;
+  2. the **module map** (#platform): the modules drawn as tiles on top of one shared-core slab,
+     with measured connectors, solid for live and dashed for planned;
+  3. **one card per module** (#modules): the live card has Start free and "See it in use"; the
+     planned cards are text only;
+  4. the use-case explorer (#features), as the live module's deep dive;
+  5. **Who it's for**, one row per module;
+  6. also included;
+  7. how it works;
+  8. pricing, with a line saying that pricing for other modules is decided when they launch;
+  9. the FAQ, with "Which modules can I use today?" and "Is the lending module available?"
+     added, each answered "Not yet… planned";
+  10. the closing band.
+* **The honesty rules are tests.**
+  * A planned card, tile or row holds no video, image or frame, no demo and no sign-up link, and
+    always carries the Planned chip. This is checked in jsdom and again in the browser at nine
+    widths, together with the requests the page makes.
+  * A planned module's words (lender, library, gym, room…) may appear only in
+    `landing.module.<planned id>.*` keys and the two FAQ answers, which must say "planned" and
+    "not". The rendered page is checked by ancestor as well.
+  * No "kirana", "udhaar" or "khata" as an English common noun, in either language, in text,
+    readable attributes or the metadata.
+  * "One module today. Four more planned." is checked against the config's counts.
+  * The lending card and FAQ both say it will not lend or move money (vision §4).
+* **Terminology.**
+  * English copy now says ledger, account, dues and money owed. "Ledger" replaces the
+    explorer's "Khata" tab. The media file ids keep `khata`, because they are code.
+  * Hindi keeps the everyday words उधार and खाता.
+  * The brand name is unchanged.
+
+**Budget.** The `/` route grew from 30.3 KB to about 35 KB: +1.5 KB of English strings, and the
+rest is the three new components. It was re-baselined with a dated note in
+`bundle-budgets.json`.
+
+**Not done, recorded.**
+
+* The recordings still show the seeded demo business "Sharma Kirana Store" in the app's sidebar,
+  and the narrated demo's captions say it. Re-recording against a neutrally named demo business
+  is an owner decision (it needs the recording pipeline and new narration).
+* Part 43 in the Project should register this CR. The coordinator owns that sync.
+
+## CR-2026-09-29-PLATFORM-C — search: metadata, crawl rules, structured data, cache headers
+
+**State:** `built`. Part of Phase 1 (the landing page). Owner review: the title and description
+wording, and the cache-policy choice below.
+**Target:** `app/page.tsx`, `app/robots.ts`, `app/sitemap.ts`, the root and group layouts,
+`features/landing/config/{seo,faq}.ts`, `utils/landingJsonLd.ts`, `src/utils/seo.ts`,
+`UbJsonLd`, `UbDisclosure`, `next.config.js`, `nginx/conf.d/app.conf`; Part 19 §19.9.1
+(Lighthouse SEO ≥ 90).
+
+**Owner direction.** Make the site SEO-friendly, positioned as the platform, with no jargon and
+no claims about planned modules, and never let a customer's document be indexed.
+
+**What changed.**
+
+* **Metadata for `/`** (Next Metadata API). Title (57 characters) and description (155) from
+  `features/landing/config/seo.ts`, platform-positioned and naming only live capabilities. An
+  absolute canonical `https://yourkhata.com/` from one `SITE_URL` (`NEXT_PUBLIC_SITE_URL`,
+  default `https://yourkhata.com`, a build arg in the Dockerfile and compose); `metadataBase` on
+  the root layout; Open Graph and a `summary_large_image` Twitter card; `robots: index, follow,
+  max-image-preview:large`. The root layout's inherited description lost "Your shop's khata".
+* **The preview card is a static PNG, not `app/opengraph-image.tsx`.** Two findings, both
+  against Next 16.3: a file-convention OG image at the app root is merged into the ROOT
+  segment's metadata and inherited by every route that does not override it, including
+  `/d/<token>`, which must never show the product (BRAND-A); and `next/og` reads TTF/OTF/WOFF,
+  while every brand face here is WOFF2. So `public/brand/yourkhata-og.png` (1200 × 630) is
+  rendered by `scripts/render-brand.mjs --og` from the K-c lockup and the hero headline (read
+  from the catalogue), on the closing band's indigo, and referenced from `/`'s metadata only.
+  No dependency: the script drives the Playwright Chromium the e2e harness already has.
+* **Crawling.** `app/robots.ts` allows `/`, `/legal/`, `/login`, `/signup` and disallows every
+  prefix in `GUARDED_ROUTE_PREFIXES` (so a new app section is disallowed automatically), the
+  password flows, `/d/` (with the slash), `/api/` and `/design-system`. `app/sitemap.ts` lists
+  the five public pages. `noindex, nofollow, noarchive` meta on the `(app)` and `(admin)`
+  layouts (now server components; their client bodies moved to `AppGroupShell` and
+  `AdminShell`) and on onboarding, accept-invite and the three password pages, as defence in
+  depth. `/d/<token>` already had the meta and `X-Robots-Tag`; kept.
+* **Structured data.** One server-rendered `<script type="application/ld+json">` via the new
+  `UbJsonLd` (which escapes `<`, `>`, `&`, U+2028/9): Organization, WebSite,
+  SoftwareApplication (BusinessApplication, Web) and FAQPage. `offers` is the free plan at
+  0 INR only while `PRICING.status === 'proposed'`; approving pricing emits the paid plans. The
+  FAQPage is built from the same ids (`config/faq.ts`, moved out of the client component so
+  the server can read the array) and the same English strings the page renders. No rating,
+  review or count, and a test walks the graph for them.
+* **On-page.** Two defects found in the server HTML with curl:
+  1. **The FAQ answers were not in the HTML at all.** `UbDisclosure` unmounts a closed panel (the
+     right rule for form fields), so crawlers saw ten questions and no answers. It now takes
+     `keepMounted`: the FAQ's panels render with `hidden`, upgraded after hydration to
+     `hidden="until-found"` so find-in-page opens them. Forms keep the unmount.
+     A second, quieter defect was waiting inside the fix: the panel's `flex` class beats the
+     `[hidden]` rule, so a naive `hidden` would have left every answer on screen.
+  2. **A skipped heading level.** The desktop use-case explorer put h4s straight under the
+     section's h2, because its job titles are tabs, not headings. They are h3 there now.
+  Otherwise the page already had one h1, header/nav/main/footer, labelled media (`role="img"`
+  plus `aria-label` around decorative videos) and descriptive links, all now asserted.
+* **Cache headers.** `public, max-age=86400, stale-while-revalidate=604800` on
+  `/media/landing/*` and `/brand/*`, identically in `next.config.js` and nginx (a jest test
+  compares the two). Not `immutable`: the names are unhashed and are re-cut in place. Next was
+  serving them `max-age=0`. **And nginx never served the landing media in production at all**:
+  `/media/` is Django's `internal` X-Accel location, so every loop and poster would have been a
+  404 there. The new `location /media/landing/` is the longer prefix and proxies to the
+  frontend.
+* **Fonts** were already `next/font/local` with `display: swap` and preload on the faces the
+  first paint uses; unchanged.
+
+**i18n and SEO — the trade-off, recorded.** The locale is a cookie, so there is one URL per page
+and crawlers, which send no cookie, index the English page only. There is no `hreflang`, because
+there is no second URL to point at, and no `/hi` route was invented. Per-locale URLs + hreflang
+is in `docs/BACKLOG.md`, together with a finding from the same check: with the Hindi cookie the
+server sends `lang="hi"` over English HTML, because the Hindi catalogues arrive after hydration.
+
+**Measured.** Lighthouse 13.5 (run from a scratch directory through `npx`, no project
+dependency), mobile, same machine, before → after: SEO **92 → 100** (the one failing audit was the
+relative canonical), accessibility 100 → 100, best practices 96 → 96. Performance read 48 → 51,
+on a box at load average 13 from a parallel video render, so it is not a real figure; LCP and CLS
+were also measured with Playwright at 390 and 1440 px, cold and throttled, and are unchanged
+within noise (CLS 0.000–0.005 both). The server HTML grew 3.6 KB gzip (the FAQ answers and the
+JSON-LD). `e2e/seo.mjs`: 96/96 against the live stack.
+
+**Not done, recorded in `docs/BACKLOG.md`:** versioned media URLs (for `immutable`), staging
+noindex, Lighthouse in CI and a performance score on a quiet machine, titles for `/login` and `/signup`, the
+`/d/` disallow-vs-noindex residue, and a stale `NEXT_PUBLIC_APP_NAME` in root `.env` files.
+
+## CR-2026-09-29-PLATFORM-D — every module presented as part of the product; coaching joins; pricing hidden; "Why YourKhata"
+
+**State:** `built` (landing page). Owner decisions of 29 Sep 2026, recorded in
+`docs/platform/00-platform-vision.md` §2 and §4, which replace the "honest landing page" rule of
+CR-2026-09-29-PLATFORM-B.
+**Target:** `/` (`features/landing`), its metadata and JSON-LD, the landing tests and the two
+landing e2e harnesses.
+
+**Owner direction.** The site is not public yet, and the page should not need reworking each time
+a module ships. So:
+
+1. **No status labels.** Every module is presented the same way, as part of the product. No
+   Live, Planned or In development chip or wording anywhere: the cards, the FAQ, the metadata or
+   the JSON-LD. `status` stays in `config/modules.ts` for the build plan and the pre-launch check,
+   and nothing renders it. A module with real recordings shows them through `media` in the config;
+   a module without shows an illustration made from our own icons. No invented screenshots and no
+   fake UI.
+2. **Coaching & tuition is the sixth module**, after Shop & billing, Lending & collections,
+   Library, Gym & fitness and Hotel & stays. Its copy comes from `research/coaching.md`: students
+   and guardians, batches, fee plans, attendance, and the refund for unused months described as a
+   calculation, with no compliance claim.
+3. **Pricing is hidden** behind `SHOW_PRICING` in `config/pricing.ts`. While it is off there is
+   no #pricing section and no Pricing link in the header, the phone menu or the footer. "What does
+   it cost?" gives way to a neutral "Do I need a card to sign up?". The JSON-LD carries **no
+   offers at all**, not even the free plan, because a price only a search engine is told is a
+   claim the page does not make. "Start free" stays, because nothing is charged today.
+4. **Adding recordings is a config change.** Every card is the same card. `media` on a module
+   swaps the illustration for its framed recording, and no component changes (tested with the
+   same stage given media for coaching).
+
+**Added on the owner's request: "Why YourKhata"** (#why, after the Shop & billing explorer, in the
+header nav). "What other apps miss. What you get with YourKhata." Eight cards, each read top to
+bottom as a contrast: the common failing ("Often elsewhere") and then what YourKhata does. They
+are drawn from `research/candidates-and-competitors.md` §5–6. No competitor is named and nothing
+is ranked. Each point rests on a live capability or a binding rule, and the evidence table is in
+`config/why.ts`:
+
+| Point | Evidence |
+|---|---|
+| One app, one set of records | Vision §1 and §3 rule 3; `enabled_modules` switches per business |
+| Your name on your bills, not ours | `customerDocumentsCarryNoProductName.test.tsx`; vision §4 |
+| Mistakes are corrected, never erased | Ledger corrections (capabilities); Canon §0.11 rule 1, model plus DB trigger |
+| Payments come straight to you | Local UPI QR, no gateway, the money never passes through the product |
+| Each person sees only their part | Four roles with per-permission checks |
+| Your data stays yours | CSV import/export; full data export at `/settings/data` |
+| Any phone or computer, in Hindi or English | Platform: both languages on every screen; browser only |
+| No ads | `docs/02-product-vision.md`: advertising in any tier, "Never" |
+
+Left out: "we never store full ID numbers". It is a design in the lending and hospitality
+*research*, not a binding rule. The hospitality design keeps full non-Aadhaar numbers behind an
+opt-in, and the business's own PAN is stored in full today (it is masked only on display).
+
+"Also included" dropped staff roles, Hindi and English, and CSV, which are now Why points, and
+took in three other live pieces of the core instead: reminders with the exact amount, the day book
+and GST summary, and the activity log.
+
+**Metadata.** The title is "YourKhata: bills, fees, collections and bookings in one app" (59
+characters). It reaches all six modules: bills for the shop; fees for the library, gym and
+coaching; collections for lending; bookings for the hotel. The description (147 characters) names
+each module. The `FAQPage` is built from the same `faqIds(SHOW_PRICING)` as the rendered FAQ, and
+`e2e/seo.mjs` now checks that the two match on the wire.
+
+**Tests changed, and why some were removed.** The old rule was: planned modules are labelled, have
+no media, and their words appear only inside planned scopes. The owner replaced it, so the tests
+that enforced it were removed:
+
+- the status chip and label tests;
+- the "planned-only scope" vocabulary guard (`plannedModuleVocabulary.ts`, now
+  `moduleVocabulary.ts`);
+- the "One module today. Four more planned." count test;
+- the live-versus-upcoming feature-line split.
+
+Kept, in their new form:
+
+- a module's own words appear only in that module's places;
+- no figures on a module card;
+- lending "does not lend or move money".
+
+New checks:
+
+- no status chip, attribute or word is rendered, in English and in Hindi, in jsdom and on the
+  live page at nine widths;
+- cards without media hold no video, image or frame;
+- pricing and its links are absent while the flag is off, and come back when it is on;
+- the Why section renders its eight points in both languages;
+- no competitor name and no comparative claim appears in any landing string;
+- six modules are shown, and the map connectors are measured for six columns.
+
+**Budget.** `/` rose from 35.0 to 37.1 KB (first load 268.3). Two savings came first. The hidden
+pricing section is now `dynamic()` and never fetched while the flag is off (−1.3 KB). Its 44
+strings moved to their own `landingPricing` catalogue (−0.7 KB); for this, plan features became
+short ids in `pricing.ts`. The budget was re-baselined to 38 / 269 with a dated note.
+
+**Gates.** Unit tests 2591/2591; landing e2e 169/169; SEO e2e 104/104; contrast 146 pairings;
+i18n in step; bundle inside budget.
+
+**Open for the owner.**
+
+- The pre-launch gate in `docs/platform/STATUS.md` now matters: five of the six modules shown
+  are not built.
+- The Why copy and the coaching copy need review.
+- Part 43 in the Project should register this CR. The coordinator owns that sync.
+
+### Amendment, 29 Sep 2026: Coaching & tuition withdrawn
+
+**Owner correction:** "I need library mgmt system, not coaching". Library stays, as it always
+has. Coaching & tuition is removed everywhere it had been added:
+
+- the vision module map (§2). The Candidates row now notes it as researched and declined, not
+  in scope;
+- `config/modules.ts` and its icons;
+- the landing copy in English and Hindi (the card, and the FAQ's "Which modules are there?");
+- the module map, cards and "Who it's for";
+- the SEO description, which no longer says "student fees". The title keeps "fees", which now
+  means library and gym fees.
+
+The landing page shows five modules: Shop & billing, Lending & collections, Library, Gym &
+fitness, Hotel & stays. The tests that counted six now count five. The coaching-refund copy test
+is replaced by a guard that no landing string or metadata names coaching (`WITHDRAWN_MODULE_WORDS`
+in `src/tests/moduleVocabulary.ts`), in jsdom and on the live page. `research/coaching.md` is kept
+for reference under a NOT IN SCOPE banner.
+
+**Budget.** `/` fell from 37.1 to 36.8 KB (first load 268.3 → 268.0). The route budget was
+tightened from 38 to 37; first load stays at 269.
+
+**Layout.** Five cards in a three-column grid left a hole at the bottom right. A short last row
+is now centred, keyed on the card count rather than written for five.
+
+**Gates.** Unit tests 2589/2589; landing e2e 169/169; SEO e2e 105/105; lint clean; contrast OK;
+i18n in step; bundle inside budget.
+
+Everything else in this CR stands: no status labels, hidden pricing, and "Why YourKhata".
+
+## CR-2026-09-30-PLATFORM-ROLES — canon §0.9: module roles, the widened action set, and `platform.calendar.manage`
+
+**State:** `raised` (built by Wave A; filed at the Wave A gate, 30 Sep 2026). Owner defaults **Q1
+and Q2** of `docs/platform/13-owner-questions.md` adopted by the build. Drafted by Track P (A13) in
+`docs/platform/progress/wave-a-track-p.md`; moved here verbatim by the gate.
+**Target:** Part 0 §0.9 (canon roles and actions; approver: holder, with a `DEC-` entry), Part 20
+§20.5 (permission checks), `apps/common/permissions_registry.py`.
+
+*Change.* Canon §0.9 fixes four system roles and a closed action set. It is amended to:
+
+1. **Module roles.** A module may own system roles, `platform_role` rows with `tenant` NULL,
+   `is_system` true and `code = "<module>_<role>"`, registered through
+   `permissions_registry.register_module_role` and seeded by the module's own data migration. Three
+   are adopted (owner Q1): `lending_agent` (collection agent — loans on the agent's routes),
+   `gym_trainer` (trainer — members whose term or batch names the trainer; no fees, dues or
+   mobiles unless granted) and `hospitality_housekeeping` (housekeeping — the room board, no guest
+   contact or ID fields, no folio, no money). A module role holds ONLY its module's codenames:
+   never `parties.party.read`, `ledger.entry.read`, `payments.payment.read`, `reports.*`,
+   `ledger.reminder.write` or any `read_all`. It is assignable only while its module is enabled;
+   while the module is off its codenames vanish and the membership remains.
+2. **Action set.** The closed set `read | write | delete | export | void | correct | manage |
+   adjust` widens to the actions the registry and the FRDs use: `read_all` (reads beyond a row
+   scope; owner and admin by default and **explicitly** accountant, whose automatic set matches only
+   `.read`), `reveal` (identity fields, ADR-053/058; never implied by `*.read`, so never the
+   accountant's automatically), `void_own`, `money_read`, and the per-module verbs each FRD lists.
+   Lending's `lending.borrower.id_read` is renamed `lending.borrower.reveal` (ADR-058).
+3. **Staff and accountant sets.** Each module's release CR adds its codenames to `_STAFF` and
+   `_ACCOUNTANT` as its FRD's permission matrix says (R47).
+4. **`platform.calendar.manage`** (owner Q2) — a new core codename held by owner and admin, to
+   write tenant-wide closed days without the owner-only `platform.tenant.manage`; a closed day with
+   `module = X` may also be written by X's settings codename (R26). (Implemented by A9b.)
+
+*Why.* Row scoping cannot be made safe with the canon roles: `staff` holds tenant-wide core reads,
+so a scope applied only to a vertical's tables would leak through `/parties` (ADR-052). And the
+accountant's `*.read` rule would hand identity fields to accountants automatically (ADR-058).
+
+*Implemented by.* Wave A task A13 (mechanism: `ScopedViewSetMixin`, `RestrictedFieldsMixin`,
+`register_module_role`, `GET /roles`, the team screen, `tests/architecture/test_module_scoping.py`)
+and A9b (the codename). Each role row ships with its vertical: in Wave A no module role is
+registered, so no tenant can assign one yet. One hardening found in A13's QA is part of the rule:
+`permissions_override.allow` cannot hand a module role a core read or a `read_all`
+(`test_an_override_cannot_hand_a_module_role_a_core_read`). *Reversal.* Remove the roles'
+registrations and rows; no core table changes.
+
+## CR-2026-09-30-LED-11 — the shop write-off is capped at the trade figure
+
+**State:** `raised` (built by Wave A task A2; filed at the gate). Owner default **Q3** adopted.
+Drafted by Track M in `docs/platform/progress/wave-a-track-m.md`.
+**Target:** Part 17-02 LED-11 and PTY-04 FR-3 (the write-off escape in the archive flow);
+ADR-043 (one balance with a `loan` bucket).
+
+*Change.* LED-11's "write off a small balance" (PTY-04 FR-3 in the archive flow) defaults to, and is
+capped at, the party's **trade figure** `balance − loan_balance` instead of `balance`.
+
+*Why.* ADR-043 keeps a loan in the party's one balance; without the cap one tap on a shop screen
+would forgive a loan, which only lending's own write-off (R38) may do.
+
+*Effect today:* none — no party has a loan, so the trade figure is the balance (proved at the gate:
+1,290 reads of 300 real dev-database parties are byte-identical before and after Wave A). *With a
+loan:* the write-off posts the trade figure (a `main` line), the loan stands, and archive is
+refused by the ordinary non-zero balance guard (EC-7); a confirmed amount other than the trade
+figure answers 409 `balance_changed` with `amount` = the trade figure.
+
+*Implemented in:* `apps/ledger/services/write_off.py`; tests in `apps/ledger/tests/test_buckets.py`.
+
+*Added at the gate (the look pass).* The archive dialog offered "Write off ₹2,300.00" for a party
+owing ₹300 to the shop and ₹2,000 on a loan: it offers the refusal's `balance`. The server's cap
+held, but the offer was the thing the cap exists to prevent, and with a loan open no shop
+write-off lets the archive through (EC-7). So the 409 `party_balance_nonzero` gains, **only while
+`loan_balance ≠ 0`**, `can_write_off: false`, `amount` (the trade figure) and `suggestion:
+"collect"`; the dialog then offers Record payment only and says "Part of this is a loan, and a
+loan cannot be written off here" (`test_the_archive_refusal_does_not_offer_to_write_off_a_loan`,
+`PartyArchiveDialogLoan.test.tsx`). Every other refusal's payload is unchanged.
+
+## CR-2026-09-30-WAVE-A — Wave A: what was built beside the FRDs and contracts v1
+
+**State:** `raised` (the gate's summary of interface-level decisions the three tracks recorded).
+Every item is additive or narrows a surface; none changes a figure an existing tenant reads (the
+gate's golden and replay proofs). The questions each one leaves are answered, as proposals, in
+`docs/platform/10-architecture.md` §18.
+**Target:** FRD 00 (`docs/platform/frd/00-core-and-engines.md`), `docs/platform/11-contracts.md` v1,
+Part 22 §22.1.1.
+
+| # | What was built | Beside what it says | Task | §18 |
+|---|---|---|---|---|
+| 1 | `sales.default_kind` and `reset_fy` removed from the settings payload and ignored on PUT (owner Q14 default) | FRD X07 BR-6 "keep showing `reset_fy`" | A8 | — |
+| 2 | `raise_counter(..., via=)` keyword, for the audit row FRD §6 names | contracts §1.7 has no `via` | A8 | W-P2 |
+| 3 | Weekdays stored as `calendar.closed_weekdays[.<module>] = {"value": [...]}` and written only through `PUT /calendar/weekdays`; `readers` added to the list's `meta` | FRD X08 §5 (one nested key; generic settings PUT as an alternative) | A9b | W-P3 |
+| 4 | Engine reads narrowed to modules that are enabled AND whose codename the member holds | contracts' minimum (any consuming module) | A12 | W-P4 |
+| 5 | Off-guard `label_id` convention `<module>.off.<thing>` routed to the `settings` catalogue; module role labels `<module>.role.<name>[.caption]` routed to `team` | not in the FRDs | A12, A13 | W-P5 |
+| 6 | A payments-owned void seam (`payments/services/void_seam.py`) replaces `void.py`'s import of `sales.refund_seam` | ADR-056 names the targets and the void listener, not this import | A14 | W-M1 |
+| 7 | `"auto"` FIFO merges each target's own FIFO by `(document_date, number, id, document_type)` | R6 "global oldest-first" read literally re-sorts PUR-02's due-date order | A4a | W-M3 |
+| 8 | "Applied later" kept in `payment.meta.applied_later` (document, date) | no column reserved | A4a | — |
+| 9 | `Issuer.available(tenant)`, `IssuedDocument.warnings` / `existing`, the origin `labels(*, tenant, ids)` listener method, the port's optional `refund` payload | contracts §1.5 lists none of them | A5 | W-M4…W-M7 |
+| 10 | Two error codes `document_origin_locked`, `document_origin_confirm` (409); `party_has_open_records` (409) | new rows in §22.1.1 table F | A5, A6 | — |
+| 11 | Deposit panel key `payments.deposits` (A6's registry wants `<module>.<name>`) | FRD X02 §7 "the core key `deposits`" | A4b | W-F6 |
+| 12 | Migration numbers `payments 0004_held_deposit`, `sales 0005_document_origin` | FRDs say `0003_held_deposits`, `0004` | A4b, A5 | — |
+| 13 | ESLint boundary zones through `import/no-restricted-paths` | FRD X14 §7 names `no-restricted-imports` | A11 | W-F1 |
+| 14 | A value credit line stored as `qty 1 × taxable_value` | print shape unstated | A15 | W-F5 |
+| 15 | The statement CSV exports the running-balance rows only; deposit lines are not in it | FRD X01 silent | A2 | W-M2 |
+| 16 | A payment's ledger `source` carries `adjustment: true` on the lines of a deposit adjustment (absent otherwise), so the out line reads "Adjusted from deposit", not "Deposit returned", on the khata and the customer's statement | FRD X02 §8 names the words by direction only | gate (A4b) | — |
+| 17 | `party_balance_nonzero` carries `can_write_off: false` + `amount` while a loan is open (see CR-2026-09-30-LED-11) | LED-11 / PTY-04 FR-3 | gate (A2) | — |
+| 18 | The khata's module panels are mounted for every party (not only while a module with party roles is on) and a registered panel may say which parties it is for (`appliesTo`); a registration module imported bare must be in `package.json` `sideEffects` | FRD X04 §7 | gate (A6, A4b) | W-F3 |
+
+
+## CR-2026-10-02-LIB-14 — canon §0.9 and Part 22 §22.1.1: the library's codenames, error codes and
+audit actions
+
+**State:** `raised` (filed by the lead, 3 Oct 2026; QA round 1 found no code defect and corrected four table L rows, 536d9436) (built by Wave B task B02 behind `UNRELEASED_MODULES`). Drafted by Track L in
+`docs/platform/progress/wave-b-track-l.md`.
+**Target:** Part 0 §0.9 (codenames), Part 20 §20.5.5 (role sets), Part 22 §22.1.1 (table L),
+Part 21 §21.3.1 (audit vocabulary); `apps/common/permissions_registry.py`,
+`apps/common/error_codes.py`, `apps/common/audit.py`.
+
+*Change.*
+1. **Codenames.** Canon §0.9 gains sixteen, in the `<module>.<resource>.<action>` format, using
+   the per-module verbs CR-2026-09-30-PLATFORM-ROLES item 2 admitted (`withdraw`, `close`,
+   `override`, `waive`, `run`): `library.catalogue.read|write`, `library.copy.withdraw`,
+   `library.member.read|write|close`, `library.loan.read|write|override|adjust`,
+   `library.charge.waive|write`, `library.verification.run|close`, `library.reports.read`,
+   `library.settings.manage`.
+2. **Role sets** (FRD LIB-14 §10). Owner and admin hold all sixteen. Staff holds seven:
+   `catalogue.read|write`, `member.read|write`, `loan.read|write`, `verification.run`. The
+   accountant holds the four reads (`catalogue`, `member`, `loan`, `reports`) through its `.read`
+   rule. `loan.override`, `loan.adjust`, `charge.waive` and `copy.withdraw` are off for staff and
+   grantable per member through `permissions_override.allow` (FR-3). A waiver above the ceiling
+   (D27) and a deposit refund (D28) are role checks inside the service and no override can grant
+   them (FR-4) — the LED-03 distinction between a business ceiling and an ordinary capability.
+   This adds library codenames to `_STAFF` at build time rather than at release (item 3 of the
+   PLATFORM-ROLES CR said the release CR does it): while the module is in `UNRELEASED_MODULES`
+   `permissions_for` drops every `library.*`, so nobody holds them until release, and the T-LIB-14-4
+   matrix needs them under the flag. The release CR (T-R1) records the matrix as live.
+3. **Error codes.** Part 22 §22.1.1 gains table L, thirty codes from FRD library Appendix A, all
+   409 and not retryable except `library_waiver_over_ceiling`, which is **403**: it is a role
+   ceiling, not a conflict with the row's state, and LIB-07 §8 shows it inline in the waive dialog
+   naming who can waive. The fifteen core codes Appendix A lists as reused are not duplicated.
+4. **Audit actions.** Part 21 §21.3.1 gains the 58 `library.<entity>.<verb>` actions of Appendix B.
+   Deposit, payment, counter and reminder rows written by library flows use the core actions.
+
+*Why.* The registry test asserts equality with canon §0.9, and Part 22 §22.1.1 is the closed error
+registry; every library view names a codename and every refusal a code, so both must exist before
+the first library view (B03), and `HasPermission` refuses an unknown codename at import time.
+
+*Effect today:* none for any tenant — library is unreleased, so no member holds a library codename
+and no library endpoint exists. `seed_reference_data` rewrites the system roles' `permissions`
+column on its next run; nothing reads that column at runtime (`system_role_permissions` is the
+source). *Reversal:* remove the three `── B02 ──` blocks and table L; no table changes.

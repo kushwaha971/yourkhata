@@ -35,6 +35,8 @@ class AuditAction:
     REFRESH_REUSE_DETECTED = "auth.refresh_reuse_detected"
     LOGGED_OUT = "auth.logged_out"
     TENANT_SWITCHED = "auth.tenant_switched"
+    # docs/platform/14 §4.2 — the app switcher (per person, per business).
+    APP_SWITCHED = "auth.app_switched"
     # ── Sprint 1: PLT-03 / PLT-04 / PLT-15 ─────────────────────────────────
     TENANT_CREATED = "tenant.created"
     TENANT_PRESET_APPLIED = "tenant.preset_applied"
@@ -56,7 +58,15 @@ class AuditAction:
     MEMBER_CREDENTIALS_ISSUED = "member.credentials_issued"
     MEMBER_CREDENTIALS_REGENERATED = "member.credentials_regenerated"
     MEMBER_ROLE_CHANGED = "member.role_changed"
+    # docs/platform/14 §6 decision 1 — which apps a member is in, and as what.
+    MEMBER_APPS_CHANGED = "member.apps_changed"
+    ACCESS_GROUP_CHANGED = "access_group.changed"
     MEMBER_REMOVED = "member.removed"
+    # Owner, 12 Oct 2026 — the manager's half of the team screen: a name
+    # corrected, and a member locked out (`suspended`) and let back in.
+    MEMBER_UPDATED = "member.updated"
+    MEMBER_BLOCKED = "member.blocked"
+    MEMBER_UNBLOCKED = "member.unblocked"
     PARTY_CREATED = "party.created"
     PARTY_UPDATED = "party.updated"
     PARTY_ARCHIVED = "party.archived"
@@ -107,6 +117,8 @@ class AuditAction:
     BRANDING_UPDATED = "branding.updated"
     BRANDING_SIGNATURE_UPDATED = "branding.signature_updated"
     AUDIT_EXPORTED = "audit.exported"
+    # Shop item 2 — a GSTR-1 / GSTR-3B file for the offline tool: a statutory record.
+    GST_RETURN_JSON_EXPORTED = "gst.return_json.exported"
     SESSION_REVOKED = "auth.session_revoked"
     SESSIONS_REVOKED_ALL = "auth.sessions_revoked_all"
     SESSION_RENAMED = "auth.session_renamed"
@@ -120,9 +132,17 @@ class AuditAction:
     ITEM_ARCHIVED = "item.archived"
     ITEM_RESTORED = "item.restored"
     CATEGORY_CREATED = "category.created"
+    # Shop gap §1.6 — price lists.
+    PRICE_LIST_CREATED = "price_list.created"
+    PRICE_LIST_UPDATED = "price_list.updated"
+    PRICE_LIST_DELETED = "price_list.deleted"
+    PRICE_LIST_RATE_SET = "price_list.rate_set"
+    PRICE_LIST_PARTY_SET = "price_list.party_set"
     UNIT_CREATED = "unit.created"
     STOCK_OPENING_POSTED = "stock.opening_posted"
     STOCK_ADJUSTMENT_POSTED = "stock.adjustment_posted"
+    STOCK_COUNT_SAVED = "stock.count_saved"
+    STOCK_TRANSFER_POSTED = "stock.transfer_posted"
     # ── Sprint 10: EXP-01 / EXP-02 (17-02 §17.4, §16) ─────────────────────
     #
     # `expense.recorded` carries the full row; `expense.voided` carries the
@@ -134,6 +154,44 @@ class AuditAction:
     EXPENSE_RECORDED = "expense.recorded"
     EXPENSE_VOIDED = "expense.voided"
     EXPENSE_CATEGORY_CREATED = "expense_category.created"
+    # ── BP-17 (R-DEC-26): a counted drawer. `after` carries the count, the
+    # records' figure it was compared with and the variance; nothing posts.
+    CASH_COUNTED = "cash.counted"
+    # ── Sprint 8: PAY-01 … PAY-05 (17-02 §17.3, §16) ──────────────────────
+    #
+    # `payment.recorded` carries the full row and its allocations in `after`;
+    # `payment.voided` carries them as `before` (the allocations are DELETED by
+    # a void, so this row is the only place they survive) plus the reason and
+    # the reversal entry. Each document a payment moves is audited under its
+    # own `*.status_changed` with `metadata.payment_id`.
+    PAYMENT_RECORDED = "payment.recorded"
+    PAYMENT_VOIDED = "payment.voided"
+    PAYMENT_RECEIPT_SHARED = "payment.receipt_shared"
+    #: LED-10 BR-7 — a document void deletes its allocations; the payment stays.
+    PAYMENT_ALLOCATION_RELEASED = "payment.allocation_released"
+    INVOICE_STATUS_CHANGED = "invoice.status_changed"
+    # ── Sprint 9: PUR-01 / PUR-04 (17-03 §16) ─────────────────────────────
+    #
+    # `purchase_bill.updated` is throttled like the invoice draft's (one row per
+    # draft per 10 minutes, with `changes_count`) — the editor autosaves.
+    # `recorded` carries the totals, number, movement ids and ledger id;
+    # `voided` the reason and every reversal id (PUR-04 §16).
+    # Shop item 3 — purchase orders
+    PURCHASE_ORDER_CREATED = "purchase_order.created"
+    PURCHASE_ORDER_UPDATED = "purchase_order.updated"
+    PURCHASE_ORDER_DELETED = "purchase_order.deleted"
+    PURCHASE_ORDER_SENT = "purchase_order.sent"
+    PURCHASE_ORDER_CANCELLED = "purchase_order.cancelled"
+    PURCHASE_ORDER_BILLED = "purchase_order.billed"
+    DEBIT_NOTE_ISSUED = "debit_note.issued"
+    DEBIT_NOTE_VOIDED = "debit_note.voided"
+    PURCHASE_BILL_DRAFT_CREATED = "purchase_bill.draft_created"
+    PURCHASE_BILL_UPDATED = "purchase_bill.updated"
+    PURCHASE_BILL_DELETED = "purchase_bill.deleted"
+    PURCHASE_BILL_RECORDED = "purchase_bill.recorded"
+    PURCHASE_BILL_VOIDED = "purchase_bill.voided"
+    # PUR-02 §16 — a supplier payment (or its void) moved a bill's status.
+    PURCHASE_BILL_STATUS_CHANGED = "purchase_bill.status_changed"
     # ── Sprint 7: SAL-02 / SAL-03 / SAL-06 (17-04 §16) ────────────────────
     #
     # `invoice.draft_updated` is throttled to one row per draft per 10 minutes
@@ -144,6 +202,48 @@ class AuditAction:
     INVOICE_ISSUED = "invoice.issued"
     INVOICE_SHARE_LINK_CREATED = "invoice.share_link_created"
     INVOICE_SHARE_LINK_REGENERATED = "invoice.share_link_regenerated"
+    INVOICE_SHARE_LINK_REVOKED = "invoice.share_link_revoked"
+    # ── Sprint 9: SAL-01 / SAL-04 / SAL-05 (17-04 §16) ────────────────────
+    #
+    # `estimate.expired` is written by the nightly job (actor_type `system`).
+    # `invoice.voided` carries the reversal ids and the payments left as
+    # advances; `credit_note.applied` names the invoice and the amount.
+    ESTIMATE_CREATED = "estimate.created"
+    ESTIMATE_UPDATED = "estimate.updated"
+    ESTIMATE_DELETED = "estimate.deleted"
+    ESTIMATE_SENT = "estimate.sent"
+    ESTIMATE_ACCEPTED = "estimate.accepted"
+    ESTIMATE_REJECTED = "estimate.rejected"
+    ESTIMATE_EXPIRED = "estimate.expired"
+    ESTIMATE_CONVERTED = "estimate.converted"
+    # Shop item 3 — sales orders
+    SALES_ORDER_CREATED = "sales_order.created"
+    SALES_ORDER_UPDATED = "sales_order.updated"
+    SALES_ORDER_DELETED = "sales_order.deleted"
+    SALES_ORDER_CONFIRMED = "sales_order.confirmed"
+    SALES_ORDER_CANCELLED = "sales_order.cancelled"
+    SALES_ORDER_CONVERTED = "sales_order.converted"
+    # Shop item 4 — delivery challans (SAL-09 §16)
+    CHALLAN_CREATED = "challan.created"
+    CHALLAN_UPDATED = "challan.updated"
+    CHALLAN_DELETED = "challan.deleted"
+    CHALLAN_ISSUED = "challan.issued"
+    CHALLAN_CONVERTED = "challan.converted"
+    CHALLAN_VOIDED = "challan.voided"
+    CREDIT_NOTE_DRAFT_CREATED = "credit_note.draft_created"
+    CREDIT_NOTE_DRAFT_UPDATED = "credit_note.draft_updated"
+    CREDIT_NOTE_DRAFT_DELETED = "credit_note.draft_deleted"
+    CREDIT_NOTE_ISSUED = "credit_note.issued"
+    CREDIT_NOTE_APPLIED = "credit_note.applied"
+    CREDIT_NOTE_VOIDED = "credit_note.voided"
+    # PAY-05 × SAL-04 FR-10 — the refund payment was voided; its amount is open credit again.
+    CREDIT_NOTE_REFUND_RELEASED = "credit_note.refund_released"
+    INVOICE_VOIDED = "invoice.voided"
+    # A wrong weight is corrected, and the row keeps what it said before.
+    CUSTOM_ORDER_UPDATED = "custom_order.updated"
+    KARIGAR_UPDATED = "karigar.updated"
+    KARIGAR_LOT_CORRECTED = "karigar_lot.corrected"
+    KARIGAR_LOT_REMOVED = "karigar_lot.removed"
     # ── Sprint 5: LED-05 … LED-08 (17-02 §16) ──────────────────────────────
     #
     # LED-05 §16: the system clearing a collection date because the balance
@@ -162,6 +262,158 @@ class AuditAction:
     TENANT_SETTINGS_UPDATED = "tenant.settings.updated"
     JOB_REQUEUED = "job.requeued"
     REFERENCE_DATA_SEEDED = "platform.reference_data_seeded"
+    # ── A8 ── perpetual counters (ADR-051, contracts §5) ──────────────────
+    COUNTER_RAISED = "counter.raised"
+    # ── A9b ── the closed-day calendar (ADR-055, FRD 00 PLT-X08 §5) ──────────
+    CALENDAR_CLOSED_DAY_CREATED = "calendar.closed_day.created"
+    CALENDAR_CLOSED_DAY_DELETED = "calendar.closed_day.deleted"
+    CALENDAR_WEEKDAYS_UPDATED = "calendar.weekdays.updated"
+
+    # ── A4a ── payments v2 (contracts §1.4, PLT-X03 §6) ───────────────────
+    #
+    # `allocate_existing` — money already received applied to later documents. Its
+    # `before`/`after` are the payment's allocations; `metadata.reason` is the caller's.
+    PAYMENT_ALLOCATED = "payment.allocated"
+
+    # ── A6 ── party relations (contracts §5, FRD 00 PLT-X04) ──────────────
+    #
+    # `deleted` covers both outcomes of a removal; `metadata.ended` says whether
+    # the row was ended (it had been used) or actually deleted.
+    PARTY_RELATION_CREATED = "party.relation.created"
+    PARTY_RELATION_DELETED = "party.relation.deleted"
+
+    # ── BP-16 ── Shop promises (R-DEC-26); `before`/`after` carry the date,
+    # amount, note and state, so the log is the change history.
+    SHOP_PROMISE_CREATED = "shop_promise.created"
+    SHOP_PROMISE_CHANGED = "shop_promise.changed"
+    SHOP_PROMISE_KEPT = "shop_promise.kept"
+    SHOP_PROMISE_CANCELLED = "shop_promise.cancelled"
+
+    # ── A4b ── held deposits (ADR-044, contracts §1.4, FRD 00 PLT-X02) ──────
+    DEPOSIT_OPENED = "deposit.opened"
+    DEPOSIT_RECEIVED = "deposit.received"
+    DEPOSIT_APPLIED = "deposit.applied"
+    DEPOSIT_REFUNDED = "deposit.refunded"
+    #: R35 — the vertical raised or lowered what it expects (never below received).
+    DEPOSIT_EXPECTED_CHANGED = "deposit.expected_changed"
+    #: EC-5 — an expected deposit nobody paid, closed by its vertical.
+    DEPOSIT_CANCELLED = "deposit.cancelled"
+    #: The deposit's own status moving because a payment settled or un-settled it.
+    DEPOSIT_STATUS_CHANGED = "deposit.status_changed"
+    #: BR-7 — both halves of an application voided together.
+    DEPOSIT_APPLICATION_VOIDED = "deposit.application_voided"
+    # ── BP-08 ── an explicit settlement of a Shop contact's two roles, and its void.
+    SHOP_SETTLEMENT_RECORDED = "shop_settlement.recorded"
+    SHOP_SETTLEMENT_VOIDED = "shop_settlement.voided"
+
+    # ── DUE-01 ── the dues engine (contracts §5); later dues tasks add theirs.
+    DUES_PLAN_CREATED = "dues.plan.created"
+    DUES_PLAN_UPDATED = "dues.plan.updated"
+    DUES_SCHEDULE_CREATED = "dues.schedule.created"
+    DUES_DUE_POSTED = "dues.due.posted"
+
+    # ── B02 ── library (LIB-14) ── FRD library Appendix B. The core actions a
+    # library flow writes (deposit.*, payment.*, counter.raised, reminder.sent)
+    # are the core constants above, never a LIBRARY_ copy. Each name is its
+    # value upper-cased with `.` → `_` (`apps/library/tests/test_vocabulary.py`).
+    LIBRARY_SETTINGS_UPDATED = "library.settings.updated"
+    LIBRARY_TITLE_CREATED = "library.title.created"
+    LIBRARY_TITLE_UPDATED = "library.title.updated"
+    LIBRARY_TITLE_ARCHIVED = "library.title.archived"
+    LIBRARY_TITLE_RESTORED = "library.title.restored"
+    LIBRARY_COPY_CREATED = "library.copy.created"
+    LIBRARY_COPY_UPDATED = "library.copy.updated"
+    LIBRARY_COPY_WITHDRAWN = "library.copy.withdrawn"
+    LIBRARY_COPY_REPAIRED = "library.copy.repaired"
+    LIBRARY_COPY_BACK_TO_SHELF = "library.copy.back_to_shelf"
+    LIBRARY_COPY_FOUND = "library.copy.found"
+    LIBRARY_COPY_MARKED_MISSING = "library.copy.marked_missing"
+    LIBRARY_CATEGORY_CREATED = "library.category.created"
+    LIBRARY_CATEGORY_UPDATED = "library.category.updated"
+    LIBRARY_CATEGORY_MERGED = "library.category.merged"
+    LIBRARY_CATEGORY_DELETED = "library.category.deleted"
+    LIBRARY_LOCATION_CREATED = "library.location.created"
+    LIBRARY_LOCATION_UPDATED = "library.location.updated"
+    LIBRARY_LOCATION_DELETED = "library.location.deleted"
+    LIBRARY_MEMBERSHIP_TYPE_CREATED = "library.membership_type.created"
+    LIBRARY_MEMBERSHIP_TYPE_UPDATED = "library.membership_type.updated"
+    # ── W02 ── a study library's shifts and seats
+    LIBRARY_SHIFT_SAVED = "library.shift.saved"
+    LIBRARY_SEAT_SAVED = "library.seat.saved"
+    # ── LEN ── lending (FRD lending §0.9)
+    LENDING_BORROWER_CREATED = "lending.borrower.created"
+    LENDING_BORROWER_UPDATED = "lending.borrower.updated"
+    LENDING_LOAN_CREATED = "lending.loan.created"
+    LENDING_LOAN_UPDATED = "lending.loan.updated"
+    LENDING_LOAN_CLOSED = "lending.loan.closed"
+    LENDING_LOAN_REOPENED = "lending.loan.reopened"
+    # LEN-09 — late fees and waivers
+    LENDING_LATE_FEE_ADDED = "lending.late_fee.added"
+    LENDING_WAIVER_CREATED = "lending.waiver.created"
+    # LEN-10 — write-off and cancel
+    LENDING_LOAN_WRITTEN_OFF = "lending.loan.written_off"
+    LENDING_LOAN_CANCELLED = "lending.loan.cancelled"
+    LENDING_COLLECTION_RECORDED = "lending.collection.recorded"
+    LENDING_COLLECTION_VOIDED = "lending.collection.voided"
+    LENDING_VISIT_CREATED = "lending.visit.created"
+    LENDING_ROUTE_CREATED = "lending.route.created"
+    LENDING_ROUTE_UPDATED = "lending.route.updated"
+    LENDING_ROUTE_STOPS_REORDERED = "lending.route.stops_reordered"
+    LIBRARY_LOAN_RULES_UPDATED = "library.loan_rules.updated"
+    LIBRARY_MEMBERSHIP_ENROLLED = "library.membership.enrolled"
+    LIBRARY_MEMBERSHIP_UPDATED = "library.membership.updated"
+    LIBRARY_MEMBERSHIP_RENEWED = "library.membership.renewed"
+    #: A member moved to another membership type (not the type row itself).
+    LIBRARY_MEMBERSHIP_TYPE_CHANGED = "library.membership.type_changed"
+    LIBRARY_MEMBERSHIP_SUSPENDED = "library.membership.suspended"
+    LIBRARY_MEMBERSHIP_REACTIVATED = "library.membership.reactivated"
+    LIBRARY_MEMBERSHIP_CLOSED = "library.membership.closed"
+    LIBRARY_MEMBERSHIP_REJOINED = "library.membership.rejoined"
+    LIBRARY_LOAN_ISSUED = "library.loan.issued"
+    LIBRARY_LOAN_RETURNED = "library.loan.returned"
+    LIBRARY_LOAN_RENEWED = "library.loan.renewed"
+    LIBRARY_LOAN_CANCELLED = "library.loan.cancelled"
+    LIBRARY_LOAN_DUE_CHANGED = "library.loan.due_changed"
+    LIBRARY_LOAN_LOST = "library.loan.lost"
+    LIBRARY_LOAN_REPLACED = "library.loan.replaced"
+    LIBRARY_LOAN_OVERRIDDEN = "library.loan.overridden"
+    LIBRARY_LOAN_IMPORTED = "library.loan.imported"
+    LIBRARY_CHARGE_CREATED = "library.charge.created"
+    LIBRARY_CHARGE_WAIVED = "library.charge.waived"
+    LIBRARY_CHARGE_REVERSED = "library.charge.reversed"
+    LIBRARY_CHARGE_STATUS_CHANGED = "library.charge.status_changed"
+    LIBRARY_HOLD_PLACED = "library.hold.placed"
+    LIBRARY_HOLD_READY = "library.hold.ready"
+    LIBRARY_HOLD_SET_ASIDE = "library.hold.set_aside"
+    LIBRARY_HOLD_COLLECTED = "library.hold.collected"
+    LIBRARY_HOLD_EXPIRED = "library.hold.expired"
+    LIBRARY_HOLD_CANCELLED = "library.hold.cancelled"
+    LIBRARY_HOLD_EXTENDED = "library.hold.extended"
+    LIBRARY_HOLD_MOVED = "library.hold.moved"
+    LIBRARY_VERIFICATION_STARTED = "library.verification.started"
+    LIBRARY_VERIFICATION_CLOSED = "library.verification.closed"
+    LIBRARY_VERIFICATION_REOPENED = "library.verification.reopened"
+    LIBRARY_VERIFICATION_MISSING_MARKED = "library.verification.missing_marked"
+    LIBRARY_VERIFICATION_MISSING_WITHDRAWN = "library.verification.missing_withdrawn"
+    LIBRARY_CARD_PRINTED = "library.card.printed"
+    LIBRARY_NO_DUES_ISSUED = "library.no_dues.issued"
+    # ── ATT ── the attendance engine (contracts §5; the group, session and
+    # auto-close actions are the v1.1 additions of the Track T note, C9).
+    ATTENDANCE_GROUP_CREATED = "attendance.group.created"
+    ATTENDANCE_GROUP_UPDATED = "attendance.group.updated"
+    ATTENDANCE_SESSION_CANCELLED = "attendance.session.cancelled"
+    ATTENDANCE_MARK_CREATED = "attendance.mark.created"
+    ATTENDANCE_MARK_EDITED = "attendance.mark.edited"
+    ATTENDANCE_MARK_VOIDED = "attendance.mark.voided"
+    ATTENDANCE_MARK_OVERRIDDEN = "attendance.mark.overridden"
+    ATTENDANCE_VISITS_AUTO_CLOSED = "attendance.visits.auto_closed"
+    ATTENDANCE_ENTITLEMENT_GRANTED = "attendance.entitlement.granted"
+    ATTENDANCE_ENTITLEMENT_EXTENDED = "attendance.entitlement.extended"
+    ATTENDANCE_ENTITLEMENT_ENDED = "attendance.entitlement.ended"
+    # ── DUE-02 ── the daily run and the `dues_due` origin listener (contracts §5).
+    DUES_DUE_CANCELLED = "dues.due.cancelled"
+    # ── DUE-03 ── a due's status moving because a payment settled or un-settled it.
+    DUES_DUE_STATUS_CHANGED = "dues.due.status_changed"
 
 
 def diff_fields(

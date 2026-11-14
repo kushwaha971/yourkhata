@@ -1,0 +1,182 @@
+# Members & Fees (Library) module round (P0 §9) — 12 Nov 2026
+
+The Library was deleted and rebuilt from scratch (commits bf0b646, 7edfa6e,
+aaa8c2a): its own app (`apps/library`, `/api/v1/library`, `/library`), its own
+tables, owned by the business, with no relation to the Shop. Design: Part I of
+the approved artifact (I4 Home, I5 Seats, I6 Student and collect fee, I7 Fees
+and reminders). Model and API: `docs/revamp/library/01-model-and-api.md`.
+
+Owner decisions this round: Books stays simple (a list and who has which copy),
+with a barcode scanner for tracking ("just like in libraries").
+
+Local stack: web :3005, API :8000. Room: the design's own students placed
+relative to today (`e2e/library_seed.py`), re-seeded before every run.
+
+## §9.1 Every harness
+
+| Harness | Result |
+|---|---|
+| `e2e/library-round.mjs` (new) | **68/68** at 390 and 1280 |
+| Server `apps/library` | 30/30 (+2 import tests) |
+| Server suite | green after the rebuild (old Library tests removed or moved to Lending) |
+| Frontend unit suite | green (the old Library's own tests went with it; 3 new) |
+| Locales | `i18n:check` green, EN and HI in step |
+
+## §9.2 Module-wide monkey
+
+`monkey.mjs --app=library` wanders all 12 Library screens and checks after every
+load and return that a student's fee due and Home's Overdue are the server's.
+Proved able to fail: `MONKEY_SKEW=1` → FAIL (2).
+
+| Seed | 390 | 1280 |
+|---|---|---|
+| 111 | PASS · 47 data checks | PASS · 49 |
+| 222 | PASS · 36 | PASS · 38 |
+| 333 | PASS · 42 | PASS · 40 |
+
+API p95 46–48 ms; no slow page, no console error, no 5xx.
+
+## §9.3 Whole-day journey
+
+`library-round.mjs` is the counter's day: Home's figures, seat 14 on the map
+(Overdue, its sheet with Remind and Collect ₹1,200), Collect from the student
+page (the sheet's "Paid to" = the date the save made; Home's Collected moves by
+exactly the fee; Fees · Overdue drops the student without a reload; the chip
+count is the server's), remove the newest payment (paid-to back exactly), enrol
+on a free seat (a second student refused, `seat_taken`), a scanner gun's barcode
+opening that one book, the Shop never seeing a student, every screen fitting.
+
+## §9.4 Edge cases — `edge-case-catalogue.md`, Library column
+
+| Case | Library |
+|---|---|
+| E1 double tap | pass (three fast taps on Save = one payment; idempotency test) |
+| E2 leave/reload | pass (saved by Save; lists refetch; monkey reload/return data check) |
+| E3 address vs screen | pass (student page reads its id from the address; monkey per student) |
+| E4 offline | pass (offline Save keeps the sheet and amount, stores nothing; back online stored exactly once) |
+| E5 two devices | pass (student row lock on every fee; seat unique index + lock: test_a_seat_is_one_students_per_shift…) |
+| E6 totals | pass (Home = Fees = Seats test; Home figures = API on screen) |
+| E7 extra zeros | pass (99999999999 refused as "too large", nothing sent; server MAX) |
+| E8 qty | n/a (no quantities; copies are whole numbers) |
+| E9 stock | n/a |
+| E10 wrong book | pass (no Shop table: test_the_library_writes_no_shop_table; the Shop's API has no party for a student) |
+| E11 no stock | n/a (a book with every copy out is refused, `no_copy_left`) |
+| E12 undo | pass (removal row; only the newest payment, so the caches go back exactly) |
+| E13 back-dated | pass (Collect has a date; a fee picked on the 9th is stored on the 9th and counted on that day) |
+| E14 freezes | pass (monkey 3 × 2) |
+| E15 reason shown | pass (seat_taken, not_latest_payment, no_copy_left shown in place; error case on all 12 screens) |
+| E16 settings survive | pass (due-soon days set, API restarted, read back) |
+| E17 long text | pass (long Hindi name, ₹12,40,378 fee: student page and list fit) |
+| E18 slow lists | pass (API p95 ≤ 48 ms under the monkey) |
+| E19 finished can't change | pass (database trigger: a payment is never edited or deleted) |
+| E20 double remove | pass (a second removal refused, `already_removed`) |
+| E21–E22, E25 | n/a |
+| E23 overpaying | pass (more than a month moves "paid to" by whole months; the rest is Part paid, said before Save) |
+| E24 print vs screen | pass for the fee poster (shifts and fees from the same API); no receipt print (WhatsApp text from the server) |
+| E26 red on open | pass (Enrol opens with nothing red) |
+| E27 restyle breaks save | pass (every form saves in the harness after the build) |
+
+## Found and fixed in this round
+
+1. **Saving with no mobile hung, in two apps.** The shared mobile rule turns an
+   empty box into null, and the Library's Enrol and the Money Book's Add person
+   both called `.replace` on it: nothing was sent and the button spun for ever.
+   The Money Book's round always typed a mobile, so it passed there. Fixed in
+   both, with tests (`librarySchemas.test.tsx`, `personMobile.test.tsx`), and the
+   harness now enrols without a mobile.
+2. **Counter said "nobody is in" when it could not load** (look sweep, error
+   case). A failed load now says so.
+3. **Fees chips wrapped mid-word on a phone** ("Due / soon · 1"), seen side by side.
+4. **The phone Home listed five Today rows**; the design shows three.
+5. **The student page's dock covered the last line** of the attendance card on a phone.
+6. Seven guard tests caught convention breaks before anything ran: two lazy
+   dialogs without a loading shape, a hand-built `wa.me` link (now
+   `utils/share`), money added in floats (now `sumMoney`), a possessive on a
+   placeholder, and "Overdue" in a second Hindi word (now समय निकल गया everywhere).
+
+## Design (look sweep and side by side)
+
+`shop-look.mjs --app=library`: 12 screens × 320/390/1280 × light/dark × EN/HI and
+after a server error at 390/1280 — 1103/1104 before the Counter fix, **1104/1104** after it. Side by side (`docs/testing/library-shots/compare-library-1.png`): Home, Seats and Fees
+at 390 and 1280 match the mocks' composition, figures, colours and actions.
+
+Departures, listed for the owner rather than chosen silently:
+- the bottom bar's fifth slot is the app switcher (the owner's call for the Money Book, kept the same);
+- shift names are the library's own saved names, so they stay as typed in Hindi;
+- screens with no mock (Counter, Students, Attendance, Messages, Income & expenses,
+  Expenses, Books, Settings) reuse the rated Money Book parts.
+
+## Second pass (owner, 12 Nov: "do all of it first, then Lending")
+
+**Side by side, every mock.** I6 (the student page and the Collect sheet) was
+not paired in the first pass. Paired now (`library-shots/compare-library-i6*.png`)
+and five differences fixed: the Collect chips wrapped to two lines, Save was full
+width, an extra line sat under the sheet title, and the phone header carried
+the mobile and "since" where the design says only "Seat 14 · Full day".
+
+**Pixels measured, not eyeballed.** `e2e/library-measure.mjs` reads the design
+element inside each `[data-mock]` and ours on the running screen: **23/23** parts
+within 1 px (weights exact). It found six differences before the fixes — cards
+and figure cards rounded 16 px (the design's 12; the Money Book had the same and
+is fixed too), card padding 14 (16), seats rounded 12 (8), desktop Counter/Enrol
+46 px tall (40), and chips at 14 px type and padding (12.5 / 10).
+
+**By hand, tap by tap, phone and desktop** (the built-in browser):
+- Home's "Remind 4 overdue" opened Fees with nobody picked; the design's Fees
+  arrives with them ticked and "Remind 4" in the dock — it does now.
+- On a short list the dock floated mid-screen (sticky only sticks on a long
+  page); it is pinned above the bottom bar, with the design's dock padding.
+- The phone chips were cut at "Part paid"; "All" carries no count on a phone,
+  as drawn, and the scroll line is gone.
+- A part payment said "Paid to 11 Nov after this. ₹500 left for the NEXT month",
+  and the saved message said "Paid to 11 Nov": both wrong, the ₹500 is owed for
+  THIS month. Now "₹500 still to pay for this month. Paid to stays 11 Nov", and
+  the card reads "₹300 of ₹800 paid · 1 day late".
+- Enrol on an empty seat from the desktop panel, with no mobile: saved, the
+  seat turned amber, Morning went 12/60 → 13/60 without a reload.
+
+**A calculation defect, found from the hand pass.** A student three months behind
+who once put down ₹300 showed "Part paid" — the order checked part before late.
+Late now always wins; the part is taken off the due.
+
+**A library with a past** (owner: "prefill data on previous dates").
+`test_history.py` builds students through the API on past days — every month on
+time, stopped after two months, behind with a part paid, part paid and not late,
+three months ahead in one go, joined on the 31st, due in three days, never paid —
+fixes "today" at 12 Nov, and checks figures worked out by hand: ₹2,400 for three
+missed months, ₹2,100 with ₹300 put down (Overdue), 31 Aug → 30 Sep → 31 Oct →
+30 Nov → 31 Dec, ₹1,600 never paid since 1 Oct, Home Overdue ₹6,100 over 3
+students, October's income ₹5,700, a back-dated payment counted on its own day
+and not today's, a future date refused. The reminder texts carry the same
+amounts and dates, in English and Hindi, signed with the library's name.
+
+**Paid on an earlier day** (owner: "but I want date"). The Collect sheet has the
+Money Book's "Today, 12 Nov · change date" line and a calendar; a future day is
+refused by the server. Harness E13: a fee picked on the 9th is stored on the 9th
+and counted in that day's money, not today's (`test_a_back_dated_payment…`).
+
+**The morning bell** (owner: "add the bell"). At 09:00 on the business's clock,
+one bell row per library: "N fees became overdue today" — the students whose fee
+was due yesterday and is unpaid — for the library's people only, opening Fees
+with them ticked. Grouped by the day (running twice raises one row), nothing on
+a day with nobody newly late, nothing sent to a student. Tested in
+`test_history.py`, and on the live stack in English and Hindi
+(`library-shots/bell-*.png`). Running it live found a defect no unit test could:
+the notification service locks a row and needs a transaction, which every test
+already has — outside one the morning job would have crashed. Fixed, with a test
+that runs outside a test transaction.
+
+## §8 score
+
+| Points | Earned | Evidence |
+|---|---|---|
+| Business 2 | 2 | fees, paid-to, Home/Fees figures read back by id after a skewed self-test; payments locked by a trigger |
+| Design 1 | 1 | six mocks paired; look sweep across 12 screens |
+| Functional 1 | 1 | the whole counter day on screen; other screens update without a reload |
+| User 2 | 2 | monkey 3 × 2 with data checks; catalogue column complete; long Hindi text |
+| Data and recovery 1 | 1 | offline Save stores nothing, then once; three taps write once |
+| Performance 1 | 1 | API p95 ≤ 48 ms; forms load on demand |
+| Honesty 1 | 1 | this report, harness defects named |
+| Owner 1 | 0 | the owner asked for this second pass: I6, measured pixels and a hand pass were missing from the first |
+
+**9/10.**

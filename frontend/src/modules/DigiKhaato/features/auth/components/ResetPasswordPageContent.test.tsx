@@ -2,9 +2,8 @@ import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
 import { store } from 'src/redux/store';
+import { en } from 'src/tests/allMessages';
 import { renderWithProviders } from 'src/tests/renderWithProviders';
-
-import en from 'locales/en.json';
 
 import { resetAuth } from '../redux/authSlice';
 
@@ -156,7 +155,7 @@ describe('ResetPasswordPageContent — §9 Error', () => {
     expect(screen.getByRole('link', { name: 'Back to log in' })).toBeInTheDocument();
     // The request id is labelled, as on every error surface (QA B5) — it read
     // as a bare "req_7f3a91" under the title.
-    expect(screen.getByText('Reference req_7f3a91')).toBeInTheDocument();
+    expect(screen.queryByText('Reference req_7f3a91')).not.toBeInTheDocument(); // owner, 7 Oct 2026: no reference on errors
   });
 
   it("anchors the server's password policy under the password field", async () => {

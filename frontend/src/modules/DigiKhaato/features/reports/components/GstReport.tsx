@@ -1,0 +1,472 @@
+'use client';
+
+import { useCallback, useMemo } from 'react';
+
+import { FigureBox, type Figure } from 'src/components/stats/FigureBox';
+import {
+  UbActionLink,
+  UbButton,
+  UbEmptyState,
+  UbPageShell,
+  UbStack,
+  UbStatusBanner,
+  UbSwitch,
+  UbTabs,
+} from 'src/design-system';
+import { useGridTier } from 'src/design-system/UbDataGrid';
+import { useAppRouter } from 'src/hooks/useAppRouter';
+import { useTranslation } from 'src/hooks/useTranslation';
+import { ROUTES } from 'src/routes';
+import { formatBusinessDate } from 'src/utils/dates';
+import { absMoney, formatInr, isZeroAmount } from 'src/utils/money';
+
+import { TAX_PERIOD_PRESETS } from '../constants/taxReportConstants';
+import { useGstSummary } from '../hooks/useGstSummary';
+import {
+  b2csCard,
+  docsCard,
+  exceptionCard,
+  hsnCard,
+  natureCard,
+  rateCard,
+} from '../view-model/gstCards';
+import { gstDrillHref } from '../view-model/gstDisplay';
+
+import {
+  b2csColumns,
+  docsColumns,
+  exceptionColumns,
+  hsnColumns,
+  natureColumns,
+  rateColumns,
+} from './GstColumns';
+import { Gstr3bBoxes } from './Gstr3bBoxes';
+import { GstReturnJsonButton } from './GstReturnJsonButton';
+import { GstSection, GstTable } from './GstSection';
+import { ReportPageShell, type ReportState } from './ReportPageShell';
+
+import type {
+  GstB2csRow,
+  GstDocsRow,
+  GstException,
+  GstHsnRow,
+  GstNatureRow,
+  GstRateRow,
+  GstSummary,
+  GstView,
+  TaxPeriodPreset,
+} from '../types/taxReports.types';
+
+const VIEWS: readonly GstView[] = ['gstr1', 'gstr3b', 'details'];
+
+/**
+ * RPT-07 — everything for GSTR-1 and GSTR-3B for one period, each figure
+ * beside the return coordinate it is typed into.
+ *
+ * The four tiles answer the owner (Alternate A): what was sold, the tax on
+ * it, the credit, and the one number to keep aside. The strip answers the
+ * accountant's first question — can I file — and opens the list of what to
+ * fix. Three views of ONE response (switching never refetches): GSTR-1 by
+ * table, GSTR-3B by box, and the rate-wise detail a figure is defended from.
+ * A rate row opens the sales register filtered to its code and supply
+ * (FR-13 through CR-RPT-2's filters, instead of a drawer).
+ */
+export function GstReport(): React.JSX.Element {
+  const { t } = useTranslation();
+  const router = useAppRouter();
+  const report = useGstSummary();
+  const { data, query, view, setView } = report;
+  const phone = useGridTier() === 'cards';
+  // The portal takes an ended period; one that runs to today or later is open.
+  const closed = query.dateTo < report.today;
+
+  const tabs = useMemo(
+    () => VIEWS.map((value) => ({ value, label: t(`reports.gst.view.${value}`) })),
+    [t]
+  );
+  const openRate = useCallback(
+    (row: GstRateRow) => router.push(gstDrillHref(query, row)),
+    [router, query]
+  );
+  const openException = useCallback(
+    (row: GstException) =>
+      router.push(
+        row.documentKind === 'credit_note'
+          ? `${ROUTES.SALES_CREDIT_NOTES}/${encodeURIComponent(row.documentId)}`
+          : `${ROUTES.SALES_INVOICES}/${encodeURIComponent(row.documentId)}`
+      ),
+    [router]
+  );
+
+  if (!report.canRead) {
+    return (
+      <UbPageShell>
+        <UbEmptyState
+          variant="firstUse"
+          title={t('reports.gst.noAccess.title')}
+          description={t('reports.gst.noAccess.body')}
+        />
+      </UbPageShell>
+    );
+  }
+  if (report.notRegistered) {
+    return (
+      <UbPageShell>
+        <UbEmptyState
+          variant="firstUse"
+          title={t('reports.gst.unregistered.title')}
+          description={t('reports.gst.unregistered.body')}
+          action={
+            <UbActionLink href={ROUTES.SETTINGS_PROFILE} variant="secondary">
+              {t('reports.gst.unregistered.action')}
+            </UbActionLink>
+          }
+        />
+      </UbPageShell>
+    );
+  }
+
+  const isEmpty = data !== null && data.meta.documentCount === 0 && !data.inwardByRate?.rows.length;
+  const state: ReportState =
+    report.status === 'failed' && !data ? 'error' : !data ? 'loading' : isEmpty ? 'empty' : 'ready';
+
+  return (
+    <ReportPageShell<TaxPeriodPreset>
+      title={t('reports.gst.title')}
+      testId="gst-summary"
+      period={{
+        presets: TAX_PERIOD_PRESETS.map((value) => ({
+          value,
+          label: t(`reports.period.${value}`),
+        })),
+        preset: report.preset,
+        onPresetChange: report.setPreset,
+        customPreset: 'custom',
+        from: query.dateFrom,
+        to: query.dateTo,
+        onRangeChange: report.setRange,
+        max: report.today,
+        name: 'gst-summary-period',
+        labels: {
+          presets: t('reports.period.label'),
+          from: t('reports.period.from'),
+          to: t('reports.period.to'),
+          apply: t('common.action.apply'),
+          close: t('common.action.close'),
+        },
+      }}
+      /* Shop item 2 — the portal file for the open tab. A composition business
+         files CMP-08 instead, so it is offered neither. */
+      actions={
+        view !== 'details' && data && !data.composition && !phone ? (
+          <GstReturnJsonButton kind={view} query={query} closed={closed} />
+        ) : undefined
+      }
+      exportAction={{
+        path: report.exportPath,
+        empty: data !== null && data.meta.documentCount === 0,
+      }}
+      filterEnd={
+        <UbSwitch
+          checked={query.rounding === 'rupee'}
+          onCheckedChange={(checked) => report.setRounding(checked ? 'rupee' : 'paise')}
+          label={t('reports.gst.rounding.label')}
+        />
+      }
+      state={state}
+      error={report.error}
+      onRetry={report.refetch}
+      loadingLabel={t('reports.grid.loading')}
+      empty={
+        data
+          ? {
+              variant: 'firstUse',
+              title: t('reports.gst.empty.title'),
+              description: t('reports.gst.empty.body', {
+                from: formatBusinessDate(data.meta.dateFrom),
+                to: formatBusinessDate(data.meta.dateTo),
+              }),
+            }
+          : undefined
+      }
+    >
+      {data && (
+        <GstBody
+          data={data}
+          view={view}
+          setView={setView}
+          tabs={tabs}
+          rounding={query.rounding}
+          openRate={openRate}
+          openException={openException}
+          json={
+            phone && view !== 'details' && !data.composition ? (
+              <GstReturnJsonButton kind={view} query={query} closed={closed} block />
+            ) : null
+          }
+        />
+      )}
+    </ReportPageShell>
+  );
+}
+
+function GstBody({
+  data,
+  view,
+  setView,
+  tabs,
+  rounding,
+  openRate,
+  openException,
+  json,
+}: Readonly<{
+  data: GstSummary;
+  view: GstView;
+  setView: (view: GstView) => void;
+  tabs: readonly { value: GstView; label: string }[];
+  rounding: 'paise' | 'rupee';
+  openRate: (row: GstRateRow) => void;
+  openException: (row: GstException) => void;
+  /** The phone's labelled JSON download, under the return it files. */
+  json: React.ReactNode;
+}>): React.JSX.Element {
+  const { t } = useTranslation();
+  // §19.9.4 — column models are memoised, never rebuilt inline on every render.
+  const columns = useMemo(
+    () => ({
+      nature: natureColumns(t),
+      b2cs: b2csColumns(t),
+      hsn: hsnColumns(t),
+      docs: docsColumns(t),
+      outward: rateColumns(t),
+      inward: rateColumns(t, true),
+      exceptions: exceptionColumns(t),
+    }),
+    [t]
+  );
+  const cards = useMemo(
+    () => ({
+      nature: natureCard(t),
+      b2cs: b2csCard(t),
+      hsn: hsnCard(t),
+      docs: docsCard(t),
+      outward: rateCard(t),
+      inward: rateCard(t, true),
+      exceptions: exceptionCard(t),
+    }),
+    [t]
+  );
+  const net = data.gstr3b?.net;
+  const netNegative = !!net && net.total.startsWith('-');
+  const issues = data.meta.exceptionCount;
+  // 09 §10.5: net payable first, then what it is made of.
+  const figures: Figure[] = [
+    {
+      key: 'net',
+      label: t(netNegative ? 'reports.gst.tile.carryForward' : 'reports.gst.tile.net'),
+      value: net ? formatInr(absMoney(net.total)) : '—',
+      caption: t('reports.gst.tile.due', { date: formatBusinessDate(data.meta.gstr3bDue) }),
+    },
+    {
+      key: 'output',
+      label: t('reports.gst.tile.output'),
+      value: net ? formatInr(net.outputTax) : '—',
+      caption: t('reports.gst.figure.output'),
+    },
+    {
+      key: 'itc',
+      label: t('reports.gst.tile.itc'),
+      value: net ? formatInr(net.itc) : '—',
+      caption: t('reports.gst.figure.itc'),
+      tone: 'success',
+    },
+    {
+      key: 'taxable',
+      label: t('reports.gst.tile.taxable'),
+      value: data.outwardByRate ? formatInr(data.outwardByRate.total.taxableValue) : '—',
+      caption: t('reports.gst.tile.documents', { count: data.meta.documentCount }),
+    },
+  ];
+  const rateId = (row: GstRateRow) =>
+    `${row.taxCode}-${row.taxRate}-${row.isInterState}-${row.itcEligible}-${row.reverseCharge}`;
+  const rateName = (row: GstRateRow) => `${row.taxCode} ${row.taxRate}`;
+
+  return (
+    <UbStack gap={4}>
+      {data.composition ? (
+        <UbStatusBanner
+          tone="info"
+          title={t('reports.gst.composition.title')}
+          description={t('reports.gst.composition.body', {
+            turnover: formatInr(data.composition.turnover),
+            rate: Number(data.composition.rate),
+            tax: formatInr(data.composition.tax),
+          })}
+        />
+      ) : (
+        <FigureBox
+          figures={figures}
+          label={t('reports.gst.tiles')}
+          testId="gst-figures"
+          figureTestId="gst-figure"
+        />
+      )}
+
+      <UbStatusBanner
+        tone={issues === 0 ? 'success' : 'warning'}
+        title={
+          issues === 0
+            ? t('reports.gst.strip.ready')
+            : t('reports.gst.strip.issues', { count: issues })
+        }
+        description={rounding === 'rupee' ? t('reports.gst.rounding.caption') : undefined}
+        action={
+          issues > 0 && view !== 'details' ? (
+            <UbButton variant="secondary" size="sm" onClick={() => setView('details')}>
+              {t('reports.gst.strip.review')}
+            </UbButton>
+          ) : undefined
+        }
+      />
+
+      <UbTabs<GstView>
+        value={view}
+        onValueChange={setView}
+        tabs={tabs}
+        ariaLabel={t('reports.gst.view.label')}
+        layout="fit"
+      >
+        <UbStack gap={4}>
+          {view === 'gstr1' && (
+            <>
+              <GstSection
+                title={t('reports.gst.section.nature')}
+                coordinate="GSTR-1"
+                hint={t('reports.gst.hint.nature')}
+              >
+                <GstTable<GstNatureRow>
+                  rows={data.byNature}
+                  columns={columns.nature}
+                  card={cards.nature}
+                  testId="gst-nature"
+                  rowId={(row) => row.nature}
+                  rowName={(row) => row.nature}
+                  caption={t('reports.gst.section.nature')}
+                />
+              </GstSection>
+              <GstSection
+                title={t('reports.gst.section.b2cs')}
+                coordinate="GSTR-1 · 7"
+                hint={t('reports.gst.hint.b2cs')}
+              >
+                <GstTable<GstB2csRow>
+                  rows={data.b2cs}
+                  columns={columns.b2cs}
+                  card={cards.b2cs}
+                  testId="gst-b2cs"
+                  rowId={(row) => `${row.posState}-${row.taxRate}-${row.isInterState}`}
+                  rowName={(row) => row.posState}
+                  caption={t('reports.gst.section.b2cs')}
+                />
+              </GstSection>
+              <GstSection
+                title={t('reports.gst.section.hsn')}
+                coordinate="GSTR-1 · 12"
+                hint={t('reports.gst.hint.hsn')}
+              >
+                <GstTable<GstHsnRow>
+                  rows={data.hsn?.rows ?? []}
+                  columns={columns.hsn}
+                  card={cards.hsn}
+                  testId="gst-hsn"
+                  totals={data.hsn?.total}
+                  rowId={(row) => `${row.hsnSac}-${row.uqc}-${row.taxRate}-${row.supplyType}`}
+                  rowName={(row) => row.hsnSac}
+                  caption={t('reports.gst.section.hsn')}
+                />
+              </GstSection>
+              <GstSection
+                title={t('reports.gst.section.docs')}
+                coordinate="GSTR-1 · 13"
+                hint={t('reports.gst.hint.docs')}
+              >
+                <GstTable<GstDocsRow>
+                  rows={data.docs}
+                  columns={columns.docs}
+                  card={cards.docs}
+                  testId="gst-docs"
+                  rowId={(row) => `${row.nature}-${row.seriesPrefix}`}
+                  rowName={(row) => row.seriesPrefix}
+                  caption={t('reports.gst.section.docs')}
+                />
+              </GstSection>
+            </>
+          )}
+          {view === 'gstr3b' && data.gstr3b && <Gstr3bBoxes gstr3b={data.gstr3b} />}
+          {json}
+          {view === 'details' && (
+            <>
+              <GstSection
+                title={t('reports.gst.section.outward')}
+                coordinate="GSTR-3B · 3.1"
+                hint={t('reports.gst.hint.outward')}
+              >
+                <GstTable<GstRateRow>
+                  rows={data.outwardByRate?.rows ?? []}
+                  columns={columns.outward}
+                  card={cards.outward}
+                  testId="gst-outward"
+                  totals={data.outwardByRate?.total}
+                  rowId={rateId}
+                  rowName={rateName}
+                  caption={t('reports.gst.section.outward')}
+                  onRowOpen={openRate}
+                />
+              </GstSection>
+              {data.inwardByRate && (
+                <GstSection
+                  title={t('reports.gst.section.inward')}
+                  coordinate="GSTR-3B · 4(A)"
+                  hint={
+                    data.itc && !isZeroAmount(data.itc.notClaimable)
+                      ? t('reports.gst.hint.notClaimable', {
+                          amount: formatInr(data.itc.notClaimable),
+                        })
+                      : t('reports.gst.hint.inward')
+                  }
+                >
+                  <GstTable<GstRateRow>
+                    rows={data.inwardByRate.rows}
+                    columns={columns.inward}
+                    card={cards.inward}
+                    testId="gst-inward"
+                    totals={data.inwardByRate.total}
+                    rowId={rateId}
+                    rowName={rateName}
+                    caption={t('reports.gst.section.inward')}
+                  />
+                </GstSection>
+              )}
+              <GstSection
+                title={t('reports.gst.section.exceptions')}
+                coordinate={t('reports.gst.exceptions.coordinate')}
+                hint={t('reports.gst.hint.exceptions')}
+              >
+                <GstTable<GstException>
+                  rows={data.exceptions}
+                  columns={columns.exceptions}
+                  card={cards.exceptions}
+                  testId="gst-exceptions"
+                  rowId={(row) => `${row.documentId}-${row.issueCode}`}
+                  rowName={(row) => row.number}
+                  caption={t('reports.gst.section.exceptions')}
+                  onRowOpen={openException}
+                />
+              </GstSection>
+            </>
+          )}
+        </UbStack>
+      </UbTabs>
+    </UbStack>
+  );
+}

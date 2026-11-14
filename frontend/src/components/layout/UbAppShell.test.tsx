@@ -1,15 +1,15 @@
-import { act, screen, waitFor, within } from '@testing-library/react';
+import { act, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { Plus } from 'lucide-react';
 
 import { SnackbarHost } from 'src/components/layout/SnackbarHost';
 import { UbAppShell } from 'src/components/layout/UbAppShell';
-import { UbText } from 'src/design-system';
+import { UbButton, UbFab, UbText } from 'src/design-system';
 import { localeChanged } from 'src/redux/slice/localeSlice';
 import { browserCameOnline, browserWentOffline } from 'src/redux/slice/networkSlice';
 import { sessionLoaded } from 'src/redux/slice/sessionSlice';
 import { hideSnackbar, showSnackbar } from 'src/redux/slice/snackbarSlice';
 import { store } from 'src/redux/store';
-import { ROUTES } from 'src/routes';
 import { renderWithProviders } from 'src/tests/renderWithProviders';
 import { clearCookie, LOCALE_COOKIE, readCookie } from 'src/utils/cookieUtils';
 
@@ -17,14 +17,19 @@ import { clearCookie, LOCALE_COOKIE, readCookie } from 'src/utils/cookieUtils';
  * The app chrome at every width.
  *
  * jsdom applies no stylesheet, so "below 1024 px" cannot be a viewport here: it
- * is the mobile HEADER, the one `lg:hidden` renders — the header holding the
- * hamburger. Whatever a phone user can reach, they reach from inside that
- * element, so that is where these tests look.
+ * is the mobile HEADER, the one `lg:hidden` renders (the phone's navigation
+ * itself is `MobileTabBar`, tested beside it, and the account lives on the More
+ * tab, `MorePageContent.test.tsx`).
  */
 jest.mock('modules/DigiKhaato/features/auth/api/authService');
-jest.mock('modules/DigiKhaato/features/parties/api/partyService', () => ({
-  ...jest.requireActual('modules/DigiKhaato/features/parties/api/partyService'),
-  listParties: jest.fn(),
+jest.mock('modules/DigiKhaato/features/sales/api/salesService', () => ({
+  listInvoices: jest.fn().mockResolvedValue({ rows: [], pageSize: 25, total: 0 }),
+}));
+jest.mock('modules/DigiKhaato/features/purchases/api/purchaseBillService', () => ({
+  listPurchaseBills: jest.fn().mockResolvedValue({ rows: [], pageSize: 25, total: 0 }),
+}));
+jest.mock('modules/DigiKhaato/features/inventory/api/itemService', () => ({
+  searchItems: jest.fn().mockResolvedValue({ rows: [], hasMore: false }),
 }));
 
 // The shell mounts the notification bell, which polls `getUnreadCount`. Left
@@ -42,22 +47,26 @@ jest.mock('modules/DigiKhaato/features/notifications/api/notificationService', (
 
 const mockReplace = jest.fn();
 const mockPush = jest.fn();
+let mockPath = '/parties';
 jest.mock('next/navigation', () => ({
   useRouter: () => ({ push: mockPush, replace: mockReplace, back: jest.fn(), prefetch: jest.fn() }),
   useSearchParams: () => new URLSearchParams(''),
-  usePathname: () => '/parties',
+  usePathname: () => mockPath,
 }));
 
 const authService = jest.requireMock('modules/DigiKhaato/features/auth/api/authService') as {
   logout: jest.Mock;
 };
 
-const partyService = jest.requireMock('modules/DigiKhaato/features/parties/api/partyService') as {
+const partyService = jest.requireMock(
+  'src/modules/DigiKhaato/features/parties/api/partyService'
+) as {
   listParties: jest.Mock;
 };
 
 const signIn = (
-  permissions: readonly string[] = ['parties.party.read', 'ledger.entry.read']
+  permissions: readonly string[] = ['parties.party.read', 'ledger.entry.read'],
+  activeApp: 'shop' | 'khata' = 'shop'
 ): void => {
   store.dispatch(
     sessionLoaded({
@@ -78,7 +87,8 @@ const signIn = (
       },
       tenants: [{ id: 't1', name: 'Kumar Kirana Store', timezone: 'Asia/Kolkata', role: 'owner' }],
       permissions: [...permissions] as never,
-      enabledModules: ['parties', 'ledger'],
+      enabledModules: activeApp === 'khata' ? ['parties', 'ledger', 'khata'] : ['parties', 'ledger'],
+      activeApp,
       version: 1,
     })
   );
@@ -94,18 +104,28 @@ const renderShell = () =>
     </>
   );
 
-/** The header a phone shows: the one that holds the navigation drawer's trigger. */
+/** The header a phone shows: the `lg:hidden` one. */
 const mobileHeader = (): HTMLElement => {
-  const header = screen
-    .getAllByRole('button', { name: 'Open menu' })
-    .map((button) => button.closest('header'))
-    .find((node): node is HTMLElement => node !== null);
+  const header = Array.from(document.querySelectorAll('header')).find((node) =>
+    node.className.includes('lg:hidden')
+  );
   if (!header) throw new Error('no mobile header');
   return header;
 };
 
 beforeEach(() => {
+  mockPath = '/parties';
   jest.clearAllMocks();
+  jest.spyOn(window, 'matchMedia').mockImplementation((query) => ({
+    matches: query.includes('max-width: 1023'),
+    media: query,
+    onchange: null,
+    addEventListener: () => undefined,
+    removeEventListener: () => undefined,
+    addListener: () => undefined,
+    removeListener: () => undefined,
+    dispatchEvent: () => false,
+  }));
   authService.logout.mockResolvedValue(undefined);
   clearCookie(LOCALE_COOKIE);
   store.dispatch(localeChanged('en'));
@@ -115,36 +135,47 @@ beforeEach(() => {
 });
 
 describe('UAT D2 — the phone and tablet chrome', () => {
-  it('shows who is signed in and a Sign out that logs out and routes to login', async () => {
-    /* D2: below 1024 px there was no Sign out and no account identity at all —
-       the account menu lived only in `UbAppTopBar`, which is `hidden lg:flex`. */
-    const user = userEvent.setup();
+  it('does not duplicate Back in the header when the Money Book person owns it', () => {
+    /** A second Back arrow wasted the person page's header (the page draws its own). */
+    mockPath = '/money-book/p1';
+    window.history.replaceState(null, '', mockPath);
+    signIn(['khata.book.read'], 'khata');
     renderShell();
-
-    const header = within(mobileHeader());
-    await user.click(header.getByRole('button', { name: 'Account menu for Suresh Kumar' }));
-
-    const menu = within(header.getByRole('menu'));
-    expect(menu.getByText('Suresh Kumar')).toBeInTheDocument();
-    expect(menu.getByText('suresh@kirana.test')).toBeInTheDocument();
-
-    await user.click(menu.getByRole('menuitem', { name: 'Sign out' }));
-
-    await waitFor(() => expect(authService.logout).toHaveBeenCalledTimes(1));
-    await waitFor(() => expect(mockReplace).toHaveBeenCalledWith(ROUTES.LOGIN));
-    expect(store.getState().session.status).toBe('anonymous');
+    expect(within(mobileHeader()).queryByRole('button', { name: 'Back' })).not.toBeInTheDocument();
   });
 
-  it('has a search button that opens the party quick search, focused', async () => {
+  it('keeps header Back off the Money Book menu screens (Report is a menu row)', () => {
+    mockPath = '/money-book/report';
+    window.history.replaceState(null, '', mockPath);
+    signIn(['khata.book.read'], 'khata');
+    renderShell();
+    expect(within(mobileHeader()).queryByRole('button', { name: 'Back' })).not.toBeInTheDocument();
+  });
+  it('keeps the account off the phone header: it lives on the More tab now', () => {
+    /* docs/mobile-redesign — the header held six controls in 390 px and cut
+       the business name to "Sharm…". The ☰ drawer and the account avatar left
+       it (the bottom nav and More replace them); the business switcher, the
+       search and the bell stay. A regression that put either back would take
+       the switcher's width again. */
+    renderShell();
+    const header = within(mobileHeader());
+    expect(header.queryByRole('button', { name: 'Open menu' })).not.toBeInTheDocument();
+    expect(
+      header.queryByRole('button', { name: 'Account menu for Suresh Kumar' })
+    ).not.toBeInTheDocument();
+    expect(header.getByRole('button', { name: 'Find or start' })).toBeInTheDocument();
+  });
+
+  it('opens the shared Shop command search from the mobile header, focused', async () => {
     /* D2: the party search was in the same desktop-only bar, so a phone had no
        way to find a khata except by scrolling the list. */
     const user = userEvent.setup();
     renderShell();
 
-    await user.click(within(mobileHeader()).getByRole('button', { name: 'Search parties' }));
+    await user.click(within(mobileHeader()).getByRole('button', { name: 'Find or start' }));
 
-    const sheet = await screen.findByRole('dialog', { name: 'Search parties' });
-    const input = within(sheet).getByRole('combobox', { name: 'Search parties' });
+    // A1 shortened the hint so it fits at 320 px.
+    const input = await screen.findByPlaceholderText('Find or start: name, item, bill no.');
     expect(input).toHaveFocus();
   });
 
@@ -158,73 +189,31 @@ describe('UAT D2 — the phone and tablet chrome', () => {
     renderShell();
 
     const header = within(mobileHeader());
-    expect(header.getByRole('button', { name: 'Open menu' })).toBeInTheDocument();
-    expect(header.queryByRole('button', { name: 'Search parties' })).not.toBeInTheDocument();
+    // `/parties` (this file's path) is not a menu destination, so the phone
+    // header carries Back where the brand would be (MobileBackButton).
+    expect(header.getByRole('button', { name: 'Back' })).toBeInTheDocument();
+    expect(header.queryByRole('button', { name: 'Find or start' })).not.toBeInTheDocument();
     expect(partyService.listParties).not.toHaveBeenCalled();
   });
 
-  it('shows a result’s mobile grouped as the party list does (D-L2)', async () => {
-    /* Prevents D-L2: the phone search sheet printed the stored E.164
-       "+919876543210" under the party's name, while the party row, the khata
-       header and the reminder sheet all show "+91 98765 43210" — three
-       spellings of one number on the screen a merchant uses to check they
-       have the right Ramesh. */
-    partyService.listParties.mockResolvedValue({
-      rows: [
-        {
-          id: 'p1',
-          name: 'Ramesh Traders',
-          displayCode: 'C-001',
-          mobile: '+919876543210',
-          isCustomer: true,
-          isSupplier: false,
-          balance: '1200.00',
-          status: 'active',
-          lastActivityAt: null,
-          tags: [],
-        },
-      ],
-      meta: { page: 1, pageSize: 8, total: 1, totalPages: 1 },
-    });
-    const user = userEvent.setup();
+  it('has one visible Shop header command trigger, without the obsolete party-only trigger', () => {
     renderShell();
-
-    await user.click(within(mobileHeader()).getByRole('button', { name: 'Search parties' }));
-    const sheet = within(await screen.findByRole('dialog', { name: 'Search parties' }));
-    await user.type(sheet.getByRole('combobox', { name: 'Search parties' }), 'Ram');
-
-    const option = await sheet.findByRole('option', { name: /Ramesh Traders/ });
-    expect(within(option).getByText('+91 98765 43210')).toBeInTheDocument();
-    expect(within(option).queryByText('+919876543210')).not.toBeInTheDocument();
+    expect(within(mobileHeader()).getAllByRole('button', { name: 'Find or start' })).toHaveLength(
+      1
+    );
+    expect(
+      within(mobileHeader()).queryByRole('button', { name: 'Search contacts' })
+    ).not.toBeInTheDocument();
   });
 });
 
-describe('UAT D2 — the language switch, in the account menu at every width', () => {
-  it('switches to Hindi from the phone header and persists it as the picker did', async () => {
-    const user = userEvent.setup();
-    renderShell();
-
-    const header = within(mobileHeader());
-    await user.click(header.getByRole('button', { name: 'Account menu for Suresh Kumar' }));
-    const menu = within(header.getByRole('menu'));
-
-    // Each option in its own script: the only label a person who needs it can read.
-    expect(menu.getByRole('menuitem', { name: 'English' })).toHaveAttribute('aria-current', 'true');
-    await user.click(menu.getByRole('menuitem', { name: 'हिन्दी' }));
-
-    expect(store.getState().locale.current).toBe('hi');
-    expect(store.getState().locale.overridden).toBe(true);
-    expect(readCookie(LOCALE_COOKIE)).toBe('hi');
-  });
-
+describe('UAT D2 — the language switch in the desktop account menu', () => {
   it('offers the same switch in the desktop account menu', async () => {
     const user = userEvent.setup();
     renderShell();
 
-    const triggers = screen.getAllByRole('button', { name: 'Account menu for Suresh Kumar' });
-    const desktop = triggers.find((node) => !mobileHeader().contains(node));
-    if (!desktop) throw new Error('no desktop account menu');
-    await user.click(desktop);
+    // The phone's switch is on the More tab (`MorePageContent.test.tsx`).
+    await user.click(screen.getByRole('button', { name: 'Account menu for Suresh Kumar' }));
 
     const menu = within(screen.getByRole('menu'));
     await user.click(menu.getByRole('menuitem', { name: 'हिन्दी' }));
@@ -259,5 +248,74 @@ describe('UAT D3 — app chrome is marked so print hides it', () => {
 
     // The page itself is not chrome and must still print.
     expect(hidden(screen.getByText('Page body'))).toBe(false);
+  });
+});
+
+describe('CR-2026-09-29-SEC-A — a support session is view only', () => {
+  const impersonate = (): void => {
+    const state = store.getState().session;
+    if (!state.user) throw new Error('signIn() runs in beforeEach');
+    store.dispatch(
+      sessionLoaded({
+        user: state.user,
+        activeTenant: state.activeTenant,
+        tenants: state.tenants,
+        permissions: state.permissions,
+        enabledModules: state.enabledModules,
+        version: state.version,
+        impersonation: {
+          id: 'imp1',
+          tenantId: 't1',
+          tenantName: 'Kumar Kirana Store',
+          adminName: 'Ops Person',
+          startedAt: '2026-09-29T10:00:00Z',
+          expiresAt: '2026-09-29T11:00:00Z',
+        },
+      })
+    );
+  };
+
+  const renderScreen = () =>
+    renderWithProviders(
+      <UbAppShell>
+        <UbButton>Save entry</UbButton>
+        <UbButton variant="destructive">Void bill</UbButton>
+        <UbButton variant="secondary" type="submit">
+          Submit form
+        </UbButton>
+        <UbButton variant="secondary">Filters</UbButton>
+        <UbFab label="Add contact" icon={<Plus aria-hidden className="h-6 w-6" />} />
+      </UbAppShell>
+    );
+
+  it('disables every write action in the content, titled with the reason', async () => {
+    /* The defect: the owner consents to a READ-ONLY session and the console
+       says so, but the screens kept offering Save, Void and Add — each of which
+       the server now refuses. The operator is told why, on the control. */
+    impersonate();
+    renderScreen();
+
+    const reason = 'Support session · view only. Changes are turned off.';
+    for (const name of ['Save entry', 'Void bill', 'Submit form', 'Add contact']) {
+      const button = screen.getByRole('button', { name });
+      expect(button).toBeDisabled();
+      expect(button).toHaveAttribute('title', reason);
+    }
+    // Reading is what the session is for: a non-write control still works.
+    expect(screen.getByRole('button', { name: 'Filters' })).toBeEnabled();
+    // The banner says it too, and its way out is never disabled.
+    expect(await screen.findByText(/Support session · view only/)).toBeInTheDocument();
+    expect(await screen.findByRole('button', { name: 'End session' })).toBeEnabled();
+  });
+
+  it("leaves the owner's own session untouched", () => {
+    /* The gate keys on the session flag, never on a role: the same screen in
+       the owner's own session offers every action. */
+    renderScreen();
+    for (const name of ['Save entry', 'Void bill', 'Submit form', 'Add contact', 'Filters']) {
+      const button = screen.getByRole('button', { name });
+      expect(button).toBeEnabled();
+      expect(button).not.toHaveAttribute('title');
+    }
   });
 });

@@ -3,7 +3,6 @@
 import { memo, useCallback, useEffect, useId, useMemo, useState, type RefObject } from 'react';
 
 import {
-  formatRequestReference,
   UbAmount,
   UbButton,
   UbDialog,
@@ -18,10 +17,19 @@ import { selectTenantTimezone } from 'src/redux/slice/sessionSlice';
 import type { ApiErrorShape } from 'src/types/api.types';
 import { todayInTenantTz } from 'src/utils/dates';
 import { formatAmount } from 'src/utils/money';
+import { hasReason } from 'src/utils/reason';
+
+import { openRecordsMessage } from '../view-model/partyRoleDisplay';
 
 import { PartyWriteOffForm } from './PartyWriteOffForm';
 
 import type { ArchiveStage, BlockedBalance } from '../hooks/usePartyArchive';
+import type { PartyOpenRecords } from '../types/party.types';
+
+// Loaded with dynamic(), so its own words come with its own chunk rather than
+// with the screen that opens it (src/i18n/catalogueRegistry.ts).
+import 'src/i18n/catalogues/ledger';
+import 'src/i18n/catalogues/parties';
 
 /**
  * PTY-04's confirmation, and the state the server puts it in when the party
@@ -53,9 +61,12 @@ import type { ArchiveStage, BlockedBalance } from '../hooks/usePartyArchive';
  */
 export interface PartyArchiveDialogProps {
   readonly t: TranslateFn;
+  readonly shop?: boolean;
   readonly name: string;
   readonly stage: ArchiveStage;
   readonly blocked: BlockedBalance | null;
+  /** A6 — set with stage `openRecords`: the module that refused and its count. */
+  readonly openRecords?: PartyOpenRecords | null;
   readonly error: ApiErrorShape | null;
   readonly onConfirm: (reason: string) => void;
   readonly onClose: () => void;
@@ -71,13 +82,13 @@ export interface PartyArchiveDialogProps {
   readonly returnFocusRef?: RefObject<HTMLElement | null>;
 }
 
-const WRITE_OFF_REASON_MIN = 3;
-
 function PartyArchiveDialogBase({
   t,
+  shop = false,
   name,
   stage,
   blocked,
+  openRecords = null,
   error,
   onConfirm,
   onClose,
@@ -109,7 +120,7 @@ function PartyArchiveDialogBase({
   const [writeOffDate, setWriteOffDate] = useState('');
   const saving = stage === 'saving';
   const shown: ArchiveStage = saving ? savingFrom : stage;
-  const canSubmitWriteOff = writeOffReason.trim().length >= WRITE_OFF_REASON_MIN && acknowledged;
+  const canSubmitWriteOff = hasReason(writeOffReason) && acknowledged;
 
   const handleConfirmWriteOff = useCallback(
     () => onConfirmWriteOff?.({ reason: writeOffReason.trim(), entryDate: writeOffDate || today }),
@@ -126,6 +137,7 @@ function PartyArchiveDialogBase({
 
   const isBlocked = stage !== 'closed' && shown === 'blocked' && blocked !== null;
   const isWriteOff = stage !== 'closed' && shown === 'writeOff' && blocked !== null;
+  const isOpenRecords = stage === 'openRecords' && openRecords !== null;
 
   /* M4 — focus is moved on purpose when the body swaps to "blocked".
      The Archive button the merchant just pressed is unmounted by the swap, so
@@ -140,8 +152,8 @@ function PartyArchiveDialogBase({
      the way back from the write-off form, whose Back button unmounts too. */
   const blockedBodyId = useId();
   useEffect(() => {
-    if (isBlocked) document.getElementById(blockedBodyId)?.focus();
-  }, [isBlocked, blockedBodyId]);
+    if (isBlocked || isOpenRecords) document.getElementById(blockedBodyId)?.focus();
+  }, [isBlocked, isOpenRecords, blockedBodyId]);
 
   if (stage === 'closed') return null;
   /* The magnitude, never the signed balance: every string this feeds already
@@ -155,16 +167,18 @@ function PartyArchiveDialogBase({
       open
       onOpenChange={handleOpenChange}
       title={
-        isWriteOff
-          ? t('parties.writeOff.title', { amount: amountText, name })
-          : isBlocked
-            ? t(
-                blocked.label === 'receivable'
-                  ? 'parties.archive.blocked.title'
-                  : 'parties.archive.blocked.titleGive',
-                { name }
-              )
-            : t('parties.archive.title', { name })
+        isOpenRecords
+          ? t('parties.archive.openRecords.title', { name })
+          : isWriteOff
+            ? t('parties.writeOff.title', { amount: amountText, name })
+            : isBlocked
+              ? t(
+                  blocked.label === 'receivable'
+                    ? 'parties.archive.blocked.title'
+                    : 'parties.archive.blocked.titleGive',
+                  { name }
+                )
+              : t('parties.archive.title', { name })
       }
       closeLabel={t('common.action.close')}
       /* A destructive decision does not dismiss on a backdrop tap: the merchant
@@ -181,7 +195,16 @@ function PartyArchiveDialogBase({
          off is still never the first thing offered. */
       footerOrder={isBlocked ? 'as-written' : undefined}
       footer={
-        isWriteOff ? (
+        isOpenRecords ? (
+          /* Nothing to do here but close: the next step is in the module that
+             holds the records, and the sentence above names it. */
+          <>
+          <UbButton variant="secondary" onClick={onClose} autoFocus>
+            {t('common.action.close')}
+          </UbButton>
+          {shop && openRecords?.module === 'sales' && onRecordPayment && <UbButton onClick={onRecordPayment}>{t('parties.person.openPayment')}</UbButton>}
+          </>
+        ) : isWriteOff ? (
           <>
             <UbButton variant="secondary" onClick={onCancelWriteOff} disabled={saving} autoFocus>
               {t('parties.writeOff.back')}
@@ -214,14 +237,14 @@ function PartyArchiveDialogBase({
                 button of the sheet, under the thumb, with the destructive
                 Write off above it, still outlined red — and Tab walks them in
                 the order they are seen. */}
-            {isBlocked && canWriteOff && onStartWriteOff && (
+            {isBlocked && canWriteOff && !blocked?.loanOpen && onStartWriteOff && (
               <UbButton variant="destructive" onClick={onStartWriteOff}>
                 {t('parties.writeOff.action', { amount: amountText })}
               </UbButton>
             )}
-            {isBlocked && onRecordPayment && (
+            {isBlocked && !shop && onRecordPayment && (
               <UbButton variant="primary" onClick={onRecordPayment}>
-                {t('parties.archive.recordPayment')}
+                {t(shop ? 'parties.person.openPayment' : 'parties.archive.recordPayment')}
               </UbButton>
             )}
             {!isBlocked && (
@@ -241,7 +264,14 @@ function PartyArchiveDialogBase({
       }
     >
       <UbStack gap={4}>
-        {isWriteOff && blocked ? (
+        {isOpenRecords && openRecords ? (
+          <UbStack gap={3} id={blockedBodyId} tabIndex={-1} className="outline-none">
+            <UbText variant="body-sm">{openRecordsMessage(t, openRecords, name)}</UbText>
+            <UbText variant="caption" tone="tertiary">
+              {t('parties.archive.openRecords.hint')}
+            </UbText>
+          </UbStack>
+        ) : isWriteOff && blocked ? (
           <PartyWriteOffForm
             t={t}
             name={name}
@@ -268,12 +298,14 @@ function PartyArchiveDialogBase({
                   : 'parties.list.balance.payable'
               )}
             />
-            <UbText variant="body-sm">{t('parties.archive.blocked.body')}</UbText>
+            <UbText variant="body-sm">{t(shop ? 'parties.person.archiveOtherBook' : 'parties.archive.blocked.body')}</UbText>
             <UbText variant="caption" tone="tertiary">
               {t(
-                canWriteOff
-                  ? 'parties.archive.blocked.options'
-                  : 'parties.archive.blocked.optionsNoWriteOff'
+                blocked.loanOpen
+                  ? 'parties.archive.blocked.optionsLoan'
+                  : canWriteOff
+                    ? 'parties.archive.blocked.options'
+                    : 'parties.archive.blocked.optionsNoWriteOff'
               )}
             </UbText>
           </UbStack>
@@ -295,17 +327,7 @@ function PartyArchiveDialogBase({
           </UbStack>
         )}
 
-        {error && (
-          <UbStatusBanner
-            tone="error"
-            title={error.message}
-            description={
-              error.requestId
-                ? formatRequestReference(t('common.error.reference'), error.requestId)
-                : undefined
-            }
-          />
-        )}
+        {error && <UbStatusBanner tone="error" title={error.message} />}
       </UbStack>
     </UbDialog>
   );

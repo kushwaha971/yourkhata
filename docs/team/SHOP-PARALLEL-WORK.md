@@ -1,0 +1,264 @@
+# Shop work in parallel — who does what, and how anyone resumes it (P0)
+
+The owner, 27 Oct 2026: several sessions work on the Shop at once, as one team,
+to one standard. If any of them stops, **anyone (another session, another AI
+tool, or a person) must be able to continue the same task, in the same
+worktree, from where it stopped**, using only this file and the repo.
+
+**Every session keeps its own section below current**: after every finished
+step, update its status, last commit and next step, and commit the change on
+its branch. A section that lags the code is a defect.
+
+---
+
+## How to resume any task (for whoever picks it up)
+
+1. Open the task's **worktree** (path below) and check out its **branch**.
+2. Read, in this order:
+   - `CLAUDE.md`;
+   - `docs/testing/P0-testing-standard.md`;
+   - `docs/testing/tester-learning-log.md`;
+   - `docs/testing/edge-case-catalogue.md`;
+   - the task's design section in `docs/revamp/design/shop-fixes-and-business-types.html`;
+   - the task's report (path below), which says what is done, measured and missing.
+3. Run `git log --oneline -15` and `git status`. Trust the code and the
+   report over this file if they disagree, then fix this file.
+4. Bring up the stack the way §"The local stack" says, on the task's **own
+   port**.
+5. Continue from the section's **Next step**. Do not redo finished steps
+   (CLAUDE.md: re-fixing is worse than not touching).
+6. Follow the same standard: nothing is done below 9/10 on the score sheet,
+   and the status stays "in test" until then. Write a lesson in the
+   learning log after the task.
+7. Keep the team rules below.
+
+## The local stack (shared by every task)
+
+- **API: one, shared, on :8000.** Start it with
+  `PATH=<repo>/backend/.venv/bin:$PATH ./e2e/serve-api.sh`, and only if it is
+  down. Restarting it interrupts every other task's tests.
+- **Frontend: one per task, on the task's own port.** Build in the task's
+  worktree with
+  `API_PROXY_TARGET=http://localhost:8000 NEXT_PUBLIC_API_BASE_URL=http://localhost:8000/api/v1 npm run build`,
+  then `PORT=<port> ./e2e/serve.sh`. `next start` cannot serve this build.
+- **Harnesses:** run them with `E2E_BASE=http://localhost:<port>` and
+  `PW_CHROME=~/Library/Caches/ms-playwright/chromium_headless_shell-1234/chrome-headless-shell-mac-arm64/chrome-headless-shell`.
+- **QA sign-in:** `/login/email`, scale@digikhaato.test (from `seed_scale`;
+  re-seed with `manage.py seed_scale --entries 6000 --parties 300 --items 400 --invoices 800`
+  if the business is missing).
+- **Many tasks write to the one QA shop.** Count by your own record ids, or by
+  a filter proven to filter, never by shop-wide totals (H3, H17).
+
+## Team rules
+
+1. **Ownership:** only a file's owner edits it; anyone else messages the
+   owner the exact change it needs.
+2. **Ask before creating anything shared** (a component, util, token or
+   harness helper): "I am adding X in <file> for <reason>; does anyone have
+   it?" If someone does, reuse theirs: cherry-pick their commit.
+3. **Share what others can use:** message the team its file and commit.
+4. **Branches are not merged by a task.** Main (A4) merges them into `dev`
+   when each is ready, and resolves overlaps in the shared docs. Keep your
+   edits to your own rows and sections there.
+5. **Never push** from a task branch; main pushes `dev`.
+6. **One standard:** the P0 testing standard, the score sheet with evidence,
+   and the habits and cases. Report honestly.
+
+## Ownership
+
+| Owner | Files |
+|---|---|
+| A4 / main | sales bill editor (`features/sales/components/Invoice*Editor*`, `InvoiceLine*`, `InvoiceLinesSection`, `InvoiceTotalsPanel`, `InvoiceBillAdjustments`, `hooks/useDraftAutosave`, `hooks/useInvoiceEditor`), `UbQuantityStepper`, `UbQuantityInput`, `UbSnackbar`, the bill prints |
+| A5 | `UbDrawer`, `UbSheet`, `UbField` spacing, `PartyFormDrawer`, `ItemFormDrawer`, `PaymentFormDrawer`, `StockAdjustmentDrawer`; the harness port change (`E2E_BASE`, `PORT` in `serve.sh`) |
+| A7 | the register tables and lists, the data grid, the count line, the pager |
+| A8 | route loading, suspense fallbacks, `UbAppShell`, route layouts |
+
+---
+
+## A4 · Adding items to a bill — main session
+
+- **Worktree:** `/Users/akashkushwaha/Projects/ims-platform/ims-platform/proceed-222204`
+- **Branch:** `shop/a2` (pushes to `dev`)
+- **Port:** 3000
+- **Report:** `docs/performance/2026-10-27-shop-a4-adding-items.md`
+- **Status:** ready for the owner's check, 9.0/10 (27 Oct 2026)
+- **Last commit:** see `git log` on `shop/a2`; pushed to `dev`
+- **Next step:**
+  1. The owner tries A4. Anything found is fixed the same day and the
+     standard is changed to catch its class.
+  2. Meanwhile: A5 here (spec list written in
+     `docs/performance/2026-10-28-shop-a5-drawer-spacing.md`).
+- **Waiting on the owner:** the desktop header's Hold / Save draft (Counter
+  Mode) against dBill.
+
+## A5 · Spacing inside drawers and sheets
+
+- **Worktree:** `/Users/akashkushwaha/Projects/ims-platform/ims-platform/shop-a5-d647aa`
+- **Branch:** `claude/shop-a5-d647aa`
+- **Port:** 3001
+- **Report:** `docs/performance/2026-10-27-shop-a5-drawer-spacing.md`
+- **Status:** ready for the owner's check, 9.0/10 (27 Oct 2026), built here
+  in the main worktree; the A5 branch only gave its port commit.
+- **Last commit:** cf10ff099 — the harness port change: `E2E_BASE` in all 148
+  harnesses, and `serve.sh` takes `PORT` without killing other servers.
+  Known gap: `sprint3-qa` F3 still asserts host `localhost:3000`.
+- **Next step:**
+  1. (Done in cf10ff099; bring it in with a cherry-pick.)
+  2. The spec-to-check mapping.
+  3. `e2e/a5-edges.mjs`.
+  4. Then build.
+
+## A7 · Tables and the count line
+
+- **Worktree:** main (`proceed-222204`), branch `shop/a2`.
+- **Report:** `docs/performance/2026-10-28-shop-a7-tables-count.md`; harness `e2e/a7-measure.mjs`.
+- **Status:** ready for the owner's check (28 Oct 2026); built in the main worktree.
+- **Built:**
+  - the register frame (`REGISTER_*`) on all seven Shop registers;
+  - `UbCountLine` and the Customers/Suppliers count line;
+  - "owe" replaced with simple words app-wide (R-DEC-62);
+  - fixes at 1024: the bill's customer box, the Hindi Pay button, phone numbers.
+- **Next:** Part F registers' count lines use `UbCountLine`; the mock-layout conflicts listed in the report.
+
+## A8 · The page goes blank on the first tap
+
+- **Worktree:** main (`proceed-222204`), branch `shop/a2`.
+- **Report:** `docs/performance/2026-10-28-shop-a8-first-tap.md`; harness `e2e/a8-first-tap.mjs`.
+- **Status:** ready for the owner's check (28 Oct 2026).
+- **Built:**
+  - loading shapes for 97 lazy overlays, with a guard test;
+  - the slow-load note with Try again;
+  - the page remounts after a feature reset, which fixes a list that never
+    loaded when opened from another app.
+- **Next:** Part B (B1 Pick what you sell).
+
+## B1 · Pick what you sell — main session
+
+- **Worktree:** main (`proceed-222204`), branch `shop/a2`.
+- **Report:** `docs/performance/2026-10-28-shop-b1-pick-what-you-sell.md`;
+  harnesses `e2e/b1-pick.mjs` (look, 124 checks) and `e2e/b1-signup.mjs`
+  (real sign-up read back, 10 checks, `--skew` fails all 10).
+- **Status:** ready for the owner's check (30 Oct 2026). Owner decisions
+  R-DEC-63 (kinds are stored types), R-DEC-64 (one business = one kind;
+  Wholesale = kind + `shop.wholesale`, "Wholesale of what?" below), R-DEC-65
+  (P0: each kind its own app, modular schema).
+- **Open:** "What do you sell?" is still a section of wizard step 1 (the design
+  has its own step; owner not asked to change it); a resumed wizard does not
+  re-light the Wholesale tile; the B2/B3 matrix
+  (https://claude.ai/artifact/XnDfhJoNkDUXZoNSKmfFLb) waits for approval.
+- **Next:** B2, after the owner approves the matrix and the design thread's
+  additions.
+
+## B2 · Menus and words per business — main session
+
+- **Report:** `docs/performance/2026-10-30-shop-b2-menus-and-words.md`;
+  harnesses `e2e/b2-menus.mjs` (61), `e2e/b2-edges.mjs` (9); fixture
+  `e2e/fixtures/b2_kind_owners.py` (one test owner per kind).
+- **Status:** ready for the owner's check (30 Oct 2026).
+- **Next:** B3 Shop features in Settings.
+
+## B3 · Shop features in Settings — main session
+
+- **Report:** inside the B2 report; harness `e2e/b3-features.mjs` (14).
+- **Status:** built and checked live. 2 vs 9 switches: owner (30 Oct) — keep as built, test again after Part D.
+
+## Part B thread (B1–B3 gaps) — 30 Oct 2026, late
+
+- **Worktree:** `shop-a8-26fdf0` (the finished A8 folder), branch `shop/b`,
+  served on **:3006**; pushed to `dev` after a rebase. Signs in as the per-kind
+  test owners (`e2e/fixtures/b2_kind_owners.py`), never the QA shop.
+- **Fixed:** name turning red when a tile is tapped first; Other's lists drawn
+  as the design's joined list (`UbRadioGroup` `list`); sticky hover on phone
+  tiles; B3 headings 600 and the phone's small kind chip; harness dark theme
+  (H37). Reports: the B1 and B2 piece reports, "Part B thread" sections.
+- **Contact sheets:** `node e2e/b-sheets.mjs --tag=<t>` → `/tmp/e2e-shots/b-sheets/`.
+- **Waiting on the owner:** long phone step 1 (needs a mock); Settings side
+  menu (`dFeatures`); ellipsis on the rail's business name.
+
+## C1 · Scan on a bill — main session
+
+- **Report:** `docs/performance/2026-10-30-shop-c1-scan-on-a-bill.md`;
+  harness `e2e/c1-scan.mjs` (25; `--skew` fails every read-back); fixture
+  `e2e/fixtures/c1_scan_item.py` (item "C1 scan item", barcode 8906000000017).
+  Run harnesses outside the sandbox with `PW_CHROME` set to the headless shell.
+- **Status:** design gaps closed on 30 Oct except the bill number in the
+  camera title (a draft has no number; see the report). Monkey next.
+- **Next:** C1 monkey (3 seeds × 390/1280 × 300 steps), then C2, then C3.
+
+## Rename: Shop → Business, Udhaar book → Money book, Lending → Ledger (R-DEC-69) — own thread, 31 Oct 2026
+
+- **Worktree / branch:** `ims-platform/rename-s4a44c`, `claude/project-thread-s4a44c`, pushed to `dev`; served on **3007**.
+- **What changed:** 77 catalogue strings (EN + HI), the landing SEO/solution names, five server messages, the decision log, four harness selectors (b1-pick, b1-signup, b1-edges, b-sheets now look for "Business").
+- **Kept, deliberately:** code names, routes, permissions, setting keys, API keys, TextChoices labels (they would need migrations), "Shop number" in addresses, "Retail shop", "udhaar" as the word for credit, Lending's own words (Lent, Borrower), the seeded "Shop maintenance" category, the demo film's narration.
+- **Harness:** `e2e/rename-look.mjs` (7 screens × 390/1280 × light/dark × EN/HI; fails on any old app name).
+- **New strings from now on:** use Business / Money book / Ledger (व्यापार / मनी बुक / लेजर).
+
+## What the stopped sessions found (27 Oct 2026, before the owner stopped them)
+
+The owner stopped the parallel sessions to save usage. Three sessions working
+at once spend it three times as fast, and each would stop mid-task at the
+limit. Their findings so far, to verify (not trust) when the piece is worked:
+
+- **A8:** the cause may already be fixed in commit 59a1eb9f8 (25 Oct, from
+  the backlog branch, in this history). A `dynamic()` drawer with neither
+  `ssr: false` nor a `loading` view waits on its first download at the route's
+  `loading.tsx`, which swaps the page for the skeleton. Next: reproduce on the
+  live app to prove the fix holds, or find what is left.
+- **A8, from A6 (28 Oct):** two cases to start from.
+  - `/suppliers` seed 64 @320 reproduces a ~7.9 s "return" every time:
+    DOM-ready at 25 ms, then main content late, with `GET /parties/roles` still
+    open. Replay: `node e2e/monkey.mjs --path=/suppliers --seed=64 --steps=250 --width=320`.
+  - The first "+" on a phone took 1–3 s to show the form under load.
+- **A8, from A4's monkey:** once, under load, the bill editor sat on its
+  skeleton for minutes (seed 501 at 390, step 193; not reproduced on a quiet
+  replay). A8 must test a stalled network on purpose: a skeleton must time out
+  into a message with a way to retry, never wait for ever.
+- **A7:** items 1 and 2 (the table frame clips the grey header to its rounded
+  corners; the pager drops its own top line) are in the code from 59a1eb9, but
+  not yet measured on the live app. **Item 3, the count line, is not built.**
+- **A5:** made only the harness port commit cf10ff099.
+
+**Lesson (main):** a message queued to a stopped session wakes it when it is
+idle, so do not message sessions the owner has stopped.
+
+## Waiting to start
+
+- **A6 · Separate customer and supplier forms — APPROVED BY THE OWNER
+  (10 Nov 2026: "checked A6 from my side and good to go"), 9.0/10, on `dev`
+  (754e627 and follow-ups). Re-run on the 10 Nov build: `e2e/a6-forms.mjs`
+  24 views, 0 failures.** Built 28 Oct 2026, main worktree. Report:
+  `docs/performance/2026-10-28-shop-a6-customer-supplier-forms.md`; harness
+  `e2e/a6-forms.mjs`. Built to R-DEC-61:
+  - a name and a number at the counter;
+  - pick an existing contact instead of a role switch;
+  - the Shop's own old balance (backend `ledger 0010`).
+  Open, outside A6: the A8 slow returns (seeds 64, 93); "owe" words on the
+  lists and the payment header; 5 backend failures predating A6.
+- **Then,** in the owner's order: Part F, Parts B/C/D, and the module round
+  for the whole Shop (P0 standard §9).
+
+## G1 · Today's rate (Jewellery) — main session, 1 Nov 2026
+
+- **State:** built, in test, 8.0. Waiting for the owner's answers on conflicts 3–8 in the report.
+- **Branch:** `shop/a2` (pushed to `dev`). Report: `docs/performance/2026-11-01-shop-g1-todays-rate.md`.
+- **Harness:** `e2e/g1-rate.mjs`, now in `b-regression.sh`. QA data: QA Jewellery in `e2e/fixtures/ad_cert_people.py`.
+- **Next:** G2 (bill by weight, old gold, PAN), which copies the day's rate onto each bill. Handover: `docs/team/CONTINUE-PART-G.md`.
+- **Open (not G1's):**
+  - which harness switches off the scale QA shop's Expenses app;
+  - four Library tests that fail by date on 1 Nov;
+  - the error-registry count (228 against 223).
+
+## QA audit of the four apps — main session, 13 Nov 2026
+
+- **Branch / worktree:** `shop/a2`, `proceed-222204`.
+- **State:** done. 12 defects fixed, each with a test. Report `docs/testing/apps-audit-2026-11-13.md`.
+- **Checks:** `e2e/team-roles.mjs` (members in their own accounts), `e2e/audit-dump.mjs` (sums from raw rows), `backend/tests/integration/test_apps_audit.py`.
+- **Regression set (13 Nov, later):** the nine stale jobs of `e2e/run-regression.mjs` are rewritten; `--quick` is 301/301 over 14 jobs. The old Udhaar person page, statement and credit form are reached through `e2e/lib/udhaar-book.mjs` (a Money Book session); no menu links to them, which is an open question for the owner.
+- **Next step for whoever picks it up:** the ~56 harnesses that work out today in UTC; the Business per-kind and monkey rounds; the owner's answers on staff adding borrowers and on the orphaned Udhaar screens.
+- **Run notes:** restart the API after a server edit (`--noreload`); the worktree has no `.venv`, so `e2e/serve-api.sh` falls back to `python`, which this Mac lacks — start it with `$E2E_PYTHON` and log to `/tmp/api.log`. Never run two harnesses at once on the QA account.
+- **13 Nov, later still (owner: "Remove them", hide by role, More on the phone):** the old Udhaar person page, statement and credit form no longer open outside the Shop (`ShopBookOnly` on the two routes; `e2e/old-udhaar-gone.mjs`); their four harnesses are deleted and the regression set no longer names them. Business hides, per role, short book Add, price-list Export, expiry Export/Return and Collect by UPI. The phone's fifth tab reads "More" in every app. Left: delete the dead `!shopBook` branches in `PartyDetailPageContent`; `/stock/short-book` and `/stock/rates` say "Try again" when that feature is off for the shop kind; staff see a near-empty `/settings/shop-features` and `/settings/messages`.
+- **14 Nov (owner: "Yes, let staff add"):** staff hold `lending.loan.create`, so they add borrowers and give loans; routes, closing a loan and settings stay owner/admin. `e2e/staff-lends.mjs` 42/42, `team-roles` 1023/1023. `/tmp/e2e-env.sh` recreated after `/tmp` was cleared.
+- **14 Nov (Apps screen):** Turn off / Leave were restored and then removed the same day on the owner's word. A switch to another business now asks first and names both businesses (`AppsPanel`, `UbConfirmDialog`); another app of the same business opens at once. `e2e/apps-primary.mjs` 47/47, jest 4379.
+- **14 Nov (Team, member apps):** Team → ⋯ → Apps makes a member active/inactive per app, without blocking (`MemberAppsDialog`, `GET /members/{id}/apps` returns `opens`). `e2e/member-apps.mjs` 44/44. Next: per member, per part inside an app.
+- **14 Nov (Team, member parts):** parts of each app can be hidden per member under the same dialog (`member_parts.py`, `permissions_override.deny`). `e2e/member-parts.mjs` 42/42. Reports is not a part (Dashboard shares its permission).
+- **14 Nov (Access groups, built):** per business and per app, Off / View only / Full per part, one default per app, member exceptions, Add member from inside an app. Replaces the member Apps dialog and the parts switches. `e2e/access-groups.mjs` 69/69.

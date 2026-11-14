@@ -50,9 +50,26 @@ def require_hsn_b2b(tenant: Any) -> bool:
     return bool(setting_field(tenant, REQUIRE_HSN_B2B_SETTING, "value", False))
 
 
+#: Design E5's terms line for a jeweller, until the shop writes its own.
+JEWELLERY_TERMS = "Rates as on the bill date. BIS hallmarked; HUID per piece. Buy-back as per shop policy."
+
+
 def default_terms(tenant: Any) -> str:
-    return str(setting_field(tenant, TERMS_SETTING, "text", ""))
+    text = str(setting_field(tenant, TERMS_SETTING, "text", ""))
+    if text:
+        return text
+    from apps.platform_app.selectors.business_words import features_of
+
+    return JEWELLERY_TERMS if "jewellery" in features_of(tenant) else ""
 
 
 def show_upi_qr(tenant: Any) -> bool:
     return bool(setting_field(tenant, SHOW_UPI_QR_SETTING, "value", True))
+
+
+def estimate_validity_days(tenant: Any) -> int:
+    """SAL-01 BR-7 — `sales.estimate_validity_days`, default 15, clamped to a year."""
+    from apps.sales.constants import ESTIMATE_DEFAULT_VALIDITY_DAYS, ESTIMATE_VALIDITY_SETTING
+
+    days = setting_field(tenant, ESTIMATE_VALIDITY_SETTING, "days", ESTIMATE_DEFAULT_VALIDITY_DAYS)
+    return days if 0 <= days <= 365 else ESTIMATE_DEFAULT_VALIDITY_DAYS

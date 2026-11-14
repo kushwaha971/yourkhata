@@ -5,7 +5,17 @@ Two entry points, both of which take Python values and return Python values:
 
 The properties this module exists to hold:
 
+* **The code is six digits and goes by WhatsApp** (owner, 14 Nov 2026): with
+  `UB_OTP_PROVIDER=meta_whatsapp` this module makes the code, stores only its
+  hash and Meta delivers it. The `console` provider — local runs, tests, e2e —
+  makes the same six-digit code and prints it in the API log, because nobody
+  is messaged there. The four-digit SMS providers (Message Central, Fast2SMS)
+  were removed the same day: nothing used them, and a second code length meant
+  a sign-in screen and a test path that real users never saw;
 * the code never appears in a response, in any environment (Part 27 §27.4.1);
+* the provider's `verificationId` never appears in a response either: the
+  browser holds our `challenge_id`, which binds the mobile, the attempts and
+  the single use to it;
 * the response to `request_otp` is identical for a known and an unknown mobile,
   so the endpoint cannot be used to enumerate accounts (PLT-01 FR-2, BR-2);
 * comparison is constant time (`hmac.compare_digest`);
@@ -32,19 +42,29 @@ from django.utils import timezone
 from apps.common.audit import AuditAction, write_audit
 from apps.common.exceptions import BusinessRuleViolation
 from apps.platform_app.constants import OtpPurpose
-from apps.platform_app.services import throttle
+from apps.platform_app.services import meta_whatsapp, throttle
 
+# One length for every provider: WhatsApp's six, which the console matches so
+# tests and local runs use the screen real users see.
 CODE_LENGTH = 6
 RESEND_AFTER_SECONDS = throttle.OTP_RESEND_GAP_SECONDS
 
 
 @dataclass(frozen=True, slots=True)
 class OtpIssued:
-    """What the view turns into `{challenge_id, expires_in, retry_after}`."""
+    """What the view turns into `{challenge_id, expires_in, retry_after, code_length, channel}`.
+
+    `code_length` and `channel` are here because the provider is chosen when the
+    server RUNS (`UB_OTP_PROVIDER`), and the sign-in screen used to guess both
+    when the site was BUILT. A build that guessed six while the server sent four
+    was a sign-in screen nobody could get past (review G2, 12 Oct 2026).
+    """
 
     challenge_id: Any
     expires_in: int
     retry_after: int
+    code_length: int = CODE_LENGTH
+    channel: str = "sms"
 
 
 class OtpThrottled(BusinessRuleViolation):
@@ -69,6 +89,54 @@ class OtpInvalid(BusinessRuleViolation):
         )
 
 
+class OtpNotSent(BusinessRuleViolation):
+    """502 `provider_error` — the code could not be sent, or could not be checked."""
+
+    def __init__(
+        self,
+        message: str = "We couldn't send the code right now. Please try again in a few minutes.",
+    ) -> None:
+        super().__init__("provider_error", message)
+
+
+PROVIDER_CONSOLE = "console"
+PROVIDER_META = "meta_whatsapp"
+
+
+def _provider() -> str:
+    """WhatsApp when configured to; otherwise the console (local, tests, e2e)."""
+    if getattr(settings, "UB_OTP_PROVIDER", PROVIDER_CONSOLE) == PROVIDER_META:
+        return PROVIDER_META
+    return PROVIDER_CONSOLE
+
+
+def code_shape() -> tuple[int, str]:
+    """`(digits, channel)` for the provider this server is running with now."""
+    if _provider() == PROVIDER_META:
+        return CODE_LENGTH, "whatsapp"
+    return CODE_LENGTH, "sms"
+
+
+def _send_console_code(
+    *, mobile: str, code: str, ttl: int, locale: str, purpose: str, challenge: Any
+) -> None:
+    """The local provider: the code goes to the API log through the SMS adapter."""
+    from apps.platform_app.services.messaging import render_otp_sms, send_sms
+
+    sent = send_sms(
+        to=mobile,
+        body=render_otp_sms(
+            code=code, minutes=max(1, ttl // 60), app_name=_app_name(), locale=locale
+        ),
+        template_code="otp",
+        payload={"purpose": purpose, "minutes": max(1, ttl // 60)},
+        related_type="platform_otp_challenge",
+        related_id=challenge.id,
+    )
+    if getattr(sent, "status", "sent") == "failed":
+        raise OtpNotSent()
+
+
 def hash_code(code: str) -> str:
     """`sha256(code + UB_OTP_PEPPER)` (Part 27 §27.4.1).
 
@@ -79,7 +147,7 @@ def hash_code(code: str) -> str:
 
 
 def generate_code() -> str:
-    """Six digits from `secrets.randbelow` — never `random`, never `000000`.
+    """The CONSOLE provider's code — `secrets.randbelow`, never `random`, never all zeroes.
 
     PLT-01 BR-4 forbids the all-zero code because it is the value a broken
     generator produces and the value a guesser tries first.
@@ -128,11 +196,16 @@ def request_otp(
 ) -> OtpIssued:
     """Create a challenge and dispatch the code. Never reveals whether the mobile exists."""
     from apps.platform_app.models import OtpChallenge
-    from apps.platform_app.services.messaging import render_otp_sms, send_sms
 
+    if _provider() == PROVIDER_META and purpose not in (
+        OtpPurpose.LOGIN,
+        OtpPurpose.SIGNUP,
+    ):
+        raise OtpNotSent("SMS OTP is available only for sign-in and sign-up.")
     _assert_not_throttled(mobile=mobile, ip=ip)
 
     ttl = int(settings.UB_OTP_TTL_SECONDS)
+    provider = _provider()
     code = generate_code()
 
     with transaction.atomic():
@@ -146,19 +219,30 @@ def request_otp(
             device_hint=(device_hint or "")[:120] or None,
         )
 
-    send_sms(
-        to=mobile,
-        body=render_otp_sms(
-            code=code,
-            minutes=max(1, ttl // 60),
-            app_name=_app_name(),
-            locale=locale,
-        ),
-        template_code="otp",
-        payload={"purpose": purpose, "minutes": max(1, ttl // 60)},
-        related_type="platform_otp_challenge",
-        related_id=challenge.id,
-    )
+    # The provider call is made with no transaction open, so no row lock is
+    # held across an HTTP exchange (Part 20 §20.11.2).
+    #
+    # A code that was not sent must not answer 200: the owner's own first
+    # sign-up (10 Oct 2026) sat on "Enter the code" waiting for a text the
+    # provider had refused. The refusal is the same for every number, so it
+    # says nothing about whether the mobile has an account. The challenge is
+    # spent rather than deleted so the resend gap and the hourly budgets still
+    # count the attempt.
+    try:
+        if provider == PROVIDER_META:
+            meta_whatsapp.send_otp(mobile, code)
+        else:
+            _send_console_code(
+                mobile=mobile,
+                code=code,
+                ttl=ttl,
+                locale=locale,
+                purpose=purpose,
+                challenge=challenge,
+            )
+    except (meta_whatsapp.MetaWhatsAppError, OtpNotSent) as exc:
+        OtpChallenge.objects.filter(pk=challenge.pk).update(expires_at=timezone.now())
+        raise OtpNotSent() from exc
 
     _audit(
         AuditAction.OTP_REQUESTED,
@@ -167,7 +251,14 @@ def request_otp(
         ip=ip,
         metadata={"purpose": purpose, "challenge_id": str(challenge.id)},
     )
-    return OtpIssued(challenge_id=challenge.id, expires_in=ttl, retry_after=RESEND_AFTER_SECONDS)
+    length, channel = code_shape()
+    return OtpIssued(
+        challenge_id=challenge.id,
+        expires_in=ttl,
+        retry_after=RESEND_AFTER_SECONDS,
+        code_length=length,
+        channel=channel,
+    )
 
 
 def consume_challenge(
@@ -188,26 +279,37 @@ def consume_challenge(
 
     max_attempts = int(settings.UB_OTP_MAX_ATTEMPTS)
 
+    def checked(row: Any) -> Any:
+        """Every refusal that needs no code: missing, spent, expired, burned, superseded."""
+        if row is None:
+            raise OtpInvalid("not_found")
+        if purpose is not None and row.purpose != purpose:
+            raise OtpInvalid("wrong_purpose")
+        if row.verified_at is not None:
+            raise OtpInvalid("used")
+        if row.expires_at <= timezone.now():
+            raise OtpInvalid("expired")
+        if row.attempts >= max_attempts:
+            raise OtpInvalid("burned", attempts_left=0)
+        if _is_superseded(row):
+            raise OtpInvalid("superseded")
+        return row
+
+    known = _looks_like_uuid(challenge_id)
+
     with transaction.atomic():
-        challenge = (
+        challenge = checked(
             OtpChallenge.objects.select_for_update().filter(pk=challenge_id).first()
-            if _looks_like_uuid(challenge_id)
+            if known
             else None
         )
-        if challenge is None:
-            raise OtpInvalid("not_found")
-        if purpose is not None and challenge.purpose != purpose:
-            raise OtpInvalid("wrong_purpose")
-        if challenge.verified_at is not None:
-            raise OtpInvalid("used")
-        if challenge.expires_at <= timezone.now():
-            raise OtpInvalid("expired")
-        if challenge.attempts >= max_attempts:
-            raise OtpInvalid("burned", attempts_left=0)
-        if _is_superseded(challenge):
-            raise OtpInvalid("superseded")
 
-        if not hmac.compare_digest(challenge.code_hash, hash_code(str(code))):
+        matches = bool(challenge.code_hash) and hmac.compare_digest(
+            challenge.code_hash, hash_code(str(code))
+        )
+        failure_reason = "incorrect"
+
+        if not matches:
             challenge.attempts += 1
             burned = challenge.attempts >= max_attempts
             if burned:
@@ -245,7 +347,7 @@ def consume_challenge(
     # back of it. The lockout this failure may have just set is enforced by
     # `_assert_not_throttled` on the next *request*, which is where Part 27
     # §27.4.1 puts it ("further `otp/request` calls return 429").
-    raise OtpInvalid("incorrect", attempts_left=attempts_left)
+    raise OtpInvalid(failure_reason, attempts_left=attempts_left)
 
 
 def _is_superseded(challenge: Any) -> bool:
@@ -276,7 +378,7 @@ def _looks_like_uuid(value: Any) -> bool:
 
 
 def _app_name() -> str:
-    return "DigiKhaato"
+    return "YourKhata"
 
 
 def _audit(
@@ -309,6 +411,7 @@ def _audit(
 __all__ = [
     "OtpIssued",
     "OtpInvalid",
+    "OtpNotSent",
     "OtpPurpose",
     "OtpThrottled",
     "RESEND_AFTER_SECONDS",

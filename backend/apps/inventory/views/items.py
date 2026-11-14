@@ -7,8 +7,10 @@ a selector or a service, wrap the result in the envelope.
 from __future__ import annotations
 
 import datetime as dt
+from decimal import Decimal
 from typing import Any
 
+from django.core.exceptions import ValidationError as DjangoValidationError
 from django.db.models import F
 from rest_framework import viewsets
 from rest_framework.decorators import action
@@ -32,7 +34,7 @@ from apps.inventory.constants import (
     ItemStatus,
     MovementType,
 )
-from apps.inventory.models import StockAdjustment, StockMovement, Unit
+from apps.inventory.models import Item, StockAdjustment, StockMovement, Unit
 from apps.inventory.permissions import (
     AdjustmentPermissions,
     ItemPermissions,
@@ -72,6 +74,28 @@ def _valuation_visible(request: Any) -> bool:
     return _has(request, "reports.financial.read")
 
 
+def _gst_percents(tenant: Any, items: Any) -> dict[str, str | None]:
+    """WP-07 — today's GST plus cess for each tax code on the page, one read per code."""
+    from apps.tax.selectors.rates import rate_for
+
+    today = tenant_today(tenant)
+    percents: dict[str, str | None] = {}
+    for code in {item.tax_code for item in items}:
+        row = rate_for(tenant=tenant, code=code, on_date=today)
+        percents[code] = str(row.rate + row.cess_rate) if row else None
+    return percents
+
+
+def _cost_settable(request: Any, payload: dict) -> dict:
+    """WP-07 — a cost may be set only by someone who may see one: a margin would
+    otherwise rest on a figure its author can never read back."""
+    if "purchase_price" in payload and not _valuation_visible(request):
+        raise ValidationFailed(
+            {"purchase_price": ["Only someone who can see costs can set an item's cost."]}
+        )
+    return payload
+
+
 def _date_param(request: Any, name: str, errors: dict) -> dt.date | None:
     raw = request.query_params.get(name)
     if not raw:
@@ -100,7 +124,21 @@ class _InventoryView:
         return Ctx.from_request(self.request)
 
     def location_id(self) -> Any:
-        return default_location(self.get_tenant()).id
+        """D P1c — `?location_id=` reads one place; without it, the whole
+        business (every place summed), which is what the Items list, the item
+        page and Stock summary show once a godown exists."""
+        raw = self.request.query_params.get("location_id")
+        if raw:
+            from apps.inventory.models import Location
+
+            try:
+                place = Location.objects.filter(tenant=self.get_tenant(), pk=raw).first()
+            except (ValueError, TypeError, DjangoValidationError):
+                place = None
+            if place is None:
+                raise ValidationFailed({"location_id": ["Choose one of your godowns."]})
+            return place.id
+        return None
 
 
 #: IMP-02 FR-2's `items` resource. Cost and value columns need
@@ -160,6 +198,9 @@ class ItemViewSet(CsvExportMixin, _InventoryView, viewsets.ViewSet):
             item_type=params.get("type"),
             category_id=params.get("category_id") or None,
             status=None if status == "all" else status,
+            product_id=params.get("product_id") or None,
+            fits=params.get("fits", ""),
+            fits_year=params.get("fits_year"),
         )
         filtered = item_selectors.filter_stock(base, params.get("stock"))
         field = ordering.lstrip("-")
@@ -185,8 +226,22 @@ class ItemViewSet(CsvExportMixin, _InventoryView, viewsets.ViewSet):
         if not valuation:
             meta["totals"]["stock_value"] = None
         meta["valuation_visible"] = valuation
+        # Any item at all, archived included, whatever the filters: an empty
+        # catalogue hides its search, tabs and ₹0 totals (approved designs).
+        meta["has_any"] = bool(page) or Item.objects.filter(tenant=self.get_tenant()).exists()
+        # Every member: "GST 5% included" is on the bill they are writing
+        # (Counter Mode step 9); only the margin built from it is cost-gated.
+        gst = _gst_percents(self.get_tenant(), page)
+        from apps.inventory.services import kind_column
+
+        meta["kind_column"] = kind_column.column_of(self.get_tenant())
+        kind = kind_column.lines(key=meta["kind_column"], items=list(page))
         return StandardResponse.ok(
-            [item_row(item, valuation=valuation) for item in page], meta=meta
+            [
+                {**item_row(item, valuation=valuation, gst_percent=gst), "kind_line": kind.get(str(item.id))}
+                for item in page
+            ],
+            meta=meta,
         )
 
     def _detail(self, item_id: Any) -> dict:
@@ -224,7 +279,17 @@ class ItemViewSet(CsvExportMixin, _InventoryView, viewsets.ViewSet):
 
     @idempotent("item_create")
     def create(self, request: Any) -> Any:
-        result = create_item(ctx=self.ctx(), payload=_body(request))
+        body = _cost_settable(request, _body(request))
+        if body.get("variants"):
+            # D P2 — a garment in sizes and colours: one item per size × colour.
+            from apps.inventory.services.variants import create_variants
+
+            made = create_variants(ctx=self.ctx(), payload=body)
+            return StandardResponse.created(
+                self._detail(made["items"][0].id),
+                meta={"warnings": made["warnings"], "variants": len(made["items"])},
+            )
+        result = create_item(ctx=self.ctx(), payload=body)
         return StandardResponse.created(
             self._detail(result["item"].id), meta={"warnings": result["warnings"]}
         )
@@ -233,7 +298,7 @@ class ItemViewSet(CsvExportMixin, _InventoryView, viewsets.ViewSet):
         result = update_item(
             ctx=self.ctx(),
             item_id=pk,
-            payload=_body(request),
+            payload=_cost_settable(request, _body(request)),
             can_adjust_stock=_has(request, "inventory.stock.adjust"),
         )
         return StandardResponse.ok(
@@ -265,7 +330,9 @@ class ItemViewSet(CsvExportMixin, _InventoryView, viewsets.ViewSet):
         )
         if item is None:
             raise NotFound(f"No item with barcode {code}.")
-        return StandardResponse.ok(item_row(item, valuation=_valuation_visible(request)))
+        valuation = _valuation_visible(request)
+        gst = _gst_percents(self.get_tenant(), [item])
+        return StandardResponse.ok(item_row(item, valuation=valuation, gst_percent=gst))
 
     @action(detail=True, methods=["get"], url_path="movements")
     def movements(self, request: Any, pk: Any = None) -> Any:
@@ -305,7 +372,11 @@ class CategoryViewSet(_InventoryView, viewsets.ViewSet):
     permission_classes = [IsAuthenticated, ModuleEnabled(ModuleCode.INVENTORY), MasterPermissions]
 
     def list(self, request: Any) -> Any:
-        return StandardResponse.ok(item_selectors.category_tree(tenant=self.get_tenant()))
+        return StandardResponse.ok(
+            item_selectors.category_tree(
+                tenant=self.get_tenant(), valuation=_valuation_visible(request)
+            )
+        )
 
     def create(self, request: Any) -> Any:
         body = _body(request)
@@ -420,26 +491,18 @@ class StockSummaryView(_InventoryView, APIView):
             errors["ordering"] = [f"Choose one of {', '.join(SUMMARY_ORDERINGS)}."]
         if errors:
             raise ValidationFailed(errors)
-        historical = as_of is not None and as_of < today
-        qs = stock_selectors.summary_queryset(
+        # The filters live in the selector so RPT-06's export reads the same ones.
+        qs, historical = stock_selectors.filtered_summary(
             tenant=self.get_tenant(),
             location_id=self.location_id(),
-            as_of=as_of if historical else None,
+            as_of=as_of,
+            today=today,
             q=params.get("q", ""),
             category_id=params.get("category_id") or None,
+            status=params.get("status"),
+            hide_zero=params.get("hide_zero", "true").lower() != "false",
+            ordering=ordering,
         )
-        status = params.get("status")
-        if status in stock_selectors.SUMMARY_STATUS:
-            qs = qs.filter(stock_selectors.SUMMARY_STATUS[status])
-        if params.get("hide_zero", "true").lower() != "false":
-            qs = qs.exclude(on_hand=0)
-        field = {"value": "stock_value"}.get(ordering.lstrip("-"), ordering.lstrip("-"))
-        expr = (
-            F(field).desc(nulls_last=True)
-            if ordering.startswith("-")
-            else F(field).asc(nulls_last=True)
-        )
-        qs = qs.order_by(expr, "name", "id")
         valuation = _valuation_visible(request)
         totals = stock_selectors.summary_totals(qs)
         paginator = PagePagination()
@@ -477,6 +540,9 @@ class StockSummaryView(_InventoryView, APIView):
             "as_of": as_of.isoformat() if as_of else None,
             "historical": historical,
             "valuation_visible": valuation,
+            # Approved designs (12 Oct 2026): over the whole book, never the
+            # filtered set — see `has_tracked_items`.
+            "has_any": bool(rows) or stock_selectors.has_tracked_items(tenant=self.get_tenant()),
         }
         return StandardResponse.ok(rows, meta=meta)
 
@@ -538,3 +604,130 @@ class LowStockView(_InventoryView, APIView):
             rows,
             meta={**paginator.get_meta(), "totals": counts, "valuation_visible": valuation},
         )
+
+
+class SerialView(_InventoryView, APIView):
+    """D P3 — find by IMEI: which item, in stock or sold, when, warranty till."""
+
+    permission_classes = [IsAuthenticated, ModuleEnabled(ModuleCode.INVENTORY), StockReadPermissions]
+
+    def get(self, request: Any, code: str) -> Any:
+        from apps.inventory.services.serials import find
+
+        found = find(tenant=self.get_tenant(), code=code)
+        if found is None:
+            raise NotFound(f"No IMEI / serial {code}.")
+        return StandardResponse.ok(found)
+
+
+class ExpiryView(_InventoryView, APIView):
+    """D P4 — design D7 "Expiry": batches expired, or expiring within 30/60/90 days."""
+
+    permission_classes = [IsAuthenticated, ModuleEnabled(ModuleCode.INVENTORY), StockReadPermissions]
+
+    def get(self, request: Any) -> Any:
+        from apps.inventory.services.batches import expiry_rows
+
+        within = request.query_params.get("within") or "30"
+        today = tenant_today(self.get_tenant())
+        rows = expiry_rows(tenant=self.get_tenant(), within=within, today=today)
+        counts = {
+            key: len(expiry_rows(tenant=self.get_tenant(), within=key, today=today))
+            for key in ("expired", "30", "60", "90")
+        }
+        if not _valuation_visible(request):
+            for row in rows:
+                row.pop("value", None)
+        return StandardResponse.ok(rows, meta={"counts": counts})
+
+
+def _shop_due_week_tile(request: Any, tenant: Any, today: Any) -> list[dict]:
+    """The design's "Udhaar due this week": open bills due in seven days and the
+    customers they belong to. Absent for someone who may not read bills."""
+    from datetime import timedelta
+
+    from django.db.models import Count, Sum
+
+    from apps.sales.constants import OPEN_STATUSES
+    from apps.sales.models import SalesDocument
+
+    if not _has(request, "sales.invoice.read"):
+        return []
+    row = SalesDocument.objects.filter(
+        tenant=tenant,
+        kind="invoice",
+        status__in=OPEN_STATUSES,
+        due_on__gte=today,
+        due_on__lte=today + timedelta(days=7),
+    ).aggregate(amount=Sum("amount_due"), people=Count("party", distinct=True))
+    return [{"key": "dueWeek", "count": row["people"], "value": str(row["amount"] or "0.00")}]
+
+
+class HomeStripView(_InventoryView, APIView):
+    """D12 — the strip of the business's own figures under Home's day line:
+    batches expiring in 30 days (medicine), phones in stock (IMEI), sizes sold
+    out (clothes). A tile appears only when that business keeps such things."""
+
+    permission_classes = [IsAuthenticated, ModuleEnabled(ModuleCode.INVENTORY), StockReadPermissions]
+
+    def get(self, request: Any) -> Any:
+        from apps.inventory.models import Batch, Serial
+        from apps.inventory.services.batches import expiry_rows
+
+        tenant = self.get_tenant()
+        today = tenant_today(tenant)
+        valuation = _valuation_visible(request)
+        tiles = []
+        from apps.inventory.constants import StockStatus
+        from apps.platform_app.selectors.business_words import features_of
+
+        # A tile follows what the business keeps, so a new medical store sees its
+        # expiry at a true zero rather than another shop's tiles.
+        features = features_of(tenant)
+        jeweller = "jewellery" in features
+        keeps_batches = "batches" in features or Batch.objects.filter(tenant=tenant).exists()
+        if keeps_batches:
+            rows = expiry_rows(tenant=tenant, within="30", today=today)
+            tile = {"key": "expiring", "count": len(rows)}
+            if valuation:
+                tile["value"] = str(sum((Decimal(r["value"]) for r in rows), Decimal("0.00")))
+            tiles.append(tile)
+        # A jeweller's serials are tags, and its Home has its own strip.
+        if not jeweller and ("serials" in features or Serial.objects.filter(tenant=tenant).exists()):
+            tiles.append(
+                {"key": "phones", "count": Serial.objects.filter(tenant=tenant, status=Serial.IN_STOCK).count()}
+            )
+        variants = item_selectors.with_stock(
+            Item.objects.filter(tenant=tenant, product__isnull=False, status=ItemStatus.ACTIVE),
+            location_id=None,
+        )
+        if "variants" in features or variants.exists():
+            tiles.append({"key": "soldOutSizes", "count": variants.filter(on_hand__lte=0).count()})
+        if not jeweller:
+            if not tiles:
+                tiles.extend(_shop_due_week_tile(request, tenant, today))
+            base = item_selectors.item_list(tenant=tenant, location_id=None, status=ItemStatus.ACTIVE)
+            counts = item_selectors.list_meta(base, base)["counts"]
+            if keeps_batches:
+                # G4 — a medical store's tile is its short book: the same rows
+                # the short book screen lists, so the two never disagree.
+                from apps.inventory.services.short_book import short_book
+
+                book = short_book(tenant=tenant)
+                tiles.append(
+                    {
+                        "key": "shortBook",
+                        "count": book["counts"]["items"],
+                        "names": [row["item"]["name"] for row in book["rows"][:2]],
+                    }
+                )
+            else:
+                short = base.filter(stock_status__in=(StockStatus.LOW, StockStatus.OUT)).order_by("name")
+                tiles.append(
+                    {
+                        "key": "lowStock",
+                        "count": counts["low"] + counts["out"],
+                        "names": [item.name for item in short[:2]],
+                    }
+                )
+        return StandardResponse.ok(tiles)

@@ -107,6 +107,17 @@ def test_mobiles_normalise_to_e164_like_everywhere_else(raw: str) -> None:
     assert coerce.mobile(raw) == "+919876543210"
 
 
+@pytest.mark.parametrize(
+    "raw, stored",
+    [("+44 7911 123456", "+447911123456"), ("0044 7911 123456", "+447911123456"), ("+1 (415) 555-2671", "+14155552671")],
+)
+def test_another_countrys_mobile_imports_with_its_code(raw: str, stored: str) -> None:
+    """Owner, 14 Nov 2026: any country. "Take the last ten digits" read every
+    foreign number as an Indian one — +44 7911 123456 became +917911123456, a
+    stranger in India. A number written with its country code keeps it."""
+    assert coerce.mobile(raw) == stored
+
+
 @pytest.mark.parametrize("raw", ["12345", "5876543210", "9.87654E+09"])
 def test_mobiles_that_are_not_mobiles_are_refused(raw: str) -> None:
     """A landline-looking number, a short one, and Excel's scientific notation."""

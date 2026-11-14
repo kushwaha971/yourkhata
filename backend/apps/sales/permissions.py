@@ -1,9 +1,11 @@
-"""Permission maps for the sales app (canon §0.9; SAL-02 §12, SAL-03 §12).
+"""Permission maps for the sales app (canon §0.9; SAL-01/02/03/04/05 §12).
 
 `HasPermission` is fail-closed: an action missing from the map is denied.
-The accountant reads and shares, never writes; staff write and issue; the
-credit-limit override and deleting somebody else's draft are ROLE checks made
-inside the service (they are not delegable codenames — LED-01's rule).
+The accountant reads and shares, never writes; staff write and issue; only an
+owner or admin voids (`sales.invoice.void` — credit notes are sales documents
+and there is no separate void codename, SAL-04 §12). The credit-limit override
+and deleting somebody else's draft are ROLE checks made inside the service
+(they are not delegable codenames — LED-01's rule).
 """
 
 from __future__ import annotations
@@ -18,7 +20,83 @@ InvoicePermissions = HasPermission(
         "partial_update": "sales.invoice.write",
         "destroy": "sales.invoice.write",
         "issue": "sales.invoice.write",
+        "void": "sales.invoice.void",
         "share_links": "sales.invoice.read",
+        # FRD share-sheet §12: revoking is owner/admin only — the same people
+        # who may void, so it rides on the void codename.
+        "revoke_share_link": "sales.invoice.void",
         "upi_intent": "sales.invoice.read",
+        # D P5 — transport details and the e-way bill file: writing a bill's details.
+        "eway": "sales.invoice.write",
+        # docs/platform/15 §1.4 — cost and profit are financial (INV-08 EC-4).
+        "profit": "reports.financial.read",
+    }
+)
+
+_ESTIMATE_ACTIONS = {
+    "list": "sales.estimate.read",
+    "retrieve": "sales.estimate.read",
+    "create": "sales.estimate.write",
+    "partial_update": "sales.estimate.write",
+    "destroy": "sales.estimate.write",
+    "mark_sent": "sales.estimate.write",
+    "mark_accepted": "sales.estimate.write",
+    "mark_rejected": "sales.estimate.write",
+    "convert": "sales.estimate.write",
+    "share_links": "sales.estimate.read",
+    "revoke_share_link": "sales.invoice.void",
+}
+EstimatePermissions = HasPermission(_ESTIMATE_ACTIONS)
+#: SAL-01 §12 — converting also writes an invoice, so it needs both codenames.
+EstimateConvertPermissions = HasPermission({**_ESTIMATE_ACTIONS, "convert": "sales.invoice.write"})
+
+#: Shop item 3 — a sales order is the estimate's kind of promise, held by the same people;
+#: converting it writes an invoice, so that also needs `sales.invoice.write`.
+_SALES_ORDER_ACTIONS = {
+    "list": "sales.estimate.read",
+    "retrieve": "sales.estimate.read",
+    "create": "sales.estimate.write",
+    "partial_update": "sales.estimate.write",
+    "destroy": "sales.estimate.write",
+    "confirm": "sales.estimate.write",
+    "cancel": "sales.estimate.write",
+    "convert": "sales.estimate.write",
+    "share_links": "sales.estimate.read",
+    "revoke_share_link": "sales.invoice.void",
+}
+SalesOrderPermissions = HasPermission(_SALES_ORDER_ACTIONS)
+SalesOrderConvertPermissions = HasPermission(
+    {**_SALES_ORDER_ACTIONS, "convert": "sales.invoice.write"}
+)
+
+#: Shop item 4 — SAL-09 §12: the invoice's codenames govern challans; void is the owner's.
+DeliveryChallanPermissions = HasPermission(
+    {
+        "list": "sales.invoice.read",
+        "retrieve": "sales.invoice.read",
+        "create": "sales.invoice.write",
+        "partial_update": "sales.invoice.write",
+        "destroy": "sales.invoice.write",
+        "issue": "sales.invoice.write",
+        "convert": "sales.invoice.write",
+        "void": "sales.invoice.void",
+        "share_links": "sales.invoice.read",
+        "revoke_share_link": "sales.invoice.void",
+    }
+)
+
+#: SAL-04 §12 — reading is `sales.invoice.read` (no separate read codename exists).
+CreditNotePermissions = HasPermission(
+    {
+        "list": "sales.invoice.read",
+        "retrieve": "sales.invoice.read",
+        "create": "sales.credit_note.write",
+        "partial_update": "sales.credit_note.write",
+        "destroy": "sales.credit_note.write",
+        "issue": "sales.credit_note.write",
+        "apply": "sales.credit_note.write",
+        "void": "sales.invoice.void",
+        "share_links": "sales.invoice.read",
+        "revoke_share_link": "sales.invoice.void",
     }
 )

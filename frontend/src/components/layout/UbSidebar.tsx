@@ -7,6 +7,7 @@ import { useTranslation } from 'src/hooks/useTranslation';
 import { selectAppName } from 'src/redux/slice/whiteLabelSlice';
 import { cn } from 'src/utils/cn';
 
+import { SidebarAppsRow } from 'modules/DigiKhaato/features/navigation/components/SidebarAppsRow';
 import { TenantSwitcherMenu } from 'modules/DigiKhaato/features/tenant-switcher/components/TenantSwitcherMenu';
 
 /**
@@ -53,11 +54,14 @@ export function UbSidebar(): React.JSX.Element {
       aria-label={t('nav.primary')}
       className={cn(
         'sticky top-0 hidden h-dvh w-sidebar shrink-0 flex-col overflow-y-auto lg:flex',
-        'border-r border-border-hairline bg-surface-nav text-text-onNav'
+        'border-r border-surface-nav bg-surface-nav text-text-onNav'
       )}
     >
-      <TenantSwitcherMenu rail caption={appName} />
-      <UbBox aria-hidden className="h-px w-full shrink-0 bg-border-hairline" />
+      <TenantSwitcherMenu rail fixed caption={appName} />
+      <UbBox aria-hidden className="h-px w-full shrink-0 bg-white/10" />
+      {/* R-DEC-09 — one "Apps" row, then the open app's own rows. The apps
+          themselves are listed on the Apps page, not in the rail. */}
+      <SidebarAppsRow />
       <NavSections />
     </UbBox>
   );

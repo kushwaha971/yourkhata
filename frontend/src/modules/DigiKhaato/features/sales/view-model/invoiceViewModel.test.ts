@@ -3,10 +3,13 @@ import { makeDocument, wireLine } from '../testing/salesFixtures';
 
 import { daysOverdue, invoiceFiltersFromQuery, invoiceQueryFromFilters } from './invoiceDisplay';
 import {
+  defaultPlaceOfSupply,
   emptyInvoiceForm,
   emptyLine,
+  formQty,
   fromDocument,
   fullCashPayment,
+  paymentRowProblems,
   paymentWireBody,
   ratePlaces,
   toWireBody,
@@ -19,6 +22,18 @@ import {
  */
 
 const TODAY = '2026-09-24';
+
+describe('the place of supply a picked party defaults to (QA S-D1)', () => {
+  it("resolves in the server's order: party state, billing state, then the shop's", () => {
+    // S-D1: the preview used the shop's state for a party in another state.
+    expect(defaultPlaceOfSupply({ stateCode: '29', billingAddress: {} }, '27')).toBe('29');
+    expect(
+      defaultPlaceOfSupply({ stateCode: null, billingAddress: { state_code: '33' } }, '27')
+    ).toBe('33');
+    expect(defaultPlaceOfSupply({ stateCode: null, billingAddress: {} }, '27')).toBe('27');
+    expect(defaultPlaceOfSupply(null, '27')).toBe('27');
+  });
+});
 
 describe('invoice form → wire', () => {
   it('sends only complete lines, so an empty trailing row never becomes a ₹0 line', () => {
@@ -51,7 +66,8 @@ describe('invoice form → wire', () => {
     const doc = makeDocument({ status: 'draft', number: null, lines: [wireLine()] });
     const body = toWireBody(fromDocument(doc));
     expect(body.lines).toEqual([
-      expect.objectContaining({ item_id: 'i1', qty: '1.000', tax_code: 'GST5' }),
+      // The same quantity, as the editor holds a whole unit's: "1", not "1.000".
+      expect.objectContaining({ item_id: 'i1', qty: '1', tax_code: 'GST5' }),
     ]);
   });
 
@@ -80,11 +96,11 @@ describe('invoice form → wire', () => {
 });
 
 describe('the list in the address bar (SAL-08 FR-3)', () => {
-  it('defaults to this financial year, all tabs, and writes nothing to the URL', () => {
+  it('defaults to this month (Part F design), all tabs, and writes nothing to the URL', () => {
     const filters = invoiceFiltersFromQuery(new URLSearchParams(''), TODAY);
     expect(filters).toMatchObject({
-      preset: 'thisFy',
-      dateFrom: '2026-04-01',
+      preset: 'thisMonth',
+      dateFrom: '2026-09-01',
       dateTo: TODAY,
       tab: 'all',
       page: 1,
@@ -123,4 +139,35 @@ describe('the list in the address bar (SAL-08 FR-3)', () => {
     expect(daysOverdue(TODAY, TODAY)).toBe(0);
     expect(daysOverdue(null, TODAY)).toBe(0);
   });
+});
+
+describe('paymentRowProblems (PAY-02 §10)', () => {
+  it('flags a zero amount, a repeated mode and a cheque with no number, in the server’s order', () => {
+    expect(
+      paymentRowProblems([
+        { mode: 'cash', amount: '100', reference: '' },
+        { mode: 'upi', amount: '0', reference: '' },
+        { mode: 'cash', amount: '50', reference: '' },
+        { mode: 'cheque', amount: '20', reference: ' ' },
+      ])
+    ).toEqual([null, 'amount', 'duplicate', 'reference']);
+  });
+});
+
+/**
+ * Found by the sales-order browser pass (7 Oct 2026): a draft reopened from the
+ * server came back as "3.000" NOS, failed the editor's whole-number rule, and
+ * Issue (or Save & confirm) did nothing at all.
+ */
+it('reopens a whole-number line as "3", which the editor accepts, and keeps decimals as sent', () => {
+  expect(formQty('3.000', false)).toBe('3');
+  expect(formQty('12.0', false)).toBe('12');
+  expect(formQty('1.500', false)).toBe('1.500'); // a real fraction stays, for the rule to refuse
+  // WP-05 review: a weighed quantity is trimmed too. "6.000" did not fit the
+  // purchase bill's Qty box at 1536 px and was cut on every KGS line.
+  expect(formQty('1.250', true)).toBe('1.25');
+  expect(formQty('6.000', true)).toBe('6');
+  expect(formQty('0.500', true)).toBe('0.5');
+  const doc = makeDocument({ lines: [wireLine({ qty: '3.000', unit_code: 'NOS' })] });
+  expect(fromDocument(doc).lines[0]?.qty).toBe('3');
 });

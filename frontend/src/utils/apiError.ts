@@ -70,8 +70,10 @@ const mapStatusToCode = (status: number): ApiErrorCode => {
   }
 };
 
+const SERVER_FAILURE_FALLBACK = 'Something went wrong. Quote this reference to support.';
+const REQUEST_FAILURE_FALLBACK = 'Request failed.';
 const defaultMessageFor = (status: number): string =>
-  status >= 500 ? 'Something went wrong. Quote this reference to support.' : 'Request failed.';
+  status >= 500 ? SERVER_FAILURE_FALLBACK : REQUEST_FAILURE_FALLBACK;
 
 /**
  * Normalises anything thrown by the transport into one shape.
@@ -151,6 +153,11 @@ const LOCALLY_PRESENTED: ReadonlySet<ApiErrorCode> = new Set<ApiErrorCode>([
   // has; a toast beside it would be a second, differently-worded report of the
   // same event, and a toast that named the address would enumerate users.
   'invalid_credentials',
+  // DEC-013 — a wrong or spent sign-in code. It lands under the code cells,
+  // with the tries left; a toast as well said it twice, and it OUTLIVED the
+  // screen — still up on onboarding after the right code went in (otpsignin
+  // sweep, 9 Oct 2026).
+  'otp_invalid',
 
   // CASE 3 — the login/reset lockout. The screen shows a countdown banner
   // and the submit is disabled until it runs out, which is information a toast
@@ -191,6 +198,16 @@ const LOCALLY_PRESENTED: ReadonlySet<ApiErrorCode> = new Set<ApiErrorCode>([
   'party_balance_nonzero',
   'balance_changed',
   'nothing_to_write_off',
+  // A6 — the same dialog names the module, the count and the next step. The
+  // look pass caught it toasting the server's fallback sentence and a request
+  // id over the dialog that was already saying it.
+  'party_has_open_records',
+  // A5 — the void dialog shows the issuing module's lock in place (Void
+  // disabled) or asks its question with "Void anyway". The Wave A gate's look
+  // pass caught the question toasting in error red, request id and all, over
+  // the dialog that was asking it.
+  'document_origin_confirm',
+  'document_origin_locked',
 
   // Track T1 — each is answered on the surface the merchant is looking at:
   // `low_contrast` under the colour field WITH the darker shade to try (a
@@ -202,7 +219,20 @@ const LOCALLY_PRESENTED: ReadonlySet<ApiErrorCode> = new Set<ApiErrorCode>([
   'sequence_backwards',
 ]);
 
-export const shouldToast = (error: ApiErrorShape): boolean => !LOCALLY_PRESENTED.has(error.code);
+/**
+ * A12 — a refused module switch is drawn under the switch from
+ * `details.breakdown` ("Close them first, then turn this off." and one line per
+ * open thing). With a breakdown there is a better local surface; without one
+ * the snackbar is the only report, so it still toasts (Wave A gate).
+ */
+const presentedByModuleBanner = (error: ApiErrorShape): boolean => {
+  if (error.code !== 'module_has_data') return false;
+  const breakdown = (error.details as Record<string, unknown> | undefined)?.breakdown;
+  return Array.isArray(breakdown) && breakdown.length > 0;
+};
+
+export const shouldToast = (error: ApiErrorShape): boolean =>
+  !LOCALLY_PRESENTED.has(error.code) && !presentedByModuleBanner(error);
 
 /**
  * CR-2026-09-19-E — the codes minted on the CLIENT carry no server copy, so
@@ -215,10 +245,27 @@ const CLIENT_MINTED_MESSAGE_ID: Partial<Record<ApiErrorCode, string>> = {
   network_error: 'error.network',
   timeout: 'error.timeout',
   offline: 'common.network.offline',
+  /*
+   * CR-2026-09-29-SEC-A — not client-minted, but the server has no Hindi
+   * catalogue, and this refusal is the one a support operator WILL meet, in
+   * whichever language the business uses. It must read as "view only", not
+   * as a permission problem the owner could fix.
+   */
+  impersonation_forbidden: 'errors.impersonation_forbidden',
 };
 
+/**
+ * Sprint 12 i18n sweep — a response with no error BODY (a proxy's 502 page, an
+ * HTML 404) also gets a client-minted English sentence from `defaultMessageFor`,
+ * and it reached a Hindi merchant's snackbar as English because only the
+ * transport codes above were mapped. Those two strings are ours, not the
+ * server's, so they resolve to the generic key too.
+ */
+const CLIENT_MINTED_FALLBACKS = new Set([SERVER_FAILURE_FALLBACK, REQUEST_FAILURE_FALLBACK]);
+
 export const errorMessageId = (error: ApiErrorShape): string | null =>
-  CLIENT_MINTED_MESSAGE_ID[error.code] ?? (error.message ? null : 'error.generic');
+  CLIENT_MINTED_MESSAGE_ID[error.code] ??
+  (!error.message || CLIENT_MINTED_FALLBACKS.has(error.message) ? 'error.generic' : null);
 
 /**
  * §19.4.4 — `details` feeds `setError`; snake_case keys become RHF paths.

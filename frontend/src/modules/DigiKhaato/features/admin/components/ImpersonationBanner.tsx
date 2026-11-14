@@ -14,6 +14,10 @@ import { replaceDocument } from 'src/utils/documentNavigation';
 
 import { endImpersonation } from '../redux/adminThunk';
 
+// Loaded with dynamic(), so its own words come with its own chunk rather than
+// with the screen that opens it (src/i18n/catalogueRegistry.ts).
+import 'src/i18n/catalogues/admin';
+
 /**
  * PLT-14 FR-5 / TSK-PLT-14-06 — the persistent red-outlined banner of a support
  * session: who is acting, in which business, until when, and the way out. It
@@ -57,7 +61,13 @@ export function ImpersonationBanner(): React.JSX.Element | null {
             time: formatTimestamp(session.expiresAt),
           })}
         </UbText>
-        <UbButton size="sm" variant="destructive" busy={ending} onClick={() => void end()}>
+        <UbButton
+          size="sm"
+          variant="destructive"
+          viewOnlySafe
+          busy={ending}
+          onClick={() => void end()}
+        >
           {t('admin.banner.end')}
         </UbButton>
       </UbStack>

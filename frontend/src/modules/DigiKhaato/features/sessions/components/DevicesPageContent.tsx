@@ -9,6 +9,7 @@ import { LogOut } from 'lucide-react';
 import {
   UbButton,
   UbConfirmDialog,
+  UbDialogLoading,
   UbEmptyState,
   UbGrid,
   UbPageHeader,
@@ -26,7 +27,8 @@ import { DeviceCard } from './DeviceCard';
 
 const RenameDeviceDialog = dynamic(
   () => import('./RenameDeviceDialog').then((module) => module.RenameDeviceDialog),
-  { ssr: false }
+  { ssr: false,
+  loading: () => <UbDialogLoading /> }
 );
 
 /**

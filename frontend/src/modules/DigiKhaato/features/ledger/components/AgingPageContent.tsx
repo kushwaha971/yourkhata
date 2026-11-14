@@ -1,23 +1,24 @@
 'use client';
 
-import { useCallback, useMemo } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 
 import dynamic from 'next/dynamic';
-import { useRouter } from 'next/navigation';
 
 import { Download } from 'lucide-react';
 
+import { SummaryStatGrid } from 'src/components/stats/SummaryStatGrid';
 import {
   UbActionLink,
   UbBox,
   UbButton,
   UbDateInput,
+  UbDialogLoading,
+  UbDivider,
   UbEmptyState,
   UbPageHeader,
   UbPageShell,
   UbStack,
   UbStatCard,
-  UbStatGrid,
   UbStatusBanner,
   UbTabs,
   UbText,
@@ -30,13 +31,18 @@ import {
   type UbGridSort,
   type UbGridState,
 } from 'src/design-system/UbDataGrid';
+import { useAppRouter } from 'src/hooks/useAppRouter';
+import { usePermissions } from 'src/hooks/usePermissions';
 import { useTranslation } from 'src/hooks/useTranslation';
 import { formatInr } from 'src/utils/money';
 
 import { usePartyTags } from '../../parties/hooks/usePartyTags';
-import { agingCsvUrl } from '../api/agingService';
+import { ReportCardRow } from '../../reports/components/ReportCardRow';
+import { ReportPager } from '../../reports/components/ReportPager';
+import { agingCsvUrl, agingReportCsvUrl } from '../api/agingService';
 import { useLedgerAging } from '../hooks/useLedgerAging';
 import { AGING_BUCKETS } from '../types/aging.types';
+import { agingCard } from '../view-model/agingCards';
 import {
   bucketLabelId,
   orderingFor,
@@ -46,6 +52,7 @@ import {
 
 import { createAgingColumns } from './AgingColumns';
 
+import type { AgingAction } from './AgingRowSheet';
 import type { AgingKind, AgingRow } from '../types/aging.types';
 
 /**
@@ -59,14 +66,33 @@ const PartyTagFilterLazy = dynamic(
 );
 
 /**
+ * 09 §10.7 — the Shop's age bars. Lazy so the Udhaar book, which shares this
+ * screen and draws tiles, does not carry the chart code; the chunk loads while
+ * the report's own request is still out.
+ */
+const AgingBarsCardLazy = dynamic(() => import('./AgingBarsCard').then((m) => m.AgingBarsCard), {
+  ssr: false,
+});
+
+/** 09 §10.7 — the Shop row's sheet and what it opens, loaded on the first tap. */
+const AgingRowSheetLazy = dynamic(() => import('./AgingRowSheet').then((m) => m.AgingRowSheet), {
+  ssr: false,
+  loading: () => <UbDialogLoading />,
+});
+const AgingRowActionLazy = dynamic(
+  () => import('./AgingRowAction').then((m) => m.AgingRowAction),
+  { ssr: false, loading: () => <UbDialogLoading /> }
+);
+
+/**
  * LED-09 — how much is out there, and how old it is.
  *
  * ── The tabs ARE the position ─────────────────────────────────────────────
  * FR-1 puts "You will get" and "You will give" on stat cards, and FR-3 puts a
  * Receivable · Payable switch under them. On a phone that is two rows saying
  * the same two words, and the second row is the one that does something. So
- * the two figures are the tab labels: the merchant reads their position and
- * picks a side in the same glance, and the list starts 90 px higher.
+ * the selected tab carries the report's own total: the merchant reads the
+ * same scoped position as the rows beneath it and picks a side in one glance.
  *
  * ── The four bucket totals are over the FILTERED set ─────────────────────
  * BR-5. With a tag applied, the cards answer "what is Camp Area owed, and how
@@ -75,17 +101,54 @@ const PartyTagFilterLazy = dynamic(
  *
  * ── Every figure is a way in ─────────────────────────────────────────────
  * FR-4, and the payoff for having built LED-04 first. See `AgingColumns`.
+ *
+ * ── An empty BOOK is not an empty REPORT ─────────────────────────────────
+ * Owner, 12 Oct 2026. A shop that has never written an entry gets one plain
+ * empty state — no as-of date, export, tag picker or "₹0.00" tabs, which
+ * describe a book that does not exist. A settled book, or a tag or date that
+ * finds nobody, keeps every control: that empty list is an ANSWER to a
+ * question the merchant asked. Only the server can tell the two apart
+ * (`meta.has_any`), and until it has said, nothing is hidden.
+ *
+ * ── The Shop's Old dues (09 §10.7) ──────────────────────────────────────
+ * `book="shop"` is the Shop's report and has its own composition: the side
+ * in the Shop's words ("Customers owe you" · "You owe suppliers", never
+ * netted), the four buckets as aging bars, the rows as three-thing cards on a
+ * phone, and a row sheet with each bucket and Remind + Receive payment (money
+ * to collect) or Pay (money to pay). The Udhaar book (`main`) is unchanged
+ * here; its revamp is its own piece.
  */
-export function AgingPageContent(): React.JSX.Element {
+export function AgingPageContent({
+  book = 'main',
+}: Readonly<{ book?: 'main' | 'shop' }> = {}): React.JSX.Element {
   const { t } = useTranslation();
-  const router = useRouter();
+  const router = useAppRouter();
   const tier = useGridTier();
-  const aging = useLedgerAging();
+  const aging = useLedgerAging(book);
   const { tags } = usePartyTags();
+  /* RPT-05 FR-9 — with Reports on, Export is the REPORT's file (FR-5's
+     collection-sheet columns and a TOTAL row); without it, LED-09's own. */
+  const { can, hasModule } = usePermissions();
+  const reportFile = hasModule('reports') && can('reports.basic.read');
+  const shop = book === 'shop';
+  const phoneCards = shop && tier === 'cards';
+  const canRemind = can('ledger.entry.read') && can('ledger.reminder.write');
+  const canPay = hasModule('payments') && can('payments.payment.write');
+  const [sheetRow, setSheetRow] = useState<AgingRow | null>(null);
+  const [acting, setActing] = useState<{ action: AgingAction; row: AgingRow } | null>(null);
+  const openSheet = useCallback((row: AgingRow) => setSheetRow(row), []);
 
   const columns = useMemo(
-    () => createAgingColumns({ t, kind: aging.filters.kind, asOf: aging.filters.asOf, tier }),
-    [t, aging.filters.kind, aging.filters.asOf, tier]
+    () =>
+      createAgingColumns({
+        t,
+        kind: aging.filters.kind,
+        asOf: aging.filters.asOf,
+        tier,
+        book,
+        onActions: shop && tier !== 'cards' ? openSheet : undefined,
+      }),
+    [t, aging.filters.kind, aging.filters.asOf, tier, book, shop, openSheet]
   );
 
   const labels = useMemo<UbDataGridLabels>(
@@ -115,15 +178,21 @@ export function AgingPageContent(): React.JSX.Element {
   );
 
   const { refetch, setTag, error } = aging;
+  const kindForEmpty = aging.filters.kind;
   const emptyStates = useMemo<UbDataGridEmptyStates>(
     () => ({
       /* §9's empty state, and the tone is the point: nothing outstanding is
          GOOD NEWS on this screen, unlike every other empty list in the
          product. A merchant whose book is settled is told so. */
-      firstUse: {
-        title: t('ledger.aging.empty.title'),
-        description: t('ledger.aging.empty.body'),
-      },
+      firstUse: shop
+        ? {
+            title: t(`ledger.aging.shop.empty.${kindForEmpty}.title`),
+            description: t(`ledger.aging.shop.empty.${kindForEmpty}.body`),
+          }
+        : {
+            title: t('ledger.aging.empty.title'),
+            description: t('ledger.aging.empty.body'),
+          },
       filtered: {
         title: t('ledger.aging.filtered.title'),
         description: t('ledger.aging.filtered.body'),
@@ -145,7 +214,7 @@ export function AgingPageContent(): React.JSX.Element {
         ),
       },
     }),
-    [t, error, refetch, setTag]
+    [t, error, refetch, setTag, shop, kindForEmpty]
   );
 
   const gridState: UbGridState =
@@ -169,8 +238,8 @@ export function AgingPageContent(): React.JSX.Element {
     [setOrdering]
   );
   const handleOpen = useCallback(
-    (row: AgingRow) => router.push(rowStatementHref(row.partyId, filters.asOf)),
-    [router, filters.asOf]
+    (row: AgingRow) => router.push(rowStatementHref(row.partyId, filters.asOf, book)),
+    [router, filters.asOf, book]
   );
   const handleTag = useCallback((next: string) => setTag(next || null), [setTag]);
   const rowId = useCallback((row: AgingRow) => row.partyId, []);
@@ -181,18 +250,38 @@ export function AgingPageContent(): React.JSX.Element {
       (['receivable', 'payable'] as const).map((kind) => ({
         value: kind,
         label: (
-          <UbBox as="span" className="inline-flex items-baseline gap-2">
+          /* The Shop's side words are longer ("Customers owe you"), so on a
+             phone its total sits under the word and the two tabs share the
+             row; side by side they ran 70 px off a 360 px screen. */
+          <UbBox
+            as="span"
+            className={
+              shop
+                ? 'inline-flex flex-col items-start sm:flex-row sm:items-baseline sm:gap-2'
+                : 'inline-flex items-baseline gap-2'
+            }
+          >
             <UbText as="span" variant="inherit" tone="inherit">
-              {t(`ledger.aging.${kind}`)}
+              {t(shop ? `ledger.aging.shop.${kind}` : `ledger.aging.${kind}`)}
             </UbText>
-            <UbText as="span" variant="inherit" tone="inherit" className="ds-num-base-semibold">
-              {aging.summary ? formatInr(aging.summary[kind]) : '—'}
-            </UbText>
+            {kind === filters.kind && (
+              <UbText as="span" variant="inherit" tone="inherit" className="ds-num-base-semibold">
+                {aging.totals ? formatInr(aging.totals.total) : '—'}
+              </UbText>
+            )}
           </UbBox>
         ),
       })),
-    [t, aging.summary]
+    [t, filters.kind, aging.totals, shop]
   );
+  const cards = useMemo(
+    () => (phoneCards ? aging.rows.map((row) => agingCard(t, filters.kind, row)) : []),
+    [phoneCards, aging.rows, t, filters.kind]
+  );
+  const totalPages = Math.max(Math.ceil(aging.total / Math.max(aging.pageSize, 1)), 1);
+
+  const emptyBook =
+    aging.status === 'succeeded' && aging.rows.length === 0 && aging.hasAny === false;
 
   if (!aging.canRead) {
     return (
@@ -214,107 +303,176 @@ export function AgingPageContent(): React.JSX.Element {
       <UbPageHeader
         title={t('ledger.aging.title')}
         actions={
-          <>
-            {/* Text, not a boxed field: the as-of date is read far more
+          emptyBook ? undefined : (
+            <>
+              {/* Text, not a boxed field: the as-of date is read far more
                 often than it is changed, and a form field on a report with no
                 form read as something to fill in. It is still the button that
                 opens the calendar. */}
-            <UbDateInput
-              name="aging-as-of"
-              appearance="inline"
-              inlineLabel={t('ledger.aging.asOf')}
-              aria-label={t('ledger.aging.asOf')}
-              placeholder={t('ledger.entry.date.placeholder')}
-              value={filters.asOf}
-              max={today}
-              onChange={(value: string | null) => setAsOf(value || today)}
-            />
-            {aging.canExport && (
-              <UbActionLink
-                href={agingCsvUrl(aging.filters)}
-                download
-                icon={<Download className="h-4 w-4" aria-hidden />}
-                iconOnly="mobile"
-                data-testid="aging-export"
-              >
-                {t('ledger.aging.export')}
-              </UbActionLink>
-            )}
-          </>
+              <UbDateInput
+                name="aging-as-of"
+                appearance="inline"
+                inlineLabel={t('ledger.aging.asOf')}
+                aria-label={t('ledger.aging.asOf')}
+                placeholder={t('ledger.entry.date.placeholder')}
+                value={filters.asOf}
+                max={today}
+                onChange={(value: string | null) => setAsOf(value || today)}
+              />
+              {aging.canExport && (
+                <UbActionLink
+                  href={reportFile ? agingReportCsvUrl(aging.filters) : agingCsvUrl(aging.filters)}
+                  download
+                  icon={<Download className="h-4 w-4" aria-hidden />}
+                  iconOnly="mobile"
+                  data-testid="aging-export"
+                >
+                  {t('ledger.aging.export')}
+                </UbActionLink>
+              )}
+            </>
+          )
         }
       />
 
       <UbStack gap={4} data-testid="aging-screen">
-        <UbTabs<AgingKind>
-          value={filters.kind}
-          onValueChange={setKind}
-          tabs={tabs}
-          ariaLabel={t('ledger.aging.side')}
-          layout="fit"
-          /* Only once there are tags to pick, for the reason the party list
+        {emptyBook ? (
+          <UbEmptyState
+            variant="firstUse"
+            title={t('ledger.aging.emptyBook.title')}
+            description={t('ledger.aging.emptyBook.body')}
+          />
+        ) : (
+          <UbTabs<AgingKind>
+            value={filters.kind}
+            onValueChange={setKind}
+            tabs={tabs}
+            ariaLabel={t('ledger.aging.side')}
+            layout={shop ? 'fill' : 'fit'}
+            /* Only once there are tags to pick, for the reason the party list
              gives: a picker that opens empty is the first thing a merchant
              with no tags would meet. */
-          trailing={
-            tags.length > 0 || filters.tag ? (
-              <PartyTagFilterLazy
-                t={t}
-                value={filters.tag ?? ''}
-                onChange={handleTag}
-                tags={tags}
-                className="w-48 shrink-0"
-              />
-            ) : undefined
-          }
-        >
-          <UbStack gap={4}>
-            {aging.asOfProblem && (
-              <UbStatusBanner tone="error" title={t('ledger.aging.asOf.future')} />
-            )}
+            trailing={
+              tags.length > 0 || filters.tag ? (
+                <PartyTagFilterLazy
+                  t={t}
+                  value={filters.tag ?? ''}
+                  onChange={handleTag}
+                  tags={tags}
+                  className="w-48 shrink-0"
+                />
+              ) : undefined
+            }
+          >
+            <UbStack gap={4}>
+              {aging.asOfProblem && (
+                <UbStatusBanner tone="error" title={t('ledger.aging.asOf.future')} />
+              )}
 
-            {/* §7 — four tiles, youngest first. Only the oldest is painted as
+              {/* §7 — four tiles, youngest first. Only the oldest is painted as
                 a problem: three warning tiles beside it would make every shop's
                 book read as an alarm, and every shop has money in 0–30. */}
-            {aging.totals && aging.rows.length > 0 && (
-              <UbStatGrid>
-                {AGING_BUCKETS.map((bucket) => (
-                  <UbStatCard
-                    key={bucket}
-                    label={t(bucketLabelId(bucket))}
-                    value={formatInr(aging.totals?.[bucket] ?? '0.00')}
-                    tone={bucket === '90_plus' ? 'danger' : 'default'}
+              {shop && aging.totals && aging.rows.length > 0 && (
+                <UbBox data-testid="aging-bars">
+                  <AgingBarsCardLazy
+                    t={t}
+                    totals={aging.totals}
+                    asOf={filters.asOf}
                   />
-                ))}
-              </UbStatGrid>
-            )}
+                </UbBox>
+              )}
+              {!shop && aging.totals && aging.rows.length > 0 && (
+                <SummaryStatGrid storageKey="aging">
+                  {AGING_BUCKETS.map((bucket) => (
+                    <UbStatCard
+                      key={bucket}
+                      label={t(bucketLabelId(bucket))}
+                      value={formatInr(aging.totals?.[bucket] ?? '0.00')}
+                      tone={bucket === '90_plus' ? 'danger' : 'default'}
+                    />
+                  ))}
+                </SummaryStatGrid>
+              )}
 
-            <UbDataGrid
-              rows={aging.rows}
-              columns={columns}
-              rowId={rowId}
-              rowName={rowName}
-              state={gridState}
-              labels={labels}
-              emptyStates={emptyStates}
-              caption={t(`ledger.aging.caption.${filters.kind}`)}
-              storageId="ledger.aging"
-              page={{
-                page: aging.page,
-                pageSize: aging.pageSize,
-                total: aging.total,
-                totalPages: Math.max(Math.ceil(aging.total / Math.max(aging.pageSize, 1)), 1),
-              }}
-              onPageChange={setPage}
-              sort={sort}
-              onSortChange={handleSort}
-              /* Cards only. On a table the party cell is already a link to
+              {phoneCards && gridState === 'rows' ? (
+                <UbStack gap={3}>
+                  <UbStack
+                    as="ul"
+                    gap={0}
+                    aria-label={t(`ledger.aging.caption.${filters.kind}`)}
+                    data-testid="aging-cards"
+                  >
+                    {aging.rows.map((row, at) => {
+                      const view = cards[at];
+                      return view ? (
+                        <UbStack as="li" key={row.partyId} gap={0}>
+                          {at > 0 && <UbDivider />}
+                          <ReportCardRow
+                            view={view}
+                            testId="aging-row"
+                            onOpen={() => openSheet(row)}
+                          />
+                        </UbStack>
+                      ) : null;
+                    })}
+                  </UbStack>
+                  <ReportPager
+                    page={aging.page}
+                    pages={totalPages}
+                    onPage={setPage}
+                    label={t('ledger.aging.pageOf', { page: aging.page, pages: totalPages })}
+                  />
+                </UbStack>
+              ) : (
+              <UbDataGrid
+                rows={aging.rows}
+                columns={columns}
+                rowId={rowId}
+                rowName={rowName}
+                state={gridState}
+                labels={labels}
+                emptyStates={emptyStates}
+                caption={t(`ledger.aging.caption.${filters.kind}`)}
+                storageId="ledger.aging"
+                page={{
+                  page: aging.page,
+                  pageSize: aging.pageSize,
+                  total: aging.total,
+                  totalPages,
+                }}
+                onPageChange={setPage}
+                sort={sort}
+                onSortChange={handleSort}
+                /* Cards only. On a table the party cell is already a link to
                  the same statement (`AgingColumns`), and the grid wraps the
                  first cell in its row-open button whenever this is passed —
                  which made that link an `<a>` inside a `<button>`. */
-              onRowOpen={tier === 'cards' ? handleOpen : undefined}
-            />
-          </UbStack>
-        </UbTabs>
+                onRowOpen={tier === 'cards' ? (shop ? openSheet : handleOpen) : undefined}
+              />
+              )}
+            </UbStack>
+          </UbTabs>
+        )}
       </UbStack>
+      {shop && sheetRow && (
+        <AgingRowSheetLazy
+          row={sheetRow}
+          kind={filters.kind}
+          asOf={filters.asOf}
+          canRemind={canRemind}
+          canPay={canPay}
+          onAction={(action, row) => setActing({ action, row })}
+          onClose={() => setSheetRow(null)}
+        />
+      )}
+      {shop && acting && (
+        <AgingRowActionLazy
+          action={acting.action}
+          row={acting.row}
+          onClose={() => setActing(null)}
+          onSaved={refetch}
+        />
+      )}
     </UbPageShell>
   );
 }

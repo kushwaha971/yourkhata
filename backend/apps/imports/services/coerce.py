@@ -165,6 +165,15 @@ def mobile(raw: str | None) -> str | None:
         raise CoerceError(
             "invalid_mobile", "Excel turned this number into 9.9E+09 — format the column as Text."
         )
+    compact = re.sub(r"[\s().-]", "", value)
+    if compact.startswith("+") or compact.startswith("00"):
+        # Written with its country code (owner, 14 Nov 2026: any country): kept
+        # as written. Taking the last ten digits made +44 7911 123456 an Indian
+        # +917911123456 — a stranger's number.
+        try:
+            return normalise_mobile(compact)
+        except InvalidMobile:
+            raise CoerceError("invalid_mobile", "Not a valid mobile number.") from None
     digits = re.sub(r"\D", "", value)
     if len(digits) < 10:
         raise CoerceError("invalid_mobile", "Not a valid 10-digit mobile.")
