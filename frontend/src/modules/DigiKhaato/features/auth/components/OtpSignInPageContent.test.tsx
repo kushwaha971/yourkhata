@@ -80,7 +80,7 @@ const toCodeStep = async (user: ReturnType<typeof userEvent.setup>) => {
 };
 
 describe('OtpSignInPageContent — the number', () => {
-  it('asks only for a mobile number: no email, no password, no country picker', () => {
+  it('asks only for a mobile number: no email, no password; India first, any country allowed', async () => {
     renderWithProviders(<OtpSignInPageContent />);
     // Owner, 12 Nov 2026: one page for both — a new number becomes an account.
     expect(screen.getByRole('heading', { level: 1, name: 'Enter your mobile number' })).toBeInTheDocument();
@@ -91,8 +91,20 @@ describe('OtpSignInPageContent — the number', () => {
     expect(screen.getByText('+91')).toBeInTheDocument();
     expect(screen.queryByLabelText(/Email/)).not.toBeInTheDocument();
     expect(screen.queryByLabelText(/Password/)).not.toBeInTheDocument();
-    // The sign-in code is sent to India only; 242 other codes would be 242 dead ends.
-    expect(screen.queryByRole('combobox', { name: 'Country code' })).not.toBeInTheDocument();
+    // Owner, 14 Nov 2026: any country, India by default (the code goes by WhatsApp).
+    expect(await screen.findByRole('combobox', { name: 'Country code' })).toHaveTextContent('+91');
+  });
+
+  it('sends a UK number with its own code', async () => {
+    const user = userEvent.setup();
+    renderWithProviders(<OtpSignInPageContent />);
+    await screen.findByRole('combobox', { name: 'Country code' });
+    await user.click(screen.getByLabelText(/Mobile number/));
+    await user.paste('+44 7911 123456');
+    await user.click(screen.getByRole('button', { name: 'Send code' }));
+    await waitFor(() =>
+      expect(authService.requestOtp).toHaveBeenCalledWith(expect.objectContaining({ mobile: '+447911123456' }))
+    );
   });
 
   it('sends the code to the number in E.164', async () => {

@@ -50,7 +50,7 @@ const clock = (seconds: number): string =>
  * OTP … use same things", replacing the email + password screens on /login and
  * /signup. Two steps on one screen:
  *
- *  1. the mobile number (India only — `lockCountry`, because the code is sent
+ *  1. the mobile number (any country, India first — owner, 14 Nov 2026; the code is sent
  *     with `countryCode=91`) and "Send code". Django asks Message Central
  *     VerifyNow to text it (DEC-014); nothing of theirs reaches this bundle;
  *  2. the four-digit code, sent automatically when the fourth digit lands, with
@@ -167,7 +167,6 @@ export function OtpSignInPageContent(): React.JSX.Element {
                 {(field) => (
                   <UbPhoneInput
                     {...field}
-                    lockCountry
                     autoComplete="tel-national"
                     disabled={disabled}
                   />

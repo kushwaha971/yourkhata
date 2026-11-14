@@ -161,12 +161,6 @@ export interface UbPhoneInputProps extends Omit<
   readonly className?: string;
   /** The country an empty field starts on. India unless a caller knows better. */
   readonly defaultCountry?: string;
-  /**
-   * Show the default country's code as a fixed label, with no picker. Sign-in
-   * uses it: the sign-in code is sent to Indian numbers only, so
-   * offering 243 countries there would offer 242 that cannot sign in.
-   */
-  readonly lockCountry?: boolean;
 }
 
 /** `useLayoutEffect` in the browser, a no-op warning-free `useEffect` on the server. */
@@ -221,8 +215,7 @@ const readInternational = (raw: string, country: PhoneCountry): string =>
  * The searchable country list is fetched after first paint, and only where it
  * is shown. Imported statically it put ml-uikit's popover and the command list
  * on /login — 23 KB on the most-visited cold page in the product, where
- * `lockCountry` never shows it (the bundle gate, 9 Oct 2026). Until it lands
- * the code is drawn as the fixed label, which is also what `lockCountry` draws.
+ * Until it lands the code is drawn as a fixed label (the bundle gate, 9 Oct 2026).
  */
 const pickerModule = deferredModule(() => import('./UbPhoneCountryPicker'));
 
@@ -239,7 +232,6 @@ const UbPhoneInputInner = forwardRef<HTMLInputElement, UbPhoneInputProps>(
       className,
       disabled,
       defaultCountry = DEFAULT_PHONE_COUNTRY,
-      lockCountry = false,
       ...rest
     },
     ref
@@ -258,13 +250,11 @@ const UbPhoneInputInner = forwardRef<HTMLInputElement, UbPhoneInputProps>(
     const trimmed = (value ?? '').trim();
     // A `+…` value says its own country; a bare legacy value is Indian; an
     // empty field is on whatever the merchant last picked.
-    const country = lockCountry
-      ? phoneCountry(defaultCountry)
-      : trimmed.startsWith('+')
-        ? (countryOfE164(trimmed, chosen) ?? phoneCountry(DEFAULT_PHONE_COUNTRY))
-        : trimmed
-          ? phoneCountry(DEFAULT_PHONE_COUNTRY)
-          : phoneCountry(chosen);
+    const country = trimmed.startsWith('+')
+      ? (countryOfE164(trimmed, chosen) ?? phoneCountry(DEFAULT_PHONE_COUNTRY))
+      : trimmed
+        ? phoneCountry(DEFAULT_PHONE_COUNTRY)
+        : phoneCountry(chosen);
     const isIndia = country.iso === DEFAULT_PHONE_COUNTRY;
     const national = nationalOf(value, country);
 
@@ -274,7 +264,7 @@ const UbPhoneInputInner = forwardRef<HTMLInputElement, UbPhoneInputProps>(
       if (trimmed) setChosen(country.iso);
     }, [trimmed, country.iso]);
 
-    const picker = useDeferredModule(pickerModule, !lockCountry);
+    const picker = useDeferredModule(pickerModule, true);
 
     // The digits start where the code label ends, MEASURED: `+1` and `+971`
     // differ by three characters, and the label's font is not the input's, so
@@ -301,13 +291,12 @@ const UbPhoneInputInner = forwardRef<HTMLInputElement, UbPhoneInputProps>(
     const followInternational = useCallback(
       (raw: string): boolean => {
         const named = internationalCountry(raw);
-        if (lockCountry) return false;
         if (!named || named.iso === country.iso || named.dial === country.dial) return false;
         setChosen(named.iso);
         onChange(readInternational(raw, named));
         return true;
       },
-      [country, lockCountry, onChange]
+      [country, onChange]
     );
 
     const handleChange = useCallback(
@@ -407,7 +396,7 @@ const UbPhoneInputInner = forwardRef<HTMLInputElement, UbPhoneInputProps>(
             box, and a typed "uae" or "971" finds one faster than a wheel. The
             closed trigger shows only the code, the open list names countries. */}
         <div ref={labelRef} className="absolute inset-y-1 left-1 z-[1] flex items-center">
-          {lockCountry || !picker ? (
+          {!picker ? (
             // Fixed, not a control: there is nothing to choose (or the list is
             // still on its way), so a screen reader hears the number field.
             <span aria-hidden className="ds-body px-2 text-text-secondary">

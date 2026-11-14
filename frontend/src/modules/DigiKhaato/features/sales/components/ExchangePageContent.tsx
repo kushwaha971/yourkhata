@@ -30,6 +30,7 @@ import { useTranslation } from 'src/hooks/useTranslation';
 import { showSnackbar } from 'src/redux/slice/snackbarSlice';
 import { ROUTES } from 'src/routes';
 import { formatInr, toDecimal } from 'src/utils/money';
+import { isValidMobile } from 'src/utils/phone';
 import { remainingQuantity } from 'src/utils/quantity';
 import { comboPaging } from 'src/utils/searchPaging';
 
@@ -53,7 +54,6 @@ interface OutLine {
 }
 
 const PREVIEW_WAIT_MS = 250;
-const INDIAN_MOBILE = /^\+91[6-9]\d{9}$/;
 
 /**
  * G6 (design `pExchange`, `dExchange`) — tick what comes back from the old bill,
@@ -104,7 +104,7 @@ export function ExchangePageContent(): React.JSX.Element {
   const quickSale = Boolean(bill) && !bill?.party;
   const mobileOnBill = Boolean(bill?.walkInMobile);
   const customerReady =
-    !quickSale || (customerName.trim() !== '' && (mobileOnBill || INDIAN_MOBILE.test(customerMobile)));
+    !quickSale || (customerName.trim() !== '' && (mobileOnBill || isValidMobile(customerMobile)));
   const request = useMemo<ExchangeRequest | null>(() => {
     if (!ticked.size || !out.length || !customerReady) return null;
     return {

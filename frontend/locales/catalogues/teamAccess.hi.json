@@ -43,6 +43,7 @@
   "team.access.new": "नया समूह",
   "team.access.noGroup": "कोई समूह नहीं (भूमिका जितना देती है)",
   "team.access.noGroupHint": "{app} में वह सब जो उनकी भूमिका देती है।",
+  "team.access.noGroupShort": "कोई समूह नहीं",
   "team.access.onlyHere": "ये समूह केवल {business} के {app} के लिए हैं। बाकी ऐप के अपने समूह उनके अपने टीम पेज पर हैं।",
   "team.access.ownerKeeps": "बिल हटाना या रद्द करना हमेशा मालिक और एडमिन के पास रहेगा।",
   "team.access.part.expenses": "खर्च",

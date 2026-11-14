@@ -157,12 +157,12 @@ describe('MembersSection — adding somebody', () => {
     expect(memberService.createMember).not.toHaveBeenCalled();
   });
 
-  it('offers no country picker: the sign-in code goes to Indian numbers only', async () => {
+  it('offers every country, India first (owner, 14 Nov 2026)', async () => {
     const user = userEvent.setup();
     renderWithProviders(<MembersSection />);
     await user.click(await screen.findByRole('button', { name: 'Add member' }));
     await screen.findByLabelText(/Mobile number/);
-    expect(screen.queryByRole('combobox', { name: 'Country code' })).not.toBeInTheDocument();
+    expect(await screen.findByRole('combobox', { name: 'Country code' })).toHaveTextContent('+91');
   });
 });
 

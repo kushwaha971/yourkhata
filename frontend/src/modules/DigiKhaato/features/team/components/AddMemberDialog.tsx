@@ -164,10 +164,9 @@ export function AddMemberDialog({
           {(field) => <UbTextInput {...field} autoComplete="off" />}
         </UbField>
 
-        {/* The way they sign in (owner, 9 Oct 2026): a code is texted to this
-            number, so it is required and Indian — the sign-in code is sent in India
-            only, hence `lockCountry`. `UbPhoneInput`, as on the party form:
-            the merchant types ten digits and the schema wants E.164 (UAT D4). */}
+        {/* The way they sign in: a code sent to this number on WhatsApp. Any
+            country, India first (owner, 14 Nov 2026). `UbPhoneInput`, as on the
+            party form: the merchant types the number and the schema wants E.164. */}
         <UbField
           name="mobile"
           label={t('team.member.mobile.label')}
@@ -175,7 +174,7 @@ export function AddMemberDialog({
           hint={t('team.member.mobile.hint')}
           required
         >
-          {(field) => <UbPhoneInput {...field} lockCountry autoComplete="off" />}
+          {(field) => <UbPhoneInput {...field} autoComplete="off" />}
         </UbField>
 
         <UbField

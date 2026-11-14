@@ -6,6 +6,9 @@ import urllib.error
 import urllib.request
 from django.conf import settings
 
+# Any country (owner, 14 Nov 2026): the same rule every mobile field uses.
+from apps.platform_app.mobile import E164_ANY
+
 class MetaWhatsAppError(Exception):
     def __init__(self, code="provider_error"):
         super().__init__("WhatsApp delivery could not be confirmed.")
@@ -14,7 +17,7 @@ class MetaWhatsAppError(Exception):
 def send_otp(mobile: str, code: str) -> str:
     key = getattr(settings, "META_WHATSAPP_ACCESS_TOKEN", "")
     phone = getattr(settings, "META_WHATSAPP_PHONE_NUMBER_ID", "")
-    if not key or not re.fullmatch(r"[0-9]+", phone) or not re.fullmatch(r"\+91[6-9][0-9]{9}", mobile) or not re.fullmatch(r"[0-9]{6}", code):
+    if not key or not re.fullmatch(r"[0-9]+", phone) or not E164_ANY.fullmatch(mobile) or not re.fullmatch(r"[0-9]{6}", code):
         raise MetaWhatsAppError("invalid_configuration")
     payload = {"messaging_product": "whatsapp", "to": mobile[1:], "type": "template", "template": {
         "name": settings.META_WHATSAPP_TEMPLATE, "language": {"code": "en"}, "components": [

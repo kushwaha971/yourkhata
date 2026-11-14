@@ -24,7 +24,7 @@
   "auth.otp.newHere": "आगे बढ़कर आप सहमत हैं",
   "auth.otp.oneHeading": "अपना मोबाइल नंबर डालें",
   "auth.otp.privacy": "गोपनीयता नीति",
-  "auth.otp.prompt": "अपना मोबाइल नंबर डालें। हम आपको कोड भेजेंगे।",
+  "auth.otp.prompt": "अपना मोबाइल नंबर डालें। आपको 6 अंकों का कोड मिलेगा।",
   "auth.otp.resend": "फिर से कोड भेजें",
   "auth.otp.resendIn": "{time} में फिर से कोड भेजें",
   "auth.otp.send": "कोड भेजें",

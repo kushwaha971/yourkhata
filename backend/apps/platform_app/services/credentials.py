@@ -286,8 +286,8 @@ def create_member(
     if by_mobile:
         if not mobile:
             raise ValidationFailed({"mobile": ["A mobile number is required."]})
-        if not mobile.startswith("+91"):
-            raise ValidationFailed({"mobile": ["Staff sign in with an Indian mobile number."]})
+        # Any country (owner, 14 Nov 2026): the serializer has already
+        # normalised the number, and the sign-in code goes by WhatsApp.
         normalised = synthetic_email_for(mobile)
     else:
         normalised = membership_service.normalise_email_or_none(email)

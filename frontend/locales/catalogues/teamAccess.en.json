@@ -43,6 +43,7 @@
   "team.access.new": "New group",
   "team.access.noGroup": "No group (everything their role allows)",
   "team.access.noGroupHint": "Everything their role allows in {app}.",
+  "team.access.noGroupShort": "No group",
   "team.access.onlyHere": "These groups are for {app} at {business} only. Other apps have their own, on their own Team page.",
   "team.access.ownerKeeps": "Deleting or cancelling a bill always stays with the owner and admins.",
   "team.access.part.expenses": "Expenses",

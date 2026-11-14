@@ -23,10 +23,13 @@ def test_template_payload_and_secret_header(settings, monkeypatch):
     assert calls[0].get_header("Authorization") == "Bearer test-key"
     assert body["template"]["components"][0]["parameters"][0]["text"] == "123456"
     assert "test-key" not in calls[0].full_url
-    for mobile, code in [("+14155552671", "123456"), ("+919794620535", "1234"), ("+919794620535,+919794620536", "123456")]:
+    # Owner, 14 Nov 2026: any country's mobile (WhatsApp reaches them all).
+    assert meta_whatsapp.send_otp("+14155552671", "123456") == "wamid.test"
+    assert json.loads(calls[1].data)["to"] == "14155552671"
+    for mobile, code in [("+919794620535", "1234"), ("+919794620535,+919794620536", "123456"), ("+44123", "123456")]:
         with pytest.raises(meta_whatsapp.MetaWhatsAppError):
             meta_whatsapp.send_otp(mobile, code)
-    assert len(calls) == 1
+    assert len(calls) == 2
 
 @pytest.mark.django_db
 def test_meta_code_is_local_hashed_and_single_use(auth_client, settings, monkeypatch):

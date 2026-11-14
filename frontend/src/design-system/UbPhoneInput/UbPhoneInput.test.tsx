@@ -485,30 +485,3 @@ describe('UbPhoneInput country picker', () => {
     expect(trigger()).toBeDisabled();
   });
 });
-
-describe('UbPhoneInput with lockCountry (sign-in)', () => {
-  // Sign-in codes are sent to India only (countryCode=91): a picker there would offer 242
-  // countries that cannot receive a code.
-  it('shows +91 with no picker and still reports E.164', async () => {
-    const user = userEvent.setup();
-    const onChange = jest.fn();
-    render(<UbPhoneInput value="" onChange={onChange} lockCountry aria-label="Mobile" />);
-    expect(screen.queryByRole('combobox', { name: 'Country code' })).not.toBeInTheDocument();
-    expect(screen.getByText('+91')).toBeInTheDocument();
-    await user.type(screen.getByLabelText('Mobile'), '9');
-    expect(onChange).toHaveBeenLastCalledWith('+919');
-  });
-
-  it('does not switch country on a pasted foreign number', async () => {
-    const user = userEvent.setup();
-    render(<Controlled />);
-    // (the unlocked control switches; covered above)
-    expect(screen.getByRole('combobox', { name: 'Country code' })).toHaveTextContent('+91');
-    const onChange = jest.fn();
-    render(<UbPhoneInput value="" onChange={onChange} lockCountry aria-label="Locked" />);
-    await user.click(screen.getByLabelText('Locked'));
-    await user.paste('+44 7911 123456');
-    expect(screen.getAllByText('+91').length).toBeGreaterThan(0);
-    expect(onChange).not.toHaveBeenCalledWith('+447911123456');
-  });
-});

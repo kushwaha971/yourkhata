@@ -34,7 +34,7 @@ package, say so instead of adding one.
 
 **Identity is a mobile number and an OTP (DEC-013; owner, 14 Nov 2026).**
 `/login` is the only flow for everybody, new or returning — an Indian mobile,
-then a **six-digit code sent on WhatsApp** (`UB_OTP_PROVIDER=meta_whatsapp`,
+then a **six-digit code sent on WhatsApp** (any country's number, India first) (`UB_OTP_PROVIDER=meta_whatsapp`,
 `services/meta_whatsapp.py`, the `META_WHATSAPP_*` values from the
 environment); a new number becomes an account on its first code, so no screen
 says "sign up" or "create account" (`/signup` forwards to `/login`). The

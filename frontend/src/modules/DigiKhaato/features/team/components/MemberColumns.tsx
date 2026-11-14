@@ -119,7 +119,8 @@ export const createMemberColumns = ({
               ? ''
               : !access.canUse
                 ? t('team.access.cannotUse', { app: appLabel })
-                : (access.groupName ?? t('team.access.noGroup'));
+                : // Short in the list: the long wording is cut on a phone card.
+                  (access.groupName ?? t('team.access.noGroupShort'));
             return (
               <MemberRoleCell
                 label={label}

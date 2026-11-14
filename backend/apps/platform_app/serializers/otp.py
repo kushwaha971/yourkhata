@@ -22,15 +22,9 @@ class OtpRequestSerializer(serializers.Serializer):
     device_hint = serializers.CharField(max_length=120, required=False, allow_blank=True)
     locale = serializers.ChoiceField(choices=["en", "hi"], required=False, default="en")
 
-    def validate_mobile(self, value: str) -> str:
-        """The sign-in OTP is sent to Indian numbers only (`countryCode=91`).
-
-        `MobileField` accepts any country since the country picker landed; a
-        foreign number here would be a code nobody receives, so it is refused
-        with a message rather than "sent" to nowhere."""
-        if not value.startswith("+91"):
-            raise serializers.ValidationError("Sign in with an Indian mobile number.")
-        return value
+    # Owner, 14 Nov 2026: any country's mobile, India by default. `MobileField`
+    # has normalised and validated it; the code goes by WhatsApp, which reaches
+    # every country (the Indian-only SMS providers were removed the same day).
 
 
 class OtpVerifySerializer(serializers.Serializer):

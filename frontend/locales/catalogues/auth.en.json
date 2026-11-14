@@ -24,7 +24,7 @@
   "auth.otp.newHere": "By continuing you agree to the",
   "auth.otp.oneHeading": "Enter your mobile number",
   "auth.otp.privacy": "Privacy Policy",
-  "auth.otp.prompt": "Enter your mobile number. We'll text you a code.",
+  "auth.otp.prompt": "Enter your mobile number. You'll get a 6-digit code.",
   "auth.otp.resend": "Resend code",
   "auth.otp.resendIn": "Resend code in {time}",
   "auth.otp.send": "Send code",

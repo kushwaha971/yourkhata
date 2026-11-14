@@ -131,13 +131,17 @@ def test_adding_somebody_already_on_the_team_is_a_field_error_on_mobile(
 
 
 @pytest.mark.django_db
-def test_a_member_by_mobile_needs_an_indian_number(api_as: Any, tenant: Any) -> None:
-    """The sign-in OTP is sent to Indian numbers only."""
+def test_a_member_by_mobile_needs_a_number_of_any_country(api_as: Any, tenant: Any) -> None:
+    """Owner, 14 Nov 2026: any country, India by default — a member abroad signs
+    in with a WhatsApp code like anyone else. A number is still required."""
     client, _ = api_as(tenant)
     missing = _create(client, email="", mobile="")
     assert missing.status_code == 400 and "mobile" in missing.json()["error"]["details"]
     foreign = _create(client, email="", mobile="+447911123456")
-    assert foreign.status_code == 400 and "mobile" in foreign.json()["error"]["details"]
+    assert foreign.status_code == 201, foreign.content
+    from apps.platform_app.models import User
+
+    assert User.objects.filter(mobile="+447911123456").exists()
 
 
 @pytest.mark.django_db

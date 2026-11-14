@@ -597,16 +597,17 @@ def test_the_audit_trail_hashes_the_mobile_and_carries_no_tenant(auth_client: An
     assert "9876543225" not in str(row.metadata)
 
 
-def test_sign_in_refuses_a_foreign_mobile_with_a_message(auth_client: Any) -> None:
-    """The sign-in OTP is sent to Indian numbers only. Since the country picker,
-    `MobileField` accepts any country; a UK number here would be a code nobody
-    receives, behind a screen saying "code sent"."""
+def test_sign_in_takes_any_countrys_mobile(auth_client: Any) -> None:
+    """Owner, 14 Nov 2026: every mobile field takes any country, India by
+    default. The code goes by WhatsApp, which reaches a UK number as well as an
+    Indian one, so sign-in no longer refuses it."""
     from apps.platform_app.models import OtpChallenge
 
     response = auth_client.post(reverse(REQUEST_URL), {"mobile": "+447911123456"}, format="json")
-    assert response.status_code == 400
-    assert "mobile" in response.json()["error"]["details"]
-    assert OtpChallenge.objects.count() == 0
+    assert response.status_code == 200, response.content
+    assert OtpChallenge.objects.filter(mobile="+447911123456").count() == 1
+    bad = auth_client.post(reverse(REQUEST_URL), {"mobile": "+44123"}, format="json")
+    assert bad.status_code == 400 and "mobile" in bad.json()["error"]["details"]
 
 
 class _RefusingSms:
