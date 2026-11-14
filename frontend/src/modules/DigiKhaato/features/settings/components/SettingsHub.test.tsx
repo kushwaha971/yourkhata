@@ -51,7 +51,7 @@ describe('Settings hub — Business days', () => {
   it('is absent when no enabled feature reads the calendar', async () => {
     service.fetchSettings.mockResolvedValue(settings([]));
     renderWithProviders(<SettingsPageContent />);
-    expect(await screen.findByText('Your business')).toBeInTheDocument();
+    expect(await screen.findByText('Business details')).toBeInTheDocument();
     // Wait for the settings to have LOADED, or the absence below proves nothing.
     expect(await screen.findByText(/Turn off what your business does not use/)).toBeInTheDocument();
     expect(screen.queryByText('Business days')).toBeNull();

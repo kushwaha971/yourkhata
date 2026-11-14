@@ -136,6 +136,8 @@ export const ROUTES = {
   // PLT-08's `/activity` and PLT-09's `/profile/devices`: one guarded prefix,
   // one place a merchant goes to look after the business itself.
   SETTINGS_PROFILE: '/settings/profile',
+  /** Design S2 — the signed-in person's own profile, every role. */
+  SETTINGS_ME: '/settings/me',
   SETTINGS_BRANDING: '/settings/branding',
   SETTINGS_ACTIVITY: '/settings/activity',
   SETTINGS_DEVICES: '/settings/devices',

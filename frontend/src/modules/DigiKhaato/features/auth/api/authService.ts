@@ -501,6 +501,19 @@ export const leaveApp = async (app: string): Promise<SessionPayload> => {
 };
 export const leaveAppWriteClass: TWriteClass = 'online-only';
 
+/** PATCH /auth/me — the signed-in person's own name and language (design S2). */
+export const saveMyProfile = async (input: {
+  readonly fullName?: string;
+  readonly locale?: string;
+}): Promise<SessionPayload> => {
+  await api.patch(API_PATHS.AUTH_ME, {
+    ...(input.fullName !== undefined ? { full_name: input.fullName } : {}),
+    ...(input.locale !== undefined ? { locale: input.locale } : {}),
+  });
+  return getSession();
+};
+export const saveMyProfileWriteClass: TWriteClass = 'online-only';
+
 /** POST /auth/logout — the teardown order is the caller's (§19.7.4). */
 export const logout = async (): Promise<void> => {
   await api.post(API_PATHS.AUTH_LOGOUT);

@@ -241,6 +241,19 @@ class MeView(APIView):
             )
         return StandardResponse.ok(session_payload.build(user=request.user, membership=membership))
 
+    def patch(self, request: Any) -> Any:
+        """Your profile — the person's own name and language, for every role."""
+        from apps.platform_app.serializers.auth import MyProfileSerializer
+
+        serializer = MyProfileSerializer(data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        fields = [key for key in ("full_name", "locale") if key in serializer.validated_data]
+        for key in fields:
+            setattr(request.user, key, serializer.validated_data[key])
+        if fields:
+            request.user.save(update_fields=[*fields, "updated_at"])
+        return self.get(request)
+
 
 class SwitchAppView(APIView):
     """`POST /auth/switch-app {app}` — the app switcher (docs/platform/14 §4.2).

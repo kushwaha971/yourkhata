@@ -76,6 +76,19 @@ export const switchApp = createAsyncThunk<
   }
 });
 
+/** MUTATION. Design S2 — the person's own name and language, any role. */
+export const saveMyProfile = createAsyncThunk<
+  SessionPayload,
+  { readonly fullName?: string; readonly locale?: string },
+  { rejectValue: ApiErrorShape }
+>('session/saveMyProfile', async (input, { rejectWithValue }) => {
+  try {
+    return await authService.saveMyProfile(input);
+  } catch (error) {
+    return rejectWithValue(toApiError(error, 'common.error.generic'));
+  }
+});
+
 /** MUTATION. docs/platform/14 §6 — the owner adds an app or turns one off. */
 export const setAppRunning = createAsyncThunk<
   SessionPayload,

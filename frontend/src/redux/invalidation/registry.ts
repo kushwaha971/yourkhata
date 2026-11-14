@@ -185,6 +185,8 @@ export const MUTATIONS = {
   switchTenant: 'session/switchTenant',
   // docs/platform/14 §4.2 — open another app of the same business
   switchApp: 'session/switchApp',
+  // Design settings-and-profile S2 — the person's own name and language
+  saveMyProfile: 'session/saveMyProfile',
   // docs/platform/14 §6 — add / turn off an app (owner), leave an app (member)
   setAppRunning: 'session/setAppRunning',
   leaveApp: 'session/leaveApp',

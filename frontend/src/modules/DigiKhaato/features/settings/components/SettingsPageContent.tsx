@@ -2,22 +2,10 @@
 
 import { useCallback, useMemo } from 'react';
 
-import {
-  Building2,
-  CalendarDays,
-  ChevronRight,
-  CreditCard,
-  DatabaseBackup,
-  History,
-  MessageSquare,
-  MonitorSmartphone,
-  Palette,
-  Store,
-  Users,
-  type LucideIcon,
-} from 'lucide-react';
+import { ChevronRight } from 'lucide-react';
 
 import {
+  UbAvatar,
   UbBox,
   UbButton,
   UbConfirmDialog,
@@ -26,28 +14,23 @@ import {
   UbPageHeader,
   UbPageShell,
   UbPanel,
-  UbPanelSection,
   UbSkeleton,
   UbStack,
+  UbStatusBadge,
   UbText,
 } from 'src/design-system';
 import { useAppSelector } from 'src/hooks/useAppStore';
 import { useTranslation } from 'src/hooks/useTranslation';
-import { selectActiveTenant } from 'src/redux/slice/sessionSlice';
+import { selectActiveRole, selectActiveTenant, selectSessionUser } from 'src/redux/slice/sessionSlice';
 import { ROUTES } from 'src/routes';
+import { formatPhoneForDisplay } from 'src/utils/share';
 
 import { useSettingsAccess } from '../hooks/useSettingsAccess';
 import { useTenantSettings } from '../hooks/useTenantSettings';
+import { settingsGroups } from '../settingsLinks';
 
 import { LedgerSettingsSection } from './LedgerSettingsSection';
 import { ModuleToggleList } from './ModuleToggleList';
-
-interface HubLink {
-  readonly key: string;
-  readonly href: string;
-  readonly icon: LucideIcon;
-  readonly show: boolean;
-}
 
 /**
  * PLT-06 — Settings. The page is two things: the doors to the business's own
@@ -74,41 +57,19 @@ export function SettingsPageContent(): React.JSX.Element {
   const hasOwnMessages = Boolean(
     useAppSelector(selectActiveTenant)?.features?.includes('jewellery')
   );
-  const links = useMemo<readonly HubLink[]>(
-    () => [
-      { key: 'profile', href: ROUTES.SETTINGS_PROFILE, icon: Building2, show: access.canView },
-      { key: 'branding', href: ROUTES.SETTINGS_BRANDING, icon: Palette, show: access.canView },
-      { key: 'team', href: ROUTES.SETTINGS_TEAM, icon: Users, show: access.canManageTeam },
-      { key: 'plan', href: ROUTES.SETTINGS_PLAN, icon: CreditCard, show: access.canView },
-      { key: 'activity', href: ROUTES.SETTINGS_ACTIVITY, icon: History, show: access.canReadAudit },
-      { key: 'devices', href: ROUTES.SETTINGS_DEVICES, icon: MonitorSmartphone, show: true },
-      // B3 — the Shop's own features, for a business that runs the Shop.
-      {
-        key: 'shopFeatures',
-        href: ROUTES.SETTINGS_SHOP_FEATURES,
-        icon: Store,
-        show: access.canView && runsShop,
-      },
-      // D15 — only a kind whose features add messages of their own.
-      {
-        key: 'messages',
-        href: ROUTES.SETTINGS_MESSAGES,
-        icon: MessageSquare,
-        show: access.canView && hasOwnMessages,
-      },
-      { key: 'data', href: ROUTES.SETTINGS_DATA, icon: DatabaseBackup, show: access.isOwner },
-      // A9b (PLT-X08 §7) — only while an enabled feature reads the calendar:
-      // business days for a shop with nothing that counts days would be a
-      // setting whose effect nobody can see.
-      {
-        key: 'businessDays',
-        href: ROUTES.SETTINGS_BUSINESS_DAYS,
-        icon: CalendarDays,
-        show: access.canView && (calendarReaders?.length ?? 0) > 0,
-      },
-    ],
+  const groups = useMemo(
+    () =>
+      settingsGroups(access, {
+        runsShop,
+        hasOwnMessages,
+        readsCalendar: (calendarReaders?.length ?? 0) > 0,
+      }),
     [access, calendarReaders, hasOwnMessages, runsShop]
   );
+  const user = useAppSelector(selectSessionUser);
+  const role = useAppSelector(selectActiveRole);
+  const tenantName = useAppSelector(selectActiveTenant)?.name ?? '';
+  const isStaff = !access.canView;
 
   const handleConflictOpenChange = useCallback(
     (next: boolean) => {
@@ -121,7 +82,7 @@ export function SettingsPageContent(): React.JSX.Element {
     [settings]
   );
 
-  const header = <UbPageHeader title={t('settings.title')} subtitle={t('settings.subtitle')} />;
+  const header = <UbPageHeader title={t('settings.title')} />;
 
   let sections: React.ReactNode = null;
   if (!access.canView) {
@@ -161,40 +122,72 @@ export function SettingsPageContent(): React.JSX.Element {
   return (
     <UbPageShell header={header} width="measure">
       <UbStack gap={4}>
-        <UbPanel as="section">
-          <UbPanelSection title={t('settings.hub.title')}>
-            <UbStack as="ul" gap={0}>
-              {links
-                .filter((link) => link.show)
-                .map((link) => (
-                  <UbBox
-                    as="li"
-                    key={link.key}
-                    className="border-b border-border-subtle last:border-0"
-                  >
-                    <UbLink
-                      href={link.href}
-                      variant="inherit"
-                      tone="primary"
-                      underline={false}
-                      className="flex min-h-14 items-center gap-3 py-2"
-                    >
-                      <link.icon aria-hidden className="h-5 w-5 shrink-0 text-text-secondary" />
-                      <UbStack gap={0.5} className="min-w-0 flex-1">
-                        <UbText as="span" variant="body-medium">
-                          {t(`settings.hub.${link.key}`)}
-                        </UbText>
-                        <UbText as="span" variant="caption" tone="tertiary">
-                          {t(`settings.hub.${link.key}.description`)}
-                        </UbText>
-                      </UbStack>
-                      <ChevronRight aria-hidden className="h-4 w-4 shrink-0 text-text-tertiary" />
-                    </UbLink>
-                  </UbBox>
-                ))}
+        {/* Design S1 — the card at the top opens Your profile. */}
+        <UbLink
+          href={ROUTES.SETTINGS_ME}
+          variant="inherit"
+          underline={false}
+          className="flex min-h-16 items-center gap-3 rounded-lg border border-border-hairline bg-surface-card px-4 py-3"
+        >
+          <UbAvatar name={user?.name ?? ''} size="md" />
+          <UbStack gap={0.5} className="min-w-0 flex-1">
+            <UbText as="span" variant="body-medium" className="break-words">
+              {user?.name}
+            </UbText>
+            <UbText as="span" variant="caption" tone="tertiary" className="break-words">
+              {[user?.mobile ? formatPhoneForDisplay(user.mobile) : null, role ? t(`tenant.role.${role}`) : null, tenantName].filter(Boolean).join(' · ')}
+            </UbText>
+          </UbStack>
+          <UbText as="span" variant="body-medium" tone="primary" className="shrink-0">
+            {t('settings.hub.me')}
+          </UbText>
+          <ChevronRight aria-hidden className="h-4 w-4 shrink-0 text-text-tertiary" />
+        </UbLink>
+        {groups
+          .filter((group) => group.key !== 'you')
+          .map((group) => (
+            <UbStack as="section" gap={2} key={group.key} aria-label={t(`settings.group.${group.key}`)}>
+              <UbText as="h2" variant="label-caps" tone="secondary" className="px-1">
+                {t(`settings.group.${group.key}`)}
+              </UbText>
+              <UbPanel>
+                <UbStack as="ul" gap={0}>
+                  {group.links.map((link) => (
+                    <UbBox as="li" key={link.key} className="border-b border-border-subtle last:border-0">
+                      <UbLink
+                        href={link.href}
+                        variant="inherit"
+                        tone="primary"
+                        underline={false}
+                        className="flex min-h-14 items-center gap-3 px-4 py-2"
+                      >
+                        <link.icon aria-hidden className="h-5 w-5 shrink-0 text-text-secondary" />
+                        <UbStack gap={0.5} className="min-w-0 flex-1">
+                          <UbText as="span" variant="body-medium">
+                            {t(`settings.hub.${link.key}`)}
+                          </UbText>
+                          <UbText as="span" variant="caption" tone="tertiary">
+                            {t(`settings.hub.${link.key}.description`)}
+                          </UbText>
+                        </UbStack>
+                        {link.viewOnly ? (
+                          <UbStatusBadge label={t('settings.hub.viewOnly')} tone="neutral" />
+                        ) : null}
+                        <ChevronRight aria-hidden className="h-4 w-4 shrink-0 text-text-tertiary" />
+                      </UbLink>
+                    </UbBox>
+                  ))}
+                </UbStack>
+              </UbPanel>
             </UbStack>
-          </UbPanelSection>
-        </UbPanel>
+          ))}
+        {isStaff ? (
+          <UbPanel className="bg-surface-sunken p-4">
+            <UbText variant="body" tone="secondary">
+              {t('settings.hub.staffNote')}
+            </UbText>
+          </UbPanel>
+        ) : null}
         {sections}
       </UbStack>
 

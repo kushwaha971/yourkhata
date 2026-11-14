@@ -1,5 +1,6 @@
 {
   "//": [
+    "14 Nov 2026, Settings and your profile (owner-approved design docs/revamp/design/settings-and-profile.html): the session slice gained saveMyProfile, which every route that ships the store pays for (+0.4 KB first load); the Settings list gained its groups, the profile card and View only; the sales screens read the business's words. New route /settings/me (Your profile: a name form with React Hook Form and Yup, the person's language, look, businesses and devices) measured 133.6, near /settings/profile's 151.7. Raised to measured + 0.3.",
     "14 Nov 2026, Settings round (owner: test Settings for every user): Messages, Business features, Plan and Business days now sit behind SettingsGate, so staff are told the setting is not available instead of a blank page or endless loading; the gate and its words moved those routes up to 0.9 KB. Plan also gained its plain plan and row names. Raised to measured + 0.3.",
     "14 Nov 2026, Access groups (owner-approved design docs/revamp/design/access-groups.html): /settings/team gained the Members | Access groups tabs, the app-and-business label, the per-app group column and their words (the new teamAccess catalogue); the groups list, the group form and the member access sheet are dynamic(). Route 100.8 / first load 343.3 measured; raised to measured + 0.3. /set-password and /accept-invite are back inside budget once the access words left the team catalogue.",
     "14 Nov 2026, Team: hide parts of an app per member. The dialog is dynamic(); the member slice's new target ships with the shared store and moved /parties/[id]/statement first load to 328.0 against 328. Raised to measured + 0.3.",
@@ -1505,19 +1506,19 @@
       "firstLoad": 336.9
     },
     "/sales/challans/[id]": {
-      "route": 100.4,
+      "route": 100.8,
       "firstLoad": 343.6
     },
     "/sales/challans": {
-      "route": 105.9,
+      "route": 106.2,
       "firstLoad": 349.1
     },
     "/sales/challans/new": {
-      "route": 204.4,
+      "route": 204.8,
       "firstLoad": 447.6
     },
     "/sales/challans/[id]/edit": {
-      "route": 204.4,
+      "route": 204.8,
       "firstLoad": 447.7
     },
     "/purchases/orders/[id]": {
@@ -1537,19 +1538,19 @@
       "firstLoad": 428.1
     },
     "/sales/orders/[id]": {
-      "route": 100.4,
+      "route": 100.7,
       "firstLoad": 343.6
     },
     "/sales/orders": {
-      "route": 105.8,
+      "route": 106.2,
       "firstLoad": 349.1
     },
     "/sales/orders/new": {
-      "route": 204.4,
+      "route": 204.8,
       "firstLoad": 447.6
     },
     "/sales/orders/[id]/edit": {
-      "route": 204.4,
+      "route": 204.8,
       "firstLoad": 447.7
     },
     "/parties": {
@@ -1561,39 +1562,39 @@
       "firstLoad": 348.0
     },
     "/sales/invoices/new": {
-      "route": 204.4,
+      "route": 204.8,
       "firstLoad": 447.6
     },
     "/sales/invoices/[id]/edit": {
-      "route": 204.4,
+      "route": 204.8,
       "firstLoad": 447.6
     },
     "/sales/invoices": {
-      "route": 105.6,
+      "route": 105.9,
       "firstLoad": 348.8
     },
     "/sales/invoices/[id]": {
-      "route": 100.4,
+      "route": 100.7,
       "firstLoad": 343.6
     },
     "/sales/estimates": {
-      "route": 105.8,
+      "route": 106.2,
       "firstLoad": 349.1
     },
     "/sales/estimates/new": {
-      "route": 204.4,
+      "route": 204.8,
       "firstLoad": 447.6
     },
     "/sales/estimates/[id]/edit": {
-      "route": 204.4,
+      "route": 204.8,
       "firstLoad": 447.7
     },
     "/sales/estimates/[id]": {
-      "route": 100.4,
+      "route": 100.7,
       "firstLoad": 343.6
     },
     "/sales/credit-notes": {
-      "route": 105.8,
+      "route": 106.2,
       "firstLoad": 349.1
     },
     "/sales/credit-notes/new": {
@@ -1601,7 +1602,7 @@
       "firstLoad": 409.1
     },
     "/sales/credit-notes/[id]": {
-      "route": 100.4,
+      "route": 100.7,
       "firstLoad": 343.6
     },
     "/onboarding/step/[n]": {
@@ -1613,8 +1614,8 @@
       "firstLoad": 358.4
     },
     "/settings/team": {
-      "route": 101.1,
-      "firstLoad": 343.6
+      "route": 101.3,
+      "firstLoad": 344.1
     },
     "/parties/[id]": {
       "route": 123.0,
@@ -1641,8 +1642,8 @@
       "firstLoad": 303.9
     },
     "/settings": {
-      "route": 115.4,
-      "firstLoad": 358.6
+      "route": 116.5,
+      "firstLoad": 359.3
     },
     "/settings/profile": {
       "route": 151.9,
@@ -1657,8 +1658,8 @@
       "firstLoad": 335
     },
     "/settings/shop-features": {
-      "route": 73.9,
-      "firstLoad": 316.8
+      "route": 74.5,
+      "firstLoad": 317.3
     },
     "/settings/devices": {
       "route": 66.8,
@@ -1973,7 +1974,7 @@
       "firstLoad": 314.2
     },
     "/stock/expiry": {
-      "route": 82.2,
+      "route": 82.5,
       "firstLoad": 325.5
     },
     "/stock/rates": {
@@ -1993,8 +1994,8 @@
       "firstLoad": 300.4
     },
     "/settings/messages": {
-      "route": 87.3,
-      "firstLoad": 329.8
+      "route": 87.9,
+      "firstLoad": 330.7
     },
     "/sales/exchange": {
       "route": 120.4,
@@ -2091,6 +2092,10 @@
     "/lending/settings": {
       "route": 67.7,
       "firstLoad": 310.9
+    },
+    "/settings/me": {
+      "route": 133.9,
+      "firstLoad": 376.7
     }
   },
   "//ignoreRoutes": [

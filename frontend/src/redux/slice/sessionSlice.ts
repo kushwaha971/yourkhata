@@ -23,6 +23,7 @@ import {
   leaveApp,
   logout,
   setAppRunning,
+  saveMyProfile,
   switchApp,
   switchTenant,
 } from 'modules/DigiKhaato/features/auth/redux/sessionThunk';
@@ -345,6 +346,12 @@ const sessionSlice = createSlice({
         });
       })
       .addCase(leaveApp.fulfilled, (state, action) => {
+        sessionSlice.caseReducers.sessionLoaded(state, {
+          type: 'session/sessionLoaded',
+          payload: action.payload,
+        });
+      })
+      .addCase(saveMyProfile.fulfilled, (state, action) => {
         sessionSlice.caseReducers.sessionLoaded(state, {
           type: 'session/sessionLoaded',
           payload: action.payload,

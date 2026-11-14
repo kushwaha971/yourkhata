@@ -99,6 +99,15 @@ EXPECTED: dict[tuple[str, str], dict[str, int]] = {
         "anon": 401,
         "other_tenant": 200,
     },
+    # Design settings-and-profile S2 — the person's own name and language.
+    ("PATCH", "v1:auth-me"): {
+        "owner": 200,
+        "admin": 200,
+        "staff": 200,
+        "accountant": 200,
+        "anon": 401,
+        "other_tenant": 200,
+    },
     ("POST", "v1:auth-logout"): {
         "owner": 200,
         "admin": 200,

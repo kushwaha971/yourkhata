@@ -27,7 +27,7 @@ const check = (ok, label) => {
   else fail += 1;
   if (!ok || !EXPLORE) console.log(`${ok ? 'ok  ' : 'FAIL'} ${label}`);
 };
-const PAGES = ['/settings', '/settings/profile', '/settings/branding', '/settings/team', '/settings/plan', '/settings/activity', '/settings/devices', '/settings/shop-features', '/settings/messages', '/settings/data', '/settings/business-days'];
+const PAGES = ['/settings', '/settings/me', '/settings/profile', '/settings/branding', '/settings/team', '/settings/plan', '/settings/activity', '/settings/devices', '/settings/shop-features', '/settings/messages', '/settings/data', '/settings/business-days'];
 const ROLES = [
   { role: 'owner' },
   { role: 'admin', mobile: '9700011101' },
@@ -103,21 +103,46 @@ for (const { role, mobile } of ROLES) {
       check(wide <= 0, `${tag} ${path}: nothing runs off the screen (${wide}px)`);
       check(cut.length === 0, `${tag} ${path}: no words cut (${cut.join(' | ')})`);
       // The role rules (Settings round, 14 Nov 2026).
-      const open = path === '/settings' || path === '/settings/devices';
+      // Your profile and Devices are the person's own (design S11): every role uses them.
+      const open = path === '/settings' || path === '/settings/devices' || path === '/settings/me';
       if (role === 'staff' && !open) check(told, `${tag} ${path}: staff are told this setting is not for them`);
-      if (role === 'accountant') {
+      if (role === 'accountant' && !open) {
         if (path === '/settings/team' || path === '/settings/data') check(told, `${tag} ${path}: the accountant is told it is not for them`);
         else check(writeButtons.length === 0 && enabledInputs <= (path === '/settings/activity' ? 1 : 0), `${tag} ${path}: read only — nothing to change (${writeButtons.join('|')} inputs ${enabledInputs})`);
       }
       if (!told) check(seen.refused.length === 0, `${tag} ${path}: no refused request (${[...new Set(seen.refused)].join(', ')})`);
       if (hub) {
         const has = (k) => hub.includes(`/settings/${k}`);
-        if (role === 'owner') check(has('profile') && has('team') && has('data'), `${tag}: the owner's hub has Profile, Team and Your data`);
+        // Design settings-and-profile S1 (owner-approved 14 Nov 2026).
+        check(has('me'), `${tag}: the hub opens Your profile`);
+        if (role === 'owner') check(has('profile') && has('team') && has('data'), `${tag}: the owner's hub has Business details, Team and Your data`);
         if (role === 'admin') check(has('team') && !has('data'), `${tag}: the admin's hub has Team, not Your data`);
-        if (role === 'staff') check(hub.length === 1 && has('devices'), `${tag}: the staff hub has only Devices (${hub.join(',')})`);
-        if (role === 'accountant') check(!has('team') && !has('data') && has('profile'), `${tag}: the accountant's hub reads Profile, no Team or Your data`);
+        if (role === 'staff') check(hub.length === 2 && has('devices'), `${tag}: the staff hub has only Your profile and Devices (${hub.join(',')})`);
+        if (role === 'accountant') check(has('team') && !has('data') && has('profile'), `${tag}: the accountant's hub reads Business details and Team, no Your data`);
+        const viewOnly = await page.getByText('View only', { exact: true }).count();
+        check(role === 'accountant' ? viewOnly > 0 : viewOnly === 0, `${tag}: "View only" only on the accountant's business rows (${viewOnly})`);
       }
       if (EXPLORE || seen.refused.length || broke || wide > 0) await page.screenshot({ path: `${SHOTS}/${role}-${width}${path.replace(/\//g, '_')}.png`, fullPage: true });
+    }
+    // Every role changes their OWN name on Your profile; read back, then put back.
+    {
+      const before = me?.user?.full_name ?? '';
+      const next = `${role} ${width} check`;
+      await page.goto(`${base}/settings/me`, { waitUntil: 'networkidle' });
+      const name = page.locator('input[name=fullName]').first();
+      await name.fill(next);
+      await page.getByRole('button', { name: 'Save' }).first().click();
+      await page.getByText(/Your profile is saved/).first().waitFor({ timeout: 8000 }).catch(() => {});
+      const after = (await (await ctx.request.get(`${base}/api/v1/auth/me`)).json()).data?.user?.full_name;
+      check(after === next, `${tag}: own name saved on Your profile and read back (${after})`);
+      check(after !== `${next}x`, `${tag}: self-test, a skewed name would not match`);
+      await ctx.request.patch(`${base}/api/v1/auth/me`, { headers: { 'X-CSRF-Token': (await ctx.cookies()).find((c) => c.name === 'ub_csrf')?.value ?? '' }, data: { full_name: before } });
+      if (EXPLORE || role === 'owner' || role === 'staff') {
+        await page.goto(`${base}/settings/me`, { waitUntil: 'networkidle' });
+        await page.screenshot({ path: `${SHOTS}/${role}-${width}_me.png`, fullPage: true });
+        await page.goto(`${base}/settings`, { waitUntil: 'networkidle' });
+        await page.screenshot({ path: `${SHOTS}/${role}-${width}_hub.png`, fullPage: true });
+      }
     }
     // Owner and admin change the business email on screen; read back, then put back.
     if (role === 'owner' || role === 'admin') {
