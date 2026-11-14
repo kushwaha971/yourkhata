@@ -71,6 +71,10 @@ export const INVALIDATION: TInvalidationMap = {
   // someone else; the session slice re-reads the whole body from the answer.
   setAppRunning: { patch: [['session', 'apps']] },
   leaveApp: { patch: [['session', 'apps']] },
+  // Design S2 — the person's own name, language and mobile; the session is re-read.
+  saveMyProfile: { patch: [['session', 'user']] },
+  // fetchSession is dispatched by the thunk itself once the number has moved.
+  confirmMobileChange: { refetch: ['session'] },
   logout: { resetAll: true },
 
   // ── PLT-02 / CR-2026-09-19-A — authentication ─────────────────────────────

@@ -411,3 +411,64 @@ def logout(
         metadata={"all_devices": bool(everywhere), "sessions_revoked": revoked},
     )
     return revoked
+
+
+def start_mobile_change(*, user: Any, mobile: str, ip: str | None = None, request_id: str | None = None) -> Any:
+    """Your profile › Change mobile, step 1: send a code to the NEW number.
+
+    Refused before any code is sent when the number is already this person's,
+    or another account signs in with it — a code would only invite a change
+    that cannot be made.
+    """
+    from apps.common.exceptions import BusinessRuleViolation
+    from apps.platform_app.constants import OtpPurpose
+    from apps.platform_app.models import User
+    from apps.platform_app.services import otp as otp_service
+
+    if user.mobile == mobile:
+        raise BusinessRuleViolation("mobile_unchanged", "This is already your number.")
+    if User.objects.filter(mobile=mobile).exclude(pk=user.pk).exists():
+        raise BusinessRuleViolation("mobile_taken", "Another account signs in with this number.")
+    return otp_service.request_otp(
+        mobile=mobile, purpose=OtpPurpose.VERIFY, ip=ip, locale=user.locale or "en", request_id=request_id
+    )
+
+
+def finish_mobile_change(
+    *, user: Any, challenge_id: Any, code: str, ip: str | None = None, request_id: str | None = None
+) -> Any:
+    """Step 2: the code typed back proves the number; the sign-in moves to it.
+
+    The check that nobody else took the number runs again under a row lock,
+    between the code being sent and typed back somebody may have. A mobile-only
+    account's stand-in email is built from its number, so it follows.
+    """
+    from django.db import transaction
+
+    from apps.common.exceptions import BusinessRuleViolation
+    from apps.platform_app.constants import OtpPurpose
+    from apps.platform_app.models import User
+    from apps.platform_app.services import otp as otp_service
+
+    challenge = otp_service.consume_challenge(
+        challenge_id=challenge_id, code=code, purpose=OtpPurpose.VERIFY, request_id=request_id, ip=ip
+    )
+    with transaction.atomic():
+        row = User.objects.select_for_update().get(pk=user.pk)
+        if User.objects.filter(mobile=challenge.mobile).exclude(pk=row.pk).exists():
+            raise BusinessRuleViolation("mobile_taken", "Another account signs in with this number.")
+        old = row.mobile
+        fields = ["mobile", "updated_at"]
+        if old and row.email == synthetic_email_for(old):
+            row.email = synthetic_email_for(challenge.mobile)
+            fields.append("email")
+        row.mobile = challenge.mobile
+        row.save(update_fields=fields)
+        write_audit(
+            ctx=Ctx(tenant=None, actor=row, actor_type="user", request_id=request_id or ""),
+            action=AuditAction.MOBILE_CHANGED,
+            entity_type="platform_user",
+            entity_id=row.pk,
+            metadata={"mobile_sha256": hashlib.sha256(challenge.mobile.encode()).hexdigest()},
+        )
+    return row

@@ -69,7 +69,9 @@ def test_registry_is_closed_and_complete() -> None:
     #           refund is undone with the return, never alone).
     # Access groups (14 Nov 2026) — +1: `group_has_members` (an access group with
     #           members is not deleted; they are moved first).
-    assert len(REGISTRY) == 257
+    # Your profile › Change mobile (14 Nov 2026) — +2: `mobile_taken` (another
+    #           account signs in with that number) and `mobile_unchanged`.
+    assert len(REGISTRY) == 259
     assert REGISTRY["settlement_balances_changed"] == (409, False)
     assert REGISTRY["promise_already_open"] == (409, False)
     assert REGISTRY["promise_closed"] == (409, False)

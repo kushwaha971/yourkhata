@@ -158,6 +158,9 @@ const LOCALLY_PRESENTED: ReadonlySet<ApiErrorCode> = new Set<ApiErrorCode>([
   // screen — still up on onboarding after the right code went in (otpsignin
   // sweep, 9 Oct 2026).
   'otp_invalid',
+  // Your profile › Change mobile: said under the number field, not as a toast.
+  'mobile_taken',
+  'mobile_unchanged',
 
   // CASE 3 — the login/reset lockout. The screen shows a countdown banner
   // and the submit is disabled until it runs out, which is information a toast

@@ -153,3 +153,16 @@ class MyProfileSerializer(serializers.Serializer):
         if not name:
             raise serializers.ValidationError("Enter your name.")
         return name
+
+
+class MobileChangeSerializer(serializers.Serializer):
+    """`POST /auth/me/mobile` — the new number a code is sent to."""
+
+    mobile = MobileField(max_length=20)
+
+
+class MobileChangeConfirmSerializer(serializers.Serializer):
+    """`POST /auth/me/mobile/confirm` — the code typed back."""
+
+    challenge_id = serializers.CharField(max_length=64)
+    code = serializers.CharField(max_length=12)

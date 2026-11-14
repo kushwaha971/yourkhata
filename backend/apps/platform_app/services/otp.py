@@ -200,6 +200,8 @@ def request_otp(
     if _provider() == PROVIDER_META and purpose not in (
         OtpPurpose.LOGIN,
         OtpPurpose.SIGNUP,
+        # Your profile › Change mobile: the code goes to the NEW number.
+        OtpPurpose.VERIFY,
     ):
         raise OtpNotSent("SMS OTP is available only for sign-in and sign-up.")
     _assert_not_throttled(mobile=mobile, ip=ip)

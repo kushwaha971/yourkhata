@@ -30,6 +30,9 @@ export const API_PATHS = {
   AUTH_REFRESH: '/auth/refresh',
   AUTH_LOGOUT: '/auth/logout',
   AUTH_ME: '/auth/me',
+  /** Your profile › Change mobile: a code to the new number, then its confirmation. */
+  AUTH_ME_MOBILE: '/auth/me/mobile',
+  AUTH_ME_MOBILE_CONFIRM: '/auth/me/mobile/confirm',
   AUTH_SWITCH_TENANT: '/auth/switch-tenant',
   AUTH_SWITCH_APP: '/auth/switch-app',
   AUTH_LEAVE_APP: '/auth/leave-app',

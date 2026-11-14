@@ -33,6 +33,9 @@ _REGISTRY: dict[str, tuple[int, bool]] = {
     # B — authentication, session, tenant context
     "invalid_credentials": (401, False),
     "otp_invalid": (400, False),
+    # Your profile › Change mobile: another account signs in with that number.
+    "mobile_taken": (409, False),
+    "mobile_unchanged": (400, False),
     "otp_throttled": (429, True),
     "login_throttled": (429, True),
     "invalid_token": (401, False),

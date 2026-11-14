@@ -255,6 +255,56 @@ class MeView(APIView):
         return self.get(request)
 
 
+class MyMobileView(APIView):
+    """`POST /auth/me/mobile` — Your profile › Change mobile: a code to the new number."""
+
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request: Any) -> Any:
+        from apps.platform_app.serializers.auth import MobileChangeSerializer
+        from apps.platform_app.services import auth as auth_service
+
+        serializer = MobileChangeSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        issued = auth_service.start_mobile_change(
+            user=request.user,
+            mobile=serializer.validated_data["mobile"],
+            ip=request.META.get("REMOTE_ADDR"),
+            request_id=getattr(request, "request_id", None),
+        )
+        return StandardResponse.ok(
+            {
+                "challenge_id": str(issued.challenge_id),
+                "expires_in": issued.expires_in,
+                "retry_after": issued.retry_after,
+                "code_length": issued.code_length,
+                "channel": issued.channel,
+            }
+        )
+
+
+class MyMobileConfirmView(APIView):
+    """`POST /auth/me/mobile/confirm` — the code proves the number; the sign-in moves."""
+
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request: Any) -> Any:
+        from apps.platform_app.serializers.auth import MobileChangeConfirmSerializer
+        from apps.platform_app.services import auth as auth_service
+
+        serializer = MobileChangeConfirmSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        auth_service.finish_mobile_change(
+            user=request.user,
+            challenge_id=serializer.validated_data["challenge_id"],
+            code=serializer.validated_data["code"],
+            ip=request.META.get("REMOTE_ADDR"),
+            request_id=getattr(request, "request_id", None),
+        )
+        request.user.refresh_from_db()
+        return MeView().get(request)
+
+
 class SwitchAppView(APIView):
     """`POST /auth/switch-app {app}` — the app switcher (docs/platform/14 §4.2).
 

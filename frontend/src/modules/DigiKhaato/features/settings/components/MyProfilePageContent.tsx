@@ -125,10 +125,13 @@ export function MyProfilePageContent(): React.JSX.Element {
               <UbText as="span" variant="label">
                 {t('settings.me.mobile')}
               </UbText>
-              <UbBox className="flex min-h-11 items-center rounded-md border border-border-hairline bg-surface-sunken px-3">
-                <UbText as="span" variant="body" tone={user?.mobile ? 'primary' : 'tertiary'}>
+              <UbBox className="flex min-h-11 items-center gap-3 rounded-md border border-border-hairline bg-surface-sunken px-3">
+                <UbText as="span" variant="body" tone={user?.mobile ? 'primary' : 'tertiary'} className="flex-1">
                   {user?.mobile ? formatPhoneForDisplay(user.mobile) : t('settings.me.noMobile')}
                 </UbText>
+                <UbLink href={ROUTES.SETTINGS_ME_MOBILE} className="flex min-h-11 items-center">
+                  {t('settings.me.change')}
+                </UbLink>
               </UbBox>
               {user?.mobile ? (
                 <UbText as="span" variant="caption" tone="tertiary">

@@ -32,6 +32,7 @@ class AuditAction:
     PASSWORD_RESET_REQUESTED = "auth.password_reset_requested"
     EMAIL_VERIFY_REQUESTED = "auth.email_verify_requested"
     EMAIL_VERIFIED = "auth.email_verified"
+    MOBILE_CHANGED = "auth.mobile_changed"
     REFRESH_REUSE_DETECTED = "auth.refresh_reuse_detected"
     LOGGED_OUT = "auth.logged_out"
     TENANT_SWITCHED = "auth.tenant_switched"

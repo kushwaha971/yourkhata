@@ -59,6 +59,9 @@ export type ApiErrorCode =
    */
   | 'unauthenticated'
   | 'otp_invalid'
+  // Your profile › Change mobile (design S2)
+  | 'mobile_taken'
+  | 'mobile_unchanged'
   | 'otp_throttled'
   | 'login_throttled'
   | 'group_has_members'

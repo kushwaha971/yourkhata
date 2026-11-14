@@ -108,6 +108,23 @@ EXPECTED: dict[tuple[str, str], dict[str, int]] = {
         "anon": 401,
         "other_tenant": 200,
     },
+    # Your profile › Change mobile — an empty body is refused for anyone signed in.
+    ("POST", "v1:auth-me-mobile"): {
+        "owner": 400,
+        "admin": 400,
+        "staff": 400,
+        "accountant": 400,
+        "anon": 401,
+        "other_tenant": 400,
+    },
+    ("POST", "v1:auth-me-mobile-confirm"): {
+        "owner": 400,
+        "admin": 400,
+        "staff": 400,
+        "accountant": 400,
+        "anon": 401,
+        "other_tenant": 400,
+    },
     ("POST", "v1:auth-logout"): {
         "owner": 200,
         "admin": 200,

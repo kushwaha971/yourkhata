@@ -24,6 +24,9 @@
 export const QUERIES = {
   // session
   fetchSession: 'session/fetchSession',
+  // Design S2 — sends a code to the new number and changes nothing held here;
+  // the confirmation is the mutation.
+  requestMobileChange: 'session/requestMobileChange',
   // PLT-15 — the plan's modules and member count, read from /auth/me
   fetchPlanLimits: 'plan/fetchPlanLimits',
   // parties (the walking skeleton, Part 32 S0-71)
@@ -187,6 +190,7 @@ export const MUTATIONS = {
   switchApp: 'session/switchApp',
   // Design settings-and-profile S2 — the person's own name and language
   saveMyProfile: 'session/saveMyProfile',
+  confirmMobileChange: 'session/confirmMobileChange',
   // docs/platform/14 §6 — add / turn off an app (owner), leave an app (member)
   setAppRunning: 'session/setAppRunning',
   leaveApp: 'session/leaveApp',

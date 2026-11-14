@@ -138,6 +138,7 @@ export const ROUTES = {
   SETTINGS_PROFILE: '/settings/profile',
   /** Design S2 — the signed-in person's own profile, every role. */
   SETTINGS_ME: '/settings/me',
+  SETTINGS_ME_MOBILE: '/settings/me/mobile',
   SETTINGS_BRANDING: '/settings/branding',
   SETTINGS_ACTIVITY: '/settings/activity',
   SETTINGS_DEVICES: '/settings/devices',
