@@ -148,6 +148,25 @@ for (const { role, mobile } of ROLES) {
         await page.screenshot({ path: `${SHOTS}/${role}-${width}_hub.png`, fullPage: true });
       }
     }
+    // Design S4: owner and admin turn the bill's UPI QR off on Bills and print;
+    // read back from the server, then turned on again on screen.
+    if (role === 'owner' || role === 'admin') {
+      const settingsNow = async () => (await (await ctx.request.get(`${base}/api/v1/tenants/current/settings`)).json()).data?.values ?? {};
+      await page.goto(`${base}/settings/branding`, { waitUntil: 'networkidle' });
+      const qr = page.getByRole('switch', { name: /Show the UPI QR/ });
+      const before = (await settingsNow())['documents.show_upi_qr']?.value ?? true;
+      await qr.click();
+      await page.waitForTimeout(1200);
+      const after = (await settingsNow())['documents.show_upi_qr']?.value;
+      check(after === !before, `${tag}: the UPI QR switch saved on the tap and read back (${before} → ${after})`);
+      await qr.click();
+      await page.waitForTimeout(1200);
+      check((await settingsNow())['documents.show_upi_qr']?.value === before, `${tag}: the UPI QR switch turned back`);
+    }
+    if (role === 'accountant') {
+      await page.goto(`${base}/settings/branding`, { waitUntil: 'networkidle' });
+      check(await page.getByRole('switch', { name: /Show the UPI QR/ }).isDisabled(), `${tag}: the accountant cannot change the UPI QR switch`);
+    }
     // Owner and admin change the business email on screen; read back, then put back.
     if (role === 'owner' || role === 'admin') {
       const api = async (path, init = {}) => {

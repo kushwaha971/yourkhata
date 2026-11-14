@@ -2,6 +2,9 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
+import dynamic from 'next/dynamic';
+
+
 import { yupResolver } from '@hookform/resolvers/yup';
 import { Lock } from 'lucide-react';
 import { useForm, useWatch } from 'react-hook-form';
@@ -50,6 +53,13 @@ import type {
   BrandingTextKey,
   LockableKey,
 } from '../types/branding.types';
+
+// Design S4 "On every bill" reads the tenant settings; its hook and slice load
+// with it rather than with the logo form every visit pays for.
+const BillDefaultsPanel = dynamic(
+  () => import('./BillDefaultsPanel').then((m) => m.BillDefaultsPanel),
+  { ssr: false }
+);
 
 const LOGO_MAX_BYTES = 2 * 1024 * 1024;
 
@@ -358,6 +368,7 @@ export function BrandingPageContent(): React.JSX.Element {
           />
         </UbStack>
       </UbGrid>
+      <BillDefaultsPanel />
     </SettingsFrame>
   );
 }

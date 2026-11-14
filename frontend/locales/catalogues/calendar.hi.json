@@ -11,6 +11,8 @@
   "calendar.closures.removeLabel": "{date} का बंद दिन हटाएँ",
   "calendar.closures.removed": "बंद दिन हटाया गया।",
   "calendar.closures.title": "छुट्टियाँ और बंद दिन",
+  "calendar.day.closed": "बंद",
+  "calendar.day.open": "खुला",
   "calendar.dialog.appliesTo": "किस पर लागू",
   "calendar.dialog.appliesTo.all": "पूरा व्यापार",
   "calendar.dialog.body": "एक दिन, या लगातार 31 दिन तक।",
@@ -44,7 +46,14 @@
   "calendar.weekday.4": "शुक्र",
   "calendar.weekday.5": "शनि",
   "calendar.weekday.6": "रवि",
-  "calendar.weekly.body": "जिन दिनों आप बंद रहते हैं, उन पर टैप करें।",
+  "calendar.weekdayLong.0": "सोमवार",
+  "calendar.weekdayLong.1": "मंगलवार",
+  "calendar.weekdayLong.2": "बुधवार",
+  "calendar.weekdayLong.3": "गुरुवार",
+  "calendar.weekdayLong.4": "शुक्रवार",
+  "calendar.weekdayLong.5": "शनिवार",
+  "calendar.weekdayLong.6": "रविवार",
+  "calendar.weekly.body": "जिन दिनों दुकान बंद रहती है, उन्हें बंद करें। देय तारीख और याद दिलाना उन दिनों को छोड़ देते हैं।",
   "calendar.weekly.lastOpen": "कम से कम एक दिन खुला रहना चाहिए।",
-  "calendar.weekly.title": "हर हफ़्ते बंद"
+  "calendar.weekly.title": "खुले दिन"
 }

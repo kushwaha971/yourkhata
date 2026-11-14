@@ -11,6 +11,8 @@
   "calendar.closures.removeLabel": "Remove the closure on {date}",
   "calendar.closures.removed": "Closure removed.",
   "calendar.closures.title": "Holidays and closures",
+  "calendar.day.closed": "Closed",
+  "calendar.day.open": "Open",
   "calendar.dialog.appliesTo": "Applies to",
   "calendar.dialog.appliesTo.all": "The whole business",
   "calendar.dialog.body": "One day, or up to 31 days in a row.",
@@ -44,7 +46,14 @@
   "calendar.weekday.4": "Fri",
   "calendar.weekday.5": "Sat",
   "calendar.weekday.6": "Sun",
-  "calendar.weekly.body": "Tap the days you are closed.",
+  "calendar.weekdayLong.0": "Monday",
+  "calendar.weekdayLong.1": "Tuesday",
+  "calendar.weekdayLong.2": "Wednesday",
+  "calendar.weekdayLong.3": "Thursday",
+  "calendar.weekdayLong.4": "Friday",
+  "calendar.weekdayLong.5": "Saturday",
+  "calendar.weekdayLong.6": "Sunday",
+  "calendar.weekly.body": "Turn off the days you are closed. Due dates and reminders skip them.",
   "calendar.weekly.lastOpen": "At least one day must stay open.",
-  "calendar.weekly.title": "Closed every week"
+  "calendar.weekly.title": "Open days"
 }

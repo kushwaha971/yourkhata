@@ -1,5 +1,6 @@
 {
   "//": [
+    "14 Nov 2026, Settings page bodies (design S4/S5): Business days draws one switch per day; Bills and print gains \"On every bill\" (the terms line and the UPI QR switch, settings the bills already read). The panel is dynamic() and loads the settings words with itself, which kept /settings/branding at 103.4 (it was 112.4 imported statically). The shared app chunk moved 116.2 -> 116.6 in the same build with no change to shell code; the likely cause is chunk splitting once a third route loads the tenant-settings hook lazily, NOT verified. Raised to measured + 0.3.",
     "14 Nov 2026, Settings piece 3: Business details, Bills and print, Business features, Business days, Devices, Activity, Plan and Your data sit in SettingsFrame (the Settings heading, the role line and the Settings menu from the approved design). Loading the whole settings and tenant word lists for the menu cost each of them about 4 KB; the menu's words (settings.hub/group/frame/title and tenant.role) now live in the small settingsGate list every Settings page already loads, which leaves the frame itself. Raised to measured + 0.3.",
     "14 Nov 2026, Your profile › Change mobile (design S2): new route /settings/me/mobile (the number and the six code boxes from sign-in, its own service and thunks) measured 104.8. The service and thunks live with Settings, not in the session slice: kept there they cost every route 0.7 KB; moved out, the shell paid 0.1 for two new error codes the screen shows itself. Raised to measured + 0.3.",
     "14 Nov 2026, Settings and your profile (owner-approved design docs/revamp/design/settings-and-profile.html): the session slice gained saveMyProfile, which every route that ships the store pays for (+0.4 KB first load); the Settings list gained its groups, the profile card and View only; the sales screens read the business's words. New route /settings/me (Your profile: a name form with React Hook Form and Yup, the person's language, look, businesses and devices) measured 133.6, near /settings/profile's 151.7. Raised to measured + 0.3.",
@@ -1102,7 +1103,7 @@
   ],
   "shared": {
     "framework": 128,
-    "sharedApp": 116.2
+    "sharedApp": 116.9
   },
   "//routes": [
     "3 Nov 2026, jewellery finish: shared nav row (Karigars) +0.1 KB on most routes; editors +0.4 for the old-gold cash-back switch; custom orders +3.4 for the row menu; shop features +2.7 for the jeweller's defaults.",
@@ -1609,7 +1610,7 @@
     },
     "/onboarding/step/[n]": {
       "route": 99.8,
-      "firstLoad": 342.9
+      "firstLoad": 343.7
     },
     "/design-system": {
       "route": 115.2,
@@ -1641,19 +1642,19 @@
     },
     "/settings/plan": {
       "route": 63.2,
-      "firstLoad": 306.2
+      "firstLoad": 307.1
     },
     "/settings": {
       "route": 116.8,
-      "firstLoad": 359.7
+      "firstLoad": 360.5
     },
     "/settings/profile": {
-      "route": 153.8,
-      "firstLoad": 396.7
+      "route": 153.9,
+      "firstLoad": 397.7
     },
     "/settings/branding": {
-      "route": 103.5,
-      "firstLoad": 346.4
+      "route": 103.7,
+      "firstLoad": 347.5
     },
     "/settings/activity": {
       "route": 101,
@@ -1661,11 +1662,11 @@
     },
     "/settings/shop-features": {
       "route": 75.5,
-      "firstLoad": 318.5
+      "firstLoad": 319.4
     },
     "/settings/devices": {
       "route": 69.3,
-      "firstLoad": 312.2
+      "firstLoad": 313.1
     },
     "/stock/summary": {
       "route": 123.7,
@@ -1717,19 +1718,19 @@
     },
     "/admin": {
       "route": 11.3,
-      "firstLoad": 254.5
+      "firstLoad": 255.2
     },
     "/admin/partners": {
       "route": 29.5,
-      "firstLoad": 272.6
+      "firstLoad": 273.4
     },
     "/admin/health": {
-      "route": 21,
-      "firstLoad": 264.3
+      "route": 21.2,
+      "firstLoad": 265.0
     },
     "/admin/tenants/[id]": {
-      "route": 28.8,
-      "firstLoad": 271.9
+      "route": 28.9,
+      "firstLoad": 272.8
     },
     "/admin/tenants": {
       "route": 34.0,
@@ -1737,7 +1738,7 @@
     },
     "/settings/data": {
       "route": 70.9,
-      "firstLoad": 313.8
+      "firstLoad": 314.7
     },
     "/purchases/bills/[id]": {
       "route": 80.7,
@@ -1781,15 +1782,15 @@
     },
     "/login": {
       "route": 57,
-      "firstLoad": 299.6
+      "firstLoad": 300.2
     },
     "/": {
       "route": 44.2,
-      "firstLoad": 287.2
+      "firstLoad": 287.9
     },
     "/settings/business-days": {
-      "route": 75.3,
-      "firstLoad": 318.2
+      "route": 75.5,
+      "firstLoad": 319.4
     },
     "/library/catalogue": {
       "route": 89.5,
@@ -1849,7 +1850,7 @@
     },
     "/forgot-password": {
       "route": 52,
-      "firstLoad": 294.4
+      "firstLoad": 294.7
     },
     "/set-password": {
       "route": 52.1,
@@ -1857,27 +1858,27 @@
     },
     "/d/[token]": {
       "route": 50.9,
-      "firstLoad": 294.0
+      "firstLoad": 294.7
     },
     "/accept-invite/[token]": {
       "route": 11.7,
-      "firstLoad": 254.6
+      "firstLoad": 255.4
     },
     "/legal/privacy": {
       "route": 8,
-      "firstLoad": 250.1
+      "firstLoad": 250.9
     },
     "/legal/terms": {
       "route": 8,
-      "firstLoad": 250.1
+      "firstLoad": 250.9
     },
     "/onboarding": {
       "route": 6,
-      "firstLoad": 247.9
+      "firstLoad": 248.7
     },
     "/_not-found": {
       "route": 1,
-      "firstLoad": 243.4
+      "firstLoad": 244.2
     },
     "/library": {
       "route": 82.9,

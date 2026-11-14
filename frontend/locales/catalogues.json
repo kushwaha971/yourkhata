@@ -99,6 +99,7 @@
     "settings.group.": "settingsGate",
     "settings.frame.": "settingsGate",
     "settings.title": "settingsGate",
+    "settings.saved": "settingsGate",
     "tenant.role.": "settingsGate",
     "settings.viewOnly": "settingsGate",
     "settings.action.": "settingsGate",

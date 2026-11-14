@@ -94,9 +94,10 @@ describe('Business days', () => {
     signIn(['platform.calendar.manage']);
     renderWithProviders(<BusinessDaysPageContent />, { messages: MESSAGES });
 
-    const sunday = await screen.findByRole('button', { name: 'Sun' });
-    expect(sunday).toHaveAttribute('aria-pressed', 'true');
-    expect(screen.getByRole('button', { name: 'Mon' })).toHaveAttribute('aria-pressed', 'false');
+    // Design S5: one switch per day, ON while the business is open that day.
+    const sunday = await screen.findByRole('switch', { name: /^Sunday/ });
+    expect(sunday).not.toBeChecked();
+    expect(screen.getByRole('switch', { name: /^Monday/ })).toBeChecked();
     expect(screen.getByText('Local holiday')).toBeInTheDocument();
     expect(screen.getByText('Library only')).toBeInTheDocument();
     expect(screen.getByText(/October 2026/)).toBeInTheDocument();
@@ -107,7 +108,7 @@ describe('Business days', () => {
     signIn(['platform.calendar.manage']);
     renderWithProviders(<BusinessDaysPageContent />, { messages: MESSAGES });
 
-    await user.click(await screen.findByRole('button', { name: 'Sat' }));
+    await user.click(await screen.findByRole('switch', { name: /^Saturday/ }));
     await waitFor(() =>
       expect(service.saveWeekdays).toHaveBeenCalledWith({ value: [5, 6], modules: {} })
     );
@@ -130,14 +131,14 @@ describe('Business days', () => {
     signIn(['platform.calendar.manage']);
     service.listClosedDays.mockResolvedValue({ ...DATA, closedWeekdays: [0, 1, 2, 3, 4, 5] });
     renderWithProviders(<BusinessDaysPageContent />, { messages: MESSAGES });
-    expect(await screen.findByRole('button', { name: 'Sun' })).toBeDisabled();
+    expect(await screen.findByRole('switch', { name: /^Sunday/ })).toBeDisabled();
   });
 
   it('is read-only without the calendar codename, with no add or remove', async () => {
     signIn([]);
     renderWithProviders(<BusinessDaysPageContent />, { messages: MESSAGES });
 
-    expect(await screen.findByRole('button', { name: 'Sun' })).toBeDisabled();
+    expect(await screen.findByRole('switch', { name: /^Sunday/ })).toBeDisabled();
     expect(screen.getByText('Only the owner or an admin can change these.')).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Add closure' })).toBeNull();
     expect(screen.queryByRole('button', { name: /Remove the closure/ })).toBeNull();
@@ -148,7 +149,7 @@ describe('Business days', () => {
     service.listClosedDays.mockResolvedValue({ ...DATA, readers: [] });
     renderWithProviders(<BusinessDaysPageContent />, { messages: MESSAGES });
     expect(await screen.findByText('No feature uses business days')).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: 'Sun' })).toBeNull();
+    expect(screen.queryByRole('switch', { name: /^Sunday/ })).toBeNull();
   });
 
   it('adds a closure through the dialog', async () => {
@@ -173,14 +174,16 @@ describe('Business days', () => {
     expect(await screen.findByText('Diwali')).toBeInTheDocument();
   });
 
-  it('lets the seven weekday chips wrap on a phone', async () => {
-    // Found by LOOKING (the A9b screenshot pass): the chip group is built not
-    // to wrap, and at 390 px "Sun" was cut in half. jsdom cannot measure; this
-    // pins the class that lets the row wrap.
+  it('draws one row per day, Monday to Sunday, each saying open or closed', async () => {
+    // Design S5 replaced the seven chips (which had to wrap at 390 px) with a
+    // row per day; each row says in words whether the business opens that day.
     signIn(['platform.calendar.manage']);
     renderWithProviders(<BusinessDaysPageContent />, { messages: MESSAGES });
-    await screen.findByRole('button', { name: 'Sun' });
-    for (const group of screen.getAllByRole('group')) expect(group).toHaveClass('flex-wrap');
+    await screen.findByRole('switch', { name: /^Sunday/ });
+    const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+    for (const day of days) expect(screen.getByRole('switch', { name: new RegExp(`^${day}`) })).toBeInTheDocument();
+    expect(screen.getAllByText('Open')).toHaveLength(6);
+    expect(screen.getAllByText('Closed')).toHaveLength(1);
   });
 
   it('uses whole generic sentences for a feature with no name on this screen', async () => {
@@ -204,7 +207,8 @@ describe('Business days', () => {
       locale: 'hi',
       messages: { ...hi, 'nav.module.library': 'लाइब्रेरी' } as Record<string, string>,
     });
-    expect(await screen.findByText('हर हफ़्ते बंद')).toBeInTheDocument();
+    expect(await screen.findByText('खुले दिन')).toBeInTheDocument();
+    expect(screen.getByRole('switch', { name: /^रविवार/ })).not.toBeChecked();
     expect(screen.getByText('सिर्फ़ लाइब्रेरी')).toBeInTheDocument();
   });
 });

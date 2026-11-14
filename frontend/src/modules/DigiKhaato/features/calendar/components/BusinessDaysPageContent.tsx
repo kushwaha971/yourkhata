@@ -31,6 +31,7 @@ import { useBusinessDays } from '../hooks/useBusinessDays';
 import { groupByMonth, moduleName, moduleOnly } from '../view-model/calendarDisplay';
 
 import { WeekdayChips } from './WeekdayChips';
+import { WeekdaySwitches } from './WeekdaySwitches';
 
 // A form belongs in the chunk that OPENS it (CLAUDE.md, the LED-03 lesson).
 const ClosedDayDialog = dynamic(
@@ -100,8 +101,7 @@ export function BusinessDaysPageContent(): React.JSX.Element {
               <UbText variant="body-sm" tone="secondary">
                 {calendar.canManage ? t('calendar.weekly.body') : t('calendar.viewOnly')}
               </UbText>
-              <WeekdayChips
-                label={t('calendar.weekly.title')}
+              <WeekdaySwitches
                 value={data.closedWeekdays}
                 disabled={!editable}
                 onChange={calendar.setWeekdays}

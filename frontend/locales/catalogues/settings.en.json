@@ -106,7 +106,6 @@
   "settings.reset.confirm": "Fill in defaults",
   "settings.reset.title": "Reset this section?",
   "settings.saveError": "We could not save your settings.",
-  "settings.saved": "Settings saved",
   "settings.section.ledger": "Money book & reminders",
   "settings.section.modules": "Features",
   "settings.shop.feature.orders": "Sales orders and challans",
