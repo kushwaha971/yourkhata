@@ -1,5 +1,6 @@
 {
   "//": [
+    "14 Nov 2026, Settings piece 3: Business details, Bills and print, Business features, Business days, Devices, Activity, Plan and Your data sit in SettingsFrame (the Settings heading, the role line and the Settings menu from the approved design). Loading the whole settings and tenant word lists for the menu cost each of them about 4 KB; the menu's words (settings.hub/group/frame/title and tenant.role) now live in the small settingsGate list every Settings page already loads, which leaves the frame itself. Raised to measured + 0.3.",
     "14 Nov 2026, Your profile › Change mobile (design S2): new route /settings/me/mobile (the number and the six code boxes from sign-in, its own service and thunks) measured 104.8. The service and thunks live with Settings, not in the session slice: kept there they cost every route 0.7 KB; moved out, the shell paid 0.1 for two new error codes the screen shows itself. Raised to measured + 0.3.",
     "14 Nov 2026, Settings and your profile (owner-approved design docs/revamp/design/settings-and-profile.html): the session slice gained saveMyProfile, which every route that ships the store pays for (+0.4 KB first load); the Settings list gained its groups, the profile card and View only; the sales screens read the business's words. New route /settings/me (Your profile: a name form with React Hook Form and Yup, the person's language, look, businesses and devices) measured 133.6, near /settings/profile's 151.7. Raised to measured + 0.3.",
     "14 Nov 2026, Settings round (owner: test Settings for every user): Messages, Business features, Plan and Business days now sit behind SettingsGate, so staff are told the setting is not available instead of a blank page or endless loading; the gate and its words moved those routes up to 0.9 KB. Plan also gained its plain plan and row names. Raised to measured + 0.3.",
@@ -1639,32 +1640,32 @@
       "firstLoad": 304.3
     },
     "/settings/plan": {
-      "route": 61.4,
-      "firstLoad": 304.3
+      "route": 63.2,
+      "firstLoad": 306.2
     },
     "/settings": {
       "route": 116.8,
       "firstLoad": 359.7
     },
     "/settings/profile": {
-      "route": 151.9,
-      "firstLoad": 395.1
+      "route": 153.8,
+      "firstLoad": 396.7
     },
     "/settings/branding": {
-      "route": 101.9,
-      "firstLoad": 345.1
+      "route": 103.5,
+      "firstLoad": 346.4
     },
     "/settings/activity": {
       "route": 101,
       "firstLoad": 335
     },
     "/settings/shop-features": {
-      "route": 74.7,
-      "firstLoad": 317.6
+      "route": 75.5,
+      "firstLoad": 318.5
     },
     "/settings/devices": {
-      "route": 66.8,
-      "firstLoad": 310.1
+      "route": 69.3,
+      "firstLoad": 312.2
     },
     "/stock/summary": {
       "route": 123.7,
@@ -1735,8 +1736,8 @@
       "firstLoad": 277.2
     },
     "/settings/data": {
-      "route": 69.0,
-      "firstLoad": 312.2
+      "route": 70.9,
+      "firstLoad": 313.8
     },
     "/purchases/bills/[id]": {
       "route": 80.7,
@@ -1787,8 +1788,8 @@
       "firstLoad": 287.2
     },
     "/settings/business-days": {
-      "route": 73.8,
-      "firstLoad": 316.6
+      "route": 75.3,
+      "firstLoad": 318.2
     },
     "/library/catalogue": {
       "route": 89.5,

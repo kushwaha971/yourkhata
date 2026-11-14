@@ -12,7 +12,6 @@ import {
   UbDialogLoading,
   UbEmptyState,
   UbPageHeader,
-  UbPageShell,
   UbPanel,
   UbPanelSection,
   UbSkeleton,
@@ -25,6 +24,8 @@ import { useAppSelector } from 'src/hooks/useAppStore';
 import { useTranslation } from 'src/hooks/useTranslation';
 import { selectTenantTimezone } from 'src/redux/slice/sessionSlice';
 import { todayInTenantTz } from 'src/utils/dates';
+
+import { SettingsFrame } from 'modules/DigiKhaato/features/settings/components/SettingsFrame';
 
 import { useBusinessDays } from '../hooks/useBusinessDays';
 import { groupByMonth, moduleName, moduleOnly } from '../view-model/calendarDisplay';
@@ -228,8 +229,8 @@ export function BusinessDaysPageContent(): React.JSX.Element {
   }
 
   return (
-    <UbPageShell header={header} width="measure">
+    <SettingsFrame page="businessDays" header={header}>
       {body}
-    </UbPageShell>
+    </SettingsFrame>
   );
 }

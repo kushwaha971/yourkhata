@@ -95,11 +95,15 @@ for (const { role, mobile } of ROLES) {
       const enabledInputs = await page.evaluate(() => [...document.querySelectorAll('main input:not([type=hidden]):not([disabled]):not([readonly]), main textarea:not([disabled]), main [role=switch]:not([disabled])')].length);
       const told = /not allowed|do not have|don.t have|ask the owner|Only the owner|Only an owner|no access|can.t (open|change)|cannot (open|change)|view only|read only/i.test(text) || landed !== path;
       const broke = /Something went wrong|Application error|Unhandled|undefined|NaN|\[object Object\]/.test(text);
+      // A word whose catalogue the page forgot to load shows as its raw id
+      // ("settings.hub.me") — the whole Settings menu did, on eight pages.
+      const rawIds = [...new Set(text.match(/\b(?:settings|tenant|plan|team|sessions|branding|auditLog|common|nav)\.[a-zA-Z]+(?:\.[a-zA-Z]+)+\b/g) ?? [])].slice(0, 4);
       const hub = path === '/settings' ? await page.locator('main a[href^="/settings/"]').evaluateAll((as) => [...new Set(as.map((a) => new URL(a.href).pathname))]) : null;
       rows.push({ tag, path, landed, refused: [...new Set(seen.refused)], five: [...seen.five], errors: [...seen.errors], wide, cut, told, broke, writeButtons, enabledInputs, hub, head: text.slice(0, 90) });
       check(seen.errors.length === 0, `${tag} ${path}: no page error${seen.errors.length ? ` (${seen.errors[0]})` : ''}`);
       check(seen.five.length === 0, `${tag} ${path}: no server error${seen.five.length ? ` (${seen.five.join(', ')})` : ''}`);
       check(!broke, `${tag} ${path}: nothing broken on screen`);
+      check(rawIds.length === 0, `${tag} ${path}: no raw message ids on screen (${rawIds.join(', ')})`);
       check(wide <= 0, `${tag} ${path}: nothing runs off the screen (${wide}px)`);
       check(cut.length === 0, `${tag} ${path}: no words cut (${cut.join(' | ')})`);
       // The role rules (Settings round, 14 Nov 2026).

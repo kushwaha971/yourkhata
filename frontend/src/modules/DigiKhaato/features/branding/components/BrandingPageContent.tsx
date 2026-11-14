@@ -15,7 +15,6 @@ import {
   UbGrid,
   UbImagePreview,
   UbPageHeader,
-  UbPageShell,
   UbPanel,
   UbPanelSection,
   UbSkeleton,
@@ -29,6 +28,8 @@ import { useAppDispatch, useAppSelector } from 'src/hooks/useAppStore';
 import { useTranslation } from 'src/hooks/useTranslation';
 import { selectActiveTenant } from 'src/redux/slice/sessionSlice';
 import { showSnackbar } from 'src/redux/slice/snackbarSlice';
+
+import { SettingsFrame } from 'modules/DigiKhaato/features/settings/components/SettingsFrame';
 
 import { useSettingsAccess } from '../../settings/hooks/useSettingsAccess';
 import { useBranding } from '../hooks/useBranding';
@@ -182,7 +183,7 @@ export function BrandingPageContent(): React.JSX.Element {
 
   if (status === 'failed') {
     return (
-      <UbPageShell header={header}>
+      <SettingsFrame page="branding" header={header} wide>
         <UbEmptyState
           variant="error"
           title={t('branding.error.title')}
@@ -195,14 +196,14 @@ export function BrandingPageContent(): React.JSX.Element {
             </UbButton>
           }
         />
-      </UbPageShell>
+      </SettingsFrame>
     );
   }
   if (!data) {
     return (
-      <UbPageShell header={header}>
+      <SettingsFrame page="branding" header={header} wide>
         <UbSkeleton variant="form" count={5} />
-      </UbPageShell>
+      </SettingsFrame>
     );
   }
 
@@ -210,7 +211,7 @@ export function BrandingPageContent(): React.JSX.Element {
   const disabled = !canEdit;
 
   return (
-    <UbPageShell header={header}>
+    <SettingsFrame page="branding" header={header} wide>
       <UbGrid columns={{ base: 1, lg: 2 }} gap={6}>
         <UbForm form={form} onSubmit={submit}>
           <UbPanel as="section">
@@ -357,6 +358,6 @@ export function BrandingPageContent(): React.JSX.Element {
           />
         </UbStack>
       </UbGrid>
-    </UbPageShell>
+    </SettingsFrame>
   );
 }

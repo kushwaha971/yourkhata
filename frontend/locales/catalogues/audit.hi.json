@@ -236,7 +236,7 @@
   "audit.select.all": "सभी चुनें",
   "audit.select.row": "{name} चुनें",
   "audit.subtitle": "किसने क्या किया और कब — हर बदलाव का पहले और बाद।",
-  "audit.title": "गतिविधि लॉग",
+  "audit.title": "गतिविधि",
   "audit.value.off": "बंद",
   "audit.value.on": "चालू"
 }

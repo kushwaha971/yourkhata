@@ -15,7 +15,6 @@ import {
   UbGrid,
   UbImagePreview,
   UbPageHeader,
-  UbPageShell,
   UbPanel,
   UbPanelSection,
   UbPhoneInput,
@@ -31,6 +30,8 @@ import { useAppDispatch } from 'src/hooks/useAppStore';
 import { useTranslation } from 'src/hooks/useTranslation';
 import { showSnackbar } from 'src/redux/slice/snackbarSlice';
 import { applyServerErrors } from 'src/utils/applyServerErrors';
+
+import { SettingsFrame } from 'modules/DigiKhaato/features/settings/components/SettingsFrame';
 
 import { useBranding } from '../../branding/hooks/useBranding';
 import {
@@ -83,7 +84,7 @@ export function BusinessProfilePageContent(): React.JSX.Element {
 
   if (status === 'failed') {
     return (
-      <UbPageShell header={header}>
+      <SettingsFrame page="profile" header={header} wide>
         <UbEmptyState
           variant="error"
           title={t('settings.profile.error.title')}
@@ -96,14 +97,14 @@ export function BusinessProfilePageContent(): React.JSX.Element {
             </UbButton>
           }
         />
-      </UbPageShell>
+      </SettingsFrame>
     );
   }
   if (!data) {
     return (
-      <UbPageShell header={header}>
+      <SettingsFrame page="profile" header={header} wide>
         <UbSkeleton variant="form" count={6} />
-      </UbPageShell>
+      </SettingsFrame>
     );
   }
   return <BusinessProfileEditor data={data} profile={profile} header={header} />;
@@ -246,7 +247,7 @@ function BusinessProfileEditor({
   const mismatch = profile.warnings.find((warning) => warning.code === 'gstin_state_mismatch');
 
   return (
-    <UbPageShell header={header}>
+    <SettingsFrame page="profile" header={header} wide>
       <UbGrid columns={{ base: 1, lg: 2 }} gap={6}>
         <UbForm form={form} onSubmit={submit} formErrors={formErrors}>
           {mismatch?.gstinStateCode && (
@@ -412,6 +413,6 @@ function BusinessProfileEditor({
         closeLabel={t('common.action.close')}
         onConfirm={confirmGst}
       />
-    </UbPageShell>
+    </SettingsFrame>
   );
 }

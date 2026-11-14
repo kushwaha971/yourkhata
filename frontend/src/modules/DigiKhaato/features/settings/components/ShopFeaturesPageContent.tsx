@@ -7,7 +7,6 @@ import {
   UbButton,
   UbEmptyState,
   UbPageHeader,
-  UbPageShell,
   UbPanel,
   UbShopKindIcon,
   UbSkeleton,
@@ -26,6 +25,7 @@ import { useSettingsAccess } from '../hooks/useSettingsAccess';
 import { useTenantSettings } from '../hooks/useTenantSettings';
 
 import { JewelDefaultsPanel } from './JewelDefaultsPanel';
+import { SettingsFrame } from './SettingsFrame';
 
 import type { JewelDefaults } from '../../inventory/api/metalRateService';
 
@@ -179,8 +179,8 @@ export function ShopFeaturesPageContent(): React.JSX.Element {
   }
 
   return (
-    <UbPageShell header={header} width="measure">
+    <SettingsFrame page="shopFeatures" header={header}>
       {access.canView ? body : null}
-    </UbPageShell>
+    </SettingsFrame>
   );
 }

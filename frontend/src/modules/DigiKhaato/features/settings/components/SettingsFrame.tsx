@@ -2,7 +2,7 @@
 
 import { useMemo, type ReactNode } from 'react';
 
-import { UbLink, UbPageShell, UbStack, UbText } from 'src/design-system';
+import { UbLink, UbPageShell, UbPanel, UbStack, UbText } from 'src/design-system';
 import { useAppSelector } from 'src/hooks/useAppStore';
 import { useTranslation } from 'src/hooks/useTranslation';
 import { selectActiveRole, selectActiveTenant, selectEnabledModules } from 'src/redux/slice/sessionSlice';
@@ -23,13 +23,26 @@ import { settingsGroups } from '../settingsLinks';
 export function SettingsFrame({
   page,
   title,
+  header,
+  wide = false,
   children,
-}: Readonly<{ page: string; title: string; children: ReactNode }>): React.JSX.Element {
+}: Readonly<{
+  page: string;
+  /** A plain page title (phone only); or */
+  title?: string;
+  /** the page's own header — title, subtitle and its buttons — beside the menu. */
+  header?: ReactNode;
+  /** Two-column forms and tables use the full width beside the menu. */
+  wide?: boolean;
+  children: ReactNode;
+}>): React.JSX.Element {
   const { t } = useTranslation();
   const access = useSettingsAccess();
   const tenant = useAppSelector(selectActiveTenant);
   const role = useAppSelector(selectActiveRole);
   const features = tenant?.features;
+  // Design S3: the accountant opens a business page to read it, and is told so.
+  const readOnly = access.canView && !access.canEdit && !['me', 'devices', 'apps'].includes(page);
   const modules = useAppSelector(selectEnabledModules);
   // Business days needs the settings' calendar readers, which only the list
   // and its own page load; the menu shows it while it is the open page.
@@ -47,9 +60,12 @@ export function SettingsFrame({
     <UbPageShell>
       <UbStack gap={4}>
         {/* The phone's app bar already carries the back arrow to Settings. */}
-        <UbText as="h1" variant="h3" className="lg:hidden">
-          {title}
-        </UbText>
+        {title !== undefined && !header ? (
+          <UbText as="h1" variant="h3" className="lg:hidden">
+            {title}
+          </UbText>
+        ) : null}
+        {/* Desktop: "Settings" over the business and the role held there. */}
         <UbStack gap={0.5} className="hidden lg:flex">
           <UbText as="span" variant="h2">
             {t('settings.title')}
@@ -77,7 +93,15 @@ export function SettingsFrame({
               </UbLink>
             ))}
           </UbStack>
-          <UbStack gap={4} className="min-w-0 max-w-[760px]">
+          <UbStack gap={4} className={wide ? 'min-w-0' : 'min-w-0 max-w-[760px]'}>
+            {header}
+            {readOnly ? (
+              <UbPanel className="bg-surface-sunken p-4">
+                <UbText variant="body-sm" tone="secondary">
+                  {t('settings.frame.readOnly')}
+                </UbText>
+              </UbPanel>
+            ) : null}
             {children}
           </UbStack>
         </UbStack>

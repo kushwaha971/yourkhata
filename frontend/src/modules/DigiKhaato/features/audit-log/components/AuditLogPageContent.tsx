@@ -14,13 +14,14 @@ import {
   UbDrawerLoading,
   UbFilterSelect,
   UbPageHeader,
-  UbPageShell,
   UbSearchInput,
   UbStack,
   UbText,
 } from 'src/design-system';
 import type { UbDataGridEmptyStates, UbDataGridLabels, UbGridState } from 'src/design-system';
 import { useTranslation } from 'src/hooks/useTranslation';
+
+import { SettingsFrame } from 'modules/DigiKhaato/features/settings/components/SettingsFrame';
 
 import { useAuditLog } from '../hooks/useAuditLog';
 import {
@@ -191,7 +192,7 @@ export function AuditLogPageContent(): React.JSX.Element {
   );
 
   return (
-    <UbPageShell header={header}>
+    <SettingsFrame page="activity" header={header} wide>
       <UbStack gap={4}>
         <UbDateRangePicker
           presets={periodPresets}
@@ -272,6 +273,6 @@ export function AuditLogPageContent(): React.JSX.Element {
       </UbStack>
 
       {log.selected && <AuditDetailDrawer log={log} />}
-    </UbPageShell>
+    </SettingsFrame>
   );
 }

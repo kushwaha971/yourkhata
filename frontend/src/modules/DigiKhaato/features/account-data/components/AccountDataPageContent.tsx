@@ -4,13 +4,14 @@ import {
   UbButton,
   UbEmptyState,
   UbPageHeader,
-  UbPageShell,
   UbSkeleton,
   UbStack,
 } from 'src/design-system';
 import { useAppSelector } from 'src/hooks/useAppStore';
 import { useTranslation } from 'src/hooks/useTranslation';
 import { selectActiveRole } from 'src/redux/slice/sessionSlice';
+
+import { SettingsFrame } from 'modules/DigiKhaato/features/settings/components/SettingsFrame';
 
 import { useAccountData } from '../hooks/useAccountData';
 
@@ -74,7 +75,7 @@ function AccountDataPage(): React.JSX.Element {
   const header = <UbPageHeader title={t('data.title')} subtitle={t('data.subtitle')} />;
 
   return (
-    <UbPageShell header={header} width="measure">
+    <SettingsFrame page="data" header={header}>
       {role === 'owner' ? (
         <OwnerDataPage />
       ) : (
@@ -84,6 +85,6 @@ function AccountDataPage(): React.JSX.Element {
           description={t('data.ownerOnly.body')}
         />
       )}
-    </UbPageShell>
+    </SettingsFrame>
   );
 }

@@ -236,7 +236,7 @@
   "audit.select.all": "Select all",
   "audit.select.row": "Select {name}",
   "audit.subtitle": "Who did what, and when — with the before and after of every change.",
-  "audit.title": "Activity log",
+  "audit.title": "Activity",
   "audit.value.off": "Off",
   "audit.value.on": "On"
 }

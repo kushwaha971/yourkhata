@@ -9,6 +9,7 @@ import { ShopFeaturesPageContent } from 'modules/DigiKhaato/features/settings/co
 
 // The words this screen renders arrive with its chunk (src/i18n/catalogueRegistry.ts).
 import 'src/i18n/catalogues/settings';
+import 'src/i18n/catalogues/tenant';
 import 'src/i18n/catalogues/settingsGate';
 
 /** B3 — Settings › Shop features. Part 19 §19.1.4: a Suspense boundary and one import. */
