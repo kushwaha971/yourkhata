@@ -95,12 +95,13 @@ export const getExport = async (id: string, signal?: AbortSignal): Promise<Tenan
 };
 
 /**
- * POST /tenants/current/delete-request (FR-3). The password re-verifies the
- * owner (DEC-010: there is no OTP); a wrong one is a 400 on the field.
+ * POST /tenants/current/delete-request (FR-3). A code sent to the owner's own
+ * mobile re-verifies them; a wrong one is a 400 on the field.
  */
 export const requestDeletion = async (input: DeleteRequestInput): Promise<DeletionState> => {
   const response = await api.post<{ data: DeletionStateApi }>(API_PATHS.TENANT_DELETE_REQUEST, {
-    ...(input.challengeId ? { challenge_id: input.challengeId, code: input.code } : { password: input.password }),
+    challenge_id: input.challengeId,
+    code: input.code,
     confirm_name: input.confirmName,
     reason: input.reason,
   });

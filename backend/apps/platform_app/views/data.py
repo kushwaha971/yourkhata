@@ -145,9 +145,7 @@ class DeletionView(APIView):
 
 
 class DeleteRequestSerializer(serializers.Serializer):
-    # By password, or by a code to the owner's own mobile (a mobile-only owner
-    # has no password); the service needs one or the other.
-    password = serializers.CharField(max_length=256, trim_whitespace=False, required=False, allow_blank=True)
+    # A code sent to the owner's own mobile (nobody has a password).
     challenge_id = serializers.CharField(max_length=64, required=False, allow_blank=True)
     code = serializers.CharField(max_length=12, required=False, allow_blank=True)
     confirm_name = serializers.CharField(max_length=200)
@@ -155,11 +153,11 @@ class DeleteRequestSerializer(serializers.Serializer):
 
 
 class DeleteRequestView(APIView):
-    """`POST /tenants/current/delete-request` (FR-3) — password re-verified."""
+    """`POST /tenants/current/delete-request` (FR-3) — re-verified by a code."""
 
     permission_classes = [IsAuthenticated]
-    # The re-verification budget: a stolen session guessing the owner's password
-    # through this endpoint gets ten tries an hour.
+    # The re-verification budget: a stolen session guessing codes through this
+    # endpoint gets ten tries an hour, on top of the code's own five.
 
     def get_throttles(self) -> list:
         return [ScopedUserRateThrottle("reverify")]
@@ -171,7 +169,6 @@ class DeleteRequestView(APIView):
         data = serializer.validated_data
         tenant = delete_service.request_deletion(
             ctx=Ctx.from_request(request),
-            password=data.get("password") or None,
             challenge_id=data.get("challenge_id") or None,
             code=data.get("code") or None,
             confirm_name=data["confirm_name"],
@@ -183,8 +180,8 @@ class DeleteRequestView(APIView):
 class DeleteCodeView(APIView):
     """`POST /tenants/current/delete-code` — a code to the owner's own mobile.
 
-    For the owner who signs in with a mobile code and has no password to type
-    into the delete (owner, 15 Nov 2026). Same budget as the delete itself.
+    The delete's re-verification (owner, 15 Nov 2026: nobody has a password).
+    Same budget as the delete itself.
     """
 
     permission_classes = [IsAuthenticated]

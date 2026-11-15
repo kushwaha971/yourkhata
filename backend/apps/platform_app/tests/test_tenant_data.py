@@ -28,14 +28,31 @@ EXPORTS = "v1:tenant-export-list"
 DELETION = "v1:tenant-deletion"
 DELETE_REQUEST = "v1:tenant-delete-request"
 DELETE_CANCEL = "v1:tenant-delete-cancel"
-PASSWORD = "Kirana-Owner-99"
+DELETE_CODE = "v1:tenant-delete-code"
+
+
+@pytest.fixture(autouse=True)
+def _known_codes(fixed_otp: str) -> None:
+    """Every delete re-verifies with a code to the owner's mobile (owner, 15 Nov
+    2026: nobody using the app has a password); the code is pinned to type it."""
 
 
 def _owner(api_as: Any, tenant: Any) -> tuple[Any, Any]:
-    client, member = api_as(tenant, "owner")
-    member.user.set_password(PASSWORD)
-    member.user.save(update_fields=["password"])
-    return client, member
+    from tests.factories.platform import UserFactory
+
+    user = UserFactory(mobile=f"+9198111{str(tenant.pk.int)[-5:]}")
+    user.set_unusable_password()
+    user.save(update_fields=["password"])
+    return api_as(tenant, "owner", user=user)
+
+
+def _proof(client: Any, code: str | None = None) -> dict:
+    """A code sent to the owner's own mobile, ready to send with the delete."""
+    from tests.fixtures import DEFAULT_OTP_CODE
+
+    sent = client.post(reverse(DELETE_CODE), {}, format="json")
+    assert sent.status_code == 200, sent.content
+    return {"challenge_id": sent.json()["data"]["challenge_id"], "code": code or DEFAULT_OTP_CODE}
 
 
 def _post_party(client: Any, name: str = "Ramesh Traders") -> dict:
@@ -270,7 +287,7 @@ def test_deletion_requires_a_fresh_export(tenant: Any, api_as: Any) -> None:
     """T-PLT-10-2 first half: no export → 409 `export_required`."""
     client, _ = _owner(api_as, tenant)
     response = client.post(
-        reverse(DELETE_REQUEST), {"password": PASSWORD, "confirm_name": tenant.name}, format="json"
+        reverse(DELETE_REQUEST), {**_proof(client), "confirm_name": tenant.name}, format="json"
     )
     assert response.status_code == 409
     assert response.json()["error"]["code"] == "export_required"
@@ -289,23 +306,23 @@ def test_an_entry_after_the_export_makes_it_stale(
 
     assert client.get(reverse(DELETION)).json()["data"]["export_fresh"] is False
     response = client.post(
-        reverse(DELETE_REQUEST), {"password": PASSWORD, "confirm_name": tenant.name}, format="json"
+        reverse(DELETE_REQUEST), {**_proof(client), "confirm_name": tenant.name}, format="json"
     )
     assert response.json()["error"]["code"] == "export_required"
 
 
-def test_a_wrong_password_is_a_field_error_never_a_401(
+def test_a_wrong_code_is_a_field_error_never_a_401(
     tenant: Any, api_as: Any, django_capture_on_commit_callbacks: Any
 ) -> None:
     """A 401 would send the client through refresh and read a typo as an expired session."""
     client, _ = _owner(api_as, tenant)
     _export(client, django_capture_on_commit_callbacks)
     response = client.post(
-        reverse(DELETE_REQUEST), {"password": "wrong-one", "confirm_name": "nope"}, format="json"
+        reverse(DELETE_REQUEST), {**_proof(client, "000001"), "confirm_name": "nope"}, format="json"
     )
     assert response.status_code == 400
     fields = response.json()["error"]["details"]
-    assert "password" in fields
+    assert "code" in fields
     assert "confirm_name" in fields
     tenant.refresh_from_db()
     assert tenant.status == "active"
@@ -329,7 +346,7 @@ def test_the_request_makes_the_business_read_only_and_revokes_staff(
 
     response = client.post(
         reverse(DELETE_REQUEST),
-        {"password": PASSWORD, "confirm_name": f"  {tenant.name.upper()} ", "reason": "Closing"},
+        {**_proof(client), "confirm_name": f"  {tenant.name.upper()} ", "reason": "Closing"},
         format="json",
     )
 
@@ -343,7 +360,9 @@ def test_the_request_makes_the_business_read_only_and_revokes_staff(
     assert Session.objects.get(pk=owner_session.pk).revoked_at is None
     audit = AuditLog.objects.get(tenant=tenant, action="tenant.deletion_requested")
     assert audit.metadata["reason"] == "Closing"
-    assert PASSWORD not in str(audit.metadata)  # the secret is never audited
+    from tests.fixtures import DEFAULT_OTP_CODE
+
+    assert DEFAULT_OTP_CODE not in str(audit.metadata)  # the code is never audited
 
     # Read-only: a write is refused, a read works, another export is allowed.
     refused = client.post(reverse("v1:party-list"), {"name": "New"}, format="json")
@@ -363,7 +382,7 @@ def test_cancel_restores_the_business(
     client, _ = _owner(api_as, tenant)
     _export(client, django_capture_on_commit_callbacks)
     client.post(
-        reverse(DELETE_REQUEST), {"password": PASSWORD, "confirm_name": tenant.name}, format="json"
+        reverse(DELETE_REQUEST), {**_proof(client), "confirm_name": tenant.name}, format="json"
     )
 
     response = client.post(reverse(DELETE_CANCEL))
@@ -610,9 +629,6 @@ def test_an_unregistered_table_holding_rows_stops_deletion_before_anything_goes(
 # for one: they could not delete their own business. A six-digit code sent to
 # their own mobile re-verifies them instead; a password still works for those
 # who have one.
-
-DELETE_CODE = "v1:tenant-delete-code"
-
 
 def _mobile_owner(api_as: Any, tenant: Any) -> tuple[Any, Any]:
     from apps.platform_app.services.auth import synthetic_email_for

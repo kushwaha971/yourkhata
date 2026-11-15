@@ -8,6 +8,7 @@ import { hi } from 'src/tests/allMessages';
 import { renderWithProviders } from 'src/tests/renderWithProviders';
 import type { PermissionCode } from 'src/types/domain.types';
 
+import { TEAM_FLAGS } from '../constants/teamFlags';
 import { resetInvitations } from '../redux/invitationSlice';
 import { resetMembers } from '../redux/memberSlice';
 
@@ -131,6 +132,19 @@ beforeEach(() => {
   memberService.listMembers.mockResolvedValue(page([]));
 });
 
+describe('TeamPageContent — no email invitations', () => {
+  it('shows no invitations and no invite by email: everyone joins by mobile', async () => {
+    // Owner, 15 Nov 2026: nobody using the app has an email or a password.
+    signIn(['platform.members.manage']);
+    renderWithProviders(<TeamPageContent />);
+    expect((await screen.findAllByRole('heading', { name: 'Team' })).length).toBeGreaterThan(0);
+    expect(screen.queryByText('Invitations')).toBeNull();
+    // Nor is the server asked for invitations nobody will see.
+    expect(invitationService.listInvitations).not.toHaveBeenCalled();
+    expect(screen.queryByRole('button', { name: /Invite/ })).toBeNull();
+  });
+});
+
 describe('TeamPageContent — permission-denied', () => {
   /**
    * `Can` and `usePermissions` existed for a sprint and were rendered nowhere,
@@ -167,6 +181,14 @@ describe('TeamPageContent — permission-denied', () => {
 });
 
 describe('TeamPageContent — the list states', () => {
+  // Email invitations are off the screen (owner, 15 Nov 2026); these tests
+  // keep the flow working for the day email lands.
+  beforeEach(() => {
+    TEAM_FLAGS.emailInvites = true;
+  });
+  afterEach(() => {
+    TEAM_FLAGS.emailInvites = false;
+  });
   it('paints the skeleton first, then the first-use empty state', async () => {
     invitationService.listInvitations.mockResolvedValue(page([]));
 
@@ -260,6 +282,14 @@ describe('TeamPageContent — the list states', () => {
 });
 
 describe('TeamPageContent — inviting', () => {
+  // Email invitations are off the screen (owner, 15 Nov 2026); these tests
+  // keep the flow working for the day email lands.
+  beforeEach(() => {
+    TEAM_FLAGS.emailInvites = true;
+  });
+  afterEach(() => {
+    TEAM_FLAGS.emailInvites = false;
+  });
   /**
    * The whole chain, and the two things that are irrecoverable if they are
    * wrong: the POST must carry an `Idempotency-Key` (two 201s for one seat is
@@ -360,6 +390,14 @@ describe('TeamPageContent — inviting', () => {
 });
 
 describe('TeamPageContent — revoking', () => {
+  // Email invitations are off the screen (owner, 15 Nov 2026); these tests
+  // keep the flow working for the day email lands.
+  beforeEach(() => {
+    TEAM_FLAGS.emailInvites = true;
+  });
+  afterEach(() => {
+    TEAM_FLAGS.emailInvites = false;
+  });
   /**
    * Revoke is destructive and irreversible, so it is behind `UbConfirmDialog`
    * and the confirm names the ACT and the PERSON. A confirm that says "OK"

@@ -42,7 +42,13 @@ says "sign up" or "create account" (`/signup` forwards to `/login`). The
 which is what tests and `e2e/serve-api.sh` always use. Resend waits sixty
 seconds, enforced by the server; sessions slide for ninety days. The email +
 password screen survives only at the unlinked `/login/email`, for the platform
-console and pre-change accounts, and the e2e harnesses sign in there. Never
+console and pre-change accounts, and the e2e harnesses sign in there.
+**Nobody using the app has a password or an email (owner, 15 Nov 2026):** the
+only identity is the mobile number and a code, for every role. Anything that
+would re-verify a person asks for a fresh code to their own mobile (deleting a
+business does), never a password; inviting by email is off the Team screen
+(`TEAM_FLAGS.emailInvites`). The email + password door stays only for our own
+testing and the platform console — never link to it. Never
 commit WhatsApp credentials. Message Central and Fast2SMS (the four-digit SMS
 providers) were removed on 14 Nov 2026; do not bring them back.
 

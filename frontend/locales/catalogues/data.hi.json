@@ -15,7 +15,7 @@
   "data.delete.code.send": "मेरे मोबाइल पर कोड भेजें",
   "data.delete.code.sendError": "कोड नहीं भेजा जा सका। फिर से कोशिश करें।",
   "data.delete.code.sent": "हमने आपके मोबाइल पर WhatsApp से छह अंकों का कोड भेजा है।",
-  "data.delete.code.why": "आप मोबाइल कोड से साइन इन करते हैं, इसलिए आपकी पहचान आपके मोबाइल पर भेजे कोड से जाँची जाती है।",
+  "data.delete.code.why": "यह आप ही हैं, यह जाँचने के लिए हम आपके मोबाइल पर छह अंकों का कोड भेजते हैं।",
   "data.delete.confirm.label": "पुष्टि के लिए {name} लिखें",
   "data.delete.confirm.mismatch": "नाम मेल नहीं खाता।",
   "data.delete.confirm.required": "व्यापार का नाम लिखें।",

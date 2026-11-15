@@ -15,7 +15,7 @@
   "data.delete.code.send": "Send code to my mobile",
   "data.delete.code.sendError": "Could not send the code. Try again.",
   "data.delete.code.sent": "We sent a six-digit code on WhatsApp to your mobile.",
-  "data.delete.code.why": "You sign in with a mobile code, so we check it is you with a code sent to your mobile.",
+  "data.delete.code.why": "To check it is you, we send a six-digit code to your mobile.",
   "data.delete.confirm.label": "Type {name} to confirm",
   "data.delete.confirm.mismatch": "Name does not match.",
   "data.delete.confirm.required": "Type the business name.",

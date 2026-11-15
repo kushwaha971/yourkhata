@@ -31,6 +31,7 @@ import { selectActiveTenant } from 'src/redux/slice/sessionSlice';
 
 import { Can } from '../../auth/components/Can';
 import { PAGE_SIZE_OPTIONS } from '../constants/teamDefaults';
+import { TEAM_FLAGS } from '../constants/teamFlags';
 import { useInvitations } from '../hooks/useInvitations';
 import { useTeamApp } from '../hooks/useTeamApp';
 
@@ -244,6 +245,7 @@ export function TeamPageContent(): React.JSX.Element {
           one. */}
       <MembersSection />
 
+      {TEAM_FLAGS.emailInvites && (
       <UbStack gap={2}>
         <UbSectionHeading
           title={t('team.tab.invitations')}
@@ -279,6 +281,7 @@ export function TeamPageContent(): React.JSX.Element {
           pageSizeOptions={PAGE_SIZE_OPTIONS}
         />
       </UbStack>
+      )}
     </>
   );
 

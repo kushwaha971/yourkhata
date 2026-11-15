@@ -66,7 +66,6 @@ const signInAs = (role: string, mobileOnly = false): void => {
         name: 'Ramesh',
         email: 'ramesh@example.com',
         mobile: mobileOnly ? '+919811100001' : null,
-        ...(mobileOnly ? { hasPassword: false } : {}),
         locale: 'en',
         mustChangePassword: false,
         passwordExpiresAt: null,
@@ -162,8 +161,8 @@ describe('AccountDataPageContent', () => {
     expect(await screen.findByText('Waiting')).toBeInTheDocument();
   });
 
-  it('an owner who signs in with a mobile code confirms with a code, not a password', async () => {
-    // Owner, 15 Nov 2026: such an owner has no password, and the dialog asked for one.
+  it('the owner confirms with a code to their mobile, never a password', async () => {
+    // Owner, 15 Nov 2026: nobody using the app has a password.
     service.getDeletionState.mockResolvedValue(state({ exportFresh: true }));
     service.requestDeleteCode.mockResolvedValue({ challengeId: 'c1', codeLength: 6 });
     service.requestDeletion.mockResolvedValue(state({ status: 'pending_deletion' }));
