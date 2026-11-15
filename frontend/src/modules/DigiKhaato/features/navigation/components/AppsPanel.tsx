@@ -313,6 +313,13 @@ export function AppsPanel({ onLeave }: Readonly<{ onLeave?: () => void }>): Reac
           <UbText as="p" variant="caption" tone="secondary">
             {t('tenant.apps.hint')}
           </UbText>
+          {/* Design S11 step 7: a role belongs to a person in one business. Where
+              they are not the owner or an admin, they are told who adds apps. */}
+          {usable.some((row) => row.role && !['owner', 'admin'].includes(row.role)) && (
+            <UbText as="p" variant="caption" tone="secondary" data-testid="apps-not-owner">
+              {t('tenant.apps.notOwner')}
+            </UbText>
+          )}
         </UbStack>
       )}
       <UbConfirmDialog
