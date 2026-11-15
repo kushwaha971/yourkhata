@@ -1,5 +1,6 @@
 {
   "//": [
+    "15 Nov 2026, delete without a password: the session now carries has_password, and Your data's delete dialog (dynamic) offers a code to the owner's own mobile instead of the password when there is none. /settings/data and the routes that ship the session slice moved by about 0.1 KB. Raised to measured + 0.3.",
     "14 Nov 2026, Settings page bodies (design S4/S5): Business days draws one switch per day; Bills and print gains \"On every bill\" (the terms line and the UPI QR switch, settings the bills already read). The panel is dynamic() and loads the settings words with itself, which kept /settings/branding at 103.4 (it was 112.4 imported statically). The shared app chunk moved 116.2 -> 116.6 in the same build with no change to shell code; the likely cause is chunk splitting once a third route loads the tenant-settings hook lazily, NOT verified. Raised to measured + 0.3.",
     "14 Nov 2026, Settings piece 3: Business details, Bills and print, Business features, Business days, Devices, Activity, Plan and Your data sit in SettingsFrame (the Settings heading, the role line and the Settings menu from the approved design). Loading the whole settings and tenant word lists for the menu cost each of them about 4 KB; the menu's words (settings.hub/group/frame/title and tenant.role) now live in the small settingsGate list every Settings page already loads, which leaves the frame itself. Raised to measured + 0.3.",
     "14 Nov 2026, Your profile › Change mobile (design S2): new route /settings/me/mobile (the number and the six code boxes from sign-in, its own service and thunks) measured 104.8. The service and thunks live with Settings, not in the session slice: kept there they cost every route 0.7 KB; moved out, the shell paid 0.1 for two new error codes the screen shows itself. Raised to measured + 0.3.",
@@ -1737,8 +1738,8 @@
       "firstLoad": 277.2
     },
     "/settings/data": {
-      "route": 70.9,
-      "firstLoad": 314.7
+      "route": 71.2,
+      "firstLoad": 315.1
     },
     "/purchases/bills/[id]": {
       "route": 80.7,
@@ -2098,7 +2099,7 @@
     },
     "/settings/me": {
       "route": 134.6,
-      "firstLoad": 377.4
+      "firstLoad": 377.7
     },
     "/settings/me/mobile": {
       "route": 105.1,

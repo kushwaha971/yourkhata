@@ -145,6 +145,7 @@ interface SessionApiResponse {
       readonly locale: Locale;
       /** DEC-012 — see `AuthUserApiRow` above for why these are optional. */
       readonly must_change_password?: boolean;
+      readonly has_password?: boolean;
       readonly password_expires_at?: string | null;
       readonly is_super_admin?: boolean;
     };
@@ -411,6 +412,7 @@ export const getSession = async (signal?: AbortSignal): Promise<SessionPayload> 
       mustChangePassword: data.user.must_change_password ?? false,
       passwordExpiresAt: data.user.password_expires_at ?? null,
       isSuperAdmin: data.user.is_super_admin ?? false,
+      hasPassword: data.user.has_password ?? true,
     },
     activeTenant,
     tenants,

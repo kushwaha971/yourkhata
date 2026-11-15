@@ -14,6 +14,7 @@ export const DELETE_REASON_MAX = 500;
 
 export interface DeleteBusinessFormValues {
   password: string;
+  code: string;
   confirmName: string;
   reason: string;
 }
@@ -24,14 +25,21 @@ export interface DeleteBusinessFormValues {
  * case-insensitively and trimmed, exactly as this does (`nameMatches`).
  */
 export const useAccountDataSchemas = (
-  businessName: string
+  businessName: string,
+  /** False for an owner who signs in with a mobile code: a code, not a password. */
+  hasPassword = true
 ): { readonly deleteBusinessSchema: Yup.ObjectSchema<DeleteBusinessFormValues> } => {
   const v = useValidationSchemas();
   const { t } = useTranslation();
   return useMemo(
     () => ({
       deleteBusinessSchema: Yup.object({
-        password: v.requiredText(256, 'data.delete.password.required').defined(),
+        password: hasPassword
+          ? v.requiredText(256, 'data.delete.password.required').defined()
+          : Yup.string().defined(),
+        code: hasPassword
+          ? Yup.string().defined()
+          : v.requiredText(12, 'data.delete.code.required').defined(),
         confirmName: v
           .requiredText(200, 'data.delete.confirm.required')
           .test('matches', t('data.delete.confirm.mismatch'), (value) =>
@@ -41,6 +49,6 @@ export const useAccountDataSchemas = (
         reason: Yup.string().max(DELETE_REASON_MAX).defined(),
       }),
     }),
-    [v, t, businessName]
+    [v, t, businessName, hasPassword]
   );
 };

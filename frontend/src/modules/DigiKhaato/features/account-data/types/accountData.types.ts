@@ -41,7 +41,10 @@ export interface SupportAccess {
 }
 
 export interface DeleteRequestInput {
-  readonly password: string;
+  /** The owner's password; or, for an owner with none, the code below. */
+  readonly password?: string;
+  readonly challengeId?: string;
+  readonly code?: string;
   readonly confirmName: string;
   readonly reason: string;
 }

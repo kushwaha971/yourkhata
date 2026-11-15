@@ -324,6 +324,8 @@ export const API_PATHS = {
   TENANT_EXPORT_DETAIL: (id: string) => `/tenants/current/exports/${seg(id)}`,
   TENANT_DELETION: '/tenants/current/deletion',
   TENANT_DELETE_REQUEST: '/tenants/current/delete-request',
+  /** A code to the owner's own mobile, for a delete without a password. */
+  TENANT_DELETE_CODE: '/tenants/current/delete-code',
   TENANT_DELETE_CANCEL: '/tenants/current/delete-cancel',
   /** PLT-14 FR-6 (CCR-12) — the owner's side of support consent. */
   SUPPORT_ACCESS_REQUESTS: '/support/access-requests',

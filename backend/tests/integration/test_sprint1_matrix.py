@@ -421,6 +421,15 @@ EXPECTED: dict[tuple[str, str], dict[str, int]] = {
         "anon": 401,
         "other_tenant": 400,
     },
+    # A code to the owner's own mobile, for a delete without a password.
+    ("POST", "v1:tenant-delete-code"): {
+        "owner": 200,
+        "admin": 403,
+        "staff": 403,
+        "accountant": 403,
+        "anon": 401,
+        "other_tenant": 200,
+    },
     ("POST", "v1:tenant-delete-cancel"): {
         "owner": 412,
         "admin": 403,

@@ -603,3 +603,78 @@ def test_an_unregistered_table_holding_rows_stops_deletion_before_anything_goes(
     tenant.refresh_from_db()
     assert tenant.status == "pending_deletion"
     assert Party.all_objects.filter(tenant=tenant).count() == 1
+
+
+# ── A mobile-only owner deletes with a code (owner, 15 Nov 2026) ─────────────
+# An owner who signs in with a mobile code has no password, and the delete asked
+# for one: they could not delete their own business. A six-digit code sent to
+# their own mobile re-verifies them instead; a password still works for those
+# who have one.
+
+DELETE_CODE = "v1:tenant-delete-code"
+
+
+def _mobile_owner(api_as: Any, tenant: Any) -> tuple[Any, Any]:
+    from apps.platform_app.services.auth import synthetic_email_for
+
+    user = UserFactory(mobile="+919811100001", email=synthetic_email_for("+919811100001"))
+    user.set_unusable_password()
+    user.save(update_fields=["password"])
+    return api_as(tenant, "owner", user=user)
+
+
+def test_a_mobile_only_owner_deletes_with_a_code_to_their_own_mobile(
+    tenant: Any, api_as: Any, fixed_otp: str, django_capture_on_commit_callbacks: Any
+) -> None:
+    client, member = _mobile_owner(api_as, tenant)
+    _export(client, django_capture_on_commit_callbacks)
+    sent = client.post(reverse(DELETE_CODE), {}, format="json")
+    assert sent.status_code == 200, sent.content
+    challenge = sent.json()["data"]["challenge_id"]
+    response = client.post(
+        reverse(DELETE_REQUEST),
+        {"challenge_id": challenge, "code": fixed_otp, "confirm_name": tenant.name},
+        format="json",
+    )
+    assert response.status_code == 200, response.content
+    tenant.refresh_from_db()
+    assert tenant.status == "pending_deletion"
+
+
+def test_a_wrong_code_deletes_nothing(
+    tenant: Any, api_as: Any, fixed_otp: str, django_capture_on_commit_callbacks: Any
+) -> None:
+    client, _ = _mobile_owner(api_as, tenant)
+    _export(client, django_capture_on_commit_callbacks)
+    challenge = client.post(reverse(DELETE_CODE), {}, format="json").json()["data"]["challenge_id"]
+    wrong = "1" * len(fixed_otp) if fixed_otp != "1" * len(fixed_otp) else "2" * len(fixed_otp)
+    response = client.post(
+        reverse(DELETE_REQUEST), {"challenge_id": challenge, "code": wrong, "confirm_name": tenant.name}, format="json"
+    )
+    assert response.status_code == 400
+    tenant.refresh_from_db()
+    assert tenant.status == "active"
+
+
+def test_a_code_sent_to_another_number_cannot_delete(
+    tenant: Any, api_as: Any, fixed_otp: str, django_capture_on_commit_callbacks: Any
+) -> None:
+    """A code proves a number, so it must be the owner's own number."""
+    from apps.platform_app.services import otp as otp_service
+
+    client, _ = _mobile_owner(api_as, tenant)
+    _export(client, django_capture_on_commit_callbacks)
+    issued = otp_service.request_otp(mobile="+919811100002", purpose="verify")
+    response = client.post(
+        reverse(DELETE_REQUEST),
+        {"challenge_id": str(issued.challenge_id), "code": fixed_otp, "confirm_name": tenant.name},
+        format="json",
+    )
+    assert response.status_code == 400
+    tenant.refresh_from_db()
+    assert tenant.status == "active"
+
+
+def test_only_the_owner_can_ask_for_a_delete_code(tenant: Any, api_as: Any) -> None:
+    client, _ = api_as(tenant, "admin")
+    assert client.post(reverse(DELETE_CODE), {}, format="json").status_code == 403

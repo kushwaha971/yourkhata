@@ -112,15 +112,38 @@ def export_is_fresh(tenant: Any) -> bool:
 
 
 def request_deletion(
-    *, ctx: Ctx, password: str, confirm_name: str, reason: str | None = None
+    *,
+    ctx: Ctx,
+    confirm_name: str,
+    password: str | None = None,
+    challenge_id: Any = None,
+    code: str | None = None,
+    reason: str | None = None,
 ) -> Any:
-    """FR-3. Owner only (the view checks the role), password re-verified here."""
+    """FR-3. Owner only (the view checks the role), the owner re-verified here.
+
+    By password, or — for an owner who signs in with a mobile code and so has
+    no password (owner, 15 Nov 2026) — by a code sent to THEIR OWN mobile. A
+    code proves a number, so one sent to any other number is refused.
+    """
+    from apps.platform_app.constants import OtpPurpose
     from apps.platform_app.models import Membership, Session, Tenant
+    from apps.platform_app.services import otp as otp_service
     from apps.platform_app.services.passwords import _verify
 
     user = ctx.actor
     errors: dict[str, list[str]] = {}
-    if not _verify(user=user, password=password or ""):
+    if challenge_id:
+        try:
+            challenge = otp_service.consume_challenge(
+                challenge_id=challenge_id, code=code or "", purpose=OtpPurpose.VERIFY
+            )
+        except otp_service.OtpInvalid:
+            errors["code"] = ["That code is not right."]
+        else:
+            if not user.mobile or challenge.mobile != user.mobile:
+                errors["code"] = ["That code is not right."]
+    elif not _verify(user=user, password=password or ""):
         errors["password"] = ["Password is incorrect."]
     tenant = Tenant.objects.get(pk=ctx.tenant.pk)
     if (confirm_name or "").strip().casefold() != (tenant.name or "").strip().casefold():
@@ -382,3 +405,16 @@ def execute_deletion(*, job: Any) -> dict:
         )
     logger.info("tenant.deleted", extra={"tenant_id": str(tenant.id), "tables": len(progress)})
     return {"counts": progress, "final_export_id": payload.get("final_export_id")}
+
+
+def send_delete_code(*, user: Any, ip: str | None = None, request_id: str | None = None) -> Any:
+    """A code to the owner's own mobile, to re-verify a delete without a password."""
+    from apps.common.exceptions import BusinessRuleViolation
+    from apps.platform_app.constants import OtpPurpose
+    from apps.platform_app.services import otp as otp_service
+
+    if not user.mobile:
+        raise BusinessRuleViolation("precondition_failed", "Add a mobile number to your profile first.")
+    return otp_service.request_otp(
+        mobile=user.mobile, purpose=OtpPurpose.VERIFY, ip=ip, locale=user.locale or "en", request_id=request_id
+    )

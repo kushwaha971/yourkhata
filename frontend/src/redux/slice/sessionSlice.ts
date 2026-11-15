@@ -75,6 +75,8 @@ export interface SessionUser {
   readonly passwordExpiresAt: string | null;
   /** PLT-14 — a Metis operator; the account menu links to the console. */
   readonly isSuperAdmin?: boolean;
+  /** False for a person who signs in with a mobile code and has no password. */
+  readonly hasPassword?: boolean;
 }
 
 /**

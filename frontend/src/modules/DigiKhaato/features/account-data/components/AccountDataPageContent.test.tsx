@@ -1,4 +1,4 @@
-import { screen, waitFor } from '@testing-library/react';
+import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
 import { sessionLoaded } from 'src/redux/slice/sessionSlice';
@@ -58,14 +58,15 @@ const request = (over: Partial<SupportAccess> = {}): SupportAccess => ({
   ...over,
 });
 
-const signInAs = (role: string): void => {
+const signInAs = (role: string, mobileOnly = false): void => {
   store.dispatch(
     sessionLoaded({
       user: {
         id: 'u1',
         name: 'Ramesh',
         email: 'ramesh@example.com',
-        mobile: null,
+        mobile: mobileOnly ? '+919811100001' : null,
+        ...(mobileOnly ? { hasPassword: false } : {}),
         locale: 'en',
         mustChangePassword: false,
         passwordExpiresAt: null,
@@ -159,5 +160,27 @@ describe('AccountDataPageContent', () => {
     await userEvent.click(await screen.findByRole('button', { name: 'Download all data' }));
     await waitFor(() => expect(service.requestExport).toHaveBeenCalledTimes(1));
     expect(await screen.findByText('Waiting')).toBeInTheDocument();
+  });
+
+  it('an owner who signs in with a mobile code confirms with a code, not a password', async () => {
+    // Owner, 15 Nov 2026: such an owner has no password, and the dialog asked for one.
+    service.getDeletionState.mockResolvedValue(state({ exportFresh: true }));
+    service.requestDeleteCode.mockResolvedValue({ challengeId: 'c1', codeLength: 6 });
+    service.requestDeletion.mockResolvedValue(state({ status: 'pending_deletion' }));
+    signInAs('owner', true);
+    renderWithProviders(<AccountDataPageContent />);
+    await userEvent.click(await screen.findByRole('button', { name: 'Delete business' }));
+    expect(screen.queryByLabelText(/Password/)).toBeNull();
+    await userEvent.click(await screen.findByRole('button', { name: 'Send code to my mobile' }));
+    const first = await screen.findByLabelText(/Digit 1/);
+    await userEvent.click(first);
+    await userEvent.keyboard('482916');
+    await userEvent.type(screen.getByLabelText(/Type .*Sharma Kirana/), 'Sharma Kirana');
+    await userEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Delete business' }));
+    await waitFor(() =>
+      expect(service.requestDeletion).toHaveBeenCalledWith(
+        expect.objectContaining({ challengeId: 'c1', code: '482916', confirmName: 'Sharma Kirana' })
+      )
+    );
   });
 });

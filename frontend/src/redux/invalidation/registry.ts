@@ -24,6 +24,8 @@
 export const QUERIES = {
   // session
   fetchSession: 'session/fetchSession',
+  // A delete code to the owner's mobile changes nothing held in the store.
+  requestDeleteCode: 'accountData/requestDeleteCode',
   // Design S2 — sends a code to the new number and changes nothing held here;
   // the confirmation is the mutation.
   requestMobileChange: 'session/requestMobileChange',

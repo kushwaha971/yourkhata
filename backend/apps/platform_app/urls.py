@@ -37,6 +37,7 @@ from apps.platform_app.views.calendar import (
 )
 from apps.platform_app.views.data import (
     DeleteCancelView,
+    DeleteCodeView,
     DeleteRequestView,
     DeletionView,
     SupportAccessDecisionView,
@@ -110,6 +111,7 @@ urlpatterns = [
     path(
         "tenants/current/delete-request", DeleteRequestView.as_view(), name="tenant-delete-request"
     ),
+    path("tenants/current/delete-code", DeleteCodeView.as_view(), name="tenant-delete-code"),
     path("tenants/current/delete-cancel", DeleteCancelView.as_view(), name="tenant-delete-cancel"),
     # PLT-14 FR-6 (CCR-12) — the owner's side of support consent.
     path("support/access-requests", SupportAccessListView.as_view(), name="support-access-list"),
