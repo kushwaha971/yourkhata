@@ -60,7 +60,7 @@ Before each harness was updated, I checked that the feature still exists somewhe
 - **Lint:** `npm run lint` fails on 30 *warnings* in Library, Lending and app-switch files from earlier sessions, none from today. It needs its own clean-up.
 - **Dues scale test (53–55 s of 60):** not a launch risk. No module registers with the dues engine, so the nightly run posts nothing.
 - **Business days:** dormant by design.
-- **Purchase line Undo:** removing a purchase line has no Undo, unlike a sales bill. Owner's call.
+- **Purchase line Undo:** removing a purchase line has no Undo, unlike a sales bill. Owner, 17 Nov 2026: leave it as it is.
 - **Phone Low stock: done (owner, 16 Nov).** A phone now chooses items too. "Choose items" opens a sheet with a tick per item and Tick all; "Order N items" makes one purchase order with only those items. `stock-reports` 48/48 checks it end to end: the URL and line hold only the ticked item at 17; rows ≥ 44 px; LOOKED at 390 EN and 320 HI dark.
 - **Sign-in page error:** the earlier one-off still has no new sighting.
 - **Monkeys:** Shop monkeys on Purchases, Payments and Items (3 seeds × 2 sizes) all 18 pass (3 seeds × 2 sizes each). Eight first failed on their very first page with a React page-load error, in a row while the local server was being changed; all eight rerun in full on the final build passed, and a fresh-browser sign-in probe never showed the error.
