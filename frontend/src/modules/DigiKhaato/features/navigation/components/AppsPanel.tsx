@@ -2,6 +2,8 @@
 
 import { useEffect, useMemo, useState } from 'react';
 
+import { usePathname } from 'next/navigation';
+
 import { Check, Plus, Star } from 'lucide-react';
 
 import { UbBox, UbConfirmDialog, UbGrid, UbPressable, UbStack, UbText } from 'src/design-system';
@@ -24,7 +26,7 @@ import { fetchAppsPerBusiness } from '../../tenant-switcher/api/tenantSwitcherSe
 import { setDefaultTenant } from '../../tenant-switcher/redux/tenantSwitcherThunk';
 import { appPlace } from '../appPlace';
 import { PERSONAL_APPS } from '../personalApps';
-import { useNavigation } from '../useNavigation';
+import { appForPath, useNavigation } from '../useNavigation';
 
 /** Apps with their own words for "Your …" and "Add …"; any other says "place". */
 const WORDED: ReadonlySet<string> = new Set(['shop', 'library', 'lending']);
@@ -68,6 +70,7 @@ export function AppsPanel({ onLeave }: Readonly<{ onLeave?: () => void }>): Reac
   const dispatch = useAppDispatch();
   const router = useAppRouter();
   const { apps: here, app: current } = useNavigation();
+  const pathname = usePathname();
   const active = useAppSelector(selectActiveTenant);
   const tenants = useAppSelector(selectSessionTenants);
   const [chosen, setChosen] = useState<string | null>(current ?? null);
@@ -115,7 +118,12 @@ export function AppsPanel({ onLeave }: Readonly<{ onLeave?: () => void }>): Reac
   const openPlace = async (tenantId: string, code: string): Promise<void> => {
     if (busy) return;
     if (tenantId === active?.id) {
-      if (code === current) return;
+      // Already in it and on one of its screens: the tap only closes the sheet.
+      // On the Apps page itself the open app's card takes the person back in.
+      if (code === current && appForPath(pathname) === code) {
+        onLeave?.();
+        return;
+      }
       onLeave?.();
       router.push(appPlace(tenantId, code, homeOf(code)));
       return;

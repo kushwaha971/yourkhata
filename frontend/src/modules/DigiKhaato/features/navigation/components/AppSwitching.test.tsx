@@ -202,6 +202,22 @@ describe('desktop rail and the Apps page (R-DEC-09)', () => {
   });
 
   /**
+   * 16 Nov e2e/apps-switch-isolation.mjs: on the Apps PAGE the card of the app
+   * the person was last in says "Open now", and tapping it did nothing — the
+   * panel returned early because that app was already the current one, so the
+   * merchant stayed on Apps. From the page it must take them back into it.
+   */
+  it('takes the person back into the open app when its card is tapped on the Apps page', () => {
+    load(APPS, ADD_LENDING);
+    mockPath = '/apps';
+    rememberAppPlace('t1', 'library', '/library/students');
+    renderWithProviders(<AppsPageContent />);
+    fireEvent.click(screen.getByTestId('apps-card-library'));
+    expect(push).toHaveBeenCalledWith('/library/students');
+    mockPath = '/library/students';
+  });
+
+  /**
    * F4 screenshots: on the dark rail in the LIGHT theme every row label was
    * dark ink, nearly invisible. The row set the rail's light ink, and the
    * label inside it (`UbText`) applied its own default tone, `text-primary`,
