@@ -110,6 +110,17 @@ def test_whole_units_refuse_fractional_quantities(owner: Any) -> None:
     )
 
 
+@pytest.mark.parametrize("field", ["selling_price", "purchase_price", "mrp"])
+def test_an_item_price_above_a_bill_rate_is_refused(owner: Any, field: str) -> None:
+    """FB-020 (found 16 Nov 2026, e2e/shop-edges-ppi.mjs E7): an item took ₹99,999,999,999 —
+    the column's own ceiling — while a bill line refuses any rate above ₹9,99,99,999.99, so a
+    typo'd price saved an item that could never be billed. The item keeps the bill's limit."""
+    assert create(owner, **{field: "99999999.99"}).status_code == 201
+    response = create(owner, name="Typo item", **{field: "100000000.00"})
+    assert response.status_code == 400
+    assert field in response.json()["error"]["details"]
+
+
 def test_opening_in_the_future_is_refused(owner: Any) -> None:
     """T-INV-05-4."""
     response = create(owner, opening_stock={"qty": "1", "unit_cost": "1", "as_of": "2999-01-01"})

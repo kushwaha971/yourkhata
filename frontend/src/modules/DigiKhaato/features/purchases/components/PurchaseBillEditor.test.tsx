@@ -736,6 +736,8 @@ describe('SH-011 — first-save recovery and one save lane (ADR-063)', () => {
   const open = async (kind?: 'purchase_bill' | 'purchase_order') => {
     const view = renderWithProviders(<Probe kind={kind} />);
     await waitFor(() => expect(editor.editor.context).not.toBeNull());
+    // A supplier makes this a purchase worth saving: an untouched one sends nothing (E21).
+    act(() => editor.form.setValue('partyId', 'p-supplier'));
     return view;
   };
   // A lost reply marks the network degraded, which correctly pauses autosave;
@@ -1295,4 +1297,16 @@ it('marks a warm stock view stale when a lost Record is recovered by reading its
   service.getPurchaseBill.mockResolvedValueOnce(envelope(RECORDED));
   await userEvent.click(screen.getByRole('button', { name: 'Check recorded bill' }));
   await waitFor(() => expect(selectStockSummaryStale(store.getState())).toBe(true));
+});
+
+it('sends nothing when an untouched new purchase is saved with Ctrl+S (E21)', async () => {
+  // Defect (16 Nov 2026, e2e/shop-edges-ppi-ui.mjs): Ctrl+S on an empty new purchase
+  // POSTed `party_id: ""`, and the server's raw "Must be a valid UUID." appeared under
+  // Supplier. An empty purchase has nothing to keep; it must not reach the server.
+  renderWithProviders(<PurchaseBillEditorPageContent documentId={null} />);
+  await screen.findByRole('combobox', { name: 'Supplier' });
+  await userEvent.keyboard('{Control>}s{/Control}');
+  await new Promise((r) => setTimeout(r, 50));
+  expect(service.createPurchaseBill).not.toHaveBeenCalled();
+  expect(screen.queryByText(/UUID/)).not.toBeInTheDocument();
 });

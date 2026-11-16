@@ -127,7 +127,11 @@ export async function measureCustomers(page, rootSelector) {
       const box = el.getBoundingClientRect(); const cs = getComputedStyle(el);
       if (!box.width || !box.height || cs.visibility === 'hidden' || el.checkVisibility?.() === false) continue;
       // Responsive screen-reader labels (e.g. max-sm:sr-only) are invisible too.
-      if (cs.position === 'absolute' && box.width <= 1 && box.height <= 1 && cs.clip !== 'auto') continue;
+      // The label may sit INSIDE one (Bills' phone count, "<span max-md:sr-only>Bills <b>299</b>").
+      const srOnly = (e) => { const s = getComputedStyle(e); const r = e.getBoundingClientRect(); return s.position === 'absolute' && r.width <= 1 && r.height <= 1 && s.clip !== 'auto'; };
+      let hiddenLabel = false;
+      for (let a = el; a && a !== root; a = a.parentElement) if (srOnly(a)) { hiddenLabel = true; break; }
+      if (hiddenLabel) continue;
       const range = document.createRange(); range.selectNodeContents(node);
       const rects = [...range.getClientRects()];
       if (rects.some((r) => r.right > box.right + 1.5 || r.left < box.left - 1.5) && cs.display !== 'inline') cut.push(text);

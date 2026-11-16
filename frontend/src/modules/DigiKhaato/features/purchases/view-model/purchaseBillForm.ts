@@ -155,7 +155,7 @@ export const hasIncompletePurchaseInput = (line: PurchaseLineForm): boolean => {
 };
 
 export const toPurchaseWireBody = (values: PurchaseBillFormValues): Record<string, unknown> => ({
-  party_id: values.partyId,
+  party_id: values.partyId || null,
   supplier_invoice_number: values.supplierInvoiceNumber.trim() || null,
   supplier_invoice_date: values.supplierInvoiceDate || null,
   document_date: values.documentDate || null,

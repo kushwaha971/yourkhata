@@ -59,7 +59,10 @@ export const createPurchaseBillColumns = ({
             cardSlot: 'none',
             widthShare: 12,
             cell: (row: PurchaseBillListRow) => (
-              <UbText as="span" variant="body-sm" className="ds-num block whitespace-nowrap">
+              /* The supplier's own number is free text ("RKE-ELECTRICAL-2026-1043"):
+                 it wraps, at its hyphens first, rather than being cut mid-glyph in a
+                 12 % column (16 Nov 2026) — the merchant matches it to the paper. */
+              <UbText as="span" variant="body-sm" className="ds-num block whitespace-normal [overflow-wrap:anywhere]">
                 {row.supplierInvoiceNumber ?? '—'}
               </UbText>
             ),

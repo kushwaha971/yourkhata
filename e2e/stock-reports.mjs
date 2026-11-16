@@ -21,6 +21,7 @@
  * Local QA tenant only; nothing is sent to anybody.
  */
 import { mkdirSync } from 'node:fs';
+import { newOwner } from './lib/fixtures.mjs';
 import { createRequire } from 'node:module';
 
 const { chromium } = createRequire(import.meta.url)('playwright');
@@ -67,7 +68,8 @@ const measure = () => {
   return {
     overflow: document.documentElement.scrollWidth - innerWidth,
     cut: [...new Set(cut)],
-    order: target(document.querySelector('[data-testid=low-stock-order]')),
+    // Part F: a phone orders the list with one button at the foot.
+    order: target([...document.querySelectorAll('button')].find((b) => /Make purchase order|पर्चेज़ ऑर्डर|ऑर्डर/.test(b.textContent ?? '') && b.offsetParent)),
   };
 };
 
@@ -78,8 +80,11 @@ try {
   const ctx = await browser.newContext();
   const page = await ctx.newPage();
   await page.goto(`${base}/login/email`);
-  await page.fill('input[type=email]', 'scale@digikhaato.test');
-  await page.fill('input[type=password]', 'Scale-Run-2026!');
+  // Its own business (16 Nov 2026): on the shared QA book, monkeys had grown Low
+  // stock to 521 rows and the two items this file makes landed on far pages.
+  const owner = await newOwner({ shop: 'Stock Reports Kirana', prefix: 'qa-stock-reports' });
+  await page.fill('input[type=email]', owner.email);
+  await page.fill('input[type=password]', owner.password);
   await page.click('button[type=submit]');
   await page.waitForURL((u) => !u.pathname.startsWith('/login'));
   const csrf = (await ctx.cookies()).find((c) => c.name === 'ub_csrf')?.value;
@@ -158,7 +163,7 @@ try {
         check(`${tag}: no sideways scroll`, m.overflow <= 0, `${m.overflow}px`);
         check(`${tag}: no text cut`, m.cut.length === 0, m.cut.join(' | '));
         if (screen === 'low' && width < 1280)
-          check(`${tag}: Order target ≥ 44 px`, m.order >= 44, `${m.order}`);
+          check(`${tag}: Make purchase order target ≥ 44 px`, m.order >= 44, `${m.order}`);
         if (screen === 'summary' && width < 1280) {
           const sku = await page.getByTestId('ub-grid-card').first().getByText(/SKU-/).count();
           check(`${tag}: a summary card has no SKU line`, sku === 0);
@@ -177,9 +182,10 @@ try {
   if (card) {
     const words = await card.getByTestId('low-stock-words').innerText();
     check('the card says what is left and where it reorders', words === '3 NOS left · reorder at 10 NOS', words);
-    check('the card names the purchase price', (await card.getByText('Purchase price ₹90.00').count()) === 1);
+    // Part F's phone card is name and words only; the price is on the item page.
     if (SHOTS) await card.screenshot({ path: `${SHOTS}/card-390.png` });
-    await card.getByTestId('low-stock-order').click();
+    // Part F (11 Nov 2026): a phone orders the whole list with one button.
+    await page.getByRole('button', { name: /Make purchase order/ }).first().click();
     await page.waitForURL(/\/purchases\/orders\/new\?items=/, { timeout: 15000 });
     check('Order opens a new purchase order with the item', page.url().includes(first.id));
     const line = page.getByText(first.name).first();
@@ -190,7 +196,8 @@ try {
     if (SHOTS) await page.screenshot({ path: `${SHOTS}/order-390.png`, fullPage: true });
 
     /* Persisted: pick a supplier and Save draft. */
-    const supplier = (await get('/parties?type=supplier&module=shop&page_size=10')).find((s) => s.status === 'active');
+    const supplier = (await get('/parties?type=supplier&module=shop&page_size=10')).find((s) => s.status === 'active')
+      ?? (await post('/parties', { name: 'Stock Reports Supplier', is_supplier: true, is_customer: false, state_code: '27' }));
     const picker = page.getByRole('combobox', { name: /Supplier/ }).first();
     await picker.click();
     await page.keyboard.type(supplier.name.slice(0, 12));
@@ -242,10 +249,14 @@ try {
   /* ---------- Adjust stock ----------
      The design's Stock summary header draws Export only, so Adjust stock is
      reached from a Low stock row (and an item's own page). */
+  // Part F (11 Nov 2026) took Adjust off the Low stock row: the row opens the
+  // item, and the item's page has Adjust stock.
   await openLow();
-  await page.getByRole('button', { name: /^Adjust stock/ }).first().click();
+  await page.getByRole('link', { name: first.name }).first().click();
+  await page.waitForURL(/\/items\/[0-9a-f-]{36}/, { timeout: 15000 });
+  await page.getByRole('button', { name: /^Adjust stock/ }).locator('visible=true').first().click();
   await page.getByRole('dialog').getByRole('radiogroup').waitFor({ timeout: 15000 });
-  check('a Low stock row opens Adjust stock', true);
+  check('a Low stock row leads to Adjust stock through its item', true);
 } finally {
   await browser.close();
 }

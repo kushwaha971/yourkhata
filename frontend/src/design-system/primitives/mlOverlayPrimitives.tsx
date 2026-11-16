@@ -533,9 +533,12 @@ export function MLDialogFooter({
         order === 'as-written'
           ? '[&:has(>button:nth-of-type(3))]:flex [&:has(>button:nth-of-type(3))]:flex-col'
           : '[&:has(>button:nth-of-type(3))]:flex [&:has(>button:nth-of-type(3))]:flex-col-reverse',
-        '[&>button]:h-[46px] [&>button]:text-[15px]',
+        // A 320 px phone gives the 2fr button ~186 px: "Paid ₹12,40,378.00 ·
+        // Record" ran off the sheet because buttons never wrap. Here a long
+        // label takes a second line inside the button instead (16 Nov 2026).
+        '[&>button]:min-h-[46px] [&>button]:h-auto [&>button]:min-w-0 [&>button]:whitespace-normal [&>button]:py-1.5 [&>button]:text-center [&>button]:leading-tight [&>button]:text-[15px]',
         'lg:flex lg:flex-row lg:flex-wrap lg:justify-end lg:px-6 lg:py-[14px]',
-        'lg:[&>button]:h-10 lg:[&>button]:text-sm',
+        'lg:[&>button]:h-10 lg:[&>button]:min-h-0 lg:[&>button]:whitespace-nowrap lg:[&>button]:text-sm',
         className
       )}
     >

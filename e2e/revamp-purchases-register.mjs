@@ -166,18 +166,13 @@ try {
           );
         await check('back-keeps-search');
       }
-      await page.goto(`${base}/purchases/bills`, { waitUntil: 'networkidle' });
-      const group = page.getByRole('radiogroup', {
-        name: locale === 'hi' ? 'स्थिति के अनुसार बिल' : 'Bills by status',
-      });
-      await group.waitFor();
-      const unpaid = group.getByRole('radio', { name: locale === 'hi' ? /देना है/ : /To pay/ });
+      // Part F (11 Nov 2026) dropped the status chips; "To pay" is a link (?tab=unpaid), as the dashboard sends.
       const response = page.waitForResponse(
         (r) =>
           r.url().includes('/api/v1/purchases/bills?') &&
           new URL(r.url()).searchParams.get('tab') === 'unpaid'
       );
-      await unpaid.click();
+      await page.goto(`${base}/purchases/bills?tab=unpaid`, { waitUntil: 'networkidle' });
       await response;
       await page.waitForLoadState('networkidle');
       await check('to-pay');

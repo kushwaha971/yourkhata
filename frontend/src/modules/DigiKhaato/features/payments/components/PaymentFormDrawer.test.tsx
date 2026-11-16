@@ -605,3 +605,13 @@ it('says money with no bill to pay goes against the old balance, not the next bi
     'No unpaid bills. The ₹1,000.00 goes against their old balance.'
   );
 });
+
+it('opens Receive money clean: tapping Received does not paint the empty amount red (E26)', async () => {
+  /** 16 Nov 2026, e2e/shop-edges-ppi-ui.mjs: the amount box is focused on open; tapping
+   *  "Received" took focus away, marked it touched, and "Enter the amount" showed in red
+   *  before any Save — the LED-01 / A5 class. An untyped amount is checked on Save. */
+  renderWithProviders(<PaymentFormDrawer context={{ direction: 'in', entry: 'list' }} onClose={jest.fn()} />);
+  const received = await screen.findByRole('radio', { name: 'Received' });
+  await userEvent.click(received);
+  expect(document.querySelector('[name="lines.0.amount"]')).not.toHaveAttribute('aria-invalid', 'true');
+});

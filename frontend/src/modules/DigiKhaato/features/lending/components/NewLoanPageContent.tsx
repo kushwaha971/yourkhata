@@ -230,7 +230,7 @@ function NewLoanForm({ borrowerId }: Readonly<{ borrowerId?: string }>): React.J
           </UbField>
         </UbBox>
       )}
-      <UbBox className="grid grid-cols-2 gap-3">
+      <UbBox className="grid grid-cols-1 gap-3 min-[380px]:grid-cols-2">
         <UbField name="each" label={each} required>
           {(field) => <UbMoneyInput {...field} value={field.value as string} inputMode="decimal" className="text-right" />}
         </UbField>

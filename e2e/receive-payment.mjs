@@ -204,6 +204,8 @@ try {
     const hint = await drawer.getByTestId('payment-hint').innerText();
     check(`more than due ${tag}: says ₹155 stays as advance`, /155\.00/.test(hint), hint);
     const row = drawer.getByTestId('alloc-advance-row');
+    // The row's amount follows the typed figure a beat later; wait for it rather than a fixed 200 ms.
+    await row.filter({ hasText: /155\.00/ }).first().waitFor({ timeout: 3000 }).catch(() => {});
     check(
       `more than due ${tag}: the advance is a row before saving`,
       // With no open bill there are no rows to sit under; the hint above says it.

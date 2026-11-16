@@ -233,6 +233,19 @@ export function UbLineItemsEditor<TForm extends FieldValues, TName extends Array
   const layout: UbLineCellLayout = forcedLayout ?? (tableFits ? 'table' : 'card');
   const baseId = useId();
   const { fields, append, remove } = fieldArray;
+  // A double tap must take one line off, not two: the next line moves up under
+  // the pointer and the second tap lands on ITS bin. A bin tap within 400 ms of
+  // the last removal is that second tap (as sales' own guard; E20, 16 Nov 2026).
+  const lastBinTap = useRef(0);
+  const removeByBin = useCallback(
+    (index: number) => {
+      const now = Date.now();
+      if (now - lastBinTap.current < 400) return;
+      lastBinTap.current = now;
+      remove(index);
+    },
+    [remove]
+  );
   const { submitCount, errors } = useFormState({ control });
   const keys = fields.map((line) => line.key).join(',');
   const [expansion, setExpansion] = useState(() => ({
@@ -526,7 +539,7 @@ export function UbLineItemsEditor<TForm extends FieldValues, TName extends Array
                 <div role="cell">
                   <button
                     type="button"
-                    onClick={() => remove(index)}
+                    onClick={() => removeByBin(index)}
                     disabled={disabled}
                     aria-label={labels.removeLine(index + 1)}
                     className="ub-hit flex h-10 w-10 items-center justify-center rounded-control text-text-tertiary hover:bg-surface-sunken hover:text-formError disabled:opacity-50"
@@ -597,7 +610,7 @@ export function UbLineItemsEditor<TForm extends FieldValues, TName extends Array
                       </div>
                       <button
                         type="button"
-                        onClick={() => remove(index)}
+                        onClick={() => removeByBin(index)}
                         disabled={disabled}
                         aria-label={labels.removeLine(index + 1)}
                         className="ub-hit flex h-10 w-10 shrink-0 items-center justify-center rounded-control text-text-tertiary hover:bg-surface-sunken hover:text-formError disabled:opacity-50"

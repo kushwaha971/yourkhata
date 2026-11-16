@@ -17,6 +17,7 @@ import {
 } from 'src/design-system';
 import type { TranslateFn } from 'src/hooks/useTranslation';
 import { PAYMENT_MODES, type PaymentMode } from 'src/types/domain.types';
+import { blurIfTyped } from 'src/utils/autofocusBlur';
 import { compareMoney, formatAmount } from 'src/utils/money';
 
 import { PaymentMethodField } from '../../ledger/components/PaymentMethodField';
@@ -165,6 +166,9 @@ export function PaymentModeEditor({
                       {(field) => (
                         <UbMoneyInput
                           {...field}
+                          // The first amount is focused on open: leaving it untyped (to tap
+                          // Received / Paid out) must not paint it red before Save (E26).
+                          onBlur={index === 0 ? blurIfTyped(field, form.formState.isSubmitted) : field.onBlur}
                           value={field.value as string}
                           inputMode="decimal"
                           disabled={disabled}

@@ -151,11 +151,8 @@ try {
       check(`${tag}: no text cut`, m.cut.length === 0, m.cut.join(' | '));
       check(`${tag}: the page does not scroll, only the rows`, m.pageScroll <= 1, `${m.pageScroll}px`);
       if (width < 1024) {
-        check(
-          `${tag}: chips 32 px face, 44 px target`,
-          m.chips.length === 4 && m.chips.every((c) => c.face === 32 && c.hit),
-          JSON.stringify(m.chips)
-        );
+        // Part F (11 Nov 2026) draws no status chips on this register.
+        check(`${tag}: no status chips (Part F)`, m.chips.length === 0, JSON.stringify(m.chips));
         check(`${tag}: no pager on a phone`, !m.pager);
         check(
           `${tag}: cards start in the top half and fill the rest`,
@@ -209,14 +206,7 @@ try {
   check('the next page was asked for page 2', asked.slice(pages).some((q) => q.get('page') === '2'));
 
   /* ---------- Cancelled ---------- */
-  /* networkidle can settle before the chip's request is sent; wait for it. */
-  const voidAsked = page
-    .waitForRequest((r) => new URL(r.url()).searchParams.get('status') === 'void', { timeout: 15000 })
-    .catch(() => null);
-  await page.getByRole('radio', { name: 'Cancelled' }).click();
-  const voidRequest = await voidAsked;
-  await page.waitForLoadState('networkidle');
-  check('Cancelled asks the server for cancelled Shop payments', new URL(voidRequest?.url() ?? 'http://x/').searchParams.get('bucket') === 'shop', voidRequest?.url() ?? 'no request');
+  /* Part F dropped the Cancelled chip; a link with ?tab=void still opens them. */
   /* The QA book has no cancelled payment, so make one to read. */
   const customer = (await getJson('/parties?type=customer&page_size=1')).data[0];
   const made = await send('/payments', {

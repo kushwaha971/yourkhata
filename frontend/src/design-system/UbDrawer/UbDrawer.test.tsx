@@ -159,7 +159,20 @@ describe('design §A5: one spacing scale for drawers and sheets', () => {
     );
     const footer = screen.getByRole('button', { name: 'Save' }).parentElement as HTMLElement;
     expect(footer).toHaveClass('grid', 'grid-cols-[1fr_2fr]', '[&>:not(button)]:col-span-full');
-    expect(footer).toHaveClass('[&>button]:h-[46px]', 'lg:[&>button]:h-10', 'lg:justify-end');
+    expect(footer).toHaveClass('[&>button]:min-h-[46px]', 'lg:[&>button]:h-10', 'lg:justify-end');
+  });
+
+  /** Prevents "Paid ₹12,40,378.00 · Record" running off a 320 px sheet (16 Nov 2026):
+   * on a phone a footer button's label wraps inside it rather than past the edge. */
+  it('lets a long footer label wrap inside its button on a phone', () => {
+    open(
+      <>
+        <button type="button">Pay later</button>
+        <button type="button">Paid ₹12,40,378.00 · Record</button>
+      </>
+    );
+    const footer = screen.getByRole('button', { name: 'Pay later' }).parentElement as HTMLElement;
+    expect(footer).toHaveClass('[&>button]:min-w-0', '[&>button]:whitespace-normal', 'lg:[&>button]:whitespace-nowrap');
   });
 
   /** Prevents a header that packs 24 px all round instead of the design's row (`.shead`). */

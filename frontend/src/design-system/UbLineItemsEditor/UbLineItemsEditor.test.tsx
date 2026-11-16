@@ -411,3 +411,25 @@ it('opens a collapsed invalid row after submission so its reason is visible', as
   expect(screen.getByRole('button', { name: 'line 2' })).toHaveAttribute('aria-expanded', 'true');
   expect(screen.queryByLabelText('Qty, line 1')).not.toBeInTheDocument();
 });
+
+describe('a busy counter', () => {
+  it('takes one line off for a double tap on a bin, not two (E20)', async () => {
+    // 16 Nov 2026, e2e/shop-edges-ppi-ui.mjs at 1280: after the first removal the
+    // next line moved up under the pointer and the second click of a double click
+    // landed on ITS bin — a purchase lost both lines. Sales had its own 400 ms
+    // guard; the shared editor every other document uses had none.
+    const user = userEvent.setup();
+    render(
+      <Harness
+        initial={[
+          { name: 'Rice', qty: '1' },
+          { name: 'Dal', qty: '1' },
+        ]}
+      />
+    );
+    // The browser's second click lands on the line that moved up into place.
+    await user.click(screen.getByRole('button', { name: 'Remove line 1' }));
+    await user.click(screen.getByRole('button', { name: 'Remove line 1' }));
+    expect(screen.getAllByRole('button', { name: /^Remove line \d$/ })).toHaveLength(1);
+  });
+});

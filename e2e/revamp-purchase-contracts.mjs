@@ -60,10 +60,11 @@ try {
   const summary=page.getByTestId('purchase-header').getByRole('button',{name:new RegExp(`^${supplier.name} ·`)});
   await summary.click();await page.getByTestId('purchase-supplier').waitFor();await shot('supplier-edit');await summary.click();
   const quantity=page.locator('[data-line-cell][data-row="0"][data-col="1"] input');
+  // Owner, 27 Oct 2026: a whole-number unit takes no point at all — 1.5 keeps 1, never 15.
   await quantity.fill('1.5');
-  check(await quantity.inputValue()==='1.5',`${tag}: fractional quantity changed into another number`);
-  await page.getByTestId('purchase-dock').getByRole('button',{name:w('editor.record'),exact:true}).click();
-  check(await quantity.getAttribute('aria-invalid')==='true'&&records===0,`${tag}: invalid whole-unit quantity was not refused`);
+  check(await quantity.inputValue()==='1',`${tag}: 1.5 on a whole unit became ${await quantity.inputValue()}, not 1`);
+  await quantity.fill('');await quantity.pressSequentially('3.141');
+  check(await quantity.inputValue()==='3',`${tag}: typing 3.141 on a whole unit became ${await quantity.inputValue()}, not 3`);
   await shot('invalid-whole-quantity');await quantity.fill('-5');
   check(await quantity.inputValue()==='-5',`${tag}: negative quantity changed sign`);
   await shot('negative-quantity');await quantity.fill('2');
@@ -77,7 +78,7 @@ try {
   const dialog=page.getByRole('dialog');await dialog.waitFor();check((await dialog.locator('input[name=name]').inputValue())===contactName,`${tag}: inline name not prefilled`);await shot('supplier-create','[role=dialog]');
   const savedParty=page.waitForResponse(r=>r.request().method()==='POST'&&new URL(r.url()).pathname==='/api/v1/parties'&&r.ok());
   const savedBill=page.waitForResponse(r=>r.request().method()==='POST'&&new URL(r.url()).pathname==='/api/v1/purchases/bills'&&r.ok());
-  await dialog.getByRole('button',{name:contacts['parties.form.submit.create.supplier'],exact:true}).click();
+  await dialog.getByRole('button',{name:contacts['parties.form.shop.submit.supplier'],exact:true}).click();
   const contact=(await (await savedParty).json()).data;const draft=(await(await savedBill).json()).data;drafts.add(draft.id);
   await page.getByTestId('purchase-header').getByRole('button',{name:new RegExp(`^${contactName} ·`)}).waitFor();
   check(await page.getByRole('dialog').count()===0,`${tag}: saving supplier unexpectedly opened a payment/Record sheet`);
@@ -121,8 +122,9 @@ try {
   await page.goto(`${base}/purchases/bills/${returnBill.id}/edit`);await page.waitForURL(u=>u.pathname===`/purchases/bills/${returnBill.id}`);
   check(await page.getByTestId('line-items-editor').count()===0,`${tag}: saved URL exposed posted-bill editing`);
   let returnPosts=0;const watch=r=>{if(r.method()==='POST'&&new URL(r.url()).pathname==='/api/v1/purchases/debit-notes')returnPosts++;};page.on('request',watch);
+  // Return now lives in the "Something wrong?" sheet (purchase-wrong), not the ⋯ menu.
+  await page.getByTestId('purchase-wrong').filter({visible:true}).first().click();
   await page.getByTestId('purchase-return').waitFor({state:'attached'});
-  if(!await page.getByTestId('purchase-return').isVisible()) await page.getByRole('button',{name:common['common.action.moreActions'],exact:true}).click();
   await page.getByTestId('purchase-return').filter({visible:true}).first().click();
   const returns=page.getByRole('dialog');await returns.waitFor();
   await returns.getByRole('combobox',{name:w('debitNote.reasonLabel'),exact:true}).click();

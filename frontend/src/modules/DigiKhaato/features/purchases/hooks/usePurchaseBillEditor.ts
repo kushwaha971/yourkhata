@@ -336,6 +336,9 @@ export const usePurchaseBillEditor = (
                 : []
             );
         let submittedRows = captureRows();
+        // E21: a new purchase with no supplier and no complete line has nothing to keep;
+        // saving it made an empty draft (or a raw server refusal) — send nothing.
+        if (!id && submittedRows.length === 0 && !form.getValues('partyId')) return null;
         let submittedBody = toPurchaseWireBody(form.getValues());
         const body = { ...submittedBody };
         if (!id) {
