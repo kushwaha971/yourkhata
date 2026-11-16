@@ -2,6 +2,8 @@
 
 import { useCallback, useMemo, useState } from 'react';
 
+import dynamic from 'next/dynamic';
+
 import { ShoppingCart } from 'lucide-react';
 
 import {
@@ -40,6 +42,12 @@ import { StockBadge } from './StockBadge';
 import { StockOffState } from './StockOffState';
 
 import type { LowStockRow } from '../types/item.types';
+
+/* The choose sheet belongs to the chunk that opens it, not the list's first paint. */
+const LowStockChooseSheet = dynamic(
+  () => import('./LowStockChooseSheet').then((m) => m.LowStockChooseSheet),
+  { ssr: false }
+);
 
 /* 09 §8.4 — the saved snackbar's View opens this, so every screen that
    mounts the drawer mounts it too. */
@@ -135,6 +143,7 @@ export function LowStockPageContent(): React.JSX.Element {
   const canOrder = hasModule('purchases') && can('purchases.bill.write');
   const rows = useMemo(() => report.low?.rows ?? [], [report.low]);
   const [selected, setSelected] = useState<readonly string[]>([]);
+  const [choosing, setChoosing] = useState(false);
 
   const order = useCallback(
     (picked: readonly LowStockRow[]) =>
@@ -238,6 +247,19 @@ export function LowStockPageContent(): React.JSX.Element {
               },
             ]}
           />
+        )}
+        {/* Owner, 16 Nov 2026: a phone chooses items too, not only the whole list. */}
+        {tier === 'cards' && canOrder && rows.length > 0 && (
+          <UbButton
+            variant="secondary"
+            onClick={() => setChoosing(true)}
+            data-testid="low-stock-choose"
+          >
+            {t('stock.low.choose')}
+          </UbButton>
+        )}
+        {choosing && (
+          <LowStockChooseSheet rows={rows} onOrder={order} onClose={() => setChoosing(false)} />
         )}
         <UbDataGrid
           rows={rows}

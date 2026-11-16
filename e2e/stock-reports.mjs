@@ -184,7 +184,23 @@ try {
     check('the card says what is left and where it reorders', words === '3 NOS left · reorder at 10 NOS', words);
     // Part F's phone card is name and words only; the price is on the item page.
     if (SHOTS) await card.screenshot({ path: `${SHOTS}/card-390.png` });
-    // Part F (11 Nov 2026): a phone orders the whole list with one button.
+    // Owner, 16 Nov 2026: a phone also CHOOSES items — tick one, order only it.
+    await page.getByTestId('low-stock-choose').click();
+    const sheet = page.getByRole('dialog');
+    await sheet.getByTestId('low-stock-choose-list').waitFor();
+    check('Choose: Order waits until something is ticked', await sheet.getByTestId('low-stock-choose-order').isDisabled());
+    await sheet.getByRole('checkbox', { name: new RegExp(second.name) }).click();
+    const rowsTall = await sheet.getByRole('checkbox').evaluateAll((els) => els.map((e) => Math.round(e.parentElement.getBoundingClientRect().height)));
+    check('Choose: every tick row is at least 44 px tall', rowsTall.every((h) => h >= 44), rowsTall.join(','));
+    check('Choose: the sheet fits the phone', (await page.evaluate(() => document.documentElement.scrollWidth - innerWidth)) <= 0);
+    if (SHOTS) await page.screenshot({ path: `${SHOTS}/choose-390.png` });
+    await sheet.getByTestId('low-stock-choose-order').click();
+    await page.waitForURL(/\/purchases\/orders\/new\?items=/, { timeout: 15000 });
+    check('Choose: the order holds the ticked item only', page.url().includes(second.id) && !page.url().includes(first.id), page.url());
+    await page.getByText(second.name).first().waitFor({ timeout: 15000 });
+    check('Choose: the ticked item is on a line at its suggested 17', (await page.locator('input[value="17"]').count()) >= 1);
+    await openLow();
+    // Part F (11 Nov 2026): the whole list is still one button.
     await page.getByRole('button', { name: /Make purchase order/ }).first().click();
     await page.waitForURL(/\/purchases\/orders\/new\?items=/, { timeout: 15000 });
     check('Order opens a new purchase order with the item', page.url().includes(first.id));

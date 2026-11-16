@@ -61,7 +61,7 @@ Before each harness was updated, I checked that the feature still exists somewhe
 - **Dues scale test (53–55 s of 60):** not a launch risk. No module registers with the dues engine, so the nightly run posts nothing.
 - **Business days:** dormant by design.
 - **Purchase line Undo:** removing a purchase line has no Undo, unlike a sales bill. Owner's call.
-- **Phone Low stock:** can only order the whole list, not chosen items. That is Part F as approved; owner's call.
+- **Phone Low stock: done (owner, 16 Nov).** A phone now chooses items too. "Choose items" opens a sheet with a tick per item and Tick all; "Order N items" makes one purchase order with only those items. `stock-reports` 48/48 checks it end to end: the URL and line hold only the ticked item at 17; rows ≥ 44 px; LOOKED at 390 EN and 320 HI dark.
 - **Sign-in page error:** the earlier one-off still has no new sighting.
 - **Monkeys:** Shop monkeys on Purchases, Payments and Items (3 seeds × 2 sizes) were running at commit time; their results follow.
 
