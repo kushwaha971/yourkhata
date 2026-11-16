@@ -71,3 +71,14 @@ it('the accountant reads both and can change neither', async () => {
   expect(screen.getByLabelText('Terms line')).toBeDisabled();
   expect(screen.queryByRole('button', { name: 'Save' })).toBeNull();
 });
+
+it('says so when another tab or device saved Settings first (412)', async () => {
+  // settings-edges E5, 16 Nov 2026: the refused save showed nothing here,
+  // because the conflict dialog lived only on the Settings list.
+  signIn('owner', ['platform.tenant.manage']);
+  service.saveSettings.mockRejectedValue({ code: 'precondition_failed', message: 'Changed', details: null, requestId: null });
+  const user = userEvent.setup();
+  renderWithProviders(<BillDefaultsPanel />);
+  await user.click(await screen.findByRole('switch', { name: /Show the UPI QR/ }));
+  expect(await screen.findByText('Settings changed elsewhere')).toBeInTheDocument();
+});

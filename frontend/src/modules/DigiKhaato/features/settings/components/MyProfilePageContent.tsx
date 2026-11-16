@@ -119,7 +119,7 @@ export function MyProfilePageContent(): React.JSX.Element {
               placeholder={t('settings.me.namePlaceholder')}
               required
             >
-              {(field) => <UbTextInput {...field} />}
+              {(field) => <UbTextInput {...field} maxLength={120} />}
             </UbField>
             <UbStack gap={1}>
               <UbText as="span" variant="label">

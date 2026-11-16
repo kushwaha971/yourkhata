@@ -482,10 +482,12 @@ const checkKept = async (i, before, how, leftFrom) => {
       if (!lost.length) keptOnServer += 1;
     }
   }
-  if (lost.length && !after.length) {
+  if (lost.length) {
     // Held (Hold saves it and opens a blank bill), or saved under an id the
     // address no longer names: look through the newest drafts, as a merchant
-    // looks along the held strip.
+    // looks along the held strip. Not only when the new bill is blank: one
+    // opened from an address with `?item=` starts with that item already on
+    // it (16 Nov 2026 — two Settings runs called a held line "lost" this way).
     const recent = ((await (await ctx.request.get(`${base}/api/v1/sales/invoices?tab=draft&page_size=50`)).json().catch(() => ({}))).data ?? []);
     for (const d of recent) {
       const saved = await serverLines(d.id);

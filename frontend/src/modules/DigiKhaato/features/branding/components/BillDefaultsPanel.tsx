@@ -5,6 +5,7 @@ import { useState } from 'react';
 import {
   UbBox,
   UbButton,
+  UbConfirmDialog,
   UbPanel,
   UbPanelSection,
   UbStack,
@@ -48,6 +49,25 @@ export function BillDefaultsPanel(): React.JSX.Element | null {
   const busy = settings.savingSection === 'documents';
 
   return (
+    <>
+    {/* Another tab or device saved Settings first (412). Without this the save
+        was refused and nothing on this page said so (settings-edges E5,
+        16 Nov 2026). */}
+    <UbConfirmDialog
+      open={settings.conflict}
+      onOpenChange={(next) => {
+        if (!next) settings.reloadAfterConflict();
+      }}
+      title={t('settings.conflict.title')}
+      description={t('settings.conflict')}
+      confirmLabel={t('settings.conflict.reload')}
+      cancelLabel={t('common.action.cancel')}
+      closeLabel={t('common.action.close')}
+      onConfirm={() => {
+        setDraft(null);
+        settings.reloadAfterConflict();
+      }}
+    />
     <UbPanel as="section">
       <UbPanelSection title={t('branding.bill.title')}>
         <UbStack gap={4}>
@@ -96,5 +116,6 @@ export function BillDefaultsPanel(): React.JSX.Element | null {
         </UbStack>
       </UbPanelSection>
     </UbPanel>
+    </>
   );
 }
