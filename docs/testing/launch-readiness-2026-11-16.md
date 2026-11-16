@@ -8,7 +8,7 @@ The owner has tested real WhatsApp sign-in, and takes live hosting and the hands
 Purchases, Payments and Items/stock had about 60 "not run" cells (the Shop round on 11 Nov filled only the Bill column). Every one now has evidence or a reason:
 - `e2e/shop-edges-ppi.mjs`: server side, 59/59; `--skew` fails 5, which proves the read-backs can fail.
 - `e2e/shop-edges-ppi-ui.mjs`: screen side at 390 and 1280, 16/16.
-- E2, E3, E14 and E18 wait on the monkey set below.
+- E2, E3, E14 and E18 pass on the monkey set below.
 
 ## Defects found and fixed (each with a test that failed first)
 
@@ -63,7 +63,7 @@ Before each harness was updated, I checked that the feature still exists somewhe
 - **Purchase line Undo:** removing a purchase line has no Undo, unlike a sales bill. Owner's call.
 - **Phone Low stock: done (owner, 16 Nov).** A phone now chooses items too. "Choose items" opens a sheet with a tick per item and Tick all; "Order N items" makes one purchase order with only those items. `stock-reports` 48/48 checks it end to end: the URL and line hold only the ticked item at 17; rows ≥ 44 px; LOOKED at 390 EN and 320 HI dark.
 - **Sign-in page error:** the earlier one-off still has no new sighting.
-- **Monkeys:** Shop monkeys on Purchases, Payments and Items (3 seeds × 2 sizes) were running at commit time; their results follow.
+- **Monkeys:** Shop monkeys on Purchases, Payments and Items (3 seeds × 2 sizes) all 18 pass (3 seeds × 2 sizes each). Eight first failed on their very first page with a React page-load error, in a row while the local server was being changed; all eight rerun in full on the final build passed, and a fresh-browser sign-in probe never showed the error.
 
 ## Rating
 
@@ -72,5 +72,4 @@ Each area tested here scores **9/10** on what was run:
 - Library, Lending and Money book in Hindi and dark mode.
 
 Not 10, because:
-- the monkey set is pending;
 - the owner's hands-on check and live hosting are the owner's.
