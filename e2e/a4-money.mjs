@@ -175,7 +175,9 @@ try {
   await page.waitForTimeout(800);
   await page.getByRole('combobox').first().click();
   await page.keyboard.type(item.name, { delay: 8 });
-  await page.getByRole('option', { name: new RegExp(esc(item.name)) }).first().click();
+  // The suggestion that STARTS with the name: another item can contain it
+  // ("3.141राधेAtta 322 pack" holds "Atta 322") and sort first (16 Nov 2026).
+  await page.getByRole('option', { name: new RegExp(`(^|\\s)${esc(item.name)}(\\s|$)`) }).first().click();
   await page.waitForTimeout(500);
   if (await page.getByRole('dialog').count()) await page.keyboard.press('Escape');
   await page.getByRole('button', { name: /^(Issue|UPI or other)/ }).last().click();
@@ -223,8 +225,8 @@ try {
     await page.waitForTimeout(1500);
     // The grid's open control on the name (a button since the 6 Nov register), or a link.
     await page
-      .getByRole('button', { name: new RegExp(esc(item.name)) })
-      .or(page.getByRole('link', { name: new RegExp(esc(item.name)) }))
+      .getByRole('button', { name: new RegExp(`(^|\\s)${esc(item.name)}(\\s|$)`) })
+      .or(page.getByRole('link', { name: new RegExp(`(^|\\s)${esc(item.name)}(\\s|$)`) }))
       .first()
       .click({ timeout: 8000 })
       .catch(() => fail(`could not open ${item.name} from the items list`));

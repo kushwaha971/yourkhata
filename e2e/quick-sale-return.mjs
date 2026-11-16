@@ -42,7 +42,15 @@ try {
         })
       ).json();
 
-    const item = (await api('GET', '/items?q=QA11-ATTA-12-002&page_size=5')).data.find((i) => i.track_stock !== false);
+    // The SKU lived in the kirana QA shop made on 11 Nov; a freshly made one
+    // (16 Nov, after /tmp was cleared) has only its seeded items — any priced,
+    // stocked one will do.
+    const item =
+      (await api('GET', '/items?q=QA11-ATTA-12-002&page_size=5')).data.find((i) => i.track_stock !== false) ??
+      (await api('GET', '/items?page_size=100')).data.find(
+        (i) => i.track_stock !== false && Number(i.on_hand) >= 4 && Number(i.selling_price) > 0
+      );
+    if (!item) throw new Error('the kirana QA shop has no priced item with 4 or more in stock');
     const stockOf = async () => Number((await api('GET', `/items/${item.id}`)).data.stock?.on_hand ?? (await api('GET', `/items/${item.id}`)).data.on_hand);
     const bill = (await api('POST', '/sales/invoices', { ...(width >= 1024 ? { walk_in_name: `Return ${width}` } : {}), lines: [{ item_id: item.id, qty: '2' }] })).data;
     const paid = await api('POST', `/sales/invoices/${bill.id}/issue`, {
@@ -59,7 +67,8 @@ try {
     check(`${width}: the bill offers Goods came back`, await goods.isVisible());
     await goods.click();
     await page.waitForURL(/credit-notes\/new/);
-    const qty = page.locator('input[inputmode=decimal]').first();
+    // Whole-unit items (PCS) take the numeric keypad, weighed ones the decimal one.
+    const qty = page.locator('input[inputmode=decimal], input[inputmode=numeric]').first();
     await qty.waitFor();
     await qty.fill('1');
     await page.waitForTimeout(400);

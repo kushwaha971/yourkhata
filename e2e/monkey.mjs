@@ -45,8 +45,10 @@ const pick = (list) => list[Math.floor(rand() * list.length)];
 // list then let the monkey tap "साइन आउट करें" (sign out) and spend the rest of
 // the run on the sign-in page tapping "कोड भेजें" (send code), asking for real
 // OTPs — which read as a /auth/me + /auth/refresh "request loop" (A6, seed 92).
+// "More settings" holds the business's feature switches: turning Reports off
+// took costs away from the QA owner and failed a dozen harnesses (16 Nov 2026).
 const SKIP =
-  /issue|delete|void|record|remove|sign out|log out|archive|cancel bill|discard|send code|साइन आउट|लॉग आउट|कोड भेजें|जारी करें|हटाएँ|मिटाएँ|left the library|लाइब्रेरी छोड़ी|remind|याद दिला|print|प्रिंट|write off|छोड़ दें|whatsapp/i;
+  /more settings|और सेटिंग|issue|delete|void|record|remove|sign out|log out|archive|cancel bill|discard|send code|साइन आउट|लॉग आउट|कोड भेजें|जारी करें|हटाएँ|मिटाएँ|left the library|लाइब्रेरी छोड़ी|remind|याद दिला|print|प्रिंट|write off|छोड़ दें|whatsapp/i;
 const TEXT = [
   "",
   "a",
