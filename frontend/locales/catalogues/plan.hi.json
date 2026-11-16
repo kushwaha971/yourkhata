@@ -23,5 +23,6 @@
   "plan.row.max_invoices_per_month": "इस महीने के बिल",
   "plan.row.max_parties": "संपर्क",
   "plan.row.max_users": "टीम सदस्य",
-  "plan.row.storage_mb": "स्टोरेज (MB)"
+  "plan.row.storage_mb": "स्टोरेज (MB)",
+  "plan.used.title": "कितना इस्तेमाल हुआ"
 }

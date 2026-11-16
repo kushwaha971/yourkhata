@@ -76,10 +76,17 @@ export function PlanUsageCard(): React.JSX.Element {
     );
   }
 
+  // Design S8: the plan on its own card, then "How much is used" (bars only
+  // where the server meters, DEC-001).
   return (
+    <UbStack gap={4}>
+    <UbCard title={t('plan.card.title')}>
+      <UbText as="span" variant="h3">
+        {planName(t, plan.planCode)}
+      </UbText>
+    </UbCard>
     <UbCard
-      title={t('plan.card.title')}
-      description={planName(t, plan.planCode)}
+      title={t('plan.used.title')}
       action={
         plan.isNearMemberLimit || plan.isAtMemberLimit ? (
           <UbStatusBadge
@@ -126,5 +133,6 @@ export function PlanUsageCard(): React.JSX.Element {
         {t('plan.ledgerNote')}
       </UbText>
     </UbCard>
+    </UbStack>
   );
 }

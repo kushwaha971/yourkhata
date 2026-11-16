@@ -38,6 +38,8 @@
   "branding.logo.tooLarge": "2 MB से छोटी फ़ोटो इस्तेमाल करें।",
   "branding.logo.upload": "लोगो अपलोड करें",
   "branding.logo.wrongType": "PNG, JPG या WebP फ़ोटो इस्तेमाल करें।",
+  "branding.more.hint": "रंग, ऐप का नाम, ऊपर और नीचे की लाइन",
+  "branding.more.title": "बिल का और रूप",
   "branding.preview.app": "ऐप हेडर",
   "branding.preview.bill": "बिल हेडर",
   "branding.preview.button": "सेव",

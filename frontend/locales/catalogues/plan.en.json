@@ -23,5 +23,6 @@
   "plan.row.max_invoices_per_month": "Bills this month",
   "plan.row.max_parties": "Contacts",
   "plan.row.max_users": "Team members",
-  "plan.row.storage_mb": "Storage (MB)"
+  "plan.row.storage_mb": "Storage (MB)",
+  "plan.used.title": "How much is used"
 }

@@ -214,6 +214,7 @@
   "audit.filter.actor.all": "Everyone",
   "audit.filter.actor.former": "{name} (former member)",
   "audit.filter.from": "From",
+  "audit.filter.more": "More filters",
   "audit.filter.period": "Period",
   "audit.filter.to": "To",
   "audit.group.auth": "Sign-ins",

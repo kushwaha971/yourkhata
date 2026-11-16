@@ -43,6 +43,8 @@
   "settings.profile.gst.confirm.regular": "Your bills will become Tax Invoices with GST lines.",
   "settings.profile.gst.confirm.title": "Change GST type?",
   "settings.profile.gst.confirm.unregistered": "Your GSTIN is removed and bills will not show GST.",
+  "settings.profile.more.hint": "Legal name, PAN, bank details, signature",
+  "settings.profile.more.title": "More details",
   "settings.profile.preview.placeholder": "Your business name",
   "settings.profile.preview.title": "Bill header preview",
   "settings.profile.saveError": "We could not save your profile.",

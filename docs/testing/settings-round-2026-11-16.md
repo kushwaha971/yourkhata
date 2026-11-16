@@ -45,6 +45,36 @@ and the QA staff, admin and accountant numbers.
 6. **Your data:** ours also has Support access, and its delete section is laid out differently.
 7. **Your profile:** "Open when I sign in" links to Apps instead of a dropdown; Save sits in the card, not at the bottom; no email (owner rule).
 
+## Third pass — built to the design (owner: "Build to the design")
+
+Each of the seven differences was built as the design draws it. Nothing that
+worked was deleted: what the design has no place for moved into a closed
+"More …" section at the bottom of its page.
+
+| # | Page | Now | Kept, closed |
+|---|---|---|---|
+| 1 | Settings list | ends at the design's groups | "More settings": Money Book reminders, the feature switches |
+| 2 | Business details | one column: Business (name, business mobile, email), Address (shop address, city, PIN, state), Tax (GST, UPI ID) | "More details": legal name, business type, PAN, address line 2, bank, signature, bill-header preview |
+| 3 | Bills and print | Logo, then On every bill, then Preview | "More bill look": colour, app name, header and footer lines |
+| 4 | Activity | person chips (Everyone first) over the list | "More filters": period, kind of change |
+| 5 | Plan | "Your plan" card, then "How much is used" | — |
+| 6 | Your data | Download, then Delete with a red border | "Support access" — opens by itself while a request waits or an access is live (a unit test caught it hidden) |
+| 7 | Your profile | "Open when I sign in" is a dropdown of every app in every business (sets the same primary as Apps); Save at the bottom, docked over the menu on a phone | — |
+
+Rechecked on the new build: settings-roles 732/732, settings-design 636/636,
+settings-edges 48/48, settings-perf 52/52, full frontend suite green, bundle
+within budget. Side-by-side sheets `compare-v2-phone*.png` LOOKED at.
+
+**Still different from the design, each because of a rule rather than a
+choice:** (a) the GST status is shown in Tax — tax on every bill follows it;
+(b) Plan shows "Unlimited" with no bars — only team members are metered
+(DEC-001) and this business has no limit; (c) Activity's rows are the app's
+standard list, not the design's simpler rows; (d) the closed "More …"
+sections exist at all.
+
+**Score: 8/10.** The design point is earned only if the owner accepts (a)–(d);
+it is not claimed until then.
+
 ## §8 score — 8/10, "in test" (second pass)
 
 | Points | Earned | Evidence / why not |

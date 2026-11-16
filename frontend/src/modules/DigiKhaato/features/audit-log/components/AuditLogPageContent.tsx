@@ -11,6 +11,9 @@ import {
   UbButton,
   UbDataGrid,
   UbDateRangePicker,
+  UbDisclosure,
+  UbFilterChip,
+  UbFilterChipGroup,
   UbDrawerLoading,
   UbFilterSelect,
   UbPageHeader,
@@ -194,6 +197,20 @@ export function AuditLogPageContent(): React.JSX.Element {
   return (
     <SettingsFrame page="activity" header={header} wide>
       <UbStack gap={4}>
+        {/* Design S7: filter by person, with chips — Everyone first. */}
+        <UbFilterChipGroup label={t('audit.filter.actor')} className="flex-wrap">
+          {actorOptions.map((option) => (
+            <UbFilterChip
+              key={option.value}
+              label={option.label}
+              pressed={(filters.actorId ?? ALL) === option.value}
+              onToggle={() => handleActor(option.value)}
+            />
+          ))}
+        </UbFilterChipGroup>
+        {/* The period and the kind of change, which the design has no place
+            for, stay under More filters, closed. */}
+        <UbDisclosure label={t('audit.filter.more')}>
         <UbDateRangePicker
           presets={periodPresets}
           preset={filters.period}
@@ -216,18 +233,6 @@ export function AuditLogPageContent(): React.JSX.Element {
               <UbFilterSelect
                 spec={{
                   kind: 'single',
-                  key: 'actor',
-                  label: t('audit.filter.actor'),
-                  anyLabel: t('audit.filter.actor.all'),
-                  options: actorOptions.filter((option) => option.value !== ALL),
-                }}
-                value={filters.actorId ?? ''}
-                onChange={(value) => handleActor(value || ALL)}
-                closeLabel={t('common.action.close')}
-              />
-              <UbFilterSelect
-                spec={{
-                  kind: 'single',
                   key: 'action',
                   label: t('audit.filter.action'),
                   anyLabel: t('audit.filter.action.all'),
@@ -240,6 +245,7 @@ export function AuditLogPageContent(): React.JSX.Element {
             </>
           }
         />
+        </UbDisclosure>
 
         <UbDataGrid
           rows={rows}

@@ -25,6 +25,9 @@ const ROOT = process.cwd();
 const NOT_AN_OPENER = new Set([
   // G2c: an inline card on a jeweller's bill, always mounted; its sheet is inside it.
   'src/modules/DigiKhaato/features/sales/components/InvoiceEditorPageContent.tsx:OldGoldSection',
+  // Settings S4: Bills and print's "On every bill" card, always shown; its only
+  // dialog is the changed-elsewhere notice, not opened by a tap.
+  'src/modules/DigiKhaato/features/branding/components/BrandingPageContent.tsx:BillDefaultsPanel',
   // Always mounted: a seat's panel stays beside the seat map and opens in place.
   'src/modules/DigiKhaato/features/library/components/SeatsPageContent.tsx:SeatPanelLazy',
   // Page content that happens to contain dialogs; not opened by a tap.

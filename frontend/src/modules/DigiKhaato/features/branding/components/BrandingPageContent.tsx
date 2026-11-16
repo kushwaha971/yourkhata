@@ -16,6 +16,7 @@ import {
   UbFileUpload,
   UbForm,
   UbGrid,
+  UbDisclosure,
   UbImagePreview,
   UbPageHeader,
   UbPanel,
@@ -251,6 +252,12 @@ export function BrandingPageContent(): React.JSX.Element {
                 </UbStack>
               </UbStack>
             </UbPanelSection>
+          </UbPanel>
+          {/* Design S4: "On every bill" right after the logo. */}
+          <BillDefaultsPanel />
+          {/* The brand look the design has no place for stays, closed. */}
+          <UbDisclosure label={t('branding.more.title')} hint={t('branding.more.hint')}>
+          <UbPanel as="section">
             <UbPanelSection
               title={t('branding.colour.label')}
               action={sourceBadge('primary_hex', 'primary_hex')}
@@ -334,6 +341,7 @@ export function BrandingPageContent(): React.JSX.Element {
               </UbField>
             </UbPanelSection>
           </UbPanel>
+          </UbDisclosure>
           {canEdit && (
             <UbStack direction="row" justify="end">
               <UbButton
@@ -368,7 +376,6 @@ export function BrandingPageContent(): React.JSX.Element {
           />
         </UbStack>
       </UbGrid>
-      <BillDefaultsPanel />
     </SettingsFrame>
   );
 }

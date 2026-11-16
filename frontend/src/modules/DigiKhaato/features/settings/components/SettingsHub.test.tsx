@@ -1,4 +1,5 @@
 import { screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 
 import { sessionLoaded } from 'src/redux/slice/sessionSlice';
 import { store } from 'src/redux/store';
@@ -53,6 +54,8 @@ describe('Settings hub — Business days', () => {
     renderWithProviders(<SettingsPageContent />);
     expect(await screen.findByText('Business details')).toBeInTheDocument();
     // Wait for the settings to have LOADED, or the absence below proves nothing.
+    // They sit under the closed More settings since the design build (16 Nov).
+    await userEvent.click(await screen.findByRole('button', { name: /More settings/ }));
     expect(await screen.findByText(/Turn off what your business does not use/)).toBeInTheDocument();
     expect(screen.queryByText('Business days')).toBeNull();
   });

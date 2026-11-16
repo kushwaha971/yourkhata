@@ -214,6 +214,7 @@
   "audit.filter.actor.all": "सभी",
   "audit.filter.actor.former": "{name} (पूर्व सदस्य)",
   "audit.filter.from": "से",
+  "audit.filter.more": "और फ़िल्टर",
   "audit.filter.period": "अवधि",
   "audit.filter.to": "तक",
   "audit.group.auth": "साइन-इन",

@@ -38,6 +38,8 @@
   "branding.logo.tooLarge": "Use an image under 2 MB.",
   "branding.logo.upload": "Upload logo",
   "branding.logo.wrongType": "Use a PNG, JPG or WebP image.",
+  "branding.more.hint": "Colour, app name, header and footer lines",
+  "branding.more.title": "More bill look",
   "branding.preview.app": "App header",
   "branding.preview.bill": "Bill header",
   "branding.preview.button": "Save",

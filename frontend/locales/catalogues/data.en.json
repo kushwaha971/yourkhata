@@ -49,6 +49,8 @@
   "data.export.start": "Download all data",
   "data.export.started": "Preparing your download. You can leave this page — we'll tell you in the inbox when it's ready.",
   "data.export.title": "Download all your data",
+  "data.more.hint": "Let support look in for a day",
+  "data.more.title": "Support access",
   "data.ownerOnly.body": "Downloading all data, support access and deleting the business are the owner's decisions.",
   "data.ownerOnly.title": "Only the owner can open this page",
   "data.subtitle": "Take a copy of everything, let support in for a day, or delete this business.",

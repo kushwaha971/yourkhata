@@ -53,7 +53,7 @@ export function DeleteBusinessPanel({
   const pending = deletion.status === 'pending_deletion';
 
   return (
-    <UbPanel as="section">
+    <UbPanel as="section" className="border-error">
       <UbPanelSection title={t('data.delete.title')}>
         {pending ? (
           <UbStack gap={3}>

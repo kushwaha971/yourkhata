@@ -9,6 +9,7 @@ import {
   UbBox,
   UbButton,
   UbConfirmDialog,
+  UbDisclosure,
   UbEmptyState,
   UbLink,
   UbPageHeader,
@@ -105,17 +106,22 @@ export function SettingsPageContent(): React.JSX.Element {
   } else if (!data) {
     sections = <UbSkeleton variant="form" count={4} />;
   } else {
+    // The design's Settings list stops at its groups (owner: "build to the
+    // design", 16 Nov 2026). The Money Book reminder settings and the feature
+    // switches it has no place for are kept, closed, under More settings.
     sections = (
-      <UbStack gap={4}>
-        <LedgerSettingsSection settings={settings} canEdit={access.canEdit} />
-        <ModuleToggleList
-          modules={data.modules}
-          canEdit={access.canEdit}
-          busy={settings.isTogglingModules || !settings.canWrite}
-          onChange={handleModules}
-          refusal={settings.moduleRefusal}
-        />
-      </UbStack>
+      <UbDisclosure label={t('settings.more.title')} hint={t('settings.more.hint')}>
+        <UbStack gap={4}>
+          <LedgerSettingsSection settings={settings} canEdit={access.canEdit} />
+          <ModuleToggleList
+            modules={data.modules}
+            canEdit={access.canEdit}
+            busy={settings.isTogglingModules || !settings.canWrite}
+            onChange={handleModules}
+            refusal={settings.moduleRefusal}
+          />
+        </UbStack>
+      </UbDisclosure>
     );
   }
 

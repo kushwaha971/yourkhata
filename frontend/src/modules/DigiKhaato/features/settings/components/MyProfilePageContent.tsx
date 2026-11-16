@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useMemo } from 'react';
+import { useCallback, useEffect, useId, useMemo, useState } from 'react';
 
 
 import { yupResolver } from '@hookform/resolvers/yup';
@@ -31,6 +31,8 @@ import { formatPhoneForDisplay } from 'src/utils/share';
 
 import { manifestFor } from 'modules/appManifests';
 import { saveMyProfile } from 'modules/DigiKhaato/features/auth/redux/sessionThunk';
+import { fetchAppsPerBusiness } from 'modules/DigiKhaato/features/tenant-switcher/api/tenantSwitcherService';
+import { setDefaultTenant } from 'modules/DigiKhaato/features/tenant-switcher/redux/tenantSwitcherThunk';
 
 import { SettingsFrame } from './SettingsFrame';
 
@@ -60,6 +62,7 @@ export function MyProfilePageContent(): React.JSX.Element {
     () => Yup.object({ fullName: requiredText(120, 'settings.me.nameRequired') }),
     [requiredText]
   );
+  const formId = useId();
   const form = useForm<ProfileForm>({
     resolver: yupResolver(schema),
     mode: 'onTouched',
@@ -83,12 +86,44 @@ export function MyProfilePageContent(): React.JSX.Element {
     [dispatch, setLocale]
   );
 
-  const opens = tenants.find((row) => row.isDefault) ?? null;
-  const opensLabel = opens
-    ? [opens.primaryApp ? t(manifestFor(opens.primaryApp)?.labelId ?? opens.primaryApp) : null, opens.name]
-        .filter(Boolean)
-        .join(' · ')
-    : '';
+  // Design S2: "Open when I sign in" is chosen here, from every app in every
+  // business the person belongs to — the same primary the Apps page sets.
+  const usable = useMemo(() => tenants.filter((row) => (row.status ?? 'active') === 'active'), [tenants]);
+  const [appsOf, setAppsOf] = useState<Readonly<Record<string, readonly string[]>>>({});
+  const [settingPrimary, setSettingPrimary] = useState(false);
+  useEffect(() => {
+    const controller = new AbortController();
+    fetchAppsPerBusiness(controller.signal)
+      .then(setAppsOf)
+      .catch(() => undefined);
+    return () => controller.abort();
+  }, [usable]);
+  const placeOptions = useMemo(
+    () =>
+      usable.flatMap((row) =>
+        (appsOf[row.id] ?? (row.primaryApp ? [row.primaryApp] : [])).map((app) => ({
+          value: `${row.id}|${app}`,
+          label: `${t(manifestFor(app)?.labelId ?? app)} · ${row.name}`,
+        }))
+      ),
+    [appsOf, t, usable]
+  );
+  const opens = usable.find((row) => row.isDefault) ?? null;
+  const opensValue = opens?.primaryApp ? `${opens.id}|${opens.primaryApp}` : null;
+  const onOpens = async (next: string) => {
+    const [tenantId, app] = next.split('|');
+    const row = usable.find((r) => r.id === tenantId);
+    if (!row?.membershipId || next === opensValue) return;
+    setSettingPrimary(true);
+    try {
+      await dispatch(setDefaultTenant({ membershipId: row.membershipId, primaryApp: app })).unwrap();
+      dispatch(showSnackbar({ severity: 'success', id: 'tenant.apps.primarySet', params: { name: row.name } }));
+    } catch {
+      dispatch(showSnackbar({ severity: 'error', id: 'tenant.apps.primaryError' }));
+    } finally {
+      setSettingPrimary(false);
+    }
+  };
   const roleWord = (code: string | null | undefined) => (code ? t(`tenant.role.${code}`) : '');
 
   return (
@@ -109,7 +144,7 @@ export function MyProfilePageContent(): React.JSX.Element {
 
         <UbPanel as="section" className="p-4" aria-label={t('settings.me.about')}>
           <FormProvider {...form}>
-          <UbStack as="form" gap={3} noValidate onSubmit={onSave}>
+          <UbStack as="form" id={formId} gap={3} noValidate onSubmit={onSave}>
             <UbText as="h2" variant="body-medium">
               {t('settings.me.about')}
             </UbText>
@@ -139,11 +174,6 @@ export function MyProfilePageContent(): React.JSX.Element {
                 </UbText>
               ) : null}
             </UbStack>
-            <UbBox className="flex justify-end">
-              <UbButton type="submit" variant="primary" busy={form.formState.isSubmitting}>
-                {t('settings.me.save')}
-              </UbButton>
-            </UbBox>
           </UbStack>
           </FormProvider>
         </UbPanel>
@@ -180,22 +210,21 @@ export function MyProfilePageContent(): React.JSX.Element {
                 options={THEME_MODES.map((mode) => ({ value: mode, label: t(`settings.me.look.${mode}`) }))}
               />
             </UbStack>
-            <UbLink
-              href={ROUTES.APPS}
-              variant="inherit"
-              underline={false}
-              className="flex min-h-14 items-center gap-3 border-t border-border-subtle pt-3"
-            >
-              <UbStack gap={0.5} className="min-w-0 flex-1">
-                <UbText as="span" variant="body-medium">
-                  {t('settings.me.opens')}
-                </UbText>
-                <UbText as="span" variant="caption" tone="tertiary" className="break-words">
-                  {opensLabel}
-                </UbText>
-              </UbStack>
-              <ChevronRight aria-hidden className="h-4 w-4 shrink-0 text-text-tertiary" />
-            </UbLink>
+            <UbStack gap={1}>
+              <UbText as="span" variant="label">
+                {t('settings.me.opens')}
+              </UbText>
+              <UbSelect
+                aria-label={t('settings.me.opens')}
+                value={opensValue}
+                onChange={(next) => void onOpens(next)}
+                options={placeOptions}
+                disabled={settingPrimary}
+              />
+              <UbText as="span" variant="caption" tone="tertiary">
+                {t('settings.me.opensHint')}
+              </UbText>
+            </UbStack>
           </UbStack>
         </UbPanel>
 
@@ -247,6 +276,18 @@ export function MyProfilePageContent(): React.JSX.Element {
             </UbBox>
           </UbStack>
         </UbPanel>
+        {/* Design S2: Save at the bottom — docked over the menu on a phone. */}
+        <UbBox className="sticky bottom-[calc(var(--ub-nav-offset)+8px)] z-10 flex justify-end lg:static">
+          <UbButton
+            type="submit"
+            form={formId}
+            variant="primary"
+            busy={form.formState.isSubmitting}
+            className="w-full lg:w-auto"
+          >
+            {t('settings.me.save')}
+          </UbButton>
+        </UbBox>
     </SettingsFrame>
   );
 }

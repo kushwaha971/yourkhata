@@ -43,6 +43,8 @@
   "settings.profile.gst.confirm.regular": "आपके बिल जीएसटी लाइनों वाले टैक्स इनवॉइस बन जाएँगे।",
   "settings.profile.gst.confirm.title": "जीएसटी प्रकार बदलें?",
   "settings.profile.gst.confirm.unregistered": "आपका जीएसटीआईएन हटा दिया जाएगा और बिलों पर जीएसटी नहीं दिखेगा।",
+  "settings.profile.more.hint": "कानूनी नाम, PAN, बैंक, हस्ताक्षर",
+  "settings.profile.more.title": "और जानकारी",
   "settings.profile.preview.placeholder": "आपके व्यापार का नाम",
   "settings.profile.preview.title": "बिल हेडर पूर्वावलोकन",
   "settings.profile.saveError": "आपकी प्रोफ़ाइल सेव नहीं हो सकी।",

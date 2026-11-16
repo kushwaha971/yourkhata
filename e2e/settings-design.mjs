@@ -80,7 +80,7 @@ for (const width of [390, 320, 1280]) {
       // After an error: an empty name refused on Your profile.
       await page.goto(`${base}/settings/me`, { waitUntil: 'networkidle' });
       await page.locator('input[name=fullName]').fill('');
-      await page.locator('form button[type=submit]').first().click();
+      await page.locator('main button[type=submit]').first().click();
       await page.waitForTimeout(500);
       const shown = await page.locator('[aria-invalid=true]').count();
       check(shown > 0, `${tag} error: the refused name is marked`);

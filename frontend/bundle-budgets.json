@@ -1,5 +1,6 @@
 {
   "//": [
+    "16 Nov 2026, Settings built to the design (owner): the Settings list, Bills and print, Business details, Your data, Activity and Plan follow the approved layouts; what the design has no place for sits in closed UbDisclosure sections (\"More …\"). The disclosures, Activity's person chips and Your profile's sign-in-place dropdown (it lists each business's apps) moved those routes by 0.3 to 1.0 KB. Raised to measured + 0.3.",
     "15 Nov 2026, delete without a password: the session now carries has_password, and Your data's delete dialog (dynamic) offers a code to the owner's own mobile instead of the password when there is none. /settings/data and the routes that ship the session slice moved by about 0.1 KB. Raised to measured + 0.3.",
     "14 Nov 2026, Settings page bodies (design S4/S5): Business days draws one switch per day; Bills and print gains \"On every bill\" (the terms line and the UPI QR switch, settings the bills already read). The panel is dynamic() and loads the settings words with itself, which kept /settings/branding at 103.4 (it was 112.4 imported statically). The shared app chunk moved 116.2 -> 116.6 in the same build with no change to shell code; the likely cause is chunk splitting once a third route loads the tenant-settings hook lazily, NOT verified. Raised to measured + 0.3.",
     "14 Nov 2026, Settings piece 3: Business details, Bills and print, Business features, Business days, Devices, Activity, Plan and Your data sit in SettingsFrame (the Settings heading, the role line and the Settings menu from the approved design). Loading the whole settings and tenant word lists for the menu cost each of them about 4 KB; the menu's words (settings.hub/group/frame/title and tenant.role) now live in the small settingsGate list every Settings page already loads, which leaves the frame itself. Raised to measured + 0.3.",
@@ -1646,16 +1647,16 @@
       "firstLoad": 307.1
     },
     "/settings": {
-      "route": 116.8,
-      "firstLoad": 360.5
+      "route": 117.4,
+      "firstLoad": 361.0
     },
     "/settings/profile": {
-      "route": 153.9,
-      "firstLoad": 397.7
+      "route": 154.9,
+      "firstLoad": 398.6
     },
     "/settings/branding": {
-      "route": 103.7,
-      "firstLoad": 347.5
+      "route": 104.3,
+      "firstLoad": 347.9
     },
     "/settings/activity": {
       "route": 101,
@@ -1738,8 +1739,8 @@
       "firstLoad": 277.2
     },
     "/settings/data": {
-      "route": 71.2,
-      "firstLoad": 315.1
+      "route": 71.9,
+      "firstLoad": 315.5
     },
     "/purchases/bills/[id]": {
       "route": 80.7,
