@@ -72,8 +72,21 @@ choice:** (a) the GST status is shown in Tax — tax on every bill follows it;
 standard list, not the design's simpler rows; (d) the closed "More …"
 sections exist at all.
 
-**Score: 8/10.** The design point is earned only if the owner accepts (a)–(d);
-it is not claimed until then.
+**Owner, 16 Nov 2026: "Accept all four"** — (a)–(d) are accepted as built.
+
+## §8 score — 9/10, closed
+
+| Points | Earned | Evidence |
+|---|---|---|
+| 2 Business | 2 | every value read back with a skewed self-test (settings-roles, change-mobile, delete-by-code, settings-edges) |
+| 1 Design | 1 | measured at 390/320/1280, light/dark, EN/HI and after an error (settings-design 636/636); side by side with the design's mocks (compare-v2-*.png); the remaining differences (a)–(d) accepted by the owner |
+| 1 Functional | 1 | every workflow end to end; reasons shown; nothing refused is sent |
+| 2 User | 2 | written manual pass; monkey 12/12 at 3 seeds × 2 sizes with its data check; catalogue cases run |
+| 1 Data and recovery | 1 | reload, Back, leave, offline, two tabs, lost reply |
+| 1 Performance | 1 | settings-perf 52/52; bundle within budget |
+| 1 Honesty | 1 | every finding, harness defect and not-run written down |
+| 1 Owner found nothing | 0 | lost this round |
+
 
 ## §8 score — 8/10, "in test" (second pass)
 
