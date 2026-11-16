@@ -145,11 +145,15 @@ of the evidence, not a known defect.
    `business-round-2026-11-16.md` (62/62 harnesses, monkey 6/6 PASS).
 5. The monkey cannot run its reload-and-return check on `/library`,
    `/library/students` and `/money-book/report`; that is a limit of the tool.
+   **Done 16 Nov:** the monkey now checks the students count and the
+   report's four figures against the server; 12/12 runs PASS and the
+   skewed run fails as it must.
 6. `apps/dues/tests/test_run_scale.py` (5,000 schedules under a minute) fails in
    the full run on this machine (66.5 s and 70 s against a 60 s limit, with the
    API, the frontend and browsers also running) and passes when run alone. No
-   dues code was changed. It needs timing on a quiet machine before it is
-   trusted either way.
+   dues code was changed. **Timed quiet on 16 Nov: 53–55 s, so it is at the
+   edge on its own.** About 11 database trips per schedule; getting clear of
+   the limit means posting in batches, a money-path change left for the owner.
 7. "Turn this app off / Leave this app" is not on the Apps page. It was
    brought back on 14 Nov and removed again the same day on the owner's word.
    Instead, switching to another business from Apps asks first and names both

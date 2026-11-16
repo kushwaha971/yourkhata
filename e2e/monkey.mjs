@@ -375,6 +375,27 @@ const checkAgrees = async (i, how) => {
           failures.push(`step ${i}: after ${how} "To get" is not the server's ${totals.to_get} (${shown.replace(/\s+/g, " ")})`);
       }
     }
+    // The report (16 Nov): after a reload it opens on this month, so its four
+    // figures must be the server's report for this month to today (India time).
+    if (new URL(url).pathname === "/money-book/report") {
+      const today = new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Kolkata" });
+      const who = new URL(url).searchParams.get("person");
+      const q = `from=${today.slice(0, 8)}01&to=${today}${who ? `&person=${who}` : ""}`;
+      const sum = (await (await ctx.request.get(`${base}/api/v1/moneybook/report?${q}`)).json().catch(() => ({}))).meta?.summary;
+      const shown = await page.getByTestId("moneybook-report-figures").innerText({ timeout: 4000 }).catch(() => "");
+      if (sum && shown) {
+        agreeChecks += 1;
+        const skew = process.env.MONKEY_SKEW ? 1 : 0;
+        for (const key of ["you_gave", "you_got", "to_get_now", "to_give_now"]) {
+          const want = (Number(sum[key]) + skew).toFixed(2).replace(/\.00$/, "");
+          if (!plain(shown).includes(want)) {
+            await page.screenshot({ path: `${dir}/agree-fail-${seed}-${width}-step${i}.png` }).catch(() => {});
+            failures.push(`step ${i}: after ${how} the report's ${key} is not the server's ${sum[key]} (${shown.replace(/\s+/g, " ").slice(0, 80)})`);
+            break;
+          }
+        }
+      }
+    }
   }
   // Library round (12 Nov): a student's fee due and Home's Overdue are the server's,
   // after every reload and return (MONKEY_SKEW=1 must make it fail, P0 §1).
@@ -394,6 +415,22 @@ const checkAgrees = async (i, how) => {
         if (!plain(shown).includes(want)) {
           await page.screenshot({ path: `${dir}/agree-fail-${seed}-${width}-step${i}.png` }).catch(() => {});
           failures.push(`step ${i}: after ${how} the student page does not show the server's fee due ${due} (${shown.replace(/\s+/g, " ").slice(0, 80)}) at ${url.replace(base, "")}`);
+        }
+      }
+    }
+    // The students list (16 Nov): the header's count is the server's.
+    if (path === "/library/students" && !new URL(url).search) {
+      const all = (await (await ctx.request.get(`${base}/api/v1/library/students?page_size=1`)).json().catch(() => ({}))).meta?.counts?.all;
+      // The count arrives with the list: wait for the number, not the heading.
+      const sub = page.getByTestId("library-students-page").locator("[data-ub-page-subtitle]").first();
+      await sub.filter({ hasText: /\d/ }).waitFor({ timeout: 6000 }).catch(() => {});
+      const shown = await sub.innerText({ timeout: 1000 }).catch(() => "");
+      if (all !== undefined && shown) {
+        agreeChecks += 1;
+        const want = String(Number(all) + skew);
+        if (!new RegExp(`(^|\\D)${want}(\\D|$)`).test(shown)) {
+          await page.screenshot({ path: `${dir}/agree-fail-${seed}-${width}-step${i}.png` }).catch(() => {});
+          failures.push(`step ${i}: after ${how} the students count is not the server's ${all} (${shown.replace(/\s+/g, " ").slice(0, 80)})`);
         }
       }
     }

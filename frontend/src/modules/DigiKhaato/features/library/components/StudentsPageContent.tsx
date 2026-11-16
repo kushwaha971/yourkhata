@@ -226,7 +226,7 @@ export function StudentsPageContent(): React.JSX.Element {
 
   return (
     <UbPageShell>
-      <UbStack gap={3} className="pb-24 lg:pb-6">
+      <UbStack gap={3} className="pb-24 lg:pb-6" data-testid="library-students-page">
         <UbPageHeader
           title={t('library.students.title')}
           subtitle={counts ? t('library.students.subtitle', { count: counts.all, due: page?.due ?? '0' }) : undefined}
