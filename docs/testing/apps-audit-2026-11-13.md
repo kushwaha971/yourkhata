@@ -133,14 +133,16 @@ of the evidence, not a known defect.
    role the server would refuse (`shopHidesWhatTheRoleMayNot.test.tsx`).
 2. **About 56 harnesses work out "today" in UTC**, so they give false failures
    between midnight and 5:30 in the morning India time. The product code found
-   with the same fault is fixed (defects 8 and 9).
+   with the same fault is fixed (defects 8 and 9). **Done 16 Nov:** 61
+   harnesses now use India time (commit 4568e67).
 3. **Staff could not add a borrower or a loan in Lending.** Changed on the
    owner's word (14 Nov, "Yes, let staff add"): staff now hold
    `lending.loan.create`. Routes, closing or writing off a loan and settings
    stay with the owner and admins; an accountant only reads.
    `e2e/staff-lends.mjs` 42/42, `team-roles` 1023/1023.
 4. **Business per-kind and monkey rounds were not repeated**; see
-   `shop-round-2026-11-11.md` for the last ones.
+   `shop-round-2026-11-11.md` for the last ones. **Done 16 Nov:** see
+   `business-round-2026-11-16.md` (62/62 harnesses, monkey 6/6 PASS).
 5. The monkey cannot run its reload-and-return check on `/library`,
    `/library/students` and `/money-book/report`; that is a limit of the tool.
 6. `apps/dues/tests/test_run_scale.py` (5,000 schedules under a minute) fails in
