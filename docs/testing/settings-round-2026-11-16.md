@@ -18,7 +18,49 @@ and the QA staff, admin and accountant numbers.
 | React #418 on first load (the "sign-in page" error) | seen 2× in the first monkey pass on `/settings/me` at 390; 0× in 12 runs with readable errors and 0× in the rerun | The disk had 2.4 GB free and the build later failed ENOSPC; clearing the build cache gave 6.9 GB and the error has not appeared since. **Likely cause, not proven.** The harnesses still fail on it |
 | Owner data after the monkey | the monkey changed `ledger.reminder_templates` and `ledger.credit_limit_mode` on the Settings list's Money Book section; restored from the snapshot taken before the runs | — |
 
-## §8 score — 5/10, "in test"
+## Second pass, same day — closing the gaps
+
+| Check | Result | Found |
+|---|---|---|
+| `e2e/settings-design.mjs` — 10 screens (Settings, Your profile, change mobile, Business details, Bills and print, Devices, Activity, Plan, Your data, Apps) × 390/320/1280 × light/dark × EN/HI, plus the refused-name error state: nothing off the screen, no cut words, no raw ids, theme and language really applied | 636/636 | — |
+| Side by side with the design's mocks (`e2e/design-compare.mjs --design=settings-and-profile.html`, sheets `compare-settings-phone*.png`, `compare-settings-desk.png`), LOOKED at | not identical | the differences below |
+| Lost reply (`settings-edges.mjs`, `delete-by-code.mjs`): the save reaches the server, the answer is cut | 8/8 + 1/1 | the screen never says "saved" without an answer; the server's value is shown after reload; saving again changes nothing twice; a lost delete reply shows the deletion as requested after reload, with Cancel |
+| `e2e/settings-perf.mjs` — per page at 390/1280: time to content, reads on opening, any read asked twice, long tasks, heap; writes per save | 52/52 after one fix | **Plan read `/auth/me` twice on opening** (the session's read, then its own a moment later) — fixed: Plan reuses a session answer under 5 s old (`sessionReadInFlight`, unit test). Content 105–896 ms (Bills and print the slowest), long tasks 0 ms, one write per save. Harness defect: the first page counted the sign-in page's late requests — the harness now waits for it to settle |
+
+### Manual pass (phone 375, in the built-in browser, 16 Nov 2026)
+
+1. Signed in through the test door; landed on Customers. Opened Settings: the card, Apps, Business, Team groups read cleanly; nothing cut.
+2. Tapped the profile card → Your profile. Opened Language, chose हिन्दी: the whole screen, the field labels and the bottom menu changed at once; the list closed after a short animation.
+3. Chose English again: everything back in English.
+4. Opened Bills and print, scrolled to "On every bill": the terms box empty with its hint, the UPI QR switch on (as restored after the test runs).
+5. Observation, not fixed: the Preview's sample app header draws a dark "Save" button that looks tappable but is only a picture (the older branding page).
+
+### Where the built screens differ from the design (for the owner)
+
+1. **Settings list:** below the design's list ours still shows the older Money Book reminder settings and the Features switches. The design has neither; nothing was removed without the owner.
+2. **Business details:** ours keeps legal name, PAN, bank details and signature, which the design leaves out.
+3. **Bills and print:** ours keeps brand colour, app name, header and footer lines; "On every bill" sits at the bottom, the design has it right after the logo.
+4. **Activity:** ours filters by date and lists rows; the design filters by person (chips).
+5. **Plan:** "Unlimited" with no bars (only team members are metered, DEC-001); the design shows bars for four limits.
+6. **Your data:** ours also has Support access, and its delete section is laid out differently.
+7. **Your profile:** "Open when I sign in" links to Apps instead of a dropdown; Save sits in the card, not at the bottom; no email (owner rule).
+
+## §8 score — 8/10, "in test" (second pass)
+
+| Points | Earned | Evidence / why not |
+|---|---|---|
+| 2 Business | 2 | as below |
+| 1 Design | 0 | measured at 390/320/1280, light/dark, EN/HI and after an error (636/636), and LOOKED at side by side — **but the seven differences above are not matched or approved**; the point needs the owner's call on each |
+| 1 Functional | 1 | as below |
+| 2 User | 2 | the written manual pass above; monkey 12/12; catalogue cases run |
+| 1 Data and recovery | 1 | reload, Back, leave, offline, two tabs and now a lost reply, each on purpose; nothing lost or doubled |
+| 1 Performance | 1 | time to content, reads per page, writes per save, long tasks and heap measured (settings-perf 52/52); bundle within budget |
+| 1 Honesty | 1 | both tables; harness defects named |
+| 1 Owner found nothing | 0 | lost for this round |
+
+**9/10 needs one thing:** the owner's decision on the seven differences — build them as the design shows, or accept each as it is.
+
+## §8 score, first pass — 5/10
 
 | Points | Earned | Evidence / why not |
 |---|---|---|

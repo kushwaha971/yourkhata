@@ -97,8 +97,21 @@ await page.screenshot({ path: `${SHOTS}/wrong.png`, fullPage: true });
 await box.focus();
 for (let i = 0; i < 6; i += 1) await page.keyboard.press('Backspace');
 await page.keyboard.insertText(code ?? '');
+// Lost reply: the delete reaches the server, the answer never comes back.
+let lostOnce = false;
+await page.route('**/api/v1/tenants/current/delete-request', async (route) => {
+  if (lostOnce) return route.continue();
+  lostOnce = true;
+  await route.fetch();
+  await route.abort('connectionreset');
+});
 await dialog.getByRole('button', { name: 'Delete business' }).click();
 await page.waitForTimeout(2000);
+await page.unroute('**/api/v1/tenants/current/delete-request');
+await page.reload({ waitUntil: 'networkidle' });
+const shownAfterReload = await page.getByRole('button', { name: /Cancel deletion|Keep my business|Cancel/i }).count();
+check(shownAfterReload > 0, `lost reply: after reload the page shows the deletion as requested, with a way to cancel (${shownAfterReload})`);
+await page.screenshot({ path: `${SHOTS}/lost-reply.png`, fullPage: true });
 const after = (await api('GET', 'tenants/current/deletion')).body?.data?.status;
 check(after === 'pending_deletion', `the right code asks for deletion, read back (${after})`);
 check(after !== 'active', 'self-test: an unchanged business would not read as pending');

@@ -118,6 +118,46 @@ for (const width of [390, 1280]) {
   check(told > 0, `${tag} E4: offline, the screen says the save did not go through`);
   check((await meName(ctx)) === saved, `${tag} E4: nothing changed on the server while offline`);
 
+  // Lost reply — the save reaches the server, the answer never comes back.
+  // The screen must not claim success, and saving again must not double up.
+  const loseNext = async (target, pattern) => {
+    let once = false;
+    await target.route(pattern, async (route) => {
+      if (once || route.request().method() === 'GET') return route.continue();
+      once = true;
+      await route.fetch(); // the server does the work...
+      await route.abort('connectionreset'); // ...and the reply is lost
+    });
+  };
+  await page.goto(`${base}/settings/me`);
+  await name.waitFor();
+  await loseNext(page, '**/api/v1/auth/me');
+  await name.fill('Lost reply name');
+  await save.click();
+  await page.waitForTimeout(1500);
+  const claimed = await page.getByText('Your profile is saved.').count();
+  check(claimed === 0, `${tag} lost reply: the screen does not say "saved" when no answer came (${claimed})`);
+  check((await meName(ctx)) === 'Lost reply name', `${tag} lost reply: the server did save it`);
+  await page.unroute('**/api/v1/auth/me');
+  await save.click();
+  await page.waitForTimeout(1200);
+  check((await meName(ctx)) === 'Lost reply name', `${tag} lost reply: saving again changes nothing twice (same name)`);
+  await page.goto(`${base}/settings/branding`);
+  await page.locator('#bill-terms').waitFor();
+  const qr = page.getByRole('switch', { name: /Show the UPI QR/ });
+  const qrBefore = (await (await ctx.request.get(`${base}/api/v1/tenants/current/settings`)).json()).data?.values?.['documents.show_upi_qr']?.value ?? true;
+  await loseNext(page, '**/api/v1/tenants/current/settings');
+  await qr.click();
+  await page.waitForTimeout(1500);
+  const qrServer = (await (await ctx.request.get(`${base}/api/v1/tenants/current/settings`)).json()).data?.values?.['documents.show_upi_qr']?.value;
+  await page.unroute('**/api/v1/tenants/current/settings');
+  await page.reload();
+  await page.locator('#bill-terms').waitFor();
+  const qrScreen = await page.getByRole('switch', { name: /Show the UPI QR/ }).isChecked();
+  check(qrScreen === qrServer, `${tag} lost reply: after reload the UPI QR switch shows what the server kept (${qrScreen} / ${qrServer})`);
+  if (qrServer !== qrBefore) await page.getByRole('switch', { name: /Show the UPI QR/ }).click();
+  await page.waitForTimeout(1200);
+
   // E5 — two tabs on Bills and print's terms line.
   const settingsNow = async () => (await (await ctx.request.get(`${base}/api/v1/tenants/current/settings`)).json()).data?.values ?? {};
   const termsBefore = (await settingsNow())['documents.terms']?.text ?? '';

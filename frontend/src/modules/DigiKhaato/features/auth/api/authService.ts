@@ -349,9 +349,28 @@ export const confirmPasswordResetWriteClass: TWriteClass = 'online-only';
 
 // ── Session (Sprint 0, unchanged) ────────────────────────────────────────────
 
+/**
+ * The `/auth/me` read in flight, if any. A screen that needs another block of
+ * the same answer (Plan's `plan_limits`) waits for this one instead of asking
+ * again — Settings P0 round, 16 Nov 2026: opening Plan read `/auth/me` twice.
+ */
+let meInFlight: Promise<{ data: { data: unknown } }> | null = null;
+let meSettledAt = 0;
+/** How long a finished session read still counts as fresh for another block. */
+const ME_FRESH_MS = 5000;
+export const sessionReadInFlight = (): Promise<{ data: { data: unknown } }> | null =>
+  meInFlight && (meSettledAt === 0 || Date.now() - meSettledAt < ME_FRESH_MS) ? meInFlight : null;
+
 /** GET /auth/me — the session summary, rehydrated on every app load. */
 export const getSession = async (signal?: AbortSignal): Promise<SessionPayload> => {
-  const response = await api.get<SessionApiResponse>(API_PATHS.AUTH_ME, { signal });
+  const request = api.get<SessionApiResponse>(API_PATHS.AUTH_ME, { signal });
+  meInFlight = request;
+  meSettledAt = 0;
+  // Kept for a few seconds after it lands: Plan asks for the same answer just
+  // after the session read finishes, because it waits for the business id.
+  const response = await request.finally(() => {
+    if (meInFlight === request) meSettledAt = Date.now();
+  });
   const data = response.data.data;
 
   // PLT-04 FR-1 — the role, the default flag and the caller's own membership

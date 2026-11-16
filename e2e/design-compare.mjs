@@ -26,9 +26,11 @@ const pairs = (arg("pairs") ?? "")
     return { mock, ours, caption: caption ?? `${mock} · ${ours}` };
   });
 const here = dirname(fileURLToPath(import.meta.url));
+// `--design=<file in docs/revamp/design>` compares against another approved
+// design (Settings: settings-and-profile.html); the Shop design by default.
 const designPath = resolve(
   here,
-  "../docs/revamp/design/shop-fixes-and-business-types.html",
+  `../docs/revamp/design/${arg("design") ?? "shop-fixes-and-business-types.html"}`,
 );
 mkdirSync(shots, { recursive: true });
 // Embedded, not file:// links: a page made with setContent is about:blank,
