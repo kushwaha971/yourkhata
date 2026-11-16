@@ -34,7 +34,7 @@ const nos = (await get('/units')).find((u) => u.code === 'NOS');
 const tag = `OB-${run}`;
 await post('/items', { name: `G3o bangle ${run}`, unit_id: nos.id, selling_price: '0', tracking: 'serial', tag: { tag_no: tag, purity: 'gold_22k', gross_g: '12.340', stone_g: '0', net_g: '12.340', making_type: 'pct', making_value: '12', wastage_pct: '0' } });
 const what = `Bangle ${run}`;
-const when = new Date(Date.now() + 5 * 864e5).toISOString().slice(0, 10);
+const when = new Date(Date.now() + 5 * 864e5).toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' });
 const order = await post('/sales/custom-orders', { client_key: randomUUID(), party_id: party.id, what, purity: 'gold_22k', deliver_on: when, advance: '50000', advance_mode: 'upi', fix_rate: true });
 await rate('12000');
 await page.goto(`${base}/sales/custom-orders`);

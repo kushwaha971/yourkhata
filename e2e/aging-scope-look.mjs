@@ -14,7 +14,7 @@ const business = await must('POST', '/tenants', {
 user.token = business.access_token ?? user.token;
 for (const step of [2, 3, 4]) await must('PATCH', '/tenants/current', { onboarding_step: step }, user.token);
 const today = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kolkata' }).format(new Date());
-const ago = (days) => new Date(new Date(`${today}T12:00:00Z`).getTime() - days * 86400000).toISOString().slice(0, 10);
+const ago = (days) => new Date(new Date(`${today}T12:00:00Z`).getTime() - days * 86400000).toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' });
 const older = await addParty(user.token, { name: 'Older Debt', mobile: uniqMobile(),
   opening_balance_amount: '250.00', opening_balance_direction: 'debit', opening_balance_as_of: ago(40) });
 await addParty(user.token, { name: 'Recent Debt', opening_balance_amount: '750.00',

@@ -33,7 +33,7 @@ if (!LOG) throw new Error('DEMO_API_LOG is required: the demo API log the OTP is
 if (!/8100/.test(process.env.E2E_BACKEND ?? '')) throw new Error('Refusing to seed anything but the demo API on :8100.');
 
 export const OWNER = { name: 'Ramesh Sharma', mobile: '9876543210' };
-const iso = (days = 0) => new Date(Date.now() + 5.5 * 3600e3 + days * 864e5).toISOString().slice(0, 10);
+const iso = (days = 0) => new Date(Date.now() + 5.5 * 3600e3 + days * 864e5).toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' });
 
 const codeFor = async (mobile, from) => {
   for (let i = 0; i < 20; i += 1) {

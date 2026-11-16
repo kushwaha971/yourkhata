@@ -24,7 +24,7 @@ const record = (id, check, ok, detail = '') => {
 };
 const psql = localPsql;
 const djangoShell = (code) => execFileSync(PYTHON, ['manage.py', 'shell', '-c', code], { cwd: BACKEND_DIR }).toString().trim();
-const ist = (n = 0) => new Date(Date.now() + n * 86400000 + 5.5 * 3600000).toISOString().slice(0, 10);
+const ist = (n = 0) => new Date(Date.now() + n * 86400000 + 5.5 * 3600000).toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' });
 const SIZES = [{ id: 'phone', width: 390, height: 844 }, { id: 'desktop', width: 1280, height: 860 }];
 const shot = async (page, size, name, full = false) => page.screenshot({ path: `${SHOTS}/${size}/${name}.png`, fullPage: full }).catch((e) => console.log('shot fail', name, e.message));
 const overflow = (page) => page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);

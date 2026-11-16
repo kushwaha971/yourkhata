@@ -87,7 +87,7 @@ const order = (a) => [a.kind === 'hero' ? 0 : a.kind === 'feature' ? 1 : 2, a.id
 assets.sort((a, b) => (order(a) < order(b) ? -1 : 1));
 const manifest = {
   version: 2,
-  generated: new Date(Date.now() + 5.5 * 3600e3).toISOString().slice(0, 10),
+  generated: new Date(Date.now() + 5.5 * 3600e3).toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' }),
   note: 'Silent loops recorded from real YourKhata screens on the demo stack (e2e/demo/record-clips.mjs), one take for the desktop layout and one for the phone layout. Posters equal each loop\'s first frame. Every name, number and the UPI handle sharmastore.demo@example are seeded demo data (e2e/demo/seed-demo.mjs).',
   assets,
 };

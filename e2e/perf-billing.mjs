@@ -22,7 +22,7 @@ const SIDE = arg('side', 'sales');
 if (!['sales', 'purchases'].includes(SIDE)) throw Error('Unknown counter side');
 const DOCS = SIDE === 'purchases' ? 'purchases/bills' : 'sales/invoices';
 const LINES = Number(arg('lines', '30'));
-const out = `${process.env.E2E_SHOTS ?? '/tmp/claude-0'}/perf-${SIDE}-billing-${new Date().toISOString().slice(0, 10)}.json`;
+const out = `${process.env.E2E_SHOTS ?? '/tmp/claude-0'}/perf-${SIDE}-billing-${new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' })}.json`;
 
 const browser = await chromium.launch({
   executablePath: process.env.CHROME ?? '/opt/pw-browsers/chromium',

@@ -14,7 +14,7 @@ if (!['127.0.0.1', 'localhost'].includes(new URL(base).hostname)) throw Error('L
 
 const day = (offset) => {
   const d = new Date(Date.now() + 5.5 * 3600e3 - offset * 86400e3);
-  return d.toISOString().slice(0, 10);
+  return d.toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' });
 };
 // [name, mobile, [[kind, amount, note, days ago], …]] — the design's I1/I2 people.
 const PEOPLE = [

@@ -20,7 +20,7 @@ import { newOwner, must, api } from './lib/fixtures.mjs';
 const FE = process.env.E2E_FRONTEND ?? (process.env.E2E_BASE ?? 'http://localhost:3000');
 const ROOT = '/tmp/e2e-shots/pick-list';
 mkdirSync(ROOT, { recursive: true });
-const iso = (n = 0) => new Date(Date.now() + 5.5 * 3600e3 - n * 86400e3).toISOString().slice(0, 10);
+const iso = (n = 0) => new Date(Date.now() + 5.5 * 3600e3 - n * 86400e3).toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' });
 let failed = 0;
 const check = (name, ok, extra = '') => {
   if (!ok) failed += 1;

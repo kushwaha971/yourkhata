@@ -20,7 +20,7 @@ import { must, uniq, PASSWORD } from './lib/fixtures.mjs';
 const FE = process.env.E2E_FRONTEND ?? (process.env.E2E_BASE ?? 'http://localhost:3000');
 const ROOT = '/tmp/e2e-shots/action-sheet';
 mkdirSync(ROOT, { recursive: true });
-const TODAY = new Date(Date.now() + 5.5 * 3600e3).toISOString().slice(0, 10);
+const TODAY = new Date(Date.now() + 5.5 * 3600e3).toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' });
 let failed = 0;
 const check = (name, ok, extra = '') => {
   if (!ok) failed += 1;

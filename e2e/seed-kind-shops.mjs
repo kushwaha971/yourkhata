@@ -17,7 +17,7 @@ const shops = {
   ...JSON.parse(readFileSync('/tmp/e2e-shots/kind-shops.json')),
   jewel: { email: 'qa-jeweller@adcert.test', password: 'AdCert-Test-2026!' },
 };
-const iso = (ago) => new Date(Date.now() - ago * 864e5).toISOString().slice(0, 10);
+const iso = (ago) => new Date(Date.now() - ago * 864e5).toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' });
 const browser = await chromium.launch({ executablePath: process.env.CHROME });
 try {
   for (const [kind, shop] of Object.entries(shops)) {

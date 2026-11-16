@@ -20,7 +20,7 @@ for (const step of [2, 3, 4]) {
 const student = await addParty(owner.token, {
   name: 'Library Only Student', mobile: uniqMobile(),
   opening_balance_amount: '250.00', opening_balance_direction: 'debit',
-  opening_balance_as_of: new Date().toISOString().slice(0, 10),
+  opening_balance_as_of: new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' }),
 });
 const plan = await must('POST', '/library/membership-types', {
   name: 'Reading plan', validity_months: 1, fee_amount: '900.00',

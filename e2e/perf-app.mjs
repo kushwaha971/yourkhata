@@ -70,7 +70,7 @@ const REPS = Number(arg('reps', '3'));
 const ONLY = arg('only', 'nav,cold,press,lists').split(',');
 const WIDTHS = arg('widths', '390,1280').split(',').map(Number);
 const PROFILE_NAMES = arg('profiles', 'unthrottled,throttled').split(',');
-const OUT = arg('out', `/tmp/claude-0/perf-app-${new Date().toISOString().slice(0, 10)}.json`);
+const OUT = arg('out', `/tmp/claude-0/perf-app-${new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' })}.json`);
 const SHOTS = process.argv.includes('--shots');
 const SHOT_DIR = `${process.env.E2E_SHOTS ?? '/tmp/e2e-shots'}/perf-app`;
 if (SHOTS) mkdirSync(SHOT_DIR, { recursive: true });

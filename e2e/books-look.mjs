@@ -24,7 +24,7 @@ const t = await must('POST', '/tenants', { name: `Look Shop ${uniq()}`, business
 user.token = t.access_token ?? user.token;
 for (const step of [2, 3, 4]) await must('PATCH', '/tenants/current', { onboarding_step: step }, user.token);
 const ramesh = await must('POST', '/parties', { name: 'Ramesh Traders', is_customer: true, mobile: '9876500011' }, user.token);
-await must('POST', '/ledger-entries', { party_id: ramesh.id, direction: 'debit', amount: '500.00', entry_date: new Date().toISOString().slice(0, 10), note: 'Cement bags' }, user.token);
+await must('POST', '/ledger-entries', { party_id: ramesh.id, direction: 'debit', amount: '500.00', entry_date: new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' }), note: 'Cement bags' }, user.token);
 const me = await must('GET', '/auth/me', null, user.token);
 console.log('apps', JSON.stringify(me.apps?.map((a) => a.code)), 'modules', JSON.stringify(me.enabled_modules?.filter((m) => ['khata', 'sales'].includes(m))));
 

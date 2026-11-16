@@ -19,7 +19,7 @@ const gstinFor = (seed) => {
   [...body].forEach((ch, i) => { const product = B36.indexOf(ch) * (i % 2 ? 2 : 1); sum += Math.floor(product / 36) + (product % 36); });
   return body + B36[(36 - (sum % 36)) % 36];
 };
-const daysAgo = (n) => new Date(Date.now() - n * 86_400_000).toISOString().slice(0, 10);
+const daysAgo = (n) => new Date(Date.now() - n * 86_400_000).toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' });
 
 async function seed() {
   const o = await newOwner({ shop: 'Sharma Kirana Store', name: 'Rajesh Sharma', prefix: 'qa-pay' });

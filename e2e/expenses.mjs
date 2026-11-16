@@ -52,7 +52,7 @@ const must = async (...args) => {
   return response;
 };
 const key = (label) => ({ 'Idempotency-Key': `exp-${stamp}-${label}` });
-const today = () => new Date().toISOString().slice(0, 10);
+const today = () => new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' });
 
 async function seed() {
   const registered = await must('POST', '/auth/register', {

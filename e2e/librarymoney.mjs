@@ -23,7 +23,7 @@ const check = (name, ok, extra = '') => {
   if (!ok) failed += 1;
   console.log(`${ok ? 'PASS' : 'FAIL'}  ${name}${extra ? ` — ${extra}` : ''}`);
 };
-const iso = (days = 0) => new Date(Date.now() + 5.5 * 3600e3 + days * 864e5).toISOString().slice(0, 10);
+const iso = (days = 0) => new Date(Date.now() + 5.5 * 3600e3 + days * 864e5).toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' });
 
 // ── Seed ────────────────────────────────────────────────────────────────────
 const email = `moneyqa-${uniq()}@e2e.test`;
@@ -46,7 +46,7 @@ const owing = await must('POST', '/parties', { name: 'Imran Khan', is_customer: 
 await must('POST', '/library/members', { membership_type_id: plan.id, party_id: owing.id }, tok);
 const cats = await must('GET', '/expense-categories', null, tok);
 const rent = (cats.find?.((c) => /rent/i.test(c.name)) ?? cats[0]);
-const today = new Date(Date.now() + 5.5 * 3600e3).toISOString().slice(0, 10);
+const today = new Date(Date.now() + 5.5 * 3600e3).toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' });
 await must('POST', '/expenses', { amount: '1200.00', expense_date: today, category_id: rent.id, mode: 'cash' }, tok);
 const sums = await must('GET', '/library/profit', null, tok);
 check('the server: 900 in, 1,200 out, 300 short', sums.income_total === '900.00' && sums.expenses_total === '1200.00' && sums.profit === '-300.00', JSON.stringify(sums));

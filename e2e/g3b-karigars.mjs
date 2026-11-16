@@ -33,7 +33,7 @@ const post = async (p, data) => (await (await ctx.request.post(`${api}${p}`, { h
 for (const old of (await get('/sales/karigars')).open_lots) await post(`/sales/karigar-lots/${old.id}/receive`, { received_g: '0' });
 const party = await post('/parties', { name: `G3b Asha ${run}`, type: 'customer', is_customer: true });
 const what = `Earrings ${run}`;
-const order = await post('/sales/custom-orders', { client_key: randomUUID(), party_id: party.id, what, purity: 'gold_22k', deliver_on: new Date(Date.now() + 5 * 864e5).toISOString().slice(0, 10) });
+const order = await post('/sales/custom-orders', { client_key: randomUUID(), party_id: party.id, what, purity: 'gold_22k', deliver_on: new Date(Date.now() + 5 * 864e5).toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' }) });
 const name = `Raju ${run}`;
 const me = async () => (await get('/sales/karigars')).rows.find((r) => r.name === name);
 

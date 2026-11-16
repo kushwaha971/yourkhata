@@ -29,7 +29,7 @@ const post = async (p, data) => (await (await ctx.request.post(`${api}${p}`, { h
 await ctx.request.put(`${api}/metal-rates/today`, { headers: await hdr(), data: { gold_22k: '11650' } });
 const party = await post('/parties', { name: `G3e Lata ${run}`, type: 'customer', is_customer: true });
 const today = (await get('/metal-rates/today')).day;
-const iso = (n) => { const d = new Date(`${today}T00:00:00Z`); d.setUTCDate(d.getUTCDate() + n); return d.toISOString().slice(0, 10); };
+const iso = (n) => { const d = new Date(`${today}T00:00:00Z`); d.setUTCDate(d.getUTCDate() + n); return d.toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' }); };
 const mk = (what, days, extra = {}) => post('/sales/custom-orders', { client_key: randomUUID(), party_id: party.id, what, purity: 'gold_22k', deliver_on: iso(days), ...extra });
 const search = async (p, q) => { await p.getByPlaceholder('Order, customer or item').fill(q); await p.waitForTimeout(900); };
 

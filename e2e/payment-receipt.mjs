@@ -156,7 +156,7 @@ try {
     }
   }
   if (!bill) throw Error('No QA customer has an open bill to settle');
-  const today = new Date().toISOString().slice(0, 10);
+  const today = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' });
   const made = await send('/payments', {
     direction: 'in',
     party_id: customer.id,

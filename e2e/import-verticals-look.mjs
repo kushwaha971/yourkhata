@@ -102,7 +102,7 @@ for (const [w, h] of [[360, 780], [1280, 900]]) {
     await fits(page, `${w}: students done`);
     const members = await must('GET', '/library/members?page_size=50', null, room.token);
     const asha = members.find((m) => m.name === 'Asha Kumari' || m.party?.name === 'Asha Kumari');
-    record(`${w}: Asha is on her seat with her paid-till date`, Boolean(asha) && asha.valid_until === daysAgo(-20).toISOString().slice(0, 10), JSON.stringify(asha ?? {}).slice(0, 160));
+    record(`${w}: Asha is on her seat with her paid-till date`, Boolean(asha) && asha.valid_until === daysAgo(-20).toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' }), JSON.stringify(asha ?? {}).slice(0, 160));
     await ctx.close();
   }
   void plan;

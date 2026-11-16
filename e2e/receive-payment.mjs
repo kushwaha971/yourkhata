@@ -299,7 +299,7 @@ try {
     const elsewhere = await send('/payments', {
       direction: 'in',
       party_id: customer.id,
-      payment_date: new Date().toISOString().slice(0, 10),
+      payment_date: new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' }),
       note: 'QA91 other device',
       bucket: 'shop',
       mode_breakup: [{ mode: 'cash', amount: '1.00' }],

@@ -20,7 +20,7 @@ tomorrow.setUTCDate(tomorrow.getUTCDate() + 1);
 const loan = await must('POST', '/lending/loans', {
   plan_type: 'fixed_daily', principal: '120.00', frequency: 'daily', instalment_count: 10,
   per_instalment_amount: '12.00', collection_weekdays: 127, disbursed_on: today,
-  first_due_on: tomorrow.toISOString().slice(0, 10),
+  first_due_on: tomorrow.toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' }),
   party: { name: 'Advance Borrower', mobile: uniqMobile() },
 }, user.token);
 await must('POST', `/lending/loans/${loan.id}/collections`, { amount: '36.00', mode: 'cash' }, user.token);

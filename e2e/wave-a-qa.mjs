@@ -70,7 +70,7 @@ const gstinFor = (seed) => {
   [...body].forEach((ch, i) => { const p = B36.indexOf(ch) * (i % 2 ? 2 : 1); sum += Math.floor(p / 36) + (p % 36); });
   return body + B36[(36 - (sum % 36)) % 36];
 };
-const iso = (n = 0) => new Date(Date.now() + 5.5 * 3600e3 - n * 86400e3).toISOString().slice(0, 10);
+const iso = (n = 0) => new Date(Date.now() + 5.5 * 3600e3 - n * 86400e3).toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' });
 
 async function seed() {
   const owner = await newOwner({ shop: 'Saraswati Library & Stores', name: 'Meera Joshi', prefix: 'wave-a' });

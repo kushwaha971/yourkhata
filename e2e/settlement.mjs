@@ -41,7 +41,7 @@ const check = (name, ok, detail = '') => {
 };
 const inr = (v) =>
   Number(v).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-const iso = (n = 0) => new Date(Date.now() + 5.5 * 3600e3 - n * 86400e3).toISOString().slice(0, 10);
+const iso = (n = 0) => new Date(Date.now() + 5.5 * 3600e3 - n * 86400e3).toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' });
 
 const measure = (scope) => {
   const root = document.querySelector(scope) ?? document.body;

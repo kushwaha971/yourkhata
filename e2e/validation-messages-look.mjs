@@ -19,8 +19,8 @@ const tenant = await must('POST', '/tenants', {
 }, user.token);
 user.token = tenant.access_token ?? user.token;
 for (const step of [2, 3, 4]) await must('PATCH', '/tenants/current', { onboarding_step: step }, user.token);
-const today = new Date().toISOString().slice(0, 10);
-const next = new Date(Date.now() + 86400000).toISOString().slice(0, 10);
+const today = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' });
+const next = new Date(Date.now() + 86400000).toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' });
 const loan = await must('POST', '/lending/loans', {
   plan_type: 'fixed_daily', principal: '1200.00', frequency: 'daily', instalment_count: 10,
   per_instalment_amount: '120.00', collection_weekdays: 127, disbursed_on: today, first_due_on: next,

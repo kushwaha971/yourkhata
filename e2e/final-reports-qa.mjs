@@ -22,7 +22,7 @@ const gstinFor = (seed) => {
   [...body].forEach((ch, i) => { const p = B36.indexOf(ch) * (i % 2 ? 2 : 1); sum += Math.floor(p / 36) + (p % 36); });
   return body + B36[(36 - (sum % 36)) % 36];
 };
-const iso = (n = 0) => { const d = new Date(Date.now() + 5.5 * 3600e3 - n * 86400e3); return d.toISOString().slice(0, 10); };
+const iso = (n = 0) => { const d = new Date(Date.now() + 5.5 * 3600e3 - n * 86400e3); return d.toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' }); };
 const TODAY = iso(0); const YDAY = iso(1);
 const num = (x) => Number(x ?? 0);
 

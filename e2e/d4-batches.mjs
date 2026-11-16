@@ -25,7 +25,7 @@ const NAME = `D4 Dolo ${tag}`;
 const BATCH = `DL${tag}`;
 // Next month's last day: within the 30-to-60-day lists either way.
 const nm = new Date(); nm.setUTCDate(1); nm.setUTCMonth(nm.getUTCMonth() + 1);
-const expiry = new Date(Date.UTC(nm.getUTCFullYear(), nm.getUTCMonth() + 1, 0)).toISOString().slice(0, 10);
+const expiry = new Date(Date.UTC(nm.getUTCFullYear(), nm.getUTCMonth() + 1, 0)).toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' });
 
 const browser = await chromium.launch(process.env.PW_CHROME ? { executablePath: process.env.PW_CHROME } : {});
 const signIn = async (ctx) => {

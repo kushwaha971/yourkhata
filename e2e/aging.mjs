@@ -112,7 +112,7 @@ const inr = (value) => {
   return `₹${grouped}.${frac}`;
 };
 const shift = (iso, days) =>
-  new Date(Date.parse(`${iso}T00:00:00Z`) - days * 86_400_000).toISOString().slice(0, 10);
+  new Date(Date.parse(`${iso}T00:00:00Z`) - days * 86_400_000).toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' });
 const ageDays = (asOf, iso) => Math.round((Date.parse(`${asOf}T00:00:00Z`) - Date.parse(`${iso}T00:00:00Z`)) / 86_400_000);
 
 // ── The book ────────────────────────────────────────────────────────────────

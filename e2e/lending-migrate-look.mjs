@@ -25,7 +25,7 @@ const fits = async (page, label) => {
   const over = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
   record(`${label} fits the screen`, over <= 0, `${over}px`);
 };
-const iso = (d) => d.toISOString().slice(0, 10);
+const iso = (d) => d.toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' });
 
 const user = await newUser({ name: 'Money Lender' });
 const t = await must('POST', '/tenants', { name: `Lender ${uniq()}`, state_code: '27', apps: ['lending'] }, user.token);

@@ -193,13 +193,13 @@ try {
     check(tag('E1 three fast taps make one collection'), (await api(`/lending/loans/${prakash.id}`)).body.data.collections.length === p0 + 1);
     // E13: a back-dated collection is stored on its own day.
     const anil = await loanOf('Anil');
-    const back = await api(`/lending/loans/${anil.id}/collections`, { method: 'POST', data: { amount: '100', collected_on: new Date(Date.now() - 2 * 86400000).toISOString().slice(0, 10) } });
+    const back = await api(`/lending/loans/${anil.id}/collections`, { method: 'POST', data: { amount: '100', collected_on: new Date(Date.now() - 2 * 86400000).toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' }) } });
     const anilRow = (await api(`/lending/loans/${anil.id}`)).body.data.collections.find((c) => c.amount === '100.00') ?? {};
-    check(tag('E13 a back-dated collection keeps its day'), back.status === 201 && anilRow.collected_on === new Date(Date.now() - 2 * 86400000).toISOString().slice(0, 10), anilRow.collected_on);
+    check(tag('E13 a back-dated collection keeps its day'), back.status === 201 && anilRow.collected_on === new Date(Date.now() - 2 * 86400000).toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' }), anilRow.collected_on);
     // E17: a long Hindi name fits the round and the loan page.
     const route = (await api('/lending/routes')).body.data[0];
     const longB = (await api('/lending/borrowers', { method: 'POST', data: { name: 'श्रीमती राधाकृष्णन वेंकटसुब्रमण्यम पाटिल देशमुख', work: 'बहुत लंबा काम का नाम', route_id: route.id } })).body.data;
-    const longL = (await api('/lending/loans', { method: 'POST', data: { borrower_id: longB.id, lent: '1240378', count: 40, each: '31010', starts_on: new Date().toISOString().slice(0, 10) } })).body.data;
+    const longL = (await api('/lending/loans', { method: 'POST', data: { borrower_id: longB.id, lent: '1240378', count: 40, each: '31010', starts_on: new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' }) } })).body.data;
     await page.goto(`${base}/lending/loans/${longL.id}`, { waitUntil: 'networkidle' });
     await fits('E17 a long Hindi name on the loan page');
     await page.goto(`${base}/lending`, { waitUntil: 'networkidle' });

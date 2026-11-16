@@ -28,7 +28,7 @@ try {
  const supplier=await must('POST','/parties',{name:'Radhe Krishna Electrical Supplies',mobile:sharedMobile,is_supplier:true,is_customer:false,gstin:fixtureGstin(),state_code:'27'},owner.token);
  const item=await must('POST','/items',{name:'LED driver 42 W',unit_id:unit.id,purchase_price:'42.00',selling_price:'55.00',tax_code:'GST18',track_stock:true},owner.token);
  const cable=await must('POST','/items',{name:'Copper cable roll 2.5 mm',unit_id:unit.id,purchase_price:'90.00',selling_price:'125.00',tax_code:'GST18',track_stock:true},owner.token);
- const bill=await must('POST','/purchases/bills',{party_id:supplier.id,supplier_invoice_number:'RKES-1043',supplier_invoice_date:new Date().toISOString().slice(0,10),lines:[{item_id:item.id,description:item.name,qty:'2',unit_code:'NOS',unit_cost:'40.00',tax_code:'GST18'},{item_id:cable.id,description:cable.name,qty:'2',unit_code:'NOS',unit_cost:'90.00',tax_code:'GST18'}]},owner.token);drafts.add(bill.id);
+ const bill=await must('POST','/purchases/bills',{party_id:supplier.id,supplier_invoice_number:'RKES-1043',supplier_invoice_date:new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' }),lines:[{item_id:item.id,description:item.name,qty:'2',unit_code:'NOS',unit_cost:'40.00',tax_code:'GST18'},{item_id:cable.id,description:cable.name,qty:'2',unit_code:'NOS',unit_cost:'90.00',tax_code:'GST18'}]},owner.token);drafts.add(bill.id);
  const other=await newOwner({shop:'Another electrical business',mobile:sharedMobile,prefix:'qa-purchase-other-owner'});
  const ownContact=await must('POST','/parties',{name:'Own electrical supplier',mobile:sharedMobile,is_supplier:true,is_customer:false},other.token);
  check(ownContact.id!==supplier.id,'Matching phone merged contacts across businesses');

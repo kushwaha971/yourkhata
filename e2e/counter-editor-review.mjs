@@ -21,7 +21,7 @@ import { api, must, uniq, PASSWORD } from './lib/fixtures.mjs';
 const FE = process.env.E2E_FRONTEND ?? (process.env.E2E_BASE ?? 'http://localhost:3000');
 const ROOT = '/tmp/e2e-shots/counter-review';
 mkdirSync(ROOT, { recursive: true });
-const TODAY = new Date(Date.now() + 5.5 * 3600e3).toISOString().slice(0, 10);
+const TODAY = new Date(Date.now() + 5.5 * 3600e3).toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' });
 const WIDTHS = [
   ['phone-360', 360, 780], ['phone-390', 390, 844], ['tablet-768', 768, 1024], ['laptop-1024', 1024, 768],
   ['laptop-1280', 1280, 800], ['desktop-1440', 1440, 900], ['desktop-1536', 1536, 864], ['wide-1920', 1920, 1080],

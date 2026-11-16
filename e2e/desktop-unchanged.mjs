@@ -33,7 +33,7 @@ const SIZES = [
   { id: '1440', width: 1440, height: 900 },
 ];
 const SCHEMES = ['light', 'dark'];
-const daysAgo = (n) => new Date(Date.now() - n * 86_400_000).toISOString().slice(0, 10);
+const daysAgo = (n) => new Date(Date.now() - n * 86_400_000).toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' });
 
 async function seed() {
   const owner = await newOwner({ shop: 'Desktop Check Stores', name: 'Desk Owner', prefix: 'desk' });

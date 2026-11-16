@@ -114,7 +114,7 @@ try {
     const made = (await api('POST', '/items', { name: `QAD Box ${stamp}`, unit_id: nos, selling_price: '720', purchase_price: '400', tax_code: 'GST0', opening_stock: { qty: '20', unit_cost: '400' } })).data;
     const box = made.item ?? made;
     const party = (await api('POST', '/parties', { name: `QAD Kavya ${stamp}`, mobile: `90${String(Date.now()).slice(-8)}`, type: 'customer' })).data;
-    const tomorrow = new Date(Date.now() + 864e5 + 5.5 * 36e5).toISOString().slice(0, 10);
+    const tomorrow = new Date(Date.now() + 864e5 + 5.5 * 36e5).toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' });
     const order = (await api('POST', '/sales/cafe-orders', { client_key: crypto.randomUUID(), kind: 'advance', party_id: party.id, ready_at: `${tomorrow}T11:00`, advance: '500', advance_mode: 'cash', lines: [{ item_id: box.id, qty: '2' }] })).data;
     await page.goto(`${base}/dashboard`, { waitUntil: 'networkidle' });
     const follow = page.getByTestId('home-followups');

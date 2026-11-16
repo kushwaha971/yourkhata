@@ -25,7 +25,7 @@ const check = (name, ok, extra = '') => {
   if (!ok) failed += 1;
   console.log(`${ok ? 'PASS' : 'FAIL'}  ${name}${extra ? ` — ${extra}` : ''}`);
 };
-const TODAY = new Date(Date.now() + 5.5 * 3600e3).toISOString().slice(0, 10);
+const TODAY = new Date(Date.now() + 5.5 * 3600e3).toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' });
 
 // ── Seed ────────────────────────────────────────────────────────────────────
 const email = `ordersqa-${uniq()}@e2e.test`;

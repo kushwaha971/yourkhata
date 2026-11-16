@@ -121,7 +121,7 @@ const psql = localPsql;
 const djangoShell = (code) =>
   execFileSync(PYTHON, ['manage.py', 'shell', '-c', code], { cwd: BACKEND_DIR }).toString().trim();
 
-const daysAgo = (n) => new Date(Date.now() - n * 86_400_000).toISOString().slice(0, 10);
+const daysAgo = (n) => new Date(Date.now() - n * 86_400_000).toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' });
 const todayIst = () => {
   const parts = new Intl.DateTimeFormat('en-GB', { timeZone: 'Asia/Kolkata', day: '2-digit', month: '2-digit', year: 'numeric' }).format(new Date());
   return parts; // dd/mm/yyyy
@@ -1570,7 +1570,7 @@ const nShot = (size, name) => `${N_DIR}/${size}/${name}.png`;
 const RT_ACCOUNTS = process.env.E2E_RT_ACCOUNTS ?? '/tmp/claude-0/retest/state.json';
 const RT_PASSWORD = 'Dukaan2026xRetest!';
 const IST_DATE = () => new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kolkata' }).format(new Date()); // yyyy-mm-dd
-const UTC_DATE = () => new Date().toISOString().slice(0, 10);
+const UTC_DATE = () => new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' });
 let nLogins = 0;
 
 /** A browser session as `who`, reusing `storageFile` when it is still valid. */

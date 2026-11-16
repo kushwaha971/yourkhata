@@ -105,7 +105,7 @@ try {
         phone_model: `QA95 iPhone ${stamp}`,
         fault: 'Battery',
         estimate: '3200',
-        ready_by: new Date(Date.now() + 864e5).toISOString().slice(0, 10),
+        ready_by: new Date(Date.now() + 864e5).toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' }),
         advance: '500',
         advance_mode: 'cash',
       })

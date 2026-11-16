@@ -40,7 +40,7 @@ for (const [size, viewport] of [['phone', { width: 360, height: 780 }], ['deskto
   user.token = ten.access_token ?? user.token;
   for (const step of [2, 3, 4]) await must('PATCH', '/tenants/current', { onboarding_step: step }, user.token);
   const ramesh = await must('POST', '/parties', { name: 'Ramesh Traders', is_customer: true, mobile: '9876500011' }, user.token);
-  await must('POST', '/ledger-entries', { party_id: ramesh.id, direction: 'debit', amount: '500.00', entry_date: new Date().toISOString().slice(0, 10), note: 'Cement bags' }, user.token);
+  await must('POST', '/ledger-entries', { party_id: ramesh.id, direction: 'debit', amount: '500.00', entry_date: new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' }), note: 'Cement bags' }, user.token);
 
   const ctx = await browser.newContext({ viewport, locale: 'en-IN' });
   const page = await ctx.newPage();
@@ -99,7 +99,7 @@ for (const [size, viewport] of [['phone', { width: 360, height: 780 }], ['deskto
   await page.keyboard.press('Escape');
 
   // MSG-07/10 — "Remind all", with the merchant's own words for each customer.
-  await must('PATCH', `/parties/${ramesh.id}`, { collection_date: new Date().toISOString().slice(0, 10) }, user.token);
+  await must('PATCH', `/parties/${ramesh.id}`, { collection_date: new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' }) }, user.token);
   const posted = [];
   page.on('request', (r) => {
     if (/\/reminders\/[^/]+\/send\/?$/.test(new URL(r.url()).pathname)) posted.push(r.postData() ?? '');

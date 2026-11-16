@@ -40,7 +40,7 @@ export const fixtureGstin = () => {
   }, 0);
   return body + alphabet[(36 - sum % 36) % 36];
 };
-const daysAgo = (n) => new Date(Date.now() - n * 86_400_000).toISOString().slice(0, 10);
+const daysAgo = (n) => new Date(Date.now() - n * 86_400_000).toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' });
 
 export async function api(method, path, body, token, extra = {}) {
   for (let attempt = 1; ; attempt += 1) {

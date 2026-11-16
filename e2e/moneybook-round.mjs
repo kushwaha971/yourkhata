@@ -290,7 +290,7 @@ try {
       await page.waitForTimeout(1200);
       const last = asked.at(-1);
       const ist = new Date(Date.now() + 5.5 * 3600e3);
-      const lm = new Date(Date.UTC(ist.getUTCFullYear(), ist.getUTCMonth() - 1, 1)).toISOString().slice(0, 10);
+      const lm = new Date(Date.UTC(ist.getUTCFullYear(), ist.getUTCMonth() - 1, 1)).toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' });
       check(tag('Apply asks for last month and the person chosen'), last?.get('from') === lm && last?.get('person') === id, last ? last.toString() : 'no request');
       page.off('request', watch);
     }

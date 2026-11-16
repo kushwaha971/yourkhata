@@ -10,8 +10,8 @@ const FE = process.env.E2E_FRONTEND ?? (process.env.E2E_BASE ?? 'http://localhos
 const SHOTS = '/tmp/e2e-shots/wave1/inventory';
 const results = [];
 const record = (id, name, ok, evidence = '') => { results.push({ id, name, ok, evidence }); console.log(`${ok ? 'PASS' : 'FAIL'} ${id} ${name} :: ${String(evidence).slice(0, 400)}`); };
-const today = new Date().toISOString().slice(0, 10);
-const daysAgo = (n) => new Date(Date.now() - n * 86_400_000).toISOString().slice(0, 10);
+const today = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' });
+const daysAgo = (n) => new Date(Date.now() - n * 86_400_000).toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' });
 
 // ---------- API seed ----------
 const o = await newOwner({ shop: 'Sharma Kirana Stores', name: 'Ramesh Sharma', prefix: 'w1-inv' });

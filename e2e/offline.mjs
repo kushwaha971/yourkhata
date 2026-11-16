@@ -25,7 +25,7 @@ const t = await must('POST', '/tenants', { name: shopName, business_type: 'retai
 user.token = t.access_token ?? user.token;
 for (const step of [2, 3, 4]) await must('PATCH', '/tenants/current', { onboarding_step: step }, user.token);
 const ramesh = await must('POST', '/parties', { name: 'Ramesh Offline', is_customer: true }, user.token);
-await must('POST', '/ledger-entries', { party_id: ramesh.id, direction: 'debit', amount: '750.00', entry_date: new Date().toISOString().slice(0, 10) }, user.token);
+await must('POST', '/ledger-entries', { party_id: ramesh.id, direction: 'debit', amount: '750.00', entry_date: new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' }) }, user.token);
 
 const browser = await chromium.launch();
 const ctx = await browser.newContext({ viewport: { width: 360, height: 780 } });

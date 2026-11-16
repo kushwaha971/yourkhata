@@ -83,7 +83,7 @@ try {
     const listed = (await api('GET', `/sales/schemes?q=P${stamp}`)).data.schemes;
     check(`${width}: the drawer saved one free-goods scheme`, listed.length === 1 && listed[0].rule === 'free' && listed[0].buy_qty === '10' && listed[0].free_qty === '1' && listed[0].item?.id === parle.id, JSON.stringify(listed.map((s) => s.code)));
 
-    const till = new Date(Date.now() + 20 * 864e5).toISOString().slice(0, 10);
+    const till = new Date(Date.now() + 20 * 864e5).toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' });
     await api('POST', '/sales/schemes', { client_key: crypto.randomUUID(), code: `S${stamp}`, company: 'HUL', rule: 'percent', item_id: surf.id, amount: '2', min_bill: '10000', valid_till: till });
     await api('POST', '/sales/schemes', { client_key: crypto.randomUUID(), code: `T${stamp}`, company: 'Tata Consumer', rule: 'per_unit', item_id: tata.id, amount: '40', valid_till: till });
 

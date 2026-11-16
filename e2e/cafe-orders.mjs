@@ -106,7 +106,7 @@ try {
     await drawer.waitFor({ state: 'hidden', timeout: 5000 }).catch(() => undefined);
 
     // An advance order for tomorrow.
-    const tomorrow = new Date(Date.now() + 864e5 + 5.5 * 36e5).toISOString().slice(0, 10);
+    const tomorrow = new Date(Date.now() + 864e5 + 5.5 * 36e5).toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' });
     const adv = (await api('POST', '/sales/cafe-orders', {
       client_key: crypto.randomUUID(), kind: 'advance', party_id: party.id, ready_at: `${tomorrow}T11:00`, fulfil: 'pickup', advance: '500', advance_mode: 'cash',
       lines: [{ item_id: box.id, qty: '2', note: 'Happy Diwali' }],

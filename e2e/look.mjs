@@ -52,7 +52,7 @@ const must = async (...args) => {
   return response;
 };
 
-const daysAgo = (n) => new Date(Date.now() - n * 86_400_000).toISOString().slice(0, 10);
+const daysAgo = (n) => new Date(Date.now() - n * 86_400_000).toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' });
 
 const postEntry = (partyId, body, token, index) =>
   must(

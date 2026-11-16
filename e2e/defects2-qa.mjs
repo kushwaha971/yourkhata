@@ -429,7 +429,7 @@ async function phaseM(browser) {
 
 
 // ─────────────────────────────────────────────────────────────────────────────
-const daysAgo = (n) => new Date(Date.now() - n * 86_400_000).toISOString().slice(0, 10);
+const daysAgo = (n) => new Date(Date.now() - n * 86_400_000).toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' });
 async function seedL(owner) {
   const tok = await login(owner);
   const s = Date.now();

@@ -16,7 +16,7 @@ try{
   const post=async(path,data)=>{const r=await auth.request.post(`${base}/api/v1/${path}`,{headers:{'X-CSRF-Token':csrf,'Idempotency-Key':crypto.randomUUID()},data});if(!r.ok())throw Error(`${path} ${r.status()} ${await r.text()}`);return (await r.json()).data;};
   const units=(await(await auth.request.get(`${base}/api/v1/units`)).json()).data;
   const item=await post('items',{name:'Radhe Krishna Enterprises Copper Electrical Cable QA',unit_id:units.find(x=>x.code==='NOS').id,selling_price:'500.00',purchase_price:'400.00',tax_code:'GST18',hsn_sac:'8544',track_stock:false});
-  const draft=await post('sales/invoices',{document_date:new Date().toISOString().slice(0,10),lines:Array.from({length:50},()=>({item_id:item.id,qty:'2',unit_price:'500.00'}))});
+  const draft=await post('sales/invoices',{document_date:new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' }),lines:Array.from({length:50},()=>({item_id:item.id,qty:'2',unit_price:'500.00'}))});
   source=(await(await auth.request.get(`${base}/api/v1/sales/invoices/${draft.id}`)).json()).data;writeFileSync(fixture,JSON.stringify(source));
  }
  const storageState=await auth.storageState();await auth.close();

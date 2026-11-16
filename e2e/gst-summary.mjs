@@ -105,7 +105,7 @@ try {
     new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kolkata' }).format(new Date())
   );
   const first = new Date(`${today.slice(0, 8)}01T00:00:00Z`);
-  const lastEnd = new Date(first.getTime() - 86_400_000).toISOString().slice(0, 10);
+  const lastEnd = new Date(first.getTime() - 86_400_000).toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' });
   const lastFrom = `${lastEnd.slice(0, 8)}01`;
   const served = await page.evaluate(async ([from, to]) => {
     const r = await fetch(`/api/v1/reports/gst-summary?date_from=${from}&date_to=${to}`);
