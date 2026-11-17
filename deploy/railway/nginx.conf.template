@@ -43,6 +43,8 @@ http {
         }
         location /static/ { alias /srv/static/; }
         location /media/landing/ { proxy_pass http://127.0.0.1:3000; }
+        # The guide pages' screenshots and clips ship in the frontend image too.
+        location /media/guides/ { proxy_pass http://127.0.0.1:3000; }
         location /media/ {
             internal;
             alias /srv/media/;

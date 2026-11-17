@@ -142,6 +142,10 @@ const nextConfig = {
         headers: [{ key: 'Cache-Control', value: PUBLIC_ASSET_CACHE }],
       },
       {
+        source: '/media/guides/:path*',
+        headers: [{ key: 'Cache-Control', value: PUBLIC_ASSET_CACHE }],
+      },
+      {
         source: '/brand/:path*',
         headers: [{ key: 'Cache-Control', value: PUBLIC_ASSET_CACHE }],
       },
