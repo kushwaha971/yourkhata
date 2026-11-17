@@ -25,13 +25,19 @@ export function FeedbackButton({
   if (!feedback) return null;
   const icon = <MessageSquareText aria-hidden className="h-5 w-5" />;
   return floating ? (
+    // PostHog's own tab shape (owner, 17 Nov 2026): a vertical tab in the brand
+    // colour, centred on the right edge, where a thumb finds it on a phone and
+    // it never covers a page's own buttons in the bottom corner.
     <UbButton
-      variant="secondary"
-      icon={icon}
+      variant="primary"
       onClick={feedback}
       data-testid="feedback-button-floating"
       className={cn(
-        'fixed bottom-[max(1rem,env(safe-area-inset-bottom))] right-4 z-40 rounded-pill shadow-[0_8px_30px_-12px_rgb(10_9_11/0.35)]'
+        // Vertical text, read bottom to top, without rotating the box: a 44 px
+        // wide target whose height follows the words in any language. rotate-180
+        // puts the rounded side (`rounded-r` before the turn) facing the page.
+        'fixed right-0 top-1/2 z-40 h-auto min-h-0 w-11 -translate-y-1/2 rounded-l-none rounded-r-[10px] px-0 py-4 [writing-mode:vertical-rl] rotate-180',
+        'bg-action text-text-inverse shadow-[0_8px_30px_-12px_rgb(10_9_11/0.35)] hover:brightness-95'
       )}
     >
       {t('feedback.tab.label')}
