@@ -79,7 +79,7 @@ const shop = await business('Sharma General Store', ['shop'], { upi_vpa: 'sharma
   const units = await must('GET', '/units', null, t);
   const u = (code) => units.find((x) => x.code === code)?.id ?? units[0].id;
   const item = (name, price, tax, hsn, qty, cost, reorder = '10') =>
-    must('POST', '/items', { name, unit_id: u('NOS'), selling_price: price, purchase_price: cost, tax_code: tax, hsn_sac: hsn, reorder_point: reorder, opening_stock: { qty, unit_cost: cost } }, t);
+    must('POST', '/items', { name, unit_id: u('NOS'), selling_price: price, purchase_price: cost, tax_code: tax, hsn_sac: hsn, reorder_point: reorder, opening_stock: { qty, unit_cost: cost, as_of: iso(-30) } }, t);
   const rice = await item('Basmati Rice 5kg', '450.00', 'GST5', '1006', '40', '380.00');
   const dal = await item('Toor Dal 1kg', '165.00', 'GST5', '0713', '60', '130.00');
   const oil = await item('Mustard Oil 1L', '180.00', 'GST5', '1514', '24', '150.00');
@@ -121,74 +121,41 @@ const shop = await business('Sharma General Store', ['shop'], { upi_vpa: 'sharma
 
 // ── 2. Library ──────────────────────────────────────────────────────────────
 const library = await business('Vidya Reading Room', ['library']);
-{
-  const t = library.token;
-  const cat = async (name) => (await must('POST', '/library/categories', { name }, t)).id;
-  const [fiction, science, exams, hindi] = [await cat('Fiction'), await cat('Science'), await cat('Competitive exams'), await cat('Hindi literature')];
-  const title = (name, authors, category_id, count, price) =>
-    must('POST', '/library/titles', { title: name, authors, category_id, copies: { count, price } }, t);
-  const wings = await title('Wings of Fire', 'A. P. J. Abdul Kalam', science, 3, '250.00');
-  const godaan = await title('Godaan', 'Munshi Premchand', hindi, 2, '180.00');
-  await title('Malgudi Days', 'R. K. Narayan', fiction, 2, '220.00');
-  const quant = await title('Quantitative Aptitude', 'R. S. Aggarwal', exams, 4, '650.00');
-  await title('Indian Polity', 'M. Laxmikanth', exams, 3, '780.00');
-  await title('The Discovery of India', 'Jawaharlal Nehru', fiction, 1, '399.00');
-  await title('Concepts of Physics Vol. 1', 'H. C. Verma', science, 2, '480.00');
-  await title('Nirmala', 'Munshi Premchand', hindi, 2, '150.00');
-
-  const monthly = await must('POST', '/library/membership-types', { name: 'Monthly', fee_amount: '900.00', validity_months: 1 }, t);
-  const quarterly = await must('POST', '/library/membership-types', { name: 'Quarterly', fee_amount: '2400.00', validity_months: 3 }, t);
-  const member = async (name, mobile, plan, paid) => {
-    const p = await must('POST', '/parties', { name, is_customer: true, mobile, state_code: '27' }, t);
-    const m = await must('POST', '/library/members', { membership_type_id: plan.id, party_id: p.id, ...(paid ? { collect_fees: { mode_breakup: [{ mode: 'upi', amount: plan.fee_amount ?? paid }] } } : {}) }, t);
-    return m.membership_id ?? m.id ?? m.membership?.id;
-  };
-  const asha = await member('Asha Kulkarni', '9820500011', monthly, '900.00');
-  const rahul = await member('Rahul Sharma', '9820500012', quarterly, '2400.00');
-  const imran = await member('Imran Khan', '9820500013', monthly, null);
-  await member('Sneha Patil', '9820500014', monthly, '900.00');
-  await member('Vikram Joshi', '9820500015', quarterly, '2400.00');
-
-  const copies = async (ttl) => (await must('GET', `/library/copies?title=${ttl.id}`, null, t));
-  const code = async (ttl, n = 0) => { const c = await copies(ttl); const row = (c.results ?? c)[n]; return row.accession_number ?? row.number ?? row.code; };
-  const issue = (membership_id, c, extra = {}) => api('POST', '/library/loans', { membership_id, code: c, ...extra }, t);
-  const r1 = await issue(asha, await code(wings));
-  const r2 = await issue(rahul, await code(quant));
-  const r3 = await issue(imran, await code(godaan));
-  library.issue = [r1.status, r2.status, r3.status];
-  library.freeCopy = await code(quant, 1);
-  library.member = asha;
-  await api('POST', '/library/shifts', { name: 'Morning', starts_at: '07:00', ends_at: '13:00' }, t);
-  await api('POST', '/library/shifts', { name: 'Evening', starts_at: '14:00', ends_at: '21:00' }, t);
-  await api('POST', '/library/seats/row', { prefix: 'A', from: 1, to: 12, zone: 'Reading hall' }, t);
-}
-
+// The Library was rebuilt (students, seats, fees, books) and its old title /
+// membership API is gone, so the old content here no longer seeds. Until it
+// is rewritten for the new API the business exists with an empty book; the
+// Ledger page work (17 Nov 2026) needed only Verma Finance.
 // ── 3. Lending ──────────────────────────────────────────────────────────────
 const lending = await business('Verma Finance', ['lending'], { upi_vpa: 'vermafinance.demo@example' });
 {
   const t = lending.token;
-  const loan = (name, mobile, principal, count, per, startedDaysAgo, extra = {}) => must('POST', '/lending/loans', {
-    plan_type: 'fixed_daily', principal, frequency: 'daily', instalment_count: count, per_instalment_amount: per,
-    disbursed_on: iso(-startedDaysAgo), first_due_on: iso(-startedDaysAgo + 1), party: { name, mobile }, payment_mode: 'cash', ...extra,
-  }, t);
-  const collect = (l, amount, mode = 'cash') => must('POST', `/lending/loans/${l.id}/collections`, { amount, mode }, t);
-  // Each seeded collection is LESS than what has fallen due, whichever side
-  // of midnight the server's day is on, so every borrower still has something
-  // to collect today and the recordings have a "Collect" to press. (A
-  // collection is always dated today; one that covered the dues would leave
-  // the Today list with nothing to do.)
-  const geeta = await loan('Geeta Devi', '9820011223', '10000.00', 100, '100.00', 6);
-  await collect(geeta, '400.00');
-  const ramu = await loan('Ramu Kaka', '9820011224', '5000.00', 50, '100.00', 4);
-  await collect(ramu, '200.00', 'upi');
-  const salma = await loan('Salma Begum', '9820011225', '20000.00', 100, '200.00', 10);
-  await collect(salma, '1600.00');
-  await loan('Kishore Yadav', '9820011226', '8000.00', 80, '100.00', 2);
-  const paid = await loan('Meena Tai', '9820011227', '1000.00', 10, '100.00', 9);
-  await collect(paid, '1000.00');
+  // Lending was rebuilt on 12 Nov 2026: a loan is a borrower on a route, an
+  // amount lent, a count of collections and the amount of each. Collections
+  // are dated on the round they were taken, so the book has a history, and
+  // each borrower stays a little behind so Today has someone to collect from.
+  const market = await must('POST', '/lending/routes', { name: 'Market road' }, t);
+  const station = await must('POST', '/lending/routes', { name: 'Station side' }, t);
+  await must('PATCH', '/lending/settings', { sign_as: 'Verma Finance', upi_id: 'vermafinance.demo@upi' }, t);
+  const loan = async (name, mobile, work, route, lent, count, each, startedDaysAgo, charges = '0') => {
+    const b = await must('POST', '/lending/borrowers', { name, mobile, work, route_id: route.id }, t);
+    return must('POST', '/lending/loans', {
+      borrower_id: b.id, lent, count, each, charges, frequency: 'daily', skip_sundays: false, starts_on: iso(-startedDaysAgo),
+    }, t);
+  };
+  const collect = (l, amount, daysAgo = 0, mode = 'cash') => must('POST', `/lending/loans/${l.id}/collections`, { amount, mode, collected_on: iso(-daysAgo) }, t);
+  const geeta = await loan('Geeta Devi', '9820011223', 'Vegetable cart', market, '20000.00', 100, '220.00', 6, '1000.00');
+  for (const d of [5, 4, 3, 2]) await collect(geeta, '220.00', d);
+  await collect(geeta, '150.00', 1);
+  const ramu = await loan('Ramu Kaka', '9820011224', 'Tea stall', market, '5000.00', 50, '110.00', 4);
+  await collect(ramu, '220.00', 2, 'upi');
+  const salma = await loan('Salma Begum', '9820011225', 'Tailor', station, '10000.00', 100, '115.00', 10, '500.00');
+  for (const d of [9, 8, 7, 6, 5, 4]) await collect(salma, '115.00', d);
+  await loan('Kishore Yadav', '9820011226', 'Auto driver', station, '8000.00', 80, '110.00', 2);
+  const paid = await loan('Meena Tai', '9820011227', 'Flower seller', market, '1000.00', 10, '110.00', 12);
+  await collect(paid, '1100.00', 1);
   lending.loan = geeta.id;
 }
 
-const state = { owner: OWNER, shop: { id: shop.id, ramesh: shop.ramesh, tea: shop.tea }, library: { id: library.id, issue: library.issue, freeCopy: library.freeCopy, member: library.member }, lending: { id: lending.id, loan: lending.loan } };
+const state = { owner: OWNER, shop: { id: shop.id, ramesh: shop.ramesh, tea: shop.tea }, library: { id: library.id }, lending: { id: lending.id, loan: lending.loan } };
 writeFileSync(OUT, JSON.stringify(state, null, 2));
 console.log(JSON.stringify(state));

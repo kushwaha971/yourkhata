@@ -53,9 +53,7 @@ describe('the pricing flag', () => {
     expect(navHrefs('Product')).toEqual(['/solutions', '#modules', '#demo', '#platform', '#why']);
     expect(screen.queryByRole('link', { name: 'Pricing' })).toBeNull();
     expect(screen.queryByRole('button', { name: 'What does it cost?' })).toBeNull();
-    expect(
-      screen.getByRole('button', { name: 'Do I need a card to sign up?' })
-    ).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Do I need a card to start?' })).toBeInTheDocument();
     // No plan, period or pricing notice anywhere. (₹ alone is not a price:
     // the explorer's steps say "enter ₹1,200", which is a ledger entry.)
     expect(container.textContent).not.toMatch(
@@ -88,7 +86,7 @@ describe('the pricing flag', () => {
       '#pricing',
     ]);
     expect(screen.getByRole('button', { name: 'What does it cost?' })).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: 'Do I need a card to sign up?' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Do I need a card to start?' })).toBeNull();
     // header, hero, how, four plans, closing band
     expect(screen.getAllByRole('link', { name: 'Start free' }).length).toBeGreaterThanOrEqual(8);
   });

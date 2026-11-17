@@ -74,9 +74,7 @@ describe('LandingPage', () => {
     expect(screen.getByText('One platform. Modules for your business.')).toBeInTheDocument();
     // DEC-013: sign-up is a mobile number and a code. The page said "email"
     // in four places for a day after the sign-in screen stopped asking for one.
-    expect(
-      screen.getByText('Sign up with your mobile number. No card needed.')
-    ).toBeInTheDocument();
+    expect(screen.getByText('Start with your mobile number. No card needed.')).toBeInTheDocument();
     expect(document.body.textContent).not.toMatch(/sign up with email|email and a password/i);
   });
 
@@ -132,7 +130,7 @@ describe('LandingPage', () => {
     expect(questions).toHaveLength(14);
     // What it is and how you get in come first: the two things a cold visitor asks.
     expect(questions[0]).toHaveTextContent('What is YourKhata?');
-    expect(questions[1]).toHaveTextContent('How do I sign up and log in?');
+    expect(questions[1]).toHaveTextContent('How do I start and log in?');
     fireEvent.click(within(faq).getByRole('button', { name: 'Does it support e-invoicing?' }));
     expect(within(faq).getByText(/^Not today\./)).toBeInTheDocument();
     fireEvent.click(
@@ -677,7 +675,9 @@ describe('PricingSection', () => {
   it('calls Business "good for growing shops", never "most popular"', () => {
     renderWithProviders(<PricingSection />);
 
-    expect(screen.getByTestId('landing-plan-business')).toHaveTextContent('Good for growing businesses');
+    expect(screen.getByTestId('landing-plan-business')).toHaveTextContent(
+      'Good for growing businesses'
+    );
     expect(document.body.textContent).not.toMatch(/popular/i);
   });
 });

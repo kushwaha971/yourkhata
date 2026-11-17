@@ -28,10 +28,11 @@ backups/
 # The landing page's silent loops, their posters and manifest.json are part of
 # the page and ARE tracked, so `media/` above is undone for exactly that one
 # folder (git cannot re-include a file under an excluded directory, hence the
-# three steps: the folder, nothing else in it, then landing/).
+# three steps: the folder, nothing else in it, then landing/ and guides/, the solutions pages' screenshots and walkthroughs).
 !/frontend/public/media/
 /frontend/public/media/*
 !/frontend/public/media/landing/
+!/frontend/public/media/guides/
 # Narrated demo videos, captions and posters are tracked for deployment.
 *.dump
 
