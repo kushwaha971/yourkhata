@@ -155,7 +155,7 @@ const page = (k: ShopKind): Solution => ({
   description: `GST bills, stock, purchases and customer dues for a ${k.label.toLowerCase()} — on phone or computer. Step-by-step guides with real screens.`,
   audience: k.who,
   problem: k.problem,
-  summary: `YourKhata's Business app for a ${k.label.toLowerCase()}: make GST bills, keep stock in ${k.units}, record purchases, see who owes you and remind them. ${k.special.join(' ')}`,
+  summary: `YourKhata's Business app for ${/^[aeiou]/i.test(k.label) ? 'an' : 'a'} ${k.label.toLowerCase()}: make GST bills, keep stock in ${k.units}, record purchases, see who owes you and remind them. ${k.special.join(' ')}`,
   highlights: [
     'GST bills on phone or computer',
     'Stock goes up and down with every bill',
