@@ -93,7 +93,7 @@ describe('the landing page metadata', () => {
    */
   it('names all five modules when all five are shown', () => {
     const all = landingWords(true);
-    expect(all.title).toMatch(/Modular Business Management/);
+    expect(all.title).toMatch(/GST Billing, Stock & Dues/);
     for (const word of [/GST bills|stock/, /loan collections/, /library/, /gym/, /room bookings/]) {
       expect(all.description).toMatch(word);
       expect(all.shareDescription).toMatch(word);
@@ -102,7 +102,7 @@ describe('the landing page metadata', () => {
 
   it('names Shop, Library and Lending, and neither hidden module, while Gym and Hotel are hidden', () => {
     const shown = landingWords(false);
-    expect(shown.title).toMatch(/Modular Business Management/);
+    expect(shown.title).toMatch(/GST Billing, Stock & Dues/);
     for (const word of [/GST bills|stock/, /librar/, /loan/]) {
       expect(shown.description).toMatch(word);
       expect(shown.shareDescription).toMatch(word);
@@ -254,6 +254,19 @@ describe('sitemap.xml', () => {
       'https://yourkhata.com/solutions/shop-billing',
       'https://yourkhata.com/solutions/library-management',
       'https://yourkhata.com/solutions/lending-collections',
+      // One guide page per shop kind (17 Nov 2026).
+      'https://yourkhata.com/solutions/shop-kirana',
+      'https://yourkhata.com/solutions/shop-electronics',
+      'https://yourkhata.com/solutions/shop-jewellery',
+      'https://yourkhata.com/solutions/shop-hardware',
+      'https://yourkhata.com/solutions/shop-wholesale',
+      'https://yourkhata.com/solutions/shop-medical',
+      'https://yourkhata.com/solutions/shop-garments',
+      'https://yourkhata.com/solutions/shop-auto-parts',
+      'https://yourkhata.com/solutions/shop-stationery',
+      'https://yourkhata.com/solutions/shop-agri',
+      'https://yourkhata.com/solutions/shop-furniture',
+      'https://yourkhata.com/solutions/shop-food',
       'https://yourkhata.com/legal/terms',
       'https://yourkhata.com/legal/privacy',
     ]);
@@ -293,7 +306,7 @@ describe('the landing page JSON-LD', () => {
       ? Object.entries(value).flatMap(([k, v]) => [k, ...keysDeep(v)])
       : [];
 
-  it('parses, and is a schema.org graph of the four nodes', () => {
+  it('parses, and is a schema.org graph of the five nodes', () => {
     const data = build();
     expect(data['@context']).toBe('https://schema.org');
     expect(data['@graph'].map((entry) => entry['@type'])).toEqual([
@@ -301,7 +314,12 @@ describe('the landing page JSON-LD', () => {
       'WebSite',
       'SoftwareApplication',
       'FAQPage',
+      'ItemList',
     ]);
+    // The list names every business guide page, each a real route.
+    const list = data['@graph'].at(-1) as { itemListElement: { url: string }[] };
+    expect(list.itemListElement.length).toBeGreaterThanOrEqual(13);
+    list.itemListElement.forEach((item) => expect(item.url).toMatch(/\/solutions\/[a-z-]+$/));
   });
 
   /** Nobody has rated or reviewed the product; structured data saying so is invented. */
@@ -462,7 +480,7 @@ describe('the FAQ keeps its answers in the HTML', () => {
     for (const id of faqIds(SHOW_PRICING))
       expect(container.textContent).toContain(messages[faqAnswerKey(id)]);
 
-    const trigger = screen.getByRole('button', { name: messages[faqQuestionKey('hindi')] });
+    const trigger = screen.getByRole('button', { name: messages[faqQuestionKey('gst')] });
     const panel = container.querySelector(
       `#${CSS.escape(trigger.getAttribute('aria-controls') ?? '')}`
     );

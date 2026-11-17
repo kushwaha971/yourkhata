@@ -1,3 +1,6 @@
+import fs from 'node:fs';
+import path from 'node:path';
+
 import { screen } from '@testing-library/react';
 
 import { isPublicPath } from 'src/routes';
@@ -6,7 +9,7 @@ import { renderWithProviders } from 'src/tests/renderWithProviders';
 import { metadata as authMetadata } from 'app/(auth)/layout';
 
 import { SolutionsPage } from 'modules/DigiKhaato/features/landing/components/SolutionsPage';
-import { SOLUTIONS } from 'modules/DigiKhaato/features/landing/config/solutions';
+import { SOLUTIONS, solutionBySlug } from 'modules/DigiKhaato/features/landing/config/solutions';
 import { solutionMetadata } from 'modules/DigiKhaato/features/landing/utils/solutionMetadata';
 
 it('keeps marketing routes public while excluding sign-in from indexing', () => {
@@ -38,31 +41,52 @@ it.each(SOLUTIONS)('renders crawlable content and matching FAQs for $slug', (sol
  * have and gave no worked example; the home page claimed interest and a
  * printed statement. Every claim here must match the Ledger module as built. */
 it('tells the loans story with a worked example, its limits and no feature the app lacks', () => {
-  const lending = SOLUTIONS.find(({ slug }) => slug === 'lending-collections')!;
+  const lending = solutionBySlug('lending-collections');
+  if (!lending) throw new Error('the loans page is missing');
   const { container } = renderWithProviders(<SolutionsPage solution={lending} />);
   expect(screen.getByRole('heading', { level: 2, name: 'In short' })).toBeInTheDocument();
   expect(screen.getByText(/To collect ₹22,000/)).toBeInTheDocument();
   expect(screen.getByText(/In hand ₹19,000/)).toBeInTheDocument();
   expect(screen.getByText(/Earns ₹3,000/)).toBeInTheDocument();
-  expect(screen.getByRole('heading', { level: 2, name: 'What Ledger does not do' })).toBeInTheDocument();
+  expect(
+    screen.getByRole('heading', { level: 2, name: 'What Ledger does not do' })
+  ).toBeInTheDocument();
   expect(screen.getAllByText('Illustrative').length).toBeGreaterThan(0);
   const text = container.textContent ?? '';
   expect(text).not.toMatch(/report|interest rate is|print/i);
   expect(text).not.toMatch(/sign up|create (an |your )?account/i);
 });
 
-describe('Ledger guides', () => {
+describe('Guides on the Ledger and every shop kind page', () => {
   it('has a phone and a computer screenshot on disk for every guide, so no guide shows a broken image', () => {
-    /* eslint-disable @typescript-eslint/no-require-imports */
-    const fs = require('node:fs') as typeof import('node:fs');
-    const path = require('node:path') as typeof import('node:path');
-    /* eslint-enable @typescript-eslint/no-require-imports */
-    const { solutionBySlug } = jest.requireActual('src/modules/DigiKhaato/features/landing/config/solutions');
-    const guides = solutionBySlug('lending-collections').guides as { shot: string }[];
-    expect(guides.length).toBeGreaterThanOrEqual(7);
-    for (const g of guides)
-      for (const size of ['phone', 'desktop'])
-        for (const ext of ['webp', 'jpg'])
-          expect(fs.existsSync(path.join(process.cwd(), 'public/media/guides/ledger', `${size}-${g.shot}.${ext}`))).toBe(true);
+    expect(solutionBySlug('lending-collections')?.guides?.length ?? 0).toBeGreaterThanOrEqual(7);
+    // Every page with guides — the Ledger and each shop kind — ships both sizes of every shot.
+    for (const s of SOLUTIONS)
+      for (const g of s.guides ?? [])
+        for (const size of ['phone', 'desktop'])
+          for (const ext of ['webp', 'jpg'])
+            expect([
+              s.slug,
+              fs.existsSync(
+                path.join(
+                  process.cwd(),
+                  'public/media/guides',
+                  s.media ?? s.slug,
+                  `${size}-${g.shot}.${ext}`
+                )
+              ),
+            ]).toEqual([s.slug, true]);
+  });
+});
+
+describe('the guides hub', () => {
+  it('lets a visitor choose any of the fourteen businesses, each leading to its own guide page', () => {
+    const { container } = renderWithProviders(<SolutionsPage />);
+    const tiles = [...container.querySelectorAll<HTMLAnchorElement>('#business a[data-business]')];
+    expect(tiles).toHaveLength(14);
+    tiles.forEach((tile) => {
+      const slug = tile.getAttribute('href')?.replace('/solutions/', '') ?? '';
+      expect(solutionBySlug(slug)).toBeDefined();
+    });
   });
 });

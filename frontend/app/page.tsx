@@ -7,16 +7,6 @@ import en from 'locales/catalogues/landing.en.json';
 
 import { LandingPage } from 'modules/DigiKhaato/features/landing/components/LandingPage';
 import {
-  DEMO_PUBLISHED_ON,
-  DEMO_TRANSCRIPT,
-} from 'modules/DigiKhaato/features/landing/config/demoTranscript';
-import {
-  DEMO_FILMS,
-  DEMO_VOICE,
-  DEMO_YOUTUBE,
-  demoVideoUrl,
-} from 'modules/DigiKhaato/features/landing/config/media';
-import {
   ALL_MODULES_VISIBLE,
   VISIBLE_MODULES,
 } from 'modules/DigiKhaato/features/landing/config/modules';
@@ -105,30 +95,10 @@ const JSON_LD = buildLandingJsonLd({
   moduleNames: VISIBLE_MODULES.map(
     (module) => en[`landing.module.${module.id}.name` as keyof typeof en]
   ),
-  // The narrated demo film is on this page (the #demo section), with its
-  // transcript in the HTML, which is what lets it be declared here. ONE film,
-  // in the language it is spoken in: the English words on the page are its
-  // subtitles, not a second film, so they are not declared as one. The desktop
-  // cut is the one declared: the phone cut is the same film in another shape,
-  // and declaring both would be a duplicate.
-  videos: [
-    {
-      language: DEMO_VOICE,
-      name: DEMO_TRANSCRIPT[DEMO_VOICE].name,
-      description: DEMO_TRANSCRIPT[DEMO_VOICE].description,
-      contentUrl: demoVideoUrl(DEMO_FILMS.desktop.id),
-      thumbnailUrl: DEMO_FILMS.desktop.poster.jpg,
-      ...(DEMO_YOUTUBE.desktop
-        ? { embedUrl: `https://www.youtube.com/embed/${DEMO_YOUTUBE.desktop}` }
-        : {}),
-      // Google asks for a date WITH a timezone; the film is cut in India.
-      uploadDate: `${DEMO_PUBLISHED_ON}T00:00:00+05:30`,
-      durationSeconds: DEMO_TRANSCRIPT[DEMO_VOICE].cuts.desktop.durationSeconds,
-      transcript: DEMO_TRANSCRIPT[DEMO_VOICE].chapters
-        .flatMap((chapter) => chapter.paragraphs)
-        .join(' '),
-    },
-  ],
+  // The narrated film left this page on 17 Nov 2026 (owner): it plays on
+  // YouTube, and Google asks for a video to be declared on the page that shows
+  // it, so this page declares none.
+  videos: [],
 });
 
 export default function HomePage(): React.JSX.Element {

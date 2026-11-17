@@ -2,7 +2,7 @@
 
 import { memo } from 'react';
 
-import { PlayCircle } from 'lucide-react';
+import { BookOpenCheck, CircleCheck } from 'lucide-react';
 
 import {
   UbActionLink,
@@ -35,12 +35,19 @@ export const splitAroundWord = (message: string): readonly [string, string] => {
  * "fees" is a gym's and a library's alike — so the hero
  * never speaks for one module outside its own card (`moduleVocabulary.ts`).
  */
+// Shop words only, each fitting one line on a 320 px phone (17 Nov 2026):
+// "collections" wrapped and moved the page by 62 px every time it came round.
+const TRUST_KEYS = [
+  'landing.hero.trust.free',
+  'landing.hero.trust.install',
+  'landing.hero.trust.data',
+] as const;
+
 export const ROTATING_WORD_KEYS = [
   'landing.hero.word.dues',
   'landing.hero.word.bills',
   'landing.hero.word.stock',
-  'landing.hero.word.fees',
-  'landing.hero.word.collections',
+  'landing.hero.word.purchases',
   'landing.hero.word.payments',
 ] as const;
 
@@ -102,11 +109,19 @@ function LandingHeroBase() {
               {' '}
               {t('landing.hero.srLine')}
             </UbText>
-            <UbText as="span" variant="inherit" aria-hidden className={`${SANS_KEY} mt-1`}>
-              {before}
-              <UbRotatingText words={words} className="text-text-accent" />
-              {after}
-            </UbText>
+          </UbText>
+          {/* The rotating line is drawn OUTSIDE the h1 (17 Nov 2026 review): a
+              crawler reads every word in a heading, and the six rotating words
+              read as one jumbled run. The h1 is the lead and its full sentence. */}
+          <UbText
+            as="p"
+            variant="inherit"
+            aria-hidden
+            className={`${SANS_KEY} -mt-5 text-[clamp(2.375rem,1.45rem+3.4vw,3.875rem)] leading-[1.08] text-text-primary`}
+          >
+            {before}
+            <UbRotatingText words={words} className="text-text-accent" />
+            {after}
           </UbText>
 
           <UbText
@@ -134,19 +149,32 @@ function LandingHeroBase() {
               >
                 {t('landing.nav.startFree')}
               </UbActionLink>
-              {/* A link to the demo section, not a dialog: the films are on the
-                  page, with their captions, chapters and transcripts, and a
-                  link works before any script has loaded. */}
+              {/* "See how it works" (owner, 17 Nov 2026): the step-by-step guides
+                  for each business, with their videos, on /solutions. */}
               <UbActionLink
-                href="#demo"
+                href="/solutions"
                 variant="outlineNeutral"
                 size="lg"
                 className="ub-lift h-12 gap-2 rounded-[14px] px-6 text-[1.0625rem]"
                 data-testid="landing-demo-open"
               >
-                <PlayCircle aria-hidden className="h-5 w-5 text-text-accent" />
+                <BookOpenCheck aria-hidden className="h-5 w-5 text-text-accent" />
                 {t('landing.hero.demo')}
               </UbActionLink>
+            </UbStack>
+            {/* Three promises a shopkeeper can check before trying it, all true today. */}
+            <UbStack as="ul" direction="row" wrap gap={2} className="gap-y-2">
+              {TRUST_KEYS.map((key) => (
+                <UbText
+                  as="li"
+                  key={key}
+                  variant="inherit"
+                  className="ds-body-s-medium inline-flex items-center gap-1.5 text-text-secondary"
+                >
+                  <CircleCheck aria-hidden className="h-4 w-4 shrink-0 text-text-accent" />
+                  {t(key)}
+                </UbText>
+              ))}
             </UbStack>
             <UbText variant="body-sm" tone="tertiary">
               {t('landing.hero.micro')}

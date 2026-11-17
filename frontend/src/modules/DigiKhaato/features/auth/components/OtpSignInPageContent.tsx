@@ -10,7 +10,6 @@ import {
   UbButton,
   UbField,
   UbForm,
-  UbLink,
   UbOtpInput,
   UbPageSkeleton,
   UbPhoneInput,
@@ -21,7 +20,6 @@ import {
 import { useAppSelector } from 'src/hooks/useAppStore';
 import { useTranslation } from 'src/hooks/useTranslation';
 import { selectAppName } from 'src/redux/slice/whiteLabelSlice';
-import { ROUTES } from 'src/routes';
 import { formatPhoneForDisplay } from 'src/utils/share';
 
 import { useAuthRedirect } from '../hooks/useAuthRedirect';
@@ -251,21 +249,7 @@ export function OtpSignInPageContent(): React.JSX.Element {
         </UbStack>
       </AuthPanel>
 
-      {otp === null && (
-        <UbText variant="body-sm" tone="tertiary" align="center">
-          {t('auth.otp.newHere')}{' '}
-          <UbLink href={ROUTES.LEGAL_TERMS} variant="inherit">
-            {t('auth.otp.terms')}
-          </UbLink>{' '}
-          {t('auth.otp.and')}{' '}
-          <UbLink href={ROUTES.LEGAL_PRIVACY} variant="inherit">
-            {t('auth.otp.privacy')}
-          </UbLink>
-          .
-        </UbText>
-      )}
-      {/* Creating an account is where the terms are accepted, so the sign-up
-          screen still says so; the same flow signing in does not. */}
+      {/* No Terms or Privacy links on public pages for now (owner, 17 Nov 2026). */}
     </UbStack>
   );
 }

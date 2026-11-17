@@ -71,6 +71,8 @@ export const SUMMARY_KEYS: readonly string[] = [
   'landing.faq.modules.a',
   'landing.faq.modules.a.all',
   'landing.faq.what.q',
+  'landing.faq.types.q',
+  'landing.faq.types.a',
   'landing.faq.what.a',
   'landing.hero.badge',
   'landing.hero.body',

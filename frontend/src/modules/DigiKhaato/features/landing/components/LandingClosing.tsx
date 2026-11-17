@@ -1,5 +1,7 @@
 'use client';
 
+// Its words arrive with it, so it renders on the guide pages as on the home page.
+import 'src/i18n/catalogues/landing';
 import { memo } from 'react';
 
 import { ArrowRight, Facebook, Instagram, Linkedin, Phone } from 'lucide-react';
@@ -172,15 +174,27 @@ function FinalCtaBase() {
 FinalCtaBase.displayName = 'FinalCta';
 export const FinalCta = memo(FinalCtaBase);
 
-function FooterLink({ href, children }: Readonly<{ href: string; children: string }>) {
+/** The footer's Solutions group: modules and the business-type index, never a list of every kind. */
+const FOOTER_SOLUTIONS: readonly { href: string; key: string; module?: string }[] = [
+  { href: '/solutions/shop-billing', key: 'landing.footer.sol.billing' },
+  { href: '/solutions/lending-collections', key: 'landing.module.lending.tile', module: 'lending' },
+  { href: '/solutions/library-management', key: 'landing.module.library.tile', module: 'library' },
+  { href: '/solutions', key: 'landing.footer.sol.byType' },
+];
+
+function FooterLink({
+  href,
+  children,
+  module,
+}: Readonly<{ href: string; children: string; module?: string }>) {
   return (
-    <UbBox as="li">
+    <UbBox as="li" data-module-id={module}>
       <UbLink
         href={href}
         underline={false}
         tone="secondary"
         variant="inherit"
-        className="ds-body-base-regular hover:text-text-primary hover:underline"
+        className="ds-body-base-regular inline-flex items-center hover:text-text-primary hover:underline max-md:min-h-11"
       >
         {children}
       </UbLink>
@@ -188,13 +202,13 @@ function FooterLink({ href, children }: Readonly<{ href: string; children: strin
   );
 }
 
-function LandingFooterBase() {
+function LandingFooterBase({ base = '' }: Readonly<{ base?: string }>) {
   const { t } = useTranslation();
   const year = new Date().getFullYear();
   return (
     <UbBox as="footer" className="border-t border-border-hairline bg-surface-subtle">
       <UbBox
-        className={`${LANDING_CONTAINER} grid grid-cols-2 gap-x-8 gap-y-8 py-10 md:grid-cols-[minmax(0,2fr)_minmax(0,1fr)_minmax(0,1.4fr)] md:py-12`}
+        className={`${LANDING_CONTAINER} grid grid-cols-2 gap-x-8 gap-y-8 py-10 md:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)_minmax(0,1.8fr)_minmax(0,1.3fr)] md:py-12`}
       >
         <UbStack gap={4} align="start" className="col-span-2 md:col-span-1">
           <UbLogo variant="full" size="md" label="YourKhata" />
@@ -207,14 +221,28 @@ function LandingFooterBase() {
             {t('landing.footer.product')}
           </UbText>
           <UbStack as="ul" gap={2}>
-            <FooterLink href="/solutions">{t('landing.footer.solutions')}</FooterLink>
-            {landingAnchors()
-              .filter((anchor) => anchor.href !== '#faq')
+            {landingAnchors(base)
+              .filter((anchor) => !anchor.href.endsWith('#faq'))
               .map((anchor) => (
                 <FooterLink key={anchor.href} href={anchor.href}>
                   {t(anchor.key)}
                 </FooterLink>
               ))}
+          </UbStack>
+        </UbBox>
+        <UbBox as="nav" aria-label={t('landing.footer.business')} className="col-span-1">
+          <UbText as="h2" variant="inherit" className="ds-body-s-semibold mb-3">
+            {t('landing.footer.business')}
+          </UbText>
+          {/* Broad, standard groups (owner, 17 Nov 2026): the list does not grow
+              with every business type or feature added later; each group's
+              page lists what is inside it. */}
+          <UbStack as="ul" gap={2}>
+            {FOOTER_SOLUTIONS.map(({ href, key, module }) => (
+              <FooterLink key={key} href={href} module={module}>
+                {t(key)}
+              </FooterLink>
+            ))}
           </UbStack>
         </UbBox>
         <UbBox as="nav" aria-label={t('landing.footer.contactSupport')}>
@@ -233,7 +261,7 @@ function LandingFooterBase() {
                 +91-9794620535
               </UbLink>
             </UbBox>
-            <FooterLink href="#faq">{t('landing.nav.faq')}</FooterLink>
+            <FooterLink href={`${base}#faq`}>{t('landing.nav.faq')}</FooterLink>
           </UbStack>
           <UbStack direction="row" align="center" gap={2} className="mt-4" wrap>
             <UbLink

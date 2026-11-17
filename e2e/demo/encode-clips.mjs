@@ -38,14 +38,14 @@ const MAX_SPEED = 1.7;
 
 /** What each loop shows. The page's own alt text is the catalogue's (it has to be in Hindi too). */
 const WORDS = {
-  hero: ['hero', "the dashboard with To collect and To pay, a ₹1,200 'You gave' entry saved to Ramesh Traders' account, then a GST tax invoice filled in and issued.", 'Dashboard, a money-owed entry and a GST bill in one loop.'],
-  'feat-khata': ['feature', "the customer list, then Ramesh Traders' account, where a ₹1,200 'You gave' entry with a note is saved and the balance updates.", 'Record money owed in seconds; the running balance updates the moment you save.'],
-  'feat-reminder': ['feature', "a customer's account, then Send reminder with the ready WhatsApp message, then the aging list of who owes and for how long.", 'A polite, exact reminder in two taps. You press send.'],
+  hero: ['hero', "the dashboard with what is billed and still to collect, ₹500 received from Ramesh Traders, then a GST bill for Anita General Store filled in and issued.", 'Dashboard, a payment received and a GST bill in one loop.'],
+  'feat-khata': ['feature', "the customer list, then Ramesh Traders' page with unpaid bills, where ₹500 received is saved and what is due updates.", 'See what each customer owes, bill by bill, and record what they pay.'],
+  'feat-reminder': ['feature', "a customer's account, then Send reminder with the ready WhatsApp message, then the Old dues report of who owes and for how long.", 'A polite, exact reminder in two taps. You press send.'],
   'feat-bill': ['feature', 'a two-item tax invoice with CGST and SGST filled in automatically, then the issued invoice.', 'GST worked out as you add items.'],
-  'feat-stock': ['feature', "the item list, the Low tab, an item's stock card with its movements, then Adjust stock.", 'What is in stock, what is low, and every movement.'],
-  'feat-purchase': ['feature', 'a purchase bill from Gupta Wholesale with GST worked out, recorded as paid from the Paid now sheet.', 'Purchases with input GST, and the supplier paid in the same step.'],
+  'feat-stock': ['feature', "the item list, an item's stock card with its movements, then Adjust stock.", 'What is in stock, what is low, and every movement.'],
+  'feat-purchase': ['feature', 'a purchase bill from Gupta Wholesale with GST worked out, recorded as paid from the Paid now? sheet.', 'Purchases with input GST, and the supplier paid in the same step.'],
   'feat-reports': ['feature', 'the Reports hub, then the day book, then the GST summary.', 'Day book, aging, registers and the GST summary.'],
-  'mod-library': ['module', "the Library module: today's fees and seats, the book catalogue searched for a title, then a book issued to a student at the counter.", 'Students, seats, fees and books in one place.'],
+  'mod-library': ['module', "the Library module: today's fees and seats, a student's monthly fee collected, then the seat map by shift.", 'Students, seats, fees and books in one place.'],
   'mod-lending': ['module', "the Lending module: today's collection list, a collection saved for a borrower, then the list of running loans with what is left on each.", 'Every loan and every collection, on record.'],
 };
 

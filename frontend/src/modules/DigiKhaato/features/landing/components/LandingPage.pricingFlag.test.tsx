@@ -49,17 +49,22 @@ describe('the pricing flag', () => {
     expect(container.querySelector('#pricing')).toBeNull();
     expect(container.querySelector('a[href="#pricing"]')).toBeNull();
     expect(navHrefs('Main')).not.toContain('#pricing');
-    // `/solutions` leads the footer's Product list since the public solutions pages (89dcdb3).
-    expect(navHrefs('Product')).toEqual(['/solutions', '#modules', '#demo', '#platform', '#why']);
+    // The Guides link (`/solutions`) closes the footer's Product list, as it closes the header.
+    expect(navHrefs('Product')).toEqual(['#features', '/solutions']);
     expect(screen.queryByRole('link', { name: 'Pricing' })).toBeNull();
     expect(screen.queryByRole('button', { name: 'What does it cost?' })).toBeNull();
     expect(screen.getByRole('button', { name: 'Do I need a card to start?' })).toBeInTheDocument();
     // No plan, period or pricing notice anywhere. (₹ alone is not a price:
     // the explorer's steps say "enter ₹1,200", which is a ledger entry.)
-    expect(container.textContent).not.toMatch(
+    // "Wholesale" is also a kind of business (its Popular link), not a plan.
+    const rest = container.cloneNode(true) as HTMLElement;
+    rest
+      .querySelectorAll('#business, footer, nav[aria-label="Popular:"]')
+      .forEach((node) => node.remove());
+    expect(rest.textContent).not.toMatch(
       /\/month|\/year|Starter|Wholesale|2 months free|Proposed pricing|exclude GST/
     );
-    expect(screen.getAllByRole('link', { name: 'Start free' }).length).toBeGreaterThanOrEqual(4);
+    expect(screen.getAllByRole('link', { name: 'Start free' }).length).toBeGreaterThanOrEqual(3);
   });
 
   // The section is its own chunk (`dynamic()` in LandingPage.tsx), so it is awaited.
@@ -69,25 +74,11 @@ describe('the pricing flag', () => {
 
     expect(await screen.findByTestId('landing-plan-business')).toBeInTheDocument();
     expect(container.querySelector('#pricing')).not.toBeNull();
-    expect(navHrefs('Main')).toEqual([
-      '#modules',
-      '#demo',
-      '#platform',
-      '#why',
-      '#pricing',
-      '#faq',
-    ]);
-    expect(navHrefs('Product')).toEqual([
-      '/solutions',
-      '#modules',
-      '#demo',
-      '#platform',
-      '#why',
-      '#pricing',
-    ]);
+    expect(navHrefs('Main')).toEqual(['#features', '#pricing', '#faq', '/solutions']);
+    expect(navHrefs('Product')).toEqual(['#features', '#pricing', '/solutions']);
     expect(screen.getByRole('button', { name: 'What does it cost?' })).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Do I need a card to start?' })).toBeNull();
-    // header, hero, how, four plans, closing band
-    expect(screen.getAllByRole('link', { name: 'Start free' }).length).toBeGreaterThanOrEqual(8);
+    // header, hero, four plans, closing band
+    expect(screen.getAllByRole('link', { name: 'Start free' }).length).toBeGreaterThanOrEqual(7);
   });
 });

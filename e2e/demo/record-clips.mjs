@@ -36,7 +36,7 @@ const CLIPS = [
     run: async (st) => {
       await st.pause(1600);
       await shop.openKhata(st);
-      await shop.entry(st, 'gave', '1200', 'Rice and dal');
+      await shop.receive(st, '500');
       await shop.bill(st, 'Anita General Store', [['Basm', 'Basmati Rice 5kg', 2]]);
     },
   },
@@ -46,7 +46,7 @@ const CLIPS = [
     run: async (st) => {
       await st.pause(900);
       await shop.openKhata(st, 'Ramesh Traders');
-      await shop.entry(st, 'gave', '1200', 'Sugar and oil');
+      await shop.receive(st, '500');
       await st.pause(900);
     },
   },
@@ -80,8 +80,9 @@ const CLIPS = [
     ready: (st) => st.go('/library'),
     run: async (st) => {
       await st.pause(1700);
-      await library.catalogue(st);
-      await library.issue(st, 'M-0004', STATE.library.freeCopy);
+      await library.students(st);
+      await library.collectFee(st);
+      await library.seats(st);
       await st.pause(900);
     },
   },

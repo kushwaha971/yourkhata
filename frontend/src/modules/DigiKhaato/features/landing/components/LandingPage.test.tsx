@@ -15,7 +15,6 @@ import {
 import { renderWithProviders } from 'src/tests/renderWithProviders';
 import { THEME_CHOICE_COOKIE } from 'src/utils/cookieUtils';
 
-import { DEMO_TRANSCRIPT } from '../config/demoTranscript';
 import { FEATURE_CLIPS } from '../config/media';
 import { LANDING_MODULES, VISIBLE_MODULES } from '../config/modules';
 import { PRICING, YEARLY_BILLED_MONTHS, priceFor, yearlyPrice } from '../config/pricing';
@@ -25,7 +24,6 @@ import {
   LANDING_SHARE_TITLE,
   LANDING_TITLE,
 } from '../config/seo';
-import { WHY_POINTS } from '../config/why';
 
 import { splitAroundWord } from './LandingHero';
 import { ModuleStage } from './LandingModuleParts';
@@ -63,15 +61,25 @@ describe('LandingPage', () => {
 
     const h1 = screen.getByRole('heading', { level: 1 });
     expect(h1).toHaveAccessibleName(
-      'All your records, in one place. Track dues, GST bills, stock, fees, collections and payments.'
+      "Your shop's records, on your phone. Track dues, GST bills, stock, purchases and payments."
     );
-    expect(within(h1).getByTestId('ub-rotator')).toHaveAttribute('aria-hidden', 'true');
+    // The rotating words sit OUTSIDE the h1 (17 Nov 2026): a crawler reads the
+    // heading's every word, and six rotating ones read as a jumble.
+    expect(within(h1).queryByTestId('ub-rotator')).toBeNull();
+    expect(h1.textContent).toBe(
+      "Your shop's records, on your phone. Track dues, GST bills, stock, purchases and payments."
+    );
+    expect(screen.getByTestId('ub-rotator').closest('[aria-hidden="true"]')).not.toBeNull();
   });
 
   it('shows the badge, the support copy and the micro-copy under the CTAs', () => {
     renderPage();
 
-    expect(screen.getByText('One platform. Modules for your business.')).toBeInTheDocument();
+    expect(screen.getByText('For shops and businesses in India')).toBeInTheDocument();
+    // Three promises under Start free, each true today.
+    ['Free to start', 'Nothing to install', 'Download your data anytime'].forEach((promise) =>
+      expect(screen.getByText(promise)).toBeInTheDocument()
+    );
     // DEC-013: sign-up is a mobile number and a code. The page said "email"
     // in four places for a day after the sign-in screen stopped asking for one.
     expect(screen.getByText('Start with your mobile number. No card needed.')).toBeInTheDocument();
@@ -83,9 +91,9 @@ describe('LandingPage', () => {
     renderPage();
 
     const starts = screen.getAllByRole('link', { name: /^Start free/ });
-    // header, hero, how it works, closing band (pricing is hidden; nothing is
-    // charged today, so "Start free" is true and stays)
-    expect(starts.length).toBeGreaterThanOrEqual(4);
+    // header, hero, closing band (pricing is hidden; nothing is charged
+    // today, so "Start free" is true and stays)
+    expect(starts.length).toBeGreaterThanOrEqual(3);
     starts.forEach((link) => expect(link).toHaveAttribute('href', '/login'));
     screen
       .getAllByRole('link', { name: 'Log in' })
@@ -103,40 +111,48 @@ describe('LandingPage', () => {
     const hrefs = within(nav)
       .getAllByRole('link')
       .map((link) => link.getAttribute('href'));
-    expect(hrefs).toEqual(['#modules', '#demo', '#platform', '#why', '#faq']);
-    hrefs.forEach((href) => expect(container.querySelector(href as string)).not.toBeNull());
+    // The last link leaves the page for the step-by-step guides (17 Nov 2026).
+    expect(hrefs).toEqual(['#features', '#faq', '/solutions']);
+    hrefs
+      .filter((href) => href?.startsWith('#'))
+      .forEach((href) => expect(container.querySelector(href as string)).not.toBeNull());
   });
 
-  it('offers the six use cases as a tablist', () => {
-    renderPage();
+  it('lists the six everyday jobs and leaves choosing a business to the guides', () => {
+    const { container } = renderPage();
 
-    const tablist = screen.getByRole('tablist', { name: 'Use cases' });
+    // The business tiles moved to /solutions (owner, 17 Nov 2026).
+    expect(container.querySelector('#business')).toBeNull();
     expect(
-      within(tablist)
-        .getAllByRole('tab')
-        .map((tab) => tab.textContent)
-    ).toEqual(['Money book', 'Reminders', 'GST bill', 'Stock', 'Purchases', 'Reports']);
-    fireEvent.click(within(tablist).getByRole('tab', { name: 'Stock' }));
-    expect(screen.getByRole('tabpanel', { name: 'Stock' })).toHaveTextContent(
-      'Adjust stock with a reason'
-    );
+      within(container.querySelector('#features') as HTMLElement)
+        .getAllByRole('heading', { level: 3 })
+        .map((h) => h.textContent)
+    ).toEqual([
+      'Make a GST bill',
+      'Keep credit straight',
+      'Remind who owes you',
+      'Know your stock',
+      'Record purchases',
+      'Close the day',
+    ]);
   });
 
-  it('answers fourteen questions in the FAQ, e-invoicing and the lending module honestly', () => {
+  it('answers eleven questions in the FAQ, e-invoicing and reminders honestly', () => {
     renderPage();
     const faq = document.getElementById('faq') as HTMLElement;
 
     const questions = within(faq).getAllByRole('button');
-    expect(questions).toHaveLength(14);
+    expect(questions).toHaveLength(11);
     // What it is and how you get in come first: the two things a cold visitor asks.
     expect(questions[0]).toHaveTextContent('What is YourKhata?');
     expect(questions[1]).toHaveTextContent('How do I start and log in?');
     fireEvent.click(within(faq).getByRole('button', { name: 'Does it support e-invoicing?' }));
     expect(within(faq).getByText(/^Not today\./)).toBeInTheDocument();
+    // A reminder is prepared, never sent for the merchant (DEC-012).
     fireEvent.click(
-      within(faq).getByRole('button', { name: 'Does the Ledger module lend money?' })
+      within(faq).getByRole('button', { name: 'Can I remind customers on WhatsApp?' })
     );
-    expect(within(faq).getByText(/^No\. Ledger keeps a record/)).toBeInTheDocument();
+    expect(within(faq).getByText(/press send; nothing is sent without you/)).toBeInTheDocument();
   });
 
   /**
@@ -154,117 +170,17 @@ describe('LandingPage', () => {
   });
 
   /**
-   * The narrated demo is a SECTION (owner, 10 Oct 2026), and ONE film since
-   * 11 Oct: Hindi voice, English subtitles. Before play is pressed there is no
-   * <video> in the page at all — the film costs a visitor one poster image —
-   * and nothing ever plays by itself.
+   * The narrated film left the home page (owner, 17 Nov 2026): it will play on
+   * YouTube, and each feature's video sits with its guide. The hero's second
+   * button is "See how it works" and opens the guides.
    */
-  it('shows one demo film, with no language switch, and loads nothing until play is pressed', () => {
+  it('carries no film, and sends See how it works to the guides', () => {
     const { container } = renderPage();
-    const demo = container.querySelector('#demo') as HTMLElement;
-
-    expect(screen.getByRole('link', { name: 'Watch the demo' })).toHaveAttribute('href', '#demo');
-    expect(demo.querySelector('video')).toBeNull();
-    // The separate English film is withdrawn, and the switch between films with it.
-    expect(within(demo).queryByRole('tablist')).toBeNull();
-    // Both posters are in the HTML and lazy; CSS shows the one for this screen.
-    expect(
-      [...demo.querySelectorAll('img')].map((img) => [
-        img.getAttribute('src'),
-        img.getAttribute('loading'),
-      ])
-    ).toEqual([
-      ['/media/landing/demo-hi-mobile-poster.jpg', 'lazy'],
-      ['/media/landing/demo-hi-desktop-poster.jpg', 'lazy'],
-    ]);
-
-    // jsdom matches no media query, so this is the phone: it gets the PHONE cut.
-    fireEvent.click(within(demo).getByTestId('landing-demo-play'));
-    const video = within(demo).getByTestId('landing-demo-video');
-    expect(video).toHaveAttribute('src', '/media/landing/demo-hi-mobile.mp4');
-    expect(video).toHaveAttribute('lang', 'hi');
-    expect(video).toHaveAttribute('controls');
-    expect(video).not.toHaveAttribute('muted');
-    // Somebody reading the page in English is not left out of a Hindi film:
-    // it carries English subtitles, and on an English page they are the ones on.
-    const captions = video.querySelector('track[kind="captions"]') as HTMLTrackElement;
-    expect(captions).toHaveAttribute('src', '/media/landing/demo-hi-mobile.vtt');
-    expect(captions).toHaveAttribute('srclang', 'hi');
-    expect(captions).not.toHaveAttribute('default');
-    const subtitles = video.querySelector('track[kind="subtitles"]') as HTMLTrackElement;
-    expect(subtitles).toHaveAttribute('src', '/media/landing/demo-hi-mobile.en.vtt');
-    expect(subtitles).toHaveAttribute('srclang', 'en');
-    expect(subtitles).toHaveAttribute('default');
-
-    // A missing film is a sentence and a way forward, not a black box.
-    fireEvent.error(video);
-    const unavailable = within(demo).getByTestId('landing-demo-unavailable');
-    expect(within(unavailable).getByRole('link', { name: /start free/i })).toHaveAttribute(
-      'href',
-      '/login'
-    );
-  });
-
-  /**
-   * From `lg` the same button plays the DESKTOP cut, and that cut is on
-   * YouTube (owner, 11 Oct 2026): its player is what loads — and only on the
-   * press. Before it, the page has asked YouTube for nothing: no player, no
-   * script, no cookie.
-   */
-  it("plays the desktop cut in YouTube's player on a desktop, loaded only by the press", () => {
-    const original = window.matchMedia;
-    window.matchMedia = ((query: string) => ({
-      matches: /min-width: 1024px/.test(query),
-      media: query,
-      addEventListener: () => undefined,
-      removeEventListener: () => undefined,
-      addListener: () => undefined,
-      removeListener: () => undefined,
-      onchange: null,
-      dispatchEvent: () => false,
-    })) as typeof window.matchMedia;
-    try {
-      const { container } = renderPage();
-      const demo = container.querySelector('#demo') as HTMLElement;
-      expect(container.querySelector('iframe')).toBeNull();
-      expect(container.innerHTML).not.toMatch(/youtube/i);
-
-      fireEvent.click(within(demo).getByTestId('landing-demo-play'));
-      const player = within(demo).getByTestId('landing-demo-youtube');
-      const src = new URL(player.getAttribute('src') ?? '');
-      // The no-cookie host, this film, from the start, captions asked for in
-      // the page's language.
-      expect(src.origin + src.pathname).toBe('https://www.youtube-nocookie.com/embed/fk-hjhDi-tg');
-      expect(Object.fromEntries(src.searchParams)).toMatchObject({
-        autoplay: '1',
-        start: '0',
-        rel: '0',
-        cc_lang_pref: 'en',
-      });
-      expect(player).toHaveAttribute('title', 'YourKhata product demo');
-      expect(demo.querySelector('video')).toBeNull();
-    } finally {
-      window.matchMedia = original;
-    }
-  });
-
-  /** Both narrations are in the HTML, whichever language is showing: text a crawler can read. */
-  it('keeps both transcripts and every chapter in the page', () => {
-    const { container } = renderPage();
-    const demo = container.querySelector('#demo') as HTMLElement;
-
-    (['en', 'hi'] as const).forEach((language) => {
-      const block = demo.querySelector(`[data-demo-language="${language}"]`) as HTMLElement;
-      expect(block).toHaveAttribute('lang', language);
-      DEMO_TRANSCRIPT[language].chapters.forEach((chapter) => {
-        chapter.paragraphs.forEach((paragraph) => expect(block.textContent).toContain(paragraph));
-      });
-      expect(within(block).getAllByRole('listitem', { hidden: true })).toHaveLength(
-        DEMO_TRANSCRIPT[language].chapters.length
-      );
-    });
-    expect(demo.querySelector('[data-demo-language="en"]')).not.toHaveAttribute('hidden');
-    expect(demo.querySelector('[data-demo-language="hi"]')).toHaveAttribute('hidden');
+    expect(container.querySelector('#demo')).toBeNull();
+    expect(container.querySelector('iframe')).toBeNull();
+    const demo = screen.getByTestId('landing-demo-open');
+    expect(demo).toHaveAttribute('href', '/solutions');
+    expect(demo).toHaveTextContent('See how it works');
   });
 });
 
@@ -275,47 +191,11 @@ describe('LandingPage', () => {
  * recordings shows words and an icon illustration, never a screen.
  */
 describe('the module story', () => {
-  const moduleElements = (container: HTMLElement) => [
-    ...container.querySelectorAll<HTMLElement>('[data-module-card][data-module-id]'),
-  ];
   /** Anything a picture could be, outside decoration drawn from our own icon set. */
   const visualMedia = (el: HTMLElement) =>
     [...el.querySelectorAll('video, img, picture, source, iframe, canvas, svg')].filter(
       (node) => !node.closest('[aria-hidden="true"]')
     );
-
-  /**
-   * The map tile, the card and the audience row — three places for each module
-   * the page SHOWS. Gym and Hotel are hidden (owner, 10 Oct 2026) through
-   * `LANDING_HIDDEN_MODULES`: they stay in the config, five of five, and
-   * appear nowhere on the rendered page.
-   */
-  it('shows the visible modules in the map, the cards and "Who it\'s for", and neither hidden one', () => {
-    const { container } = renderPage();
-    const elements = moduleElements(container);
-
-    expect(elements.map((el) => `${el.dataset.moduleCard}:${el.dataset.moduleId}`).sort()).toEqual(
-      VISIBLE_MODULES.flatMap((module) =>
-        ['audience', 'card', 'map'].map((where) => `${where}:${module.id}`)
-      ).sort()
-    );
-    expect(LANDING_MODULES).toHaveLength(5);
-    expect(VISIBLE_MODULES.map((module) => module.id)).toEqual(['shop', 'lending', 'library']);
-    const map = screen.getByTestId('landing-module-map');
-    expect(
-      within(map)
-        .getAllByRole('link')
-        .map((link) => link.textContent)
-    ).toEqual(['Business & billing', 'Ledger', 'Library']);
-    expect(
-      container.querySelector(
-        '#module-gym, #module-hotel, [data-module-id="gym"], [data-module-id="hotel"]'
-      )
-    ).toBeNull();
-    expect(container.textContent).not.toMatch(/gym|fitness|hotel|guest house/i);
-    expect(container.querySelector('#module-coaching, [data-module-id="coaching"]')).toBeNull();
-    expect(container.textContent).not.toMatch(/coaching|tuition/i);
-  });
 
   /**
    * The owner's rule: no Live, Planned or In development — as a chip, a
@@ -330,13 +210,9 @@ describe('the module story', () => {
       expect(
         container.querySelector('[data-module-status], [data-testid^="landing-status-"]')
       ).toBeNull();
-      // The offline desktop section is the one announced future (owner,
-      // 12 Oct 2026); it says "coming soon" on purpose and is pinned by its
-      // own test. Everything else on the page is still held to the rule.
-      const rest = container.cloneNode(true) as HTMLElement;
-      rest.querySelector('[data-testid="landing-desktop-soon"]')?.remove();
-      const text = rest.textContent ?? '';
-      expect(container.querySelector('[data-testid="landing-desktop-soon"]')).not.toBeNull();
+      // The offline desktop section left the home page on 17 Nov 2026, so the
+      // whole page is held to the rule now.
+      const text = container.textContent ?? '';
       expect(text).not.toMatch(STATUS_WORDS[locale]);
       if (locale === 'en')
         expect(text).not.toMatch(/one module today|more planned|planned to help/i);
@@ -368,47 +244,6 @@ describe('the module story', () => {
       expect(container.querySelector('[data-device], video, img')).toBeNull();
       unmount();
     });
-  });
-
-  /** Every card the page shows has a real recording, two actions and its "What you can do" list. */
-  it('gives every visible module a recording, a list and two actions that name it', () => {
-    const { container } = renderPage();
-    VISIBLE_MODULES.forEach((module) => {
-      const card = container.querySelector(`#module-${module.id}`) as HTMLElement;
-      const name = enMessages[`landing.module.${module.id}.name`];
-      expect(
-        card.querySelector('[data-module-stage="media"] [data-device="browser"] video')
-      ).not.toBeNull();
-      expect(card.querySelector('[data-module-illustration]')).toBeNull();
-      expect(within(card).getByRole('heading', { name: 'What you can do' })).toBeInTheDocument();
-      expect(within(card).getByRole('link', { name: `Start free with ${name}` })).toHaveAttribute(
-        'href',
-        '/login'
-      );
-      expect(within(card).getByRole('link', { name: `See ${name} in the demo` })).toHaveAttribute(
-        'href',
-        '#demo'
-      );
-    });
-  });
-
-  /** A module with `media` gets its real recording, in a browser frame, on the same card. */
-  it('renders the framed recording for a module with media — Business & billing today', () => {
-    const { container } = renderPage();
-    const shop = container.querySelector('#module-shop') as HTMLElement;
-
-    const stage = shop.querySelector('[data-module-stage="media"]') as HTMLElement;
-    expect(stage).not.toBeNull();
-    expect(stage.querySelector('[data-device="browser"] video')).not.toBeNull();
-    // Two recordings since 11 Oct 2026: the desktop layout in a browser frame
-    // and the phone layout in a phone frame. CSS shows one; each only loads
-    // on the screen it is for.
-    expect(stage.querySelector('[data-device="phone"] video')).not.toBeNull();
-    expect(within(stage).getAllByRole('img', { name: /two-item tax invoice/ })).toHaveLength(2);
-    expect(shop.querySelector('[data-module-illustration]')).toBeNull();
-    expect(
-      container.querySelector('#features video, #features [data-testid="ub-video"]')
-    ).not.toBeNull();
   });
 
   /**
@@ -523,26 +358,19 @@ describe('the module story', () => {
  * hard-coded string cannot slip past the catalogue checks.
  */
 describe('Why YourKhata', () => {
+  // The four the home page keeps (17 Nov 2026), in its order.
   const HEADINGS = {
     en: [
-      'One app, one set of records',
-      'Your name on your bills, not ours',
-      'Mistakes are corrected, never erased',
+      'Any phone or computer',
       'Payments come straight to you',
-      'Each person sees only their part',
+      'Mistakes are corrected, never erased',
       'Your data stays yours',
-      'Any phone or computer, in Hindi or English',
-      'No ads',
     ],
     hi: [
-      'एक ऐप, एक ही रिकॉर्ड',
-      'बिल पर आपका नाम, हमारा नहीं',
-      'गलती सुधरती है, मिटती नहीं',
+      'कोई भी फ़ोन या कंप्यूटर',
       'पैसा सीधे आपके पास',
-      'हर व्यक्ति सिर्फ़ अपना हिस्सा देखे',
+      'गलती सुधरती है, मिटती नहीं',
       'आपका डेटा आपका ही',
-      'कोई भी फ़ोन या कंप्यूटर, हिन्दी या अंग्रेज़ी में',
-      'कोई विज्ञापन नहीं',
     ],
   } as const;
 
@@ -555,7 +383,12 @@ describe('Why YourKhata', () => {
       expect(section).toHaveAttribute('aria-labelledby', 'landing-why-title');
 
       const cards = [...section.querySelectorAll<HTMLElement>('article[data-why-id]')];
-      expect(cards.map((card) => card.dataset.whyId)).toEqual([...WHY_POINTS]);
+      expect(cards.map((card) => card.dataset.whyId)).toEqual([
+        'anywhere',
+        'payments',
+        'corrections',
+        'data',
+      ]);
       expect(
         within(section)
           .getAllByRole('heading', { level: 3 })
@@ -573,17 +406,14 @@ describe('Why YourKhata', () => {
     }
   );
 
-  it('sits after the module map and is in the header', () => {
+  it('sits after the jobs, and is not in the trimmed menu', () => {
     const { container } = renderPage();
     const ids = [...container.querySelectorAll('main section[id]')].map((el) => el.id);
-    expect(ids.indexOf('why')).toBe(ids.indexOf('platform') + 1);
-    // Reading order: what it does, see it, the shop's jobs, how it fits together, why.
-    expect(ids.slice(0, 5)).toEqual(['modules', 'demo', 'features', 'platform', 'why']);
+    // Reading order (17 Nov 2026): what it does, then why. The menu keeps the
+    // essentials only, so Why is reached by scrolling.
+    expect(ids.slice(0, 2)).toEqual(['features', 'why']);
     const nav = screen.getAllByRole('navigation', { name: 'Main' })[0] as HTMLElement;
-    expect(within(nav).getByRole('link', { name: 'Why YourKhata' })).toHaveAttribute(
-      'href',
-      '#why'
-    );
+    expect(within(nav).queryByRole('link', { name: 'Why YourKhata' })).toBeNull();
   });
 
   it('names no competitor anywhere on the rendered page, in either language', () => {

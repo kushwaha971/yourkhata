@@ -1,5 +1,7 @@
 'use client';
 
+// Its words arrive with it, so it renders on the guide pages as on the home page.
+import 'src/i18n/catalogues/landing';
 import { memo, useCallback, useRef, useState } from 'react';
 
 import { Menu } from 'lucide-react';
@@ -22,40 +24,45 @@ import { SHOW_PRICING } from '../config/pricing';
 import { LANDING_CONTAINER } from './LandingPrimitives';
 import { LanguageToggle, ThemeToggle } from './LandingToggles';
 
+// The essentials only (owner, 17 Nov 2026), as business sites keep them:
+// what it does, pricing while it is shown, and answers; Guides is appended.
 const ANCHORS = [
-  { href: '#modules', key: 'landing.nav.modules' },
-  { href: '#demo', key: 'landing.nav.demo' },
-  { href: '#platform', key: 'landing.nav.platform' },
-  { href: '#why', key: 'landing.nav.why' },
+  { href: '#features', key: 'landing.nav.features' },
   { href: '#pricing', key: 'landing.nav.pricing' },
   { href: '#faq', key: 'landing.nav.faq' },
 ] as const;
 
 /**
- * In-page anchors, in reading order. The ids are the sections' own. Pricing is
- * listed only while `SHOW_PRICING` is on (CR-2026-09-29-PLATFORM-D) — a link
- * to a section that is not rendered is a dead anchor. A function, read at
- * render, so the flag is never frozen into a module constant.
+ * The anchors, with Pricing listed only while `SHOW_PRICING` is on — a link to
+ * a section that is not rendered is a dead anchor. A function, read at render,
+ * so the flag is never frozen into a module constant. `base` is '/' off the
+ * home page, so the anchors lead back to its sections.
  */
-export const landingAnchors = (): readonly (typeof ANCHORS)[number][] =>
-  SHOW_PRICING ? ANCHORS : ANCHORS.filter((anchor) => anchor.href !== '#pricing');
+export const landingAnchors = (base = ''): readonly { href: string; key: string }[] => [
+  ...(SHOW_PRICING ? ANCHORS : ANCHORS.filter((anchor) => anchor.href !== '#pricing')).map(
+    (anchor) => ({ ...anchor, href: `${base}${anchor.href}` })
+  ),
+  // The step-by-step guides for each module and each kind of shop.
+  { href: '/solutions', key: 'landing.nav.guides' },
+];
 
 /**
  * A floating pill: sticky 12 px from the top, translucent canvas with a
  * backdrop blur, a hairline and a soft shadow — so it reads as a surface over
  * the page in both themes rather than a band across it.
  *
- * Desktop (`lg`+): logo, the four anchors centred, then theme, language,
- * Log in and Start free. Below `lg`: logo, Start free and a menu button; the
+ * Desktop (`xl`+, since the Guides link made the row too wide at 1024): logo, the anchors centred, then theme, language,
+ * Log in and Start free. Below `xl`: logo, Start free and a menu button; the
  * menu is `UbDialog` — a bottom sheet on a phone, with the focus trap, Escape
  * and focus-return every dialog in the product already has.
  */
-function LandingHeaderBase() {
+/** `base` is '/' on pages other than the home page, so the anchors lead back to its sections. */
+function LandingHeaderBase({ base = '' }: Readonly<{ base?: string }>) {
   const { t } = useTranslation();
   const [menuOpen, setMenuOpen] = useState(false);
   const menuButtonRef = useRef<HTMLButtonElement | null>(null);
   const closeMenu = useCallback(() => setMenuOpen(false), []);
-  const anchors = landingAnchors();
+  const anchors = landingAnchors(base);
 
   return (
     <UbBox as="header" className="sticky top-0 z-40 pt-3">
@@ -66,7 +73,8 @@ function LandingHeaderBase() {
           justify="between"
           gap={3}
           className={cn(
-            'h-14 rounded-[20px] border border-border-hairline pl-4 pr-2 lg:h-16 lg:pl-5',
+            // Below 360 px every pixel counts: logo, Start free and the menu must fit 320.
+            'h-14 rounded-[20px] border border-border-hairline pl-4 pr-2 max-[359px]:gap-2 max-[359px]:pl-3 max-[359px]:pr-1 lg:h-16 lg:pl-5',
             'bg-canvas/75 shadow-[0_8px_30px_-12px_rgb(10_9_11/0.18)] backdrop-blur-xl backdrop-saturate-150'
           )}
         >
@@ -79,7 +87,7 @@ function LandingHeaderBase() {
             <UbLogo variant="full" size="md" label={t('landing.nav.home')} />
           </UbLink>
 
-          <UbBox as="nav" aria-label={t('landing.nav.label')} className="hidden lg:block">
+          <UbBox as="nav" aria-label={t('landing.nav.label')} className="hidden xl:block">
             <UbStack as="ul" direction="row" gap={1}>
               {anchors.map((anchor) => (
                 <UbBox as="li" key={anchor.href}>
@@ -97,9 +105,9 @@ function LandingHeaderBase() {
             </UbStack>
           </UbBox>
 
-          <UbStack direction="row" align="center" gap={2} className="shrink-0">
-            <ThemeToggle className="hidden lg:inline-flex" />
-            <LanguageToggle className="hidden lg:inline-flex" />
+          <UbStack direction="row" align="center" gap={2} className="shrink-0 max-[359px]:gap-1">
+            <ThemeToggle className="hidden xl:inline-flex" />
+            <LanguageToggle className="hidden xl:inline-flex" />
             <UbActionLink
               href={ROUTES.LOGIN}
               variant="ghost"
@@ -110,7 +118,7 @@ function LandingHeaderBase() {
             <UbActionLink
               href={ROUTES.LOGIN}
               variant="primary"
-              className="ub-lift rounded-[14px] px-4"
+              className="ub-lift rounded-[14px] px-4 max-[359px]:px-2.5"
               data-testid="landing-header-start"
             >
               {t('landing.nav.startFree')}
@@ -123,7 +131,7 @@ function LandingHeaderBase() {
               aria-expanded={menuOpen}
               onClick={() => setMenuOpen(true)}
               icon={<Menu aria-hidden className="h-5 w-5" />}
-              className="rounded-pill lg:hidden"
+              className="rounded-pill xl:hidden"
             >
               {t('landing.nav.menu.open')}
             </UbButton>

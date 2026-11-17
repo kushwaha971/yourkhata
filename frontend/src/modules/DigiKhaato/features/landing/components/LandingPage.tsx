@@ -10,16 +10,15 @@ import { cn } from 'src/utils/cn';
 
 import { SHOW_PRICING } from '../config/pricing';
 
-import { DesktopSoonSection } from './DesktopSoonSection';
+import { JobsSection } from './BusinessSection';
 import { FaqSection, FinalCta, LandingFooter } from './LandingClosing';
 import { LandingHeader } from './LandingHeader';
 import { LandingHero } from './LandingHero';
 import { LANDING_SCALE } from './LandingPrimitives';
-import { AlsoIncludedSection, HowItWorksSection } from './LandingSections';
-import { AudienceSection, ModulesSection } from './ModulesSection';
-import { PlatformMapSection } from './PlatformMap';
-import { UseCaseExplorer } from './UseCaseExplorer';
 import { WhySection } from './WhySection';
+
+/** The four reasons the home page keeps (17 Nov 2026); all eight are on the guides. */
+const HOME_WHY = ['anywhere', 'payments', 'corrections', 'data'] as const;
 
 // The words this page renders arrive with its chunk (src/i18n/catalogueRegistry.ts).
 // Imported HERE, in the client tree, rather than in `app/page.tsx`: that file is
@@ -38,7 +37,6 @@ import 'src/i18n/catalogues/landing';
  * language tabs and the two narrations' text are 5 KB of script the first
  * screen does not need, so they are not in the route's first-load bundle.
  */
-const DemoSection = dynamic(() => import('./DemoSection').then((module) => module.DemoSection));
 
 const PricingSection = dynamic(() =>
   import('./PricingSection').then((module) => module.PricingSection)
@@ -93,15 +91,8 @@ function LandingPageBase({ className }: Readonly<{ className?: string }>) {
       <LandingHeader />
       <UbBox as="main" id="main" tabIndex={-1} className="outline-none">
         <LandingHero />
-        <ModulesSection />
-        <DemoSection />
-        <UseCaseExplorer />
-        <PlatformMapSection />
-        <WhySection />
-        <DesktopSoonSection />
-        <AudienceSection />
-        <AlsoIncludedSection />
-        <HowItWorksSection />
+        <JobsSection />
+        <WhySection points={HOME_WHY} />
         {SHOW_PRICING && <PricingSection />}
         <FaqSection />
         <FinalCta />

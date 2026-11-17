@@ -1,5 +1,6 @@
 import { GooglePublicTracker } from 'src/analytics/GooglePublicTracker';
 import {
+  UbAmbientGlow,
   UbActionLink,
   UbBox,
   UbDeviceFrame,
@@ -12,9 +13,16 @@ import {
   UbVideo,
 } from 'src/design-system';
 import { ROUTES } from 'src/routes';
+import { cn } from 'src/utils/cn';
 import { absoluteUrl } from 'src/utils/seo';
 
-import { SOLUTIONS, type Solution, type SolutionGuide } from '../config/solutions';
+import { LANDING_CONTAINER, LANDING_SCALE } from '../config/layout';
+import { SOLUTIONS, solutionBySlug, type Solution, type SolutionGuide } from '../config/solutions';
+
+import { BusinessSection } from './BusinessSection';
+import { GuideFold } from './GuideFold';
+import { LandingFooter } from './LandingClosing';
+import { LandingHeader } from './LandingHeader';
 
 /** English public pages: the video controls are labelled in the page's language. */
 const VIDEO_LABELS = { play: 'Play video', pause: 'Pause video', fallback: 'Open the video' };
@@ -22,7 +30,7 @@ const CARD = 'rounded-[18px] border border-border-hairline bg-surface-card';
 const SECTION_LABEL = 'uppercase tracking-[0.06em]';
 
 const shot = (slug: string, size: 'phone' | 'desktop', name: string) =>
-  `/media/guides/${slug === 'lending-collections' ? 'ledger' : slug}/${size}-${name}`;
+  `/media/guides/${solutionBySlug(slug)?.media ?? slug}/${size}-${name}`;
 
 function Picture({
   base,
@@ -44,6 +52,50 @@ function Picture({
 }
 
 /** A guide's two screenshots: the phone in front, the computer behind it. */
+/** The home page's silent loop for this job, tap to play: recorded in the demo general store. */
+function GuideClip({ clip, title }: Readonly<{ clip: string; title: string }>) {
+  const base = `/media/landing/${clip}`;
+  const sources = (size: 'desktop' | 'mobile') => [
+    { src: `${base}-${size}.webm`, type: 'video/webm; codecs=vp9' },
+    { src: `${base}-${size}.mp4`, type: 'video/mp4' },
+  ];
+  const poster = (size: 'desktop' | 'mobile') => ({
+    webp: `${base}-${size}-poster.webp`,
+    jpg: `${base}-${size}-poster.jpg`,
+  });
+  return (
+    <UbStack gap={2}>
+      <UbText variant="body-sm-medium" tone="secondary">
+        Watch it done · recorded in our demo general store
+      </UbText>
+      <UbBox className="overflow-hidden rounded-[14px] border border-border-hairline max-md:hidden">
+        <UbVideo
+          sources={sources('desktop')}
+          poster={poster('desktop')}
+          width={1280}
+          height={800}
+          alt={`${title}, recorded on a computer`}
+          labels={VIDEO_LABELS}
+          media="(min-width: 768px)"
+          autoPlay={false}
+        />
+      </UbBox>
+      <UbBox className="mx-auto w-[min(62%,230px)] overflow-hidden rounded-[22px] border border-border-hairline md:hidden">
+        <UbVideo
+          sources={sources('mobile')}
+          poster={poster('mobile')}
+          width={584}
+          height={1264}
+          alt={`${title}, recorded on a phone`}
+          labels={VIDEO_LABELS}
+          media="(max-width: 767.98px)"
+          autoPlay={false}
+        />
+      </UbBox>
+    </UbStack>
+  );
+}
+
 function GuideShots({
   slug,
   guide,
@@ -53,7 +105,7 @@ function GuideShots({
       <UbBox className="mr-[26%] overflow-hidden rounded-lg border border-border-hairline shadow-sm max-md:hidden">
         <Picture base={shot(slug, 'desktop', guide.shot)} alt={`${guide.alt} (computer)`} />
       </UbBox>
-      <UbBox className="mx-auto w-[min(72%,280px)] overflow-hidden rounded-[22px] border border-border-hairline shadow-lg md:absolute md:bottom-4 md:right-6 md:w-[22%]">
+      <UbBox className="mx-auto w-[min(62%,230px)] overflow-hidden rounded-[22px] border border-border-hairline shadow-lg md:absolute md:bottom-4 md:right-6 md:w-[22%]">
         <Picture base={shot(slug, 'phone', guide.shot)} phone alt={`${guide.alt} (phone)`} />
       </UbBox>
     </UbBox>
@@ -82,7 +134,7 @@ function SectionHead({
 
 function SolutionDetail({ solution }: Readonly<{ solution: Solution }>): React.JSX.Element {
   const guides = solution.guides ?? [];
-  const hero = guides.find((g) => g.shot === 'today');
+  const hero = guides.find((g) => g.shot === 'today' || g.shot === 'dashboard') ?? guides[0];
   const video = solution.video;
   return (
     <>
@@ -275,36 +327,30 @@ function SolutionDetail({ solution }: Readonly<{ solution: Solution }>): React.J
             </UbBox>
             <UbStack gap={8}>
               {guides.map((guide, index) => (
-                <UbBox
-                  as="article"
+                <GuideFold
                   key={guide.id}
                   id={guide.id}
-                  className={`${CARD} grid scroll-mt-6 gap-6 p-5 md:p-6`}
+                  index={index}
+                  title={guide.title}
+                  className={`${CARD} grid scroll-mt-24 gap-4 p-5 md:gap-6 md:p-6`}
                 >
-                  <UbStack gap={4}>
-                    <UbText variant="body-sm-medium" tone="accent">
-                      Guide {index + 1}
-                    </UbText>
-                    <UbText as="h3" variant="h3">
-                      {guide.title}
-                    </UbText>
-                    <UbStack as="ol" gap={3}>
-                      {guide.steps.map((step, n) => (
-                        <UbStack as="li" key={step} direction="row" gap={3} align="start">
-                          <UbText
-                            variant="caption"
-                            tone="accent"
-                            className="flex size-6 shrink-0 items-center justify-center rounded-full bg-[var(--accent-quiet)]"
-                          >
-                            {n + 1}
-                          </UbText>
-                          <UbText>{step}</UbText>
-                        </UbStack>
-                      ))}
-                    </UbStack>
+                  <UbStack as="ol" gap={3}>
+                    {guide.steps.map((step, n) => (
+                      <UbStack as="li" key={step} direction="row" gap={3} align="start">
+                        <UbText
+                          variant="caption"
+                          tone="accent"
+                          className="flex size-6 shrink-0 items-center justify-center rounded-full bg-[var(--accent-quiet)]"
+                        >
+                          {n + 1}
+                        </UbText>
+                        <UbText>{step}</UbText>
+                      </UbStack>
+                    ))}
                   </UbStack>
                   <GuideShots slug={solution.slug} guide={guide} />
-                </UbBox>
+                  {guide.clip ? <GuideClip clip={guide.clip} title={guide.title} /> : null}
+                </GuideFold>
               ))}
             </UbStack>
           </UbBox>
@@ -374,6 +420,24 @@ function SolutionDetail({ solution }: Readonly<{ solution: Solution }>): React.J
 /** English public editorial pages. Hindi remains available in the application;
  * separate Hindi URLs will be introduced with reviewed translated content.
  */
+const isShopKind = (entry: Solution): boolean => entry.media?.startsWith('shop/') ?? false;
+
+/** The guides hub groups every kind of shop together; a page offers its siblings first. */
+const GROUPS = (current?: Solution): readonly { title: string; entries: readonly Solution[] }[] => {
+  const others = SOLUTIONS.filter((entry) => entry.slug !== current?.slug);
+  const kinds = others.filter(isShopKind);
+  const modules = others.filter((entry) => !isShopKind(entry));
+  const kindsTitle =
+    current && isShopKind(current)
+      ? 'Guides for other kinds of shop'
+      : 'Guides for your kind of shop';
+  const groups = [
+    { title: kindsTitle, entries: kinds },
+    { title: current ? 'Other modules' : 'Other modules and solutions', entries: modules },
+  ];
+  return current && !isShopKind(current) ? [...groups].reverse() : groups;
+};
+
 export function SolutionsPage({ solution }: Readonly<{ solution?: Solution }>): React.JSX.Element {
   const path = solution ? `/solutions/${solution.slug}` : '/solutions';
   const title = solution?.name ?? 'Business solutions on one shared platform';
@@ -443,40 +507,33 @@ export function SolutionsPage({ solution }: Readonly<{ solution?: Solution }>): 
     ],
   };
   return (
-    <UbBox lang="en" className="bg-surface-page min-h-screen text-text-primary">
+    <UbBox
+      lang="en"
+      className={cn(
+        'relative min-h-dvh overflow-x-clip bg-canvas text-text-primary',
+        LANDING_SCALE
+      )}
+    >
       <UbJsonLd data={graph} />
       <GooglePublicTracker />
-      <UbBox as="header" className="border-b border-border-hairline">
-        <UbStack
-          direction="row"
-          wrap
-          justify="between"
-          align="center"
-          gap={4}
-          className="mx-auto max-w-6xl px-4 py-4 sm:px-6"
-        >
-          <UbLink href="/" variant="h3" underline={false}>
-            YourKhata
-          </UbLink>
-          <UbStack
-            as="nav"
-            aria-label="Public navigation"
-            direction="row"
-            wrap
-            align="center"
-            gap={4}
-          >
-            <UbLink href="/solutions">Solutions</UbLink>
-            <UbLink href={ROUTES.LOGIN}>Sign in</UbLink>
-          </UbStack>
-        </UbStack>
-      </UbBox>
-      <UbStack as="main" gap={10} className="mx-auto max-w-6xl px-4 py-8 sm:px-6 md:py-14">
+      {/* The home page's own shell: its glow, floating header and footer. */}
+      <UbAmbientGlow className="bottom-auto h-[min(900px,calc(100dvh+200px))]" />
+      <LandingHeader base="/" />
+      <UbStack
+        as="main"
+        id="main"
+        gap={10}
+        className={`${LANDING_CONTAINER} relative py-8 md:py-14`}
+      >
         <UbBox as="nav" aria-label="Breadcrumb">
           <UbText variant="body-sm" tone="secondary">
-            <UbLink href="/">Home</UbLink>
+            <UbLink href="/" className="inline-flex min-h-11 items-center">
+              Home
+            </UbLink>
             {' / '}
-            <UbLink href="/solutions">Solutions</UbLink>
+            <UbLink href="/solutions" className="inline-flex min-h-11 items-center">
+              Solutions
+            </UbLink>
             {solution ? ` / ${solution.name}` : ''}
           </UbText>
         </UbBox>
@@ -488,37 +545,38 @@ export function SolutionsPage({ solution }: Readonly<{ solution?: Solution }>): 
               {title}
             </UbText>
             <UbText variant="body" tone="secondary">
-              YourKhata is a modular business-management platform. Choose a workflow for your
-              business, with shared people, money, documents, reports and team access.
+              Pick your business to see step-by-step guides with real screens, on phone and
+              computer.
             </UbText>
-            <UbBox as="section">
-              <UbText as="h2" variant="h2">
-                Choose the records your business needs
-              </UbText>
-              <UbText className="mt-4">
-                Start with the available solutions below. New modules can build on the same platform
-                as they are released.
-              </UbText>
-            </UbBox>
+            {/* Moved here from the home page (owner, 17 Nov 2026). */}
+            <BusinessSection bare />
           </>
         )}
-        <UbStack as="section" gap={6}>
-          <SectionHead title={solution ? 'Explore other solutions' : 'Available solutions'} />
-          <UbBox className="grid gap-4 md:grid-cols-2">
-            {SOLUTIONS.filter((entry) => entry.slug !== solution?.slug).map((entry) => (
-              <UbBox key={entry.slug} className={`${CARD} p-6`}>
-                <UbText as="h3" variant="h3">
-                  <UbLink href={`/solutions/${entry.slug}`} variant="h3">
-                    {entry.name}
-                  </UbLink>
-                </UbText>
-                <UbText tone="secondary" className="mt-3">
-                  {entry.description}
-                </UbText>
-              </UbBox>
-            ))}
-          </UbBox>
-        </UbStack>
+        {(solution ? GROUPS(solution) : []).map((group) => (
+          <UbStack as="section" gap={6} key={group.title}>
+            <SectionHead title={group.title} />
+            <UbBox className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {group.entries.map((entry) => (
+                <UbBox key={entry.slug} className={`${CARD} p-6`}>
+                  <UbText as="h3" variant="h3">
+                    <UbLink
+                      href={`/solutions/${entry.slug}`}
+                      variant="h3"
+                      className="inline-flex min-h-11 items-center"
+                    >
+                      {entry.name}
+                    </UbLink>
+                  </UbText>
+                  <UbText tone="secondary" className="mt-3">
+                    {entry.guides?.length
+                      ? `${entry.guides.length} step-by-step guides with real phone and computer screens.`
+                      : entry.description}
+                  </UbText>
+                </UbBox>
+              ))}
+            </UbBox>
+          </UbStack>
+        ))}
         <UbStack
           as="section"
           gap={4}
@@ -531,25 +589,14 @@ export function SolutionsPage({ solution }: Readonly<{ solution?: Solution }>): 
               : 'Start with your business records'}
           </UbText>
           <UbText>
-            YourKhata works in a browser on phone or computer. The application supports Hindi and
-            English.
+            YourKhata works in a browser on phone or computer, with nothing to install.
           </UbText>
           <UbActionLink href={ROUTES.LOGIN} variant="primary">
             Start free
           </UbActionLink>
         </UbStack>
       </UbStack>
-      <UbStack
-        as="footer"
-        direction="row"
-        wrap
-        gap={6}
-        className="mx-auto max-w-6xl border-t border-border-hairline px-4 py-8 sm:px-6"
-      >
-        <UbLink href="/">YourKhata</UbLink>
-        <UbLink href="/legal/privacy">Privacy</UbLink>
-        <UbLink href="/legal/terms">Terms</UbLink>
-      </UbStack>
+      <LandingFooter base="/" />
     </UbBox>
   );
 }

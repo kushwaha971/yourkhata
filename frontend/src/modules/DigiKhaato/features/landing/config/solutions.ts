@@ -30,6 +30,8 @@ export interface Solution {
     readonly seconds: number;
     readonly recorded: string;
   };
+  /** Folder under /media/guides/ holding the guide screenshots; the slug when absent. */
+  readonly media?: string;
   /** One-line facts for the hero, each true of the module as built. */
   readonly highlights?: readonly string[];
 }
@@ -40,7 +42,11 @@ export interface SolutionGuide {
   /** Screenshot base name under /media/guides/<module>/, without size or extension. */
   readonly shot: string;
   readonly alt: string;
+  /** A home-page loop (`/media/landing/<clip>-<size>`) showing this job end to end. */
+  readonly clip?: string;
 }
+import { SHOP_KIND_SOLUTIONS } from './shopKinds';
+
 export const SOLUTIONS: readonly Solution[] = [
   {
     slug: 'shop-billing',
@@ -49,7 +55,7 @@ export const SOLUTIONS: readonly Solution[] = [
     description:
       'Create GST bills, track stock, record purchases and follow customer dues with YourKhata. Business records in one place, on phone or computer.',
     audience:
-      'Retail shops and small businesses that sell products and need a clear record of stock, sales and customer balances.',
+      'Shops and businesses that sell products and need a clear record of stock, sales and customer balances.',
     problem:
       'A bill in one book, stock in a spreadsheet and unpaid balances in messages make it difficult to know what sold and what is still owed.',
     features: [
@@ -112,10 +118,11 @@ export const SOLUTIONS: readonly Solution[] = [
   },
   {
     slug: 'lending-collections',
+    media: 'ledger',
     name: 'Ledger for loans and collections',
     title: 'Daily Collection & Loan Record App for Small Lenders | YourKhata',
     description:
-      "Record loans, see the full collection schedule before you save, and walk today's round knowing who is due, late or paid. Daily, weekly or monthly, in Hindi or English.",
+      "Record loans, see the full collection schedule before you save, and walk today's round knowing who is due, late or paid. Daily, weekly or monthly.",
     audience:
       'Small lenders who collect daily, weekly or monthly on a route, and any business that keeps records of its own lawful lending.',
     problem:
@@ -160,7 +167,7 @@ export const SOLUTIONS: readonly Solution[] = [
       'Daily, weekly or monthly',
       'Part payments and late amounts',
       'Reminders open in WhatsApp',
-      'English and Hindi',
+      'Works on any phone',
     ],
     video: {
       base: '/media/guides/ledger/tutorial',
@@ -287,6 +294,7 @@ export const SOLUTIONS: readonly Solution[] = [
       },
     ],
   },
+  ...SHOP_KIND_SOLUTIONS,
 ];
 export const solutionBySlug = (slug: string): Solution | undefined =>
   SOLUTIONS.find((solution) => solution.slug === slug);

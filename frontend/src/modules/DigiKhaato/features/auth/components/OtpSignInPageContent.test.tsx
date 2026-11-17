@@ -86,7 +86,8 @@ describe('OtpSignInPageContent — the number', () => {
     expect(screen.getByRole('heading', { level: 1, name: 'Enter your mobile number' })).toBeInTheDocument();
     expect(screen.queryByRole('link', { name: 'Create an account' })).not.toBeInTheDocument();
     expect(screen.queryByText(/sign up|create/i)).not.toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'Terms' })).toHaveAttribute('href', '/legal/terms');
+    // No Terms or Privacy links on public pages for now (owner, 17 Nov 2026).
+    expect(screen.queryByRole('link', { name: 'Terms' })).not.toBeInTheDocument();
     expect(screen.getByLabelText(/Mobile number/)).toBeInTheDocument();
     expect(screen.getByText('+91')).toBeInTheDocument();
     expect(screen.queryByLabelText(/Email/)).not.toBeInTheDocument();

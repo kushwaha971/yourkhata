@@ -1,6 +1,7 @@
 import { PUBLIC_PHONE, PUBLIC_SOCIAL_PROFILES } from '../config/contact';
 import { faqAnswerKey, faqIds, faqQuestionKey } from '../config/faq';
 import { LANDING_DESCRIPTION, LOGO_IMAGE } from '../config/seo';
+import { SOLUTIONS } from '../config/solutions';
 
 import type { Pricing } from '../config/pricing';
 
@@ -183,6 +184,19 @@ export const buildLandingJsonLd = ({
             '@type': 'Answer',
             text: message(messages, faqAnswerKey(id, allModules)),
           },
+        })),
+      },
+      // The guide page for each kind of business (17 Nov 2026): the home page
+      // links them under Guides and Popular, and this names them as one set.
+      {
+        '@type': 'ItemList',
+        '@id': `${home}#businesses`,
+        name: 'Step-by-step guides by type of business',
+        itemListElement: SOLUTIONS.filter((entry) => entry.guides?.length).map((entry, index) => ({
+          '@type': 'ListItem',
+          position: index + 1,
+          name: entry.name,
+          url: `${home.replace(/\/$/, '')}/solutions/${entry.slug}`,
         })),
       },
     ],

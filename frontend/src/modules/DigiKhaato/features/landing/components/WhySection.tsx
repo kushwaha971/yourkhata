@@ -56,9 +56,11 @@ function WhyCard({ id, t }: Readonly<{ id: WhyId; t: TranslateFn }>) {
       data-why-id={id}
       className="group row-span-3 grid grid-rows-subgrid rounded-[22px] border border-border-hairline bg-surface-card p-3 shadow-[0_24px_60px_-48px_var(--device-glow)] transition-[border-color,box-shadow] duration-base ease-standard hover:border-accent-line hover:shadow-[0_28px_70px_-40px_var(--device-glow)]"
     >
+      {/* On a phone the answer alone (17 Nov 2026: less scrolling); the
+          contrast is still in the HTML and shows from `sm`. */}
       <UbStack
         gap={2}
-        className="rounded-[16px] bg-surface-subtle p-4 ring-1 ring-inset ring-border-hairline"
+        className="rounded-[16px] bg-surface-subtle p-4 ring-1 ring-inset ring-border-hairline max-sm:sr-only"
       >
         <UbStack direction="row" align="center" gap={2}>
           <UbBox
@@ -80,7 +82,7 @@ function WhyCard({ id, t }: Readonly<{ id: WhyId; t: TranslateFn }>) {
         </UbText>
       </UbStack>
 
-      <UbBox aria-hidden className="relative flex h-7 items-center justify-center">
+      <UbBox aria-hidden className="relative flex h-7 items-center justify-center max-sm:hidden">
         <UbBox className="absolute inset-y-0 left-1/2 w-0 -translate-x-1/2 border-l border-dashed border-accent-line" />
         <UbBox className="relative flex h-6 w-6 items-center justify-center rounded-full border border-accent-line bg-surface-card text-text-accent">
           <ArrowDown className="h-3.5 w-3.5" strokeWidth={2.25} />
@@ -117,7 +119,8 @@ function WhyCard({ id, t }: Readonly<{ id: WhyId; t: TranslateFn }>) {
  * generically: no competitor is named and nothing is ranked. 1 → 2 → 4
  * columns, so eight is one, four or two even rows.
  */
-function WhySectionBase() {
+/** `points`: the home page shows four (owner, 17 Nov 2026: a shorter page); the rest live on the guides. */
+function WhySectionBase({ points = WHY_POINTS }: Readonly<{ points?: readonly WhyId[] }>) {
   const { t } = useTranslation();
   return (
     <UbBox
@@ -149,7 +152,7 @@ function WhySectionBase() {
           stagger
           className="mt-12 grid gap-x-4 sm:grid-cols-2 md:gap-x-5 xl:grid-cols-4"
         >
-          {WHY_POINTS.map((id) => (
+          {points.map((id) => (
             <UbBox as="li" key={id} className="row-span-3 grid grid-rows-subgrid pb-4 md:pb-5">
               <WhyCard id={id} t={t} />
             </UbBox>

@@ -6,7 +6,6 @@ import { join } from 'node:path';
 
 import { en, hi } from 'src/tests/allMessages';
 
-import { faqIds } from './faq';
 import { FEATURE_CLIPS, MODULE_CLIPS } from './media';
 import {
   CAN_DO_LINES,
@@ -150,7 +149,7 @@ describe('the landing page module config', () => {
    * `.a.all`, and exactly the visible ones — never a hidden one — in `.a`.
    */
   it('names every module in the "which modules" answer, in both languages', () => {
-    expect(faqIds(false)).toContain('modules');
+    // The question left the home page on 17 Nov 2026; its answer stays exact for the guide pages.
     LANDING_MODULES.forEach((module) => {
       expect(enMessages['landing.faq.modules.a.all']).toContain(
         enMessages[`landing.module.${module.id}.name`]

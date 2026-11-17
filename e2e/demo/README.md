@@ -17,7 +17,7 @@ development data and no SMS is ever sent:
 | | |
 | --- | --- |
 | Database | `yourkhata_demo` on the local PostgreSQL |
-| API | `manage.py runserver 127.0.0.1:8100`, `UB_OTP_PROVIDER=console` (codes are printed in its log) |
+| API | `manage.py runserver 127.0.0.1:8100`, `UB_OTP_PROVIDER=console` (codes are printed in its log), `UB_PUBLIC_BASE_URL=https://yourkhata.com` (so a reminder's pay link on screen is not localhost) |
 | Frontend | a production build with `NEXT_PUBLIC_API_BASE_URL=http://localhost:8100/api/v1`, served on `:3100` |
 
 `localhost`, not `127.0.0.1`, in the frontend address: the session cookie is
@@ -28,6 +28,8 @@ set for the host the API was called on.
 | File | What it does |
 | --- | --- |
 | `seed-demo.mjs` | Builds the demo book through the public API: one owner (mobile + OTP), and three businesses, each choosing its app at sign-up the way a merchant does — Sharma General Store (Shop), Vidya Reading Room (Library only), Verma Finance (Lending only). |
+| `seed-kinds.mjs` | One GST-registered demo shop per sign-up kind (Kirana, Electronics, Jewellery, …), run after `seed-demo.mjs`. |
+| `shop-kind-shots.mjs` | The screenshots of each kind's guides on `/solutions/shop-<kind>`. Signs in once (the server waits 60 s between codes to one number). |
 | `flows.mjs` | What the recordings do, written once for both screen sizes. |
 | `record-clips.mjs` | Records the 18 silent loops (9 × desktop and phone). |
 | `encode-clips.mjs` | Trims, encodes (VP9 + H.264), makes posters and `manifest.json`. `--publish` copies them into `frontend/public/media/landing/`. |

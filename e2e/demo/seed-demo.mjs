@@ -8,7 +8,7 @@
  * three businesses:
  *
  *   Sharma General Store   Shop & billing   customers, suppliers, items, bills
- *   Vidya Reading Room     Library          catalogue, members, issues, returns
+ *   Vidya Reading Room     Library          shifts, seats, students, fees, books
  *   Verma Finance          Lending          borrowers, loans, collections
  *
  * Run it against the DEMO stack only — its own database, the console OTP
@@ -121,10 +121,41 @@ const shop = await business('Sharma General Store', ['shop'], { upi_vpa: 'sharma
 
 // ── 2. Library ──────────────────────────────────────────────────────────────
 const library = await business('Vidya Reading Room', ['library']);
-// The Library was rebuilt (students, seats, fees, books) and its old title /
-// membership API is gone, so the old content here no longer seeds. Until it
-// is rewritten for the new API the business exists with an empty book; the
-// Ledger page work (17 Nov 2026) needed only Verma Finance.
+{
+  const t = library.token;
+  // The Library was rebuilt as a reading room: shifts, a numbered seat map,
+  // students paying a monthly fee, a few books lent out and the room's own
+  // expenses. Two students are left behind on fees so Home has dues to show.
+  await must('PATCH', '/library/settings', { sign_as: 'Vidya Reading Room', upi_id: 'vidyaroom.demo@upi' }, t);
+  await must('PUT', '/library/seats', { count: 40 }, t);
+  // Switching the Library on makes Morning, Evening and Full day at ₹0; the
+  // owner sets their fees and times on the set-up card, as this does.
+  const shifts = await must('GET', '/library/shifts', null, t);
+  const shift = (name, body) => must('PATCH', `/library/shifts/${shifts.find((s) => s.name === name).id}`, body, t);
+  const morning = await shift('Morning', { monthly_fee: '800.00', starts_at: '07:00', ends_at: '13:00' });
+  const evening = await shift('Evening', { monthly_fee: '800.00', starts_at: '14:00', ends_at: '21:00' });
+  const fullDay = await shift('Full day', { monthly_fee: '1400.00' });
+  const enrol = (name, mobile, shift, seat, joinedDaysAgo, first, mode = 'cash') => must('POST', '/library/students', {
+    name, mobile, shift_id: shift.id, seat, joined_on: iso(-joinedDaysAgo), first_payment: first, mode,
+  }, t);
+  const students = [
+    await enrol('Priya Sharma', '9830011201', fullDay, 1, 20, '1400.00', 'upi'),
+    await enrol('Rahul Patil', '9830011202', morning, 2, 45, '1600.00'),
+    await enrol('Sneha Kulkarni', '9830011203', evening, 2, 12, '800.00', 'upi'),
+    await enrol('Amit Jadhav', '9830011204', morning, 5, 38, '800.00'),
+    await enrol('Pooja More', '9830011205', fullDay, 7, 8, '1400.00'),
+    await enrol('Vikas Shinde', '9830011206', evening, 9, 40, '800.00', 'upi'),
+    await enrol('Neha Gaikwad', '9830011207', morning, 11, 3, '800.00'),
+  ];
+  await enrol('Rohit Pawar', '9830011208', evening, 12, 33, '');
+  for (const [title, code] of [['Lucent General Knowledge', 'GK-01'], ['Indian Polity — M. Laxmikanth', 'POL-01'], ['Quantitative Aptitude — R.S. Aggarwal', 'MAT-01']]) {
+    const book = await must('POST', '/library/books', { title, code }, t);
+    if (code !== 'MAT-01') await must('POST', `/library/books/${book.id}/give`, { student_id: students[code === 'GK-01' ? 0 : 1].id }, t);
+  }
+  await must('POST', '/library/expenses', { head: 'rent', amount: '9000.00', spent_on: iso(-10), note: 'Room rent' }, t);
+  await must('POST', '/library/expenses', { head: 'electricity', amount: '1650.00', spent_on: iso(-4), note: 'Light bill' }, t);
+  await must('POST', '/library/expenses', { head: 'internet', amount: '699.00', spent_on: iso(-2), note: 'Wi-Fi' }, t);
+}
 // ── 3. Lending ──────────────────────────────────────────────────────────────
 const lending = await business('Verma Finance', ['lending'], { upi_vpa: 'vermafinance.demo@example' });
 {

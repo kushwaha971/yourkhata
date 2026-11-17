@@ -25,22 +25,35 @@ import type { LandingModuleId } from './modules';
  * what the library one does. Plain, specific and checked against the product:
  * `signup` describes the mobile-number sign-in exactly as built (DEC-013/014).
  */
+/**
+ * 17 Nov 2026 (owner: "review that FAQ"): eleven, in the order people search. No answer names a language: more
+ * are being added (owner, 17 Nov 2026), so `hindi` left the list too.
+ * `types` and `remind` are new; `modules`, `library`, `lending` and `many` left
+ * the home page — each module's own questions are on its guide page, and
+ * `what` already names the modules.
+ */
 const BEFORE_COST = [
   'what',
   'signup',
-  'modules',
-  'library',
-  'lending',
-  'many',
+  'types',
   'phone',
-  'hindi',
   'gst',
+  'remind',
   'staff',
   'export',
 ] as const;
 const AFTER_COST = ['brand', 'einvoice'] as const;
 
-export type FaqId = (typeof BEFORE_COST)[number] | (typeof AFTER_COST)[number] | 'cost' | 'card';
+export type FaqId =
+  | (typeof BEFORE_COST)[number]
+  | (typeof AFTER_COST)[number]
+  | 'cost'
+  | 'card'
+  | 'modules'
+  | 'library'
+  | 'lending'
+  | 'many'
+  | 'hindi';
 
 export const faqIds = (showPricing: boolean): readonly FaqId[] => [
   ...BEFORE_COST,
@@ -57,6 +70,7 @@ export const faqIds = (showPricing: boolean): readonly FaqId[] => [
  */
 export const FAQ_MODULE_SCOPE: Readonly<Partial<Record<FaqId, LandingModuleId | 'summary'>>> = {
   what: 'summary',
+  types: 'summary',
   modules: 'summary',
   library: 'library',
   lending: 'lending',
