@@ -6,6 +6,7 @@ import { memo } from 'react';
 
 import { ArrowRight, Facebook, Instagram, Linkedin, Phone } from 'lucide-react';
 
+import { FeedbackButton } from 'src/components/layout/FeedbackButton';
 import {
   UbActionLink,
   UbBox,
@@ -308,6 +309,8 @@ function LandingFooterBase({ base = '' }: Readonly<{ base?: string }>) {
           {t('landing.footer.copyright', { year: String(year) })}
         </UbText>
       </UbStack>
+      {/* Every public page ends in this footer, so the pill rides with it. */}
+      <FeedbackButton floating />
     </UbBox>
   );
 }

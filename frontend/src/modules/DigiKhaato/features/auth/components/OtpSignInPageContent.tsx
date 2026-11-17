@@ -5,6 +5,7 @@ import { useMemo } from 'react';
 import { yupResolver } from '@hookform/resolvers/yup';
 import { useForm } from 'react-hook-form';
 
+import { FeedbackButton } from 'src/components/layout/FeedbackButton';
 import { OTP_USES_META } from 'src/constants';
 import {
   UbButton,
@@ -250,6 +251,8 @@ export function OtpSignInPageContent(): React.JSX.Element {
       </AuthPanel>
 
       {/* No Terms or Privacy links on public pages for now (owner, 17 Nov 2026). */}
+      {/* Somebody who cannot sign in can still say so (owner, 17 Nov 2026). */}
+      <FeedbackButton floating />
     </UbStack>
   );
 }
