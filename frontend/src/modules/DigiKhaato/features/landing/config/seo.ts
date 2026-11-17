@@ -43,18 +43,18 @@ const WORDS = {
     title: 'YourKhata | GST Billing, Stock & Dues App for Shops',
     description:
       'GST bills, stock and customer dues for shops; students, seats, fees and books for libraries; loans and daily collections for lenders. On any phone or computer.',
-    shareTitle: 'YourKhata — one place for all your business records',
+    shareTitle: 'YourKhata — GST bills, stock and dues for your business',
     shareDescription:
-      'Business bills and stock, library students, fees and books, and loan collections, on one shared core. On any phone or computer.',
+      'Business bills and stock, library students, fees and books, and loan collections. On any phone or computer.',
   },
   all: {
     // The words people search for (17 Nov 2026 review), after the brand.
     title: 'YourKhata | GST Billing, Stock & Dues App for Shops',
     description:
       'GST bills and stock, loan collections, library and gym members and their fees, and room bookings: all your records in one place, on any phone or computer.',
-    shareTitle: 'YourKhata — one place for all your business records',
+    shareTitle: 'YourKhata — GST bills, stock and dues for your business',
     shareDescription:
-      'Business bills and stock, loan collections, library and gym members, and room bookings, on one shared core. On any phone or computer.',
+      'Business bills and stock, loan collections, library and gym members, and room bookings. On any phone or computer.',
   },
 } as const;
 

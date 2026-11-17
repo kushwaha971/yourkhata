@@ -513,13 +513,14 @@ describe('cache headers for unhashed public assets', () => {
     const nginx = readFileSync(join(process.cwd(), '../nginx/conf.d/app.conf'), 'utf8');
     const value = /PUBLIC_ASSET_CACHE = '([^']+)'/.exec(nextConfig)?.[1];
     expect(value).toBe('public, max-age=86400, stale-while-revalidate=604800');
-    for (const prefix of ['/media/landing/', '/brand/']) {
+    for (const prefix of ['/media/landing/', '/media/guides/', '/brand/']) {
       const block = nginx.slice(nginx.indexOf(`location ${prefix} {`));
       expect(block.slice(0, block.indexOf('}'))).toContain(
         `add_header Cache-Control "${value}" always;`
       );
     }
     expect(nextConfig).toContain("source: '/media/landing/:path*'");
+    expect(nextConfig).toContain("source: '/media/guides/:path*'");
     expect(nextConfig).toContain("source: '/brand/:path*'");
   });
 });

@@ -48,6 +48,10 @@ const nextConfig = {
       { protocol: 'https', hostname: '**' },
     ],
   },
+  async redirects() {
+    // Crawlers and old browsers ask for /favicon.ico whatever the page links.
+    return [{ source: '/favicon.ico', destination: '/icons/favicon-32.png', permanent: true }];
+  },
   async rewrites() {
     return process.env.API_PROXY_TARGET
       ? [
