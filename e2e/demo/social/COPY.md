@@ -32,12 +32,11 @@ records…") — they carry the old logo and colours.
 > Remind customers on WhatsApp with the exact amount. Record supplier bills.
 > Close the day with the day book.
 >
-> Kirana, medical, electronics, jewellery, hardware, wholesale and more —
-> each with step-by-step guides.
+> Step-by-step guides with real screens for your business.
 >
 > Start free with your mobile number: yourkhata.com (link in bio)
 >
-> #YourKhata #GSTBilling #InventoryApp #ShopOwner #Kirana #RetailIndia #BusinessApp #MadeInIndia
+> #YourKhata #GSTBilling #InventoryApp #ShopOwner #RetailIndia #BusinessApp #MadeInIndia
 
 ---
 
@@ -60,11 +59,8 @@ records…") — they carry the old logo and colours.
 > carry your business's name, never ours, and you can download all your data
 > any time.
 >
-> Kirana and general stores, medical stores, electronics and mobile shops,
-> jewellers, hardware, wholesale, clothes, auto parts, stationery, agri
-> inputs, furniture and sweets & bakeries each get their own words and
-> step-by-step guides. Libraries, study rooms and lenders have modules of
-> their own.
+> Every kind of business gets its own words, features and step-by-step
+> guides with real screens.
 >
 > Free to start: https://yourkhata.com
 **Specialties:** GST billing, Inventory management, Accounts receivable, Purchase management, Retail software, Library management, Loan collection records
@@ -77,8 +73,7 @@ records…") — they carry the old logo and colours.
 > your stock, record purchases, and close the day. All in the browser, on any
 > phone or computer, starting with just a mobile number.
 >
-> Every kind of shop now has its own guide page with real screens — kirana,
-> medical, jewellery, wholesale, hardware and more:
+> Step-by-step guides with real screens for your business:
 > https://yourkhata.com/solutions
 >
 > #GST #RetailIndia #SaaS #MSME
@@ -112,7 +107,7 @@ offline desktop edition "being built", "see the profit on that bill", and
 khata screens that were removed. Proposed replacement, same URL:
 
 **Title:** YourKhata: Your Shop's Records, on Your Phone
-**Subtitle:** GST bills, stock and who owes you — in one place, for every kind of shop in India.
+**Subtitle:** GST bills, stock and who owes you — in one place, for every kind of business in India.
 **Lead image:** `medium-cover-1600x840.png`
 **Tags:** GST, Small Business → *Business*, Inventory Management, Retail, India
 
@@ -144,14 +139,10 @@ khata screens that were removed. Proposed replacement, same URL:
 > **Close the day.** Day book, cash book, money to collect and the GST summary
 > for your accountant.
 >
-> ### Built for the shop you actually run
+> ### Built for the business you actually run
 >
-> A jeweller bills by weight with today's gold rate. A medical store keeps
-> batch and expiry. A wholesaler sells to retailers and buys from companies.
-> An electronics shop keeps the IMEI on the bill. Twelve kinds of shop each
-> get their own words, features and a guide page with real screens:
-> yourkhata.com/solutions. Libraries, study rooms and lenders have modules of
-> their own.
+> Every kind of business gets its own words, features and a guide page with
+> real screens: yourkhata.com/solutions.
 >
 > ### Things you can count on
 >
