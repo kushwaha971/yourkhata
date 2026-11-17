@@ -2,6 +2,7 @@
 
 import { type ReactNode } from 'react';
 
+import { FeedbackButton } from 'src/components/layout/FeedbackButton';
 import { MobileBackButton } from 'src/components/layout/MobileBackButton';
 import { MobileQuickSearch } from 'src/components/layout/MobileQuickSearch';
 import { MobileTabBar } from 'src/components/layout/MobileTabBar';
@@ -126,6 +127,7 @@ export function UbAppShell({ children }: Readonly<{ children: ReactNode }>): Rea
               component. The account (and Sign out) moved to the More tab with
               the mobile redesign, which also took the ☰ drawer's place. */}
           <MobileQuickSearch />
+          <FeedbackButton />
           {/* NTF-01 FR-4 — the bell sits beside search. */}
           <NotificationBell />
         </UbStack>
