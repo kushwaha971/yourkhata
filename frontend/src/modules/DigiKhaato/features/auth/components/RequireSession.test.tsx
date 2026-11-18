@@ -107,7 +107,8 @@ describe('RequireSession — a session with no active tenant', () => {
     expect(replace).not.toHaveBeenCalled();
   });
 
-  it('still sends an account with no membership at all to the wizard', async () => {
+  /** Owner, 18 Nov 2026: with no business, a business page leads home to Money Book, not into setup. */
+  it('sends an account with no membership at all to Money Book', async () => {
     loadSession([]);
 
     renderWithProviders(
@@ -118,7 +119,7 @@ describe('RequireSession — a session with no active tenant', () => {
       </RequireSession>
     );
 
-    await waitFor(() => expect(replace).toHaveBeenCalledWith('/onboarding/step/1'));
+    await waitFor(() => expect(replace).toHaveBeenCalledWith('/money-book'));
     expect(screen.queryByText('the app')).not.toBeInTheDocument();
   });
 

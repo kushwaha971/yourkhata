@@ -27,6 +27,7 @@ import {
 import { matchAppPath } from './appPath';
 import { rememberAppPlace } from './appPlace';
 import { rememberHistoryApp, useHistoryApp } from './historyApp';
+import { PERSONAL_APPS } from './personalApps';
 
 export interface NavSectionView {
   readonly key: string;
@@ -99,12 +100,25 @@ export function useNavigation(): UseNavigationResult {
   const fromPath = appForPath(pathname) ?? historyApp;
 
   const result = useMemo(() => {
+    // A personal app (Money Book) belongs to the person, not the business, so
+    // its rows show whatever business is open, or none (owner, 18 Nov 2026:
+    // it had no tabs, header or home there, and its Home led to a 404).
+    // Only on its own pages: elsewhere every menu stays exactly as it was.
+    const onPersonal = !!fromPath && PERSONAL_APPS.has(fromPath);
+    const personalModules = new Set(
+      onPersonal
+        ? APP_MANIFESTS.filter((m) => m.code === fromPath).flatMap((m) =>
+            m.navigation.map((item) => item.module)
+          )
+        : []
+    );
     const visible = (item: AppNavItem): boolean =>
-      enabledModules.includes(item.module) &&
+      personalModules.has(item.module) ||
+      (enabledModules.includes(item.module) &&
       permissions.includes(item.permission) &&
-      (!item.feature || features === null || features.includes(item.feature));
+      (!item.feature || features === null || features.includes(item.feature)));
 
-    const accessible = sessionApps
+    const fromServer = sessionApps
       ? sessionApps.flatMap((server) => {
           const manifest = APP_MANIFESTS.find((m) => m.code === server.code);
           return manifest ? [{ manifest, home: server.homePath }] : [];
@@ -113,6 +127,13 @@ export function useNavigation(): UseNavigationResult {
           const first = manifest.navigation.find(visible);
           return first ? [{ manifest, home: first.href }] : [];
         });
+    const personal = APP_MANIFESTS.filter(
+      (m) => onPersonal && m.code === fromPath && !fromServer.some((a) => a.manifest.code === m.code)
+    ).flatMap((manifest) => {
+      const first = manifest.navigation.find(visible);
+      return first ? [{ manifest, home: first.href }] : [];
+    });
+    const accessible = [...fromServer, ...personal];
     const has = (code: string | null): boolean =>
       !!code && accessible.some((a) => a.manifest.code === code);
     const code = has(fromPath)
@@ -171,7 +192,17 @@ export function useNavigation(): UseNavigationResult {
   // A page of another app was opened directly: say so, once, so the server's
   // `active_app` follows the person rather than the last switcher tap.
   const syncTo =
-    sessionApps && fromPath && fromPath !== activeApp && result.app === fromPath ? fromPath : null;
+    // Only an app the server lists: a personal app opened with no business (or
+    // one the business does not run) has nothing to switch to, and the server
+    // answers 403, which re-read the session and asked again, for ever.
+    sessionApps &&
+    tenantId &&
+    fromPath &&
+    fromPath !== activeApp &&
+    result.app === fromPath &&
+    sessionApps.some((a) => a.code === fromPath)
+      ? fromPath
+      : null;
   useEffect(() => {
     if (!syncTo) {
       lastSyncedTo = null;

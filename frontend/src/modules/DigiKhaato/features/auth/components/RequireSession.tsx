@@ -78,7 +78,11 @@ export function RequireSession({
       router.replace(loginPathWithNext(pathname));
       return;
     }
-    if (blocked) router.replace(landingRoute(landing, ROUTES.DASHBOARD));
+    if (!blocked) return;
+    // No business open: back to Money Book, the person's home (owner, 18 Nov
+    // 2026), not into business setup; "Add a business" goes there on purpose.
+    const noBusiness = landing.kind === 'no_business' || landing.kind === 'choose_business';
+    router.replace(noBusiness ? ROUTES.KHATA : landingRoute(landing, ROUTES.DASHBOARD));
   }, [status, router, pathname, blocked, landing]);
 
   if (status === 'loading' || status === 'idle') return <UbPageSkeleton variant="app" />;

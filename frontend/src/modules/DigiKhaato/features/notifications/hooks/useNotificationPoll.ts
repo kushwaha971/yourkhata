@@ -2,7 +2,8 @@
 
 import { useEffect } from 'react';
 
-import { useAppDispatch } from 'src/hooks/useAppStore';
+import { useAppDispatch, useAppSelector } from 'src/hooks/useAppStore';
+import { selectActiveTenant } from 'src/redux/slice/sessionSlice';
 
 import '../redux/notificationSlice';
 import { fetchUnreadCount } from '../redux/notificationThunk';
@@ -21,7 +22,11 @@ export const POLL_MS = 60_000;
 
 export const useNotificationPoll = (): void => {
   const dispatch = useAppDispatch();
+  // Notifications belong to a business: with none open (Money Book only, since
+  // 18 Nov 2026) the server answers 403, and the snackbar said so on every poll.
+  const tenantId = useAppSelector(selectActiveTenant)?.id ?? null;
   useEffect(() => {
+    if (!tenantId) return undefined;
     const refresh = () => {
       if (document.visibilityState === 'visible') void dispatch(fetchUnreadCount());
     };
@@ -34,5 +39,5 @@ export const useNotificationPoll = (): void => {
       window.removeEventListener('focus', refresh);
       document.removeEventListener('visibilitychange', refresh);
     };
-  }, [dispatch]);
+  }, [dispatch, tenantId]);
 };

@@ -63,6 +63,9 @@ import {
  * FR-7's "Leave business" is behind `UbConfirmDialog` because it is not
  * reversible by the person doing it; FR-2's switch is not, because it is.
  */
+/** Stands in for a business when Money Book is open with none. */
+const EMPTY_PLACE = { id: '', name: '', timezone: '', role: null } as const;
+
 export function TenantSwitcherMenu({
   className,
   rail = false,
@@ -134,14 +137,17 @@ export function TenantSwitcherMenu({
 
   // Before `/auth/me` lands there is no name to show; a placeholder chevron
   // next to an empty string reads as a broken control.
-  if (!switcher.activeTenant) return null;
-
-  const active = switcher.activeTenant;
+  // Money Book with no business open (sign-in lands there, owner 18 Nov 2026):
+  // the same fixed "My Money Book" block as inside a business, never empty.
+  const active =
+    switcher.activeTenant ??
+    (fixed ? { ...EMPTY_PLACE, name: t('moneybook.app.mine') } : null);
+  if (!active) return null;
   const shown = splitByOwnership(switcher.groups.active.slice(0, MENU_TENANT_LIMIT));
   const overflow = switcher.groups.active.length > MENU_TENANT_LIMIT;
   // The Money Book is the person's own book, not the business's: its header says
   // "My Money Book" (design I1), while the menu still switches apps and businesses.
-  const shownName = app === 'khata' ? t('moneybook.app.mine') : active.name;
+  const shownName = app === 'khata' || !switcher.activeTenant ? t('moneybook.app.mine') : active.name;
   const activeName = tenantNameView(shownName);
   const openAppLabel = apps.find((a) => a.code === app)?.labelId;
   // B2 (design `rail()`): "Hardware · Shop" — the kind under the business name,
@@ -171,7 +177,7 @@ export function TenantSwitcherMenu({
       </UbBox>
     ) : (
       <UbBox className={cn('flex min-w-0 items-center gap-2', className)} data-testid="open-place">
-        <UbAvatar name={app === 'khata' ? (userName ?? shownName) : active.name} size="sm" />
+        <UbAvatar name={app === 'khata' ? userName || shownName : active.name} size="sm" />
         <UbBox as="span" className="flex min-w-0 flex-1 flex-col">
           <UbText as="span" variant="body-sm-medium" truncate title={activeName.truncated ? shownName : undefined}>
             {activeName.text}
@@ -233,7 +239,7 @@ export function TenantSwitcherMenu({
             </>
           ) : (
             <>
-              <UbAvatar name={app === 'khata' ? (userName ?? shownName) : active.name} size="sm" />
+              <UbAvatar name={app === 'khata' ? userName || shownName : active.name} size="sm" />
               <UbText
                 as="span"
                 variant="body-sm-medium"

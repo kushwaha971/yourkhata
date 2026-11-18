@@ -59,9 +59,21 @@ export const entryRoute = (
   return starred ? landingRoute(landing, nextPath) : ROUTES.KHATA;
 };
 
-/** Money Book belongs to the person, so a session with no business may open it. */
+/**
+ * Pages that belong to the person, not a business, so a session with no
+ * business may open them (owner, 18 Nov 2026): Money Book, More, and their own
+ * profile and devices. Anything else sends them back to Money Book.
+ */
+const PERSONAL_PREFIXES: readonly string[] = [
+  ROUTES.KHATA,
+  ROUTES.MORE,
+  ROUTES.SETTINGS_ME,
+  ROUTES.SETTINGS_PROFILE,
+  ROUTES.SETTINGS_DEVICES,
+];
+
 export const isPersonalPath = (pathname: string): boolean =>
-  pathname === ROUTES.KHATA || pathname.startsWith(`${ROUTES.KHATA}/`);
+  PERSONAL_PREFIXES.some((p) => pathname === p || pathname.startsWith(`${p}/`));
 
 /** Kinds that leave no business to show: the guard must not render the app page. */
 export const isTenantless = (landing: Landing): boolean =>

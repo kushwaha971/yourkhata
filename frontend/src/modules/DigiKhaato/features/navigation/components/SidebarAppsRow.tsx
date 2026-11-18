@@ -7,7 +7,7 @@ import { ChevronRight, LayoutGrid } from 'lucide-react';
 import { UbLink, UbStack, UbText } from 'src/design-system';
 import { useAppSelector } from 'src/hooks/useAppStore';
 import { useTranslation } from 'src/hooks/useTranslation';
-import { selectAppsAddable, selectSessionTenants } from 'src/redux/slice/sessionSlice';
+import { selectActiveTenant, selectAppsAddable, selectSessionTenants } from 'src/redux/slice/sessionSlice';
 import { ROUTES } from 'src/routes';
 import { cn } from 'src/utils/cn';
 
@@ -32,13 +32,17 @@ export function SidebarAppsRow({ onNavigate }: Readonly<{ onNavigate?: () => voi
   const tenants = useAppSelector(selectSessionTenants);
   // The Apps screen is also where a person with several businesses changes
   // business (owner, 12 Nov 2026), so it is reachable for them too.
-  if (apps.length < 2 && addable.length === 0 && tenants.length < 2) return null;
-  const active = pathname === ROUTES.APPS;
+  // No business open (Money Book after sign-in, owner 18 Nov 2026): the same
+  // row, leading to starting or choosing a business.
+  const noBusiness = useAppSelector(selectActiveTenant) === null;
+  if (!noBusiness && apps.length < 2 && addable.length === 0 && tenants.length < 2) return null;
+  const href = noBusiness ? ROUTES.SWITCH_TENANT : ROUTES.APPS;
+  const active = pathname === href;
 
   return (
     <UbStack as="div" gap={0} className="p-3 pb-0" data-testid="sidebar-apps-row">
       <UbLink
-        href={ROUTES.APPS}
+        href={href}
         variant="inherit"
         tone="inherit"
         underline={false}

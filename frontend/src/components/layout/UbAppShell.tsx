@@ -10,12 +10,11 @@ import { NetworkStrip } from 'src/components/layout/NetworkStrip';
 import { ShellNotices } from 'src/components/layout/ShellNotices';
 import { UbAppTopBar } from 'src/components/layout/UbAppTopBar';
 import { UbSidebar } from 'src/components/layout/UbSidebar';
-import { UbActionLink, UbBox, UbLink, UbLogo, UbStack, UbViewOnlyProvider } from 'src/design-system';
+import { UbBox, UbLink, UbLogo, UbStack, UbViewOnlyProvider } from 'src/design-system';
 import { useAppSelector } from 'src/hooks/useAppStore';
 import { useTranslation } from 'src/hooks/useTranslation';
-import { selectActiveTenant, selectImpersonation } from 'src/redux/slice/sessionSlice';
+import { selectImpersonation } from 'src/redux/slice/sessionSlice';
 import { selectAppName } from 'src/redux/slice/whiteLabelSlice';
-import { ROUTES } from 'src/routes';
 
 import { useLandingPath } from 'modules/DigiKhaato/features/navigation/useLandingPath';
 import { useMobileNav } from 'modules/DigiKhaato/features/navigation/useMobileNav';
@@ -67,7 +66,6 @@ export function UbAppShell({ children }: Readonly<{ children: ReactNode }>): Rea
   // The logo opens this workspace's first page — a library's, not the shop's.
   const landing = useLandingPath();
   const impersonating = useAppSelector(selectImpersonation) !== null;
-  const hasBusiness = useAppSelector(selectActiveTenant) !== null;
   const mobileNav = useMobileNav();
 
   return (
@@ -123,17 +121,7 @@ export function UbAppShell({ children }: Readonly<{ children: ReactNode }>): Rea
           ) : (
             <MobileBackButton upHref={mobileNav.upHref} />
           )}
-          {hasBusiness ? (
-            <TenantSwitcherMenu fixed className="min-w-0 flex-1" />
-          ) : (
-            // No business open (owner, 18 Nov 2026: sign-in lands on Money Book
-            // then): the way to start one, where the switcher would be.
-            <UbStack direction="row" className="min-w-0 flex-1">
-              <UbActionLink href={ROUTES.SWITCH_TENANT} variant="secondary" size="sm">
-                {t('tenant.switcher.add')}
-              </UbActionLink>
-            </UbStack>
-          )}
+          <TenantSwitcherMenu fixed className="min-w-0 flex-1" />
           {/* UAT D2 — below `lg` the top bar does not render, and it held the
               only party search. It is here as a 44 px icon, reusing the same
               component. The account (and Sign out) moved to the More tab with
