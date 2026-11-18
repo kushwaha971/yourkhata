@@ -60,3 +60,37 @@ Verified facts are kept apart from assumptions. All sources were read on 18 Nov 
 | Accountants / CAs serving many businesses | LinkedIn, YouTube | Clients' messy records | LinkedIn posts on day-close and GST summary |
 | Library and lending operators | YouTube search, Facebook | Fee and collection tracking on paper | Module guide pages + a monthly Short |
 Rules: no cold DMs and no posting in groups without the admin's permission (owner approval needed). Answer questions in threads where we are tagged or invited.
+
+---
+# Third pass: competitors' social channels (18 Nov 2026, analytics session)
+"Observed" means read by hand on the public page on 18 Nov 2026. "Reported" means a third-party tracker. Counts are YouTube's rounded figures.
+
+## YouTube (observed)
+| | Vyapar (@VyaparApp) | myBillBook (@myBillBook) |
+|---|---|---|
+| Subscribers / videos | 336K / 1.3K | 34.7K / 869 |
+| Cadence (last 3 months) | ~2 a week | ~1–2 a week |
+| Main format | 5–14 min **"How to X in Vyapar \| benefit"** tutorials (GSTR-1 errors, users & permissions, payment reminders, expenses, invoice design, PhonePe QR) | **~1 min product demos per kind of shop** ("Billing Software for Jewellery Shops", "Hardware Shop Billing Software…") |
+| Second format | ~1 min **customer testimonials** (named businesses, a CA) | Step-by-step guides, year-close how-tos |
+| Typical views per video | 1K–8.5K | 140–3.2K |
+| Titles | The searched question first, the product second | Search phrase "X billing software" first |
+Sources: https://www.youtube.com/@VyaparApp/videos ; https://www.youtube.com/@myBillBook/videos (both 18 Nov 2026). An earlier tracker figure for Vyapar was 266K (vidIQ, July 2025): https://vidiq.com/youtube-stats/channel/UCPyg1bziA6iTfjjX-IwGlhQ
+
+**Khatabook YouTube:** `@khatabook` is an empty channel with 1 subscriber, not theirs. The official channel was **not found**, so this is unverified, not "none".
+
+## Instagram, Facebook and LinkedIn
+- Vyapar Instagram @vyaparapp: 73K followers, verified (reported, date unclear): https://socialveins.com/influencer/instagram/vyaparapp
+- Khatabook grew through **vernacular influencer campaigns** on TikTok/YouTube (reported, 2020–21 case studies, not current): https://www.influencer.in/blog/leveraged-vernacular-influencer-marketing-to-achieve-1-million-app-installs-for-khatabook/ ; https://www.socialbeat.in/work/vernacular-marketing-khatabook/
+- Instagram/Facebook/LinkedIn counts and formats for myBillBook, Khatabook and Tally: **not available** (needs a signed-in hands-on pass). Tally's own guidance puts LinkedIn first for B2B branding: https://tallysolutions.com/business-guides/social-media-impact-relevance-in-msmes/
+
+## What they do that we don't (by channel)
+| Channel | They do | We do now | Gap → what to add |
+|---|---|---|---|
+| YouTube | Hundreds of searchable how-to videos; 1-min testimonials | **Nothing published.** Shorts wait on the voice recording | 1 how-to a week titled with the searched question ("How to send a payment reminder on WhatsApp", "How to make a GST bill on your phone"), 3–6 min screen recording + voice. Captions/subtitles let it start before the voice is ready |
+| YouTube | One demo per kind of business (myBillBook) | Guide pages per kind exist; posts don't name kinds | **Owner decision:** a demo per kind on YouTube only, linking its guide page (not a post listing kinds) |
+| All | Real customer testimonials | None (rule: no testimonials until real) | Ask the first 3 active businesses for a 30-s clip, once PostHog shows active users |
+| Instagram/FB | Influencer and creator reach (Khatabook) | Own page only | Later: 2–3 small business creators, paid. Needs owner approval and budget |
+| LinkedIn | CA and accountant voices (Vyapar's CA testimonial) | Problem posts | One post a week aimed at accountants: "what to ask your client to send you" + day-close/GST summary |
+
+## Where we can honestly be different
+Free right now with no charges, nothing to install, mobile + WhatsApp code sign-in, and your own name on bills. Rivals' titles sell features; ours can lead with the shopkeeper's moment (STRATEGY.md quality bar).
