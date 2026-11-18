@@ -10,7 +10,7 @@ Nothing here is done without the owner's yes.
 | 4 | High | Limit the feedback survey to signed-in users after onboarding, once per person | Stops nagging visitors (490 shown, 2 answers) | XS | Response rate up; survey shown to <10% of visitors |
 | 5 | High | Point posts to /solutions guide pages; check each has a "Start free" button to /login | Guide pages already draw 16 of 24 visitors | S | Guide → /login rate |
 | 6 | High | Filter internal traffic in PostHog (owner's IPs/emails) | Honest numbers | XS | Internal-filter toggle on |
-| 7 | High | Meta route: owner posts carousels from Meta Business Suite on the phone, or connects Claude in Chrome | Unblocks IG/FB | XS (owner) | IG/FB rows move to scheduled |
+| 7 | Done | Meta route: owner chose to keep the content session's upload workaround (18 Nov). Watch for any Meta warning or restriction on the Page | Unblocks IG/FB | — | No Meta warnings; IG/FB rows published |
 | 8 | Medium | Server redirect from /signup to /login | Removes rage clicks | XS | $rageclick on /signup = 0 |
 | 9 | Medium | GA4 access, or decide PostHog is enough | One source of truth | XS | Decision recorded |
 | 10 | Medium | SEO pages answering job questions ("how to send payment reminder on WhatsApp", "GST bill on mobile without app", "daily collection register"), each with a Short | Search + AI answers | M (per page) | GSC impressions per page after 4 weeks |
